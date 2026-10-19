@@ -39,7 +39,7 @@
     "@kc/infrastructure-supabase": "workspace:*",
     "@kc/ui": "workspace:*",
     "@react-native-async-storage/async-storage": "2.2.0",
-    "@react-native-community/datetimepicker": "8.4.4",
+    "@react-native-community/datetimepicker": "9.2.1",
     "@react-native-community/slider": "^5.2.0",
     "@sentry/react-native": "^8.12.0",
     "@shopify/flash-list": "1.7.3",
