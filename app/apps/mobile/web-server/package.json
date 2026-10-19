@@ -5,7 +5,7 @@
   "type": "module",
   "dependencies": {
     "hono": "^4.6.0",
-    "@hono/node-server": "^1.14.0"
+    "@hono/node-server": "^2.1.5"
   },
   "scripts": {
     "test": "node --test server.test.mjs",
