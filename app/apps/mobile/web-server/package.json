@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "dependencies": {
-    "hono": "^4.6.0",
+    "hono": "^4.13.11",
     "@hono/node-server": "^1.14.0"
   },
   "scripts": {
