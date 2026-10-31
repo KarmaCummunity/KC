@@ -7,4 +7,8 @@ describe('karmaReasonKey', () => {
     expect(karmaReasonKey('closure_giver')).toBe('closure_giver');
     expect(karmaReasonKey('something_new')).toBe('other');
   });
+
+  it('labels the rating-given award (KC#1306)', () => {
+    expect(karmaReasonKey('rating_given')).toBe('rating_given');
+  });
 });

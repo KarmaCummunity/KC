@@ -30,6 +30,7 @@ export const karmaHe = {
     closure_receiver: 'קבלת פריט (מקבל)',
     giving_handoff_giver: 'נתינה שהושלמה',
     giving_handoff_receiver: 'קבלה שהושלמה',
+    rating_given: 'דירוג אחרי מסירה',
     listing_fulfilled: 'מודעה שהושלמה',
     volunteer_checkin: 'משמרת התנדבות',
     backfill: 'נקודות על פעילות קודמת',

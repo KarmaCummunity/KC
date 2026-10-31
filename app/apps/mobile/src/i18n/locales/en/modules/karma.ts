@@ -30,6 +30,7 @@ export const karmaEn = {
     closure_receiver: 'Item received',
     giving_handoff_giver: 'Giving completed',
     giving_handoff_receiver: 'Receiving completed',
+    rating_given: 'Rated a handoff',
     listing_fulfilled: 'Listing fulfilled',
     volunteer_checkin: 'Volunteer shift',
     backfill: 'Points for earlier activity',

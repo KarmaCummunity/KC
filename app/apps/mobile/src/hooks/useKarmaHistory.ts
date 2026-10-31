@@ -36,7 +36,7 @@ export function useKarmaHistory(userId: string | undefined) {
 const KNOWN = new Set([
   'registration', 'post_created', 'post_removed', 'outreach', 'follower_gained', 'follower_gained_reverse',
   'closure_giver', 'closure_receiver', 'giving_handoff_giver', 'giving_handoff_receiver',
-  'listing_fulfilled', 'volunteer_checkin', 'backfill',
+  'listing_fulfilled', 'volunteer_checkin', 'backfill', 'rating_given',
 ]);
 
 /** i18n key suffix for a ledger event type (unknown types map to `other`). */

@@ -73,7 +73,7 @@ All engagement earns; closed giving earns most (D12). Visible only to the owner;
 | Rating given | 2 | – |
 | Post removed by admin (existing) | −5 | – |
 
-Tech: D12,D29,D32,D43,D52 · `14_karma`, migration 0099, FR-KARMA-007/008 · `karma_ledger`, hard-coded values · G16
+Tech: D12,D29,D32,D43,D52 · `14_karma`, migration 0099, FR-KARMA-007/008 · `karma_ledger`, hard-coded values · G16 · "Rating given" 2 for handoff and ride ratings, once per rating (`0466`, KC#1306)
 
 ## 7.7 Ratings
 After each handoff both sides rate 1–5 with a note — one generic rating for all types (D15, D19). **Users never see ratings, not even their own**; only KC admins (D24). Ratings feed the trust engine.
