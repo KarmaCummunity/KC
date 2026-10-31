@@ -3,7 +3,7 @@ import { Alert, Platform, Pressable, View } from 'react-native';
 import { KcFlashList } from '../../../../src/components/lists/KcFlashList';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import type { MyListingRow } from '@kc/domain';
 import { KcRowCard } from '../../../../src/components/cards/KcRowCard';
 import { listingWorldIcon } from '../../../../src/components/cards/ListingCard';
@@ -22,9 +22,10 @@ const useStyles = makeUseStyles(({ colors }) => ({
   title: { ...typography.h2, color: colors.textPrimary },
   hint: { ...typography.caption, color: colors.textSecondary },
   actions: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: spacing.sm },
-  btn: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: 8, backgroundColor: colors.surfaceRaised },
+  btn: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.sm, backgroundColor: colors.surfaceRaised },
   btnDanger: { backgroundColor: colors.errorLight },
-  btnText: { ...typography.caption, color: colors.textPrimary, fontWeight: '600' as const },
+  btnText: { ...typography.caption, ...typography.semiBold, color: colors.textPrimary },
+  empty: { padding: spacing.lg, textAlign: 'center' as const },
 }));
 
 const ROW = { marginHorizontal: spacing.md };
@@ -148,7 +149,7 @@ export default function MyListingsScreen() {
         }}
         onEndReachedThreshold={LIST_END_THRESHOLD}
         ListEmptyComponent={
-          <Text style={{ padding: spacing.lg, textAlign: 'center' }}>
+          <Text style={styles.empty}>
             {isLoading ? t('marketplace.loading') : t('marketplace.myListingsEmpty')}
           </Text>
         }
@@ -164,8 +165,10 @@ export default function MyListingsScreen() {
               `${t(`marketplace.world.${item.worldSlug}`, { defaultValue: item.worldSlug })} · ${t('marketplace.myListingsUpdated', {
                 date: new Date(item.updatedAt).toLocaleDateString(),
               })}`,
+              // KC#1298: tell the owner why a reported listing no longer shows to others.
+              item.status === 'hidden_pending_review' ? t('marketplace.myListingsHiddenHint') : null,
             ]}
-            statusLabel={item.status}
+            statusLabel={t(`marketplace.listingStatus.${item.status}`, { defaultValue: item.status })}
             closed={item.status === 'closed'}
             closedLabel={t('cards.closed')}
             onPress={() => router.push(`/(tabs)/donations/marketplace/${item.listingId}`)}

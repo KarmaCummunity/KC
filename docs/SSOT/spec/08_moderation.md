@@ -121,6 +121,8 @@ A user removes a block via the Blocked Users screen.
 
 > ⚠️ **Superseded by the project book** — D33 — 3 reports on a post hide it for human review; 5 distinct reporters (30 days) suspend a user from actions (gap G33, question Q-2). Binding text: `docs/spec/07_cross_cutting_systems.md` §7.15. Evidence and status: `docs/spec/95_reconciliation.md` §2. The text below is kept as history (D35).
 
+> **Implementation note (2026-10-30, KC#1298):** marketplace listings follow D33 from migration `0468`: 3 distinct reporters within 14 days set an open listing to `hidden_pending_review` (hidden from everyone but its owner, who sees the state in My listings and gets an `owner_auto_removed` notice with `outcome = 'hidden_pending_review'`); `admin_restore_target('listing')` reopens it and `admin_remove_listing` removes it. Only the threshold and the admin RPCs move a listing into or out of a review state.
+
 **Description.**
 When a content target accumulates 3 distinct reports from 3 distinct reporters, it is auto-removed.
 
@@ -243,6 +245,8 @@ After reporting, the target is removed from the reporter's view regardless of sy
 - AC1. A `ReporterHide` row associates the reporter with the target; visibility queries exclude hidden targets for that reporter.
 - AC2. The hide is permanent unless the reporter explicitly removes it (no UI in MVP for un-hiding; this exists for V2 as a "Hidden by me" list).
 - AC3. Hidden targets do not appear in feeds, search results, recipient pickers, or chat anchors.
+
+> **Implementation note (2026-10-30, KC#1298):** listings follow AC1 from migration `0468`: `reporter_hides` accepts `listing`, and `is_listing_visible_to` (used by browse, search, map, detail and matching) excludes a listing for the viewer who reported it. Before `0463` every listing report failed on the `reporter_hides` and `audit_events` target-type checks.
 
 **Related.** Domain: `ReporterHide`.
 

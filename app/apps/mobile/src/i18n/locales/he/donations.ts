@@ -5,7 +5,7 @@ import { marketplaceMap } from './marketplaceMap';
 import { rides } from './donations.rides';
 import { marketplaceErrors } from './donations.marketplaceErrors';
 import { marketplaceBrowseRefine, marketplaceOrgPicker, marketplaceWorldLabels } from './donations.marketplaceExtras';
-import { marketplaceAvailabilityLabels, marketplaceFieldLabels, marketplaceOptionLabels } from './donations.marketplaceFields';
+import { marketplaceAvailabilityLabels, marketplaceFieldLabels, marketplaceListingStatusLabels, marketplaceOptionLabels } from './donations.marketplaceFields';
 import { worldLaunch } from './donations.worldLaunch';
 import { worldsHub } from './donations.worldsHub';
 export { moneyPayments } from './donations.moneyPayments';
@@ -291,10 +291,12 @@ export const marketplace = {
   myListingsDeleteHint: 'המודעה תימחק לצמיתות.',
   myListingsSave: 'שמירת שינויים',
   myListingsUpdated: 'עודכן {{date}}',
+  myListingsHiddenHint: 'מוסתרת מאחרים עד שהצוות יבדוק את הדיווחים',
   world: marketplaceWorldLabels,
   orgPicker: marketplaceOrgPicker,
   browseRefine: marketplaceBrowseRefine,
   field: marketplaceFieldLabels,
   option: marketplaceOptionLabels,
   availability: marketplaceAvailabilityLabels,
+  listingStatus: marketplaceListingStatusLabels,
 } as const;

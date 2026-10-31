@@ -76,11 +76,12 @@ Last applied on kc-dev when this was written: `0239`.
 | 0464 | #1297 chat from a listing opens and anchors the listing; one context per chat | in review |
 | 0465 | FR-ADMIN-030 team management: org-scoped `admin_list_admins` + atomic `admin_change_role` (D-197) | in progress |
 | 0490–0509 | Organization profile & accounts — `SSOT/spec/20_organizations.md` FR-ORG-001..020 (P1 `0490–0499`, P2 `0500–0505`, P3 `0506–0509`) | claimed (spec only, no files yet) |
-| 0466–0469, 0510+ | — | free |
+| 0468 | #1298 listing reports recorded (reporter hide, audit), reported listings hidden for review, admin restore, moderation-only review states | in review |
+| 0466–0467, 0469, 0510+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0466–0469`, `0510+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0466–0467`, `0469`, `0510+`.
 
 ## How to claim
 

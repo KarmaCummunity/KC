@@ -96,3 +96,12 @@ export const marketplaceAvailabilityLabels = {
   scheduled: 'מתוזמן',
   ongoing: 'זמין תמיד',
 } as const;
+
+/** Owner-facing listing status pill in "My listings" (`marketplace.listingStatus.<status>`). */
+export const marketplaceListingStatusLabels = {
+  open: 'פתוחה',
+  cancelled: 'מושהית',
+  closed: 'הושלמה',
+  expired: 'פג תוקף',
+  hidden_pending_review: 'מוסתרת לבדיקה',
+} as const;

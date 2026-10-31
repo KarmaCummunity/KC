@@ -140,10 +140,6 @@
     "app/(tabs)/create.tsx": {
       "iconSizeLiteral": 1
     },
-    "app/(tabs)/donations/marketplace/my-listings.tsx": {
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 1
-    },
     "app/(tabs)/donations/marketplace/my-listings/edit/[listingId].tsx": {
       "fontWeightLiteral": 1,
       "radiusLiteral": 2,

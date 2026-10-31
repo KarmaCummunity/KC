@@ -110,4 +110,4 @@ Tech: · PRD_V2 rule 13 superseded · phone only · G10, G13
 
 ## 7.15 Reports and moderation
 Anyone can report a post, comment or user. **3 reports on a post → hidden until human review, and admins are notified; 5 on a user → suspended from actions, still sees everything and can chat with support** (D33, D61). "5" = 5 distinct reporters within 30 days; suspended user's open posts are hidden (S11). Review within 48h; malicious reports count against the reporter (S12). False emergency reports are handled with priority (D42).
-Tech: · `spec/08`, R-Food superseded · `reports`, suspects queue · G20
+Tech: · `spec/08`, R-Food superseded · `reports`, suspects queue · G20 · posts `0452`, items/food listings `0468` (KC#1298)

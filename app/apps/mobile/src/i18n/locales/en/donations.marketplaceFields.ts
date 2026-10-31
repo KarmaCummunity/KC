@@ -96,3 +96,12 @@ export const marketplaceAvailabilityLabels = {
   scheduled: 'Scheduled',
   ongoing: 'Ongoing',
 } as const;
+
+/** Owner-facing listing status pill in "My listings" (`marketplace.listingStatus.<status>`). */
+export const marketplaceListingStatusLabels = {
+  open: 'Open',
+  cancelled: 'Paused',
+  closed: 'Completed',
+  expired: 'Expired',
+  hidden_pending_review: 'Hidden for review',
+} as const;
