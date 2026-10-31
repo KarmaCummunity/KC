@@ -16,10 +16,18 @@ name: Auto-merge PRs
 # used: its pushes start no workflows, so a merge made with it would skip push
 # CI and every deploy without any error. With no credential the job fails.
 #
+# Default branch only ({{TD:pull-request-target-main-only}}): since 2025-12-08 GitHub runs pull_request_target
+# from the DEFAULT branch (`main`): this file's `main` copy is the one that runs
+# (the `dev` copy is ignored), GITHUB_REF is refs/heads/main, and environment
+# branch policies are checked against `main`. Changes here take effect only once
+# they reach `main`.
+#
 # The credentials are secrets of the `agent-merge` environment, whose
-# deployment-branch policy allows only `dev`: a pull_request_target job runs
-# on its base branch, so only PRs into dev reach them, and a workflow an agent
-# pushes on any other branch cannot read them (TD-223).
+# deployment-branch policy must allow only `main` (like `ci-verdict`). Only
+# code on `main` reaches them, and every change to `main` needs the owner's
+# approval. A workflow an agent pushes on any other branch, `dev` included,
+# cannot read them (TD-223). A policy that allows only `dev` fails this job
+# with an environment protection error.
 
 on:
   pull_request_target:
@@ -85,7 +93,7 @@ jobs:
         # merge removes the head branch per the repository's delete-on-merge setting.
         run: |
           if [ -z "$GH_TOKEN" ]; then
-            echo "::error::No agent merge identity: set AGENT_APP_ID + AGENT_APP_PRIVATE_KEY (GitHub App, preferred) or AGENT_MERGE_TOKEN in the agent-merge environment. GITHUB_TOKEN is not used because a merge made with it triggers no push CI and no deploy (TD-197). See docs/SSOT/OPERATOR_RUNBOOK.md § Owner setup for D-195 CI/CD."
+            echo "::error::No agent merge identity: set AGENT_APP_ID + AGENT_APP_PRIVATE_KEY (GitHub App, preferred) or AGENT_MERGE_TOKEN in the agent-merge environment (deployment branch main). GITHUB_TOKEN is not used because a merge made with it triggers no push CI and no deploy (TD-197). See docs/SSOT/OPERATOR_RUNBOOK.md § Owner setup for D-195 CI/CD."
             exit 1
           fi
           gh pr merge "$PR" --repo "$REPO" --auto --squash
