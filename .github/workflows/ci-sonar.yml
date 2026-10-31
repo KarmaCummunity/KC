@@ -2,9 +2,11 @@ name: CI — SonarCloud
 
 # SonarCloud quality gate on new code, called by ci-frontend.yml after the
 # tests job. It scans with that job's `coverage` artifact instead of
-# re-running the test suite. ci.yml enables it for PRs and pushes to `main`
-# (the free plan analyses only those) and disables it for Dependabot runs,
-# which get no secrets. Setup, waivers: docs/dev/SONAR.md.
+# re-running the test suite. ci.yml enables it for PRs into `main` and pushes
+# to `main` only: the free plan analyses only `main` and pull requests, so
+# merge groups and dev pushes cannot be scanned, and PRs into dev get fast
+# feedback only (D-195 addendum, TD-236). Dependabot runs get no secrets.
+# Setup, waivers: docs/dev/SONAR.md.
 
 on:
   workflow_call:

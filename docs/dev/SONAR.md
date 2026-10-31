@@ -12,11 +12,11 @@ Organization: `karmacummunity`
 5. **Save Connection**, then bind workspace to project **KarmaCummunity_MVP-2**.
 6. Open the repo root (not only `app/`).
 
-## 2. CI — block PRs with new Sonar issues
+## 2. CI — block PRs into main with new Sonar issues
 
 Workflow: [`.github/workflows/ci-sonar.yml`](../../.github/workflows/ci-sonar.yml)
 
-Called by the `frontend` lane of `CI gate` (`ci-frontend.yml`) on every PR whose `frontend` lane runs (not for Dependabot) and on pushes to `main`:
+Called by the `frontend` lane of `CI gate` (`ci-frontend.yml`) on PRs into `main` whose `frontend` lane runs (not for Dependabot) and on pushes to `main`. PRs into `dev` do not run it: they get fast feedback only, and the free SonarCloud plan analyses only `main` and pull requests, so neither the `dev` merge queue nor `dev` pushes can be scanned (`D-195` addendum, `TD-236`). New-code findings therefore surface on the release PR:
 
 1. Downloads the tests job's lcov coverage and runs SonarCloud analysis on the PR branch.
 2. Waits for the **Quality Gate** (`sonar.qualitygate.wait=true`).

@@ -5,14 +5,14 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { HEAVY_LANES, LANE_JOBS, OPTIONAL_LANES, REVIEW_LANES, changedFiles, classify, plan, wiredLanes } from './ci-changes.mjs';
+import { HEAVY_LANES, LANE_JOBS, OPTIONAL_LANES, REVIEW_LANES, changedFiles, classify, plan } from './ci-changes.mjs';
 
-const PR = { event: 'pull_request', draft: false, actor: 'agent', ref: 'refs/pull/1/merge' };
-const ALL = { hygiene: true, static: true, frontend: true, backend: true, edge: true };
+const PR = { event: 'pull_request', draft: false, actor: 'agent', ref: 'refs/pull/1/merge', baseRef: 'dev' };
+const ALL = { hygiene: true, static: true, frontend: true, backend: true, edge: true, bundles: true };
 
 test('docs-only PR runs only hygiene and static', () => {
   const r = plan({ ...PR, files: ['docs/SSOT/BACKLOG.md', 'CLAUDE.md', '.claude/settings.json'] });
-  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: false, backend: false, edge: false });
+  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: false, backend: false, edge: false, bundles: false });
   assert.equal(r.sonar, false);
 });
 
@@ -21,9 +21,15 @@ test('the plan names every lane job explicitly', () => {
   assert.deepEqual(Object.keys(r.plan).sort(), [...LANE_JOBS].sort());
 });
 
-test('app change runs frontend + sonar only', () => {
+test('app change into dev runs frontend only: bundles wait for the merge queue, Sonar for main', () => {
   const r = plan({ ...PR, files: ['app/apps/mobile/src/lib/x.ts'] });
-  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false });
+  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: false });
+  assert.equal(r.sonar, false);
+});
+
+test('app change into main runs frontend, bundles and Sonar', () => {
+  const r = plan({ ...PR, baseRef: 'main', files: ['app/apps/mobile/src/lib/x.ts'] });
+  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: true, release: true });
   assert.equal(r.sonar, true);
 });
 
@@ -62,15 +68,15 @@ test('unclaimed non-inert path runs every lane (fail closed)', () => {
 test('draft PR plans every lane as not needed and flags draft', () => {
   const r = plan({ ...PR, draft: true, files: ['app/x.ts'] });
   assert.equal(r.draft, true);
-  assert.deepEqual(Object.values(r.plan), [false, false, false, false, false]);
+  assert.deepEqual(Object.values(r.plan), [false, false, false, false, false, false]);
 });
 
-test('unknown diff runs every lane', () => {
-  assert.deepEqual(plan({ ...PR, files: null }).plan, ALL);
+test('unknown diff runs every lane, except the heavy ones on a PR into dev', () => {
+  assert.deepEqual(plan({ ...PR, files: null }).plan, { ...ALL, bundles: false });
 });
 
 test('dependabot PR skips sonar (no secrets)', () => {
-  assert.equal(plan({ ...PR, actor: 'dependabot[bot]', files: ['app/package.json'] }).sonar, false);
+  assert.equal(plan({ ...PR, baseRef: 'main', actor: 'dependabot[bot]', files: ['app/package.json'] }).sonar, false);
 });
 
 test('merge queue runs no hygiene and no sonar', () => {
@@ -104,21 +110,21 @@ test('push to main runs every lane and sonar', () => {
 
 test('the same docs-only diff on a PR stays diff-based', () => {
   const r = plan({ ...PR, files: ['docs/a.md'] });
-  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: false, backend: false, edge: false });
+  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: false, backend: false, edge: false, bundles: false });
 });
 
 test('a PR into main plans the release lane, even when docs-only', () => {
   const r = plan({ ...PR, baseRef: 'main', files: ['docs/SSOT/BACKLOG.md'] });
-  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: false, backend: false, edge: false, release: true });
+  assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: false, backend: false, edge: false, bundles: false, release: true });
 });
 
 test('the release lane is left out of the plan, never planned false, unless the base is main', () => {
   assert.equal('release' in plan({ ...PR, baseRef: 'dev', files: ['app/a.ts'] }).plan, false);
-  assert.equal('release' in plan({ ...PR, files: ['app/a.ts'] }).plan, false);
+  assert.equal('release' in plan({ ...PR, baseRef: undefined, files: ['app/a.ts'] }).plan, false);
   for (const event of ['push', 'workflow_dispatch']) {
     assert.equal('release' in plan({ event, draft: false, actor: 'x', ref: 'refs/heads/main', baseRef: '', files: [] }).plan, false);
   }
-  assert.deepEqual(OPTIONAL_LANES, ['release', ...HEAVY_LANES]);
+  assert.deepEqual(OPTIONAL_LANES, ['release']);
 });
 
 test('a merge group for main plans the release lane; one for dev does not', () => {
@@ -162,43 +168,31 @@ test('manual dispatch runs every heavy lane', () => {
 
 // ── heavy lanes (D-195 addendum: PR = fast feedback, merge queue = full gate)
 
-const WIRED = new Set(['bundles']);
 const APP = ['app/apps/mobile/src/lib/x.ts'];
 
-test('wiredLanes finds only top-level heavy jobs in ci.yml', () => {
-  assert.deepEqual([...wiredLanes('jobs:\n  changes:\n    outputs:\n      bundles: x\n  bundles:\n    name: bundles\n')], ['bundles']);
-  assert.deepEqual([...wiredLanes('jobs:\n  changes:\n    outputs:\n      bundles: ${{ x }}\n')], []);
+test('the heavy lanes are regular lane jobs, named in every plan', () => {
   assert.deepEqual(HEAVY_LANES, ['bundles']);
-});
-
-test('wiredLanes fails closed on a bundles job line it cannot read', () => {
-  for (const line of ['  bundles: # web + native', "  'bundles':", '  "bundles":', '  bundles: { uses: x }', ' bundles:', 'bundles:']) {
-    assert.throws(() => wiredLanes(`jobs:\n${line}\n    name: bundles\n`), /cannot read the "bundles" job line/, line);
-  }
-  assert.deepEqual([...wiredLanes('jobs:\n  bundles:  \n    name: bundles\n')], ['bundles']);
-});
-
-test('a heavy lane stays out of the plan until ci.yml wires it', () => {
+  assert.ok(LANE_JOBS.includes('bundles'));
   for (const event of ['pull_request', 'merge_group', 'push']) {
-    assert.equal('bundles' in plan({ ...PR, event, baseRef: 'dev', files: APP }).plan, false, event);
+    assert.equal(typeof plan({ ...PR, event, files: ['docs/a.md'] }).plan.bundles, 'boolean', event);
   }
 });
 
 test('a PR into dev plans the heavy lanes as not needed, even for an app change', () => {
-  const r = plan({ ...PR, baseRef: 'dev', files: APP, wired: WIRED });
+  const r = plan({ ...PR, baseRef: 'dev', files: APP });
   assert.deepEqual(r.plan, { hygiene: true, static: true, frontend: true, backend: false, edge: false, bundles: false });
   assert.equal(r.run.bundles, false);
 });
 
 test('a review into dev plans the heavy lanes as not needed and runs none', () => {
-  const r = plan({ ...PR, event: 'pull_request_review', baseRef: 'dev', files: APP, wired: WIRED });
+  const r = plan({ ...PR, event: 'pull_request_review', baseRef: 'dev', files: APP });
   assert.equal(r.plan.bundles, false);
   assert.equal(r.run.bundles, false);
 });
 
 test('a PR into main needs the heavy lanes whenever it needs frontend', () => {
-  assert.equal(plan({ ...PR, baseRef: 'main', files: APP, wired: WIRED }).plan.bundles, true);
-  assert.equal(plan({ ...PR, baseRef: 'main', files: ['docs/a.md'], wired: WIRED }).plan.bundles, false);
+  assert.equal(plan({ ...PR, baseRef: 'main', files: APP }).plan.bundles, true);
+  assert.equal(plan({ ...PR, baseRef: 'main', files: ['docs/a.md'] }).plan.bundles, false);
 });
 
 test('merge groups, pushes and dispatches run the heavy lanes, whatever the diff', () => {
@@ -210,7 +204,7 @@ test('merge groups, pushes and dispatches run the heavy lanes, whatever the diff
     { event: 'workflow_dispatch', ref: 'refs/heads/dev' },
   ];
   for (const r of runs) {
-    const result = plan({ draft: false, actor: 'x', files: ['docs/a.md'], wired: WIRED, ...r });
+    const result = plan({ draft: false, actor: 'x', files: ['docs/a.md'], ...r });
     assert.equal(result.plan.bundles, true, `${r.event} ${r.ref}`);
     assert.equal(result.run.bundles, true, `${r.event} ${r.ref}`);
   }

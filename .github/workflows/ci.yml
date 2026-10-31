@@ -29,6 +29,8 @@ on:
   # review run whose PR targets anything but dev or main.
   pull_request_review:
     types: [submitted, dismissed]
+  # The full gate: a merge group runs every lane whatever its diff, including
+  # the heavy `bundles` lane that PRs into dev leave to the queue.
   merge_group:
     types: [checks_requested]
   # Post-merge signal on the integration branches (and the main SonarCloud
@@ -80,6 +82,7 @@ jobs:
       frontend: ${{ steps.plan.outputs.frontend }}
       backend: ${{ steps.plan.outputs.backend }}
       edge: ${{ steps.plan.outputs.edge }}
+      bundles: ${{ steps.plan.outputs.bundles }}
       sonar: ${{ steps.plan.outputs.sonar }}
       plan: ${{ steps.plan.outputs.plan }}
     steps:
@@ -159,6 +162,17 @@ jobs:
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
+  # Web export + budget + smoke and iOS + Android bundles. PRs into dev plan
+  # it as not needed (the merge queue runs it); every other run needs it with
+  # the frontend lane. The gate accepts the skip only on PRs into dev.
+  bundles:
+    name: bundles
+    needs: changes
+    if: needs.changes.outputs.bundles == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci-bundles.yml
+
   backend:
     name: backend
     needs: changes
@@ -185,7 +199,7 @@ jobs:
   # up to 12 minutes for that run to finish, hence the timeout.
   gate:
     name: CI gate
-    needs: [changes, hygiene, static, release, frontend, backend, edge]
+    needs: [changes, hygiene, static, release, frontend, bundles, backend, edge]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 15

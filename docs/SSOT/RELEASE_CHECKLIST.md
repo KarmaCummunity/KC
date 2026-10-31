@@ -26,7 +26,7 @@ Required on the release PR (GitHub branch protection on `main`; the live rule st
 | --- | --- | --- |
 | PR gate | CI | `CI gate` |
 
-`CI gate` (`D-195`) aggregates every lane. For a PR into `main` the change detector also plans the **release** lane (`.github/workflows/ci-release.yml`), whatever the diff touches, and the gate fails if it did not succeed:
+`CI gate` (`D-195`) aggregates every lane. A PR into `main` has no merge queue after it, so it runs every lane its diff needs, heavy ones included: the `bundles` lane (web export + bundle budget + smoke, iOS + Android bundles) whenever `frontend` runs, and the SonarCloud quality gate (80% coverage on new code, blocking) inside `frontend`. The release PR is where Sonar judges everything merged into `dev` since the last release (`TD-236`); fix new-code findings on a follow-up PR into `dev`. For a PR into `main` the change detector also plans the **release** lane (`.github/workflows/ci-release.yml`), whatever the diff touches, and the gate fails if it did not succeed:
 
 | Release-lane job | Fails when |
 | --- | --- |

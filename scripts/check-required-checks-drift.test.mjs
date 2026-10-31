@@ -70,7 +70,7 @@ test('parseRequiredTable errors when heading missing', () => {
 
 // Minimal valid ci.yml: `changes`, every planned lane, and a gate that depends
 // on all of them and runs always().
-const LANES = ['hygiene', 'static', 'frontend', 'backend', 'edge'];
+const LANES = ['hygiene', 'static', 'frontend', 'bundles', 'backend', 'edge'];
 const CI_WF = [
   'name: CI',
   'jobs:',
@@ -219,7 +219,7 @@ test('checkGateWiring accepts inline and block needs lists', () => {
 });
 
 test('checkGateWiring flags a lane missing from the gate needs', () => {
-  const missing = CI_WF.replace(`    needs: [changes, ${LANES.join(', ')}]`, '    needs: [changes, hygiene, static, frontend, backend]');
+  const missing = CI_WF.replace(`    needs: [changes, ${LANES.join(', ')}]`, '    needs: [changes, hygiene, static, frontend, bundles, backend]');
   assert.deepEqual(checkGateWiring(missing), [
     '.github/workflows/ci.yml: job "edge" is missing from the "CI gate" needs: list — its failure would not block merges',
   ]);
@@ -241,13 +241,10 @@ test('checkGateWiring accepts an optional release lane wired into the gate', () 
   assert.match(checkGateWiring(unwired)[0], /job "release" is missing from the "CI gate" needs: list/);
 });
 
-test('checkGateWiring accepts a heavy bundles lane once wired into the gate', () => {
-  const withBundles = CI_WF.replace('  gate:', '  bundles:\n    name: bundles\n    needs: changes\n  gate:').replace(
-    `    needs: [changes, ${LANES.join(', ')}]`,
-    `    needs: [changes, ${LANES.join(', ')}, bundles]`,
-  );
-  assert.deepEqual(checkGateWiring(withBundles), []);
-  const unwired = CI_WF.replace('  gate:', '  bundles:\n    name: bundles\n    needs: changes\n  gate:');
+test('checkGateWiring requires the heavy bundles lane, wired into the gate', () => {
+  const noBundles = CI_WF.replace('  bundles:\n    name: bundles\n    needs: changes\n', '').replace(' bundles,', '');
+  assert.deepEqual(checkGateWiring(noBundles), ['.github/workflows/ci.yml: planned job "bundles" does not exist']);
+  const unwired = CI_WF.replace(' bundles,', '');
   assert.match(checkGateWiring(unwired)[0], /job "bundles" is missing from the "CI gate" needs: list/);
 });
 
