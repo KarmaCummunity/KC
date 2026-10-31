@@ -5,6 +5,7 @@ import { adminMoneyHe } from './adminMoney';
 import { adminCrmHe } from './adminCrm';
 import { adminOrgApprovalsHe } from './adminOrgApprovals';
 import { adminWhatsAppHe } from './adminWhatsApp';
+import { adminMatchingHe } from './adminMatching';
 import { adminSurveysHe } from './adminSurveys';
 import { adminTasksHe } from './adminTasks';
 import { adminAdminsHe } from './adminAdmins';
@@ -26,6 +27,7 @@ export const adminHe = {
     orgApprovals:  'אישור ארגונים',
     audit:         'יומן פעולות',
     whatsapp:      'וואטסאפ',
+    matching:      'איכות התאמות',
   },
   roles: {
     super_admin: 'מנהל-על',
@@ -51,7 +53,7 @@ export const adminHe = {
     postsKpi: 'פוסטים',
     surveysKpi: 'סקרים',
     auditKpi: 'יומן פעולות',
-    auditOpenLabel: 'פתח',
+    auditOpenLabel: 'פתיחה',
     noCount: '—',
   },
   comingSoon: {
@@ -108,7 +110,7 @@ export const adminHe = {
     },
     notFound: 'לא נמצא תיק.',
     loading:  'טוען...',
-    openReporter: (name: string) => `פתח פרופיל של ${name}`,
+    openReporter: (name: string) => `פתיחת פרופיל של ${name}`,
     targetCard: {
       postKind:    'פוסט',
       userKind:    'משתמש',
@@ -118,9 +120,9 @@ export const adminHe = {
       openOwner:   'פתיחת פרופיל המפרסם',
       noPreview:   '(אין תצוגה מקדימה)',
       unnamedUser: '(משתמש ללא שם)',
-      openPost:    'פתח את הפוסט',
-      openProfile: 'פתח פרופיל',
-      openAuthor:  'פתח את היוצר',
+      openPost:    'פתיחת הפוסט',
+      openProfile: 'פתיחת פרופיל',
+      openAuthor:  'פתיחת היוצר',
       createdAt:   (when: string) => `נוצר ב-${when}`,
       signedUpAt:  (when: string) => `הצטרף ב-${when}`,
       removedAt:   (when: string) => `הוסר ב-${when}`,
@@ -131,7 +133,7 @@ export const adminHe = {
   },
   coexistence: {
     bubbleReadOnly: 'הפעולות זמינות בפורטל הניהול',
-    bubbleOpenInPortal: 'פתח בפורטל',
+    bubbleOpenInPortal: 'פתיחה בפורטל',
   },
   admins: adminAdminsHe,
   tasks: adminTasksHe,
@@ -139,6 +141,7 @@ export const adminHe = {
   time: adminTimeHe,
   money: adminMoneyHe,
   whatsapp: adminWhatsAppHe,
+  matching: adminMatchingHe,
   crm: adminCrmHe,
   orgApprovals: adminOrgApprovalsHe,
   surveys: adminSurveysHe,

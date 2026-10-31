@@ -10,7 +10,7 @@ import { adminChipScroll } from './adminChipScroll';
 import { Ionicons } from '@expo/vector-icons';
 import { router, usePathname, type Href } from 'expo-router';
 import { type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
-import { makeUseStyles, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, useTheme, Text, iconSize } from '@kc/ui';
 import { useAdminRoles } from '../../hooks/useAdminRoles';
 import { rowDirectionStart, textAlignStart } from '../../lib/rtlLayout';
 import { useLocaleBundle, type LocaleBundle } from '../../i18n/useLocaleBundle';
@@ -34,6 +34,7 @@ const ITEMS: readonly NavItem[] = [
   { key: 'surveys',   href: '/(admin)/surveys', icon: 'bar-chart-outline',        perm: 'surveys.view' },
   { key: 'audit',     href: '/(admin)/audit',   icon: 'time-outline',             perm: 'audit.view_own' },
   { key: 'whatsapp',  href: '/(admin)/whatsapp', icon: 'logo-whatsapp',            perm: 'whatsapp.manage' },
+  { key: 'matching',  href: '/(admin)/matching', icon: 'git-compare-outline',      perm: 'matching.view_quality' },
 ];
 
 function normalize(href: string): string {
@@ -69,7 +70,7 @@ export function AdminNav({ variant }: { variant: 'sidebar' | 'topbar' }): ReactE
       >
         <Ionicons
           name={it.icon}
-          size={variant === 'sidebar' ? 20 : 18}
+          size={variant === 'sidebar' ? iconSize.lg : iconSize.md}
           color={active ? colors.primary : colors.textSecondary}
         />
         <Text
@@ -87,7 +88,7 @@ export function AdminNav({ variant }: { variant: 'sidebar' | 'topbar' }): ReactE
       <View style={styles.sidebar}>
         <View style={styles.brand}>
           <View style={styles.brandMark}>
-            <Ionicons name="shield-checkmark" size={18} color={colors.textInverse} />
+            <Ionicons name="shield-checkmark" size={iconSize.md} color={colors.textInverse} />
           </View>
           <Text style={styles.brandText} numberOfLines={1}>
             {L.admin.portalTitle}
@@ -119,53 +120,53 @@ const useStyles = makeUseStyles(({ colors }) => ({
     backgroundColor: colors.surface,
     borderStartWidth: 1,
     borderStartColor: colors.border,
-    paddingVertical: 20,
-    paddingHorizontal: 12,
-    gap: 16,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
+    gap: spacing.base,
   },
   brand: {
     flexDirection: rowDirectionStart,
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 8,
-    paddingBottom: 14,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   brandMark: {
     width: 34,
     height: 34,
-    borderRadius: 11,
+    borderRadius: radius.md,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  brandText: { flex: 1, fontSize: 16, fontWeight: '800', color: colors.textPrimary, textAlign: textAlignStart() },
-  sideList: { gap: 4 },
+  brandText: { flex: 1, fontSize: typography.bodyLarge.fontSize, ...typography.extraBold, color: colors.textPrimary, textAlign: textAlignStart() },
+  sideList: { gap: spacing.xs },
   sideItem: {
     flexDirection: rowDirectionStart,
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 11,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
   },
   sideItemActive: { backgroundColor: colors.primarySurface },
 
   // Mobile pill bar
   topbarWrap: { backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border },
-  topbar: { flexDirection: rowDirectionStart, gap: 8, paddingHorizontal: 12, paddingVertical: 10 },
+  topbar: { flexDirection: rowDirectionStart, gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   pill: {
     flexDirection: rowDirectionStart,
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 999,
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
     backgroundColor: colors.skeleton,
   },
   pillActive: { backgroundColor: colors.primarySurface, borderWidth: 1, borderColor: colors.primaryLight },
 
-  label: { fontSize: 14, fontWeight: '500' },
-  labelActive: { fontWeight: '700' },
+  label: { fontSize: typography.body.fontSize, ...typography.medium },
+  labelActive: { ...typography.bold },
 }));

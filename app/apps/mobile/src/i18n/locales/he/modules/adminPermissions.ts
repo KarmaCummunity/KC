@@ -32,4 +32,5 @@ export const adminPermissionsHe: Readonly<Record<AdminPermission, string>> = {
   'crm.manage':                 'ניהול אנשי קשר',
   'org.review_applications':    'אישור בקשות ארגונים',
   'whatsapp.manage':            'ניהול וואטסאפ',
+  'matching.view_quality':      'צפייה באיכות התאמות',
 };

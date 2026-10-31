@@ -38,7 +38,45 @@ export interface MatchRespondResult {
   readonly mutual: boolean;
 }
 
+/** KC#1122 / FR-ADMIN-029 — one world's match quality over the requested window (0454). */
+export interface MatchQualityByWorld {
+  readonly worldSlug: string;
+  readonly worldLabelHe: string;
+  readonly worldLabelEn: string;
+  readonly notifiedPairs: number;
+  readonly responses: number;
+  readonly accepted: number;
+  /** accepted / responses; null when nobody answered yet. */
+  readonly precisionProxy: number | null;
+  readonly chatPairs: number;
+  /** chat pairs / notified pairs; null when nothing was notified. */
+  readonly chatRate: number | null;
+  /** null for worlds that do not hand off through giving_handoffs. */
+  readonly completedPairs: number | null;
+  readonly completionRate: number | null;
+}
+
 type Row = Database['public']['Functions']['rpc_my_matches']['Returns'][number];
+type QualityRow = Database['public']['Functions']['admin_match_quality']['Returns'][number];
+
+// PostgREST returns numeric columns as strings and SQL nulls as null; keep nulls meaningful.
+const numOrNull = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
+
+export function mapMatchQualityRow(r: QualityRow): MatchQualityByWorld {
+  return {
+    worldSlug: r.world_slug,
+    worldLabelHe: r.world_label_he ?? r.world_slug,
+    worldLabelEn: r.world_label_en ?? r.world_slug,
+    notifiedPairs: Number(r.notified_pairs ?? 0),
+    responses: Number(r.responses ?? 0),
+    accepted: Number(r.accepted ?? 0),
+    precisionProxy: numOrNull(r.precision_proxy),
+    chatPairs: Number(r.chat_pairs ?? 0),
+    chatRate: numOrNull(r.chat_rate),
+    completedPairs: numOrNull(r.completed_pairs),
+    completionRate: numOrNull(r.completion_rate),
+  };
+}
 
 const asResponse = (v: string | null): MatchResponse | null =>
   v === 'accepted' || v === 'declined' ? v : null;
@@ -86,6 +124,13 @@ export class SupabaseMatchRepository {
     if (error) throw new Error(`respondToMatch: ${error.message}`);
     const out = (data ?? {}) as { status?: unknown; mutual?: unknown };
     return { status: String(out.status ?? ''), mutual: out.mutual === true };
+  }
+
+  /** Admin-only (super admin / moderator): per-world quality over the last `days` (server clamps 1..365). */
+  async qualityByWorld(days = 30): Promise<MatchQualityByWorld[]> {
+    const { data, error } = await this.client.rpc('admin_match_quality', { p_days: days });
+    if (error) throw new Error(`matchQualityByWorld: ${error.message}`);
+    return (data ?? []).map(mapMatchQualityRow);
   }
 
   /** Recomputes the caller's open listings (server-throttled to once per 10 min each). */

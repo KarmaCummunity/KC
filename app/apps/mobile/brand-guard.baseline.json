@@ -589,13 +589,6 @@
       "fontWeightLiteral": 1,
       "spacingLiteral": 2
     },
-    "src/components/admin/AdminNav.tsx": {
-      "fontSizeLiteral": 2,
-      "fontWeightLiteral": 3,
-      "radiusLiteral": 3,
-      "spacingLiteral": 16,
-      "iconSizeLiteral": 2
-    },
     "src/components/admin/AdminScreenGuard.tsx": {
       "fontSizeLiteral": 1,
       "fontWeightLiteral": 1,

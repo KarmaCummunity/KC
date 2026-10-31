@@ -10,9 +10,6 @@
     "src/i18n/locales/he/modules/aboutContentUxRefreshPartA.ts": {
       "brandWording": 1
     },
-    "src/i18n/locales/he/modules/admin.ts": {
-      "genderedImperative": 6
-    },
     "src/i18n/locales/he/modules/adminAdmins.ts": {
       "genderedImperative": 10
     },

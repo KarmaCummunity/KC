@@ -561,6 +561,25 @@ From any person in the hierarchy (or any user from the search), a team manager c
 
 ---
 
+## §18 Admin Portal — Match quality dashboard (KC#1122)
+
+## FR-ADMIN-029 — Match quality per world
+
+> **Status (2026-10-30):** ✅ Implemented — migration `0454`, screen `(admin)/matching`, permission `matching.view_quality`.
+
+**Description.**
+The team sees how well matching v2 works per world, to tune `matching_settings` (`docs/SSOT/MATCHING_V2.md`).
+
+**Acceptance Criteria.**
+- AC1. Admin → Match quality lists every world with alerted pairs in the window (7 / 30 / 90 days, default 30; server clamps 1..365), each with: alerted pairs, **precision proxy** (accepted answers / all answers), **notification→chat rate** (pairs whose owners exchanged a user message after the first alert / alerted pairs), **completion rate** (pairs with a handed-over giving handoff between the two owners / alerted pairs).
+- AC2. A pair counts from its first real alert; sides that opted out of match alerts (FR-NOTIF-017) do not make a pair "alerted".
+- AC3. Completion is shown only for worlds that hand off through `giving_handoffs` (items, food, rides, knowledge); other worlds show "not tracked". A rate with a zero denominator renders as "—", never 0%.
+- AC4. Only super admin and moderator can open the screen or call `admin_match_quality` (`42501` otherwise; anon has no execute).
+
+**Related.** `supabase/tests/0454_admin_match_quality.sql` · `SupabaseMatchRepository.qualityByWorld` · `formatRate`.
+
+---
+
 | Version | Date | Summary |
 | ------- | ---- | ------- |
 | 0.1 | 2026-05-05 | Initial draft from PRD §2.2 and Flow 9. |
@@ -578,3 +597,4 @@ From any person in the hierarchy (or any user from the search), a team manager c
 | 0.13 | 2026-10-30 | Added §17 Admin Portal — Layered hierarchy view (P3.A-Layers). FR-ADMIN-028: layered view of the management chain across every visible org — one band per reporting level, unlimited depth — on a masked community base (suspended users count as members, D84); `admin_hierarchy_census` RPC (counts only, RBAC-scoped like `admin_org_tree`); org colour keys + focus chips; default view of `(admin)/admins`; grant/revoke now refresh the tree. Migration `0461`; decision `D-198`. |
 | 0.14 | 2026-10-30 | Added §18 Admin Portal — End-to-end team management (P3.A-Team). FR-ADMIN-030: the person screen manages anyone end to end — roles with org, grant in a chosen place, change role in place (`admin_change_role`, keeps manager and reports), revoke, role-derived permissions list, direct manager; org admins and managers run their own org's team (D86) with a scoped roster (`admin_list_admins`); permissions stay role-derived (D85). Migration `0465`; decision `D-197`. |
 | 0.15 | 2026-10-30 | FR-ADMIN-021 AC7–AC8 (KC#1058): single-choice stats and the Sean Ellis PMF score card (`admin_pmf_survey_report`, `0458`). |
+| 0.16 | 2026-10-30 | Added §18 / FR-ADMIN-029 — match quality dashboard (KC#1122): `admin_match_quality` (`0454`), `(admin)/matching`, `matching.view_quality`. |

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { SupabaseMatchRepository, mapMatchRow } from '../SupabaseMatchRepository';
+import { SupabaseMatchRepository, mapMatchQualityRow, mapMatchRow } from '../SupabaseMatchRepository';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -65,5 +65,45 @@ describe('SupabaseMatchRepository', () => {
     expect(await r.refreshMine()).toBe(3);
     expect(rpc).toHaveBeenCalledWith('rpc_match_refresh_mine');
     await expect(repo({ data: null, error: { message: 'x' } }).r.refreshMine()).rejects.toThrow('refreshMyMatches: x');
+  });
+});
+
+describe('mapMatchQualityRow', () => {
+  const Q = {
+    world_slug: 'items', world_label_he: 'חפצים', world_label_en: 'Items', notified_pairs: 12, responses: 8, accepted: '6', precision_proxy: '0.7500',
+    chat_pairs: 5, chat_rate: '0.4167', completed_pairs: 2, completion_rate: '0.1667',
+  };
+
+  it('maps numeric strings to numbers', () => {
+    expect(mapMatchQualityRow(Q as any)).toEqual({
+      worldSlug: 'items', worldLabelHe: 'חפצים', worldLabelEn: 'Items', notifiedPairs: 12, responses: 8, accepted: 6, precisionProxy: 0.75,
+      chatPairs: 5, chatRate: 0.4167, completedPairs: 2, completionRate: 0.1667,
+    });
+  });
+
+  it('keeps SQL nulls as null (no answers yet, world without handoffs)', () => {
+    const m = mapMatchQualityRow({ ...Q, world_slug: 'time', world_label_he: null, responses: 0, accepted: 0,
+      precision_proxy: null, completed_pairs: null, completion_rate: null } as any);
+    expect(m.precisionProxy).toBeNull();
+    expect(m.completedPairs).toBeNull();
+    expect(m.completionRate).toBeNull();
+    expect(m.responses).toBe(0);
+    expect(m.worldLabelHe).toBe('time');
+  });
+});
+
+describe('SupabaseMatchRepository.qualityByWorld', () => {
+  it('calls admin_match_quality with the window and maps rows', async () => {
+    const { rpc, r } = repo({ data: [{ world_slug: 'food', notified_pairs: 1, responses: 0, accepted: 0,
+      precision_proxy: null, chat_pairs: 0, chat_rate: '0', completed_pairs: 0, completion_rate: '0' }], error: null });
+    const out = await r.qualityByWorld(7);
+    expect(rpc).toHaveBeenCalledWith('admin_match_quality', { p_days: 7 });
+    expect(out[0]).toMatchObject({ worldSlug: 'food', notifiedPairs: 1, chatRate: 0, precisionProxy: null });
+  });
+
+  it('returns [] for null data and wraps a forbidden error', async () => {
+    expect(await repo({ data: null, error: null }).r.qualityByWorld()).toEqual([]);
+    await expect(repo({ data: null, error: { message: 'forbidden' } }).r.qualityByWorld())
+      .rejects.toThrow('matchQualityByWorld: forbidden');
   });
 });
