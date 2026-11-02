@@ -156,7 +156,7 @@ function Button({
   );
 }
 
-/** Solid brand call to action — one per screen area. */
+/** Solid brand call to action — one per screen (spec 17 §8.1 call 6). */
 export function PrimaryButton(props: ButtonProps) {
   return <Button {...props} variant="primary" />;
 }
