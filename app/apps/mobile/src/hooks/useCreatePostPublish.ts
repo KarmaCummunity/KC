@@ -60,6 +60,7 @@ export function useCreatePostPublish(args: {
   const queryClient = useQueryClient();
   const checkedFirstPostRef = useRef(false);
   const prePublishOpenCountRef = useRef<number | null>(null);
+  const publishStartedRef = useRef(false);
   const [addressValidationTouched, setAddressValidationTouched] = useState(false);
 
   const fieldSnapshot = useMemo(
@@ -146,12 +147,19 @@ export function useCreatePostPublish(args: {
       const message = isPostError(err) ? mapPostErrorToHebrew(err.code) : t('post.networkError');
       useFeedSessionStore.getState().showEphemeralToast(t('post.publishFailed', { message }), 'error');
     },
+    onSettled: () => {
+      publishStartedRef.current = false;
+    },
   });
 
   const isPublishing = publish.isPending || args.uploadingCount > 0;
 
   const runPublishAfterGate = () => {
-    args.requestSoftGate(() => publish.mutate());
+    args.requestSoftGate(() => {
+      if (publishStartedRef.current) return;
+      publishStartedRef.current = true;
+      publish.mutate();
+    });
   };
 
   const tryPublish = () => {
