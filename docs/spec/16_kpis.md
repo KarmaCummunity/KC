@@ -9,7 +9,7 @@ Numeric targets set after launch.
 | Liquidity | % posts with a response within 24h; % closed |
 | Engagement | Actions per visit, likes & comments, challenge participants |
 | Giving | Volunteer hours, rides, kg food, donations to KC |
-| Impact per domain | Closed givings per domain & world — from the domain tag (D45) |
+| Impact per world | Closed givings per world and sub-category ({{D:one-world-list}}) |
 | Organizations | Active orgs, events, jobs |
 | Trust | % verified, reports per 1,000 posts, review time |
 | Emergency | Time from declaration to first response, requests answered |
