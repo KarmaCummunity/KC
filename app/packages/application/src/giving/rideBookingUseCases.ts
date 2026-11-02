@@ -124,3 +124,10 @@ export class CompleteRideTripUseCase {
     return this.repo.complete(handoffId);
   }
 }
+
+export class CompleteRideListingUseCase {
+  constructor(private readonly repo: IRideBookingRepository) {}
+  execute(listingId: string): Promise<number> {
+    return this.repo.completeRide(listingId);
+  }
+}

@@ -4,6 +4,7 @@ import {
   BookRideSeatUseCase,
   CancelRideBookingUseCase,
   CompleteRideTripUseCase,
+  CompleteRideListingUseCase,
   DeclineRideBookingUseCase,
   ListRideBookingsUseCase,
   type IRideBookingRepository,
@@ -27,6 +28,7 @@ export const rideBookingUseCases = {
   decline: () => new DeclineRideBookingUseCase(repository()),
   cancel: () => new CancelRideBookingUseCase(repository()),
   complete: () => new CompleteRideTripUseCase(repository()),
+  completeRide: () => new CompleteRideListingUseCase(repository()),
 };
 
 /** Locates or creates a DM chat between the ride driver and a passenger. */

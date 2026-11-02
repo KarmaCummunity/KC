@@ -11,6 +11,9 @@ export const rideBooking = {
   approve: 'אישור',
   decline: 'דחייה',
   completeTrip: 'הנסיעה הסתיימה',
+  finishRide: 'סיום הנסיעה וסגירת המודעה',
+  finishRideConfirmTitle: 'לסיים את הנסיעה?',
+  finishRideConfirmMessage: 'בקשות ממתינות יבוטלו והזמנות שאושרו יסומנו כהושלמו.',
   cancel: 'ביטול',
   statusLabel: {
     reserved: 'ממתין לאישור',

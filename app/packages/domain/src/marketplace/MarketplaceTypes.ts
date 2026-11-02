@@ -84,6 +84,8 @@ export interface MarketplaceListingDetail {
   readonly cityId: string | null;
   readonly urgencyLevel: number;
   readonly availabilityStatus: string;
+  /** Lifecycle state of the listing row (open, closed, cancelled, etc.). */
+  readonly listingStatus?: string;
   readonly publishedAt: string | null;
   readonly lat: number | null;
   readonly lng: number | null;

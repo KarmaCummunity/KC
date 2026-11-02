@@ -6,6 +6,7 @@ import {
   BookRideSeatUseCase,
   CancelRideBookingUseCase,
   CompleteRideTripUseCase,
+  CompleteRideListingUseCase,
   DeclineRideBookingUseCase,
   ListRideBookingsUseCase,
 } from '../rideBookingUseCases';
@@ -31,6 +32,7 @@ function makeRepo() {
     decline: vi.fn<IRideBookingRepository['decline']>(async () => undefined),
     cancel: vi.fn<IRideBookingRepository['cancel']>(async () => undefined),
     complete: vi.fn<IRideBookingRepository['complete']>(async () => undefined),
+    completeRide: vi.fn<IRideBookingRepository['completeRide']>(async () => 2),
   } satisfies IRideBookingRepository;
 }
 
@@ -68,6 +70,12 @@ describe('ride booking use cases', () => {
     const repo = makeRepo();
     await new UseCase(repo).execute('h1');
     expect(repo[method]).toHaveBeenCalledWith('h1');
+  });
+
+  it('lets the driver complete a ride listing and reports completed bookings', async () => {
+    const repo = makeRepo();
+    await expect(new CompleteRideListingUseCase(repo).execute('l1')).resolves.toBe(2);
+    expect(repo.completeRide).toHaveBeenCalledWith('l1');
   });
 
   it('surfaces server errors unchanged', async () => {

@@ -85,11 +85,12 @@ Last applied on kc-dev when this was written: `0239`.
 | 0527 | KC#1411 `list_ride_places` total order (label, kind, id) so the app can page past `max_rows` | in review |
 | 0528 | KC#1391 FR-NOTIF-018 item and food handoff pushes (`giving_handoffs_giving_notify`) | in review |
 | 0529 | Feed filter giving worlds + subcategories (#1457) | in progress |
-| 0530+ | — | free |
+| 0530 | KC#1128 ride completion RPC: owner closes ride and completes confirmed bookings | in review |
+| 0531+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0530+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0531+`.
 
 ## How to claim
 

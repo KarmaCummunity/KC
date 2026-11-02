@@ -20,7 +20,7 @@ describe('useListingMirrorRedirect', () => {
     expect(result.current).toBe(true);
     expect(replace).toHaveBeenCalledTimes(1);
     expect(replace).toHaveBeenCalledWith({
-      pathname: '/(tabs)/donations/marketplace/[listingId]',
+      pathname: '/listing/[listingId]',
       params: { listingId: 'l_1' },
     });
   });

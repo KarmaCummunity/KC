@@ -145,9 +145,6 @@
       "iconSizeLiteral": 4,
       "unmirroredDirectionalIcon": 2
     },
-    "app/settings/translation-language.tsx": {
-      "radiusLiteral": 1
-    },
     "app/settings/whatsapp.tsx": {
       "radiusLiteral": 2
     },
@@ -516,9 +513,6 @@
       "physicalSide": 2,
       "shadowLiteral": 12,
       "adHocChip": 1
-    },
-    "src/components/marketplace/MarketplaceForYouSection.tsx": {
-      "physicalSide": 1
     },
     "src/components/marketplace/listingChipStyles.ts": {
       "adHocChip": 1

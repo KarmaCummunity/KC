@@ -15,6 +15,8 @@ import {
   rideBookingUseCases,
 } from '../../../services/rideBookingComposition';
 import { RideBookingRow, type RideBookingRowActions } from './RideBookingRow';
+import { HandoffActionButton } from '../HandoffActionButton';
+import { confirmAction } from '../../../services/platformConfirm';
 import { useRideBookingAction } from './useRideBookingAction';
 import { useRideBookingStyles } from './rideBookingStyles';
 
@@ -23,9 +25,11 @@ interface Props {
   readonly cityId: string | null;
   /** Seats the driver offered (`details.seats_available`). */
   readonly capacity: number;
+  readonly listingStatus: string;
+  readonly departsAt: string | null;
 }
 
-export function RideBookingsPanel({ listingId, cityId, capacity }: Props) {
+export function RideBookingsPanel({ listingId, cityId, capacity, listingStatus, departsAt }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
   const styles = useRideBookingStyles();
@@ -38,6 +42,18 @@ export function RideBookingsPanel({ listingId, cityId, capacity }: Props) {
 
   const list = bookings.data ?? [];
   const seats = summarizeRideSeats(capacity, list);
+  const canFinishRide = listingStatus === 'open'
+    && departsAt !== null
+    && Number.isFinite(Date.parse(departsAt))
+    && Date.parse(departsAt) <= Date.now() + 60 * 60 * 1000;
+
+  async function finishRide(): Promise<void> {
+    const confirmed = await confirmAction(t('rideBooking.finishRideConfirmTitle'), t('rideBooking.finishRideConfirmMessage'), {
+      destructive: true,
+    });
+    if (!confirmed) return;
+    await run(() => rideBookingUseCases.completeRide().execute(listingId), 'handover_completed');
+  }
 
   const onChat = async (recipientId: string) => {
     if (!viewerId) return;
@@ -71,6 +87,12 @@ export function RideBookingsPanel({ listingId, cityId, capacity }: Props) {
       {seats.waiting > 0 ? (
         <Text style={styles.caption}>{t('rideBooking.waitingSummary', { count: seats.waiting })}</Text>
       ) : null}
+      {canFinishRide ? <HandoffActionButton
+        testID="ride-complete-listing"
+        label={t('rideBooking.finishRide')}
+        busy={busy}
+        onPress={() => void finishRide()}
+      /> : null}
 
       {bookings.isError ? (
         <Pressable accessibilityRole="button" onPress={() => void bookings.refetch()} testID="ride-bookings-retry">
