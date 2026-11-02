@@ -20,7 +20,7 @@ type OccurrenceRow = Database['public']['Functions']['list_ride_series_occurrenc
 const COLUMNS = 'series_id, direction, title, details, depart_time, weekdays, duration_minutes, ends_on, status';
 
 /**
- * Recurring rides over `ride_series` (0529; RLS: own rows for reading) and its RPCs, which own
+ * Recurring rides over `ride_series` (0531; RLS: own rows for reading) and its RPCs, which own
  * the occurrences: `create_ride_series`, `set_ride_series_status`, `update_ride_series`;
  * `list_ride_series_occurrences` is the public read of a series' upcoming dates.
  */

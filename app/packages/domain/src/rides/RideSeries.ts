@@ -5,7 +5,7 @@
 // from the listing's details alone.
 import type { RideErrorCode } from './RideError';
 
-/** Days ahead the server keeps occurrences published for (0529 `ride_series_materialize`). */
+/** Days ahead the server keeps occurrences published for (0531 `ride_series_materialize`). */
 export const RIDE_SERIES_LOOKAHEAD_DAYS = 30;
 
 /** Sunday … Saturday, as JavaScript's `Date.getDay()` numbers them. */
@@ -60,7 +60,7 @@ export interface RideSeriesOccurrence {
   readonly passengers: number | null;
 }
 
-/** The marker an occurrence carries in `details.ride_series` (0529). */
+/** The marker an occurrence carries in `details.ride_series` (0531). */
 export interface RideSeriesMarker {
   readonly id: string;
   /** The occurrence's day, ISO date. */

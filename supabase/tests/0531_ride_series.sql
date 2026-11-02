@@ -1,4 +1,4 @@
--- 0529_ride_series.sql | Recurring rides (FR-RIDE-046, #1413): a series materializes one
+-- 0531_ride_series.sql | Recurring rides (FR-RIDE-046, #1413): a series materializes one
 -- ride listing per upcoming day, only its soonest occurrence reaches the main feed, a follower
 -- is alerted once, pause / resume / cancel / reschedule respect booked occurrences.
 -- Places: Tel Aviv 5000, Jerusalem 3000 (official cities, D71).
@@ -333,4 +333,4 @@ end $$;
 
 rollback;
 
-\echo '✓ 0529_ride_series.sql passed'
+\echo '✓ 0531_ride_series.sql passed'

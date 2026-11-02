@@ -1,4 +1,4 @@
--- 0529_ride_series | Recurring rides: one series, one ride listing per upcoming occurrence
+-- 0531_ride_series | Recurring rides: one series, one ride listing per upcoming occurrence
 -- (docs/spec/05_giving_worlds.md §5.3 step 1 "recurring ride", FR-RIDE-046; issue #1413).
 --
 --   1. ride_series — a member's standing ride: direction, the ride details every occurrence
