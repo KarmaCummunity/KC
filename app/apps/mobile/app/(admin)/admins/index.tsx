@@ -17,6 +17,7 @@ import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography, useBreakpoint } from '@kc/ui';
+import { PrimaryButton } from '../../../src/components/ui/Buttons';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { rowDirectionStart } from '../../../src/lib/rtlLayout';
 import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
@@ -84,9 +85,7 @@ export default function AdminsScreen() {
           ))}
         </View>
         {canGrant && (
-          <Pressable accessibilityRole="button" onPress={() => setGrantOpen(true)} style={styles.grantBtn}>
-            <Text style={styles.grantBtnText}>{L.admin.admins.grantBtn}</Text>
-          </Pressable>
+          <PrimaryButton testID="admin-grant" label={L.admin.admins.grantBtn} size="sm" onPress={() => setGrantOpen(true)} />
         )}
       </View>
 
@@ -116,6 +115,4 @@ const useStyles = makeUseStyles(({ colors }) => ({
   segmentBtnActive: { backgroundColor: colors.primary },
   segmentText: { ...typography.bodySmall, ...typography.bold, color: colors.textSecondary },
   segmentTextActive: { color: colors.textInverse },
-  grantBtn:    { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.primary },
-  grantBtnText: { ...typography.bodySmall, ...typography.bold, color: colors.textInverse },
 }));

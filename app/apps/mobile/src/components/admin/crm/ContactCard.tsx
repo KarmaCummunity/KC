@@ -1,7 +1,8 @@
 // V2-ADMIN-CRM-8 — single CRM contact card.
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { CrmContact } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { DangerButton, PrimaryButton, SecondaryButton } from '../../ui/Buttons';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
 export interface ContactCardProps {
@@ -44,15 +45,10 @@ export function ContactCard({ contact, onEdit, onMarkContacted, onDelete }: Cont
         <Text style={styles.metaSubtle}>{t.row.updatedAt(fmt(contact.updatedAt))}</Text>
       </View>
       <View style={styles.actions}>
-        <Pressable onPress={onMarkContacted} style={[styles.action, styles.actionMuted]}>
-          <Text style={styles.actionText}>{t.row.markContacted}</Text>
-        </Pressable>
-        <Pressable onPress={onEdit} style={[styles.action, styles.actionPrimary]}>
-          <Text style={styles.actionPrimaryText}>{t.row.edit}</Text>
-        </Pressable>
-        <Pressable onPress={onDelete} style={[styles.action, styles.actionDanger]}>
-          <Text style={styles.actionDangerText}>{t.row.delete}</Text>
-        </Pressable>
+        {/* Compact admin size (spec 17 §4.3); the delete is destructive, so a DangerButton (D94). */}
+        <SecondaryButton label={t.row.markContacted} size="sm" onPress={onMarkContacted} />
+        <PrimaryButton label={t.row.edit} size="sm" onPress={onEdit} />
+        <DangerButton label={t.row.delete} size="sm" onPress={onDelete} />
       </View>
     </View>
   );
@@ -77,11 +73,4 @@ const useStyles = makeUseStyles(({ colors }) => ({
   metaRow:     { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xs },
   metaSubtle:  { fontSize: typography.caption.fontSize, opacity: 0.55 },
   actions:     { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm, justifyContent: 'flex-end' },
-  action:      { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.xs },
-  actionMuted: { backgroundColor: colors.secondaryLight },
-  actionText:  { fontSize: typography.bodySmall.fontSize, ...typography.semiBold },
-  actionPrimary: { backgroundColor: colors.primary },
-  actionPrimaryText: { fontSize: typography.bodySmall.fontSize, ...typography.bold, color: colors.textInverse },
-  actionDanger:  { backgroundColor: colors.errorLight },
-  actionDangerText: { fontSize: typography.bodySmall.fontSize, ...typography.bold, color: colors.error },
 }));

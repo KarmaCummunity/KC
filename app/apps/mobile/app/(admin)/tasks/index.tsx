@@ -2,7 +2,7 @@
 // FR-ADMIN-018 — admin tasks list screen with chip filters.
 import { useMemo, useState } from 'react';
 import { router } from 'expo-router';
-import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { RefreshControl, ScrollView, View } from 'react-native';
 import { adminChipScroll } from '../../../src/components/admin/adminChipScroll';
 import { AdminFilterChip } from '../../../src/components/admin/AdminFilterChip';
 import {
@@ -13,6 +13,7 @@ import {
 } from '@kc/domain';
 import type { AdminTaskListFilters } from '@kc/application';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { PrimaryButton } from '../../../src/components/ui/Buttons';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { useAdminTasksList } from '../../../src/hooks/useAdminTasks';
 import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
@@ -149,13 +150,7 @@ export default function TasksScreen() {
         title={L.admin.tasks.title}
         subtitle={!q.isLoading ? L.admin.tasks.countLabel(q.tasks.length) : undefined}
         right={can('tasks.create') ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/(admin)/tasks/new')}
-            style={styles.newBtn}
-          >
-            <Text style={styles.newBtnText}>{L.admin.tasks.newBtn}</Text>
-          </Pressable>
+          <PrimaryButton testID="admin-tasks-new" label={L.admin.tasks.newBtn} size="sm" onPress={() => router.push('/(admin)/tasks/new')} />
         ) : undefined}
       />
 
@@ -187,8 +182,6 @@ const useStyles = makeUseStyles(({ colors }) => ({
   root:            { flex: 1, backgroundColor: colors.background },
   center:          { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   deniedTitle:     { ...typography.h3, ...typography.bold, color: colors.textPrimary },
-  newBtn:          { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md, backgroundColor: colors.primary },
-  newBtnText:      { ...typography.bodySmall, ...typography.bold, color: colors.textInverse },
 
   listContent: {
     // 96pt of room under the last row, off the spacing scale's 64 + 32.

@@ -4,10 +4,10 @@
 // over (GrantAuthority mirrors the server's `can_grant_role` and
 // `can_manage_grant`, FR-ADMIN-027).
 import { useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View } from 'react-native';
 import { canRevokeGrant, isAdminRoleError, type AdminGrant } from '@kc/domain';
-import { iconSize, makeUseStyles, radius, spacing, Text, typography, useTheme } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { PrimaryButton } from '../../ui/Buttons';
 import { useRevokeAdminRole } from '../../../hooks/useAdminRoleMutations';
 import { useGrantAuthority } from '../../../hooks/useGrantAuthority';
 import { useHierarchyPyramid } from '../../../hooks/useHierarchyPyramid';
@@ -33,7 +33,6 @@ function revokeErrorText(L: LocaleBundle, code: string): string {
 
 export function PersonRolesSection({ userId, personName, grants }: PersonRolesSectionProps) {
   const styles = useStyles();
-  const { colors } = useTheme();
   const L = useLocaleBundle();
   const team = L.admin.admins.team;
   const { authority, scopes } = useGrantAuthority();
@@ -63,10 +62,7 @@ export function PersonRolesSection({ userId, personName, grants }: PersonRolesSe
       <View style={styles.header}>
         <Text style={styles.title}>{L.admin.admins.detail.rolesSection}</Text>
         {scopes.length > 0 && (
-          <Pressable accessibilityRole="button" onPress={() => setAdding(true)} style={styles.addBtn}>
-            <Ionicons name="add" size={iconSize.sm} color={colors.textInverse} />
-            <Text style={styles.addText}>{team.addRole}</Text>
-          </Pressable>
+          <PrimaryButton testID="person-roles-add" label={team.addRole} size="sm" icon="add" onPress={() => setAdding(true)} />
         )}
       </View>
 
@@ -109,12 +105,6 @@ const useStyles = makeUseStyles(({ colors }) => ({
   root:   { gap: spacing.sm },
   header: { flexDirection: rowDirectionStart, alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
   title:  { ...typography.body, ...typography.extraBold, color: colors.textPrimary, textAlign: textAlignStart() },
-  addBtn: {
-    flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.xs,
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
-    backgroundColor: colors.primary,
-  },
-  addText: { ...typography.bodySmall, ...typography.bold, color: colors.textInverse },
   errorBanner: {
     ...typography.caption, color: colors.error, backgroundColor: colors.errorLight,
     padding: spacing.md, borderRadius: radius.sm, textAlign: textAlignStart(),
