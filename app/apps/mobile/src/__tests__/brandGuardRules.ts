@@ -24,8 +24,9 @@ const LINE_RULES = {
   spacingLiteral:
     /\b(?:margin|padding)(?:Top|Bottom|Start|End|Left|Right|Horizontal|Vertical)?:\s*-?[1-9]|\b(?:gap|rowGap|columnGap):\s*[1-9]/g,
   // Physical sides break the RTL/LTR mirror: use start/end or the rtlLayout helpers.
+  // Covers the style key and the `TextInput` prop form (`textAlign="right"`).
   physicalSide:
-    /\btextAlign:\s*['"`](?:left|right)['"`]|\b(?:margin|padding|border)(?:Left|Right)\w*:|\bborder(?:Top|Bottom)(?:Left|Right)Radius:/g,
+    /\btextAlign(?::\s*|=)['"`](?:left|right)['"`]|\b(?:margin|padding|border)(?:Left|Right)\w*:|\bborder(?:Top|Bottom)(?:Left|Right)Radius:/g,
   // `zIndex.*` layers — zero (the document flow) is allowed.
   zIndexLiteral: /\bzIndex:\s*-?[1-9]/g,
   // `shadow.*` presets. One count per property whose value holds a non-zero

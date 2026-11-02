@@ -89,6 +89,12 @@
       "radiusLiteral": 1,
       "iconSizeLiteral": 1
     },
+    "app/chat/[id].tsx": {
+      "physicalSide": 1
+    },
+    "app/chat/index.tsx": {
+      "physicalSide": 1
+    },
     "app/dev/shell-preview.tsx": {
       "fontSizeLiteral": 2,
       "fontWeightLiteral": 2,
@@ -98,6 +104,7 @@
       "iconSizeLiteral": 1
     },
     "app/edit-profile.tsx": {
+      "physicalSide": 3,
       "rawTextInput": 3
     },
     "app/follow/suggestions.tsx": {
@@ -215,6 +222,9 @@
     "src/components/CreatePostForm/CreatePostExposureSection.tsx": {
       "iconSizeLiteral": 1
     },
+    "src/components/CreatePostForm/CreatePostFormScrollContent.tsx": {
+      "physicalSide": 1
+    },
     "src/components/CreatePostForm/EstimatedValueSlider.tsx": {
       "spacingLiteral": 1
     },
@@ -316,6 +326,7 @@
       "iconSizeLiteral": 1
     },
     "src/components/SearchablePicker/SearchablePicker.tsx": {
+      "physicalSide": 1,
       "rawTextInput": 2,
       "rawModal": 1
     },
@@ -556,6 +567,7 @@
       "fontWeightLiteral": 2,
       "radiusLiteral": 3,
       "spacingLiteral": 10,
+      "physicalSide": 1,
       "rawTextInput": 1
     },
     "src/components/closure/RecipientPickerRow.tsx": {
@@ -653,6 +665,7 @@
       "fontSizeLiteral": 1
     },
     "src/components/post/EditPostFormScrollContent.tsx": {
+      "physicalSide": 4,
       "rawTextInput": 4
     },
     "src/components/post/ExpiredRepublishView.tsx": {

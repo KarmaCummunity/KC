@@ -25,8 +25,10 @@ describe('countLiterals — colour, type, radius, spacing, sides', () => {
     const source = [
       "const a = { textAlign: 'right', borderLeftWidth: 1, borderTopRightRadius: radius.md };",
       "const b = { textAlign: 'center', borderStartWidth: 1, paddingEnd: spacing.sm };",
+      '<Input textAlign="right" />',
+      '<Input textAlign={rtlTextAlignStart} />',
     ].join('\n');
-    expect(countLiterals(source)).toEqual({ physicalSide: 3 });
+    expect(countLiterals(source)).toEqual({ physicalSide: 4 });
   });
 
   it('ignores tokens, hashtags, issue numbers and allowed lines', () => {
