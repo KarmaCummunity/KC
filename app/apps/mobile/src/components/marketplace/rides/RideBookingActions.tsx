@@ -27,7 +27,13 @@ export function RideBookingActions({ detail }: Props) {
     <>
       {/* The driver is always on the ride: the emergency call shows while it is under way. */}
       <RideEmergencyButton listingId={detail.listingId} details={detail.details} />
-      <RideBookingsPanel listingId={detail.listingId} cityId={detail.cityId} capacity={capacity} />
+      <RideBookingsPanel
+        listingId={detail.listingId}
+        cityId={detail.cityId}
+        capacity={capacity}
+        listingStatus={detail.listingStatus ?? ''}
+        departsAt={typeof detail.details['departs_at'] === 'string' ? detail.details['departs_at'] : null}
+      />
     </>
   ) : (
     <RidePassengerBooking listingId={detail.listingId} cityId={detail.cityId} capacity={capacity} details={detail.details} />
