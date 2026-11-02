@@ -4,11 +4,16 @@
 // back exactly one screen. Interactive pop requires the default slide
 // animation, so the cross-fade is kept on web only.
 import { Platform } from 'react-native';
-import { rootStackGestureEnabled, rootStackScreenAnimation } from './rootStackAnimation';
+import { rootStackScreenAnimation } from './rootStackAnimation';
 
-export const nestedStackGestureOptions = {
-  animation: rootStackScreenAnimation(),
-  animationDuration: Platform.OS === 'web' ? 220 : undefined,
-  gestureEnabled: rootStackGestureEnabled,
-  fullScreenGestureEnabled: Platform.OS === 'ios',
-} as const;
+export function getNestedStackGestureOptions() {
+  const isWeb = Platform.OS === 'web';
+  return {
+    animation: rootStackScreenAnimation(),
+    animationDuration: isWeb ? 220 : undefined,
+    gestureEnabled: !isWeb,
+    fullScreenGestureEnabled: Platform.OS === 'ios',
+  } as const;
+}
+
+export const nestedStackGestureOptions = getNestedStackGestureOptions();
