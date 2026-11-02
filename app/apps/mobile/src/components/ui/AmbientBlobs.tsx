@@ -8,7 +8,7 @@
 //                 where the blobs should feel like a watermark, not a feature.
 import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useTheme } from '@kc/ui';
+import { radius, useTheme } from '@kc/ui';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 380,
     height: 380,
-    borderRadius: 190,
+    borderRadius: radius.full,
     // Kept fully below the top edge: an opaque stack header would otherwise
     // cut the disk with a hard line and it would sit over the screen's hero icon.
     top: 140,
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 260,
     height: 260,
-    borderRadius: 130,
+    borderRadius: radius.full,
     bottom: 60,
     left: -70,
   },
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 140,
     height: 140,
-    borderRadius: 70,
+    borderRadius: radius.full,
     bottom: 220,
     right: 20,
   },
