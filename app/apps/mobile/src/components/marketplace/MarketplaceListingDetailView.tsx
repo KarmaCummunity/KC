@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
@@ -18,20 +18,12 @@ import { SimilarListingCard } from '../cards/SimilarListingCard';
 import { useAuthStore } from '../../store/authStore';
 import { ListingDetailActions } from './ListingDetailActions';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { PublisherCard } from '../post-detail/PublisherCard';
+import { useCityName } from '../../hooks/useCityName';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   body: { padding: spacing.lg, gap: spacing.md },
   summary: { ...typography.body, color: colors.textSecondary, textAlign: rtlTextAlignStart },
-  ownerCard: {
-    flexDirection: 'row' as const,
-    gap: spacing.md,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceRaised,
-    alignItems: 'center' as const,
-  },
-  ownerName: { ...typography.bodyLarge, color: colors.textPrimary },
-  avatar: { width: 48, height: 48, borderRadius: radius.full, backgroundColor: colors.border },
   section: { ...typography.h3, color: colors.textPrimary, marginTop: spacing.md },
   similarCell: { marginEnd: spacing.sm, paddingVertical: spacing.xs },
   galleryImg: { width: 280, height: 180, borderRadius: radius.md, marginEnd: spacing.sm },
@@ -54,6 +46,7 @@ export function MarketplaceListingDetailView({ detail, bottomInset }: Props) {
 
   const worldLabel = i18n.language.startsWith('he') ? detail.worldLabelHe : detail.worldLabelEn;
   const kindLabel = i18n.language.startsWith('he') ? detail.kindLabelHe : detail.kindLabelEn;
+  const ownerCityName = useCityName(detail.owner?.cityId ?? null);
 
   return (
     <>
@@ -82,26 +75,12 @@ export function MarketplaceListingDetailView({ detail, bottomInset }: Props) {
           {kindLabel}
         </Text>
         {detail.owner ? (
-          <Pressable
-            style={styles.ownerCard}
-            accessibilityRole="button"
-            onPress={() => {
-              const handle = detail.owner!.shareHandle || detail.owner!.userId;
-              router.push(`/user/${handle}`);
-            }}
-          >
-            {detail.owner.avatarUrl ? (
-              <KCImage uri={detail.owner.avatarUrl} style={styles.avatar} />
-            ) : (
-              <View style={styles.avatar} />
-            )}
-            <View>
-              <Text style={styles.ownerName}>{detail.owner.displayName ?? t('marketplace.anonymousOwner')}</Text>
-              {detail.owner.shareHandle ? (
-                <Text style={styles.summary}>@{detail.owner.shareHandle}</Text>
-              ) : null}
-            </View>
-          </Pressable>
+          <PublisherCard
+            name={detail.owner.displayName ?? t('marketplace.anonymousOwner')}
+            avatarUrl={detail.owner.avatarUrl}
+            cityName={ownerCityName}
+            profileRef={detail.owner.shareHandle || detail.owner.userId}
+          />
         ) : null}
         <GivingHandoffActions detail={detail} />
         <RideBookingActions detail={detail} />

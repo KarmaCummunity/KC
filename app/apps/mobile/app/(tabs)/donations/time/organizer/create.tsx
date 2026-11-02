@@ -1,41 +1,24 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { makeUseStyles, radius, spacing, typography, useTheme, Text, TextInput } from '@kc/ui';
+import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../../../../../src/components/ui/Screen';
+import { TextField } from '../../../../../src/components/ui/TextField';
+import { PrimaryButton } from '../../../../../src/components/ui/Buttons';
 import { volunteerUseCases } from '../../../../../src/services/volunteerComposition';
 import { rtlTextAlignStart } from '../../../../../src/lib/rtlTextAlignStart';
-import { webTextRtl } from '../../../../../src/lib/webRtlStyle';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   scroll: { padding: spacing.lg, gap: spacing.md },
   label: { ...typography.bodySmall, color: colors.textSecondary, textAlign: rtlTextAlignStart },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    ...typography.body,
-    color: colors.textPrimary,
-    textAlign: rtlTextAlignStart,
-    ...webTextRtl,
-  },
-  btn: {
-    padding: spacing.md,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primary,
-    alignItems: 'center' as const,
-  },
-  btnText: { ...typography.button, color: colors.textInverse },
   hint: { ...typography.caption, color: colors.textSecondary },
 }));
 
 export default function CreateVolunteerOpportunityScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { colors } = useTheme();
   const styles = useStyles();
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
@@ -75,34 +58,21 @@ export default function CreateVolunteerOpportunityScreen() {
   return (
     <Screen blobs="content">
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={styles.label}>{t('timeVolunteer.fieldTitle')}</Text>
-        <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholderTextColor={colors.textDisabled} />
-        <Text style={styles.label}>{t('timeVolunteer.fieldSummary')}</Text>
-        <TextInput
-          style={[styles.input, { minHeight: 80 }]}
-          value={summary}
-          onChangeText={setSummary}
-          multiline
-          placeholderTextColor={colors.textDisabled}
-        />
-        <Text style={styles.label}>{t('timeVolunteer.fieldLocation')}</Text>
-        <TextInput style={styles.input} value={location} onChangeText={setLocation} placeholderTextColor={colors.textDisabled} />
+        <TextField label={t('timeVolunteer.fieldTitle')} value={title} onChangeText={setTitle} />
+        <TextField label={t('timeVolunteer.fieldSummary')} value={summary} onChangeText={setSummary} multiline />
+        <TextField label={t('timeVolunteer.fieldLocation')} value={location} onChangeText={setLocation} />
         <Text style={styles.label}>{t('timeVolunteer.shiftStarts')}</Text>
         <DateTimePicker value={starts} mode="datetime" onChange={(_, d) => d && setStarts(d)} />
         <Text style={styles.label}>{t('timeVolunteer.shiftEnds')}</Text>
         <DateTimePicker value={ends} mode="datetime" onChange={(_, d) => d && setEnds(d)} />
-        <Text style={styles.label}>{t('timeVolunteer.shiftCapacity')}</Text>
-        <TextInput
-          style={styles.input}
+        <TextField
+          label={t('timeVolunteer.shiftCapacity')}
           value={capacity}
           onChangeText={setCapacity}
           keyboardType="number-pad"
-          placeholderTextColor={colors.textDisabled}
         />
         <Text style={styles.hint}>{t('timeVolunteer.publishHint')}</Text>
-        <Pressable style={styles.btn} onPress={onCreate} disabled={busy}>
-          <Text style={styles.btnText}>{t('timeVolunteer.publish')}</Text>
-        </Pressable>
+        <PrimaryButton label={t('timeVolunteer.publish')} fullWidth disabled={busy} onPress={() => void onCreate()} />
       </ScrollView>
     </Screen>
   );
