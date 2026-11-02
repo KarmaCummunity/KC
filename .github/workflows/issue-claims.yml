@@ -4,7 +4,11 @@ name: Issue claims
 # Safe as pull_request_target: no PR code is checked out or run; the PR body
 # is read via the API, never interpolated into the script.
 
+# `push` to dev runs from dev's own workflow file; pull_request_target and
+# schedule only run once this file is on main (TD-240).
 on:
+  push:
+    branches: [dev]
   pull_request_target:
     branches: [dev]
     types: [closed]
@@ -29,10 +33,15 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
+      PUSH_SHA: ${{ github.event_name == 'push' && github.sha || '' }}
     steps:
       - name: Release claims
         run: |
           set -uo pipefail
+          if [ -n "${PUSH_SHA:-}" ]; then
+            PR_NUMBER=$(gh api "repos/$GH_REPO/commits/$PUSH_SHA/pulls" -q '[.[] | select(.merged_at != null)][0].number // empty')
+            [ -z "$PR_NUMBER" ] && { echo "no merged PR for $PUSH_SHA"; exit 0; }
+          fi
           release() {
             labels=$(gh issue view "$1" --json labels -q '[.labels[].name | select(. == "in-progress" or startswith("agent:"))] | join(",")')
             [ -n "$labels" ] && gh issue edit "$1" --remove-label "$labels" && echo "released #$1 ($2)"
