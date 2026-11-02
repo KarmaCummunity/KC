@@ -21,6 +21,10 @@ tags: [posts]
     visible:
       id: ride-departs-at
     timeout: 10000
+- tapOn:
+    id: create-header-publish
+- assertVisible:
+    id: listing-create-form
 - tapOn: "לבקש"
 - assertVisible:
     id: ride-departs-at
