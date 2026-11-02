@@ -770,9 +770,6 @@
     "src/components/survey/SurveyRatingRow.tsx": {
       "fontWeightLiteral": 1
     },
-    "src/components/ui/AmbientBlobs.tsx": {
-      "radiusLiteral": 3
-    },
     "src/components/ui/Card.tsx": {
       "shadowLiteral": 4
     },
