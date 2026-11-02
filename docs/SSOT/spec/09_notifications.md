@@ -298,7 +298,28 @@ Besides the two category toggles (FR-NOTIF-014), the user can turn off a single 
 
 ---
 
+## FR-NOTIF-018 — Item and food handoff changes *(Critical)*
+
+> **Status (2026-11-02):** ✅ Implemented — KC#1391. Book §7.5 (closing and handoff). Rides have the same contract for bookings (0511, D73); this FR covers the items and food worlds.
+
+**Description.**
+Every change to an item or food handoff (`giving_handoffs`) pushes the other side, so neither the giver nor the requester has to open the app to learn about it.
+
+**Acceptance Criteria.**
+- AC1. A new item request (`reserved`) pushes the giver (`giving_handoff_requested`). A food quick claim, which is confirmed at once, pushes the giver (`giving_handoff_claimed`).
+- AC2. The giver approving a request (`confirmed`) pushes the requester (`giving_handoff_confirmed`).
+- AC3. The giver cancelling a waiting request pushes the requester as a decline (`giving_handoff_declined`). Any other cancellation pushes the side that did not cancel, and a system cancel pushes both sides (`giving_handoff_cancelled`).
+- AC4. Marking the handoff handed over pushes the other side to rate it (`giving_handoff_completed`).
+- AC5. The side that acted is never pushed about its own action. Each recipient gets each change once (dedupe per kind, handoff and recipient).
+- AC6. The push names the other side and the listing, in Hebrew. Tapping it opens the listing.
+- AC7. Rides and knowledge handoffs are not affected: rides keep their booking pushes (0511).
+
+**Related.** Migration `0528` · Domain `NotificationKind` · Mobile `pushRouteAllowlist` · Copy `dispatch-notification/i18n.json` + `notifications` locales · Tests `supabase/tests/0528_giving_handoff_notifications.sql`, `src/lib/notifications/__tests__/pushRouteAllowlist.test.ts`, `src/i18n/__tests__/handoffPushCopy.test.ts`.
+
+---
+
 | Version | Date | Summary |
 | ------- | ---- | ------- |
 | 0.1 | 2026-05-05 | Initial draft. Master list synthesized from PRD flows + Decisions D-5, D-6, D-7. |
 | 0.2 | 2026-10-30 | FR-NOTIF-017 per-type opt-out (match suggestions); FR-NOTIF-016 marked superseded by D26. |
+| 0.3 | 2026-11-02 | FR-NOTIF-018 item and food handoff pushes (KC#1391). |
