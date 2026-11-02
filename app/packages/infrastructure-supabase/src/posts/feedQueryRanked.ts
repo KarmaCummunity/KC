@@ -56,6 +56,7 @@ export function needsRankedPath(filter: PostFeedFilter): boolean {
   if (filter.sortOrder === 'personalized') return true;
   if (filter.locationFilter && filter.locationFilter.radiusKm > 0) return true;
   if (filter.followersOnly) return true;
+  if (filter.subcategories && filter.subcategories.length > 0) return true;
   return false;
 }
 
@@ -85,6 +86,8 @@ export async function fetchRankedFeedPage(
     p_filter_search_query: filter.searchQuery ?? undefined,
     p_followers_only: filter.followersOnly ?? false,
     p_cursor_rank_score: cursorParsed?.rankScore ?? undefined,
+    p_filter_worlds: filter.worlds?.length ? filter.worlds : undefined,
+    p_filter_subcategories: filter.subcategories?.length ? filter.subcategories : undefined,
   } as never);
   if (rpcError) throw new Error(`feed_ranked_ids: ${rpcError.message}`);
 

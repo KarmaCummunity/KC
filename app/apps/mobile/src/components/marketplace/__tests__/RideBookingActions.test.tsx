@@ -12,6 +12,8 @@ const listForRide = vi.fn();
 const approve = vi.fn();
 const decline = vi.fn();
 const book = vi.fn();
+const completeRide = vi.fn();
+const confirmAction = vi.fn();
 const getForListing = vi.fn();
 let sessionUserId: string | null = 'u_driver';
 
@@ -32,11 +34,13 @@ vi.mock('../../../services/rideBookingComposition', () => ({
     book: () => ({ execute: book }),
     cancel: () => ({ execute: vi.fn() }),
     complete: () => ({ execute: vi.fn() }),
+    completeRide: () => ({ execute: completeRide }),
   },
 }));
 vi.mock('../../../services/givingHandoffComposition', () => ({
   givingHandoffUseCases: { getForListing: () => ({ execute: getForListing }), rate: () => ({ execute: vi.fn() }) },
 }));
+vi.mock('../../../services/platformConfirm', () => ({ confirmAction: (...args: unknown[]) => confirmAction(...args) }));
 vi.mock('../../../lib/analytics', () => ({ track: vi.fn() }));
 vi.mock('../../../services/rideSafetyComposition', () => ({ raiseRideEmergency: vi.fn() }));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn() }));
@@ -50,6 +54,7 @@ import { RideBookingActions, rideCapacity } from '../rides/RideBookingActions';
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  confirmAction.mockResolvedValue(true);
   sessionUserId = 'u_driver';
 });
 
@@ -60,6 +65,8 @@ const DETAIL = {
   direction: 'give',
   cityId: null,
   details: { seats_available: 3 },
+  listingStatus: 'open',
+  availabilityStatus: 'open',
 } as unknown as MarketplaceListingDetail;
 
 function booking(handoffId: string, status: RideBooking['status'], seats = 1): RideBooking {
@@ -116,6 +123,51 @@ describe('RideBookingActions — driver', () => {
     listForRide.mockResolvedValue([]);
     const view = renderActions();
     await waitFor(() => expect(view.queryByTestId('ride-bookings-empty')).not.toBeNull());
+  });
+
+  it('lets the driver finish the ride listing', async () => {
+    const detail = { ...DETAIL, details: { seats_available: 3, departs_at: new Date(Date.now() + 30 * 60_000).toISOString() } } as MarketplaceListingDetail;
+    listForRide.mockResolvedValue([booking('h1', 'confirmed')]);
+    completeRide.mockResolvedValue(1);
+    const view = renderActions(detail);
+    await waitFor(() => expect(view.queryByTestId('ride-complete-listing')).not.toBeNull());
+    fireEvent.click(view.getByTestId('ride-complete-listing'));
+    await waitFor(() => expect(confirmAction).toHaveBeenCalledWith('rideBooking.finishRideConfirmTitle', 'rideBooking.finishRideConfirmMessage', { destructive: true }));
+    await waitFor(() => expect(completeRide).toHaveBeenCalledWith('l_ride'));
+  });
+
+  it.each([
+    ['closed listing', { ...DETAIL, listingStatus: 'closed', details: { departs_at: new Date().toISOString() } }],
+    ['departure over one hour away', { ...DETAIL, details: { departs_at: new Date(Date.now() + 2 * 60 * 60_000).toISOString() } }],
+    ['missing departure', { ...DETAIL, details: {} }],
+  ])('hides finish action for %s', async (_label, detail) => {
+    listForRide.mockResolvedValue([]);
+    const view = renderActions(detail as MarketplaceListingDetail);
+    await waitFor(() => expect(view.queryByTestId('ride-bookings-panel')).not.toBeNull());
+    expect(view.queryByTestId('ride-complete-listing')).toBeNull();
+  });
+
+  it('does not finish when confirmation is declined', async () => {
+    confirmAction.mockResolvedValue(false);
+    listForRide.mockResolvedValue([]);
+    const detail = { ...DETAIL, details: { departs_at: new Date().toISOString() } } as MarketplaceListingDetail;
+    const view = renderActions(detail);
+    await waitFor(() => expect(view.queryByTestId('ride-complete-listing')).not.toBeNull());
+    fireEvent.click(view.getByTestId('ride-complete-listing'));
+    await waitFor(() => expect(confirmAction).toHaveBeenCalled());
+    expect(completeRide).not.toHaveBeenCalled();
+  });
+
+  it.each(['ride_not_started', 'invalid_status', 'owner_only'])('maps finish error %s to localized marketplace copy', async (code) => {
+    listForRide.mockResolvedValue([]);
+    completeRide.mockRejectedValue(new Error(code));
+    const alertSpy = vi.spyOn(globalThis, 'alert').mockImplementation(() => {});
+    const detail = { ...DETAIL, details: { departs_at: new Date().toISOString() } } as MarketplaceListingDetail;
+    const view = renderActions(detail);
+    await waitFor(() => expect(view.queryByTestId('ride-complete-listing')).not.toBeNull());
+    fireEvent.click(view.getByTestId('ride-complete-listing'));
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(`marketplace.errors.${code}`));
+    alertSpy.mockRestore();
   });
 
   it('alerts with the server error copy when an action fails', async () => {

@@ -1,18 +1,19 @@
 // Mapped to spec: FR-FEED-020 AC2 — the controls above a giving world's feed: search within
 // the world, the offers / requests filter, and the world's subcategory + distance chips.
+// Rebuilt on top of the shared filterKit (issue #1457).
 import React from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing } from '@kc/ui';
-import { TextField } from '../ui/TextField';
-import { Chip } from '../ui/Chip';
+import { FilterSearchBar } from '../filterKit/FilterSearchBar';
+import { FilterChipRow } from '../filterKit/FilterChipRow';
 import { BrowseRefineChips } from '../marketplace/BrowseRefineChips';
 import type { WorldFeedDirection } from '../../lib/worldFeed';
 import type { WorldFeedState } from '../../hooks/useWorldFeed';
 
 const useStyles = makeUseStyles(() => ({
   root: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
-  row: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: spacing.sm },
+  searchBar: { marginBottom: 0 },
 }));
 
 /** Direction chips in display order; literal testIDs keep the Maestro contract checkable. */
@@ -30,30 +31,29 @@ interface Props {
 export function WorldFeedControls({ worldSlug, feed }: Props) {
   const { t } = useTranslation();
   const styles = useStyles();
+
+  const directionOptions = DIRECTION_CHIPS.map(({ direction, labelKey, testID }) => ({
+    value: direction,
+    label: t(labelKey),
+    testID,
+  }));
+
   return (
     <View style={styles.root}>
-      <TextField
+      <FilterSearchBar
         testID="world-feed-search"
-        label={t('donations.worldFeed.searchLabel')}
         placeholder={t('donations.worldFeed.searchPlaceholder')}
-        leadingIcon="search-outline"
+        accessibilityLabel={t('donations.worldFeed.searchLabel')}
         value={feed.query}
         onChangeText={feed.setQuery}
-        returnKeyType="search"
-        autoCorrect={false}
+        style={styles.searchBar}
       />
-      <View style={styles.row} accessibilityLabel={t('donations.worldFeed.directionRowA11y')}>
-        {DIRECTION_CHIPS.map(({ direction, labelKey, testID }) => (
-          <Chip
-            key={direction}
-            testID={testID}
-            size="sm"
-            label={t(labelKey)}
-            selected={feed.direction === direction}
-            onPress={() => feed.setDirection(direction)}
-          />
-        ))}
-      </View>
+      <FilterChipRow<WorldFeedDirection>
+        options={directionOptions}
+        value={feed.direction}
+        onChange={(d) => { if (d) feed.setDirection(d); }}
+        accessibilityLabel={t('donations.worldFeed.directionRowA11y')}
+      />
       {/* A text search spans every subcategory and distance, so these refine browsing only. */}
       {feed.searching ? null : (
         <BrowseRefineChips

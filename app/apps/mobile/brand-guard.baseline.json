@@ -1,33 +1,12 @@
 {
   "$comment": "Frozen brand-guard findings per file (spec 17 §6, TD-199). Counts may only go down.",
   "files": {
-    "app/(admin)/audit/index.tsx": {
-      "fontSizeLiteral": 9,
-      "fontWeightLiteral": 3,
-      "radiusLiteral": 4,
-      "spacingLiteral": 21,
-      "physicalSide": 2,
-      "rawTextInput": 3,
-      "adHocChip": 1
-    },
-    "app/(admin)/crm/index.tsx": {
-      "fontSizeLiteral": 8,
-      "fontWeightLiteral": 5,
-      "radiusLiteral": 3,
-      "spacingLiteral": 18,
-      "physicalSide": 1,
-      "rawTextInput": 1,
-      "adHocChip": 1
-    },
     "app/(admin)/org-approvals/index.tsx": {
       "fontSizeLiteral": 15,
       "fontWeightLiteral": 9,
       "radiusLiteral": 6,
       "spacingLiteral": 31,
       "rawTextInput": 1,
-      "adHocChip": 1
-    },
-    "app/(admin)/posts/index.tsx": {
       "adHocChip": 1
     },
     "app/(admin)/tasks/[taskId]/index.tsx": {
@@ -46,15 +25,6 @@
       "spacingLiteral": 17,
       "physicalSide": 1,
       "rawTextInput": 3
-    },
-    "app/(admin)/users/index.tsx": {
-      "fontSizeLiteral": 5,
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 2,
-      "spacingLiteral": 12,
-      "physicalSide": 1,
-      "rawTextInput": 1,
-      "adHocChip": 1
     },
     "app/(tabs)/donations/index.tsx": {
       "unmirroredDirectionalIcon": 1
@@ -77,10 +47,6 @@
       "radiusLiteral": 1,
       "spacingLiteral": 1
     },
-    "app/(tabs)/index.tsx": {
-      "spacingLiteral": 1,
-      "iconSizeLiteral": 1
-    },
     "app/(tabs)/profile/hidden.tsx": {
       "radiusLiteral": 1,
       "iconSizeLiteral": 1
@@ -90,9 +56,6 @@
       "iconSizeLiteral": 1
     },
     "app/chat/[id].tsx": {
-      "physicalSide": 1
-    },
-    "app/chat/index.tsx": {
       "physicalSide": 1
     },
     "app/dev/shell-preview.tsx": {
@@ -182,9 +145,6 @@
       "iconSizeLiteral": 4,
       "unmirroredDirectionalIcon": 2
     },
-    "app/settings/translation-language.tsx": {
-      "radiusLiteral": 1
-    },
     "app/settings/whatsapp.tsx": {
       "radiusLiteral": 2
     },
@@ -192,14 +152,6 @@
       "spacingLiteral": 1,
       "iconSizeLiteral": 1,
       "unmirroredDirectionalIcon": 1
-    },
-    "app/user/[handle]/followers.tsx": {
-      "rawTextInput": 1,
-      "iconSizeLiteral": 2
-    },
-    "app/user/[handle]/following.tsx": {
-      "rawTextInput": 1,
-      "iconSizeLiteral": 1
     },
     "app/user/[handle]/index.tsx": {
       "spacingLiteral": 1,
@@ -261,13 +213,6 @@
       "fontWeightLiteral": 1,
       "iconSizeLiteral": 1
     },
-    "src/components/FeedFilterIcon.tsx": {
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 1,
-      "spacingLiteral": 1,
-      "iconSizeLiteral": 1
-    },
     "src/components/NewPostsBanner.tsx": {
       "fontWeightLiteral": 1,
       "shadowLiteral": 4,
@@ -284,10 +229,6 @@
       "fontWeightLiteral": 5,
       "spacingLiteral": 13,
       "shadowLiteral": 4
-    },
-    "src/components/PostFilterSheet/SearchSection.tsx": {
-      "rawTextInput": 1,
-      "iconSizeLiteral": 2
     },
     "src/components/PostImageCarousel.tsx": {
       "colorLiteral": 2,
@@ -387,15 +328,6 @@
       "radiusLiteral": 1,
       "spacingLiteral": 4
     },
-    "src/components/admin/reports/ReportFilters.tsx": {
-      "fontSizeLiteral": 2,
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 2,
-      "spacingLiteral": 8,
-      "physicalSide": 1,
-      "rawTextInput": 1,
-      "adHocChip": 1
-    },
     "src/components/admin/surveys/SurveyOverviewCard.tsx": {
       "unmirroredDirectionalIcon": 1
     },
@@ -415,14 +347,6 @@
       "radiusLiteral": 1,
       "spacingLiteral": 3,
       "adHocChip": 1
-    },
-    "src/components/admin/tasks/TaskDueRangeFilter.tsx": {
-      "fontSizeLiteral": 4,
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 3,
-      "spacingLiteral": 10,
-      "physicalSide": 1,
-      "rawTextInput": 2
     },
     "src/components/admin/time/TimesheetFormModal.tsx": {
       "colorLiteral": 1,
@@ -589,9 +513,6 @@
       "physicalSide": 2,
       "shadowLiteral": 12,
       "adHocChip": 1
-    },
-    "src/components/marketplace/MarketplaceForYouSection.tsx": {
-      "physicalSide": 1
     },
     "src/components/marketplace/listingChipStyles.ts": {
       "adHocChip": 1
@@ -917,15 +838,6 @@
       "radiusLiteral": 2,
       "spacingLiteral": 2,
       "iconSizeLiteral": 1
-    },
-    "src/screens/tabs/search.styles.ts": {
-      "fontSizeLiteral": 2,
-      "fontWeightLiteral": 4,
-      "radiusLiteral": 1,
-      "spacingLiteral": 1,
-      "physicalSide": 1,
-      "shadowLiteral": 8,
-      "adHocChip": 1
     }
   }
 }

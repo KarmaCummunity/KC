@@ -5,10 +5,11 @@ import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { useMarketplaceRecommendations } from '../../hooks/useMarketplaceBrowse';
 import { ListingCard } from '../cards/ListingCard';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   wrap: { paddingVertical: spacing.md, gap: spacing.sm },
-  title: { ...typography.h3, color: colors.textPrimary, paddingHorizontal: spacing.lg, textAlign: 'right' as const },
+  title: { ...typography.h3, color: colors.textPrimary, paddingHorizontal: spacing.lg, textAlign: rtlTextAlignStart },
   scroll: { paddingHorizontal: spacing.lg, gap: spacing.sm, paddingBottom: spacing.xs },
 }));
 
@@ -29,7 +30,7 @@ export function MarketplaceForYouSection() {
             key={item.listingId}
             item={item}
             variant="tile"
-            onPress={() => router.push(`/(tabs)/donations/marketplace/${item.listingId}`)}
+            onPress={() => router.push(`/listing/${item.listingId}`)}
           />
         ))}
       </ScrollView>

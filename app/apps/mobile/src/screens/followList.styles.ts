@@ -1,4 +1,4 @@
-import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
+import { makeUseStyles, spacing, typography } from '@kc/ui';
 import { rowDirectionStart } from '../lib/rtlLayout';
 import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
 
@@ -7,12 +7,7 @@ import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
 // "remove follower" control.
 export const useFollowListStyles = makeUseStyles(({ colors }) => ({
   container: { flex: 1, backgroundColor: colors.background },
-  searchRow: {
-    flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.xs,
-    backgroundColor: colors.surface, margin: spacing.base, padding: spacing.sm,
-    borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
-  },
-  searchInput: { flex: 1, ...typography.body, color: colors.textPrimary, textAlign: rtlTextAlignStart },
+  searchWrap: { paddingHorizontal: spacing.base, paddingTop: spacing.base, marginBottom: 0 },
   row: {
     flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.sm,
     paddingHorizontal: spacing.base, paddingVertical: spacing.sm,

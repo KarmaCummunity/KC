@@ -1,7 +1,7 @@
 // Mapped to spec: FR-POST-001 AC6 — state and publish pipeline of the listing create form
 // (rides, food, housing, time). The kind is derived from request / offer: every create world
 // has exactly one kind per direction, so members never pick a "listing type".
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { validateListingDetails } from '@kc/domain';
@@ -61,6 +61,7 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
   const [subcategoryId, setSubcategoryId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const publishLock = useRef(false);
 
   // A new kind (direction switch) starts from its own defaults. The ride route and schedule are
   // shared by both ride kinds, so they survive the switch (RideCreateSection keeps showing them).
@@ -86,11 +87,12 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
   };
 
   const publish = async () => {
-    if (!userId || !kind || busy) return;
+    if (!userId || !kind || busy || publishLock.current) return;
     const submitted = detailsForSubmit(specs, details);
     const problem = validate(submitted);
     setError(problem);
     if (problem) return;
+    publishLock.current = true;
     setBusy(true);
     try {
       const mediaPaths = photos.length > 0 ? await uploadListingImages(userId, photos) : [];
@@ -123,6 +125,7 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
     } catch (err) {
       setError(t(marketplaceServerErrorKey(err)));
     } finally {
+      publishLock.current = false;
       setBusy(false);
     }
   };

@@ -93,7 +93,7 @@ export function MarketplaceListingDetailView({ detail, bottomInset }: Props) {
                 <View key={item.listingId} style={styles.similarCell}>
                   <SimilarListingCard
                     item={item}
-                    onPress={() => router.push(`/(tabs)/donations/marketplace/${item.listingId}`)}
+                    onPress={() => router.push(`/listing/${item.listingId}`)}
                   />
                 </View>
               ))}

@@ -1,0 +1,56 @@
+name: PR opened-by label
+
+# Every PR must carry exactly one label naming who opened it.
+# If none is set, the label is taken from the "Opened by:" line in the body.
+# pull_request_target is not used: plain pull_request runs the workflow from
+# the PR's merge ref, so this works on PRs into dev before it reaches main.
+
+on:
+  pull_request:
+    branches: [dev, main]
+    types: [opened, edited, labeled, unlabeled, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  opened-by:
+    name: PR opened-by label
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check or apply opened-by label
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+          allowed="agent:cursor agent:kc-bot agent:antigravity agent:codex agent:other human"
+          labels=$(gh pr view "$PR" -R "$REPO" --json labels --jq '.labels[].name')
+          found=()
+          for l in $allowed; do grep -qxF "$l" <<<"$labels" && found+=("$l"); done
+          if [ ${#found[@]} -eq 1 ]; then echo "Opened by: ${found[0]}"; exit 0; fi
+          if [ ${#found[@]} -gt 1 ]; then
+            echo "::error::PR has more than one opened-by label (${found[*]}). Keep exactly one of: $allowed"; exit 1
+          fi
+          pick=""
+          case "$AUTHOR" in dependabot*|renovate*) pick="agent:other";; esac
+          if [ -z "$pick" ]; then
+            line=$(printf '%s\n' "$BODY" | grep -iE '^\s*opened by:' | head -1 || true)
+            hits=()
+            for l in $allowed; do grep -qwF "$l" <<<"$line" && hits+=("$l"); done
+            [ ${#hits[@]} -eq 1 ] && pick="${hits[0]}"
+          fi
+          if [ -n "$pick" ]; then
+            if gh pr edit "$PR" -R "$REPO" --add-label "$pick" >/dev/null 2>&1; then
+              echo "Applied opened-by label: $pick"; exit 0
+            fi
+            echo "::error::Could not apply label $pick (fork PRs have a read-only token). Ask a maintainer to add it."; exit 1
+          fi
+          echo "::error::Missing opened-by label. Add exactly one of: $allowed — or set one value on the 'Opened by:' line of the PR body."
+          exit 1

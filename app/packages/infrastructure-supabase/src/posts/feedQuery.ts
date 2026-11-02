@@ -38,6 +38,13 @@ export function buildFeedQuery(
   }
 
   if (filter.type) q = q.eq('type', filter.type);
+  if (filter.worlds?.length) {
+    if (filter.worlds.includes('items')) {
+      q = q.or(`listing_world_slug.in.(${filter.worlds.join(',')}),listing_world_slug.is.null`);
+    } else {
+      q = q.in('listing_world_slug', filter.worlds);
+    }
+  }
   if (filter.categories?.length) q = q.in('category', filter.categories);
   if (filter.itemConditions?.length) q = q.in('item_condition', filter.itemConditions);
   if (filter.searchQuery) q = q.or(feedTextSearchOrClause(filter.searchQuery));

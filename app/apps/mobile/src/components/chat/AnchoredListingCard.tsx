@@ -38,7 +38,7 @@ export function AnchoredListingCard({ anchorListingId }: Props) {
     <KcRowCard
       testID="chat-anchored-listing"
       containerStyle={styles.banner}
-      onPress={() => router.push(`/(tabs)/donations/marketplace/${listing.listingId}`)}
+      onPress={() => router.push(`/listing/${listing.listingId}`)}
       accessibilityLabel={t('chat.anchoredOpenA11y')}
       tone={isGive ? 'give' : 'request'}
       badgeLabel={t(isGive ? 'feed.giveTypeShort' : 'feed.requestTypeShort')}
