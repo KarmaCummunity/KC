@@ -47,7 +47,12 @@ export type RideErrorCode =
   // FR-RIDE-043 — minor consent.
   | 'minor_consent_required'
   // FR-RIDE-045 — international ride ban.
-  | 'international_rides_banned';
+  | 'international_rides_banned'
+  // Ride seat bookings (D73, 0393, 0511).
+  | 'seats_exhausted'
+  | 'invalid_status'
+  | 'ride_departed'
+  | 'ride_not_started';
 
 export class RideError extends DomainError {
   readonly code: RideErrorCode;

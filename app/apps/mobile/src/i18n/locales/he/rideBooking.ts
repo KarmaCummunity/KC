@@ -26,4 +26,9 @@ export const rideBooking = {
   confirmed: 'המקום שלך מאושר. נסיעה טובה!',
   cancelBooking: 'ביטול ההזמנה',
   loadError: 'לא הצלחנו לטעון את ההזמנות. הקישו כדי לנסות שוב.',
+  exceedsCapacity: 'אי אפשר לאשר: חורג ממספר המקומות הפנויים',
+  departed: 'הנסיעה כבר יצאה לדרך',
+  full: 'לא נשארו מקומות פנויים בנסיעה זו',
+  chat: 'הודעה',
+  completedAndRated: 'הנסיעה הסתיימה ודורגה. תודה!',
 } as const;

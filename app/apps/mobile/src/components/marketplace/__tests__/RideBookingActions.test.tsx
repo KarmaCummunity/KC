@@ -13,29 +13,42 @@ const approve = vi.fn();
 const decline = vi.fn();
 const book = vi.fn();
 const getForListing = vi.fn();
+const rate = vi.fn();
+const complete = vi.fn();
+const cancel = vi.fn();
+const routerPush = vi.fn();
+const openRidePassengerChat = vi.fn();
 let sessionUserId: string | null = 'u_driver';
 
+vi.mock('expo-router', () => ({ useRouter: () => ({ push: routerPush }) }));
 // The kit buttons pull in reanimated and haptics; their press feedback is not under test here.
 vi.mock('react-native-reanimated', async () => (await import('../../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
 vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogTestKit')).hapticsDouble);
 vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
 vi.mock('../../../store/authStore', () => ({
-  useAuthStore: (select: (s: unknown) => unknown) => select({ session: sessionUserId ? { userId: sessionUserId } : null }),
+  useAuthStore: Object.assign(
+    (select: (s: unknown) => unknown) => select({ session: sessionUserId ? { userId: sessionUserId } : null }),
+    { getState: () => ({ session: sessionUserId ? { userId: sessionUserId } : null }) },
+  ),
+}));
+vi.mock('../../../services/ridesFeedComposition', () => ({
+  RIDES_FEED_QUERY_KEY: ['rides-feed'],
 }));
 vi.mock('../../../services/rideBookingComposition', () => ({
   rideBookingsQueryKey: (id: string) => ['ride-bookings', id],
+  openRidePassengerChat: (...args: unknown[]) => openRidePassengerChat(...args),
   rideBookingUseCases: {
     listForRide: () => ({ execute: listForRide }),
     approve: () => ({ execute: approve }),
     decline: () => ({ execute: decline }),
     book: () => ({ execute: book }),
-    cancel: () => ({ execute: vi.fn() }),
-    complete: () => ({ execute: vi.fn() }),
+    cancel: () => ({ execute: cancel }),
+    complete: () => ({ execute: complete }),
   },
 }));
 vi.mock('../../../services/givingHandoffComposition', () => ({
-  givingHandoffUseCases: { getForListing: () => ({ execute: getForListing }), rate: () => ({ execute: vi.fn() }) },
+  givingHandoffUseCases: { getForListing: () => ({ execute: getForListing }), rate: () => ({ execute: rate }) },
 }));
 vi.mock('../../../lib/analytics', () => ({ track: vi.fn() }));
 vi.mock('../../../services/rideSafetyComposition', () => ({ raiseRideEmergency: vi.fn() }));
@@ -46,6 +59,7 @@ vi.mock('../../cards/ListingCard', () => ({ formatRideTime: (iso: string | null)
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
 import { RideBookingActions, rideCapacity } from '../rides/RideBookingActions';
+import { RidePassengerBooking } from '../rides/RidePassengerBooking';
 
 afterEach(() => {
   cleanup();
@@ -109,7 +123,7 @@ describe('RideBookingActions — driver', () => {
     await waitFor(() => expect(view.queryByTestId(`ride-booking-${action}-h1`)).not.toBeNull());
     expect(view.queryByTestId(`ride-booking-${action}-h2`)).toBeNull();
     fireEvent.click(view.getByTestId(`ride-booking-${action}-h1`));
-    await waitFor(() => expect(useCase).toHaveBeenCalledWith('h1'));
+    await waitFor(() => expect(useCase).toHaveBeenCalledWith('h1', expect.anything()));
   });
 
   it('shows the empty state when no one booked yet', async () => {
@@ -129,6 +143,36 @@ describe('RideBookingActions — driver', () => {
     await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('marketplace.errors.invalid_status'));
     alertSpy.mockRestore();
   });
+
+  it('disables approve and shows warning when requested seats exceed remaining capacity (accepting beyond capacity)', async () => {
+    // Capacity 3: h1 is confirmed (2 seats), remaining capacity is 1. h2 requests 2 seats -> exceeds capacity!
+    listForRide.mockResolvedValue([booking('h1', 'confirmed', 2), booking('h2', 'reserved', 2)]);
+    const view = renderActions();
+
+    await waitFor(() => expect(view.queryByTestId('ride-booking-h2')).not.toBeNull());
+    // h2 approve button should be disabled
+    const approveBtn = view.getByTestId('ride-booking-approve-h2');
+    expect(approveBtn.getAttribute('aria-disabled')).toBe('true');
+    // Warning caption should be visible
+    expect(view.queryByTestId('ride-booking-exceeds-h2')).not.toBeNull();
+    // Decline button should remain enabled
+    const declineBtn = view.getByTestId('ride-booking-decline-h2');
+    expect(declineBtn.getAttribute('aria-disabled')).toBeNull();
+  });
+
+  it('opens a chat thread with the passenger on chat button click', async () => {
+    listForRide.mockResolvedValue([booking('h1', 'confirmed', 1)]);
+    openRidePassengerChat.mockResolvedValue('c_123');
+    const view = renderActions();
+
+    await waitFor(() => expect(view.queryByTestId('ride-booking-chat-h1')).not.toBeNull());
+    fireEvent.click(view.getByTestId('ride-booking-chat-h1'));
+
+    await waitFor(() => {
+      expect(openRidePassengerChat).toHaveBeenCalledWith('u_driver', 'u_h1');
+      expect(routerPush).toHaveBeenCalledWith('/chat/c_123');
+    });
+  });
 });
 
 describe('RideBookingActions — passenger', () => {
@@ -142,8 +186,58 @@ describe('RideBookingActions — passenger', () => {
     fireEvent.click(view.getByLabelText('rideBooking.moreSeats'));
     expect(view.getByTestId('ride-booking-seats').textContent).toBe('2');
     fireEvent.click(view.getByTestId('giving-handoff-book-seat'));
-    await waitFor(() => expect(book).toHaveBeenCalledWith('l_ride', 2));
+    await waitFor(() => expect(book).toHaveBeenCalledWith('l_ride', 2, { capacity: 3, departsAt: null }));
     expect(listForRide).not.toHaveBeenCalled();
+  });
+
+  it('shows departed state when ride has already departed', async () => {
+    sessionUserId = 'u_passenger';
+    getForListing.mockResolvedValue(null);
+    const pastDetail = {
+      ...DETAIL,
+      details: { seats_available: 3, departs_at: new Date(Date.now() - 10000).toISOString() },
+    } as unknown as MarketplaceListingDetail;
+    const view = renderActions(pastDetail);
+
+    await waitFor(() => expect(view.queryByTestId('ride-booking-departed')).not.toBeNull());
+    expect(view.queryByTestId('giving-handoff-book-seat')).toBeNull();
+  });
+
+  it('shows full state when capacity is zero', async () => {
+    sessionUserId = 'u_passenger';
+    getForListing.mockResolvedValue(null);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
+          <RidePassengerBooking listingId="l_ride" cityId={null} capacity={0} details={{}} />
+        </ThemeProvider>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => expect(view.queryByTestId('ride-booking-full')).not.toBeNull());
+    expect(view.queryByTestId('giving-handoff-book-seat')).toBeNull();
+  });
+
+  it('shows completed and rated state after rating, without showing booking form', async () => {
+    sessionUserId = 'u_passenger';
+    getForListing.mockResolvedValue({ handoffId: 'h1', status: 'handed_over' });
+    rate.mockResolvedValue(undefined);
+    const alertSpy = vi.spyOn(globalThis, 'alert').mockImplementation(() => {});
+    const view = renderActions();
+
+    await waitFor(() => expect(view.queryByTestId('handoff-rating-form')).not.toBeNull());
+    // Star rating buttons in form: choose 5 stars and submit
+    fireEvent.click(view.getByTestId('handoff-rating-star-5'));
+    fireEvent.click(view.getByTestId('handoff-rating-submit'));
+
+    await waitFor(() => {
+      expect(rate).toHaveBeenCalledWith('h1', 5, null);
+      expect(view.queryByTestId('ride-booking-completed-rated')).not.toBeNull();
+      // Ensure the "book seat" form does NOT reappear
+      expect(view.queryByTestId('giving-handoff-book-seat')).toBeNull();
+    });
+    alertSpy.mockRestore();
   });
 
   it('shows a waiting booking with its deadline instead of the book button', async () => {

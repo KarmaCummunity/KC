@@ -17,12 +17,15 @@ export interface RideBookingRowActions {
   readonly complete: (handoffId: string) => void;
   readonly cancel: (handoffId: string) => void;
   readonly rate: (handoffId: string, rating: number, note: string | null) => void;
+  readonly chat?: (recipientId: string) => void;
 }
 
 interface Props {
   readonly booking: RideBooking;
   readonly busy: boolean;
   readonly actions: RideBookingRowActions;
+  /** False when approving this booking would exceed remaining ride capacity. */
+  readonly canApprove?: boolean;
 }
 
 /** The driver's action pair per booking state: the main action and its outlined alternative. */
@@ -31,12 +34,13 @@ const ACTION_PAIRS = {
   confirmed: { main: 'complete', mainLabel: 'rideBooking.completeTrip', other: 'cancel', otherLabel: 'rideBooking.cancel' },
 } as const;
 
-export function RideBookingRow({ booking, busy, actions }: Props) {
+export function RideBookingRow({ booking, busy, actions, canApprove = true }: Props) {
   const { t } = useTranslation();
   const styles = useRideBookingStyles();
   const id = booking.handoffId;
   const deadline = booking.status === 'reserved' ? formatRideTime(booking.confirmBy) : null;
   const pair = booking.status === 'reserved' || booking.status === 'confirmed' ? ACTION_PAIRS[booking.status] : null;
+  const isApproveBlocked = booking.status === 'reserved' && !canApprove;
 
   return (
     <View style={styles.row} testID={`ride-booking-${id}`}>
@@ -45,11 +49,33 @@ export function RideBookingRow({ booking, busy, actions }: Props) {
         {t('rideBooking.seatsCount', { count: booking.seats })} · {t(`rideBooking.statusLabel.${booking.status}`)}
       </Text>
       {deadline ? <Text style={styles.caption}>{t('rideBooking.approveBy', { time: deadline })}</Text> : null}
+      {isApproveBlocked ? (
+        <Text style={styles.warning} testID={`ride-booking-exceeds-${id}`}>
+          {t('rideBooking.exceedsCapacity')}
+        </Text>
+      ) : null}
 
       {pair ? (
         <View style={styles.actions}>
-          <HandoffActionButton inRow testID={`ride-booking-${pair.main}-${id}`} label={t(pair.mainLabel)} busy={busy} onPress={() => actions[pair.main](id)} />
+          <HandoffActionButton
+            inRow
+            testID={`ride-booking-${pair.main}-${id}`}
+            label={t(pair.mainLabel)}
+            busy={busy}
+            disabled={pair.main === 'approve' && isApproveBlocked}
+            onPress={() => actions[pair.main](id)}
+          />
           <HandoffActionButton inRow secondary testID={`ride-booking-${pair.other}-${id}`} label={t(pair.otherLabel)} busy={busy} onPress={() => actions[pair.other](id)} />
+          {actions.chat ? (
+            <HandoffActionButton
+              inRow
+              secondary
+              testID={`ride-booking-chat-${id}`}
+              label={t('rideBooking.chat')}
+              busy={busy}
+              onPress={() => actions.chat?.(booking.recipientId)}
+            />
+          ) : null}
         </View>
       ) : null}
 

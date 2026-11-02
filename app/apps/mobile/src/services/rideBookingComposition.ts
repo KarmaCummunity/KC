@@ -9,6 +9,7 @@ import {
   type IRideBookingRepository,
 } from '@kc/application';
 import { SupabaseRideBookingRepository } from '@kc/infrastructure-supabase';
+import { container } from '../lib/container';
 import { getMarketplaceSupabaseClient } from './marketplaceComposition';
 
 let repo: IRideBookingRepository | null = null;
@@ -27,6 +28,12 @@ export const rideBookingUseCases = {
   cancel: () => new CancelRideBookingUseCase(repository()),
   complete: () => new CompleteRideTripUseCase(repository()),
 };
+
+/** Locates or creates a DM chat between the ride driver and a passenger. */
+export async function openRidePassengerChat(viewerId: string, recipientId: string): Promise<string> {
+  const chat = await container.openOrCreateChat.execute({ viewerId, otherUserId: recipientId });
+  return chat.chatId;
+}
 
 /** React Query key of a ride's bookings list (driver view). */
 export const rideBookingsQueryKey = (listingId: string) => ['ride-bookings', listingId] as const;
