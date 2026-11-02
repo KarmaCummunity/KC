@@ -45,7 +45,7 @@ Release mechanics: [docs/agents/RELEASE.md](../agents/RELEASE.md).
 2. **Money donations on iOS (guideline 3.2.1(vi) / 3.2.2(iv)).** In-app donations are only allowed for Apple-approved nonprofits (with Apple Pay) or by linking out to the browser. Options: (a) hide the money world on iOS for v1, (b) open donations in Safari, (c) apply as an approved nonprofit. Recommendation: (a) or (b) for the first TestFlight/App Store build.
 3. **Retention of financial records on account deletion.** Implemented as: payments, receipts and donation intents are kept but de-identified (user link removed). Confirm this matches accounting obligations.
 4. **24-hour report handling.** Terms commit to reviewing reports within 24 hours (Apple expects timely action on UGC reports). Confirm someone owns the moderation queue.
-5. **Store name.** Proposed "קהילת קארמה – נתינה" / "Karma Community: Give & Get" (name must be unique on the App Store).
+5. **Store name.** "KC - קהילת קארמה" / "KC - Karma Community" — the app name with the `KC - ` prefix (spec 17 §1; the locale `appName`, pinned by `brandGuard.test.ts`). The name must be unique on the App Store; "KC" alone is the iOS display name.
 6. **Review account.** Apple/Google reviewers need a working login on prod (email + password) and notes; create a dedicated reviewer account on prod.
 7. **Support URL.** Done: `/support` (he + en). Confirm the support email `karmacommunity2.0@gmail.com` is the one to publish.
 8. **WhatsApp bot data** (phone numbers) is collected outside the app but by the same service — include it in the App Privacy answers (done below) or keep the bot separate.
