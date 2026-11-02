@@ -1,6 +1,7 @@
 // D60 (docs/spec/04_product_structure.md): a world whose launch flag is off is
 // a portal — it is still shown in full, with its links and knowledge (the
-// FR-DONATE-006 links list) — instead of a "coming soon" dead end.
+// FR-DONATE-006 links list) — instead of a "coming soon" dead end. The money
+// portal also keeps the support-KC card (FR-DONATE-011) and the jgive card (FR-DONATE-003).
 import React from 'react';
 import { ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -10,6 +11,8 @@ import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../ui/Screen';
 import { PrimaryButton } from '../ui/Buttons';
 import { DonationLinksList } from '../DonationLinksList';
+import { SupportKcCard } from '../money/SupportKcCard';
+import { PartnerNonprofitsCard } from '../money/PartnerNonprofitsCard';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
 
@@ -30,6 +33,12 @@ export function WorldPortalScreen({ categorySlug }: Readonly<{ categorySlug?: Do
       <ScrollView contentContainerStyle={[styles.body, { paddingBottom: tabBarPad }]} testID="world-portal">
         <Text style={styles.title}>{t('donations.worldLaunch.portalTitle')}</Text>
         <Text style={styles.subtitle}>{t('donations.worldLaunch.portalBody')}</Text>
+        {categorySlug === 'money' ? (
+          <>
+            <SupportKcCard testID="world-portal-support-kc" />
+            <PartnerNonprofitsCard />
+          </>
+        ) : null}
         {categorySlug ? <DonationLinksList categorySlug={categorySlug} /> : null}
         <View>
           <PrimaryButton
