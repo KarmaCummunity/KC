@@ -2,9 +2,9 @@
 // FR-ADMIN-018 — admin tasks list screen with chip filters.
 import { useMemo, useState } from 'react';
 import { router } from 'expo-router';
-import { RefreshControl, ScrollView, View } from 'react-native';
-import { adminChipScroll } from '../../../src/components/admin/adminChipScroll';
-import { AdminFilterChip } from '../../../src/components/admin/AdminFilterChip';
+import { RefreshControl, View } from 'react-native';
+import { FilterChipRow } from '../../../src/components/filterKit/FilterChipRow';
+import { Chip } from '../../../src/components/ui/Chip';
 import {
   ADMIN_TASK_CATEGORIES,
   ADMIN_TASK_STATUSES, type AdminPermission, type AdminRole,
@@ -89,47 +89,47 @@ export default function TasksScreen() {
     <View style={styles.filterCard}>
       <Text style={styles.filterTitle}>{L.admin.tasks.filtersTitle}</Text>
 
-      <ScrollView horizontal style={adminChipScroll.scroll} showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.chips, adminChipScroll.content]}>
-        <AdminFilterChip
-          label={L.admin.tasks.filters.all}
-          active={statusFilter === null && !overdueOnly}
-          onPress={() => { setStatusFilter(null); setOverdueOnly(false); }}
-        />
-        {ADMIN_TASK_STATUSES.map((s) => (
-          <AdminFilterChip
-            key={s}
-            label={L.admin.tasks.status[s]}
-            active={statusFilter === s}
-            onPress={() => { setStatusFilter(statusFilter === s ? null : s); }}
-          />
-        ))}
-        <AdminFilterChip
+      <FilterChipRow<AdminTaskStatus>
+        scrollable
+        showAllChip
+        allLabel={L.admin.tasks.filters.all}
+        options={ADMIN_TASK_STATUSES.map((s) => ({
+          value: s,
+          label: L.admin.tasks.status[s],
+        }))}
+        value={overdueOnly ? null : statusFilter}
+        onChange={(s) => {
+          setStatusFilter(s);
+          if (s !== null) setOverdueOnly(false);
+        }}
+        contentContainerStyle={styles.chips}
+      >
+        <Chip
+          size="sm"
           label={L.admin.tasks.filters.overdue}
-          active={overdueOnly}
+          selected={overdueOnly}
           onPress={() => setOverdueOnly((v) => !v)}
         />
-        <AdminFilterChip
+        <Chip
+          size="sm"
           label={L.admin.tasks.filters.onlyMine}
-          active={onlyMine}
+          selected={onlyMine}
           onPress={() => setOnlyMine((v) => !v)}
         />
-      </ScrollView>
+      </FilterChipRow>
 
-      <ScrollView horizontal style={adminChipScroll.scroll} showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.chips, adminChipScroll.content]}>
-        <AdminFilterChip
-          label={L.admin.tasks.categoryFilters.all}
-          active={categoryFilter === null}
-          onPress={() => setCategoryFilter(null)}
-        />
-        {ADMIN_TASK_CATEGORIES.map((c) => (
-          <AdminFilterChip
-            key={c}
-            label={L.admin.tasks.category[c]}
-            active={categoryFilter === c}
-            onPress={() => setCategoryFilter(categoryFilter === c ? null : c)}
-          />
-        ))}
-      </ScrollView>
+      <FilterChipRow<AdminTaskCategory>
+        scrollable
+        showAllChip
+        allLabel={L.admin.tasks.categoryFilters.all}
+        options={ADMIN_TASK_CATEGORIES.map((c) => ({
+          value: c,
+          label: L.admin.tasks.category[c],
+        }))}
+        value={categoryFilter}
+        onChange={(c) => setCategoryFilter(c)}
+        contentContainerStyle={styles.chips}
+      />
 
       {can('admins.view') && (
         <TaskAssigneeFilter value={assigneeFilter} onChange={setAssigneeFilter} />

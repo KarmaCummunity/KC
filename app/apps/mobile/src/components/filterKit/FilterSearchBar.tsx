@@ -1,6 +1,6 @@
 // Mapped to spec: FR-FEED-003 / FR-FEED-004 (search bar for filter sheets and kits)
 import React from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, View, type StyleProp, type TextStyle, type ViewStyle, type TextInputProps } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, iconSize, radius, spacing, typography, useTheme, TextInput } from '@kc/ui';
@@ -13,6 +13,15 @@ export interface FilterSearchBarProps {
   readonly accessibilityLabel?: string;
   readonly clearAccessibilityLabel?: string;
   readonly testID?: string;
+  readonly onSubmitEditing?: () => void;
+  readonly returnKeyType?: TextInputProps['returnKeyType'];
+  readonly autoCorrect?: boolean;
+  readonly autoCapitalize?: TextInputProps['autoCapitalize'];
+  readonly style?: StyleProp<ViewStyle>;
+  readonly inputRowStyle?: StyleProp<ViewStyle>;
+  readonly inputStyle?: StyleProp<TextStyle>;
+  readonly onClear?: () => void;
+  readonly inputRef?: React.Ref<any>;
 }
 
 export function FilterSearchBar({
@@ -22,30 +31,48 @@ export function FilterSearchBar({
   accessibilityLabel,
   clearAccessibilityLabel,
   testID,
+  onSubmitEditing,
+  returnKeyType = 'search',
+  autoCorrect = false,
+  autoCapitalize,
+  style,
+  inputRowStyle,
+  inputStyle,
+  onClear,
+  inputRef,
 }: FilterSearchBarProps) {
   const { t } = useTranslation();
   const styles = useFilterSearchBarStyles();
   const { colors } = useTheme();
   const resolvedPlaceholder = placeholder ?? t('filters.searchPlaceholder');
 
+  const handleClear = () => {
+    onChangeText('');
+    onClear?.();
+  };
+
   return (
-    <View style={styles.wrap} testID={testID}>
-      <View style={styles.inputRow}>
+    <View style={[styles.wrap, style]}>
+      <View style={[styles.inputRow, inputRowStyle]}>
         <Ionicons name="search" size={iconSize.md} color={colors.textSecondary} />
         <TextInput // brand-guard-allow: search bar input, not a form field
-          style={styles.input}
+          ref={inputRef}
+          testID={testID}
+          style={[styles.input, inputStyle]}
           value={value}
           onChangeText={onChangeText}
+          onSubmitEditing={onSubmitEditing}
           placeholder={resolvedPlaceholder}
           placeholderTextColor={colors.textSecondary}
           textAlign={rtlTextAlignStart}
-          autoCorrect={false}
-          returnKeyType="search"
+          autoCorrect={autoCorrect}
+          autoCapitalize={autoCapitalize}
+          returnKeyType={returnKeyType}
           accessibilityLabel={accessibilityLabel ?? resolvedPlaceholder}
         />
         {value.length > 0 && (
           <Pressable
-            onPress={() => onChangeText('')}
+            onPress={handleClear}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel={clearAccessibilityLabel ?? t('filters.searchClearA11y')}

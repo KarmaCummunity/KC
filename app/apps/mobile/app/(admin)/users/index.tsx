@@ -1,16 +1,18 @@
 // app/apps/mobile/app/(admin)/users/index.tsx
 // FR-ADMIN-019 — admin users search screen.
+// Rebuilt on top of the shared filterKit (issue #1457).
 import { useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { adminChipScroll } from '../../../src/components/admin/adminChipScroll';
+import { RefreshControl, View } from 'react-native';
 import { type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
-import { makeUseStyles, Text, TextInput } from '@kc/ui';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { useAdminUserSearch } from '../../../src/hooks/useAdminContentSearch';
 import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
 import { UserSearchRow } from '../../../src/components/admin/content/UserSearchRow';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
+import { FilterSearchBar } from '../../../src/components/filterKit/FilterSearchBar';
+import { FilterChipRow } from '../../../src/components/filterKit/FilterChipRow';
 
 const STATUS_OPTIONS = [
   { value: null,                            key: 'all' as const },
@@ -47,27 +49,23 @@ export default function UsersScreen() {
   return (
     <View style={styles.root}>
       <AdminScreenHeader title={L.admin.content.usersTitle} />
-      <TextInput
-        style={styles.search}
+      <FilterSearchBar
+        style={styles.searchWrap}
         value={query}
         onChangeText={setQuery}
         placeholder={L.admin.content.searchUsersPlaceholder}
         autoCapitalize="none"
-        autoCorrect={false}
       />
-      <ScrollView horizontal style={adminChipScroll.scroll} showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.chips, adminChipScroll.content]}>
-        {STATUS_OPTIONS.map((s) => (
-          <Pressable
-            key={s.key}
-            onPress={() => setStatusFilter(s.value)}
-            style={[styles.chip, statusFilter === s.value && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, statusFilter === s.value && styles.chipTextActive]}>
-              {L.admin.content.userStatusFilter[s.key]}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      <FilterChipRow<string>
+        scrollable
+        options={STATUS_OPTIONS.map((s) => ({
+          value: s.value ?? '__all__',
+          label: L.admin.content.userStatusFilter[s.key],
+        }))}
+        value={statusFilter ?? '__all__'}
+        onChange={(val) => setStatusFilter(val === '__all__' || val === null ? null : val)}
+        contentContainerStyle={styles.chips}
+      />
       <Text style={styles.totalLabel}>
         {L.admin.content.totalCount(result.page.totalCount)}
       </Text>
@@ -90,20 +88,11 @@ export default function UsersScreen() {
 
 const useStyles = makeUseStyles(({ colors }) => ({
   root:        { flex: 1, backgroundColor: colors.background },
-  center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  deniedTitle: { fontSize: 18, fontWeight: '700' },
-  search: {
-    marginHorizontal: 16, marginBottom: 8, padding: 10,
-    borderRadius: 10, backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
-    textAlign: 'right', fontSize: 14,
-  },
-  chips:           { paddingHorizontal: 16, gap: 8, paddingBottom: 8 },
-  chip:            { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14, backgroundColor: colors.secondaryLight },
-  chipActive:      { backgroundColor: colors.primary },
-  chipText:        { fontSize: 12, fontWeight: '600' },
-  chipTextActive:  { color: colors.textInverse },
-  totalLabel:      { paddingHorizontal: 16, paddingBottom: 4, fontSize: 11, opacity: 0.6 },
-  empty:           { padding: 32, alignItems: 'center' },
-  emptyText:       { fontSize: 14, opacity: 0.6 },
+  center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+  deniedTitle: { ...typography.h3, ...typography.bold },
+  searchWrap:  { marginHorizontal: spacing.base, marginBottom: spacing.sm },
+  chips:       { paddingHorizontal: spacing.base, gap: spacing.sm, paddingBottom: spacing.sm },
+  totalLabel:  { paddingHorizontal: spacing.base, paddingBottom: spacing.xs, ...typography.caption, color: colors.textSecondary },
+  empty:       { padding: spacing['2xl'], alignItems: 'center' },
+  emptyText:   { ...typography.body, color: colors.textSecondary },
 }));
