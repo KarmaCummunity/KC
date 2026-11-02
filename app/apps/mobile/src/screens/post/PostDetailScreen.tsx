@@ -22,7 +22,11 @@ import { PostMenuButton } from '../../components/post/PostMenuButton';
 import { PostShareButton } from '../../components/post/PostShareButton';
 import { PostDetailScrollContent } from './PostDetailScrollContent';
 import { usePostDetailStyles } from './postDetailScreen.styles';
-import { useShellTabBarVisibility, shellTabBarHeightPx } from '../../navigation/useShellTabBarVisibility';
+import {
+  useShellTabBarVisibility,
+  useShellTabBarScrollInset,
+  shellTabBarHeightPx,
+} from '../../navigation/useShellTabBarVisibility';
 import { useListingMirrorRedirect } from '../../hooks/useListingMirrorRedirect';
 import { nativeStackHeaderRightIconOnly } from '../../navigation/nativeHeaderIconOnly';
 
@@ -93,6 +97,10 @@ export function PostDetailScreen() {
 
   const showShellTabBar = useShellTabBarVisibility();
   const tabBarPad = shellTabBarHeightPx(showShellTabBar);
+  // KC#1387: the floating CTA is absolutely positioned, so the SafeAreaView's
+  // bottom padding does not lift it. Its offset must include the safe-area
+  // inset the docked bar extends under, or the bar covers the button.
+  const ctaBottom = useShellTabBarScrollInset(spacing.base);
   // D-206: a feed mirror of a listing opens the listing detail instead.
   const redirectingToListing = useListingMirrorRedirect(query.data?.post);
 
@@ -184,7 +192,7 @@ export function PostDetailScreen() {
       ) : null}
       {showViewerContactCta ? (
         <View
-          style={[styles.cta, { bottom: spacing.base + tabBarPad }]}
+          style={[styles.cta, { bottom: ctaBottom }]}
           pointerEvents="box-none"
         >
           <TouchableOpacity
