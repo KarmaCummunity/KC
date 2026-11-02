@@ -130,6 +130,7 @@ begin
 
   v_ride := kc_test.create_ride_offer(p.driver, p_seats => 2);
   v_within_capacity := kc_test.book_ride(p.passenger1, v_ride);
+  perform kc_test.act_as(p.driver);
   perform public.confirm_ride_booking(v_within_capacity);
   perform kc_test.assert_eq(kc_test.handoff_status(v_within_capacity), 'confirmed',
     'approval succeeds while seats remain within capacity');
