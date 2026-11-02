@@ -8,6 +8,7 @@ import type { MarketplaceBrowseRow } from '@kc/domain';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
 import { usePostGridCardWidth } from '../../hooks/useShellContentWidth';
 import { KcCard } from './KcCard';
+import { rideSeatCountKey } from '../../lib/rideSeatCountKey';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -62,7 +63,7 @@ function ListingCardInner({ item, onPress, variant = 'grid', meta }: Readonly<Pr
     if (ride.seats != null) {
       details.push({
         icon: 'people-outline',
-        text: t(isRequest ? 'cards.passengers' : 'cards.seats', { count: ride.seats }),
+        text: t(rideSeatCountKey(isRequest ? 'passengers' : 'seats', ride.seats), { count: ride.seats }),
       });
     }
   }
