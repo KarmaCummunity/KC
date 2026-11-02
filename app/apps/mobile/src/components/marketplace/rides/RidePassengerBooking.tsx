@@ -11,7 +11,7 @@ import { givingHandoffUseCases } from '../../../services/givingHandoffCompositio
 import { rideBookingUseCases } from '../../../services/rideBookingComposition';
 import { HandoffRatingForm } from '../HandoffRatingForm';
 import { formatRideTime } from '../../cards/ListingCard';
-import { ActionButton } from './RideBookingRow';
+import { HandoffActionButton } from '../HandoffActionButton';
 import { RideEmergencyButton } from './RideEmergencyButton';
 import { useRideBookingAction } from './useRideBookingAction';
 import { useRideBookingStyles } from './rideBookingStyles';
@@ -42,6 +42,17 @@ export function RidePassengerBooking({ listingId, cityId, capacity, details }: P
     const next = seats + delta;
     if (next <= maxSeats && isValidRideBookingSeats(next)) setSeats(next);
   };
+  /** Withdraws the passenger's own booking, waiting or approved; `inRow` beside "complete trip". */
+  const cancelMine = (handoffId: string, inRow = false) => (
+    <HandoffActionButton
+      inRow={inRow}
+      testID="ride-booking-cancel-mine"
+      label={t('rideBooking.cancelBooking')}
+      busy={busy}
+      secondary
+      onPress={() => void run(() => rideBookingUseCases.cancel().execute(handoffId))}
+    />
+  );
 
   return (
     <View style={styles.box} testID="ride-passenger-booking">
@@ -55,7 +66,7 @@ export function RidePassengerBooking({ listingId, cityId, capacity, details }: P
             <Text style={styles.stepperValue} testID="ride-booking-seats">{seats}</Text>
             <StepperButton label="+" a11y={t('rideBooking.moreSeats')} disabled={busy || seats >= maxSeats} onPress={() => changeSeats(1)} />
           </View>
-          <ActionButton
+          <HandoffActionButton
             testID="giving-handoff-book-seat"
             label={t('rideBooking.book')}
             busy={busy}
@@ -69,13 +80,7 @@ export function RidePassengerBooking({ listingId, cityId, capacity, details }: P
           <Text style={styles.caption} testID="ride-booking-waiting">
             {t('rideBooking.waitingForDriver', { time: formatRideTime(h.confirmBy) ?? '' })}
           </Text>
-          <ActionButton
-            testID="ride-booking-cancel-mine"
-            label={t('rideBooking.cancelBooking')}
-            busy={busy}
-            secondary
-            onPress={() => void run(() => rideBookingUseCases.cancel().execute(h.handoffId))}
-          />
+          {cancelMine(h.handoffId)}
         </>
       ) : null}
 
@@ -85,19 +90,14 @@ export function RidePassengerBooking({ listingId, cityId, capacity, details }: P
           {/* An approved passenger is on the ride: the emergency call shows while it is under way. */}
           <RideEmergencyButton listingId={listingId} details={details} />
           <View style={styles.actions}>
-            <ActionButton
+            <HandoffActionButton
+              inRow
               testID="giving-handoff-complete"
               label={t('rideBooking.completeTrip')}
               busy={busy}
               onPress={() => void run(() => rideBookingUseCases.complete().execute(h.handoffId), 'handover_completed')}
             />
-            <ActionButton
-              testID="ride-booking-cancel-mine"
-              label={t('rideBooking.cancelBooking')}
-              busy={busy}
-              secondary
-              onPress={() => void run(() => rideBookingUseCases.cancel().execute(h.handoffId))}
-            />
+            {cancelMine(h.handoffId, true)}
           </View>
         </>
       ) : null}

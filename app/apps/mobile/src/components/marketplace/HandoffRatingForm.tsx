@@ -4,8 +4,9 @@
 import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
+import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { TextField } from '../ui/TextField';
+import { PrimaryButton } from '../ui/Buttons';
 
 /** Upper bound for the note; long enough for a sentence or two of thanks or context. */
 export const HANDOFF_RATING_NOTE_MAX_LENGTH = 300;
@@ -61,16 +62,13 @@ export function HandoffRatingForm({ busy, onSubmit }: Props) {
         multiline
         editable={!busy}
       />
-      <Pressable
+      <PrimaryButton
         testID="handoff-rating-submit"
-        style={[styles.btn, (rating === null || busy) && styles.btnDisabled]}
+        label={t('givingHandoff.ratingSubmit')}
+        size="md"
         disabled={rating === null || busy}
         onPress={submit}
-        accessibilityRole="button"
-        accessibilityState={{ disabled: rating === null || busy }}
-      >
-        <Text style={styles.btnText}>{t('givingHandoff.ratingSubmit')}</Text>
-      </Pressable>
+      />
     </View>
   );
 }
@@ -82,7 +80,4 @@ const useStyles = makeUseStyles(({ colors }) => ({
   stars: { flexDirection: 'row' as const, gap: spacing.sm },
   star: { ...typography.h2, color: colors.textSecondary },
   starFilled: { color: colors.primary },
-  btn: { padding: spacing.md, borderRadius: radius.sm, backgroundColor: colors.primary, alignItems: 'center' as const },
-  btnDisabled: { opacity: 0.5 },
-  btnText: { ...typography.button, color: colors.textInverse },
 }));

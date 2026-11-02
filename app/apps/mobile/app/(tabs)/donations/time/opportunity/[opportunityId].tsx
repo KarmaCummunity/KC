@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../../../../../src/components/ui/Screen';
+import { PrimaryButton, SecondaryButton } from '../../../../../src/components/ui/Buttons';
 import { volunteerUseCases } from '../../../../../src/services/volunteerComposition';
 import { useAuthStore } from '../../../../../src/store/authStore';
 
@@ -14,21 +15,13 @@ const useStyles = makeUseStyles(({ colors }) => ({
   summary: { ...typography.body, color: colors.textSecondary },
   shift: {
     padding: spacing.md,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: colors.surfaceRaised,
     gap: spacing.xs,
   },
   shiftMeta: { ...typography.caption, color: colors.textSecondary },
-  btn: {
-    marginTop: spacing.sm,
-    paddingVertical: spacing.sm,
-    alignItems: 'center' as const,
-    backgroundColor: colors.primary,
-    borderRadius: 10,
-  },
-  btnText: { ...typography.button, color: colors.textInverse },
-  btnSecondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  btnSecondaryText: { ...typography.button, color: colors.primary },
+  action: { marginTop: spacing.sm },
+  message: { padding: spacing.lg },
 }));
 
 export default function VolunteerOpportunityDetailScreen() {
@@ -64,14 +57,14 @@ export default function VolunteerOpportunityDetailScreen() {
   if (!d && detail.isLoading) {
     return (
       <Screen>
-        <Text style={{ padding: spacing.lg }}>{t('timeVolunteer.loading')}</Text>
+        <Text style={styles.message}>{t('timeVolunteer.loading')}</Text>
       </Screen>
     );
   }
   if (!d) {
     return (
       <Screen>
-        <Text style={{ padding: spacing.lg }}>{t('timeVolunteer.errorGeneric')}</Text>
+        <Text style={styles.message}>{t('timeVolunteer.errorGeneric')}</Text>
       </Screen>
     );
   }
@@ -85,17 +78,16 @@ export default function VolunteerOpportunityDetailScreen() {
         {d.locationLabel ? <Text style={styles.summary}>{d.locationLabel}</Text> : null}
         {d.summary ? <Text style={styles.summary}>{d.summary}</Text> : null}
         {isOrganizer ? (
-          <Pressable
-            style={[styles.btn, styles.btnSecondary]}
+          <SecondaryButton
+            label={t('timeVolunteer.organizerLink')}
+            size="md"
             onPress={() =>
               router.push({
                 pathname: '/(tabs)/donations/time/organizer/[opportunityId]',
                 params: { opportunityId: d.opportunityId },
               })
             }
-          >
-            <Text style={styles.btnSecondaryText}>{t('timeVolunteer.organizerLink')}</Text>
-          </Pressable>
+          />
         ) : null}
         {d.shifts.map((shift) => {
           const when = `${new Date(shift.startsAt).toLocaleString(i18n.language.startsWith('he') ? 'he-IL' : 'en-IL', {
@@ -114,15 +106,14 @@ export default function VolunteerOpportunityDetailScreen() {
               {mine && mine !== 'cancelled' ? (
                 <Text style={styles.shiftMeta}>{mine}</Text>
               ) : (
-                <Pressable
-                  disabled={busyShift === shift.shiftId}
-                  style={styles.btn}
-                  onPress={() => onSignUp(shift.shiftId, shift.slotsOpen <= 0)}
-                >
-                  <Text style={styles.btnText}>
-                    {shift.slotsOpen <= 0 ? t('timeVolunteer.waitlist') : t('timeVolunteer.signUp')}
-                  </Text>
-                </Pressable>
+                <View style={styles.action}>
+                  <PrimaryButton
+                    label={shift.slotsOpen <= 0 ? t('timeVolunteer.waitlist') : t('timeVolunteer.signUp')}
+                    size="md"
+                    disabled={busyShift === shift.shiftId}
+                    onPress={() => void onSignUp(shift.shiftId, shift.slotsOpen <= 0)}
+                  />
+                </View>
               )}
             </View>
           );

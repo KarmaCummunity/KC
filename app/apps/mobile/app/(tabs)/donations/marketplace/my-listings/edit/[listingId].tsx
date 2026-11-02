@@ -1,25 +1,19 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { makeUseStyles, spacing, typography, Text, TextInput } from '@kc/ui';
+import { makeUseStyles, spacing, Text } from '@kc/ui';
 import { Screen } from '../../../../../../src/components/ui/Screen';
+import { TextField } from '../../../../../../src/components/ui/TextField';
+import { PrimaryButton } from '../../../../../../src/components/ui/Buttons';
 import { marketplaceRepository } from '../../../../../../src/services/marketplaceComposition';
 import { useInvalidateMyListings } from '../../../../../../src/hooks/useMyMarketplaceListings';
 
-const useStyles = makeUseStyles(({ colors }) => ({
+const useStyles = makeUseStyles(() => ({
   body: { padding: spacing.lg, gap: spacing.md },
-  label: { ...typography.caption, color: colors.textSecondary },
-  input: {
-    padding: spacing.md,
-    borderRadius: 12,
-    backgroundColor: colors.surfaceRaised,
-    color: colors.textPrimary,
-    ...typography.body,
-  },
-  btn: { padding: spacing.md, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center' as const },
-  btnText: { ...typography.body, color: colors.textInverse, fontWeight: '600' as const },
+  loading: { marginTop: spacing['4xl'] },
+  message: { padding: spacing.lg },
 }));
 
 export default function EditMyListingScreen() {
@@ -44,10 +38,24 @@ export default function EditMyListingScreen() {
     setSummary(detailQuery.data.summary ?? '');
   }, [detailQuery.data?.listingId]);
 
+  const save = async () => {
+    setSaving(true);
+    try {
+      await marketplaceRepository().updateMyListing(listingId!, {
+        title: title.trim(),
+        summary: summary.trim() || null,
+      });
+      await invalidate();
+      router.back();
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (detailQuery.isLoading) {
     return (
       <Screen>
-        <ActivityIndicator style={{ marginTop: 80 }} />
+        <ActivityIndicator style={styles.loading} />
       </Screen>
     );
   }
@@ -55,7 +63,7 @@ export default function EditMyListingScreen() {
   if (!detailQuery.data) {
     return (
       <Screen>
-        <Text style={{ padding: spacing.lg }}>{t('marketplace.notFound')}</Text>
+        <Text style={styles.message}>{t('marketplace.notFound')}</Text>
       </Screen>
     );
   }
@@ -63,34 +71,16 @@ export default function EditMyListingScreen() {
   return (
     <Screen>
       <View style={styles.body}>
-        <Text style={styles.label}>{t('marketplace.fieldTitle')}</Text>
-        <TextInput style={styles.input} value={title} onChangeText={setTitle} />
-        <Text style={styles.label}>{t('marketplace.fieldSummary')}</Text>
-        <TextInput
-          style={[styles.input, { minHeight: 100 }]}
-          value={summary}
-          onChangeText={setSummary}
-          multiline
-        />
-        <Pressable
-          style={styles.btn}
+        <TextField label={t('marketplace.fieldTitle')} value={title} onChangeText={setTitle} />
+        <TextField label={t('marketplace.fieldSummary')} value={summary} onChangeText={setSummary} multiline />
+        {/* The label switches to "saving…" while the update runs, as before the kit button. */}
+        <PrimaryButton
+          testID="edit-listing-save"
+          label={saving ? t('marketplace.publishing') : t('marketplace.myListingsSave')}
+          fullWidth
           disabled={saving || title.trim().length < 2}
-          onPress={async () => {
-            setSaving(true);
-            try {
-              await marketplaceRepository().updateMyListing(listingId!, {
-                title: title.trim(),
-                summary: summary.trim() || null,
-              });
-              await invalidate();
-              router.back();
-            } finally {
-              setSaving(false);
-            }
-          }}
-        >
-          <Text style={styles.btnText}>{saving ? t('marketplace.publishing') : t('marketplace.myListingsSave')}</Text>
-        </Pressable>
+          onPress={() => void save()}
+        />
       </View>
     </Screen>
   );

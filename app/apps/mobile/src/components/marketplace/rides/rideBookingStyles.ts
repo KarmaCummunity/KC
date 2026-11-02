@@ -7,16 +7,6 @@ export const useRideBookingStyles = makeUseStyles(({ colors }) => ({
   row: { gap: spacing.xs, paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
   name: { ...typography.bodyLarge, color: colors.textPrimary },
   actions: { flexDirection: 'row' as const, gap: spacing.sm },
-  btn: {
-    flex: 1,
-    padding: spacing.md,
-    borderRadius: radius.sm,
-    backgroundColor: colors.primary,
-    alignItems: 'center' as const,
-  },
-  btnSecondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  btnText: { ...typography.button, color: colors.textInverse },
-  btnTextSecondary: { color: colors.primary },
   stepper: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.md },
   stepperBtn: {
     width: 40,

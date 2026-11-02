@@ -3,7 +3,8 @@ import { View, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, typography, spacing, radius, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, iconSize, useTheme, Text } from '@kc/ui';
+import { PrimaryButton } from '../../components/ui/Buttons';
 import {
   ABOUT_DONATION_PHONE_DISPLAY,
   ABOUT_EMAIL_NAVE,
@@ -69,9 +70,9 @@ export function AboutContactLinks() {
           accessibilityRole="link"
           accessibilityLabel={r.label}
         >
-          <Ionicons name="chevron-back" size={18} color={colors.textDisabled} />
+          <Ionicons name="chevron-back" size={iconSize.md} color={colors.textDisabled} />
           <Text style={styles.label}>{r.label}</Text>
-          <Ionicons name={r.icon} size={22} color={colors.primary} />
+          <Ionicons name={r.icon} size={iconSize.xl} color={colors.primary} />
         </Pressable>
       ))}
 
@@ -83,14 +84,14 @@ export function AboutContactLinks() {
 
       <Text style={styles.support}>{t('aboutContent.contactSupportRow')}</Text>
 
-      <Pressable
-        style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
-        onPress={() => router.push('/settings/report-issue')}
-        accessibilityRole="button"
-      >
-        <Ionicons name="chatbubbles-outline" size={20} color={colors.textInverse} />
-        <Text style={styles.ctaText}>{t('aboutContent.contactCta')}</Text>
-      </Pressable>
+      <View style={styles.cta}>
+        <PrimaryButton
+          label={t('aboutContent.contactCta')}
+          size="md"
+          icon="chatbubbles-outline"
+          onPress={() => router.push('/settings/report-issue')}
+        />
+      </View>
     </View>
   );
 }
@@ -110,7 +111,7 @@ const useAboutContactLinksStyles = makeUseStyles(({ colors }) => ({
     backgroundColor: colors.surfaceRaised,
   },
   rowPressed: { opacity: 0.92, backgroundColor: colors.primarySurface },
-  label: { flex: 1, ...typography.body, color: colors.textPrimary, ...aboutRtlText, fontWeight: '600' },
+  label: { flex: 1, ...typography.body, ...typography.semiBold, color: colors.textPrimary, ...aboutRtlText },
   donation: {
     marginTop: spacing.md,
     padding: spacing.md,
@@ -120,9 +121,9 @@ const useAboutContactLinksStyles = makeUseStyles(({ colors }) => ({
     borderColor: colors.warning,
     gap: spacing.xs,
   },
-  donationH: { ...typography.label, color: colors.textPrimary, ...aboutRtlText, fontWeight: '800' },
+  donationH: { ...typography.label, ...typography.extraBold, color: colors.textPrimary, ...aboutRtlText },
   donationP: { ...typography.body, color: colors.textSecondary, ...aboutRtlText, lineHeight: 22 },
-  mono: { ...typography.h4, color: colors.textPrimary, ...aboutRtlText, fontWeight: '800', letterSpacing: 1 },
+  mono: { ...typography.h4, ...typography.extraBold, color: colors.textPrimary, ...aboutRtlText, letterSpacing: 1 },
   support: {
     ...typography.caption,
     color: colors.textSecondary,
@@ -130,16 +131,5 @@ const useAboutContactLinksStyles = makeUseStyles(({ colors }) => ({
     lineHeight: 20,
     marginTop: spacing.xs,
   },
-  cta: {
-    flexDirection: aboutRtlRow,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
-    borderRadius: radius.md,
-    marginTop: spacing.md,
-  },
-  ctaPressed: { opacity: 0.9 },
-  ctaText: { ...typography.button, color: colors.textInverse, ...aboutRtlText },
+  cta: { marginTop: spacing.md },
 }));

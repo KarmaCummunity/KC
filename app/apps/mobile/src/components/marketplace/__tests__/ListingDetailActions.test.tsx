@@ -12,6 +12,11 @@ const startChat = vi.fn();
 const shareToFeed = vi.fn();
 
 vi.mock('expo-router', () => ({ useRouter: () => ({ push }) }));
+// The kit buttons pull in reanimated and haptics; their press feedback is not under test here.
+vi.mock('react-native-reanimated', async () => (await import('../../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
+vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogTestKit')).hapticsDouble);
+vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
+vi.mock('@expo/vector-icons', async () => (await import('../../ui/__tests__/kitDialogTestKit')).iconsDouble);
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
 vi.mock('../../../services/marketplaceComposition', () => ({
   marketplaceRepository: () => ({ startChat, shareToFeed }),
@@ -80,5 +85,22 @@ describe('ListingDetailActions', () => {
     fireEvent.click(getByTestId('listing-action-start-chat'));
     await vi.waitFor(() => expect(alert).toHaveBeenCalledWith('marketplace.actionFailed'));
     alert.mockRestore();
+  });
+
+  it('names each kit button by its label and blocks the message button while the chat opens', async () => {
+    let finish: (chatId: string) => void = () => {};
+    startChat.mockReturnValueOnce(new Promise<string>((resolve) => { finish = resolve; }));
+    const { getByRole } = renderActions('u_viewer');
+    const message = getByRole('button', { name: 'marketplace.startChat' });
+    expect(getByRole('button', { name: 'marketplace.shareLink' })).toBeTruthy();
+    expect(getByRole('button', { name: 'marketplace.report' })).toBeTruthy();
+
+    fireEvent.click(message);
+    await vi.waitFor(() => expect(message.getAttribute('aria-disabled')).toBe('true'));
+    fireEvent.click(message);
+    expect(startChat).toHaveBeenCalledTimes(1);
+
+    finish('c_2');
+    await vi.waitFor(() => expect(message.getAttribute('aria-disabled')).not.toBe('true'));
   });
 });

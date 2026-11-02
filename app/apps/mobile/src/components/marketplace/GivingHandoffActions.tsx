@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
@@ -12,14 +12,11 @@ import { trackCoreLoop } from '../../lib/analyticsCoreLoop';
 import { hapticSuccess } from '../../lib/haptics';
 import { handoffErrorKey } from '../../lib/marketplaceCreateErrors';
 import { HandoffRatingForm } from './HandoffRatingForm';
+import { HandoffActionButton } from './HandoffActionButton';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   box: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceRaised },
   status: { ...typography.caption, color: colors.textSecondary },
-  btn: { padding: spacing.md, borderRadius: radius.sm, backgroundColor: colors.primary, alignItems: 'center' as const },
-  btnSecondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  btnText: { ...typography.button, color: colors.textInverse },
-  btnTextSecondary: { color: colors.primary },
 }));
 
 interface Props {
@@ -89,68 +86,55 @@ export function GivingHandoffActions({ detail }: Props) {
 
       {!h && detail.worldSlug === 'items' && !isOwner ? (
         <>
-          <Pressable
+          <HandoffActionButton
             testID="giving-handoff-reserve"
-            style={styles.btn}
-            disabled={busy}
+            label={t('givingHandoff.reserveItem')}
+            busy={busy}
             onPress={() => run(async () => { await givingHandoffUseCases.reserveItem().execute(detail.listingId, 'pickup'); }, 'match_made')}
-          >
-            <Text style={styles.btnText}>{t('givingHandoff.reserveItem')}</Text>
-          </Pressable>
-          <Pressable
+          />
+          <HandoffActionButton
             testID="giving-handoff-reserve-delivery"
-            style={[styles.btn, styles.btnSecondary]}
-            disabled={busy}
+            label={t('givingHandoff.reserveDelivery')}
+            busy={busy}
+            secondary
             onPress={() => run(async () => { await givingHandoffUseCases.reserveItem().execute(detail.listingId, 'delivery'); }, 'match_made')}
-          >
-            <Text style={[styles.btnText, styles.btnTextSecondary]}>{t('givingHandoff.reserveDelivery')}</Text>
-          </Pressable>
+          />
         </>
       ) : null}
 
       {!h && detail.worldSlug === 'food' && !isOwner ? (
-        <Pressable
+        <HandoffActionButton
           testID="giving-handoff-claim"
-          style={styles.btn}
-          disabled={busy}
+          label={t('givingHandoff.claimFood')}
+          busy={busy}
           onPress={() => run(async () => { await givingHandoffUseCases.claimFood().execute(detail.listingId); }, 'match_made')}
-        >
-          <Text style={styles.btnText}>{t('givingHandoff.claimFood')}</Text>
-        </Pressable>
+        />
       ) : null}
 
       {!h && detail.worldSlug === 'knowledge' && !isOwner ? (
-        <Pressable
+        <HandoffActionButton
           testID="giving-handoff-book-slot"
-          style={styles.btn}
-          disabled={busy}
+          label={t('givingHandoff.bookKnowledgeSlot')}
+          busy={busy}
           onPress={() => run(async () => { await ridesKnowledgeRpcs.bookKnowledgeSlot(detail.listingId); }, 'match_made')}
-        >
-          <Text style={styles.btnText}>{t('givingHandoff.bookKnowledgeSlot')}</Text>
-        </Pressable>
+        />
       ) : null}
 
       {h?.status === 'reserved' && isOwner && detail.worldSlug !== 'knowledge' ? (
-        <Pressable
+        <HandoffActionButton
           testID="giving-handoff-confirm"
-          style={styles.btn}
-          disabled={busy}
-          onPress={() =>
-            run(async () => {
-              await givingHandoffUseCases.confirmItem().execute(h.handoffId);
-            })
-          }
-        >
-          <Text style={styles.btnText}>{t('givingHandoff.confirmReservation')}</Text>
-        </Pressable>
+          label={t('givingHandoff.confirmReservation')}
+          busy={busy}
+          onPress={() => run(async () => { await givingHandoffUseCases.confirmItem().execute(h.handoffId); })}
+        />
       ) : null}
 
       {(h?.status === 'confirmed' || (h?.status === 'reserved' && (detail.worldSlug === 'knowledge'))) && (isOwner || isRecipient) ? (
         <>
-          <Pressable
+          <HandoffActionButton
             testID="giving-handoff-complete"
-            style={styles.btn}
-            disabled={busy}
+            label={detail.worldSlug === 'knowledge' ? t('givingHandoff.completeSession') : t('givingHandoff.markHandedOver')}
+            busy={busy}
             onPress={() =>
               run(async () => {
                 if (detail.worldSlug === 'knowledge') {
@@ -160,21 +144,14 @@ export function GivingHandoffActions({ detail }: Props) {
                 }
               }, 'handover_completed')
             }
-          >
-            <Text style={styles.btnText}>
-              {detail.worldSlug === 'knowledge'
-                ? t('givingHandoff.completeSession')
-                : t('givingHandoff.markHandedOver')}
-            </Text>
-          </Pressable>
-          <Pressable
+          />
+          <HandoffActionButton
             testID="giving-handoff-cancel"
-            style={[styles.btn, styles.btnSecondary]}
-            disabled={busy}
+            label={t('givingHandoff.cancel')}
+            busy={busy}
+            secondary
             onPress={() => run(async () => { await givingHandoffUseCases.cancel().execute(h.handoffId); })}
-          >
-            <Text style={[styles.btnText, styles.btnTextSecondary]}>{t('givingHandoff.cancel')}</Text>
-          </Pressable>
+          />
         </>
       ) : null}
 

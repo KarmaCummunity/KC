@@ -15,6 +15,10 @@ const book = vi.fn();
 const getForListing = vi.fn();
 let sessionUserId: string | null = 'u_driver';
 
+// The kit buttons pull in reanimated and haptics; their press feedback is not under test here.
+vi.mock('react-native-reanimated', async () => (await import('../../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
+vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogTestKit')).hapticsDouble);
+vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
 vi.mock('../../../store/authStore', () => ({
   useAuthStore: (select: (s: unknown) => unknown) => select({ session: sessionUserId ? { userId: sessionUserId } : null }),
