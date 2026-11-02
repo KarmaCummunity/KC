@@ -6,3 +6,5 @@
 export default function ResearchLayoutFallback(): null {
   return null;
 }
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';

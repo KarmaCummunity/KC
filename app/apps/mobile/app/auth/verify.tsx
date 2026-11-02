@@ -13,6 +13,8 @@ import { useAuthStore } from '../../src/store/authStore';
 import { mapAuthErrorToHebrew } from '../../src/services/authMessages';
 import { AuthProgressScreen, AuthStatusScreen } from '../../src/components/auth/AuthStatusScreen';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
+
 export default function AuthVerifyScreen() {
   const router = useRouter();
   const { t } = useTranslation();

@@ -34,6 +34,8 @@ import { CreatePostFormScrollContent } from '../../src/components/CreatePostForm
 import { useUnifiedCreateCategory } from '../../src/hooks/useUnifiedCreateCategory';
 import { ListingCreateForm } from '../../src/components/CreatePostForm/ListingCreateForm';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
+
 export default function CreatePostScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();

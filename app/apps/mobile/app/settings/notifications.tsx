@@ -19,6 +19,8 @@ import { NotificationToggleRow } from '../../src/components/NotificationToggleRo
 import { QuietHoursSection } from '../../src/components/settings/QuietHoursSection';
 import { useNotificationPreferences } from '../../src/hooks/useNotificationPreferences';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
+
 const useStyles = makeUseStyles(({ colors }) => ({
   scrollContent: { ...webViewRtl },
   sectionHeader: {

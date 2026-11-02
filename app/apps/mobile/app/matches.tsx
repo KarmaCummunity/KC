@@ -13,6 +13,8 @@ import { sortMatches, matchStateOf } from '../src/lib/matching';
 import { trackCoreLoop } from '../src/lib/analyticsCoreLoop';
 import { rtlTextAlignStart } from '../src/lib/rtlTextAlignStart';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
+
 export default function MatchesScreen() {
   const { t } = useTranslation();
   const styles = useStyles();

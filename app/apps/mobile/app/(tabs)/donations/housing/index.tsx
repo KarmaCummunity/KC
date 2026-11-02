@@ -6,6 +6,8 @@ import { WorldMarketplaceHub } from '../../../../src/components/giving/WorldMark
 import { worldSubScreens } from '../../../../src/components/giving/worldSubScreens';
 import { WorldLaunchGateBySlug } from '../../../../src/components/worlds/WorldLaunchGate';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
+
 export default function HousingWorldScreen() {
   return (
     <WorldLaunchGateBySlug worldSlug="housing">

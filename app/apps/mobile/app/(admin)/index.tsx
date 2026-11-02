@@ -18,6 +18,8 @@ import { useReportsInbox } from '../../src/hooks/useReportsInbox';
 import { getCommunityStatsSnapshotUseCase } from '../../src/services/postsComposition';
 import { useLocaleBundle } from '../../src/i18n/useLocaleBundle';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
+
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
 interface Card {

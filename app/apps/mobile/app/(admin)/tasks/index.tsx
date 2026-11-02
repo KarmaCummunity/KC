@@ -30,6 +30,8 @@ import {
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+
 function parseDueFrom(value: string): Date | undefined {
   if (!isValidIsoDate(value) || value.length === 0) return undefined;
   return new Date(`${value}T00:00:00.000Z`);

@@ -5,6 +5,7 @@ import type { ComponentProps } from 'react';
 import type { Ionicons } from '@expo/vector-icons';
 import type { RideCardSummary } from '@kc/domain';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
+import { rideSeatCountKey } from '../../lib/rideSeatCountKey';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -34,7 +35,7 @@ function rideDetails(
   if (ride.seats != null) {
     details.push({
       icon: 'people-outline',
-      text: t(isRequest ? 'cards.passengers' : 'cards.seats', { count: ride.seats }),
+      text: t(rideSeatCountKey(isRequest ? 'passengers' : 'seats', ride.seats), { count: ride.seats }),
     });
   }
   return details;
