@@ -37,6 +37,9 @@ vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn() }));
 vi.mock('../../../lib/haptics', () => ({ hapticSuccess: vi.fn() }));
 vi.mock('../ReportListingModal', () => ({ ReportListingModal: () => null }));
 vi.mock('../RideRouteCard', () => ({ RideRouteCard: () => null }));
+// The publisher card and the city lookup pull in Expo modules; neither holds a button.
+vi.mock('../../post-detail/PublisherCard', () => ({ PublisherCard: () => null }));
+vi.mock('../../../hooks/useCityName', () => ({ useCityName: () => null }));
 vi.mock('../../cards/ListingCard', () => ({ formatRideTime: () => '' }));
 // The kit buttons become plain buttons tagged with their variant, so the test counts primaries
 // without reading styles.
