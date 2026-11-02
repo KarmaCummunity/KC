@@ -10,6 +10,8 @@ vi.mock('../../services/postsComposition', () => ({
   getTranslatedPostsUseCase: () => ({ execute: getExec }),
   materializePostTranslationsUseCase: () => ({ execute: matExec }),
 }));
+const flagOn = { value: true };
+vi.mock('../useFeatureFlag', () => ({ useFeatureFlag: () => flagOn.value }));
 
 import { useTranslatedPosts } from '../useTranslatedPosts';
 
@@ -41,5 +43,17 @@ describe('useTranslatedPosts', () => {
     await waitFor(() => expect(getExec).toHaveBeenCalled());
     const fieldsArg = getExec.mock.calls[0][0].fields.map((f: any) => f.field);
     expect(fieldsArg).toEqual(['title']); // description excluded by the filter
+  });
+});
+
+describe('useTranslatedPosts flag off', () => {
+  it('does not call translation when ugc_auto_translation is off', async () => {
+    flagOn.value = false;
+    getExec.mockClear();
+    const { result } = renderHook(() => useTranslatedPosts([post], 'he'), { wrapper });
+    expect(result.current.getTranslatedFields('p1').title).toBeUndefined();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(getExec).not.toHaveBeenCalled();
+    flagOn.value = true;
   });
 });
