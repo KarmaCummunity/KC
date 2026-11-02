@@ -3,10 +3,10 @@
 //   value = null               → no filter ("all")
 //   value = 'unassigned'       → only tasks with no assignee
 //   value = '<userId>'         → only tasks assigned to that admin
+// Rebuilt on top of the shared filterKit (issue #1457).
 import { useQuery } from '@tanstack/react-query';
-import { ScrollView, StyleSheet } from 'react-native';
-import { adminChipScroll } from '../adminChipScroll';
-import { AdminFilterChip } from '../AdminFilterChip';
+import { StyleSheet } from 'react-native';
+import { FilterChipRow } from '../../filterKit/FilterChipRow';
 import type { AdminGrant } from '@kc/domain';
 import { spacing } from '@kc/ui';
 import { container } from '../../../lib/container';
@@ -37,19 +37,21 @@ export function TaskAssigneeFilter({ value, onChange }: TaskAssigneeFilterProps)
     entries.push({ userId: g.userId, displayName: g.displayName ?? L.admin.admins.row.unnamed });
   }
 
+  const options = [
+    { value: UNASSIGNED_TOKEN, label: L.admin.tasks.assigneeFilter.unassigned },
+    ...entries.map((e) => ({ value: e.userId, label: e.displayName })),
+  ];
+
   return (
-    <ScrollView horizontal style={adminChipScroll.scroll} showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.row, adminChipScroll.content]}>
-      <AdminFilterChip label={L.admin.tasks.assigneeFilter.all}        active={value === null}              onPress={() => onChange(null)} />
-      <AdminFilterChip label={L.admin.tasks.assigneeFilter.unassigned} active={value === UNASSIGNED_TOKEN}  onPress={() => onChange(UNASSIGNED_TOKEN)} />
-      {entries.map((e) => (
-        <AdminFilterChip
-          key={e.userId}
-          label={e.displayName}
-          active={value === e.userId}
-          onPress={() => onChange(value === e.userId ? null : e.userId)}
-        />
-      ))}
-    </ScrollView>
+    <FilterChipRow<string>
+      scrollable
+      showAllChip
+      allLabel={L.admin.tasks.assigneeFilter.all}
+      options={options}
+      value={value}
+      onChange={(v) => onChange(v as AssigneeFilterValue)}
+      contentContainerStyle={styles.row}
+    />
   );
 }
 

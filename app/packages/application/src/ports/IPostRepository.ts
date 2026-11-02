@@ -30,6 +30,8 @@ import type { PostActorIdentityRow, UpsertPostActorIdentityInput } from './postA
 export interface PostFeedFilter {
   type?: PostType;
   categories?: Category[];          // empty/undefined = no category filter
+  worlds?: string[];                // empty/undefined = no worlds filter
+  subcategories?: string[];         // empty/undefined = no subcategories filter
   itemConditions?: ItemCondition[]; // empty/undefined = no condition filter; ignored unless type === 'Give'
   locationFilter?: LocationFilter;  // city + radius (km); undefined = no spatial filter
   statusFilter?: FeedStatusFilter;  // 'open' (default) | 'closed' | 'all'

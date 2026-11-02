@@ -114,17 +114,19 @@ of active filters when >0; the old in-feed "X filters active" chip
 **Acceptance Criteria.**
 - AC1. Filter set:
    - **Search** (top of sheet): free-text field per `FR-FEED-003`.
-   - **Sort**: `Newest first` (default) / `Oldest first` / `By proximity`. When
+   - **Sort**: `Newest first` (default) / `Oldest first` / `By proximity` / `For you`. When
      `By proximity` is selected, a city picker resolves the center of the
      ranking; default is the viewer's registered city.
    - **Type**: `All` / `Givers only` / `Requesters only`.
-   - **Category**: multi-select from the canonical 10 categories.
-   - **Item condition**: multi-select; rendered only when `Type = Givers only`
-     (`New` / `LikeNew` / `Good` / `Fair`).
+   - **Giving world**: single-select giving world (`All` chip, plus items, rides, food, housing, time, money, knowledge, medical, animals, environment, creative, app design).
+   - **World subcategory**: multi-select row displayed when a giving world is selected, loaded dynamically from that world's active child categories. Tapping `All` selects all subcategories; changing or clearing the giving world clears any selected subcategories.
+   - **Item condition**: multi-select; rendered only when `Type = Givers only` and the selected world is items (or `All` / none)
+     (`New` / `LikeNew` / `Good` / `Fair` / `Damaged`).
    - **Location**: city picker + radius slider (`5 / 10 / 25 / 50 / 100` km).
      When set, the feed includes only posts whose city is within the radius
      of the chosen center city. Defaults to no spatial filter.
    - **Status**: 3-mode — `Open only` (default) / `Closed only` / `All`.
+   - **Source**: `All` / `Only people I follow` (`FR-FEED-020`).
 - AC2. Filters compose with AND semantics. Sort is independent of filters.
 - AC3. Changes **auto-commit** to the persisted store on every control change
    (chips immediately; search text after `FR-FEED-003` debounce). There is
@@ -137,6 +139,7 @@ of active filters when >0; the old in-feed "X filters active" chip
    state.
 
 **Related.** Screens: 2.2 · `FR-FEED-013` (deprecated) · `FR-FEED-018`.
+**Shared filter kit (#1457).** Implemented on top of `@kc/mobile`'s shared `filterKit` (`FilterSearchBar`, `FilterButton`, `FilterChipRow`, `FilterSection`, `SortSection`, `FilterSheetFrame`). Full component and surface inventory in spec 17 §4.1.2.
 
 ---
 

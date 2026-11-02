@@ -5,6 +5,7 @@ KC (Karma Community) is built largely by AI agents. This is the short entry poin
 | Read | For |
 |---|---|
 | [`docs/agents/OPERATING_MODEL.md`](docs/agents/OPERATING_MODEL.md) | Roles, the issue → PR → dev → kc-dev flow, labels, auto-merge |
+| [`docs/agents/ISSUE_CLAIMS.md`](docs/agents/ISSUE_CLAIMS.md) | **Claim an issue before starting it**: skip `in-progress` issues |
 | [`docs/agents/MIGRATION_RANGES.md`](docs/agents/MIGRATION_RANGES.md) | **Claim a migration number range before writing SQL** |
 | [`docs/agents/STACK_MAP.md`](docs/agents/STACK_MAP.md) | Open stacked PRs and merge order |
 | [`docs/agents/ARCHITECTURE.md`](docs/agents/ARCHITECTURE.md) | Apps / packages / supabase / workflows map |
@@ -37,6 +38,7 @@ KC (Karma Community) is built largely by AI agents. This is the short entry poin
 - [ ] New or changed behavior has tests
 - [ ] Migrations, if any: numbered inside your claimed range, apply cleanly on a fresh stack (`./scripts/dev-up.sh`), RLS plus policy tests, no destructive ops (migration safety scan in the `static` lane of `CI gate`)
 - [ ] DB types regenerated and committed if the API surface changed
+- [ ] PR labeled with exactly one opened-by label (`agent:cursor|kc-bot|antigravity|codex|other` or `human`), matching the `Opened by:` line ([ISSUE_CLAIMS.md](docs/agents/ISSUE_CLAIMS.md))
 - [ ] PR body: `Closes #N` and `Mapped to spec: …`, following the CLAUDE.md §6 template
 - [ ] `CI gate` green, then label `agent-ready` to auto-merge
 - [ ] After merge: verified on kc-dev / dev.karma-community.pages.dev
