@@ -29,6 +29,11 @@ on:
         description: Android versionCode of the submitted AAB
         value: ${{ jobs.play-internal.outputs.version_code }}
   workflow_dispatch:
+    inputs:
+      ref:
+        description: Optional dev commit SHA to build (default the dispatched head; use the last green commit when the head is a [skip ci] version bump)
+        type: string
+        required: false
 
 permissions:
   contents: read
