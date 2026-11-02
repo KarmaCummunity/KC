@@ -116,9 +116,6 @@
       "iconSizeLiteral": 3,
       "unmirroredDirectionalIcon": 1
     },
-    "app/notifications/inbox.tsx": {
-      "fontWeightLiteral": 1
-    },
     "app/pro.tsx": {
       "fontSizeLiteral": 1,
       "fontWeightLiteral": 1,
