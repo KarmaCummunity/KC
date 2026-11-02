@@ -29,6 +29,5 @@ export const givingHandoff = {
   itemsHubIntro: 'Give and receive items with photos, condition, pickup or delivery, and a clear reservation flow.',
   foodHubIntro: 'Rescue food before it expires — urgency rises as expiry nears. Quick claim and pickup windows.',
   myHandoffs: 'My handoffs',
-  createListing: 'Post a listing',
   urgencyHigh: 'Expires soon',
 } as const;

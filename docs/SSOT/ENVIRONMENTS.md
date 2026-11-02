@@ -133,12 +133,13 @@ Why: without a queue every merge made all other PRs "behind", and re-merging `de
 
 ## Agent identity (`INFRA-CI-6`)
 
-Agents must not act as the owner. Two identities replace the owner's personal account (setup: [`OPERATOR_RUNBOOK.md` § Owner setup for D-195 CI/CD](./OPERATOR_RUNBOOK.md#owner-setup-ci)):
+Agents must not act as the owner. These identities replace the owner's personal account (setup: [`OPERATOR_RUNBOOK.md` § Owner setup for D-195 CI/CD](./OPERATOR_RUNBOOK.md#owner-setup-ci)):
 
 | Identity | Used for | Permissions |
 | --- | --- | --- |
 | **Agent GitHub App** (secrets `AGENT_APP_ID`, `AGENT_APP_PRIVATE_KEY` in environment `agent-merge`, deployment branch `main` only) | `auto-merge-agent-ready.yml` (every non-draft PR into `dev`; a `pull_request_target` workflow, so GitHub runs its `main` copy with `GITHUB_REF` = `main` and checks the environment policy against `main`, `TD-240`) mints a short-lived installation token (`actions/create-github-app-token`, scoped to this repository, contents + pull requests write) to arm squash auto-merge (the PR then enters the merge queue), so the merge push to `dev` triggers **CI** → **Deploy** and `close-issues-on-dev-merge` (`TD-197`). | App: Contents R/W, Pull requests R/W, Actions R, Checks R, Metadata R. **No** Administration, no Workflows. Installed on this repository only. |
 | **CI-verdict GitHub App** (secrets `CI_VERDICT_APP_ID`, `CI_VERDICT_APP_PRIVATE_KEY` in environment `ci-verdict`, deployment branch `main` only) | `ci-verdict.yml` posts the required `CI verdict` check. A separate App, so the ruleset can require checks from it alone. | App: Checks R/W, Actions R, Contents R, Pull requests R, Metadata R. Installed on this repository only. |
+| **Version-bump GitHub App** (secrets `VERSION_BUMP_APP_ID`, `VERSION_BUMP_APP_PRIVATE_KEY` in environment `version-bump`, deployment branch `dev` only) | `bump-version-on-merge.yml` pushes the post-merge ID commit and the `[skip ci]` `app/VERSION` commit straight to `dev` (`TD-231`). The App is the `dev` ruleset's only bypass actor besides the repository admin. | App: Contents R/W, Metadata R. **No** Pull requests, so it cannot merge or approve. Installed on this repository only. |
 | **Agent machine user** (dedicated GitHub account) | Claude Code / agent sessions: branches, commits, pushes, PRs. | Repository role **Write**, never Admin, so it cannot change rulesets or bypass them, and the owner can approve its PRs (an author cannot approve their own PR). |
 
 `AGENT_MERGE_TOKEN` (fine-grained PAT of the machine user, contents + pull requests write on this repository, also in `agent-merge`) remains a fallback when the App is not configured. The workflow never falls back to `GITHUB_TOKEN`: its pushes start no workflows, so they fail with an explicit error instead. Secrets kept at repository level are readable by any workflow an agent pushes on any branch (`TD-223`); keep sensitive ones in branch-restricted environments.

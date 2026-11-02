@@ -81,7 +81,7 @@ Last applied on kc-dev when this was written: `0239`.
 | 0511–0519 | Rides end to end — `docs/spec/05_giving_worlds.md` §5.3, gaps G44–G49 (`0511` G47 driver bookings) | in progress |
 | 0520 | KC#1063 function `EXECUTE` explicit grants: new functions private by default, SECURITY DEFINER triggers and internal helpers service-role only | in review |
 | 0521 | KC#1064 `chat-media` bucket private: read policy by chat visibility, signed URLs in the app | in review |
-| 0522–0526 | FEED-WORLDS / FR-FEED-020 — main feed of every create category + a feed per world (`0522` every create category mirrors into the feed) | in progress |
+| 0522–0526 | FEED-WORLDS / FR-FEED-020 — main feed of every create category + a feed per world (`0522` every create category mirrors into the feed, merged #1376) | in progress |
 | 0527+ | — | free |
 
 ## Next free ranges

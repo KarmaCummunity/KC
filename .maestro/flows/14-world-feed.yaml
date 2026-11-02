@@ -1,0 +1,42 @@
+# A giving world's own screen (food): request / offer buttons, search within the world and the
+# offers / requests filter render on device, and "request" opens the create form on the food
+# request form.
+# Spec: docs/SSOT/spec/06_feed_and_search.md FR-FEED-020 AC2; docs/spec/07_cross_cutting_systems.md §7.3.
+appId: org.karmacommunity.app
+name: Worlds — food world feed and request entry
+tags: [donations, feed]
+---
+- runFlow: ../subflows/sign-in.yaml
+- tapOn:
+    id: tab-donations
+- extendedWaitUntil:
+    visible:
+      id: donations-hub
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: donation-tile-food
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: donation-tile-food
+- extendedWaitUntil:
+    visible:
+      id: world-hub-offer
+    timeout: 15000
+- assertVisible:
+    id: world-hub-request
+- assertVisible:
+    id: world-feed-search
+- tapOn:
+    id: world-feed-direction-request
+- assertVisible:
+    id: world-feed-direction-all
+- tapOn:
+    id: world-hub-request
+- extendedWaitUntil:
+    visible:
+      id: listing-create-form
+    timeout: 15000
+- assertVisible:
+    id: unified-create-header

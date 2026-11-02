@@ -4,18 +4,16 @@
 // Sibling of auth/callback.tsx (OAuth code exchange).
 // docs/SSOT/spec/01_auth_and_onboarding.md
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, TouchableOpacity, View } from 'react-native';
+import { Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { isAuthError } from '@kc/application';
 import { getVerifyEmailUseCase } from '../../src/services/authComposition';
 import { useAuthStore } from '../../src/store/authStore';
 import { mapAuthErrorToHebrew } from '../../src/services/authMessages';
+import { AuthProgressScreen, AuthStatusScreen } from '../../src/components/auth/AuthStatusScreen';
 
 export default function AuthVerifyScreen() {
-  const styles = useStyles();
-  const { colors } = useTheme();
   const router = useRouter();
   const { t } = useTranslation();
   const params = useLocalSearchParams<{ token_hash?: string; type?: string }>();
@@ -58,33 +56,13 @@ export default function AuthVerifyScreen() {
 
   if (error) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.title}>{t('auth.verifyFailedTitle')}</Text>
-        <Text style={styles.body}>{error}</Text>
-        <TouchableOpacity style={styles.btn} onPress={() => router.replace('/(auth)/sign-in')}>
-          <Text style={styles.btnText}>{t('auth.backToSignInCta')}</Text>
-        </TouchableOpacity>
-      </View>
+      <AuthStatusScreen
+        title={t('auth.verifyFailedTitle')}
+        body={error}
+        ctaLabel={t('auth.backToSignInCta')}
+        onCta={() => router.replace('/(auth)/sign-in')}
+      />
     );
   }
-  return (
-    <View style={styles.center}>
-      <ActivityIndicator size="large" color={colors.primary} />
-      <Text style={styles.body}>{t('auth.verifyingProgress')}</Text>
-    </View>
-  );
+  return <AuthProgressScreen message={t('auth.verifyingProgress')} />;
 }
-
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
-  center: {
-    flex: 1, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: colors.background, paddingHorizontal: spacing.xl, gap: spacing.md,
-  },
-  title: { ...typography.h2, color: colors.textPrimary, textAlign: 'center' },
-  body: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
-  btn: {
-    marginTop: spacing.lg, backgroundColor: colors.primary,
-    paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: 12,
-  },
-  btnText: { ...typography.button, color: colors.textInverse },
-}));

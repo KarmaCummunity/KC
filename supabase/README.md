@@ -57,6 +57,7 @@ Always run migrations in numeric order.
 
 ```bash
 supabase gen types typescript --project-id <project-ref> \
+  | node scripts/strip-partition-types.mjs \
   > app/packages/infrastructure-supabase/src/database.types.ts
 ```
 

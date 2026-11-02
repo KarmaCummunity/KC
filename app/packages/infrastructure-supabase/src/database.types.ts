@@ -1948,48 +1948,6 @@ export type Database = {
         }
         Relationships: []
       }
-      feed_impressions_y2026m11: {
-        Row: {
-          impression_id: string
-          post_id: string
-          seen_at: string
-          user_id: string
-        }
-        Insert: {
-          impression_id?: string
-          post_id: string
-          seen_at?: string
-          user_id: string
-        }
-        Update: {
-          impression_id?: string
-          post_id?: string
-          seen_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      feed_impressions_y2026m12: {
-        Row: {
-          impression_id: string
-          post_id: string
-          seen_at: string
-          user_id: string
-        }
-        Insert: {
-          impression_id?: string
-          post_id: string
-          seen_at?: string
-          user_id: string
-        }
-        Update: {
-          impression_id?: string
-          post_id?: string
-          seen_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       feed_mute_filters: {
         Row: {
           created_at: string

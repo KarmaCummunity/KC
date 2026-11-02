@@ -5,6 +5,7 @@ import type { PostType } from '@kc/domain';
 import {
   DEFAULT_CREATE_CATEGORY,
   isCreateCategoryId,
+  isCreateDirection,
   type CreateCategoryId,
   type CreateDirection,
 } from './createCategories';
@@ -28,10 +29,6 @@ export const DEFAULT_CREATE_PREFERENCES: CreatePreferences = {
   direction: 'give',
 };
 
-function isDirection(v: unknown): v is CreateDirection {
-  return v === 'give' || v === 'request';
-}
-
 /**
  * Parses stored preferences. Corrupt JSON, a removed category or a bad direction falls back
  * field by field to the defaults, so an old app version's value can never break the form.
@@ -48,7 +45,7 @@ export function parseCreatePreferences(raw: string | null | undefined): CreatePr
   const { categoryId, direction } = parsed as Record<string, unknown>;
   return {
     categoryId: isCreateCategoryId(categoryId) ? categoryId : DEFAULT_CREATE_PREFERENCES.categoryId,
-    direction: isDirection(direction) ? direction : DEFAULT_CREATE_PREFERENCES.direction,
+    direction: isCreateDirection(direction) ? direction : DEFAULT_CREATE_PREFERENCES.direction,
   };
 }
 

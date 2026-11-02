@@ -1,24 +1,22 @@
 // Onboarding step 2 — FR-AUTH-010
 import React from 'react';
-import {
-  View,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-} from 'react-native';
+import { View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, typography, spacing, radius, useTheme, Text, TextInput } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, useTheme, Text } from '@kc/ui';
 import { CityPicker } from '../../src/components/CityPicker';
 import { StreetPicker } from '../../src/components/StreetPicker';
 import { OnboardingStepHeader } from '../../src/components/OnboardingStepHeader';
 import { useOnboardingBasicInfoFlow } from '../../src/hooks/useOnboardingBasicInfoFlow';
 import { AnimatedEntry } from '../../src/components/animations/AnimatedEntry';
-import { PressableScale } from '../../src/components/animations/PressableScale';
 import { staggerDelay } from '../../src/lib/animations/motion';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
+import { TextField } from '../../src/components/ui/TextField';
+import { PrimaryButton } from '../../src/components/ui/Buttons';
+
+/** Side of the round halo behind the hero glyph, in points (a layout size). */
+const HERO_HALO_SIZE = 68;
 
 export default function OnboardingBasicInfoScreen() {
   const styles = useStyles();
@@ -27,14 +25,14 @@ export default function OnboardingBasicInfoScreen() {
   const {
     displayName, setDisplayName, city, setCity, street, setStreet, streetNumber, setStreetNumber,
     contactPhone, setContactPhone,
-    loading, hasRequiredFields, canSubmit, handleBack, handleContinue, handleSkip,
+    loading, hasRequiredFields, handleBack, handleContinue, handleSkip,
   } = useOnboardingBasicInfoFlow();
 
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
+        style={styles.fill}
       >
         <View style={styles.content}>
           <ScrollView
@@ -53,7 +51,11 @@ export default function OnboardingBasicInfoScreen() {
 
             <AnimatedEntry delay={staggerDelay(0)} style={styles.iconWrap}>
               <View style={styles.iconHalo}>
-                <Ionicons name="person-outline" size={32} color={colors.primary} />
+                <Ionicons
+                  name="person-outline"
+                  size={32} // brand-guard-allow: hero glyph above the title, off the icon scale (spec 17 §4.2)
+                  color={colors.primary}
+                />
               </View>
             </AnimatedEntry>
 
@@ -66,19 +68,15 @@ export default function OnboardingBasicInfoScreen() {
             </AnimatedEntry>
 
             <AnimatedEntry delay={staggerDelay(3)}>
-              <View style={styles.field}>
-                <Text style={styles.label}>{t('onboarding.displayName')}</Text>
-                <TextInput
-                  style={styles.input}
-                  value={displayName}
-                  onChangeText={setDisplayName}
-                  placeholder={t('onboarding.fullNamePlaceholder')}
-                  placeholderTextColor={colors.textDisabled}
-                  maxLength={50}
-                  textAlign={rtlTextAlignStart}
-                  editable={!loading}
-                />
-              </View>
+              <TextField
+                containerStyle={styles.field}
+                label={t('onboarding.displayName')}
+                value={displayName}
+                onChangeText={setDisplayName}
+                placeholder={t('onboarding.fullNamePlaceholder')}
+                maxLength={50}
+                editable={!loading}
+              />
             </AnimatedEntry>
 
             <AnimatedEntry delay={staggerDelay(4)}>
@@ -100,13 +98,13 @@ export default function OnboardingBasicInfoScreen() {
                         disabled={loading}
                       />
                     </View>
-                    <TextInput
-                      style={[styles.input, styles.streetInputHouse]}
+                    <TextField
+                      containerStyle={styles.streetNumberCol}
+                      style={styles.streetNumberInput}
+                      label={t('profile.streetNumberShort')}
                       value={streetNumber}
                       onChangeText={setStreetNumber}
                       placeholder={t('profile.streetNumberShort')}
-                      placeholderTextColor={colors.textDisabled}
-                      textAlign={rtlTextAlignStart}
                       editable={!loading}
                       maxLength={10}
                     />
@@ -116,44 +114,29 @@ export default function OnboardingBasicInfoScreen() {
             ) : null}
 
             <AnimatedEntry delay={staggerDelay(5)}>
-              <View style={styles.field}>
-                <Text style={styles.label}>{t('onboarding.contactPhoneLabel')}</Text>
-                <TextInput
-                  style={styles.input}
-                  value={contactPhone}
-                  onChangeText={setContactPhone}
-                  placeholder={t('onboarding.contactPhonePlaceholder')}
-                  placeholderTextColor={colors.textDisabled}
-                  maxLength={20}
-                  keyboardType="phone-pad"
-                  textAlign={rtlTextAlignStart}
-                  editable={!loading}
-                />
-              </View>
+              <TextField
+                containerStyle={styles.field}
+                label={t('onboarding.contactPhoneLabel')}
+                value={contactPhone}
+                onChangeText={setContactPhone}
+                placeholder={t('onboarding.contactPhonePlaceholder')}
+                maxLength={20}
+                keyboardType="phone-pad"
+                editable={!loading}
+              />
             </AnimatedEntry>
           </ScrollView>
 
-          <AnimatedEntry delay={staggerDelay(6)}>
-            <PressableScale
-              style={[
-                styles.cta,
-                !hasRequiredFields && { opacity: 0.4 },
-                hasRequiredFields && !canSubmit && { opacity: 0.85 },
-              ]}
-              disabled={!hasRequiredFields || loading}
-              onPress={handleContinue}
-              accessibilityRole="button"
+          <AnimatedEntry delay={staggerDelay(6)} style={styles.ctaWrap}>
+            <PrimaryButton
+              label={t('onboarding.continue')}
               accessibilityLabel={t('onboarding.continueA11y')}
-            >
-              {loading ? (
-                <ActivityIndicator color={colors.textInverse} />
-              ) : (
-                <>
-                  <Text style={styles.ctaText}>{t('onboarding.continue')}</Text>
-                  <Ionicons name="arrow-back" size={20} color={colors.textInverse} />
-                </>
-              )}
-            </PressableScale>
+              icon="arrow-back"
+              fullWidth
+              loading={loading}
+              disabled={!hasRequiredFields}
+              onPress={handleContinue}
+            />
           </AnimatedEntry>
         </View>
       </KeyboardAvoidingView>
@@ -161,8 +144,9 @@ export default function OnboardingBasicInfoScreen() {
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   container: { flex: 1, backgroundColor: colors.surface },
+  fill: { flex: 1 },
   content: {
     flex: 1,
     paddingHorizontal: spacing.xl,
@@ -173,9 +157,9 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
   scrollContent: { gap: spacing.base, paddingBottom: spacing.lg },
   iconWrap: { alignItems: 'center', marginTop: spacing.sm, marginBottom: spacing.xs },
   iconHalo: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: HERO_HALO_SIZE,
+    height: HERO_HALO_SIZE,
+    borderRadius: radius.full,
     backgroundColor: colors.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -199,33 +183,16 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
     gap: spacing.xs,
   },
   label: { ...typography.label, color: colors.textSecondary, textAlign: rtlTextAlignStart },
+  // The number field carries its own label, so the row lines the two boxes up at the bottom.
   streetRow: {
     flexDirection: 'row',
     gap: spacing.sm,
-    alignItems: 'flex-start',
+    alignItems: 'flex-end',
     width: '100%',
   },
   streetCol: { flex: 2, minWidth: 0 },
-  streetInputHouse: { flex: 1, minWidth: 0, maxWidth: 120, height: 50 },
-  input: {
-    height: 54,
-    backgroundColor: colors.background,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.base,
-    ...typography.bodyLarge,
-    color: colors.textPrimary,
-  },
-  cta: {
-    height: 56,
-    marginTop: spacing.sm,
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  ctaText: { ...typography.button, color: colors.textInverse, fontSize: 16 },
+  streetNumberCol: { flex: 1, minWidth: 0, maxWidth: 120 },
+  // Lets the narrow input shrink below the browser's default input width on web.
+  streetNumberInput: { minWidth: 0 },
+  ctaWrap: { marginTop: spacing.sm },
 }));

@@ -4,20 +4,21 @@
 // `/auth/reset-password`.
 // docs/SSOT/spec/01_auth_and_onboarding.md
 import React, { useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme, Text } from '@kc/ui';
+import { Text } from '@kc/ui';
 import { isAuthError } from '@kc/application';
 import { AUTH_RESET_PASSWORD_URL, getRequestPasswordResetUseCase } from '../../src/services/authComposition';
 import { mapAuthErrorToHebrew } from '../../src/services/authMessages';
 import { AnimatedAuthInput } from '../../src/components/auth/AnimatedAuthInput';
 import { usePasswordResetStyles } from '../../src/components/auth/passwordResetScreen.styles';
+import { AuthStatusScreen } from '../../src/components/auth/AuthStatusScreen';
+import { GhostButton, PrimaryButton } from '../../src/components/ui/Buttons';
 
 export default function ForgotPasswordScreen() {
   const styles = usePasswordResetStyles();
-  const { colors } = useTheme();
   const router = useRouter();
   const { t } = useTranslation();
   // Prefilled when opened from the sign-in screen.
@@ -48,15 +49,13 @@ export default function ForgotPasswordScreen() {
 
   if (sent) {
     return (
-      <SafeAreaView style={styles.screen}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.title}>{t('auth.forgotPasswordSentTitle')}</Text>
-          <Text style={styles.body}>{t('auth.forgotPasswordSentBody')}</Text>
-          <TouchableOpacity testID="forgot-password-back" style={styles.primaryBtn} onPress={backToSignIn}>
-            <Text style={styles.primaryBtnText}>{t('auth.backToSignInCta')}</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </SafeAreaView>
+      <AuthStatusScreen
+        title={t('auth.forgotPasswordSentTitle')}
+        body={t('auth.forgotPasswordSentBody')}
+        ctaLabel={t('auth.backToSignInCta')}
+        onCta={backToSignIn}
+        ctaTestID="forgot-password-back"
+      />
     );
   }
 
@@ -79,21 +78,15 @@ export default function ForgotPasswordScreen() {
             onSubmitEditing={onSubmit}
           />
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <TouchableOpacity
+          <PrimaryButton
             testID="forgot-password-submit"
-            style={[styles.primaryBtn, loading && styles.primaryBtnDisabled]}
+            label={t('auth.forgotPasswordSubmitCta')}
+            size="md"
+            fullWidth
+            loading={loading}
             onPress={onSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color={colors.textInverse} />
-            ) : (
-              <Text style={styles.primaryBtnText}>{t('auth.forgotPasswordSubmitCta')}</Text>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.linkBtn} onPress={backToSignIn} disabled={loading}>
-            <Text style={styles.linkBtnText}>{t('auth.backToSignInCta')}</Text>
-          </TouchableOpacity>
+          />
+          <GhostButton label={t('auth.backToSignInCta')} size="md" fullWidth disabled={loading} onPress={backToSignIn} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

@@ -9,6 +9,7 @@ import { marketplaceAvailabilityLabels, marketplaceFieldLabels, marketplaceListi
 import { worldLaunch } from './donations.worldLaunch';
 import { marketplaceMyListings } from './donations.myListings';
 import { worldsHub } from './donations.worldsHub';
+import { worldFeed } from './donations.worldFeed';
 export { moneyPayments } from './donations.moneyPayments';
 export { timeVolunteer } from './donations.timeVolunteer';
 
@@ -22,6 +23,7 @@ export const donations = {
   hubCategoriesSectionTitle: 'More donation categories',
   worldLaunch,
   worldsHub,
+  worldFeed,
   items: { title: 'Items', subtitle: 'Donate and request items' },
   time: { title: 'Time', subtitle: 'Volunteering and free time' },
   money: { title: 'Money', subtitle: 'Monetary donation' },
@@ -238,7 +240,6 @@ export const search = {
 export const marketplace = {
   ...marketplaceMap,
   allWorlds: 'All worlds',
-  createListing: 'Create listing',
   loading: 'Loading…',
   empty: 'No listings match your filters.',
   clusterLabel: '{{count}} listings',

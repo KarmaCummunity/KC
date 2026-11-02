@@ -58,7 +58,7 @@ Rules for every function:
 
 ### 5. Generated types and contract checks
 
-- `app/packages/infrastructure-supabase/src/database.types.ts` is generated, never hand-edited: `supabase gen types typescript --local > …` after applying your migration locally. CI fails on drift ("apply migrations · rls · types · sql probes").
+- `app/packages/infrastructure-supabase/src/database.types.ts` is generated, never hand-edited: `supabase gen types typescript --local | node scripts/strip-partition-types.mjs > …` (drops monthly partition child tables, whose names follow the current month) after applying your migration locally. CI fails on drift ("apply migrations · rls · types · sql probes").
 - `scripts/check-rpc-contract.mjs` (CI "rpc · table contract") fails when the adapter calls an RPC or table that no migration defines.
 - Adapters type rows from `Database['public']['Functions'][name]['Returns']` / `Tables[name]['Row']`, not hand-written shapes.
 

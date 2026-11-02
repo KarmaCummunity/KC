@@ -4,18 +4,16 @@
 // AuthGate in `app/_layout.tsx` whitelists this route so unauth users can reach it.
 // docs/SSOT/spec/01_auth_and_onboarding.md
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, TouchableOpacity, View } from 'react-native';
+import { Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { isAuthError } from '@kc/application';
 import { exchangeOAuthCode } from '../../src/services/authComposition';
 import { useAuthStore } from '../../src/store/authStore';
 import { mapAuthErrorToHebrew } from '../../src/services/authMessages';
+import { AuthProgressScreen, AuthStatusScreen } from '../../src/components/auth/AuthStatusScreen';
 
 export default function AuthCallbackScreen() {
-  const styles = useStyles();
-  const { colors } = useTheme();
   const router = useRouter();
   const { t } = useTranslation();
   const params = useLocalSearchParams<{
@@ -77,41 +75,13 @@ export default function AuthCallbackScreen() {
 
   if (error) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.title}>{t('auth.callbackFailedTitle')}</Text>
-        <Text style={styles.body}>{error}</Text>
-        <TouchableOpacity style={styles.btn} onPress={() => router.replace('/(auth)')}>
-          <Text style={styles.btnText}>{t('auth.backToSignInCta')}</Text>
-        </TouchableOpacity>
-      </View>
+      <AuthStatusScreen
+        title={t('auth.callbackFailedTitle')}
+        body={error}
+        ctaLabel={t('auth.backToSignInCta')}
+        onCta={() => router.replace('/(auth)')}
+      />
     );
   }
-
-  return (
-    <View style={styles.center}>
-      <ActivityIndicator size="large" color={colors.primary} />
-      <Text style={styles.body}>{t('auth.callbackCompleting')}</Text>
-    </View>
-  );
+  return <AuthProgressScreen message={t('auth.callbackCompleting')} />;
 }
-
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.xl,
-    gap: spacing.md,
-  },
-  title: { ...typography.h2, color: colors.textPrimary, textAlign: 'center' },
-  body: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
-  btn: {
-    marginTop: spacing.lg,
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: 12,
-  },
-  btnText: { ...typography.button, color: colors.textInverse },
-}));

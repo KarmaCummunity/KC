@@ -4,7 +4,7 @@ import { View, ActivityIndicator, Platform, type ViewStyle } from 'react-native'
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, typography, spacing, radius, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, iconSize, useTheme, Text } from '@kc/ui';
 import { isLayoutRtl } from '../../src/lib/rtlLayout';
 
 /**
@@ -13,8 +13,8 @@ import { isLayoutRtl } from '../../src/lib/rtlLayout';
  * positioning, so on web we resolve RTL live and emit a physical key.
  */
 function cameraBadgeCornerEnd(): Pick<ViewStyle, 'left' | 'right' | 'end'> {
-  if (Platform.OS !== 'web') return { end: 12 };
-  return isLayoutRtl() ? { left: 12 } : { right: 12 };
+  if (Platform.OS !== 'web') return { end: spacing.md };
+  return isLayoutRtl() ? { left: spacing.md } : { right: spacing.md };
 }
 import { AvatarInitials } from '../../src/components/AvatarInitials';
 import { OnboardingStepHeader } from '../../src/components/OnboardingStepHeader';
@@ -24,6 +24,7 @@ import { HeroHalo } from '../../src/components/animations/HeroHalo';
 import { PressableScale } from '../../src/components/animations/PressableScale';
 import { staggerDelay } from '../../src/lib/animations/motion';
 import { useOnboardingPhotoFlow } from '../../src/hooks/useOnboardingPhotoFlow';
+import { PrimaryButton, SecondaryButton } from '../../src/components/ui/Buttons';
 
 const HALO_SIZE = 196;
 const AVATAR_SIZE = 128;
@@ -75,7 +76,7 @@ export default function OnboardingPhotoScreen() {
               />
             </HeroHalo>
             <View style={styles.cameraBadge}>
-              <Ionicons name="camera" size={18} color={colors.textInverse} />
+              <Ionicons name="camera" size={iconSize.md} color={colors.textInverse} />
             </View>
             {uploading && (
               <View style={styles.avatarSpinner}>
@@ -94,41 +95,26 @@ export default function OnboardingPhotoScreen() {
         </AnimatedEntry>
 
         <AnimatedEntry delay={staggerDelay(3)} style={styles.changeBtnWrap}>
-          <PressableScale
-            style={[styles.changeBtn, busy && { opacity: 0.5 }]}
-            onPress={openSheet}
+          <SecondaryButton
+            label={hasAvatar ? t('onboarding.photoReplaceCta') : t('onboarding.photoChooseCta')}
+            icon={hasAvatar ? 'swap-horizontal-outline' : 'image-outline'}
+            size="md"
             disabled={busy}
-          >
-            <Ionicons
-              name={hasAvatar ? 'swap-horizontal-outline' : 'image-outline'}
-              size={18}
-              color={colors.primary}
-            />
-            <Text style={styles.changeBtnText}>
-              {hasAvatar ? t('onboarding.photoReplaceCta') : t('onboarding.photoChooseCta')}
-            </Text>
-          </PressableScale>
+            onPress={openSheet}
+          />
         </AnimatedEntry>
 
-        <View style={{ flex: 1 }} />
+        <View style={styles.spacer} />
 
         <AnimatedEntry delay={staggerDelay(4)}>
-          <PressableScale
-            style={[styles.cta, busy && { opacity: 0.7 }]}
-            onPress={finalize}
+          <PrimaryButton
+            label={hasAvatar ? t('onboarding.photoContinueWithCta') : t('onboarding.photoContinueWithoutCta')}
+            icon="arrow-back"
+            fullWidth
+            loading={finalizing}
             disabled={busy}
-          >
-            {finalizing ? (
-              <ActivityIndicator color={colors.textInverse} />
-            ) : (
-              <>
-                <Text style={styles.ctaText}>
-                  {hasAvatar ? t('onboarding.photoContinueWithCta') : t('onboarding.photoContinueWithoutCta')}
-                </Text>
-                <Ionicons name="arrow-back" size={20} color={colors.textInverse} />
-              </>
-            )}
-          </PressableScale>
+            onPress={finalize}
+          />
         </AnimatedEntry>
 
         <AnimatedEntry delay={staggerDelay(5)}>
@@ -147,7 +133,7 @@ export default function OnboardingPhotoScreen() {
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   container: { flex: 1, backgroundColor: colors.surface },
   content: {
     flex: 1,
@@ -159,9 +145,9 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
   avatarWrap: { alignItems: 'center', marginTop: spacing.base, marginBottom: spacing.xs },
   cameraBadge: {
     position: 'absolute',
-    bottom: 12,
+    bottom: spacing.md,
     ...cameraBadgeCornerEnd(),
-    width: 36, height: 36, borderRadius: 18,
+    width: 36, height: 36, borderRadius: radius.full,
     backgroundColor: colors.primary,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 3, borderColor: colors.surface,
@@ -170,7 +156,7 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
     position: 'absolute',
     width: AVATAR_SIZE, height: AVATAR_SIZE,
     borderRadius: AVATAR_SIZE / 2,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center', alignItems: 'center',
   },
   title: {
@@ -185,27 +171,7 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
     paddingHorizontal: spacing.sm,
   },
   changeBtnWrap: { alignItems: 'center' },
-  changeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.full,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-  },
-  changeBtnText: { ...typography.button, color: colors.primary },
-  cta: {
-    height: 56,
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  ctaText: { ...typography.button, color: colors.textInverse, fontSize: 16 },
+  spacer: { flex: 1 },
   hint: {
     ...typography.caption,
     color: colors.textDisabled,

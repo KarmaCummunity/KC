@@ -15,22 +15,12 @@
 
 import { appendFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { parseLookback, resolveNewestGreenDevSha } from './resolve-green-dev-sha.mjs';
+
+export { parseLookback, pickGreenSha } from './resolve-green-dev-sha.mjs';
 
 /** Prefix of the per-build traceability tags; a tagged commit has shipped. */
 export const SHIPPED_TAG_PREFIX = 'mobile/v';
-
-/** Parse LOOKBACK; one API page holds at most 100 commits, so larger values are refused. */
-export function parseLookback(raw) {
-  const n = Number(raw ?? 30);
-  if (!Number.isInteger(n) || n < 1 || n > 100) throw new Error(`LOOKBACK must be an integer from 1 to 100 (got "${raw}")`);
-  return n;
-}
-
-/** Return the first SHA in `commitShas` (newest first) that has a green CI push run. */
-export function pickGreenSha(commitShas, greenShas) {
-  const green = new Set(greenShas);
-  return commitShas.find((sha) => green.has(sha)) ?? null;
-}
 
 /** Map commit SHA → shipped tag names, from a git/matching-refs API response. */
 export function shippedTags(refs) {
@@ -92,13 +82,7 @@ async function main() {
   const branch = env.BRANCH || 'dev';
   const lookback = parseLookback(env.LOOKBACK);
 
-  const commits = await api(`/repos/${repo}/commits?sha=${branch}&per_page=${lookback}`);
-  // `status=success` filters on the run conclusion; 100 runs cover the lookback window.
-  const runs = await api(`/repos/${repo}/actions/workflows/ci.yml/runs?branch=${branch}&event=push&status=success&per_page=100`);
-  const greenSha = pickGreenSha(
-    commits.map((c) => c.sha),
-    runs.workflow_runs.map((r) => r.head_sha),
-  );
+  const greenSha = await resolveNewestGreenDevSha(api, { repo, branch, lookback });
   if (!greenSha) {
     console.log(`::error::No commit among the last ${lookback} on ${branch} has a successful CI push run.`);
     process.exit(1);

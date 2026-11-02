@@ -5,12 +5,12 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, typography, spacing, radius, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, iconSize, useTheme, Text } from '@kc/ui';
 import { AnimatedEntry } from '../../src/components/animations/AnimatedEntry';
 import { HeroHalo } from '../../src/components/animations/HeroHalo';
 import { OnboardingStepHeader } from '../../src/components/OnboardingStepHeader';
-import { PressableScale } from '../../src/components/animations/PressableScale';
 import { staggerDelay } from '../../src/lib/animations/motion';
+import { PrimaryButton } from '../../src/components/ui/Buttons';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -70,7 +70,7 @@ export default function OnboardingAboutIntroScreen() {
           {PILLARS.map((p) => (
             <View key={p.key} style={styles.pillar}>
               <View style={styles.pillarIcon}>
-                <Ionicons name={p.icon} size={22} color={colors.primary} />
+                <Ionicons name={p.icon} size={iconSize.xl} color={colors.primary} />
               </View>
               <Text style={styles.pillarLabel}>{t(`onboarding.${p.key}`)}</Text>
             </View>
@@ -79,25 +79,15 @@ export default function OnboardingAboutIntroScreen() {
       </ScrollView>
 
       <AnimatedEntry delay={staggerDelay(5)} style={styles.footer}>
-        <PressableScale
-          style={styles.cta}
-          onPress={goBasicInfo}
-          accessibilityRole="button"
-          accessibilityLabel={t('onboarding.aboutIntroCta')}
-        >
-          <Text style={styles.ctaText}>{t('onboarding.aboutIntroCta')}</Text>
-          <Ionicons name="arrow-back" size={20} color={colors.textInverse} />
-        </PressableScale>
+        <PrimaryButton label={t('onboarding.aboutIntroCta')} icon="arrow-back" fullWidth onPress={goBasicInfo} />
       </AnimatedEntry>
-
-
     </SafeAreaView>
   );
 }
 
 const LOGO_SIZE = 148;
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   container: { flex: 1, backgroundColor: colors.surface },
   headerPad: { paddingHorizontal: spacing.xl, paddingTop: spacing.base },
   scroll: { flex: 1 },
@@ -122,11 +112,9 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
     marginTop: spacing.sm,
   },
   tagline: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...typography.h3,
     color: colors.primaryDark,
     textAlign: 'center',
-    lineHeight: 26,
   },
   body: {
     ...typography.bodyLarge,
@@ -150,26 +138,16 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
   pillarIcon: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radius.full,
     backgroundColor: colors.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   pillarLabel: {
     ...typography.caption,
+    ...typography.semiBold,
     color: colors.textPrimary,
     textAlign: 'center',
-    fontWeight: '600',
   },
   footer: { paddingHorizontal: spacing.xl, paddingBottom: spacing.base },
-  cta: {
-    height: 56,
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  ctaText: { ...typography.button, color: colors.textInverse, fontSize: 16 },
 }));

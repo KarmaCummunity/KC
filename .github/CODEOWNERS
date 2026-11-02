@@ -34,6 +34,7 @@
 /scripts/*-guard*                           @navesarussi
 /scripts/mobile-*                           @navesarussi
 /scripts/release-version.mjs                @navesarussi
+/scripts/resolve-green-dev-sha.mjs           @navesarussi
 /scripts/edge-functions.mjs                 @navesarussi
 /scripts/cloudflare-pages.mjs               @navesarussi
 /scripts/extract-hebrew-text.mjs            @navesarussi
@@ -44,6 +45,21 @@
 /app/scripts/check-*                        @navesarussi
 /app/scripts/web-version.mjs                @navesarussi
 /app/perf-budgets.json                      @navesarussi
+
+# Scripts that workflows run with write credentials or that decide a lane's
+# result. spec-ids.mjs and bump-app-version.mjs run in the post-merge job that
+# pushes to `dev` as the ruleset's bypass actor; the DB harness decides the
+# backend lane. scripts/check-codeowners-coverage.mjs fails CI when a script a
+# workflow runs is missing here.
+/scripts/spec-ids.mjs                       @navesarussi
+/scripts/bump-app-version.mjs               @navesarussi
+/scripts/close-linked-issues.mjs            @navesarussi
+/scripts/run-db-tests.sh                    @navesarussi
+/scripts/db-explain-dev.sh                  @navesarussi
+/scripts/strip-partition-types.mjs          @navesarussi
+/scripts/maestro-*                          @navesarussi
+/scripts/ops/                               @navesarussi
+/supabase/tests/_harness/                   @navesarussi
 
 # Quality thresholds: coverage and test selection (vitest / vite configs and
 # workspaces, Deno task and test config for Edge Functions, Playwright
@@ -88,4 +104,5 @@ playwright.config.*                         @navesarussi
 # Deleting a test or removing assertions is caught by the test-integrity guard
 # (scripts/check-test-integrity.mjs) instead.
 /scripts/*.test.mjs
+/scripts/ops/*.test.mjs
 /app/scripts/*.test.mjs

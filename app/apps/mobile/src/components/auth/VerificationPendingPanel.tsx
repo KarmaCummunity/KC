@@ -1,9 +1,9 @@
 // FR-AUTH-006 — verification-pending state shown inside sign-up and sign-in screens.
 // Renders email-icon header, three actions: open mail, resend (60s cooldown), change email.
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { isAuthError } from '@kc/application';
 import { mapAuthErrorToHebrew } from '../../services/authMessages';
 import {
@@ -11,6 +11,7 @@ import {
   getResendVerificationEmailUseCase,
 } from '../../services/authComposition';
 import { openMail } from '../../lib/openMail';
+import { GhostButton, PrimaryButton, SecondaryButton } from '../ui/Buttons';
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
@@ -21,7 +22,6 @@ export interface VerificationPendingPanelProps {
 
 export function VerificationPendingPanel(props: VerificationPendingPanelProps) {
   const styles = useStyles();
-  const { colors } = useTheme();
   const { t } = useTranslation();
   const { email, onChangeEmail } = props;
   const [cooldown, setCooldown] = useState(0);
@@ -83,62 +83,31 @@ export function VerificationPendingPanel(props: VerificationPendingPanelProps) {
         {t('auth.verifyBodyBefore')}<Text style={styles.bodyBold}>{email}</Text>{t('auth.verifyBodyAfter')}
       </Text>
 
-      <TouchableOpacity style={styles.primaryBtn} onPress={onOpenMail}>
-        <Text style={styles.primaryBtnText}>{t('auth.openMail')}</Text>
-      </TouchableOpacity>
+      <PrimaryButton label={t('auth.openMail')} size="md" fullWidth onPress={onOpenMail} />
 
-      <TouchableOpacity
-        style={[styles.secondaryBtn, (cooldown > 0 || resending) && styles.btnDisabled]}
+      <SecondaryButton
+        label={cooldown > 0 ? t('auth.resendWithCountdown', { count: cooldown }) : t('auth.resendOtp')}
+        size="md"
+        fullWidth
+        loading={resending}
+        disabled={cooldown > 0}
         onPress={onResend}
-        disabled={cooldown > 0 || resending}
-      >
-        {resending ? (
-          <ActivityIndicator color={colors.primary} />
-        ) : (
-          <Text style={styles.secondaryBtnText}>
-            {cooldown > 0 ? t('auth.resendWithCountdown', { count: cooldown }) : t('auth.resendOtp')}
-          </Text>
-        )}
-      </TouchableOpacity>
+      />
 
       {resendOk ? <Text style={styles.helperOk}>{t('auth.resendOk')}</Text> : null}
       {resendError ? <Text style={styles.helperErr}>{resendError}</Text> : null}
 
-      <TouchableOpacity style={styles.tertiaryBtn} onPress={onChangeEmail}>
-        <Text style={styles.tertiaryBtnText}>{t('auth.changeEmail')}</Text>
-      </TouchableOpacity>
+      <GhostButton label={t('auth.changeEmail')} size="md" fullWidth onPress={onChangeEmail} />
     </View>
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   container: { gap: spacing.base, paddingTop: spacing.lg },
-  icon: { fontSize: 48, textAlign: 'center' },
+  icon: { fontSize: 48, textAlign: 'center' }, // brand-guard-allow: hero emoji glyph, off the type scale
   title: { ...typography.h2, color: colors.textPrimary, textAlign: 'center' },
   body: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
-  bodyBold: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
-  primaryBtn: {
-    height: 52,
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  primaryBtnText: { ...typography.button, color: colors.textInverse },
-  secondaryBtn: {
-    height: 52,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  secondaryBtnText: { ...typography.button, color: colors.primary },
-  btnDisabled: { opacity: 0.5 },
+  bodyBold: { ...typography.body, ...typography.bold, color: colors.textPrimary },
   helperOk: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' },
   helperErr: { ...typography.caption, color: colors.error, textAlign: 'center' },
-  tertiaryBtn: { alignItems: 'center', paddingVertical: spacing.sm },
-  tertiaryBtnText: { ...typography.body, color: colors.primary },
 }));

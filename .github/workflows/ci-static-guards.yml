@@ -141,3 +141,6 @@ jobs:
       - name: Deploys only through deploy.yml
         if: ${{ !cancelled() }}
         run: node scripts/check-deploy-isolation.mjs
+
+      - name: Workflow-run scripts are code-owned
+        run: node scripts/check-codeowners-coverage.mjs

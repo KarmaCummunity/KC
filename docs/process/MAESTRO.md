@@ -19,6 +19,8 @@ Tracking issue: KC#1235. Workflow: [`ci-maestro-android.yml`](../../.github/work
 | `10-settings-notifications` | notification preferences open | FR-NOTIF-014, FR-SETTINGS-005 |
 | `11-matches` | "Matches for you" opens by deep link | `MATCHING_V2` |
 | `12-donations-hub` | donations hub shows the worlds entry | FR-DONATE-001 |
+| `13-create-form-categories` | every create category opens in both directions | FR-POST-001 AC6 |
+| `14-world-feed` | food world: request / offer, search and direction filter; "request" opens the food request form | FR-FEED-020 AC2 |
 
 `.maestro/subflows/` holds the shared steps (`sign-in`, `open-email-sign-in`, `dismiss-gates`); `config.yaml` runs only `flows/`.
 

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 // KC#1102 / KC#1111 — the hub's refine chips: items/food show their world subcategories (tap picks,
-// "all" clears), other worlds show none, and the distance row reports the chosen radius.
+// "all" clears), other worlds show none, and the distance row reports the chosen radius. The
+// chips are kit filter chips (spec 17 §4.1), announced with their checked state.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { cleanup, fireEvent, render } from '@testing-library/react';
@@ -9,6 +10,7 @@ import { ThemeProvider } from '@kc/ui';
 
 const listWorldSubcategories = vi.fn();
 
+vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
 vi.mock('../../../services/marketplaceComposition', () => ({
   marketplaceRepository: () => ({ listWorldSubcategories }),
@@ -49,7 +51,9 @@ describe('BrowseRefineChips', () => {
     ]);
     const { findByTestId, getByTestId, onCategoryChange } = renderChips('items', 'c-toys');
 
-    fireEvent.click(await findByTestId('browse-refine-subcategory-books'));
+    expect((await findByTestId('browse-refine-subcategory-toys')).getAttribute('aria-checked')).toBe('true');
+    expect(getByTestId('browse-refine-subcategory-books').getAttribute('aria-checked')).toBe('false');
+    fireEvent.click(getByTestId('browse-refine-subcategory-books'));
     expect(onCategoryChange).toHaveBeenLastCalledWith('c-books');
     fireEvent.click(getByTestId('browse-refine-subcategory-all'));
     expect(onCategoryChange).toHaveBeenLastCalledWith(null);
@@ -67,6 +71,7 @@ describe('BrowseRefineChips', () => {
 
   it('reports the chosen distance', () => {
     const { getByTestId, onRadiusChange } = renderChips(null);
+    expect(getByTestId(`browse-refine-radius-${DEFAULT_BROWSE_RADIUS_KM}`).getAttribute('aria-checked')).toBe('true');
     fireEvent.click(getByTestId('browse-refine-radius-10'));
     expect(onRadiusChange).toHaveBeenCalledWith(10);
   });

@@ -1,5 +1,6 @@
 import { WorldMarketplaceHub } from '../../../../src/components/giving/WorldMarketplaceHub';
 import { WorldLaunchGateBySlug } from '../../../../src/components/worlds/WorldLaunchGate';
+import { worldSubScreens } from '../../../../src/components/giving/worldSubScreens';
 
 export default function KnowledgeHubScreen() {
   return (
@@ -9,7 +10,7 @@ export default function KnowledgeHubScreen() {
         icon="school-outline"
         introKey="donations.knowledge.hubBody"
         linksCategory="knowledge"
-        handoffsPath="/(tabs)/donations/knowledge/handoffs"
+        subScreens={worldSubScreens('/(tabs)/donations/knowledge/handoffs')}
       />
     </WorldLaunchGateBySlug>
   );

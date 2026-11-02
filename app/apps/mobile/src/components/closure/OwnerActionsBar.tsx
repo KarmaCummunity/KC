@@ -6,10 +6,10 @@
 //   deleted_no_recipient (past grace) → no CTA (post is on its way out)
 //   removed_admin / expired           → no CTA
 import { useEffect, useState } from 'react';
-import { View, Pressable, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, spacing, useTheme } from '@kc/ui';
 import type { Post } from '@kc/domain';
 import { isPostError, type PostErrorCode } from '@kc/application';
 import { useClosureStore } from '../../store/closureStore';
@@ -22,6 +22,7 @@ import { ClosureExplainerSheet } from './ClosureExplainerSheet';
 import { ReopenConfirmModal } from './ReopenConfirmModal';
 import { hapticSuccess } from '../../lib/haptics';
 import { trackSocialHandoverCompleted } from '../../lib/trackSocialHandoverCompleted';
+import { PrimaryButton, SecondaryButton } from '../ui/Buttons';
 
 interface Props {
   post: Post;
@@ -112,26 +113,23 @@ export function OwnerActionsBar(props: Readonly<Props>) {
     <>
       <View style={[styles.bar, { paddingBottom: spacing.base + tabBarOverlayInset }]}>
         {isOpen ? (
-          <Pressable
-            style={[styles.btnPrimary, (closureBusy || closureStep !== 'idle') && styles.btnDisabled]}
+          <PrimaryButton
+            label={markCtaText}
+            fullWidth
             disabled={closureBusy || closureStep !== 'idle'}
             onPress={() => startClosure(post.postId, ownerId, post.type, { initiator: 'post-detail' })}
-            accessibilityLabel={markCtaText}
-          >
-            <Text style={styles.btnPrimaryText}>{markCtaText}</Text>
-          </Pressable>
+          />
         ) : (
-          <Pressable
-            style={[styles.btnSecondary, (isReopening || reopenOpen) && styles.btnDisabled]}
+          <SecondaryButton
+            label={t('closure.itemNotDeliveredCta')}
+            accessibilityLabel={t('closure.itemNotDeliveredA11y')}
+            fullWidth
             disabled={isReopening || reopenOpen}
             onPress={() => {
               setReopenError(null);
               setReopenOpen(true);
             }}
-            accessibilityLabel={t('closure.itemNotDeliveredA11y')}
-          >
-            <Text style={styles.btnSecondaryText}>{t('closure.itemNotDeliveredCta')}</Text>
-          </Pressable>
+          />
         )}
       </View>
 
@@ -162,7 +160,7 @@ export function OwnerActionsBar(props: Readonly<Props>) {
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   bar: {
     paddingHorizontal: spacing.base,
     paddingTop: spacing.md,
@@ -170,30 +168,6 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  btnPrimary: {
-    height: 56,
-    backgroundColor: colors.primary,
-    borderRadius: radius.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: isDark ? 0.15 : 0.22,
-    shadowRadius: 10,
-    elevation: isDark ? 2 : 4,
-  },
-  btnSecondary: {
-    height: 56,
-    backgroundColor: isDark ? colors.surfaceRaised : colors.background,
-    borderRadius: radius.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  btnPrimaryText: { ...typography.button, color: colors.textInverse, fontSize: 16 },
-  btnSecondaryText: { ...typography.button, color: colors.textPrimary, fontSize: 16 },
-  btnDisabled: { opacity: 0.5 },
   busyOverlay: {
     position: 'absolute',
     bottom: 80,

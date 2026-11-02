@@ -2,8 +2,10 @@
 # then `eas submit`. Uploads to TestFlight only; never submits for App Store review.
 #
 # Callers: the nightly pipeline (mobile-nightly.yml, `workflow_call` with the
-# green SHA) and manual dispatch on dev. The commit built must have a successful
-# `CI` push run on dev (D-195 "Mobile nightly"). Tester builds use the eas.json
+# green SHA) and manual dispatch on dev. Manual dispatch resolves the newest dev
+# commit with a successful CI push run (scripts/mobile-store-target.mjs), or
+# accepts an optional `ref` input validated the same way. The commit built must
+# have a successful `CI` push run on dev (D-195 "Mobile nightly"). Tester builds use the eas.json
 # `nightly` profile and the kc-dev Supabase backend; store builds from main
 # (prod backend) are not wired yet, and scripts/mobile-store-config.mjs refuses them.
 #
@@ -28,6 +30,11 @@ on:
         description: CFBundleVersion of the uploaded build
         value: ${{ jobs.testflight.outputs.build_number }}
   workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit SHA to build (must have a successful CI push run on dev); default resolves the newest green dev commit
+        type: string
+        required: false
 
 permissions:
   contents: read
@@ -59,32 +66,31 @@ jobs:
       run:
         working-directory: app/apps/mobile
     steps:
+      # Sparse checkout only under .store-target so the full build checkout
+      # below never inherits sparse state (pnpm/action-setup needs app/package.json).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .store-target
+          sparse-checkout: |
+            .nvmrc
+            scripts/resolve-green-dev-sha.mjs
+            scripts/mobile-store-target.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .store-target/.nvmrc
       - name: Verify the commit passed CI on dev
         id: target
-        working-directory: .
         env:
-          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
           INPUT_REF: ${{ inputs.ref }}
           EVENT_NAME: ${{ github.event_name }}
-        run: |
-          set -euo pipefail
-          # A dispatch builds the dispatched ref's head; a nightly call passes its green SHA.
-          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$GITHUB_REF" != "refs/heads/dev" ]; then
-            echo "::error::Manual TestFlight runs are allowed only on dev (got $GITHUB_REF)."
-            exit 1
-          fi
-          sha="${INPUT_REF:-$GITHUB_SHA}"
-          # Branches with a green push run for this commit; main wins so that
-          # mobile-store-config.mjs refuses it (prod store builds are not wired).
-          branches="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$sha&event=push&status=success" \
-            --jq '[.workflow_runs[].head_branch | select(. == "dev" or . == "main")] | unique | join(" ")')"
-          case " $branches " in
-            *" main "*) branch=main ;;
-            *" dev "*) branch=dev ;;
-            *) echo "::error::$sha has no successful CI push run on dev; refusing to build it."; exit 1 ;;
-          esac
-          echo "sha=$sha" >> "$GITHUB_OUTPUT"
-          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          GITHUB_REF: ${{ github.ref }}
+          LOOKBACK: '30'
+        working-directory: .
+        run: node .store-target/scripts/mobile-store-target.mjs
 
       - name: Preflight secrets (fail closed)
         working-directory: .
