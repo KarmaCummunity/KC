@@ -67,7 +67,7 @@ Usage rules for app code (`app/apps/mobile/**`):
 4. No `fontFamily` literals outside `packages/ui`. Text renders through `Text` / `TextInput` from `@kc/ui` (ESLint blocks importing them from `react-native`); they pick the brand face from `fontWeight`, so **changing the brand font is a change to `theme/fonts.ts` + the loader map only**. If the faces fail to load, `BrandFontProvider` falls back to the system font with its real weights.
 5. Corner radii come from `radius.*` — no raw `borderRadius: <number>` (`0` is allowed).
 6. Margin, padding and gap come from `spacing.*` (`0` is allowed). Layout sizes (widths, heights, rail and content widths) are not spacing; shell sizes live in `shellDimensions`.
-7. Use logical sides so layouts mirror between Hebrew (RTL) and English (LTR): `Start` / `End` properties and the `lib/rtlLayout.ts` helpers — never `textAlign: 'left' | 'right'`, `marginLeft`, `paddingRight`, `borderLeft*` or `borderTopLeftRadius`.
+7. Use logical sides so layouts mirror between Hebrew (RTL) and English (LTR): `Start` / `End` properties and the `lib/rtlLayout.ts` helpers (`rtlTextAlignStart` / `rtlTextAlignEnd`, `rowDirectionStart`, `layoutWritingDirectionStyle()`; `rtlTextAlignStart.ts` and `webRtlStyle.ts` only re-export from it) — never `textAlign: 'left' | 'right'` (as a style key or a `TextInput` prop), `marginLeft`, `paddingRight`, `borderLeft*` or `borderTopLeftRadius`.
 8. Icon sizes come from `iconSize.*` — no numeric `size={N}` on `Ionicons` (§4.2).
 9. Stacking order comes from `zIndex.*` — no raw `zIndex: <number>` (`0` is allowed).
 10. Shadows come from the `shadow.*` presets — no raw `shadowOpacity`, `shadowRadius`, `shadowOffset` or `elevation` numbers (`0`, which switches a shadow off, is allowed).

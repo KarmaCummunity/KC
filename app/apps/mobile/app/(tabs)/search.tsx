@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useShallow } from 'zustand/react/shallow';
 import { useTheme, Text, TextInput, iconSize } from '@kc/ui';
+import { rtlTextAlignStart } from '../../src/lib/rtlLayout';
 import type { SearchResultType, SearchSortBy } from '@kc/domain';
 import { useTranslation } from 'react-i18next';
 
@@ -156,7 +157,7 @@ export default function SearchScreen() {
             onSubmitEditing={handleSubmit}
             placeholder={t('search.placeholder')}
             placeholderTextColor={colors.textDisabled}
-            textAlign="right"
+            textAlign={rtlTextAlignStart}
             returnKeyType="search"
             autoCorrect={false}
           />
