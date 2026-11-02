@@ -46,6 +46,7 @@ jobs:
       - name: Resolve kc-dev environment (public anon key + seed password)
         env:
           DEV_WEB_URL: ${{ vars.DEV_WEB_URL }}
+          E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
         run: |
           set -euo pipefail
           node scripts/maestro-dev-env.mjs > "$RUNNER_TEMP/kc-dev.env"

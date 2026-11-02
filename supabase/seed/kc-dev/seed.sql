@@ -1,6 +1,7 @@
 -- KC dev fake data (Hebrew). DEV ONLY. All accounts use @seed.kc.test.
 -- Wipe with supabase/seed/kc-dev/wipe.sql. Idempotent: wipes previous seed first.
--- Test login: any seed user email, password SeedKC-2026 (fake, dev-only).
+-- Test login: any seed user email; the password is the E2E_SEED_PASSWORD secret,
+-- passed in by the Seed KC dev workflow as the kc.seed_password setting.
 begin;
 select setseed(0.4242);
 
@@ -8,6 +9,9 @@ select setseed(0.4242);
 do $$ begin
   if coalesce(current_setting('kc.seed_target', true), '') <> 'dev' then
     raise exception 'refusing to seed: set kc.seed_target=dev';
+  end if;
+  if coalesce(current_setting('kc.seed_password', true), '') = '' then
+    raise exception 'refusing to seed: set kc.seed_password (E2E_SEED_PASSWORD secret)';
   end if;
 end $$;
 
@@ -32,7 +36,7 @@ from generate_series(1,200) g;
 
 insert into auth.users (instance_id,id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at,confirmation_token,recovery_token,email_change_token_new,email_change)
 select '00000000-0000-0000-0000-000000000000', id, 'authenticated','authenticated',
-  'user'||i||'@seed.kc.test', crypt('SeedKC-2026', gen_salt('bf')), now(),
+  'user'||i||'@seed.kc.test', crypt(current_setting('kc.seed_password'), gen_salt('bf')), now(),
   jsonb_build_object('provider','email','providers',array['email'],'seed',true),
   jsonb_build_object('full_name', fn||' '||ln, 'seed', true),
   now() - (random()*200||' days')::interval, now(), '', '', '', ''
