@@ -23,4 +23,12 @@ describe('donationsHubTiles', () => {
     expect(tiles.find((t) => t.tile.key === 'food')?.mode).toBe('active');
     expect(tiles.find((t) => t.tile.key === 'transport')?.mode).toBe('portal');
   });
+
+  it('opens each giving world of the create form on its own world screen (FR-FEED-020 AC2)', () => {
+    const href = (key: string) => DONATIONS_HUB_TILES.find((t) => t.key === key)?.href;
+    expect(href('food')).toBe('/(tabs)/donations/food');
+    expect(href('housing')).toBe('/(tabs)/donations/housing');
+    expect(href('time')).toBe('/(tabs)/donations/time');
+    expect(href('transport')).toBe('/(tabs)/donations/rides');
+  });
 });
