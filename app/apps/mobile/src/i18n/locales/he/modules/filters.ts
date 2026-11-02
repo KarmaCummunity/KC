@@ -3,13 +3,15 @@
 // Extracted to a dedicated module per TD-156 incremental migration.
 export const filtersHe = {
   header: 'סינון ומיון',
-  clearAll: 'נקה הכל',
+  clearAll: 'איפוס הכל',
   apply: 'החל',
   searchPlaceholder: 'חיפוש בכותרת, תיאור או קטגוריה…',
-  searchClearA11y: 'נקה חיפוש',
+  searchClearA11y: 'איפוס חיפוש',
 
   // Section titles
   sectionType: 'סוג פוסט',
+  sectionWorld: 'עולם נתינה',
+  sectionSubcategory: 'תת-קטגוריה',
   sectionCategory: 'קטגוריה',
   sectionCondition: 'מצב המוצר',
   sectionStatus: 'סטטוס פוסט',

@@ -35,6 +35,8 @@ describe('useFilterStore — defaults', () => {
   it('starts with all defaults (no filters active)', () => {
     const s = useFilterStore.getState();
     expect(s.type).toBeNull();
+    expect(s.worlds).toEqual([]);
+    expect(s.subcategories).toEqual([]);
     expect(s.categories).toEqual([]);
     expect(s.itemConditions).toEqual([]);
     expect(s.locationFilter).toBeNull();
@@ -56,6 +58,13 @@ describe('useFilterStore — setters', () => {
     useFilterStore.getState().setType('Give');
     expect(useFilterStore.getState().type).toBe('Give');
     expect(useFilterStore.getState().categories).toEqual([]); // untouched
+  });
+
+  it('setWorlds and setSubcategories update array fields', () => {
+    useFilterStore.getState().setWorlds(['items', 'food']);
+    expect(useFilterStore.getState().worlds).toEqual(['items', 'food']);
+    useFilterStore.getState().setSubcategories(['books', 'toys']);
+    expect(useFilterStore.getState().subcategories).toEqual(['books', 'toys']);
   });
 
   it('setCategories replaces the array (not appends)', () => {
@@ -179,9 +188,18 @@ describe('useFilterStore — activeCount() per dimension', () => {
     expect(useFilterStore.getState().activeCount()).toBe(1);
   });
 
-  it('all dimensions stack additively up to 9', () => {
+  it('counts worlds and subcategories as active filters', () => {
+    useFilterStore.getState().setWorlds(['items']);
+    expect(useFilterStore.getState().activeCount()).toBe(1);
+    useFilterStore.getState().setSubcategories(['books']);
+    expect(useFilterStore.getState().activeCount()).toBe(2);
+  });
+
+  it('all dimensions stack additively up to 11', () => {
     const s = useFilterStore.getState();
     s.setType('Request');
+    s.setWorlds(['items']);
+    s.setSubcategories(['books']);
     s.setCategories(['Books']);
     s.setItemConditions(['Good']);
     s.setLocationFilter(TLV_FILTER);
@@ -190,6 +208,49 @@ describe('useFilterStore — activeCount() per dimension', () => {
     s.setProximitySortCity('IL-001', 'Tel Aviv');
     s.setFollowersOnly(true);
     s.setSearchQuery('בקשה');
-    expect(useFilterStore.getState().activeCount()).toBe(9);
+    expect(useFilterStore.getState().activeCount()).toBe(11);
+  });
+});
+
+describe('useFilterStore — persisted state migration (v4 -> v5)', () => {
+  it('safely migrates old v4 state by dropping categories and initializing worlds and subcategories', () => {
+    const migrate = (
+      useFilterStore as unknown as {
+        persist: {
+          getOptions: () => {
+            migrate?: (persisted: unknown, version: number) => unknown;
+          };
+        };
+      }
+    ).persist.getOptions().migrate;
+    const oldV4State = {
+      type: 'Give',
+      categories: ['Electronics', 'Books'],
+      itemConditions: ['New'],
+      locationFilter: TLV_FILTER,
+      statusFilter: 'closed',
+      sortOrder: 'distance',
+      proximitySortCity: 'IL-001',
+      proximitySortCityName: 'Tel Aviv',
+      followersOnly: true,
+      searchQuery: 'laptop',
+    };
+
+    expect(migrate).toBeDefined();
+    const migrated = migrate!(oldV4State, 4);
+    expect(migrated).toMatchObject({
+      type: 'Give',
+      worlds: [],
+      subcategories: [],
+      categories: [],
+      itemConditions: ['New'],
+      locationFilter: TLV_FILTER,
+      statusFilter: 'closed',
+      sortOrder: 'distance',
+      proximitySortCity: 'IL-001',
+      proximitySortCityName: 'Tel Aviv',
+      followersOnly: true,
+      searchQuery: 'laptop',
+    });
   });
 });

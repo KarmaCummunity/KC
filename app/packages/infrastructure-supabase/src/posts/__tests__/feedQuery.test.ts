@@ -139,6 +139,32 @@ describe('buildFeedQuery — optional filters', () => {
     buildFeedQuery(client, { itemConditions: ['Good', 'LikeNew'] }, undefined, 10);
     expect(ops.find((o) => o.kind === 'in' && o.col === 'item_condition')).toEqual({ kind: 'in', col: 'item_condition', vals: ['Good', 'LikeNew'] });
   });
+
+  it('emits in(listing_world_slug, ...) when worlds is non-empty and does not include items', () => {
+    const { client, ops } = makeFakeClient();
+    buildFeedQuery(client, { worlds: ['food', 'rides'] }, undefined, 10);
+    expect(ops.find((o) => o.kind === 'in' && o.col === 'listing_world_slug')).toEqual({
+      kind: 'in',
+      col: 'listing_world_slug',
+      vals: ['food', 'rides'],
+    });
+  });
+
+  it('emits or(listing_world_slug.in..., listing_world_slug.is.null) when worlds includes items', () => {
+    const { client, ops } = makeFakeClient();
+    buildFeedQuery(client, { worlds: ['items', 'food'] }, undefined, 10);
+    expect(ops.find((o) => o.kind === 'or' && o.expr.includes('listing_world_slug.is.null'))).toEqual({
+      kind: 'or',
+      expr: 'listing_world_slug.in.(items,food),listing_world_slug.is.null',
+    });
+  });
+
+  it('skips worlds filter for an empty worlds array', () => {
+    const { client, ops } = makeFakeClient();
+    buildFeedQuery(client, { worlds: [] }, undefined, 10);
+    expect(ops.find((o) => o.kind === 'in' && o.col === 'listing_world_slug')).toBeUndefined();
+    expect(ops.find((o) => o.kind === 'or' && o.expr.includes('listing_world_slug'))).toBeUndefined();
+  });
 });
 
 describe('buildFeedQuery — sort order + cursor', () => {
