@@ -32,8 +32,10 @@ export default function MarketplaceListingDetailScreen() {
     );
   }
 
+  // testID: feed mirrors of listings redirect here (D-206), so this is the same
+  // "the loaded post opened" E2E anchor as PostDetailScreen (Maestro flow 06).
   return (
-    <Screen>
+    <Screen testID="post-detail-screen">
       <MarketplaceListingDetailView detail={detail} bottomInset={inset} />
     </Screen>
   );
