@@ -10,4 +10,4 @@ Read it before doing any work. This file exists only so Cursor's `alwaysApply: t
 
 ## Issue claims
 
-Before starting any issue, follow [`docs/agents/ISSUE_CLAIMS.md`](../../docs/agents/ISSUE_CLAIMS.md): skip `in-progress` issues, claim with `in-progress` + `agent:cursor`.
+Before starting any issue, follow [`docs/agents/ISSUE_CLAIMS.md`](../../docs/agents/ISSUE_CLAIMS.md): skip `in-progress` issues, claim with `in-progress` + `agent:cursor`. Open every PR with the `agent:cursor` label (`gh pr create --label agent:cursor`) and `Opened by: agent:cursor` in the body.
