@@ -55,9 +55,6 @@
     "src/i18n/locales/he/modules/follow.ts": {
       "genderedImperative": 1
     },
-    "src/i18n/locales/he/modules/legal.ts": {
-      "genderedImperative": 4
-    },
     "src/i18n/locales/he/modules/onboarding.ts": {
       "genderedImperative": 13,
       "genderedAddress": 3

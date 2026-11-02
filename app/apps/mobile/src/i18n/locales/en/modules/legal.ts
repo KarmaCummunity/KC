@@ -14,6 +14,7 @@ export const legalEn = {
   cardOpenFull: 'Open and read in full',
   checkboxTerms: 'I have read and accept the Terms of Use',
   checkboxPrivacy: 'I have read and accept the Privacy Policy',
+  checkboxAge18: 'I confirm I am 18 or older',
   signupContinue: 'Continue',
   exitLink: 'You can come back later — exit',
   exitConfirmTitle: 'Sign out?',
