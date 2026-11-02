@@ -29,7 +29,7 @@ export function MarketplaceForYouSection() {
             key={item.listingId}
             item={item}
             variant="tile"
-            onPress={() => router.push(`/(tabs)/donations/marketplace/${item.listingId}`)}
+            onPress={() => router.push(`/listing/${item.listingId}`)}
           />
         ))}
       </ScrollView>

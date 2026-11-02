@@ -103,7 +103,7 @@ export function CaseTargetCard({ targetType, targetId, target }: CaseTargetCardP
           </Pressable>
         ) : null}
         <View style={styles.primaryBtn}>
-          <PrimaryButton testID="case-target-open-listing" label={t.openListing} size="sm" onPress={() => router.push(`/(tabs)/donations/marketplace/${targetId}`)} />
+          <PrimaryButton testID="case-target-open-listing" label={t.openListing} size="sm" onPress={() => router.push(`/listing/${targetId}`)} />
         </View>
       </View>
     );

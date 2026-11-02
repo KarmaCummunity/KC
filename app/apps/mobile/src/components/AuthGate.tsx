@@ -31,7 +31,7 @@ import { PrimaryButton } from './ui/Buttons';
 export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) {
   const { colors } = useTheme();
   const router = useRouter();
-  const segments = useSegments();
+  const segments: string[] = useSegments();
   const queryClient = useQueryClient();
   const pathname = usePathname();
   const capturePendingPath = useRedirectIntentStore((s) => s.capturePath);
