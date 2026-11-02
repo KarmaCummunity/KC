@@ -105,7 +105,13 @@ export function TabBar({ bottomInset = 0 }: Readonly<{ bottomInset?: number }> =
       {TABS.map((tab) => {
         const isActive = active === tab.key;
         const label = t(tab.labelI18nKey);
-        const onPress = () => router.push(tab.route);
+        const onPress = () => {
+          // The bar is also shown over root-level screens (post/[id], chat, ...).
+          // Pushing a tab route from there leaves that screen underneath, so the
+          // iOS swipe-back later jumps to it. Pop back to the tabs first.
+          if (segments[0] !== '(tabs)' && router.canDismiss()) router.dismissAll();
+          router.push(tab.route);
+        };
         if (tab.isComposer) {
           return (
             <PlusBtn key={tab.key} active={isActive} onPress={onPress} label={label} testID={`tab-${tab.key}`} />

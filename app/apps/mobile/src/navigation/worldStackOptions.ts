@@ -2,6 +2,7 @@
 // header-less stack with fade, plus a detail header with the icon-only back button.
 import { useTheme } from '@kc/ui';
 import { nativeStackHeaderLeftIconOnly } from './nativeHeaderIconOnly';
+import { nestedStackGestureOptions } from './nestedStackGestureOptions';
 
 export function useWorldStackOptions() {
   const { colors } = useTheme();
@@ -21,8 +22,7 @@ export function useWorldStackOptions() {
       minWidth: '100%',
       alignSelf: 'stretch',
     },
-    animation: 'fade',
-    animationDuration: 220,
+    ...nestedStackGestureOptions,
   } as const;
   return { detailHeader, screenOptions };
 }
