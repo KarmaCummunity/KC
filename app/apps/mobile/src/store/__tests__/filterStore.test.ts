@@ -253,4 +253,20 @@ describe('useFilterStore — persisted state migration (v4 -> v5)', () => {
       searchQuery: 'laptop',
     });
   });
+  it('falls back to defaults when the persisted state is not an object', () => {
+    const migrate = (
+      useFilterStore as unknown as {
+        persist: { getOptions: () => { migrate?: (persisted: unknown, version: number) => unknown } };
+      }
+    ).persist.getOptions().migrate;
+    expect(migrate!(null, 4)).toMatchObject({ worlds: [], subcategories: [], statusFilter: 'open' });
+    expect(migrate!({}, 4)).toMatchObject({
+      type: null, worlds: [], subcategories: [], itemConditions: [], locationFilter: null,
+      statusFilter: 'open', sortOrder: 'newest', proximitySortCity: null,
+      proximitySortCityName: null, followersOnly: false, searchQuery: '',
+    });
+    expect(migrate!({ worlds: ['food'], subcategories: ['bakery'] }, 5)).toMatchObject({
+      worlds: ['food'], subcategories: ['bakery'],
+    });
+  });
 });
