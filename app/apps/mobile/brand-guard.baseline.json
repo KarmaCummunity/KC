@@ -145,9 +145,6 @@
       "iconSizeLiteral": 4,
       "unmirroredDirectionalIcon": 2
     },
-    "app/settings/translation-language.tsx": {
-      "radiusLiteral": 1
-    },
     "app/settings/whatsapp.tsx": {
       "radiusLiteral": 2
     },
