@@ -6,6 +6,7 @@ import { View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, Text } from '@kc/ui';
+import type { DonationCategorySlug } from '@kc/domain';
 import { IconTile } from '../ui/IconTile';
 import { GhostButton, PrimaryButton, SecondaryButton } from '../ui/Buttons';
 import { DonationLinksList } from '../DonationLinksList';
@@ -39,7 +40,7 @@ export interface WorldHubHeaderProps {
   readonly icon: 'car-outline' | 'school-outline' | 'gift-outline' | 'restaurant-outline' | 'home-outline' | 'time-outline';
   readonly introKey: string;
   /** Curated external links under the header (donation links category). */
-  readonly linksCategory?: 'transport' | 'knowledge';
+  readonly linksCategory?: DonationCategorySlug;
   /** The world's own screens, in display order. */
   readonly subScreens?: readonly WorldSubScreenLink[];
   /** Extra header content under the links (e.g. the rides route search). */

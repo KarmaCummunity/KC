@@ -39,6 +39,7 @@ export default function DonationsLayout() {
       <Stack.Screen name="time" options={{ headerShown: false }} />
       <Stack.Screen name="items" options={{ headerShown: false }} />
       <Stack.Screen name="food" options={{ headerShown: false }} />
+      <Stack.Screen name="housing" options={{ headerShown: false }} />
       <Stack.Screen name="category/[slug]" options={{ ...detailHeader, headerTitle: '' }} />
       <Stack.Screen name="domain/[slug]" options={{ ...detailHeader, headerTitle: '' }} />
       <Stack.Screen name="experiences" options={{ ...detailHeader, headerTitle: '' }} />

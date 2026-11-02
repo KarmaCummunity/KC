@@ -83,7 +83,7 @@ begin
 end $$;
 
 -- 3) Housing and time listings, both directions, reach the feed with their world, even
---    though their launch flags are off (flags pick active vs portal, D60; they never hide
+--    with their launch flags off (flags pick active vs portal, D60; they never hide
 --    listings from the main feed). Published publicly, every member sees them.
 do $$
 declare
@@ -93,9 +93,8 @@ declare
   v_mirror public.posts;
 begin
   select * into p from personas;
-  perform kc_test.assert_true(
-    not (select enabled from public.app_flags where key = 'world_time_enabled'),
-    'precondition: the time world launch flag is off');
+  -- Both worlds as portals inside this rolled-back block, whatever the current configuration.
+  update public.app_flags set enabled = false where key in ('world_housing_enabled', 'world_time_enabled');
 
   for r in
     select * from (values
