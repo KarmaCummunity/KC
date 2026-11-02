@@ -99,14 +99,6 @@ export class SupabaseUserRepository implements IUserRepository {
     if (error) throw new Error(`setBiography: ${error.message}`);
   }
 
-  async setPreferredLanguage(userId: string, languageTag: string | null): Promise<void> {
-    const { error } = await this.client
-      .from('users')
-      .update({ preferred_language: languageTag })
-      .eq('user_id', userId);
-    if (error) throw new Error(`setPreferredLanguage: ${error.message}`);
-  }
-
   async setPrivacyMode(userId: string, mode: import('@kc/domain').PrivacyMode): Promise<User> {
     const { data, error } = await this.client
       .from('users')
