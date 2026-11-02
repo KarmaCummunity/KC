@@ -64,6 +64,7 @@ A single screen exposes all available authentication methods. The set of methods
 - AC3. The screen offers a single Terms-of-Service consent checkbox required for sign-up; sign-in does not require re-consent.
 - AC4. Selecting a method that is unavailable due to a misconfiguration (e.g. Google client not initialized) surfaces a non-blocking error toast and the screen remains usable for the other methods.
 - AC5. On successful authentication completion (Google / Apple / email-password), the user is routed to the legal consent gate **before** the authenticated shell renders and before the onboarding soft gate is evaluated. The gate is satisfied either by an existing `user_legal_acceptances` row clearing `needs_legal_reacknowledgement` for the current user, or by completing the post-OAuth consent screen (`FR-SETTINGS-010` AC4). Sign-out from the consent screen returns the user to the welcome screen with the auth session terminated.
+- AC5.a. **Minimum age 18 at launch (#1450).** In sign-up mode the consent screen also shows a required "I confirm I am 18 or older" checkbox (copy in locale files, `legal.checkboxAge18`); Continue stays disabled until it and every pending document are checked. Update mode (re-consent to new document versions) does not ask again. A later stage will allow ages 13–17 with parental consent.
 
 **Edge Cases.**
 - A user who already linked one method cannot link a second one in MVP (`FR-AUTH-009`).

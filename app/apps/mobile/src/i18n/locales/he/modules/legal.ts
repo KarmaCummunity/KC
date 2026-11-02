@@ -14,6 +14,7 @@ export const legalHe = {
   cardOpenFull: 'פתח וקרא במלואו',
   checkboxTerms: 'קראתי ואני מאשר/ת את תנאי השימוש',
   checkboxPrivacy: 'קראתי ואני מאשר/ת את מדיניות הפרטיות',
+  checkboxAge18: 'אני מאשר/ת שמלאו לי 18 שנים',
   signupContinue: 'המשך',
   exitLink: 'אפשר לחזור בהמשך — יציאה',
   exitConfirmTitle: 'להתנתק?',

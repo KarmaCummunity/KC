@@ -7,6 +7,8 @@ import type { LegalPendingItem } from '@kc/domain';
 import { typography, spacing, useTheme, Text } from '@kc/ui';
 import { LegalDocumentReader } from './LegalDocumentReader';
 import { LegalConsentCard } from './LegalConsentCard';
+import { AgeConfirmationCheckbox } from './AgeConfirmationCheckbox';
+import { canSubmitLegalConsent } from './legalConsentRules';
 import { getAcceptLegalDocumentUseCase } from '../../services/legalComposition';
 import { performFullSignOut } from '../../services/performFullSignOut';
 import { useAuthStore } from '../../store/authStore';
@@ -29,11 +31,15 @@ export function LegalConsentScreen({ mode, pending, onResolved }: LegalConsentSc
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [accepted, setAccepted] = useState<Record<string, boolean>>({});
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   const [readerOpenFor, setReaderOpenFor] = useState<LegalPendingItem | null>(null);
 
-  const allChecked = useMemo(() => pending.every((p) => accepted[p.docType]), [pending, accepted]);
+  const allChecked = useMemo(
+    () => canSubmitLegalConsent({ mode, pending, accepted, ageConfirmed }),
+    [mode, pending, accepted, ageConfirmed],
+  );
 
   const onSubmit = async () => {
     if (submitting || !allChecked) return;
@@ -110,6 +116,10 @@ export function LegalConsentScreen({ mode, pending, onResolved }: LegalConsentSc
             onOpenReader={() => setReaderOpenFor(p)}
           />
         ))}
+
+        {mode === 'signup' ? (
+          <AgeConfirmationCheckbox checked={ageConfirmed} onToggle={setAgeConfirmed} />
+        ) : null}
 
         <Pressable
           onPress={onSubmit}
