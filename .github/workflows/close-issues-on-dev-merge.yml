@@ -10,7 +10,12 @@ name: Close issues on dev merge
 # The daily sweep is a backstop for merges done with GITHUB_TOKEN, which do not
 # trigger workflows.
 
+# pull_request_target and schedule only run from the default branch (main), so
+# they never fired before the first release (TD-240). `push` to dev runs the
+# workflow file from dev itself and sweeps the PRs merged in the last day.
 on:
+  push:
+    branches: [dev]
   pull_request_target:
     branches: [dev]
     types: [closed]
@@ -52,7 +57,9 @@ jobs:
           SINCE_DAYS: ${{ inputs.since_days || '3' }}
           DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
         run: |
-          if [ "$EVENT_NAME" = pull_request_target ]; then
+          if [ "$EVENT_NAME" = push ]; then
+            node scripts/close-linked-issues.mjs --since-days 1
+          elif [ "$EVENT_NAME" = pull_request_target ]; then
             node scripts/close-linked-issues.mjs --event
           elif [ "$DRY_RUN" = true ]; then
             node scripts/close-linked-issues.mjs --since-days "$SINCE_DAYS" --dry-run

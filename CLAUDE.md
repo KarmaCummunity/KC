@@ -203,6 +203,8 @@ When you spot tech debt outside the immediate scope:
 
 Before starting an issue: skip it if it has `in-progress` or an open PR references it. Otherwise claim it (`in-progress` + your `agent:cursor|codex|antigravity|kc-bot` label, comment `claimed by <agent>`). Release on abandon; merge releases automatically. Claims older than 6 hours with no open PR are stale. Full rule: [`docs/agents/ISSUE_CLAIMS.md`](docs/agents/ISSUE_CLAIMS.md).
 
+Every PR you open gets exactly one opened-by label (`agent:cursor|kc-bot|antigravity|codex|other` or `human`) and the matching `Opened by:` line in the PR body; `pr-opened-by.yml` checks it.
+
 > Repo: `KarmaCummunity/KC` · Default branch: `main` · Merge strategy: **squash** · Auto-merge: **on** — `dev` merges through a merge queue once the single required check **`CI gate`** passes.
 > **Working branch: `dev`.** All PRs target `dev`. `main` is updated by a `dev` → `main` release PR (squash-merged). Full topology in [`docs/SSOT/ENVIRONMENTS.md`](docs/SSOT/ENVIRONMENTS.md).
 
