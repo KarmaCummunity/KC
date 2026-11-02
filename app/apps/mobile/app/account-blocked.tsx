@@ -8,6 +8,8 @@ import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
+
 const SUPPORT_EMAIL = 'karmacommunity2.0@gmail.com';
 
 function openSupportMail(t: TFunction) {

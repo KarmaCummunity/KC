@@ -15,6 +15,8 @@ import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { TextField } from '../../src/components/ui/TextField';
 import { PrimaryButton } from '../../src/components/ui/Buttons';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
+
 /** Side of the round halo behind the hero glyph, in points (a layout size). */
 const HERO_HALO_SIZE = 68;
 

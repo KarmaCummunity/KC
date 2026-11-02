@@ -1,4 +1,6 @@
 // Marketplace listing (items, food, rides, knowledge, ...) rendered with the shared KcCard.
+// It reads like the feed card of the same post (docs/spec/07 §7.4, #1412): the same direction
+// badge, the world chip, and the publisher's name and avatar; a ride adds its route and seats.
 import React from 'react';
 import type { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -6,6 +8,7 @@ import { format } from 'date-fns';
 import { he as dateFnsHe } from 'date-fns/locale';
 import type { MarketplaceBrowseRow } from '@kc/domain';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
+import { worldChipKey } from '../../lib/feedCardCategory';
 import { usePostGridCardWidth } from '../../hooks/useShellContentWidth';
 import { KcCard } from './KcCard';
 import { listingCardDetails, listingCardRoute } from './listingCardContent';
@@ -44,11 +47,6 @@ interface Props {
 
 const TILE_WIDTH = 200;
 
-function listingBadgeLabel(t: (k: string) => string, isRide: boolean, isRequest: boolean): string {
-  if (isRide) return t(isRequest ? 'cards.rideRequest' : 'cards.rideOffer');
-  return t(isRequest ? 'feed.requestTypeShort' : 'feed.giveTypeShort');
-}
-
 function ListingCardInner({ item, onPress, variant = 'grid', meta }: Readonly<Props>) {
   const { t } = useTranslation();
   const gridWidth = usePostGridCardWidth(2);
@@ -64,7 +62,9 @@ function ListingCardInner({ item, onPress, variant = 'grid', meta }: Readonly<Pr
     formatTime: formatRideTime,
   });
   const route = listingCardRoute(ride, t);
-  const badgeLabel = listingBadgeLabel(t, isRide, isRequest);
+  const author = item.publisher
+    ? { name: item.publisher.displayName ?? t('marketplace.anonymousOwner'), avatarUrl: item.publisher.avatarUrl }
+    : null;
   const distance = item.distanceKm != null ? t('matches.distanceKm', { km: item.distanceKm.toFixed(1) }) : null;
 
   return (
@@ -74,9 +74,10 @@ function ListingCardInner({ item, onPress, variant = 'grid', meta }: Readonly<Pr
       accessibilityLabel={title}
       placeholderIcon={listingWorldIcon(item.worldSlug)}
       tone={isRequest ? 'request' : 'give'}
-      badgeLabel={badgeLabel}
+      badgeLabel={t(isRequest ? 'feed.requestTypeShort' : 'feed.giveTypeShort')}
+      author={author}
       title={title}
-      chip={isRide ? null : t(`marketplace.world.${item.worldSlug}`, { defaultValue: item.worldSlug })}
+      chip={t(worldChipKey(item.worldSlug), { defaultValue: item.worldSlug })}
       route={route}
       details={details}
       location={distance}

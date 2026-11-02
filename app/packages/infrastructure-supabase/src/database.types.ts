@@ -10389,6 +10389,7 @@ export type Database = {
         Returns: Json
       }
       get_volunteer_shift_ics: { Args: { p_shift_id: string }; Returns: string }
+      giving_handoff_copy_key: { Args: { p_kind: string }; Returns: string }
       giving_handoff_no_show_sweep: { Args: never; Returns: number }
       has_admin_role:
         | { Args: { role_name: string; uid: string }; Returns: boolean }

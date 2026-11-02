@@ -9,6 +9,8 @@ import { OnboardingStepHeader } from '../../src/components/OnboardingStepHeader'
 import { TourSlidePager, type TourSlide } from '../../src/components/animations/TourSlidePager';
 import { PrimaryButton } from '../../src/components/ui/Buttons';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
+
 export default function OnboardingTourScreen() {
   const styles = useStyles();
   const router = useRouter();

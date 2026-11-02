@@ -13,6 +13,8 @@ import { useMyProfilePostOwner } from '../../../src/hooks/useProfilePostOwner';
 import { useScreenAside } from '../../../src/components/aside/useScreenAside';
 import { ProfileStatsAside } from '../../../src/components/aside/ProfileStatsAside';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+
 export default function MyProfileOpenScreen() {
   const tabBarPad = useShellTabBarScrollInset();
   const userId = useAuthStore((s) => s.session?.userId);

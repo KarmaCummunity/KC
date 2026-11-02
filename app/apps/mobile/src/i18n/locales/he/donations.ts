@@ -247,6 +247,12 @@ export const marketplace = {
   startChat: 'שליחת הודעה',
   shareFeed: 'שיתוף בפיד',
   actionFailed: 'הפעולה לא הושלמה. נסו שוב.',
+  actionErrors: {
+    signInRequired: 'צריך להתחבר כדי לשלוח הודעה.',
+    accountNotActive: 'החשבון שלך עדיין לא פעיל, ולכן אי אפשר לשלוח הודעה.',
+    listingUnavailable: 'המודעה כבר לא זמינה.',
+    ownListing: 'זו המודעה שלך.',
+  },
   chatOpener: 'היי — ראיתי את המודעה שלך בשוק.',
   fieldTitle: 'כותרת',
   fieldSummary: 'תקציר',

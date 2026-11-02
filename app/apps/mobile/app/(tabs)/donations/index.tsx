@@ -35,6 +35,8 @@ import {
   donationsHubTiles,
 } from '../../../src/navigation/donationsHubTiles';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+
 const useStyles = makeUseStyles(({ colors, isDark }) => ({
   scrollView: { flex: 1, width: '100%', alignSelf: 'stretch' as const },
   // `paddingBottom` is supplied dynamically by `useShellTabBarScrollInset()`

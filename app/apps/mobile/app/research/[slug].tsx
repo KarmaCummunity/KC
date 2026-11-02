@@ -5,3 +5,5 @@
 export default function ResearchSlugFallback(): null {
   return null;
 }
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';

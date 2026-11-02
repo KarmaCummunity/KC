@@ -247,6 +247,12 @@ export const marketplace = {
   startChat: 'Message publisher',
   shareFeed: 'Share to feed',
   actionFailed: 'That did not go through. Please try again.',
+  actionErrors: {
+    signInRequired: 'Sign in to send a message.',
+    accountNotActive: 'Your account is not active yet, so you cannot send messages.',
+    listingUnavailable: 'This listing is no longer available.',
+    ownListing: 'This is your own listing.',
+  },
   chatOpener: 'Hi — I saw your listing on the marketplace.',
   fieldTitle: 'Title',
   fieldSummary: 'Summary',

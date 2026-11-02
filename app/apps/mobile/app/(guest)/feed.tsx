@@ -18,6 +18,8 @@ import { useActivePostsCount } from '../../src/hooks/useActivePostsCount';
 import { useGuestFeedStyles } from '../../src/screens/guest/feed.styles';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
+
 export default function GuestPreviewFeedScreen() {
   const styles = useGuestFeedStyles();
   const { colors } = useTheme();
