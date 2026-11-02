@@ -2,6 +2,8 @@
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
+
 export default function HousingWorldLayout() {
   const { t } = useTranslation();
   return (
