@@ -9931,6 +9931,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      complete_ride_listing: { Args: { p_listing_id: string }; Returns: number }
       complete_ride_trip: {
         Args: { p_handoff_id: string }
         Returns: {
@@ -9960,10 +9961,6 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
-      }
-      complete_ride_listing: {
-        Args: { p_listing_id: string }
-        Returns: number
       }
       complete_sandbox_donation: {
         Args: { p_intent_id: string }
