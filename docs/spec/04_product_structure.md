@@ -1,9 +1,9 @@
-# 04 — Product structure: one list of giving worlds ({{D:one-world-list}})
+# 04 — Product structure: one list of giving worlds (D100)
 
 ## One layer
 - **Giving worlds** are the only structure. One list, shown in full in the Donations tab (D3, D60); no separate "domains" layer and no domain hubs. This supersedes the two-layer model of D45 / D62 and the domain fills S37–S39.
 - Each world has its own sub-screens, form, closing flow and functionality **on shared infrastructure** (D36). A world may define **sub-categories** (the "item subcategory" pattern of D18) that drive the create form, browse filters and matching.
-- **A post lives in one primary world and may be marked for additional worlds** ({{D:multi-world-post}}). It is stored once, so edit, pause and cancel apply to every feed. Each world's feed shows posts where that world is primary **or** additional. Examples: a recurring volunteering slot shows in time and employment; a private maths lesson shows in knowledge and time.
+- **A post lives in one primary world and may be marked for additional worlds** (D101). It is stored once, so edit, pause and cancel apply to every feed. Each world's feed shows posts where that world is primary **or** additional. Examples: a recurring volunteering slot shows in time and employment; a private maths lesson shows in knowledge and time.
 - The feed **is** the give-and-take marketplace between people and between people and organizations, filterable by world and by sub-category.
 - A world is either **active** (full in-app flow: form, matching, chat, closing) or a **portal** (links, knowledge and org blocks only). Launch flags switch a world between active and portal; they never hide it (D3, D60).
 - Religion is out; spirituality and philosophy are a knowledge sub-category (D45, kept). Emergency is a **mode**, not a world (D42).
@@ -67,4 +67,4 @@ Every world is a deep hub, not just a feed. One infrastructure; each world defin
 | 7. World challenges | Active challenges + start a new giving challenge here (D43, D46) |
 | + plug-in / emergency block | Unique need (D36) / active emergency (D42) |
 
-Tech: `{{G:one-world-registry}}` (spec → registry → data migration), `{{G:multi-world-post}}`; legacy rows G2, G24, G35.
+Tech: `G50` (spec → registry → data migration), `G51`; legacy rows G2, G24, G35.

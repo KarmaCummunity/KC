@@ -26,7 +26,7 @@ Security work is tracked privately and is not listed here (README rule).
 | # | Decision | Blocks |
 |---|---|---|
 | P1 | **Which group first: rides or items?** Name, size, admin contact | Everything in §4 |
-| P2 | ✅ {{D:launch-wedge-rides}} — launch worlds are items, rides and food (rides flag on since `0511`, time on since `0523`); other worlds are portals (D60) | Launch scope, rides migration |
+| P2 | ✅ D102 — launch worlds are items, rides and food (rides flag on since `0511`, time on since `0523`); other worlds are portals (D60) | Launch scope, rides migration |
 | P3 | **Import consent (D54, open):** may non-members' messages appear (anonymously, 72 h) or only consenting members'? | Chat-export import design |
 | P4 | ✅ D61 — Moderation thresholds (Q-2, D33) | Launch moderation behavior |
 | P5 | ✅ D59 — Expiry per type + relevance reminder (G32, D21) — confirm before items stop expiring | Feed quality after launch |

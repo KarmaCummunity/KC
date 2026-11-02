@@ -40,9 +40,9 @@ Gaps filled by context. **Status of every row: pending approval.** Use as the wo
 | S34 | Location & limits by type: offer = address at display level, request = city; 20 open posts total per private user, not orgs. | 07.2 |
 | S35 | Org data from Registrar open data (data.gov.il) with source and proper-management badge; do not scrape GuideStar. | 08 |
 | S36 | Professional 'consulting hour' post type in knowledge; 'event leftovers' block in food. | 05 |
-| S37 | ❌ Superseded by {{D:one-world-list}} — Former topic worlds → domains with domain hubs (medical, elderly, democracy, employment, animals, environment); D30 medical exceptions remain; 'rights' stays in knowledge. | 04 |
-| S38 | ❌ Superseded by {{D:one-world-list}} — Domain hub = light hub: domain-filtered feed across worlds, knowledge, orgs, resources, challenges, impact counter; no own forms — publish opens world form with domain preset. | 04 |
-| S39 | ❌ Superseded by {{D:one-world-list}} — Domain selection in form: auto-suggested from text & image, editable, exactly one required; no 'general', there is 'other'. | 07.2 |
+| S37 | ❌ Superseded by D100 — Former topic worlds → domains with domain hubs (medical, elderly, democracy, employment, animals, environment); D30 medical exceptions remain; 'rights' stays in knowledge. | 04 |
+| S38 | ❌ Superseded by D100 — Domain hub = light hub: domain-filtered feed across worlds, knowledge, orgs, resources, challenges, impact counter; no own forms — publish opens world form with domain preset. | 04 |
+| S39 | ❌ Superseded by D100 — Domain selection in form: auto-suggested from text & image, editable, exactly one required; no 'general', there is 'other'. | 07.2 |
 | S40 | Org levels 4–5 criteria: transparency from published reports & registrar data; effectiveness combines Midot rating & KC impact data. | 08 |
 | S41 | Private person / social venture registering as org: level 1 = ID + declared social goal + admin approval; marked 'private venture'. | 08 |
 | S42 | Official body: approved by main admin with defined permission for region, world and emergency level; every declaration logged. | 09 |

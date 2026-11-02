@@ -3,7 +3,7 @@
 Each section ends with a **Tech** line: decisions · legacy spec superseded/kept · code today · gap.
 
 ## 7.1 Post, statuses, expiry
-Everything published in KC is one `Post` (D2, D16, D19): one primary giving world plus optional additional worlds ({{D:one-world-list}}, {{D:multi-world-post}}), direction (offer/request), status, visibility, anonymity, location, likes & comments. Special types add an extension — ride, event (D31), housing stay (D30), job (D41). **Handoff is the closing stage, not a type** (D19). An imported WhatsApp post is a normal Post with source `imported` until claimed (S21).
+Everything published in KC is one `Post` (D2, D16, D19): one primary giving world plus optional additional worlds (D100, D101), direction (offer/request), status, visibility, anonymity, location, likes & comments. Special types add an extension — ride, event (D31), housing stay (D30), job (D41). **Handoff is the closing stage, not a type** (D19). An imported WhatsApp post is a normal Post with source `imported` until claimed (S21).
 
 Statuses: `open`, `closed_delivered`, `deleted_no_recipient`, `expired`, `removed_admin`, `hidden_pending_review` (D33).
 - **State machine (S1):** `open → (hidden_pending_review ↔ open) → closed_delivered | expired | deleted_no_recipient | removed_admin`; reopen from `closed_delivered` and `expired`, by owner only.
@@ -14,7 +14,7 @@ Statuses: `open`, `closed_delivered`, `deleted_no_recipient`, `expired`, `remove
 Tech: D2,D16,D19,D21,D30,D31,D33,D41 · FR-POST-012/013, R-Items-5 superseded by D21 · `posts` + `listings` with triggers; `ride_listings`; `giving_handoffs` · G1, G11
 
 ## 7.2 Form and procedure per post type
-One form creates a Post: giving world first, then the world's sub-category where it has one, then optional additional worlds ({{D:multi-world-post}}); no "general", there is "other"; offer/request toggle worded per world, then a type-specific form defined in world config (D6*, D28, D36). Anonymity chosen in the form (D16); affiliated volunteer posts on the org's behalf (D22); emergency templates appear during emergencies (D42). No form in money (D4). Common rules: title ≤ 80 chars, description ≤ 500, ≤ 5 images with EXIF stripped, local draft. Location: offer = address at chosen display level, request = city; max 20 open posts per private user, none for orgs (S34).
+One form creates a Post: giving world first, then the world's sub-category where it has one, then optional additional worlds (D101); no "general", there is "other"; offer/request toggle worded per world, then a type-specific form defined in world config (D6*, D28, D36). Anonymity chosen in the form (D16); affiliated volunteer posts on the org's behalf (D22); emergency templates appear during emergencies (D42). No form in money (D4). Common rules: title ≤ 80 chars, description ≤ 500, ≤ 5 images with EXIF stripped, local draft. Location: offer = address at chosen display level, request = city; max 20 open posts per private user, none for orgs (S34).
 
 | Post type | Photo | Location | Expiry | Unique fields |
 |---|---|---|---|---|

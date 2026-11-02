@@ -1,4 +1,4 @@
-# 06 — Domains (superseded by {{D:one-world-list}})
+# 06 — Domains (superseded by D100)
 
 The "domain" layer (D45: one internal tag per post, plus a light domain hub, S37–S39) was removed on 2026-11-01 by the PM's one-world-list decision. There is one list of giving worlds, and what used to be a domain is now either a world of its own or a sub-category of a world. The table below records where each former domain went so older references stay readable; the binding definitions live in [04](./04_product_structure.md) and [05](./05_giving_worlds.md).
 
