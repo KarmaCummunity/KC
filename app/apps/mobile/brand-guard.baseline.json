@@ -77,10 +77,6 @@
       "radiusLiteral": 1,
       "spacingLiteral": 1
     },
-    "app/(tabs)/index.tsx": {
-      "spacingLiteral": 1,
-      "iconSizeLiteral": 1
-    },
     "app/(tabs)/profile/hidden.tsx": {
       "radiusLiteral": 1,
       "iconSizeLiteral": 1
@@ -261,13 +257,6 @@
       "fontWeightLiteral": 1,
       "iconSizeLiteral": 1
     },
-    "src/components/FeedFilterIcon.tsx": {
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 1,
-      "spacingLiteral": 1,
-      "iconSizeLiteral": 1
-    },
     "src/components/NewPostsBanner.tsx": {
       "fontWeightLiteral": 1,
       "shadowLiteral": 4,
@@ -284,10 +273,6 @@
       "fontWeightLiteral": 5,
       "spacingLiteral": 13,
       "shadowLiteral": 4
-    },
-    "src/components/PostFilterSheet/SearchSection.tsx": {
-      "rawTextInput": 1,
-      "iconSizeLiteral": 2
     },
     "src/components/PostImageCarousel.tsx": {
       "colorLiteral": 2,

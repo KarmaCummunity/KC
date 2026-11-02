@@ -44,13 +44,22 @@ function normalizeFilter(raw: PostFeedFilter): PostFeedFilter {
   if (Array.isArray(out.categories) && out.categories.length === 0) {
     delete out.categories;
   }
+  if (Array.isArray(out.worlds) && out.worlds.length === 0) {
+    delete out.worlds;
+  }
+  if (Array.isArray(out.subcategories) && out.subcategories.length === 0) {
+    delete out.subcategories;
+  }
   if (Array.isArray(out.itemConditions) && out.itemConditions.length === 0) {
     delete out.itemConditions;
   }
 
-  // Item condition is only meaningful for Give posts.
-  if (out.itemConditions && out.type !== 'Give') {
-    delete out.itemConditions;
+  // Item condition is only meaningful for Give posts on items world (or when no world filter set).
+  if (out.itemConditions) {
+    const isItemsWorld = !out.worlds?.length || out.worlds.includes('items');
+    if (out.type !== 'Give' || !isItemsWorld) {
+      delete out.itemConditions;
+    }
   }
 
   // Drop blank explicit proximity city — let the adapter fall back to the

@@ -10,6 +10,8 @@ export const filtersEn = {
 
   // Section titles
   sectionType: 'Post type',
+  sectionWorld: 'Giving world',
+  sectionSubcategory: 'Subcategory',
   sectionCategory: 'Category',
   sectionCondition: 'Item condition',
   sectionStatus: 'Post status',

@@ -1,29 +1,39 @@
-import React from 'react';
-import { View } from 'react-native';
+// Mapped to spec: FR-FEED-004 (filter sheet sections: worlds, subcategories, type, condition, status, source)
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ALL_CATEGORIES,
-  type Category,
-  type FeedStatusFilter,
-  type ItemCondition,
-  type PostType,
+import type {
+  Category,
+  FeedStatusFilter,
+  ItemCondition,
+  PostType,
+  WorldSubcategory,
 } from '@kc/domain';
-import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
-import { Chip } from '../ui/Chip';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { GIVING_WORLD_SLUGS } from '@kc/domain';
+import { marketplaceRepository } from '../../services/marketplaceComposition';
+import { worldChipKey } from '../../lib/feedCardCategory';
+import { FilterSection } from '../filterKit/FilterSection';
 
-interface FiltersSectionProps {
-  type: PostType | null;
-  categories: Category[];
-  itemConditions: ItemCondition[];
-  statusFilter: FeedStatusFilter;
-  followersOnly: boolean;
-  onTypeChange: (t: PostType | null) => void;
-  onCategoriesChange: (c: Category[]) => void;
-  onItemConditionsChange: (i: ItemCondition[]) => void;
-  onStatusFilterChange: (s: FeedStatusFilter) => void;
-  onFollowersOnlyChange: (v: boolean) => void;
+export interface FiltersSectionProps {
+  readonly type: PostType | null;
+  readonly worlds?: readonly string[];
+  readonly world?: string | null;
+  readonly subcategories?: readonly string[];
+  readonly categories?: readonly Category[];
+  readonly itemConditions: readonly ItemCondition[];
+  readonly statusFilter: FeedStatusFilter;
+  readonly followersOnly: boolean;
+  readonly onTypeChange: (t: PostType | null) => void;
+  readonly onWorldsChange?: (w: string[]) => void;
+  readonly onWorldChange?: (w: string | null) => void;
+  readonly onSubcategoriesChange?: (s: string[]) => void;
+  readonly onCategoriesChange?: (c: Category[]) => void;
+  readonly onItemConditionsChange: (i: ItemCondition[]) => void;
+  readonly onStatusFilterChange: (s: FeedStatusFilter) => void;
+  readonly onFollowersOnlyChange: (v: boolean) => void;
 }
+
+/** The canonical giving worlds (D45); domains such as medical or democracy are tags, not worlds. */
+export const FEED_FILTER_WORLD_SLUGS = GIVING_WORLD_SLUGS;
 
 const ITEM_CONDITION_KEYS: Record<ItemCondition, string> = {
   New: 'filters.conditionNew',
@@ -39,119 +49,142 @@ const STATUS_KEYS: Record<FeedStatusFilter, string> = {
   closed: 'filters.statusClosedOnly',
 };
 
-const ITEM_CONDITIONS: ItemCondition[] = ['New', 'LikeNew', 'Good', 'Fair', 'Damaged'];
+const ITEM_CONDITIONS: readonly ItemCondition[] = ['New', 'LikeNew', 'Good', 'Fair', 'Damaged'];
 
-function toggleInArray<T>(arr: T[], value: T): T[] {
-  return arr.includes(value) ? arr.filter((x) => x !== value) : [...arr, value];
-}
+export function FiltersSection(props: FiltersSectionProps) {
+  const { t, i18n } = useTranslation();
+  const hebrew = i18n?.language?.startsWith('he') ?? false;
 
-export function FiltersSection({
-  type,
-  categories,
-  itemConditions,
-  statusFilter,
-  followersOnly,
-  onTypeChange,
-  onCategoriesChange,
-  onItemConditionsChange,
-  onStatusFilterChange,
-  onFollowersOnlyChange,
-}: FiltersSectionProps) {
-  const { t } = useTranslation();
-  const styles = useFiltersSectionStyles();
+  const selectedWorld = props.world !== undefined ? props.world : (props.worlds?.[0] ?? null);
+  const selectedSubcategories = props.subcategories ?? [];
+
+  const [subcategoriesList, setSubcategoriesList] = useState<WorldSubcategory[]>([]);
+
+  useEffect(() => {
+    if (!selectedWorld) {
+      setSubcategoriesList([]);
+      return;
+    }
+    let active = true;
+    void marketplaceRepository()
+      .listWorldSubcategories(selectedWorld)
+      .then((rows) => {
+        if (active) setSubcategoriesList(rows ?? []);
+      })
+      .catch(() => {
+        if (active) setSubcategoriesList([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedWorld]);
+
+  const handleWorldChange = (nextWorld: string | null) => {
+    if (nextWorld !== selectedWorld) {
+      props.onWorldChange?.(nextWorld);
+      props.onWorldsChange?.(nextWorld ? [nextWorld] : []);
+      props.onSubcategoriesChange?.([]);
+    }
+  };
+
+  const showCondition =
+    props.type === 'Give' && (selectedWorld === null || selectedWorld === 'items');
+
+  const worldOptions = FEED_FILTER_WORLD_SLUGS.map((slug) => ({
+    value: slug,
+    label: t(worldChipKey(slug), { defaultValue: slug }),
+    testID: `world-chip-${slug}`,
+  }));
+
+  const subcategoryOptions = subcategoriesList.map((s) => ({
+    value: s.slug,
+    label: hebrew ? s.labelHe : (s.labelEn ?? s.labelHe),
+    testID: `subcategory-chip-${s.slug}`,
+  }));
+
+  const typeOptions = [
+    { value: 'Give' as const, label: t('filters.typeGive') },
+    { value: 'Request' as const, label: t('filters.typeRequest') },
+  ];
+
+  const conditionOptions = ITEM_CONDITIONS.map((cond) => ({
+    value: cond,
+    label: t(ITEM_CONDITION_KEYS[cond]),
+    testID: `condition-chip-${cond}`,
+  }));
+
+  const statusOptions = (['all', 'open', 'closed'] as const).map((s) => ({
+    value: s,
+    label: t(STATUS_KEYS[s]),
+    testID: `status-chip-${s}`,
+  }));
+
+  const sourceOptions = [
+    { value: 'all' as const, label: t('filters.all'), testID: 'source-chip-all' },
+    {
+      value: 'followers' as const,
+      label: t('filters.followersOnly'),
+      testID: 'source-chip-followers',
+    },
+  ];
+
   return (
     <>
-      <View style={styles.section}>
-        <Text style={styles.title}>{t('filters.sectionType')}</Text>
-        <View style={styles.row}>
-          <Chip size="sm" label={t('filters.all')} selected={type === null} onPress={() => onTypeChange(null)} />
-          <Chip size="sm" label={t('filters.typeGive')} selected={type === 'Give'} onPress={() => onTypeChange('Give')} />
-          <Chip size="sm" label={t('filters.typeRequest')} selected={type === 'Request'} onPress={() => onTypeChange('Request')} />
-        </View>
-      </View>
+      <FilterSection
+        title={t('filters.sectionType')}
+        options={typeOptions}
+        value={props.type}
+        onChange={props.onTypeChange}
+        testID="filters-type"
+      />
 
-      <View style={styles.section}>
-        <Text style={styles.title}>{t('filters.sectionCategory')}</Text>
-        <View style={styles.row}>
-          <Chip
-            size="sm"
-            label={t('filters.all')}
-            selected={categories.length === 0}
-            onPress={() => onCategoriesChange([])}
-          />
-          {ALL_CATEGORIES.map((c) => (
-            <Chip
-              size="sm"
-              key={c}
-              label={t(`post.category.${c}`)}
-              selected={categories.includes(c)}
-              onPress={() => onCategoriesChange(toggleInArray(categories, c))}
-            />
-          ))}
-        </View>
-      </View>
+      <FilterSection
+        title={t('filters.sectionWorld', { defaultValue: t('filters.sectionCategory') })}
+        options={worldOptions}
+        value={selectedWorld}
+        onChange={handleWorldChange}
+        testID="filters-worlds"
+      />
 
-      {type === 'Give' && (
-        <View style={styles.section}>
-          <Text style={styles.title}>{t('filters.sectionCondition')}</Text>
-          <View style={styles.row}>
-            <Chip
-              size="sm"
-              label={t('filters.all')}
-              selected={itemConditions.length === 0}
-              onPress={() => onItemConditionsChange([])}
-            />
-            {ITEM_CONDITIONS.map((i) => (
-              <Chip
-                size="sm"
-                key={i}
-                label={t(ITEM_CONDITION_KEYS[i])}
-                selected={itemConditions.includes(i)}
-                onPress={() => onItemConditionsChange(toggleInArray(itemConditions, i))}
-              />
-            ))}
-          </View>
-        </View>
-      )}
+      {selectedWorld && subcategoriesList.length > 0 ? (
+        <FilterSection<string>
+          title={t('filters.sectionSubcategory')}
+          multiSelect
+          options={subcategoryOptions}
+          value={selectedSubcategories}
+          onChange={(subs) => props.onSubcategoriesChange?.(subs)}
+          testID="filters-subcategories"
+        />
+      ) : null}
 
-      <View style={styles.section}>
-        <Text style={styles.title}>{t('filters.sectionStatus')}</Text>
-        <View style={styles.row}>
-          {(['all', 'open', 'closed'] as FeedStatusFilter[]).map((s) => (
-            <Chip
-              size="sm"
-              key={s}
-              label={t(STATUS_KEYS[s])}
-              selected={statusFilter === s}
-              onPress={() => onStatusFilterChange(s)}
-            />
-          ))}
-        </View>
-      </View>
+      {showCondition ? (
+        <FilterSection
+          title={t('filters.sectionCondition')}
+          multiSelect
+          options={conditionOptions}
+          value={props.itemConditions}
+          onChange={(conds) => props.onItemConditionsChange(conds as ItemCondition[])}
+          testID="filters-condition"
+        />
+      ) : null}
 
-      <View style={styles.section}>
-        <Text style={styles.title}>{t('filters.sectionSource')}</Text>
-        <View style={styles.row}>
-          <Chip
-            size="sm"
-            label={t('filters.all')}
-            selected={!followersOnly}
-            onPress={() => onFollowersOnlyChange(false)}
-          />
-          <Chip
-            size="sm"
-            label={t('filters.followersOnly')}
-            selected={followersOnly}
-            onPress={() => onFollowersOnlyChange(true)}
-          />
-        </View>
-      </View>
+      <FilterSection
+        title={t('filters.sectionStatus')}
+        showAllChip={false}
+        options={statusOptions}
+        value={props.statusFilter}
+        onChange={(s) => props.onStatusFilterChange(s as FeedStatusFilter)}
+        testID="filters-status"
+      />
+
+      <FilterSection
+        title={t('filters.sectionSource')}
+        showAllChip={false}
+        options={sourceOptions}
+        value={props.followersOnly ? 'followers' : 'all'}
+        onChange={(v) => props.onFollowersOnlyChange(v === 'followers')}
+        testID="filters-source"
+      />
     </>
   );
 }
-
-const useFiltersSectionStyles = makeUseStyles(({ colors }) => ({
-  section: { gap: spacing.xs, marginBottom: spacing.md },
-  title: { ...typography.label, color: colors.textPrimary, textAlign: rtlTextAlignStart },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'flex-end' },
-}));
