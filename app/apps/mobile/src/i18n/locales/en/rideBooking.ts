@@ -11,6 +11,9 @@ export const rideBooking = {
   approve: 'Approve',
   decline: 'Decline',
   completeTrip: 'Ride completed',
+  finishRide: 'Finish ride and close listing',
+  finishRideConfirmTitle: 'Finish this ride?',
+  finishRideConfirmMessage: 'Waiting bookings will be cancelled, and approved bookings will be marked complete.',
   cancel: 'Cancel',
   statusLabel: {
     reserved: 'Waiting for approval',

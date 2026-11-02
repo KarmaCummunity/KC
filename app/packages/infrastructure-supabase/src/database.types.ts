@@ -9961,6 +9961,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      complete_ride_listing: {
+        Args: { p_listing_id: string }
+        Returns: number
+      }
       complete_sandbox_donation: {
         Args: { p_intent_id: string }
         Returns: Json

@@ -18,4 +18,6 @@ export interface IRideBookingRepository {
   cancel(handoffId: string): Promise<void>;
   /** Either side marks the trip done (from 1 hour before departure); earns karma. */
   complete(handoffId: string): Promise<void>;
+  /** Driver only: completes confirmed bookings and closes the ride offer. */
+  completeRide(listingId: string): Promise<number>;
 }
