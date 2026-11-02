@@ -3,6 +3,9 @@
 // owner and report the listing. Everyone can share the link. Server failures surface as an
 // alert instead of a silent no-op: a known refusal gets its own copy, anything else the generic
 // copy and a report (#1412).
+//
+// One primary per screen (spec 17 §8.1 call 6): "message the owner" is the primary only when the
+// viewer has no flow action (reserve, claim, book) above this row; beside one it is secondary.
 import React, { useState } from 'react';
 import { Share, View } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -13,6 +16,7 @@ import { marketplaceRepository } from '../../services/marketplaceComposition';
 import { trackCoreLoop } from '../../lib/analyticsCoreLoop';
 import { listingActionErrorKey, reportListingActionError } from '../../lib/listingActionError';
 import { PrimaryButton, SecondaryButton } from '../ui/Buttons';
+import { listingFlowHasViewerAction } from './listingFlow';
 
 interface Props {
   readonly detail: MarketplaceListingDetail;
@@ -30,6 +34,8 @@ export function ListingDetailActions({ detail, viewerId, onReport }: Props) {
   // Items and food listings are mirrored into the feed on publish; the manual share is for
   // listings that are not in the feed yet.
   const canShareToFeed = isOwner && detail.feedPostId === null;
+  // The flow action (reserve, claim, book) is the screen's primary when the viewer has one.
+  const MessageButton = listingFlowHasViewerAction(detail, viewerId) ? SecondaryButton : PrimaryButton;
 
   /** Runs a server action once at a time and tells the viewer why it failed. */
   const run = async (name: string, action: () => Promise<void>) => {
@@ -65,7 +71,7 @@ export function ListingDetailActions({ detail, viewerId, onReport }: Props) {
   return (
     <View style={styles.actions}>
       {!isOwner ? (
-        <PrimaryButton
+        <MessageButton
           testID="listing-action-start-chat"
           label={t('marketplace.startChat')}
           size="md"

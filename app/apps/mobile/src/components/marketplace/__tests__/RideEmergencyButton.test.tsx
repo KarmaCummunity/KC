@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 // G44 / D70 — the emergency call: only while the ride is under way, and only after a second tap.
+// Both taps are the kit `AlertButton` (spec 17 §8.1 call 7).
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
@@ -8,6 +9,11 @@ import { ThemeProvider } from '@kc/ui';
 const { raiseRideEmergency } = vi.hoisted(() => ({ raiseRideEmergency: vi.fn() }));
 
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
+// The kit buttons pull in reanimated and haptics; their press feedback is not under test here.
+vi.mock('react-native-reanimated', async () => (await import('../../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
+vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogTestKit')).hapticsDouble);
+vi.mock('@expo/vector-icons', async () => (await import('../../ui/__tests__/kitDialogTestKit')).iconsDouble);
+vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 vi.mock('../../../services/rideSafetyComposition', () => ({ raiseRideEmergency }));
 
 import { RideEmergencyButton } from '../rides/RideEmergencyButton';
@@ -42,9 +48,12 @@ describe('RideEmergencyButton', () => {
     vi.spyOn(globalThis, 'alert').mockImplementation(() => {});
     const view = renderButton(ride(10));
 
-    fireEvent.click(view.getByTestId('ride-emergency'));
+    // Each tap is a kit button named by its label and carrying the alert glyph.
+    fireEvent.click(view.getByRole('button', { name: 'rideSafety.emergency' }));
     expect(raiseRideEmergency).not.toHaveBeenCalled();
-    fireEvent.click(view.getByTestId('ride-emergency-send'));
+    expect(view.getAllByTestId('icon-alert-circle-outline')).toHaveLength(1);
+    expect(view.getByRole('button', { name: 'rideSafety.emergencyCancel' })).toBeTruthy();
+    fireEvent.click(view.getByRole('button', { name: 'rideSafety.emergencySend' }));
     await waitFor(() => expect(raiseRideEmergency).toHaveBeenCalledWith('l1'));
   });
 

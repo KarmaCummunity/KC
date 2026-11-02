@@ -3,7 +3,8 @@ import React from 'react';
 import { View, TouchableOpacity, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { iconSize, makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { MirroredIcon, useDirectionalBackIcon } from './ui/MirroredIcon';
 import { OnboardingProgressBar } from './animations/OnboardingProgressBar';
 import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
 
@@ -26,6 +27,7 @@ export function OnboardingStepHeader({
   const styles = useStyles();
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const backIcon = useDirectionalBackIcon();
   const showBack = step > 1;
 
   return (
@@ -52,9 +54,9 @@ export function OnboardingStepHeader({
             hitSlop={12}
             style={({ pressed }) => [styles.side, pressed && { opacity: 0.6 }]}
           >
-            <Ionicons
-              name="arrow-forward"
-              size={22}
+            <MirroredIcon
+              name={backIcon}
+              size={iconSize.xl}
               color={backDisabled ? colors.textDisabled : colors.primary}
             />
           </Pressable>

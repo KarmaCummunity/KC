@@ -4,6 +4,7 @@
 //   <SecondaryButton label="..." size="md" icon="open-outline" onPress={open} />
 //   <GhostButton label="..." size="sm" onPress={edit} />           // compact admin size
 //   <DangerButton label="..." onPress={confirmDelete} loading={busy} />
+//   <AlertButton label="..." icon="alert-circle-outline" onPress={callForHelp} />
 //
 // Variants:
 //   PrimaryButton   — solid brand orange, inverse text.
@@ -11,6 +12,9 @@
 //   GhostButton     — text only, brand-coloured, no fill.
 //   DangerButton    — solid `error` red, inverse text; only for destructive
 //                     actions (delete, block, remove) — D94.
+//   AlertButton     — outlined in `error`, `error` label: an alarm (the ride
+//                     emergency call), neither a primary nor destructive —
+//                     spec 17 §8.1 call 7.
 //
 // Sizes (`size`, default `lg` so existing callers keep their look):
 //   lg 56pt · md 48pt · sm 36pt (compact, admin). Every size keeps a 44pt touch
@@ -36,7 +40,7 @@ import { BUTTON_HEIGHT, BUTTON_ICON_SIZE, useButtonStyles, type ButtonSize } fro
 
 export type { ButtonSize } from './buttonStyles';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'alert';
 
 export interface ButtonProps {
   /** Visible text; also the accessible name unless `accessibilityLabel` is set. */
@@ -80,6 +84,7 @@ function useButtonPress(reduced: boolean) {
  */
 function foregroundColor(variant: Variant, colors: ColorPalette): string {
   if (variant === 'primary' || variant === 'danger') return colors.textInverse;
+  if (variant === 'alert') return colors.error;
   return variant === 'ghost' ? colors.primary : colors.textPrimary;
 }
 
@@ -121,6 +126,7 @@ function Button({
     (variant === 'primary' || variant === 'danger') && styles.textOnFill,
     variant === 'secondary' && styles.textOnSurface,
     variant === 'ghost' && styles.textOnGhost,
+    variant === 'alert' && styles.textOnAlert,
     loading && styles.hidden,
   ];
   const glyph = iconNode ?? (icon ? <Ionicons name={icon} size={BUTTON_ICON_SIZE[size]} color={fg} /> : null);
@@ -156,7 +162,7 @@ function Button({
   );
 }
 
-/** Solid brand call to action — one per screen area. */
+/** Solid brand call to action — one per screen (spec 17 §8.1 call 6). */
 export function PrimaryButton(props: ButtonProps) {
   return <Button {...props} variant="primary" />;
 }
@@ -178,4 +184,14 @@ export function GhostButton(props: ButtonProps) {
  */
 export function DangerButton(props: ButtonProps) {
   return <Button {...props} variant="danger" />;
+}
+
+/**
+ * Outlined red button for an alarm — the ride emergency call. It is neither
+ * the screen's primary nor a destructive action, so it takes neither fill:
+ * the `error` outline and ink mark it as the one control that calls for help
+ * (spec 17 §8.1 call 7).
+ */
+export function AlertButton(props: ButtonProps) {
+  return <Button {...props} variant="alert" />;
 }

@@ -13,6 +13,7 @@ import { hapticSuccess } from '../../lib/haptics';
 import { handoffErrorKey } from '../../lib/marketplaceCreateErrors';
 import { HandoffRatingForm } from './HandoffRatingForm';
 import { HandoffActionButton } from './HandoffActionButton';
+import { HANDOFF_WORLDS } from './listingFlow';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   box: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceRaised },
@@ -38,8 +39,7 @@ export function GivingHandoffActions({ detail }: Props) {
 
   if (detail.direction !== 'give') return null;
   // Rides manage many bookings per offer — see rides/RideBookingActions (D73).
-  const handoffWorlds = ['items', 'food', 'knowledge'] as const;
-  if (!(handoffWorlds as readonly string[]).includes(detail.worldSlug)) return null;
+  if (!HANDOFF_WORLDS.includes(detail.worldSlug)) return null;
   if (!userId || detail.ownerId === userId) {
     if (!handoff.data) return null;
   }

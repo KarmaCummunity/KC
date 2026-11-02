@@ -1,13 +1,16 @@
 // Emergency call during an active ride (docs/spec/05_giving_worlds.md §5.3 step 6, D70; gap G44).
 // Shown to the driver and approved passengers only while the ride is under way; a second tap
 // confirms, so a pocket tap never sends it. Everyone else on the ride and KC's admins are alerted.
+// Both taps are the kit `AlertButton` — an alarm, neither the screen's primary nor a destructive
+// action (spec 17 §8.1 call 7); the confirm step's "cancel" is a ghost button.
 import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
+import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { isRideEmergencyWindow } from '@kc/domain';
 import { raiseRideEmergency } from '../../../services/rideSafetyComposition';
 import { handoffErrorKey } from '../../../lib/marketplaceCreateErrors';
+import { AlertButton, GhostButton } from '../../ui/Buttons';
 
 interface Props {
   readonly listingId: string;
@@ -37,29 +40,41 @@ export function RideEmergencyButton({ listingId, details }: Props) {
 
   if (!confirming) {
     return (
-      <Pressable accessibilityRole="button" testID="ride-emergency" style={styles.btn} onPress={() => setConfirming(true)}>
-        <Text style={styles.btnText}>{t('rideSafety.emergency')}</Text>
-      </Pressable>
+      <AlertButton
+        testID="ride-emergency"
+        label={t('rideSafety.emergency')}
+        icon="alert-circle-outline"
+        size="md"
+        fullWidth
+        onPress={() => setConfirming(true)}
+      />
     );
   }
 
   return (
     <View style={styles.confirm} testID="ride-emergency-confirm">
       <Text style={styles.question}>{t('rideSafety.emergencyConfirm')}</Text>
-      <Pressable accessibilityRole="button" testID="ride-emergency-send" style={styles.btn} disabled={busy} onPress={() => void send()}>
-        <Text style={styles.btnText}>{t('rideSafety.emergencySend')}</Text>
-      </Pressable>
-      <Pressable accessibilityRole="button" testID="ride-emergency-cancel" disabled={busy} onPress={() => setConfirming(false)}>
-        <Text style={styles.cancel}>{t('rideSafety.emergencyCancel')}</Text>
-      </Pressable>
+      <AlertButton
+        testID="ride-emergency-send"
+        label={t('rideSafety.emergencySend')}
+        icon="alert-circle-outline"
+        size="md"
+        fullWidth
+        loading={busy}
+        onPress={() => void send()}
+      />
+      <GhostButton
+        testID="ride-emergency-cancel"
+        label={t('rideSafety.emergencyCancel')}
+        size="md"
+        disabled={busy}
+        onPress={() => setConfirming(false)}
+      />
     </View>
   );
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  btn: { padding: spacing.md, borderRadius: radius.sm, backgroundColor: colors.error, alignItems: 'center' as const },
-  btnText: { ...typography.button, color: colors.textInverse },
   confirm: { gap: spacing.sm },
   question: { ...typography.body, color: colors.textPrimary },
-  cancel: { ...typography.button, color: colors.textSecondary, textAlign: 'center' as const, padding: spacing.sm },
 }));
