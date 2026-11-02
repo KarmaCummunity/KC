@@ -47,6 +47,7 @@ export * from './translations/TranslationError';
 export * from './translations/TranslationRequest';
 export * from './translations/cacheKey';
 export * from './marketplace/MarketplaceTypes';
+export * from './marketplace/givingHandoff';
 export * from './marketplace/validateListingDetails';
 export * from './marketplace/marketplaceWorldRules';
 export * from './marketplace/externalBodies';
