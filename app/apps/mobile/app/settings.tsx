@@ -23,7 +23,7 @@ import { usePrivateProfileToggle } from '../src/hooks/usePrivateProfileToggle';
 import { useActiveStatusSetting } from '../src/hooks/useActiveStatusSetting';
 import { useSettingsScreenStyles } from '../src/screens/settings.styles';
 import { getUserRepo } from '../src/services/userComposition';
-import { useFeatureFlag } from '../src/hooks/useFeatureFlag';
+import { TranslationLanguageSection } from '../src/components/settings/TranslationLanguageSection';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
 /** Metro `__DEV__` is false in release; set `EXPO_PUBLIC_DEV_SETTINGS_TOOLS=1` for internal builds only. */
@@ -33,7 +33,6 @@ const SHOW_SETTINGS_DEBUG_TOOLS =
 export default function SettingsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const translationEnabled = useFeatureFlag('ugc_auto_translation');
   const { colors } = useTheme();
   const styles = useSettingsScreenStyles();
   const session = useAuthStore((s) => s.session);
@@ -128,18 +127,7 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {translationEnabled ? (
-          <>
-        <Text style={styles.sectionTitle}>{t('settings.translationLanguage')}</Text>
-          <View style={styles.section}>
-            <SettingsScreenRow
-              label={t('settings.translationLanguage')}
-              icon="language-outline"
-              onPress={() => router.push('/settings/translation-language')}
-            />
-          </View>
-          </>
-        ) : null}
+        <TranslationLanguageSection titleStyle={styles.sectionTitle} sectionStyle={styles.section} />
 
         <Text style={styles.sectionTitle}>{t('settings.notifications')}</Text>
         <View style={styles.section}>
