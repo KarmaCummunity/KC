@@ -8,7 +8,7 @@ import type { MarketplaceBrowseRow } from '@kc/domain';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
 import { usePostGridCardWidth } from '../../hooks/useShellContentWidth';
 import { KcCard } from './KcCard';
-import { rideSeatCountKey } from '../../lib/rideSeatCountKey';
+import { listingCardDetails, listingCardRoute } from './listingCardContent';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -16,6 +16,7 @@ const WORLD_ICON: Record<string, IconName> = {
   rides: 'car-outline',
   food: 'restaurant-outline',
   items: 'gift-outline',
+  housing: 'home-outline',
   knowledge: 'school-outline',
   time: 'time-outline',
   money: 'cash-outline',
@@ -55,23 +56,14 @@ function ListingCardInner({ item, onPress, variant = 'grid', meta }: Readonly<Pr
   const isRide = item.worldSlug === 'rides';
   const title = cleanDisplayTitle(item.title);
   const ride = isRide ? item.ride ?? null : null;
-
-  const details: Array<{ icon: IconName; text: string }> = [];
-  if (ride) {
-    const when = formatRideTime(ride.departsAt);
-    if (when) details.push({ icon: 'time-outline', text: when });
-    if (ride.seats != null) {
-      details.push({
-        icon: 'people-outline',
-        text: t(rideSeatCountKey(isRequest ? 'passengers' : 'seats', ride.seats), { count: ride.seats }),
-      });
-    }
-  }
-  const route = ride && (ride.originLabel || ride.destLabel)
-    ? { from: ride.originLabel ?? t('cards.unknownPlace'), to: ride.destLabel ?? t('cards.unknownPlace') }
-    : null;
-  const secondary = meta === undefined ? item.summary : meta;
-  if (details.length === 0 && secondary) details.push({ icon: 'information-circle-outline', text: cleanDisplayTitle(secondary) });
+  const details = listingCardDetails({
+    ride,
+    isRequest,
+    secondary: meta === undefined ? item.summary : meta,
+    t,
+    formatTime: formatRideTime,
+  });
+  const route = listingCardRoute(ride, t);
   const badgeLabel = listingBadgeLabel(t, isRide, isRequest);
   const distance = item.distanceKm != null ? t('matches.distanceKm', { km: item.distanceKm.toFixed(1) }) : null;
 

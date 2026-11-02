@@ -92,9 +92,6 @@
       "fontWeightLiteral": 1,
       "radiusLiteral": 1
     },
-    "app/(tabs)/donations/time/index.tsx": {
-      "fontWeightLiteral": 1
-    },
     "app/(tabs)/donations/time/my-shifts.tsx": {
       "fontWeightLiteral": 1
     },

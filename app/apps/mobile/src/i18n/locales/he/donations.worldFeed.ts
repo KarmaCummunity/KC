@@ -12,4 +12,8 @@ export const worldFeed = {
   directionRequest: 'בקשות',
   emptyTitle: 'עדיין אין כאן מודעות פתוחות',
   emptyBody: 'אפשר לפרסם בקשה או הצעה ראשונה.',
+  housingIntro: 'אירוח ולינה בקהילה: להציע מקום לישון, או לבקש אירוח ללילה או לתקופה.',
+  timeOpportunitiesTitle: 'התנדבויות בארגונים',
+  timeOpportunitiesShowAll: 'כל ההתנדבויות ({{count}})',
+  timeOpportunitiesShowLess: 'להציג פחות',
 };

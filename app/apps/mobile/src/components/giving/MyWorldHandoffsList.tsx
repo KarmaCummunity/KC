@@ -13,7 +13,11 @@ import { givingHandoffUseCases } from '../../services/givingHandoffComposition';
 const ROW = { marginHorizontal: spacing.lg };
 
 /** My handoffs (as owner or recipient) for one giving world. */
-export function MyWorldHandoffsList({ worldSlug }: { readonly worldSlug: 'items' | 'food' | 'rides' | 'knowledge' }) {
+export function MyWorldHandoffsList({
+  worldSlug,
+}: {
+  readonly worldSlug: 'items' | 'food' | 'rides' | 'knowledge' | 'housing' | 'time';
+}) {
   const router = useRouter();
   const { t } = useTranslation();
   const rows = useQuery({
