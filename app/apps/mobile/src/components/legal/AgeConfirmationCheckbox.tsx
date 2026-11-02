@@ -1,6 +1,6 @@
 import { View, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { typography, spacing, useTheme, Text } from '@kc/ui';
+import { typography, spacing, radius, useTheme, Text } from '@kc/ui';
 import { rowDirectionStart } from '../../lib/rtlLayout';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
@@ -24,7 +24,7 @@ export function AgeConfirmationCheckbox({ checked, onToggle }: AgeConfirmationCh
         alignItems: 'center',
         gap: spacing.sm,
         backgroundColor: colors.surfaceRaised,
-        borderRadius: 12,
+        borderRadius: radius.md,
         padding: spacing.md,
         marginBottom: spacing.md,
       }}
@@ -33,7 +33,7 @@ export function AgeConfirmationCheckbox({ checked, onToggle }: AgeConfirmationCh
         style={{
           width: 22,
           height: 22,
-          borderRadius: 4,
+          borderRadius: radius.xs,
           borderWidth: 2,
           borderColor: colors.primary,
           backgroundColor: checked ? colors.primary : 'transparent',

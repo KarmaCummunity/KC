@@ -6,12 +6,12 @@ export const legalHe = {
   versionChip: 'גרסה {{version}}',
   futureEffective: 'ייכנס לתוקף ב-{{date}}',
   offlineBanner: 'מציג גרסה שמורה — לא ניתן לעדכן כרגע',
-  loadFailed: 'לא הצלחנו לטעון את המסמך. נסה שוב מאוחר יותר.',
+  loadFailed: 'לא הצלחנו לטעון את המסמך. אפשר לנסות שוב מאוחר יותר.',
   consentCheckFailed: 'לא הצלחנו לאמת את הסכמתך לתקנון. בדוק/י חיבור ונסה/י שוב.',
   closeReader: 'סגור',
 
   signupHeading: 'עוד דבר אחרון לפני שמתחילים — נשמח שתכיר/י את הכללים שלנו.',
-  cardOpenFull: 'פתח וקרא במלואו',
+  cardOpenFull: 'לפתוח ולקרוא במלואו',
   checkboxTerms: 'קראתי ואני מאשר/ת את תנאי השימוש',
   checkboxPrivacy: 'קראתי ואני מאשר/ת את מדיניות הפרטיות',
   checkboxAge18: 'אני מאשר/ת שמלאו לי 18 שנים',
@@ -19,7 +19,7 @@ export const legalHe = {
   exitLink: 'אפשר לחזור בהמשך — יציאה',
   exitConfirmTitle: 'להתנתק?',
   exitConfirmBody: 'תאבד/י גישה לפרופיל ולשיחות עד שתחזור/י להיכנס.',
-  exitConfirmConfirm: 'התנתק',
+  exitConfirmConfirm: 'התנתקות',
   exitConfirmCancel: 'ביטול',
 
   updateModalHeading: 'מסמכי התקנון התעדכנו',
@@ -28,7 +28,7 @@ export const legalHe = {
   updateCheckbox: 'קראתי ואני מאשר/ת',
   updateConfirmCta: 'אישור',
 
-  updateSheetOpen: 'פתח לקריאה',
+  updateSheetOpen: 'לפתוח לקריאה',
   updateSheetSnooze: 'אזכיר לי בעוד יום',
   updateSheetAccept: 'אישור עכשיו',
 } as const;

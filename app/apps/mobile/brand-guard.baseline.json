@@ -577,10 +577,6 @@
       "physicalSide": 2,
       "rawModal": 2
     },
-    "src/components/legal/LegalConsentScreen.tsx": {
-      "radiusLiteral": 4,
-      "rawModal": 2
-    },
     "src/components/legal/LegalDocumentReader.tsx": {
       "radiusLiteral": 1
     },
