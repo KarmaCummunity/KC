@@ -6,7 +6,7 @@ import React from 'react';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@kc/ui';
-import type { MarketplaceListingDetail, RideBooking } from '@kc/domain';
+import type { MarketplaceListingDetail } from '@kc/domain';
 
 const listForRide = vi.fn();
 const approve = vi.fn();
