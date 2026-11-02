@@ -1,15 +1,21 @@
 // KC#869 — in-app notification center (read/unread, deep links).
 
-import React, { useCallback } from 'react';
-import { Platform, Pressable, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { Pressable, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
 import { useAuthStore } from '../../src/store/authStore';
 import { container } from '../../src/lib/container';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
+import { rowDirectionStart } from '../../src/lib/rtlLayout';
+import { formatRelativeChatTime } from '../../src/lib/formatRelativeChatTime';
+import { groupInboxByDay } from '../../src/lib/notificationInboxView';
+import { NotificationInboxRow } from '../../src/components/notifications/NotificationInboxRow';
+import { EmptyState } from '../../src/components/EmptyState';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
 import { SimpleRowListSkeleton } from '../../src/components/skeletons/SimpleRowListSkeleton';
 
@@ -27,12 +33,16 @@ export default function NotificationInboxScreen() {
   const userId = useAuthStore((s) => s.session?.userId);
   const qc = useQueryClient();
   const detailOptions = useDetailStackScreenOptions();
+  const { colors } = useTheme();
 
   const query = useQuery({
     queryKey: ['notification-inbox', userId],
     queryFn: () => container.notificationInbox.list({ limit: 40 }),
     enabled: Boolean(userId),
   });
+  const rows = useMemo(() => query.data ?? [], [query.data]);
+  const items = useMemo(() => groupInboxByDay(rows), [rows]);
+  const hasUnread = rows.some((r) => !r.readAt);
 
   const refreshAll = useCallback(async () => {
     await Promise.all([
@@ -64,7 +74,7 @@ export default function NotificationInboxScreen() {
         options={{
           ...detailOptions,
           headerTitle: t('notifications.inboxTitle'),
-          ...(Platform.OS === 'ios' ? { headerLargeTitle: true } : {}),
+          headerLargeTitle: false,
         }}
       />
       <KcFlashList
@@ -73,34 +83,43 @@ export default function NotificationInboxScreen() {
         refreshing={query.isRefetching}
         onRefresh={() => void refreshAll()}
         ListHeaderComponent={
-          (query.data?.length ?? 0) > 0 ? (
+          hasUnread ? (
             <View style={styles.toolbar}>
-              <TouchableOpacity onPress={() => void onMarkAll()} accessibilityRole="button">
+              <Pressable
+                style={styles.markAllBtn}
+                onPress={() => void onMarkAll()}
+                accessibilityRole="button"
+                testID="notification-inbox-mark-all"
+              >
+                <Ionicons name="checkmark-done-outline" size={iconSize.sm} color={colors.primary} />
                 <Text style={styles.markAll}>{t('notifications.inboxMarkAll')}</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           ) : null
         }
-        data={query.data ?? []}
-        keyExtractor={(item) => item.inboxId}
+        data={items}
+        keyExtractor={(entry) => entry.key}
         contentContainerStyle={styles.list}
-        renderItem={({ item }) => {
-          const title = t(item.titleKey, item.bodyArgs as Record<string, string>);
-          const body = t(item.bodyKey, item.bodyArgs as Record<string, string>);
-          const unread = !item.readAt;
-          return (
-            <Pressable
-              style={[styles.row, unread ? styles.rowUnread : null]}
-              onPress={() => void onOpen(item.inboxId, item.data, item.readAt)}
-            >
-              <Text style={styles.rowTitle}>{title}</Text>
-              <Text style={styles.rowBody} numberOfLines={2}>
-                {body}
+        renderItem={({ item: entry }) => {
+          if (entry.type === 'header') {
+            return (
+              <Text style={styles.sectionTitle}>
+                {t(entry.section === 'today' ? 'notifications.inboxToday' : 'notifications.inboxEarlier')}
               </Text>
-              {item.groupCount > 1 ? (
-                <Text style={styles.groupHint}>{t('notifications.inboxGrouped', { count: item.groupCount })}</Text>
-              ) : null}
-            </Pressable>
+            );
+          }
+          const item = entry.item;
+          const args = item.bodyArgs as Record<string, string>;
+          return (
+            <NotificationInboxRow
+              kind={item.kind}
+              title={t(item.titleKey, args)}
+              body={t(item.bodyKey, args)}
+              time={formatRelativeChatTime(item.createdAt)}
+              groupHint={item.groupCount > 1 ? t('notifications.inboxGrouped', { count: item.groupCount }) : undefined}
+              unread={!item.readAt}
+              onPress={() => void onOpen(item.inboxId, item.data, item.readAt)}
+            />
           );
         }}
         ListEmptyComponent={
@@ -108,10 +127,14 @@ export default function NotificationInboxScreen() {
             <SimpleRowListSkeleton rows={8} rowHeight={72} />
           ) : query.isError ? (
             <Pressable onPress={() => void query.refetch()} accessibilityRole="button">
-              <Text style={styles.empty}>{t('notifications.inboxError')}</Text>
+              <EmptyState icon="cloud-offline-outline" title={t('notifications.inboxError')} />
             </Pressable>
           ) : (
-            <Text style={styles.empty}>{t('notifications.inboxEmpty')}</Text>
+            <EmptyState
+              icon="notifications-off-outline"
+              title={t('notifications.inboxEmpty')}
+              subtitle={t('notifications.inboxEmptySubtitle')}
+            />
           )
         }
       />
@@ -123,20 +146,29 @@ const useStyles = makeUseStyles(({ colors }) => ({
   container: { flex: 1, backgroundColor: colors.background },
   flex: { flex: 1 },
   toolbar: {
-    paddingHorizontal: spacing.base,
     paddingVertical: spacing.sm,
-    alignItems: 'flex-end',
+    flexDirection: rowDirectionStart,
+    justifyContent: 'flex-end',
   },
-  markAll: { ...typography.body, color: colors.primary, fontWeight: '600' },
-  list: { paddingHorizontal: spacing.base, paddingBottom: spacing.xl },
-  row: {
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+  markAllBtn: {
+    flexDirection: rowDirectionStart,
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  rowUnread: { backgroundColor: colors.primaryLight },
-  rowTitle: { ...typography.h3, color: colors.textPrimary, textAlign: rtlTextAlignStart },
-  rowBody: { ...typography.body, color: colors.textSecondary, marginTop: spacing.xs, textAlign: rtlTextAlignStart },
-  groupHint: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs, textAlign: rtlTextAlignStart },
-  empty: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.xl },
+  markAll: { ...typography.caption, color: colors.primary, ...typography.semiBold },
+  list: { paddingHorizontal: spacing.base, paddingTop: spacing.sm, paddingBottom: spacing.xl },
+  sectionTitle: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    ...typography.semiBold,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+    textAlign: rtlTextAlignStart,
+  },
 }));
