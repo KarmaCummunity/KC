@@ -194,10 +194,6 @@
       "spacingLiteral": 1,
       "iconSizeLiteral": 2
     },
-    "src/components/AuthGate.tsx": {
-      "radiusLiteral": 1,
-      "spacingLiteral": 1
-    },
     "src/components/BackButton.tsx": {
       "spacingLiteral": 1,
       "iconSizeLiteral": 1
@@ -233,12 +229,6 @@
       "spacingLiteral": 1,
       "iconSizeLiteral": 2
     },
-    "src/components/DonationLinksList.styles.ts": {
-      "radiusLiteral": 1
-    },
-    "src/components/DonationLinksList.tsx": {
-      "iconSizeLiteral": 2
-    },
     "src/components/DonationTile.tsx": {
       "fontSizeLiteral": 1,
       "spacingLiteral": 1,
@@ -250,10 +240,6 @@
     "src/components/EditProfileAvatar.tsx": {
       "colorLiteral": 1,
       "radiusLiteral": 1
-    },
-    "src/components/EmptyState.tsx": {
-      "fontWeightLiteral": 2,
-      "iconSizeLiteral": 1
     },
     "src/components/EphemeralToast.tsx": {
       "fontWeightLiteral": 1,
@@ -270,9 +256,6 @@
       "radiusLiteral": 1,
       "spacingLiteral": 1,
       "iconSizeLiteral": 1
-    },
-    "src/components/FirstPostNudge.tsx": {
-      "fontWeightLiteral": 1
     },
     "src/components/NewPostsBanner.tsx": {
       "fontWeightLiteral": 1,

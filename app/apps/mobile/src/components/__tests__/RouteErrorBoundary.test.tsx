@@ -11,6 +11,11 @@ const captureException = vi.fn();
 vi.mock('../../lib/observability/sentry', () => ({ getSentryIfInit: () => ({ captureException }) }));
 vi.mock('expo-router', () => ({ usePathname: () => '/chat/abc' }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
+// The retry is a kit button, which pulls in reanimated and haptics; its press feedback is not under test here.
+vi.mock('react-native-reanimated', async () => (await import('../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
+vi.mock('expo-haptics', async () => (await import('../ui/__tests__/kitDialogTestKit')).hapticsDouble);
+vi.mock('@expo/vector-icons', async () => (await import('../ui/__tests__/kitDialogTestKit')).iconsDouble);
+vi.mock('../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 
 describe('RouteErrorBoundary', () => {
   beforeEach(() => {
