@@ -49,11 +49,11 @@ const LINE_RULES = {
 const KIT_EXEMPT_RULES: ReadonlySet<string> = new Set(['rawTextInput', 'adHocChip']);
 
 type LineRuleName = keyof typeof LINE_RULES;
-export type RuleName = LineRuleName | 'rawModal' | 'iconSizeLiteral';
+export type RuleName = LineRuleName | 'rawModal' | 'iconSizeLiteral' | 'unmirroredDirectionalIcon';
 export type FileCounts = Partial<Record<RuleName, number>>;
 
 const LINE_RULE_NAMES = Object.keys(LINE_RULES) as LineRuleName[];
-export const RULE_NAMES: readonly RuleName[] = [...LINE_RULE_NAMES, 'rawModal', 'iconSizeLiteral'];
+export const RULE_NAMES: readonly RuleName[] = [...LINE_RULE_NAMES, 'rawModal', 'iconSizeLiteral', 'unmirroredDirectionalIcon'];
 
 // `import { …, Modal [as Alias], … } from 'react-native'` (named imports may span lines).
 const RN_NAMED_IMPORTS = /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*['"]react-native['"]/g;
@@ -118,6 +118,29 @@ function countIconSizeLiterals(source: string, lines: readonly string[]): number
   return found;
 }
 
+// `name="chevron-back"` / `name={'arrow-forward'}` … on an Ionicons tag.
+const NAME_PROP = /\bname=\{?\s*['"]([a-z0-9-]+)['"]\s*\}?/;
+// Glyphs that point along the reading direction and so must flip in RTL (spec 17 §4.2).
+const DIRECTIONAL_GLYPH = /^(?:arrow|chevron|caret|play|return|play-skip)-(?:back|forward)(?:-circle)?(?:-outline|-sharp)?$/;
+
+/**
+ * `unmirroredDirectionalIcon` (spec 17 §4.2, FR-RESP-006 AC18): `<Ionicons … name="…">`
+ * whose glyph is directional. Such a glyph renders through the kit `MirroredIcon`
+ * (which flips it in RTL) or `useDirectionalBackIcon()`; the allow-marker belongs
+ * on the line that holds `name=`.
+ */
+function countUnmirroredDirectionalIcons(source: string, lines: readonly string[]): number {
+  let found = 0;
+  for (const tag of source.matchAll(/<Ionicons\b/g)) {
+    const start = tag.index;
+    const name = NAME_PROP.exec(source.slice(start, tagEnd(source, start)));
+    if (!name || !DIRECTIONAL_GLYPH.test(name[1])) continue;
+    const nameLine = source.slice(0, start + name.index).split('\n').length - 1;
+    if (!lines[nameLine].includes(ALLOW_MARKER)) found += 1;
+  }
+  return found;
+}
+
 /** Matches of `pattern` across `lines`. */
 function countMatches(lines: readonly string[], pattern: RegExp): number {
   return lines.reduce((sum, line) => sum + (line.match(pattern)?.length ?? 0), 0);
@@ -143,5 +166,7 @@ export function countLiterals(source: string, file = ''): FileCounts {
   if (rawModals > 0) counts.rawModal = rawModals;
   const iconSizes = countIconSizeLiterals(source, lines);
   if (iconSizes > 0) counts.iconSizeLiteral = iconSizes;
+  const unmirrored = countUnmirroredDirectionalIcons(source, lines);
+  if (unmirrored > 0) counts.unmirroredDirectionalIcon = unmirrored;
   return counts;
 }
