@@ -11,6 +11,7 @@ import {
   type TranslationStatus,
   type PostWithOwner,
 } from '@kc/application';
+import { useFeatureFlag } from './useFeatureFlag';
 import { getTranslatedPostsUseCase, materializePostTranslationsUseCase } from '../services/postsComposition';
 
 type FieldKey = string; // `${postId}:${field}`
@@ -32,14 +33,15 @@ export function useTranslatedPosts(
   fields?: readonly ('title' | 'description')[],
 ) {
   const queryClient = useQueryClient();
+  const translationEnabled = useFeatureFlag('ugc_auto_translation');
   const skipRef = useRef<Set<FieldKey>>(new Set());
 
   const eligible = useMemo(
     () =>
-      posts
+      (translationEnabled ? posts : [])
         .flatMap((p) => toTranslatableFields(p, readerLanguage))
         .filter((f) => !fields || fields.includes(f.field as 'title' | 'description')),
-    [posts, readerLanguage, fields],
+    [posts, readerLanguage, fields, translationEnabled],
   );
   const postIds = useMemo(() => Array.from(new Set(eligible.map((f) => f.postId))), [eligible]);
 

@@ -16,6 +16,10 @@
 //     at head) than before, so moving tests into a new file is fine but
 //     commenting assertions out is not.
 //
+// Scope: only changes into `main` need an owner's approval (scripts/ci-base.mjs);
+// on `dev` the findings are printed as warnings and the guard passes, and the
+// release PR into `main` surfaces them to the owner.
+//
 // Override: an owner listed in the base commit's .github/owners.json approves
 // the PR's current head SHA (and is not its author). The static lane runs this
 // file from the base commit (like the CI judges), and `CI gate` re-runs the
@@ -30,6 +34,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { ownerApprovalRequired } from './ci-base.mjs';
 import { findOwnerOverride } from './ci-github.mjs';
 
 const TEST_PATHS = [/\.(test|spec)\.[^/]+$/, /(^|\/)__tests__\//, /^supabase\/tests\/.+\.sql$/, /^tests\/e2e\//];
@@ -237,6 +242,11 @@ async function main() {
   const violations = findViolations(loadDiff(env.BASE_SHA, env.HEAD_SHA));
   if (violations.length === 0) {
     console.log('Test integrity: no deleted tests, skip/focus markers, loosened limits or lost assertions.');
+    return;
+  }
+  if (!ownerApprovalRequired(env)) {
+    // Free on dev; the release PR into main surfaces it to the owner.
+    for (const v of violations) console.log(`::warning::Test integrity: ${v} — allowed: owner approval is required only for changes into main`);
     return;
   }
   const override = await findOwnerOverride(env, env.JUDGE_REF);

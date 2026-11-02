@@ -143,6 +143,14 @@ describe('needsRankedPath', () => {
     expect(needsRankedPath({ followersOnly: true })).toBe(true);
   });
 
+  it('returns true when subcategories is non-empty', () => {
+    expect(needsRankedPath({ subcategories: ['books'] })).toBe(true);
+  });
+
+  it('returns false when subcategories is empty', () => {
+    expect(needsRankedPath({ subcategories: [] })).toBe(false);
+  });
+
   it('returns false when followersOnly is false', () => {
     expect(needsRankedPath({ followersOnly: false })).toBe(false);
   });

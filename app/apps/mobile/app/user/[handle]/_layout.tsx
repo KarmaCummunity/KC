@@ -7,6 +7,7 @@ import { Stack } from 'expo-router';
 import React from 'react';
 import { useTheme } from '@kc/ui';
 import { nativeStackHeaderLeftIconOnly } from '../../../src/navigation/nativeHeaderIconOnly';
+import { nestedStackGestureOptions } from '../../../src/navigation/nestedStackGestureOptions';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
@@ -14,7 +15,7 @@ export default function UserHandleLayout() {
   const { colors } = useTheme();
   return (
     <Stack
-      screenOptions={{
+      screenOptions={{ ...nestedStackGestureOptions,
         headerShown: true,
         ...nativeStackHeaderLeftIconOnly(colors.primary),
         headerBackVisible: false,

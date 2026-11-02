@@ -126,15 +126,6 @@ export default function SettingsScreen() {
           />
         </View>
 
-        <Text style={styles.sectionTitle}>{t('settings.translationLanguage')}</Text>
-        <View style={styles.section}>
-          <SettingsScreenRow
-            label={t('settings.translationLanguage')}
-            icon="language-outline"
-            onPress={() => router.push('/settings/translation-language')}
-          />
-        </View>
-
         <Text style={styles.sectionTitle}>{t('settings.notifications')}</Text>
         <View style={styles.section}>
           <SettingsScreenRow

@@ -15,6 +15,7 @@ export {
   DeclineRideBookingUseCase,
   CancelRideBookingUseCase,
   CompleteRideTripUseCase,
+  CompleteRideListingUseCase,
 } from './rideBookingUseCases';
 export type { IRideBookingRepository } from '../ports/IRideBookingRepository';
 export { ListRidePlacesUseCase } from './ListRidePlacesUseCase';

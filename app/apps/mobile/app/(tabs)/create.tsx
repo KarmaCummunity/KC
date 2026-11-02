@@ -4,7 +4,7 @@
 // Mapped to: FR-POST-001..006 (FR-POST-001 AC6 categories + remembered choice) (incl. FR-POST-003 visibility + FR-POST-006 followers publish confirm), FR-POST-021 (D-31 partner-surface mask + collapsible exposure settings), FR-POST-007 (local draft autosave + resume), FR-POST-010 (delete) lives elsewhere.
 // FR-AUTH-015 soft-gate preserved from #12 — Publish wraps publish.mutate() with requestSoftGate.
 // FR-NOTIF-015 AC1: push pre-prompt fires after first post published.
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -33,6 +33,7 @@ import { useCreatePostPublish } from '../../src/hooks/useCreatePostPublish';
 import { CreatePostFormScrollContent } from '../../src/components/CreatePostForm/CreatePostFormScrollContent';
 import { useUnifiedCreateCategory } from '../../src/hooks/useUnifiedCreateCategory';
 import { ListingCreateForm } from '../../src/components/CreatePostForm/ListingCreateForm';
+import { CreateFormHeaderPublishAction } from '../../src/components/CreatePostForm/CreateFormHeaderPublishAction';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -102,6 +103,13 @@ export default function CreatePostScreen() {
   const [batchId] = useState(() => newUploadBatchId());
   const [notify, setNotify] = useState<{ title: string; message: string } | null>(null);
   const [missingDraftImagesNotified, setMissingDraftImagesNotified] = useState(false);
+  const [listingPublishAction, setListingPublishAction] = useState<(() => void) | null>(null);
+  const [listingPublishLoading, setListingPublishLoading] = useState(false);
+  const setListingPublishState = useCallback((action: (() => void) | null, loading: boolean) => {
+    // Wrap: a bare function would be treated as a state updater and invoked.
+    setListingPublishAction(() => action);
+    setListingPublishLoading(loading);
+  }, []);
 
   const isGive = form.type === 'Give';
 
@@ -177,22 +185,11 @@ export default function CreatePostScreen() {
           <Ionicons name="close" size={iconSize['2xl']} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('tabs.newPost')}</Text>
-        {activeCategory.engine === 'post' ? (
-        <TouchableOpacity
-          style={styles.publishBtn}
-          onPress={tryPublish}
-          disabled={isPublishing}
-          accessibilityState={{ disabled: isPublishing }}
-        >
-          {isPublishing ? (
-            <ActivityIndicator color={colors.textInverse} size="small" />
-          ) : (
-            <Text style={styles.publishBtnText}>{t('post.publish')}</Text>
-          )}
-        </TouchableOpacity>
-        ) : (
-          <View style={styles.headerClose} />
-        )}
+        <CreateFormHeaderPublishAction
+          onPress={activeCategory.engine === 'post' ? tryPublish : () => listingPublishAction?.()}
+          loading={activeCategory.engine === 'post' ? isPublishing : listingPublishLoading}
+          disabled={activeCategory.engine === 'listing' && listingPublishAction === null}
+        />
       </View>
 
       {!ready ? (
@@ -208,6 +205,7 @@ export default function CreatePostScreen() {
           summary={form.description}
           onSummaryChange={form.setDescription}
           onPublished={(id) => router.replace(`/(tabs)/donations/marketplace/${id}`)}
+          onPublishActionChange={setListingPublishState}
         />
       ) : (
       <CreatePostFormScrollContent

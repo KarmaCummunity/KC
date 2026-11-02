@@ -28,7 +28,7 @@ See [RELEASE.md](./RELEASE.md): version bump → EAS preview → TestFlight / Pl
 | Full fake dataset (users, posts, chats …) | Actions → **Seed KC dev** (`seed-kc-dev.yml`, action `seed`). **Destructive:** wipes and recreates every `@seed.kc.test` row. Ask before running. Details: [`supabase/seed/kc-dev/README.md`](../../supabase/seed/kc-dev/README.md). |
 | Remove the fake dataset | Same workflow, action `wipe`. |
 
-Never seed prod. Seed credentials live only in the seed files; never paste them into code, issues, PRs or chat.
+Never seed prod. The seed password lives only in the `E2E_SEED_PASSWORD` Actions secret; never paste them into code, issues, PRs or chat.
 
 ## DB types drift
 

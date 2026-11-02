@@ -10014,6 +10014,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      complete_ride_listing: { Args: { p_listing_id: string }; Returns: number }
       complete_ride_trip: {
         Args: { p_handoff_id: string }
         Returns: {
@@ -10350,7 +10351,9 @@ export type Database = {
           p_filter_radius_km?: number
           p_filter_search_query?: string
           p_filter_status?: string
+          p_filter_subcategories?: string[]
           p_filter_type?: string
+          p_filter_worlds?: string[]
           p_followers_only?: boolean
           p_page_limit?: number
           p_proximity_sort_city?: string

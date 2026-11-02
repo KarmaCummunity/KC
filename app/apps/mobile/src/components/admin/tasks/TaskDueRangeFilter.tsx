@@ -4,8 +4,9 @@
 // just renders + validates the format.
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { makeUseStyles, Text, TextInput } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text, TextInput } from '@kc/ui';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
+import { rtlTextAlignStart } from '../../../lib/rtlTextAlignStart';
 
 export interface TaskDueRangeFilterProps {
   readonly fromValue: string;
@@ -37,7 +38,7 @@ export function TaskDueRangeFilter({ fromValue, toValue, onChange, onClear }: Ta
     <View style={styles.row}>
       <View style={styles.fieldCol}>
         <Text style={styles.label}>{L.admin.tasks.dueRange.fromLabel}</Text>
-        <TextInput
+        <TextInput // brand-guard-allow: admin date range filter input, not a form field
           style={[styles.input, !fromOk && styles.invalid]}
           value={from}
           onChangeText={setFrom}
@@ -45,11 +46,12 @@ export function TaskDueRangeFilter({ fromValue, toValue, onChange, onClear }: Ta
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="numbers-and-punctuation"
+          textAlign={rtlTextAlignStart}
         />
       </View>
       <View style={styles.fieldCol}>
         <Text style={styles.label}>{L.admin.tasks.dueRange.toLabel}</Text>
-        <TextInput
+        <TextInput // brand-guard-allow: admin date range filter input, not a form field
           style={[styles.input, !toOk && styles.invalid]}
           value={to}
           onChangeText={setTo}
@@ -57,6 +59,7 @@ export function TaskDueRangeFilter({ fromValue, toValue, onChange, onClear }: Ta
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="numbers-and-punctuation"
+          textAlign={rtlTextAlignStart}
         />
       </View>
       <View style={styles.actionsCol}>
@@ -81,18 +84,18 @@ export function TaskDueRangeFilter({ fromValue, toValue, onChange, onClear }: Ta
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  row:       { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 8, alignItems: 'flex-end' },
-  fieldCol:  { flex: 1, gap: 4 },
-  actionsCol:{ gap: 4 },
-  label:     { fontSize: 11, opacity: 0.7 },
+  row:       { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.base, paddingBottom: spacing.sm, alignItems: 'flex-end' },
+  fieldCol:  { flex: 1, gap: spacing.xs },
+  actionsCol:{ gap: spacing.xs },
+  label:     { ...typography.caption, opacity: 0.7 },
   input: {
-    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: 8,
-    padding: 8, fontSize: 13, textAlign: 'left', backgroundColor: colors.surface, minWidth: 110,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: radius.md,
+    padding: spacing.sm, ...typography.caption, textAlign: rtlTextAlignStart, backgroundColor: colors.surface, minWidth: 110,
   },
   invalid:   { borderColor: colors.error },
-  applyBtn:  { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.primary },
-  applyText: { color: colors.textInverse, fontSize: 12, fontWeight: '700' },
+  applyBtn:  { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md, backgroundColor: colors.primary },
+  applyText: { color: colors.textInverse, ...typography.caption, ...typography.bold },
   disabledBtn: { opacity: 0.4 },
-  clearBtn:  { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: colors.secondaryLight },
-  clearText: { color: colors.textPrimary, fontSize: 12, fontWeight: '600' },
+  clearBtn:  { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.md, backgroundColor: colors.secondaryLight },
+  clearText: { color: colors.textPrimary, ...typography.caption, ...typography.semiBold },
 }));

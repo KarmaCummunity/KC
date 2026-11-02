@@ -112,6 +112,7 @@ function renderForm(worldSlug: string, direction: 'give' | 'request', title = '×
           summary=""
           onSummaryChange={() => {}}
           onPublished={onPublished}
+          onPublishActionChange={() => {}}
         />
       </ThemeProvider>
     </QueryClientProvider>
