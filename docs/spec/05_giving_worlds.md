@@ -23,7 +23,7 @@ Rides live in WhatsApp groups; dedicated apps failed on critical mass. This worl
 
 One rides flow (D70): ride offers and requests are posts with a ride extension; bookings use the generic handoff stage. The separate legacy ride screens are retired; their emergency button and cost-sharing caps attach to this flow.
 
-1. Driver posts (quick publish, D75) — origin, destination, up to 3 meeting points, departure, estimated end, seats. The last route is remembered and a past ride can be published again. Anyone may drive; verification is shown (D23).
+1. Driver posts (quick publish, D75) — origin, destination, up to 3 meeting points, departure, estimated end, seats. The last route is remembered and a past ride can be published again. Anyone may drive; verification is shown (D23). A **recurring ride** ({{D:recurring-rides}}) is the same post with weekdays, a departure time and an optional end date: the server publishes one ordinary ride per upcoming day (a week ahead), cards say "every Sun–Thu at 07:30", and the member pauses, reschedules or cancels the series from "my recurring rides"; a ride someone already booked stays an agreed ride.
 2. Places — origin, destination and meeting points are picked **only** from official catalogs: cities, streets, and named junctions & interchanges. No free-text places (D71).
 3. Passenger books a seat or posts a ride request. The driver sees every booking on the ride and approves or declines each; both sides get a push on every change (D73). Chat per pair (D13). An unapproved booking expires 12 hours after it was made or at departure, whichever is earlier, and frees its seats (D96).
 4. Saved route (D74) — a user follows a route (from → to, optional days and hours) and is notified of new rides along it; the rides form of the saved filter (D10). Urgent rides notifications bypass quiet hours (D95).
@@ -33,7 +33,9 @@ One rides flow (D70): ride offers and requests are posts with a ride extension; 
 
 Feed (D75): offers and requests together, sorted by departure, grouped today / tomorrow / later; departed rides are hidden.
 Rules: no profit — cost-sharing caps (₪70 intercity / ₪20 urban). Secondary use: moving items/food.
-Gaps: G44–G46, G48, G49 (G47 ✅).
+Gaps: G44–G46, G48, G49 (G47 ✅), {{G:recurring-rides}} ✅.
+
+Tech ({{G:recurring-rides}} ✅, FR-RIDE-046): `ride_series` (owner-only RLS; `0529`) holds the schedule and the details template; `ride_series_materialize` publishes one listing per matching day for the next 7 days with `details.ride_series = {id, on, weekdays, time}` (one per series and day), so feed, search, matching, bookings, alerts and the emergency call need no change; `ride_series_sweep` (every 10 min) materializes, expires departed request occurrences and mirrors only the soonest upcoming occurrence into the main feed (`listings_feed_mirror_sync` skips the others); a saved-route follower is alerted once per series. RPCs `create_ride_series`, `update_ride_series`, `set_ride_series_status` (pause / resume / cancel: upcoming unbooked occurrences are removed, booked ones stay; cancel is terminal and detaches booked rides). App: the "recurring ride" switch in the create form (`RideRecurrenceFields`), the recurrence chip on cards and the ride detail, `/donations/rides/series` (`MyRideSeriesList`). The legacy `ride_templates` → `ride_listings` materializer (0148, FR-RIDE-021/022) is superseded.
 
 Tech (G47 ✅): driver bookings list + approve / decline / expiry sweep / one `important` push per booking change (`0511`; `list_ride_bookings`, `decline_ride_booking`, `ride_bookings_expire_sweep` every 10 min, `giving_handoffs.cancel_reason`); app: `RideBookingActions` (driver `RideBookingsPanel`, passenger `RidePassengerBooking` with seat count) over `IRideBookingRepository`.
 

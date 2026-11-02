@@ -11,7 +11,7 @@ import { supportKc } from './donations.supportKc';
 import { givingHandoff } from './givingHandoff';
 import { rideBooking } from './rideBooking';
 import { ridePlaces } from './ridePlaces';
-import { dateTimeField, rideFeed, rideRoutes, rideSafety, rideSchedule } from './rideSchedule';
+import { dateTimeField, rideFeed, rideRoutes, rideSafety, rideSchedule, rideSeries } from './rideSchedule';
 import { authHe } from './modules/auth';
 import { onboardingHe } from './modules/onboarding';
 import { errorsHe } from './modules/errors';
@@ -133,6 +133,8 @@ const he = {
   rideFeed,
   rideRoutes,
   rideSafety,
+  // Recurring rides (FR-RIDE-046) — see rideSchedule.ts
+  rideSeries,
 
   // Search (D-16, FR-FEED-016) — see donations.ts
   search,

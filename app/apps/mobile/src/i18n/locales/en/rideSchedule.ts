@@ -59,3 +59,37 @@ export const rideSafety = {
   emergencySent: 'Your emergency call was sent. In immediate danger, call 100.',
   costCapHint: 'Cost sharing up to ₪{{cap}} — no profit.',
 } as const;
+
+// Recurring rides (FR-RIDE-046): the switch in the create form, the labels on cards and
+// the "my recurring rides" screen.
+export const rideSeries = {
+  toggle: 'Recurring ride',
+  daysLabel: 'Which days?',
+  endsOn: 'End date',
+  noEnd: 'No end date',
+  clearEnd: 'Remove the end date',
+  publishHint: 'The ride is published on every picked day at {{time}}, a week ahead.',
+  departureHint: 'The departure time you pick above becomes the recurring time.',
+  every: 'Every {{days}} at {{time}}',
+  everyDay: 'Every day at {{time}}',
+  until: 'Until {{date}}',
+  mine: 'My recurring rides',
+  manage: 'Manage the recurring ride',
+  empty: 'No recurring ride yet. In the publish form, turn on "Recurring ride" and pick days.',
+  error: "We couldn't load your recurring rides. Please try again.",
+  status: { paused: 'Paused' },
+  pause: 'Pause',
+  resume: 'Resume',
+  reschedule: 'Reschedule',
+  cancel: 'Cancel the recurring ride',
+  cancelConfirm: 'Cancel this recurring ride? Upcoming rides nobody booked are removed; a booked ride goes on as a single ride.',
+  cancelYes: 'Yes, cancel',
+  keep: 'Keep',
+  time: 'Departure time',
+  save: 'Save',
+  saved: 'Schedule updated. Upcoming rides nobody booked were published again.',
+  errors: {
+    weekdaysRequired: 'Pick at least one day for the recurring ride.',
+    generic: 'That did not work. Please try again.',
+  },
+} as const;

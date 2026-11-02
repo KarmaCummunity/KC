@@ -59,3 +59,37 @@ export const rideSafety = {
   emergencySent: 'קריאת החירום נשלחה. בסכנה מיידית חייגו 100.',
   costCapHint: 'השתתפות בהוצאות עד ₪{{cap}} — בלי רווח.',
 } as const;
+
+// Recurring rides (FR-RIDE-046): the switch in the create form, the labels on cards and
+// the "my recurring rides" screen.
+export const rideSeries = {
+  toggle: 'טרמפ קבוע (חוזר)',
+  daysLabel: 'באילו ימים?',
+  endsOn: 'תאריך סיום',
+  noEnd: 'בלי תאריך סיום',
+  clearEnd: 'הסרת תאריך הסיום',
+  publishHint: 'הנסיעה תתפרסם בכל יום שנבחר ב-{{time}}, שבוע קדימה.',
+  departureHint: 'שעת היציאה שתבחרו למעלה תהיה שעת הטרמפ הקבוע.',
+  every: 'כל {{days}} ב-{{time}}',
+  everyDay: 'כל יום ב-{{time}}',
+  until: 'עד {{date}}',
+  mine: 'הטרמפים הקבועים שלי',
+  manage: 'ניהול הטרמפ הקבוע',
+  empty: 'אין לכם עדיין טרמפ קבוע. בטופס הפרסום סמנו "טרמפ קבוע" ובחרו ימים.',
+  error: 'לא הצלחנו לטעון את הטרמפים הקבועים. נסו שוב.',
+  status: { paused: 'מושהה' },
+  pause: 'השהיה',
+  resume: 'חידוש',
+  reschedule: 'שינוי זמנים',
+  cancel: 'ביטול הטרמפ הקבוע',
+  cancelConfirm: 'לבטל את הטרמפ הקבוע? נסיעות עתידיות בלי הזמנה יוסרו; נסיעה שכבר הוזמנה תימשך כנסיעה רגילה.',
+  cancelYes: 'כן, לבטל',
+  keep: 'להשאיר',
+  time: 'שעת יציאה',
+  save: 'שמירה',
+  saved: 'הזמנים עודכנו. נסיעות עתידיות בלי הזמנה פורסמו מחדש.',
+  errors: {
+    weekdaysRequired: 'בחרו לפחות יום אחד לטרמפ הקבוע.',
+    generic: 'הפעולה נכשלה. נסו שוב.',
+  },
+} as const;

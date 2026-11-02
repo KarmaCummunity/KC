@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { RideFeedItem } from '@kc/domain';
+import { readRideSeriesMarker, type RideFeedItem } from '@kc/domain';
 import type { IRidesFeedRepository } from '@kc/application';
 import type { Database } from '../database.types';
 
@@ -33,5 +33,7 @@ export function mapFeedRow(row: FeedRow): RideFeedItem | null {
     meetingPoints: row.meeting_points ?? 0,
     seatsLeft: row.seats_left ?? null,
     passengers: row.passengers ?? null,
+    // The series marker rides along as the occurrence's own details would carry it.
+    recurrence: readRideSeriesMarker({ ride_series: row.recurrence }),
   };
 }

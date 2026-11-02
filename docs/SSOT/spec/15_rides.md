@@ -100,14 +100,14 @@ Prefix: `FR-RIDE-*`
 - AC3. `rpc_ride_participants_request` widens the joinability check the same way — a follower can request to join a FollowersOnly ride.
 - AC4. Creation paths in V2.0 still default to `Public` (FR-RIDE-007). Allowing creation with non-Public tiers requires `CreateRideListingUseCase` to accept a `visibility` input — out of scope for this PR.
 
-## FR-RIDE-022 — Recurring ride templates application layer ✅
+## FR-RIDE-022 — Recurring ride templates application layer ✅ (superseded by FR-RIDE-046)
 - AC1. Domain entity `RideTemplate` + value object `RideTemplateStatus`.
 - AC2. `validateRideTemplateDraft` mirrors `validateRideDraft` (route distinctness + seats-by-mode + description ≤ 500) and adds the recurrence checks (`weekday_mask` ∈ [1,127], `lookahead_days` ∈ [1,30]).
 - AC3. Application use cases: `CreateRideTemplateUseCase` (validates + city-catalog check + defaults visibility to `Public`), `ListMyRideTemplatesUseCase`, `SetRideTemplateStatusUseCase` (enforces the status machine — `archived` is terminal), `DeleteRideTemplateUseCase`.
 - AC4. Adapter `SupabaseRideTemplateRepository` calls `from('ride_templates')` directly (owner-only RLS handles authz; no SECURITY DEFINER RPCs required for templates).
 - AC5. Snake_case → camelCase mapping via `mapRideTemplateRow`.
 
-## FR-RIDE-021 — Recurring ride templates ✅
+## FR-RIDE-021 — Recurring ride templates ✅ (superseded by FR-RIDE-046)
 > DB schema + materializer + application layer in place; UI follows when the rides hub returns.
 
 - AC1. `ride_templates` table holds one row per recurring slot: owner, mode, route (cities + streets + optional house numbers), `depart_time time`, `weekday_mask` (bitmask Sun=1..Sat=64), `seats_available` (offer-only, NULL on request), `visibility`, `status` ∈ {`active`,`paused`,`archived`}, `lookahead_days` (default 7, clamped 1..30).
@@ -384,6 +384,21 @@ Prefix: `FR-RIDE-*`
 - AC3. **International rides ban.** Server-side check in `rpc_ride_create`: if both cities' country code != 'IL', raise `RideError.international_rides_banned`. (Currently both ends are constrained to `cities` table which is IL-only, so this is a forward-compat guard.)
 - AC4. **Vehicle breakdown.** Owner cancels the ride mid-transit by calling `rpc_ride_arrive` early with `p_reason='breakdown'`; participants get a critical notification `ride_breakdown` with the owner's note. (Same RPC; the reason becomes a chat system message variant.)
 - AC5. **Spontaneous publish.** Quick-publish mode with `departs_at=now()` and no approved participants is the empty-ride happy path: owner can simply not start. No special handling needed; the ride expires after 3 hours (0135).
+
+---
+
+## FR-RIDE-046 — Recurring rides on the one rides flow ✅
+> Issue #1413; product decision {{D:recurring-rides}}; `docs/spec/05_giving_worlds.md` §5.3 step 1. Supersedes FR-RIDE-021/022 (legacy `ride_templates` → `ride_listings`).
+
+- AC1. `ride_series` (`0529`): owner, kind, direction, title, summary, the ride details template (route, seats, cost — never the times), `depart_time` (Israel time), `weekdays` bit mask (bit 0 = Sunday, 1..127), optional `duration_minutes`, `starts_on`, optional `ends_on`, `status` ∈ {`active`, `paused`, `cancelled`}. RLS: the owner reads their own rows; every write goes through an RPC.
+- AC2. An occurrence is an ordinary native ride listing whose `details.ride_series = {id, on, weekdays, time}` (both ride kinds' detail schemas accept it); a partial unique index keeps one occurrence per series and day. Feed, search, matching, bookings, saved-route alerts, cost cap and the emergency call work on it unchanged.
+- AC3. `ride_series_materialize(series?)` publishes the missing occurrences for today … today + 7 (Israel dates) whose departure is still ahead; `arrives_at` = departure + `duration_minutes`; a request occurrence expires 30 minutes after departure. Runs on create, resume and reschedule, and from `ride_series_sweep` every 10 minutes, which also expires departed request occurrences.
+- AC4. Main-feed noise control: only the soonest upcoming occurrence of a series is mirrored into the main feed (`listings_feed_mirror_sync` skips the others); when it departs the sweep mirrors the next one. A saved-route follower is alerted once per series (`listings_ride_route_alerts`), not once per day.
+- AC5. `create_ride_series(kind, title, details, direction, depart_time, weekdays, summary?, duration?, ends_on?)` → `(series_id, first_listing_id)`: active member, rides kind, the template validated as the occurrence it becomes, weekdays 1..127 (`ride_series_weekdays_invalid`), duration 1..1440 (`ride_series_duration_invalid`), end date not before today (`ride_series_ends_in_past`); refused when no occurrence would run (`ride_series_no_occurrence`).
+- AC6. `set_ride_series_status(series, status)`: owner only (`ride_series_not_found`); `active ↔ paused`, either → `cancelled` (terminal, `ride_series_cancelled`). Pausing or cancelling deletes the upcoming occurrences nobody booked; a booked occurrence stays an open ride; cancelling also detaches the booked ones (`details - 'ride_series'`). Resuming materializes again.
+- AC7. `update_ride_series(series, depart_time, weekdays, duration?, ends_on?)`: same checks; upcoming unbooked occurrences are replaced at the new schedule, a booked one keeps its agreed time. The route and the offer are not editable — publish a new series.
+- AC8. `list_rides_feed` returns `recurrence` (the marker) per row. App: the "recurring ride" switch under the schedule in the create form (`RideRecurrenceFields`: weekdays, optional end date; the departure field's time of day is the series time) publishes through `CreateRideSeriesUseCase` and opens the first occurrence; cards and the ride detail show "every Sun–Thu at 07:30" (`rideSeriesLabel`); the owner reaches `/donations/rides/series` (`MyRideSeriesList`: pause / resume, reschedule, cancel behind a confirm step) from the rides hub and from an occurrence.
+- Tests: `supabase/tests/0529_ride_series.sql` (materialization, idempotency, feed mirror hand-over, one alert per series, request expiry, pause / resume / reschedule / cancel with a booked occurrence, ownership and schedule checks, grants); `@kc/domain` `RideSeries.test.ts`; `@kc/application` `rideSeriesUseCases.test.ts`; `@kc/infrastructure-supabase` `SupabaseRideSeriesRepository.test.ts`; mobile `RideRecurrenceFields`, `MyRideSeriesList`, `ListingCreateForm` (series publish), `RidesFeedList`, `RideRouteCard`, `DateTimeField` (date / time modes).
 
 ---
 

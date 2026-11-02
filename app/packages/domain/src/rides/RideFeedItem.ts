@@ -1,5 +1,6 @@
 // The rides feed (docs/spec/05_giving_worlds.md §5.3 "Feed", D75; gap G49): offers and requests
 // together, soonest departure first, grouped today / tomorrow / later; departed rides are hidden.
+import type { RideSeriesMarker } from './RideSeries';
 
 export interface RideFeedItem {
   readonly listingId: string;
@@ -13,6 +14,8 @@ export interface RideFeedItem {
   readonly seatsLeft: number | null;
   /** Requests: passengers asking. Null for offers. */
   readonly passengers: number | null;
+  /** The series of a recurring ride's occurrence (FR-RIDE-046); null on a single ride. */
+  readonly recurrence: RideSeriesMarker | null;
 }
 
 export const RIDE_FEED_GROUPS = ['today', 'tomorrow', 'later'] as const;

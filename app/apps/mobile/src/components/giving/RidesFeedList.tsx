@@ -12,6 +12,7 @@ import type { RideFeedGroup, RideFeedItem } from '@kc/domain';
 import { loadRidesFeed, RIDES_FEED_QUERY_KEY } from '../../services/ridesFeedComposition';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
+import { rideSeriesLabel } from '../../lib/rides/rideSeriesLabel';
 import { KcRowCard } from '../cards/KcRowCard';
 
 /** The feed refreshes every minute so departed rides drop off while the hub stays open. */
@@ -35,6 +36,8 @@ export function RidesFeedList({ header }: Readonly<{ header: React.ReactElement 
       ? item.seatsLeft ? t('rideFeed.seatsLeft', { count: item.seatsLeft }) : t('rideFeed.full')
       : t('rideFeed.passengers', { count: item.passengers ?? 1 }),
     item.meetingPoints > 0 ? t('rideFeed.meetingPoints', { count: item.meetingPoints }) : null,
+    // A recurring ride's occurrence says when the ride repeats (FR-RIDE-046).
+    item.recurrence ? rideSeriesLabel(item.recurrence, t) : null,
   ];
 
   return (
