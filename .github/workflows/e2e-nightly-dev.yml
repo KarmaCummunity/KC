@@ -57,6 +57,7 @@ jobs:
         working-directory: tests/e2e
         env:
           P0_ONLY: ${{ inputs.p0_only }}
+          E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
         run: |
           # P0 = the top-level journeys plus the auth setup they depend on; the
           # pattern cannot cross a `/`, so journeys/qa/** is excluded.

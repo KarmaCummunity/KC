@@ -32,10 +32,13 @@ jobs:
             echo "::error::supabase-dev SUPABASE_PROJECT_REF is not kc-dev; refusing."; exit 1
           fi
       - name: Run SQL via Management API
+        env:
+          E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
         run: |
           set -euo pipefail
           file=supabase/seed/kc-dev/${{ inputs.action }}.sql
-          body=$(python3 -c 'import json,sys;print(json.dumps({"query":"set kc.seed_target=\x27dev\x27;\n"+open(sys.argv[1]).read()}))' "$file")
+          [ -n "${E2E_SEED_PASSWORD:-}" ] || { echo "::error::E2E_SEED_PASSWORD secret is not set"; exit 1; }
+          body=$(python3 -c 'import json,os,sys;pw=os.environ["E2E_SEED_PASSWORD"].replace("\x27","\x27\x27");print(json.dumps({"query":"set kc.seed_target=\x27dev\x27;\nset kc.seed_password=\x27"+pw+"\x27;\n"+open(sys.argv[1]).read()}))' "$file")
           code=$(curl -sS -o out.json -w '%{http_code}' -X POST \
             "https://api.supabase.com/v1/projects/$KC_DEV_REF/database/query" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H 'Content-Type: application/json' \

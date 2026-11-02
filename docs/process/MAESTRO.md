@@ -26,7 +26,7 @@ Tracking issue: KC#1235. Workflow: [`ci-maestro-android.yml`](../../.github/work
 
 ## How CI builds and runs it
 
-1. `scripts/maestro-dev-env.mjs` resolves the kc-dev URL, the **public** anon key (read from the deployed dev web bundle) and the kc-dev seed password (read from `supabase/seed/kc-dev/seed.sql`). No repository secrets; it refuses to target production.
+1. `scripts/maestro-dev-env.mjs` resolves the kc-dev URL, the **public** anon key (read from the deployed dev web bundle) and the kc-dev seed password (from the `E2E_SEED_PASSWORD` Actions secret; fails if unset). It refuses to target production.
 2. `expo prebuild` + `./gradlew assembleRelease` for `x86_64` only, with `KC_E2E_BUILD=1` (OTA updates off, so the APK runs this PR's JS) and Sentry upload off. No EAS / `EXPO_TOKEN`.
 3. `scripts/maestro-run-android.sh` installs the APK on an API 34 emulator and runs each flow on its own, screen-recording it.
 4. Artifacts (`maestro-android`): JUnit per flow, Maestro debug output (screenshots, logs), and a video **only for failed flows**.
