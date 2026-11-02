@@ -55,6 +55,8 @@ const SKIP_HEBREW_SCAN_EXACT_RELS = new Set([
   "app/apps/mobile/public/privacy.html",
   "app/apps/mobile/public/terms.html",
   "app/apps/mobile/public/support.html",
+  "app/apps/mobile/public/delete-account.html",
+  "app/apps/mobile/public/child-safety.html",
 ]);
 
 function parseArgs(argv) {
