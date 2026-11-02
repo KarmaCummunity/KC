@@ -36,7 +36,7 @@ export function ProfileMarketplaceListings({ ownerId }: { readonly ownerId: stri
               key={item.listingId}
               item={item}
               width={cardWidth}
-              onPress={() => router.push(`/(tabs)/donations/marketplace/${item.listingId}`)}
+              onPress={() => router.push(`/listing/${item.listingId}`)}
             />
           ))}
         </View>
