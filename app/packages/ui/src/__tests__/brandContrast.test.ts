@@ -28,6 +28,16 @@ const REQUIRED_PAIRS: readonly RequiredPair[] = [
   { foreground: 'requestTag', background: 'requestTagBg', minimum: AA_TEXT, usage: 'request post-type tag label' },
   { foreground: 'error', background: 'surface', minimum: AA_TEXT, usage: 'inline error message' },
   { foreground: 'secondary', background: 'surface', minimum: AA_LARGE_TEXT_OR_UI, usage: 'secondary accent glyphs' },
+  { foreground: 'roleSuperAdmin', background: 'surface', minimum: AA_LARGE_TEXT_OR_UI, usage: 'super_admin role badge dot and border' },
+  { foreground: 'roleModerator', background: 'surface', minimum: AA_LARGE_TEXT_OR_UI, usage: 'moderator role badge dot and border' },
+  { foreground: 'roleSupport', background: 'surface', minimum: AA_LARGE_TEXT_OR_UI, usage: 'support role badge dot and border' },
+  { foreground: 'roleOperator', background: 'surface', minimum: AA_LARGE_TEXT_OR_UI, usage: 'operator role badge dot and border' },
+  { foreground: 'roleOperatorsManager', background: 'surface', minimum: AA_LARGE_TEXT_OR_UI, usage: 'operators_manager role badge dot and border' },
+  { foreground: 'roleOrgAdmin', background: 'surface', minimum: AA_LARGE_TEXT_OR_UI, usage: 'org_admin role badge dot and border' },
+  { foreground: 'roleOrgManager', background: 'surface', minimum: AA_LARGE_TEXT_OR_UI, usage: 'org_manager role badge dot and border' },
+  { foreground: 'roleOrgEmployee', background: 'surface', minimum: AA_LARGE_TEXT_OR_UI, usage: 'org_employee role badge dot and border' },
+  { foreground: 'roleVolunteerManager', background: 'surface', minimum: AA_LARGE_TEXT_OR_UI, usage: 'volunteer_manager role badge dot and border' },
+  { foreground: 'roleOrgVolunteer', background: 'surface', minimum: AA_LARGE_TEXT_OR_UI, usage: 'org_volunteer role badge dot and border' },
 ];
 
 // Pairs that fail today. Each entry must keep failing — once it passes, the

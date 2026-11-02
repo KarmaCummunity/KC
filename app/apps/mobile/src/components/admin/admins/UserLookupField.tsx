@@ -5,7 +5,8 @@
 // "change" link.
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
-import { makeUseStyles, radius, spacing, Text, TextInput, typography } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { TextField } from '../../ui/TextField';
 import { supabase } from '../../../lib/container';
 import { rowDirectionStart, textAlignStart } from '../../../lib/rtlLayout';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
@@ -81,13 +82,14 @@ export function UserLookupField({ selected, onSelect, changeable }: UserLookupFi
 
   return (
     <View>
-      <TextInput
-        style={styles.input}
+      <TextField
+        label=""
         value={query}
         onChangeText={setQuery}
         placeholder={copy.searchPlaceholder}
         autoCapitalize="none"
         autoCorrect={false}
+        leadingIcon="search"
       />
       {loading && <ActivityIndicator style={styles.spinner} />}
       {!loading && query.trim().length >= MIN_QUERY && matches.length === 0 && (
@@ -103,11 +105,6 @@ export function UserLookupField({ selected, onSelect, changeable }: UserLookupFi
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  input: {
-    ...typography.body, color: colors.textPrimary, textAlign: textAlignStart(),
-    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: radius.sm,
-    padding: spacing.md,
-  },
   spinner:      { marginTop: spacing.sm },
   selectedRow: {
     flexDirection: rowDirectionStart, alignItems: 'center', justifyContent: 'space-between',

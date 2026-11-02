@@ -2,10 +2,11 @@
 // FR-ADMIN-018 — pick an assignee from active admins (uses admin_list_admins RPC).
 // Visible only when the caller has admins.view permission (super_admin/moderator).
 import { useQuery } from '@tanstack/react-query';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { adminChipScroll } from '../adminChipScroll';
 import type { AdminGrant } from '@kc/domain';
-import { makeUseStyles, Text } from '@kc/ui';
+import { makeUseStyles, spacing } from '@kc/ui';
+import { Chip } from '../../ui/Chip';
 import { container } from '../../../lib/container';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
@@ -33,17 +34,19 @@ export function AssigneePicker({ value, onChange }: AssigneePickerProps) {
   return (
     <View>
       <ScrollView horizontal style={adminChipScroll.scroll} showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.row, adminChipScroll.content]}>
-        <ChipButton
+        <Chip
           label={L.admin.tasks.form.unassigned}
-          active={value === null}
+          selected={value === null}
           onPress={() => onChange(null)}
+          size="sm"
         />
         {entries.map((e) => (
-          <ChipButton
+          <Chip
             key={e.userId}
             label={e.displayName}
-            active={value === e.userId}
+            selected={value === e.userId}
             onPress={() => onChange(e.userId)}
+            size="sm"
           />
         ))}
       </ScrollView>
@@ -70,31 +73,6 @@ function derivePickEntries(
   return out;
 }
 
-interface ChipButtonProps {
-  readonly label: string;
-  readonly active: boolean;
-  readonly onPress: () => void;
-}
-
-function ChipButton({ label, active, onPress }: ChipButtonProps) {
-  const styles = useStyles();
-  return (
-    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
-      <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-const useStyles = makeUseStyles(({ colors }) => ({
-  row:            { gap: 8, paddingVertical: 4 },
-  chip: {
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16,
-    backgroundColor: colors.secondaryLight,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
-  },
-  chipActive:     { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText:       { fontSize: 13, fontWeight: '600', color: colors.textPrimary },
-  chipTextActive: { color: colors.textInverse },
+const useStyles = makeUseStyles(() => ({
+  row: { gap: spacing.sm, paddingVertical: spacing.xs },
 }));

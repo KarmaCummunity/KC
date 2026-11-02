@@ -4,7 +4,7 @@
 // rows + revoke action now live on the detail screen).
 import { Pressable, View } from 'react-native';
 import type { AdminPerson } from '@kc/domain';
-import { Ionicons } from '@expo/vector-icons';
+import { MirroredIcon } from '../../ui/MirroredIcon';
 import { iconSize, makeUseStyles, radius, shadow, spacing, Text, typography, useTheme } from '@kc/ui';
 import { AvatarInitials } from '../../AvatarInitials';
 import { rowDirectionStart, textAlignStart } from '../../../lib/rtlLayout';
@@ -52,7 +52,7 @@ export function AdminPersonCard({ person, onPress }: AdminPersonCardProps) {
         </View>
         <Text style={styles.meta} numberOfLines={1}>{lastSeenLabel(L, person.lastSeenAt)}</Text>
       </View>
-      <Ionicons name="chevron-back" size={iconSize.md} color={colors.textSecondary} style={styles.chevron} />
+      <MirroredIcon name="chevron-forward" size={iconSize.md} color={colors.textSecondary} />
     </Pressable>
   );
 }
@@ -72,5 +72,4 @@ const useStyles = makeUseStyles(({ colors }) => ({
   more:    { fontSize: typography.caption.fontSize, ...typography.bold, color: colors.textSecondary },
   noRole:  { fontSize: typography.caption.fontSize, color: colors.textSecondary },
   meta:    { fontSize: typography.caption.fontSize, color: colors.textSecondary, textAlign: textAlignStart() },
-  chevron: { transform: [{ scaleX: 1 }] },
 }));

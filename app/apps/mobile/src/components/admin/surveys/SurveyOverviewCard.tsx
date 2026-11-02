@@ -2,7 +2,7 @@
 // FR-ADMIN-021 — selectable survey summary card (counts + last response).
 import type { ReactElement } from 'react';
 import { Pressable, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { MirroredIcon } from '../../ui/MirroredIcon';
 import type { AdminSurveyOverviewItem } from '@kc/domain';
 import { iconSize, makeUseStyles, radius, shadow, spacing, Text, typography, useTheme } from '@kc/ui';
 import { textAlignStart, rowDirectionStart } from '../../../lib/rtlLayout';
@@ -52,7 +52,7 @@ export function SurveyOverviewCard({ item, onPress }: SurveyOverviewCardProps): 
         <Text style={styles.footerText} numberOfLines={1}>
           {last ? t.lastResponse(last) : t.noResponses}
         </Text>
-        <Ionicons name="chevron-back" size={iconSize.md} color={colors.textSecondary} />
+        <MirroredIcon name="chevron-forward" size={iconSize.md} color={colors.textSecondary} />
       </View>
     </Pressable>
   );
