@@ -10,6 +10,11 @@ import { useUncaughtErrorStore } from '../../store/uncaughtErrorStore';
 
 vi.mock('../../lib/observability/sentry', () => ({ getSentryIfInit: () => null }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
+// The error gate's retry is a kit button, which pulls in reanimated and haptics (CTAs 3).
+vi.mock('react-native-reanimated', async () => (await import('../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
+vi.mock('expo-haptics', async () => (await import('../ui/__tests__/kitDialogTestKit')).hapticsDouble);
+vi.mock('@expo/vector-icons', async () => (await import('../ui/__tests__/kitDialogTestKit')).iconsDouble);
+vi.mock('../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 
 describe('UncaughtErrorGate', () => {
   beforeEach(() => {
