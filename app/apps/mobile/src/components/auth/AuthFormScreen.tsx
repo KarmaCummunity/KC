@@ -62,8 +62,16 @@ function useEntryMotion() {
   };
 }
 
-export function AuthFormScreen(props: AuthFormScreenProps) {
-  const { title, subtitle, form, footer } = props;
+export function AuthFormScreen({
+  title,
+  subtitle,
+  form,
+  passwordLabel,
+  passwordPlaceholder,
+  submitLabel,
+  beforeSubmit,
+  footer,
+}: AuthFormScreenProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   const router = useRouter();
@@ -94,7 +102,13 @@ export function AuthFormScreen(props: AuthFormScreenProps) {
 
               {/* Kept mounted while an address is pending, so "change address" returns to the typed values. */}
               <View style={[styles.form, form.pendingEmail ? styles.hidden : null]}>
-                <AuthCredentialFields {...props} />
+                <AuthCredentialFields
+                  form={form}
+                  passwordLabel={passwordLabel}
+                  passwordPlaceholder={passwordPlaceholder}
+                  submitLabel={submitLabel}
+                  beforeSubmit={beforeSubmit}
+                />
               </View>
 
               {form.pendingEmail ? null : <View style={styles.footer}>{footer}</View>}
@@ -112,9 +126,14 @@ export function AuthFormScreen(props: AuthFormScreenProps) {
   );
 }
 
+/** The props the credential fields read: the form state, the password labels and the submit. */
+type AuthCredentialFieldsProps = Pick<
+  AuthFormScreenProps,
+  'form' | 'passwordLabel' | 'passwordPlaceholder' | 'submitLabel' | 'beforeSubmit'
+>;
+
 /** Address and password inputs, the optional extra action and the submit. */
-function AuthCredentialFields(props: AuthFormScreenProps) {
-  const { form, passwordLabel, passwordPlaceholder, submitLabel, beforeSubmit } = props;
+function AuthCredentialFields({ form, passwordLabel, passwordPlaceholder, submitLabel, beforeSubmit }: AuthCredentialFieldsProps) {
   const { t } = useTranslation();
   return (
     <>
