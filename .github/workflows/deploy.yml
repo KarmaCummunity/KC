@@ -282,6 +282,9 @@ jobs:
   smoke:
     name: smoke
     needs: [resolve, web]
+    # Explicit: the default success() also needs every upstream job, and on dev
+    # the prod-only approve/web-baseline jobs are always skipped.
+    if: ${{ !cancelled() && needs.web.result == 'success' }}
     permissions:
       contents: read
     uses: ./.github/workflows/deploy-smoke.yml
