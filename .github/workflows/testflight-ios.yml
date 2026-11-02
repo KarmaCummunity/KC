@@ -48,7 +48,7 @@ jobs:
   testflight:
     name: Build & upload to TestFlight
     runs-on: macos-latest
-    timeout-minutes: 90
+    timeout-minutes: 150
     environment: mobile-store
     permissions:
       contents: read
@@ -220,6 +220,24 @@ jobs:
           eas submit --platform ios --profile production --path ./build-kc.ipa --non-interactive
           echo "build_number=$build_number" >> "$GITHUB_OUTPUT"
           echo "TestFlight upload: iOS build $build_number from $BUILD_SHA (kc-dev backend)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Distribute to external testers & submit for Beta App Review (non-fatal)
+        if: success()
+        continue-on-error: true
+        timeout-minutes: 50
+        working-directory: .
+        env:
+          ASC_KEY_PATH: ${{ runner.temp }}/asc-api-key.p8
+          ASC_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+          ASC_APP_ID: ${{ vars.KC_ASC_APP_ID }}
+          BUILD_NUMBER: ${{ steps.build.outputs.build_number }}
+          BUILD_SHA: ${{ steps.target.outputs.sha }}
+          TF_GROUPS: KC Beta,KC Real Users
+          TF_TIMEOUT_MIN: '45'
+        run: |
+          export TF_WHATS_NEW="Karma Community dev build ${BUILD_NUMBER} (${BUILD_SHA:0:7}). General testing of Karma Community."
+          node scripts/testflight-distribute.mjs
 
       - name: Remove key files
         if: always()

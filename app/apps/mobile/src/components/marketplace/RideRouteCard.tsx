@@ -11,6 +11,7 @@ import { formatRideTime } from '../cards/ListingCard';
 import { RideRouteMap } from './RideRouteMap';
 import { RideRouteStops } from './RideRouteStops';
 import { Chip } from '../ui/Chip';
+import { rideSeatCountKey } from '../../lib/rideSeatCountKey';
 
 interface Props {
   details: Record<string, unknown>;
@@ -34,7 +35,7 @@ export function RideRouteCard({ details, direction }: Readonly<Props>) {
 
   const chips: InfoChip[] = [];
   if (when) chips.push({ icon: 'time-outline', text: when });
-  if (seats != null) chips.push({ icon: 'people-outline', text: t(direction === 'request' ? 'cards.passengers' : 'cards.seats', { count: seats }) });
+  if (seats != null) chips.push({ icon: 'people-outline', text: t(rideSeatCountKey(direction === 'request' ? 'passengers' : 'seats', seats), { count: seats }) });
   if (direction === 'give') chips.push({ icon: 'wallet-outline', text: cost != null && cost > 0 ? t('cards.costShare', { amount: cost }) : t('cards.free') });
   if (isFree && direction !== 'give') chips.push({ icon: 'wallet-outline', text: t('cards.free') });
 

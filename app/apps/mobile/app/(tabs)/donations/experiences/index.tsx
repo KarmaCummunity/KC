@@ -3,6 +3,8 @@
 import React from 'react';
 import { WorldPortalScreen } from '../../../../src/components/worlds/WorldPortalScreen';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
+
 export default function ExperiencesWorldScreen() {
   return <WorldPortalScreen />;
 }

@@ -49,7 +49,8 @@ test('bypass (b): a templated environment and supabase migration up are refused'
 });
 
 test('bypass (c): a quoted "on" key cannot hide a trigger on deploy.yml or a stage', () => {
-  assert.match(checkWorkflow('deploy.yml', '"on":\n  push:\njobs: {}\n')[0], /found push/);
+  assert.match(checkWorkflow('deploy.yml', '"on":\n  push:\njobs: {}\n')[0], /exactly branches: \[dev\]/);
+  assert.match(checkWorkflow('deploy.yml', '"on":\n  schedule:\njobs: {}\n')[0], /found schedule/);
   const stage = `"on":\n  workflow_call:\n  push:\njobs:\n  deploy:\n    environment: cloudflare-\${{ inputs.target }}\n    steps:\n${GUARD_STEPS}\n`;
   assert.match(checkWorkflow('deploy-web.yml', stage)[0], /trigger push is not allowed/);
 });
@@ -100,4 +101,12 @@ test('read-only monitor: any other file, job, env, trigger or deploy command is 
   assert.ok(refused('ops-health.yml', { envs: ['production'] }), 'approval environment');
   assert.ok(refused('ops-health.yml', { on: '  push:' }), 'push trigger');
   assert.ok(refused('ops-health.yml', { run: 'supabase db push --linked' }), 'deploy command');
+});
+
+test('deploy.yml may trigger on push only to exactly dev (#1430)', () => {
+  const wf = (on) => `on:\n${on}\njobs: {}\n`;
+  assert.deepEqual(checkWorkflow('deploy.yml', wf('  push:\n    branches: [dev]\n  workflow_dispatch:')), []);
+  assert.match(checkWorkflow('deploy.yml', wf('  push:\n    branches: [dev, main]'))[0], /exactly branches: \[dev\]/);
+  assert.match(checkWorkflow('deploy.yml', wf('  push:'))[0], /exactly branches: \[dev\]/);
+  assert.match(checkWorkflow('deploy.yml', wf('  push:\n    branches: [main]'))[0], /exactly branches: \[dev\]/);
 });

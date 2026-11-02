@@ -1,7 +1,8 @@
 // KC#1310 — the listing detail's action row, shown per viewer role: the owner can share the
 // listing to the feed (unless it is already mirrored there, D-206); anyone else can message the
 // owner and report the listing. Everyone can share the link. Server failures surface as an
-// alert instead of a silent no-op.
+// alert instead of a silent no-op: a known refusal gets its own copy, anything else the generic
+// copy and a report (#1412).
 //
 // One primary per screen (spec 17 §8.1 call 6): "message the owner" is the primary only when the
 // viewer has no flow action (reserve, claim, book) above this row; beside one it is secondary.
@@ -13,6 +14,7 @@ import { makeUseStyles, spacing } from '@kc/ui';
 import type { MarketplaceListingDetail } from '@kc/domain';
 import { marketplaceRepository } from '../../services/marketplaceComposition';
 import { trackCoreLoop } from '../../lib/analyticsCoreLoop';
+import { listingActionErrorKey, reportListingActionError } from '../../lib/listingActionError';
 import { PrimaryButton, SecondaryButton } from '../ui/Buttons';
 import { listingFlowHasViewerAction } from './listingFlow';
 
@@ -35,27 +37,28 @@ export function ListingDetailActions({ detail, viewerId, onReport }: Props) {
   // The flow action (reserve, claim, book) is the screen's primary when the viewer has one.
   const MessageButton = listingFlowHasViewerAction(detail, viewerId) ? SecondaryButton : PrimaryButton;
 
-  /** Runs a server action once at a time and tells the viewer when it fails. */
-  const run = async (action: () => Promise<void>) => {
+  /** Runs a server action once at a time and tells the viewer why it failed. */
+  const run = async (name: string, action: () => Promise<void>) => {
     setBusy(true);
     try {
       await action();
-    } catch {
-      alert(t('marketplace.actionFailed'));
+    } catch (error) {
+      reportListingActionError(name, error);
+      alert(t(listingActionErrorKey(error)));
     } finally {
       setBusy(false);
     }
   };
 
   const startChat = () =>
-    run(async () => {
+    run('start_chat', async () => {
       const chatId = await marketplaceRepository().startChat(detail.listingId, t('marketplace.chatOpener'));
       trackCoreLoop('chat_started', { world: detail.worldSlug, cityId: detail.cityId });
       router.push(`/chat/${chatId}`);
     });
 
   const shareToFeed = () =>
-    run(async () => {
+    run('share_to_feed', async () => {
       const postId = await marketplaceRepository().shareToFeed(detail.listingId);
       router.push(`/post/${postId}`);
     });

@@ -12,6 +12,8 @@ import { OnboardingStepHeader } from '../../src/components/OnboardingStepHeader'
 import { staggerDelay } from '../../src/lib/animations/motion';
 import { PrimaryButton } from '../../src/components/ui/Buttons';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
+
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 const PILLARS: ReadonlyArray<{ readonly icon: IoniconName; readonly key: 'pillarFree' | 'pillarNoAds' | 'pillarNonProfit' }> = [

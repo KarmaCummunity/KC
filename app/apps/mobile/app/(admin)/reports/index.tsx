@@ -12,6 +12,8 @@ import { ReportRow } from '../../../src/components/admin/reports/ReportRow';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+
 export default function ReportsInbox() {
   const L = useLocaleBundle();
   const [filters, setFilters] = useState<ListOpenReportsFilters>({});

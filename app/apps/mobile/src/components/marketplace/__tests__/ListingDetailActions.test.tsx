@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // KC#1310 — listing detail actions per viewer role, and a failed server action alerts instead of
-// failing silently.
+// failing silently; #1412 — a known refusal gets its own copy, an unknown one is reported.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { cleanup, fireEvent, render } from '@testing-library/react';
@@ -22,6 +22,8 @@ vi.mock('../../../services/marketplaceComposition', () => ({
   marketplaceRepository: () => ({ startChat, shareToFeed }),
 }));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn() }));
+const captureException = vi.fn();
+vi.mock('../../../lib/observability/sentry', () => ({ getSentryIfInit: () => ({ captureException }) }));
 
 import { ListingDetailActions } from '../ListingDetailActions';
 
@@ -74,7 +76,7 @@ describe('ListingDetailActions', () => {
     expect(queryByTestId('listing-action-share-link')).not.toBeNull();
   });
 
-  it('opens the chat on success and alerts when the server refuses', async () => {
+  it('opens the chat on success and explains a known refusal without reporting it', async () => {
     const alert = vi.spyOn(window, 'alert').mockImplementation(() => {});
     startChat.mockResolvedValueOnce('c_1').mockRejectedValueOnce(new Error('account_not_active'));
     const { getByTestId } = renderActions('u_viewer');
@@ -83,7 +85,22 @@ describe('ListingDetailActions', () => {
     await vi.waitFor(() => expect(push).toHaveBeenCalledWith('/chat/c_1'));
 
     fireEvent.click(getByTestId('listing-action-start-chat'));
+    await vi.waitFor(() => expect(alert).toHaveBeenCalledWith('marketplace.actionErrors.accountNotActive'));
+    expect(captureException).not.toHaveBeenCalled();
+    alert.mockRestore();
+  });
+
+  it('shows the generic copy for an unknown failure and reports it with the action name', async () => {
+    const alert = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    const failure = Object.assign(new Error('permission denied for table chats'), { code: '42501' });
+    startChat.mockRejectedValueOnce(failure);
+    const { getByTestId } = renderActions('u_viewer');
+
+    fireEvent.click(getByTestId('listing-action-start-chat'));
     await vi.waitFor(() => expect(alert).toHaveBeenCalledWith('marketplace.actionFailed'));
+    expect(captureException).toHaveBeenCalledWith(failure, {
+      tags: { area: 'listing_detail', action: 'start_chat', pg_code: '42501' },
+    });
     alert.mockRestore();
   });
 

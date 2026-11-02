@@ -35,6 +35,8 @@ import {
 import { track } from '../../../src/lib/analytics';
 import { SurveyQuestionPanel } from '../../../src/screens/settings/survey/SurveyQuestionPanel';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+
 // ─── types ───────────────────────────────────────────────────────────────────
 
 type RunnerContentProps = {
