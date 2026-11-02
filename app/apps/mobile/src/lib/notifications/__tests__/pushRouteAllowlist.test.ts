@@ -44,7 +44,7 @@ describe('resolvePushRoute', () => {
   ] as const)('routes %s to the listing (KC#1316, D70, D73, D74, FR-NOTIF-018)', (kind) => {
     expect(
       resolvePushRoute({ category: 'critical', kind, notification_id: 'n9', params: { listingId: UUID } }),
-    ).toEqual({ pathname: '/(tabs)/donations/marketplace/[listingId]', params: { listingId: UUID } });
+    ).toEqual({ pathname: '/listing/[listingId]', params: { listingId: UUID } });
     expect(
       resolvePushRoute({ category: 'critical', kind, notification_id: 'n10', params: { listingId: 'not-a-uuid' } }),
     ).toBeNull();

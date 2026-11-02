@@ -19,7 +19,7 @@ export function useListingMirrorRedirect(post: MirrorSource): boolean {
     if (!listingId || redirectedTo.current === listingId) return;
     redirectedTo.current = listingId;
     router.replace({
-      pathname: '/(tabs)/donations/marketplace/[listingId]',
+      pathname: '/listing/[listingId]',
       params: { listingId },
     });
   }, [listingId, router]);

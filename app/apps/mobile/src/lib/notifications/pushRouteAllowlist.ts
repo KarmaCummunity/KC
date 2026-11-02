@@ -140,7 +140,7 @@ const KIND_ROUTES: Record<NotificationKind, KindHandler> = {
 /** Marketplace listing detail, only for a well-formed listing id. */
 function listingRoute(raw: string | undefined): ResolvedRoute | null {
   const listingId = requireUuid(raw);
-  return listingId ? { pathname: '/(tabs)/donations/marketplace/[listingId]', params: { listingId } } : null;
+  return listingId ? { pathname: '/listing/[listingId]', params: { listingId } } : null;
 }
 
 export function resolvePushRoute(data: Partial<PushData>): ResolvedRoute | null {

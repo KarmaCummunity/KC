@@ -514,9 +514,6 @@
       "shadowLiteral": 12,
       "adHocChip": 1
     },
-    "src/components/marketplace/MarketplaceForYouSection.tsx": {
-      "physicalSide": 1
-    },
     "src/components/marketplace/listingChipStyles.ts": {
       "adHocChip": 1
     },
