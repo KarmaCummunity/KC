@@ -388,7 +388,7 @@ Prefix: `FR-RIDE-*`
 ---
 
 ## FR-RIDE-046 — Recurring rides on the one rides flow ✅
-> Issue #1413; product decision {{D:recurring-rides}}; `docs/spec/05_giving_worlds.md` §5.3 step 1. Supersedes FR-RIDE-021/022 (legacy `ride_templates` → `ride_listings`).
+> Issue #1413; product decision D103; `docs/spec/05_giving_worlds.md` §5.3 step 1. Supersedes FR-RIDE-021/022 (legacy `ride_templates` → `ride_listings`).
 
 - AC1. `ride_series` (`0531`): owner, kind, direction, title, summary, the ride details template (route, seats, cost — never the times), `depart_time` (Israel time), `weekdays` bit mask (bit 0 = Sunday, 1..127), optional `duration_minutes`, `starts_on`, optional `ends_on`, `status` ∈ {`active`, `paused`, `cancelled`}. RLS: the owner reads their own rows; every write goes through an RPC.
 - AC2. An occurrence is an ordinary native ride listing whose `details.ride_series = {id, on, weekdays, time}` (both ride kinds' detail schemas accept it); a partial unique index keeps one occurrence per series and day. Feed, search, matching, bookings, saved-route alerts, cost cap and the emergency call work on it unchanged.
