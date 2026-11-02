@@ -25,6 +25,10 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       refetchOnMount: true,
       retry: 2,
+      throwOnError: false,
+    },
+    mutations: {
+      throwOnError: false,
     },
   },
 });

@@ -13,6 +13,7 @@ import { chunkArray } from '../../lib/chunkArray';
 import { postWithOwnerFromPost, type ProfilePostOwnerContext } from '../../lib/postWithOwnerFromPost';
 import { PostCardGrid } from '../PostCardGrid';
 import { EmptyState } from '../EmptyState';
+import { PrimaryButton } from '../ui/Buttons';
 import { PostGridSkeleton } from '../skeletons/PostGridSkeleton';
 
 export type EmptyVariant =
@@ -29,12 +30,14 @@ export type EmptyVariant =
 export interface ProfilePostsGridProps {
   posts: Post[];
   isLoading: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
   empty: EmptyVariant;
   /** Profile owner context for PostMenuButton / post detail (not shown on grid cards). */
   postOwner?: ProfilePostOwnerContext;
 }
 
-export function ProfilePostsGrid({ posts, isLoading, empty, postOwner }: ProfilePostsGridProps) {
+export function ProfilePostsGrid({ posts, isLoading, isError, onRetry, empty, postOwner }: ProfilePostsGridProps) {
   const styles = useStyles();
   const { t } = useTranslation();
   const EMPTY_COPY: Record<EmptyVariant, { title: string; subtitle: string; icon: keyof typeof Ionicons.glyphMap }> = {
@@ -86,6 +89,20 @@ export function ProfilePostsGrid({ posts, isLoading, empty, postOwner }: Profile
   };
   if (isLoading) {
     return <PostGridSkeleton columns={PROFILE_GRID_COLUMNS} count={PROFILE_GRID_COLUMNS * 3} />;
+  }
+  if (isError && posts.length === 0) {
+    return (
+      <EmptyState
+        icon="cloud-offline-outline"
+        title={t('general.errorTitle')}
+        subtitle={t('errorBoundary.body')}
+        action={
+          onRetry ? (
+            <PrimaryButton testID="profile-posts-retry" label={t('general.retry')} size="md" onPress={onRetry} />
+          ) : undefined
+        }
+      />
+    );
   }
   if (posts.length === 0) {
     const e = EMPTY_COPY[empty];

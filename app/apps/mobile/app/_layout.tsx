@@ -35,6 +35,7 @@ import { ShellWithResponsiveChrome } from '../src/components/shell/ShellWithResp
 import { AppThemeProvider } from '../src/components/AppThemeProvider';
 import { NotificationsBridge } from '../src/components/NotificationsBridge';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
+export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
 import { UncaughtErrorGate } from '../src/components/UncaughtErrorGate';
 import { SoftGateProvider } from '../src/components/OnboardingSoftGate';
 import { AuthGate } from '../src/components/AuthGate';

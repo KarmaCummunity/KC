@@ -6,6 +6,7 @@
 export const errorBoundaryEn = {
   title: 'Something went wrong',
   body: 'You can try again or refresh the app.',
+  retry: 'Try again',
 } as const;
 
 export const devBannerEn = 'Development environment · DEV — not production';

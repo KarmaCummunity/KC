@@ -3,7 +3,7 @@ import React, { useCallback, useMemo } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { KcRefreshControl } from './lists/KcRefreshControl';
 import type { ViewToken } from 'react-native';
-import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import type { PostWithOwner } from '@kc/application';
 import type { useTranslatedPosts } from '../hooks/useTranslatedPosts';
 import { HOME_FEED_GRID_COLUMNS, usePostGridCardWidth } from '../hooks/useShellContentWidth';
@@ -105,7 +105,7 @@ export function PostFeedList({
   if (isLoading && !data) {
     return <PostGridSkeleton columns={HOME_FEED_GRID_COLUMNS} count={HOME_FEED_GRID_COLUMNS * 3} />;
   }
-  if (isError && !data) {
+  if (isError && (!data || data.length === 0)) {
     return (
       <View style={styles.center}>
         <Text style={styles.errorTitle}>{t('feed.loadErrorTitle')}</Text>
