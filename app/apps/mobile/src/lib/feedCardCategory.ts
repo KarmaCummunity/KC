@@ -46,6 +46,15 @@ export function feedCardCategory(post: FeedCardPost): FeedCardCategory {
 }
 
 /**
+ * Chip label key of a giving world on a card. A create category (items, rides, food, housing,
+ * time) reads as the feed's chip does; any other world keeps its marketplace name.
+ */
+export function worldChipKey(worldSlug: string): string {
+  const category = isCreateCategoryId(worldSlug) ? CREATE_CATEGORIES.find((c) => c.id === worldSlug) : undefined;
+  return category?.labelKey ?? `marketplace.world.${worldSlug}`;
+}
+
+/**
  * The create category of a mirror's world, when the card should show it: every create
  * category except items, whose mirrors carry the more specific item subcategory.
  */
