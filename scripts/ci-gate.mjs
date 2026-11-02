@@ -46,6 +46,7 @@
 import { appendFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { HEAVY_LANES, LANE_JOBS, OPTIONAL_LANES as OPTIONAL_LANE_IDS, PR_ONLY_LANES, REVIEW_LANES } from './ci-changes.mjs';
+import { ownerApprovalRequired } from './ci-base.mjs';
 import { findOwnerOverride } from './ci-github.mjs';
 import { PROTECTED } from './ci-run-binding.mjs';
 import { reusedLaneResults } from './ci-run-reuse.mjs';
@@ -133,15 +134,21 @@ export function mergeReused(needs, reused) {
 }
 
 /**
- * Errors from the ci.yml comparison: none when the PR leaves ci.yml alone or
- * an owner approved the head SHA. Pushes and dispatches run dev/main's own
- * ci.yml, so only PR-like events are compared.
+ * Errors from the ci.yml comparison: none when the PR leaves ci.yml alone, targets
+ * `dev` (an owner's approval is required only into `main`) or an owner approved
+ * the head SHA. Pushes and dispatches run dev/main's own ci.yml, so only PR-like
+ * events are compared.
  */
-async function ciWorkflowErrors(env) {
+export async function ciWorkflowErrors(env, cwd = process.cwd()) {
   if (!['pull_request', 'pull_request_review', 'merge_group'].includes(env.EVENT_NAME)) return [];
-  const drift = workflowDrift({ judgeRef: env.JUDGE_REF, runningRef: 'HEAD', baseSha: env.BASE_SHA, headSha: env.HEAD_SHA });
+  const drift = workflowDrift({ judgeRef: env.JUDGE_REF, runningRef: 'HEAD', baseSha: env.BASE_SHA, headSha: env.HEAD_SHA, cwd });
   if (drift.length === 0) return [];
-  const override = await findOwnerOverride(env, env.JUDGE_REF);
+  if (!ownerApprovalRequired(env)) {
+    // Free on dev; the release PR into main surfaces it to the owner.
+    for (const d of drift) console.log(`::warning::${d} — allowed: owner approval is required only for changes into main`);
+    return [];
+  }
+  const override = await findOwnerOverride(env, env.JUDGE_REF, cwd);
   if (override.login) {
     for (const d of drift) console.log(`::notice::${d} — accepted: @${override.login} approved head ${env.HEAD_SHA}`);
     return [];
