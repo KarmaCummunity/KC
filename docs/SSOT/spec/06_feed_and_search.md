@@ -139,6 +139,7 @@ of active filters when >0; the old in-feed "X filters active" chip
    state.
 
 **Related.** Screens: 2.2 · `FR-FEED-013` (deprecated) · `FR-FEED-018`.
+**Shared filter kit (#1457).** Implemented on top of `@kc/mobile`'s shared `filterKit` (`FilterSearchBar`, `FilterButton`, `FilterChipRow`, `FilterSection`, `SortSection`, `FilterSheetFrame`). Full component and surface inventory in spec 17 §4.1.2.
 
 ---
 

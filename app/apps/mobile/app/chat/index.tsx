@@ -5,7 +5,8 @@ import { Stack, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import type { ListRenderItem } from 'react-native';
 import { ChatError, type ChatWithPreview } from '@kc/application';
-import { makeUseStyles, typography, spacing, radius, useTheme, TextInput } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, useTheme } from '@kc/ui';
+import { FilterSearchBar } from '../../src/components/filterKit/FilterSearchBar';
 import { useAuthStore } from '../../src/store/authStore';
 import { container } from '../../src/lib/container';
 import { markNeedFreshThreadWith } from '../../src/lib/chatNavigationPrefs';
@@ -85,16 +86,12 @@ export default function ChatListScreen() {
         }}
       />
 
-      <View style={styles.searchWrap}>
-        <TextInput // brand-guard-allow: inbox search bar, not a form field (spec 17 §4.1)
-          style={styles.search}
-          value={q}
-          onChangeText={setQ}
-          placeholder={t('chat.searchPlaceholder')}
-          placeholderTextColor={colors.textDisabled}
-          textAlign="right"
-        />
-      </View>
+      <FilterSearchBar
+        style={styles.searchWrap}
+        value={q}
+        onChangeText={setQ}
+        placeholder={t('chat.searchPlaceholder')}
+      />
 
       {showSkeleton ? (
         <InboxListSkeleton />
@@ -166,15 +163,5 @@ export default function ChatListScreen() {
 
 const useChatListStyles = makeUseStyles(({ colors }) => ({
   container: { flex: 1, backgroundColor: colors.surface },
-  searchWrap: { padding: spacing.sm, backgroundColor: colors.surface },
-  search: {
-    backgroundColor: colors.background,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    ...typography.body,
-    color: colors.textPrimary,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
+  searchWrap: { padding: spacing.sm, backgroundColor: colors.surface, marginBottom: 0 },
 }));

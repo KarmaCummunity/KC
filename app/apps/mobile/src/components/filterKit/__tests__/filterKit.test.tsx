@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FilterButton } from '../FilterButton';
 import { FilterSearchBar } from '../FilterSearchBar';
+import { FilterChipRow } from '../FilterChipRow';
 import { FilterSection } from '../FilterSection';
 import { SortSection } from '../SortSection';
 import { FilterSheetFrame } from '../FilterSheetFrame';
@@ -26,6 +27,8 @@ vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 vi.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 20, bottom: 34, left: 0, right: 0 }),
 }));
+vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
+vi.mock('../../../hooks/useModalHardwareBack', () => ({ useModalHardwareBack: () => {} }));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -33,6 +36,8 @@ vi.mock('react-i18next', () => ({
     i18n: { language: 'en' },
   }),
 }));
+
+afterEach(cleanup);
 
 describe('filterKit — FilterButton', () => {
   it('renders without badge when activeCount is 0', () => {
@@ -50,6 +55,20 @@ describe('filterKit — FilterButton', () => {
     rerender(<FilterButton activeCount={12} onPress={vi.fn()} />);
     expect(screen.getByText('9+')).toBeTruthy();
   });
+
+  it('supports variant="boxed" with badge and active count', () => {
+    const onPress = vi.fn();
+    const { rerender } = render(
+      <FilterButton activeCount={2} onPress={onPress} variant="boxed" testID="boxed-btn" />,
+    );
+    expect(screen.getByTestId('boxed-btn')).toBeTruthy();
+    expect(screen.getByText('2')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('boxed-btn'));
+    expect(onPress).toHaveBeenCalledTimes(1);
+
+    rerender(<FilterButton activeCount={0} onPress={onPress} variant="boxed" testID="boxed-btn" />);
+    expect(screen.queryByTestId('filter-button-badge')).toBeNull();
+  });
 });
 
 describe('filterKit — FilterSearchBar', () => {
@@ -65,6 +84,70 @@ describe('filterKit — FilterSearchBar', () => {
     expect(clearBtn).toBeTruthy();
     fireEvent.click(clearBtn);
     expect(onChange).toHaveBeenCalledWith('');
+  });
+
+  it('handles onSubmitEditing and custom onClear', () => {
+    const onSubmit = vi.fn();
+    const onClear = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <FilterSearchBar
+        value="query"
+        onChangeText={onChange}
+        onSubmitEditing={onSubmit}
+        onClear={onClear}
+      />,
+    );
+    const clearBtn = screen.getByLabelText('filters.searchClearA11y');
+    fireEvent.click(clearBtn);
+    expect(onChange).toHaveBeenCalledWith('');
+    expect(onClear).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('filterKit — FilterChipRow', () => {
+  const options = [
+    { value: 'opt1', label: 'Option 1' },
+    { value: 'opt2', label: 'Option 2' },
+  ];
+
+  it('renders inline wrapping row and handles selection', () => {
+    const onChange = vi.fn();
+    render(
+      <FilterChipRow
+        options={options}
+        value="opt1"
+        onChange={onChange}
+        showAllChip
+        allLabel="All items"
+        testID="inline-row"
+      />,
+    );
+    expect(screen.getByText('All items')).toBeTruthy();
+    expect(screen.getByTestId('inline-row-opt1')).toBeTruthy();
+    expect(screen.getByTestId('inline-row-opt2')).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId('inline-row-opt2'));
+    expect(onChange).toHaveBeenCalledWith('opt2');
+
+    fireEvent.click(screen.getByTestId('inline-row-all'));
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it('supports scrollable mode and multiSelect', () => {
+    const onChange = vi.fn();
+    render(
+      <FilterChipRow
+        scrollable
+        multiSelect
+        options={options}
+        value={['opt1']}
+        onChange={onChange}
+        testID="scroll-row"
+      />,
+    );
+    fireEvent.click(screen.getByTestId('scroll-row-opt2'));
+    expect(onChange).toHaveBeenCalledWith(['opt1', 'opt2']);
   });
 });
 
