@@ -66,10 +66,6 @@
     "app/edit-post/[id].tsx": {
       "iconSizeLiteral": 1
     },
-    "app/edit-profile.tsx": {
-      "physicalSide": 3,
-      "rawTextInput": 3
-    },
     "app/follow/suggestions.tsx": {
       "radiusLiteral": 2
     },
@@ -97,46 +93,11 @@
     "app/settings/appearance.tsx": {
       "radiusLiteral": 1
     },
-    "app/settings/audit.tsx": {
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 1,
-      "fontFamilyLiteral": 1,
-      "radiusLiteral": 2,
-      "spacingLiteral": 1,
-      "rawTextInput": 1
-    },
-    "app/settings/feed.tsx": {
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 1,
-      "spacingLiteral": 1,
-      "rawTextInput": 1,
-      "adHocChip": 1,
-      "iconSizeLiteral": 2
-    },
-    "app/settings/feedback.tsx": {
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 1,
-      "spacingLiteral": 1,
-      "rawTextInput": 1
-    },
     "app/settings/follow-requests.tsx": {
       "fontWeightLiteral": 1
     },
     "app/settings/language.tsx": {
       "radiusLiteral": 1
-    },
-    "app/settings/report-issue.tsx": {
-      "fontWeightLiteral": 3,
-      "rawTextInput": 1,
-      "adHocChip": 1,
-      "iconSizeLiteral": 1
-    },
-    "app/settings/survey-demo.tsx": {
-      "fontSizeLiteral": 3,
-      "fontWeightLiteral": 3,
-      "radiusLiteral": 1,
-      "rawTextInput": 1
     },
     "app/settings/surveys.tsx": {
       "fontWeightLiteral": 3,
@@ -804,9 +765,6 @@
       "spacingLiteral": 1,
       "physicalSide": 2,
       "adHocChip": 1
-    },
-    "src/screens/edit-profile.styles.ts": {
-      "physicalSide": 1
     },
     "src/screens/guest/feed.styles.ts": {
       "spacingLiteral": 1
