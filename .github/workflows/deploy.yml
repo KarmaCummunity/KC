@@ -43,7 +43,18 @@ name: Deploy
 # to the CI run's completion). Both are matched by name; deploy-target.mjs
 # accepts only runs of these two workflow files and always reads the
 # certification from ci.yml's runs, never from the triggering run.
+#
+# dev push (TD #1430). `workflow_run` only fires for a file on the default
+# branch (main), so until a release carries deploy.yml no dev push would ever
+# deploy kc-dev. A push to dev therefore also starts this workflow from dev's
+# own copy: resolve waits for that commit's push CI run to finish, then judges
+# it exactly like a dispatch (same CI-gate and bump-inheritance rules). Push is
+# dev-only — prod still deploys only through workflow_run/dispatch on main with
+# the owner's approval. A `[skip ci]` bump push starts nothing; the merge's
+# push run picks up the bump child once CI is green.
 on:
+  push:
+    branches: [dev]
   workflow_run:
     workflows: [CI, Bump app version on merge]
     types: [completed]
@@ -56,7 +67,7 @@ on:
 # with CI-triggered deploys, so they never run concurrently.
 concurrency:
   group: >-
-    deploy-${{ (github.event_name == 'workflow_dispatch' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success'))
+    deploy-${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success'))
     && (github.event.workflow_run.head_branch || github.ref_name) || format('noop-{0}', github.run_id) }}
   cancel-in-progress: false
 
@@ -72,9 +83,9 @@ jobs:
   # another commit; and it finds the previous release for rollback.
   resolve:
     name: resolve target
-    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success')
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 75
     permissions:
       contents: read
       actions: read
@@ -92,6 +103,23 @@ jobs:
           sparse-checkout: scripts/deploy-target.mjs
           sparse-checkout-cone-mode: false
           persist-credentials: false
+      # dev push only: wait (max ~70 min) for this commit's push CI run to
+      # complete; the judge below then requires its CI gate to be green.
+      - name: Wait for the push CI run (dev push)
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 140); do
+            st=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$SHA&event=push&per_page=5" \
+              --jq '[.workflow_runs[].status] | if length == 0 then "none" elif all(. == "completed") then "completed" else "running" end')
+            echo "CI for $SHA: $st"
+            [ "$st" = completed ] && exit 0
+            sleep 30
+          done
+          echo "::error::CI for $SHA did not complete in time"; exit 1
       - name: Resolve and verify the CI gate
         id: target
         env:
