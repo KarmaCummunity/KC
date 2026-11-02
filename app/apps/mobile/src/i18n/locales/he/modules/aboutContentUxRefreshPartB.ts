@@ -123,7 +123,6 @@ export const aboutContentUxRefreshPartB = {
     'תרומה ישירה דרך ביט או פייבוקס למספר 0528616878 — מחוץ למוצר. הכסף יושב בקופה עד שנירשם כעמותה. בלי איסוף ובלי ערבות של האפליקציה.',
   contactSupportRow: 'דיווח על באג או בקשת תכונה — דרך «דיווח על בעיה» בהגדרות (מומלץ).',
   contactLinkError: 'לא הצלחנו לפתוח את הקישור במכשיר הזה.',
-  instagramWebFallbackTitle: 'אינסטגרם — פתיחה חיצונית',
 
   roadmapExpandMore: 'קרא עוד',
   roadmapExpandLess: 'פחות',

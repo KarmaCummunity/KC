@@ -123,7 +123,6 @@ export const aboutContentUxRefreshPartB = {
     'Direct donation via Bit or PayBox to 0528616878 — outside the product. The money sits in a fund until we register as a nonprofit. No collection and no guarantee from the app.',
   contactSupportRow: 'Report a bug or request a feature — through "Report an issue" in Settings (recommended).',
   contactLinkError: 'We couldn\'t open the link on this device.',
-  instagramWebFallbackTitle: 'Instagram — open externally',
 
   roadmapExpandMore: 'Read more',
   roadmapExpandLess: 'Less',

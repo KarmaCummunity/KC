@@ -803,13 +803,6 @@
       "fontWeightLiteral": 1,
       "radiusLiteral": 2
     },
-    "src/features/about-landing/AboutInstagramEmbed.tsx": {
-      "iconSizeLiteral": 1
-    },
-    "src/features/about-landing/AboutInstagramEmbed.web.tsx": {
-      "physicalSide": 3,
-      "iconSizeLiteral": 1
-    },
     "src/features/about-landing/AboutLogoEvolutionSection.tsx": {
       "fontSizeLiteral": 1,
       "fontWeightLiteral": 3,
