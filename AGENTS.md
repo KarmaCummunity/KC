@@ -5,6 +5,7 @@ KC (Karma Community) is built largely by AI agents. This is the short entry poin
 | Read | For |
 |---|---|
 | [`docs/agents/OPERATING_MODEL.md`](docs/agents/OPERATING_MODEL.md) | Roles, the issue → PR → dev → kc-dev flow, labels, auto-merge |
+| [`docs/agents/ISSUE_CLAIMS.md`](docs/agents/ISSUE_CLAIMS.md) | **Claim an issue before starting it**: skip `in-progress` issues |
 | [`docs/agents/MIGRATION_RANGES.md`](docs/agents/MIGRATION_RANGES.md) | **Claim a migration number range before writing SQL** |
 | [`docs/agents/STACK_MAP.md`](docs/agents/STACK_MAP.md) | Open stacked PRs and merge order |
 | [`docs/agents/ARCHITECTURE.md`](docs/agents/ARCHITECTURE.md) | Apps / packages / supabase / workflows map |

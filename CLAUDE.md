@@ -199,6 +199,10 @@ When you spot tech debt outside the immediate scope:
 
 ## 6. Git & PR workflow
 
+### Issue claims (multi-agent)
+
+Before starting an issue: skip it if it has `in-progress` or an open PR references it. Otherwise claim it (`in-progress` + your `agent:cursor|codex|antigravity|kc-bot` label, comment `claimed by <agent>`). Release on abandon; merge releases automatically. Claims older than 6 hours with no open PR are stale. Full rule: [`docs/agents/ISSUE_CLAIMS.md`](docs/agents/ISSUE_CLAIMS.md).
+
 > Repo: `KarmaCummunity/KC` · Default branch: `main` · Merge strategy: **squash** · Auto-merge: **on** — `dev` merges through a merge queue once the single required check **`CI gate`** passes.
 > **Working branch: `dev`.** All PRs target `dev`. `main` is updated by a `dev` → `main` release PR (squash-merged). Full topology in [`docs/SSOT/ENVIRONMENTS.md`](docs/SSOT/ENVIRONMENTS.md).
 
