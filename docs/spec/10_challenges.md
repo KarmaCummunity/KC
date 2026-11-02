@@ -1,6 +1,6 @@
 # 10 — Challenges layer (D43, D46, D52)
 
-Challenges are a **cross-cutting layer, not a world** (D43). Personal (read 10 pages a day), group (weekly run) and community ("1,000 meals this month").
+Challenges are a **world in the one world list** ({{D:one-world-list}}: give = open a challenge, take = join; community and personal, every anonymity level — [05 §5.12](./05_giving_worlds.md#512-challenges-challenges--phase-2)) **and** a cross-cutting engine that every other world uses (D43, D46). Personal (read 10 pages a day), group (weekly run) and community ("1,000 meals this month").
 
 - **One engine** (D46). A giving challenge opens from two places — inside any giving world (e.g. "gave away 5 items this month" from items) and from the challenges screen. Same challenge, same counting, same karma.
 - Giving challenge: linked to a world, counted from closings. Personal challenge: counted from self-report.

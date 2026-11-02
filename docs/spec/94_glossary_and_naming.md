@@ -6,9 +6,9 @@
 | מקור האמת | Source of truth | The Hebrew project-book page (D35); this folder is its English derivation |
 | פוסט | Post | The only publishing entity (D2, D19) |
 | סוג פוסט | Post type | World + direction, or event/job; drives form, expiry and closing |
-| עולם נתינה | Giving world | Type of giving; one of 8 (D45) |
-| תחום | Domain | One internal tag per post; not shown on card; drives filters, recommendations, impact, domain hub (D45) |
-| מרכז עולם / מרכז תחום | World hub / domain hub | World screen built from config (D36); light domain version (S38) |
+| עולם נתינה | Giving world | Type of giving; one list of 12 ({{D:one-world-list}}); a post has one primary world and optional additional worlds ({{D:multi-world-post}}) |
+| תת-קטגוריה של עולם | World sub-category | Per-world list (item subcategory, food type, time: elderly & loneliness / sport, knowledge: science & technology / …); drives the form, browse filters and matching. The former "domain" tag (D45) is gone ({{D:one-world-list}}) |
+| מרכז עולם | World hub | World screen built from config (D36); no domain hubs ({{D:one-world-list}}) |
 | שכבה רוחבית | Cross-cutting layer | Applies to all worlds: challenges, emergency, karma |
 | בלוק מתוסף | Plug-in block | World-specific component on the shared template (D36) |
 | תת-קטגוריה של חפצים | Item subcategory | Kind of item (D18) |
@@ -50,8 +50,8 @@
 | Concept | Proposed identifier | In code today |
 |---|---|---|
 | Post | `Post` / `public.posts` (D19) | `posts` + `listings` |
-| Giving world | `DonationWorld`, `DONATION_WORLD_SLUGS`: items, food, time, knowledge, money, rides, housing, experiences | `world_slug`, `MARKETPLACE_WORLD_SLUGS` |
-| Domain | `PostDomain`, `POST_DOMAIN_SLUGS`: medical, animals, environment, elderly, democracy, employment, sport, tech, heritage, culture, spirituality; `Post.domain_slug`; `DomainHubConfig` | none |
+| Giving world | `GivingWorld`, `WORLD_SLUGS`: items, food, transport (code `rides` until `{{G:one-world-registry}}`), time, money, housing, knowledge, medical, animals, democracy, employment, challenges | `world_slug`, `MARKETPLACE_WORLD_SLUGS`, `GIVING_WORLD_SLUGS` + `DOMAIN_SLUGS` |
+| Additional worlds | `Post.additionalWorlds`, `listing_worlds` ({{D:multi-world-post}}) | `Post.domain_slug`, `DomainHubConfig`, `POST_DOMAIN_SLUGS` |
 | Hub | `WorldHubScreen`, `WorldHubConfig`, `WorldHubBlock` | `WorldMarketplaceHub` |
 | Orgs / knowledge / resource | `WorldOrgDirectory`, `WorldKnowledgeArticle`, `WorldResource` | `donation_links` |
 | Post type / direction | `PostType`; `PostDirection: offer \| request` | `listing_kinds`; give/request |

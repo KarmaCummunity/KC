@@ -18,7 +18,9 @@ Huge market already exists in WhatsApp/Facebook/Yad2 "giveaway" without trust or
 4. No expiry; relevance reminder after 14 days (D21, S3).
 Item subcategories (D18): furniture, kitchen, clothing, books, toys, baby, sport, electronics, tools, other. Baby-product safety warning.
 
-## 5.3 Rides (`rides`) — MVP (flag on since `0511`)
+## 5.3 Transport (`transport`) — rides sub-category, MVP (flag on since `0511`)
+The transport world replaces the rides world ({{D:one-world-list}}); rides are its first and, for now, only sub-category. The code slug stays `rides` until the registry task (`{{G:one-world-registry}}`), and nothing in the launch rides flow below changes for users.
+
 Rides live in WhatsApp groups; dedicated apps failed on critical mass. This world is the main growth engine: WhatsApp group import (D38, D47) and fixed routes. The bar is the WhatsApp ride group: publishing a ride is as fast as sending a message, and everyone who cares about that route hears about it at once (D70–D75).
 
 One rides flow (D70): ride offers and requests are posts with a ride extension; bookings use the generic handoff stage. The separate legacy ride screens are retired; their emergency button and cost-sharing caps attach to this flow.
@@ -52,7 +54,8 @@ Anyone can give an hour (D22). One-off, person-to-person, and org events.
 1. Offer or request with estimated duration (D32).
 2. Match & chat.
 3. "Volunteering done" — unaffiliated: karma by declared duration (S14); affiliated: hours approved by the org manager (D32).
-Emotional support only via a hotline. Elderly actions are tagged with the elderly domain (D39).
+Emotional support only via a hotline.
+Sub-categories ({{D:one-world-list}}): elderly & loneliness (D39, S24; home visit requires volunteer ID verification, D48), sport, cleanups, class seats, general. Organizations that are not lawful employers recruit volunteers here, not in employment.
 
 ## 5.5 Money (`money`) — MVP (Grow) → phase 2
 No money between users (D4). Now: donate to KC, one-time or recurring, via a Grow hosted payment page (D20) — the app only redirects and receives confirmation, so the provider can be swapped without code. Bit / PayBox transfer links are interim only and disappear once the one-time clearing page is live (D64). Vision: a JGive-like platform inside the app for every approved org, section-46 receipts, with JGive as partner (D37). No post form. Org directory with proper-management badge (S35).
@@ -67,6 +70,26 @@ Always free. Minors only with a parent; at-risk youth only via an org (S16). Eme
 
 ## 5.7 Knowledge, rights & legal aid (`knowledge`) — phase 2
 Content exists (Kol Zchut, Campus IL); the missing piece is personal connection. Lessons and mentoring for free, plus rights and legal aid (D40): a pro-bono "consulting hour" post by lawyers, accountants, advisors (S36). No binding legal advice in posts — refer to an authorized party.
+Sub-categories ({{D:one-world-list}}): science & technology, history & heritage, culture & art, spirituality & philosophy, rights & legal aid, lessons & mentoring. A recurring lesson may also be marked for the time world ({{D:multi-world-post}}). Listing approval rule pending (KC#1037).
 
-## 5.8 Experiences (`experiences`) — phase 2 (D45)
-Unused tickets, free class places, workshops. Its own form, expiry at event date, and closing "experience delivered". Domain tag (culture, sport, spirituality…) set per post. Free only — a priced ticket breaches the terms. An org workshop may be an event post.
+## 5.8 Medical (`medical`) — directory now, feed later
+A world of its own ({{D:one-world-list}}; was a domain under D45). **Only verified medical bodies publish** (D30, S17) — Yad Sarah, MDA, Ezer Mizion, ADI; regular users view, contact, borrow and return. The curated philanthropic medical directory (24 bodies, 10 topics, KC#1314) feeds the hub.
+1. Equipment lending — offer by a medical body with return date; request by anyone.
+2. Blood and organ donation — deep links to the official registries only; no personal health data stored.
+3. Information and calls — blood calls only from medical bodies; a local shortage becomes a targeted emergency (D42).
+Rules: no medical advice in any post; a "not medical advice" notice on every medical screen.
+
+## 5.9 Animals (`animals`) — phase 2
+Give and take for animals ({{D:one-world-list}}): supplies, foster, adoption, care and training knowledge, feeding and water points (plug-in map). SPCA as lead partner. **Everyone may publish and take** (PM 2026-11-02); the only rule is the platform-wide one — everything is free, nothing is sold.
+
+## 5.10 Democracy (`democracy`) — phase 3
+Kept as a world, empty for now ({{D:one-world-list}}). Content is the governance layer of [11](./11_governance.md): rules, rule parameters, proposals and votes (KC#1032), civic knowledge and advocacy nonprofits (D40). Strict party-political neutrality (S25).
+
+## 5.11 Employment (`employment`) — phase 2
+Give = post a job; take = apply ({{D:one-world-list}}). **Only a verified organization that is regulated by law and may legally employ people posts jobs**; an organization that is not such recruits volunteers in the time world (PM 2026-11-02; refines D41, D53, D57). Free posting; philanthropic and nonprofit-sector roles only; no karma on paid jobs (S27). Applications open a chat anchored on the job; no CV storage in v1. Job board gap: G28.
+
+## 5.12 Challenges (`challenges`) — phase 2
+Give = open a challenge; take = join ({{D:one-world-list}}). Community and personal challenges, with every anonymity level the app supports. The one challenge engine of [10](./10_challenges.md) (D46) stays: a giving challenge can still be opened from inside any world and is counted from closings. Supersedes "challenges are a layer, not a world" (D43) for the product structure only; the engine, karma rules and streaks in 10 are unchanged.
+
+## 5.13 Experiences — removed ({{D:one-world-list}})
+The experiences world (D45) was dropped: unused tickets are items (sub-category tickets, expiry at event date), free class places and workshops are time posts. Free only — a priced ticket breaches the terms.
