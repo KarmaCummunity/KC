@@ -1,5 +1,6 @@
 // A date + time field that works on every platform (gap G49):
-//   • iOS — the native spinner in a bottom sheet, applied on "done";
+//   • iOS — the native spinner in a bottom sheet, applied on "done", drawn in the app's theme
+//     (not the phone's) so its digits stay visible on the sheet;
 //   • Android — the native picker does not do date and time at once, so it opens the date
 //     dialog and then the time dialog;
 //   • web — the browser's `datetime-local` input in the same sheet.
@@ -49,7 +50,7 @@ export function fromWebLocalValue(value: string): Date | null {
 export function DateTimeField({ label, value, onChange, placeholder, minimumDate, shortcuts, disabled, testID }: Props) {
   const { t } = useTranslation();
   const styles = useStyles();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Date>(value ?? minimumDate ?? new Date());
 
@@ -122,6 +123,11 @@ export function DateTimeField({ label, value, onChange, placeholder, minimumDate
                 display="spinner"
                 minimumDate={minimumDate}
                 locale="he-IL"
+                // The spinner follows the phone's appearance unless told otherwise, while the sheet
+                // follows the app's theme (light by default). On a phone in dark mode it drew white
+                // digits on the light sheet, so the picker looked empty (#1398).
+                themeVariant={isDark ? 'dark' : 'light'}
+                textColor={colors.textPrimary}
                 onChange={(_e: DateTimePickerEvent, d?: Date) => d && setDraft(d)}
               />
             )}
