@@ -2,7 +2,7 @@
 
 | Field | Value | Limit |
 |---|---|---|
-| Name (App Store / Play) | Karma Community: Give & Get | 30 / 30 |
+| Name (App Store / Play) | KC - Karma Community | 30 / 30 |
 | Subtitle (iOS) | Give items, food, rides & time | 30 |
 | Short description (Play) | Give, ask and connect: items, food, time, rides, knowledge and donations. | 80 |
 | Keywords (iOS) | giving,free stuff,donate,give away,second hand,volunteer,rideshare,charity,community,neighbors | 100 |

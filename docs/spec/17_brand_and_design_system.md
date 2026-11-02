@@ -22,7 +22,8 @@ Rules:
 
 ## 2. Logo
 
-- Master asset: `app/apps/mobile/assets/logo.png` (K + heart + globe). Store icons, splash and favicon are derived from it (`assets/icon.png`, `adaptive-icon*.png`, `splash*.png`, `favicon.png`).
+- Master asset: `app/apps/mobile/assets/logo.png` (K + heart + globe). Store icons, splash and favicon are derived from it (`assets/icon.png`, `adaptive-icon*.png`, `splash*.png`, `favicon.png` — the 256px favicon is what `app.json` `web.favicon` points at). `docs/logo_without_background.png` is the transparent export of the same master for print and marketing; it ships in no app surface.
+- Backdrop: the splash, the Android adaptive icon and the web page / PWA manifest sit on the light `background` token (`#FFFBF7`), not on white, so the logo lands on the same cream the app opens with. Config files cannot import tokens, so `brandGuard.test.ts` pins the `app.json` copies and `scripts/generate-web-manifest.mjs` reads `kc.tokens.json`.
 - History: `assets/logo-evolution/` (read-only archive).
 - Logo colours: dark navy `#203050` (the K and the globe ring), warm orange/peach gradient (heart), teal `#95D1CF` (globe sea). The navy is the app's `secondary` (D66).
 - Do not recolour, stretch, add effects, or place the full-colour logo on a busy or orange background. Use the monochrome adaptive icon on coloured backgrounds.
