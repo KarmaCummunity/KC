@@ -18,7 +18,9 @@ export function RidesHubScreen() {
             icon="car-outline"
             introKey="donations.rides.hubBody"
             linksCategory="transport"
-            subScreens={worldSubScreens('/(tabs)/donations/rides/handoffs')}
+            subScreens={worldSubScreens('/(tabs)/donations/rides/handoffs', [
+              { labelKey: 'rideSeries.mine', path: '/(tabs)/donations/rides/series', testID: 'world-hub-ride-series' },
+            ])}
             headerExtra={<RideMatchSearch />}
           />
         }

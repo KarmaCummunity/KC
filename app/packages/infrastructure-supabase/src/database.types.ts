@@ -6595,6 +6595,89 @@ export type Database = {
           },
         ]
       }
+      ride_series: {
+        Row: {
+          created_at: string
+          depart_time: string
+          details: Json
+          direction: string
+          duration_minutes: number | null
+          ends_on: string | null
+          kind_id: string
+          owner_id: string
+          series_id: string
+          starts_on: string
+          status: string
+          summary: string | null
+          title: string
+          updated_at: string
+          weekdays: number
+        }
+        Insert: {
+          created_at?: string
+          depart_time: string
+          details?: Json
+          direction: string
+          duration_minutes?: number | null
+          ends_on?: string | null
+          kind_id: string
+          owner_id: string
+          series_id?: string
+          starts_on?: string
+          status?: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+          weekdays: number
+        }
+        Update: {
+          created_at?: string
+          depart_time?: string
+          details?: Json
+          direction?: string
+          duration_minutes?: number | null
+          ends_on?: string | null
+          kind_id?: string
+          owner_id?: string
+          series_id?: string
+          starts_on?: string
+          status?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          weekdays?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_series_kind_id_fkey"
+            columns: ["kind_id"]
+            isOneToOne: false
+            referencedRelation: "listing_kinds"
+            referencedColumns: ["kind_id"]
+          },
+          {
+            foreignKeyName: "ride_series_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ride_series_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ride_series_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       ride_stops: {
         Row: {
           city_id: string
@@ -10074,6 +10157,23 @@ export type Database = {
         }
         Returns: string
       }
+      create_ride_series: {
+        Args: {
+          p_depart_time: string
+          p_details: Json
+          p_direction: string
+          p_duration_minutes?: number
+          p_ends_on?: string
+          p_kind_id: string
+          p_summary?: string
+          p_title: string
+          p_weekdays: number
+        }
+        Returns: {
+          first_listing_id: string
+          series_id: string
+        }[]
+      }
       create_standing_order: {
         Args: {
           p_amount_ils: number
@@ -10646,6 +10746,15 @@ export type Database = {
           place_kind: string
         }[]
       }
+      list_ride_series_occurrences: {
+        Args: { p_limit?: number; p_series_id: string }
+        Returns: {
+          departs_at: string
+          listing_id: string
+          passengers: number
+          seats_left: number
+        }[]
+      }
       list_rides_feed: {
         Args: { p_limit?: number }
         Returns: {
@@ -10656,7 +10765,9 @@ export type Database = {
           meeting_points: number
           origin_label: string
           passengers: number
+          recurrence: Json
           seats_left: number
+          series_more: number
           title: string
         }[]
       }
@@ -11423,6 +11534,67 @@ export type Database = {
         Returns: string
       }
       ride_route_alerts_sweep: { Args: never; Returns: number }
+      ride_series_check_schedule: {
+        Args: {
+          p_duration_minutes: number
+          p_ends_on: string
+          p_weekdays: number
+        }
+        Returns: undefined
+      }
+      ride_series_drop_unbooked: {
+        Args: { p_series_id: string }
+        Returns: number
+      }
+      ride_series_feed_waits: {
+        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
+        Returns: boolean
+      }
+      ride_series_for_update: {
+        Args: { p_series_id: string }
+        Returns: {
+          created_at: string
+          depart_time: string
+          details: Json
+          direction: string
+          duration_minutes: number | null
+          ends_on: string | null
+          kind_id: string
+          owner_id: string
+          series_id: string
+          starts_on: string
+          status: string
+          summary: string | null
+          title: string
+          updated_at: string
+          weekdays: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ride_series"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      ride_series_marker: {
+        Args: {
+          p_on: string
+          p_series: Database["public"]["Tables"]["ride_series"]["Row"]
+        }
+        Returns: Json
+      }
+      ride_series_materialize: {
+        Args: { p_series_id?: string }
+        Returns: number
+      }
+      ride_series_materialize_day: {
+        Args: {
+          p_on: string
+          p_series: Database["public"]["Tables"]["ride_series"]["Row"]
+        }
+        Returns: number
+      }
+      ride_series_sweep: { Args: never; Returns: number }
       ride_templates_materialize: { Args: never; Returns: number }
       rides_expired_listings_sweep: { Args: never; Returns: number }
       role_rank: { Args: { p_role: string }; Returns: number }
@@ -12209,6 +12381,10 @@ export type Database = {
         Args: { p_city_id: string; p_count?: number; p_owner_id: string }
         Returns: number
       }
+      set_ride_series_status: {
+        Args: { p_series_id: string; p_status: string }
+        Returns: undefined
+      }
       share_listing_to_feed: { Args: { p_listing_id: string }; Returns: string }
       shows_active_status: { Args: { p_user: string }; Returns: boolean }
       sign_up_volunteer_shift: {
@@ -12341,6 +12517,16 @@ export type Database = {
           p_summary?: string
           p_title?: string
           p_urgency_level?: number
+        }
+        Returns: undefined
+      }
+      update_ride_series: {
+        Args: {
+          p_depart_time: string
+          p_duration_minutes?: number
+          p_ends_on?: string
+          p_series_id: string
+          p_weekdays: number
         }
         Returns: undefined
       }

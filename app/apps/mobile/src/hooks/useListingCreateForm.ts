@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { validateListingDetails } from '@kc/domain';
+import { localIsoDate, localTimeHHmm, rideDurationMinutes, validateListingDetails } from '@kc/domain';
 import type { CreateDirection } from '../lib/unifiedCreate/createCategories';
 import { WORLDS_WITH_SUBCATEGORY_PICKER } from '../lib/unifiedCreate/createCategories';
 import { buildListingCreatePayload } from '../lib/unifiedCreate/unifiedCreatePayload';
@@ -21,7 +21,9 @@ import { uploadListingImages, type PickedImage } from '../services/listingImageU
 import { useAuthStore } from '../store/authStore';
 import { trackActivationIfFirst, trackCoreLoop } from '../lib/analyticsCoreLoop';
 import { rememberRideRoute } from '../lib/rides/rideStartDetails';
+import { rideSeriesUseCases } from '../services/rideSeriesComposition';
 import { RIDE_CREATE_DETAIL_KEYS } from '../components/giving/RideCreateSection';
+import type { RideRecurrenceDraft } from '../components/giving/RideRecurrenceFields';
 
 /** Matching radius sent with every listing; the world rules refine reach server-side. */
 const DEFAULT_RADIUS_KM = 25;
@@ -59,6 +61,8 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
   const [city, setCity] = useState<City | null>(null);
   const [photos, setPhotos] = useState<PickedImage[]>([]);
   const [subcategoryId, setSubcategoryId] = useState<string | null>(null);
+  // Rides only: a recurring ride publishes a series instead of one listing (FR-RIDE-046).
+  const [recurrence, setRecurrence] = useState<RideRecurrenceDraft | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const publishLock = useRef(false);
@@ -82,8 +86,30 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
     if (!isRides && !city) return t('post.unifiedCreate.errors.cityRequired');
     const rule = marketplaceRuleFieldError({ worldSlug, details: submitted, photoCount: photos.length });
     if (rule) return t(rule.key);
+    if (isRides && recurrence && recurrence.weekdays.length === 0) return t('rideSeries.errors.weekdaysRequired');
     const schemaErr = kind ? validateListingDetails(kind.detailSchema, submitted) : null;
     return schemaErr ? t('marketplace.validationFailed', { code: schemaErr }) : null;
+  };
+
+  /** A recurring ride: the series the server materializes, from the form's ride details. */
+  const publishSeries = async (submitted: Record<string, unknown>, draft: RideRecurrenceDraft): Promise<string> => {
+    if (!kind) throw new Error('kind_not_found');
+    // The departure field's time of day is the series time; its day is only the first occurrence.
+    const { departs_at: departsAt, arrives_at: _arrivesAt, ...template } = submitted;
+    const created = await rideSeriesUseCases.create().execute({
+      kindId: kind.kindId,
+      direction,
+      title: title.trim(),
+      summary: summary.trim() || null,
+      details: template,
+      schedule: {
+        weekdays: draft.weekdays,
+        time: localTimeHHmm(new Date(String(departsAt))),
+        endsOn: draft.endsOn ? localIsoDate(draft.endsOn) : null,
+      },
+      durationMinutes: rideDurationMinutes(submitted),
+    });
+    return created.firstListingId;
   };
 
   const publish = async () => {
@@ -95,6 +121,13 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
     publishLock.current = true;
     setBusy(true);
     try {
+      if (isRides && recurrence) {
+        const firstId = await publishSeries(submitted, recurrence);
+        trackCoreLoop('listing_created', { world: worldSlug, cityId: null });
+        void rememberRideRoute(submitted);
+        onPublished(firstId);
+        return;
+      }
       const mediaPaths = photos.length > 0 ? await uploadListingImages(userId, photos) : [];
       const id = await marketplaceRepository().createListing(
         buildListingCreatePayload({
@@ -143,6 +176,8 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
     setPhotos,
     subcategoryId,
     setSubcategoryId,
+    recurrence,
+    setRecurrence,
     showSubcategory,
     isRides,
     busy,

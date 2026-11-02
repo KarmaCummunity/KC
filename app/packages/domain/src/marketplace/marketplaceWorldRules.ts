@@ -58,6 +58,14 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   // D70 (0517) — the emergency button works only during the ride, once per 5 minutes.
   'ride_not_active',
   'emergency_throttled',
+  // FR-RIDE-046 (0531) — recurring rides: the schedule, ownership and the terminal cancelled state.
+  'ride_series_weekdays_invalid',
+  'ride_series_duration_invalid',
+  'ride_series_ends_in_past',
+  'ride_series_no_occurrence',
+  'ride_series_not_found',
+  'ride_series_cancelled',
+  'ride_series_status_invalid',
 ] as const;
 
 export type MarketplaceServerErrorCode = (typeof MARKETPLACE_SERVER_ERROR_CODES)[number];

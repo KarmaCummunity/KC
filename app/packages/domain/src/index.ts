@@ -41,6 +41,7 @@ export * from './rides/rideNavigation';
 export * from './rides/rideSchedule';
 export * from './rides/RideFeedItem';
 export * from './rides/RideSavedRoute';
+export * from './rides/RideSeries';
 export * from './rides/rideSafety';
 export * from './translations/TranslationTypes';
 export * from './translations/TranslationError';

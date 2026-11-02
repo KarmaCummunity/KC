@@ -1,0 +1,31 @@
+// Composition root for recurring rides (docs/spec/05_giving_worlds.md §5.3 step 1, FR-RIDE-046).
+import {
+  CreateRideSeriesUseCase,
+  ListMyRideSeriesUseCase,
+  ListRideSeriesOccurrencesUseCase,
+  SetRideSeriesStatusUseCase,
+  UpdateRideSeriesScheduleUseCase,
+  type IRideSeriesRepository,
+} from '@kc/application';
+import { SupabaseRideSeriesRepository } from '@kc/infrastructure-supabase';
+import { getMarketplaceSupabaseClient } from './marketplaceComposition';
+
+let repo: IRideSeriesRepository | null = null;
+
+function repository(): IRideSeriesRepository {
+  repo ??= new SupabaseRideSeriesRepository(getMarketplaceSupabaseClient());
+  return repo;
+}
+
+export const rideSeriesUseCases = {
+  create: () => new CreateRideSeriesUseCase(repository()),
+  listMine: () => new ListMyRideSeriesUseCase(repository()),
+  setStatus: () => new SetRideSeriesStatusUseCase(repository()),
+  updateSchedule: () => new UpdateRideSeriesScheduleUseCase(repository()),
+  listOccurrences: () => new ListRideSeriesOccurrencesUseCase(repository()),
+};
+
+export const MY_RIDE_SERIES_QUERY_KEY = ['ride-series'] as const;
+
+/** The upcoming dates of one series ("other dates" on an occurrence). */
+export const rideSeriesOccurrencesQueryKey = (seriesId: string) => ['ride-series-occurrences', seriesId] as const;

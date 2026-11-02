@@ -46,6 +46,13 @@ function renderCard(details: Record<string, unknown>) {
 const fullRoute = withMeetingPoints(withRidePlace(withRidePlace({}, 'origin', TLV), 'dest', HAIFA), [GLILOT]);
 
 describe('RideRouteCard', () => {
+  it('says when a recurring ride repeats (FR-RIDE-046)', () => {
+    const view = renderCard({ ...fullRoute, ride_series: { id: 's1', on: '2026-11-02', weekdays: 0b11111, time: '07:30' } });
+    expect(view.getByText('rideSeries.every')).toBeTruthy();
+    cleanup();
+    expect(renderCard(fullRoute).queryByText('rideSeries.every')).toBeNull();
+  });
+
   it('lists origin, meeting point and destination in driving order', () => {
     const view = renderCard(fullRoute);
     const roles = view.getAllByTestId(/^ride-stop-(origin|meeting|dest)$/).map((el) => el.getAttribute('data-testid'));

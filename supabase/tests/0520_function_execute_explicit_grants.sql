@@ -111,7 +111,7 @@ select pg_temp.assert_none($q$
        -- public-read RPCs
        'browse_listings', 'get_marketplace_listing_detail', 'get_nonprofit_public_page',
        'get_public_research_questions', 'get_volunteer_opportunity_detail', 'list_profile_listings',
-       'list_rides_feed', 'list_verified_nonprofits', 'list_volunteer_opportunities',
+       'list_ride_series_occurrences', 'list_rides_feed', 'list_verified_nonprofits', 'list_volunteer_opportunities',
        'map_listing_clusters', 'map_listing_pins', 'marketplace_search', 'profile_closed_posts',
        'profile_closed_posts_count', 'ride_listings_search', 'search_listings', 'search_posts_page',
        'search_users_page', 'similar_listings'])

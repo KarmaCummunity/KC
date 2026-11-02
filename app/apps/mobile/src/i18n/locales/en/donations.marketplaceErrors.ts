@@ -42,5 +42,12 @@ export const marketplaceErrors = {
   same_route: 'The origin and the destination are the same place.',
   ride_not_active: 'You can call for help only during the ride.',
   emergency_throttled: 'Your call was already sent. You can send another in a few minutes.',
+  ride_series_weekdays_invalid: 'Pick at least one day for the recurring ride.',
+  ride_series_duration_invalid: 'The estimated end of the recurring ride is not valid.',
+  ride_series_ends_in_past: 'The end date of the recurring ride has already passed.',
+  ride_series_no_occurrence: 'This recurring ride would not run in the coming week. Check its days and end date.',
+  ride_series_not_found: 'This recurring ride no longer exists.',
+  ride_series_cancelled: 'This recurring ride was cancelled and cannot change. You can publish a new one.',
+  ride_series_status_invalid: 'That is not possible right now. Refresh and try again.',
   generic: 'Publishing failed. Please try again.',
 } as const;
