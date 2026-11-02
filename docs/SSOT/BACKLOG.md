@@ -70,7 +70,7 @@ Stages 1, 2, 3 and 6 (`INFRA-CI-1` unified PR gate, `INFRA-CI-2` gate integrity,
 
 | ID | Task | Owner | Status | Spec |
 |----|------|-------|--------|------|
-| RIDES-G47 | **Driver bookings + push.** Driver sees and approves/declines every booking on a ride; push on booked / approved / declined / cancelled / expired; unapproved bookings expire (D96). Shipped: `0511` + `RideBookingActions`; rides world flag on. | agent-fullstack | ✅ Done | `docs/spec/05_giving_worlds.md` §5.3 · G47 |
+| RIDES-G47 | **Driver bookings + push.** Driver sees and approves/declines every booking on a ride; push on booked / approved / declined / cancelled / expired; unapproved bookings expire (D96). Shipped: `0511` + `RideBookingActions`; rides world flag on. Approval seat capacity is enforced atomically at the server (`0531`). | agent-fullstack | ✅ Done | `docs/spec/05_giving_worlds.md` §5.3 · G47 |
 | RIDES-G45 | **Official places catalog + picker.** Import MoT junctions & interchanges (D98); one picker over cities, streets and junctions for origin, destination and ≤ 3 meeting points. Shipped: `0512`/`0513`, `RidePlaceField`, server-side place guard. | agent-fullstack | ✅ Done | §5.3 · G45 |
 | RIDES-G46 | **Map + navigate.** Ride route on the map; "navigate" to Waze / Google Maps / Apple Maps for every ride place. | agent-fe | ✅ Done | §5.3 · G46 |
 | RIDES-G49 | **Quick publish + rides feed.** Cross-platform date-time field, time shortcuts, remembered route, "publish again" (D97); feed of offers + requests by departure, departed hidden. | agent-fullstack | ✅ Done | §5.3 · G49 |

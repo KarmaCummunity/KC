@@ -9,6 +9,7 @@ export const marketplaceErrors = {
   ride_departure_past: 'Choose a departure time in the future.',
   knowledge_slot_invalid: 'Choose a future start time and an end time after it.',
   seats_exhausted: 'No seats left on this ride.',
+  ride_seats_exhausted: 'There are not enough seats left to approve this booking.',
   slots_exhausted: 'No slots left for this session.',
   already_booked: 'You already have a booking here.',
   ride_departed: 'This ride has already left.',

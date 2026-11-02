@@ -20,6 +20,7 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'ride_departure_past',
   'knowledge_slot_invalid',
   'seats_exhausted',
+  'ride_seats_exhausted',
   'slots_exhausted',
   'already_booked',
   'ride_departed',
