@@ -133,6 +133,25 @@ Screens move onto the kit one area per PR, after the PM approves the look; track
 
 ✅ **CTAs 4 — admin, the token-clean files** (2026-11-02): 84 fills in 68 files left outside the kit and tests, down from 97 in 80 after CTAs 3 (same whole-token count). Every admin action is the compact `sm` size (§4.3); a destructive one is a `DangerButton` (D94). Shared: ✅ `AdminCardActions` (primary edit, danger delete), ✅ `AdminFormActions` (ghost cancel, primary submit that keeps its "saving" label while blocked), ✅ `AdminScreenHeader` (primary "new"); ✅ `crm/ContactCard` (secondary "mark contacted", primary edit, danger delete), ✅ `admins/{GrantManagerSection, PersonRolesSection, layers/AdminsLayersView}` (primary assign / add role with the `add` glyph / retry; secondary "clear manager"), ✅ `time/TimesheetEntryCard` (secondary edit, primary submit / approve, danger delete / reject), ✅ `reports/CaseTargetCard` (primary open post / listing / profile); screens ✅ `(admin)/{money, tasks, admins}` (primary "new" / "grant") and ✅ `(admin)/whatsapp` (the kill switch: primary to turn the channel on, danger to turn it off). **Not CTAs, kept:** the admins view-mode segment, the status / category / assignee chips (chip slice), the timeline dot, the survey bars and the nav brand mark. The admin files still in the brand-guard baseline (UI-ADMIN-1's token cleanup, §4.3) keep their hand-rolled CTAs until that cleanup reaches them: `crm/ContactFormModal`, `tasks/TaskDueRangeFilter`, `time/TimesheetFormModal`, `(admin)/{audit, crm, org-approvals, tasks/new, tasks/[taskId]}`.
 
+#### 4.1.2 Search, filter and sort kit (#1457)
+
+The shared filter kit (`apps/mobile/src/components/filterKit`) standardizes search inputs, filter buttons, chip rows, section frames, and sort sections across the mobile app.
+
+- **Kit controls:** `FilterSearchBar` (search input with search icon, clear button, RTL alignment, testID), `FilterButton` (icon or boxed filter button with active count badge), `FilterChipRow` (horizontal scrollable or wrapping inline chip row of kit `Chip`s, single or multi-select), `FilterSection` (composite titled section wrapping `FilterChipRow`), `SortSection` (preset sort options row), `FilterSheetFrame` (standardized bottom sheet frame with scrollable body, count badge, reset link, and footer apply action).
+- **Surfaces migrated to kit:**
+  - Home feed filter sheet (`components/PostFilterSheet/*`)
+  - Universal Search screen (`app/(tabs)/search.tsx`, `components/search/*`) and sheet (`components/SearchFilterSheet.tsx`)
+  - Giving world feeds controls (`components/giving/WorldFeedControls.tsx`) and marketplace refine chips (`components/marketplace/BrowseRefineChips.tsx`)
+  - Rides filter sheet (`features/rides/sheets/RideFilterSheet.tsx`)
+  - Admin report filters (`components/admin/reports/ReportFilters.tsx`)
+  - Admin task assignee and status filters (`components/admin/tasks/TaskAssigneeFilter.tsx`, `app/(admin)/tasks/index.tsx`)
+  - Admin content search rows (`app/(admin)/posts/index.tsx`, `app/(admin)/users/index.tsx`)
+  - Admin CRM search and status filters (`app/(admin)/crm/index.tsx`)
+  - Admin audit search and action filters (`app/(admin)/audit/index.tsx`)
+  - Chat inbox search (`app/chat/index.tsx`)
+  - User followers and following lists search (`app/user/[handle]/followers.tsx`, `app/user/[handle]/following.tsx`)
+- **Kept out of kit / raw:** `components/giving/RideMatchSearch.tsx` is a corridor match via dual origin/dest place selector (`RidePlaceField` + `SearchablePicker`); `components/SearchablePicker` is a fixed-height modal picker (kept raw per §4.1.1).
+
 ### 4.2 Icons
 
 - One icon set: **Ionicons** from `@expo/vector-icons`. Do not add another icon library or inline SVG icons without a decision. ESLint `no-restricted-imports` blocks the other `@expo/vector-icons` families (named or deep imports) and other icon libraries (lucide, react-native-vector-icons, Feather, Phosphor, Heroicons, Tabler, Font Awesome) (D87).

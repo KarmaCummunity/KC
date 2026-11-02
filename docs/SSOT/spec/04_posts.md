@@ -47,6 +47,7 @@ Tapping the "+" tab opens one form whose top control toggles between `🎁 Give`
   - *Time* — offer: duration; request: support type (companionship, practical help, escort — emotional support goes to a hotline, §5.4) + duration.
   - Every listing category also has photos (optional), title, description and city. The kind is derived from the direction (one kind per direction per world), so members never pick a "listing type"; internal schema keys (linked ids, org slugs) are never shown.
   - The form reopens on the category **and** direction the member last used (per user, on the device); a `?category=` deep link wins. A missing required field blocks publish with a message naming it. Date fields open in a sheet (iOS) or the system dialogs (Android) — never an inline native picker (TestFlight 1.6.x crash).
+- AC7. *(KC#1472)* Every category and direction shows the same compact kit Publish action in the screen header and a Publish action at the bottom. Both actions use the category's single submit path, validation, disabled and loading states; repeated taps while a publish is in progress start at most one submission. The header action works in RTL and web.
 
 **Related.** Screens: 2.4 · Domain: `Post.type`, `Post.status`, `WorldSubcategory` · Code: `app/(tabs)/create.tsx`, `src/lib/unifiedCreate/`, `src/components/CreatePostForm/`.
 

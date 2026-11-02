@@ -2,9 +2,7 @@
 // Mapped to SRS: FR-FEED-003 (text search), FR-FEED-004 (filter modal),
 // FR-FEED-005 (persisted state), FR-FEED-006 (distance sort), FR-FEED-018,
 // FR-FEED-020 (followers-only scope).
-//
-// All controls commit immediately to the parent store; the feed refetches in place.
-// The frame, dismissal and motion come from the kit `BottomSheet` (spec 17 §4.1).
+// Rebuilt on top of the shared filterKit (issue #1457).
 
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,8 +14,7 @@ import type {
   LocationFilter,
   PostType,
 } from '@kc/domain';
-import { BottomSheet } from '../ui/BottomSheet';
-import { GhostButton } from '../ui/Buttons';
+import { FilterSheetFrame } from '../filterKit/FilterSheetFrame';
 import { SortSection } from './SortSection';
 import { FiltersSection } from './FiltersSection';
 import { LocationFilterSection } from './LocationFilterSection';
@@ -25,13 +22,15 @@ import { SearchSection } from './SearchSection';
 
 /**
  * Compact cap so the feed stays visible behind the sheet (FR-FEED-004 AC3:
- * "maxHeight ~55–60%"). A share of the screen height, not a design token.
+ * "maxHeight ~55–60%").
  */
 const FILTER_SHEET_MAX_HEIGHT = '58%';
 
 export interface PostFilterValue {
   type: PostType | null;
-  categories: Category[];
+  worlds?: string[];
+  subcategories?: string[];
+  categories?: Category[];
   itemConditions: ItemCondition[];
   locationFilter: LocationFilter | null;
   statusFilter: FeedStatusFilter;
@@ -70,12 +69,13 @@ export function PostFilterSheet({
   };
 
   return (
-    <BottomSheet
+    <FilterSheetFrame
       visible={visible}
       onDismiss={onClose}
       title={t('filters.header')}
       maxHeight={FILTER_SHEET_MAX_HEIGHT}
-      footer={<GhostButton label={t('filters.clearAll')} size="md" fullWidth onPress={handleClear} />}
+      clearLabel={t('filters.clearAll')}
+      onClear={handleClear}
     >
       {visible ? (
         <SearchSection
@@ -101,11 +101,15 @@ export function PostFilterSheet({
       />
       <FiltersSection
         type={value.type}
+        worlds={value.worlds ?? []}
+        subcategories={value.subcategories ?? []}
         categories={value.categories}
         itemConditions={value.itemConditions}
         statusFilter={value.statusFilter}
         followersOnly={value.followersOnly}
         onTypeChange={(type) => onPatch({ type })}
+        onWorldsChange={(worlds) => onPatch({ worlds })}
+        onSubcategoriesChange={(subcategories) => onPatch({ subcategories })}
         onCategoriesChange={(categories) => onPatch({ categories })}
         onItemConditionsChange={(itemConditions) => onPatch({ itemConditions })}
         onStatusFilterChange={(statusFilter) => onPatch({ statusFilter })}
@@ -115,6 +119,6 @@ export function PostFilterSheet({
         value={value.locationFilter}
         onChange={(locationFilter) => onPatch({ locationFilter })}
       />
-    </BottomSheet>
+    </FilterSheetFrame>
   );
 }

@@ -10,7 +10,8 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { spacing, useTheme, Text, TextInput } from '@kc/ui';
+import { iconSize, spacing, useTheme, Text } from '@kc/ui';
+import { FilterSearchBar } from '../../../src/components/filterKit/FilterSearchBar';
 import type { User } from '@kc/domain';
 import { AvatarInitials } from '../../../src/components/AvatarInitials';
 import { ConfirmActionModal } from '../../../src/components/post/ConfirmActionModal';
@@ -78,16 +79,12 @@ export default function FollowersListScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <Stack.Screen options={{ headerTitle: t('profile.followersScreen.headerTitle') }} />
-      <View style={styles.searchRow}>
-        <Ionicons name="search" size={18} color={colors.textSecondary} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder={t('profile.followersScreen.searchPlaceholder')}
-          placeholderTextColor={colors.textSecondary}
-          value={search}
-          onChangeText={setSearch}
-        />
-      </View>
+      <FilterSearchBar
+        style={styles.searchWrap}
+        placeholder={t('profile.followersScreen.searchPlaceholder')}
+        value={search}
+        onChangeText={setSearch}
+      />
       {followersQuery.isLoading ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />
       ) : filtered.length === 0 ? (
@@ -106,7 +103,7 @@ export default function FollowersListScreen() {
             </View>
             {isMe ? (
               <TouchableOpacity onPress={() => setPendingRemove(u)} style={styles.menuBtn}>
-                <Ionicons name="ellipsis-horizontal" size={18} color={colors.textSecondary} />
+                <Ionicons name="ellipsis-horizontal" size={iconSize.md} color={colors.textSecondary} />
               </TouchableOpacity>
             ) : null}
           </TouchableOpacity>
