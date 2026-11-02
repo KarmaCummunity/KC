@@ -1,7 +1,8 @@
 // V2-ADMIN-TIME-10 — single timesheet entry row.
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { TimesheetEntry } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { DangerButton, PrimaryButton, SecondaryButton } from '../../ui/Buttons';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
 export interface TimesheetEntryCardProps {
@@ -51,42 +52,31 @@ export function TimesheetEntryCard(props: TimesheetEntryCardProps) {
         </Text>
       )}
 
+      {/* Compact admin size (spec 17 §4.3); delete and reject are destructive, so DangerButtons (D94). */}
       <View style={styles.actions}>
         {isMine && entry.status === 'draft' && (
           <>
             {props.onEdit && (
-              <Pressable onPress={props.onEdit} style={[styles.btn, styles.btnMuted]}>
-                <Text style={styles.btnText}>{t.row.edit}</Text>
-              </Pressable>
+              <SecondaryButton label={t.row.edit} size="sm" onPress={props.onEdit} />
             )}
             {props.onSubmit && (
-              <Pressable onPress={props.onSubmit} style={[styles.btn, styles.btnPrimary]}>
-                <Text style={styles.btnPrimaryText}>{t.row.submit}</Text>
-              </Pressable>
+              <PrimaryButton label={t.row.submit} size="sm" onPress={props.onSubmit} />
             )}
             {props.onDelete && (
-              <Pressable onPress={props.onDelete} style={[styles.btn, styles.btnDanger]}>
-                <Text style={styles.btnDangerText}>{t.row.delete}</Text>
-              </Pressable>
+              <DangerButton label={t.row.delete} size="sm" onPress={props.onDelete} />
             )}
           </>
         )}
         {isMine && entry.status === 'rejected' && props.onEdit && (
-          <Pressable onPress={props.onEdit} style={[styles.btn, styles.btnPrimary]}>
-            <Text style={styles.btnPrimaryText}>{t.row.edit}</Text>
-          </Pressable>
+<PrimaryButton label={t.row.edit} size="sm" onPress={props.onEdit} />
         )}
         {canApprove && entry.status === 'submitted' && (
           <>
             {props.onReject && (
-              <Pressable onPress={props.onReject} style={[styles.btn, styles.btnDanger]}>
-                <Text style={styles.btnDangerText}>{t.row.reject}</Text>
-              </Pressable>
+              <DangerButton label={t.row.reject} size="sm" onPress={props.onReject} />
             )}
             {props.onApprove && (
-              <Pressable onPress={props.onApprove} style={[styles.btn, styles.btnPrimary]}>
-                <Text style={styles.btnPrimaryText}>{t.row.approve}</Text>
-              </Pressable>
+              <PrimaryButton label={t.row.approve} size="sm" onPress={props.onApprove} />
             )}
           </>
         )}
@@ -116,11 +106,4 @@ const useStyles = makeUseStyles(({ colors }) => ({
   metaSubtle:  { fontSize: typography.caption.fontSize, opacity: 0.6, marginTop: spacing.xs },
   description: { fontSize: typography.bodySmall.fontSize, marginTop: spacing.xs, opacity: 0.85 },
   actions:     { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm, justifyContent: 'flex-end' },
-  btn:         { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.xs },
-  btnMuted:    { backgroundColor: colors.secondaryLight },
-  btnText:     { fontSize: typography.bodySmall.fontSize, ...typography.semiBold },
-  btnPrimary:  { backgroundColor: colors.primary },
-  btnPrimaryText: { fontSize: typography.bodySmall.fontSize, ...typography.bold, color: colors.textInverse },
-  btnDanger:   { backgroundColor: colors.errorLight },
-  btnDangerText: { fontSize: typography.bodySmall.fontSize, ...typography.bold, color: colors.error },
 }));

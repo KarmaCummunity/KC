@@ -4,6 +4,7 @@ import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { hasPermission, isWhatsAppAdminError, type AdminPermission, type AdminRole } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { DangerButton, PrimaryButton } from '../../../src/components/ui/Buttons';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { container } from '../../../src/lib/container';
 import { AdminFilterChip } from '../../../src/components/admin/AdminFilterChip';
@@ -136,13 +137,14 @@ export default function WhatsAppAdminScreen() {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{t.killSwitch.label}</Text>
         <Text style={styles.muted}>{channelOn ? t.killSwitch.on : t.killSwitch.off}</Text>
-        <Pressable
-          style={[styles.btn, channelOn ? styles.btnDanger : styles.btnPrimary]}
-          onPress={() => { void onToggle(); }}
-          disabled={setEnabled.isPending}
-        >
-          <Text style={styles.btnText}>{channelOn ? t.killSwitch.toggleOff : t.killSwitch.toggleOn}</Text>
-        </Pressable>
+        {/* Turning the channel off is the destructive side of the switch (D94); compact admin size (§4.3). */}
+        <View style={styles.btn}>
+          {channelOn ? (
+            <DangerButton testID="whatsapp-kill-switch" label={t.killSwitch.toggleOff} size="sm" disabled={setEnabled.isPending} onPress={() => { void onToggle(); }} />
+          ) : (
+            <PrimaryButton testID="whatsapp-kill-switch" label={t.killSwitch.toggleOn} size="sm" disabled={setEnabled.isPending} onPress={() => { void onToggle(); }} />
+          )}
+        </View>
       </View>
 
       <Text style={styles.section}>{t.overview.title}</Text>
@@ -265,10 +267,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   cardTitle: { ...typography.bold, color: colors.textPrimary },
   muted: { color: colors.textSecondary, fontSize: typography.bodySmall.fontSize },
   error: { color: colors.error, fontSize: typography.bodySmall.fontSize },
-  btn: { marginTop: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.sm, alignSelf: 'flex-start' },
-  btnPrimary: { backgroundColor: colors.primary },
-  btnDanger: { backgroundColor: colors.error },
-  btnText: { color: colors.textInverse, ...typography.bold },
+  btn: { marginTop: spacing.xs, alignSelf: 'flex-start' },
   kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   kpi: {
     width: '30%', minWidth: 96, backgroundColor: colors.surface, borderRadius: radius.sm, padding: spacing.sm,
