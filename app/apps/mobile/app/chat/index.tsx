@@ -21,6 +21,8 @@ import { useChatStore } from '../../src/store/chatStore';
 import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
 import { queryClient } from '../../src/lib/queryPersist';
 import { chatInboxQueryKey } from '../../src/lib/chatInboxQuery';
+import { NativeStackHeaderTitle } from '../../src/navigation/NativeStackHeaderTitle';
+import { rtlTextAlignStart } from '../../src/lib/rtlLayout';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -80,7 +82,7 @@ export default function ChatListScreen() {
       <Stack.Screen
         options={{
           ...detailOptions,
-          headerTitle: t('chat.title'),
+          headerTitle: () => <NativeStackHeaderTitle title={t('chat.title')} />,
           headerLargeTitle: false,
         }}
       />
@@ -92,7 +94,7 @@ export default function ChatListScreen() {
           onChangeText={setQ}
           placeholder={t('chat.searchPlaceholder')}
           placeholderTextColor={colors.textDisabled}
-          textAlign="right"
+          textAlign={rtlTextAlignStart}
         />
       </View>
 

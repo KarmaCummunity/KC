@@ -92,9 +92,6 @@
     "app/chat/[id].tsx": {
       "physicalSide": 1
     },
-    "app/chat/index.tsx": {
-      "physicalSide": 1
-    },
     "app/dev/shell-preview.tsx": {
       "fontSizeLiteral": 2,
       "fontWeightLiteral": 2,
