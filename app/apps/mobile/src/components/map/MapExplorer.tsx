@@ -1,11 +1,12 @@
 // Convenient map (Epic #1166): clustered pins for every world, filter chips, near me,
 // search-this-area, list/map toggle and a preview sheet using the unified listing card.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, I18nManager, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { useTheme, Text } from '@kc/ui';
+import { iconSize, spacing, useTheme, Text } from '@kc/ui';
+import { MirroredIcon } from '../ui/MirroredIcon';
 import {
   LOD_REGION,
   MARKETPLACE_WORLD_SLUGS,
@@ -156,7 +157,7 @@ export function MapExplorer({ initialWorld = null }: Readonly<{ initialWorld?: s
         <View style={styles.titleRow}>
           {router.canGoBack() ? (
             <Pressable onPress={() => router.back()} hitSlop={12} accessibilityRole="button" accessibilityLabel={t('marketplace.mapBack')}>
-              <Ionicons name={I18nManager.isRTL ? 'chevron-forward' : 'chevron-back'} size={24} color={colors.textPrimary} />
+              <MirroredIcon name="chevron-back" size={iconSize['2xl']} color={colors.textPrimary} />
             </Pressable>
           ) : null}
           <Text style={styles.title}>{t('marketplace.mapTitle')}</Text>
@@ -170,7 +171,7 @@ export function MapExplorer({ initialWorld = null }: Readonly<{ initialWorld?: s
               accessibilityRole="tab"
               accessibilityState={{ selected: mode === m }}
             >
-              <Ionicons name={m === 'map' ? 'map-outline' : 'list-outline'} size={16} color={mode === m ? colors.textInverse : colors.textPrimary} />
+              <Ionicons name={m === 'map' ? 'map-outline' : 'list-outline'} size={iconSize.sm} color={mode === m ? colors.textInverse : colors.textPrimary} />
               <Text style={[styles.toggleText, mode === m && styles.toggleTextActive]}>{t(m === 'map' ? 'marketplace.mapModeMap' : 'marketplace.mapModeList')}</Text>
             </Pressable>
           ))}
@@ -214,7 +215,7 @@ export function MapExplorer({ initialWorld = null }: Readonly<{ initialWorld?: s
 
           {moved && !loading ? (
             <Pressable style={styles.searchArea} onPress={() => void load(region, world)} accessibilityRole="button">
-              <Ionicons name="refresh" size={16} color={colors.textInverse} />
+              <Ionicons name="refresh" size={iconSize.sm} color={colors.textInverse} />
               <Text style={styles.searchAreaText}>{t('marketplace.mapSearchArea')}</Text>
             </Pressable>
           ) : null}
@@ -234,7 +235,7 @@ export function MapExplorer({ initialWorld = null }: Readonly<{ initialWorld?: s
             {loc.status === 'locating' ? (
               <ActivityIndicator color={colors.primary} />
             ) : (
-              <Ionicons name="locate" size={22} color={colors.primary} />
+              <Ionicons name="locate" size={iconSize.xl} color={colors.primary} />
             )}
           </Pressable>
           {loc.status === 'denied' ? (
@@ -244,13 +245,13 @@ export function MapExplorer({ initialWorld = null }: Readonly<{ initialWorld?: s
           ) : null}
 
           {selection ? (
-            <View style={[styles.sheet, { paddingBottom: 12 + bottomInset }]}>
+            <View style={[styles.sheet, { paddingBottom: spacing.md + bottomInset }]}>
               <View style={styles.sheetHeader}>
                 <Text style={styles.sheetTitle}>
                   {selection.length > 1 ? t('marketplace.clusterLabel', { count: selection.length }) : t('marketplace.mapPreview')}
                 </Text>
                 <Pressable onPress={() => setSelection(null)} hitSlop={12} accessibilityRole="button" accessibilityLabel={t('marketplace.mapClose')}>
-                  <Ionicons name="close" size={22} color={colors.textSecondary} />
+                  <Ionicons name="close" size={iconSize.xl} color={colors.textSecondary} />
                 </Pressable>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sheetCards}>
@@ -266,7 +267,7 @@ export function MapExplorer({ initialWorld = null }: Readonly<{ initialWorld?: s
           data={visible}
           numColumns={2}
           keyExtractor={(r) => r.listingId}
-          contentContainerStyle={{ paddingBottom: bottomInset + 16, paddingHorizontal: 8 }}
+          contentContainerStyle={{ paddingBottom: bottomInset + spacing.base, paddingHorizontal: spacing.sm }}
           ListHeaderComponent={
             <Text style={styles.listHeader}>{t('marketplace.mapListHeader', { count: visible.length })}</Text>
           }

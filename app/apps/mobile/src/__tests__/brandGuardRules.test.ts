@@ -25,8 +25,10 @@ describe('countLiterals — colour, type, radius, spacing, sides', () => {
     const source = [
       "const a = { textAlign: 'right', borderLeftWidth: 1, borderTopRightRadius: radius.md };",
       "const b = { textAlign: 'center', borderStartWidth: 1, paddingEnd: spacing.sm };",
+      '<Input textAlign="right" />',
+      '<Input textAlign={rtlTextAlignStart} />',
     ].join('\n');
-    expect(countLiterals(source)).toEqual({ physicalSide: 3 });
+    expect(countLiterals(source)).toEqual({ physicalSide: 4 });
   });
 
   it('ignores tokens, hashtags, issue numbers and allowed lines', () => {
@@ -51,7 +53,8 @@ describe('countLiterals — iconSizeLiteral (spec 17 §4.2)', () => {
       '/>',
       '<Ionicons name={icon} size={active ? 28 : iconSize.lg} />',
     ].join('\n');
-    expect(countLiterals(source)).toEqual({ iconSizeLiteral: 3 });
+    // The chevron is also a directional glyph on a raw tag (spec 17 §4.2).
+    expect(countLiterals(source)).toEqual({ iconSizeLiteral: 3, unmirroredDirectionalIcon: 1 });
   });
 
   it('ignores tokens, constants and the size prop of other components', () => {
@@ -165,5 +168,28 @@ describe('countLiterals — adHocChip (spec 17 §4.1)', () => {
     ].join('\n');
     expect(countLiterals(source, 'src/components/search/SearchChip.tsx')).toEqual({});
     expect(countLiterals('  chip: {', 'src/components/ui/chipStyles.ts')).toEqual({});
+  });
+});
+
+describe('countLiterals — directional icons (spec 17 §4.2, FR-RESP-006 AC18)', () => {
+  it('counts a directional Ionicons glyph, across lines and in braces, but not through MirroredIcon', () => {
+    const source = [
+      '<Ionicons name="chevron-back" size={iconSize.md} />',
+      "<Ionicons\n  name={'arrow-forward'}\n  size={iconSize.md}\n/>",
+      '<Ionicons name="caret-forward-outline" size={iconSize.sm} />',
+      '<MirroredIcon name="chevron-forward" size={iconSize.md} />',
+      '<Ionicons name={useDirectionalBackIcon()} size={iconSize.xl} />',
+    ].join('\n');
+    expect(countLiterals(source)).toEqual({ unmirroredDirectionalIcon: 3 });
+  });
+
+  it('leaves non-directional and vertical glyphs and allowed lines alone', () => {
+    const source = [
+      '<Ionicons name="search" size={iconSize.md} />',
+      '<Ionicons name="chevron-down" size={iconSize.md} />',
+      '<Ionicons name="arrow-up-circle" size={iconSize.md} />',
+      '<Ionicons name="play-forward" size={iconSize.md} /> // brand-guard-allow: media control, never mirrors',
+    ].join('\n');
+    expect(countLiterals(source)).toEqual({});
   });
 });

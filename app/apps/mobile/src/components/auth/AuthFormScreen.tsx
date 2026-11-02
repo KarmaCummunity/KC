@@ -21,6 +21,7 @@ import { NotifyModal } from '../NotifyModal';
 import { AmbientBlobs } from '../ui/AmbientBlobs';
 import { AnimatedAuthInput } from './AnimatedAuthInput';
 import { PrimaryButton } from '../ui/Buttons';
+import { MirroredIcon, useDirectionalBackIcon } from '../ui/MirroredIcon';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import type { AuthEmailForm } from './useAuthEmailForm';
 
@@ -76,6 +77,7 @@ export function AuthFormScreen({
   const { colors } = useTheme();
   const router = useRouter();
   const motion = useEntryMotion();
+  const backIcon = useDirectionalBackIcon();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -85,7 +87,7 @@ export function AuthFormScreen({
           <View style={styles.content}>
             <Animated.View style={[styles.header, motion.header]}>
               <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-                <Ionicons name="arrow-forward" size={iconSize.xl} color={colors.primary} />
+                <MirroredIcon name={backIcon} size={iconSize.xl} color={colors.primary} />
               </TouchableOpacity>
               <Image source={require('../../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
             </Animated.View>
