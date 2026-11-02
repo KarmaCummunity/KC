@@ -48,6 +48,28 @@ function listingBadgeLabel(t: (k: string) => string, isRide: boolean, isRequest:
   return t(isRequest ? 'feed.requestTypeShort' : 'feed.giveTypeShort');
 }
 
+type CardDetail = { icon: IconName; text: string };
+type Translate = (key: string, options?: Record<string, unknown>) => string;
+type RideSummary = NonNullable<Props['item']['ride']>;
+
+/** A ride's departure time and seat (offer) or passenger (request) count. */
+function rideDetails(t: Translate, ride: RideSummary, isRequest: boolean): CardDetail[] {
+  const details: CardDetail[] = [];
+  const when = formatRideTime(ride.departsAt);
+  if (when) details.push({ icon: 'time-outline', text: when });
+  if (ride.seats != null) {
+    const key = rideSeatCountKey(isRequest ? 'passengers' : 'seats', ride.seats);
+    details.push({ icon: 'people-outline', text: t(key, { count: ride.seats }) });
+  }
+  return details;
+}
+
+/** The ride's origin → destination line, or null when neither end is known. */
+function rideRoute(t: Translate, ride: RideSummary | null): { from: string; to: string } | null {
+  if (!ride || (!ride.originLabel && !ride.destLabel)) return null;
+  return { from: ride.originLabel ?? t('cards.unknownPlace'), to: ride.destLabel ?? t('cards.unknownPlace') };
+}
+
 function ListingCardInner({ item, onPress, variant = 'grid', meta }: Readonly<Props>) {
   const { t } = useTranslation();
   const gridWidth = usePostGridCardWidth(2);
@@ -56,20 +78,8 @@ function ListingCardInner({ item, onPress, variant = 'grid', meta }: Readonly<Pr
   const title = cleanDisplayTitle(item.title);
   const ride = isRide ? item.ride ?? null : null;
 
-  const details: Array<{ icon: IconName; text: string }> = [];
-  if (ride) {
-    const when = formatRideTime(ride.departsAt);
-    if (when) details.push({ icon: 'time-outline', text: when });
-    if (ride.seats != null) {
-      details.push({
-        icon: 'people-outline',
-        text: t(rideSeatCountKey(isRequest ? 'passengers' : 'seats', ride.seats), { count: ride.seats }),
-      });
-    }
-  }
-  const route = ride && (ride.originLabel || ride.destLabel)
-    ? { from: ride.originLabel ?? t('cards.unknownPlace'), to: ride.destLabel ?? t('cards.unknownPlace') }
-    : null;
+  const details = ride ? rideDetails(t, ride, isRequest) : [];
+  const route = rideRoute(t, ride);
   const secondary = meta === undefined ? item.summary : meta;
   if (details.length === 0 && secondary) details.push({ icon: 'information-circle-outline', text: cleanDisplayTitle(secondary) });
   const badgeLabel = listingBadgeLabel(t, isRide, isRequest);
