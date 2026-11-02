@@ -56,7 +56,7 @@ describe('RideSeriesOccurrences', () => {
     fireEvent.click(chips[0]!);
     expect(push).not.toHaveBeenCalled();
     fireEvent.click(chips[1]!);
-    expect(push).toHaveBeenCalledWith({ pathname: '/(tabs)/donations/marketplace/[listingId]', params: { listingId: 'l2' } });
+    expect(push).toHaveBeenCalledWith({ pathname: '/listing/[listingId]', params: { listingId: 'l2' } });
     expect(listOccurrences).toHaveBeenCalledWith('s1');
   });
 

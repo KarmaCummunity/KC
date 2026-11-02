@@ -49,7 +49,7 @@ export function RideSeriesOccurrences({ listingId, details }: Props) {
             active={o.listingId === listingId}
             onPress={() => {
               if (o.listingId === listingId) return;
-              router.push({ pathname: '/(tabs)/donations/marketplace/[listingId]', params: { listingId: o.listingId } });
+              router.push({ pathname: '/listing/[listingId]', params: { listingId: o.listingId } });
             }}
           />
         ))}
