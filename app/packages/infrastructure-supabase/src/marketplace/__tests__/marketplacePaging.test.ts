@@ -140,6 +140,29 @@ describe('marketplacePaging — cards', () => {
     ]);
   });
 
+  // #1412 — a card shows its publisher like a feed card does (docs/spec/07 §7.4).
+  it('maps the publisher embed, and no publisher when RLS hides the owner', async () => {
+    const card = (id: string, publisher: unknown) => ({
+      listing_id: id, world_slug: 'rides', direction: 'give', title: id, summary: null, urgency_level: 0,
+      availability_status: 'a', city_id: null, kind: null, details: { seats_available: 2 }, publisher,
+    });
+    const { c } = client({}, {
+      data: [
+        card('a', { display_name: ' Dana ', avatar_url: 'https://cdn/a.png' }),
+        card('b', [{ display_name: null, avatar_url: '' }]),
+        card('c', null),
+      ],
+      error: null,
+    });
+    const cards = await fetchListingCards(c, ['a', 'b', 'c']);
+    expect(cards.map((r) => r.publisher)).toEqual([
+      { displayName: 'Dana', avatarUrl: 'https://cdn/a.png' },
+      { displayName: null, avatarUrl: null },
+      null,
+    ]);
+    expect(cards[0]?.ride?.seats).toBe(2);
+  });
+
   it('skips the query for no ids and returns [] on error', async () => {
     const none = client({});
     expect(await fetchListingCards(none.c, [])).toEqual([]);

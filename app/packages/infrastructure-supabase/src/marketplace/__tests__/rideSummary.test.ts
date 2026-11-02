@@ -12,34 +12,58 @@ describe('rideSummaryFromDetails', () => {
   });
 });
 
-import { attachRideSummaries } from '../marketplacePaging';
+import { attachCardExtras } from '../marketplacePaging';
 import type { MarketplaceBrowseRow } from '@kc/domain';
 
 const row = (id: string, worldSlug: string): MarketplaceBrowseRow => ({
   listingId: id, worldSlug, kindSlug: 'k', direction: 'give', title: 't', summary: null,
   urgencyLevel: 0, availabilityStatus: 'open', cityId: null, distanceKm: null,
 });
+/** A client whose one `listings` read resolves to `result` (or rejects with it), counting reads. */
 function client(result: unknown) {
-  return { from: () => ({ select: () => ({ in: () => (result instanceof Error ? Promise.reject(result) : Promise.resolve(result)) }) }) } as never;
+  const reads: unknown[] = [];
+  const c = {
+    from: () => ({
+      select: () => ({
+        in: (_col: string, ids: unknown) => {
+          reads.push(ids);
+          return result instanceof Error ? Promise.reject(result) : Promise.resolve(result);
+        },
+      }),
+    }),
+  } as never;
+  return { c, reads };
 }
 
-describe('attachRideSummaries', () => {
-  it('skips when there are no rides', async () => {
-    const rows = [row('a', 'items')];
-    expect(await attachRideSummaries(client({ data: [], error: null }), rows)).toBe(rows);
+describe('attachCardExtras', () => {
+  it('makes no read for an empty page', async () => {
+    const { c, reads } = client({ data: [], error: null });
+    const rows: MarketplaceBrowseRow[] = [];
+    expect(await attachCardExtras(c, rows)).toBe(rows);
+    expect(reads).toEqual([]);
   });
-  it('attaches ride info by id', async () => {
-    const out = await attachRideSummaries(
-      client({ data: [{ listing_id: 'r', details: { origin_label: 'A', dest_label: 'B', seats_available: 2 } }], error: null }),
-      [row('r', 'rides'), row('x', 'food')],
-    );
+
+  it('attaches every row its publisher, and a ride its route, in one read', async () => {
+    const { c, reads } = client({
+      data: [
+        { listing_id: 'r', details: { origin_label: 'A', dest_label: 'B', seats_available: 2 }, publisher: { display_name: 'Dana', avatar_url: null } },
+        { listing_id: 'x', details: { origin_label: 'ignored' }, publisher: [{ display_name: 'Noa', avatar_url: 'u' }] },
+      ],
+      error: null,
+    });
+    const out = await attachCardExtras(c, [row('r', 'rides'), row('x', 'food'), row('gone', 'items')]);
+    expect(reads).toEqual([['r', 'x', 'gone']]);
     expect(out[0]?.ride).toEqual({ originLabel: 'A', destLabel: 'B', departsAt: null, seats: 2 });
+    expect(out[0]?.publisher).toEqual({ displayName: 'Dana', avatarUrl: null });
     expect(out[1]?.ride).toBeUndefined();
+    expect(out[1]?.publisher).toEqual({ displayName: 'Noa', avatarUrl: 'u' });
+    expect(out[2]).toEqual(row('gone', 'items'));
   });
+
   it('returns rows unchanged on error or throw', async () => {
     const rows = [row('r', 'rides')];
-    expect(await attachRideSummaries(client({ data: null, error: { message: 'x' } }), rows)).toBe(rows);
-    expect(await attachRideSummaries(client(new Error('boom')), rows)).toBe(rows);
-    expect(await attachRideSummaries(client({ data: null, error: null }), rows)).toBe(rows);
+    expect(await attachCardExtras(client({ data: null, error: { message: 'x' } }).c, rows)).toBe(rows);
+    expect(await attachCardExtras(client(new Error('boom')).c, rows)).toBe(rows);
+    expect(await attachCardExtras(client({ data: null, error: null }).c, rows)).toBe(rows);
   });
 });
