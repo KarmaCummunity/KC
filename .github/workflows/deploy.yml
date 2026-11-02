@@ -112,7 +112,7 @@ jobs:
           SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          for i in $(seq 1 140); do
+          for _ in $(seq 1 140); do
             st=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$SHA&event=push&per_page=5" \
               --jq '[.workflow_runs[].status] | if length == 0 then "none" elif all(. == "completed") then "completed" else "running" end')
             echo "CI for $SHA: $st"
