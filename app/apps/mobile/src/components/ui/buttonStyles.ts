@@ -62,6 +62,8 @@ export const useButtonStyles = makeUseStyles(({ colors, isDark }) => ({
     elevation: isDark ? 0 : shadow.card.elevation,
   },
   ghost: { backgroundColor: 'transparent' },
+  // An alarm: the surface with an `error` outline (spec 17 §8.1 call 7).
+  alert: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.error },
   inactive: { opacity: DISABLED_OPACITY },
   // Label type per size: the button preset at body-large size for `lg` (as before),
   // the plain button preset for `md`, and a semi-bold body for the compact `sm`.
@@ -72,6 +74,7 @@ export const useButtonStyles = makeUseStyles(({ colors, isDark }) => ({
   textOnFill: { color: colors.textInverse },
   textOnSurface: { color: colors.textPrimary },
   textOnGhost: { color: colors.primary },
+  textOnAlert: { color: colors.error },
   // While loading, the label and icon keep their space (so the button does not resize) but are not drawn.
   hidden: { opacity: 0 },
   spinner: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
