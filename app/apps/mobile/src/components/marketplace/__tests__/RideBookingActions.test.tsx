@@ -63,7 +63,6 @@ vi.mock('../../cards/ListingCard', () => ({ formatRideTime: (iso: string | null)
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
 import { RideBookingActions, rideCapacity } from '../rides/RideBookingActions';
-import { RidePassengerBooking } from '../rides/RidePassengerBooking';
 
 afterEach(() => {
   cleanup();

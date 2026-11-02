@@ -62,7 +62,7 @@ vi.mock('../../../lib/haptics', () => ({ hapticSuccess: vi.fn() }));
 vi.mock('../../cards/ListingCard', () => ({ formatRideTime: (iso: string | null) => iso }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
-import { RideBookingActions, rideCapacity } from '../rides/RideBookingActions';
+import { RideBookingActions } from '../rides/RideBookingActions';
 import { RidePassengerBooking } from '../rides/RidePassengerBooking';
 
 afterEach(() => {
@@ -82,20 +82,6 @@ const DETAIL = {
   listingStatus: 'open',
   availabilityStatus: 'open',
 } as unknown as MarketplaceListingDetail;
-
-function booking(handoffId: string, status: RideBooking['status'], seats = 1): RideBooking {
-  return {
-    handoffId,
-    recipientId: `u_${handoffId}`,
-    passengerName: `Passenger ${handoffId}`,
-    avatarUrl: null,
-    seats,
-    status,
-    reservedAt: '2026-11-01T08:00:00Z',
-    confirmBy: '2026-11-01T10:00:00Z',
-    ratedByMe: false,
-  };
-}
 
 function renderActions(detail: MarketplaceListingDetail = DETAIL) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
