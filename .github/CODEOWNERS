@@ -33,6 +33,7 @@
 /scripts/smoke-*                            @navesarussi
 /scripts/*-guard*                           @navesarussi
 /scripts/mobile-*                           @navesarussi
+/scripts/testflight-*                        @navesarussi
 /scripts/release-version.mjs                @navesarussi
 /scripts/resolve-green-dev-sha.mjs           @navesarussi
 /scripts/edge-functions.mjs                 @navesarussi
