@@ -12,4 +12,8 @@ export const worldFeed = {
   directionRequest: 'Requests',
   emptyTitle: 'No open listings here yet',
   emptyBody: 'Post the first request or offer.',
+  housingIntro: 'Hosting and stays in the community: offer a place to sleep, or ask to be hosted for a night or longer.',
+  timeOpportunitiesTitle: 'Volunteering with organisations',
+  timeOpportunitiesShowAll: 'All volunteering ({{count}})',
+  timeOpportunitiesShowLess: 'Show less',
 };
