@@ -30,6 +30,7 @@ vi.mock('../../../services/rideBookingComposition', () => ({
   rideBookingUseCases: {},
   rideBookingsQueryKey: (listingId: string) => ['ride-bookings', listingId],
 }));
+vi.mock('../../../services/platformConfirm', () => ({ confirmAction: vi.fn().mockResolvedValue(false) }));
 vi.mock('../../../services/ridesKnowledgeComposition', () => ({ ridesKnowledgeRpcs: {} }));
 vi.mock('../../../services/rideSafetyComposition', () => ({ raiseRideEmergency: vi.fn() }));
 vi.mock('../../../lib/analytics', () => ({ track: vi.fn() }));

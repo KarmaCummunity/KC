@@ -76,7 +76,7 @@ describe('AnchoredListingCard', () => {
     expect(getListingDetail).toHaveBeenCalledWith('l_1');
 
     fireEvent.click(card);
-    expect(push).toHaveBeenCalledWith('/(tabs)/donations/marketplace/l_1');
+    expect(push).toHaveBeenCalledWith('/listing/l_1');
   });
 
   it('renders nothing when the listing is no longer visible to the viewer', async () => {

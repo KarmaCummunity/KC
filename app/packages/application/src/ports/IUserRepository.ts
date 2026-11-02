@@ -94,13 +94,6 @@ export interface IUserRepository {
   setBiography(userId: string, biography: string | null): Promise<void>;
 
   /**
-   * FR-TRANSLATE-001 — persist the reader's BCP-47 preferred output language.
-   * Caller validates the tag (createLanguageTag) upstream. Pass `null` to reset
-   * to the device-locale default. Idempotent at the DB layer.
-   */
-  setPreferredLanguage(userId: string, languageTag: string | null): Promise<void>;
-
-  /**
    * FR-PROFILE-005, 006 — flips users.privacy_mode and stamps privacy_changed_at.
    * Returns the updated User. Idempotent at the DB layer; the use case prevents
    * pointless writes when the mode is unchanged.

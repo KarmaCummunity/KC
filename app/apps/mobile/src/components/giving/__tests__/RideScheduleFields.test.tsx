@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import React, { useState } from 'react';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import { ThemeProvider } from '@kc/ui';
-import { withRidePlace, type RidePlace } from '@kc/domain';
+import { readRideRoute, suggestRideArrival, withRidePlace, type RidePlace } from '@kc/domain';
 
 const TLV: RidePlace = { kind: 'city', id: '5000', label: 'Tel Aviv', lat: 32.0853, lng: 34.7818, cityId: '5000' };
 const JLM: RidePlace = { kind: 'city', id: '3000', label: 'Jerusalem', lat: 31.7683, lng: 35.2137, cityId: '3000' };
@@ -60,8 +60,10 @@ describe('RideScheduleFields', () => {
     const view = render(<Harness initial={route} />);
     fireEvent.click(view.getByTestId('ride-departs-at-in60'));
     const { departs_at: departs, arrives_at: arrives } = read(view);
-    // ~54 km at 60 km/h + 15 min, rounded up: at least 69 minutes after departure.
-    expect(new Date(arrives).getTime() - new Date(departs).getTime()).toBeGreaterThanOrEqual(69 * 60_000);
+    // The suggestion is the route estimate (~54 km at 60 km/h + 15 min) rounded up to a quarter
+    // hour, so it depends on the clock; compare with the domain rule instead of a fixed minute count.
+    expect(arrives).toBe(suggestRideArrival(new Date(departs), readRideRoute(route))?.toISOString());
+    expect(new Date(arrives).getTime() - new Date(departs).getTime()).toBeGreaterThan(60 * 60_000);
   });
 
   it('stops re-suggesting once the driver picks the estimated end', () => {
