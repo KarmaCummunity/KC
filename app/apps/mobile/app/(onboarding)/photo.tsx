@@ -26,6 +26,8 @@ import { staggerDelay } from '../../src/lib/animations/motion';
 import { useOnboardingPhotoFlow } from '../../src/hooks/useOnboardingPhotoFlow';
 import { PrimaryButton, SecondaryButton } from '../../src/components/ui/Buttons';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
+
 const HALO_SIZE = 196;
 const AVATAR_SIZE = 128;
 

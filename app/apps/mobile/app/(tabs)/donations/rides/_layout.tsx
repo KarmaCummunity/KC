@@ -3,6 +3,8 @@ import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useWorldStackOptions } from '../../../../src/navigation/worldStackOptions';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
+
 export default function RidesLayout() {
   const { t } = useTranslation();
   const { detailHeader, screenOptions } = useWorldStackOptions();

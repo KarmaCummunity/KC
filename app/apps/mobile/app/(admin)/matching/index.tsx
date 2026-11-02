@@ -15,6 +15,8 @@ import { formatRate } from '../../../src/components/admin/matching/formatRate';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { textAlignStart } from '../../../src/lib/rtlLayout';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+
 const WINDOWS = [
   { key: 'd7', days: 7 },
   { key: 'd30', days: 30 },

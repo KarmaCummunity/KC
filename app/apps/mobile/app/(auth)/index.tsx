@@ -32,6 +32,8 @@ import { AmbientBlobs } from '../../src/components/ui/AmbientBlobs';
 import { AuthMiniAboutTeaser } from '../../src/components/auth/AuthMiniAboutTeaser';
 import { useWelcomeScreenStyles } from '../../src/components/auth/welcomeScreen.styles';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
+
 const VALUE_PROPS: Array<{ icon: React.ComponentProps<typeof Ionicons>['name']; key: string }> = [
   { icon: 'gift-outline', key: 'welcomeValueProp1' },
   { icon: 'search-outline', key: 'welcomeValueProp2' },

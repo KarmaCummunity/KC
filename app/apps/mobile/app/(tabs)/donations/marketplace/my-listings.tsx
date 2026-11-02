@@ -17,6 +17,8 @@ import { marketplaceRepository } from '../../../../src/services/marketplaceCompo
 import { useShellTabBarScrollInset } from '../../../../src/navigation/useShellTabBarVisibility';
 import { LIST_END_THRESHOLD } from '../../../../src/hooks/usePrefetchNextPage';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
+
 const useStyles = makeUseStyles(({ colors }) => ({
   header: { padding: spacing.md, gap: spacing.xs },
   title: { ...typography.h2, color: colors.textPrimary },

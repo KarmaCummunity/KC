@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@kc/ui';
 import { nativeStackHeaderLeftIconOnly } from '../../../src/navigation/nativeHeaderIconOnly';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+
 export default function DonationsLayout() {
   const { colors } = useTheme();
   const detailHeader = {

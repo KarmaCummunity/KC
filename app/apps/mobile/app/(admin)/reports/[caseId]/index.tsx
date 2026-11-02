@@ -15,6 +15,8 @@ import { CaseActions } from '../../../../src/components/admin/reports/CaseAction
 import { CaseTargetCard } from '../../../../src/components/admin/reports/CaseTargetCard';
 import { useLocaleBundle } from '../../../../src/i18n/useLocaleBundle';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
+
 function parseCaseId(
   raw: string | undefined,
 ): { type: AdminReportTargetType; id: string } | null {

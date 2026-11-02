@@ -19,6 +19,8 @@ import { rowDirectionStart } from '../../../src/lib/rtlLayout';
 import { rtlTextAlignStart } from '../../../src/lib/rtlTextAlignStart';
 import { OWNER_MODERATED_POST_STATUSES } from '../../../src/lib/moderation/postModeration';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+
 export default function MyProfileRemovedScreen() {
   const styles = useStyles();
   const tabBarPad = useShellTabBarScrollInset();

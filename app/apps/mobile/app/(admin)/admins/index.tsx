@@ -26,6 +26,8 @@ import { AdminsTreeView } from '../../../src/components/admin/admins/AdminsTreeV
 import { AdminsLayersView } from '../../../src/components/admin/admins/layers/AdminsLayersView';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+
 type ViewMode = 'layers' | 'list' | 'tree';
 // The layered pyramid is the overview and opens first (FR-ADMIN-028 AC5).
 const VIEW_MODES: readonly ViewMode[] = ['layers', 'list', 'tree'];

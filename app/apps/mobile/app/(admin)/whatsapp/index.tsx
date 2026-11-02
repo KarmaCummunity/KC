@@ -11,6 +11,8 @@ import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
 import { confirmAction as platformConfirm } from '../../../src/services/platformConfirm';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+
 type OutFilter = 'all' | 'queued' | 'sent' | 'failed';
 
 export default function WhatsAppAdminScreen() {
