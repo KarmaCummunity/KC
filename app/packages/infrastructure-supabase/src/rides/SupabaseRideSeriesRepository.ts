@@ -6,6 +6,7 @@ import {
   type CreateRideSeriesInput,
   type CreatedRideSeries,
   type RideSeries,
+  type RideSeriesOccurrence,
   type RideSeriesSchedule,
   type RideSeriesStatus,
 } from '@kc/domain';
@@ -14,12 +15,14 @@ import type { Database, Json } from '../database.types';
 
 type Client = SupabaseClient<Database>;
 type SeriesRow = Database['public']['Tables']['ride_series']['Row'];
+type OccurrenceRow = Database['public']['Functions']['list_ride_series_occurrences']['Returns'][number];
 
 const COLUMNS = 'series_id, direction, title, details, depart_time, weekdays, duration_minutes, ends_on, status';
 
 /**
  * Recurring rides over `ride_series` (0529; RLS: own rows for reading) and its RPCs, which own
- * the occurrences: `create_ride_series`, `set_ride_series_status`, `update_ride_series`.
+ * the occurrences: `create_ride_series`, `set_ride_series_status`, `update_ride_series`;
+ * `list_ride_series_occurrences` is the public read of a series' upcoming dates.
  */
 export class SupabaseRideSeriesRepository implements IRideSeriesRepository {
   constructor(private readonly client: Client) {}
@@ -58,6 +61,17 @@ export class SupabaseRideSeriesRepository implements IRideSeriesRepository {
   async setStatus(seriesId: string, status: RideSeriesStatus): Promise<void> {
     const { error } = await this.client.rpc('set_ride_series_status', { p_series_id: seriesId, p_status: status });
     if (error) throw new Error(error.message);
+  }
+
+  async listOccurrences(seriesId: string): Promise<RideSeriesOccurrence[]> {
+    const { data, error } = await this.client.rpc('list_ride_series_occurrences', { p_series_id: seriesId });
+    if (error) throw new Error(error.message);
+    return ((data ?? []) as OccurrenceRow[]).map((row) => ({
+      listingId: row.listing_id,
+      departsAt: row.departs_at,
+      seatsLeft: row.seats_left ?? null,
+      passengers: row.passengers ?? null,
+    }));
   }
 
   async updateSchedule(seriesId: string, schedule: RideSeriesSchedule, durationMinutes: number | null): Promise<void> {

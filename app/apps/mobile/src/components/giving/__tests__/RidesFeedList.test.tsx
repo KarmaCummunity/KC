@@ -29,7 +29,7 @@ afterEach(() => {
 
 const ride = (id: string, direction: 'give' | 'request', extra: Partial<RideFeedItem> = {}): RideFeedItem => ({
   listingId: id, direction, title: id, departsAt: '2026-11-02T06:00:00Z', originLabel: 'Tel Aviv', destLabel: 'Haifa',
-  meetingPoints: 0, seatsLeft: direction === 'give' ? 2 : null, passengers: direction === 'request' ? 1 : null, recurrence: null, ...extra,
+  meetingPoints: 0, seatsLeft: direction === 'give' ? 2 : null, passengers: direction === 'request' ? 1 : null, recurrence: null, seriesMore: 0, ...extra,
 });
 
 function renderFeed(sections: RideFeedSection[]) {
@@ -60,8 +60,13 @@ describe('RidesFeedList', () => {
 
   it('names the recurrence of a recurring ride occurrence (FR-RIDE-046)', async () => {
     const recurrence = { id: 's1', on: '2026-11-02', weekdays: [0, 1, 2, 3, 4] as const, time: '06:00' };
-    const view = renderFeed([{ group: 'today', items: [ride('o9', 'give', { recurrence })] }]);
+    const view = renderFeed([
+      { group: 'today', items: [ride('o9', 'give', { recurrence })] },
+      { group: 'later', items: [ride('o10', 'give', { recurrence, seriesMore: 27 })] },
+    ]);
     await waitFor(() => expect(view.getByTestId('rides-feed-item-o9').textContent).toContain('rideSeries.every'));
+    expect(view.getByTestId('rides-feed-item-o9').textContent).not.toContain('rideSeries.moreDates');
+    expect(view.getByTestId('rides-feed-item-o10').textContent).toContain('rideSeries.moreDates');
   });
 
   it('marks a full offer', async () => {

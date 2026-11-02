@@ -16,6 +16,8 @@ export interface RideFeedItem {
   readonly passengers: number | null;
   /** The series of a recurring ride's occurrence (FR-RIDE-046); null on a single ride. */
   readonly recurrence: RideSeriesMarker | null;
+  /** Later dates of the series folded into this row (the feed folds a series beyond tomorrow). */
+  readonly seriesMore: number;
 }
 
 export const RIDE_FEED_GROUPS = ['today', 'tomorrow', 'later'] as const;

@@ -6,6 +6,7 @@ import type { IRideSeriesRepository } from '../../ports/IRideSeriesRepository';
 import {
   CreateRideSeriesUseCase,
   ListMyRideSeriesUseCase,
+  ListRideSeriesOccurrencesUseCase,
   SetRideSeriesStatusUseCase,
   UpdateRideSeriesScheduleUseCase,
 } from '../rideSeriesUseCases';
@@ -27,6 +28,7 @@ function makeRepo() {
     create: vi.fn<IRideSeriesRepository['create']>(async () => ({ seriesId: 's1', firstListingId: 'l1' })),
     setStatus: vi.fn<IRideSeriesRepository['setStatus']>(async () => undefined),
     updateSchedule: vi.fn<IRideSeriesRepository['updateSchedule']>(async () => undefined),
+    listOccurrences: vi.fn<IRideSeriesRepository['listOccurrences']>(async () => []),
   } satisfies IRideSeriesRepository;
 }
 
@@ -55,11 +57,13 @@ describe('recurring ride use cases', () => {
     expect(repo.updateSchedule).toHaveBeenCalledOnce();
   });
 
-  it('lists mine and changes the status', async () => {
+  it('lists mine, lists the dates of a series and changes the status', async () => {
     const repo = makeRepo();
     await new ListMyRideSeriesUseCase(repo).execute();
+    await new ListRideSeriesOccurrencesUseCase(repo).execute('s1');
     await new SetRideSeriesStatusUseCase(repo).execute('s1', 'paused');
     expect(repo.listMine).toHaveBeenCalledOnce();
+    expect(repo.listOccurrences).toHaveBeenCalledWith('s1');
     expect(repo.setStatus).toHaveBeenCalledWith('s1', 'paused');
   });
 });

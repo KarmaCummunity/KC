@@ -7,12 +7,15 @@
 --   2. An occurrence is an ordinary ride listing carrying details.ride_series =
 --      {id, on, weekdays, time}; one per series and day (partial unique index). The feed,
 --      search, matching, bookings, saved-route alerts and the emergency button need no change.
---   3. ride_series_materialize — creates the missing occurrences for the next 7 days. It runs
---      on create / resume / schedule change and every 10 minutes from ride_series_sweep, which
---      also expires departed request occurrences and hands the main-feed mirror on.
+--   3. ride_series_materialize — creates the missing occurrences for the next 30 days, so a
+--      passenger finds a daily driver for next week too. It runs on create / resume / schedule
+--      change and every 10 minutes from ride_series_sweep, which also expires departed request
+--      occurrences and hands the main-feed mirror on.
 --   4. Noise control: only the soonest upcoming occurrence of a series is mirrored into the
 --      main feed (listings_feed_mirror_sync skips the others; the sweep mirrors the next one
---      once it is the soonest), and a saved-route follower is alerted once per series.
+--      once it is the soonest); the rides feed shows every occurrence of today and tomorrow and
+--      folds the later ones of a series into one row with a count; a saved-route follower is
+--      alerted once per series. list_ride_series_occurrences lists a series' upcoming dates.
 --   5. RPCs (authenticated): create_ride_series, update_ride_series, set_ride_series_status.
 --      Pausing or cancelling removes the upcoming occurrences nobody booked; a booked
 --      occurrence is an agreed ride and stays. Cancelling also detaches the booked ones.
@@ -144,7 +147,7 @@ begin
 end;
 $$;
 
--- Creates the missing occurrences of every active series (or one) for the next 7 days.
+-- Creates the missing occurrences of every active series (or one) for the next 30 days.
 create or replace function public.ride_series_materialize(p_series_id uuid default null)
 returns int
 language plpgsql
@@ -163,7 +166,7 @@ begin
             order by r.created_at, r.series_id
   loop
     v_day := greatest(s.starts_on, v_today);
-    v_last := least(coalesce(s.ends_on, v_today + 7), v_today + 7);
+    v_last := least(coalesce(s.ends_on, v_today + 30), v_today + 30);
     while v_day <= v_last loop
       v_count := v_count + public.ride_series_materialize_day(s, v_day);
       v_day := v_day + 1;
@@ -174,7 +177,7 @@ end;
 $$;
 
 comment on function public.ride_series_materialize(uuid) is
-  'Creates the missing occurrences of active recurring rides for the next 7 days (FR-RIDE-046).';
+  'Creates the missing occurrences of active recurring rides for the next 30 days (FR-RIDE-046).';
 
 -- Removes the upcoming occurrences of a series that nobody booked. A booked occurrence is an
 -- agreed ride: it stays, and the driver handles it like any single ride.
@@ -517,10 +520,13 @@ end;
 $$;
 
 -- ── 7. The rides feed says which rides recur ─────────────────────────────────
--- Same query as 0515 plus `recurrence`, the occurrence's series marker (null on a single ride).
--- The return type changes, so the function is re-created; same arguments, older clients ignore
--- the extra column.
-drop function if exists public.list_rides_feed(int); -- migration-safety: allow — re-created below with one more column, same arguments
+-- Same rows as 0515 plus `recurrence` (the occurrence's series marker, null on a single ride)
+-- and `series_more`. Today's and tomorrow's occurrences are listed one by one; from the day
+-- after tomorrow on, a series folds into its earliest remaining occurrence and `series_more`
+-- counts the later ones, so a daily driver is one row under "later", not thirty. The return
+-- type changes, so the function is re-created; same arguments, older clients ignore the extra
+-- columns.
+drop function if exists public.list_rides_feed(int); -- migration-safety: allow — re-created below with two more columns, same arguments
 create function public.list_rides_feed(p_limit int default 100)
 returns table (
   listing_id     uuid,
@@ -532,7 +538,72 @@ returns table (
   meeting_points int,
   seats_left     int,
   passengers     int,
-  recurrence     jsonb
+  recurrence     jsonb,
+  series_more    int
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with upcoming as (
+    select l.*,
+           (l.details->>'departs_at')::timestamptz as departs,
+           l.details->'ride_series'->>'id' as series_id
+      from public.listings l
+     where l.world_slug = 'rides'
+       and l.status = 'open'
+       and l.moderation_status = 'published'
+       and jsonb_typeof(l.details->'departs_at') = 'string'
+       and (l.details->>'departs_at')::timestamptz > now()
+       and public.is_listing_visible_to(l, auth.uid())
+  ), horizon as (
+    -- Midnight starting the day after tomorrow, Israel time.
+    select (((now() at time zone 'Asia/Jerusalem')::date + 2)::timestamp) at time zone 'Asia/Jerusalem' as at
+  ), keyed as (
+    select u.*,
+           case when u.series_id is not null and u.departs >= h.at
+                then 'series:' || u.series_id else 'listing:' || u.listing_id::text end as fold_key
+      from upcoming u, horizon h
+  ), folded as (
+    select distinct on (k.fold_key)
+           k.*, (count(*) over (partition by k.fold_key) - 1)::int as later_count
+      from keyed k
+     order by k.fold_key, k.departs, k.listing_id
+  )
+  select f.listing_id,
+         f.direction,
+         f.title,
+         f.departs,
+         f.details->>'origin_label',
+         f.details->>'dest_label',
+         coalesce(jsonb_array_length(case jsonb_typeof(f.details->'meeting_points')
+                                       when 'array' then f.details->'meeting_points' end), 0),
+         case when f.direction = 'give' then greatest(0,
+           coalesce((f.details->>'seats_available')::int, 1)
+           - coalesce((select sum(h.seats)::int from public.giving_handoffs h
+                        where h.listing_id = f.listing_id
+                          and h.status in ('reserved', 'confirmed', 'handed_over')), 0))
+         end,
+         case when f.direction = 'request' then (f.details->>'passengers')::int end,
+         f.details->'ride_series',
+         f.later_count
+    from folded f
+   order by f.departs, f.listing_id
+   limit greatest(1, least(coalesce(p_limit, 100), 200));
+$$;
+
+comment on function public.list_rides_feed(int) is
+  'Rides feed: open ride offers and requests not yet departed, soonest first, with free seats (D75); a recurring ride shows its recurrence and, from the day after tomorrow, folds into one row with the count of later dates (FR-RIDE-046).';
+
+-- The upcoming dates of one recurring ride, for "other dates" on an occurrence: the member
+-- picks the day they need and books that occurrence.
+create or replace function public.list_ride_series_occurrences(p_series_id uuid, p_limit int default 60)
+returns table (
+  listing_id uuid,
+  departs_at timestamptz,
+  seats_left int,
+  passengers int
 )
 language sql
 stable
@@ -540,38 +611,32 @@ security definer
 set search_path = public
 as $$
   select l.listing_id,
-         l.direction,
-         l.title,
          (l.details->>'departs_at')::timestamptz,
-         l.details->>'origin_label',
-         l.details->>'dest_label',
-         coalesce(jsonb_array_length(case jsonb_typeof(l.details->'meeting_points')
-                                       when 'array' then l.details->'meeting_points' end), 0),
          case when l.direction = 'give' then greatest(0,
            coalesce((l.details->>'seats_available')::int, 1)
            - coalesce((select sum(h.seats)::int from public.giving_handoffs h
                         where h.listing_id = l.listing_id
                           and h.status in ('reserved', 'confirmed', 'handed_over')), 0))
          end,
-         case when l.direction = 'request' then (l.details->>'passengers')::int end,
-         l.details->'ride_series'
+         case when l.direction = 'request' then (l.details->>'passengers')::int end
     from public.listings l
-   where l.world_slug = 'rides'
+   where l.details->'ride_series'->>'id' = p_series_id::text
      and l.status = 'open'
      and l.moderation_status = 'published'
-     and jsonb_typeof(l.details->'departs_at') = 'string'
      and (l.details->>'departs_at')::timestamptz > now()
      and public.is_listing_visible_to(l, auth.uid())
    order by (l.details->>'departs_at')::timestamptz, l.listing_id
-   limit greatest(1, least(coalesce(p_limit, 100), 200));
+   limit greatest(1, least(coalesce(p_limit, 60), 200));
 $$;
 
-comment on function public.list_rides_feed(int) is
-  'Rides feed: open ride offers and requests not yet departed, soonest first, with free seats (D75) and the recurrence of a recurring ride (FR-RIDE-046).';
+comment on function public.list_ride_series_occurrences(uuid, int) is
+  'Upcoming open occurrences of a recurring ride the caller may see, soonest first (FR-RIDE-046).';
 
 -- ── 8. Privileges (ADR-002 §2: explicit per function) ────────────────────────
 revoke all on function public.list_rides_feed(int) from public;
 grant execute on function public.list_rides_feed(int) to anon, authenticated;
+revoke all on function public.list_ride_series_occurrences(uuid, int) from public;
+grant execute on function public.list_ride_series_occurrences(uuid, int) to anon, authenticated;
 
 revoke all on function public.create_ride_series(uuid, text, jsonb, text, time, int, text, int, date) from public, anon;
 grant execute on function public.create_ride_series(uuid, text, jsonb, text, time, int, text, int, date) to authenticated;

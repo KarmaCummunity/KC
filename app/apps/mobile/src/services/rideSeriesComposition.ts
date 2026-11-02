@@ -2,6 +2,7 @@
 import {
   CreateRideSeriesUseCase,
   ListMyRideSeriesUseCase,
+  ListRideSeriesOccurrencesUseCase,
   SetRideSeriesStatusUseCase,
   UpdateRideSeriesScheduleUseCase,
   type IRideSeriesRepository,
@@ -21,6 +22,10 @@ export const rideSeriesUseCases = {
   listMine: () => new ListMyRideSeriesUseCase(repository()),
   setStatus: () => new SetRideSeriesStatusUseCase(repository()),
   updateSchedule: () => new UpdateRideSeriesScheduleUseCase(repository()),
+  listOccurrences: () => new ListRideSeriesOccurrencesUseCase(repository()),
 };
 
 export const MY_RIDE_SERIES_QUERY_KEY = ['ride-series'] as const;
+
+/** The upcoming dates of one series ("other dates" on an occurrence). */
+export const rideSeriesOccurrencesQueryKey = (seriesId: string) => ['ride-series-occurrences', seriesId] as const;

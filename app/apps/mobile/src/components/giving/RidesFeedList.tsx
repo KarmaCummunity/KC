@@ -36,8 +36,10 @@ export function RidesFeedList({ header }: Readonly<{ header: React.ReactElement 
       ? item.seatsLeft ? t('rideFeed.seatsLeft', { count: item.seatsLeft }) : t('rideFeed.full')
       : t('rideFeed.passengers', { count: item.passengers ?? 1 }),
     item.meetingPoints > 0 ? t('rideFeed.meetingPoints', { count: item.meetingPoints }) : null,
-    // A recurring ride's occurrence says when the ride repeats (FR-RIDE-046).
+    // A recurring ride's occurrence says when the ride repeats; under "later" a series is one
+    // row that counts the dates folded into it (FR-RIDE-046).
     item.recurrence ? rideSeriesLabel(item.recurrence, t) : null,
+    item.seriesMore > 0 ? t('rideSeries.moreDates', { count: item.seriesMore }) : null,
   ];
 
   return (

@@ -8,6 +8,7 @@ import {
   type CreateRideSeriesInput,
   type CreatedRideSeries,
   type RideSeries,
+  type RideSeriesOccurrence,
   type RideSeriesSchedule,
   type RideSeriesStatus,
 } from '@kc/domain';
@@ -52,5 +53,13 @@ export class UpdateRideSeriesScheduleUseCase {
   ): Promise<void> {
     assertSchedule(schedule, now);
     return this.repo.updateSchedule(seriesId, schedule, durationMinutes);
+  }
+}
+
+/** "Other dates" on an occurrence: the member picks the day they need and books that ride. */
+export class ListRideSeriesOccurrencesUseCase {
+  constructor(private readonly repo: IRideSeriesRepository) {}
+  execute(seriesId: string): Promise<RideSeriesOccurrence[]> {
+    return this.repo.listOccurrences(seriesId);
   }
 }

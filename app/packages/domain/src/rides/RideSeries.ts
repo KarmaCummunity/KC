@@ -6,7 +6,7 @@
 import type { RideErrorCode } from './RideError';
 
 /** Days ahead the server keeps occurrences published for (0529 `ride_series_materialize`). */
-export const RIDE_SERIES_LOOKAHEAD_DAYS = 7;
+export const RIDE_SERIES_LOOKAHEAD_DAYS = 30;
 
 /** Sunday … Saturday, as JavaScript's `Date.getDay()` numbers them. */
 export const RIDE_WEEKDAYS = [0, 1, 2, 3, 4, 5, 6] as const;
@@ -48,6 +48,16 @@ export interface CreateRideSeriesInput {
 export interface CreatedRideSeries {
   readonly seriesId: string;
   readonly firstListingId: string;
+}
+
+/** One upcoming date of a recurring ride, as `list_ride_series_occurrences` returns it. */
+export interface RideSeriesOccurrence {
+  readonly listingId: string;
+  readonly departsAt: string;
+  /** Offers: seats still free. Null for requests. */
+  readonly seatsLeft: number | null;
+  /** Requests: passengers asking. Null for offers. */
+  readonly passengers: number | null;
 }
 
 /** The marker an occurrence carries in `details.ride_series` (0529). */

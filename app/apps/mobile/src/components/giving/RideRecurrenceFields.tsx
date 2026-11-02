@@ -1,6 +1,6 @@
 // "Recurring ride" in the create form (docs/spec/05_giving_worlds.md §5.3 step 1, FR-RIDE-046;
 // FR-RIDE-046): a switch, then the weekdays and an optional end date. The departure field above
-// gives the time of day; the server publishes one ride per picked day for the coming week.
+// gives the time of day; the server publishes one ride per picked day for the coming month.
 import React from 'react';
 import { Switch, View } from 'react-native';
 import { useTranslation } from 'react-i18next';

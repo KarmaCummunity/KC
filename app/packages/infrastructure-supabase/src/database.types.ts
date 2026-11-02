@@ -10743,6 +10743,15 @@ export type Database = {
           place_kind: string
         }[]
       }
+      list_ride_series_occurrences: {
+        Args: { p_limit?: number; p_series_id: string }
+        Returns: {
+          departs_at: string
+          listing_id: string
+          passengers: number
+          seats_left: number
+        }[]
+      }
       list_rides_feed: {
         Args: { p_limit?: number }
         Returns: {
@@ -10755,6 +10764,7 @@ export type Database = {
           passengers: number
           recurrence: Json
           seats_left: number
+          series_more: number
           title: string
         }[]
       }

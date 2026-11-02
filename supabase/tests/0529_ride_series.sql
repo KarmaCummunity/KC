@@ -54,12 +54,12 @@ as $$
    order by (l.details ->> 'departs_at')::timestamptz
 $$;
 
--- Days in the materializer's window (today … today + 7) whose departure is still ahead.
+-- Days in the materializer's window (today … today + 30) whose departure is still ahead.
 create function pg_temp.expected_days(p_weekdays int, p_time time)
 returns bigint
 language sql
 as $$
-  select count(*) from clock c, generate_series(c.today, c.today + 7, interval '1 day') d
+  select count(*) from clock c, generate_series(c.today, c.today + 30, interval '1 day') d
    where (p_weekdays & (1 << extract(dow from d)::int)) <> 0
      and ((d::date + p_time) at time zone 'Asia/Jerusalem') > now()
 $$;
@@ -81,7 +81,7 @@ begin
       kc_test.ride_route_tlv_jlm() || jsonb_build_object('seats_available', 3), 'give', c.soon, 127, null, 60, null) r;
 
   perform kc_test.assert_eq((select count(*) from pg_temp.occurrences(v_series)),
-    pg_temp.expected_days(127, c.soon), 'every day of the coming week gets an occurrence');
+    pg_temp.expected_days(127, c.soon), 'every day of the coming month gets an occurrence');
   perform kc_test.assert_eq(public.ride_series_materialize(v_series), 0,
     'materializing again creates nothing: one occurrence per series and day');
 
@@ -130,6 +130,36 @@ begin
   perform public.ride_series_sweep();
   perform kc_test.assert_true(exists (select 1 from public.posts po where po.listing_id = v_second),
     'the next occurrence is mirrored once it is the soonest');
+end $$;
+
+-- 2b) The rides feed lists today's and tomorrow's occurrences and folds the later ones into one
+--     row with their count; "other dates" lists every upcoming occurrence.
+do $$
+declare
+  p personas;
+  v_series uuid;
+  v_total bigint;
+  v_near bigint;
+  v_horizon timestamptz := (((now() at time zone 'Asia/Jerusalem')::date + 2)::timestamp) at time zone 'Asia/Jerusalem';
+begin
+  select * into p from personas;
+  v_series := pg_temp.series(p.driver);
+  v_total := (select count(*) from pg_temp.occurrences(v_series));
+  v_near := (select count(*) from pg_temp.occurrences(v_series) o where (o.details ->> 'departs_at')::timestamptz < v_horizon);
+
+  perform kc_test.act_as_anon();
+  perform kc_test.assert_eq(
+    (select count(*) from public.list_rides_feed(200) f where f.recurrence ->> 'id' = v_series::text),
+    v_near + 1, 'the feed lists the near occurrences one by one and the later ones as one row');
+  perform kc_test.assert_eq(
+    (select max(f.series_more) from public.list_rides_feed(200) f where f.recurrence ->> 'id' = v_series::text),
+    (v_total - v_near - 1)::int, 'the folded row counts the later dates');
+  perform kc_test.assert_eq(
+    (select count(*) from public.list_ride_series_occurrences(v_series)),
+    v_total, 'a guest sees every upcoming date of a public recurring ride');
+  perform kc_test.assert_true(
+    (select bool_and(o.seats_left = 3) from public.list_ride_series_occurrences(v_series) o),
+    'each date carries its free seats');
 end $$;
 
 -- 3) A saved-route follower hears about a recurring ride once, not every day.
@@ -200,7 +230,7 @@ begin
 
   perform public.set_ride_series_status(v_series, 'active');
   perform kc_test.assert_eq((select count(*) from pg_temp.occurrences(v_series)), v_before,
-    'resuming publishes the week again');
+    'resuming publishes the month again');
 end $$;
 
 -- 6) Rescheduling replaces the unbooked occurrences; a booked one keeps its agreed time.

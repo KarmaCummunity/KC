@@ -3,7 +3,7 @@ import { groupRidesByDay, type RideFeedItem } from '../RideFeedItem';
 
 const item = (id: string, departsAt: Date): RideFeedItem => ({
   listingId: id, direction: 'give', title: id, departsAt: departsAt.toISOString(),
-  originLabel: 'A', destLabel: 'B', meetingPoints: 0, seatsLeft: 2, passengers: null, recurrence: null,
+  originLabel: 'A', destLabel: 'B', meetingPoints: 0, seatsLeft: 2, passengers: null, recurrence: null, seriesMore: 0,
 });
 
 describe('groupRidesByDay', () => {

@@ -28,6 +28,7 @@ export {
   ListMyRideSeriesUseCase,
   SetRideSeriesStatusUseCase,
   UpdateRideSeriesScheduleUseCase,
+  ListRideSeriesOccurrencesUseCase,
 } from './rideSeriesUseCases';
 export type { IRideSeriesRepository } from '../ports/IRideSeriesRepository';
 export { RaiseRideEmergencyUseCase } from './RaiseRideEmergencyUseCase';

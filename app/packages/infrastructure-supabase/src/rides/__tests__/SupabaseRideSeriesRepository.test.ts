@@ -53,6 +53,16 @@ describe('SupabaseRideSeriesRepository', () => {
     });
   });
 
+  it('lists the upcoming dates of a series', async () => {
+    const { rpc, repo } = clientWith({ error: null }, {
+      data: [{ listing_id: 'l2', departs_at: '2026-11-03T05:30:00Z', seats_left: 2, passengers: null }], error: null,
+    });
+    await expect(repo.listOccurrences('s1')).resolves.toEqual([
+      { listingId: 'l2', departsAt: '2026-11-03T05:30:00Z', seatsLeft: 2, passengers: null },
+    ]);
+    expect(rpc).toHaveBeenCalledWith('list_ride_series_occurrences', { p_series_id: 's1' });
+  });
+
   it('surfaces server errors', async () => {
     const { repo } = clientWith({ data: null, error: { message: 'boom' } }, { data: null, error: { message: 'nope' } });
     await expect(repo.listMine()).rejects.toThrow('boom');

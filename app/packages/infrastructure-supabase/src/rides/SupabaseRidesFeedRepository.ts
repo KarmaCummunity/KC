@@ -35,5 +35,6 @@ export function mapFeedRow(row: FeedRow): RideFeedItem | null {
     passengers: row.passengers ?? null,
     // The series marker rides along as the occurrence's own details would carry it.
     recurrence: readRideSeriesMarker({ ride_series: row.recurrence }),
+    seriesMore: row.series_more ?? 0,
   };
 }
