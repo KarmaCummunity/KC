@@ -81,8 +81,10 @@ const styles = StyleSheet.create({
     width: 380,
     height: 380,
     borderRadius: 190,
-    top: -110,
-    right: -90,
+    // Kept fully below the top edge: an opaque stack header would otherwise
+    // cut the disk with a hard line and it would sit over the screen's hero icon.
+    top: 140,
+    right: -220,
   },
   blob2: {
     position: 'absolute',
