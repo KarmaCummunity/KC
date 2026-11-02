@@ -19,14 +19,15 @@
 // Override: an owner listed in the base commit's .github/owners.json approves
 // the PR's current head SHA (and is not its author). The static lane runs this
 // file from the base commit (like the CI judges), and `CI gate` re-runs the
-// static lane when a review is submitted or dismissed. Merge groups cannot
-// carry an override.
+// static lane when a review is submitted or dismissed. In a merge group the
+// override is the approval of the one PR the queue entry carries
+// (scripts/ci-queue.mjs, TD-252), so an approved change passes the queue too.
 //
 // Pushes and dispatches are not judged: their commits already passed a PR.
 // The checks are textual tripwires, not proof (TD-222).
 //
 // Inputs (env): EVENT_NAME, BASE_SHA, HEAD_SHA, JUDGE_REF, PR_NUMBER,
-// PR_AUTHOR, GITHUB_REPOSITORY, GITHUB_TOKEN.
+// PR_AUTHOR, GITHUB_REPOSITORY, GITHUB_TOKEN; merge groups also GITHUB_EVENT_PATH.
 
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -241,7 +242,7 @@ async function main() {
   }
   const override = await findOwnerOverride(env, env.JUDGE_REF);
   if (override.login) {
-    for (const v of violations) console.log(`::notice::${v} — accepted: @${override.login} approved head ${env.HEAD_SHA}`);
+    for (const v of violations) console.log(`::notice::${v} — accepted: @${override.login} approved PR #${override.number} at ${override.headSha}`);
     return;
   }
   for (const v of violations) console.log(`::error::Test integrity: ${v}`);

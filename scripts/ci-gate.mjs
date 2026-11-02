@@ -143,7 +143,7 @@ async function ciWorkflowErrors(env) {
   if (drift.length === 0) return [];
   const override = await findOwnerOverride(env, env.JUDGE_REF);
   if (override.login) {
-    for (const d of drift) console.log(`::notice::${d} — accepted: @${override.login} approved head ${env.HEAD_SHA}`);
+    for (const d of drift) console.log(`::notice::${d} — accepted: @${override.login} approved PR #${override.number} at ${override.headSha}`);
     return [];
   }
   return [

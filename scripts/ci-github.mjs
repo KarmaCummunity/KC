@@ -5,11 +5,13 @@
 //
 // Owner override rule: a judge that finds a gate-weakening change passes only
 // when an owner listed in the base commit's .github/owners.json approved the
-// PR's current head SHA, and that owner is not the PR author.
+// PR's current head SHA, and that owner is not the PR author. In a merge-queue
+// run the PR is the one the queue entry carries (scripts/ci-queue.mjs).
 //
 // Every API failure throws; callers turn that into a red gate (fail closed).
 
 import { execFileSync } from 'node:child_process';
+import { identifyQueuedPr, readQueueHeadRef } from './ci-queue.mjs';
 
 export const OWNERS_FILE = '.github/owners.json';
 
@@ -117,25 +119,45 @@ export async function githubList(path, key, env = process.env) {
 }
 
 /**
+ * The PR whose reviews can carry an override for this run, with the head SHA the
+ * approval must be on: the PR itself for PR events, the PR a queue entry carries
+ * for merge groups. Returns { number, author, headSha } or { why }.
+ */
+async function overrideTarget(env, cwd) {
+  if (PR_EVENTS.has(env.EVENT_NAME) && env.PR_NUMBER) {
+    return { number: env.PR_NUMBER, author: env.PR_AUTHOR, headSha: env.HEAD_SHA };
+  }
+  if (env.EVENT_NAME !== 'merge_group') {
+    return { why: `a ${env.EVENT_NAME} run has no PR review to carry an owner approval (overrides need a PR merge)` };
+  }
+  const queued = identifyQueuedPr({ headRef: readQueueHeadRef(env), baseSha: env.BASE_SHA, headSha: env.HEAD_SHA }, cwd);
+  if (!queued.number) return { why: `merge queue: ${queued.why}` };
+  // A PR waiting in the queue is still open; its head SHA is the one reviewed.
+  const pr = await githubGet(`/repos/${env.GITHUB_REPOSITORY}/pulls/${queued.number}`, env);
+  if (pr.state !== 'open' || pr.base?.ref !== queued.baseBranch) {
+    return { why: `merge queue: PR #${queued.number} is not open against ${queued.baseBranch}` };
+  }
+  return { number: queued.number, author: pr.user?.login, headSha: pr.head?.sha };
+}
+
+/**
  * Look for an owner approval that overrides a gate-weakening change.
- * Returns { login } on success, or { login: null, why } explaining what is
- * missing. Inputs (env): EVENT_NAME, PR_NUMBER, PR_AUTHOR, HEAD_SHA,
- * GITHUB_REPOSITORY, GITHUB_TOKEN; `judgeRef` is the base commit.
+ * Returns { login, number, headSha } on success (the approving owner, and the PR
+ * and head SHA the approval covers), or { login: null, why } explaining what is
+ * missing. Inputs (env): EVENT_NAME, PR_NUMBER, PR_AUTHOR, HEAD_SHA, BASE_SHA,
+ * GITHUB_REPOSITORY, GITHUB_TOKEN, and for merge groups HEAD_REF or the event
+ * payload at GITHUB_EVENT_PATH; `judgeRef` is the base commit.
  */
 export async function findOwnerOverride(env, judgeRef, cwd = process.cwd()) {
-  // Merge groups (and pushes) have no single PR whose reviews could carry an
-  // override, so an owner override is unsupported there: such a change must
-  // merge through a normal PR, not the merge queue.
-  if (!PR_EVENTS.has(env.EVENT_NAME) || !env.PR_NUMBER) {
-    return { login: null, why: `a ${env.EVENT_NAME} run has no PR review to carry an owner approval (overrides need a normal PR merge)` };
-  }
+  const target = await overrideTarget(env, cwd);
+  if (!target.number) return { login: null, why: target.why };
   const owners = ownersAt(judgeRef, cwd);
   if (owners.length === 0) return { login: null, why: `the base commit has no ${OWNERS_FILE}` };
-  const reviews = await githubList(`/repos/${env.GITHUB_REPOSITORY}/pulls/${env.PR_NUMBER}/reviews`, null, env);
-  const login = ownerApproval({ reviews, owners, headSha: env.HEAD_SHA, author: env.PR_AUTHOR });
-  if (login) return { login };
+  const reviews = await githubList(`/repos/${env.GITHUB_REPOSITORY}/pulls/${target.number}/reviews`, null, env);
+  const login = ownerApproval({ reviews, owners, headSha: target.headSha, author: target.author });
+  if (login) return { login, number: target.number, headSha: target.headSha };
   const list = owners.map((o) => `@${o}`).join(', ');
-  return { login: null, why: `no approving review by ${list} on head ${env.HEAD_SHA} (the PR author cannot approve)` };
+  return { login: null, why: `no approving review by ${list} on head ${target.headSha} of PR #${target.number} (the PR author cannot approve)` };
 }
 
 /** Conclusions that mean a lane did not pass, besides `cancelled`. */
