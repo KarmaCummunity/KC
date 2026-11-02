@@ -9,6 +9,7 @@ import { marketplaceAvailabilityLabels, marketplaceFieldLabels, marketplaceListi
 import { worldLaunch } from './donations.worldLaunch';
 import { marketplaceMyListings } from './donations.myListings';
 import { worldsHub } from './donations.worldsHub';
+import { worldFeed } from './donations.worldFeed';
 export { moneyPayments } from './donations.moneyPayments';
 export { timeVolunteer } from './donations.timeVolunteer';
 
@@ -22,6 +23,7 @@ export const donations = {
   hubCategoriesSectionTitle: 'More donation categories',
   worldLaunch,
   worldsHub,
+  worldFeed,
   items: { title: 'Items', subtitle: 'Donate and request items' },
   time: { title: 'Time', subtitle: 'Volunteering and free time' },
   money: { title: 'Money', subtitle: 'Monetary donation' },
@@ -238,7 +240,6 @@ export const search = {
 export const marketplace = {
   ...marketplaceMap,
   allWorlds: 'All worlds',
-  createListing: 'Create listing',
   loading: 'Loading…',
   empty: 'No listings match your filters.',
   clusterLabel: '{{count}} listings',
@@ -246,6 +247,12 @@ export const marketplace = {
   startChat: 'Message publisher',
   shareFeed: 'Share to feed',
   actionFailed: 'That did not go through. Please try again.',
+  actionErrors: {
+    signInRequired: 'Sign in to send a message.',
+    accountNotActive: 'Your account is not active yet, so you cannot send messages.',
+    listingUnavailable: 'This listing is no longer available.',
+    ownListing: 'This is your own listing.',
+  },
   chatOpener: 'Hi — I saw your listing on the marketplace.',
   fieldTitle: 'Title',
   fieldSummary: 'Summary',

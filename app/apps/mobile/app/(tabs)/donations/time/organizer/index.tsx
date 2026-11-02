@@ -1,24 +1,19 @@
 import React from 'react';
-import { Pressable } from 'react-native';
+import { View } from 'react-native';
 import { KcFlashList } from '../../../../../src/components/lists/KcFlashList';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { makeUseStyles, spacing, Text } from '@kc/ui';
 import { KcRowCard } from '../../../../../src/components/cards/KcRowCard';
 import { Screen } from '../../../../../src/components/ui/Screen';
+import { PrimaryButton } from '../../../../../src/components/ui/Buttons';
 import { volunteerUseCases } from '../../../../../src/services/volunteerComposition';
 import { useShellTabBarScrollInset } from '../../../../../src/navigation/useShellTabBarVisibility';
 
-const useStyles = makeUseStyles(({ colors }) => ({
-  create: {
-    margin: spacing.lg,
-    padding: spacing.md,
-    borderRadius: 12,
-    backgroundColor: colors.primary,
-    alignItems: 'center' as const,
-  },
-  createText: { ...typography.button, color: colors.textInverse },
+const useStyles = makeUseStyles(() => ({
+  create: { margin: spacing.lg },
+  empty: { padding: spacing.lg, textAlign: 'center' as const },
 }));
 
 const ROW = { marginHorizontal: spacing.lg };
@@ -40,16 +35,17 @@ export default function OrganizerVolunteerListScreen() {
         keyExtractor={(item) => item.opportunityId}
         contentContainerStyle={{ paddingBottom: inset }}
         ListHeaderComponent={
-          <Pressable
-            style={styles.create}
-            onPress={() => router.push('/(tabs)/donations/time/organizer/create')}
-          >
-            <Text style={styles.createText}>{t('timeVolunteer.createOpportunity')}</Text>
-          </Pressable>
+          <View style={styles.create}>
+            <PrimaryButton
+              label={t('timeVolunteer.createOpportunity')}
+              size="md"
+              onPress={() => router.push('/(tabs)/donations/time/organizer/create')}
+            />
+          </View>
         }
         ListEmptyComponent={
           !list.isLoading ? (
-            <Text style={{ padding: spacing.lg, textAlign: 'center' }}>{t('timeVolunteer.organizerEmpty')}</Text>
+            <Text style={styles.empty}>{t('timeVolunteer.organizerEmpty')}</Text>
           ) : null
         }
         renderItem={({ item }) => (

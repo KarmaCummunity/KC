@@ -4,6 +4,9 @@ import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@kc/ui';
 import { nativeStackHeaderLeftIconOnly } from '../../../src/navigation/nativeHeaderIconOnly';
+import { nestedStackGestureOptions } from '../../../src/navigation/nestedStackGestureOptions';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
 export default function DonationsLayout() {
   const { colors } = useTheme();
@@ -26,10 +29,7 @@ export default function DonationsLayout() {
           minWidth: '100%',
           alignSelf: 'stretch',
         },
-        // Same subtle cross-fade as the root stack so navigating into a
-        // donation sub-screen feels continuous with the rest of the app.
-        animation: 'fade',
-        animationDuration: 220,
+        ...nestedStackGestureOptions,
       }}
     >
       <Stack.Screen name="index" />
@@ -37,6 +37,7 @@ export default function DonationsLayout() {
       <Stack.Screen name="time" options={{ headerShown: false }} />
       <Stack.Screen name="items" options={{ headerShown: false }} />
       <Stack.Screen name="food" options={{ headerShown: false }} />
+      <Stack.Screen name="housing" options={{ headerShown: false }} />
       <Stack.Screen name="category/[slug]" options={{ ...detailHeader, headerTitle: '' }} />
       <Stack.Screen name="domain/[slug]" options={{ ...detailHeader, headerTitle: '' }} />
       <Stack.Screen name="experiences" options={{ ...detailHeader, headerTitle: '' }} />

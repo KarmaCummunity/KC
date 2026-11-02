@@ -81,12 +81,14 @@ Last applied on kc-dev when this was written: `0239`.
 | 0511–0519 | Rides end to end — `docs/spec/05_giving_worlds.md` §5.3, gaps G44–G49 (`0511` G47 driver bookings) | in progress |
 | 0520 | KC#1063 function `EXECUTE` explicit grants: new functions private by default, SECURITY DEFINER triggers and internal helpers service-role only | in review |
 | 0521 | KC#1064 `chat-media` bucket private: read policy by chat visibility, signed URLs in the app | in review |
-| 0522–0526 | FEED-WORLDS / FR-FEED-020 — main feed of every create category + a feed per world (`0522` every create category mirrors into the feed) | in progress |
-| 0527+ | — | free |
+| 0522–0526 | FEED-WORLDS / FR-FEED-020 — main feed of every create category + a feed per world (`0522` every create category mirrors into the feed, merged #1376; `0523` time world active) | in progress |
+| 0527 | KC#1411 `list_ride_places` total order (label, kind, id) so the app can page past `max_rows` | in review |
+| 0528 | KC#1391 FR-NOTIF-018 item and food handoff pushes (`giving_handoffs_giving_notify`) | in review |
+| 0529+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0527+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0529+`.
 
 ## How to claim
 

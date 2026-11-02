@@ -1,7 +1,7 @@
 // FR-FEED-020 AC1 — a feed mirror of a rides, food, housing or time listing shows its giving
 // world on the card (chip + icon); ordinary posts and items mirrors keep their subcategory.
 import { describe, expect, it } from 'vitest';
-import { feedCardCategory } from '../feedCardCategory';
+import { feedCardCategory, worldChipKey } from '../feedCardCategory';
 // eslint-disable-next-line no-restricted-imports -- test asserts every chip key exists in the Hebrew bundle
 import he from '../../i18n/locales/he';
 // eslint-disable-next-line no-restricted-imports -- test asserts every chip key exists in the English bundle
@@ -63,4 +63,19 @@ describe('feedCardCategory', () => {
       expect(typeof resolveKey(en, chipKey)).toBe('string');
     },
   );
+});
+
+// #1412 — a listing card names its world as the feed card does.
+describe('worldChipKey', () => {
+  it('uses the create category label for a create-form world, as the feed chip does', () => {
+    expect(worldChipKey('rides')).toBe(feedCardCategory({ category: 'Other', type: 'Give', listingWorldSlug: 'rides' }).chipKey);
+    expect(worldChipKey('items')).toBe('post.unifiedCreate.categories.items');
+  });
+
+  it.each(['knowledge', 'money'])('keeps the marketplace name of the %s world, in Hebrew and English', (world) => {
+    const key = worldChipKey(world);
+    expect(key).toBe(`marketplace.world.${world}`);
+    expect(typeof resolveKey(he, key)).toBe('string');
+    expect(typeof resolveKey(en, key)).toBe('string');
+  });
 });

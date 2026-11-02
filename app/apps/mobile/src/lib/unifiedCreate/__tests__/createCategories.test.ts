@@ -9,6 +9,7 @@ import {
   createRouteFor,
   findCreateCategory,
   isCreateCategoryId,
+  isCreateDirection,
 } from '../createCategories';
 // eslint-disable-next-line no-restricted-imports -- test asserts every category label key exists in the Hebrew bundle
 import he from '../../../i18n/locales/he';
@@ -81,5 +82,19 @@ describe('unified create — category config', () => {
     expect(createRouteFor('knowledge')).toBe('/(tabs)/create');
     expect(createRouteFor('rides')).toBe('/(tabs)/create?category=rides');
     expect(createRouteFor('items')).toBe('/(tabs)/create?category=items');
+  });
+
+  it('presets the direction with a category (FR-FEED-020 AC2), never without one', () => {
+    expect(createRouteFor('food', 'request')).toBe('/(tabs)/create?category=food&direction=request');
+    expect(createRouteFor('housing', 'give')).toBe('/(tabs)/create?category=housing&direction=give');
+    expect(createRouteFor('rides', null)).toBe('/(tabs)/create?category=rides');
+    expect(createRouteFor('knowledge', 'give')).toBe('/(tabs)/create');
+    expect(createRouteFor(null, 'request')).toBe('/(tabs)/create');
+  });
+
+  it('recognises exactly the two create directions', () => {
+    expect(isCreateDirection('give')).toBe(true);
+    expect(isCreateDirection('request')).toBe(true);
+    for (const bad of ['Give', 'offer', '', null, undefined, 1]) expect(isCreateDirection(bad)).toBe(false);
   });
 });

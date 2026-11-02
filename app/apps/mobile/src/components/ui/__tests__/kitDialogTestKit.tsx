@@ -17,6 +17,7 @@ export const reanimatedDouble = {
   useAnimatedStyle: () => ({}),
   withSpring: (value: number) => value,
   withTiming: (value: number) => value,
+  withDelay: (_delay: number, value: number) => value,
 };
 
 export const hapticsDouble = {
@@ -27,6 +28,7 @@ export const hapticsDouble = {
 /** The real safe-area entry does not load under jsdom. */
 export const safeAreaDouble = {
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+  SafeAreaView: View,
 };
 
 /** `t` returns the key, so tests assert on keys instead of copy. */

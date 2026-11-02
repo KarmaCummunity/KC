@@ -4,9 +4,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
 import type { LegalPendingItem } from '@kc/domain';
-import { typography, spacing, useTheme, Text } from '@kc/ui';
+import { typography, spacing, radius, useTheme, Text } from '@kc/ui';
 import { LegalDocumentReader } from './LegalDocumentReader';
 import { LegalConsentCard } from './LegalConsentCard';
+import { AgeConfirmationCheckbox } from './AgeConfirmationCheckbox';
+import { canSubmitLegalConsent } from './legalConsentRules';
 import { getAcceptLegalDocumentUseCase } from '../../services/legalComposition';
 import { performFullSignOut } from '../../services/performFullSignOut';
 import { useAuthStore } from '../../store/authStore';
@@ -29,11 +31,15 @@ export function LegalConsentScreen({ mode, pending, onResolved }: LegalConsentSc
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [accepted, setAccepted] = useState<Record<string, boolean>>({});
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   const [readerOpenFor, setReaderOpenFor] = useState<LegalPendingItem | null>(null);
 
-  const allChecked = useMemo(() => pending.every((p) => accepted[p.docType]), [pending, accepted]);
+  const allChecked = useMemo(
+    () => canSubmitLegalConsent({ mode, pending, accepted, ageConfirmed }),
+    [mode, pending, accepted, ageConfirmed],
+  );
 
   const onSubmit = async () => {
     if (submitting || !allChecked) return;
@@ -111,13 +117,17 @@ export function LegalConsentScreen({ mode, pending, onResolved }: LegalConsentSc
           />
         ))}
 
+        {mode === 'signup' ? (
+          <AgeConfirmationCheckbox checked={ageConfirmed} onToggle={setAgeConfirmed} />
+        ) : null}
+
         <Pressable
           onPress={onSubmit}
           disabled={!allChecked || submitting}
           style={({ pressed }) => ({
             marginTop: spacing.lg,
             paddingVertical: spacing.md,
-            borderRadius: 12,
+            borderRadius: radius.md,
             backgroundColor: !allChecked || submitting ? colors.surfaceRaised : colors.primary,
             opacity: pressed ? 0.85 : 1,
             alignItems: 'center',
@@ -144,7 +154,7 @@ export function LegalConsentScreen({ mode, pending, onResolved }: LegalConsentSc
         </Pressable>
       </ScrollView>
 
-      <Modal
+      <Modal // brand-guard-allow: pre-existing exit dialog, kit migration out of scope for #1450
         visible={exitConfirmOpen}
         transparent
         animationType="fade"
@@ -160,7 +170,7 @@ export function LegalConsentScreen({ mode, pending, onResolved }: LegalConsentSc
         >
           <View
             style={[
-              { backgroundColor: colors.surface, borderRadius: 12, padding: spacing.lg },
+              { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.lg },
               Platform.OS === 'web'
                 ? ({ width: '100%', maxWidth: 480, alignSelf: 'center' } as const)
                 : null,
@@ -197,7 +207,7 @@ export function LegalConsentScreen({ mode, pending, onResolved }: LegalConsentSc
                 style={{
                   flex: 1,
                   paddingVertical: spacing.md,
-                  borderRadius: 8,
+                  borderRadius: radius.sm,
                   backgroundColor: colors.surfaceRaised,
                   alignItems: 'center',
                 }}
@@ -211,7 +221,7 @@ export function LegalConsentScreen({ mode, pending, onResolved }: LegalConsentSc
                 style={{
                   flex: 1,
                   paddingVertical: spacing.md,
-                  borderRadius: 8,
+                  borderRadius: radius.sm,
                   backgroundColor: colors.error,
                   alignItems: 'center',
                 }}
@@ -225,7 +235,7 @@ export function LegalConsentScreen({ mode, pending, onResolved }: LegalConsentSc
         </View>
       </Modal>
 
-      <Modal
+      <Modal // brand-guard-allow: full-screen document reader, not a dialog
         visible={!!readerOpenFor}
         animationType="slide"
         onRequestClose={() => setReaderOpenFor(null)}

@@ -46,7 +46,14 @@ export type NotificationKind =
   // D74 (0516) — a new ride on a route the user follows.
   | 'ride_route_match'
   // D70 (0517) — an emergency raised on a ride of the one rides flow.
-  | 'ride_listing_emergency';
+  | 'ride_listing_emergency'
+  // FR-NOTIF-018 (0528) — item and food handoffs: every change reaches the other side.
+  | 'giving_handoff_requested'
+  | 'giving_handoff_claimed'
+  | 'giving_handoff_confirmed'
+  | 'giving_handoff_declined'
+  | 'giving_handoff_cancelled'
+  | 'giving_handoff_completed';
 
 /** Payload attached to every Expo push under `data`. The client reads this on tap. */
 export interface PushData {

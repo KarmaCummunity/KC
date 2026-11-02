@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useShallow } from 'zustand/react/shallow';
 import { useTheme, Text, TextInput, iconSize } from '@kc/ui';
+import { rtlTextAlignStart } from '../../src/lib/rtlLayout';
 import type { SearchResultType, SearchSortBy } from '@kc/domain';
 import { useTranslation } from 'react-i18next';
 
@@ -27,6 +28,8 @@ import { useSearchScreenStyles } from '../../src/screens/tabs/search.styles';
 import { SearchSuggestedQueries } from '../../src/components/search/SearchSuggestedQueries';
 import { SearchRecentSection } from '../../src/components/search/SearchRecentSection';
 import { SearchResultSections } from '../../src/components/search/SearchResultSections';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 // ── Constants ─────────────────────────────────
 const DEBOUNCE_MS = 300; // debounce delay for search input
@@ -156,7 +159,7 @@ export default function SearchScreen() {
             onSubmitEditing={handleSubmit}
             placeholder={t('search.placeholder')}
             placeholderTextColor={colors.textDisabled}
-            textAlign="right"
+            textAlign={rtlTextAlignStart}
             returnKeyType="search"
             autoCorrect={false}
           />

@@ -35,7 +35,13 @@ describe('resolvePushRoute', () => {
     'ride_booking_cancelled',
     'ride_route_match',
     'ride_listing_emergency',
-  ] as const)('routes %s to the listing (KC#1316, D70, D73, D74)', (kind) => {
+    'giving_handoff_requested',
+    'giving_handoff_claimed',
+    'giving_handoff_confirmed',
+    'giving_handoff_declined',
+    'giving_handoff_cancelled',
+    'giving_handoff_completed',
+  ] as const)('routes %s to the listing (KC#1316, D70, D73, D74, FR-NOTIF-018)', (kind) => {
     expect(
       resolvePushRoute({ category: 'critical', kind, notification_id: 'n9', params: { listingId: UUID } }),
     ).toEqual({ pathname: '/(tabs)/donations/marketplace/[listingId]', params: { listingId: UUID } });

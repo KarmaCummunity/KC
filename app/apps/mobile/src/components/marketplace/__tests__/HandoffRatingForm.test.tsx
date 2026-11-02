@@ -9,6 +9,10 @@ import { ThemeProvider } from '@kc/ui';
 vi.mock('@expo/vector-icons', () => ({
   Ionicons: ({ name }: { name: string }) => <span data-testid={`icon-${name}`} />,
 }));
+// The kit buttons pull in reanimated and haptics; their press feedback is not under test here.
+vi.mock('react-native-reanimated', async () => (await import('../../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
+vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogTestKit')).hapticsDouble);
+vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
 
 import { HANDOFF_RATING_NOTE_MAX_LENGTH, HandoffRatingForm } from '../HandoffRatingForm';

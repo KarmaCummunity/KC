@@ -8,7 +8,7 @@ import type { PostType } from '@kc/domain';
 import { ThemeProvider } from '@kc/ui';
 
 const mocks = vi.hoisted(() => ({
-  params: {} as { category?: string | string[] },
+  params: {} as { category?: string | string[]; direction?: string | string[] },
   load: vi.fn(),
   save: vi.fn(),
 }));
@@ -66,6 +66,25 @@ describe('useUnifiedCreateCategory', () => {
     await renderHarness();
     expect(mocks.load).not.toHaveBeenCalled();
     expect(state()).toBe('food/give');
+  });
+
+  it('a deep link with a direction presets request / offer (FR-FEED-020 AC2)', async () => {
+    mocks.params = { category: 'food', direction: 'request' };
+    await renderHarness();
+    expect(mocks.load).not.toHaveBeenCalled();
+    expect(state()).toBe('food/request');
+  });
+
+  it('ignores a bad direction in a deep link and keeps the form direction', async () => {
+    mocks.params = { category: 'time', direction: 'sideways' };
+    await renderHarness();
+    expect(state()).toBe('time/give');
+  });
+
+  it('ignores a direction without a known category', async () => {
+    mocks.params = { category: 'knowledge', direction: 'give' };
+    await renderHarness();
+    expect(state()).toBe('rides/request');
   });
 
   it('an unknown deep link falls back to the remembered choice', async () => {

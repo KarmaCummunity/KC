@@ -22,8 +22,12 @@ name: Bump app version on merge
 # ID rewrite into the bump commit, and renaming this workflow requires the same
 # rename in deploy.yml's `workflows:` list.
 #
-# Needs AGENT_MERGE_TOKEN whose owner may push to `dev` (branch protection
-# bypass). A push made with GITHUB_TOKEN could not do this either way.
+# Pushes as the `kc-version-bump` GitHub App (Contents write, nothing else),
+# whose ID and key live only in the `dev`-only `version-bump` environment. The
+# App is the `dev` ruleset's bypass actor, so its push skips the merge queue;
+# it has no Pull requests permission, so it cannot merge or approve anything.
+# GITHUB_TOKEN cannot replace it: its pushes start no workflows, so the ID
+# commit would never be certified by CI.
 
 on:
   push:
@@ -49,20 +53,32 @@ jobs:
         && !startsWith(github.event.head_commit.message, 'chore(release): assign spec ids') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # Branch-restricted to `dev`: a workflow pushed on any other branch cannot
+    # read the App key (repository-level secrets would be readable, TD-223).
+    environment: version-bump
     steps:
-      - name: Require the merge token
+      - name: Require the version-bump App
         env:
-          TOKEN: ${{ secrets.AGENT_MERGE_TOKEN }}
+          APP_ID: ${{ secrets.VERSION_BUMP_APP_ID }}
+          APP_KEY: ${{ secrets.VERSION_BUMP_APP_PRIVATE_KEY }}
         run: |
-          if [ -z "$TOKEN" ]; then
-            echo "::error::AGENT_MERGE_TOKEN is not set; the version cannot be bumped (TD-196)"
+          if [ -z "$APP_ID" ] || [ -z "$APP_KEY" ]; then
+            echo "::error::VERSION_BUMP_APP_ID / VERSION_BUMP_APP_PRIVATE_KEY are not set in the version-bump environment; the version cannot be bumped. See docs/SSOT/OPERATOR_RUNBOOK.md § Owner setup for D-195 CI/CD."
             exit 1
           fi
+
+      # Short-lived installation token, scoped to this repository only.
+      - name: Mint the version-bump App token
+        id: app
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.VERSION_BUMP_APP_ID }}
+          private-key: ${{ secrets.VERSION_BUMP_APP_PRIVATE_KEY }}
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 2
-          token: ${{ secrets.AGENT_MERGE_TOKEN }}
+          token: ${{ steps.app.outputs.token }}
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
@@ -120,5 +136,5 @@ jobs:
             sleep $((attempt * 5))
           done
 
-          echo "::error::Could not push the post-merge commit to dev. If branch protection rejected it, the owner of AGENT_MERGE_TOKEN needs to be allowed to bypass it (TD-196)."
+          echo "::error::Could not push the post-merge commit to dev. If the ruleset rejected it, add the kc-version-bump App as the dev ruleset's bypass actor (TD-231)."
           exit 1

@@ -58,6 +58,7 @@ jobs:
         with:
           sparse-checkout: |
             .nvmrc
+            scripts/resolve-green-dev-sha.mjs
             scripts/mobile-nightly-resolve.mjs
           sparse-checkout-cone-mode: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7

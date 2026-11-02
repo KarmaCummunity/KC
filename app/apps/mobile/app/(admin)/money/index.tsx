@@ -1,7 +1,7 @@
 // app/apps/mobile/app/(admin)/money/index.tsx
 // V2-ADMIN-MONEY-9 — V2 §13.3 Admin Money — minimal donations / expenses ledger.
 import { useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { adminChipScroll } from '../../../src/components/admin/adminChipScroll';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -10,6 +10,7 @@ import {
   type FinanceDirection, type FinanceEntry,
 } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { PrimaryButton } from '../../../src/components/ui/Buttons';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { container } from '../../../src/lib/container';
 import { FinanceEntryCard } from '../../../src/components/admin/money/FinanceEntryCard';
@@ -19,6 +20,8 @@ import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
 import { confirmAction as platformConfirm } from '../../../src/services/platformConfirm';
 import { useLocaleBundle, type LocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
 type DirFilter = FinanceDirection | 'all';
 
@@ -86,9 +89,7 @@ export default function MoneyScreen() {
     <View style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.title}>{t.title}</Text>
-        <Pressable accessibilityRole="button" onPress={() => setCreating(true)} style={styles.newBtn}>
-          <Text style={styles.newBtnText}>{t.newBtn}</Text>
-        </Pressable>
+        <PrimaryButton testID="admin-money-new" label={t.newBtn} size="sm" onPress={() => setCreating(true)} />
       </View>
 
       <View style={styles.summaryBox}>
@@ -175,8 +176,6 @@ const useStyles = makeUseStyles(({ colors }) => ({
   header:      { paddingHorizontal: spacing.base, paddingTop: spacing.base, paddingBottom: spacing.sm,
                  flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title:       { fontSize: typography.h2.fontSize, ...typography.bold },
-  newBtn:      { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.primary },
-  newBtnText:  { color: colors.textInverse, fontSize: typography.bodySmall.fontSize, ...typography.bold },
 
   summaryBox: { marginHorizontal: spacing.base, marginBottom: spacing.sm, padding: spacing.md, borderRadius: radius.sm,
                 backgroundColor: colors.surface,

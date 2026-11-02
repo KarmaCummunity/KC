@@ -1,27 +1,29 @@
 import React from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../../../../../src/components/ui/Screen';
+import { PrimaryButton, SecondaryButton } from '../../../../../src/components/ui/Buttons';
 import { CampaignProgressBar } from '../../../../../src/components/money/CampaignProgressBar';
 import { paymentsUseCases } from '../../../../../src/services/paymentsComposition';
 import { useShellTabBarScrollInset } from '../../../../../src/navigation/useShellTabBarVisibility';
 import { useExternalDonations } from '../../../../../src/hooks/useExternalDonations';
 
+/** Narrowest a donate action may get before the pair wraps (a layout size, in points). */
+const ACTION_MIN_WIDTH = 140;
+
 const useStyles = makeUseStyles(({ colors }) => ({
   body: { padding: spacing.lg, gap: spacing.lg },
   title: { ...typography.h2, color: colors.textPrimary },
   about: { ...typography.body, color: colors.textSecondary },
-  stat: { ...typography.bodyLarge, color: colors.textPrimary, fontWeight: '700' as const },
-  campaign: { padding: spacing.md, borderRadius: 12, backgroundColor: colors.surfaceRaised, gap: spacing.sm },
+  stat: { ...typography.bodyLarge, ...typography.bold, color: colors.textPrimary },
+  campaign: { padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceRaised, gap: spacing.sm },
   campaignTitle: { ...typography.bodyLarge, color: colors.textPrimary },
   actions: { flexDirection: 'row' as const, gap: spacing.md, flexWrap: 'wrap' as const },
-  btn: { flex: 1, minWidth: 140, padding: spacing.md, borderRadius: 12, backgroundColor: colors.primary },
-  btnSecondary: { backgroundColor: colors.surfaceRaised, borderWidth: 1, borderColor: colors.border },
-  btnText: { ...typography.button, color: colors.textInverse, textAlign: 'center' as const },
-  btnTextSecondary: { color: colors.textPrimary },
+  // Side by side while both fit; the second wraps under the first on narrow screens.
+  action: { flex: 1, minWidth: ACTION_MIN_WIDTH },
 }));
 
 export default function NonprofitPublicScreen() {
@@ -67,29 +69,33 @@ export default function NonprofitPublicScreen() {
         </Text>
 
         <View style={styles.actions}>
-          <Pressable
-            style={styles.btn}
-            onPress={() =>
-              external
-                ? void openExternal('donate', p.orgId)
-                : router.push({ pathname: '/(tabs)/donations/money/donate/[orgId]', params: { orgId: p.orgId } })
-            }
-          >
-            <Text style={styles.btnText}>{t('moneyPayments.donateNow')}</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.btn, styles.btnSecondary]}
-            onPress={() =>
-              external
-                ? void openExternal('standing-order', p.orgId)
-                : router.push({
-                    pathname: '/(tabs)/donations/money/standing-order/[orgId]',
-                    params: { orgId: p.orgId },
-                  })
-            }
-          >
-            <Text style={[styles.btnText, styles.btnTextSecondary]}>{t('moneyPayments.monthlyGift')}</Text>
-          </Pressable>
+          <View style={styles.action}>
+            <PrimaryButton
+              label={t('moneyPayments.donateNow')}
+              size="md"
+              fullWidth
+              onPress={() =>
+                external
+                  ? void openExternal('donate', p.orgId)
+                  : router.push({ pathname: '/(tabs)/donations/money/donate/[orgId]', params: { orgId: p.orgId } })
+              }
+            />
+          </View>
+          <View style={styles.action}>
+            <SecondaryButton
+              label={t('moneyPayments.monthlyGift')}
+              size="md"
+              fullWidth
+              onPress={() =>
+                external
+                  ? void openExternal('standing-order', p.orgId)
+                  : router.push({
+                      pathname: '/(tabs)/donations/money/standing-order/[orgId]',
+                      params: { orgId: p.orgId },
+                    })
+              }
+            />
+          </View>
         </View>
 
         <Text style={styles.title}>{t('moneyPayments.campaignsSection')}</Text>

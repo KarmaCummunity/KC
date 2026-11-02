@@ -9,6 +9,7 @@ import { marketplaceAvailabilityLabels, marketplaceFieldLabels, marketplaceListi
 import { worldLaunch } from './donations.worldLaunch';
 import { marketplaceMyListings } from './donations.myListings';
 import { worldsHub } from './donations.worldsHub';
+import { worldFeed } from './donations.worldFeed';
 export { moneyPayments } from './donations.moneyPayments';
 export { timeVolunteer } from './donations.timeVolunteer';
 
@@ -22,6 +23,7 @@ export const donations = {
   hubCategoriesSectionTitle: 'תחומי תרומה נוספים',
   worldLaunch,
   worldsHub,
+  worldFeed,
   items: { title: 'חפצים', subtitle: 'תרומה ובקשת חפצים' },
   time: { title: 'זמן', subtitle: 'התנדבות וזמן פנוי' },
   money: { title: 'כסף', subtitle: 'תרומה כספית' },
@@ -238,7 +240,6 @@ export const search = {
 export const marketplace = {
   ...marketplaceMap,
   allWorlds: 'כל העולמות',
-  createListing: 'פרסום מודעה',
   loading: 'טוען…',
   empty: 'אין מודעות לפי הסינון.',
   clusterLabel: '{{count}} מודעות',
@@ -246,6 +247,12 @@ export const marketplace = {
   startChat: 'שליחת הודעה',
   shareFeed: 'שיתוף בפיד',
   actionFailed: 'הפעולה לא הושלמה. נסו שוב.',
+  actionErrors: {
+    signInRequired: 'צריך להתחבר כדי לשלוח הודעה.',
+    accountNotActive: 'החשבון שלך עדיין לא פעיל, ולכן אי אפשר לשלוח הודעה.',
+    listingUnavailable: 'המודעה כבר לא זמינה.',
+    ownListing: 'זו המודעה שלך.',
+  },
   chatOpener: 'היי — ראיתי את המודעה שלך בשוק.',
   fieldTitle: 'כותרת',
   fieldSummary: 'תקציר',

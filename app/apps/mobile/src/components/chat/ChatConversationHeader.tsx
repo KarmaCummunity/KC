@@ -7,7 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
-import { useTheme, Text } from '@kc/ui';
+import { iconSize, useTheme, Text } from '@kc/ui';
+import { MirroredIcon, useDirectionalBackIcon } from '../ui/MirroredIcon';
 import { useChatConversationHeaderStyles } from './chatConversationHeader.styles';
 import { OnlineDot } from './OnlineDot';
 
@@ -25,6 +26,7 @@ export function ChatConversationHeader({ title, canOpenProfile, shareHandle, onO
   const { t } = useTranslation();
   const styles = useChatConversationHeaderStyles();
   const { colors } = useTheme();
+  const backIcon = useDirectionalBackIcon();
   const rtl = I18nManager.isRTL;
   // Symmetric hitSlop steals touches from the centered title on native (esp. RTL); extend only toward screen edges.
   const backHitSlop = rtl
@@ -54,7 +56,7 @@ export function ChatConversationHeader({ title, canOpenProfile, shareHandle, onO
           accessibilityLabel={t('general.back')}
           style={styles.side}
         >
-          <Ionicons name="arrow-forward" size={24} color={colors.primary} />
+          <MirroredIcon name={backIcon} size={iconSize['2xl']} color={colors.primary} />
         </Pressable>
         <TouchableOpacity
           style={styles.titleWrap}
@@ -78,7 +80,7 @@ export function ChatConversationHeader({ title, canOpenProfile, shareHandle, onO
           accessibilityLabel={t('chat.headerActionsA11y')}
           style={styles.side}
         >
-          <Ionicons name="ellipsis-vertical" size={22} color={colors.textPrimary} />
+          <Ionicons name="ellipsis-vertical" size={iconSize.xl} color={colors.textPrimary} />
         </Pressable>
       </View>
     </View>

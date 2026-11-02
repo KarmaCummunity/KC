@@ -29,6 +29,5 @@ export const givingHandoff = {
   itemsHubIntro: 'מסירת חפצים עם תמונות, מצב, איסוף או משלוח, ושריון ברור.',
   foodHubIntro: 'הצילו מזון לפני פקיעה — דחיפות עולה ככל שהתאריך קרוב. תפיסה מהירה וחלונות איסוף.',
   myHandoffs: 'המסירות שלי',
-  createListing: 'פרסום מודעה',
   urgencyHigh: 'פג תוקף בקרוב',
 } as const;

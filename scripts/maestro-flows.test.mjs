@@ -33,9 +33,13 @@ function flowIds() {
   return [...ids].sort();
 }
 
-/** True when the app renders `id` as a testID, literally or via the tab bar's `tab-${key}` template. */
+/**
+ * True when the app renders `id` as a testID: a JSX literal (`testID="id"`), a literal in a
+ * data table the screen maps over (`testID: 'id'`, e.g. hub tiles), or the tab bar's
+ * `tab-${key}` template.
+ */
 function appHasTestId(id) {
-  if (source.includes(`testID="${id}"`)) return true;
+  if (source.includes(`testID="${id}"`) || source.includes(`testID: '${id}'`)) return true;
   const tab = id.match(/^tab-(\w+)$/);
   return Boolean(tab && source.includes('testID={`tab-${tab.key}`}') && source.includes(`key: '${tab[1]}'`));
 }

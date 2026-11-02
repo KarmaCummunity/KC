@@ -37,3 +37,34 @@ describe('rtlLayout', () => {
     expect(layoutDirectionStyle()).toEqual({});
   });
 });
+
+describe('rtl helpers share one implementation (issue #1289)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.resetModules();
+  });
+
+  it('rtlTextAlignStart / rtlTextAlignEnd follow document dir on web and textAlignStart() returns the same edge', async () => {
+    vi.stubGlobal('document', { documentElement: { getAttribute: () => 'rtl' } });
+    const rtl = await import('../rtlLayout');
+    expect(rtl.rtlTextAlignStart).toBe('right');
+    expect(rtl.rtlTextAlignEnd).toBe('left');
+    expect(rtl.textAlignStart()).toBe(rtl.rtlTextAlignStart);
+
+    vi.resetModules();
+    vi.stubGlobal('document', { documentElement: { getAttribute: () => 'ltr' } });
+    const ltr = await import('../rtlLayout');
+    expect(ltr.rtlTextAlignStart).toBe('left');
+    expect(ltr.rtlTextAlignEnd).toBe('right');
+  });
+
+  it('the legacy modules re-export the same values', async () => {
+    vi.stubGlobal('document', { documentElement: { getAttribute: () => 'ltr' } });
+    const rtl = await import('../rtlLayout');
+    const legacy = await import('../rtlTextAlignStart');
+    const web = await import('../webRtlStyle');
+    expect(legacy.rtlTextAlignStart).toBe(rtl.rtlTextAlignStart);
+    expect(legacy.rtlTextAlignEnd).toBe(rtl.rtlTextAlignEnd);
+    expect(web.webTextRtl).toEqual(rtl.layoutWritingDirectionStyle());
+  });
+});

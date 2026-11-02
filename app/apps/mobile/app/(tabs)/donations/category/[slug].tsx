@@ -18,6 +18,8 @@ import { MotionEntry, ENTRY_DELAY } from '../../../../src/components/ui/MotionEn
 import { useShellTabBarScrollInset } from '../../../../src/navigation/useShellTabBarVisibility';
 import { rtlTextAlignStart } from '../../../../src/lib/rtlTextAlignStart';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
+
 const ICON_BY_SLUG: Record<DonationCategorySlug, keyof typeof Ionicons.glyphMap> = {
   time: 'time-outline',
   money: 'cash-outline',

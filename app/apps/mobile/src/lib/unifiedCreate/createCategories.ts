@@ -73,9 +73,20 @@ export function findCreateCategory(id: string | null | undefined): CreateCategor
   return CREATE_CATEGORIES.find((c) => c.id === resolved)!;
 }
 
-/** Single entry route for every create button; preselects a category when one is given. */
-export function createRouteFor(categoryId?: string | null): Href {
-  const base = '/(tabs)/create';
-  if (!isCreateCategoryId(categoryId)) return base;
-  return `${base}?category=${encodeURIComponent(categoryId)}`;
+/** Type guard: is `value` one of the two create directions? */
+export function isCreateDirection(value: unknown): value is CreateDirection {
+  return value === 'give' || value === 'request';
+}
+
+/**
+ * Single entry route for every create button; preselects a category when one is given and,
+ * with it, a direction (a world screen's "request" / "offer" buttons, FR-FEED-020 AC2). A
+ * direction without a known category is dropped: the form would not know where it applies.
+ */
+export function createRouteFor(categoryId?: string | null, direction?: CreateDirection | null): Href {
+  if (!isCreateCategoryId(categoryId)) return '/(tabs)/create';
+  const category = encodeURIComponent(categoryId);
+  return isCreateDirection(direction)
+    ? `/(tabs)/create?category=${category}&direction=${direction}`
+    : `/(tabs)/create?category=${category}`;
 }

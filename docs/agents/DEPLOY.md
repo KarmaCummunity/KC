@@ -32,7 +32,7 @@ Never seed prod. Seed credentials live only in the seed files; never paste them 
 
 ## DB types drift
 
-`apply migrations · rls · types · sql probes` regenerates `app/packages/infrastructure-supabase/src/database.types.ts` on a fresh stack. If it fails with a diff, apply that exact diff to the file (or run `supabase gen types` locally with Docker) and push again.
+`apply migrations · rls · types · sql probes` regenerates `app/packages/infrastructure-supabase/src/database.types.ts` on a fresh stack. If it fails with a diff, apply that exact diff to the file (or run `supabase gen types typescript --local | node scripts/strip-partition-types.mjs > …` locally with Docker; the filter drops the monthly partition tables, whose names change every month) and push again.
 
 ## Verify on dev (E2E)
 

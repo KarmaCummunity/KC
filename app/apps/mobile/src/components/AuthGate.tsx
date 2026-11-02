@@ -4,7 +4,7 @@
 // FR-AUTH-010 AC3 (Skip preserves location).
 // FR-CHAT-001: inbox subscription started on sign-in, torn down on sign-out.
 import React, { useEffect, useState } from 'react';
-import { Pressable, ActivityIndicator, Image, View } from 'react-native';
+import { ActivityIndicator, Image, View } from 'react-native';
 import { spacing, typography, useTheme, Text } from '@kc/ui';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useSegments, usePathname, type Href } from 'expo-router';
@@ -26,6 +26,7 @@ import { container } from '../lib/container';
 import { useEnforceAccountGate } from '../hooks/useEnforceAccountGate';
 import { isPublicResearchPath } from '../navigation/publicResearchPaths';
 import { isPublicLegalSegment } from '../navigation/publicLegalPaths';
+import { PrimaryButton } from './ui/Buttons';
 
 export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) {
   const { colors } = useTheme();
@@ -231,7 +232,7 @@ export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) 
           backgroundColor: colors.background,
           justifyContent: 'center',
           alignItems: 'center',
-          gap: 24,
+          gap: spacing.xl,
         }}
       >
         <Image
@@ -257,27 +258,23 @@ export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) 
         <Text style={{ ...typography.body, color: colors.textPrimary, textAlign: 'center' }}>
           {t('general.error')}
         </Text>
-        <Pressable
-          onPress={() => {
-            if (!session) return;
-            setOnboardingBootstrapError(false);
-            void getOnboardingBootstrap(session.userId)
-              .then((boot) => {
-                setOnboardingState(boot.state);
-                setBasicInfoSkipped(boot.basicInfoSkipped);
-              })
-              .catch(() => setOnboardingBootstrapError(true));
-          }}
-          style={{
-            marginTop: spacing.md,
-            padding: spacing.md,
-            borderRadius: 8,
-            backgroundColor: colors.primary,
-            alignItems: 'center',
-          }}
-        >
-          <Text style={{ ...typography.button, color: colors.textInverse }}>{t('general.retry')}</Text>
-        </Pressable>
+        <View style={{ marginTop: spacing.md }}>
+          <PrimaryButton
+            testID="auth-gate-retry"
+            label={t('general.retry')}
+            size="md"
+            onPress={() => {
+              if (!session) return;
+              setOnboardingBootstrapError(false);
+              void getOnboardingBootstrap(session.userId)
+                .then((boot) => {
+                  setOnboardingState(boot.state);
+                  setBasicInfoSkipped(boot.basicInfoSkipped);
+                })
+                .catch(() => setOnboardingBootstrapError(true));
+            }}
+          />
+        </View>
       </View>
     );
   }

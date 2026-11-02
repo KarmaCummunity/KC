@@ -4,11 +4,12 @@
 // authority (`admins.set_manager` + GrantAuthority, FR-ADMIN-027). The
 // read-only display lives in ManagerSummary; this owns the mutation + picker.
 import { useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import {
   canDetachManager, canManageGrant, isOrgHierarchyError, managerCandidatesFor, type OrgTreeMember,
 } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { PrimaryButton, SecondaryButton } from '../../ui/Buttons';
 import { RoleBadge } from './RoleBadge';
 import { ManagerSummary } from './ManagerSummary';
 import { ManagerPickerModal } from './ManagerPickerModal';
@@ -72,25 +73,22 @@ export function GrantManagerSection({ member, members, canManage }: GrantManager
 
       {canAct && (
         <View style={styles.actions}>
-          <Pressable
-            accessibilityRole="button"
+          {/* Compact admin size (spec 17 §4.3). */}
+          <PrimaryButton
+            testID="grant-manager-assign"
+            label={manager ? L.admin.admins.detail.changeManager : L.admin.admins.detail.assignManager}
+            size="sm"
             disabled={setManager.isPending}
             onPress={() => { setErr(null); setPickerOpen(true); }}
-            style={styles.assignBtn}
-          >
-            <Text style={styles.assignText}>
-              {manager ? L.admin.admins.detail.changeManager : L.admin.admins.detail.assignManager}
-            </Text>
-          </Pressable>
+          />
           {manager && canDetach && (
-            <Pressable
-              accessibilityRole="button"
+            <SecondaryButton
+              testID="grant-manager-clear"
+              label={L.admin.admins.detail.clearManager}
+              size="sm"
               disabled={setManager.isPending}
               onPress={() => { void pick(null); }}
-              style={styles.clearBtn}
-            >
-              <Text style={styles.clearText}>{L.admin.admins.detail.clearManager}</Text>
-            </Pressable>
+            />
           )}
         </View>
       )}
@@ -115,14 +113,4 @@ const useStyles = makeUseStyles(({ colors }) => ({
   head: { flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
   org:  { ...typography.caption, color: colors.textSecondary },
   actions: { flexDirection: rowDirectionStart, gap: spacing.sm, marginTop: spacing.md },
-  assignBtn: {
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm,
-    backgroundColor: colors.primary,
-  },
-  assignText: { ...typography.bodySmall, ...typography.bold, color: colors.textInverse },
-  clearBtn: {
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm,
-    backgroundColor: colors.surfaceCream,
-  },
-  clearText: { ...typography.bodySmall, ...typography.bold, color: colors.textSecondary },
 }));

@@ -1,10 +1,10 @@
 import React, { useRef, useState } from 'react';
-import { View, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
+import { View, TouchableOpacity, Platform, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { isAuthError } from '@kc/application';
-import { useTheme, Text } from '@kc/ui';
+import { iconSize, useTheme, Text } from '@kc/ui';
 import { useAuthStore } from '../../store/authStore';
 import {
   getOAuthRedirectUri,
@@ -27,6 +27,8 @@ export function AuthSocialSignInBlock() {
   const [appleLoading, setAppleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const busyRef = useRef(false);
+  // The Apple button flips between black and white with the theme; its logo and spinner follow the label.
+  const appleInk = StyleSheet.flatten(styles.appleBtnText).color as string;
 
   const finish = () => router.replace('/(tabs)');
 
@@ -74,11 +76,6 @@ export function AuthSocialSignInBlock() {
 
   return (
     <>
-      <View style={styles.oauthDividerRow}>
-        <View style={styles.oauthDividerLine} />
-        <Text style={styles.oauthDividerText}>{t('auth.orDivider')}</Text>
-        <View style={styles.oauthDividerLine} />
-      </View>
       {Platform.OS === 'ios' ? (
         <TouchableOpacity
           style={[styles.authBtn, styles.appleBtn, appleLoading && styles.authBtnDisabled]}
@@ -86,11 +83,11 @@ export function AuthSocialSignInBlock() {
           disabled={appleLoading || googleLoading}
         >
           {appleLoading ? (
-            <ActivityIndicator color="#FFFFFF" />
+            <ActivityIndicator color={appleInk} />
           ) : (
             <>
               <Text style={[styles.authBtnText, styles.appleBtnText]}>{t('auth.continueWithApple')}</Text>
-              <Ionicons name="logo-apple" size={20} color="#FFFFFF" />
+              <Ionicons name="logo-apple" size={iconSize.lg} color={appleInk} />
             </>
           )}
         </TouchableOpacity>
@@ -109,6 +106,12 @@ export function AuthSocialSignInBlock() {
           </>
         )}
       </TouchableOpacity>
+      {/* After the social buttons: "or" leads into the e-mail form below the block (FR-AUTH-007 AC7). */}
+      <View style={styles.oauthDividerRow}>
+        <View style={styles.oauthDividerLine} />
+        <Text style={styles.oauthDividerText}>{t('auth.orDivider')}</Text>
+        <View style={styles.oauthDividerLine} />
+      </View>
       <NotifyModal
         visible={error !== null}
         title={t('auth.signInFailedTitle')}

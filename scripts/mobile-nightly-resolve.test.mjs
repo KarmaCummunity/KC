@@ -1,18 +1,9 @@
 // Unit tests for scripts/mobile-nightly-resolve.mjs. Run: node --test scripts/mobile-nightly-resolve.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseLookback, parseVersion, pickGreenSha, planNightly, shippedTags } from './mobile-nightly-resolve.mjs';
+import { parseVersion, planNightly, shippedTags } from './mobile-nightly-resolve.mjs';
 
 const tagRef = (name, sha, type = 'commit') => ({ ref: `refs/tags/${name}`, object: { type, sha } });
-
-test('picks the newest commit that has a green CI push run, not the tip', () => {
-  assert.equal(pickGreenSha(['tip', 'mid', 'old'], ['old', 'mid']), 'mid');
-});
-
-test('returns null when no scanned commit is green', () => {
-  assert.equal(pickGreenSha(['a', 'b'], ['z']), null);
-  assert.equal(pickGreenSha([], []), null);
-});
 
 test('shippedTags groups lightweight tags by commit and ignores annotated tags', () => {
   const shipped = shippedTags([
@@ -42,18 +33,6 @@ test('force rebuilds a shipped commit', () => {
 
 test('planNightly refuses to plan without a green commit', () => {
   assert.throws(() => planNightly({ greenSha: null, shipped: new Map(), force: true }), /green SHA/);
-});
-
-test('parseLookback defaults to 30 and accepts 1..100', () => {
-  assert.equal(parseLookback(undefined), 30);
-  assert.equal(parseLookback('1'), 1);
-  assert.equal(parseLookback('100'), 100);
-});
-
-test('parseLookback refuses values one API page cannot hold', () => {
-  assert.throws(() => parseLookback('101'), /1 to 100/);
-  assert.throws(() => parseLookback('0'), /1 to 100/);
-  assert.throws(() => parseLookback('ten'), /1 to 100/);
 });
 
 test('parseVersion accepts MAJOR.MINOR.PATCH and rejects anything else', () => {

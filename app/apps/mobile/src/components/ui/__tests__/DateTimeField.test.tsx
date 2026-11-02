@@ -1,20 +1,30 @@
 // @vitest-environment jsdom
 // FR-POST-001 AC6 / G49 — the tap-to-open date field: empty state, the date sheet (web input),
-// done / cancel, shortcuts, and the `datetime-local` value helpers.
+// done / cancel, shortcuts, and the `datetime-local` value helpers; on iOS, the native spinner
+// is drawn in the app's theme (#1398).
 import React from 'react';
+import { Platform } from 'react-native';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ThemeProvider } from '@kc/ui';
+import { darkColors, lightColors, ThemeProvider, type ThemeMode } from '@kc/ui';
 
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
-vi.mock('@react-native-community/datetimepicker', () => ({ default: () => null, DateTimePickerAndroid: { open: vi.fn() } }));
+// The native picker records the props of its last render, so a test can read what iOS would draw.
+const nativePicker = vi.hoisted(() => ({ props: null as Record<string, unknown> | null }));
+vi.mock('@react-native-community/datetimepicker', () => ({
+  default: (props: Record<string, unknown>) => {
+    nativePicker.props = props;
+    return null;
+  },
+  DateTimePickerAndroid: { open: vi.fn() },
+}));
 
 import { DateTimeField, fromWebLocalValue, toWebLocalValue } from '../DateTimeField';
 
-function renderField(value: Date | null, onChange = vi.fn()) {
+function renderField(value: Date | null, onChange = vi.fn(), theme: ThemeMode = 'light') {
   render(
-    <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
+    <ThemeProvider mode={theme} systemScheme="light" setMode={() => {}}>
       <DateTimeField
         testID="when"
         value={value}
@@ -28,7 +38,13 @@ function renderField(value: Date | null, onChange = vi.fn()) {
   return onChange;
 }
 
-afterEach(() => cleanup());
+const originalOs = Platform.OS;
+
+afterEach(() => {
+  cleanup();
+  Platform.OS = originalOs;
+  nativePicker.props = null;
+});
 
 describe('DateTimeField', () => {
   it('shows the placeholder while empty', () => {
@@ -67,4 +83,17 @@ describe('DateTimeField', () => {
     expect(fromWebLocalValue('2031-01-02T03:04')).toEqual(d);
     expect(fromWebLocalValue('')).toBeNull();
   });
+
+  // #1398 — the spinner followed the phone's appearance while the sheet followed the app's, so a
+  // phone in dark mode drew white digits on the light sheet and the picker looked empty.
+  it.each([
+    ['light', 'light', lightColors.textPrimary],
+    ['dark', 'dark', darkColors.textPrimary],
+  ] as const)('on iOS draws the spinner in the app theme (%s)', (theme, variant, textColor) => {
+    Platform.OS = 'ios';
+    renderField(null, vi.fn(), theme);
+    fireEvent.click(screen.getByLabelText('מועד'));
+    expect(nativePicker.props).toMatchObject({ display: 'spinner', themeVariant: variant, textColor });
+  });
 });
+

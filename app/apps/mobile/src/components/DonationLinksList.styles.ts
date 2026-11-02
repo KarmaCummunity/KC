@@ -22,7 +22,7 @@ export const useDonationLinksListStyles = makeUseStyles(({ colors }) => ({
   plusBtn: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.full,
     backgroundColor: colors.primary,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
@@ -43,13 +43,5 @@ export const useDonationLinksListStyles = makeUseStyles(({ colors }) => ({
   },
   emptyTitle: { ...typography.h3, color: colors.textPrimary, textAlign: 'center' as const },
   emptyBody: { ...typography.body, color: colors.textSecondary, textAlign: 'center' as const },
-  emptyCta: {
-    marginTop: spacing.sm,
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.lg,
-  },
-  emptyCtaPressed: { opacity: 0.85 },
-  emptyCtaText: { ...typography.button, color: colors.textInverse },
+  emptyCta: { marginTop: spacing.sm },
 }));

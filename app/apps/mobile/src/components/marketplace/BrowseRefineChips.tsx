@@ -2,12 +2,12 @@
 // `categories` rows the create form uses) and a distance-from-home choice. `browse_listings` anchors
 // on the viewer's home location, so the radius needs no device location permission.
 import React from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { Text } from '@kc/ui';
 import { marketplaceRepository } from '../../services/marketplaceComposition';
 import { WORLDS_WITH_SUBCATEGORY_PICKER } from '../../lib/unifiedCreate/createCategories';
+import { Chip } from '../ui/Chip';
 import { useListingChipStyles } from './listingChipStyles';
 
 /** Distance choices in km; 25 matches the server's default radius (`browse_listings`, 0410). */
@@ -37,17 +37,9 @@ export function BrowseRefineChips({ worldSlug, categoryId, onCategoryChange, rad
   const rows = hasSubcategories ? (subcategories.data ?? []) : [];
   const hebrew = i18n.language.startsWith('he');
 
+  // Kit filter chips (spec 17 §4.1): one look for every refine row.
   const chip = (key: string, label: string, selected: boolean, onPress: () => void) => (
-    <Pressable
-      key={key}
-      testID={`browse-refine-${key}`}
-      style={[chipStyles.chip, selected && chipStyles.chipOn]}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-    >
-      <Text style={chipStyles.chipText}>{label}</Text>
-    </Pressable>
+    <Chip key={key} testID={`browse-refine-${key}`} size="sm" label={label} selected={selected} onPress={onPress} />
   );
 
   return (

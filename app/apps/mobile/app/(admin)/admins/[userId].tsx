@@ -20,6 +20,8 @@ import { AdminManagerSections } from '../../../src/components/admin/admins/Admin
 import { rowDirectionStart } from '../../../src/lib/rtlLayout';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+
 export default function AdminPersonScreen() {
   const styles = useStyles();
   const L = useLocaleBundle();

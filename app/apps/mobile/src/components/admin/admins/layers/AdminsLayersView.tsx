@@ -7,9 +7,10 @@
 // org chips focus the view on one org without refetching (the fold is
 // in-memory).
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { RefreshControl, ScrollView, View } from 'react-native';
 import type { HierarchyPyramid } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography, useTheme } from '@kc/ui';
+import { PrimaryButton } from '../../../ui/Buttons';
 import { useHierarchyPyramid } from '../../../../hooks/useHierarchyPyramid';
 import { SimpleRowListSkeleton } from '../../../skeletons/SimpleRowListSkeleton';
 import { MotionEntry } from '../../../ui/MotionEntry';
@@ -119,9 +120,7 @@ export function AdminsLayersView({ isWide, onSelect }: AdminsLayersViewProps) {
     content = (
       <View style={styles.center}>
         <Text style={styles.errorText}>{L.admin.admins.layers.loadError}</Text>
-        <Pressable accessibilityRole="button" onPress={refetch} style={styles.retryBtn}>
-          <Text style={styles.retryText}>{L.admin.admins.layers.retry}</Text>
-        </Pressable>
+        <PrimaryButton testID="admins-layers-retry" label={L.admin.admins.layers.retry} size="sm" onPress={refetch} />
       </View>
     );
   } else if (pyramid === null) {
@@ -159,6 +158,4 @@ const useStyles = makeUseStyles(({ colors }) => ({
   center:      { alignItems: 'center', gap: spacing.md, paddingVertical: spacing['2xl'] },
   errorText:   { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
   emptyText:   { ...typography.bodySmall, color: colors.textSecondary, textAlign: 'center', paddingVertical: spacing.base },
-  retryBtn:    { paddingHorizontal: spacing.base, paddingVertical: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.primary },
-  retryText:   { ...typography.bodySmall, ...typography.bold, color: colors.textInverse },
 }));

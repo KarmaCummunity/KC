@@ -2,11 +2,12 @@
 // that state allows — approve/decline a waiting booking, complete/cancel an approved one, and
 // rate the passenger once after the trip (spec 05 §5.3 step 3, D73; spec 07 §7.7).
 import React from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@kc/ui';
 import type { RideBooking } from '@kc/domain';
 import { HandoffRatingForm } from '../HandoffRatingForm';
+import { HandoffActionButton } from '../HandoffActionButton';
 import { formatRideTime } from '../../cards/ListingCard';
 import { useRideBookingStyles } from './rideBookingStyles';
 
@@ -24,11 +25,18 @@ interface Props {
   readonly actions: RideBookingRowActions;
 }
 
+/** The driver's action pair per booking state: the main action and its outlined alternative. */
+const ACTION_PAIRS = {
+  reserved: { main: 'approve', mainLabel: 'rideBooking.approve', other: 'decline', otherLabel: 'rideBooking.decline' },
+  confirmed: { main: 'complete', mainLabel: 'rideBooking.completeTrip', other: 'cancel', otherLabel: 'rideBooking.cancel' },
+} as const;
+
 export function RideBookingRow({ booking, busy, actions }: Props) {
   const { t } = useTranslation();
   const styles = useRideBookingStyles();
   const id = booking.handoffId;
   const deadline = booking.status === 'reserved' ? formatRideTime(booking.confirmBy) : null;
+  const pair = booking.status === 'reserved' || booking.status === 'confirmed' ? ACTION_PAIRS[booking.status] : null;
 
   return (
     <View style={styles.row} testID={`ride-booking-${id}`}>
@@ -38,17 +46,10 @@ export function RideBookingRow({ booking, busy, actions }: Props) {
       </Text>
       {deadline ? <Text style={styles.caption}>{t('rideBooking.approveBy', { time: deadline })}</Text> : null}
 
-      {booking.status === 'reserved' ? (
+      {pair ? (
         <View style={styles.actions}>
-          <ActionButton testID={`ride-booking-approve-${id}`} label={t('rideBooking.approve')} busy={busy} onPress={() => actions.approve(id)} />
-          <ActionButton testID={`ride-booking-decline-${id}`} label={t('rideBooking.decline')} busy={busy} secondary onPress={() => actions.decline(id)} />
-        </View>
-      ) : null}
-
-      {booking.status === 'confirmed' ? (
-        <View style={styles.actions}>
-          <ActionButton testID={`ride-booking-complete-${id}`} label={t('rideBooking.completeTrip')} busy={busy} onPress={() => actions.complete(id)} />
-          <ActionButton testID={`ride-booking-cancel-${id}`} label={t('rideBooking.cancel')} busy={busy} secondary onPress={() => actions.cancel(id)} />
+          <HandoffActionButton inRow testID={`ride-booking-${pair.main}-${id}`} label={t(pair.mainLabel)} busy={busy} onPress={() => actions[pair.main](id)} />
+          <HandoffActionButton inRow secondary testID={`ride-booking-${pair.other}-${id}`} label={t(pair.otherLabel)} busy={busy} onPress={() => actions[pair.other](id)} />
         </View>
       ) : null}
 
@@ -56,29 +57,5 @@ export function RideBookingRow({ booking, busy, actions }: Props) {
         <HandoffRatingForm busy={busy} onSubmit={(rating, note) => actions.rate(id, rating, note)} />
       ) : null}
     </View>
-  );
-}
-
-interface ActionButtonProps {
-  readonly testID: string;
-  readonly label: string;
-  readonly busy: boolean;
-  readonly secondary?: boolean;
-  readonly onPress: () => void;
-}
-
-/** Full-width half of an action pair; secondary is the outlined, less prominent choice. */
-export function ActionButton({ testID, label, busy, secondary = false, onPress }: ActionButtonProps) {
-  const styles = useRideBookingStyles();
-  return (
-    <Pressable
-      testID={testID}
-      accessibilityRole="button"
-      style={[styles.btn, secondary && styles.btnSecondary]}
-      disabled={busy}
-      onPress={onPress}
-    >
-      <Text style={[styles.btnText, secondary && styles.btnTextSecondary]}>{label}</Text>
-    </Pressable>
   );
 }
