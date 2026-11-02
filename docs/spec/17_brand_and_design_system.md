@@ -132,7 +132,7 @@ Screens move onto the kit one area per PR, after the PM approves the look; track
 
 - One icon set: **Ionicons** from `@expo/vector-icons`. Do not add another icon library or inline SVG icons without a decision. ESLint `no-restricted-imports` blocks the other `@expo/vector-icons` families (named or deep imports) and other icon libraries (lucide, react-native-vector-icons, Feather, Phosphor, Heroicons, Tabler, Font Awesome) (D87).
 - Sizes come from `iconSize` (xs 14 · sm 16 · md 18 · lg 20 · xl 22 · 2xl 24). A larger hero / empty-state glyph (28+) stays off the scale with an end-of-line `brand-guard-allow: <reason>` on its `size=` line.
-- Directional icons (arrows, chevrons, "back") must mirror between RTL and LTR; non-directional icons never mirror.
+- Directional icons (arrows, chevrons, carets, "back") must mirror between RTL and LTR; non-directional icons never mirror. A directional glyph is named for LTR and rendered through the kit `MirroredIcon` (`apps/mobile/src/components/ui/MirroredIcon.tsx`), which flips it when the layout runs RTL (`isLayoutRtl()`); the "back" affordance takes its glyph from `useDirectionalBackIcon()` (chevron on iOS, arrow on Android and web). The brand guard counts a directional glyph on a raw `Ionicons` tag (`unmirroredDirectionalIcon`, frozen per file, counts only go down); a media control that must not mirror carries `brand-guard-allow` on its `name=` line.
 - Icon colours come from tokens (`colors.primary` for brand glyphs, `textSecondary` for neutral ones).
 
 ### 4.3 Admin surfaces (D67)
