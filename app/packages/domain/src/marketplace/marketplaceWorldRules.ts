@@ -46,6 +46,10 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'not_participant',
   'invalid_status',
   'handoff_not_found',
+  // Items & food handoffs (0382, 0453, 0510).
+  'invalid_pickup_mode',
+  'handoff_not_confirmed',
+  'invalid_rating',
   // D71 (0512) — ride places come only from official catalogs; at most 3 meeting points.
   'ride_place_invalid',
   'too_many_meeting_points',
@@ -152,6 +156,9 @@ export function mapMarketplaceServerError(err: unknown): MarketplaceServerErrorC
   const e = err as { message?: unknown; details?: unknown; hint?: unknown };
   for (const field of [e.message, e.details, e.hint]) {
     if (typeof field === 'string') {
+      if (field.includes('giving_handoffs_active_listing_uidx')) {
+        return 'listing_not_available';
+      }
       const code = matchCode(field);
       if (code) return code;
     }

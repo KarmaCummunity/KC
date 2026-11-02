@@ -40,13 +40,15 @@ export function GivingHandoffActions({ detail }: Props) {
   if (detail.direction !== 'give') return null;
   // Rides manage many bookings per offer — see rides/RideBookingActions (D73).
   if (!HANDOFF_WORLDS.includes(detail.worldSlug)) return null;
-  if (!userId || detail.ownerId === userId) {
-    if (!handoff.data) return null;
-  }
+  if (!userId) return null;
+  if (detail.ownerId === userId && !handoff.data) return null;
 
   const invalidate = async () => {
     await qc.invalidateQueries({ queryKey: ['giving-handoff', detail.listingId] });
     await qc.invalidateQueries({ queryKey: ['marketplace'] });
+    await qc.invalidateQueries({ queryKey: ['marketplace-detail', detail.listingId] });
+    await qc.invalidateQueries({ queryKey: ['giving-handoffs'] });
+    await qc.invalidateQueries({ queryKey: ['feed'] });
   };
 
   const run = async (
@@ -74,6 +76,7 @@ export function GivingHandoffActions({ detail }: Props) {
   const h = handoff.data;
   const isOwner = userId === detail.ownerId;
   const isRecipient = h != null && userId === h.recipientId;
+  const isAvailableForRequest = detail.availabilityStatus !== 'scheduled' && detail.availabilityStatus !== 'ongoing';
 
   return (
     <View style={styles.box} testID="giving-handoff">
@@ -84,7 +87,19 @@ export function GivingHandoffActions({ detail }: Props) {
         </Text>
       ) : null}
 
-      {!h && detail.worldSlug === 'items' && !isOwner ? (
+      {!h && detail.availabilityStatus === 'scheduled' ? (
+        <Text style={styles.status} testID="giving-handoff-status">
+          {t('givingHandoff.status', { status: t('givingHandoff.statusLabel.reserved', { defaultValue: 'Reserved' }) })}
+        </Text>
+      ) : null}
+
+      {!h && detail.availabilityStatus === 'ongoing' ? (
+        <Text style={styles.status} testID="giving-handoff-status">
+          {t('givingHandoff.status', { status: t('givingHandoff.statusLabel.handed_over', { defaultValue: 'Handed over' }) })}
+        </Text>
+      ) : null}
+
+      {!h && isAvailableForRequest && detail.worldSlug === 'items' && !isOwner ? (
         <>
           <HandoffActionButton
             testID="giving-handoff-reserve"
@@ -102,7 +117,7 @@ export function GivingHandoffActions({ detail }: Props) {
         </>
       ) : null}
 
-      {!h && detail.worldSlug === 'food' && !isOwner ? (
+      {!h && isAvailableForRequest && detail.worldSlug === 'food' && !isOwner ? (
         <HandoffActionButton
           testID="giving-handoff-claim"
           label={t('givingHandoff.claimFood')}
@@ -111,7 +126,7 @@ export function GivingHandoffActions({ detail }: Props) {
         />
       ) : null}
 
-      {!h && detail.worldSlug === 'knowledge' && !isOwner ? (
+      {!h && isAvailableForRequest && detail.worldSlug === 'knowledge' && !isOwner ? (
         <HandoffActionButton
           testID="giving-handoff-book-slot"
           label={t('givingHandoff.bookKnowledgeSlot')}
@@ -121,29 +136,58 @@ export function GivingHandoffActions({ detail }: Props) {
       ) : null}
 
       {h?.status === 'reserved' && isOwner && detail.worldSlug !== 'knowledge' ? (
+        <>
+          <HandoffActionButton
+            testID="giving-handoff-confirm"
+            label={t('givingHandoff.confirmReservation')}
+            busy={busy}
+            onPress={() => run(async () => { await givingHandoffUseCases.confirmItem().execute(h.handoffId); })}
+          />
+          <HandoffActionButton
+            testID="giving-handoff-cancel"
+            label={t('givingHandoff.cancel')}
+            busy={busy}
+            secondary
+            onPress={() => run(async () => { await givingHandoffUseCases.cancel().execute(h.handoffId); })}
+          />
+        </>
+      ) : null}
+
+      {h?.status === 'reserved' && isRecipient && detail.worldSlug !== 'knowledge' ? (
         <HandoffActionButton
-          testID="giving-handoff-confirm"
-          label={t('givingHandoff.confirmReservation')}
+          testID="giving-handoff-cancel"
+          label={t('givingHandoff.cancel')}
           busy={busy}
-          onPress={() => run(async () => { await givingHandoffUseCases.confirmItem().execute(h.handoffId); })}
+          secondary
+          onPress={() => run(async () => { await givingHandoffUseCases.cancel().execute(h.handoffId); })}
         />
       ) : null}
 
-      {(h?.status === 'confirmed' || (h?.status === 'reserved' && (detail.worldSlug === 'knowledge'))) && (isOwner || isRecipient) ? (
+      {h?.status === 'confirmed' && (isOwner || isRecipient) ? (
         <>
           <HandoffActionButton
             testID="giving-handoff-complete"
-            label={detail.worldSlug === 'knowledge' ? t('givingHandoff.completeSession') : t('givingHandoff.markHandedOver')}
+            label={t('givingHandoff.markHandedOver')}
             busy={busy}
-            onPress={() =>
-              run(async () => {
-                if (detail.worldSlug === 'knowledge') {
-                  await ridesKnowledgeRpcs.completeKnowledgeSession(h.handoffId);
-                } else {
-                  await givingHandoffUseCases.markHandedOver().execute(h.handoffId);
-                }
-              }, 'handover_completed')
-            }
+            onPress={() => run(async () => { await givingHandoffUseCases.markHandedOver().execute(h.handoffId); }, 'handover_completed')}
+          />
+          <HandoffActionButton
+            testID="giving-handoff-cancel"
+            label={t('givingHandoff.cancel')}
+            busy={busy}
+            secondary
+            onPress={() => run(async () => { await givingHandoffUseCases.cancel().execute(h.handoffId); })}
+          />
+        </>
+      ) : null}
+
+      {h?.status === 'reserved' && detail.worldSlug === 'knowledge' && (isOwner || isRecipient) ? (
+        <>
+          <HandoffActionButton
+            testID="giving-handoff-complete"
+            label={t('givingHandoff.completeSession')}
+            busy={busy}
+            onPress={() => run(async () => { await ridesKnowledgeRpcs.completeKnowledgeSession(h.handoffId); }, 'handover_completed')}
           />
           <HandoffActionButton
             testID="giving-handoff-cancel"
