@@ -20,6 +20,8 @@ import { confirmAction as platformConfirm } from '../../../src/services/platform
 import { useLocaleBundle, type LocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+
 type DirFilter = FinanceDirection | 'all';
 
 function confirmDelete(message: string, L: LocaleBundle): Promise<boolean> {

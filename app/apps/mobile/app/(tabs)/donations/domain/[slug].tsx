@@ -14,6 +14,8 @@ import { DONATIONS_HUB_DOMAIN_TILES } from '../../../../src/navigation/donations
 import { useShellTabBarScrollInset } from '../../../../src/navigation/useShellTabBarVisibility';
 import { rtlTextAlignStart } from '../../../../src/lib/rtlTextAlignStart';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
+
 const useStyles = makeUseStyles(({ colors }) => ({
   body: { padding: spacing.lg, gap: spacing.md, maxWidth: 480, width: '100%', alignSelf: 'center' as const },
   hero: { alignItems: 'center' as const, gap: spacing.sm },

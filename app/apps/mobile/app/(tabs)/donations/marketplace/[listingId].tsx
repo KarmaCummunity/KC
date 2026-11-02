@@ -8,6 +8,8 @@ import { useMarketplaceListingDetail } from '../../../../src/hooks/useMarketplac
 import { MarketplaceListingDetailView } from '../../../../src/components/marketplace/MarketplaceListingDetailView';
 import { useShellTabBarScrollInset } from '../../../../src/navigation/useShellTabBarVisibility';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
+
 export default function MarketplaceListingDetailScreen() {
   const { listingId } = useLocalSearchParams<{ listingId: string }>();
   const { t } = useTranslation();

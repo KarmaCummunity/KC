@@ -9,6 +9,8 @@ import { AuthFormScreen } from '../../src/components/auth/AuthFormScreen';
 import { useAuthEmailForm } from '../../src/components/auth/useAuthEmailForm';
 import { GhostButton } from '../../src/components/ui/Buttons';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
+
 export default function SignInScreen() {
   const router = useRouter();
   const { t } = useTranslation();

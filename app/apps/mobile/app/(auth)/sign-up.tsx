@@ -10,6 +10,8 @@ import { useAuthEmailForm } from '../../src/components/auth/useAuthEmailForm';
 import { GhostButton } from '../../src/components/ui/Buttons';
 import { trackCoreLoop } from '../../src/lib/analyticsCoreLoop';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
+
 export default function SignUpScreen() {
   const styles = useStyles();
   const router = useRouter();

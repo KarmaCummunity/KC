@@ -28,6 +28,8 @@ import { SearchSuggestedQueries } from '../../src/components/search/SearchSugges
 import { SearchRecentSection } from '../../src/components/search/SearchRecentSection';
 import { SearchResultSections } from '../../src/components/search/SearchResultSections';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
+
 // ── Constants ─────────────────────────────────
 const DEBOUNCE_MS = 300; // debounce delay for search input
 const PREVIEW_LIMIT = 5; // results per section before "Show all"
