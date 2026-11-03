@@ -7,6 +7,7 @@ import { adminOrgApprovalsHe } from './adminOrgApprovals';
 import { adminDonationLinksHe } from './adminDonationLinks';
 import { adminWhatsAppHe } from './adminWhatsApp';
 import { adminMatchingHe } from './adminMatching';
+import { adminStatsHe } from './adminStats';
 import { adminSurveysHe } from './adminSurveys';
 import { adminTasksHe } from './adminTasks';
 import { adminAdminsHe } from './adminAdmins';
@@ -30,6 +31,7 @@ export const adminHe = {
     whatsapp:      'וואטסאפ',
     matching:      'איכות התאמות',
     donationLinks: 'קישורי תרומה',
+    stats:         'סטטיסטיקות',
   },
   roles: {
     super_admin: 'מנהל-על',
@@ -144,6 +146,7 @@ export const adminHe = {
   money: adminMoneyHe,
   whatsapp: adminWhatsAppHe,
   matching: adminMatchingHe,
+  stats: adminStatsHe,
   crm: adminCrmHe,
   orgApprovals: adminOrgApprovalsHe,
   donationLinks: adminDonationLinksHe,

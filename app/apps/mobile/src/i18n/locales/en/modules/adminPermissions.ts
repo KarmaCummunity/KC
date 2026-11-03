@@ -34,4 +34,5 @@ export const adminPermissionsEn: Readonly<Record<AdminPermission, string>> = {
   'whatsapp.manage':            'Manage WhatsApp',
   'matching.view_quality':      'View match quality',
   'donation_links.review':      'Review donation links',
+  'stats.view_platform':        'View platform statistics',
 };

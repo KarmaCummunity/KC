@@ -11118,6 +11118,17 @@ export type Database = {
         Args: { p_actor?: string; p_merged: string; p_survivor: string }
         Returns: string
       }
+      my_world_givings: {
+        Args: never
+        Returns: {
+          closed: number
+          given: number
+          received: number
+          world_label_en: string
+          world_label_he: string
+          world_slug: string
+        }[]
+      }
       needs_legal_reacknowledgement: {
         Args: never
         Returns: {

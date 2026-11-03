@@ -13,6 +13,8 @@ function makeStats(s: Partial<CommunityStatsSnapshot> & { activePublicPosts: num
     getActivePublicPostsCount: async () => full.activePublicPosts,
     getCommunityStatsSnapshot: async () => full,
     listMyActivityTimeline: async () => [],
+    getWorldFlowFunnel: async () => [],
+    listMyWorldGivings: async () => [],
   };
 }
 

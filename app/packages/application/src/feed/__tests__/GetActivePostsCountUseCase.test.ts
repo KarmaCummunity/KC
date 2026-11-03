@@ -13,6 +13,8 @@ function makeStats(value: number): IStatsRepository {
     getActivePublicPostsCount: async () => value,
     getCommunityStatsSnapshot: async () => snap,
     listMyActivityTimeline: async () => [],
+    getWorldFlowFunnel: async () => [],
+    listMyWorldGivings: async () => [],
   };
 }
 

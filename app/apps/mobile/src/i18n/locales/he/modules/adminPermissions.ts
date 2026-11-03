@@ -34,4 +34,5 @@ export const adminPermissionsHe: Readonly<Record<AdminPermission, string>> = {
   'whatsapp.manage':            'ניהול וואטסאפ',
   'matching.view_quality':      'צפייה באיכות התאמות',
   'donation_links.review':      'אישור קישורי תרומה',
+  'stats.view_platform':        'צפייה בסטטיסטיקות הפלטפורמה',
 };
