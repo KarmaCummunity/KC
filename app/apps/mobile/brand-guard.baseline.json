@@ -182,15 +182,6 @@
       "rawModal": 1,
       "iconSizeLiteral": 1
     },
-    "src/components/SearchablePicker/SearchablePicker.tsx": {
-      "physicalSide": 1,
-      "rawTextInput": 2,
-      "rawModal": 1
-    },
-    "src/components/SearchablePicker/searchablePickerStyles.ts": {
-      "fontWeightLiteral": 2,
-      "physicalSide": 2
-    },
     "src/components/SettingsAboutCard.tsx": {
       "fontWeightLiteral": 1,
       "iconSizeLiteral": 2,
