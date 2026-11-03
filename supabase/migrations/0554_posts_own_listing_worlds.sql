@@ -263,7 +263,7 @@ $$;
 revoke all on function public.post_sync_from_listing(public.listings) from public, anon, authenticated;
 grant execute on function public.post_sync_from_listing(public.listings) to service_role;
 
--- Same conditions as 0466 for listing-sourced listings; a post-sourced listing syncs back instead.
+-- Same conditions as 0466 / 0531 for listing-sourced listings; a post-sourced listing syncs back instead.
 create or replace function public.listings_feed_mirror_sync()
 returns trigger
 language plpgsql
@@ -289,11 +289,16 @@ begin
   select exists (select 1 from public.posts p where p.listing_id = new.listing_id)
     into v_mirrored;
 
+  -- Without a mirror yet, only a published open listing of a mirrored world gets one — and
+  -- of a recurring ride only its soonest upcoming occurrence (FR-RIDE-046, 0531).
   if not v_mirrored then
     if new.moderation_status <> 'published' or new.status <> 'open' then
       return new;
     end if;
     if not exists (select 1 from public.worlds w where w.slug = new.world_slug and w.feed_mirror) then
+      return new;
+    end if;
+    if public.ride_series_feed_waits(new) then
       return new;
     end if;
   end if;
@@ -731,6 +736,11 @@ begin
   loop
     begin
       select p.post_id into v_post_id from public.posts p where p.listing_id = l.listing_id;
+      -- An occurrence of a recurring ride waiting its turn in the feed keeps waiting (0531):
+      -- it stays listing-sourced and the series sweep mirrors it when it is the soonest.
+      if v_post_id is null and l.details ? 'ride_series' then
+        continue;
+      end if;
       if v_post_id is null then
         v_post_id := public.listing_feed_mirror_upsert(l);
       end if;
