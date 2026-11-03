@@ -31,3 +31,10 @@ export {
   type ReportActor,
   type ReportContractContext,
 } from './reportRepository.contract';
+export {
+  FOLLOW_REQUEST_COOLDOWN_DAYS,
+  followGraphContract,
+  type FollowActor,
+  type FollowGraph,
+  type FollowGraphContractContext,
+} from './followGraph.contract';
