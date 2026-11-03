@@ -268,6 +268,7 @@ export default function ChatScreen() {
       <ChatScreenOverlays
         chatId={chatId}
         isSupportThread={chat?.isSupportThread}
+        counterpartUserId={counterpart.isDeleted ? null : counterpart.userId}
         reportOpen={reportOpen}
         onReportClose={() => setReportOpen(false)}
         menuOpen={menuOpen}

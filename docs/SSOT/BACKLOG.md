@@ -109,7 +109,7 @@ Stages 1, 2, 3 and 6 (`INFRA-CI-1` unified PR gate, `INFRA-CI-2` gate integrity,
 
 | ID | Task | Status | Spec |
 |----|------|--------|------|
-| P3.1 | Block / unblock + visibility restoration, **in the launch scope** (D105). Shipped: bilateral filtering on every surface (`0544`). Open: Blocked Users screen with unblock (FR-MOD-004 AC1), block from Post Detail and Conversation (FR-MOD-003 AC1). | agent-fullstack | 🟡 In progress | `spec/08_moderation.md` FR-MOD-003/004/009 |
+| P3.1 | Block / unblock + visibility restoration, **in the launch scope** (D105). Shipped: bilateral filtering on every surface (`0544`); Settings → "Blocked users" with unblock (`0545` `list_my_blocked_users`, `ListMyBlockedUsersUseCase`, `useBlockedUsers`); block from the profile, the conversation menu and the listing detail. Follow-ups: TD-263, TD-264. | agent-fullstack | ✅ Done | `spec/08_moderation.md` FR-MOD-003/004/009 |
 | P3.MATCH-XW | **Cross-world matching** (improvement, P3). Goal: pair listings across worlds when one enables the other (item give ↔ ride offer for pickup/delivery; food give ↔ volunteer time for distribution). AC: opt-in per world pair in `matching_settings`; reuses `match_candidates` with a `link_kind`; geo/time windows of both legs respected; never notifies above the per-user cap; SQL test + seed sample; off by default. | ⏳ Deferred (PM 2026-10-18) | `docs/SSOT/MATCHING_V2.md` |
 
 ---

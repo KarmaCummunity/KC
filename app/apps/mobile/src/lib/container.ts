@@ -50,6 +50,7 @@ import {
   ReportChatUseCase,
   ReportPostUseCase,
   SetUserBlockedUseCase,
+  ListMyBlockedUsersUseCase,
   ReportListingUseCase,
   DeletePostUseCase,
   AdminRemovePostUseCase,
@@ -237,6 +238,7 @@ export const container = {
   reportPost: new ReportPostUseCase(reportRepo),
   blockRepo,
   setUserBlocked: new SetUserBlockedUseCase(blockRepo),
+  listMyBlockedUsers: new ListMyBlockedUsersUseCase(blockRepo),
   reportListing: new ReportListingUseCase(reportRepo),
 
   // Post moderation
