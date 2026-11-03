@@ -1704,6 +1704,16 @@ Owner rules that go with it:
 
 **Affected.** `supabase/migrations/0550–0569`, `posts`, `ride_post_details`, `post_handoffs`, `listing_feed_mirror_upsert`, `@kc/domain` `PostStatus`, later every listing port and adapter, `/listing/*`, the create form and `docs/spec/07` §7.1–7.5.
 
+## {{ENG:posts-own-listing-worlds}} — A post of a listing world owns a derived native listing; the listing-side rules keep running on it (2026-11-03)
+
+**Decision.** G1 step 2 (BACKLOG `G1-S2`, migration `0554`). For food, rides, housing and time the create, edit and owner RPCs (`create_marketplace_listing`, `update_my_listing`, `pause / resume / fulfill / delete_my_listing`) write a `posts` row; `listing_upsert_from_post` derives the listing with `origin = 'native'` and `legacy_post_id = post_id`, and the post links back through `posts.listing_id` like a mirror. Keeping `origin = 'native'` means every listing-side rule (world permission, rate limit, detail schema, official places, ride schedule, cost cap, food expiry, matching, embeddings) still runs on the derived row and a refusal rolls the post back with the same error code. What the listing side computes or changes (expiry, canonical details, urgency, the world's anonymity cap, a status set by a sweep, a handoff or moderation) flows back through `post_sync_from_listing`; both directions compare before writing, so the chain converges. The RPC signatures, the returned ids and the error codes are unchanged, so the app needs no change. Items stay on the post engine with the `origin = 'post'` legacy listing shape (their closing moves with G34); listings of worlds without a create form and directly inserted listings stay listing-sourced with a mirror post. The post-side open-posts cap, karma, counters and closure messages apply to items posts only, which is what the mirror exemption did before. A post title is at most 80 characters (`07` §7.2), enforced by the RPCs (`title_too_long`).
+
+**Why.** Step 2 of ADR-006 had to flip the source of truth without rewriting the twenty-odd listing triggers that carry the rides, food and matching business rules, and without changing the app's write path mid-flight. Deriving a native listing keeps those rules where they are and lets step 3 move them one at a time.
+
+**Rejected.** `origin = 'post'` for the derived rows (every native-only rule and the detail-schema check would have been skipped). Porting the listing rules to `posts` in this step (too wide a change for one PR; step 3 and step 6 own it). Rewriting the app to call new post RPCs now (the ids the detail, chat and handoff screens hold are listing ids until step 4).
+
+**Affected.** `supabase/migrations/0554_posts_own_listing_worlds.sql`, `listing_upsert_from_post`, `listings_feed_mirror_sync`, `post_sync_from_listing`, `posts_enforce_active_cap` and the six post-side karma / counter / closure triggers, the owner RPCs; `docs/spec/07` §7.1, `docs/spec/93` G1.
+
 ## D-212 — Post and listing detail pages share one hero + content-card frame (2026-11-03)
 
 **Decision.** The listing page (items, food, rides, knowledge) uses the same hero frame (`DetailHeroCard`, with the photo gallery or a placeholder icon) and the same content card as the post page. Each type keeps its own fields and actions (route card, handoff, booking, messaging).
@@ -1724,6 +1734,7 @@ Owner rules that go with it:
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
+| 4.41 | 2026-11-03 | Added `{{ENG:posts-own-listing-worlds}}` (G1 step 2: the listing worlds' RPCs write posts and derive a native listing that syncs back; items unchanged; `0554`). |
 | 4.40 | 2026-11-03 | Added `D-214` (G1 plan: reverse the listing mirror, move flows one PR at a time, drop `listings` last; ADR-006). |
 | 4.39 | 2026-11-03 | Added `D-213` (live public finance numbers behind organization-controlled toggles, default off; refines `D-196` for the public view; `FIN-P0`). |
 >>>>>>> origin/dev
