@@ -8,7 +8,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { useTheme, Text } from '@kc/ui';
+import { iconSize, useTheme, Text } from '@kc/ui';
 import type { Category, ItemCondition, LocationDisplayLevel, PostVisibility } from '@kc/domain';
 import { isPostError } from '@kc/application';
 import { getSupabaseClient } from '@kc/infrastructure-supabase';
@@ -285,7 +285,7 @@ export default function EditPostScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.headerClose}>
-          <Ionicons name="close" size={24} color={colors.textPrimary} />
+          <Ionicons name="close" size={iconSize['2xl']} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('post.editPost.headerTitle')}</Text>
         <TouchableOpacity

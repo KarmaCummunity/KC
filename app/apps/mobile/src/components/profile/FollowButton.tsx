@@ -131,7 +131,7 @@ const useStyles = makeUseStyles(({ colors, isDark: _isDark }) => ({
   },
   btnSecondary: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border },
   btnDisabled: { opacity: 0.5 },
-  text: { ...typography.button, color: colors.textInverse, fontWeight: '700' as const },
+  text: { ...typography.button, color: colors.textInverse, ...typography.bold },
   textSecondary: { color: colors.textPrimary },
-  subtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  subtitle: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
 }));

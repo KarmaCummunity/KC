@@ -6,7 +6,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { he as dateFnsHe } from 'date-fns/locale';
 import { Ionicons } from '@expo/vector-icons';
 import type { PersonalActivityItem, PersonalActivityKind } from '@kc/domain';
-import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 const KIND_ICONS: Record<PersonalActivityKind, keyof typeof Ionicons.glyphMap> = {
@@ -69,7 +69,7 @@ export function ActivityTimelineList({
           accessibilityRole="button"
         >
           <View style={styles.iconCircle}>
-            <Ionicons name={KIND_ICONS[item.kind]} size={18} color={colors.primaryDark} />
+            <Ionicons name={KIND_ICONS[item.kind]} size={iconSize.md} color={colors.primaryDark} />
           </View>
           <View style={styles.body}>
             <Text style={styles.line}>{resolveLabel(item)}</Text>
@@ -106,7 +106,7 @@ const useStyles = makeUseStyles(({ colors, isDark: _isDark }) => ({
   iconCircle: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radius.full,
     backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',

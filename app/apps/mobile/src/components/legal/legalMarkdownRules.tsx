@@ -4,15 +4,15 @@
 // Background — why this exists:
 //
 // The library renders paragraph / heading1..6 / list_item / blockquote as
-// `<View>` wrappers and strips text-style props (incl. `textAlign`,
+// `<View>` wrappers and strips text-style props (incl. alignment,
 // `writingDirection`) from them via its internal `removeTextStyleProps`
-// helper. Result: `textAlign: 'right'` in `LegalMarkdownStyles.ts` ends up
+// helper. Result: the right-alignment setting in `LegalMarkdownStyles.ts` ends up
 // applied to a View where it does nothing, the inner `textgroup` Text
 // inherits no explicit alignment, and the rendered body falls back to the
 // platform's default (LTR on web; auto on native) for mixed Hebrew/Latin
 // runs — which is what users saw as "not right-aligned at all".
 //
-// Fix: override those rules so each block is a `<Text>` with `textAlign`
+// Fix: override those rules so each block is a `<Text>` with alignment
 // + `writingDirection: 'rtl'` applied directly. Inline spans (strong, em,
 // link, text) nest inside cleanly and inherit alignment.
 //
@@ -25,12 +25,12 @@ import { View, type TextStyle, type ViewStyle } from 'react-native';
 import { openExternalUrl } from '../../utils/openExternalUrl';
 import type { ASTNode, RenderRules } from 'react-native-markdown-display';
 import type { ColorPalette } from '@kc/ui';
-import { typography, spacing, Text } from '@kc/ui';
+import { typography, spacing, radius, Text } from '@kc/ui';
 import { rowDirectionStart } from '../../lib/rtlLayout';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
-// Why `rtlTextAlignStart` and not a hard-coded 'right':
-// On native under `I18nManager.forceRTL(true)`, `textAlign: 'right'` resolves
+// Why `rtlTextAlignStart` and not a hard-coded physical side:
+// On native under `I18nManager.forceRTL(true)`, right alignment resolves
 // to the *end* edge (visually LEFT in RTL). The helper returns 'left' on native
 // (which mirrors to inline-start = visual right) and 'right' on web (where
 // `dir="rtl"` makes physical 'right' the inline-start edge).
@@ -141,13 +141,13 @@ export function makeLegalMarkdownRules(colors: ColorPalette): RenderRules {
           backgroundColor: colors.surfaceRaised,
           // `borderStartWidth` is a logical property: lands on the inline-start
           // edge (right in RTL) on both native and web. Avoids the LTR-only
-          // `borderRightWidth`, which doesn't auto-mirror reliably on web.
+          // A physical right border does not auto-mirror reliably on web.
           borderStartWidth: 3,
           borderStartColor: colors.primary,
           paddingHorizontal: spacing.md,
           paddingVertical: spacing.sm,
           marginVertical: spacing.sm,
-          borderRadius: 6,
+          borderRadius: radius.xs,
         }}
       >
         {children}

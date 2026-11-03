@@ -80,7 +80,7 @@ export function EditProfileAvatar({ userId, displayName, avatarUrl, disabled, on
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark: _isDark }) => ({
+const useStyles = makeUseStyles(({ colors, isDark }) => ({
   wrap: { alignItems: 'center', marginVertical: spacing.base, gap: spacing.sm },
   spinner: {
     position: 'absolute', width: 104, height: 104, borderRadius: 52,

@@ -38,7 +38,7 @@ const useStyles = makeUseStyles(({ colors, isDark: _isDark }) => ({
   center: { alignItems: 'center' },
   title: {
     ...typography.h1,
-    fontSize: 32,
+    fontSize: 32, // brand-guard-allow: section display heading above h1 scale
     color: colors.textPrimary,
     letterSpacing: -0.5,
     textAlign: rtlTextAlignStart,

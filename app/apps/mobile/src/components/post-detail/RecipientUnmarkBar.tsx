@@ -83,5 +83,5 @@ const useStyles = makeUseStyles(({ colors }) => ({
     backgroundColor: colors.errorLight,
     alignItems: 'center',
   },
-  btnText: { ...typography.bodySmall, color: colors.error, fontWeight: '600' },
+  btnText: { ...typography.bodySmall, color: colors.error, ...typography.semiBold },
 }));
