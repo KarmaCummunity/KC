@@ -41,6 +41,18 @@ select seed_a, seed_b from personas;
 insert into public.organizations (org_id, name, slug, is_platform, is_verified_nonprofit, verified_at, verification_method)
 values ('00000000-0000-0000-0000-00000000d0a1', '[DEMO] test org', 'demo-test-org-0550', false, true, now(), 'demo_seed');
 
+-- ── audit allow-list: extended in place, existing actions survive ─────────────
+do $$
+begin
+  -- 'account_deletion_requested' comes from another migration; this one must not drop it.
+  insert into public.audit_events (action, target_type) values ('account_deletion_requested', 'none');
+  insert into public.audit_events (action, target_type) values ('admin_wipe_demo_data', 'none');
+  insert into public.audit_events (action, target_type) values ('admin_seed_demo_data', 'none');
+  perform kc_test.assert_raises($q$insert into public.audit_events (action, target_type) values ('not_an_action', 'none')$q$,
+    'new row for relation "audit_events" violates check constraint "audit_events_action_check"',
+    'an unknown audit action is still rejected');
+end $$;
+
 -- ── access control ──────────────────────────────────────────────────────────
 do $$
 declare p personas;

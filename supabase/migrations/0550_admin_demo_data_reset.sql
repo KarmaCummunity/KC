@@ -15,31 +15,37 @@
 
 begin;
 
--- ── 1. Audit allow-list: add 'admin_wipe_demo_data' to the v8 list (0203) ──────────────
-alter table public.audit_events
-  drop constraint if exists audit_events_action_check;
-alter table public.audit_events
-  add constraint audit_events_action_check_v9 check (action in (
-    'block_user','unblock_user',
-    'report_target',
-    'auto_remove_target','manual_remove_target','restore_target',
-    'suspend_user','unsuspend_user',
-    'ban_user',
-    'false_report_sanction_applied',
-    'dismiss_report','confirm_report',
-    'delete_message',
-    'delete_account',
-    'unmark_recipient_self',
-    'admin_role_grant','admin_role_revoke',
-    'admin_task_create','admin_task_update','admin_task_delete',
-    'org_application_approve','org_application_reject',
-    'post_edited',
-    'admin_set_manager',
-    'admin_wipe_demo_data','admin_seed_demo_data'
-  )) not valid;
-alter table public.audit_events validate constraint audit_events_action_check_v9;
-alter table public.audit_events
-  rename constraint audit_events_action_check_v9 to audit_events_action_check;
+-- ── 1. Audit allow-list: add the demo-data actions to whatever it holds now ────────────
+-- The list is extended in place instead of rewritten, so actions added by other migrations
+-- (account_deletion_requested, ...) survive and a later migration order cannot clobber them.
+do $$
+declare
+  v_def text;
+  v_new text;
+begin
+  select pg_get_constraintdef(c.oid) into v_def
+    from pg_constraint c
+   where c.conrelid = 'public.audit_events'::regclass
+     and c.conname = 'audit_events_action_check';
+
+  if v_def is null then
+    raise exception 'audit_events_action_check not found';
+  end if;
+  if v_def like '%admin_wipe_demo_data%' then
+    return; -- already extended
+  end if;
+
+  -- Postgres prints `CHECK ((action = ANY (ARRAY['a'::text, ...])))`; append before the closing bracket.
+  v_new := regexp_replace(v_def, '\]\)\)\)$',
+                          ', ''admin_wipe_demo_data''::text, ''admin_seed_demo_data''::text])))');
+  if v_new = v_def then
+    raise exception 'unexpected audit_events_action_check definition: %', v_def;
+  end if;
+
+  alter table public.audit_events drop constraint audit_events_action_check;
+  execute format('alter table public.audit_events add constraint audit_events_action_check %s not valid', v_new);
+  alter table public.audit_events validate constraint audit_events_action_check;
+end $$;
 
 -- ── 2. kc_dev_demo_config: the dev-environment marker ──────────────────────────────────
 -- One row means "this database is kc-dev and may hold fake demo data". It is created here only
