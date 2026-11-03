@@ -61,7 +61,7 @@ export function makeLegalMarkdownRules(colors: ColorPalette): RenderRules {
     );
 
   return {
-    paragraph: (node: any, children: any) => (
+    paragraph: (node: ASTNode, children: React.ReactNode) => (
       <Text
         key={node.key}
         style={{
@@ -87,19 +87,19 @@ export function makeLegalMarkdownRules(colors: ColorPalette): RenderRules {
     // via rowDirectionStart so the bullet/number sits on the inline-start
     // edge (right in RTL) on both native and web. The content slot is a
     // <Text> so children inherit RTL alignment.
-    bullet_list: (node: any, children: any) => (
+    bullet_list: (node: ASTNode, children: React.ReactNode) => (
       <View key={node.key} style={{ marginBottom: spacing.md }}>
         {children}
       </View>
     ),
-    ordered_list: (node: any, children: any) => (
+    ordered_list: (node: ASTNode, children: React.ReactNode) => (
       <View key={node.key} style={{ marginBottom: spacing.md }}>
         {children}
       </View>
     ),
-    list_item: (node: any, children: any, parent: any) => {
-      const isOrdered = parent[0]?.type === 'ordered_list';
-      const bulletChar = isOrdered ? `${node.index + 1}.` : '•';
+    list_item: (node: ASTNode, children: React.ReactNode, parent?: ASTNode[]) => {
+      const isOrdered = parent![0]?.type === 'ordered_list';
+      const bulletChar = isOrdered ? `${node.index! + 1}.` : '•';
       const rowStyle: ViewStyle = {
         flexDirection: rowDirectionStart,
         alignItems: 'flex-start',
@@ -134,7 +134,7 @@ export function makeLegalMarkdownRules(colors: ColorPalette): RenderRules {
       );
     },
 
-    blockquote: (node: any, children: any) => (
+    blockquote: (node: ASTNode, children: React.ReactNode) => (
       <View
         key={node.key}
         style={{
@@ -154,7 +154,7 @@ export function makeLegalMarkdownRules(colors: ColorPalette): RenderRules {
       </View>
     ),
 
-    link: (node: any, children: any) => {
+    link: (node: ASTNode, children: React.ReactNode) => {
       const href = (node.attributes?.href as string | undefined) ?? '';
       return (
         <Text

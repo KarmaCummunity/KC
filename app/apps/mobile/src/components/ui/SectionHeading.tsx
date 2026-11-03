@@ -4,7 +4,7 @@
 // presence.
 import React from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
-import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 interface SectionHeadingProps {
@@ -21,7 +21,6 @@ export function SectionHeading({
   style,
 }: SectionHeadingProps) {
   const styles = useStyles();
-  const { colors } = useTheme();
   return (
     <View style={[align === 'center' ? styles.center : styles.right, style]}>
       <Text style={[styles.title, align === 'center' && styles.titleCentered]}>{title}</Text>
@@ -34,7 +33,7 @@ export function SectionHeading({
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors, isDark: _isDark }) => ({
   right: { alignItems: 'flex-end' },
   center: { alignItems: 'center' },
   title: {

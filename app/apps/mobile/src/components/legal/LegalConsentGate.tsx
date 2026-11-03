@@ -64,7 +64,6 @@ export function LegalConsentGate({ children }: LegalConsentGateProps) {
         userOptedToAcceptNow: false,
       });
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.warn('[legal] consent_check_failed', {
         reason: (err as Error).message,
         timestamp: new Date().toISOString(),

@@ -22,6 +22,7 @@ import { ProfilePostsGrid } from '../../../src/components/profile/ProfilePostsGr
 import { ProfileClosedPostsGrid } from '../../../src/components/profile/ProfileClosedPostsGrid';
 import { FollowButton } from '../../../src/components/profile/FollowButton';
 import { useAuthStore } from '../../../src/store/authStore';
+import type { User } from '@kc/domain';
 import { getUserRepo } from '../../../src/services/userComposition';
 import { getMyPostsUseCase } from '../../../src/services/postsComposition';
 import { getGetFollowStateUseCase } from '../../../src/services/followComposition';
@@ -99,7 +100,7 @@ export default function OtherProfileScreen() {
   // When `u` is null (still loading), we pass a safe fallback so the hook is always called.
   const dispatchFollowAction = useOptimisticFollowAction({
     viewerId: me,
-    target: u ?? { userId: '', shareHandle: '', privacyMode: 'Public' } as any,
+    target: u ?? { userId: '', shareHandle: '', privacyMode: 'Public' } as User,
     handle: handle ?? '',
     onError: setError,
   });

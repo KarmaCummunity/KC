@@ -9,7 +9,7 @@ import React from 'react';
 import { TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import type { FollowState } from '@kc/application';
 import { ConfirmActionModal } from '../post/ConfirmActionModal';
 
@@ -35,7 +35,6 @@ export function FollowButton({
   state, cooldownUntil, onPress, busy, interactionDisabled,
 }: FollowButtonProps) {
   const styles = useStyles();
-  const { colors } = useTheme();
   const { t } = useTranslation();
   const [confirmOpen, setConfirmOpen] = React.useState(false);
 
@@ -125,7 +124,7 @@ function config(state: FollowState, cooldownUntil: string | undefined, t: TFunct
   }
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors, isDark: _isDark }) => ({
   btn: {
     backgroundColor: colors.primary, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg,
     borderRadius: radius.md, alignItems: 'center', alignSelf: 'stretch',

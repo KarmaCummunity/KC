@@ -86,7 +86,7 @@ export function ActivityTimelineList({
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors, isDark: _isDark }) => ({
   list: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

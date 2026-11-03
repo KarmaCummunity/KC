@@ -112,7 +112,7 @@ export function ProfileClosedPostsGrid({
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors, isDark: _isDark }) => ({
   loading: { padding: spacing.xl, alignItems: 'center' },
   grid: {
     width: '100%',
