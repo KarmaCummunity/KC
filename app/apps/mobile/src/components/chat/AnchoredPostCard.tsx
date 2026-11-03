@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, iconSize, useTheme, Text } from '@kc/ui';
 import type { GestureResponderEvent } from 'react-native';
 import type { PostType } from '@kc/domain';
 import { getPostByIdUseCase } from '../../services/postsComposition';
@@ -178,7 +178,7 @@ export function AnchoredPostCard({ chatId, anchorPostId, viewerId, counterpartId
               accessibilityLabel={t('chat.anchoredCallCounterpartA11y', { phone: counterpartPhone })}
               hitSlop={6}
             >
-              <Ionicons name="call" size={14} color={colors.primary} />
+              <Ionicons name="call" size={iconSize.xs} color={colors.primary} />
               <Text style={styles.phoneText} numberOfLines={1}>
                 {counterpartPhone}
               </Text>
@@ -201,12 +201,12 @@ const useAnchoredPostCardStyles = makeUseStyles(({ colors }) => ({
   phoneRow: {
     flexDirection: rowDirectionStart,
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   phoneText: {
     ...typography.caption,
     color: colors.primary,
-    fontWeight: '600',
+    ...typography.semiBold,
     textDecorationLine: 'underline',
   },
   cta: {
@@ -216,5 +216,5 @@ const useAnchoredPostCardStyles = makeUseStyles(({ colors }) => ({
     backgroundColor: colors.primary,
     flexShrink: 0,
   },
-  ctaText: { ...typography.button, color: colors.textInverse, fontSize: 14 },
+  ctaText: { ...typography.button, color: colors.textInverse },
 }));

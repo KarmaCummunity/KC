@@ -93,7 +93,7 @@ export default function EditProfileScreen() {
       }
     })();
     return () => { cancelled = true; };
-  }, [session]);
+  }, [session, t]);
 
   // Audit §16.10 — confirm before discarding unsaved edits on Back.
   const isDirty = useMemo(() => {

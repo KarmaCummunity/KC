@@ -87,13 +87,14 @@ Last applied on kc-dev when this was written: `0239`.
 | 0529 | Feed filter giving worlds + subcategories (#1457) | in progress |
 | 0530 | KC#1128 ride completion RPC: owner closes ride and completes confirmed bookings | in review |
 | 0531 | KC#1413 FR-RIDE-046 recurring rides: `ride_series`, materializer + sweep, series RPCs, rides-feed folding, `list_ride_series_occurrences` | in review |
-| 0532–0533, 0536+ | — | free |
+| 0532 | Item reservations return `item_already_reserved` instead of a raw unique violation | in review |
+| 0533, 0536+ | — | free |
 | 0535 | #1468 knowledge world subcategories | in progress |
 | 0534 | #880 server-side write rate limits: listings, giving handoffs, follows | in progress |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0532–0533`, `0536+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0533`, `0536+`.
 
 ## How to claim
 

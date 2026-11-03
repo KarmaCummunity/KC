@@ -17,6 +17,7 @@ export const marketplaceErrors = {
   session_not_started: 'You can mark the session completed from 15 minutes before it starts.',
   own_listing: 'You cannot book your own listing.',
   listing_not_available: 'This listing is no longer available.',
+  item_already_reserved: 'Someone else has already reserved this item.',
   medical_listing_requires_external_body: 'This medical listing type requires a verified organisation.',
   external_body_invalid: 'The selected organisation is not verified or does not belong to this world. Please choose another.',
   world_permission_denied: 'Publishing in this world is open to verified members only. Complete account verification and try again.',
