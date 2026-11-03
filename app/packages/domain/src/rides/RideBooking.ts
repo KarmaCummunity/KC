@@ -61,3 +61,101 @@ export function summarizeRideSeats(capacity: number, bookings: readonly RideBook
     free: Math.max(0, safeCapacity - waiting - approved - completed),
   };
 }
+
+/**
+ * Seats not yet committed to confirmed or completed bookings.
+ * A driver cannot approve a waiting booking whose requested seats exceed this value.
+ */
+export function getRideRemainingCapacity(capacity: number, bookings: readonly RideBooking[]): number {
+  const committed = bookings
+    .filter((b) => b.status === 'confirmed' || b.status === 'handed_over')
+    .reduce((sum, b) => sum + b.seats, 0);
+  return Math.max(0, Math.max(0, capacity) - committed);
+}
+
+/**
+ * True when the target booking is waiting (reserved) and its requested seats do not
+ * exceed remaining ride capacity (prevents accepting beyond capacity).
+ */
+export function canApproveRideBooking(
+  capacity: number,
+  bookings: readonly RideBooking[],
+  targetOrId: RideBooking | string,
+): boolean {
+  const target = typeof targetOrId === 'string'
+    ? bookings.find((b) => b.handoffId === targetOrId)
+    : targetOrId;
+  if (!target || target.status !== 'reserved') return false;
+  return target.seats <= getRideRemainingCapacity(capacity, bookings);
+}
+
+/**
+ * True when a passenger can request `requestedSeats` on this ride: seats are valid
+ * and do not exceed free seats open for booking.
+ */
+export function canBookRideSeats(
+  capacity: number,
+  bookings: readonly RideBooking[],
+  requestedSeats: number,
+): boolean {
+  if (!isValidRideBookingSeats(requestedSeats)) return false;
+  const summary = summarizeRideSeats(capacity, bookings);
+  return summary.free > 0 && requestedSeats <= summary.free;
+}
+
+/**
+ * Valid state transitions for a ride booking:
+ * - reserved -> confirmed (driver approves)
+ * - reserved -> handed_over (trip completed)
+ * - reserved -> cancelled (declined, expired, cancelled)
+ * - confirmed -> handed_over (trip completed)
+ * - confirmed -> cancelled (cancelled by passenger or driver)
+ * - handed_over & cancelled are terminal.
+ */
+export function isValidRideBookingTransition(
+  from: RideBookingStatus,
+  to: RideBookingStatus | 'cancelled',
+): boolean {
+  if (from === 'reserved') return to === 'confirmed' || to === 'handed_over' || to === 'cancelled';
+  if (from === 'confirmed') return to === 'handed_over' || to === 'cancelled';
+  return false;
+}
+
+export type RideBookingAction = 'approve' | 'decline' | 'cancel' | 'complete' | 'rate';
+
+/**
+ * Whether the action is permitted on a booking in this status.
+ */
+export function canPerformBookingAction(
+  status: RideBookingStatus | 'cancelled',
+  action: RideBookingAction,
+  ratedByMe = false,
+): boolean {
+  switch (action) {
+    case 'approve':
+    case 'decline':
+      return status === 'reserved';
+    case 'cancel':
+      return status === 'reserved' || status === 'confirmed';
+    case 'complete':
+      return status === 'confirmed' || status === 'reserved';
+    case 'rate':
+      return status === 'handed_over' && !ratedByMe;
+    default:
+      return false;
+  }
+}
+
+/**
+ * A trip can be marked completed from 1 hour before departure onward (mirrors 0453).
+ */
+export function isRideTripCompletable(
+  departsAtIso: string | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (!departsAtIso) return true;
+  const departsAt = new Date(departsAtIso).getTime();
+  if (Number.isNaN(departsAt)) return true;
+  const oneHourBefore = departsAt - 60 * 60 * 1000;
+  return now.getTime() >= oneHourBefore;
+}
