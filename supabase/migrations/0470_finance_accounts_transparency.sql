@@ -24,8 +24,9 @@ as $$
   select o.org_id from public.organizations o where o.is_platform limit 1;
 $$;
 -- Internal helper: called only from the SECURITY DEFINER RPCs below (runs as owner),
--- so it is intentionally not granted to client roles.
-revoke execute on function public.finance_platform_org_id() from public;
+-- so it is intentionally not granted to client roles. Supabase's default privileges grant
+-- EXECUTE to anon/authenticated explicitly, so revoking from PUBLIC alone is not enough.
+revoke execute on function public.finance_platform_org_id() from public, anon, authenticated;
 
 -- ── 1. finance_accounts ────────────────────────────────────────────────────
 create table if not exists public.finance_accounts (
