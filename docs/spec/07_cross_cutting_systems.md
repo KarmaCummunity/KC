@@ -32,7 +32,7 @@ One form creates a Post: giving world first, then the world's sub-category where
 | Ride | no (D28) | origin, destination, ≤ 3 meeting points — official places only (D71) | offer: +30 min | departure, est. end, seats |
 | Time / elderly / consulting | no | city or "remote" | none | estimated duration (D32) |
 | Knowledge lesson / mentoring offer | no | city or "remote" | one-off: last slot + 30 min; recurring: none | topic(s), level, modality, slots or recurrence, capacity, language ([18 §18.4](./18_knowledge_world.md)) |
-| Knowledge consulting hour | no | city or "remote" | last slot + 30 min | profession, topic(s), slots; ID-verified giver, disclaimer ({{S:knowledge-consulting-hour-verification}}) |
+| Knowledge consulting hour | no | city or "remote" | last slot + 30 min | profession, topic(s), slots; ID-verified giver, disclaimer (S70) |
 | Knowledge learning / mentoring request | no | city | none | topic, level or goal, modality, cadence |
 | Knowledge question | no | none | 30 days after an accepted answer | topic, question ≤ 500, context link; answers are comments, one accepted |
 | Event (org) | no | address | date | capacity, registration policy (D31) |
@@ -87,7 +87,7 @@ All engagement earns; closed giving earns most (D12). Visible only to the owner;
 | Vote in community poll (D40) | 1 | – |
 | Donation to KC / standing order | 1 per ₪10 / 10 per month | 100 per donation |
 | Rating given | 2 | – |
-| Knowledge session completed ({{S:knowledge-karma-values}}): giver / learner | 10 per hour (D32) / 5 | 80/day |
+| Knowledge session completed (S72): giver / learner | 10 per hour (D32) / 5 | 80/day |
 | Knowledge resource approved / marked helpful by another member | 5 / 1 per voter | 5/day / 20/day |
 | Course published / course completed: learner / author per completion | 20 / 10 / 2 | – / – / 20/day |
 | Question asked / accepted answer | 2 / 5 | 5/day / – |

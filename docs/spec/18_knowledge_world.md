@@ -1,6 +1,6 @@
 # 18 — Knowledge world (`knowledge`): free knowledge, give & take, library, courses, agent-readable storage
 
-> **Scope decision ({{D:knowledge-world-scope}}, PM 2026-11-03):** the knowledge world holds **both** the give & take of knowledge between people (lesson offers, mentoring, consulting hours, questions) **and** a **free knowledge library**: courses with progress tracking and quizzes, links to other sites, books, articles, videos, documents — "everything, all knowledge, free". The world is specified functionally, visually, and as a storage model that AI agents can search so they can help members find things.
+> **Scope decision (D119, PM 2026-11-03):** the knowledge world holds **both** the give & take of knowledge between people (lesson offers, mentoring, consulting hours, questions) **and** a **free knowledge library**: courses with progress tracking and quizzes, links to other sites, books, articles, videos, documents — "everything, all knowledge, free". The world is specified functionally, visually, and as a storage model that AI agents can search so they can help members find things.
 >
 > Everything in this file that is not a `D#` is a KC fill (`S#`, pending PM approval) or an implementation gap (`G#`). Engineering contract with acceptance criteria: [`../SSOT/spec/23_knowledge.md`](../SSOT/spec/23_knowledge.md) (`FR-KNOW-*`). Product structure: [04](./04_product_structure.md); world summary: [05 §5.7](./05_giving_worlds.md#57-knowledge-rights--legal-aid-knowledge--phase-2).
 
@@ -15,7 +15,7 @@ Three promises, all free (D4 spirit, R-Knowledge-2 kept):
 
 Personas (from [03](./03_users_personas_roles.md)): the expert who will not become a paid teacher but will give an hour a week; the learner changing careers; the parent looking for a free course for a teenager (the account is the parent's, D109); the lawyer/accountant giving a pro-bono consulting hour (S36); the organization (Campus IL, a public library, a nonprofit) publishing its free courses; the KC team and community curators keeping the library clean.
 
-## 18.2 Two layers on one world ({{S:knowledge-two-layers}})
+## 18.2 Two layers on one world (S63)
 
 | Layer | What it is | Entity | Lifecycle | Earns |
 |---|---|---|---|---|
@@ -24,7 +24,7 @@ Personas (from [03](./03_users_personas_roles.md)): the expert who will not beco
 
 Why resources are not posts: a resource has no offer/request direction, no counterpart and no closing; it must stay findable for years; it carries structure (modules, lessons, quizzes, chunks) that a post does not. A post may **reference** resources ("I teach this course"), and a resource page shows the open posts about its topics ("people who teach this", "people who want to learn this"). A newly published resource may be mirrored into the world feed as a "new in the library" card (phase K3), the way native listings mirror into the feed today.
 
-## 18.3 Three axes every knowledge object carries ({{S:knowledge-topic-graph}})
+## 18.3 Three axes every knowledge object carries (S64)
 
 Agents and filters need more than the six D100 sub-categories. Every post and resource is placed on three orthogonal axes:
 
@@ -58,7 +58,7 @@ Every resource has the same envelope, plus kind-specific detail validated by a J
 
 - **Identity & shape:** `kind`, `title` (≤ 120), `summary` (≤ 300, written for a person *and* an agent: what it is, for whom, what you will be able to do after), `language(s)`, `level` (none / beginner / intermediate / advanced), `estimated_minutes`, `shelf`, primary + additional `topics`, `tags`.
 - **Source & rights:** `source = native | external`, canonical `source_url` (normalized, deduplicated by hash), `publisher` / `author` attribution, `license` (public domain / CC-* / free to access / author permission / unknown-not-allowed), `authority_tier` (official source · verified organization · community), `is_free = true` always (a resource that costs money is refused at review; "free tier" is allowed only if the learning content itself is free).
-- **Kind detail examples:** course → outline (modules, lessons), provider, has quizzes, cohort or self-paced; book → author, ISBN, year, free legal access (open access link, public library, "someone near you is giving it away" via the items world sub-category books); video → provider id, duration, captions languages; article → native body or external link; document → file type and page count (links only in K1, {{S:knowledge-no-file-uploads-k1}}); tool / dataset → what it does, access requirements.
+- **Kind detail examples:** course → outline (modules, lessons), provider, has quizzes, cohort or self-paced; book → author, ISBN, year, free legal access (open access link, public library, "someone near you is giving it away" via the items world sub-category books); video → provider id, duration, captions languages; article → native body or external link; document → file type and page count (links only in K1, S71); tool / dataset → what it does, access requirements.
 - **Quality & freshness (agent-rankable columns):** `helped_count`, `save_count`, `completion_count`, `report_count`, `last_verified_at`, `link_status` (ok / redirected / broken), `reviewed_at` + reviewer, `authority_tier`.
 - **Machine-generated fields, kept apart from human text:** `ai_summary`, `ai_keywords`, `ai_questions_answered` (the questions this resource answers), `ai_prerequisites`, `ai_audience`, each with `generated_by` (model + version) and `generated_at`; regenerated on edit, never overwriting contributor fields.
 - **Body & chunks (native content):** the body is markdown, versioned; it is split into **chunks** (heading path + passage + embedding) so an agent can cite "resource › module 2 › lesson 3 › paragraph" rather than a whole document. External resources get one chunk from their metadata plus the contributor's "why it is useful" note.
@@ -68,7 +68,7 @@ Every resource has the same envelope, plus kind-specific detail validated by a J
 2. For a link: the server fetches title, description, image, language, provider, and guesses the kind (YouTube → video, ISBN → book, a syllabus page → course); duplicates are shown ("already in the library — add your note instead").
 3. AI enrichment proposes shelf, topics, level, summary and the questions it answers; the contributor confirms or edits — the contributor's words win.
 4. Contributor states license / free access and accepts the knowledge rules (18.9).
-5. Submitted → **pending review** → published or rejected with a reason ({{S:knowledge-review-before-publish}}). Trusted contributors (curators) publish directly with post-review.
+5. Submitted → **pending review** → published or rejected with a reason (S65). Trusted contributors (curators) publish directly with post-review.
 6. On publish: karma, embedding and chunking, catalog export, "new on a topic you follow" notifications.
 
 ### 18.5.3 Courses with progress and quizzes
@@ -76,13 +76,13 @@ Every resource has the same envelope, plus kind-specific detail validated by a J
 - **Quiz:** single choice, multiple choice, true/false, short answer with accepted answers; explanations per answer; pass threshold (default 70%); unlimited attempts; the best score counts. Questions are versioned; an attempt stores the question version it answered.
 - **Progress:** enrollment (self-paced) → per-lesson done → quiz attempts → completion. Progress is **private** to the learner (D110 default "only me"); the author sees counts only. "Continue learning" on the hub and on the profile.
 - **External courses, tracked:** an external course (Campus IL, an open university course, a YouTube playlist) may carry a KC outline (its syllabus as modules/lessons without bodies) so a learner tracks it in KC and takes a KC quiz the contributor wrote. "We track your progress even on courses that are not ours."
-- **Completion record ({{S:knowledge-completion-record}}):** a non-official completion certificate with a verifiable id, course title, hours and date; shown on the profile only if the owner chooses (D110). Not a credential; the wording says so.
+- **Completion record (S69):** a non-official completion certificate with a verifiable id, course title, hours and date; shown on the profile only if the owner chooses (D110). Not a credential; the wording says so.
 - **Cohorts (K3):** a course run with a start date and capacity is the course plus a time-world post (D101); group chat follows the chat rule for a project/challenge/event (7.8).
 
 ### 18.5.4 Q&A and community answers
 A question post (18.4) with an accepted answer is indexed as a **community answer chunk** (question + accepted answer + topic), so agents can retrieve "someone asked this and here is the answer that helped". The asker or a curator may promote it into the library as an article of `authority_tier = community`.
 
-## 18.6 Display — hub, library, players ({{S:knowledge-hub-tabs}})
+## 18.6 Display — hub, library, players (S66)
 
 The knowledge hub is the world hub template (D36) with three **tabs** under one search-first header. Per D107 the give & take feed comes first; the PM may flip the default once usage shows which tab people open (open question, [92](./92_open_questions.md)).
 
@@ -98,16 +98,16 @@ The knowledge hub is the world hub template (D36) with three **tabs** under one 
 10. **Profile (7.12):** "teaches" (open offers), "learning" (count), "contributed" (count), completions — each under the owner's per-field visibility (D110).
 11. **Admin portal:** knowledge review queue (resources pending, with the AI suggestions shown as hints and a reviewer checklist per shelf), topic management (approve / merge / rename), link health report, flagged resources, demand map (open requests by topic with no offer or resource).
 
-## 18.7 Storage and retrieval built for AI agents ({{S:knowledge-agent-contract}})
+## 18.7 Storage and retrieval built for AI agents (S67)
 
 Principles:
 1. **Typed first, text second.** Every fact an agent would otherwise have to guess is a column or a topic edge: kind, level, language, duration, authority, license, link status, counts, topics with aliases. Free text (summary, body) is for humans and for semantic search.
-2. **One index, three sources, one retrieval call.** Resources, chunks, exchange posts and community answers share one search entry point: `knowledge_search(query, filters, viewer)` returns typed hits (`resource | chunk | post | topic | teacher`) with a score breakdown and a **citation** (resource id, version, chunk path). Fusion = full-text (Hebrew and English, `simple` config + unaccent) + trigram on titles and aliases + **real** vector embeddings (today's `search_listings` already fuses four lanes but its vector lane and the `embed-worker` embedder are placeholders — {{TD:embedding-stub}}; the knowledge index ships on a real multilingual embedding model, chosen by name in config so it can change) + topic match (query terms resolved to topics through aliases, then expanded down the tree).
+2. **One index, three sources, one retrieval call.** Resources, chunks, exchange posts and community answers share one search entry point: `knowledge_search(query, filters, viewer)` returns typed hits (`resource | chunk | post | topic | teacher`) with a score breakdown and a **citation** (resource id, version, chunk path). Fusion = full-text (Hebrew and English, `simple` config + unaccent) + trigram on titles and aliases + **real** vector embeddings (today's `search_listings` already fuses four lanes but its vector lane and the `embed-worker` embedder are placeholders — TD-269; the knowledge index ships on a real multilingual embedding model, chosen by name in config so it can change) + topic match (query terms resolved to topics through aliases, then expanded down the tree).
 3. **Citations and provenance are first class.** A hit always carries who added it, who reviewed it, the license and the last verification date, so an assistant can say "from Kol Zchut, verified by KC on …" and never present a community answer as official.
 4. **Machine fields never overwrite human fields.** AI summaries, keywords and suggested topics live in their own columns with model and timestamp; a human edit sets them stale and they are regenerated.
 5. **Privacy by construction.** Learner progress, quiz answers, enrollments and saved items are never in the index; only aggregates reach a resource. Exchange posts obey the post visibility rules (`is_listing_visible_to`) and block filtering (D105): every agent query runs **as a viewer** (a member id or anonymous), never as a superuser over members' data.
 6. **Stable identity.** Topics and resources have stable slugs; a merged topic keeps its slug as an alias; a resource keeps its id across versions; external URLs are normalized and hashed for deduplication.
-7. **Freshness is measured, not assumed.** A weekly link checker ({{S:knowledge-link-health}}) marks `redirected` / `broken`, hides broken ones after a grace period and notifies the contributor; `last_verified_at` is a ranking signal.
+7. **Freshness is measured, not assumed.** A weekly link checker (S68) marks `redirected` / `broken`, hides broken ones after a grace period and notifies the contributor; `last_verified_at` is a ranking signal.
 8. **Agent surface = the same RPCs the app uses, plus a service contract.** `api_knowledge_search`, `api_knowledge_get_resource` (envelope + outline + chunks on request), `api_knowledge_topic_map` (the tree with counts: resources, teachers, open requests per topic), `api_knowledge_demand` (open requests and questions with no answer, per topic — what the community is missing), `api_knowledge_suggest_topics(text)`, `api_knowledge_submit_resource` (as a member; lands in review). These follow the existing `api_bot_*` contract (service role, viewer id as a parameter) and are exposed to the WhatsApp intake bot and to MCP tools.
 9. **Open catalog for the outside world (K3).** A daily, public, read-only export of the published library — JSON catalog, an `llms.txt`-style index and a web sitemap — free content and provenance only, no member data, so external assistants and search engines can send people to free knowledge on KC.
 10. **Events for learning and recommendations.** `knowledge_events` (view, open external, save, helped, enroll, lesson done, quiz passed, completed) feed "most helpful", "continue learning", the recommendation engine (D27) and research aggregates; pseudonymous, retention per the research rules (16).
@@ -116,9 +116,9 @@ Pipeline: contribute → link enrichment (metadata, kind guess, duplicate check)
 
 ## 18.8 Trust, roles and moderation
 
-- **Who may do what:** every member may ask, request, offer lessons and mentoring, contribute links and articles, enroll, take quizzes. A **consulting hour** requires ID verification and a declared profession shown on the post ({{S:knowledge-consulting-hour-verification}}; an exception to "verification is not blocking", D23, in the spirit of the housing and medical exceptions of D30). Courses: any member may build a course; a course in rights & legal aid or health-adjacent topics is reviewed with a stricter checklist. Organizations publish in their name (D88) and their resources get `authority_tier = verified organization`.
-- **Review before publish ({{S:knowledge-review-before-publish}}):** KC admins and moderators review; a **knowledge curator** community role (phase K3, a governance role per 11) may review within their shelf. Reviewer checklist per shelf: free, legal to share, accurate source, no sales funnel, shelf rules (06: no missionary content; no divisive heritage content; a source per heritage item; no binding legal or medical advice, D40).
-- **Copyright:** no uploaded copies of books or paid courses (K1 has no file uploads, {{S:knowledge-no-file-uploads-k1}}); a book is a reference plus a free legal way to read it. A copyright report hides the resource at once and counts against the contributor (7.15).
+- **Who may do what:** every member may ask, request, offer lessons and mentoring, contribute links and articles, enroll, take quizzes. A **consulting hour** requires ID verification and a declared profession shown on the post (S70; an exception to "verification is not blocking", D23, in the spirit of the housing and medical exceptions of D30). Courses: any member may build a course; a course in rights & legal aid or health-adjacent topics is reviewed with a stricter checklist. Organizations publish in their name (D88) and their resources get `authority_tier = verified organization`.
+- **Review before publish (S65):** KC admins and moderators review; a **knowledge curator** community role (phase K3, a governance role per 11) may review within their shelf. Reviewer checklist per shelf: free, legal to share, accurate source, no sales funnel, shelf rules (06: no missionary content; no divisive heritage content; a source per heritage item; no binding legal or medical advice, D40).
+- **Copyright:** no uploaded copies of books or paid courses (K1 has no file uploads, S71); a book is a reference plus a free legal way to read it. A copyright report hides the resource at once and counts against the contributor (7.15).
 - **Reports:** resources, posts, comments and answers are reportable (7.15); three reports hide a resource until review.
 - **Quality:** "helped me" votes and completions rank; reports and broken links demote; a contributor whose resources are repeatedly rejected loses the fast path.
 
@@ -128,8 +128,8 @@ Pipeline: contribute → link enrichment (metadata, kind guess, duplicate check)
 - "A completion record is a KC community record, not an accredited certificate."
 - Shelf rules from [06](./06_domain_hubs.md) are shown on the contribute step of that shelf.
 
-## 18.10 Karma, notifications, KPIs ({{S:knowledge-karma-values}})
-Karma (adds rows to 7.6; estimates, in `KARMA_POINT_VALUES`): lesson / mentoring / consulting session completed — giver 10 per hour (D32, cap 80/day), learner 5; resource approved — 5 (cap 5/day); resource marked helpful by others — 1 per vote received (cap 20/day); course published — 20; course completed — learner 10, author 2 per completion (cap 20/day); accepted answer — 5; question asked — 2 (cap 5/day). Today's code grants 5/3 per knowledge session (`complete_knowledge_session`); it moves to the table values ({{G:knowledge-exchange-form}}).
+## 18.10 Karma, notifications, KPIs (S72)
+Karma (adds rows to 7.6; estimates, in `KARMA_POINT_VALUES`): lesson / mentoring / consulting session completed — giver 10 per hour (D32, cap 80/day), learner 5; resource approved — 5 (cap 5/day); resource marked helpful by others — 1 per vote received (cap 20/day); course published — 20; course completed — learner 10, author 2 per completion (cap 20/day); accepted answer — 5; question asked — 2 (cap 5/day). Today's code grants 5/3 per knowledge session (`complete_knowledge_session`); it moves to the table values (G56).
 
 Notifications (7.11): resource approved / rejected (`important`); booking requested / approved / declined and a 24h session reminder (`important`, like rides D73); new enrollment and course completion for the author (`social`, grouped); answer accepted (`social`); "new on a topic you follow" (`social`, the saved-filter rule D10: max 3/day); broken link on your resource (`social`).
 
@@ -142,4 +142,4 @@ KPIs (adds to [16](./16_kpis.md)): sessions completed; questions with an accepte
 | **K2** | Native articles with versioned bodies and chunks; native courses: builder (web), modules, lessons, quizzes, enrollment, progress, completion record; "continue learning"; external course tracking shells; demand map in admin; community answers indexed |
 | **K3** | Completions on the profile; cohorts; course analytics for authors; open catalog export (`llms.txt`, sitemap); knowledge curator role; promote answers to the library; "new in the library" feed cards |
 
-Gaps: {{G:knowledge-topic-graph}}, {{G:knowledge-exchange-form}}, {{G:knowledge-library}}, {{G:knowledge-search-agent-api}}, {{G:knowledge-courses}}, {{G:knowledge-review-queue}}. Open questions for the PM: [92](./92_open_questions.md) §6.
+Gaps: G55, G56, G57, G58, G59, G60. Open questions for the PM: [92](./92_open_questions.md) §6.

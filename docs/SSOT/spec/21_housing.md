@@ -78,7 +78,7 @@ The world has four **housing sub-categories** (the "item subcategory" pattern, D
 | Place type | `place_type` | `private_room` · `shared_room` · `couch` · `whole_unit` · `secondary_unit` (cabin, caravan, granny flat) · `tent_pitch` (yard / plot) | ✅ |
 | Beds / guests capacity per night | `capacity` | integer 1–20 | ✅ |
 | Exclusive use | `exclusive` | boolean — true for `whole_unit` / `secondary_unit` by default: one booking per night | ✅ |
-| Min / max nights per booking | `min_nights`, `max_nights` | 1 ≤ min ≤ max ≤ 30 (`{{D:housing-community-stay-cap}}`) | ✅ (defaults 1 / 3) |
+| Min / max nights per booking | `min_nights`, `max_nights` | 1 ≤ min ≤ max ≤ 30 (`D120`) | ✅ (defaults 1 / 3) |
 | Check-in window | `check_in_from`, `check_in_until` | `HH:MM` local, from < until (until may be after midnight ≤ 02:00) | ✅ (defaults 16:00 / 22:00) |
 | Check-out by | `check_out_by` | `HH:MM` local | ✅ (default 10:00) |
 | Who the host accepts | `guest_policy` | `any` · `women_only` · `men_only` · `families_only` · `couples_and_families` | ✅ (default `any`) |
@@ -443,7 +443,7 @@ Every new function follows the privilege rule of `SEC-1063` (private by default,
 | Event exceeds attendees or hours | Host reports via FR-HOUSING-020 AC3; trust signal. |
 | Placement host becomes unreachable | Coordinator check-in reminders → org manager → KC support (FR-HOUSING-032 AC5). |
 | Blocked pair | FR-HOUSING-023 AC3. |
-| Request to stay longer than 30 nights | Not possible in the community track (`{{D:housing-community-stay-cap}}`); the form explains why and points to the assisted track and the housing organizations directory. |
+| Request to stay longer than 30 nights | Not possible in the community track (`D120`); the form explains why and points to the assisted track and the housing organizations directory. |
 
 ## Success metrics
 
@@ -477,4 +477,4 @@ Open questions for the PM: [`docs/spec/92_open_questions.md`](../../spec/92_open
 |---|---|---|
 | 0.1 | 2026-11-03 | New domain file. Housing becomes free space sharing with four sub-categories (stays, emergency shelter via organizations, event & gathering space, storage) — `D112`; FR-HOUSING-001…039; nine housing fills pending PM approval (`docs/spec/91`). |
 | 0.2 | 2026-11-03 | PM answers: shelter only via organizations; storage for personal and nonprofit goods, never for-profit; organizations offer, request and search in every world; verification in every sub-category; verification = ID document + live selfie (`22_identity_verification.md`) replacing the interim manual path; legal texts drafted for counsel (`docs/legal/drafts/`). Minors rule aligned with D109. |
-| 0.3 | 2026-11-03 | PM: community stays capped at 30 nights, longer needs through organizations (`{{D:housing-community-stay-cap}}`, closes Q-H4); counsel reviews the legal drafts once before launch and no phase waits for it (D118 refined). |
+| 0.3 | 2026-11-03 | PM: community stays capped at 30 nights, longer needs through organizations (`D120`, closes Q-H4); counsel reviews the legal drafts once before launch and no phase waits for it (D118 refined). |

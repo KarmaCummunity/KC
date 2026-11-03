@@ -46,13 +46,13 @@
 | רכז/ת אירוח | Housing coordinator | Member of a verified organization with housing coordination who takes shelter requests and places people |
 | שיבוץ | Placement | A booking created by a coordinator on behalf of a person in need, possibly off-platform |
 | אימות זהות | Identity verification | Level 2 of D23: an ID document + a live selfie matched by a certified provider (`D117`); code `VerificationLevel`, `identity_verifications` |
-| משאב ידע | Knowledge resource | A free library entry (course, article, link, book, video, document, podcast, tool, dataset) with provenance and review; a catalog entity, not a post ({{S:knowledge-two-layers}}) |
-| מדף | Shelf | The knowledge world sub-category of D100 (six values); the first of the three knowledge axes ({{S:knowledge-topic-graph}}) |
-| נושא / גרף נושאים | Topic / topic graph | Curated subject tree with aliases (Hebrew, English, transliteration); every knowledge post and resource has one primary topic ({{S:knowledge-topic-graph}}) |
+| משאב ידע | Knowledge resource | A free library entry (course, article, link, book, video, document, podcast, tool, dataset) with provenance and review; a catalog entity, not a post (S63) |
+| מדף | Shelf | The knowledge world sub-category of D100 (six values); the first of the three knowledge axes (S64) |
+| נושא / גרף נושאים | Topic / topic graph | Curated subject tree with aliases (Hebrew, English, transliteration); every knowledge post and resource has one primary topic (S64) |
 | קטע ידע | Knowledge chunk | A retrievable passage of a native resource, lesson or community answer, with heading path and embedding, cited by agents (FR-KNOW-009) |
-| שעת ייעוץ | Consulting hour | Pro-bono professional session post (S36) by an ID-verified giver with a declared profession ({{S:knowledge-consulting-hour-verification}}) |
+| שעת ייעוץ | Consulting hour | Pro-bono professional session post (S36) by an ID-verified giver with a declared profession (S70) |
 | תשובה מקובלת | Accepted answer | The comment the asker marked on a question post; indexed as a community answer (FR-KNOW-005) |
-| רשומת סיום | Completion record | KC community record of finishing a course; not an accredited certificate ({{S:knowledge-completion-record}}) |
+| רשומת סיום | Completion record | KC community record of finishing a course; not an accredited certificate (S69) |
 
 ## Naming rules
 1. Always the precise name: "giving world", "item subcategory", "post type" — **never a bare "categories"**.
