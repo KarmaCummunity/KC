@@ -34,6 +34,23 @@ describe('validateRideTemplateDraft', () => {
     expect(() => validateRideTemplateDraft({ ...base, originStreet: '   ' })).toThrow(RideError);
   });
 
+  it('rejects empty or whitespace-only dest street', () => {
+    expect(() => validateRideTemplateDraft({ ...base, destStreet: '' })).toThrow(RideError);
+    expect(() => validateRideTemplateDraft({ ...base, destStreet: '   ' })).toThrow(RideError);
+  });
+
+  it('rejects non-integer weekday mask', () => {
+    expect(() => validateRideTemplateDraft({ ...base, weekdayMask: 4.5 })).toThrow(RideError);
+  });
+
+  it('rejects non-integer lookahead days', () => {
+    expect(() => validateRideTemplateDraft({ ...base, lookaheadDays: 7.2 })).toThrow(RideError);
+  });
+
+  it('accepts description up to 500 chars', () => {
+    expect(() => validateRideTemplateDraft({ ...base, description: 'x'.repeat(500) })).not.toThrow();
+  });
+
   it('rejects offer with null seats', () => {
     expect(() => validateRideTemplateDraft({ ...base, seatsAvailable: null })).toThrow(RideError);
   });

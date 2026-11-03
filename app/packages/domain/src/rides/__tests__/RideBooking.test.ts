@@ -147,6 +147,17 @@ describe('canPerformBookingAction', () => {
     expect(canPerformBookingAction('confirmed', 'decline')).toBe(false);
   });
 
+  it('permits cancel on reserved and confirmed, rejects on terminal', () => {
+    expect(canPerformBookingAction('reserved', 'cancel')).toBe(true);
+    expect(canPerformBookingAction('confirmed', 'cancel')).toBe(true);
+    expect(canPerformBookingAction('handed_over', 'cancel')).toBe(false);
+  });
+
+  it('rejects unknown booking actions', () => {
+    // @ts-expect-error testing default case
+    expect(canPerformBookingAction('confirmed', 'unknown_action')).toBe(false);
+  });
+
   it('permits complete on confirmed and reserved', () => {
     expect(canPerformBookingAction('confirmed', 'complete')).toBe(true);
     expect(canPerformBookingAction('reserved', 'complete')).toBe(true);
@@ -173,8 +184,10 @@ describe('isRideTripCompletable', () => {
     expect(isRideTripCompletable(departs, base)).toBe(false);
   });
 
-  it('returns true when departure is past or missing', () => {
+  it('returns true when departure is past, missing, or invalid', () => {
     expect(isRideTripCompletable('2026-11-02T11:00:00Z', base)).toBe(true);
     expect(isRideTripCompletable(null, base)).toBe(true);
+    expect(isRideTripCompletable(undefined, base)).toBe(true);
+    expect(isRideTripCompletable('invalid-date', base)).toBe(true);
   });
 });
