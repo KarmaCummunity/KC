@@ -3,7 +3,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, iconSize, useTheme, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../../../lib/rtlTextAlignStart';
 import { useTranslation } from 'react-i18next';
 import type { SystemMessageBubbleProps } from './SystemMessageBubble';
@@ -26,7 +26,7 @@ export function SupportIssueBubble({ payload }: SystemMessageBubbleProps) {
       <View style={styles.card}>
         <View style={styles.headerRow}>
           <View style={styles.iconBadge}>
-            <Ionicons name="headset-outline" size={18} color={colors.info} />
+            <Ionicons name="headset-outline" size={iconSize.md} color={colors.info} />
           </View>
           <Text style={styles.title}>{t('moderation.supportIssueBubble.title')}</Text>
         </View>
@@ -87,7 +87,7 @@ const useSupportIssueBubbleStyles = makeUseStyles(({ colors, isDark }) => ({
     ...typography.body,
     flex: 1,
     color: colors.textPrimary,
-    fontWeight: '700',
+    ...typography.bold,
     textAlign: rtlTextAlignStart,
   },
   metaRow: {
@@ -103,7 +103,7 @@ const useSupportIssueBubbleStyles = makeUseStyles(({ colors, isDark }) => ({
   },
   categoryBadge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
     borderRadius: radius.full,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -112,7 +112,7 @@ const useSupportIssueBubbleStyles = makeUseStyles(({ colors, isDark }) => ({
   categoryText: {
     ...typography.caption,
     color: colors.info,
-    fontWeight: '600',
+    ...typography.semiBold,
   },
   descriptionBox: {
     padding: spacing.sm,
