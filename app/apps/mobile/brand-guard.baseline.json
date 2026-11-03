@@ -103,9 +103,6 @@
       "iconSizeLiteral": 1,
       "unmirroredDirectionalIcon": 1
     },
-    "src/components/EditProfileAddressBlock.tsx": {
-      "rawTextInput": 1
-    },
     "src/components/EditProfileAvatar.tsx": {
       "colorLiteral": 1,
       "radiusLiteral": 1
@@ -151,15 +148,6 @@
       "zIndexLiteral": 2,
       "rawModal": 1,
       "iconSizeLiteral": 1
-    },
-    "src/components/SearchablePicker/SearchablePicker.tsx": {
-      "physicalSide": 1,
-      "rawTextInput": 2,
-      "rawModal": 1
-    },
-    "src/components/SearchablePicker/searchablePickerStyles.ts": {
-      "fontWeightLiteral": 2,
-      "physicalSide": 2
     },
     "src/components/SettingsAboutCard.tsx": {
       "fontWeightLiteral": 1,
@@ -322,10 +310,6 @@
       "radiusLiteral": 2,
       "spacingLiteral": 1
     },
-    "src/components/post-detail/PostEngagementSection.tsx": {
-      "fontWeightLiteral": 2,
-      "rawTextInput": 1
-    },
     "src/components/post-detail/RecipientCallout.tsx": {
       "colorLiteral": 1,
       "fontWeightLiteral": 2,
@@ -340,10 +324,6 @@
     "src/components/post/CounterpartyIdentityCard.tsx": {
       "fontSizeLiteral": 1,
       "fontWeightLiteral": 1
-    },
-    "src/components/post/EditPostFormScrollContent.tsx": {
-      "physicalSide": 4,
-      "rawTextInput": 4
     },
     "src/components/post/ExpiredRepublishView.tsx": {
       "iconSizeLiteral": 2
@@ -412,9 +392,6 @@
       "fontWeightLiteral": 3,
       "radiusLiteral": 2,
       "spacingLiteral": 8
-    },
-    "src/components/settings/QuietHoursSection.tsx": {
-      "rawTextInput": 1
     },
     "src/components/settings/appearanceParts.tsx": {
       "fontWeightLiteral": 2,
@@ -581,12 +558,6 @@
       "spacingLiteral": 5,
       "zIndexLiteral": 2,
       "shadowLiteral": 16
-    },
-    "src/screens/research/ResearchQuestionPanel.tsx": {
-      "fontSizeLiteral": 4,
-      "fontWeightLiteral": 3,
-      "radiusLiteral": 3,
-      "rawTextInput": 3
     },
     "src/screens/research/ResearchRunner.tsx": {
       "fontWeightLiteral": 1,

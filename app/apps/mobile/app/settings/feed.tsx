@@ -6,7 +6,7 @@ import { Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ALL_CATEGORIES } from '@kc/domain';
-import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { Chip, TextField } from '../../src/components/ui';
 import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
@@ -26,7 +26,6 @@ export default function FeedSettingsScreen() {
   const options = useDetailStackScreenOptions();
   const { t } = useTranslation();
   const styles = useStyles();
-  const { colors } = useTheme();
   const { list, add, remove } = useFeedMuteFilters();
   const { prefs, update } = useNotificationPreferences();
   const [draft, setDraft] = useState('');

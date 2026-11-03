@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '../database.types';
 import { SupabaseLegalDocumentRepository } from '../legal/SupabaseLegalDocumentRepository';
 import { LegalDocumentCache, type AsyncKVStorage } from '../legal/legalCache';
 
@@ -19,7 +21,7 @@ function makeClient(overrides: {
   pointerResult?: { data: { current_version: number } | null; error: { message: string } | null };
   versionResult?: { data: unknown; error: { message: string } | null };
   rpcResults?: Record<string, { data: unknown; error: { message: string } | null }>;
-} = {}): any {
+} = {}): SupabaseClient<Database> {
   const pointer = overrides.pointerResult ?? { data: null, error: { message: 'not found' } };
   const version = overrides.versionResult ?? { data: null, error: { message: 'not found' } };
 
@@ -40,7 +42,7 @@ function makeClient(overrides: {
       const result = overrides.rpcResults?.[name];
       return Promise.resolve(result ?? { data: null, error: null });
     }),
-  };
+  } as unknown as SupabaseClient<Database>;
 }
 
 const FRESH_ROW = {

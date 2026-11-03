@@ -6,7 +6,6 @@ import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import {
   FilterChipRow,
   type FilterOption,
-  type FilterChipRowProps,
   type SingleFilterChipRowProps,
   type MultiFilterChipRowProps,
 } from './FilterChipRow';
