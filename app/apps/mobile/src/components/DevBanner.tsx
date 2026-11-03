@@ -9,15 +9,14 @@
 //      shortcuts are enabled.
 // All strips use the same styling so the warning is recognizable.
 import React from 'react';
-import { Pressable, View } from 'react-native';
-import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { colors, Text, spacing, typography, zIndex } from '@kc/ui';
 import { useTranslation } from 'react-i18next';
 import { isDevGhostSessionEnabled } from '../services/devGhostSession';
 import { isDevAutoSignInEnabled } from '../services/devAutoSignIn';
 import { isDevEnvironment } from '../config/environment';
 
 export function DevBanner() {
-  const styles = useStyles();
   const { t } = useTranslation();
   const envDev = isDevEnvironment();
   const metroDev = typeof __DEV__ !== 'undefined' && __DEV__;
@@ -43,13 +42,13 @@ export function DevBanner() {
   );
 }
 
-const useStyles = makeUseStyles(({ colors }) => ({
+const styles = StyleSheet.create({
   bar: {
     position: 'absolute',
     top: 0,
     start: 0,
     end: 0,
-    zIndex: 9999, // brand-guard-allow: global development banner overlay
+    zIndex: zIndex.toast,
     backgroundColor: colors.error,
   },
   inner: {
@@ -63,4 +62,4 @@ const useStyles = makeUseStyles(({ colors }) => ({
     ...typography.semiBold,
     letterSpacing: 0.3,
   },
-}));
+});

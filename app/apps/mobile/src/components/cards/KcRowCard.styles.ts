@@ -24,7 +24,7 @@ export const useKcRowCardStyles = makeUseStyles(({ colors }) => ({
   pill: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.full },
   givePill: { backgroundColor: colors.primarySurface },
   requestPill: { backgroundColor: `${colors.secondary}18` },
-  pillText: { ...typography.caption, ...typography.bold },
+  pillText: { ...typography.label, ...typography.bold },
   givePillText: { color: colors.giveTag },
   requestPillText: { color: colors.secondary },
   mutedPill: { backgroundColor: colors.border },

@@ -82,7 +82,7 @@ export function LegalConsentScreen({ mode, pending, onResolved }: LegalConsentSc
       : undefined;
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View testID="legal-consent-screen" style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
         contentContainerStyle={[
           {
@@ -122,6 +122,7 @@ export function LegalConsentScreen({ mode, pending, onResolved }: LegalConsentSc
         ) : null}
 
         <Pressable
+          testID="legal-consent-submit"
           onPress={onSubmit}
           disabled={!allChecked || submitting}
           style={({ pressed }) => ({
