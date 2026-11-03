@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildKcSupportOptions,
+  formatPayeePhone,
   hasKcSupportOptions,
   isKcSupportChannelKind,
   isSecureSupportUrl,
+  isValidPayeePhone,
   type KcSupportChannel,
 } from '../KcSupportChannel';
 
@@ -11,6 +13,7 @@ const channel = (overrides: Partial<KcSupportChannel> = {}): KcSupportChannel =>
   kind: 'bit',
   url: 'https://www.bitpay.co.il/app/share-info?i=1',
   providerLabel: 'Bit',
+  payeePhone: null,
   ...overrides,
 });
 
@@ -101,5 +104,32 @@ describe('buildKcSupportOptions', () => {
       channel({ kind: 'card_standing_order', url: 'https://pay.grow.link/monthly' }),
     ]);
     expect(hasKcSupportOptions(options)).toBe(true);
+  });
+});
+
+describe('payee phone (FR-DONATE-011 AC9)', () => {
+  it('accepts Israeli mobile numbers in digits-only form', () => {
+    expect(isValidPayeePhone('0500000000')).toBe(true);
+    expect(isValidPayeePhone('+972500000000')).toBe(false);
+    expect(isValidPayeePhone('050-000-0000')).toBe(false);
+    expect(isValidPayeePhone('0300000000')).toBe(false);
+  });
+
+  it('formats a payee phone for display', () => {
+    expect(formatPayeePhone('0501234567')).toBe('050-123-4567');
+  });
+
+  it('keeps a valid payee phone on Bit / PayBox', () => {
+    const options = buildKcSupportOptions([channel({ payeePhone: '0500000000' })]);
+    expect(options.oneTime[0]?.payeePhone).toBe('0500000000');
+  });
+
+  it('drops a malformed payee phone and one on a card channel', () => {
+    const options = buildKcSupportOptions([
+      channel({ payeePhone: '12345' }),
+      channel({ kind: 'card_standing_order', url: 'https://pay.grow.link/m', payeePhone: '0500000000' }),
+    ]);
+    expect(options.oneTime[0]?.payeePhone).toBeNull();
+    expect(options.standingOrder?.payeePhone).toBeNull();
   });
 });

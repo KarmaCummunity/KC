@@ -60,7 +60,7 @@ Emotional support only via a hotline.
 Sub-categories (D100): elderly & loneliness (D39, S24; home visit requires volunteer ID verification, D48), sport, cleanups, class seats, general. Organizations that are not lawful employers recruit volunteers here, not in employment.
 
 ## 5.5 Money (`money`) — MVP (Grow) → phase 2
-No money between users (D4). Now: donate to KC, one-time or recurring, via a Grow hosted payment page (D20) — the app only redirects and receives confirmation, so the provider can be swapped without code. Bit / PayBox transfer links are interim only and disappear once the one-time clearing page is live (D64). Vision: a JGive-like platform inside the app for every approved org, section-46 receipts, with JGive as partner (D37). No post form. Org directory with proper-management badge (S35).
+No money between users (D4). Now: donate to KC, one-time or recurring, via a Grow hosted payment page (D20) — the app only redirects and receives confirmation, so the provider can be swapped without code. Bit / PayBox transfer links are interim only and disappear once the one-time clearing page is live (D64). Vision: a JGive-like platform inside the app for every approved org, section-46 receipts, with JGive as partner (D37). No post form. Org directory with proper-management badge (S35). Meanwhile the money goes to the founder's personal account and Bit / PayBox show the payee phone to signed-in users ({{D:kc-support-personal-phone}}).
 
 ## 5.6 Housing (`housing`) — next to launch (D30)
 Two tracks: (a) community hosting à la Couchsurfing; (b) housing for at-risk populations (street people, at-risk youth, foster care, people fleeing violence) — only via professional bodies. **ID verification required for both sides** (D30).
