@@ -140,60 +140,66 @@ begin
     v_expires_at := p_post.expires_at;
   end if;
 
-  insert into public.listings as l (
-    owner_id, world_slug, kind_id, category_id, direction, status, visibility,
-    anonymity_level, title, summary, geo, city_id, time_window, expires_at,
-    details, origin, legacy_post_id, moderation_status, published_at, created_at, updated_at,
-    urgency_level, external_body_id, beneficiary_org_id
-  ) values (
-    p_post.owner_id, v_world, v_kind_id, v_category_id,
-    case when v_direction = 'request' then 'request' else 'give' end,
-    v_status, p_post.visibility, public.visibility_to_anonymity_level(p_post.visibility),
-    p_post.title, p_post.description, v_geo, p_post.city, v_time_window, v_expires_at,
-    v_details, case when v_is_items then 'post' else 'native' end, p_post.post_id, 'published',
-    coalesce(p_post.created_at, now()), coalesce(p_post.created_at, now()), coalesce(p_post.updated_at, now()),
-    coalesce(p_post.urgency_level, 2), p_post.external_body_id, p_post.beneficiary_org_id
-  )
-  on conflict (legacy_post_id) where legacy_post_id is not null do update set
-    owner_id           = excluded.owner_id,
-    kind_id            = excluded.kind_id,
-    category_id        = excluded.category_id,
-    direction          = excluded.direction,
-    status             = excluded.status,
-    visibility         = excluded.visibility,
-    anonymity_level    = excluded.anonymity_level,
-    title              = excluded.title,
-    summary            = excluded.summary,
-    geo                = excluded.geo,
-    city_id            = excluded.city_id,
-    time_window        = excluded.time_window,
-    expires_at         = excluded.expires_at,
-    details            = excluded.details,
-    urgency_level      = excluded.urgency_level,
-    external_body_id   = excluded.external_body_id,
-    beneficiary_org_id = excluded.beneficiary_org_id,
-    updated_at         = excluded.updated_at
-  where (l.owner_id, l.kind_id, l.category_id, l.direction, l.status, l.visibility, l.anonymity_level,
-         l.title, l.summary, l.geo::text, l.city_id, l.time_window, l.expires_at, l.details,
-         l.urgency_level, l.external_body_id, l.beneficiary_org_id)
-        is distinct from
-        (excluded.owner_id, excluded.kind_id, excluded.category_id, excluded.direction, excluded.status,
-         excluded.visibility, excluded.anonymity_level, excluded.title, excluded.summary, excluded.geo::text,
-         excluded.city_id, excluded.time_window, excluded.expires_at, excluded.details,
-         excluded.urgency_level, excluded.external_body_id, excluded.beneficiary_org_id)
-  returning listing_id into v_listing_id;
+  -- Update in place when the listing exists; an INSERT … ON CONFLICT would run the listing's
+  -- BEFORE INSERT triggers (world TTL, expiry from details, rate limit) on every sync and feed
+  -- their result into `excluded`, resetting what the listing side had set since.
+  select l.listing_id into v_listing_id from public.listings l where l.legacy_post_id = p_post.post_id;
+
+  if v_listing_id is null then
+    insert into public.listings (
+      owner_id, world_slug, kind_id, category_id, direction, status, visibility,
+      anonymity_level, title, summary, geo, city_id, time_window, expires_at,
+      details, origin, legacy_post_id, moderation_status, published_at, created_at, updated_at,
+      urgency_level, external_body_id, beneficiary_org_id
+    ) values (
+      p_post.owner_id, v_world, v_kind_id, v_category_id,
+      case when v_direction = 'request' then 'request' else 'give' end,
+      v_status, p_post.visibility, public.visibility_to_anonymity_level(p_post.visibility),
+      p_post.title, p_post.description, v_geo, p_post.city, v_time_window, v_expires_at,
+      v_details, case when v_is_items then 'post' else 'native' end, p_post.post_id, 'published',
+      coalesce(p_post.created_at, now()), coalesce(p_post.created_at, now()), coalesce(p_post.updated_at, now()),
+      coalesce(p_post.urgency_level, 2), p_post.external_body_id, p_post.beneficiary_org_id
+    )
+    returning listing_id into v_listing_id;
+  else
+    update public.listings l set
+      owner_id           = p_post.owner_id,
+      kind_id            = v_kind_id,
+      category_id        = v_category_id,
+      direction          = case when v_direction = 'request' then 'request' else 'give' end,
+      status             = v_status,
+      visibility         = p_post.visibility,
+      anonymity_level    = public.visibility_to_anonymity_level(p_post.visibility),
+      title              = p_post.title,
+      summary            = p_post.description,
+      geo                = v_geo,
+      city_id            = p_post.city,
+      time_window        = v_time_window,
+      expires_at         = v_expires_at,
+      details            = v_details,
+      urgency_level      = coalesce(p_post.urgency_level, 2),
+      external_body_id   = p_post.external_body_id,
+      beneficiary_org_id = p_post.beneficiary_org_id,
+      updated_at         = now()
+    where l.listing_id = v_listing_id
+      and (l.owner_id, l.kind_id, l.category_id, l.direction, l.status, l.visibility, l.anonymity_level,
+           l.title, l.summary, l.geo::text, l.city_id, l.time_window, l.expires_at, l.details,
+           l.urgency_level, l.external_body_id, l.beneficiary_org_id)
+          is distinct from
+          (p_post.owner_id, v_kind_id, v_category_id,
+           case when v_direction = 'request' then 'request' else 'give' end,
+           v_status, p_post.visibility, public.visibility_to_anonymity_level(p_post.visibility),
+           p_post.title, p_post.description, v_geo::text, p_post.city, v_time_window, v_expires_at,
+           v_details, coalesce(p_post.urgency_level, 2), p_post.external_body_id, p_post.beneficiary_org_id);
+  end if;
 
   -- A post of a listing world points at its listing like a mirror does, so the feed card,
   -- the detail redirect and the photo sync keep working (0466, 0522).
   if not v_is_items then
-    if v_listing_id is null then
-      select listing_id into v_listing_id from public.listings where legacy_post_id = p_post.post_id;
-    end if;
     update public.posts
        set listing_id = v_listing_id, listing_world_slug = v_world
      where post_id = p_post.post_id
-       and listing_id is null
-       and v_listing_id is not null;
+       and listing_id is null;
   end if;
 end;
 $$;

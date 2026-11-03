@@ -145,6 +145,24 @@ begin
   perform kc_test.assert_eq((pg_temp.post_of(v_listing)).status, 'expired', 'an expiry set on the listing flows back');
 end $$;
 
+-- ── T4b an expiry set on the listing survives an unrelated post edit (0459 regression) ──
+do $$
+declare
+  p personas;
+  v_listing uuid;
+  v_expires timestamptz := date_trunc('second', now() + interval '1 hour');
+begin
+  select * into p from personas;
+  v_listing := pg_temp.create_ride(p.driver, 'Ashdod to Tel Aviv');
+  update public.listings set expires_at = v_expires where listing_id = v_listing;
+  perform kc_test.assert_eq((pg_temp.post_of(v_listing)).expires_at, v_expires, 'the expiry set on the listing reaches the post');
+  perform kc_test.act_as(p.driver);
+  perform public.update_my_listing(v_listing, p_title => 'Ashdod to Tel Aviv, early');
+  perform kc_test.assert_eq((pg_temp.listing(v_listing)).expires_at, v_expires,
+    'an unrelated edit through the post does not recompute the listing expiry');
+  perform kc_test.assert_eq((pg_temp.listing(v_listing)).title, 'Ashdod to Tel Aviv, early', 'while the edit itself lands');
+end $$;
+
 -- ── T5 the listing-side rules still refuse through the post path ────────────────────
 do $$
 declare
