@@ -93,7 +93,7 @@ const useRatingStyles = makeUseStyles(({ colors }) => ({
   },
   cellText: {
     ...typography.body,
-    fontWeight: '600',
+    ...typography.semiBold,
     color: colors.textSecondary,
   },
   cellTextSelected: {

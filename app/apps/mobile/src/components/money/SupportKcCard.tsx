@@ -6,7 +6,7 @@ import React, { useCallback } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, useTheme, Text } from '@kc/ui';
+import { iconSize, makeUseStyles, useTheme, Text } from '@kc/ui';
 import { warmPromptCardBase } from '../warmPromptCardStyles';
 import { aboutOpenExternalUrl } from '../../features/about-landing/aboutOpenExternalUrl';
 import { useKcSupportOptions } from '../../hooks/useKcSupportOptions';
@@ -46,7 +46,7 @@ export function SupportKcCard({
   return (
     <View style={[styles.card, style]} testID={testID}>
       <View style={styles.iconBadge}>
-        <Ionicons name="heart" size={26} color={colors.textInverse} />
+        <Ionicons name="heart" size={iconSize['2xl']} color={colors.textInverse} />
       </View>
       <Text style={styles.title} accessibilityRole="header">{t(titleKey)}</Text>
       <Text style={styles.tagline}>{t(taglineKey)}</Text>

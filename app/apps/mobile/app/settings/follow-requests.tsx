@@ -191,7 +191,7 @@ const useFollowRequestsScreenStyles = makeUseStyles(({ colors }) => ({
     paddingVertical: spacing.xs,
     borderRadius: radius.sm,
   },
-  btnApproveText: { ...typography.button, color: colors.textInverse, fontWeight: '700' as const },
+  btnApproveText: { ...typography.button, ...typography.bold, color: colors.textInverse },
   btnReject: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
