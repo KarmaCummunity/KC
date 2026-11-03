@@ -12346,7 +12346,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      rpc_set_date_of_birth: { Args: { p_date_of_birth: string }; Returns: undefined }
+      rpc_set_date_of_birth: {
+        Args: { p_date_of_birth: string }
+        Returns: undefined
+      }
       rpc_set_message_reaction: {
         Args: { p_message_id: string; p_reaction_type: string }
         Returns: {
