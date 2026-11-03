@@ -19,6 +19,18 @@ describe('SignInWithGoogleUseCase', () => {
     expect(auth.lastExchangeCode).toBe('abc123');
   });
 
+  it('correctly extracts code when URL contains a hash fragment', async () => {
+    const auth = new FakeAuthService();
+    auth.exchangeResult = makeSession();
+    const opener = async () => `${REDIRECT}?code=hash_code&state=xyz#access_token=none`;
+
+    const uc = new SignInWithGoogleUseCase(auth, opener);
+    const out = await uc.execute({ redirectTo: REDIRECT });
+
+    expect(out.session).toBe(auth.exchangeResult);
+    expect(auth.lastExchangeCode).toBe('hash_code');
+  });
+
   it('throws oauth_dismissed if the browser was closed without a redirect', async () => {
     const auth = new FakeAuthService();
     const opener = async () => null;

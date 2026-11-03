@@ -66,6 +66,7 @@ describe('validateKnowledgeSlot', () => {
 describe('booking error codes', () => {
   it('maps server booking errors', () => {
     expect(mapMarketplaceServerError({ code: 'P0001', message: 'seats_exhausted' })).toBe('seats_exhausted');
+    expect(mapMarketplaceServerError({ code: '23514', message: 'ride_seats_exhausted' })).toBe('ride_seats_exhausted');
     expect(mapMarketplaceServerError({ message: 'slots_exhausted' })).toBe('slots_exhausted');
     expect(mapMarketplaceServerError({ code: '23505', message: 'already_booked' })).toBe('already_booked');
     expect(mapMarketplaceServerError({ message: 'ride_departed' })).toBe('ride_departed');

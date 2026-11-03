@@ -19,4 +19,9 @@ describe('DeactivateDeviceUseCase', () => {
     const repo = new FakeDeviceRepository();
     await expect(new DeactivateDeviceUseCase(repo).execute('unknown')).resolves.toBeUndefined();
   });
+
+  it('returns early when pushToken is empty', async () => {
+    const repo = new FakeDeviceRepository();
+    await expect(new DeactivateDeviceUseCase(repo).execute('')).resolves.toBeUndefined();
+  });
 });

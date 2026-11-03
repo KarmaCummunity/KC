@@ -128,12 +128,25 @@ describe('giving handoff domain model', () => {
         expect((e as GivingHandoffError).code).toBe('invalid_status');
       }
     });
+
+    it('handles cancellation and invalid intermediate transitions', () => {
+      expect(() => validateGivingHandoffTransition('reserved', 'cancelled', 'owner')).not.toThrow();
+      expect(() => validateGivingHandoffTransition('confirmed', 'cancelled', 'recipient')).not.toThrow();
+
+      expect(() => validateGivingHandoffTransition('reserved', 'no_show')).toThrowError(GivingHandoffError);
+      expect(() => validateGivingHandoffTransition('confirmed', 'reserved')).toThrowError(GivingHandoffError);
+      expect(() => validateGivingHandoffTransition('confirmed', 'no_show')).toThrowError(GivingHandoffError);
+      // @ts-expect-error test unsupported from status
+      expect(() => validateGivingHandoffTransition('unknown_status', 'confirmed')).toThrowError(GivingHandoffError);
+    });
   });
 
   describe('validateHandoffFeedback', () => {
     it('succeeds for handed_over handoff with valid rating and note', () => {
       expect(() => validateHandoffFeedback('handed_over', 5, 'Thank you!')).not.toThrow();
       expect(() => validateHandoffFeedback('handed_over', 1, null)).not.toThrow();
+      expect(() => validateHandoffFeedback('handed_over', 3, undefined)).not.toThrow();
+      expect(() => validateHandoffFeedback('handed_over', 4, 'a'.repeat(300))).not.toThrow();
     });
 
     it('throws if handoff is not in handed_over status', () => {
