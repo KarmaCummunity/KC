@@ -4,7 +4,7 @@ import { View, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import type { ChatWithPreview } from '@kc/application';
-import { iconSize, makeUseStyles, radius, typography, spacing, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, iconSize, useTheme, Text } from '@kc/ui';
 import { AvatarInitials } from '../AvatarInitials';
 import { OnlineDot } from './OnlineDot';
 import { formatRelativeChatTime } from '../../lib/formatRelativeChatTime';

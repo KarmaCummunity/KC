@@ -37,7 +37,7 @@ export type CreateCategoryId = (typeof CREATE_CATEGORY_IDS)[number];
 export const DEFAULT_CREATE_CATEGORY: CreateCategoryId = 'items';
 
 /** Worlds whose giver picks a world subcategory in the listing form (food → bakery…), KC#1296. */
-export const WORLDS_WITH_SUBCATEGORY_PICKER: readonly string[] = ['items', 'food'];
+export const WORLDS_WITH_SUBCATEGORY_PICKER: readonly string[] = ['items', 'food', 'knowledge'];
 
 const ICON_BY_ID: Readonly<Record<CreateCategoryId, CreateCategoryIcon>> = {
   items: 'cube-outline',

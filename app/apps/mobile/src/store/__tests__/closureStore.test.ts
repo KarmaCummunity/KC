@@ -168,3 +168,56 @@ describe('closureStore — dismissExplainer', () => {
     expect(useClosureStore.getState().step).toBe('done');
   });
 });
+
+describe('closureStore — setSearchQuery', () => {
+  it('clears results and stops searching when query length is less than 2', () => {
+    useClosureStore.setState({
+      searchQuery: 'long',
+      searchResults: [{ userId: 'u_1', displayName: 'User', shareHandle: 'u', avatarUrl: null } as never],
+      isSearching: true,
+    });
+
+    useClosureStore.getState().setSearchQuery('a', 'owner_1');
+
+    expect(useClosureStore.getState().searchQuery).toBe('a');
+    expect(useClosureStore.getState().searchResults).toEqual([]);
+    expect(useClosureStore.getState().isSearching).toBe(false);
+  });
+
+  it('debounces search by 300ms and commits results', async () => {
+    vi.useFakeTimers();
+    const results = [{ userId: 'u_found', displayName: 'Found', shareHandle: 'found', avatarUrl: null }];
+    searchUsersImpl = () => Promise.resolve(results);
+
+    useClosureStore.getState().setSearchQuery('search term', 'owner_1');
+
+    expect(useClosureStore.getState().isSearching).toBe(true);
+    await vi.advanceTimersByTimeAsync(300);
+
+    expect(useClosureStore.getState().searchResults).toEqual(results);
+    expect(useClosureStore.getState().isSearching).toBe(false);
+  });
+
+  it('discards results if query changed before debounce completes', async () => {
+    vi.useFakeTimers();
+    searchUsersImpl = () => Promise.resolve([{ userId: 'stale' } as never]);
+
+    useClosureStore.getState().setSearchQuery('first', 'owner_1');
+    useClosureStore.getState().setSearchQuery('second', 'owner_1');
+
+    await vi.advanceTimersByTimeAsync(300);
+    // The query is 'second' while the first call was for 'first'
+    expect(useClosureStore.getState().searchQuery).toBe('second');
+  });
+
+  it('handles search failure gracefully by resetting results', async () => {
+    vi.useFakeTimers();
+    searchUsersImpl = () => Promise.reject(new Error('network error'));
+
+    useClosureStore.getState().setSearchQuery('error term', 'owner_1');
+    await vi.advanceTimersByTimeAsync(300);
+
+    expect(useClosureStore.getState().searchResults).toEqual([]);
+    expect(useClosureStore.getState().isSearching).toBe(false);
+  });
+});

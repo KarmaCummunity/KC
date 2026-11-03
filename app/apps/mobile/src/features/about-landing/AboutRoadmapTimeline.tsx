@@ -3,7 +3,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Pressable, LayoutAnimation, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { iconSize, makeUseStyles, typography, spacing, radius, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, iconSize, useTheme, Text } from '@kc/ui';
 import { aboutRtlText, aboutRtlRow } from './aboutWebRtlStyle';
 
 type PhaseSeverity = 'current' | 'soon' | 'future' | 'long-term';
@@ -115,7 +115,7 @@ const useAboutRoadmapTimelineStyles = makeUseStyles(({ colors, isDark }) => ({
   dotRing: {
     width: DOT + 8,
     height: DOT + 8,
-    borderRadius: (DOT + 8) / 2,
+    borderRadius: radius.full,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -124,11 +124,11 @@ const useAboutRoadmapTimelineStyles = makeUseStyles(({ colors, isDark }) => ({
   dot: {
     width: DOT,
     height: DOT,
-    borderRadius: DOT / 2,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dotNum: { ...typography.caption, color: colors.textInverse, ...typography.extraBold },
+  dotNum: { ...typography.label, color: colors.textInverse, ...typography.extraBold },
   line: { flex: 1, width: 2, marginTop: spacing.xs, minHeight: 24 },
   card: {
     flex: 1,

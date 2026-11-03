@@ -68,11 +68,12 @@ const useAboutScopeToggleStyles = makeUseStyles(({ colors }) => ({
   pillOn: {
     backgroundColor: colors.primary,
     ...shadow.glow,
-    shadowColor: colors.primary,
+    shadowColor: colors.primaryDark,
   },
   pillOnVision: {
     backgroundColor: colors.secondary,
-    ...shadow.card,
+    ...shadow.glow,
+    shadowColor: colors.secondary,
   },
   pillText: {
     ...typography.caption,

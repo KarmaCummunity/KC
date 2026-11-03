@@ -20,7 +20,8 @@ function pushRoute(route: ResolvedRoute): void {
 // tap wins, which matches intent (the user opened the most recent notification).
 let pendingTapRoute: ResolvedRoute | null = null;
 
-function handleNotificationTap(data: Partial<PushData>): void {
+function handleNotificationTap(data: Partial<PushData> | null | undefined): void {
+  if (!data || typeof data !== 'object') return;
   const action = decideTapAction(data, useAuthStore.getState());
   if (action.kind === 'push') {
     pushRoute(action.route);
@@ -41,12 +42,12 @@ export function useNotificationTapRouting(): void {
       return undefined;
     }
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      handleNotificationTap(response.notification.request.content.data as Partial<PushData>);
+      handleNotificationTap(response.notification.request.content.data as Partial<PushData> | null);
     });
     // Cold-start: a tap may have launched the app (native only).
     void Notifications.getLastNotificationResponseAsync().then((response) => {
       if (response) {
-        handleNotificationTap(response.notification.request.content.data as Partial<PushData>);
+        handleNotificationTap(response.notification.request.content.data as Partial<PushData> | null);
       }
     });
     // Flush a queued cold-start tap once the session has restored and onboarding

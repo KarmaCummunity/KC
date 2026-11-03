@@ -5,11 +5,11 @@ import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import {
-  iconSize,
   makeUseStyles,
   radius,
   spacing,
   typography,
+  iconSize,
   useTheme,
   type ColorPalette,
   type ThemeMode,
@@ -176,7 +176,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   iconBubble: {
     width: 36,
     height: 36,
-    borderRadius: radius.lg,
+    borderRadius: radius.full,
     backgroundColor: colors.surfaceRaised,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
@@ -215,7 +215,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   radioDot: {
     width: 10,
     height: 10,
-    borderRadius: radius.xs,
+    borderRadius: radius.full,
     backgroundColor: colors.primary,
   },
   previewCard: {

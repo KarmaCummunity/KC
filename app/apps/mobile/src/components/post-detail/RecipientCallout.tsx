@@ -6,7 +6,7 @@ import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, iconSize, useTheme, Text } from '@kc/ui';
 import { MirroredIcon } from '../ui/MirroredIcon';
 import type { PostType } from '@kc/domain';
 import { AvatarInitials } from '../AvatarInitials';
@@ -37,7 +37,7 @@ export function RecipientCallout({ postType, recipient, profileNavigable = true 
   const inner = (
     <View style={styles.card}>
       <View style={styles.iconRing}>
-        <Ionicons name="checkmark-circle" size={iconSize["2xl"]} color={colors.success} />
+        <Ionicons name="checkmark-circle" size={iconSize['2xl']} color={colors.success} />
       </View>
       <View style={styles.textCol}>
         <Text style={styles.sublabel}>{sublabel}</Text>
@@ -91,11 +91,11 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
     width: 44,
     height: 44,
     borderRadius: radius.full,
-    backgroundColor: isDark ? colors.successLight : colors.surface,
+    backgroundColor: isDark ? `${colors.success}22` : colors.textInverse,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  textCol: { flex: 1, gap: spacing.xs },
+  textCol: { flex: 1, gap: 0 },
   sublabel: {
     ...typography.caption,
     color: colors.textSecondary,

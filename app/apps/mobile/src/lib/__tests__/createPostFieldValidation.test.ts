@@ -12,6 +12,9 @@ import {
   buildCreatePostNonAddressToastMessage,
   getAddressValidationIssue,
   hasAddressRequiredFieldGaps,
+  hasNonAddressRequiredFieldGaps,
+  isStreetMissing,
+  isStreetNumberMissing,
 } from '../createPostFieldValidation';
 
 const COMPLETE = {
@@ -58,6 +61,10 @@ describe('buildAddressInlineErrorMessage', () => {
     );
     expect(buildAddressInlineErrorMessage('city')).toContain('missingCityBeforePublish');
   });
+
+  it('returns empty string for none issue', () => {
+    expect(buildAddressInlineErrorMessage('none')).toBe('');
+  });
 });
 
 describe('buildCreatePostNonAddressToastMessage', () => {
@@ -81,6 +88,50 @@ describe('buildCreatePostNonAddressToastMessage', () => {
   it('surfaces photo for Give when missing', () => {
     const out = buildCreatePostNonAddressToastMessage({ ...COMPLETE, uploadsLength: 0 });
     expect(out).toContain('fieldPhoto');
+  });
+
+  it('surfaces multiple missing fields with missingMany when both title and photo are missing', () => {
+    const out = buildCreatePostNonAddressToastMessage({
+      ...COMPLETE,
+      title: '',
+      uploadsLength: 0,
+      isGive: true,
+    });
+    expect(out).toContain('missingMany');
+    expect(out).toContain('fieldTitle');
+    expect(out).toContain('fieldPhoto');
+  });
+});
+
+describe('hasNonAddressRequiredFieldGaps', () => {
+  it('returns true when title is empty', () => {
+    expect(hasNonAddressRequiredFieldGaps({ ...COMPLETE, title: '' })).toBe(true);
+  });
+
+  it('returns true when isGive is true and photo uploadsLength is 0', () => {
+    expect(hasNonAddressRequiredFieldGaps({ ...COMPLETE, uploadsLength: 0 })).toBe(true);
+  });
+
+  it('returns false when Request post has no photo uploads', () => {
+    expect(hasNonAddressRequiredFieldGaps({ ...COMPLETE, isGive: false, uploadsLength: 0 })).toBe(false);
+  });
+
+  it('returns false when complete', () => {
+    expect(hasNonAddressRequiredFieldGaps(COMPLETE)).toBe(false);
+  });
+});
+
+describe('isStreetMissing and isStreetNumberMissing', () => {
+  it('detects blank or whitespace street', () => {
+    expect(isStreetMissing({ ...COMPLETE, street: '' })).toBe(true);
+    expect(isStreetMissing({ ...COMPLETE, street: '   ' })).toBe(true);
+    expect(isStreetMissing(COMPLETE)).toBe(false);
+  });
+
+  it('detects blank or whitespace streetNumber', () => {
+    expect(isStreetNumberMissing({ ...COMPLETE, streetNumber: '' })).toBe(true);
+    expect(isStreetNumberMissing({ ...COMPLETE, streetNumber: '   ' })).toBe(true);
+    expect(isStreetNumberMissing(COMPLETE)).toBe(false);
   });
 });
 
