@@ -5,9 +5,9 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Ionicons } from '@expo/vector-icons';
 import { ALL_CATEGORIES } from '@kc/domain';
-import { makeUseStyles, radius, spacing, typography, useTheme, Text, TextInput } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { Chip, TextField } from '../../src/components/ui';
 import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { rowDirectionStart } from '../../src/lib/rtlLayout';
@@ -67,8 +67,9 @@ export default function FeedSettingsScreen() {
 
         <Text style={styles.header}>{t('feedSettings.keywordsTitle')}</Text>
         <View style={styles.addRow}>
-          <TextInput
-            style={styles.input}
+          <TextField
+            label={t('feedSettings.keywordPlaceholder')}
+            containerStyle={styles.input}
             value={draft}
             onChangeText={(v) => {
               setDraft(v);
@@ -90,16 +91,14 @@ export default function FeedSettingsScreen() {
         <View style={styles.chips}>
           {grouped.keywords.length === 0 ? <Text style={styles.hint}>{t('feedSettings.keywordsEmpty')}</Text> : null}
           {grouped.keywords.map((k) => (
-            <Pressable
+            <Chip
               key={k.filterId}
-              style={[styles.chip, styles.chipOn]}
-              onPress={() => remove.mutate(k.filterId)}
-              accessibilityRole="button"
-              accessibilityLabel={t('feedSettings.unmuteA11y', { value: k.filterValue })}
-            >
-              <Text style={styles.chipText}>{k.filterValue}</Text>
-              <Ionicons name="close" size={14} color={colors.textPrimary} />
-            </Pressable>
+              variant="removable"
+              size="sm"
+              label={k.filterValue}
+              onRemove={() => remove.mutate(k.filterId)}
+              removeAccessibilityLabel={t('feedSettings.unmuteA11y', { value: k.filterValue })}
+            />
           ))}
         </View>
 
@@ -109,16 +108,13 @@ export default function FeedSettingsScreen() {
           {ALL_CATEGORIES.map((c) => {
             const muted = findCategoryMute(rows, c);
             return (
-              <Pressable
+              <Chip
                 key={c}
-                style={[styles.chip, muted && styles.chipOn]}
-                accessibilityRole="switch"
-                accessibilityState={{ checked: Boolean(muted) }}
+                selected={Boolean(muted)}
                 onPress={() => (muted ? remove.mutate(muted.filterId) : add.mutate({ kind: 'category', value: c }))}
-              >
-                {muted ? <Ionicons name="eye-off-outline" size={14} color={colors.textPrimary} /> : null}
-                <Text style={styles.chipText}>{t(`post.category.${c}`)}</Text>
-              </Pressable>
+                label={t(`post.category.${c}`)}
+                icon={muted ? 'eye-off-outline' : undefined}
+              />
             );
           })}
         </View>
@@ -158,12 +154,6 @@ const useStyles = makeUseStyles(({ colors }) => ({
   addRow: { flexDirection: rowDirectionStart, gap: spacing.sm, paddingHorizontal: spacing.base },
   input: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    color: colors.textPrimary,
   },
   addBtn: {
     paddingHorizontal: spacing.lg,
@@ -171,21 +161,8 @@ const useStyles = makeUseStyles(({ colors }) => ({
     backgroundColor: colors.primary,
     justifyContent: 'center' as const,
   },
-  addBtnText: { ...typography.body, color: colors.textInverse, fontWeight: '600' as const },
+  addBtnText: { ...typography.body, color: colors.textInverse, ...typography.semiBold },
   chips: { flexDirection: rowDirectionStart, flexWrap: 'wrap' as const, gap: spacing.sm, padding: spacing.base },
-  chip: {
-    flexDirection: rowDirectionStart,
-    alignItems: 'center' as const,
-    gap: 4,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: 999,
-    backgroundColor: colors.surfaceRaised,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipOn: { borderColor: colors.primary, backgroundColor: colors.primarySurface },
-  chipText: { ...typography.caption, color: colors.textPrimary },
   personRow: {
     flexDirection: rowDirectionStart,
     alignItems: 'center' as const,
@@ -194,5 +171,5 @@ const useStyles = makeUseStyles(({ colors }) => ({
     paddingVertical: spacing.sm,
   },
   personName: { ...typography.body, color: colors.textPrimary, flex: 1 },
-  link: { ...typography.body, color: colors.primary, fontWeight: '600' as const },
+  link: { ...typography.body, color: colors.primary, ...typography.semiBold },
 }));

@@ -12,7 +12,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { useTheme, Text, TextInput } from '@kc/ui';
+import { useTheme, Text } from '@kc/ui';
+import { TextField } from '../src/components/ui';
+import { rtlTextAlignStart } from '../src/lib/rtlLayout';
 import { EditProfileAddressBlock } from '../src/components/EditProfileAddressBlock';
 import { EditProfileAvatar } from '../src/components/EditProfileAvatar';
 import { NotifyModal } from '../src/components/NotifyModal';
@@ -202,9 +204,8 @@ export default function EditProfileScreen() {
           <EditProfileAvatar userId={session?.userId ?? ''} displayName={displayName}
             avatarUrl={avatarUrl} disabled={saving} onChange={setAvatarUrl} />
           <View style={styles.field}>
-            <Text style={styles.label}>{t('profile.editScreen.fullNameLabel')}</Text>
-            <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName}
-              maxLength={50} textAlign="right" editable={!saving}
+            <TextField label={t('profile.editScreen.fullNameLabel')} value={displayName} onChangeText={setDisplayName}
+              maxLength={50} textAlign={rtlTextAlignStart} editable={!saving}
               placeholder={t('profile.editScreen.fullNamePlaceholder')} />
             <Text style={styles.count}>{displayName.length}/50</Text>
           </View>
@@ -212,15 +213,13 @@ export default function EditProfileScreen() {
             streetNumber={streetNumber} onStreetChange={setStreet}
             onStreetNumberChange={setStreetNumber} disabled={saving} />
           <View style={styles.field}>
-            <Text style={styles.label}>{t('profile.editScreen.contactPhoneLabel')}</Text>
-            <TextInput style={styles.input} value={contactPhone} onChangeText={setContactPhone}
-              maxLength={20} keyboardType="phone-pad" textAlign="right" editable={!saving}
+            <TextField label={t('profile.editScreen.contactPhoneLabel')} value={contactPhone} onChangeText={setContactPhone}
+              maxLength={20} keyboardType="phone-pad" textAlign={rtlTextAlignStart} editable={!saving}
               placeholder={t('profile.editScreen.contactPhonePlaceholder')} />
           </View>
           <View style={styles.field}>
-            <Text style={styles.label}>{t('profile.editScreen.biographyLabel')}</Text>
-            <TextInput style={[styles.input, styles.textarea]} value={biography} onChangeText={setBiography}
-              maxLength={200} multiline textAlign="right" editable={!saving}
+            <TextField label={t('profile.editScreen.biographyLabel')} style={styles.textarea} value={biography} onChangeText={setBiography}
+              maxLength={200} multiline textAlign={rtlTextAlignStart} editable={!saving}
               placeholder={t('profile.editScreen.biographyPlaceholder')} />
             <Text style={styles.count}>{biography.length}/200</Text>
           </View>
