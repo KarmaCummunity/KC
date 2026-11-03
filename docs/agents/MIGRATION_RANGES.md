@@ -89,11 +89,12 @@ Last applied on kc-dev when this was written: `0239`.
 | 0531 | KC#1413 FR-RIDE-046 recurring rides: `ride_series`, materializer + sweep, series RPCs, rides-feed folding, `list_ride_series_occurrences` | in review |
 | 0532 | Item reservations return `item_already_reserved` (#1500) | in review |
 | 0533 | Ride booking approval rechecks seat capacity under the listing lock (#1499) | in review |
-| 0534+ | — | free |
+| 0534 | #880 server-side write rate limits: listings, giving handoffs, follows | in progress |
+| 0535+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0534+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0535+`.
 
 ## How to claim
 

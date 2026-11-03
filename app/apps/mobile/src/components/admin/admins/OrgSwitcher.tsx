@@ -30,13 +30,13 @@ export function OrgSwitcher({ orgs, selected, onSelect, accents }: OrgSwitcherPr
         accessibilityRole="button"
         accessibilityState={{ selected: selected === id }}
         onPress={() => onSelect(id)}
-        style={[styles.chip, selected === id && styles.chipActive]}
+        style={[styles.pill, selected === id && styles.pillActive]}
       >
         {/* A ring keeps the dot visible on the selected chip, whose fill can match the accent. */}
         {accent !== undefined && (
           <View style={[styles.dot, { backgroundColor: accent }, selected === id && styles.dotActive]} />
         )}
-        <Text style={[styles.chipText, selected === id && styles.chipTextActive]}>{label}</Text>
+        <Text style={[styles.pillText, selected === id && styles.pillTextActive]}>{label}</Text>
       </Pressable>
     );
   };
@@ -55,14 +55,14 @@ export function OrgSwitcher({ orgs, selected, onSelect, accents }: OrgSwitcherPr
 
 const useStyles = makeUseStyles(({ colors }) => ({
   bar: { flexDirection: rowDirectionStart, gap: spacing.sm, paddingHorizontal: spacing.base, paddingVertical: spacing.sm },
-  chip: {
+  pill: {
     flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.xs,
     paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full,
     backgroundColor: colors.surface,
   },
   dot: { width: 8, height: 8, borderRadius: radius.full },
   dotActive: { borderWidth: 2, borderColor: colors.textInverse },
-  chipActive: { backgroundColor: colors.primary },
-  chipText: { ...typography.bodySmall, ...typography.bold, color: colors.textSecondary },
-  chipTextActive: { color: colors.textInverse },
+  pillActive: { backgroundColor: colors.primary },
+  pillText: { ...typography.bodySmall, ...typography.bold, color: colors.textSecondary },
+  pillTextActive: { color: colors.textInverse },
 }));

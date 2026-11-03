@@ -5,7 +5,7 @@
 //   deleted_no_recipient (in grace)   → "reopen"
 //   deleted_no_recipient (past grace) → no CTA (post is on its way out)
 //   removed_admin / expired           → no CTA
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -52,6 +52,9 @@ export function OwnerActionsBar(props: Readonly<Props>) {
   const [isReopening, setIsReopening] = useState(false);
   const [reopenError, setReopenError] = useState<string | null>(null);
 
+  const postRef = useRef(post);
+  postRef.current = post;
+
   // When the closure flow finishes, refresh the parent's data. MUST run in
   // useEffect — calling parent setState during render is a React anti-pattern
   // (B2). Reset the store here too so the next closure starts clean.
@@ -63,8 +66,8 @@ export function OwnerActionsBar(props: Readonly<Props>) {
   useEffect(() => {
     if (closureStep !== 'done' || closureInitiator === 'chat') return;
     hapticSuccess();
-    trackSocialHandoverCompleted(post);
-    const closedPostId = post.postId;
+    trackSocialHandoverCompleted(postRef.current);
+    const closedPostId = postRef.current.postId;
     resetClosure();
     void (async () => {
       await queryClient.invalidateQueries({ queryKey: ['feed'] });
@@ -73,7 +76,7 @@ export function OwnerActionsBar(props: Readonly<Props>) {
       invalidatePersonalStatsCaches(queryClient, ownerId);
       await Promise.resolve(onClosed());
     })();
-  }, [closureStep, closureInitiator, resetClosure, post.postId, onClosed, queryClient, ownerId]);
+  }, [closureStep, closureInitiator, resetClosure, onClosed, queryClient, ownerId]);
 
   const isOpen = post.status === 'open';
   const isReopenable =

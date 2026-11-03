@@ -5,10 +5,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import {
   Alert,
   Platform,
-  Pressable,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   View,
 } from 'react-native';
 import {
@@ -16,7 +14,9 @@ import {
   type AdminTaskCategory, type AdminTaskStatus,
   hasPermission, isAdminTaskError, isStatusTransitionAllowed,
 } from '@kc/domain';
-import { makeUseStyles, Text, TextInput } from '@kc/ui';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
+import { DangerButton, PrimaryButton, SecondaryButton } from '../../../../src/components/ui/Buttons';
+import { TextField } from '../../../../src/components/ui/TextField';
 import { useAuthStore } from '../../../../src/store/authStore';
 import { useAdminRoles } from '../../../../src/hooks/useAdminRoles';
 import { useAdminTaskDetail } from '../../../../src/hooks/useAdminTasks';
@@ -157,14 +157,13 @@ export default function TaskDetailScreen() {
             {ADMIN_TASK_STATUSES
               .filter((s) => isStatusTransitionAllowed(t.status, s) && s !== t.status)
               .map((s) => (
-                <Pressable
+                <SecondaryButton
                   key={s}
+                  label={L.admin.tasks.status[s]}
+                  size="sm"
                   disabled={setStatus.isPending}
                   onPress={() => { void moveStatus(s); }}
-                  style={styles.statusBtn}
-                >
-                  <Text style={styles.statusBtnText}>{L.admin.tasks.status[s]}</Text>
-                </Pressable>
+                />
               ))}
           </View>
         </View>
@@ -188,21 +187,23 @@ export default function TaskDetailScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{L.admin.tasks.detail.addComment}</Text>
-        <TextInput
-          style={[styles.input, styles.multiline]}
+        <TextField
+          label=""
           value={commentBody}
           onChangeText={setCommentBody}
           placeholder={L.admin.tasks.detail.commentPlaceholder}
           multiline
           numberOfLines={3}
         />
-        <Pressable
-          style={[styles.commentBtn, addComment.isPending && styles.commentBtnDisabled]}
-          disabled={addComment.isPending || commentBody.trim().length === 0}
-          onPress={() => { void submitComment(); }}
-        >
-          <Text style={styles.commentBtnText}>{L.admin.tasks.detail.submitComment}</Text>
-        </Pressable>
+        <View style={styles.commentActions}>
+          <PrimaryButton
+            label={L.admin.tasks.detail.submitComment}
+            size="sm"
+            disabled={commentBody.trim().length === 0}
+            loading={addComment.isPending}
+            onPress={() => { void submitComment(); }}
+          />
+        </View>
       </View>
 
       {errorCode !== null && (
@@ -213,9 +214,14 @@ export default function TaskDetailScreen() {
       )}
 
       {canDelete && (
-        <Pressable style={styles.deleteBtn} onPress={() => { void deleteTask(); }}>
-          <Text style={styles.deleteBtnText}>{L.admin.tasks.detail.deleteBtn}</Text>
-        </Pressable>
+        <View style={styles.deleteRow}>
+          <DangerButton
+            label={L.admin.tasks.detail.deleteBtn}
+            size="sm"
+            loading={remove.isPending}
+            onPress={() => { void deleteTask(); }}
+          />
+        </View>
       )}
     </ScrollView>
   );
@@ -223,37 +229,18 @@ export default function TaskDetailScreen() {
 
 const useStyles = makeUseStyles(({ colors }) => ({
   root:            { flex: 1, backgroundColor: colors.background },
-  content:         { padding: 16, gap: 10 },
-  center:          { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  deniedTitle:     { fontSize: 18, fontWeight: '700' },
-  headerRow:       { flexDirection: 'row', gap: 8 },
-  title:           { fontSize: 20, fontWeight: '700' },
-  description:     { fontSize: 14, opacity: 0.85 },
-  metaCol:         { gap: 4 },
-  metaText:        { fontSize: 12, opacity: 0.65 },
-  section:         { marginTop: 14, gap: 8 },
-  sectionTitle:    { fontSize: 14, fontWeight: '700' },
-  statusRow:       { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  statusBtn: {
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8,
-    backgroundColor: colors.secondaryLight,
-  },
-  statusBtnText:   { fontSize: 13, fontWeight: '600' },
-  input: {
-    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: 8,
-    padding: 10, fontSize: 14, textAlign: 'right', backgroundColor: colors.surface,
-  },
-  multiline:       { minHeight: 60, textAlignVertical: 'top' },
-  commentBtn: {
-    alignSelf: 'flex-end', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8,
-    backgroundColor: colors.primary,
-  },
-  commentBtnDisabled: { opacity: 0.5 },
-  commentBtnText:  { color: colors.textInverse, fontSize: 13, fontWeight: '700' },
-  error:           { color: colors.error, fontSize: 12, marginTop: 8 },
-  deleteBtn: {
-    marginTop: 12, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8,
-    backgroundColor: colors.errorLight, alignSelf: 'flex-start',
-  },
-  deleteBtnText:   { color: '#7f1d1d', fontWeight: '700', fontSize: 13 },
+  content:         { padding: spacing.base, gap: spacing.md },
+  center:          { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+  deniedTitle:     { ...typography.h3, ...typography.bold, color: colors.textPrimary },
+  headerRow:       { flexDirection: 'row', gap: spacing.sm },
+  title:           { ...typography.h2, ...typography.bold, color: colors.textPrimary },
+  description:     { ...typography.body, color: colors.textSecondary },
+  metaCol:         { gap: spacing.xs },
+  metaText:        { ...typography.bodySmall, color: colors.textSecondary },
+  section:         { marginTop: spacing.md, gap: spacing.sm },
+  sectionTitle:    { ...typography.label, ...typography.bold, color: colors.textPrimary },
+  statusRow:       { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
+  commentActions:  { alignItems: 'flex-end', marginTop: spacing.xs },
+  error:           { ...typography.caption, color: colors.error, marginTop: spacing.sm },
+  deleteRow:       { marginTop: spacing.md, alignItems: 'flex-start' },
 }));

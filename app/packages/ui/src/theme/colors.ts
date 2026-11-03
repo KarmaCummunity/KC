@@ -66,6 +66,18 @@ export interface ColorPalette {
   followersOnlyBadge: string;
   onlyMeBadge: string;
 
+  // Admin role badges (FR-ADMIN-022, spec 17 §4.3)
+  roleSuperAdmin: string;
+  roleModerator: string;
+  roleSupport: string;
+  roleOperator: string;
+  roleOperatorsManager: string;
+  roleOrgAdmin: string;
+  roleOrgManager: string;
+  roleOrgEmployee: string;
+  roleVolunteerManager: string;
+  roleOrgVolunteer: string;
+
   // Misc
   overlay: string;
   skeleton: string;
@@ -116,6 +128,17 @@ export const lightColors: ColorPalette = {
   publicBadge: '#6B7280',
   followersOnlyBadge: '#8B5CF6',
   onlyMeBadge: '#6B7280',
+
+  roleSuperAdmin: '#6D28D9',
+  roleModerator: '#1D4ED8',
+  roleSupport: '#0F766E',
+  roleOperator: '#15803D',
+  roleOperatorsManager: '#15803D',
+  roleOrgAdmin: '#C2410C',
+  roleOrgManager: '#B45309',
+  roleOrgEmployee: '#203050',
+  roleVolunteerManager: '#BE185D',
+  roleOrgVolunteer: '#203050',
 
   overlay: 'rgba(0, 0, 0, 0.5)',
   skeleton: '#F3F4F6',
@@ -175,6 +198,17 @@ export const darkColors: ColorPalette = {
   publicBadge: '#B8AFA1',
   followersOnlyBadge: '#A78BFA',
   onlyMeBadge: '#B8AFA1',
+
+  roleSuperAdmin: '#A78BFA',
+  roleModerator: '#60A5FA',
+  roleSupport: '#2DD4BF',
+  roleOperator: '#4ADE80',
+  roleOperatorsManager: '#4ADE80',
+  roleOrgAdmin: '#FB923C',
+  roleOrgManager: '#FBBF24',
+  roleOrgEmployee: '#A5B8DC',
+  roleVolunteerManager: '#F472B6',
+  roleOrgVolunteer: '#A5B8DC',
 
   overlay: 'rgba(0, 0, 0, 0.65)',
   skeleton: '#2A231B',

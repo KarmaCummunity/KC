@@ -18,6 +18,7 @@ export const marketplaceErrors = {
   session_not_started: 'אפשר לסמן סיום מפגש החל מ-15 דקות לפני תחילתו.',
   own_listing: 'אי אפשר להזמין מודעה שלכם.',
   listing_not_available: 'המודעה הזו כבר לא זמינה.',
+  item_already_reserved: 'מישהו אחר כבר שמר את הפריט הזה.',
   medical_listing_requires_external_body: 'סוג מודעה זה ברפואה מחייב בחירת ארגון מאומת.',
   external_body_invalid: 'הארגון שנבחר אינו מאומת או אינו שייך לעולם זה. בחרו ארגון אחר.',
   world_permission_denied: 'הפרסום בעולם זה פתוח רק לחברים מאומתים. השלימו אימות חשבון ונסו שוב.',

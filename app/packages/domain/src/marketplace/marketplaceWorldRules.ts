@@ -29,6 +29,7 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'session_not_started',
   'own_listing',
   'listing_not_available',
+  'item_already_reserved',
   'medical_listing_requires_external_body',
   'external_body_invalid',
   'world_permission_denied',

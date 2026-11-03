@@ -130,7 +130,7 @@ describe('FiltersSection — world and subcategory behavior', () => {
     const onWorldsChange = vi.fn();
     const onSubcategoriesChange = vi.fn();
 
-    let rerenderFn: any;
+    let rerenderFn!: ReturnType<typeof render>['rerender'];
     await act(async () => {
       const utils = render(
         <FiltersSection

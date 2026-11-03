@@ -45,13 +45,9 @@ import { usePrefetchNextPage } from '../../src/hooks/usePrefetchNextPage';
 // detail translates the description on open). FR-TRANSLATE-003.
 const FEED_TRANSLATABLE_FIELDS = ['title'] as const;
 
-// Module-scope guard: fires once per JS context (cold home-tab mount).
-let feedFirstRenderStarted = false;
-if (!feedFirstRenderStarted) {
-  feedFirstRenderStarted = true;
-  startMark('feed.first_render');
-  startMark('image.first_paint');
-}
+// Cold home-tab mount: fires once per JS context on module load.
+startMark('feed.first_render');
+startMark('image.first_paint');
 
 export default function HomeFeedScreen() {
   const router = useRouter();
