@@ -9,7 +9,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { MirroredIcon } from '../ui/MirroredIcon';
 import { useTheme, Text, iconSize } from '@kc/ui';
 import { KCImage } from '../ui/KCImage';
-import { MirroredIcon } from '../ui/MirroredIcon';
 import { useKcRowCardStyles } from './KcRowCard.styles';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
