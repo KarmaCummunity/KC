@@ -169,6 +169,8 @@ infrastructure-supabase  →  application  →  domain
 
 If you catch yourself importing `@kc/infrastructure-supabase` or `@supabase/supabase-js` from a `domain` or `application` file, **stop and revert** — push the integration to a port + adapter.
 
+Full C4 diagrams and package boundary matrix: [`docs/architecture/current.md`](./docs/architecture/current.md).
+
 ### Hard constraints
 
 - **File size cap**: ≤ 300 lines per file. Split if you exceed. Enforced by `pnpm lint:arch`.

@@ -11,6 +11,8 @@ export interface HandoffActionButtonProps {
   readonly label: string;
   /** An action of the same flow is running. */
   readonly busy: boolean;
+  /** Action is disabled by state or business rules (e.g. accepting beyond capacity). */
+  readonly disabled?: boolean;
   /** The outlined, less prominent choice of a pair (decline, cancel). */
   readonly secondary?: boolean;
   /** Shares a row with another action and takes an equal part of it. */
@@ -18,10 +20,18 @@ export interface HandoffActionButtonProps {
   readonly onPress: () => void;
 }
 
-export function HandoffActionButton({ testID, label, busy, secondary = false, inRow = false, onPress }: HandoffActionButtonProps) {
+export function HandoffActionButton({
+  testID,
+  label,
+  busy,
+  disabled = false,
+  secondary = false,
+  inRow = false,
+  onPress,
+}: HandoffActionButtonProps) {
   const styles = useStyles();
   const Button = secondary ? SecondaryButton : PrimaryButton;
-  const button = <Button testID={testID} label={label} size="md" fullWidth disabled={busy} onPress={onPress} />;
+  const button = <Button testID={testID} label={label} size="md" fullWidth disabled={busy || disabled} onPress={onPress} />;
   return inRow ? <View style={styles.rowPart}>{button}</View> : button;
 }
 

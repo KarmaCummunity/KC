@@ -142,6 +142,46 @@
         "$type": "color",
         "$value": "#6B7280"
       },
+      "roleSuperAdmin": {
+        "$type": "color",
+        "$value": "#6D28D9"
+      },
+      "roleModerator": {
+        "$type": "color",
+        "$value": "#1D4ED8"
+      },
+      "roleSupport": {
+        "$type": "color",
+        "$value": "#0F766E"
+      },
+      "roleOperator": {
+        "$type": "color",
+        "$value": "#15803D"
+      },
+      "roleOperatorsManager": {
+        "$type": "color",
+        "$value": "#15803D"
+      },
+      "roleOrgAdmin": {
+        "$type": "color",
+        "$value": "#C2410C"
+      },
+      "roleOrgManager": {
+        "$type": "color",
+        "$value": "#B45309"
+      },
+      "roleOrgEmployee": {
+        "$type": "color",
+        "$value": "#203050"
+      },
+      "roleVolunteerManager": {
+        "$type": "color",
+        "$value": "#BE185D"
+      },
+      "roleOrgVolunteer": {
+        "$type": "color",
+        "$value": "#203050"
+      },
       "overlay": {
         "$type": "color",
         "$value": "rgba(0, 0, 0, 0.5)"
@@ -295,6 +335,46 @@
       "onlyMeBadge": {
         "$type": "color",
         "$value": "#B8AFA1"
+      },
+      "roleSuperAdmin": {
+        "$type": "color",
+        "$value": "#A78BFA"
+      },
+      "roleModerator": {
+        "$type": "color",
+        "$value": "#60A5FA"
+      },
+      "roleSupport": {
+        "$type": "color",
+        "$value": "#2DD4BF"
+      },
+      "roleOperator": {
+        "$type": "color",
+        "$value": "#4ADE80"
+      },
+      "roleOperatorsManager": {
+        "$type": "color",
+        "$value": "#4ADE80"
+      },
+      "roleOrgAdmin": {
+        "$type": "color",
+        "$value": "#FB923C"
+      },
+      "roleOrgManager": {
+        "$type": "color",
+        "$value": "#FBBF24"
+      },
+      "roleOrgEmployee": {
+        "$type": "color",
+        "$value": "#A5B8DC"
+      },
+      "roleVolunteerManager": {
+        "$type": "color",
+        "$value": "#F472B6"
+      },
+      "roleOrgVolunteer": {
+        "$type": "color",
+        "$value": "#A5B8DC"
       },
       "overlay": {
         "$type": "color",

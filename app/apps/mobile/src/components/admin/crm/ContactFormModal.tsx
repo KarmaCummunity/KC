@@ -1,12 +1,15 @@
 // V2-ADMIN-CRM-8 — bottom-sheet modal for create / edit CRM contact.
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
 import {
   CRM_CONTACT_STATUSES, isCrmContactError,
   type CrmContact, type CrmContactStatus,
 } from '@kc/domain';
-import { makeUseStyles, Text, TextInput } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { TextField } from '../../ui/TextField';
+import { Chip } from '../../ui/Chip';
+import { AdminFormActions } from '../AdminFormActions';
 import { container } from '../../../lib/container';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
@@ -56,99 +59,51 @@ export function ContactFormModal({ initial, onClose, onSaved }: ContactFormModal
       <ScrollView style={styles.sheet} contentContainerStyle={styles.content}>
         <Text style={styles.title}>{isEdit ? t.form.editTitle : t.form.createTitle}</Text>
 
-        <Field label={t.form.nameLabel}         value={name}         onChange={setName} />
-        <Field label={t.form.organizationLabel} value={organization} onChange={setOrg} />
-        <Field label={t.form.emailLabel}        value={email}        onChange={setEmail} />
-        <Field label={t.form.phoneLabel}        value={phone}        onChange={setPhone} />
-        <Field label={t.form.roleLabel}         value={roleTitle}    onChange={setRoleTitle} />
+        <TextField label={t.form.nameLabel}         value={name}         onChangeText={setName} />
+        <TextField label={t.form.organizationLabel} value={organization} onChangeText={setOrg} />
+        <TextField label={t.form.emailLabel}        value={email}        onChangeText={setEmail} />
+        <TextField label={t.form.phoneLabel}        value={phone}        onChangeText={setPhone} />
+        <TextField label={t.form.roleLabel}         value={roleTitle}    onChangeText={setRoleTitle} />
 
         <Text style={styles.label}>{t.form.statusLabel}</Text>
         <View style={styles.statusRow}>
           {CRM_CONTACT_STATUSES.map((s) => (
-            <Pressable
+            <Chip
               key={s}
+              label={t.status[s]}
+              selected={status === s}
               onPress={() => setStatus(s)}
-              style={[styles.statusOption, status === s && styles.statusOptionActive]}
-            >
-              <Text style={[styles.statusOptionText, status === s && styles.statusOptionTextActive]}>
-                {t.status[s]}
-              </Text>
-            </Pressable>
+              size="sm"
+            />
           ))}
         </View>
 
-        <Field label={t.form.tagsLabel}  value={tagsRaw} onChange={setTagsRaw} />
-        <Field label={t.form.notesLabel} value={notes}   onChange={setNotes} multiline />
+        <TextField label={t.form.tagsLabel}  value={tagsRaw} onChangeText={setTagsRaw} />
+        <TextField label={t.form.notesLabel} value={notes}   onChangeText={setNotes} multiline />
 
-        {errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
-
-        <View style={styles.actions}>
-          <Pressable style={styles.cancel} onPress={onClose} disabled={save.isPending}>
-            <Text style={styles.cancelText}>{t.form.cancel}</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.submit, save.isPending && styles.submitDisabled]}
-            onPress={() => { void save.mutateAsync(); }}
-            disabled={save.isPending}
-          >
-            <Text style={styles.submitText}>
-              {save.isPending ? t.form.submitting : t.form.submit}
-            </Text>
-          </Pressable>
-        </View>
+        <AdminFormActions
+          cancelLabel={t.form.cancel}
+          submitLabel={t.form.submit}
+          submittingLabel={t.form.submitting}
+          isPending={save.isPending}
+          onCancel={onClose}
+          onSubmit={() => { void save.mutateAsync(); }}
+          errorMsg={errorMsg}
+        />
       </ScrollView>
-    </View>
-  );
-}
-
-function Field({
-  label, value, onChange, multiline = false,
-}: {
-  readonly label: string;
-  readonly value: string;
-  readonly onChange: (v: string) => void;
-  readonly multiline?: boolean;
-}) {
-  const styles = useStyles();
-  return (
-    <View style={styles.fieldRow}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        style={[styles.input, multiline && styles.inputMultiline]}
-        value={value}
-        onChangeText={onChange}
-        multiline={multiline}
-      />
     </View>
   );
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
   backdrop: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end',
+    position: 'absolute', top: 0, start: 0, end: 0, bottom: 0,
+    backgroundColor: colors.overlay, justifyContent: 'flex-end',
   },
   sheet:   { maxHeight: '90%', backgroundColor: colors.surface,
-             borderTopLeftRadius: 16, borderTopRightRadius: 16 },
-  content: { padding: 16, gap: 10 },
-  title:   { fontSize: 18, fontWeight: '700' },
-  fieldRow:{ gap: 4 },
-  label:   { fontSize: 12, opacity: 0.7 },
-  input: {
-    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: 8,
-    padding: 10, fontSize: 13, backgroundColor: colors.background, textAlign: 'right',
-  },
-  inputMultiline: { minHeight: 80, textAlignVertical: 'top' },
-  statusRow:     { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-  statusOption:  { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: colors.secondaryLight },
-  statusOptionActive: { backgroundColor: colors.primary },
-  statusOptionText:       { fontSize: 12, fontWeight: '600' },
-  statusOptionTextActive: { color: colors.textInverse },
-  errorText:  { color: colors.error, fontSize: 12 },
-  actions:    { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 },
-  cancel:     { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8 },
-  cancelText: { fontSize: 13, fontWeight: '500' },
-  submit:     { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, backgroundColor: colors.primary },
-  submitDisabled: { opacity: 0.5 },
-  submitText: { color: colors.textInverse, fontSize: 13, fontWeight: '700' },
+             borderTopStartRadius: radius.lg, borderTopEndRadius: radius.lg },
+  content: { padding: spacing.base, gap: spacing.md },
+  title:   { ...typography.h3, ...typography.bold, color: colors.textPrimary },
+  label:   { ...typography.label, color: colors.textSecondary },
+  statusRow: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
 }));

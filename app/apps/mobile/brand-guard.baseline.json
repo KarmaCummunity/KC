@@ -1,31 +1,6 @@
 {
   "$comment": "Frozen brand-guard findings per file (spec 17 §6, TD-199). Counts may only go down.",
   "files": {
-    "app/(admin)/org-approvals/index.tsx": {
-      "fontSizeLiteral": 15,
-      "fontWeightLiteral": 9,
-      "radiusLiteral": 6,
-      "spacingLiteral": 31,
-      "rawTextInput": 1,
-      "adHocChip": 1
-    },
-    "app/(admin)/tasks/[taskId]/index.tsx": {
-      "colorLiteral": 1,
-      "fontSizeLiteral": 10,
-      "fontWeightLiteral": 6,
-      "radiusLiteral": 4,
-      "spacingLiteral": 17,
-      "physicalSide": 1,
-      "rawTextInput": 1
-    },
-    "app/(admin)/tasks/new.tsx": {
-      "fontSizeLiteral": 9,
-      "fontWeightLiteral": 5,
-      "radiusLiteral": 4,
-      "spacingLiteral": 17,
-      "physicalSide": 1,
-      "rawTextInput": 3
-    },
     "app/(tabs)/donations/index.tsx": {
       "unmirroredDirectionalIcon": 1
     },
@@ -66,10 +41,6 @@
     "app/edit-post/[id].tsx": {
       "iconSizeLiteral": 1
     },
-    "app/edit-profile.tsx": {
-      "physicalSide": 3,
-      "rawTextInput": 3
-    },
     "app/follow/suggestions.tsx": {
       "radiusLiteral": 2
     },
@@ -97,46 +68,11 @@
     "app/settings/appearance.tsx": {
       "radiusLiteral": 1
     },
-    "app/settings/audit.tsx": {
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 1,
-      "fontFamilyLiteral": 1,
-      "radiusLiteral": 2,
-      "spacingLiteral": 1,
-      "rawTextInput": 1
-    },
-    "app/settings/feed.tsx": {
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 1,
-      "spacingLiteral": 1,
-      "rawTextInput": 1,
-      "adHocChip": 1,
-      "iconSizeLiteral": 2
-    },
-    "app/settings/feedback.tsx": {
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 1,
-      "spacingLiteral": 1,
-      "rawTextInput": 1
-    },
     "app/settings/follow-requests.tsx": {
       "fontWeightLiteral": 1
     },
     "app/settings/language.tsx": {
       "radiusLiteral": 1
-    },
-    "app/settings/report-issue.tsx": {
-      "fontWeightLiteral": 3,
-      "rawTextInput": 1,
-      "adHocChip": 1,
-      "iconSizeLiteral": 1
-    },
-    "app/settings/survey-demo.tsx": {
-      "fontSizeLiteral": 3,
-      "fontWeightLiteral": 3,
-      "radiusLiteral": 1,
-      "rawTextInput": 1
     },
     "app/settings/surveys.tsx": {
       "fontWeightLiteral": 3,
@@ -265,97 +201,6 @@
     },
     "src/components/WebRefreshButton.tsx": {
       "iconSizeLiteral": 1
-    },
-    "src/components/admin/AdminFormField.tsx": {
-      "fontSizeLiteral": 2,
-      "radiusLiteral": 1,
-      "spacingLiteral": 2,
-      "physicalSide": 1,
-      "rawTextInput": 1
-    },
-    "src/components/admin/admins/AdminPersonCard.tsx": {
-      "unmirroredDirectionalIcon": 1
-    },
-    "src/components/admin/admins/OrgSwitcher.tsx": {
-      "adHocChip": 1
-    },
-    "src/components/admin/admins/UserLookupField.tsx": {
-      "rawTextInput": 1
-    },
-    "src/components/admin/admins/layers/LayerPersonChip.tsx": {
-      "adHocChip": 1
-    },
-    "src/components/admin/content/AuditLogRow.tsx": {
-      "fontSizeLiteral": 4,
-      "fontWeightLiteral": 1,
-      "fontFamilyLiteral": 1,
-      "spacingLiteral": 3
-    },
-    "src/components/admin/content/PostSearchRow.tsx": {
-      "adHocChip": 1
-    },
-    "src/components/admin/content/UserSearchRow.tsx": {
-      "adHocChip": 1
-    },
-    "src/components/admin/crm/ContactFormModal.tsx": {
-      "colorLiteral": 1,
-      "fontSizeLiteral": 7,
-      "fontWeightLiteral": 4,
-      "radiusLiteral": 6,
-      "spacingLiteral": 13,
-      "physicalSide": 3,
-      "rawTextInput": 1
-    },
-    "src/components/admin/money/FinanceEntryCard.tsx": {
-      "fontSizeLiteral": 5,
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 2,
-      "spacingLiteral": 8,
-      "adHocChip": 1
-    },
-    "src/components/admin/money/FinanceEntryFormModal.tsx": {
-      "colorLiteral": 1,
-      "fontSizeLiteral": 3,
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 3,
-      "spacingLiteral": 5,
-      "physicalSide": 2
-    },
-    "src/components/admin/reports/CaseActions.tsx": {
-      "colorLiteral": 1,
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 1,
-      "spacingLiteral": 4
-    },
-    "src/components/admin/surveys/SurveyOverviewCard.tsx": {
-      "unmirroredDirectionalIcon": 1
-    },
-    "src/components/admin/surveys/SurveyResultsView.tsx": {
-      "unmirroredDirectionalIcon": 1
-    },
-    "src/components/admin/tasks/AssigneePicker.tsx": {
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 1,
-      "spacingLiteral": 4,
-      "adHocChip": 1
-    },
-    "src/components/admin/tasks/TaskCategoryPicker.tsx": {
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 1,
-      "spacingLiteral": 3,
-      "adHocChip": 1
-    },
-    "src/components/admin/time/TimesheetFormModal.tsx": {
-      "colorLiteral": 1,
-      "fontSizeLiteral": 6,
-      "fontWeightLiteral": 3,
-      "radiusLiteral": 5,
-      "spacingLiteral": 10,
-      "physicalSide": 3,
-      "rawTextInput": 1
     },
     "src/components/animations/TourSlidePager.tsx": {
       "radiusLiteral": 1
@@ -804,9 +649,6 @@
       "spacingLiteral": 1,
       "physicalSide": 2,
       "adHocChip": 1
-    },
-    "src/screens/edit-profile.styles.ts": {
-      "physicalSide": 1
     },
     "src/screens/guest/feed.styles.ts": {
       "spacingLiteral": 1

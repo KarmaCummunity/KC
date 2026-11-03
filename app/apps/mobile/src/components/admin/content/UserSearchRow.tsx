@@ -15,6 +15,7 @@ import {
   type AdminUserSearchResult,
 } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { Chip } from '../../ui/Chip';
 import { useAdminRoles } from '../../../hooks/useAdminRoles';
 import { BanUserModal } from '../../profile/BanUserModal';
 import { rowDirectionStart, textAlignStart } from '../../../lib/rtlLayout';
@@ -24,10 +25,10 @@ export interface UserSearchRowProps {
   readonly row: AdminUserSearchResult;
 }
 
-function statusTone(status: string): 'good' | 'warn' | 'bad' | 'muted' {
-  if (status === 'active') return 'good';
-  if (status === 'pending_verification') return 'warn';
-  if (status === 'banned' || status === 'deleted') return 'bad';
+function statusTone(status: string): 'success' | 'warning' | 'error' | 'muted' {
+  if (status === 'active') return 'success';
+  if (status === 'pending_verification') return 'warning';
+  if (status === 'banned' || status === 'deleted') return 'error';
   return 'muted';
 }
 
@@ -64,12 +65,15 @@ export function UserSearchRow({ row }: UserSearchRowProps) {
           {row.shareHandle && <Text style={styles.handle} numberOfLines={1}>@{row.shareHandle}</Text>}
           {row.cityName && <Text style={styles.meta} numberOfLines={1}>{row.cityName}</Text>}
         </View>
-        <View style={[styles.chip, styles[`chip_${tone}` as const]]}>
-          <Text style={styles.chipText}>
-            {L.admin.content.userStatus[row.accountStatus as keyof LocaleBundle['admin']['content']['userStatus']]
-              ?? row.accountStatus}
-          </Text>
-        </View>
+        <Chip
+          variant="tag"
+          tone={tone}
+          label={
+            L.admin.content.userStatus[row.accountStatus as keyof LocaleBundle['admin']['content']['userStatus']]
+              ?? row.accountStatus
+          }
+          size="sm"
+        />
         {showRoles && (
           <Pressable
             accessibilityRole="button"
@@ -118,12 +122,6 @@ const useStyles = makeUseStyles(({ colors }) => ({
   name:        { ...typography.body, ...typography.semiBold, color: colors.textPrimary, textAlign: textAlignStart() },
   handle:      { ...typography.caption, color: colors.primary, textAlign: textAlignStart() },
   meta:        { ...typography.caption, color: colors.textSecondary, textAlign: textAlignStart() },
-  chip:        { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.sm },
-  chip_good:   { backgroundColor: colors.successLight },
-  chip_warn:   { backgroundColor: colors.warningLight },
-  chip_bad:    { backgroundColor: colors.errorLight },
-  chip_muted:  { backgroundColor: colors.border },
-  chipText:    { ...typography.caption, ...typography.bold, color: colors.textPrimary },
   rolesBtn: {
     paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.sm,
     backgroundColor: colors.primarySurface,
