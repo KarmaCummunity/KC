@@ -29,7 +29,8 @@ begin
   insert into public.listings (owner_id, world_slug, kind_id, direction, title, origin, moderation_status,
                                details, expires_at)
   select p_owner, 'food', kind_id, 'give', p_title, 'native', 'published',
-         '{"image_url":"https://example.test/f.jpg"}'::jsonb, p_expires_at
+         jsonb_build_object('food_type', 'cooked', 'expires_at', to_char(p_expires_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')),
+         p_expires_at
     from public.listing_kinds where world_slug = 'food' and slug = 'give_food'
   returning listing_id into v_id;
   return v_id;

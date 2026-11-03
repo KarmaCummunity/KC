@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { coalesceChat, coalesceFollowStarted } from './coalesce.ts';
 import { sendExpoPush, type ExpoMessage, type ExpoTicket } from './expoPushClient.ts';
 import i18n from './i18n.json' with { type: 'json' };
