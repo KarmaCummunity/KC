@@ -3,7 +3,7 @@ import { AccessibilityInfo, ScrollView, TouchableOpacity, View } from 'react-nat
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { useTheme, Text } from '@kc/ui';
+import { iconSize, useTheme, Text } from '@kc/ui';
 import type { PostWithOwner } from '@kc/application';
 import { AvatarInitials } from '../../components/AvatarInitials';
 import { PostImageCarousel } from '../../components/PostImageCarousel';
@@ -18,6 +18,7 @@ import { useTranslatedPosts } from '../../hooks/useTranslatedPosts';
 import { usePostDetailStyles } from './postDetailScreen.styles';
 import { PostEngagementSection } from '../../components/post-detail/PostEngagementSection';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
+import { MirroredIcon } from '../../components/ui/MirroredIcon';
 
 export type PostDetailScrollContentProps = Readonly<{
   post: PostWithOwner;
@@ -135,7 +136,7 @@ export function PostDetailScrollContent({
 
           {isOpen ? (
             <View style={styles.metaChip}>
-              <Ionicons name="sparkles-outline" size={14} color={colors.primary} />
+              <Ionicons name="sparkles-outline" size={iconSize.xs} color={colors.primary} />
               <Text style={styles.metaChipText}>{t('post.detail.statusOpenHint')}</Text>
             </View>
           ) : null}
@@ -143,7 +144,7 @@ export function PostDetailScrollContent({
           <View style={styles.metaSection}>
             <View style={styles.locationRow}>
               <View style={styles.locationIcon}>
-                <Ionicons name="location-outline" size={16} color={colors.primary} />
+                <Ionicons name="location-outline" size={iconSize.sm} color={colors.primary} />
               </View>
               <Text style={styles.locationText}>{locationText}</Text>
             </View>
@@ -178,7 +179,7 @@ function MetaChips(props: Readonly<{ post: PostWithOwner; isGive: boolean }>) {
   if (isGive && post.itemCondition != null) {
     chips.push(
       <View key="condition" style={styles.metaChip}>
-        <Ionicons name="cube-outline" size={14} color={colors.textSecondary} />
+        <Ionicons name="cube-outline" size={iconSize.xs} color={colors.textSecondary} />
         <Text style={styles.metaChipText}>{t(`post.condition.${post.itemCondition}`)}</Text>
       </View>,
     );
@@ -186,7 +187,7 @@ function MetaChips(props: Readonly<{ post: PostWithOwner; isGive: boolean }>) {
   if (!isGive && post.urgency != null && post.urgency !== '') {
     chips.push(
       <View key="urgency" style={styles.metaChip}>
-        <Ionicons name="flash-outline" size={14} color={colors.warning} />
+        <Ionicons name="flash-outline" size={iconSize.xs} color={colors.warning} />
         <Text style={styles.metaChipText}>{post.urgency}</Text>
       </View>,
     );
@@ -194,7 +195,7 @@ function MetaChips(props: Readonly<{ post: PostWithOwner; isGive: boolean }>) {
   if (isGive && post.estimatedValue != null && post.estimatedValue > 0) {
     chips.push(
       <View key="value" style={styles.metaChip}>
-        <Ionicons name="pricetag-outline" size={14} color={colors.textSecondary} />
+        <Ionicons name="pricetag-outline" size={iconSize.xs} color={colors.textSecondary} />
         <Text style={styles.metaChipText}>
           {t('post.estimatedValueBadge', { value: post.estimatedValue })}
         </Text>
@@ -254,7 +255,7 @@ function PostDetailAuthorFooter(
     return (
       <TouchableOpacity style={styles.authorRow} onPress={() => router.push(`/user/${ownerHandle}`)}>
         {core}
-        <Ionicons name="chevron-back" size={20} color={colors.textSecondary} />
+        <MirroredIcon name="chevron-forward" size={iconSize.lg} color={colors.textSecondary} />
       </TouchableOpacity>
     );
   }

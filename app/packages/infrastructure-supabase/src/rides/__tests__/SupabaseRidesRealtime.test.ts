@@ -101,9 +101,17 @@ describe('SupabaseRidesRealtime.subscribeToPublicRideInserts', () => {
     repo.subscribeToPublicRideInserts({ onChange: vi.fn(), onError });
     channels[0]!.statusCb!('CHANNEL_ERROR');
     channels[0]!.statusCb!('TIMED_OUT');
+    channels[0]!.statusCb!('SUBSCRIBED');
     expect(onError).toHaveBeenCalledTimes(2);
     expect((onError.mock.calls[0]![0] as Error).message).toContain('channel_error');
     expect((onError.mock.calls[1]![0] as Error).message).toContain('timed_out');
+  });
+
+  it('safely handles CHANNEL_ERROR when onError callback is omitted', () => {
+    const { client, channels } = makeFakeClient();
+    const repo = new SupabaseRidesRealtime(client);
+    repo.subscribeToPublicRideInserts({ onChange: vi.fn() });
+    expect(() => channels[0]!.statusCb!('CHANNEL_ERROR')).not.toThrow();
   });
 
   it('returns an unsubscribe that removes the channel', () => {
@@ -140,6 +148,17 @@ describe('SupabaseRidesRealtime.subscribeToUserParticipantUpdates', () => {
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
+  it('translates CHANNEL_ERROR / TIMED_OUT via onError callback', () => {
+    const { client, channels } = makeFakeClient();
+    const repo = new SupabaseRidesRealtime(client);
+    const onError = vi.fn();
+    repo.subscribeToUserParticipantUpdates('u_me', { onChange: vi.fn(), onError });
+    channels[0]!.statusCb!('CHANNEL_ERROR');
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining('channel_error') }),
+    );
+  });
+
   it('returns an unsubscribe that removes the channel', () => {
     const { client, removed } = makeFakeClient();
     const repo = new SupabaseRidesRealtime(client);
@@ -171,5 +190,18 @@ describe('SupabaseRidesRealtime.subscribeToRideParticipantInserts', () => {
     repo.subscribeToRideParticipantInserts('r1', { onChange });
     channels[0]!.onCalls[0]!.handler({});
     expect(onChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('translates status errors via onError callback and handles unsubscribe', () => {
+    const { client, channels, removed } = makeFakeClient();
+    const repo = new SupabaseRidesRealtime(client);
+    const onError = vi.fn();
+    const unsub = repo.subscribeToRideParticipantInserts('r1', { onChange: vi.fn(), onError });
+    channels[0]!.statusCb!('TIMED_OUT');
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining('timed_out') }),
+    );
+    unsub();
+    expect(removed).toHaveLength(1);
   });
 });

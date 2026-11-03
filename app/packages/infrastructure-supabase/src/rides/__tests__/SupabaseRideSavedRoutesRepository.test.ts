@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { RidePlace } from '@kc/domain';
-import { SupabaseRideSavedRoutesRepository } from '../SupabaseRideSavedRoutesRepository';
+import { SupabaseRideSavedRoutesRepository, mapRouteRow } from '../SupabaseRideSavedRoutesRepository';
 
 type AnyClient = ConstructorParameters<typeof SupabaseRideSavedRoutesRepository>[0];
 
@@ -37,12 +37,26 @@ describe('SupabaseRideSavedRoutesRepository', () => {
     expect(from).toHaveBeenCalledWith('ride_saved_routes');
   });
 
+  it('throws when listMine query fails', async () => {
+    const { repo } = clientWith({ error: { message: 'db error' } });
+    await expect(repo.listMine()).rejects.toThrow('db error');
+  });
+
   it('saves places, the weekday mask and the hour window', async () => {
     const { calls, repo } = clientWith({ error: null });
     await repo.save({ wants: 'requests', origin: TLV, dest: GLILOT, weekdays: [0, 4], timeWindow: 'evening' });
     expect(calls.insert?.[0]).toMatchObject({
       wants: 'requests', origin_place_kind: 'city', origin_place_id: '5000', dest_place_kind: 'junction',
       dest_place_id: '106', weekdays: 0b10001, time_from: '15:00', time_to: '21:00',
+    });
+  });
+
+  it('saves with null time_from and time_to when timeWindow is null', async () => {
+    const { calls, repo } = clientWith({ error: null });
+    await repo.save({ wants: 'offers', origin: TLV, dest: GLILOT, weekdays: null, timeWindow: null });
+    expect(calls.insert?.[0]).toMatchObject({
+      time_from: null,
+      time_to: null,
     });
   });
 
@@ -53,5 +67,17 @@ describe('SupabaseRideSavedRoutesRepository', () => {
     await expect(clientWith({ error: { message: 'saved_routes_limit' } }).repo.save({
       wants: 'offers', origin: TLV, dest: GLILOT, weekdays: null, timeWindow: null,
     })).rejects.toThrow('saved_routes_limit');
+    await expect(clientWith({ error: { message: 'delete error' } }).repo.remove('r1')).rejects.toThrow('delete error');
+  });
+
+  describe('mapRouteRow edge cases', () => {
+    it('drops rows with invalid wants', () => {
+      expect(mapRouteRow({ ...ROW, wants: 'invalid' } as unknown as Parameters<typeof mapRouteRow>[0])).toBeNull();
+    });
+
+    it('drops rows with invalid origin or dest place kind', () => {
+      expect(mapRouteRow({ ...ROW, origin_place_kind: 'unknown' } as unknown as Parameters<typeof mapRouteRow>[0])).toBeNull();
+      expect(mapRouteRow({ ...ROW, dest_place_kind: 'unknown' } as unknown as Parameters<typeof mapRouteRow>[0])).toBeNull();
+    });
   });
 });

@@ -3,6 +3,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { AdminTaskError, isAdminTaskError } from '@kc/domain';
 import { SupabaseAdminTaskRepository } from '../SupabaseAdminTaskRepository';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 function mockClient(rpcImpl: (name: string, args?: unknown) => unknown): SupabaseClient {
   return { rpc: vi.fn(rpcImpl as never) } as unknown as SupabaseClient;
 }
@@ -135,6 +137,16 @@ describe('SupabaseAdminTaskRepository — writes', () => {
     expect(await repo.create({ title: 'x' })).toBe('t-new');
   });
 
+  it('create throws when RPC returns non-string data', async () => {
+    const repo = new SupabaseAdminTaskRepository(
+      mockClient(() => ({ data: null, error: null })),
+    );
+    await expect(repo.create({ title: 'x' })).rejects.toMatchObject({
+      code: 'unknown',
+      message: 'admin_task_create returned non-string task_id',
+    });
+  });
+
   it('create maps known error messages', async () => {
     const repo = new SupabaseAdminTaskRepository(
       mockClient(() => ({ data: null, error: { message: 'assignee_not_admin', code: '23514' } })),
@@ -142,6 +154,30 @@ describe('SupabaseAdminTaskRepository — writes', () => {
     const err = await repo.create({ title: 'x', assigneeId: 'u' }).catch((e) => e);
     expect(isAdminTaskError(err)).toBe(true);
     expect((err as AdminTaskError).code).toBe('assignee_not_admin');
+  });
+
+  it('update forwards patch args to RPC', async () => {
+    let capturedArgs: any;
+    const repo = new SupabaseAdminTaskRepository(
+      mockClient((name, args) => {
+        expect(name).toBe('admin_task_update');
+        capturedArgs = args;
+        return { data: null, error: null };
+      }),
+    );
+    await repo.update('t1', {
+      title: 'new title',
+      clearDue: true,
+      labels: ['bug'],
+      category: 'support',
+    });
+    expect(capturedArgs).toMatchObject({
+      p_task_id: 't1',
+      p_title: 'new title',
+      p_clear_due: true,
+      p_labels: ['bug'],
+      p_category: 'support',
+    });
   });
 
   it('setStatus maps invalid_transition error', async () => {
@@ -153,11 +189,37 @@ describe('SupabaseAdminTaskRepository — writes', () => {
     });
   });
 
+  it('assign forwards new assignee to admin_task_assign RPC', async () => {
+    let capturedArgs: any;
+    const repo = new SupabaseAdminTaskRepository(
+      mockClient((name, args) => {
+        expect(name).toBe('admin_task_assign');
+        capturedArgs = args;
+        return { data: null, error: null };
+      }),
+    );
+    await repo.assign('t1', 'u_new_admin');
+    expect(capturedArgs).toEqual({
+      p_task_id: 't1',
+      p_new_assignee: 'u_new_admin',
+    });
+  });
+
   it('addComment returns activity_id from the RPC', async () => {
     const repo = new SupabaseAdminTaskRepository(
       mockClient(() => ({ data: 'a-1', error: null })),
     );
     expect(await repo.addComment('t1', 'hi')).toBe('a-1');
+  });
+
+  it('addComment throws when RPC returns non-string data', async () => {
+    const repo = new SupabaseAdminTaskRepository(
+      mockClient(() => ({ data: null, error: null })),
+    );
+    await expect(repo.addComment('t1', 'hi')).rejects.toMatchObject({
+      code: 'unknown',
+      message: 'admin_task_add_comment returned non-string activity_id',
+    });
   });
 
   it('delete maps task_not_found by SQLSTATE P0002 when message is opaque', async () => {

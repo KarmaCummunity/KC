@@ -115,6 +115,26 @@ describe('SupabaseSurveyAdminRepository.getPmfReport', () => {
     });
   });
 
+  it('maps a report with null options to empty options array', async () => {
+    const client = makeClient({
+      admin_pmf_survey_report: {
+        data: {
+          slug: 'pmf-null-options',
+          title_he: 'Short Title',
+          version: 1,
+          prompt_he: 'Question',
+          min_active_days_14d: 0,
+          respondents_total: 0,
+          respondents_qualified: 0,
+          options: null,
+        },
+        error: null,
+      },
+    });
+    const report = await new SupabaseSurveyAdminRepository(client.typed).getPmfReport('pmf-null-options');
+    expect(report.options).toEqual([]);
+  });
+
   it('maps a survey without a choice question to a validation error', async () => {
     const client = makeClient({
       admin_pmf_survey_report: { data: null, error: { message: 'survey_has_no_choice_question' } },

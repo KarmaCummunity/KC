@@ -15,7 +15,7 @@ describe('SupabaseAdminContentRepository — searchUsers', () => {
           {
             user_id: 'u1', display_name: 'A', share_handle: 'a',
             account_status: 'active', city_name: null,
-            created_at: '2026-01-01T00:00:00.000Z', last_seen_at: null,
+            created_at: '2026-01-01T00:00:00.000Z', last_seen_at: '2026-01-02T00:00:00.000Z',
             total_count: 1,
           },
         ],
@@ -26,15 +26,23 @@ describe('SupabaseAdminContentRepository — searchUsers', () => {
     expect(page.rows).toHaveLength(1);
     expect(page.totalCount).toBe(1);
     expect(page.rows[0]?.createdAt).toBeInstanceOf(Date);
+    expect(page.rows[0]?.lastSeenAt).toBeInstanceOf(Date);
   });
 
-  it('returns totalCount 0 on empty data', async () => {
-    const repo = new SupabaseAdminContentRepository(
+  it('returns totalCount 0 on empty or null data', async () => {
+    const repoEmpty = new SupabaseAdminContentRepository(
       mockClient(() => ({ data: [], error: null })),
     );
-    const page = await repo.searchUsers({});
-    expect(page.rows).toEqual([]);
-    expect(page.totalCount).toBe(0);
+    const pageEmpty = await repoEmpty.searchUsers({});
+    expect(pageEmpty.rows).toEqual([]);
+    expect(pageEmpty.totalCount).toBe(0);
+
+    const repoNull = new SupabaseAdminContentRepository(
+      mockClient(() => ({ data: null, error: null })),
+    );
+    const pageNull = await repoNull.searchUsers({});
+    expect(pageNull.rows).toEqual([]);
+    expect(pageNull.totalCount).toBe(0);
   });
 
   it('parses total_count when returned as a string (Postgres bigint)', async () => {
@@ -55,21 +63,35 @@ describe('SupabaseAdminContentRepository — searchUsers', () => {
     expect(page.totalCount).toBe(17);
   });
 
-  it('maps forbidden by message', async () => {
+  it('maps forbidden by message or code 42501', async () => {
     const repo = new SupabaseAdminContentRepository(
-      mockClient(() => ({ data: null, error: { message: 'forbidden', code: '42501' } })),
+      mockClient(() => ({ data: null, error: { message: 'other_denied', code: '42501' } })),
     );
     const err = await repo.searchUsers({}).catch((e) => e);
     expect(isAdminContentError(err)).toBe(true);
     expect(err.code).toBe('forbidden');
   });
 
-  it('maps invalid_status by message', async () => {
-    const repo = new SupabaseAdminContentRepository(
-      mockClient(() => ({ data: null, error: { message: 'invalid_status', code: '22023' } })),
+  it('maps invalid_status and invalid_input and unknown', async () => {
+    const repoStatus = new SupabaseAdminContentRepository(
+      mockClient(() => ({ data: null, error: { message: 'invalid_status' } })),
     );
-    await expect(repo.searchUsers({ status: 'limbo' })).rejects.toMatchObject({
+    await expect(repoStatus.searchUsers({ status: 'limbo' })).rejects.toMatchObject({
       code: 'invalid_status',
+    });
+
+    const repoInput = new SupabaseAdminContentRepository(
+      mockClient(() => ({ data: null, error: { message: 'invalid_input' } })),
+    );
+    await expect(repoInput.searchUsers({})).rejects.toMatchObject({
+      code: 'invalid_input',
+    });
+
+    const repoUnknown = new SupabaseAdminContentRepository(
+      mockClient(() => ({ data: null, error: { message: 'something_weird' } })),
+    );
+    await expect(repoUnknown.searchUsers({})).rejects.toMatchObject({
+      code: 'unknown',
     });
   });
 });
@@ -92,6 +114,26 @@ describe('SupabaseAdminContentRepository — searchPosts', () => {
     const page = await repo.searchPosts({});
     expect(page.rows[0]).toMatchObject({ postId: 'p1', title: 'help' });
     expect(page.rows[0]?.updatedAt).toBeInstanceOf(Date);
+  });
+
+  it('passes searchPosts filters and handles null data and error', async () => {
+    const spy = vi.fn(() => ({ data: null, error: null }));
+    const repo = new SupabaseAdminContentRepository(mockClient(spy as never));
+
+    const page = await repo.searchPosts({ query: 'item', status: 'open', limit: 20, offset: 5 });
+    expect(spy).toHaveBeenCalledWith('admin_search_posts', {
+      p_query: 'item',
+      p_status: 'open',
+      p_limit: 20,
+      p_offset: 5,
+    });
+    expect(page.rows).toEqual([]);
+    expect(page.totalCount).toBe(0);
+
+    const failRepo = new SupabaseAdminContentRepository(
+      mockClient(() => ({ data: null, error: { message: 'db error' } })),
+    );
+    await expect(failRepo.searchPosts({})).rejects.toMatchObject({ code: 'unknown' });
   });
 });
 
@@ -116,10 +158,10 @@ describe('SupabaseAdminContentRepository — searchAudit', () => {
     expect(page.rows[0]?.action).toBe('ban_user');
   });
 
-  it('passes filters through to the RPC', async () => {
-    const spy = vi.fn(() => ({ data: [], error: null }));
+  it('passes filters through to the RPC and handles null data', async () => {
+    const spy = vi.fn(() => ({ data: null, error: null }));
     const repo = new SupabaseAdminContentRepository(mockClient(spy as never));
-    await repo.searchAudit({ actorId: 'u1', action: 'dismiss_report', limit: 10, offset: 0 });
+    const page = await repo.searchAudit({ actorId: 'u1', action: 'dismiss_report', limit: 10, offset: 0 });
     expect(spy).toHaveBeenCalledWith('admin_audit_search', {
       p_target_user_id: null,
       p_actor_id: 'u1',
@@ -129,6 +171,8 @@ describe('SupabaseAdminContentRepository — searchAudit', () => {
       p_from: null,
       p_to: null,
     });
+    expect(page.rows).toEqual([]);
+    expect(page.totalCount).toBe(0);
   });
 
   it('serialises fromDate / toDate as ISO strings', async () => {
