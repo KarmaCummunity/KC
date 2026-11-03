@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, View } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { Pressable, View } from 'react-native';
 import { KcFlashList } from '../../../../src/components/lists/KcFlashList';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -9,11 +9,8 @@ import { KcRowCard } from '../../../../src/components/cards/KcRowCard';
 import { listingWorldIcon } from '../../../../src/components/cards/ListingCard';
 import { cleanDisplayTitle } from '../../../../src/lib/displayTitle';
 import { Screen } from '../../../../src/components/ui/Screen';
-import {
-  useInvalidateMyListings,
-  useMyMarketplaceListings,
-} from '../../../../src/hooks/useMyMarketplaceListings';
-import { marketplaceRepository } from '../../../../src/services/marketplaceComposition';
+import { useMyMarketplaceListings } from '../../../../src/hooks/useMyMarketplaceListings';
+import { useMyListingActions } from '../../../../src/hooks/useMyListingActions';
 import { useShellTabBarScrollInset } from '../../../../src/navigation/useShellTabBarVisibility';
 import { LIST_END_THRESHOLD } from '../../../../src/hooks/usePrefetchNextPage';
 
@@ -34,17 +31,6 @@ const ROW = { marginHorizontal: spacing.md };
 
 const myListingKeyExtractor = (item: MyListingRow) => item.listingId;
 
-function confirmAsync(title: string, message: string): Promise<boolean> {
-  if (Platform.OS === 'web') {
-    return Promise.resolve(typeof window !== 'undefined' && window.confirm(`${title}\n${message}`));
-  }
-  return new Promise((resolve) => {
-    Alert.alert(title, message, [
-      { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-      { text: 'OK', onPress: () => resolve(true) },
-    ]);
-  });
-}
 
 interface MyListingRowItemProps {
   readonly item: MyListingRow;
@@ -55,6 +41,7 @@ interface MyListingRowItemProps {
   readonly onFulfill: (listingId: string) => void;
   readonly onResume: (listingId: string) => void;
   readonly onDelete: (listingId: string) => void;
+  readonly onAddPhotos: (listingId: string) => void;
   readonly styles: ReturnType<typeof useStyles>;
 }
 
@@ -67,6 +54,7 @@ const MyListingRowItem = React.memo(function MyListingRowItem({
   onFulfill,
   onResume,
   onDelete,
+  onAddPhotos,
   styles,
 }: MyListingRowItemProps) {
   const { t } = useTranslation();
@@ -77,6 +65,7 @@ const MyListingRowItem = React.memo(function MyListingRowItem({
   const handleFulfill = useCallback(() => onFulfill(item.listingId), [item.listingId, onFulfill]);
   const handleResume = useCallback(() => onResume(item.listingId), [item.listingId, onResume]);
   const handleDelete = useCallback(() => onDelete(item.listingId), [item.listingId, onDelete]);
+  const handleAddPhotos = useCallback(() => onAddPhotos(item.listingId), [item.listingId, onAddPhotos]);
 
   const meta = useMemo(
     () => [
@@ -84,6 +73,8 @@ const MyListingRowItem = React.memo(function MyListingRowItem({
         date: new Date(item.updatedAt).toLocaleDateString(),
       })}`,
       item.status === 'hidden_pending_review' ? t('marketplace.myListingsHiddenHint') : null,
+      item.status === 'cancelled' ? t('marketplace.myListingsPausedHint') : null,
+      item.status === 'closed' ? t('marketplace.myListingsClosedHint') : null,
     ],
     [item.status, item.updatedAt, item.worldSlug, t],
   );
@@ -108,6 +99,11 @@ const MyListingRowItem = React.memo(function MyListingRowItem({
       {item.status === 'cancelled' ? (
         <Pressable style={styles.btn} disabled={busy} onPress={handleResume}>
           <Text style={styles.btnText}>{t('marketplace.myListingsResume')}</Text>
+        </Pressable>
+      ) : null}
+      {['open', 'cancelled', 'closed'].includes(item.status) ? (
+        <Pressable style={styles.btn} disabled={busy} onPress={handleAddPhotos} testID={`my-listing-add-photos-${item.listingId}`}>
+          <Text style={styles.btnText}>{t('marketplace.myListingsAddPhotos')}</Text>
         </Pressable>
       ) : null}
       {['open', 'cancelled', 'closed'].includes(item.status) ? (
@@ -144,22 +140,7 @@ export default function MyListingsScreen() {
   const myQuery = useMyMarketplaceListings();
   const { isLoading, refetch } = myQuery;
   const rows = useMemo(() => myQuery.data?.pages.flatMap((p) => p.rows) ?? [], [myQuery.data?.pages]);
-  const invalidate = useInvalidateMyListings();
-  const [busyId, setBusyId] = useState<string | null>(null);
-
-  const act = useCallback(
-    async (listingId: string, fn: () => Promise<void>) => {
-      setBusyId(listingId);
-      try {
-        await fn();
-        await invalidate();
-        await refetch();
-      } finally {
-        setBusyId(null);
-      }
-    },
-    [invalidate, refetch],
-  );
+  const actions = useMyListingActions(refetch);
 
   const handleOpen = useCallback(
     (listingId: string) => router.push(`/(tabs)/donations/marketplace/${listingId}`),
@@ -172,42 +153,6 @@ export default function MyListingsScreen() {
     [router],
   );
 
-  const handlePause = useCallback(
-    (listingId: string) => {
-      void act(listingId, () => marketplaceRepository().pauseMyListing(listingId));
-    },
-    [act],
-  );
-
-  const handleFulfill = useCallback(
-    async (listingId: string) => {
-      const ok = await confirmAsync(
-        t('marketplace.myListingsFulfillTitle'),
-        t('marketplace.myListingsFulfillHint'),
-      );
-      if (ok) await act(listingId, () => marketplaceRepository().fulfillMyListing(listingId));
-    },
-    [act, t],
-  );
-
-  const handleResume = useCallback(
-    (listingId: string) => {
-      void act(listingId, () => marketplaceRepository().resumeMyListing(listingId));
-    },
-    [act],
-  );
-
-  const handleDelete = useCallback(
-    async (listingId: string) => {
-      const ok = await confirmAsync(
-        t('marketplace.myListingsDeleteTitle'),
-        t('marketplace.myListingsDeleteHint'),
-      );
-      if (ok) await act(listingId, () => marketplaceRepository().deleteMyListing(listingId));
-    },
-    [act, t],
-  );
-
   const contentContainerStyle = useMemo(() => ({ paddingBottom: inset }), [inset]);
 
   const handleEndReached = useCallback(() => {
@@ -218,17 +163,18 @@ export default function MyListingsScreen() {
     ({ item }: { item: MyListingRow }) => (
       <MyListingRowItem
         item={item}
-        busy={busyId === item.listingId}
+        busy={actions.busyId === item.listingId}
         onOpen={handleOpen}
         onEdit={handleEdit}
-        onPause={handlePause}
-        onFulfill={handleFulfill}
-        onResume={handleResume}
-        onDelete={handleDelete}
+        onPause={actions.pause}
+        onFulfill={actions.fulfill}
+        onResume={actions.resume}
+        onDelete={actions.remove}
+        onAddPhotos={actions.addPhotos}
         styles={styles}
       />
     ),
-    [busyId, handleDelete, handleEdit, handleFulfill, handleOpen, handlePause, handleResume, styles],
+    [actions, handleEdit, handleOpen, styles],
   );
 
   return (

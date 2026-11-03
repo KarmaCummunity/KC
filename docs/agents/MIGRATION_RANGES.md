@@ -97,6 +97,7 @@ Last applied on kc-dev when this was written: `0239`.
 | 0540 | listing detail schemas enforced for native listings | in progress |
 | 0541 | follow edges to Private profiles only through an approved request (FR-FOLLOW-003/005/012) | in progress |
 | 0542 | admin per-world flow funnel (G43) | in progress |
+| 0543 | listing owner management by status (spec 07 §7.1) | in progress |
 | 0544 | block filtering in both directions (FR-MOD-009) | in progress |
 | 0545+ | — | free |
 
