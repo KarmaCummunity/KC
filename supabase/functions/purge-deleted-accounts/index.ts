@@ -11,7 +11,7 @@
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
-import { type Handler, reportError, withObservability } from '../_shared/observability/mod.ts';
+import { reportError, withObservability } from '../_shared/observability/mod.ts';
 import { isServiceRoleRequest, serviceRoleRequiredResponse } from '../_shared/serviceRoleGuard.ts';
 import { purgeUserFolders, type StorageGateway, type StorageListEntry } from '../_shared/storageCleanup.ts';
 
@@ -84,7 +84,9 @@ async function purgeAccount(admin: SupabaseClient, userId: string, req: Request)
   return true;
 }
 
-const handler: Handler = async (req) => {
+// The handler is inline so the service-role check is visibly the first thing `serve` runs
+// (the regression test in `_shared/serviceRoleGuard.test.ts` reads it from here).
+serve(withObservability('purge-deleted-accounts', async (req) => {
   if (req.method !== 'POST') return new Response('method not allowed', { status: 405 });
   if (!isServiceRoleRequest(req, SERVICE_KEY)) return serviceRoleRequiredResponse();
 
@@ -105,6 +107,4 @@ const handler: Handler = async (req) => {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });
-};
-
-serve(withObservability('purge-deleted-accounts', handler));
+}));
