@@ -1,5 +1,5 @@
 import { StyleSheet, type TextStyle, type ViewStyle } from 'react-native';
-import { typography, spacing, type ColorPalette } from '@kc/ui';
+import { typography, spacing, radius, type ColorPalette } from '@kc/ui';
 import { rowDirectionStart } from '../../lib/rtlLayout';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
@@ -11,7 +11,7 @@ import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 //     `writingDirection: 'rtl'`. The helper resolves to physical `left` on
 //     native (which mirrors to inline-start under `I18nManager.forceRTL(true)`)
 //     and physical `right` on web (where `dir="rtl"` makes `right` the
-//     inline-start edge). Hard-coding `textAlign: 'right'` on native lands
+//     inline-start edge). Hard-coding a physical text edge on native lands
 //     text on the *end* edge — visually LEFT — which produced the misaligned
 //     Hebrew bodies users hit in the FR-SETTINGS-010 review.
 //   - `writingDirection: 'rtl'` is still needed: it nails RTL bidi rendering
@@ -108,11 +108,11 @@ export function makeLegalMarkdownStyles(colors: ColorPalette) {
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       marginVertical: spacing.sm,
-      borderRadius: 6,
+      borderRadius: radius.xs,
     } as ViewStyle,
     strong: {
       ...typography.body,
-      fontWeight: '700',
+      ...typography.bold,
       writingDirection: 'rtl',
     } as TextStyle,
     em: {

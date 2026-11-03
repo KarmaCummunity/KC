@@ -40,6 +40,6 @@ const useStyles = makeUseStyles(({ colors }) => ({
     gap: spacing.md,
     backgroundColor: colors.surface,
   },
-  info: { flex: 1, gap: 6 },
-  sep: { height: 1, backgroundColor: colors.border, marginRight: spacing.base },
+  info: { flex: 1, gap: spacing.xs },
+  sep: { height: 1, backgroundColor: colors.border, marginEnd: spacing.base },
 }));

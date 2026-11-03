@@ -8,7 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, typography, spacing, radius, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, useTheme, Text, iconSize } from '@kc/ui';
 import { aboutRtlText, aboutRtlRow } from './aboutWebRtlStyle';
 import { MOTION } from '../../lib/animations/motion';
 
@@ -45,7 +45,7 @@ function FaqRow({ item, isLast }: RowProps) {
     <View style={[styles.row, !isLast && styles.rowBorder]}>
       <TouchableOpacity style={styles.question} onPress={toggle} activeOpacity={0.7}>
         <Animated.View style={chevronStyle}>
-          <Ionicons name="chevron-down" size={20} color={colors.primary} />
+          <Ionicons name="chevron-down" size={iconSize.lg} color={colors.primary} />
         </Animated.View>
         <Text style={styles.q}>{item.q}</Text>
       </TouchableOpacity>
@@ -92,7 +92,7 @@ const useAboutFaqAccordionStyles = makeUseStyles(({ colors }) => ({
     color: colors.textPrimary,
     flex: 1,
     ...aboutRtlText,
-    fontWeight: '600',
+    ...typography.semiBold,
   },
   answer: { paddingBottom: spacing.md },
   a: {
