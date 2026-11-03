@@ -54,7 +54,7 @@ begin
   perform kc_test.assert_true(v_offer_post is not null and v_request_post is not null,
     'feed_mirror creates posts for time offers and requests');
   perform kc_test.assert_eq((select type from public.posts where post_id = v_offer_post), 'Give', 'offer mirrors as Give');
-  perform kc_test.assert_eq((select type from public.posts where post_id = v_request_post), 'Take', 'request mirrors as Take');
+  perform kc_test.assert_eq((select type from public.posts where post_id = v_request_post), 'Request', 'request mirrors as Request');
   perform kc_test.assert_true(pg_temp.time_in_feed(p.viewer, v_offer_post), 'viewer sees time offer in main feed');
   perform kc_test.assert_true(pg_temp.time_in_feed(p.viewer, v_request_post), 'viewer sees time request in main feed');
 end $$;
