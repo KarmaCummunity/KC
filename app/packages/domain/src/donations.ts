@@ -10,6 +10,12 @@ export interface DonationCategory {
   readonly isActive: boolean;
 }
 
+/**
+ * D9 — a suggested link goes live only after a reviewer (super admin or moderator) approves it.
+ * The submitter sees their own pending or rejected link; everyone else sees approved links only.
+ */
+export type DonationLinkReviewStatus = 'pending' | 'approved' | 'rejected';
+
 export interface DonationLink {
   readonly id: string;
   readonly categorySlug: DonationCategorySlug;
@@ -20,4 +26,8 @@ export interface DonationLink {
   readonly validatedAt: string;
   readonly hiddenAt: string | null;
   readonly createdAt: string;
+  /** D9 review state; a content edit sends an approved link back to 'pending'. */
+  readonly reviewStatus: DonationLinkReviewStatus;
+  /** The reviewer's optional reason, set on rejection. */
+  readonly reviewNote: string | null;
 }

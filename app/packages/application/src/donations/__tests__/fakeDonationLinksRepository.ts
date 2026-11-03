@@ -16,6 +16,8 @@ export function makeLink(overrides: Partial<DonationLink> = {}): DonationLink {
     validatedAt: '2026-05-10T00:00:00.000Z',
     hiddenAt: null,
     createdAt: '2026-05-10T00:00:00.000Z',
+    reviewStatus: 'approved',
+    reviewNote: null,
     ...overrides,
   };
 }
@@ -67,5 +69,15 @@ export class FakeDonationLinksRepository implements IDonationLinksRepository {
   async report(linkId: string): Promise<void> {
     this.lastReportedLinkId = linkId;
     if (this.reportError) throw this.reportError;
+  }
+
+  // D9 review methods: not exercised by these use-case tests (ReviewDonationLinksUseCases.test
+  // drives its own stub), so they answer with an empty queue and echo the decision.
+  async listForReview(): Promise<[]> {
+    return [];
+  }
+
+  async review(_linkId: string, approve: boolean): Promise<'approved' | 'rejected'> {
+    return approve ? 'approved' : 'rejected';
   }
 }

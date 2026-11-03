@@ -158,7 +158,7 @@ The Donations Hub is extended with 6 community-driven category tiles below the e
 A reusable component renders the community-curated NGO link list for any category slug in `('time','money','food','housing','transport','knowledge','animals','medical')`. Used both on the new dynamic category screen and embedded below the existing Time and Money screens.
 
 **Acceptance Criteria.**
-- AC1. Lists rows for the slug where the row still exists and is visible: `donation_links.category_slug = slug AND hidden_at IS NULL`, newest first. (Hard-deleted rows are gone from the table; `hidden_at` remains in the schema only for legacy rows until purged.)
+- AC1. Lists rows for the slug where the row still exists and is visible: `donation_links.category_slug = slug AND hidden_at IS NULL`, newest first. *(2026-11-03, D9, `0546`)* Other members see only rows with `review_status = 'approved'`; the submitter also sees their own pending or rejected row, with its status ("waiting for KC team approval" / "not approved" and the reviewer's note). (Hard-deleted rows are gone from the table; `hidden_at` remains in the schema only for legacy rows until purged.)
 - AC2. Header row shows the section title (*"עמותות וקישורים"*) and a small *"+"* icon button (32×32, primary color) on the leading RTL edge.
 - AC3. Each row shows: site favicon (with `link-outline` Ionicon fallback on image error), display name (h3), description (body, 2-line clamp), and tiny domain chip. Tap → `Linking.openURL(url)`.
 - AC4. Empty state shows a friendly message + centered *"הוספת קישור ראשון"* CTA that opens the add-link modal.

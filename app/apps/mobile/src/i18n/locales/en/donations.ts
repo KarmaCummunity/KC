@@ -97,6 +97,10 @@ export const donations = {
     },
     loading: 'Loading...',
     loadError: 'We couldn’t load the links. Try again.',
+    // D9 — the submitter's own link while it waits, or after a rejection.
+    reviewPending: 'Waiting for KC team approval',
+    reviewRejected: 'Not approved',
+    reviewRejectedNote: 'Not approved: {{note}}',
     retry: 'Try again',
     rowMenu: {
       open: 'Open',
@@ -134,8 +138,8 @@ export const donations = {
     submit: 'Add',
     save: 'Save',
     submitting: 'Verifying link...',
-    helperText: 'The link will be checked for validity before it’s added.',
-    editHelperText: 'Your changes will be verified against the server before saving.',
+    helperText: 'The link is checked, and shown to everyone once the KC team approves it.',
+    editHelperText: 'After a change, the link goes back to the KC team for approval before everyone sees it.',
     errors: {
       invalid_url: 'The link is invalid. Make sure it starts with http or https.',
       invalid_input: 'Please make sure all fields are filled in correctly.',
