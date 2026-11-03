@@ -8,6 +8,7 @@ function fakeRepo() {
     isBlocking: async () => false,
     block: async (a, b) => void calls.push(`block:${a}:${b}`),
     unblock: async (a, b) => void calls.push(`unblock:${a}:${b}`),
+    listMyBlockedUsers: async () => [],
   };
   return { repo, calls };
 }

@@ -10660,6 +10660,15 @@ export type Database = {
       kc_dev_is_e2e_title: { Args: { p_title: string }; Returns: boolean }
       kc_dev_is_seeded: { Args: never; Returns: boolean }
       list_active_surveys: { Args: never; Returns: Json }
+      list_my_blocked_users: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          blocked_at: string
+          display_name: string
+          user_id: string
+        }[]
+      }
       list_my_donation_history: {
         Args: { p_limit?: number }
         Returns: {

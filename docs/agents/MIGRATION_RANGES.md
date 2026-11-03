@@ -99,6 +99,7 @@ Last applied on kc-dev when this was written: `0239`.
 | 0542 | admin per-world flow funnel (G43) | in progress |
 | 0543 | listing owner management by status (spec 07 §7.1) | in progress |
 | 0544 | block filtering in both directions (FR-MOD-009) | in progress |
+| 0545 | Blocked Users list (FR-MOD-004) | in progress |
 | 0546 | donation link approval (D9) | in progress |
 | 0547+ | — | free |
 
