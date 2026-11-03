@@ -4,7 +4,7 @@
 // (link_target + target_preview) is present.
 import React from 'react';
 import { View, Pressable } from 'react-native';
-import { makeUseStyles, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, spacing, radius, typography, useTheme, Text } from '@kc/ui';
 import { hasPermission, type AdminRole } from '@kc/domain';
 import { useAdminRoles } from '../../../hooks/useAdminRoles';
 import { useAuthStore } from '../../../store/authStore';
@@ -96,18 +96,18 @@ export function AutoRemovedBubble({
 
 const useAutoRemovedBubbleStyles = makeUseStyles(({ colors }) => ({
   bubble: {
-    padding: 8,
+    padding: spacing.sm,
     backgroundColor: colors.warningLight,
-    borderRadius: 8,
-    marginVertical: 4,
+    borderRadius: radius.sm,
+    marginVertical: spacing.xs,
     alignSelf: 'center' as const,
     maxWidth: '90%',
   },
   dimmed: { opacity: 0.5 },
-  title: { fontWeight: '600' as const, color: colors.textPrimary },
-  body: { marginTop: 2, fontSize: 13, color: colors.textPrimary },
-  note: { fontSize: 11, color: colors.textSecondary, fontStyle: 'italic' as const, marginTop: 2 },
-  evidence: { fontSize: 11, color: colors.textSecondary, fontStyle: 'italic' as const, marginTop: 4 },
-  row: { flexDirection: rowDirectionStart, gap: 16, marginTop: 8 },
-  btn: { color: colors.secondary, fontWeight: '600' as const },
+  title: { ...typography.semiBold, color: colors.textPrimary },
+  body: { marginTop: spacing.xs, ...typography.body, color: colors.textPrimary },
+  note: { ...typography.caption, color: colors.textSecondary, fontStyle: 'italic' as const, marginTop: spacing.xs },
+  evidence: { ...typography.caption, color: colors.textSecondary, fontStyle: 'italic' as const, marginTop: spacing.xs },
+  row: { flexDirection: rowDirectionStart, gap: spacing.base, marginTop: spacing.sm },
+  btn: { color: colors.secondary, ...typography.semiBold },
 }));
