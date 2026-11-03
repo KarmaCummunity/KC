@@ -117,6 +117,15 @@ begin
                     and u.email like '%@seed.kc.test'
                     and coalesce(u.raw_app_meta_data->>'seed', '') = 'true');
 
+  -- Follow edges next, while both ends still exist: deleting an edge runs the karma trigger,
+  -- which credits the followed user and would hit a foreign-key error if that user's row were
+  -- already gone in the same cascade (two demo users following each other).
+  delete from public.follow_edges f
+   where exists (select 1 from auth.users u
+                  where u.id in (f.follower_id, f.followed_id)
+                    and u.email like '%@seed.kc.test'
+                    and coalesce(u.raw_app_meta_data->>'seed', '') = 'true');
+
   -- Cascades from auth.users to public.users and all of their content.
   delete from auth.users u
    where u.email like '%@seed.kc.test'
