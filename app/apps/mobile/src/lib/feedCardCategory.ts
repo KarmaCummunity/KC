@@ -5,8 +5,8 @@
 // only "Other". Ordinary posts and items mirrors keep their item subcategory (Books, Toys…).
 import type { ComponentProps } from 'react';
 import type { Ionicons } from '@expo/vector-icons';
-import type { Post } from '@kc/domain';
-import { CREATE_CATEGORIES, isCreateCategoryId } from './unifiedCreate/createCategories';
+import { isFeedWorldSlug, type Post } from '@kc/domain';
+import { CREATE_CATEGORIES } from './unifiedCreate/createCategories';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -46,11 +46,11 @@ export function feedCardCategory(post: FeedCardPost): FeedCardCategory {
 }
 
 /**
- * Chip label key of a giving world on a card. A create category (items, rides, food, housing,
+ * Chip label key of a giving world on a card. A world with a feed (items, rides, food, housing,
  * time) reads as the feed's chip does; any other world keeps its marketplace name.
  */
 export function worldChipKey(worldSlug: string): string {
-  const category = isCreateCategoryId(worldSlug) ? CREATE_CATEGORIES.find((c) => c.id === worldSlug) : undefined;
+  const category = isFeedWorldSlug(worldSlug) ? CREATE_CATEGORIES.find((c) => c.id === worldSlug) : undefined;
   return category?.labelKey ?? `marketplace.world.${worldSlug}`;
 }
 
@@ -59,6 +59,6 @@ export function worldChipKey(worldSlug: string): string {
  * category except items, whose mirrors carry the more specific item subcategory.
  */
 function worldCategory(worldSlug: string | null) {
-  if (!isCreateCategoryId(worldSlug) || worldSlug === 'items') return null;
+  if (!worldSlug || !isFeedWorldSlug(worldSlug) || worldSlug === 'items') return null;
   return CREATE_CATEGORIES.find((c) => c.id === worldSlug) ?? null;
 }

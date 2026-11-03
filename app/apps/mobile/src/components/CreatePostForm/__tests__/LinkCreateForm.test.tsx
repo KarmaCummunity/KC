@@ -1,0 +1,80 @@
+// @vitest-environment jsdom
+// FR-POST-001 AC6 / D100 — the create form of a world with no feed is "add a link": the submit
+// is blocked until the link is valid, then writes to the world's links category and reports it.
+import React from 'react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ThemeProvider } from '@kc/ui';
+
+const mocks = vi.hoisted(() => ({ addLink: vi.fn() }));
+
+vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
+vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+vi.mock('../../../lib/container', () => ({
+  container: { addDonationLink: { execute: mocks.addLink }, updateDonationLink: { execute: vi.fn() } },
+}));
+// The kit buttons animate with reanimated and haptics; the shared test doubles stand in for both.
+vi.mock('react-native-reanimated', async () => (await import('../../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
+vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogTestKit')).hapticsDouble);
+vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
+vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarScrollInset: () => 0 }));
+
+import { LinkCreateForm } from '../LinkCreateForm';
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
+
+function renderForm(onAdded = vi.fn(), onPublishActionChange = vi.fn()) {
+  render(
+    <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
+      <LinkCreateForm
+        categorySlug="democracy"
+        header={<div data-testid="header" />}
+        onAdded={onAdded}
+        onPublishActionChange={onPublishActionChange}
+      />
+    </ThemeProvider>,
+  );
+  return { onAdded, onPublishActionChange };
+}
+
+const input = (label: string) => screen.getByLabelText(label) as HTMLInputElement;
+const type = (label: string, value: string) => fireEvent.change(input(label), { target: { value } });
+
+describe('LinkCreateForm', () => {
+  it('keeps the submit disabled until the URL and name are valid', () => {
+    renderForm();
+    const publish = screen.getByTestId('link-publish');
+    expect(publish.getAttribute('aria-disabled')).toBe('true');
+    type('donations.addLinkModal.urlLabel', 'https://example.org');
+    type('donations.addLinkModal.nameLabel', 'Example org');
+    expect(screen.getByTestId('link-publish').getAttribute('aria-disabled')).not.toBe('true');
+  });
+
+  it('adds the link to the world\'s links category and reports it', async () => {
+    const link = { id: 'l1' };
+    mocks.addLink.mockResolvedValue(link);
+    const { onAdded } = renderForm();
+    type('donations.addLinkModal.urlLabel', 'https://example.org');
+    type('donations.addLinkModal.nameLabel', 'Example org');
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('link-publish'));
+    });
+    await waitFor(() => expect(onAdded).toHaveBeenCalledWith(link));
+    expect(mocks.addLink).toHaveBeenCalledWith({
+      categorySlug: 'democracy',
+      url: 'https://example.org',
+      displayName: 'Example org',
+      description: null,
+    });
+  });
+
+  it('registers the header publish action and clears it on unmount', () => {
+    const { onPublishActionChange } = renderForm();
+    expect(onPublishActionChange).toHaveBeenCalledWith(expect.any(Function), false);
+    cleanup();
+    expect(onPublishActionChange).toHaveBeenLastCalledWith(null, false);
+  });
+});

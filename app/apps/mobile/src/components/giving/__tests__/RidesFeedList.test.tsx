@@ -32,19 +32,31 @@ const ride = (id: string, direction: 'give' | 'request', extra: Partial<RideFeed
   meetingPoints: 0, seatsLeft: direction === 'give' ? 2 : null, passengers: direction === 'request' ? 1 : null, recurrence: null, seriesMore: 0, ...extra,
 });
 
-function renderFeed(sections: RideFeedSection[]) {
+function renderFeed(sections: RideFeedSection[], footer?: React.ReactElement) {
   loadRidesFeed.mockResolvedValue(sections);
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
       <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
-        <RidesFeedList header={<div data-testid="hub-header" />} />
+        <RidesFeedList header={<div data-testid="hub-header" />} footer={footer} />
       </ThemeProvider>
     </QueryClientProvider>,
   );
 }
 
 describe('RidesFeedList', () => {
+  it('puts the footer (the NGO links) after the rides, never before them', async () => {
+    const view = renderFeed(
+      [{ group: 'today', items: [ride('o1', 'give')] }],
+      <div data-testid="hub-footer" />,
+    );
+    await waitFor(() => expect(view.queryByTestId('rides-feed-item-o1')).not.toBeNull());
+    const order = (a: string, b: string) =>
+      view.getByTestId(a).compareDocumentPosition(view.getByTestId(b)) & Node.DOCUMENT_POSITION_FOLLOWING;
+    expect(order('hub-header', 'rides-feed-item-o1')).toBeTruthy();
+    expect(order('rides-feed-item-o1', 'hub-footer')).toBeTruthy();
+  });
+
   it('shows each day group with its rides, offers and requests together', async () => {
     const view = renderFeed([
       { group: 'today', items: [ride('o1', 'give', { meetingPoints: 2 })] },
