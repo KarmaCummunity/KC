@@ -3,16 +3,18 @@
  * listFeedback. Uses a manually-crafted RPC mock — no live Supabase instance.
  */
 import { describe, it, expect, vi } from 'vitest';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '../../database.types';
 import { SupabaseSurveyAdminRepository } from '../SupabaseSurveyAdminRepository';
 
 type RpcOverrides = Record<string, { data: unknown; error: { message: string } | null }>;
 
-function makeClient(rpcResults: RpcOverrides = {}): any {
+function makeClient(rpcResults: RpcOverrides = {}): SupabaseClient<Database> {
   return {
     rpc: vi.fn().mockImplementation((name: string) =>
       Promise.resolve(rpcResults[name] ?? { data: null, error: null }),
     ),
-  };
+  } as unknown as SupabaseClient<Database>;
 }
 
 describe('SupabaseSurveyAdminRepository.listOverview', () => {

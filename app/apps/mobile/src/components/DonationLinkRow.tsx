@@ -4,7 +4,7 @@ import { Image, Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import type { DonationLink } from '@kc/domain';
-import { makeUseStyles, radius, shadow, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, radius, shadow, spacing, typography, iconSize, useTheme, Text } from '@kc/ui';
 import { openExternalUrl } from '../utils/openExternalUrl';
 import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
 import { rowDirectionStart } from '../lib/rtlLayout';
@@ -53,14 +53,14 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
   iconWrap: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radius.full,
     backgroundColor: colors.primaryLight,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     overflow: 'hidden' as const,
   },
   favicon: { width: 28, height: 28 },
-  body: { flex: 1, gap: 2 },
+  body: { flex: 1, gap: spacing.xs },
   title: { ...typography.h3, color: colors.textPrimary, textAlign: rtlTextAlignStart },
   description: { ...typography.body, color: colors.textSecondary, textAlign: rtlTextAlignStart },
   host: { ...typography.caption, color: colors.textDisabled, textAlign: rtlTextAlignStart },
@@ -93,7 +93,7 @@ export function DonationLinkRow({ link, canRemove, onMenuPress }: Props) {
       >
         <View style={styles.iconWrap}>
           {iconError ? (
-            <Ionicons name="link-outline" size={22} color={colors.primary} />
+            <Ionicons name="link-outline" size={iconSize.xl} color={colors.primary} />
           ) : (
             <Image
               source={{ uri: faviconUrl }}
@@ -119,7 +119,7 @@ export function DonationLinkRow({ link, canRemove, onMenuPress }: Props) {
         hitSlop={8}
         style={styles.menuBtn}
       >
-        <Ionicons name="ellipsis-horizontal" size={20} color={colors.textSecondary} />
+        <Ionicons name="ellipsis-horizontal" size={iconSize.lg} color={colors.textSecondary} />
       </Pressable>
     </View>
   );

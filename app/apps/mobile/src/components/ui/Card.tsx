@@ -3,7 +3,7 @@
 // that should sit "above" the cream backdrop.
 import React from 'react';
 import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
-import { makeUseStyles, radius, spacing } from '@kc/ui';
+import { makeUseStyles, radius, spacing, shadow } from '@kc/ui';
 
 interface CardProps {
   readonly children: React.ReactNode;
@@ -18,11 +18,9 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: isDark ? 0 : 0.05,
-    shadowRadius: 4,
-    elevation: isDark ? 0 : 1,
+    ...shadow.card,
+    shadowOpacity: isDark ? 0 : shadow.card.shadowOpacity,
+    elevation: isDark ? 0 : shadow.card.elevation,
     borderWidth: isDark ? 1 : 0,
     borderColor: isDark ? colors.border : 'transparent',
   },
