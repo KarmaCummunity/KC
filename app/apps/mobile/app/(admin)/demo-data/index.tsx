@@ -1,5 +1,5 @@
 // FR-ADMIN-031 — Demo data: shows how much kc-dev fake data exists and lets a super admin
-// delete it in one press (admin_wipe_demo_data, 0549). Restoring is the "Seed KC dev" workflow.
+// delete it in one press (admin_wipe_demo_data, 0549) and bring it back (admin_seed_demo_data, 0550).
 import { Alert, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { hasPermission, type AdminRole } from '@kc/domain';
@@ -8,6 +8,7 @@ import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { getDemoDataRepository } from '../../../src/services/demoDataComposition';
 import { confirmAction } from '../../../src/services/platformConfirm';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
+import { DemoDataSeedCard } from '../../../src/components/admin/demoData/DemoDataSeedCard';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { textAlignStart } from '../../../src/lib/rtlLayout';
 
@@ -41,6 +42,15 @@ export default function DemoDataScreen() {
     onError: () => Alert.alert(t.wipeFailed),
   });
 
+  const seed = useMutation({
+    mutationFn: (password: string | undefined) => getDemoDataRepository().seed(password),
+    onSuccess: (r) => {
+      void queryClient.invalidateQueries();
+      Alert.alert(t.seedDoneTitle, t.seedDone(r.users, r.posts, r.organizations));
+    },
+    onError: () => Alert.alert(t.seedFailed),
+  });
+
   if (rolesLoading) {
     return <View style={styles.center}><Text>{t.loading}</Text></View>;
   }
@@ -51,6 +61,7 @@ export default function DemoDataScreen() {
   const users = status.data?.demoUsers ?? 0;
   const orgs = status.data?.demoOrganizations ?? 0;
   const hasDemo = users + orgs > 0;
+  const canSeed = status.data?.canSeed ?? false;
 
   const onWipe = async () => {
     const ok = await confirmAction(t.confirmTitle, t.confirmBody(users, orgs), {
@@ -69,7 +80,16 @@ export default function DemoDataScreen() {
       <Text style={styles.muted}>{t.subtitle}</Text>
 
       {status.isError ? <Text style={styles.error}>{t.error}</Text> : null}
-      {status.isSuccess && !hasDemo ? <AdminListEmpty title={t.noneTitle} hint={t.noneHint} /> : null}
+      {status.isSuccess && !hasDemo ? (
+        <AdminListEmpty title={t.noneTitle} hint={canSeed ? t.noneHintRestore : t.noneHintNoRestore} />
+      ) : null}
+      {status.isSuccess && !hasDemo && canSeed ? (
+        <DemoDataSeedCard
+          needsPassword={!status.data?.hasSavedPassword}
+          pending={seed.isPending}
+          onSeed={(password) => seed.mutate(password)}
+        />
+      ) : null}
 
       {status.isSuccess && hasDemo ? (
         <View style={styles.card}>
@@ -85,7 +105,6 @@ export default function DemoDataScreen() {
           >
             <Text style={styles.wipeLabel}>{wipe.isPending ? t.wiping : t.wipeButton}</Text>
           </Pressable>
-          <Text style={styles.muted}>{t.restoreNote}</Text>
         </View>
       ) : null}
     </ScrollView>

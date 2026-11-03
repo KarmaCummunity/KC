@@ -9111,6 +9111,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      admin_seed_demo_data: {
+        Args: { p_password?: string }
+        Returns: Json
+      }
       admin_dismiss_report: {
         Args: { p_report_id: string }
         Returns: undefined

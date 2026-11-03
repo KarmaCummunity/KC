@@ -5,6 +5,10 @@ import type { Database } from '../database.types';
 export interface DemoDataStatus {
   readonly demoUsers: number;
   readonly demoOrganizations: number;
+  /** True only on the kc-dev database, where the demo data may be (re)created. */
+  readonly canSeed: boolean;
+  /** True once a seed password was given, so a restore needs no password. */
+  readonly hasSavedPassword: boolean;
 }
 
 export interface DemoDataWipeResult {
@@ -14,6 +18,13 @@ export interface DemoDataWipeResult {
   readonly organizationsKept: number;
 }
 
+export interface DemoDataSeedResult {
+  readonly users: number;
+  readonly posts: number;
+  readonly rides: number;
+  readonly organizations: number;
+}
+
 // RPCs return untyped jsonb; read each key defensively so a missing field becomes 0, not NaN.
 const count = (obj: Record<string, unknown>, key: string): number => Number(obj[key] ?? 0);
 const asObject = (data: unknown): Record<string, unknown> =>
@@ -21,7 +32,12 @@ const asObject = (data: unknown): Record<string, unknown> =>
 
 export function mapDemoDataStatus(data: unknown): DemoDataStatus {
   const o = asObject(data);
-  return { demoUsers: count(o, 'demo_users'), demoOrganizations: count(o, 'demo_organizations') };
+  return {
+    demoUsers: count(o, 'demo_users'),
+    demoOrganizations: count(o, 'demo_organizations'),
+    canSeed: o.can_seed === true,
+    hasSavedPassword: o.has_saved_password === true,
+  };
 }
 
 export function mapDemoDataWipeResult(data: unknown): DemoDataWipeResult {
@@ -30,6 +46,16 @@ export function mapDemoDataWipeResult(data: unknown): DemoDataWipeResult {
     usersDeleted: count(o, 'users_deleted'),
     organizationsDeleted: count(o, 'organizations_deleted'),
     organizationsKept: count(o, 'organizations_kept'),
+  };
+}
+
+export function mapDemoDataSeedResult(data: unknown): DemoDataSeedResult {
+  const o = asObject(data);
+  return {
+    users: count(o, 'users'),
+    posts: count(o, 'posts'),
+    rides: count(o, 'rides'),
+    organizations: count(o, 'organizations'),
   };
 }
 
@@ -48,5 +74,15 @@ export class SupabaseDemoDataRepository {
     const { data, error } = await this.client.rpc('admin_wipe_demo_data');
     if (error) throw new Error(`wipeDemoData: ${error.message}`);
     return mapDemoDataWipeResult(data);
+  }
+
+  /**
+   * Super admin, kc-dev only: wipes then recreates the demo data. `password` (min 8 chars) is the
+   * seed users' login password; it is needed once and saved server-side as a hash.
+   */
+  async seed(password?: string): Promise<DemoDataSeedResult> {
+    const { data, error } = await this.client.rpc('admin_seed_demo_data', { p_password: password });
+    if (error) throw new Error(`seedDemoData: ${error.message}`);
+    return mapDemoDataSeedResult(data);
   }
 }
