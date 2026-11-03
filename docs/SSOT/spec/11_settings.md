@@ -222,7 +222,7 @@ The user deletes their own account: it is deactivated for 30 days, restorable, t
 
 **Acceptance Criteria.**
 - AC1. The action requires a two-step confirmation: a warning modal listing consequences (including that the account is kept for 30 days and can be restored by signing in), followed by typing the user's display name to confirm.
-- AC2. On confirm the account is **deactivated**, not deleted (`{{D:account-restore-grace}}`): `account_status` becomes `pending_deletion` and a purge date 30 days ahead is stored. Immediately:
+- AC2. On confirm the account is **deactivated**, not deleted (`D108`): `account_status` becomes `pending_deletion` and a purge date 30 days ahead is stored. Immediately:
    - The profile, posts, listings and chats of the user disappear for everyone else (feeds, search, map, profile, chat lists); counterparts see the "Deleted user" placeholder per `D-14`.
    - All push tokens are unregistered and the user is signed out on every device.
    - Nothing is deleted yet: posts, media, follows, blocks and chats stay as they were so a restore is complete.

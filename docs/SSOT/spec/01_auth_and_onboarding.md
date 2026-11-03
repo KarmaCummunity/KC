@@ -257,7 +257,7 @@ Captures `display_name`, `city` (canonical picker), and optionally `profile_stre
 - AC2. `city` is a dropdown of the canonical Israeli city list seeded by the system. No free-text city.
 - AC2.b. **Optional full address (MVP+):** After choosing a city, the user may enter `profile_street` (1–80 chars) and `profile_street_number` (same validation and storage rule as posts / `FR-PROFILE-007`: digits with an optional single-letter suffix — Latin or Hebrew — e.g. `12`, `12B`, `12א`; see `04_posts.md` street_number AC3). Both must be filled together or both left empty; values persist to `users.profile_street` / `users.profile_street_number` (`FR-PROFILE-007`). Omitting them keeps city-only residence. **Street is a city-dependent canonical picker** over `public.streets` (sourced from data.gov.il package 321; see `D-36`) with a free-text fallback row that lets the user save any string when the typed name is not in the list. **On this screen the street + number fields are progressively disclosed** — hidden until a city is selected, revealed via the existing entry animation, collapsed back to hidden if the user clears the city. Switching the city resets street + number so a Tel Aviv street can never accompany a Jerusalem submission.
 - AC2.c. **Optional contact phone (MVP+):** Below the address, the user may enter a free-text contact phone (`users.contact_phone`, 1–20 chars after trim). The field is **non-verified** in MVP — no OTP, no format validation, no country-code normalization. Null = unset. Distinct from the auth phone (`auth.users.phone`) used for `FR-AUTH-005` OTP sign-in. Surfaced to other users as a tappable `tel:` link on the chat anchored-post card (`FR-CHAT-014`).
-- AC2.d. **Date of birth (`{{D:profile-extra-fields}}`):** a required date field (`users.date_of_birth`), private to the owner. The user must be at least 18 on the day of the check; a younger or invalid date is rejected with an inline error and nothing is saved. The server enforces the same rule, so a modified client cannot bypass it.
+- AC2.d. **Date of birth (`D109`):** a required date field (`users.date_of_birth`), private to the owner. The user must be at least 18 on the day of the check; a younger or invalid date is rejected with an inline error and nothing is saved. The server enforces the same rule, so a modified client cannot bypass it.
 - AC3. A "Skip" option exists. Skipping advances to step 3 (Profile Photo, `FR-AUTH-011`) but marks `User.onboarding_state = pending_basic_info` (and leaves the date of birth empty). The first attempt at a meaningful action (post creation, follow, sending the first chat message) re-prompts to fill these fields (see `FR-AUTH-015`). The system also persists `users.basic_info_skipped = true` on Skip so returning sessions (cold start, app update, re-auth) **land on the Home Feed** instead of forcing the full-screen wizard again; the deferred fields are still collected only via `FR-AUTH-015` until saved.
 - AC4. SSO-prefilled values are editable and persisted upon "Continue".
 
@@ -373,10 +373,10 @@ A user whose `onboarding_state` is `pending_basic_info` and who attempts to crea
 ## FR-AUTH-016 — Account deletion grace period (replaces the re-registration cooldown)
 
 **Description.**
-A deleted account is deactivated for 30 days and can be restored by signing in; there is no re-registration cooldown (`{{D:account-restore-grace}}`, PM 2026-11-03). The deletion itself is `FR-SETTINGS-012`.
+A deleted account is deactivated for 30 days and can be restored by signing in; there is no re-registration cooldown (`D108`, PM 2026-11-03). The deletion itself is `FR-SETTINGS-012`.
 
 **Source.**
-- Decisions: `D-12`, `{{D:account-restore-grace}}` (supersedes the 30-day identifier cooldown).
+- Decisions: `D-12`, `D108` (supersedes the 30-day identifier cooldown).
 - Constraints: `R-MVP-Privacy-6`.
 
 **Acceptance Criteria.**
