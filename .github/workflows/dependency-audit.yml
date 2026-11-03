@@ -1,0 +1,87 @@
+name: Dependency audit
+
+# Scheduled half of the dependency audit (#1373, TD-254). The PR gate audits
+# only when a diff touches a dependency file, so a newly published advisory
+# never turns unrelated PRs red. This workflow audits `dev` and `main` daily
+# against the current advisory database and the exception expiry dates, and
+# keeps one open issue while any branch fails; the issue closes itself on the
+# next green run. The issue links the run and never names packages (SECURITY.md:
+# no vulnerability details in public issues). Not part of `CI gate`.
+
+on:
+  schedule:
+    - cron: '41 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: audit (${{ matrix.ref }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        ref: [dev, main]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ matrix.ref }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install guard-script dependencies
+        run: npm ci --prefix scripts --ignore-scripts --no-audit --no-fund
+
+      - name: Audit every lockfile and Edge Function npm import
+        run: node scripts/check-dependency-audit.mjs
+
+  report:
+    name: tracking issue
+    needs: audit
+    if: ${{ !cancelled() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open or close the tracking issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RESULT: ${{ needs.audit.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          title="Scheduled dependency audit is failing"
+          number="$(gh issue list -R "$REPO" --state open --search "\"$title\" in:title" \
+            --json number,title --jq "map(select(.title == \"$title\")) | .[0].number // empty")"
+          if [ "$RESULT" = "success" ]; then
+            if [ -n "$number" ]; then
+              gh issue close "$number" -R "$REPO" --comment "The scheduled dependency audit passes again: $RUN_URL"
+            fi
+            exit 0
+          fi
+          if [ -n "$number" ]; then
+            echo "Tracking issue #$number is already open."
+            exit 0
+          fi
+          body="$(printf '%s\n' \
+            "The scheduled dependency audit failed on \`dev\` or \`main\`: $RUN_URL" \
+            "" \
+            "A new high/critical advisory, an expired exception or an unreachable registry fails it. Details are in the run log only." \
+            "" \
+            "Fix: upgrade the dependency, or add or renew a reviewed exception in \`scripts/check-dependency-audit.allowlist.json\` (owner review). Run \`node scripts/check-dependency-audit.mjs\` locally to reproduce. Process: \`SECURITY.md\` (Dependency audit)." \
+            "" \
+            "This issue closes itself on the next green scheduled run.")"
+          gh issue create -R "$REPO" --title "$title" \
+            --label area:security --label area:ci --label priority:P1 --body "$body"
