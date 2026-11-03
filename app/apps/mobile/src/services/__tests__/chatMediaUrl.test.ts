@@ -1,8 +1,14 @@
 import { describe, it, expect, vi } from 'vitest';
+import { getSupabaseClient } from '@kc/infrastructure-supabase';
 
 vi.mock('@kc/infrastructure-supabase', () => ({ getSupabaseClient: vi.fn() }));
 
-import { chatImagePath, createChatMediaUrlResolver, SIGNED_URL_TTL_SECONDS } from '../chatMediaUrl';
+import {
+  chatImagePath,
+  createChatMediaUrlResolver,
+  resolveChatMediaUrl,
+  SIGNED_URL_TTL_SECONDS,
+} from '../chatMediaUrl';
 
 const PATH = 'u1/c1/obj-1.jpg';
 
@@ -79,5 +85,43 @@ describe('chatImagePath', () => {
   it('returns null for other media types and for no payload', () => {
     expect(chatImagePath({ type: 'location', path: PATH })).toBeNull();
     expect(chatImagePath(null)).toBeNull();
+  });
+});
+
+describe('default resolveChatMediaUrl with supabase', () => {
+  it('calls supabase storage createSignedUrl and returns signed url', async () => {
+    const mockCreateSignedUrl = vi.fn().mockResolvedValue({
+      data: { signedUrl: 'https://storage/signed/default.jpg' },
+      error: null,
+    });
+    vi.mocked(getSupabaseClient).mockReturnValue({
+      storage: {
+        from: vi.fn(() => ({
+          createSignedUrl: mockCreateSignedUrl,
+        })),
+      },
+    } as never);
+
+    const url = await resolveChatMediaUrl('unique-path-1.jpg');
+
+    expect(url).toBe('https://storage/signed/default.jpg');
+    expect(mockCreateSignedUrl).toHaveBeenCalledWith('unique-path-1.jpg', SIGNED_URL_TTL_SECONDS);
+  });
+
+  it('returns null when supabase storage returns an error', async () => {
+    const mockCreateSignedUrl = vi.fn().mockResolvedValue({
+      data: null,
+      error: { message: 'Not allowed' },
+    });
+    vi.mocked(getSupabaseClient).mockReturnValue({
+      storage: {
+        from: vi.fn(() => ({
+          createSignedUrl: mockCreateSignedUrl,
+        })),
+      },
+    } as never);
+
+    const url = await resolveChatMediaUrl('unique-path-error.jpg');
+    expect(url).toBeNull();
   });
 });

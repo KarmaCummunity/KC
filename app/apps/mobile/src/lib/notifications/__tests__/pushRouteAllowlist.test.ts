@@ -186,4 +186,58 @@ describe('resolvePushRoute', () => {
       });
     }
   });
+
+  describe('chat and post lifecycle notifications', () => {
+    it.each(['support_message', 'system_message'] as const)(
+      'routes %s to /chat/[id] using chat_id or params.id',
+      (kind) => {
+        expect(
+          resolvePushRoute({ category: 'social', kind, notification_id: 'n', chat_id: UUID }),
+        ).toEqual({ pathname: '/chat/[id]', params: { id: UUID } });
+
+        expect(
+          resolvePushRoute({ category: 'social', kind, notification_id: 'n', params: { id: UUID } }),
+        ).toEqual({ pathname: '/chat/[id]', params: { id: UUID } });
+      },
+    );
+
+    it.each(['post_expiring', 'mark_recipient', 'unmark_recipient'] as const)(
+      'routes %s to /post/[id] when id is a valid UUID',
+      (kind) => {
+        expect(
+          resolvePushRoute({ category: 'critical', kind, notification_id: 'n', params: { id: UUID } }),
+        ).toEqual({ pathname: '/post/[id]', params: { id: UUID } });
+
+        expect(
+          resolvePushRoute({ category: 'critical', kind, notification_id: 'n', params: { id: 'bad' } }),
+        ).toBeNull();
+      },
+    );
+
+    it('routes auto_removed to /settings/audit', () => {
+      expect(
+        resolvePushRoute({ category: 'critical', kind: 'auto_removed', notification_id: 'n' }),
+      ).toEqual({ pathname: '/settings/audit', params: {} });
+    });
+
+    it.each(['follow_started', 'follow_approved'] as const)(
+      'routes %s to /settings/follow-requests',
+      (kind) => {
+        expect(
+          resolvePushRoute({ category: 'social', kind, notification_id: 'n' }),
+        ).toEqual({ pathname: '/settings/follow-requests', params: {} });
+      },
+    );
+
+    it('routes task_assigned using params.id when task_id is omitted', () => {
+      expect(
+        resolvePushRoute({
+          category: 'social',
+          kind: 'task_assigned',
+          notification_id: 'n',
+          params: { id: UUID },
+        }),
+      ).toEqual({ pathname: '/(admin)/tasks/[taskId]', params: { taskId: UUID } });
+    });
+  });
 });
