@@ -1,6 +1,6 @@
 // validate-donation-link/dnsGuard.test.ts — run: deno test supabase/functions/validate-donation-link
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
-import { DnsUnavailableError, resolvesOnlyToPublic, type ResolveRecords } from './dnsGuard.ts';
+import { DnsUnavailableError, ipv4FromMappedIPv6, resolvesOnlyToPublic, type ResolveRecords } from './dnsGuard.ts';
 
 const predicates = {
   isPrivateIPv4: (a: string) => /^(10\.|127\.|169\.254\.|192\.168\.)/.test(a),
@@ -35,4 +35,19 @@ Deno.test('fails closed when resolution throws', async () => {
 Deno.test('skips the check when the runtime has no DNS API', async () => {
   const unavailable: ResolveRecords = () => Promise.reject(new DnsUnavailableError('no dns'));
   assertEquals(await resolvesOnlyToPublic('example.org', unavailable, predicates), true);
+});
+
+Deno.test('decodes an IPv4-mapped IPv6 address in dotted and hex form', () => {
+  assertEquals(ipv4FromMappedIPv6('::ffff:127.0.0.1'), '127.0.0.1');
+  // `new URL('http://[::ffff:127.0.0.1]/').hostname` is `[::ffff:7f00:1]`.
+  assertEquals(new URL('http://[::ffff:127.0.0.1]/').hostname, '[::ffff:7f00:1]');
+  assertEquals(ipv4FromMappedIPv6('[::ffff:7f00:1]'), '127.0.0.1');
+  assertEquals(ipv4FromMappedIPv6('::ffff:a9fe:a9fe'), '169.254.169.254');
+  assertEquals(ipv4FromMappedIPv6('0:0:0:0:0:ffff:808:808'), '8.8.8.8');
+});
+
+Deno.test('returns null for an address that is not IPv4-mapped', () => {
+  assertEquals(ipv4FromMappedIPv6('2001:4860:4860::8888'), null);
+  assertEquals(ipv4FromMappedIPv6('::1'), null);
+  assertEquals(ipv4FromMappedIPv6('::ffff:zzzz:1'), null);
 });
