@@ -13,8 +13,8 @@ import React from 'react';
 import { ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Ionicons } from '@expo/vector-icons';
 import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { MirroredIcon } from '../../../src/components/ui/MirroredIcon';
 import { TopBar } from '../../../src/components/TopBar';
 import { PressableScale } from '../../../src/components/animations/PressableScale';
 import { Screen } from '../../../src/components/ui/Screen';
@@ -154,7 +154,7 @@ export default function DonationsHubScreen() {
                     {t(DONATIONS_HUB_FEATURED.subtitleKey)}
                   </Text>
                 </View>
-                <Ionicons name="chevron-back" size={iconSize.xl} color={colors.primary} />
+                <MirroredIcon name="chevron-forward" size={iconSize.xl} color={colors.primary} />
               </Card>
             </PressableScale>
           </MotionEntry>

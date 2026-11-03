@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { makeUseStyles, typography, spacing, useTheme, Text, iconSize } from '@kc/ui';
 import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../lib/webRtlStyle';
+import { MirroredIcon } from './ui/MirroredIcon';
 
 export interface SettingsScreenRowProps {
   readonly label: string;
@@ -32,7 +33,7 @@ export function SettingsScreenRow({
   const iconColor = destructive ? colors.error : colors.textSecondary;
   const labelStyle = [styles.rowLabel, destructive && { color: colors.error }];
   const trailing = rightElement ?? (
-    <Ionicons name="chevron-back" size={iconSize.md} color={colors.textDisabled} />
+    <MirroredIcon name="chevron-forward" size={iconSize.md} color={colors.textDisabled} />
   );
 
   const inner = (

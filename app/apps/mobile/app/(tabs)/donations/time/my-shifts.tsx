@@ -11,7 +11,7 @@ import { volunteerUseCases } from '../../../../src/services/volunteerComposition
 import { useShellTabBarScrollInset } from '../../../../src/navigation/useShellTabBarVisibility';
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  action: { ...typography.bodySmall, color: colors.primary, fontWeight: '600' as const },
+  action: { ...typography.bodySmall, ...typography.semiBold, color: colors.primary },
 }));
 
 const ROW = { marginHorizontal: spacing.lg };
