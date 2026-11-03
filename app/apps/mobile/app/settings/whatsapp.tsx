@@ -4,7 +4,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, View } from 'react-nat
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
@@ -118,11 +118,11 @@ const useScreenStyles = makeUseStyles(({ colors }) => ({
   text: { ...typography.body, color: colors.textPrimary, textAlign: rtlTextAlignStart, width: '100%', ...webTextRtl },
   note: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart, width: '100%', ...webTextRtl },
   card: {
-    backgroundColor: colors.surface, borderRadius: 14, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
     padding: spacing.base, gap: spacing.md, ...webViewRtl,
   },
   code: { ...typography.h1, color: colors.primary, textAlign: 'center' as const, letterSpacing: 6 },
-  button: { backgroundColor: colors.primary, borderRadius: 10, paddingVertical: spacing.md, alignItems: 'center' as const },
+  button: { backgroundColor: colors.primary, borderRadius: radius.sm, paddingVertical: spacing.md, alignItems: 'center' as const },
   buttonText: { ...typography.button, color: colors.textInverse },
   linkButton: { paddingVertical: spacing.sm, alignItems: 'center' as const },
   danger: { ...typography.body, color: colors.error },
