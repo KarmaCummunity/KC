@@ -109,29 +109,36 @@ declare
   v_orgs_deleted integer := 0;
   v_orgs_kept    integer := 0;
   v_org_id       uuid;
+  v_seed_ids     uuid[];
 begin
-  -- Chats first: their participant FKs do not cascade from users.
-  delete from public.chats c
-   where exists (select 1 from auth.users u
-                  where u.id in (c.participant_a, c.participant_b)
-                    and u.email like '%@seed.kc.test'
-                    and coalesce(u.raw_app_meta_data->>'seed', '') = 'true');
-
-  -- Follow edges next, while both ends still exist: deleting an edge runs the karma trigger,
-  -- which credits the followed user and would hit a foreign-key error if that user's row were
-  -- already gone in the same cascade (two demo users following each other).
-  delete from public.follow_edges f
-   where exists (select 1 from auth.users u
-                  where u.id in (f.follower_id, f.followed_id)
-                    and u.email like '%@seed.kc.test'
-                    and coalesce(u.raw_app_meta_data->>'seed', '') = 'true');
-
-  -- Cascades from auth.users to public.users and all of their content.
-  delete from auth.users u
+  select coalesce(array_agg(u.id), '{}') into v_seed_ids
+    from auth.users u
    where u.email like '%@seed.kc.test'
      and coalesce(u.raw_app_meta_data->>'seed', '') = 'true';
+
+  -- Delete in dependency order while every demo user still exists. Rows removed by the
+  -- auth.users cascade would fire delete triggers (karma credit, personal activity log,
+  -- counters) that write rows for a user whose row is already gone, breaking a foreign key.
+
+  -- Chats first: their participant FKs do not cascade from users.
+  delete from public.chats c
+   where c.participant_a = any (v_seed_ids) or c.participant_b = any (v_seed_ids);
+
+  delete from public.follow_edges f
+   where f.follower_id = any (v_seed_ids) or f.followed_id = any (v_seed_ids);
+
+  delete from public.recipients r
+   where r.recipient_user_id = any (v_seed_ids)
+      or r.post_id in (select p.post_id from public.posts p where p.owner_id = any (v_seed_ids));
+
+  delete from public.posts p where p.owner_id = any (v_seed_ids);
+
+  -- Whatever is left cascades from auth.users to public.users.
+  delete from auth.users u where u.id = any (v_seed_ids);
   get diagnostics v_users = row_count;
 
+  -- Demo nonprofits are not owned by seed users. One with payment history (non-cascading
+  -- FKs) is kept and counted, not fatal.
   for v_org_id in
     select o.org_id from public.organizations o where o.verification_method = 'demo_seed'
   loop
