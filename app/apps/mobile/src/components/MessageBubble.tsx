@@ -1,11 +1,11 @@
 // Bubble for a single chat message — FR-CHAT-002 AC2/AC4.
 // FR-ADMIN-005 — admins can long-press a user-kind bubble to hard-delete it.
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
 import type { MessageReactionType } from '@kc/infrastructure-supabase';
 import { Ionicons } from '@expo/vector-icons';
 import type { OptimisticMessage } from '../store/chatStore';
-import { makeUseStyles, typography, spacing, radius, useTheme } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, iconSize, useTheme, Text } from '@kc/ui';
 import { SystemMessageBubble } from './chat/system/SystemMessageBubble';
 import { hasPermission, type AdminRole } from '@kc/domain';
 import { useAdminRoles } from '../hooks/useAdminRoles';
@@ -14,9 +14,11 @@ import { confirmAndRun, showAdminToast } from './chat/system/adminActions';
 import { formatMessageBubbleTime } from '../lib/chatMessageDisplayTime';
 import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
 import { useTranslation } from 'react-i18next';
-import { KCImage } from './ui/KCImage';
+import { ChatMediaImage } from './chat/ChatMediaImage';
+import { chatImagePath } from '../services/chatMediaUrl';
 import { ChatReactionChips } from './chat/ChatReactionChips';
 import type { ReactionSummary } from '../hooks/useChatMessageReactions';
+import { systemMessageText } from '../lib/chat/systemMessageText';
 
 const KNOWN_MOD_KINDS = [
   'report_received',
@@ -37,7 +39,8 @@ function MessageBubbleInner({
   handledByLaterAction?: boolean;
   reactionSummary?: ReactionSummary;
   myReaction?: MessageReactionType | null;
-  onReactionPick?: (reaction: MessageReactionType) => void;
+  /** Called with the persisted message id; reactions are off for unsent messages. */
+  onReactionPick?: (messageId: string, reaction: MessageReactionType) => void;
 }) {
   const [showTime, setShowTime] = useState(false);
   const { t } = useTranslation();
@@ -47,26 +50,31 @@ function MessageBubbleInner({
   const { colors } = useTheme();
   const mineMetaColor = { color: colors.textInverse, opacity: 0.7 };
 
+  const handlePickReaction = React.useMemo(
+    () =>
+      onReactionPick && m.messageId
+        ? (reaction: MessageReactionType) => onReactionPick(m.messageId!, reaction)
+        : undefined,
+    [m.messageId, onReactionPick],
+  );
+
   // System messages (FR-CHAT-007 / FR-MOD-002) — moderation kinds delegate to
   // SystemMessageBubble; unknown/legacy kinds keep the existing neutral pill.
   if (m.kind === 'media') {
-    const payload = m.mediaPayload as { type?: string; url?: string } | null;
-    const imageUrl = payload?.type === 'image' ? payload.url : undefined;
+    const imagePath = chatImagePath(m.mediaPayload);
     return (
       <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleOther]}>
-        {imageUrl ? (
-          <KCImage uri={imageUrl} style={styles.mediaImage} contentFit="cover" />
-        ) : null}
+        {imagePath ? <ChatMediaImage path={imagePath} style={styles.mediaImage} /> : null}
         {m.body.trim().length > 0 && m.body.trim() !== ' ' ? (
           <Text style={[styles.bubbleText, mine ? styles.bubbleTextMine : styles.bubbleTextOther]}>
             {m.body}
           </Text>
         ) : null}
-        {m.messageId && onReactionPick ? (
+        {handlePickReaction ? (
           <ChatReactionChips
             summary={reactionSummary ?? {}}
             mine={myReaction ?? null}
-            onPick={onReactionPick}
+            onPick={handlePickReaction}
           />
         ) : null}
       </View>
@@ -89,8 +97,8 @@ function MessageBubbleInner({
     return (
       <View style={styles.systemWrap}>
         <View style={styles.systemPill}>
-          <Ionicons name="information-circle-outline" size={14} color={colors.textSecondary} />
-          <Text style={styles.systemText}>{m.body}</Text>
+          <Ionicons name="information-circle-outline" size={iconSize.xs} color={colors.textSecondary} />
+          <Text style={styles.systemText}>{systemMessageText(m, t)}</Text>
         </View>
       </View>
     );
@@ -119,16 +127,16 @@ function MessageBubbleInner({
     >
       <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleOther]}>
         <Text style={[styles.bubbleText, mine ? styles.bubbleTextMine : styles.bubbleTextOther]}>{m.body}</Text>
-        {m.messageId && onReactionPick ? (
+        {handlePickReaction ? (
           <ChatReactionChips
             summary={reactionSummary ?? {}}
             mine={myReaction ?? null}
-            onPick={onReactionPick}
+            onPick={handlePickReaction}
           />
         ) : null}
         <View style={styles.bubbleMeta}>
           {m.failed && (
-            <TouchableOpacity onPress={() => onRetry(m.clientId, m.body)}><Ionicons name="refresh" size={14} color={colors.textInverse} /></TouchableOpacity>
+            <TouchableOpacity onPress={() => onRetry(m.clientId, m.body)}><Ionicons name="refresh" size={iconSize.xs} color={colors.textInverse} /></TouchableOpacity>
           )}
           {mine && !m.failed && <Text style={[styles.readReceipt, mineMetaColor]}>{m.status === 'read' ? '✓✓' : '✓'}</Text>}
           {showTime && (
@@ -148,21 +156,21 @@ function MessageBubbleInner({
 export const MessageBubble = React.memo(MessageBubbleInner);
 
 const useMessageBubbleStyles = makeUseStyles(({ colors }) => ({
-  bubble: { maxWidth: '80%', padding: spacing.md, borderRadius: radius.lg, gap: 4 },
+  bubble: { maxWidth: '80%', padding: spacing.md, borderRadius: radius.lg, gap: spacing.xs },
   // Tail-notch corner uses logical start/end radii so web (RN-Web maps these to
   // CSS border-*-*-radius) and native (RN ≥ 0.71) mirror identically under RTL —
   // physical Left/Right diverged between the two platforms (TD-159).
-  bubbleMine: { alignSelf: 'flex-start', backgroundColor: colors.primary, borderBottomStartRadius: 4 },
-  bubbleOther: { alignSelf: 'flex-end', backgroundColor: colors.surface, borderBottomEndRadius: 4, borderWidth: 1, borderColor: colors.border },
+  bubbleMine: { alignSelf: 'flex-start', backgroundColor: colors.primary, borderBottomStartRadius: radius.xs },
+  bubbleOther: { alignSelf: 'flex-end', backgroundColor: colors.surface, borderBottomEndRadius: radius.xs, borderWidth: 1, borderColor: colors.border },
   bubbleText: { ...typography.body },
   bubbleTextMine: { color: colors.textInverse },
   bubbleTextOther: { color: colors.textPrimary, textAlign: rtlTextAlignStart },
-  bubbleMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
+  bubbleMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.xs },
   timeText: { ...typography.caption, color: colors.textSecondary },
-  readReceipt: { fontSize: 11 },
+  readReceipt: { fontSize: typography.caption.fontSize },
   systemWrap: { alignItems: 'center', paddingVertical: spacing.xs },
   systemPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
     backgroundColor: colors.background,
     borderWidth: 1, borderColor: colors.border,
     paddingHorizontal: spacing.md, paddingVertical: spacing.xs,

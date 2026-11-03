@@ -1,8 +1,8 @@
 // Sub-component for the Translation-Language settings screen (FR-TRANSLATE-003).
 // Lives under src/ (not app/) so expo-router does not register it as a route.
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { makeUseStyles, spacing, typography, useTheme } from '@kc/ui';
+import { Pressable, View } from 'react-native';
+import { makeUseStyles, spacing, radius, typography, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../lib/webRtlStyle';
 
@@ -56,21 +56,21 @@ const useStyles = makeUseStyles(({ colors }) => ({
   label: {
     ...typography.body,
     color: colors.textPrimary,
-    fontWeight: '600' as const,
+    ...typography.semiBold,
     textAlign: rtlTextAlignStart,
     ...webTextRtl,
   },
   hint: {
     ...typography.caption,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: spacing.xs,
     textAlign: rtlTextAlignStart,
     ...webTextRtl,
   },
   radio: {
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: radius.full,
     borderWidth: 2,
     borderColor: colors.borderStrong,
     alignItems: 'center' as const,
@@ -80,7 +80,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   radioDot: {
     width: 10,
     height: 10,
-    borderRadius: 5,
+    borderRadius: radius.full,
     backgroundColor: colors.primary,
   },
 }));

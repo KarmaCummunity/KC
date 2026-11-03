@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react';
-import { Text } from 'react-native';
+import { Text } from '@kc/ui';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../../hooks/useAdminRoles', () => ({ useAdminRoles: vi.fn() }));

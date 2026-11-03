@@ -6,11 +6,11 @@
 // The library renders paragraph / heading1..6 / list_item / blockquote as
 // `<View>` wrappers and strips text-style props (incl. `textAlign`,
 // `writingDirection`) from them via its internal `removeTextStyleProps`
-// helper. Result: `textAlign: 'right'` in `LegalMarkdownStyles.ts` ends up
+// helper. Result: a physical right alignment in `LegalMarkdownStyles.ts` ends up
 // applied to a View where it does nothing, the inner `textgroup` Text
 // inherits no explicit alignment, and the rendered body falls back to the
 // platform's default (LTR on web; auto on native) for mixed Hebrew/Latin
-// runs — which is what users saw as "not right-aligned at all".
+// runs — which is what users saw as incorrectly aligned.
 //
 // Fix: override those rules so each block is a `<Text>` with `textAlign`
 // + `writingDirection: 'rtl'` applied directly. Inline spans (strong, em,
@@ -18,22 +18,20 @@
 //
 // Lists keep their two-column structure (icon + content) but use the
 // `rowDirectionStart` helper so the bullet/number lands on the inline-start
-// edge (right in RTL) on both native and web.
+// edge (reading-start in RTL) on both native and web.
 
 import React from 'react';
-import { Text, View, type TextStyle, type ViewStyle } from 'react-native';
+import { View, type TextStyle, type ViewStyle } from 'react-native';
 import { openExternalUrl } from '../../utils/openExternalUrl';
 import type { ASTNode, RenderRules } from 'react-native-markdown-display';
 import type { ColorPalette } from '@kc/ui';
-import { typography, spacing } from '@kc/ui';
+import { typography, spacing, radius, Text } from '@kc/ui';
 import { rowDirectionStart } from '../../lib/rtlLayout';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 // Why `rtlTextAlignStart` and not a hard-coded 'right':
-// On native under `I18nManager.forceRTL(true)`, `textAlign: 'right'` resolves
-// to the *end* edge (visually LEFT in RTL). The helper returns 'left' on native
-// (which mirrors to inline-start = visual right) and 'right' on web (where
-// `dir="rtl"` makes physical 'right' the inline-start edge).
+// On native under `I18nManager.forceRTL(true)`, physical alignment resolves
+// to the end edge. The helper maps to inline-start on native and web.
 const RTL_TEXT_BASE: TextStyle = {
   writingDirection: 'rtl',
   textAlign: rtlTextAlignStart,
@@ -61,7 +59,7 @@ export function makeLegalMarkdownRules(colors: ColorPalette): RenderRules {
     );
 
   return {
-    paragraph: (node: any, children: any) => (
+    paragraph: (node, children) => (
       <Text
         key={node.key}
         style={{
@@ -87,19 +85,19 @@ export function makeLegalMarkdownRules(colors: ColorPalette): RenderRules {
     // via rowDirectionStart so the bullet/number sits on the inline-start
     // edge (right in RTL) on both native and web. The content slot is a
     // <Text> so children inherit RTL alignment.
-    bullet_list: (node: any, children: any) => (
+    bullet_list: (node, children) => (
       <View key={node.key} style={{ marginBottom: spacing.md }}>
         {children}
       </View>
     ),
-    ordered_list: (node: any, children: any) => (
+    ordered_list: (node, children) => (
       <View key={node.key} style={{ marginBottom: spacing.md }}>
         {children}
       </View>
     ),
-    list_item: (node: any, children: any, parent: any) => {
+    list_item: (node, children, parent) => {
       const isOrdered = parent[0]?.type === 'ordered_list';
-      const bulletChar = isOrdered ? `${node.index + 1}.` : '•';
+      const bulletChar = isOrdered ? `${(node.index ?? 0) + 1}.` : '•';
       const rowStyle: ViewStyle = {
         flexDirection: rowDirectionStart,
         alignItems: 'flex-start',
@@ -134,27 +132,26 @@ export function makeLegalMarkdownRules(colors: ColorPalette): RenderRules {
       );
     },
 
-    blockquote: (node: any, children: any) => (
+    blockquote: (node, children) => (
       <View
         key={node.key}
         style={{
           backgroundColor: colors.surfaceRaised,
-          // `borderStartWidth` is a logical property: lands on the inline-start
-          // edge (right in RTL) on both native and web. Avoids the LTR-only
-          // `borderRightWidth`, which doesn't auto-mirror reliably on web.
+          // `borderStartWidth` is a logical property: lands on inline-start
+          // on both native and web, avoiding a border that fails to mirror.
           borderStartWidth: 3,
           borderStartColor: colors.primary,
           paddingHorizontal: spacing.md,
           paddingVertical: spacing.sm,
           marginVertical: spacing.sm,
-          borderRadius: 6,
+          borderRadius: radius.xs,
         }}
       >
         {children}
       </View>
     ),
 
-    link: (node: any, children: any) => {
+    link: (node, children) => {
       const href = (node.attributes?.href as string | undefined) ?? '';
       return (
         <Text

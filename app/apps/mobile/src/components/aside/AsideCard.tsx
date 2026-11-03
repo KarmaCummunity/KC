@@ -1,8 +1,8 @@
 // Shared section card for desktop aside panels (FR-RESP-003).
 // Rendered only inside <AsidePanel> at >=1024px; never on the mobile path.
 import type { ReactNode } from 'react';
-import { Text, View } from 'react-native';
-import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
+import { View } from 'react-native';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 type AsideCardProps = {

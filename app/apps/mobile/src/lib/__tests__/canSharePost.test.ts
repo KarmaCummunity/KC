@@ -23,6 +23,8 @@ const base: PostWithOwner = {
   mediaAssets: [],
   recipient: null,
   reopenCount: 0,
+  listingId: null,
+  listingWorldSlug: null,
   deleteAfter: null,
   ownerName: 'Test',
   ownerAvatarUrl: null,

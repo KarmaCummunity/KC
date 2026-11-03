@@ -1,0 +1,122 @@
+name: CI — release
+
+# Release lane, called by ci.yml for every PR (or merge group) into `main`
+# (D-195, INFRA-CI-3). Replaces the separately required "CI — main release
+# guard" and "CI — E2E dev" checks: the CI gate now fails a release whose
+# lane did not succeed, so `main` needs only `CI gate`.
+#
+# Every job runs unconditionally (the gate sees one result for the lane, so an
+# inner job that skipped on its own would pass unnoticed). A merge group has
+# no head branch, so `source` fails it: main releases go through a PR.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  source:
+    name: release source is dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Enforce dev → main
+        env:
+          # Branch names are attacker-controlled on fork PRs; never inline them.
+          HEAD_REF: ${{ github.head_ref }}
+          # A fork's branch can also be named dev; it must be this repo's dev.
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          if [ "$HEAD_REF" != dev ] || [ "$HEAD_REPO" != "$GITHUB_REPOSITORY" ]; then
+            echo "::error::Production releases must be a PR from this repository's \`dev\` into \`main\` (head: \`${HEAD_REPO:-none}:${HEAD_REF:-none}\`)."
+            exit 1
+          fi
+          echo "Release source branch is $GITHUB_REPOSITORY:dev."
+
+  # Stricter than the static lane's scan, for migrations this release adds or
+  # changes: a destructive line needs its `migration-safety: allow` marker AND
+  # a "Migration safety: <file> — <reason>" line in the PR body; a change that
+  # can break the previous code (rename, type change, SET NOT NULL, dropped
+  # function/policy, policy change, RLS off) needs that body line.
+  migrations:
+    name: release migration scan (strict)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+      - name: Scan the release's migrations
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: node scripts/check-migration-safety.mjs --release "$BASE_SHA" "$HEAD_SHA"
+
+  # app/VERSION on the release head must be above the latest v* tag, or the
+  # deploy's tag step would collide after prod is already updated.
+  version:
+    name: release version bump
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+      - name: VERSION above the latest release tag
+        run: node scripts/release-version.mjs check-bump
+
+  # P0 journeys against the live dev site (D-55), but only once dev serves the
+  # exact release head: E2E against an older dev build would test the wrong
+  # code. The dev deploy follows the dev push's CI run, so allow 30 minutes.
+  e2e:
+    name: dev E2E on the release head
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      DEV_WEB_URL: ${{ vars.DEV_WEB_URL }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+      - name: Wait until dev serves the release head
+        env:
+          SMOKE_CHECKS: version
+          SMOKE_WEB_URL: ${{ vars.DEV_WEB_URL }}
+          SMOKE_SHA: ${{ github.event.pull_request.head.sha }}
+          SMOKE_TIMEOUT_SECONDS: '1800'
+        run: node scripts/smoke-deploy.mjs
+      - name: Install Playwright
+        working-directory: tests/e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Run P0 journeys
+        working-directory: tests/e2e
+        env:
+          E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
+        run: npm test
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: playwright-report-release
+          path: |
+            tests/e2e/playwright-report/
+            tests/e2e/test-results/
+          retention-days: 14

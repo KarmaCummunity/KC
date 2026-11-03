@@ -1,6 +1,6 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { Redirect } from 'expo-router';
-import { useTheme, useBreakpoint, spacing } from '@kc/ui';
+import { useTheme, useBreakpoint, spacing, radius, typography, Text } from '@kc/ui';
 import { AppShell } from '../../src/components/shell/AppShell';
 import { SHELL_V2_ENABLED } from '../../src/config/environment';
 
@@ -17,7 +17,7 @@ function ShellPreviewScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={[styles.h1, { color: colors.textPrimary }]}>Shell preview</Text>
         <Text style={[styles.body, { color: colors.textSecondary }]}>
-          Current breakpoint: <Text style={{ fontWeight: '600' }}>{bp}</Text>
+          Current breakpoint: <Text style={{ ...typography.semiBold }}>{bp}</Text>
         </Text>
         <Text style={[styles.body, { color: colors.textSecondary }]}>
           Resize the browser window to: 375 / 800 / 1280 / 1600.
@@ -38,8 +38,8 @@ function ShellPreviewScreen() {
 
 const styles = StyleSheet.create({
   container: { padding: spacing.base, gap: spacing.sm },
-  h1: { fontSize: 24, fontWeight: '700' },
-  body: { fontSize: 14 },
+  h1: { ...typography.h2 },
+  body: { ...typography.body },
   spacer: { height: spacing.base },
-  card: { borderWidth: StyleSheet.hairlineWidth, padding: spacing.base, borderRadius: 8 },
+  card: { borderWidth: StyleSheet.hairlineWidth, padding: spacing.base, borderRadius: radius.sm },
 });

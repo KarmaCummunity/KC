@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { LegalDocumentContent, LegalPendingItem } from '@kc/domain';
-import { typography, spacing, useTheme } from '@kc/ui';
+import { typography, spacing, radius, useTheme, Text } from '@kc/ui';
 import { getLoadLegalDocumentUseCase } from '../../services/legalComposition';
 import { rowDirectionStart } from '../../lib/rtlLayout';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
@@ -14,6 +14,11 @@ interface LegalConsentCardProps {
   readonly onOpenReader: () => void;
 }
 
+const DOC_CHECKBOX_TEST_IDS = {
+  terms: { testID: 'legal-consent-terms-checkbox' },
+  privacy: { testID: 'legal-consent-privacy-checkbox' },
+} as const;
+
 export function LegalConsentCard({ item, checked, onToggle, onOpenReader }: LegalConsentCardProps) {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -24,7 +29,7 @@ export function LegalConsentCard({ item, checked, onToggle, onOpenReader }: Lega
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         const c = await getLoadLegalDocumentUseCase().execute({ docType: item.docType });
         if (!cancelled) setContent(c);
@@ -50,7 +55,7 @@ export function LegalConsentCard({ item, checked, onToggle, onOpenReader }: Lega
     <View
       style={{
         backgroundColor: colors.surfaceRaised,
-        borderRadius: 12,
+        borderRadius: radius.md,
         padding: spacing.md,
         marginBottom: spacing.md,
       }}
@@ -100,6 +105,7 @@ export function LegalConsentCard({ item, checked, onToggle, onOpenReader }: Lega
       </Pressable>
 
       <Pressable
+        testID={DOC_CHECKBOX_TEST_IDS[item.docType as keyof typeof DOC_CHECKBOX_TEST_IDS]?.testID}
         accessibilityRole="checkbox"
         accessibilityState={{ checked }}
         onPress={() => onToggle(!checked)}
@@ -119,7 +125,7 @@ export function LegalConsentCard({ item, checked, onToggle, onOpenReader }: Lega
           style={{
             width: 22,
             height: 22,
-            borderRadius: 4,
+            borderRadius: radius.xs,
             borderWidth: 2,
             borderColor: colors.primary,
             backgroundColor: checked ? colors.primary : 'transparent',

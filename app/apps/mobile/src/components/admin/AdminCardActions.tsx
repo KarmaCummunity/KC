@@ -1,5 +1,6 @@
-import { Pressable, Text, View } from 'react-native';
-import { makeUseStyles } from '@kc/ui';
+import { View } from 'react-native';
+import { makeUseStyles, spacing } from '@kc/ui';
+import { DangerButton, PrimaryButton } from '../ui/Buttons';
 
 export interface AdminCardActionsProps {
   readonly editLabel:   string;
@@ -12,21 +13,13 @@ export function AdminCardActions({ editLabel, deleteLabel, onEdit, onDelete }: A
   const styles = useStyles();
   return (
     <View style={styles.row}>
-      <Pressable onPress={onEdit}   style={[styles.action, styles.actionPrimary]}>
-        <Text style={styles.actionPrimaryText}>{editLabel}</Text>
-      </Pressable>
-      <Pressable onPress={onDelete} style={[styles.action, styles.actionDanger]}>
-        <Text style={styles.actionDangerText}>{deleteLabel}</Text>
-      </Pressable>
+      {/* Compact admin size (spec 17 §4.3); the delete is destructive, so a DangerButton (D94). */}
+      <PrimaryButton label={editLabel} size="sm" onPress={onEdit} />
+      <DangerButton label={deleteLabel} size="sm" onPress={onDelete} />
     </View>
   );
 }
 
-const useStyles = makeUseStyles(({ colors }) => ({
-  row:                { flexDirection: 'row', gap: 8, marginTop: 6 },
-  action:             { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
-  actionPrimary:      { backgroundColor: colors.primary },
-  actionPrimaryText:  { color: colors.textInverse, fontSize: 12, fontWeight: '700' },
-  actionDanger:       { backgroundColor: colors.error },
-  actionDangerText:   { color: colors.textInverse, fontSize: 12, fontWeight: '700' },
+const useStyles = makeUseStyles(() => ({
+  row:                { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
 }));

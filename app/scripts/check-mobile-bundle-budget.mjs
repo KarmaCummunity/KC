@@ -31,9 +31,11 @@ function mainBundlePath() {
 }
 
 const main = mainBundlePath();
+// A missing bundle means the export did not run or changed layout; passing
+// silently would disable the budget, so treat it as a failure.
 if (!main) {
-  console.log('check-mobile-bundle-budget: skip (no dist build; run expo export in CI)');
-  process.exit(0);
+  console.error(`check-mobile-bundle-budget: no web bundle under ${DIST}/_expo/static/js/web — run \`pnpm build:web\` first`);
+  process.exit(1);
 }
 
 console.log(`check-mobile-bundle-budget: main ${main.path} gzip ${main.gzipKb}KB (budget ${BUDGET_KB}KB)`);

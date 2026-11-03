@@ -11,11 +11,11 @@
     },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF"
+      "backgroundColor": "#FFFBF7"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -157,10 +157,10 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "monochromeImage": "./assets/adaptive-icon-monochrome.png",
-        "backgroundColor": "#FFFFFF"
+        "backgroundColor": "#FFFBF7"
       },
       "package": "org.karmacommunity.app",
-      "predictiveBackGestureEnabled": true,
+      "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.POST_NOTIFICATIONS"
@@ -216,9 +216,9 @@
     "web": {
       "bundler": "metro",
       "output": "single",
-      "favicon": "./assets/icon.png",
+      "favicon": "./assets/favicon.png",
       "themeColor": "#F97316",
-      "backgroundColor": "#ffffff",
+      "backgroundColor": "#FFFBF7",
       "display": "standalone",
       "shortName": "KC"
     },
@@ -236,6 +236,14 @@
         }
       ],
       "expo-localization",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "KC uses your approximate location only while you use the map, to show listings near you. It is never shared or stored.",
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
+        }
+      ],
       "expo-font",
       [
         "expo-splash-screen",
@@ -243,7 +251,7 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#FFFFFF"
+          "backgroundColor": "#FFFBF7"
         }
       ],
       [
@@ -268,7 +276,7 @@
         "@sentry/react-native/expo",
         {
           "url": "https://de.sentry.io/",
-          "organization": "kupay-hb",
+          "organization": "karma-community",
           "project": "kc-mobile"
         }
       ]

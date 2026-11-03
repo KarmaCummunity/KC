@@ -18,14 +18,14 @@ runs:
   using: composite
   steps:
     - name: Setup pnpm
-      uses: pnpm/action-setup@v4
+      uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
       with:
         package_json_file: app/package.json
         run_install: false
 
     - name: Setup Node.js (from .nvmrc)
       if: inputs.node-version == ''
-      uses: actions/setup-node@v7
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
       with:
         node-version-file: ${{ inputs.node-version-file }}
         cache: pnpm
@@ -33,14 +33,14 @@ runs:
 
     - name: Setup Node.js (pinned)
       if: inputs.node-version != ''
-      uses: actions/setup-node@v7
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
       with:
         node-version: ${{ inputs.node-version }}
         cache: pnpm
         cache-dependency-path: app/pnpm-lock.yaml
 
     - name: Restore Turbo local cache
-      uses: actions/cache@v4
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
       with:
         path: app/.turbo
         key: turbo-${{ runner.os }}-${{ hashFiles('app/pnpm-lock.yaml') }}-${{ github.sha }}

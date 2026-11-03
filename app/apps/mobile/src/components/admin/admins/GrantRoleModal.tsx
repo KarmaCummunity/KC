@@ -1,210 +1,136 @@
 // app/apps/mobile/src/components/admin/admins/GrantRoleModal.tsx
-// FR-ADMIN-016 — modal for granting moderator/support to an active user.
-// Lookup queries `users` directly (RLS allows admin SELECT on active rows).
-import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Modal, Pressable, StyleSheet, Text, TextInput, View,
-} from 'react-native';
-import type { GrantableAdminRole } from '@kc/domain';
-import { GRANTABLE_ADMIN_ROLES, isAdminRoleError } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
-import { supabase } from '../../../lib/container';
+// FR-ADMIN-016 / FR-ADMIN-030 — grant a role to an active user.
+//
+// The viewer picks where (the platform or one of their orgs) and which role;
+// both lists come from GrantAuthority, so only grants the server will accept
+// are offered. Opened from the team screen (user lookup) or from a person's
+// screen (user fixed via `presetUser`).
+import { useEffect, useMemo, useState } from 'react';
+import { ScrollView } from 'react-native';
+import { grantableRolesIn, isAdminRoleError, type GrantableAdminRole } from '@kc/domain';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { useGrantAdminRole } from '../../../hooks/useAdminRoleMutations';
-import { useLocaleBundle, type LocaleBundle } from '../../../i18n/useLocaleBundle';
+import { useGrantAuthority } from '../../../hooks/useGrantAuthority';
+import { ChoiceChips } from './ChoiceChips';
+import { UserLookupField, type PickedUser } from './UserLookupField';
+import { roleScopeErrorText } from './roleErrors';
+import { textAlignStart } from '../../../lib/rtlLayout';
+import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
+import { GhostButton, PrimaryButton } from '../../ui/Buttons';
+import { Modal } from '../../ui/Modal';
 
 export interface GrantRoleModalProps {
   readonly visible: boolean;
   readonly onClose: () => void;
+  /** Fixes the target user (person screen); omitted on the team screen. */
+  readonly presetUser?: PickedUser;
 }
 
-interface UserMatch {
-  readonly user_id: string;
-  readonly display_name: string | null;
-  readonly avatar_url: string | null;
-}
-
-async function lookupUsers(q: string): Promise<readonly UserMatch[]> {
-  const trimmed = q.trim();
-  if (trimmed.length < 2) return [];
-  const { data, error } = await supabase
-    .from('users')
-    .select('user_id, display_name, avatar_url')
-    .eq('account_status', 'active')
-    .ilike('display_name', `%${trimmed}%`)
-    .limit(8);
-  if (error || !Array.isArray(data)) return [];
-  return data as UserMatch[];
-}
-
-export function GrantRoleModal({ visible, onClose }: GrantRoleModalProps) {
+export function GrantRoleModal({ visible, onClose, presetUser }: GrantRoleModalProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
-  const [query, setQuery] = useState('');
-  const [matches, setMatches] = useState<readonly UserMatch[]>([]);
-  const [loadingMatches, setLoadingMatches] = useState(false);
-  const [selected, setSelected] = useState<UserMatch | null>(null);
+  const copy = L.admin.admins.grantModal;
+  const team = L.admin.admins.team;
+  const { authority, scopes } = useGrantAuthority();
+  const grant = useGrantAdminRole();
+  const [user, setUser] = useState<PickedUser | null>(presetUser ?? null);
+  // `undefined` = no scope picked yet; `null` = the platform.
+  const [scope, setScope] = useState<string | null | undefined>(undefined);
   const [role, setRole] = useState<GrantableAdminRole | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
-  const grant = useGrantAdminRole();
 
-  useEffect(() => {
-    if (!visible) {
-      setQuery(''); setMatches([]); setSelected(null);
-      setRole(null); setErrorCode(null);
-    }
-  }, [visible]);
-
+  // Reset on every open only, so a background refetch never wipes the form.
   useEffect(() => {
     if (!visible) return;
-    if (selected) return;
-    let cancelled = false;
-    setLoadingMatches(true);
-    const handle = setTimeout(async () => {
-      const r = await lookupUsers(query);
-      if (!cancelled) {
-        setMatches(r);
-        setLoadingMatches(false);
-      }
-    }, 280);
-    return () => { cancelled = true; clearTimeout(handle); setLoadingMatches(false); };
-  }, [query, selected, visible]);
+    setUser(presetUser ?? null);
+    setScope(undefined);
+    setRole(null);
+    setErrorCode(null);
+  }, [visible, presetUser]);
 
-  const canSubmit = selected !== null && role !== null && !grant.isPending;
+  // A viewer who can grant in exactly one place gets it preselected.
+  const onlyScope = scopes.length === 1 ? scopes[0]?.scopeOrgId : undefined;
+  const activeScope = scope !== undefined ? scope : onlyScope;
+  const roles = useMemo(
+    () => (activeScope === undefined ? [] : grantableRolesIn(authority.grants, activeScope)),
+    [authority.grants, activeScope],
+  );
+  const scopeOptions = scopes.map((s) => ({
+    key: s.scopeOrgId,
+    label: s.scopeOrgId === null ? `${s.name} · ${team.platformScope}` : s.name,
+  }));
+  const canSubmit = user !== null && activeScope !== undefined && role !== null && !grant.isPending;
 
   async function submit() {
-    if (!selected || !role) return;
+    if (!user || activeScope === undefined || !role) return;
     setErrorCode(null);
     try {
-      await grant.mutateAsync({ targetUserId: selected.user_id, role });
+      await grant.mutateAsync({ targetUserId: user.userId, role, scopeOrgId: activeScope });
       onClose();
     } catch (e) {
-      const code = isAdminRoleError(e) ? e.code : 'unknown';
-      setErrorCode(code);
+      setErrorCode(isAdminRoleError(e) ? e.code : 'unknown');
     }
   }
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.sheet}>
-          <Text style={styles.title}>{L.admin.admins.grantModal.title}</Text>
+    <Modal
+      visible={visible}
+      title={copy.title}
+      onDismiss={onClose}
+      footer={
+        <>
+          <PrimaryButton
+            label={copy.submit}
+            size="md"
+            fullWidth
+            disabled={!canSubmit}
+            loading={grant.isPending}
+            onPress={() => { void submit(); }}
+          />
+          <GhostButton label={copy.cancel} size="md" fullWidth onPress={onClose} />
+        </>
+      }
+    >
+      {/* The user lookup and both choice lists can outgrow a phone screen: scroll them, keep the actions pinned. */}
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.body}>
+        <Text style={styles.label}>{copy.searchLabel}</Text>
+        <UserLookupField selected={user} onSelect={setUser} changeable={presetUser === undefined} />
 
-          <Text style={styles.label}>{L.admin.admins.grantModal.searchLabel}</Text>
-          {selected ? (
-            <View style={styles.selectedRow}>
-              <Text style={styles.selectedName} numberOfLines={1}>
-                {selected.display_name ?? L.admin.admins.row.unnamed}
-              </Text>
-              <Pressable onPress={() => { setSelected(null); setQuery(''); }}>
-                <Text style={styles.changeLink}>{L.admin.admins.grantModal.changeUser}</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <>
-              <TextInput
-                style={styles.input}
-                value={query}
-                onChangeText={setQuery}
-                placeholder={L.admin.admins.grantModal.searchPlaceholder}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              {loadingMatches && <ActivityIndicator style={{ marginTop: 8 }} />}
-              {!loadingMatches && query.trim().length >= 2 && matches.length === 0 && (
-                <Text style={styles.hint}>{L.admin.admins.grantModal.noMatches}</Text>
-              )}
-              {matches.map((m) => (
-                <Pressable
-                  key={m.user_id}
-                  style={styles.matchRow}
-                  onPress={() => setSelected(m)}
-                >
-                  <Text style={styles.matchName} numberOfLines={1}>
-                    {m.display_name ?? L.admin.admins.row.unnamed}
-                  </Text>
-                </Pressable>
-              ))}
-            </>
-          )}
+        <Text style={styles.label}>{team.scope.label}</Text>
+        {scopes.length === 0 ? (
+          <Text style={styles.hint}>{team.scope.none}</Text>
+        ) : (
+          <ChoiceChips
+            options={scopeOptions}
+            selected={activeScope}
+            onSelect={(key) => { setScope(key); setRole(null); }}
+          />
+        )}
 
-          <Text style={[styles.label, { marginTop: 12 }]}>
-            {L.admin.admins.grantModal.roleLabel}
-          </Text>
-          <View style={styles.roleRow}>
-            {GRANTABLE_ADMIN_ROLES.map((r) => (
-              <Pressable
-                key={r}
-                onPress={() => setRole(r)}
-                style={[styles.roleChip, role === r && styles.roleChipActive]}
-              >
-                <Text style={[styles.roleChipText, role === r && styles.roleChipTextActive]}>
-                  {L.admin.roles[r]}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+        {activeScope !== undefined && (
+          <>
+            <Text style={styles.label}>{copy.roleLabel}</Text>
+            <ChoiceChips
+              options={roles.map((r) => ({ key: r, label: L.admin.roles[r] }))}
+              selected={role ?? undefined}
+              onSelect={setRole}
+            />
+          </>
+        )}
 
-          {errorCode !== null && (
-            <Text style={styles.errorText}>
-              {L.admin.admins.grantModal.errors[errorCode as keyof LocaleBundle['admin']['admins']['grantModal']['errors']]
-                ?? L.admin.admins.grantModal.errors.unknown}
-            </Text>
-          )}
-
-          <View style={styles.actions}>
-            <Pressable style={styles.cancelBtn} onPress={onClose}>
-              <Text style={styles.cancelBtnText}>{L.admin.admins.grantModal.cancel}</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.submitBtn, !canSubmit && styles.submitBtnDisabled]}
-              disabled={!canSubmit}
-              onPress={() => { void submit(); }}
-            >
-              <Text style={styles.submitBtnText}>{L.admin.admins.grantModal.submit}</Text>
-            </Pressable>
-          </View>
-        </View>
-      </View>
+        {errorCode !== null && <Text style={styles.errorText}>{roleScopeErrorText(L, errorCode)}</Text>}
+      </ScrollView>
     </Modal>
   );
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  overlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 16 },
-  sheet:      { backgroundColor: colors.surface, borderRadius: 14, padding: 16, gap: 6, maxHeight: '85%' },
-  title:      { fontSize: 18, fontWeight: '700', marginBottom: 6 },
-  label:      { fontSize: 12, opacity: 0.7, marginBottom: 4 },
-  input: {
-    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: 8,
-    padding: 10, fontSize: 14, textAlign: 'right',
+  // Shrink inside the dialog's height cap so the footer stays on screen.
+  scroll:    { flexGrow: 0, flexShrink: 1 },
+  body:      { gap: spacing.sm },
+  label: {
+    ...typography.caption, color: colors.textSecondary, marginTop: spacing.sm, textAlign: textAlignStart(),
   },
-  selectedRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingVertical: 10, paddingHorizontal: 12,
-    backgroundColor: colors.secondaryLight, borderRadius: 8,
-  },
-  selectedName: { fontSize: 14, fontWeight: '600', flex: 1 },
-  changeLink:   { fontSize: 12, color: colors.primary, fontWeight: '600' },
-  hint:         { fontSize: 12, opacity: 0.6, marginTop: 6, textAlign: 'center' },
-  matchRow:     { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
-  matchName:    { fontSize: 14 },
-  roleRow:      { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  roleChip: {
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8,
-    backgroundColor: colors.secondaryLight,
-  },
-  roleChipActive: { backgroundColor: colors.primary },
-  roleChipText:   { fontSize: 13, fontWeight: '600' },
-  roleChipTextActive: { color: colors.textInverse },
-  errorText:      { fontSize: 12, color: colors.error, marginTop: 8 },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 16 },
-  cancelBtn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 },
-  cancelBtnText: { fontSize: 14, fontWeight: '500' },
-  submitBtn: {
-    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8,
-    backgroundColor: colors.primary,
-  },
-  submitBtnDisabled: { opacity: 0.5 },
-  submitBtnText: { fontSize: 14, fontWeight: '700', color: colors.textInverse },
+  hint:      { ...typography.bodySmall, color: colors.textSecondary, textAlign: textAlignStart() },
+  errorText: { ...typography.bodySmall, color: colors.error, marginTop: spacing.sm, textAlign: textAlignStart() },
 }));

@@ -1,10 +1,10 @@
 // app/apps/mobile/src/components/admin/admins/AdminsListView.tsx
 // FR-ADMIN-022 — the "list" tab of the admins screen: one card per user with an
 // include-revoked toggle. Split out of the screen to keep each unit small.
-import { useMemo, useState } from 'react';
-import { RefreshControl, Switch, Text, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { RefreshControl, Switch, View } from 'react-native';
 import { type AdminPerson, groupGrantsByUser } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { useAdminsList } from '../../../hooks/useAdminsList';
 import { rowDirectionStart, textAlignStart } from '../../../lib/rtlLayout';
 import { AdminPersonCard } from './AdminPersonCard';
@@ -29,6 +29,9 @@ function renderItem(item: AdminListItem, onSelect: (userId: string) => void, sty
   return <AdminPersonCard person={item.person} onPress={onSelect} />;
 }
 
+const adminListKeyExtractor = (it: AdminListItem) =>
+  it.kind === 'header' ? `h:${it.title}` : `p:${it.person.userId}`;
+
 export function AdminsListView({ isWide, onSelect }: AdminsListViewProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
@@ -36,6 +39,16 @@ export function AdminsListView({ isWide, onSelect }: AdminsListViewProps) {
   const list = useAdminsList(includeRevoked);
   const people = useMemo<readonly AdminPerson[]>(() => groupGrantsByUser(list.grants), [list.grants]);
   const items = useMemo(() => buildAdminListItems(people, includeRevoked), [people, includeRevoked]);
+
+  const contentContainerStyle = useMemo(
+    () => [styles.listContent, isWide && styles.listContentWide],
+    [isWide, styles.listContent, styles.listContentWide],
+  );
+
+  const handleRenderItem = useCallback(
+    ({ item }: { item: AdminListItem }) => renderItem(item, onSelect, styles),
+    [onSelect, styles],
+  );
 
   return (
     <View style={styles.fill}>
@@ -45,9 +58,10 @@ export function AdminsListView({ isWide, onSelect }: AdminsListViewProps) {
       </View>
       <KcFlashList
         data={items}
-        keyExtractor={(it, i) => (it.kind === 'header' ? `h:${it.title}` : `p:${it.person.userId}:${i}`)}
-        contentContainerStyle={[styles.listContent, isWide && styles.listContentWide]}
-        renderItem={({ item }) => renderItem(item, onSelect, styles)}
+        keyExtractor={adminListKeyExtractor}
+        estimatedItemSize={72}
+        contentContainerStyle={contentContainerStyle}
+        renderItem={handleRenderItem}
         ListEmptyComponent={list.isLoading ? null : <EmptyState />}
         refreshControl={<RefreshControl refreshing={list.isRefetching} onRefresh={list.refetch} />}
       />
@@ -68,17 +82,17 @@ function EmptyState() {
 
 const useStyles = makeUseStyles(({ colors }) => ({
   fill:        { flex: 1 },
-  toggleRow:   { flexDirection: rowDirectionStart, alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingBottom: 8 },
-  toggleLabel: { fontSize: 13, color: colors.textSecondary },
-  listContent:     { paddingBottom: 24 },
+  toggleRow:   { flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.base, paddingBottom: spacing.sm },
+  toggleLabel: { fontSize: typography.bodySmall.fontSize, color: colors.textSecondary },
+  listContent:     { paddingBottom: spacing.xl },
   listContentWide: { width: '100%', maxWidth: 760, alignSelf: 'center' },
   sectionHeader: {
     flexDirection: rowDirectionStart, justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingTop: 16, paddingBottom: 6,
+    paddingHorizontal: spacing.base, paddingTop: spacing.base, paddingBottom: spacing.xs,
   },
-  sectionHeaderText:  { fontSize: 14, fontWeight: '800', color: colors.textPrimary, textAlign: textAlignStart() },
-  sectionHeaderCount: { fontSize: 12, color: colors.textSecondary },
-  empty:      { padding: 32, alignItems: 'center', gap: 8 },
-  emptyTitle: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
-  emptyHint:  { fontSize: 13, opacity: 0.6, textAlign: 'center', color: colors.textSecondary },
+  sectionHeaderText:  { fontSize: typography.body.fontSize, ...typography.extraBold, color: colors.textPrimary, textAlign: textAlignStart() },
+  sectionHeaderCount: { fontSize: typography.bodySmall.fontSize, color: colors.textSecondary },
+  empty:      { padding: spacing['2xl'], alignItems: 'center', gap: spacing.sm },
+  emptyTitle: { fontSize: typography.bodyLarge.fontSize, ...typography.semiBold, color: colors.textPrimary },
+  emptyHint:  { fontSize: typography.bodySmall.fontSize, opacity: 0.6, textAlign: 'center', color: colors.textSecondary },
 }));

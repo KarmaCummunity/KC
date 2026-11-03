@@ -1,4 +1,18 @@
-import type { DonationLink, DonationCategorySlug } from '@kc/domain';
+import type { DonationLink, DonationCategorySlug, DonationLinkReviewStatus } from '@kc/domain';
+
+/** D9 — one suggested link as the reviewer's queue shows it. */
+export interface DonationLinkReviewItem {
+  readonly id: string;
+  readonly categorySlug: DonationCategorySlug;
+  readonly url: string;
+  readonly displayName: string;
+  readonly description: string | null;
+  readonly submittedBy: string;
+  readonly submitterName: string | null;
+  readonly reviewStatus: DonationLinkReviewStatus;
+  readonly reviewNote: string | null;
+  readonly createdAt: string;
+}
 
 export interface AddDonationLinkInput {
   readonly categorySlug: DonationCategorySlug;
@@ -40,4 +54,10 @@ export interface IDonationLinksRepository {
    *  thread. Server-side resolves the reporter via auth.uid() and the link
    *  URL/name from the DB; client must be signed in. FR-DONATE AC2. */
   report(linkId: string): Promise<void>;
+
+  /** D9 — reviewer only: links in `status`, oldest first (`admin_list_donation_links_for_review`). */
+  listForReview(status: DonationLinkReviewStatus): Promise<DonationLinkReviewItem[]>;
+
+  /** D9 — reviewer only: approve or reject a pending link; a rejection may carry a short note. */
+  review(linkId: string, approve: boolean, note?: string | null): Promise<DonationLinkReviewStatus>;
 }

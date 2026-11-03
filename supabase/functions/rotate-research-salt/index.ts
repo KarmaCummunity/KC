@@ -14,7 +14,8 @@
 //   → 405 { error: 'method_not_allowed' }
 //   → 500 { error: 'internal' }
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+import { reportError, withObservability } from '../_shared/observability/mod.ts';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -48,7 +49,7 @@ function generateSaltHex(): string {
 // Auth check
 // ---------------------------------------------------------------------------
 
-async function isAuthorized(req: Request): Promise<boolean> {
+function isAuthorized(req: Request): boolean {
   // Option 1: shared rotation secret header (for scheduler / cron invocations)
   if (ROTATION_SECRET) {
     const headerSecret = req.headers.get('x-rotation-secret') ?? '';
@@ -78,12 +79,12 @@ async function isAuthorized(req: Request): Promise<boolean> {
 // Handler
 // ---------------------------------------------------------------------------
 
-Deno.serve(async (req) => {
+Deno.serve(withObservability('rotate-research-salt', async (req) => {
   if (req.method !== 'POST') {
     return json({ error: 'method_not_allowed' }, 405);
   }
 
-  if (!(await isAuthorized(req))) {
+  if (!isAuthorized(req)) {
     return json({ error: 'unauthorized' }, 401);
   }
 
@@ -100,10 +101,10 @@ Deno.serve(async (req) => {
     .eq('key', SALT_KEY);
 
   if (error) {
-    console.error('[rotate-research-salt] update failed', error.message);
+    await reportError(error, { fn: 'rotate-research-salt', req });
     return json({ error: 'internal' }, 500);
   }
 
   console.log('[rotate-research-salt] salt rotated at', rotatedAt);
   return json({ rotated_at: rotatedAt }, 200);
-});
+}));

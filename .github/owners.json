@@ -1,0 +1,4 @@
+{
+  "$comment": "Owners whose approving review on a PR's head SHA overrides the CI judges (test-integrity guard, ci.yml comparison). The judges read this file from the PR's BASE commit, so a PR cannot add itself here. Code-owned (.github/CODEOWNERS). D-195, INFRA-CI-2.",
+  "owners": ["navesarussi"]
+}

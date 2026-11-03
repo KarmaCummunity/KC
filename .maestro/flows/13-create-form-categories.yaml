@@ -1,0 +1,57 @@
+# Native regression for the create-form crash: open every category in both directions and
+# open the date sheet of the food offer, so a native picker or slider that crashes the app
+# (TestFlight, 1.6.x) fails here instead of in the store build.
+# Category tiles and the request / offer toggle are tapped by their Hebrew labels (the
+# product's own words, FR-POST-001 AC6); their testIDs are built per category.
+# Spec: docs/SSOT/spec/04_posts.md FR-POST-001 AC6; docs/spec/07_cross_cutting_systems.md §7.2.
+appId: org.karmacommunity.app
+name: Posts — create form categories open on device
+tags: [posts]
+---
+- runFlow: ../subflows/sign-in.yaml
+- tapOn:
+    id: tab-create
+- extendedWaitUntil:
+    visible:
+      id: unified-create-header
+    timeout: 15000
+- tapOn: "טרמפים"
+- tapOn: "להציע"
+- extendedWaitUntil:
+    visible:
+      id: ride-departs-at
+    timeout: 10000
+- tapOn:
+    id: create-header-publish
+- assertVisible:
+    id: listing-create-form
+- tapOn: "לבקש"
+- assertVisible:
+    id: ride-departs-at
+- tapOn: "אוכל"
+- tapOn: "להציע"
+- extendedWaitUntil:
+    visible: "תאריך תפוגה"
+    timeout: 10000
+- tapOn: "בחירת תאריך ושעה"
+# Android opens the system date dialog; iOS opens the app's bottom sheet.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - pressKey: back
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          text: "ביטול"
+- tapOn: "דיור"
+- assertVisible:
+    id: listing-create-form
+- tapOn: "זמן"
+- assertVisible:
+    id: listing-create-form
+- tapOn: "חפצים"
+- assertVisible:
+    id: create-post-screen

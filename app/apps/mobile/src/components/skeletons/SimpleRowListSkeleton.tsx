@@ -1,7 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
-import { makeUseStyles, spacing, radius } from '@kc/ui';
-import { Skeleton } from '@kc/ui';
+import { makeUseStyles, spacing, radius, Skeleton } from '@kc/ui';
 
 type Props = {
   readonly rows?: number;

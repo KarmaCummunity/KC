@@ -2,17 +2,17 @@
 // Mapped to SRS: FR-POST-001..004, FR-POST-008..011, FR-POST-014, FR-FEED-001..005, FR-FEED-013, FR-CLOSURE-001..005.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { PostError } from '@kc/application';
-import type {
-  ClosureCandidate,
-  CreatePostInput,
-  FeedPage,
-  IPostRepository,
-  PostActorIdentityRow,
-  PostFeedFilter,
-  PostWithOwner,
-  UpdatePostInput,
-  UpsertPostActorIdentityInput,
+import {
+  PostError,
+  type ClosureCandidate,
+  type CreatePostInput,
+  type FeedPage,
+  type IPostRepository,
+  type PostActorIdentityRow,
+  type PostFeedFilter,
+  type PostWithOwner,
+  type UpdatePostInput,
+  type UpsertPostActorIdentityInput,
 } from '@kc/application';
 import type {
   Post,
@@ -22,14 +22,7 @@ import type {
   ProfileClosedPostsListMode,
 } from '@kc/domain';
 import type { Database } from '../database.types';
-import {
-  POST_SELECT_BARE,
-  POST_SELECT_OWNER,
-  mapPostRow,
-  mapPostWithOwnerRow,
-  type PostJoinedRow,
-  type PostWithOwnerJoinedRow,
-} from './mapPostRow';
+import { POST_SELECT_OWNER, mapPostWithOwnerRow, type PostWithOwnerJoinedRow } from './mapPostRow';
 import { mapInsertError } from './mapInsertError';
 import { encodeCursor } from './cursor';
 import { runSimpleFeedQuery } from './feedQuery';
@@ -188,8 +181,9 @@ export class SupabasePostRepository implements IPostRepository {
       .eq('post_id', postId)
       .select('post_id');
     if (error) throw new Error(`delete: ${error.message}`);
-    // RLS allows DELETE only for owner + open (posts_delete_self_open). No row
-    // matched → PostgREST returns 200 with an empty array — treat as failure.
+    // RLS `posts_delete_self_unlinked` (0053): owner, and the post is open or closed
+    // without a recipient row. No row matched → PostgREST returns 200 with an empty
+    // array — treat as failure.
     if (!data?.length) {
       throw new PostError(
         'post_owner_delete_forbidden',

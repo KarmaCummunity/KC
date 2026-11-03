@@ -1,14 +1,19 @@
 import { WorldMarketplaceHub } from '../../../../src/components/giving/WorldMarketplaceHub';
+import { WorldLaunchGateBySlug } from '../../../../src/components/worlds/WorldLaunchGate';
+import { worldSubScreens } from '../../../../src/components/giving/worldSubScreens';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
 
 export default function KnowledgeHubScreen() {
   return (
-    <WorldMarketplaceHub
-      worldSlug="knowledge"
-      icon="school-outline"
-      introKey="donations.knowledge.hubBody"
-      createPath="/(tabs)/donations/marketplace/create/knowledge"
-      linksCategory="knowledge"
-      handoffsPath="/(tabs)/donations/knowledge/handoffs"
-    />
+    <WorldLaunchGateBySlug worldSlug="knowledge">
+      <WorldMarketplaceHub
+        worldSlug="knowledge"
+        icon="school-outline"
+        introKey="donations.knowledge.hubBody"
+        linksCategory="knowledge"
+        subScreens={worldSubScreens('/(tabs)/donations/knowledge/handoffs')}
+      />
+    </WorldLaunchGateBySlug>
   );
 }

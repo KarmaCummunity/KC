@@ -5,6 +5,9 @@ import { join } from 'node:path';
 
 const ROOT = join(import.meta.dirname, '../apps/mobile');
 const SKIP = new Set(['node_modules', '.expo', 'web-server']);
+// The KcFlashList wrapper is the one sanctioned place: it falls back to
+// FlatList on native under the New Architecture (FlashList v1 grid overlap).
+const ALLOW = new Set(['src/components/lists/KcFlashList.tsx']);
 
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
@@ -19,6 +22,7 @@ function walk(dir, out = []) {
 
 const offenders = [];
 for (const file of walk(ROOT)) {
+  if (ALLOW.has(file.replace(`${ROOT}/`, ''))) continue;
   const text = readFileSync(file, 'utf8');
   if (/import\s*\{[^}]*\bFlatList\b[^}]*\}\s*from\s*['"]react-native['"]/.test(text)) {
     offenders.push(file.replace(`${ROOT}/`, ''));

@@ -1,0 +1,179 @@
+name: CI — static guards
+
+# Repo-wide static guards, called by ci.yml on every non-draft change. Each is
+# a dependency-free Node script (or a pinned linter), so the lane needs no
+# `pnpm install` and finishes in about a minute. These guards are the CI copy
+# of `pnpm lint:arch` / `pnpm lint:i18n`; the frontend lane runs only the
+# ESLint part of `pnpm lint` so nothing is scanned twice. The `integrity` job
+# is the test-integrity guard; ci.yml also calls this lane on review events so
+# an owner approval can clear it.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  # Test-integrity guard (INFRA-CI-2): deleted tests, skip/focus markers,
+  # loosened coverage or warning limits, net-removed assertions. Runs the base
+  # commit's scripts/check-test-integrity.mjs (like the CI judges), which reads
+  # owner approvals through the API, hence `pull-requests: read`. The `github`
+  # context here is the caller's (ci.yml's event).
+  integrity:
+    name: test integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    env:
+      JUDGE_REF: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.sha }}
+    steps:
+      # Full history without blobs: enough to diff from the merge-base and to
+      # read the owner allowlist at the base commit.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          sparse-checkout: .nvmrc
+          sparse-checkout-cone-mode: false
+
+      # The judge: the base commit's scripts/ directory, never the PR's copy. A
+      # base that predates the guard fails the next step (one-time bootstrap,
+      # merged by the owner — OPERATOR_RUNBOOK.md § Owner setup for D-195 CI/CD).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.JUDGE_REF }}
+          path: .judge
+          persist-credentials: false
+          sparse-checkout: scripts
+
+      - name: Judge the diff for weakened tests
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .judge/scripts/check-test-integrity.mjs
+
+  guards:
+    name: static guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    # Every guard step runs even after an earlier one fails (`!cancelled()`),
+    # so one run reports every broken guard instead of only the first.
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+
+      # Pinned release binary; agents edit workflows unsupervised, so they get
+      # their own linter (actionlint also runs shellcheck on every `run:`).
+      # The release asset is fetched directly and checked against its SHA-256
+      # (from the release's actionlint_<version>_checksums.txt), so a moved tag
+      # or a swapped asset fails here instead of running unverified (TD-254).
+      - name: Workflow lint (actionlint 1.7.7)
+        env:
+          ACTIONLINT_VERSION: 1.7.7
+          ACTIONLINT_SHA256: 023070a287cd8cccd71515fedc843f1985bf96c436b7effaecce67290e7e0757
+        run: |
+          set -euo pipefail
+          asset="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL --retry 3 --retry-all-errors -o "$RUNNER_TEMP/$asset" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${asset}"
+          echo "${ACTIONLINT_SHA256}  $RUNNER_TEMP/$asset" | sha256sum --check --strict -
+          tar -xzf "$RUNNER_TEMP/$asset" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -color
+
+      # The guard scripts' only dependency (a YAML parser), pinned by
+      # scripts/package-lock.json; no install scripts run.
+      - name: Install guard-script dependencies
+        run: npm ci --prefix scripts --ignore-scripts --no-audit --no-fund
+
+      # Every lockfile and Edge Function npm import against the npm advisory
+      # database (#1373); a high/critical finding without a reviewed exception
+      # fails. It audits only when the diff touches a dependency file, so a
+      # newly published advisory cannot turn unrelated PRs red (TD-254): the
+      # scheduled dependency-audit.yml covers that. Without a base commit
+      # (dispatch, new branch) it always audits.
+      - name: Dependency audit (every lockfile, on dependency changes)
+        if: ${{ !cancelled() }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
+        run: |
+          args=()
+          if [ -n "$BASE_SHA" ]; then
+            git fetch --no-tags --depth=1 origin "$BASE_SHA" || echo "Base $BASE_SHA not fetchable; auditing everything."
+            args=(--changed-since "$BASE_SHA")
+          fi
+          node scripts/check-dependency-audit.mjs "${args[@]}"
+
+      - name: Script self-tests (scripts/*.test.mjs, scripts/ops/*.test.mjs, app/scripts/*.test.mjs)
+        if: ${{ !cancelled() }}
+        run: node --test scripts/*.test.mjs scripts/ops/*.test.mjs app/scripts/*.test.mjs
+
+      - name: No unresolved merge-conflict markers
+        if: ${{ !cancelled() }}
+        run: node scripts/check-conflict-markers.mjs
+
+      - name: Architecture (file size, layers, typed domain errors)
+        if: ${{ !cancelled() }}
+        run: node app/scripts/check-architecture.mjs
+
+      - name: SSOT dead-link guard
+        if: ${{ !cancelled() }}
+        run: node app/scripts/check-ssot-links.mjs
+
+      - name: Spec registry IDs (unique numbers, merge-time placeholders)
+        if: ${{ !cancelled() }}
+        run: node scripts/spec-ids.mjs check
+
+      - name: Hebrew source scan (no inline UI copy)
+        if: ${{ !cancelled() }}
+        run: node scripts/extract-hebrew-text.mjs --check
+
+      - name: RPC / table contract
+        if: ${{ !cancelled() }}
+        run: node scripts/check-rpc-contract.mjs
+
+      - name: Web manifest parity
+        if: ${{ !cancelled() }}
+        run: node scripts/check-web-manifest.mjs
+
+      - name: expo-router platform-extension fallbacks
+        if: ${{ !cancelled() }}
+        run: node scripts/check-expo-router-platform-extensions.mjs
+
+      - name: Migration chain (single head)
+        if: ${{ !cancelled() }}
+        run: node scripts/check-migration-chain.mjs
+
+      - name: Migration destructive-op scan
+        if: ${{ !cancelled() }}
+        run: node scripts/check-migration-safety.mjs
+
+      - name: No FlatList in mobile (#896)
+        if: ${{ !cancelled() }}
+        run: node app/scripts/check-mobile-flatlist.mjs
+
+      - name: No OFFSET pagination in SQL (#898)
+        if: ${{ !cancelled() }}
+        run: node app/scripts/check-sql-no-offset.mjs
+
+      - name: Required-check docs and CI gate wiring
+        if: ${{ !cancelled() }}
+        run: node scripts/check-required-checks-drift.mjs
+
+      - name: Deploys only through deploy.yml
+        if: ${{ !cancelled() }}
+        run: node scripts/check-deploy-isolation.mjs
+
+      - name: Workflow-run scripts are code-owned
+        run: node scripts/check-codeowners-coverage.mjs

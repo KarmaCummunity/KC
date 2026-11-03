@@ -86,6 +86,7 @@ export class FakeChatRepository implements IChatRepository {
             ...existing,
             anchorPostId: anchorPostId ?? (rideChanged ? null : existing.anchorPostId),
             anchorRideId: anchorRideId ?? (postChanged ? null : existing.anchorRideId),
+            anchorListingId: null,
           };
           this.chats[idx] = updated;
           return updated;
@@ -99,6 +100,7 @@ export class FakeChatRepository implements IChatRepository {
       participantIds: ids,
       anchorPostId: anchorPostId ?? null,
       anchorRideId: anchorRideId ?? null,
+      anchorListingId: null,
       isSupportThread: false,
       lastMessageAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
@@ -183,6 +185,7 @@ export class FakeChatRepository implements IChatRepository {
       participantIds: ids,
       anchorPostId: null,
       anchorRideId: null,
+      anchorListingId: null,
       isSupportThread: true,
       lastMessageAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),

@@ -1,11 +1,10 @@
-// Generic two-button confirmation modal used by post-detail ⋮ menu actions
-// (delete-owner, admin-remove, block).
-import { Modal, View, Text, Pressable, ActivityIndicator } from 'react-native';
+// Generic two-button confirmation dialog used by post-detail ⋮ menu actions
+// (delete-owner, admin-remove, block). Built on the kit `Modal` (spec 17 §4.1).
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, useTheme } from '@kc/ui';
-import { rowDirectionStart } from '../../lib/rtlLayout';
+import { makeUseStyles, typography, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-import { useModalHardwareBack } from '../../hooks/useModalHardwareBack';
+import { DangerButton, PrimaryButton, SecondaryButton } from '../ui/Buttons';
+import { Modal } from '../ui/Modal';
 
 interface Props {
   visible: boolean;
@@ -14,7 +13,7 @@ interface Props {
   confirmLabel: string;
   /** Secondary action label (defaults to `general.cancel`). */
   cancelLabel?: string;
-  /** When true, the confirm button is rendered in destructive (red) style. */
+  /** When true, the confirm action is the red `DangerButton` (D94). */
   destructive?: boolean;
   isBusy?: boolean;
   errorMessage?: string | null;
@@ -36,60 +35,29 @@ export function ConfirmActionModal({
 }: Props) {
   const { t } = useTranslation();
   const styles = useConfirmActionModalStyles();
-  const { colors } = useTheme();
   const cancelLabel = cancelLabelProp ?? t('general.cancel');
-  useModalHardwareBack(visible, onCancel);
+  const ConfirmButton = destructive ? DangerButton : PrimaryButton;
   return (
-    <Modal visible={visible} animationType="fade" transparent onRequestClose={onCancel}>
-      <View style={styles.backdrop}>
-        <View style={styles.sheet}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.message}>{message}</Text>
-          {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
-          <View style={styles.actions}>
-            <Pressable
-              style={[styles.btn, styles.btnSecondary, isBusy && styles.btnDisabled]}
-              disabled={isBusy}
-              onPress={onCancel}
-              accessibilityLabel={cancelLabel}
-            >
-              <Text style={styles.btnSecondaryText}>{cancelLabel}</Text>
-            </Pressable>
-            <Pressable
-              style={[
-                styles.btn,
-                destructive ? styles.btnDestructive : styles.btnPrimary,
-                isBusy && styles.btnDisabled,
-              ]}
-              disabled={isBusy}
-              onPress={onConfirm}
-              accessibilityLabel={confirmLabel}
-            >
-              {isBusy ? (
-                <ActivityIndicator color={colors.textInverse} />
-              ) : (
-                <Text style={styles.btnPrimaryText}>{confirmLabel}</Text>
-              )}
-            </Pressable>
-          </View>
-        </View>
-      </View>
+    <Modal
+      visible={visible}
+      title={title}
+      onDismiss={onCancel}
+      // The request is in flight: keep the dialog until it settles, like the disabled cancel.
+      dismissible={!isBusy}
+      footer={
+        <>
+          <ConfirmButton label={confirmLabel} size="md" fullWidth loading={isBusy} onPress={onConfirm} />
+          <SecondaryButton label={cancelLabel} size="md" fullWidth disabled={isBusy} onPress={onCancel} />
+        </>
+      }
+    >
+      <Text style={styles.message}>{message}</Text>
+      {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
     </Modal>
   );
 }
 
 const useConfirmActionModalStyles = makeUseStyles(({ colors }) => ({
-  backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', padding: 16 },
-  sheet: { backgroundColor: colors.surfaceRaised, borderRadius: 12, padding: 20, gap: 12 },
-  title: { fontSize: 18, fontWeight: '600', color: colors.textPrimary, textAlign: rtlTextAlignStart },
-  message: { fontSize: 15, color: colors.textSecondary, textAlign: rtlTextAlignStart, lineHeight: 22 },
-  error: { fontSize: 13, color: colors.error, textAlign: rtlTextAlignStart },
-  actions: { flexDirection: rowDirectionStart, gap: 8, marginTop: 8 },
-  btn: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  btnPrimary: { backgroundColor: colors.primary },
-  btnDestructive: { backgroundColor: colors.error },
-  btnSecondary: { backgroundColor: colors.skeleton },
-  btnPrimaryText: { color: colors.textInverse, fontSize: 15, fontWeight: '600' },
-  btnSecondaryText: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
-  btnDisabled: { opacity: 0.5 },
+  message: { ...typography.body, color: colors.textSecondary, textAlign: rtlTextAlignStart },
+  error: { ...typography.bodySmall, color: colors.error, textAlign: rtlTextAlignStart },
 }));

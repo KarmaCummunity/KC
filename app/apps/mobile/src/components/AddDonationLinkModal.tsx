@@ -1,19 +1,11 @@
-// FR-DONATE-008/009 — modal for adding or editing community NGO links.
+// FR-DONATE-008/009 — sheet for adding or editing community NGO links.
+// Kit `BottomSheet` + `TextField`s; the submit leads the footer (spec 17 §4.1).
 import React from 'react';
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { DonationCategorySlug, DonationLink } from '@kc/domain';
-import { DONATION_LINK_DESCRIPTION_MAX, DONATION_LINK_DISPLAY_NAME_MAX } from '@kc/domain';
-import { useTheme } from '@kc/ui';
-import { useAddDonationLinkModalStyles } from './AddDonationLinkModal.styles';
+import { BottomSheet } from './ui/BottomSheet';
+import { GhostButton, PrimaryButton } from './ui/Buttons';
+import { DonationLinkFields } from './DonationLinkFields';
 import { useAddOrEditDonationLinkModal } from './useAddOrEditDonationLinkModal';
 
 interface Props {
@@ -27,111 +19,46 @@ interface Props {
 
 export function AddDonationLinkModal(props: Readonly<Props>) {
   const { t } = useTranslation();
-  const { colors } = useTheme();
-  const styles = useAddDonationLinkModalStyles();
-  const {
-    url,
-    setUrl,
-    name,
-    setName,
-    desc,
-    setDesc,
-    valid,
-    isEdit,
-    submitting,
-    errorKey,
-    handleClose,
-    submit,
-  } = useAddOrEditDonationLinkModal(props);
+  const { url, setUrl, name, setName, desc, setDesc, valid, isEdit, submitting, errorKey, handleClose, submit } =
+    useAddOrEditDonationLinkModal(props);
+
+  const submitLabel = isEdit ? t('donations.addLinkModal.save') : t('donations.addLinkModal.submit');
 
   return (
-    <Modal visible={props.visible} animationType="slide" onRequestClose={handleClose} transparent>
-      <View style={styles.backdrop}>
-        <View style={styles.sheet}>
-          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
-            <Text style={styles.title}>
-              {isEdit ? t('donations.addLinkModal.editTitle') : t('donations.addLinkModal.title')}
-            </Text>
-
-            <Text style={styles.label}>{t('donations.addLinkModal.urlLabel')}</Text>
-            <TextInput
-              style={[styles.input, styles.inputUrl]}
-              value={url}
-              onChangeText={setUrl}
-              placeholder={t('donations.addLinkModal.urlPlaceholder')}
-              placeholderTextColor={colors.textDisabled}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-              editable={!submitting}
-            />
-
-            <Text style={styles.label}>{t('donations.addLinkModal.nameLabel')}</Text>
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder={t('donations.addLinkModal.namePlaceholder')}
-              placeholderTextColor={colors.textDisabled}
-              maxLength={DONATION_LINK_DISPLAY_NAME_MAX}
-              editable={!submitting}
-            />
-
-            <Text style={styles.label}>{t('donations.addLinkModal.descriptionLabel')}</Text>
-            <TextInput
-              style={[styles.input, styles.inputMulti]}
-              value={desc}
-              onChangeText={setDesc}
-              placeholder={t('donations.addLinkModal.descriptionPlaceholder')}
-              placeholderTextColor={colors.textDisabled}
-              maxLength={DONATION_LINK_DESCRIPTION_MAX}
-              textAlignVertical="top"
-              multiline
-              editable={!submitting}
-            />
-            <Text style={styles.helper}>
-              {isEdit ? t('donations.addLinkModal.editHelperText') : t('donations.addLinkModal.helperText')}
-            </Text>
-
-            {errorKey ? (
-              <Text style={styles.errorText}>
-                {t(`donations.addLinkModal.errors.${errorKey}`, {
-                  defaultValue: t('donations.addLinkModal.errors.unknown'),
-                })}
-              </Text>
-            ) : null}
-
-            <View style={styles.actions}>
-              <Pressable
-                style={[styles.btn, styles.btnGhost]}
-                onPress={handleClose}
-                disabled={submitting}
-                accessibilityRole="button"
-              >
-                <Text style={styles.btnGhostText}>{t('donations.addLinkModal.cancel')}</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.btn, styles.btnPrimary, (!valid || submitting) && styles.btnDisabled]}
-                onPress={submit}
-                disabled={!valid || submitting}
-                accessibilityRole="button"
-                accessibilityState={{ disabled: !valid || submitting }}
-              >
-                {submitting ? (
-                  <View style={styles.submittingRow}>
-                    <ActivityIndicator size="small" color={colors.textInverse} />
-                    <Text style={styles.btnPrimaryText}>{t('donations.addLinkModal.submitting')}</Text>
-                  </View>
-                ) : (
-                  <Text style={styles.btnPrimaryText}>
-                    {isEdit ? t('donations.addLinkModal.save') : t('donations.addLinkModal.submit')}
-                  </Text>
-                )}
-              </Pressable>
-            </View>
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
+    <BottomSheet
+      visible={props.visible}
+      onDismiss={handleClose}
+      title={isEdit ? t('donations.addLinkModal.editTitle') : t('donations.addLinkModal.title')}
+      footer={
+        <>
+          <PrimaryButton
+            label={submitting ? t('donations.addLinkModal.submitting') : submitLabel}
+            size="md"
+            fullWidth
+            onPress={() => void submit()}
+            disabled={!valid || submitting}
+          />
+          <GhostButton
+            label={t('donations.addLinkModal.cancel')}
+            size="md"
+            fullWidth
+            onPress={handleClose}
+            disabled={submitting}
+          />
+        </>
+      }
+    >
+      <DonationLinkFields
+        url={url}
+        setUrl={setUrl}
+        name={name}
+        setName={setName}
+        desc={desc}
+        setDesc={setDesc}
+        isEdit={isEdit}
+        submitting={submitting}
+        errorKey={errorKey}
+      />
+    </BottomSheet>
   );
 }

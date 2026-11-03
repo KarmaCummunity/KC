@@ -1,5 +1,5 @@
-import { Text, View } from 'react-native';
-import { makeUseStyles } from '@kc/ui';
+import { View } from 'react-native';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 
 export interface AdminListEmptyProps {
   readonly title: string;
@@ -17,7 +17,7 @@ export function AdminListEmpty({ title, hint }: AdminListEmptyProps) {
 }
 
 const useStyles = makeUseStyles(() => ({
-  box:   { padding: 32, alignItems: 'center', gap: 8 },
-  title: { fontSize: 16, fontWeight: '600' },
-  hint:  { fontSize: 13, opacity: 0.6, textAlign: 'center' },
+  box:   { padding: spacing['2xl'], alignItems: 'center', gap: spacing.sm },
+  title: { fontSize: typography.bodyLarge.fontSize, ...typography.semiBold },
+  hint:  { fontSize: typography.bodySmall.fontSize, opacity: 0.6, textAlign: 'center' },
 }));

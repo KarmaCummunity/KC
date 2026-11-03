@@ -9,7 +9,7 @@ async function pickFromDialog(page: Page, opener: string, query: string) {
   await dialog.getByRole('button', { name: new RegExp(query) }).first().click();
   await expect(dialog).toHaveCount(0);
 }
-import { rest, runTag, sessionFor } from '../../lib/api';
+import { cleanupE2eContent, rest, runTag, sessionFor } from '../../lib/api';
 import { USER_A } from '../../lib/env';
 
 test('feed renders posts with no failed API calls', async ({ page }) => {
@@ -57,4 +57,8 @@ test('like and comment on a post', async ({ page }) => {
   await page.getByPlaceholder('כתוב תגובה…').fill(comment);
   await page.getByText('פרסם תגובה', { exact: true }).click();
   await expect(page.getByText(comment)).toBeVisible();
+});
+
+test.afterAll(async () => {
+  await cleanupE2eContent(USER_A);
 });

@@ -28,6 +28,34 @@ export class FakeAuthService implements IAuthService {
   public lastSignUpRedirect: string | undefined;
   public syncProfileCalls: AuthProfileMetadataPatch[] = [];
 
+  // FR-AUTH-008 password reset.
+  public resetRequestCalls: Array<{ email: string; redirectTo?: string }> = [];
+  public resetRequestError: Error | null = null;
+  public recoveryTokens: string[] = [];
+  public recoveryError: Error | null = null;
+  public passwordUpdates: string[] = [];
+  /** Ordered log of reset-related port calls, to assert sequencing. */
+  public resetCallOrder: string[] = [];
+
+  async requestPasswordReset(email: string, options?: { redirectTo?: string }): Promise<void> {
+    this.resetRequestCalls.push({ email, redirectTo: options?.redirectTo });
+    if (this.resetRequestError) throw this.resetRequestError;
+  }
+
+  async verifyPasswordRecovery(tokenHash: string): Promise<AuthSession> {
+    this.resetCallOrder.push('verifyPasswordRecovery');
+    this.recoveryTokens.push(tokenHash);
+    if (this.recoveryError) throw this.recoveryError;
+    if (!this.verifyEmailResult) throw new AuthError('unknown', 'no recovery session configured');
+    return this.verifyEmailResult;
+  }
+
+  async updatePasswordAndSignOutEverywhere(newPassword: string): Promise<void> {
+    this.resetCallOrder.push('updatePasswordAndSignOutEverywhere');
+    this.passwordUpdates.push(newPassword);
+    this.currentSession = null;
+  }
+
   async syncProfileMetadata(patch: AuthProfileMetadataPatch): Promise<void> {
     this.syncProfileCalls.push(patch);
     if (this.currentSession) {

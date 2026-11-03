@@ -1,16 +1,20 @@
 // app/apps/mobile/app/(admin)/tasks/index.tsx
 // FR-ADMIN-018 — admin tasks list screen with chip filters.
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { router } from 'expo-router';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, View } from 'react-native';
+import { FilterChipRow } from '../../../src/components/filterKit/FilterChipRow';
+import { Chip } from '../../../src/components/ui/Chip';
 import {
   ADMIN_TASK_CATEGORIES,
   ADMIN_TASK_STATUSES, type AdminPermission, type AdminRole,
+  type AdminTask,
   type AdminTaskCategory, type AdminTaskStatus,
   hasPermission,
 } from '@kc/domain';
 import type { AdminTaskListFilters } from '@kc/application';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { PrimaryButton } from '../../../src/components/ui/Buttons';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { useAdminTasksList } from '../../../src/hooks/useAdminTasks';
 import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
@@ -26,6 +30,10 @@ import {
 } from '../../../src/components/admin/tasks/TaskDueRangeFilter';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+
+const taskKeyExtractor = (t: AdminTask) => t.taskId;
 
 function parseDueFrom(value: string): Date | undefined {
   if (!isValidIsoDate(value) || value.length === 0) return undefined;
@@ -69,6 +77,15 @@ export default function TasksScreen() {
   const q = useAdminTasksList(filters);
   const can = (perm: AdminPermission) => hasPermission(roles as readonly AdminRole[], perm);
 
+  const renderItem = useCallback(
+    ({ item }: { item: AdminTask }) => (
+      <View style={styles.rowWrap}>
+        <TaskRow task={item} />
+      </View>
+    ),
+    [styles.rowWrap],
+  );
+
   if (rolesLoading) {
     return <View style={styles.center}><Text>{L.admin.tasks.loading}</Text></View>;
   }
@@ -84,47 +101,47 @@ export default function TasksScreen() {
     <View style={styles.filterCard}>
       <Text style={styles.filterTitle}>{L.admin.tasks.filtersTitle}</Text>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        <FilterChip
-          label={L.admin.tasks.filters.all}
-          active={statusFilter === null && !overdueOnly}
-          onPress={() => { setStatusFilter(null); setOverdueOnly(false); }}
-        />
-        {ADMIN_TASK_STATUSES.map((s) => (
-          <FilterChip
-            key={s}
-            label={L.admin.tasks.status[s]}
-            active={statusFilter === s}
-            onPress={() => { setStatusFilter(statusFilter === s ? null : s); }}
-          />
-        ))}
-        <FilterChip
+      <FilterChipRow<AdminTaskStatus>
+        scrollable
+        showAllChip
+        allLabel={L.admin.tasks.filters.all}
+        options={ADMIN_TASK_STATUSES.map((s) => ({
+          value: s,
+          label: L.admin.tasks.status[s],
+        }))}
+        value={overdueOnly ? null : statusFilter}
+        onChange={(s) => {
+          setStatusFilter(s);
+          if (s !== null) setOverdueOnly(false);
+        }}
+        contentContainerStyle={styles.chips}
+      >
+        <Chip
+          size="sm"
           label={L.admin.tasks.filters.overdue}
-          active={overdueOnly}
+          selected={overdueOnly}
           onPress={() => setOverdueOnly((v) => !v)}
         />
-        <FilterChip
+        <Chip
+          size="sm"
           label={L.admin.tasks.filters.onlyMine}
-          active={onlyMine}
+          selected={onlyMine}
           onPress={() => setOnlyMine((v) => !v)}
         />
-      </ScrollView>
+      </FilterChipRow>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        <FilterChip
-          label={L.admin.tasks.categoryFilters.all}
-          active={categoryFilter === null}
-          onPress={() => setCategoryFilter(null)}
-        />
-        {ADMIN_TASK_CATEGORIES.map((c) => (
-          <FilterChip
-            key={c}
-            label={L.admin.tasks.category[c]}
-            active={categoryFilter === c}
-            onPress={() => setCategoryFilter(categoryFilter === c ? null : c)}
-          />
-        ))}
-      </ScrollView>
+      <FilterChipRow<AdminTaskCategory>
+        scrollable
+        showAllChip
+        allLabel={L.admin.tasks.categoryFilters.all}
+        options={ADMIN_TASK_CATEGORIES.map((c) => ({
+          value: c,
+          label: L.admin.tasks.category[c],
+        }))}
+        value={categoryFilter}
+        onChange={(c) => setCategoryFilter(c)}
+        contentContainerStyle={styles.chips}
+      />
 
       {can('admins.view') && (
         <TaskAssigneeFilter value={assigneeFilter} onChange={setAssigneeFilter} />
@@ -145,22 +162,15 @@ export default function TasksScreen() {
         title={L.admin.tasks.title}
         subtitle={!q.isLoading ? L.admin.tasks.countLabel(q.tasks.length) : undefined}
         right={can('tasks.create') ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/(admin)/tasks/new' as never)}
-            style={styles.newBtn}
-          >
-            <Text style={styles.newBtnText}>{L.admin.tasks.newBtn}</Text>
-          </Pressable>
+          <PrimaryButton testID="admin-tasks-new" label={L.admin.tasks.newBtn} size="sm" onPress={() => router.push('/(admin)/tasks/new')} />
         ) : undefined}
       />
 
       <KcFlashList
-        data={[...q.tasks]}
-        keyExtractor={(t) => t.taskId}
-        renderItem={({ item }) => (
-          <View style={styles.rowWrap}><TaskRow task={item} /></View>
-        )}
+        data={q.tasks}
+        keyExtractor={taskKeyExtractor}
+        estimatedItemSize={80}
+        renderItem={renderItem}
         ListHeaderComponent={filtersBar}
         contentContainerStyle={styles.listContent}
         refreshControl={
@@ -179,68 +189,41 @@ export default function TasksScreen() {
   );
 }
 
-interface FilterChipProps {
-  readonly label: string;
-  readonly active: boolean;
-  readonly onPress: () => void;
-}
-
-function FilterChip({ label, active, onPress }: FilterChipProps) {
-  const styles = useStyles();
-  return (
-    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
-      <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 const useStyles = makeUseStyles(({ colors }) => ({
   root:            { flex: 1, backgroundColor: colors.background },
-  center:          { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  deniedTitle:     { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
-  newBtn:          { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: colors.primary },
-  newBtnText:      { color: colors.textInverse, fontWeight: '700', fontSize: 13 },
+  center:          { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+  deniedTitle:     { ...typography.h3, ...typography.bold, color: colors.textPrimary },
 
   listContent: {
-    paddingBottom: 96,
-    gap: 10,
+    // 96pt of room under the last row, off the spacing scale's 64 + 32.
+    paddingBottom: spacing['4xl'] + spacing['2xl'],
+    gap: spacing.sm,
     width: '100%',
     maxWidth: 900,
     alignSelf: 'center',
   },
-  rowWrap: { paddingHorizontal: 16 },
+  rowWrap: { paddingHorizontal: spacing.base },
 
   filterCard: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 4,
-    padding: 14,
-    gap: 10,
+    marginHorizontal: spacing.base,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+    padding: spacing.md,
+    gap: spacing.sm,
     backgroundColor: colors.surface,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
   },
   filterTitle: {
-    fontSize: 12,
-    fontWeight: '800',
+    ...typography.label,
+    ...typography.extraBold,
     color: colors.textSecondary,
     letterSpacing: 0.3,
     writingDirection: 'rtl',
   },
-  chips:           { gap: 8, paddingVertical: 2 },
-  chip: {
-    flexShrink: 0,
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999,
-    backgroundColor: colors.background,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
-  },
-  chipActive:      { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText:        { fontSize: 13, fontWeight: '600', color: colors.textPrimary },
-  chipTextActive:  { color: colors.textInverse },
-  empty:           { padding: 32, alignItems: 'center', gap: 8 },
-  emptyTitle:      { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
-  emptyHint:       { fontSize: 13, opacity: 0.6, textAlign: 'center', color: colors.textSecondary },
+  chips:           { gap: spacing.sm },
+  empty:           { padding: spacing['2xl'], alignItems: 'center', gap: spacing.sm },
+  emptyTitle:      { ...typography.h4, color: colors.textPrimary },
+  emptyHint:       { ...typography.bodySmall, opacity: 0.6, textAlign: 'center', color: colors.textSecondary },
 }));

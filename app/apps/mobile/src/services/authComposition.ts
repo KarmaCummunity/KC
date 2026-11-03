@@ -7,7 +7,7 @@
 // ─────────────────────────────────────────────
 
 import { Platform } from 'react-native';
-import { createAuthSecureStorage } from './authSecureStorage';
+import { pickAuthStorage } from './authSecureStorage';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -16,7 +16,6 @@ import {
   getSupabaseClient,
   SupabaseAccountGateRepository,
   SupabaseAuthService,
-  type SupabaseAuthStorage,
 } from '@kc/infrastructure-supabase';
 import {
   RestoreSessionUseCase,
@@ -27,11 +26,14 @@ import {
   SignUpWithEmailUseCase,
   ResendVerificationEmailUseCase,
   VerifyEmailUseCase,
+  RequestPasswordResetUseCase,
+  ResetPasswordUseCase,
   type AuthSession as KcAuthSession,
   type IAuthService,
   type OpenAuthSession,
   type PerformAppleSignIn,
 } from '@kc/application';
+import { webBaseUrl } from '../config/featureFlags';
 
 let _authService: IAuthService | null = null;
 let _signUp: SignUpWithEmailUseCase | null = null;
@@ -42,6 +44,8 @@ let _signOut: SignOutUseCase | null = null;
 let _restore: RestoreSessionUseCase | null = null;
 let _resend: ResendVerificationEmailUseCase | null = null;
 let _verifyEmail: VerifyEmailUseCase | null = null;
+let _requestPasswordReset: RequestPasswordResetUseCase | null = null;
+let _resetPassword: ResetPasswordUseCase | null = null;
 
 /**
  * Deep link the verification email lands on. Production: web universal link
@@ -51,28 +55,9 @@ let _verifyEmail: VerifyEmailUseCase | null = null;
 export const AUTH_VERIFY_URL =
   process.env.EXPO_PUBLIC_AUTH_VERIFY_URL ?? 'https://karma-community-kc.com/auth/verify';
 
-/**
- * Web localStorage exposes async-compatible sync methods (without this,
- * refreshing the web preview drops the session — FR-AUTH-013 regresses).
- * Native routes through SecureStore (Keychain/Keystore) per TD-101
- * (BACKLOG P2.14); the adapter performs a one-time read-through migration
- * from AsyncStorage so existing signed-in users aren't logged out by the
- * swap. The Supabase client is a singleton — only the first
- * `getSupabaseClient({ storage })` call's return value is consumed, so
- * `pickStorage()` is also called by `apps/mobile/src/lib/container.ts`
- * for loader-order independence.
- */
-function pickStorage(): SupabaseAuthStorage | undefined {
-  if (Platform.OS === 'web') {
-    if (typeof window === 'undefined' || !window.localStorage) return undefined;
-    return window.localStorage;
-  }
-  return createAuthSecureStorage();
-}
-
 export function getAuthService(): IAuthService {
   if (_authService) return _authService;
-  const client = getSupabaseClient({ storage: pickStorage() });
+  const client = getSupabaseClient({ storage: pickAuthStorage() });
   _authService = new SupabaseAuthService(client);
   return _authService;
 }
@@ -161,12 +146,12 @@ export async function redirectToGoogleSignInWeb(): Promise<void> {
 }
 
 export function getSignUpUseCase(): SignUpWithEmailUseCase {
-  if (!_signUp) _signUp = new SignUpWithEmailUseCase(getAuthService());
+  _signUp ??= new SignUpWithEmailUseCase(getAuthService());
   return _signUp;
 }
 
 export function getSignInUseCase(): SignInWithEmailUseCase {
-  if (!_signIn) _signIn = new SignInWithEmailUseCase(getAuthService());
+  _signIn ??= new SignInWithEmailUseCase(getAuthService());
   return _signIn;
 }
 
@@ -186,7 +171,7 @@ export function getSignInWithAppleUseCase(): SignInWithAppleUseCase {
 }
 
 export function getSignOutUseCase(): SignOutUseCase {
-  if (!_signOut) _signOut = new SignOutUseCase(getAuthService());
+  _signOut ??= new SignOutUseCase(getAuthService());
   return _signOut;
 }
 
@@ -195,20 +180,37 @@ export function getRestoreSessionUseCase(): RestoreSessionUseCase {
     // TD-68: cold-start restore consults the same server-side gate the 60s
     // in-session poll uses, so a suspended/banned user is signed out before
     // any session-scoped query runs.
-    const gate = new SupabaseAccountGateRepository(getSupabaseClient({ storage: pickStorage() }));
+    const gate = new SupabaseAccountGateRepository(getSupabaseClient({ storage: pickAuthStorage() }));
     _restore = new RestoreSessionUseCase(getAuthService(), gate);
   }
   return _restore;
 }
 
 export function getResendVerificationEmailUseCase(): ResendVerificationEmailUseCase {
-  if (!_resend) _resend = new ResendVerificationEmailUseCase(getAuthService());
+  _resend ??= new ResendVerificationEmailUseCase(getAuthService());
   return _resend;
 }
 
 export function getVerifyEmailUseCase(): VerifyEmailUseCase {
-  if (!_verifyEmail) _verifyEmail = new VerifyEmailUseCase(getAuthService());
+  _verifyEmail ??= new VerifyEmailUseCase(getAuthService());
   return _verifyEmail;
+}
+
+/**
+ * FR-AUTH-008: where the password-reset email link lands. The hosted
+ * "Reset password" email template must point at this route with
+ * `?token_hash={{ .TokenHash }}&type=recovery` (see `/auth/reset-password`).
+ */
+export const AUTH_RESET_PASSWORD_URL = `${webBaseUrl().replace(/\/+$/, '')}/auth/reset-password`;
+
+export function getRequestPasswordResetUseCase(): RequestPasswordResetUseCase {
+  _requestPasswordReset ??= new RequestPasswordResetUseCase(getAuthService());
+  return _requestPasswordReset;
+}
+
+export function getResetPasswordUseCase(): ResetPasswordUseCase {
+  _resetPassword ??= new ResetPasswordUseCase(getAuthService());
+  return _resetPassword;
 }
 
 /** Used by the `/auth/callback` route to exchange an OAuth code for a session. */

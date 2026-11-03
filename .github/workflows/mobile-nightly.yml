@@ -1,0 +1,157 @@
+name: Mobile nightly
+
+# Tier 2 of D-195 (INFRA-CI-4): every night, ship the newest green `dev` commit
+# to TestFlight (iOS) and Play internal (Android). No human approval: both are
+# internal tester tracks, built with the eas.json `nightly` profile on the
+# kc-dev Supabase backend (each store job checks the built bundle for it).
+#
+#   resolve → e2e (P0 against dev) → ios ∥ android → record
+#
+# `resolve` picks the newest dev commit whose `CI` push run succeeded and builds
+# that exact SHA, never the tip. Nothing is built when that SHA already carries
+# a `mobile/v*` tag (the macOS runner is the costly part), unless `force` is
+# set. `record` creates that tag only after both stores accepted the build, so
+# a night where either store failed is retried in full the next night.
+#
+# Scheduled runs use the default branch's (main's) copy of this file, so the
+# schedule takes effect once it reaches main; it still builds dev's commit.
+
+on:
+  schedule:
+    - cron: '43 23 * * *' # 02:43 Asia/Jerusalem in summer, 01:43 in winter
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Build even if the newest green dev commit was already built
+        type: boolean
+        default: false
+
+# One nightly at a time; a second run queues instead of cancelling a build
+# that has already consumed store build numbers.
+concurrency:
+  group: mobile-nightly
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  resolve:
+    name: resolve green dev commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read # commits, app/VERSION, shipped tags
+      actions: read # CI run conclusions
+    outputs:
+      sha: ${{ steps.pick.outputs.sha }}
+      version: ${{ steps.pick.outputs.version }}
+      build: ${{ steps.pick.outputs.build }}
+    steps:
+      # A dispatch from a feature branch would run that branch's copy of the
+      # store workflows; only dev's (or the schedule's main) copy may ship.
+      - name: Require dev for manual runs
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/dev'
+        run: |
+          echo "::error::Run Mobile nightly from dev (got $GITHUB_REF)."
+          exit 1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: |
+            .nvmrc
+            scripts/resolve-green-dev-sha.mjs
+            scripts/mobile-nightly-resolve.mjs
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+      - name: Pick the commit and decide whether to build
+        id: pick
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BRANCH: dev
+          LOOKBACK: '30'
+          FORCE: ${{ inputs.force }}
+        run: node scripts/mobile-nightly-resolve.mjs
+
+  # Jobs that call a reusable workflow cannot set timeout-minutes; each called
+  # job sets its own (e2e 30, ios 90, android 90 minutes).
+  e2e:
+    name: e2e
+    needs: resolve
+    if: needs.resolve.outputs.build == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/e2e-nightly-dev.yml
+    with:
+      p0_only: true
+      ref: ${{ needs.resolve.outputs.sha }}
+
+  ios:
+    name: ios
+    needs: [resolve, e2e]
+    if: needs.resolve.outputs.build == 'true'
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/testflight-ios.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+    # Repo-level store credentials; the mobile-store environment's are read in the called job.
+    secrets: inherit
+
+  android:
+    name: android
+    needs: [resolve, e2e]
+    if: needs.resolve.outputs.build == 'true'
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/play-internal.yml
+    with:
+      ref: ${{ needs.resolve.outputs.sha }}
+    secrets: inherit
+
+  record:
+    name: record
+    needs: [resolve, ios, android]
+    if: needs.resolve.outputs.build == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # create the traceability tag
+    steps:
+      - name: Tag the shipped commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+          VERSION: ${{ needs.resolve.outputs.version }}
+          IOS_BUILD: ${{ needs.ios.outputs.build_number }}
+          ANDROID_CODE: ${{ needs.android.outputs.version_code }}
+        run: |
+          set -euo pipefail
+          if [ -z "$IOS_BUILD" ] || [ -z "$ANDROID_CODE" ]; then
+            echo "::error::A store job reported no build number"
+            exit 1
+          fi
+          # Traceability, and the marker resolve uses to skip a shipped commit.
+          tag="mobile/v$VERSION-ios$IOS_BUILD-android$ANDROID_CODE"
+          # Create or move the tag; idempotent, so a retry after a lost response is safe.
+          put_tag() {
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/$tag" -f sha="$SHA" -F force=true > /dev/null 2>&1 ||
+              gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$tag" -f sha="$SHA" > /dev/null
+          }
+          for delay in 2 4 8 0; do
+            if put_tag; then break; fi
+            if [ "$delay" -eq 0 ]; then
+              echo "::error::Could not create tag $tag on $SHA; tomorrow's run will rebuild this commit."
+              exit 1
+            fi
+            sleep "$delay"
+          done
+          {
+            echo "### Mobile nightly shipped"
+            echo
+            echo "| Version | Commit | iOS build | Android versionCode | Supabase | Tag |"
+            echo "| --- | --- | --- | --- | --- | --- |"
+            echo "| $VERSION | \`$SHA\` | $IOS_BUILD | $ANDROID_CODE | kc-dev | \`$tag\` |"
+          } >> "$GITHUB_STEP_SUMMARY"

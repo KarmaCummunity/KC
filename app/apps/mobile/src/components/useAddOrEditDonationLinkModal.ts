@@ -6,7 +6,7 @@ import {
   DONATION_LINK_DISPLAY_NAME_MAX,
   DONATION_LINK_URL_PATTERN,
 } from '@kc/domain';
-import { DonationLinkError } from '@kc/application';
+import { isDonationLinkError } from '@kc/application';
 import { container } from '../lib/container';
 
 interface Args {
@@ -96,7 +96,7 @@ export function useAddOrEditDonationLinkModal({
       reset();
       onClose();
     } catch (err) {
-      setErrorKey(err instanceof DonationLinkError ? err.code : 'unknown');
+      setErrorKey(isDonationLinkError(err) ? err.code : 'unknown');
     } finally {
       setSubmitting(false);
     }

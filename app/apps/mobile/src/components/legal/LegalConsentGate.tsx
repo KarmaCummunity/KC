@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { AppState, View, Text, Pressable, Modal, Platform } from 'react-native';
+import { AppState, View, Pressable, Modal, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { usePathname } from 'expo-router';
 import type { LegalPendingItem } from '@kc/domain';
 import type { CheckPendingLegalAcksResult } from '@kc/application';
-import { typography, spacing, useTheme } from '@kc/ui';
+import { typography, spacing, useTheme, Text } from '@kc/ui';
 import { useAuthStore } from '../../store/authStore';
 import { getCheckPendingLegalAcksUseCase } from '../../services/legalComposition';
 import { useModalStackIsEmpty } from './useActiveModalStack';
@@ -75,7 +75,7 @@ export function LegalConsentGate({ children }: LegalConsentGateProps) {
 
   // Trigger: mount + auth change
   useEffect(() => {
-    runCheck();
+    void runCheck();
   }, [runCheck]);
 
   // Trigger: AppState 'active' transition (debounced)

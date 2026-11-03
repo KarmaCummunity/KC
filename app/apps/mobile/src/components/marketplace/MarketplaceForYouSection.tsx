@@ -1,15 +1,16 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography } from '@kc/ui';
+import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { useMarketplaceRecommendations } from '../../hooks/useMarketplaceBrowse';
+import { ListingCard } from '../cards/ListingCard';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  wrap: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.sm },
-  title: { ...typography.h3, color: colors.textPrimary },
-  row: { paddingVertical: spacing.xs },
-  link: { ...typography.body, color: colors.primary },
+  wrap: { paddingVertical: spacing.md, gap: spacing.sm },
+  title: { ...typography.h3, color: colors.textPrimary, paddingHorizontal: spacing.lg, textAlign: rtlTextAlignStart },
+  scroll: { paddingHorizontal: spacing.lg, gap: spacing.sm, paddingBottom: spacing.xs },
 }));
 
 export function MarketplaceForYouSection() {
@@ -23,15 +24,16 @@ export function MarketplaceForYouSection() {
   return (
     <View style={styles.wrap}>
       <Text style={styles.title}>{t('marketplace.forYouTitle')}</Text>
-      {rows.map((item) => (
-        <Pressable
-          key={item.listingId}
-          style={styles.row}
-          onPress={() => router.push(`/(tabs)/donations/marketplace/${item.listingId}`)}
-        >
-          <Text style={styles.link}>{item.title}</Text>
-        </Pressable>
-      ))}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        {rows.map((item) => (
+          <ListingCard
+            key={item.listingId}
+            item={item}
+            variant="tile"
+            onPress={() => router.push(`/listing/${item.listingId}`)}
+          />
+        ))}
+      </ScrollView>
     </View>
   );
 }

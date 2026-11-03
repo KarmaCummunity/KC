@@ -1,12 +1,13 @@
 // Sub-panes for ClosureStep2: tab switcher + chats list + search input/results.
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, useTheme } from '@kc/ui';
+import { makeUseStyles, spacing, radius, typography, useTheme, Text } from '@kc/ui';
 import type { ClosureCandidate } from '@kc/application';
 import type { PickMode } from '../../store/closureStore';
 import { RecipientPickerRow } from './RecipientPickerRow';
 import { rowDirectionStart } from '../../lib/rtlLayout';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { TextField } from '../ui/TextField';
 
 export function ModeTabs({
   pickMode,
@@ -93,15 +94,16 @@ export function SearchPane({
   const { t } = useTranslation();
   return (
     <View>
-      <TextInput
-        style={styles.input}
+      <TextField
+        label={t('closure.searchPlaceholder')}
+        containerStyle={styles.inputContainer}
         placeholder={t('closure.searchPlaceholder')}
         placeholderTextColor={colors.textDisabled}
         value={query}
         onChangeText={onQueryChange}
         autoCorrect={false}
         autoCapitalize="none"
-        textAlign="right"
+        textAlign={rtlTextAlignStart}
       />
       {isSearching ? (
         <View style={styles.searchingRow}>
@@ -122,24 +124,15 @@ export function SearchPane({
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
-  body: { fontSize: 14, color: colors.textSecondary, textAlign: rtlTextAlignStart, lineHeight: 22 },
-  tabs: { flexDirection: rowDirectionStart, gap: 4, marginBottom: 12, backgroundColor: colors.skeleton, borderRadius: 8, padding: 3 },
-  tab: { flex: 1, paddingVertical: 8, borderRadius: 6, alignItems: 'center' },
+const useStyles = makeUseStyles(({ colors }) => ({
+  body: { ...typography.body, color: colors.textSecondary, textAlign: rtlTextAlignStart },
+  tabs: { flexDirection: rowDirectionStart, gap: spacing.xs, marginBottom: spacing.md, backgroundColor: colors.skeleton, borderRadius: radius.sm, padding: spacing.xs },
+  tab: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.sm, alignItems: 'center' },
   tabActive: { backgroundColor: colors.surface },
-  tabText: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
-  tabTextActive: { color: colors.textPrimary, fontWeight: '700' },
-  list: { maxHeight: 240, marginBottom: 8 },
-  emptyPane: { padding: 12, marginBottom: 8 },
-  input: {
-    height: 44,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    color: colors.textPrimary,
-    backgroundColor: colors.surface,
-    marginBottom: 8,
-  },
-  searchingRow: { paddingVertical: 8, alignItems: 'center' },
+  tabText: { ...typography.body, ...typography.medium, color: colors.textSecondary },
+  tabTextActive: { color: colors.textPrimary, ...typography.bold },
+  list: { maxHeight: spacing['3xl'] * 5, marginBottom: spacing.sm },
+  emptyPane: { padding: spacing.md, marginBottom: spacing.sm },
+  inputContainer: { marginBottom: spacing.sm },
+  searchingRow: { paddingVertical: spacing.sm, alignItems: 'center' },
 }));

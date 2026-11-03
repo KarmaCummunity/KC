@@ -23,6 +23,7 @@ function repo(members: readonly OrgTreeMember[]): IOrgHierarchyRepository {
   return {
     getOrgTree: vi.fn(async () => members),
     setManager: vi.fn(),
+    getHierarchyCensus: vi.fn(),
   };
 }
 

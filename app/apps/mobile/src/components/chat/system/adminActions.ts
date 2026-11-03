@@ -18,9 +18,15 @@ export interface ConfirmAndRunOpts {
   onConfirm: () => Promise<void>;
   onSuccess: () => void;
   onError: (msg: string) => void;
+  /**
+   * The admin backed out of the confirmation (web `confirm` → false, the native
+   * cancel button, or an Android outside-tap dismiss). Callers that marked
+   * themselves busy before asking reset here (TD-251).
+   */
+  onCancel?: () => void;
 }
 
-export function confirmAndRun({ action, onConfirm, onSuccess, onError }: ConfirmAndRunOpts): void {
+export function confirmAndRun({ action, onConfirm, onSuccess, onError, onCancel }: ConfirmAndRunOpts): void {
   if (Platform.OS === 'web') {
     const ok = globalThis.window?.confirm(
       `${i18n.t(`moderation.actions.${action}`)}\n\n${i18n.t(`moderation.actions.confirmModal.${action}`)}`,
@@ -29,6 +35,8 @@ export function confirmAndRun({ action, onConfirm, onSuccess, onError }: Confirm
       onConfirm()
         .then(onSuccess)
         .catch((e: unknown) => onError(errorMessage(e)));
+    } else {
+      onCancel?.();
     }
     return;
   }
@@ -36,7 +44,7 @@ export function confirmAndRun({ action, onConfirm, onSuccess, onError }: Confirm
     i18n.t(`moderation.actions.${action}`),
     i18n.t(`moderation.actions.confirmModal.${action}`),
     [
-      { text: i18n.t('moderation.actions.cancel'), style: 'cancel' },
+      { text: i18n.t('moderation.actions.cancel'), style: 'cancel', onPress: onCancel },
       {
         text: i18n.t('moderation.actions.proceed'),
         style: 'destructive',
@@ -50,7 +58,7 @@ export function confirmAndRun({ action, onConfirm, onSuccess, onError }: Confirm
         },
       },
     ],
-    { cancelable: true },
+    { cancelable: true, onDismiss: onCancel },
   );
 }
 

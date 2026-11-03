@@ -1,9 +1,9 @@
 import React from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '@kc/ui';
+import { spacing, useTheme, Text } from '@kc/ui';
 import { useOtherProfileScreenStyles } from './otherProfileScreen.styles';
 
 export function OtherProfileLoading() {
@@ -11,7 +11,7 @@ export function OtherProfileLoading() {
   const styles = useOtherProfileScreenStyles();
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ActivityIndicator style={{ marginTop: 80 }} color={colors.primary} />
+      <ActivityIndicator style={{ marginTop: spacing['4xl'] }} color={colors.primary} />
     </SafeAreaView>
   );
 }

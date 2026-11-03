@@ -6,10 +6,10 @@
 // Mapped to: FR-FOLLOW-011, FR-FOLLOW-002 AC1, FR-FOLLOW-004 AC1.
 
 import React from 'react';
-import { Text, TouchableOpacity } from 'react-native';
+import { TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { makeUseStyles, radius, spacing, typography, useTheme } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import type { FollowState } from '@kc/application';
 import { ConfirmActionModal } from '../post/ConfirmActionModal';
 
@@ -35,7 +35,6 @@ export function FollowButton({
   state, cooldownUntil, onPress, busy, interactionDisabled,
 }: FollowButtonProps) {
   const styles = useStyles();
-  const { colors } = useTheme();
   const { t } = useTranslation();
   const [confirmOpen, setConfirmOpen] = React.useState(false);
 
@@ -125,14 +124,14 @@ function config(state: FollowState, cooldownUntil: string | undefined, t: TFunct
   }
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   btn: {
     backgroundColor: colors.primary, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg,
     borderRadius: radius.md, alignItems: 'center', alignSelf: 'stretch',
   },
   btnSecondary: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border },
   btnDisabled: { opacity: 0.5 },
-  text: { ...typography.button, color: colors.textInverse, fontWeight: '700' as const },
+  text: { ...typography.button, ...typography.bold, color: colors.textInverse },
   textSecondary: { color: colors.textPrimary },
-  subtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  subtitle: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
 }));

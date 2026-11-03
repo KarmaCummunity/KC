@@ -1,0 +1,35 @@
+// English — "My listings" screen copy (marketplace).
+// Extracted from `donations.ts` (300-LOC cap). Spread into `marketplace` so keys stay `marketplace.myListings*`.
+
+export const marketplaceMyListings = {
+  myListingsNav: 'My listings',
+  myListingsTitle: 'My listings',
+  myListingsSubtitle: 'Edit, pause, mark fulfilled, or delete your marketplace posts. Fulfilling earns karma.',
+  myListingsEmpty: 'You have no listings yet.',
+  myListingsEdit: 'Edit',
+  myListingsPause: 'Pause',
+  myListingsResume: 'Resume',
+  myListingsFulfill: 'Mark fulfilled',
+  myListingsFulfillTitle: 'Mark as fulfilled?',
+  myListingsFulfillHint: 'This closes the listing and awards karma for completing a give/request.',
+  myListingsDelete: 'Delete',
+  myListingsDeleteTitle: 'Delete listing?',
+  myListingsDeleteHint: 'This permanently removes the listing.',
+  myListingsSave: 'Save changes',
+  myListingsUpdated: 'Updated {{date}}',
+  myListingsHiddenHint: 'Hidden from others until the team reviews the reports',
+  // Owner lifecycle (spec 07 §7.1 "Owner management"): status hints and refusals.
+  myListingsAddPhotos: 'Add photos',
+  myListingsPhotosAdded: 'Photos added to the listing',
+  myListingsPausedHint: 'Paused: hidden from everyone but you',
+  myListingsClosedHint: 'Closed: you can only add photos',
+  myListingsErrorTitle: "That didn't work",
+  myListingsErrorWrongStatus: "This action isn't available in the listing's current status.",
+  myListingsErrorActiveHandoff: 'The listing has an active reservation or booking. Finish or cancel it first.',
+  myListingsErrorHandoffHistory: "A listing that was handed over can't be deleted: it is part of the other side's history.",
+  myListingsErrorExpired: "The listing has expired, so it can't be resumed.",
+  myListingsErrorMediaFull: 'A listing can have up to 10 photos.',
+  myListingsErrorNotEditable: "A closed listing can't be edited. You can only add photos.",
+  myListingsErrorNotFound: "The listing wasn't found.",
+  myListingsErrorGeneric: 'Something went wrong. Please try again.',
+} as const;

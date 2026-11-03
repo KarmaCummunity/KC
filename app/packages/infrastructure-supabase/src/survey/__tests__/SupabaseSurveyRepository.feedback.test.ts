@@ -3,7 +3,8 @@
  * Split from SupabaseSurveyRepository.test.ts to stay within the 300-line file cap.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { SurveyError } from '@kc/domain';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '../../database.types';
 import { SupabaseSurveyRepository } from '../SupabaseSurveyRepository';
 
 // ---------------------------------------------------------------------------
@@ -17,7 +18,7 @@ function makeClient(opts: {
   insertResult?: { error: { message: string } | null };
   userId?: string | null;
   authError?: { message: string } | null;
-} = {}): any {
+} = {}): SupabaseClient<Database> {
   const rpcResults = opts.rpcResults ?? {};
   const insertResult = opts.insertResult ?? { error: null };
   const userId = 'userId' in opts ? opts.userId : 'user-uuid';
@@ -37,7 +38,7 @@ function makeClient(opts: {
         error: authError,
       }),
     },
-  };
+  } as unknown as SupabaseClient<Database>;
 }
 
 const ELIGIBILITY_RAW = { show: true, reasons: ['eligible'] };

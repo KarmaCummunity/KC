@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  fitsGrantScope,
   GRANTABLE_ADMIN_ROLES,
   isAdminGrantActive,
   isGrantableAdminRole,
@@ -14,6 +15,7 @@ function grant(overrides: Partial<AdminGrant> = {}): AdminGrant {
     displayName: 'Nave',
     avatarUrl: null,
     role: 'moderator',
+    scopeOrgId: null,
     grantedAt: new Date('2026-01-01T00:00:00Z'),
     grantedBy: 'admin',
     grantedByDisplayName: 'Admin',
@@ -33,14 +35,21 @@ describe('AdminGrant', () => {
     expect(isAdminGrantActive(grant({ revokedAt: new Date('2026-02-01T00:00:00Z') }))).toBe(false);
   });
 
-  it('GRANTABLE_ADMIN_ROLES lists moderator and support only', () => {
-    expect(GRANTABLE_ADMIN_ROLES).toEqual(['moderator', 'support']);
+  it('GRANTABLE_ADMIN_ROLES lists every role except super_admin', () => {
+    expect(GRANTABLE_ADMIN_ROLES).toHaveLength(9);
+    expect(GRANTABLE_ADMIN_ROLES).not.toContain('super_admin');
   });
 
-  it('isGrantableAdminRole accepts moderator/support and rejects others', () => {
+  it('isGrantableAdminRole rejects only super_admin', () => {
     expect(isGrantableAdminRole('moderator')).toBe(true);
-    expect(isGrantableAdminRole('support')).toBe(true);
+    expect(isGrantableAdminRole('org_volunteer')).toBe(true);
     expect(isGrantableAdminRole('super_admin' as AdminRole)).toBe(false);
-    expect(isGrantableAdminRole('org_admin' as AdminRole)).toBe(false);
+  });
+
+  it('fitsGrantScope: platform roles need no org, org roles need one', () => {
+    expect(fitsGrantScope('moderator', null)).toBe(true);
+    expect(fitsGrantScope('moderator', 'org-a')).toBe(false);
+    expect(fitsGrantScope('org_manager', 'org-a')).toBe(true);
+    expect(fitsGrantScope('operator', null)).toBe(false);
   });
 });

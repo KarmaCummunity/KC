@@ -3,8 +3,14 @@ import type { FetchFn } from '../_shared/whatsapp/meta.ts';
 import type { RpcFn } from '../_shared/whatsapp/sender.ts';
 import { createSenderHandler, type SenderDeps } from './handler.ts';
 
-const post = (h: (r: Request) => Promise<Response>) =>
-  h(new Request('https://x/functions/v1/whatsapp-sender', { method: 'POST', body: '{}' }));
+const SERVICE_KEY = 'service-role-key-for-tests';
+
+const post = (h: (r: Request) => Promise<Response>, authorization = `Bearer ${SERVICE_KEY}`) =>
+  h(new Request('https://x/functions/v1/whatsapp-sender', {
+    method: 'POST',
+    headers: { Authorization: authorization },
+    body: '{}',
+  }));
 
 function base(over: Partial<SenderDeps> = {}, fetchCalls: string[] = []): SenderDeps {
   const rpc: RpcFn = (fn, args) => {
@@ -21,6 +27,7 @@ function base(over: Partial<SenderDeps> = {}, fetchCalls: string[] = []): Sender
     return Promise.resolve(new Response(JSON.stringify({ messages: [{ id: 'wamid.ok' }] }), { status: 200 }));
   };
   return {
+    serviceKey: SERVICE_KEY,
     rpc,
     loadChannelConfig: () => Promise.resolve({ is_enabled: true, phone_number_id: null, graph_api_version: 'v21.0' }),
     token: 'fake-token',
@@ -30,6 +37,24 @@ function base(over: Partial<SenderDeps> = {}, fetchCalls: string[] = []): Sender
     ...over,
   };
 }
+
+Deno.test('a caller without the service-role key gets 401 and nothing is claimed or sent', async () => {
+  const calls: string[] = [];
+  let channelLoaded = false;
+  const handler = createSenderHandler(base({
+    loadChannelConfig: () => {
+      channelLoaded = true;
+      return Promise.resolve({ is_enabled: true, phone_number_id: null, graph_api_version: 'v21.0' });
+    },
+  }, calls));
+  for (const authorization of ['', 'Bearer anon-key']) {
+    const res = await post(handler, authorization);
+    assertEquals(res.status, 401);
+    assertEquals(await res.json(), { ok: false, error: 'unauthenticated' });
+  }
+  assertEquals(channelLoaded, false);
+  assertEquals(calls.length, 0);
+});
 
 Deno.test('disabled channel (the default) sends nothing', async () => {
   const calls: string[] = [];

@@ -29,6 +29,11 @@ export interface AutosaveGuards {
   readonly ownerId: string | undefined;
   readonly isHydrating: boolean;
   readonly isResumePending: boolean;
+  /**
+   * False while a listing category (rides / food / housing / time) is open: drafts are items
+   * posts only, so a listing title typed there must not become an items draft (FR-POST-001 AC6).
+   */
+  readonly isPostCategory: boolean;
 }
 
 export const POST_DRAFT_DEFAULTS: PostDraftFormState = {
@@ -73,7 +78,10 @@ export function shouldAutosaveDraft(guards: AutosaveGuards, state: PostDraftForm
   if (!guards.ownerId) return false;
   if (guards.isHydrating) return false;
   if (guards.isResumePending) return false;
-  if (isFormStateAtDefaults(state)) return false;
+  if (!guards.isPostCategory) return false;
+  // The direction alone is not content: it is remembered on its own (FR-POST-001 AC6), so a
+  // restored "request" toggle on an empty form must not produce a draft.
+  if (isFormStateAtDefaults({ ...state, type: POST_DRAFT_DEFAULTS.type })) return false;
   return true;
 }
 

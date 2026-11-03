@@ -10,7 +10,8 @@
 //               → 500 { ok: false, error: string }
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+import { reportError, withObservability } from '../_shared/observability/mod.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -26,7 +27,7 @@ function json(body: unknown, status = 200): Response {
 }
 
 async function listAllObjects(
-  client: ReturnType<typeof createClient>,
+  client: SupabaseClient,
   prefix = '',
 ): Promise<string[]> {
   const paths: string[] = [];
@@ -54,7 +55,7 @@ async function listAllObjects(
   return paths;
 }
 
-serve(async (req: Request) => {
+serve(withObservability('reconcile-storage-orphans', async (req: Request) => {
   if (req.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405);
 
   const auth = req.headers.get('Authorization') ?? '';
@@ -98,7 +99,12 @@ serve(async (req: Request) => {
       const batch = orphans.slice(i, i + BATCH);
       const { error: rmErr } = await adminClient.storage.from(BUCKET).remove(batch);
       if (rmErr) {
-        console.error('[reconcile-storage-orphans] remove error', rmErr.message, batch);
+        await reportError(rmErr, {
+          fn: 'reconcile-storage-orphans',
+          req,
+          tags: { stage: 'remove' },
+          extra: { batch_size: batch.length },
+        });
         errors += batch.length;
       } else {
         removed += batch.length;
@@ -111,7 +117,7 @@ serve(async (req: Request) => {
     return json({ ok: true, scanned: allPaths.length, removed, errors });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[reconcile-storage-orphans] fatal', msg);
+    await reportError(err, { fn: 'reconcile-storage-orphans', req });
     return json({ ok: false, error: msg }, 500);
   }
-});
+}));

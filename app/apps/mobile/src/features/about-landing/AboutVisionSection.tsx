@@ -1,8 +1,8 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, LayoutAnimation, Platform } from 'react-native';
+import { View, Pressable, LayoutAnimation, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, typography, spacing, radius, useTheme } from '@kc/ui';
+import { iconSize, makeUseStyles, typography, spacing, radius, useTheme, Text } from '@kc/ui';
 import { aboutRtlText, aboutRtlRow } from './aboutWebRtlStyle';
 
 export function AboutVisionSection() {
@@ -46,7 +46,7 @@ export function AboutVisionSection() {
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
       >
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={22} color={colors.secondary} />
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={iconSize.xl} color={colors.secondary} />
         <Text style={styles.expandTitle}>{t('aboutContent.visionExpandTitle')}</Text>
       </Pressable>
       {open ? <Text style={styles.expandBody}>{t('aboutContent.visionExpandBody')}</Text> : null}
@@ -63,7 +63,7 @@ const useAboutVisionSectionStyles = makeUseStyles(({ colors }) => ({
     ...aboutRtlText,
     lineHeight: 24,
     marginBottom: spacing.lg,
-    fontWeight: '600',
+    ...typography.semiBold,
   },
   subh: {
     ...typography.label,
@@ -71,7 +71,7 @@ const useAboutVisionSectionStyles = makeUseStyles(({ colors }) => ({
     ...aboutRtlText,
     marginBottom: spacing.xs,
     marginTop: spacing.md,
-    fontWeight: '800',
+    ...typography.extraBold,
   },
   p: { ...typography.body, color: colors.textSecondary, ...aboutRtlText, lineHeight: 24 },
   ol: { gap: spacing.sm, marginTop: spacing.xs },
@@ -86,7 +86,7 @@ const useAboutVisionSectionStyles = makeUseStyles(({ colors }) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  olNum: { ...typography.caption, color: colors.primary, fontWeight: '800' },
+  olNum: { ...typography.caption, color: colors.primary, ...typography.extraBold },
   olText: { flex: 1, ...typography.body, color: colors.textPrimary, ...aboutRtlText, lineHeight: 22 },
   expandHead: {
     flexDirection: aboutRtlRow,
@@ -104,7 +104,7 @@ const useAboutVisionSectionStyles = makeUseStyles(({ colors }) => ({
     ...typography.body,
     flex: 1,
     ...aboutRtlText,
-    fontWeight: '700',
+    ...typography.bold,
     color: colors.textPrimary,
   },
   expandBody: {

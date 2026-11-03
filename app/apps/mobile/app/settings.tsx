@@ -1,11 +1,11 @@
 // Settings screen stub — SRS §3.5, FR-AUTH-017 (logout)
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { PlatformSwitch, spacing, useTheme } from '@kc/ui';
+import { PlatformSwitch, spacing, useTheme, Text } from '@kc/ui';
 import { BackButton } from '../src/components/BackButton';
 import { useIsSuperAdmin } from '../src/hooks/useIsSuperAdmin';
 import { useAdminRoles } from '../src/hooks/useAdminRoles';
@@ -21,8 +21,10 @@ import { SettingsScreenRow } from '../src/components/SettingsScreenRow';
 import { ConfirmActionModal } from '../src/components/post/ConfirmActionModal';
 import { usePrivateProfileToggle } from '../src/hooks/usePrivateProfileToggle';
 import { useActiveStatusSetting } from '../src/hooks/useActiveStatusSetting';
-import { useSettingsScreenStyles } from './settings.styles';
+import { useSettingsScreenStyles } from '../src/screens/settings.styles';
 import { getUserRepo } from '../src/services/userComposition';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
 /** Metro `__DEV__` is false in release; set `EXPO_PUBLIC_DEV_SETTINGS_TOOLS=1` for internal builds only. */
 const SHOW_SETTINGS_DEBUG_TOOLS =
   __DEV__ || process.env.EXPO_PUBLIC_DEV_SETTINGS_TOOLS === '1';
@@ -106,7 +108,7 @@ export default function SettingsScreen() {
           <SettingsScreenRow
             label={t('settings.appearance')}
             icon="contrast-outline"
-            onPress={() => router.push('/settings/appearance' as never)}
+            onPress={() => router.push('/settings/appearance')}
           />
         </View>
 
@@ -115,30 +117,27 @@ export default function SettingsScreen() {
           <SettingsScreenRow
             label={t('settings.language')}
             icon="globe-outline"
-            onPress={() => router.push('/settings/language' as never)}
+            onPress={() => router.push('/settings/language')}
           />
-        </View>
-
-        <Text style={styles.sectionTitle}>{t('settings.translationLanguage')}</Text>
-        <View style={styles.section}>
           <SettingsScreenRow
-            label={t('settings.translationLanguage')}
-            icon="language-outline"
-            onPress={() => router.push('/settings/translation-language' as never)}
+            label={t('settings.whatsappRow')}
+            icon="logo-whatsapp"
+            onPress={() => router.push('/settings/whatsapp')}
           />
         </View>
 
         <Text style={styles.sectionTitle}>{t('settings.notifications')}</Text>
         <View style={styles.section}>
           <SettingsScreenRow
+            testID="settings-row-notifications"
             label={t('settings.notifications')}
             icon="notifications-outline"
-            onPress={() => router.push('/settings/notifications' as never)}
+            onPress={() => router.push('/settings/notifications')}
           />
           <SettingsScreenRow
             label={t('feedSettings.settingsRow')}
             icon="options-outline"
-            onPress={() => router.push('/settings/feed' as never)}
+            onPress={() => router.push('/settings/feed')}
           />
         </View>
 
@@ -171,9 +170,15 @@ export default function SettingsScreen() {
             <SettingsScreenRow
               label={t('settings.followRequests')}
               icon="people-outline"
-              onPress={() => router.push('/settings/follow-requests' as never)}
+              onPress={() => router.push('/settings/follow-requests')}
             />
           ) : null}
+          {/* FR-MOD-004 AC1 — the only way back to a blocked member (their profile is hidden). */}
+          <SettingsScreenRow
+            label={t('moderation.block.listTitle')}
+            icon="ban-outline"
+            onPress={() => router.push('/settings/blocked-users')}
+          />
         </View>
 
         <Text style={styles.sectionTitle}>{t('settings.statsSection')}</Text>
@@ -205,7 +210,7 @@ export default function SettingsScreen() {
             <SettingsScreenRow
               label={t('audit.title')}
               icon="document-text-outline"
-              onPress={() => router.push('/settings/audit' as never)}
+              onPress={() => router.push('/settings/audit')}
             />
           ) : null}
           {adminRoles.length > 0 ? (

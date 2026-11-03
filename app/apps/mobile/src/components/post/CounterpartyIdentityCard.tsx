@@ -1,9 +1,8 @@
 // FR-POST-021 — partner-surface identity mask (shared: create, edit, post menu).
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, PlatformSwitch, radius, spacing, typography } from '@kc/ui';
+import { makeUseStyles, PlatformSwitch, radius, spacing, typography, Text } from '@kc/ui';
 import {
-  crossAxisAlignStart,
   layoutDirectionStyle,
   layoutWritingDirectionStyle,
   textAlignStart,
@@ -43,7 +42,7 @@ const useCounterpartyIdentityCardStyles = makeUseStyles(({ colors }) => ({
   },
   title: {
     ...typography.caption,
-    fontWeight: '600',
+    ...typography.semiBold,
     color: colors.textSecondary,
     textAlign: textAlignStart(),
     ...layoutWritingDirectionStyle(),
@@ -62,7 +61,7 @@ const useCounterpartyIdentityCardStyles = makeUseStyles(({ colors }) => ({
   },
   hint: {
     ...typography.caption,
-    fontSize: 11,
+    ...typography.caption,
     color: colors.textSecondary,
     textAlign: textAlignStart(),
     lineHeight: 16,

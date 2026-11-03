@@ -1,11 +1,15 @@
+import { marketplaceMap } from './marketplaceMap';
 // English — Donations hub + Search tab (D-16, FR-DONATE-001..009, FR-FEED-016).
 // Locale file under `locales/en/`; composed into the bundle via `locales/en/index.ts`.
-// Rides strings (FR-RIDE-*) live in `donations.rides.ts` to keep file sizes
-// under the architecture cap.
+// Rides strings (FR-RIDE-*) live in `donations.rides.ts` (architecture file-size cap).
 import { rides } from './donations.rides';
 import { marketplaceErrors } from './donations.marketplaceErrors';
-import { marketplaceOrgPicker, marketplaceWorldLabels } from './donations.marketplaceExtras';
-import { marketplaceAvailabilityLabels, marketplaceFieldLabels, marketplaceOptionLabels } from './donations.marketplaceFields';
+import { marketplaceBrowseRefine, marketplaceWorldLabels } from './donations.marketplaceExtras';
+import { marketplaceAvailabilityLabels, marketplaceFieldLabels, marketplaceListingStatusLabels, marketplaceOptionLabels } from './donations.marketplaceFields';
+import { worldLaunch } from './donations.worldLaunch';
+import { linkWorldCategories } from './donations.linkWorlds';
+import { marketplaceMyListings } from './donations.myListings';
+import { worldFeed } from './donations.worldFeed';
 export { moneyPayments } from './donations.moneyPayments';
 export { timeVolunteer } from './donations.timeVolunteer';
 
@@ -14,14 +18,15 @@ export const donations = {
   hubTitle: 'Donations by:',
   hubHeroTitle: 'Give. Receive. Donate what you have.',
   hubHeroSubtitle: 'Pick a cause that speaks to you and turn it into action.',
-  hubItemsFeaturedTitle: 'Items',
-  hubItemsFeaturedSubtitle: 'Donate and request items — the core action in the app',
-  hubCategoriesSectionTitle: 'More donation categories',
+  hubCategoriesSectionTitle: 'Giving worlds',
+  worldLaunch,
+  worldFeed,
   items: { title: 'Items', subtitle: 'Donate and request items' },
   time: { title: 'Time', subtitle: 'Volunteering and free time' },
   money: { title: 'Money', subtitle: 'Monetary donation' },
   // FR-DONATE-006 — six new categories.
   categories: {
+    ...linkWorldCategories,
     food: {
       title: 'Food',
       subtitle: 'Food distribution nonprofits',
@@ -56,13 +61,13 @@ export const donations = {
       title: 'Medical',
       subtitle: 'Medical support and equipment',
       body:
-        'The medical category is coming soon.\nUntil then, we invite you to donate to the community itself and help us grow and develop.\nFor nonprofits offering medical equipment, care, and support, as well as blood and organ donation — visit one of the links below.',
+        'Blood donation, the ADI organ donor card, first aid and medical equipment — find the leading organizations in Israel here.\nPick one, visit its site and help save lives.',
     },
   },
   moneyScreen: {
     title: 'Monetary donation',
     body:
-      'Donate to verified nonprofits in-app (sandbox — no real charges). External links remain below for legacy flows.',
+      'Support Karma Community directly, find nonprofits to donate to, and share links to nonprofits you know.',
     openLink: 'Open jgive.com',
     linkErrorTitle: 'We couldn’t open the link',
     linkErrorBody: 'Try a different browser or enter the address manually.',
@@ -90,6 +95,10 @@ export const donations = {
     },
     loading: 'Loading...',
     loadError: 'We couldn’t load the links. Try again.',
+    // D9 — the submitter's own link while it waits, or after a rejection.
+    reviewPending: 'Waiting for KC team approval',
+    reviewRejected: 'Not approved',
+    reviewRejectedNote: 'Not approved: {{note}}',
     retry: 'Try again',
     rowMenu: {
       open: 'Open',
@@ -108,12 +117,6 @@ export const donations = {
     title: 'Giving with love? Give to the community too',
     tagline:
       'Karma is a free community that runs on your love and generosity. Every donation helps us keep building a place of giving for everyone.',
-    ctaBit: 'Donate via Bit',
-    ctaPaybox: 'Donate via PayBox',
-    ctaBitA11y: 'Open the Bit app to donate to Karma Community',
-    ctaPayboxA11y: 'Open the PayBox app to donate to Karma Community',
-    linkErrorTitle: 'We couldn’t open the link',
-    linkErrorBody: 'Try updating the app or opening the link in a browser.',
   },
   // FR-RIDE-001..045 — hitchhiking (rides V3.0). Strings live in donations.rides.ts.
   rides,
@@ -133,8 +136,8 @@ export const donations = {
     submit: 'Add',
     save: 'Save',
     submitting: 'Verifying link...',
-    helperText: 'The link will be checked for validity before it’s added.',
-    editHelperText: 'Your changes will be verified against the server before saving.',
+    helperText: 'The link is checked, and shown to everyone once the KC team approves it.',
+    editHelperText: 'After a change, the link goes back to the KC team for approval before everyone sees it.',
     errors: {
       invalid_url: 'The link is invalid. Make sure it starts with http or https.',
       invalid_input: 'Please make sure all fields are filled in correctly.',
@@ -146,8 +149,6 @@ export const donations = {
       unknown: 'Unexpected error. Try again.',
     },
   },
-  marketplaceHubTitle: 'Unified marketplace',
-  marketplaceHubSubtitle: 'Browse all giving worlds in one place',
 } as const;
 
 export const search = {
@@ -235,37 +236,35 @@ export const search = {
     knowledge: 'Knowledge',
     animals: 'Animals',
     medical: 'Medical',
+    democracy: 'Democracy',
+    employment: 'Employment',
+    challenges: 'Challenges',
   },
 } as const;
 
 export const marketplace = {
-  browseTitle: 'Marketplace',
-  searchPlaceholder: 'Search listings…',
+  ...marketplaceMap,
   allWorlds: 'All worlds',
-  openMap: 'Map view',
-  createListing: 'Create listing',
   loading: 'Loading…',
   empty: 'No listings match your filters.',
-  mapTitle: 'Map clusters',
-  mapEmpty: 'No geo-tagged listings in this area.',
   clusterLabel: '{{count}} listings',
   notFound: 'Listing not found.',
   startChat: 'Message publisher',
   shareFeed: 'Share to feed',
+  actionFailed: 'That did not go through. Please try again.',
+  actionErrors: {
+    signInRequired: 'Sign in to send a message.',
+    accountNotActive: 'Your account is not active yet, so you cannot send messages.',
+    listingUnavailable: 'This listing is no longer available.',
+    ownListing: 'This is your own listing.',
+  },
   chatOpener: 'Hi — I saw your listing on the marketplace.',
-  createTitle: 'New {{world}} listing',
   fieldTitle: 'Title',
   fieldSummary: 'Summary',
-  publish: 'Publish',
   publishing: 'Publishing…',
   forYouTitle: 'For you',
-  createHubTitle: 'Choose a giving world',
-  fieldKind: 'Listing type',
-  fieldDirection: 'Give or request',
-  fieldCity: 'City / area',
-  fieldRadius: 'Search radius: {{km}} km',
-  fieldPhotos: 'Photos',
-  fieldPhotosHint: 'Listings with a photo get more responses.',
+  fieldWorldSubcategory: 'Subcategory',
+  fieldWorldSubcategoryHint: 'Optional — helps us find matches for you',
   validationFailed: 'Please check the form ({{code}}).',
   errors: marketplaceErrors,
   shareLink: 'Share link',
@@ -276,25 +275,11 @@ export const marketplace = {
   profileListingsTitle: 'Marketplace listings',
   profileListingsEmpty: 'No public listings yet.',
   statusClosed: 'Fulfilled',
-  myListingsNav: 'My listings',
-  myListingsTitle: 'My listings',
-  myListingsSubtitle: 'Edit, pause, mark fulfilled, or delete your marketplace posts. Fulfilling earns karma.',
-  myListingsEmpty: 'You have no listings yet.',
-  myListingsEdit: 'Edit',
-  myListingsPause: 'Pause',
-  myListingsResume: 'Resume',
-  myListingsFulfill: 'Mark fulfilled',
-  myListingsFulfillTitle: 'Mark as fulfilled?',
-  myListingsFulfillHint: 'This closes the listing and awards karma for completing a give/request.',
-  myListingsDelete: 'Delete',
-  myListingsDeleteTitle: 'Delete listing?',
-  myListingsDeleteHint: 'This permanently removes the listing.',
-  myListingsSave: 'Save changes',
-  myListingsUpdated: 'Updated {{date}}',
-  mapWebFallback: 'Interactive map is available in the iOS/Android app. Clusters below use the same server data.',
+  ...marketplaceMyListings,
   world: marketplaceWorldLabels,
-  orgPicker: marketplaceOrgPicker,
+  browseRefine: marketplaceBrowseRefine,
   field: marketplaceFieldLabels,
   option: marketplaceOptionLabels,
   availability: marketplaceAvailabilityLabels,
+  listingStatus: marketplaceListingStatusLabels,
 } as const;

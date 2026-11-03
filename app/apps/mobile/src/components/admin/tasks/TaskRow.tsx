@@ -1,9 +1,10 @@
 // app/apps/mobile/src/components/admin/tasks/TaskRow.tsx
 // FR-ADMIN-018 — single task row for /admin/tasks list.
+import { memo } from 'react';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { type AdminTask, isOverdue } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { TaskStatusChip } from './TaskStatusChip';
 import { TaskPriorityChip } from './TaskPriorityChip';
 import { TaskCategoryChip } from './TaskCategoryChip';
@@ -17,7 +18,7 @@ function fmtDue(d: Date): string {
   return d.toLocaleDateString('he-IL', { year: 'numeric', month: '2-digit', day: '2-digit' });
 }
 
-export function TaskRow({ task }: TaskRowProps) {
+function TaskRowInner({ task }: TaskRowProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   const overdue = isOverdue(task);
@@ -25,7 +26,7 @@ export function TaskRow({ task }: TaskRowProps) {
     <Pressable
       style={styles.root}
       onPress={() =>
-        router.push({ pathname: '/(admin)/tasks/[taskId]', params: { taskId: task.taskId } } as never)
+        router.push({ pathname: '/(admin)/tasks/[taskId]', params: { taskId: task.taskId } })
       }
     >
       <View style={styles.header}>
@@ -60,14 +61,16 @@ export function TaskRow({ task }: TaskRowProps) {
 
 const useStyles = makeUseStyles(({ colors }) => ({
   root: {
-    padding: 14, gap: 6,
+    padding: spacing.md, gap: spacing.xs,
     borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
   },
-  header:       { flexDirection: 'row', gap: 6, alignItems: 'center' },
-  title:        { fontSize: 15, fontWeight: '600' },
-  meta:         { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
-  metaText:     { fontSize: 12, opacity: 0.7 },
+  header:       { flexDirection: 'row', gap: spacing.xs, alignItems: 'center' },
+  title:        { fontSize: typography.button.fontSize, ...typography.semiBold },
+  meta:         { flexDirection: 'row', gap: spacing.md, flexWrap: 'wrap' },
+  metaText:     { fontSize: typography.bodySmall.fontSize, opacity: 0.7 },
   overdueLabel: { color: colors.error, opacity: 1 },
-  overdueChip:  { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: colors.errorLight },
-  overdueText:  { fontSize: 10, fontWeight: '700', color: colors.error },
+  overdueChip:  { paddingHorizontal: spacing.xs, paddingVertical: spacing.xs, borderRadius: radius.xs, backgroundColor: colors.errorLight },
+  overdueText:  { fontSize: typography.caption.fontSize, ...typography.bold, color: colors.error },
 }));
+
+export const TaskRow = memo(TaskRowInner);

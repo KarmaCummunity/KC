@@ -10,6 +10,8 @@ import type {
   MarketplaceBrowseRow,
   MarketplaceListingDetail,
   MarketplaceMapCluster,
+  MarketplaceMapPin,
+  MapBounds,
   MarketplaceSimilarListing,
   MyListingRow,
   ProfileListingRow,
@@ -17,8 +19,11 @@ import type {
 import type { Database } from '../database.types';
 import { mapListingDetail } from './mapListingDetail';
 import { searchExternalBodies } from './mapExternalBody';
+import { listWorldSubcategories } from './listWorldSubcategories';
 import * as handoffs from './givingHandoffs';
+import * as owner from './listingOwnerActions';
 import * as paging from './marketplacePaging';
+import { mapPinRow } from './mapPinRow';
 
 export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
@@ -79,6 +84,19 @@ export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
     }));
   }
 
+  async mapPins(bounds: MapBounds & { worldSlug?: string | null; limit?: number }): Promise<MarketplaceMapPin[]> {
+    const { data, error } = await this.client.rpc('map_listing_pins', {
+      p_sw_lat: bounds.swLat,
+      p_sw_lng: bounds.swLng,
+      p_ne_lat: bounds.neLat,
+      p_ne_lng: bounds.neLng,
+      p_world_slug: bounds.worldSlug ?? undefined,
+      p_limit: bounds.limit ?? undefined,
+    });
+    if (error || !data) return [];
+    return data.map(mapPinRow);
+  }
+
   async getListingDetail(listingId: string): Promise<MarketplaceListingDetail | null> {
     const { data, error } = await this.client.rpc('get_marketplace_listing_detail', {
       p_listing_id: listingId,
@@ -121,6 +139,8 @@ export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
 
   searchExternalBodies = (worldSlug: string, query?: string | null, limit?: number) =>
     searchExternalBodies(this.client, worldSlug, query, limit);
+
+  listWorldSubcategories = (worldSlug: string) => listWorldSubcategories(this.client, worldSlug);
 
   async getListingCard(listingId: string): Promise<MarketplaceBrowseRow | null> {
     const { data, error } = await this.client
@@ -165,6 +185,7 @@ export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
       p_max_radius_km: input.maxRadiusKm ?? undefined,
       p_media_paths: input.mediaPaths ?? undefined,
       p_external_body_id: input.externalBodyId ?? undefined,
+      p_category_id: input.categoryId ?? undefined,
       p_urgency_level: input.urgencyLevel ?? undefined,
       p_availability_status: input.availabilityStatus ?? undefined,
     });
@@ -219,42 +240,15 @@ export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
     }));
   }
 
-  async updateMyListing(
-    listingId: string,
-    patch: Parameters<IMarketplaceRepository['updateMyListing']>[1],
-  ): Promise<void> {
-    const { error } = await this.client.rpc('update_my_listing', {
-      p_listing_id: listingId,
-      p_title: patch.title,
-      p_summary: patch.summary ?? undefined,
-      p_details: (patch.details ?? undefined) as Database['public']['Functions']['update_my_listing']['Args']['p_details'],
-      p_city_id: patch.cityId ?? undefined,
-      p_max_radius_km: patch.maxRadiusKm ?? undefined,
-      p_urgency_level: patch.urgencyLevel,
-      p_availability_status: patch.availabilityStatus,
-    });
-    if (error) throw error;
-  }
-
-  async pauseMyListing(listingId: string): Promise<void> {
-    const { error } = await this.client.rpc('pause_my_listing', { p_listing_id: listingId });
-    if (error) throw error;
-  }
-
-  async resumeMyListing(listingId: string): Promise<void> {
-    const { error } = await this.client.rpc('resume_my_listing', { p_listing_id: listingId });
-    if (error) throw error;
-  }
-
-  async fulfillMyListing(listingId: string): Promise<void> {
-    const { error } = await this.client.rpc('fulfill_my_listing', { p_listing_id: listingId });
-    if (error) throw error;
-  }
-
-  async deleteMyListing(listingId: string): Promise<void> {
-    const { error } = await this.client.rpc('delete_my_listing', { p_listing_id: listingId });
-    if (error) throw error;
-  }
+  // Owner lifecycle (spec 07 §7.1 "Owner management") — see listingOwnerActions.ts.
+  updateMyListing = (listingId: string, patch: Parameters<IMarketplaceRepository['updateMyListing']>[1]) =>
+    owner.updateMyListing(this.client, listingId, patch);
+  pauseMyListing = (listingId: string) => owner.runOwnerAction(this.client, 'pause_my_listing', listingId);
+  resumeMyListing = (listingId: string) => owner.runOwnerAction(this.client, 'resume_my_listing', listingId);
+  fulfillMyListing = (listingId: string) => owner.runOwnerAction(this.client, 'fulfill_my_listing', listingId);
+  deleteMyListing = (listingId: string) => owner.runOwnerAction(this.client, 'delete_my_listing', listingId);
+  addMyListingMedia = (listingId: string, mediaPaths: readonly string[]) =>
+    owner.addMyListingMedia(this.client, listingId, mediaPaths);
 
 
   // Items/food handoffs — see givingHandoffs.ts.

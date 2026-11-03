@@ -1,13 +1,11 @@
 name: CI — PR hygiene
 
-on:
-  pull_request:
-    branches: [main, dev]
-    types: [opened, synchronize, reopened, ready_for_review]
+# Called by ci.yml for `pull_request` events only (the payload below is the
+# caller's PR). ci.yml also listens to `edited`, so a title or body fix
+# re-runs this check without a new push.
 
-concurrency:
-  group: ci-pr-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+on:
+  workflow_call:
 
 permissions:
   contents: read
@@ -16,12 +14,14 @@ permissions:
 jobs:
   pr-hygiene:
     name: PR hygiene
-    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     timeout-minutes: 2
     steps:
       - name: Require Conventional Commits PR title
-        uses: amannn/action-semantic-pull-request@v5
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -48,7 +48,7 @@ jobs:
       # still applies (dependabot uses `chore(deps): …`).
       - name: Require "Mapped to spec" line in PR body
         if: github.event.pull_request.user.login != 'dependabot[bot]'
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             const body = context.payload.pull_request.body || '';

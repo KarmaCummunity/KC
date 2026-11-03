@@ -23,10 +23,27 @@ describe('rowToChat', () => {
       participantIds: ['u_a', 'u_b'],
       anchorPostId: 'p_1',
       anchorRideId: null,
+      anchorListingId: null,
       isSupportThread: false,
       lastMessageAt: '2026-05-15T12:00:00.000Z',
       createdAt: '2026-05-10T08:00:00.000Z',
     });
+  });
+
+  it('maps the listing a chat was opened from (KC#1297)', () => {
+    const row = {
+      chat_id: 'c_3',
+      participant_a: 'u_a',
+      participant_b: 'u_b',
+      anchor_post_id: null,
+      anchor_ride_id: null,
+      anchor_listing_id: 'l_1',
+      is_support_thread: false,
+      last_message_at: null,
+      created_at: '2026-05-10T08:00:00.000Z',
+    } as any;
+
+    expect(rowToChat(row)).toMatchObject({ anchorPostId: null, anchorRideId: null, anchorListingId: 'l_1' });
   });
 
   it('keeps null participant slots after account deletion (migration 0028)', () => {

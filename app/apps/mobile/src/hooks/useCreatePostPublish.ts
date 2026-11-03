@@ -25,6 +25,9 @@ import { mapPostErrorToHebrew } from '../services/postMessages';
 import { invalidatePersonalStatsCaches } from '../lib/invalidatePersonalStatsCaches';
 import { hapticSuccess } from '../lib/haptics';
 import { invalidateMyProfilePostQueries } from '../lib/invalidateMyProfilePostQueries';
+import { buildPostCreatePayload } from '../lib/unifiedCreate/unifiedCreatePayload';
+import { trackActivationIfFirst, trackCoreLoop } from '../lib/analyticsCoreLoop';
+import { useAuthStore } from '../store/authStore';
 import type { UploadedAsset } from '../services/imageUpload';
 import type { PrePromptTrigger } from '../lib/notifications/usePushPermissionGate';
 
@@ -57,6 +60,7 @@ export function useCreatePostPublish(args: {
   const queryClient = useQueryClient();
   const checkedFirstPostRef = useRef(false);
   const prePublishOpenCountRef = useRef<number | null>(null);
+  const publishStartedRef = useRef(false);
   const [addressValidationTouched, setAddressValidationTouched] = useState(false);
 
   const fieldSnapshot = useMemo(
@@ -100,30 +104,14 @@ export function useCreatePostPublish(args: {
           // Non-critical — skip push gate on error.
         }
       }
-      return getCreatePostUseCase().execute({
-        ownerId,
-        type: args.type,
-        visibility: args.visibilityRef.current,
-        title: args.title,
-        description: args.description.trim() ? args.description : null,
-        category: args.category,
-        address: {
-          city: args.city.id,
-          cityName: args.city.name,
-          street: args.street,
-          streetNumber: args.streetNumber,
-        },
-        locationDisplayLevel: args.locationDisplayLevel,
-        itemCondition: args.isGive ? args.condition : null,
-        urgency: !args.isGive && args.urgency.trim() ? args.urgency : null,
-        estimatedValue: args.isGive ? args.estimatedValue : null,
-        mediaAssets: args.uploads.map((u) => ({
-          path: u.path,
-          mimeType: u.mimeType,
-          sizeBytes: u.sizeBytes,
-        })),
-        hideFromCounterparty: args.hideFromCounterparty,
-      });
+      return getCreatePostUseCase().execute(
+        buildPostCreatePayload({
+          ...args,
+          ownerId,
+          city: args.city,
+          visibility: args.visibilityRef.current,
+        }),
+      );
     },
     onSuccess: async () => {
       const { ownerId, city, street, streetNumber } = args;
@@ -137,6 +125,10 @@ export function useCreatePostPublish(args: {
       }
       // FR-POST-007 AC4 — successful publish clears the local draft.
       usePostDraftStore.getState().clearDraft();
+      // Core-loop funnel (#1055, #1042): items posts count like listings of the items world.
+      const funnel = { world: 'items', cityId: city?.id ?? null };
+      trackCoreLoop('listing_created', funnel);
+      void trackActivationIfFirst({ ...funnel, accountCreatedAt: useAuthStore.getState().session?.accountCreatedAt });
       await queryClient.invalidateQueries({ queryKey: ['feed'] });
       invalidateMyProfilePostQueries(queryClient, ownerId);
       await queryClient.invalidateQueries({ queryKey: ['openPostsCount'] });
@@ -155,12 +147,19 @@ export function useCreatePostPublish(args: {
       const message = isPostError(err) ? mapPostErrorToHebrew(err.code) : t('post.networkError');
       useFeedSessionStore.getState().showEphemeralToast(t('post.publishFailed', { message }), 'error');
     },
+    onSettled: () => {
+      publishStartedRef.current = false;
+    },
   });
 
   const isPublishing = publish.isPending || args.uploadingCount > 0;
 
   const runPublishAfterGate = () => {
-    args.requestSoftGate(() => publish.mutate());
+    args.requestSoftGate(() => {
+      if (publishStartedRef.current) return;
+      publishStartedRef.current = true;
+      publish.mutate();
+    });
   };
 
   const tryPublish = () => {

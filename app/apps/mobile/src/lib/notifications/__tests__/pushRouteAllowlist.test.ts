@@ -25,6 +25,40 @@ describe('resolvePushRoute', () => {
     ).toEqual({ pathname: '/settings/follow-requests', params: {} });
   });
 
+  it.each([
+    'listing_expiring',
+    'listing_expired',
+    'ride_booking_requested',
+    'ride_booking_confirmed',
+    'ride_booking_declined',
+    'ride_booking_expired',
+    'ride_booking_cancelled',
+    'ride_route_match',
+    'ride_listing_emergency',
+    'giving_handoff_requested',
+    'giving_handoff_claimed',
+    'giving_handoff_confirmed',
+    'giving_handoff_declined',
+    'giving_handoff_cancelled',
+    'giving_handoff_completed',
+  ] as const)('routes %s to the listing (KC#1316, D70, D73, D74, FR-NOTIF-018)', (kind) => {
+    expect(
+      resolvePushRoute({ category: 'critical', kind, notification_id: 'n9', params: { listingId: UUID } }),
+    ).toEqual({ pathname: '/listing/[listingId]', params: { listingId: UUID } });
+    expect(
+      resolvePushRoute({ category: 'critical', kind, notification_id: 'n10', params: { listingId: 'not-a-uuid' } }),
+    ).toBeNull();
+  });
+
+  it('routes a post_relevance_check reminder (D59) to the post, and drops a bad id', () => {
+    expect(
+      resolvePushRoute({ category: 'critical', kind: 'post_relevance_check', notification_id: 'n9', params: { id: UUID } }),
+    ).toEqual({ pathname: '/post/[id]', params: { id: UUID } });
+    expect(
+      resolvePushRoute({ category: 'critical', kind: 'post_relevance_check', notification_id: 'n10', params: { id: 'nope' } }),
+    ).toBeNull();
+  });
+
   it('rejects an unknown kind', () => {
     expect(
       resolvePushRoute({
@@ -151,5 +185,59 @@ describe('resolvePushRoute', () => {
         ).toEqual({ pathname: '/matches', params: {} });
       });
     }
+  });
+
+  describe('chat and post lifecycle notifications', () => {
+    it.each(['support_message', 'system_message'] as const)(
+      'routes %s to /chat/[id] using chat_id or params.id',
+      (kind) => {
+        expect(
+          resolvePushRoute({ category: 'social', kind, notification_id: 'n', chat_id: UUID }),
+        ).toEqual({ pathname: '/chat/[id]', params: { id: UUID } });
+
+        expect(
+          resolvePushRoute({ category: 'social', kind, notification_id: 'n', params: { id: UUID } }),
+        ).toEqual({ pathname: '/chat/[id]', params: { id: UUID } });
+      },
+    );
+
+    it.each(['post_expiring', 'mark_recipient', 'unmark_recipient'] as const)(
+      'routes %s to /post/[id] when id is a valid UUID',
+      (kind) => {
+        expect(
+          resolvePushRoute({ category: 'critical', kind, notification_id: 'n', params: { id: UUID } }),
+        ).toEqual({ pathname: '/post/[id]', params: { id: UUID } });
+
+        expect(
+          resolvePushRoute({ category: 'critical', kind, notification_id: 'n', params: { id: 'bad' } }),
+        ).toBeNull();
+      },
+    );
+
+    it('routes auto_removed to /settings/audit', () => {
+      expect(
+        resolvePushRoute({ category: 'critical', kind: 'auto_removed', notification_id: 'n' }),
+      ).toEqual({ pathname: '/settings/audit', params: {} });
+    });
+
+    it.each(['follow_started', 'follow_approved'] as const)(
+      'routes %s to /settings/follow-requests',
+      (kind) => {
+        expect(
+          resolvePushRoute({ category: 'social', kind, notification_id: 'n' }),
+        ).toEqual({ pathname: '/settings/follow-requests', params: {} });
+      },
+    );
+
+    it('routes task_assigned using params.id when task_id is omitted', () => {
+      expect(
+        resolvePushRoute({
+          category: 'social',
+          kind: 'task_assigned',
+          notification_id: 'n',
+          params: { id: UUID },
+        }),
+      ).toEqual({ pathname: '/(admin)/tasks/[taskId]', params: { taskId: UUID } });
+    });
   });
 });

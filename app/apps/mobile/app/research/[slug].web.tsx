@@ -1,10 +1,10 @@
 // Web-only public research form — FR-RESEARCH-001, FR-RESEARCH-002, FR-RESEARCH-003.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
-import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { ActivityIndicator, Pressable, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, useTheme } from '@kc/ui';
+import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { container } from '../../src/lib/container';
 import { webTextRtl } from '../../src/lib/webRtlStyle';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
@@ -15,7 +15,7 @@ import {
 } from '../../src/lib/surveyDraftStorage';
 
 const RESEARCH_DRAFT_NS = 'research';
-import { ResearchRunner, errorKey, type AnswerEntry } from './ResearchRunner';
+import { ResearchRunner, errorKey, type AnswerEntry } from '../../src/screens/research/ResearchRunner';
 
 const SOURCE_REGEX = /^[a-z0-9_-]{1,32}$/;
 
@@ -156,7 +156,7 @@ export default function PublicResearchScreen() {
     const ok = await submitAnswers();
     if (ok) {
       clearSurveyDraft(RESEARCH_DRAFT_NS, slug);
-      router.replace('/research/thanks' as Href);
+      router.replace('/research/thanks');
     }
   }
 

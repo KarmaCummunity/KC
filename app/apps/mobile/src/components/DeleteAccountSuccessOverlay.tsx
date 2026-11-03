@@ -2,9 +2,9 @@
 // the parent navigates to the sign-in screen.
 
 import React from 'react';
-import { Modal, Text, View } from 'react-native';
+import { Modal, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, typography, spacing } from '@kc/ui';
+import { makeUseStyles, typography, spacing, Text } from '@kc/ui';
 
 export interface DeleteAccountSuccessOverlayProps {
   visible: boolean;

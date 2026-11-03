@@ -24,6 +24,7 @@ export const feedHe = {
   refreshFailed: 'הרענון נכשל — נסה שוב',
   refreshA11y: 'רענן את הפיד (R)',
   filterA11y: 'סינון ומיון פוסטים',
+  openMapA11y: 'תצוגת מפה',
   filterA11yHint: 'פותח חלון לסינון ולמיון של הפיד',
   newPostsOne: 'פוסט חדש 1 — הקש לרענון',
   newPostsMany: '{{count}} פוסטים חדשים — הקש לרענון',

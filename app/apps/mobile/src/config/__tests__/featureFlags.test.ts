@@ -13,6 +13,12 @@ describe('featureFlags', () => {
     expect(resolveFeatureFlag('ios_in_app_donations', {})).toBe(false);
   });
 
+  it('keeps the sandbox in-app org payments flow hidden by default (FR-DONATE-011)', () => {
+    expect(FEATURE_FLAG_DEFAULTS.money_in_app_org_payments).toBe(false);
+    expect(resolveFeatureFlag('money_in_app_org_payments', {})).toBe(false);
+    expect(resolveFeatureFlag('money_in_app_org_payments', { money_in_app_org_payments: true })).toBe(true);
+  });
+
   it('remote row overrides the default', () => {
     expect(resolveFeatureFlag('ios_in_app_donations', { ios_in_app_donations: true })).toBe(true);
   });

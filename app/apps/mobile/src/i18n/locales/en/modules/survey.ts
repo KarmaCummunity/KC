@@ -20,6 +20,7 @@ export const surveyEn = {
   progressHint: 'You can go back and edit',
   questionIndex: 'Question {{index}}',
   ratingFieldLabel: 'Rating (1–7, required)',
+  choiceFieldLabel: 'Choose one (required)',
   textFieldLabel: 'Details (optional)',
   savingLabel: 'Saving...',
   saveErrorTitle: 'Save error',

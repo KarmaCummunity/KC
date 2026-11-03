@@ -26,6 +26,8 @@ export async function getMyPostsPage(
     .from('posts')
     .select(POST_SELECT_BARE)
     .eq('owner_id', userId)
+    // Feed mirrors of listings are listed with the listings, not here (D-206).
+    .is('listing_id', null)
     .in('status', status)
     .order('created_at', { ascending: false })
     .limit(safeLimit + 1);

@@ -1,7 +1,9 @@
 // V2-ADMIN-CRM-8 — single CRM contact card.
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { memo } from 'react';
+import { StyleSheet, View } from 'react-native';
 import type { CrmContact } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { DangerButton, PrimaryButton, SecondaryButton } from '../../ui/Buttons';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
 export interface ContactCardProps {
@@ -17,7 +19,7 @@ function fmt(d: Date): string {
   });
 }
 
-export function ContactCard({ contact, onEdit, onMarkContacted, onDelete }: ContactCardProps) {
+function ContactCardInner({ contact, onEdit, onMarkContacted, onDelete }: ContactCardProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   const t = L.admin.crm;
@@ -44,44 +46,34 @@ export function ContactCard({ contact, onEdit, onMarkContacted, onDelete }: Cont
         <Text style={styles.metaSubtle}>{t.row.updatedAt(fmt(contact.updatedAt))}</Text>
       </View>
       <View style={styles.actions}>
-        <Pressable onPress={onMarkContacted} style={[styles.action, styles.actionMuted]}>
-          <Text style={styles.actionText}>{t.row.markContacted}</Text>
-        </Pressable>
-        <Pressable onPress={onEdit} style={[styles.action, styles.actionPrimary]}>
-          <Text style={styles.actionPrimaryText}>{t.row.edit}</Text>
-        </Pressable>
-        <Pressable onPress={onDelete} style={[styles.action, styles.actionDanger]}>
-          <Text style={styles.actionDangerText}>{t.row.delete}</Text>
-        </Pressable>
+        {/* Compact admin size (spec 17 §4.3); the delete is destructive, so a DangerButton (D94). */}
+        <SecondaryButton label={t.row.markContacted} size="sm" onPress={onMarkContacted} />
+        <PrimaryButton label={t.row.edit} size="sm" onPress={onEdit} />
+        <DangerButton label={t.row.delete} size="sm" onPress={onDelete} />
       </View>
     </View>
   );
 }
 
+export const ContactCard = memo(ContactCardInner);
+
 const useStyles = makeUseStyles(({ colors }) => ({
   card: {
-    margin: 12, padding: 14, gap: 4,
-    borderRadius: 10, backgroundColor: colors.surface,
+    margin: spacing.md, padding: spacing.md, gap: spacing.xs,
+    borderRadius: radius.sm, backgroundColor: colors.surface,
     borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
   },
   cardHead:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  contactName:  { fontSize: 15, fontWeight: '700', flex: 1, paddingEnd: 8 },
-  statusChip:   { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  contactName:  { fontSize: typography.button.fontSize, ...typography.bold, flex: 1, paddingEnd: spacing.sm },
+  statusChip:   { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.xs },
   statusChip_cold:     { backgroundColor: colors.secondaryLight },
   statusChip_warm:     { backgroundColor: colors.warningLight },
   statusChip_active:   { backgroundColor: colors.successLight },
   statusChip_inactive: { backgroundColor: colors.border },
-  statusChipText:      { fontSize: 11, fontWeight: '700' },
-  meta:        { fontSize: 12, opacity: 0.7 },
-  notes:       { fontSize: 12, marginTop: 4, opacity: 0.85 },
-  metaRow:     { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
-  metaSubtle:  { fontSize: 10, opacity: 0.55 },
-  actions:     { flexDirection: 'row', gap: 6, marginTop: 8, justifyContent: 'flex-end' },
-  action:      { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
-  actionMuted: { backgroundColor: colors.secondaryLight },
-  actionText:  { fontSize: 12, fontWeight: '600' },
-  actionPrimary: { backgroundColor: colors.primary },
-  actionPrimaryText: { fontSize: 12, fontWeight: '700', color: colors.textInverse },
-  actionDanger:  { backgroundColor: colors.errorLight },
-  actionDangerText: { fontSize: 12, fontWeight: '700', color: colors.error },
+  statusChipText:      { fontSize: typography.caption.fontSize, ...typography.bold },
+  meta:        { fontSize: typography.bodySmall.fontSize, opacity: 0.7 },
+  notes:       { fontSize: typography.bodySmall.fontSize, marginTop: spacing.xs, opacity: 0.85 },
+  metaRow:     { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xs },
+  metaSubtle:  { fontSize: typography.caption.fontSize, opacity: 0.55 },
+  actions:     { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm, justifyContent: 'flex-end' },
 }));

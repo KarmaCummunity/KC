@@ -1,11 +1,15 @@
 // app/apps/mobile/src/i18n/locales/en/modules/adminAdmins.ts
 // English strings for the Admin Portal "Admin Team" (RBAC) surface.
 // Split out of `admin.ts` to respect the 300-line file cap (FR-ADMIN-015/016/021).
+import { adminLayersEn } from './adminLayers';
+import { adminTeamEn } from './adminTeam';
+import { adminPermissionsEn } from './adminPermissions';
+
 export const adminAdminsEn = {
   title:                'Admin Team',
   loading:              'Loading...',
   forbiddenTitle:       'You are not authorized to view this screen',
-  forbiddenHint:        'The team management screen is available only to super_admin and moderator roles.',
+  forbiddenHint:        'The team management screen is available to the super admin, moderators and organization managers (for their own organization).',
   includeRevokedLabel:  'Include revoked',
   grantBtn:             '+ Add to Role',
   emptyTitle:           'No active team members',
@@ -15,10 +19,14 @@ export const adminAdminsEn = {
   profileLink:          'Admin Card',
   viewList:             'List',
   viewTree:             'Hierarchy Tree',
+  viewLayers:           'Layers',
   card: {
     rolesNone:    'No active role',
     rolesMore:    (n: number) => `+${n}`,
   },
+  layers: adminLayersEn,
+  team: adminTeamEn,
+  permissions: adminPermissionsEn,
   tree: {
     levelBadge:   (n: number) => `Level ${n}`,
     empty:        'No hierarchy data to display.',
@@ -54,6 +62,7 @@ export const adminAdminsEn = {
     manager_revoked:       'The selected manager\'s assignment has been revoked.',
     manager_other_org:     'The manager must be from the same organization.',
     manager_cycle:         'This assignment would create a cycle in the hierarchy.',
+    manager_rank:          'The new manager must hold a more senior role.',
     grant_not_found:       'Assignment not found.',
     grant_already_revoked: 'The assignment has been revoked.',
     invalid_input:         'Invalid input.',
@@ -76,6 +85,7 @@ export const adminAdminsEn = {
   },
   revokeErrors: {
     forbidden:                       'You are not authorized to revoke a role.',
+    forbidden_revoke:                'You are not allowed to revoke this role.',
     grant_not_found:                 'Assignment not found — it may have already been revoked.',
     grant_already_revoked:           'The assignment has already been revoked.',
     cannot_revoke_last_super_admin:  'You cannot revoke the only active super_admin.',
@@ -93,8 +103,12 @@ export const adminAdminsEn = {
     submit:            'Grant Role',
     errors: {
       forbidden:           'You are not authorized to grant a role.',
+      forbidden_grant:     'You are not allowed to grant this role in this organization.',
+      invalid_scope:       'This role does not fit the selected place.',
+      grant_not_found:     'Assignment not found — it may have already been revoked.',
+      grant_already_revoked: 'The assignment has already been revoked.',
       invalid_input:       'Please select a user.',
-      invalid_role:        'Please select a role (moderator or support).',
+      invalid_role:        'Please select a role.',
       target_not_found:    'User not found.',
       target_not_active:   'You can only grant a role to an active user.',
       role_already_active: 'This user already has an active assignment for this role.',

@@ -3,13 +3,26 @@ name: E2E nightly (dev)
 # Full Playwright QA suite against https://dev.karma-community.pages.dev + kc-dev.
 # Uses the public kc-dev seed users (supabase/seed/kc-dev) and the publishable anon key
 # read from the deployed bundle, so it needs no repository secrets. Never targets prod.
+# mobile-nightly.yml calls it with `p0_only` to gate the store builds on the P0 journeys.
 on:
   schedule:
     - cron: '0 1 * * *' # 04:00 Asia/Jerusalem (summer time)
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      p0_only:
+        description: Run only the P0 journeys (tests/e2e/journeys/*.spec.ts), not the qa/ suite
+        type: boolean
+        default: false
+      ref:
+        description: Commit whose tests/e2e suite runs (default the caller's commit)
+        type: string
+        default: ''
 
+# In a called run `github.workflow` is the caller's name, so the mobile nightly
+# never shares (and never cancels) this workflow's own nightly group.
 concurrency:
-  group: e2e-nightly-dev
+  group: e2e-nightly-dev-${{ github.workflow }}
   cancel-in-progress: true
 
 permissions:
@@ -23,9 +36,11 @@ jobs:
     env:
       DEV_WEB_URL: ${{ vars.DEV_WEB_URL || 'https://dev.karma-community.pages.dev' }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .nvmrc
 
@@ -40,17 +55,27 @@ jobs:
 
       - name: Run QA suite
         working-directory: tests/e2e
-        run: npx playwright test
+        env:
+          P0_ONLY: ${{ inputs.p0_only }}
+          E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
+        run: |
+          # P0 = the top-level journeys plus the auth setup they depend on; the
+          # pattern cannot cross a `/`, so journeys/qa/** is excluded.
+          if [ "$P0_ONLY" = "true" ]; then
+            npx playwright test 'journeys/[a-z-]+\.(setup|spec)\.ts'
+          else
+            npx playwright test
+          fi
 
       - name: Summary
         if: always()
         working-directory: tests/e2e
         run: node scripts/summary.mjs
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
-          name: playwright-report-nightly
+          name: playwright-report-nightly${{ inputs.p0_only && '-p0' || '' }}
           path: |
             tests/e2e/playwright-report/
             tests/e2e/test-results/

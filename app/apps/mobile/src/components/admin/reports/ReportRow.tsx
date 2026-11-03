@@ -1,10 +1,11 @@
 // app/apps/mobile/src/components/admin/reports/ReportRow.tsx
 // FR-ADMIN-012 — single inbox row showing target preview + threshold + age.
+import { memo } from 'react';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import type { ReportInboxRow } from '@kc/domain';
 import { thresholdProgress } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { useLocaleBundle, type LocaleBundle } from '../../../i18n/useLocaleBundle';
 
 export interface ReportRowProps {
@@ -28,7 +29,7 @@ function preview(row: ReportInboxRow): string {
   return `${row.targetType}:${row.targetId.slice(0, 8)}`;
 }
 
-export function ReportRow({ row }: ReportRowProps) {
+function ReportRowInner({ row }: ReportRowProps) {
   const progress = thresholdProgress(row.reporterCount);
   const caseId = encodeURIComponent(`${row.targetType}:${row.targetId}`);
   const styles = useStyles();
@@ -54,9 +55,11 @@ export function ReportRow({ row }: ReportRowProps) {
   );
 }
 
+export const ReportRow = memo(ReportRowInner);
+
 const useStyles = makeUseStyles(({ colors }) => ({
-  root:      { padding: 16, gap: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
-  preview:   { fontSize: 14, fontWeight: '500' },
-  meta:      { flexDirection: 'row', gap: 12 },
-  metaText:  { fontSize: 12, opacity: 0.6 },
+  root:      { padding: spacing.base, gap: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  preview:   { fontSize: typography.body.fontSize, ...typography.medium },
+  meta:      { flexDirection: 'row', gap: spacing.md },
+  metaText:  { fontSize: typography.bodySmall.fontSize, opacity: 0.6 },
 }));

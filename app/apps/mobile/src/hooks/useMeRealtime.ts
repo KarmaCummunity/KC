@@ -4,6 +4,8 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
 import { getUserRealtime } from '../services/userRealtimeComposition';
+import { mergeSelfRealtimeUser } from '../lib/mergeSelfRealtimeUser';
+import type { User } from '@kc/domain';
 
 export function useMeRealtime(): void {
   const userId = useAuthStore((s) => s.session?.userId);
@@ -12,7 +14,11 @@ export function useMeRealtime(): void {
     if (!userId) return;
     const unsub = getUserRealtime().subscribeToSelf(
       userId,
-      (user) => queryClient.setQueryData(['user-profile', userId], user),
+      (user) => {
+        // Payload lacks owner-private columns (karma_points) — merge, then refetch via RPC.
+        queryClient.setQueryData<User | null>(['user-profile', userId], (prev) => mergeSelfRealtimeUser(prev, user));
+        void queryClient.invalidateQueries({ queryKey: ['user-profile', userId] });
+      },
       (err) => { if (__DEV__) console.warn('[karma] self-realtime channel error:', err.message); },
     );
     return unsub;

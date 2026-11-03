@@ -1,19 +1,19 @@
 // FR-MOD-007 + FR-ADMIN-004 — overflow ⋮ menu in the user profile header.
-// Owns the trigger, action sheet, and the report/ban modals so the
+// Owns the trigger, action sheet, and the report/ban sheets so the
 // /user/[handle] screen stays under the 200-line cap.
 //
 // TD-127 + TD-138: the previous version used `Alert.alert('', '', buttons)`
 // which RN-Web collapses to `window.alert`, dropping the buttons array — so
-// the menu was unreachable in the browser. Switched to an inline bottom-
-// sheet (same pattern as `ChatActionMenu`) so the menu items render
-// identically across iOS, Android, and Web.
+// the menu was unreachable in the browser. The menu is the kit
+// `ActionMenuSheet` (spec 17 §4.1), so it renders identically on iOS, Android
+// and Web.
 import React, { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, radius, spacing, typography, useTheme } from '@kc/ui';
 import { hasPermission, type AdminRole } from '@kc/domain';
 import { useAdminRoles } from '../../hooks/useAdminRoles';
 import { useTranslation } from 'react-i18next';
+import { ActionMenuSheet } from '../ui/ActionMenuSheet';
+import { SheetActionRow } from '../ui/SheetActionRow';
+import { OverflowMenuTrigger } from './OverflowMenuTrigger';
 import { ReportUserModal } from './ReportUserModal';
 import { BanUserModal } from './BanUserModal';
 import { useUserBlock } from '../../hooks/useUserBlock';
@@ -25,8 +25,6 @@ interface Props {
 type OpenModal = 'report' | 'ban' | null;
 
 export function ProfileOverflowMenu({ targetUserId }: Props) {
-  const styles = useStyles();
-  const { colors } = useTheme();
   const { t } = useTranslation();
   const { roles } = useAdminRoles();
   const canBan = hasPermission(roles as readonly AdminRole[], 'reports.permanent_ban');
@@ -42,64 +40,25 @@ export function ProfileOverflowMenu({ targetUserId }: Props) {
 
   return (
     <>
-      <Pressable
-        onPress={() => setSheetOpen(true)}
-        accessibilityRole="button"
-        accessibilityLabel={t('moderation.report.user.title')}
-        hitSlop={8}
-        style={styles.trigger}
-      >
-        <Ionicons name="ellipsis-vertical" size={22} color={colors.textPrimary} />
-      </Pressable>
+      <OverflowMenuTrigger onPress={() => setSheetOpen(true)} accessibilityLabel={t('moderation.report.user.title')} />
 
-      <Modal visible={sheetOpen} transparent animationType="fade" onRequestClose={close}>
-        <Pressable style={styles.backdrop} onPress={close}>
-          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
-            <TouchableOpacity
-              style={styles.item}
-              onPress={() => pick('report')}
-              accessibilityRole="button"
-            >
-              <Text style={styles.itemText}>{t('moderation.report.user.title')}</Text>
-            </TouchableOpacity>
-            {block.canBlock ? (
-              <>
-                <View style={styles.divider} />
-                <TouchableOpacity
-                  style={styles.item}
-                  onPress={() => {
-                    close();
-                    void block.toggle();
-                  }}
-                  disabled={block.busy}
-                  accessibilityRole="button"
-                  testID="profile-block-toggle"
-                >
-                  <Text style={[styles.itemText, block.isBlocked ? null : styles.itemDestructive]}>
-                    {t(block.isBlocked ? 'moderation.block.unblock' : 'moderation.block.block')}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            ) : null}
-            {canBan ? (
-              <>
-                <View style={styles.divider} />
-                <TouchableOpacity
-                  style={styles.item}
-                  onPress={() => pick('ban')}
-                  accessibilityRole="button"
-                >
-                  <Text style={[styles.itemText, styles.itemDestructive]}>{t('moderation.actions.ban')}</Text>
-                </TouchableOpacity>
-              </>
-            ) : null}
-            <View style={styles.divider} />
-            <TouchableOpacity style={styles.item} onPress={close} accessibilityRole="button">
-              <Text style={[styles.itemText, styles.itemCancel]}>{t('moderation.actions.cancel')}</Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      <ActionMenuSheet visible={sheetOpen} onDismiss={close} cancelLabel={t('moderation.actions.cancel')}>
+        <SheetActionRow label={t('moderation.report.user.title')} onPress={() => pick('report')} />
+        {block.canBlock ? (
+          <SheetActionRow
+            label={t(block.isBlocked ? 'moderation.block.unblock' : 'moderation.block.block')}
+            // Blocking is destructive; unblocking is not.
+            destructive={!block.isBlocked}
+            disabled={block.busy}
+            testID="profile-block-toggle"
+            onPress={() => {
+              close();
+              void block.toggle();
+            }}
+          />
+        ) : null}
+        {canBan ? <SheetActionRow label={t('moderation.actions.ban')} destructive onPress={() => pick('ban')} /> : null}
+      </ActionMenuSheet>
 
       <ReportUserModal
         targetUserId={targetUserId}
@@ -116,19 +75,3 @@ export function ProfileOverflowMenu({ targetUserId }: Props) {
     </>
   );
 }
-
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
-  trigger: { paddingHorizontal: 8, paddingVertical: 4 },
-  backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    paddingVertical: spacing.xs,
-  },
-  item: { paddingVertical: spacing.md, paddingHorizontal: spacing.base, alignItems: 'center' },
-  itemText: { ...typography.body, color: colors.textPrimary },
-  itemDestructive: { color: colors.error },
-  itemCancel: { ...typography.semiBold, color: colors.textSecondary },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
-}));

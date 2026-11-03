@@ -122,7 +122,7 @@ describe('SupabaseChatRepository — getOrCreateSupportThread', () => {
 
 describe('SupabaseChatRepository — getCounterpart', () => {
   const CHAT: Chat = {
-    chatId: 'c_1', participantIds: ['u_me', 'u_other'], anchorPostId: null, anchorRideId: null,
+    chatId: 'c_1', participantIds: ['u_me', 'u_other'], anchorPostId: null, anchorRideId: null, anchorListingId: null,
     isSupportThread: false, lastMessageAt: 't', createdAt: 't',
   };
 

@@ -1,0 +1,15 @@
+# The donations hub shows the giving worlds (the marketplace card was removed, FR-DONATE-001 AC6).
+# Spec: docs/SSOT/spec/13_donations.md FR-DONATE-001; docs/spec/05_giving_worlds.md.
+appId: org.karmacommunity.app
+name: Donations — hub opens
+tags: [donations]
+---
+- runFlow: ../subflows/sign-in.yaml
+- tapOn:
+    id: tab-donations
+- extendedWaitUntil:
+    visible:
+      id: donations-hub
+    timeout: 15000
+- assertVisible:
+    id: shell-tab-bar

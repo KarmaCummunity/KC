@@ -1,11 +1,11 @@
 // Production survey floating nav — bottom-anchored prev/next pills.
 // FR-SETTINGS-016 AC3: floating controls above tab bar, never hidden.
 import React from 'react';
-import { Pressable, Text, View, type ViewStyle } from 'react-native';
+import { Pressable, View, type ViewStyle } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, radius, spacing, typography, useTheme } from '@kc/ui';
+import { iconSize, makeUseStyles, radius, shadow, spacing, typography, useTheme, Text, zIndex } from '@kc/ui';
 import { webTextRtl, webViewRtl } from '../../lib/webRtlStyle';
+import { MirroredIcon } from '../ui/MirroredIcon';
 
 type SurveyFloatingNavProps = {
   readonly onPrev: () => void;
@@ -52,9 +52,9 @@ export function SurveyFloatingNav({
         accessibilityLabel={t('surveyDemo.navPrevA11y')}
         accessibilityState={{ disabled: prevDisabled }}
       >
-        <Ionicons
-          name="chevron-forward"
-          size={18}
+        <MirroredIcon
+          name="chevron-back"
+          size={iconSize.md}
           color={prevDisabled ? colors.textDisabled : colors.textPrimary}
         />
         <Text style={[styles.pillText, prevDisabled && styles.pillTextDisabled]}>
@@ -78,9 +78,9 @@ export function SurveyFloatingNav({
         <Text style={[styles.pillTextPrimary, nextDisabled && styles.pillTextDisabledOnPrimary]}>
           {nextLabel ?? t('surveyDemo.navNext')}
         </Text>
-        <Ionicons
-          name="chevron-back"
-          size={18}
+        <MirroredIcon
+          name="chevron-forward"
+          size={iconSize.md}
           color={nextDisabled ? colors.textDisabled : colors.textInverse}
         />
       </Pressable>
@@ -91,13 +91,13 @@ export function SurveyFloatingNav({
 /** Reserve scroll space so content clears the floating nav pills. */
 export const SURVEY_FLOAT_NAV_CLEARANCE = 52;
 
-const useNavStyles = makeUseStyles(({ colors, isDark }) => ({
+const useNavStyles = makeUseStyles(({ colors }) => ({
   dock: {
     position: 'absolute',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    zIndex: 20,
+    zIndex: zIndex.floating,
     ...webViewRtl,
   },
   pill: {
@@ -108,11 +108,8 @@ const useNavStyles = makeUseStyles(({ colors, isDark }) => ({
     paddingHorizontal: spacing.base,
     borderRadius: radius.full,
     minHeight: 48,
+    ...shadow.modal,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: isDark ? 0.35 : 0.14,
-    shadowRadius: 10,
-    elevation: 10,
     ...webViewRtl,
   },
   pillSecondary: {
@@ -135,13 +132,13 @@ const useNavStyles = makeUseStyles(({ colors, isDark }) => ({
   },
   pillText: {
     ...typography.button,
-    fontSize: 15,
+    fontSize: typography.button.fontSize,
     color: colors.textPrimary,
     ...webTextRtl,
   },
   pillTextPrimary: {
     ...typography.button,
-    fontSize: 15,
+    fontSize: typography.button.fontSize,
     color: colors.textInverse,
     ...webTextRtl,
   },

@@ -1,0 +1,60 @@
+name: Agent task
+description: A well-scoped task an AI agent (or human) can pick up and finish in one PR to dev.
+title: "[area] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: "See [CLAUDE.md](../blob/dev/CLAUDE.md) and [docs/process/PROJECT_BOARD.md](../blob/dev/docs/process/PROJECT_BOARD.md). One task = one PR to `dev`. Never describe security vulnerabilities here; say 'details shared privately'."
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [mobile, backend/db, web, CI/DevOps, spec/docs, GTM]
+    validations: { required: true }
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why this matters, current behavior, related issues/PRs, epic.
+      placeholder: "Epic #… · Depends on #…"
+    validations: { required: true }
+  - type: input
+    id: spec_ref
+    attributes:
+      label: Spec ref
+      description: docs/spec section, D# decision and/or G# gap (legacy FR-IDs in docs/SSOT/spec also fine). Write "none found" if truly absent.
+      placeholder: "docs/spec/05_giving_worlds.md §5.2; D19; G1"
+    validations: { required: true }
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Testable checkboxes.
+      value: |
+        - [ ] 
+        - [ ] Tests cover the new behavior
+        - [ ] Spec and SSOT docs updated in the same PR
+    validations: { required: true }
+  - type: textarea
+    id: test_plan
+    attributes:
+      label: Test plan
+      description: Automated tests to add/run and any manual checks (platform, persona, kc-dev).
+    validations: { required: true }
+  - type: textarea
+    id: files
+    attributes:
+      label: Likely files
+      placeholder: "supabase/migrations/0xxx_*.sql\napp/apps/mobile/app/(tabs)/…"
+  - type: input
+    id: migration_range
+    attributes:
+      label: Migration range
+      description: Claimed in docs/agents/MIGRATION_RANGES.md, e.g. 0350-0354. "none" if no SQL.
+      placeholder: none
+    validations: { required: true }
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope

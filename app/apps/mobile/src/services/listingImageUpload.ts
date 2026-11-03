@@ -1,11 +1,6 @@
 import * as Crypto from 'expo-crypto';
 import { getSupabaseClient } from '@kc/infrastructure-supabase';
-import {
-  buildPostImagePath,
-  newUploadBatchId,
-  pickPostImages,
-  type PickedImage,
-} from './imageUpload';
+import { buildPostImagePath, pickPostImages, type PickedImage } from './imageUpload';
 
 export type { PickedImage };
 import * as ImageManipulator from 'expo-image-manipulator';

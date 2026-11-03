@@ -13,6 +13,8 @@ import { useMyProfilePostOwner } from '../../../src/hooks/useProfilePostOwner';
 import { useScreenAside } from '../../../src/components/aside/useScreenAside';
 import { ProfileStatsAside } from '../../../src/components/aside/ProfileStatsAside';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+
 export default function MyProfileOpenScreen() {
   const tabBarPad = useShellTabBarScrollInset();
   const userId = useAuthStore((s) => s.session?.userId);
@@ -35,7 +37,7 @@ export default function MyProfileOpenScreen() {
   });
 
   return (
-    <Screen blobs="content">
+    <Screen blobs="content" testID="my-profile-screen">
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={{ paddingBottom: tabBarPad }}
@@ -45,6 +47,8 @@ export default function MyProfileOpenScreen() {
         <ProfilePostsGrid
           posts={myPostsQuery.data?.posts ?? []}
           isLoading={myPostsQuery.isLoading}
+          isError={myPostsQuery.isError}
+          onRetry={() => void myPostsQuery.refetch()}
           empty="self_open"
           postOwner={postOwner}
         />

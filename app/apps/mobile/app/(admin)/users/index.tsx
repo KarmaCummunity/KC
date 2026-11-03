@@ -1,15 +1,18 @@
 // app/apps/mobile/app/(admin)/users/index.tsx
 // FR-ADMIN-019 — admin users search screen.
-import { useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
+// Rebuilt on top of the shared filterKit (issue #1457).
+import { useCallback, useMemo, useState } from 'react';
+import { RefreshControl, View } from 'react-native';
+import { type AdminPermission, type AdminRole, type AdminUserSearchResult, hasPermission } from '@kc/domain';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { useAdminUserSearch } from '../../../src/hooks/useAdminContentSearch';
 import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
 import { UserSearchRow } from '../../../src/components/admin/content/UserSearchRow';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
+import { FilterSearchBar } from '../../../src/components/filterKit/FilterSearchBar';
+import { FilterChipRow } from '../../../src/components/filterKit/FilterChipRow';
 
 const STATUS_OPTIONS = [
   { value: null,                            key: 'all' as const },
@@ -20,6 +23,8 @@ const STATUS_OPTIONS = [
   { value: 'suspended_for_false_reports',   key: 'suspendedFalse' as const },
   { value: 'deleted',                       key: 'deleted' as const },
 ];
+
+const userSearchKeyExtractor = (u: AdminUserSearchResult) => u.userId;
 
 export default function UsersScreen() {
   const styles = useStyles();
@@ -36,6 +41,11 @@ export default function UsersScreen() {
   const result = useAdminUserSearch(filters);
   const can = (perm: AdminPermission) => hasPermission(roles as readonly AdminRole[], perm);
 
+  const renderItem = useCallback(
+    ({ item }: { item: AdminUserSearchResult }) => <UserSearchRow row={item} />,
+    [],
+  );
+
   if (rolesLoading) {
     return <View style={styles.center}><Text>{L.admin.content.loading}</Text></View>;
   }
@@ -46,34 +56,31 @@ export default function UsersScreen() {
   return (
     <View style={styles.root}>
       <AdminScreenHeader title={L.admin.content.usersTitle} />
-      <TextInput
-        style={styles.search}
+      <FilterSearchBar
+        style={styles.searchWrap}
         value={query}
         onChangeText={setQuery}
         placeholder={L.admin.content.searchUsersPlaceholder}
         autoCapitalize="none"
-        autoCorrect={false}
       />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        {STATUS_OPTIONS.map((s) => (
-          <Pressable
-            key={s.key}
-            onPress={() => setStatusFilter(s.value)}
-            style={[styles.chip, statusFilter === s.value && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, statusFilter === s.value && styles.chipTextActive]}>
-              {L.admin.content.userStatusFilter[s.key]}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      <FilterChipRow<string>
+        scrollable
+        options={STATUS_OPTIONS.map((s) => ({
+          value: s.value ?? '__all__',
+          label: L.admin.content.userStatusFilter[s.key],
+        }))}
+        value={statusFilter ?? '__all__'}
+        onChange={(val) => setStatusFilter(val === '__all__' || val === null ? null : val)}
+        contentContainerStyle={styles.chips}
+      />
       <Text style={styles.totalLabel}>
         {L.admin.content.totalCount(result.page.totalCount)}
       </Text>
       <KcFlashList
-        data={[...result.page.rows]}
-        keyExtractor={(u) => u.userId}
-        renderItem={({ item }) => <UserSearchRow row={item} />}
+        data={result.page.rows}
+        keyExtractor={userSearchKeyExtractor}
+        estimatedItemSize={72}
+        renderItem={renderItem}
         refreshControl={<RefreshControl refreshing={result.isRefetching} onRefresh={result.refetch} />}
         ListEmptyComponent={
           !result.isLoading ? (
@@ -89,20 +96,11 @@ export default function UsersScreen() {
 
 const useStyles = makeUseStyles(({ colors }) => ({
   root:        { flex: 1, backgroundColor: colors.background },
-  center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  deniedTitle: { fontSize: 18, fontWeight: '700' },
-  search: {
-    marginHorizontal: 16, marginBottom: 8, padding: 10,
-    borderRadius: 10, backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
-    textAlign: 'right', fontSize: 14,
-  },
-  chips:           { paddingHorizontal: 16, gap: 8, paddingBottom: 8 },
-  chip:            { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14, backgroundColor: colors.secondaryLight },
-  chipActive:      { backgroundColor: colors.primary },
-  chipText:        { fontSize: 12, fontWeight: '600' },
-  chipTextActive:  { color: colors.textInverse },
-  totalLabel:      { paddingHorizontal: 16, paddingBottom: 4, fontSize: 11, opacity: 0.6 },
-  empty:           { padding: 32, alignItems: 'center' },
-  emptyText:       { fontSize: 14, opacity: 0.6 },
+  center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+  deniedTitle: { ...typography.h3, ...typography.bold },
+  searchWrap:  { marginHorizontal: spacing.base, marginBottom: spacing.sm },
+  chips:       { paddingHorizontal: spacing.base, gap: spacing.sm, paddingBottom: spacing.sm },
+  totalLabel:  { paddingHorizontal: spacing.base, paddingBottom: spacing.xs, ...typography.caption, color: colors.textSecondary },
+  empty:       { padding: spacing['2xl'], alignItems: 'center' },
+  emptyText:   { ...typography.body, color: colors.textSecondary },
 }));

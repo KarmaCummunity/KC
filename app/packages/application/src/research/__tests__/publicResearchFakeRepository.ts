@@ -20,6 +20,7 @@ export const makeQuestion = (
   textPlaceholderHe: 'ספר/י לנו...',
   ratingAnchorLowHe: 'בשום פנים לא',
   ratingAnchorHighHe: 'בהחלט כן',
+  choiceOptions: [],
   ...overrides,
 });
 

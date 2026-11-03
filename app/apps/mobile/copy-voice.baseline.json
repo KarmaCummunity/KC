@@ -1,0 +1,85 @@
+{
+  "$comment": "Frozen copy-voice findings per locale file (spec 17 §7, D93). Counts may only go down.",
+  "files": {
+    "src/i18n/locales/he/donations.rides.ts": {
+      "genderedImperative": 16
+    },
+    "src/i18n/locales/he/modules/aboutContentUxRefreshPartA.ts": {
+      "brandWording": 1
+    },
+    "src/i18n/locales/he/modules/adminAdmins.ts": {
+      "genderedImperative": 10
+    },
+    "src/i18n/locales/he/modules/adminCrm.ts": {
+      "genderedImperative": 7
+    },
+    "src/i18n/locales/he/modules/adminLayers.ts": {
+      "genderedImperative": 2
+    },
+    "src/i18n/locales/he/modules/adminMoney.ts": {
+      "genderedImperative": 6
+    },
+    "src/i18n/locales/he/modules/adminOrgApprovals.ts": {
+      "genderedImperative": 1
+    },
+    "src/i18n/locales/he/modules/adminTasks.ts": {
+      "genderedImperative": 7
+    },
+    "src/i18n/locales/he/modules/adminTime.ts": {
+      "genderedImperative": 6
+    },
+    "src/i18n/locales/he/modules/adminWhatsApp.ts": {
+      "genderedImperative": 2
+    },
+    "src/i18n/locales/he/modules/auth.ts": {
+      "genderedImperative": 15,
+      "genderedAddress": 3,
+      "buttonLength": 2
+    },
+    "src/i18n/locales/he/modules/chat.ts": {
+      "genderedImperative": 11
+    },
+    "src/i18n/locales/he/modules/closure.ts": {
+      "genderedImperative": 10
+    },
+    "src/i18n/locales/he/modules/errors.ts": {
+      "genderedImperative": 8,
+      "paddedSoftener": 1
+    },
+    "src/i18n/locales/he/modules/feed.ts": {
+      "genderedImperative": 15
+    },
+    "src/i18n/locales/he/modules/follow.ts": {
+      "genderedImperative": 1
+    },
+    "src/i18n/locales/he/modules/onboarding.ts": {
+      "genderedImperative": 13,
+      "genderedAddress": 3
+    },
+    "src/i18n/locales/he/modules/postEdit.ts": {
+      "genderedImperative": 7,
+      "genderedAddress": 1
+    },
+    "src/i18n/locales/he/modules/postMenu.ts": {
+      "genderedImperative": 8
+    },
+    "src/i18n/locales/he/modules/postReport.ts": {
+      "genderedImperative": 2
+    },
+    "src/i18n/locales/he/modules/profile.ts": {
+      "genderedImperative": 21,
+      "genderedAddress": 1
+    },
+    "src/i18n/locales/he/modules/research.ts": {
+      "genderedImperative": 2
+    },
+    "src/i18n/locales/he/modules/settings.ts": {
+      "genderedImperative": 15,
+      "genderedAddress": 1
+    },
+    "src/i18n/locales/he/modules/surveyDemo.ts": {
+      "genderedAddress": 1,
+      "genderedImperative": 1
+    }
+  }
+}

@@ -71,4 +71,75 @@ describe('ReconcileAuthProfileMetadataUseCase', () => {
 
     expect(auth.syncProfileCalls).toHaveLength(0);
   });
+
+  it('no-ops when input userId is blank', async () => {
+    const users = { findById: vi.fn() } as unknown as IUserRepository;
+    const auth = new FakeAuthService();
+
+    await new ReconcileAuthProfileMetadataUseCase(users, auth).execute({ userId: '   ' });
+
+    expect(users.findById).not.toHaveBeenCalled();
+    expect(auth.syncProfileCalls).toHaveLength(0);
+  });
+
+  it('no-ops when user not found or session missing or session userId does not match', async () => {
+    const users = {
+      findById: vi.fn().mockResolvedValue(null),
+    } as unknown as IUserRepository;
+    const auth = new FakeAuthService();
+    auth.currentSession = makeSession({ userId: 'u-1' });
+
+    const uc = new ReconcileAuthProfileMetadataUseCase(users, auth);
+
+    // user is null
+    await uc.execute({ userId: 'u-1' });
+    expect(auth.syncProfileCalls).toHaveLength(0);
+
+    // session is null
+    users.findById = vi.fn().mockResolvedValue(baseUser({}));
+    auth.currentSession = null;
+    await uc.execute({ userId: 'u-1' });
+    expect(auth.syncProfileCalls).toHaveLength(0);
+
+    // session userId does not match
+    auth.currentSession = makeSession({ userId: 'other-user' });
+    await uc.execute({ userId: 'u-1' });
+    expect(auth.syncProfileCalls).toHaveLength(0);
+  });
+
+  it('syncs only displayName when only name drifts', async () => {
+    const users = {
+      findById: vi.fn().mockResolvedValue(
+        baseUser({ displayName: 'New Name', avatarUrl: 'https://same.example/a.jpg' }),
+      ),
+    } as unknown as IUserRepository;
+    const auth = new FakeAuthService();
+    auth.currentSession = makeSession({
+      userId: 'u-1',
+      displayName: 'Old Name',
+      avatarUrl: 'https://same.example/a.jpg',
+    });
+
+    await new ReconcileAuthProfileMetadataUseCase(users, auth).execute({ userId: 'u-1' });
+
+    expect(auth.syncProfileCalls).toEqual([{ displayName: 'New Name' }]);
+  });
+
+  it('syncs only avatarUrl when only avatar drifts', async () => {
+    const users = {
+      findById: vi.fn().mockResolvedValue(
+        baseUser({ displayName: 'Same Name', avatarUrl: 'https://new.example/a.jpg' }),
+      ),
+    } as unknown as IUserRepository;
+    const auth = new FakeAuthService();
+    auth.currentSession = makeSession({
+      userId: 'u-1',
+      displayName: 'Same Name',
+      avatarUrl: 'https://old.example/a.jpg',
+    });
+
+    await new ReconcileAuthProfileMetadataUseCase(users, auth).execute({ userId: 'u-1' });
+
+    expect(auth.syncProfileCalls).toEqual([{ avatarUrl: 'https://new.example/a.jpg' }]);
+  });
 });

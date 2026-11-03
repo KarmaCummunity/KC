@@ -4,22 +4,20 @@
 // FR-AUTH-010 AC3 (Skip preserves location).
 // FR-CHAT-001: inbox subscription started on sign-in, torn down on sign-out.
 import React, { useEffect, useState } from 'react';
-import { Pressable, Text } from 'react-native';
-import { spacing, typography } from '@kc/ui';
-import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Image, View } from 'react-native';
+import { spacing, typography, useTheme, Text } from '@kc/ui';
+import { useTranslation } from 'react-i18next';
 import { useRouter, useSegments, usePathname, type Href } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useQueryClient } from '@tanstack/react-query';
-import { useTheme } from '@kc/ui';
 import {
   getRestoreSessionUseCase,
   subscribeToSession,
 } from '../services/authComposition';
 import { tryDevAutoSignIn } from '../services/devAutoSignIn';
-import { getDevGhostSession } from '../services/devGhostSession';
+import { startColdStartSession } from '../services/coldStartSession';
+import { getDevGhostSession, isDevGhostSessionEnabled } from '../services/devGhostSession';
 import { getOnboardingBootstrap, getReconcileAuthProfileMetadataUseCase } from '../services/userComposition';
-import { isDevGhostSessionEnabled } from '../services/devGhostSession';
 import { useAuthStore } from '../store/authStore';
 import { useChatStore } from '../store/chatStore';
 import { usePostDraftStore } from '../store/postDraftStore';
@@ -28,11 +26,12 @@ import { container } from '../lib/container';
 import { useEnforceAccountGate } from '../hooks/useEnforceAccountGate';
 import { isPublicResearchPath } from '../navigation/publicResearchPaths';
 import { isPublicLegalSegment } from '../navigation/publicLegalPaths';
+import { PrimaryButton } from './ui/Buttons';
 
 export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) {
   const { colors } = useTheme();
   const router = useRouter();
-  const segments = useSegments();
+  const segments: string[] = useSegments();
   const queryClient = useQueryClient();
   const pathname = usePathname();
   const capturePendingPath = useRedirectIntentStore((s) => s.capturePath);
@@ -57,36 +56,21 @@ export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) 
   //   2. Auto sign-in — real Supabase auth with test credentials (devAutoSignIn.ts)
   // Ghost takes priority because it's instant and has no network dependency.
   useEffect(() => {
-    let mounted = true;
-
     // Ghost mode short-circuits the restore flow entirely — no Supabase call,
     // no subscription needed (the fake session never changes).
     const ghost = getDevGhostSession();
     if (ghost) {
       setSession(ghost);
-      return () => {
-        mounted = false;
-      };
+      return undefined;
     }
 
-    void (async () => {
-      try {
-        const { session } = await getRestoreSessionUseCase().execute();
-        const devSession = await tryDevAutoSignIn(session);
-        if (mounted) setSession(devSession ?? session);
-      } catch {
-        const devSession = await tryDevAutoSignIn(null);
-        if (mounted) setSession(devSession);
-      }
-    })();
-
-    const unsubscribe = subscribeToSession((s) => {
-      if (mounted) setSession(s);
+    // Restore + subscription race handling lives in coldStartSession (TD-127).
+    return startColdStartSession({
+      restore: async () => (await getRestoreSessionUseCase().execute()).session,
+      subscribe: subscribeToSession,
+      devFallback: tryDevAutoSignIn,
+      setSession,
     });
-    return () => {
-      mounted = false;
-      unsubscribe();
-    };
   }, [setSession]);
 
   useEffect(() => {
@@ -184,6 +168,10 @@ export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) 
     // out; the route itself exchanges the token and sets the session.
     const isEmailVerify =
       (segments[0] as string | undefined) === 'auth' && segments[1] === 'verify';
+    // FR-AUTH-008 — reset-password opens from an email link while signed out and
+    // must not be redirected once the recovery token creates a session.
+    const isPasswordReset =
+      (segments[0] as string | undefined) === 'auth' && segments[1] === 'reset-password';
     // FR-MOD-010 AC4 — account-blocked is a terminal screen reachable while
     // signed out; do not bounce the user back to (auth).
     const isAccountBlocked = (segments[0] as string | undefined) === 'account-blocked';
@@ -204,6 +192,7 @@ export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) 
         !inGuestGroup &&
         !isOAuthCallback &&
         !isEmailVerify &&
+        !isPasswordReset &&
         !isAccountBlocked &&
         !isAboutSurface &&
         !isResearchSurface &&
@@ -243,7 +232,7 @@ export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) 
           backgroundColor: colors.background,
           justifyContent: 'center',
           alignItems: 'center',
-          gap: 24,
+          gap: spacing.xl,
         }}
       >
         <Image
@@ -269,27 +258,23 @@ export function AuthGate({ children }: Readonly<{ children: React.ReactNode }>) 
         <Text style={{ ...typography.body, color: colors.textPrimary, textAlign: 'center' }}>
           {t('general.error')}
         </Text>
-        <Pressable
-          onPress={() => {
-            if (!session) return;
-            setOnboardingBootstrapError(false);
-            void getOnboardingBootstrap(session.userId)
-              .then((boot) => {
-                setOnboardingState(boot.state);
-                setBasicInfoSkipped(boot.basicInfoSkipped);
-              })
-              .catch(() => setOnboardingBootstrapError(true));
-          }}
-          style={{
-            marginTop: spacing.md,
-            padding: spacing.md,
-            borderRadius: 8,
-            backgroundColor: colors.primary,
-            alignItems: 'center',
-          }}
-        >
-          <Text style={{ ...typography.button, color: colors.textInverse }}>{t('general.retry')}</Text>
-        </Pressable>
+        <View style={{ marginTop: spacing.md }}>
+          <PrimaryButton
+            testID="auth-gate-retry"
+            label={t('general.retry')}
+            size="md"
+            onPress={() => {
+              if (!session) return;
+              setOnboardingBootstrapError(false);
+              void getOnboardingBootstrap(session.userId)
+                .then((boot) => {
+                  setOnboardingState(boot.state);
+                  setBasicInfoSkipped(boot.basicInfoSkipped);
+                })
+                .catch(() => setOnboardingBootstrapError(true));
+            }}
+          />
+        </View>
       </View>
     );
   }

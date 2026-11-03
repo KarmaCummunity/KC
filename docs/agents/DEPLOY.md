@@ -4,10 +4,9 @@
 
 | What | Workflow | Target |
 |---|---|---|
-| DB migrations | `DB deploy` (`.github/workflows/db-deploy.yml`) | Supabase **kc-dev** (`supabase-dev` env) |
-| Web SPA | `Deploy Web` | Cloudflare Pages → `https://dev.karma-community.pages.dev/` |
+| DB migrations → Edge Functions → web → smoke | `Deploy` (`.github/workflows/deploy.yml`), after the dev push's **CI** run passes | Supabase **kc-dev** (`supabase-dev`) + Cloudflare Pages → `https://dev.karma-community.pages.dev/` |
 
-Verify: open Pages URL; for SQL, check the Actions log for `Applying migration …` / `Finished supabase db push`.
+Verify: `https://dev.karma-community.pages.dev/version.json` shows the merged SHA; the Deploy run's smoke stage is green. To redeploy dev, dispatch **Deploy** on `dev`.
 
 ## Local DB
 
@@ -29,11 +28,11 @@ See [RELEASE.md](./RELEASE.md): version bump → EAS preview → TestFlight / Pl
 | Full fake dataset (users, posts, chats …) | Actions → **Seed KC dev** (`seed-kc-dev.yml`, action `seed`). **Destructive:** wipes and recreates every `@seed.kc.test` row. Ask before running. Details: [`supabase/seed/kc-dev/README.md`](../../supabase/seed/kc-dev/README.md). |
 | Remove the fake dataset | Same workflow, action `wipe`. |
 
-Never seed prod. Seed credentials live only in the seed files; never paste them into code, issues, PRs or chat.
+Never seed prod. The seed password lives only in the `E2E_SEED_PASSWORD` Actions secret; never paste them into code, issues, PRs or chat.
 
 ## DB types drift
 
-`apply migrations · rls · types · sql probes` regenerates `app/packages/infrastructure-supabase/src/database.types.ts` on a fresh stack. If it fails with a diff, apply that exact diff to the file (or run `supabase gen types` locally with Docker) and push again.
+`apply migrations · rls · types · sql probes` regenerates `app/packages/infrastructure-supabase/src/database.types.ts` on a fresh stack. If it fails with a diff, apply that exact diff to the file (or run `supabase gen types typescript --local | node scripts/strip-partition-types.mjs > …` locally with Docker; the filter drops the monthly partition tables, whose names change every month) and push again.
 
 ## Verify on dev (E2E)
 
@@ -43,18 +42,18 @@ Playwright QA suite against `https://dev.karma-community.pages.dev` + kc-dev: [`
 
 | Workflow | Trigger | Notes |
 |---|---|---|
-| `ci-*.yml` | PRs | Required checks; list in `ci-required-checks.yml` |
-| `db-deploy.yml` (DB deploy) | push to `dev` (migration paths) / manual | kc-dev on `dev`; prod only from `main` (Nave) |
-| `deploy-web.yml` | push to `dev` (`app/**`) / manual | Cloudflare Pages dev site |
-| `supabase-functions-deploy.yml` | push to `dev` / manual | Edge Functions (WhatsApp, workers) to kc-dev; prod only from `main` |
+| `ci.yml` (+ `ci-*.yml` lanes) | PRs, dev/main pushes | One required check, `CI gate` (`D-195`); PRs into `main` add the release lane (`ci-release.yml`) |
+| `deploy.yml` (+ `deploy-*.yml` stages) | after a green dev/main push CI run / manual on dev or main | Only deploy path. dev automatic; prod waits for Nave's one approval on `production`. After a failure use **Re-run all jobs**, never **Re-run failed jobs** (the deploy guard refuses it on prod) |
+| `deploy-smoke.yml` | manual | Read-only smoke against dev or prod |
 | `seed-kc-dev.yml` | manual | Destructive dev reseed / wipe |
 | `e2e-nightly-dev.yml` | nightly + manual | QA suite against dev |
-| `ci-e2e-dev.yml` | dev → main PRs | Release gate |
 | `k6-load-dev.yml` | manual | Load test against dev |
-| `kc-mobile-eas-preview.yml`, `testflight-ios.yml`, `play-internal.yml` | manual | Store builds, see [RELEASE.md](./RELEASE.md) |
-| `prod-smoke.yml`, `sync-main-to-dev.yml`, `ci-main-guard.yml` | main / release | Prod side. Do not trigger without Nave |
+| `mobile-nightly.yml` → `testflight-ios.yml`, `play-internal.yml` | nightly + manual (dev) | Store builds of the newest green dev commit, see [RELEASE.md](./RELEASE.md) |
+| `kc-mobile-eas-preview.yml` | manual | EAS preview build, no store submit |
+| `sync-main-to-dev.yml` | main push | Opens a zero-diff PR into `dev`; the owner merges it as a merge commit with the admin bypass (`TD-182`) |
+| `bump-version-on-merge.yml` | dev push | Bumps `app/VERSION` PATCH after each merge (`TD-196`); PRs do not edit VERSION |
 | `auto-merge-agent-ready.yml`, `labeler.yml`, `bump-app-version.yml`, `stale-stack-report.yml` | PR / schedule | Housekeeping |
 
-## Web Dockerfile / Railway (legacy note)
+## Web (Cloudflare Pages)
 
-Historical Railway notes: [docs/DEPLOY_WEB.md](../DEPLOY_WEB.md). Current **dev** web path is Cloudflare Pages on push to `dev`.
+Runbook: [docs/DEPLOY_WEB.md](../DEPLOY_WEB.md). The only web path is Cloudflare Pages through `deploy.yml` (dev and prod); Railway is retired, and the repo-root `Dockerfile` / `railway.json` are no longer deployed.

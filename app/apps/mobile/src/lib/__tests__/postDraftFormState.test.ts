@@ -7,7 +7,7 @@ import {
   type PostDraftFormState,
 } from '../postDraftFormState';
 
-const guards = { ownerId: 'user-A', isHydrating: false, isResumePending: false };
+const guards = { ownerId: 'user-A', isHydrating: false, isResumePending: false, isPostCategory: true };
 
 describe('isFormStateAtDefaults', () => {
   it('returns true for the canonical empty state', () => {
@@ -63,6 +63,16 @@ describe('shouldAutosaveDraft', () => {
 
   it('refuses to save when the form is at canonical defaults', () => {
     expect(shouldAutosaveDraft(guards, POST_DRAFT_DEFAULTS)).toBe(false);
+  });
+
+  // FR-POST-001 AC6: the remembered direction is restored on open; it is not draft content.
+  it('refuses to save an empty form whose only change is the direction', () => {
+    expect(shouldAutosaveDraft(guards, { ...POST_DRAFT_DEFAULTS, type: 'Request' })).toBe(false);
+    expect(shouldAutosaveDraft(guards, { ...dirty, type: 'Request' })).toBe(true);
+  });
+
+  it('refuses to save while a listing category is open', () => {
+    expect(shouldAutosaveDraft({ ...guards, isPostCategory: false }, dirty)).toBe(false);
   });
 });
 

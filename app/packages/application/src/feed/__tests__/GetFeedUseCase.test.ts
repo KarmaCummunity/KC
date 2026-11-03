@@ -68,6 +68,49 @@ describe('GetFeedUseCase', () => {
     expect(repo.lastGetFeedArgs?.filter.itemConditions).toBeUndefined();
   });
 
+  it('drops itemConditions for a Give filter outside the items world', async () => {
+    const repo = new FakePostRepository();
+    const uc = new GetFeedUseCase(repo);
+
+    await uc.execute({
+      viewerId: null,
+      filter: { type: 'Give', worlds: ['food'], itemConditions: ['New'] },
+      limit: 20,
+    });
+
+    expect(repo.lastGetFeedArgs?.filter.itemConditions).toBeUndefined();
+  });
+
+  it('keeps world filters and item conditions for Give posts in the items world', async () => {
+    const repo = new FakePostRepository();
+    const uc = new GetFeedUseCase(repo);
+
+    await uc.execute({
+      viewerId: null,
+      filter: { type: 'Give', worlds: ['items'], subcategories: ['books'], itemConditions: ['New'] },
+      limit: 20,
+    });
+
+    expect(repo.lastGetFeedArgs?.filter.worlds).toEqual(['items']);
+    expect(repo.lastGetFeedArgs?.filter.subcategories).toEqual(['books']);
+    expect(repo.lastGetFeedArgs?.filter.itemConditions).toEqual(['New']);
+  });
+
+  it('drops empty worlds and subcategories', async () => {
+    const repo = new FakePostRepository();
+    const uc = new GetFeedUseCase(repo);
+
+    await uc.execute({
+      viewerId: null,
+      filter: { type: 'Request', worlds: [], subcategories: [], itemConditions: ['New'] },
+      limit: 20,
+    });
+
+    expect(repo.lastGetFeedArgs?.filter.itemConditions).toBeUndefined();
+    expect(repo.lastGetFeedArgs?.filter.worlds).toBeUndefined();
+    expect(repo.lastGetFeedArgs?.filter.subcategories).toBeUndefined();
+  });
+
   it('drops searchQuery shorter than 2 chars and trims longer', async () => {
     const repo = new FakePostRepository();
     const uc = new GetFeedUseCase(repo);

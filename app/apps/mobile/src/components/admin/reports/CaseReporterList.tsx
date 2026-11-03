@@ -3,9 +3,9 @@
 // V2-ADMIN-REPORTS-4 — each row is now tappable; routes the admin straight to
 // the reporter's profile so they can vet the reporter's history before acting.
 import { router } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import type { ReportCaseReporter } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
 export interface CaseReporterListProps {
@@ -32,7 +32,7 @@ export function CaseReporterList({ reporters }: CaseReporterListProps) {
             key={r.reportId}
             accessibilityRole="button"
             accessibilityLabel={L.admin.caseDetail.openReporter(label)}
-            onPress={() => router.push(`/user/${r.reporterId}` as never)}
+            onPress={() => router.push(`/user/${r.reporterId}`)}
             style={styles.item}
           >
             <View style={styles.head}>
@@ -50,14 +50,14 @@ export function CaseReporterList({ reporters }: CaseReporterListProps) {
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  list:      { gap: 12 },
-  item:      { padding: 12, borderRadius: 8, backgroundColor: colors.skeleton, gap: 4 },
+  list:      { gap: spacing.md },
+  item:      { padding: spacing.md, borderRadius: radius.sm, backgroundColor: colors.skeleton, gap: spacing.xs },
   head:      { flexDirection: 'row', justifyContent: 'space-between' },
-  name:      { fontSize: 14, fontWeight: '600' },
-  status:    { fontSize: 12, opacity: 0.6 },
-  reason:    { fontSize: 14 },
-  note:      { fontSize: 13, opacity: 0.7 },
-  time:      { fontSize: 11, opacity: 0.5 },
-  empty:     { padding: 24, alignItems: 'center' },
-  emptyText: { fontSize: 14, opacity: 0.5 },
+  name:      { fontSize: typography.body.fontSize, ...typography.semiBold },
+  status:    { fontSize: typography.bodySmall.fontSize, opacity: 0.6 },
+  reason:    { fontSize: typography.body.fontSize },
+  note:      { fontSize: typography.bodySmall.fontSize, opacity: 0.7 },
+  time:      { fontSize: typography.caption.fontSize, opacity: 0.5 },
+  empty:     { padding: spacing.xl, alignItems: 'center' },
+  emptyText: { fontSize: typography.body.fontSize, opacity: 0.5 },
 }));

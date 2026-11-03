@@ -2,10 +2,11 @@
 // FR-ADMIN-022 — one card per user carrying all their roles. Tapping it opens
 // the admin-detail screen. Replaces the per-grant row in the list (the per-role
 // rows + revoke action now live on the detail screen).
-import { Pressable, Text, View } from 'react-native';
+import { memo } from 'react';
+import { Pressable, View } from 'react-native';
 import type { AdminPerson } from '@kc/domain';
-import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, radius, shadow, useTheme } from '@kc/ui';
+import { MirroredIcon } from '../../ui/MirroredIcon';
+import { iconSize, makeUseStyles, radius, shadow, spacing, Text, typography, useTheme } from '@kc/ui';
 import { AvatarInitials } from '../../AvatarInitials';
 import { rowDirectionStart, textAlignStart } from '../../../lib/rtlLayout';
 import { useLocaleBundle, type LocaleBundle } from '../../../i18n/useLocaleBundle';
@@ -26,7 +27,7 @@ export interface AdminPersonCardProps {
   readonly onPress: (userId: string) => void;
 }
 
-export function AdminPersonCard({ person, onPress }: AdminPersonCardProps) {
+function AdminPersonCardInner({ person, onPress }: AdminPersonCardProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   const L = useLocaleBundle();
@@ -52,25 +53,26 @@ export function AdminPersonCard({ person, onPress }: AdminPersonCardProps) {
         </View>
         <Text style={styles.meta} numberOfLines={1}>{lastSeenLabel(L, person.lastSeenAt)}</Text>
       </View>
-      <Ionicons name="chevron-back" size={18} color={colors.textSecondary} style={styles.chevron} />
+      <MirroredIcon name="chevron-forward" size={iconSize.md} color={colors.textSecondary} />
     </Pressable>
   );
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
   card: {
-    flexDirection: rowDirectionStart, alignItems: 'center', gap: 12,
+    flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.md,
     backgroundColor: colors.surface, borderRadius: radius.lg,
-    paddingVertical: 12, paddingHorizontal: 14, marginHorizontal: 16, marginVertical: 5,
+    paddingVertical: spacing.md, paddingHorizontal: spacing.md, marginHorizontal: spacing.base, marginVertical: spacing.xs,
     ...shadow.card,
   },
   pressed: { opacity: 0.7 },
   revoked: { opacity: 0.6 },
-  body:    { flex: 1, gap: 5 },
-  name:    { fontSize: 15, fontWeight: '700', color: colors.textPrimary, textAlign: textAlignStart() },
-  badges:  { flexDirection: rowDirectionStart, alignItems: 'center', flexWrap: 'wrap', gap: 6 },
-  more:    { fontSize: 11, fontWeight: '700', color: colors.textSecondary },
-  noRole:  { fontSize: 11, color: colors.textSecondary },
-  meta:    { fontSize: 11, color: colors.textSecondary, textAlign: textAlignStart() },
-  chevron: { transform: [{ scaleX: 1 }] },
+  body:    { flex: 1, gap: spacing.xs },
+  name:    { fontSize: typography.button.fontSize, ...typography.bold, color: colors.textPrimary, textAlign: textAlignStart() },
+  badges:  { flexDirection: rowDirectionStart, alignItems: 'center', flexWrap: 'wrap', gap: spacing.xs },
+  more:    { fontSize: typography.caption.fontSize, ...typography.bold, color: colors.textSecondary },
+  noRole:  { fontSize: typography.caption.fontSize, color: colors.textSecondary },
+  meta:    { fontSize: typography.caption.fontSize, color: colors.textSecondary, textAlign: textAlignStart() },
 }));
+
+export const AdminPersonCard = memo(AdminPersonCardInner);

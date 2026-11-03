@@ -1,21 +1,23 @@
 // app/apps/mobile/app/(admin)/audit/index.tsx
 // FR-ADMIN-020 — admin audit log viewer with role-tiered visibility.
 // V2-ADMIN-AUDIT-5 — date-range filter + CSV export (web).
-import { useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
+// Rebuilt on top of the shared filterKit (issue #1457).
+import { useCallback, useMemo, useState } from 'react';
+import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { type AdminAuditRow, type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
 import type { AdminAuditSearchFilters } from '@kc/application';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, TextInput, typography } from '@kc/ui';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { useAdminAuditSearch } from '../../../src/hooks/useAdminContentSearch';
 import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
 import { AuditLogRow } from '../../../src/components/admin/content/AuditLogRow';
 import { container } from '../../../src/lib/container';
-import {
-  downloadAuditCsv, isCsvExportSupported,
-} from '../../../src/lib/auditCsvExport';
+import { downloadAuditCsv, isCsvExportSupported } from '../../../src/lib/auditCsvExport';
 import { useLocaleBundle, type LocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
+import { rtlTextAlignStart } from '../../../src/lib/rtlTextAlignStart';
+import { FilterSearchBar } from '../../../src/components/filterKit/FilterSearchBar';
+import { FilterChipRow } from '../../../src/components/filterKit/FilterChipRow';
 
 const COMMON_ACTIONS = [
   null,
@@ -33,6 +35,8 @@ const COMMON_ACTIONS = [
   'delete_message',
   'delete_account',
 ] as const;
+
+const auditKeyExtractor = (e: AdminAuditRow) => e.eventId;
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 function parseFromDate(value: string): Date | undefined {
@@ -67,6 +71,11 @@ export default function AuditScreen() {
 
   const result = useAdminAuditSearch(filters);
   const can = (perm: AdminPermission) => hasPermission(roles as readonly AdminRole[], perm);
+
+  const renderItem = useCallback(
+    ({ item }: { item: AdminAuditRow }) => <AuditLogRow row={item} />,
+    [],
+  );
 
   async function doExport() {
     setExportError(null);
@@ -107,19 +116,19 @@ export default function AuditScreen() {
         title={L.admin.content.auditTitle}
         subtitle={!canSeeAll ? L.admin.content.tierLimited : undefined}
       />
-      <TextInput
-        style={styles.search}
-        value={targetIdRaw}
-        onChangeText={setTargetIdRaw}
-        placeholder={L.admin.content.auditTargetPlaceholder}
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
+      <View style={styles.searchWrap}>
+        <FilterSearchBar
+          value={targetIdRaw}
+          onChangeText={setTargetIdRaw}
+          placeholder={L.admin.content.auditTargetPlaceholder}
+          testID="audit-search-bar"
+        />
+      </View>
 
       <View style={styles.dateRow}>
         <View style={styles.dateField}>
           <Text style={styles.dateLabel}>{L.admin.content.dateFromLabel}</Text>
-          <TextInput
+          <TextInput // brand-guard-allow: admin audit date filter input, not a form field
             style={styles.dateInput}
             value={fromRaw}
             onChangeText={setFromRaw}
@@ -131,7 +140,7 @@ export default function AuditScreen() {
         </View>
         <View style={styles.dateField}>
           <Text style={styles.dateLabel}>{L.admin.content.dateToLabel}</Text>
-          <TextInput
+          <TextInput // brand-guard-allow: admin audit date filter input, not a form field
             style={styles.dateInput}
             value={toRaw}
             onChangeText={setToRaw}
@@ -156,26 +165,24 @@ export default function AuditScreen() {
         <Text style={styles.exportError}>{exportError}</Text>
       )}
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        {COMMON_ACTIONS.map((a) => (
-          <Pressable
-            key={a ?? '_all'}
-            onPress={() => setAction(a)}
-            style={[styles.chip, action === a && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, action === a && styles.chipTextActive]}>
-              {a === null
-                ? L.admin.content.auditActionFilterAll
-                : (L.admin.content.auditAction[a as keyof LocaleBundle['admin']['content']['auditAction']] ?? a)}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      <FilterChipRow<string>
+        scrollable
+        options={COMMON_ACTIONS.map((a) => ({
+          value: a ?? '__all__',
+          label: a === null
+            ? L.admin.content.auditActionFilterAll
+            : (L.admin.content.auditAction[a as keyof LocaleBundle['admin']['content']['auditAction']] ?? a),
+        }))}
+        value={action ?? '__all__'}
+        onChange={(val: string | null) => setAction(val === '__all__' || val === null ? null : val)}
+        contentContainerStyle={styles.chips}
+      />
       <Text style={styles.totalLabel}>{L.admin.content.totalCount(result.page.totalCount)}</Text>
       <KcFlashList
-        data={[...result.page.rows]}
-        keyExtractor={(e) => e.eventId}
-        renderItem={({ item }) => <AuditLogRow row={item} />}
+        data={result.page.rows}
+        keyExtractor={auditKeyExtractor}
+        estimatedItemSize={64}
+        renderItem={renderItem}
         refreshControl={<RefreshControl refreshing={result.isRefetching} onRefresh={result.refetch} />}
         ListEmptyComponent={
           !result.isLoading ? (
@@ -191,34 +198,25 @@ export default function AuditScreen() {
 
 const useStyles = makeUseStyles(({ colors }) => ({
   root:        { flex: 1, backgroundColor: colors.background },
-  center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  deniedTitle: { fontSize: 18, fontWeight: '700' },
-  search: {
-    marginHorizontal: 16, marginBottom: 8, padding: 10,
-    borderRadius: 10, backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
-    textAlign: 'right', fontSize: 14,
-  },
-  chips:          { paddingHorizontal: 16, gap: 8, paddingBottom: 8 },
-  chip:           { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, backgroundColor: colors.secondaryLight },
-  chipActive:     { backgroundColor: colors.primary },
-  chipText:       { fontSize: 11, fontWeight: '600' },
-  chipTextActive: { color: colors.textInverse },
-  totalLabel:     { paddingHorizontal: 16, paddingBottom: 4, fontSize: 11, opacity: 0.6 },
-  empty:          { padding: 32, alignItems: 'center' },
-  emptyText:      { fontSize: 14, opacity: 0.6 },
-  dateRow:        { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 8, alignItems: 'flex-end' },
-  dateField:      { flex: 1, gap: 4 },
-  dateLabel:      { fontSize: 11, opacity: 0.7 },
+  center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+  deniedTitle: { ...typography.h3, ...typography.bold },
+  searchWrap:  { marginHorizontal: spacing.base, marginBottom: spacing.sm },
+  chips:       { paddingHorizontal: spacing.base, gap: spacing.sm, paddingBottom: spacing.sm },
+  totalLabel:  { paddingHorizontal: spacing.base, paddingBottom: spacing.xs, ...typography.caption, opacity: 0.6 },
+  empty:       { padding: spacing['2xl'], alignItems: 'center' },
+  emptyText:   { ...typography.body, opacity: 0.6 },
+  dateRow:     { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.base, paddingBottom: spacing.sm, alignItems: 'flex-end' },
+  dateField:   { flex: 1, gap: spacing.xs },
+  dateLabel:   { ...typography.caption, opacity: 0.7 },
   dateInput: {
-    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: 8,
-    padding: 8, fontSize: 13, textAlign: 'left', backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: radius.md,
+    padding: spacing.sm, ...typography.caption, textAlign: rtlTextAlignStart, backgroundColor: colors.surface,
   },
   exportBtn: {
-    paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md,
     backgroundColor: colors.primary, alignSelf: 'flex-end',
   },
   exportBtnDisabled: { opacity: 0.5 },
-  exportBtnText:  { color: colors.textInverse, fontSize: 12, fontWeight: '700' },
-  exportError:    { paddingHorizontal: 16, paddingBottom: 4, color: colors.error, fontSize: 11 },
+  exportBtnText:  { color: colors.textInverse, ...typography.caption, ...typography.bold },
+  exportError:    { paddingHorizontal: spacing.base, paddingBottom: spacing.xs, color: colors.error, ...typography.caption },
 }));

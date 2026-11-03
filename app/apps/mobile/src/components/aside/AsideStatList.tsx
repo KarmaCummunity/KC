@@ -1,8 +1,8 @@
 // Shared stat-row list for the desktop stats asides (FR-RESP-003).
 // CommunityStatsAside and ProfileStatsAside render an identical
 // {label, value} row idiom — keep it in one place.
-import { Text, View } from 'react-native';
-import { makeUseStyles, spacing, typography } from '@kc/ui';
+import { View } from 'react-native';
+import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { rowDirectionStart } from '../../lib/rtlLayout';
 

@@ -1,0 +1,38 @@
+name: Deploy guard
+description: >
+  Fail unless this job runs inside deploy.yml of this repository (prod: on
+  main, approved in this run attempt, release still the main tip and not
+  behind the latest release tag). See scripts/deploy-guard.mjs. Callers check
+  out github.workflow_sha (the running deploy.yml's own commit, never the
+  commit being deployed) into .deploy-guard first, so the guard cannot be
+  weakened by the code it judges, and use this action from that copy. The
+  job needs `actions: read` and `contents: read`.
+
+inputs:
+  target:
+    description: dev or prod
+    required: true
+  release-sha:
+    description: The release commit being deployed (for a functions rollback, the failed release, not the redeployed one)
+    required: true
+  approved-attempt:
+    description: run_attempt in which `approve release` succeeded (empty on dev)
+    required: true
+  baseline-attempt:
+    description: run_attempt in which the Cloudflare rollback baseline was recorded (rollback only)
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Check the caller, approval and release freshness
+      shell: bash
+      env:
+        WORKFLOW_REF: ${{ github.workflow_ref }}
+        GITHUB_TOKEN: ${{ github.token }}
+        TARGET: ${{ inputs.target }}
+        RELEASE_SHA: ${{ inputs.release-sha }}
+        APPROVED_ATTEMPT: ${{ inputs.approved-attempt }}
+        BASELINE_ATTEMPT: ${{ inputs.baseline-attempt }}
+      run: node "$GITHUB_ACTION_PATH/../../../scripts/deploy-guard.mjs"

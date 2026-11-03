@@ -1,0 +1,31 @@
+# Signs in a kc-dev seed user by email and waits for the home feed.
+# Env: KC_E2E_EMAIL (default user1@seed.kc.test), KC_E2E_PASSWORD (from scripts/maestro-dev-env.mjs).
+appId: org.karmacommunity.app
+env:
+  KC_E2E_EMAIL: user1@seed.kc.test
+---
+- runFlow: open-email-sign-in.yaml
+- tapOn:
+    id: auth-email
+- inputText: ${KC_E2E_EMAIL}
+- tapOn:
+    id: auth-password
+- inputText: ${KC_E2E_PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: auth-submit
+- extendedWaitUntil:
+    notVisible:
+      id: auth-submit
+    timeout: 30000
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: feed-screen
+    commands:
+      - runFlow: dismiss-gates.yaml
+- extendedWaitUntil:
+    visible:
+      id: feed-screen
+    timeout: 90000

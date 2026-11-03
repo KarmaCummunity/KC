@@ -12,7 +12,8 @@
         "simulator": true
       },
       "env": {
-        "EXPO_PUBLIC_ENVIRONMENT": "development"
+        "EXPO_PUBLIC_ENVIRONMENT": "development",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_XUHNZtvdAfrciqWfkbCzDKyHgGi"
       }
     },
     "preview": {
@@ -22,14 +23,25 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_ENVIRONMENT": "development"
+        "EXPO_PUBLIC_ENVIRONMENT": "development",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_XUHNZtvdAfrciqWfkbCzDKyHgGi"
+      }
+    },
+    "nightly": {
+      "channel": "preview",
+      "environment": "preview",
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_ENVIRONMENT": "development",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_XUHNZtvdAfrciqWfkbCzDKyHgGi"
       }
     },
     "production": {
       "channel": "production",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_ENVIRONMENT": "production"
+        "EXPO_PUBLIC_ENVIRONMENT": "production",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_XUHNZtvdAfrciqWfkbCzDKyHgGi"
       }
     }
   },
@@ -41,7 +53,7 @@
       "android": {
         "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "internal",
-        "releaseStatus": "draft",
+        "releaseStatus": "completed",
         "changesNotSentForReview": true
       }
     }

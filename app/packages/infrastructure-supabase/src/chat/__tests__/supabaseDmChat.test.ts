@@ -210,4 +210,21 @@ describe('findOrCreateDmChat', () => {
 
     expect(calls.rpcs).toHaveLength(0);
   });
+
+  // KC#1297 — a chat shows one context: a listing anchor gives way to the post or ride entry.
+  it.each([
+    [{ postId: 'p_same' }, 'rpc_chat_set_anchor', { anchor_post_id: 'p_same' }],
+    [{ rideId: 'r_same' }, 'rpc_chat_set_anchor_ride', { anchor_ride_id: 'r_same' }],
+  ] as const)('re-anchors a listing-anchored chat entered from %o', async (anchor, rpc, current) => {
+    const { client, calls } = makeFakeClient({
+      userExists: true,
+      chatsList: [{ ...CHAT_ROW, ...current, anchor_listing_id: 'l_1' }],
+      setAnchorData: [{ ...CHAT_ROW, ...current, anchor_listing_id: null }],
+    });
+
+    const chat = await findOrCreateDmChat(client, 'u_aaaa', 'u_zzzz', anchor);
+
+    expect(calls.rpcs.map((c) => c.fn)).toEqual([rpc]);
+    expect(chat.anchorListingId).toBeNull();
+  });
 });

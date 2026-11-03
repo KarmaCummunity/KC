@@ -1,14 +1,16 @@
-// Create Post — wired to IPostRepository (P0.4-FE).
-// Mapped to: FR-POST-001..006 (incl. FR-POST-003 visibility + FR-POST-006 followers publish confirm), FR-POST-021 (D-31 partner-surface mask + collapsible exposure settings), FR-POST-007 (local draft autosave + resume), FR-POST-010 (delete) lives elsewhere.
+// Unified Create — ONE form for every category (items post + rides / food / housing / time
+// listings). Category picker, then request / offer, then the category's own fields
+// (lib/unifiedCreate config). Items publish through IPostRepository (P0.4-FE).
+// Mapped to: FR-POST-001..006 (FR-POST-001 AC6 categories + remembered choice) (incl. FR-POST-003 visibility + FR-POST-006 followers publish confirm), FR-POST-021 (D-31 partner-surface mask + collapsible exposure settings), FR-POST-007 (local draft autosave + resume), FR-POST-010 (delete) lives elsewhere.
 // FR-AUTH-015 soft-gate preserved from #12 — Publish wraps publish.mutate() with requestSoftGate.
 // FR-NOTIF-015 AC1: push pre-prompt fires after first post published.
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { useTheme } from '@kc/ui';
+import { iconSize, useTheme, Text } from '@kc/ui';
 import { Screen } from '../../src/components/ui/Screen';
 import { useAuthStore } from '../../src/store/authStore';
 import { useSoftGate } from '../../src/components/OnboardingSoftGate';
@@ -26,9 +28,14 @@ import { NotifyModal } from '../../src/components/NotifyModal';
 import { ConfirmActionModal } from '../../src/components/post/ConfirmActionModal';
 import { DraftResumeModal } from '../../src/components/post/DraftResumeModal';
 import { getUserRepo } from '../../src/services/userComposition';
-import { useCreatePostStyles } from './create.styles';
+import { useCreatePostStyles } from '../../src/screens/tabs/create.styles';
 import { useCreatePostPublish } from '../../src/hooks/useCreatePostPublish';
 import { CreatePostFormScrollContent } from '../../src/components/CreatePostForm/CreatePostFormScrollContent';
+import { useUnifiedCreateCategory } from '../../src/hooks/useUnifiedCreateCategory';
+import { WorldCreateForm } from '../../src/components/CreatePostForm/WorldCreateForm';
+import { CreateFormHeaderPublishAction } from '../../src/components/CreatePostForm/CreateFormHeaderPublishAction';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 export default function CreatePostScreen() {
   const { t } = useTranslation();
@@ -50,6 +57,8 @@ export default function CreatePostScreen() {
   } = useCreatePostAddressPrefill(ownerId);
 
   const form = useCreatePostFormState();
+  const { activeCategory, direction, header, ready, selectCategory } = useUnifiedCreateCategory(ownerId, form.type, form.setType);
+
 
   const draftHydration = usePostDraftHydration(ownerId);
 
@@ -57,6 +66,7 @@ export default function CreatePostScreen() {
     ownerId,
     isHydrating: draftHydration.status.phase === 'pending',
     isResumePending: draftHydration.status.phase === 'ready',
+    isPostCategory: activeCategory.engine === 'post',
     type: form.type,
     title: form.title,
     description: form.description,
@@ -93,6 +103,13 @@ export default function CreatePostScreen() {
   const [batchId] = useState(() => newUploadBatchId());
   const [notify, setNotify] = useState<{ title: string; message: string } | null>(null);
   const [missingDraftImagesNotified, setMissingDraftImagesNotified] = useState(false);
+  const [listingPublishAction, setListingPublishAction] = useState<(() => void) | null>(null);
+  const [listingPublishLoading, setListingPublishLoading] = useState(false);
+  const setListingPublishState = useCallback((action: (() => void) | null, loading: boolean) => {
+    // Wrap: a bare function would be treated as a state updater and invoked.
+    setListingPublishAction(() => action);
+    setListingPublishLoading(loading);
+  }, []);
 
   const isGive = form.type === 'Give';
 
@@ -152,6 +169,8 @@ export default function CreatePostScreen() {
   const handleDraftContinue = () => {
     const hydrated = draftHydration.continueWithDraft();
     if (!hydrated) return;
+    // Drafts are items posts (FR-POST-007); resuming one opens the items form.
+    selectCategory('items');
     form.applyDraft(hydrated);
     if (hydrated.missingCount > 0 && !missingDraftImagesNotified) {
       setMissingDraftImagesNotified(true);
@@ -163,26 +182,32 @@ export default function CreatePostScreen() {
     <Screen blobs="off" testID="create-post-screen">
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.headerClose}>
-          <Ionicons name="close" size={24} color={colors.textPrimary} />
+          <Ionicons name="close" size={iconSize['2xl']} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('tabs.newPost')}</Text>
-        <TouchableOpacity
-          style={styles.publishBtn}
-          onPress={tryPublish}
-          disabled={isPublishing}
-          accessibilityState={{ disabled: isPublishing }}
-        >
-          {isPublishing ? (
-            <ActivityIndicator color={colors.textInverse} size="small" />
-          ) : (
-            <Text style={styles.publishBtnText}>{t('post.publish')}</Text>
-          )}
-        </TouchableOpacity>
+        <CreateFormHeaderPublishAction
+          onPress={activeCategory.engine === 'post' ? tryPublish : () => listingPublishAction?.()}
+          loading={activeCategory.engine === 'post' ? isPublishing : listingPublishLoading}
+          disabled={activeCategory.engine !== 'post' && listingPublishAction === null}
+        />
       </View>
 
+      {!ready ? (
+        <ActivityIndicator style={styles.scroll} testID="create-preferences-loading" />
+      ) : activeCategory.engine !== 'post' ? (
+        <WorldCreateForm
+          category={activeCategory}
+          header={header}
+          direction={direction}
+          title={form.title}
+          onTitleChange={form.setTitle}
+          summary={form.description}
+          onSummaryChange={form.setDescription}
+          onPublishActionChange={setListingPublishState}
+        />
+      ) : (
       <CreatePostFormScrollContent
-        type={form.type}
-        onTypeChange={form.setType}
+        header={header}
         title={form.title}
         onTitleChange={form.setTitle}
         city={city}
@@ -219,6 +244,7 @@ export default function CreatePostScreen() {
         onRemovePhoto={handleRemove}
         onPublishPress={tryPublish}
       />
+      )}
 
       <DraftResumeModal
         visible={draftHydration.status.phase === 'ready'}

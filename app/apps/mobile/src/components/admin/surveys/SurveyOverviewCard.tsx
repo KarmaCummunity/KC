@@ -1,10 +1,10 @@
 // app/apps/mobile/src/components/admin/surveys/SurveyOverviewCard.tsx
 // FR-ADMIN-021 — selectable survey summary card (counts + last response).
 import type { ReactElement } from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Pressable, View } from 'react-native';
+import { MirroredIcon } from '../../ui/MirroredIcon';
 import type { AdminSurveyOverviewItem } from '@kc/domain';
-import { makeUseStyles, shadow, useTheme } from '@kc/ui';
+import { iconSize, makeUseStyles, radius, shadow, spacing, Text, typography, useTheme } from '@kc/ui';
 import { textAlignStart, rowDirectionStart } from '../../../lib/rtlLayout';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
@@ -52,7 +52,7 @@ export function SurveyOverviewCard({ item, onPress }: SurveyOverviewCardProps): 
         <Text style={styles.footerText} numberOfLines={1}>
           {last ? t.lastResponse(last) : t.noResponses}
         </Text>
-        <Ionicons name="chevron-back" size={18} color={colors.textSecondary} />
+        <MirroredIcon name="chevron-forward" size={iconSize.md} color={colors.textSecondary} />
       </View>
     </Pressable>
   );
@@ -73,32 +73,32 @@ const useStyles = makeUseStyles(({ colors }) => ({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 18,
-    padding: 16,
-    gap: 14,
+    borderRadius: radius.lg,
+    padding: spacing.base,
+    gap: spacing.md,
     ...shadow.card,
   },
   pressed: { opacity: 0.7 },
-  top: { flexDirection: rowDirectionStart, alignItems: 'flex-start', gap: 8 },
-  title: { flex: 1, fontSize: 17, fontWeight: '800', color: colors.textPrimary, textAlign: textAlignStart() },
+  top: { flexDirection: rowDirectionStart, alignItems: 'flex-start', gap: spacing.sm },
+  title: { flex: 1, fontSize: typography.bodyLarge.fontSize, ...typography.extraBold, color: colors.textPrimary, textAlign: textAlignStart() },
   inactiveBadge: {
     backgroundColor: colors.skeleton,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
-  inactiveText: { fontSize: 10, fontWeight: '700', color: colors.textSecondary },
-  metrics: { flexDirection: rowDirectionStart, gap: 10 },
+  inactiveText: { fontSize: typography.caption.fontSize, ...typography.bold, color: colors.textSecondary },
+  metrics: { flexDirection: rowDirectionStart, gap: spacing.sm },
   metric: {
     flex: 1,
     backgroundColor: colors.background,
-    borderRadius: 12,
-    paddingVertical: 10,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
     alignItems: 'center',
-    gap: 2,
+    gap: spacing.xs,
   },
-  metricValue: { fontSize: 20, fontWeight: '800', color: colors.textPrimary },
-  metricLabel: { fontSize: 11, fontWeight: '600', color: colors.textSecondary },
+  metricValue: { fontSize: typography.h3.fontSize, ...typography.extraBold, color: colors.textPrimary },
+  metricLabel: { fontSize: typography.caption.fontSize, ...typography.semiBold, color: colors.textSecondary },
   footer: { flexDirection: rowDirectionStart, alignItems: 'center', justifyContent: 'space-between' },
-  footerText: { flex: 1, fontSize: 12, color: colors.textSecondary, textAlign: textAlignStart() },
+  footerText: { flex: 1, fontSize: typography.bodySmall.fontSize, color: colors.textSecondary, textAlign: textAlignStart() },
 }));

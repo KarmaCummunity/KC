@@ -2,11 +2,13 @@
 // Lives at the top level (outside the (auth) group) so a signed-out user can land
 // on it directly after the gate hook signs them out.
 import React from 'react';
-import { Linking, Platform, Pressable, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { makeUseStyles, spacing, typography } from '@kc/ui';
+import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
 
 const SUPPORT_EMAIL = 'karmacommunity2.0@gmail.com';
 
@@ -65,7 +67,7 @@ export default function AccountBlockedScreen() {
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   container: {
     flex: 1,
     padding: spacing.xl,

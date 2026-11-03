@@ -2,7 +2,6 @@ import React from 'react';
 import {
   Modal,
   View,
-  Text,
   Pressable,
   Platform,
   StyleSheet,
@@ -11,7 +10,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, typography, spacing, radius, useTheme } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, useTheme, Text } from '@kc/ui';
 import { aboutRtlText, aboutRtlRow } from './aboutWebRtlStyle';
 import { isLayoutRtl } from '../../lib/rtlLayout';
 import type { AboutSectionId } from './aboutSectionModel';

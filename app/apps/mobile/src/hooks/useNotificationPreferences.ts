@@ -1,6 +1,7 @@
 // Notification preferences (FR-NOTIF-014 / 0256): shared by Settings → notifications and feed settings.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { NotificationPreferences } from '@kc/domain';
+import { applyNotificationPreferencesPatch, type NotificationPreferencesPatch } from '@kc/application';
 import { useAuthStore } from '../store/authStore';
 import { container } from '../lib/container';
 
@@ -15,12 +16,6 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
   critical: true,
   social: true,
   quietHours: DEFAULT_QUIET_HOURS,
-};
-
-type PrefsPatch = {
-  critical?: boolean;
-  social?: boolean;
-  quietHours?: NotificationPreferences['quietHours'];
 };
 
 export function useNotificationPreferences() {
@@ -39,15 +34,14 @@ export function useNotificationPreferences() {
   });
 
   const mutation = useMutation({
-    mutationFn: (partial: PrefsPatch) =>
+    mutationFn: (partial: NotificationPreferencesPatch) =>
       container.updateNotificationPreferences.execute({ userId: userId!, ...partial }),
     onMutate: async (partial) => {
       await qc.cancelQueries({ queryKey });
       const previous = qc.getQueryData<NotificationPreferences>(queryKey);
-      qc.setQueryData<NotificationPreferences>(queryKey, (old) => ({
-        ...(old ?? DEFAULT_NOTIFICATION_PREFS),
-        ...partial,
-      }));
+      qc.setQueryData<NotificationPreferences>(queryKey, (old) =>
+        applyNotificationPreferencesPatch(old ?? DEFAULT_NOTIFICATION_PREFS, partial),
+      );
       return { previous };
     },
     onError: (_err, _vars, ctx) => {

@@ -1,10 +1,11 @@
 // KC#867 — reactions + comments on post detail (native-feeling tap targets).
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { hapticLightTap, hapticSuccess } from '../../lib/haptics';
-import { makeUseStyles, spacing, typography, radius } from '@kc/ui';
+import { makeUseStyles, spacing, typography, radius, Text } from '@kc/ui';
+import { TextField } from '../ui/TextField';
 import type { PostReactionType } from '@kc/infrastructure-supabase';
 import { container } from '../../lib/container';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
@@ -103,14 +104,13 @@ export function PostEngagementSection({ postId, viewerId }: Props) {
           {c.body}
         </Text>
       ))}
-      <TextInput
-        style={styles.input}
+      <TextField
+        label={t('post.engagement.commentPlaceholder')}
         value={draft}
         onChangeText={setDraft}
         placeholder={t('post.engagement.commentPlaceholder')}
         multiline
         maxLength={2000}
-        textAlign={rtlTextAlignStart}
       />
       <TouchableOpacity
         style={[styles.sendBtn, draft.trim().length === 0 ? styles.sendBtnDisabled : null]}
@@ -145,20 +145,10 @@ const useStyles = makeUseStyles(({ colors }) => ({
   },
   reactionChipOn: { backgroundColor: colors.primaryLight },
   reactionLabel: { ...typography.caption, color: colors.textSecondary },
-  reactionLabelOn: { color: colors.primary, fontWeight: '600' },
+  reactionLabelOn: { color: colors.primary, ...typography.semiBold },
   spinner: { marginStart: spacing.xs },
   meta: { ...typography.caption, color: colors.textSecondary, marginVertical: spacing.sm, textAlign: rtlTextAlignStart },
   commentLine: { ...typography.body, color: colors.textPrimary, marginBottom: spacing.xs, textAlign: rtlTextAlignStart },
-  input: {
-    ...typography.body,
-    minHeight: 44,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.sm,
-    color: colors.textPrimary,
-    backgroundColor: colors.surface,
-  },
   sendBtn: {
     marginTop: spacing.sm,
     alignSelf: 'flex-start',
@@ -168,5 +158,5 @@ const useStyles = makeUseStyles(({ colors }) => ({
     borderRadius: radius.md,
   },
   sendBtnDisabled: { opacity: 0.45 },
-  sendBtnText: { ...typography.body, color: colors.textInverse, fontWeight: '600' },
+  sendBtnText: { ...typography.body, color: colors.textInverse, ...typography.semiBold },
 }));

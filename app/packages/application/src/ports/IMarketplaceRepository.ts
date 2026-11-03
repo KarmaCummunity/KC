@@ -2,9 +2,12 @@ import type {
   ExternalBodyOption,
   GivingHandoffSnapshot,
   ListingKindOption,
+  WorldSubcategory,
   MarketplaceBrowseRow,
   MarketplaceListingDetail,
   MarketplaceMapCluster,
+  MarketplaceMapPin,
+  MapBounds,
   MarketplaceSimilarListing,
   MyGivingHandoffRow,
   MyListingRow,
@@ -19,6 +22,8 @@ export interface MarketplaceBrowseFilters {
   lat?: number | null;
   lng?: number | null;
   radiusKm?: number | null;
+  /** World subcategory (`categories.category_id`, items / food); null = the whole world. KC#1102. */
+  categoryId?: string | null;
   limit?: number;
   /** @deprecated use `cursor` (keyset); honoured by the server only without a cursor. */
   offset?: number;
@@ -72,10 +77,14 @@ export interface IMarketplaceRepository {
     neLng: number;
     worldSlug?: string | null;
   }): Promise<MarketplaceMapCluster[]>;
+  /** Individual approximate pins in a viewport (client clusters them). */
+  mapPins(bounds: MapBounds & { worldSlug?: string | null; limit?: number }): Promise<MarketplaceMapPin[]>;
   getListingCard(listingId: string): Promise<MarketplaceBrowseRow | null>;
   getListingDetail(listingId: string): Promise<MarketplaceListingDetail | null>;
   similarListings(listingId: string, limit?: number): Promise<MarketplaceSimilarListing[]>;
   listKindsForWorld(worldSlug: string): Promise<ListingKindOption[]>;
+  /** Active subcategories of a giving world, in display order (KC#1296). */
+  listWorldSubcategories(worldSlug: string): Promise<WorldSubcategory[]>;
   /** Active + verified organisations for a routed world (search_external_bodies). */
   searchExternalBodies(worldSlug: string, query?: string | null, limit?: number): Promise<ExternalBodyOption[]>;
   createListing(input: {
@@ -91,6 +100,8 @@ export interface IMarketplaceRepository {
     mediaPaths?: string[];
     /** Required for routed worlds (medical / animals / environment). */
     externalBodyId?: string | null;
+    /** The giver's world subcategory; must belong to the listing's world (0462). */
+    categoryId?: string | null;
     urgencyLevel?: number;
     availabilityStatus?: string;
   }): Promise<string>;
@@ -119,6 +130,12 @@ export interface IMarketplaceRepository {
   resumeMyListing(listingId: string): Promise<void>;
   fulfillMyListing(listingId: string): Promise<void>;
   deleteMyListing(listingId: string): Promise<void>;
+  /**
+   * Appends already-uploaded photos (storage paths under the owner's folder) to the owner's
+   * listing, open, paused or closed; existing photos are never replaced (ten at most).
+   * Resolves with the number added. Spec 07 §7.1 "Owner management".
+   */
+  addMyListingMedia(listingId: string, mediaPaths: readonly string[]): Promise<number>;
   getListingHandoff(listingId: string): Promise<GivingHandoffSnapshot | null>;
   listMyGivingHandoffs(limit?: number): Promise<MyGivingHandoffRow[]>;
   reserveItemGiving(

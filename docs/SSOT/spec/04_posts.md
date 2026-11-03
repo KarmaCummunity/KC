@@ -37,8 +37,20 @@ Tapping the "+" tab opens one form whose top control toggles between `🎁 Give`
 - AC1. The toggle is the most prominent control on the screen and persists the chosen mode locally so the next visit defaults to the previous selection.
 - AC2. Switching the toggle preserves shared fields (title, description, category, address, visibility) and clears type-specific fields (item condition, urgency).
 - AC3. The form is the same screen used for editing an existing post (`FR-POST-008`); the route distinguishes them.
+- AC4. *(KC#1296, 2026-10-30)* For the items and food giving worlds, the listing form offers an optional **world subcategory** (items → books, food → bakery…, `public.categories` children of the world). The choice is stored as the listing's `category_id`; a subcategory of another world is rejected (`category_world_mismatch`, migration `0462`). Matching uses it for its category score.
+- AC5. *(KC#1101 / KC#1109, D-206, 2026-10-31)* A published open listing of a feed-mirrored world (`worlds.feed_mirror`: items, food) **appears in the main feed** through one mirror row in `posts` (`posts.listing_id`, migration `0466`). The mirror follows the listing's title, summary, subcategory, condition, photos (`media_assets.bucket = 'listing-images'`), privacy, status and deletion; opening it from the feed opens the listing detail. Mirrors do not count toward the open-posts cap (FR-POST-011) and are not listed under "my posts". "Share to feed" reuses the same mirror for every world and is hidden once the listing is mirrored.
+- AC6. *(2026-11-01, `D-207`)* **Category first, then request / offer, then the category's own fields.** The top of the form is a category picker with one category per giving world (`D100`, `D107`), in the hub's order: **חפצים** (items), **אוכל** (food), **טרמפים** (rides), **זמן** (time), **כסף** (money), **דיור** (housing), **ידע** (knowledge), **רפואה** (medical), **בעלי חיים** (animals), **דמוקרטיה** (democracy), **תעסוקה** (employment), **אתגרים** (challenges); there is no "general" category. Under it sits the request / offer toggle (*לבקש* / *להציע*) — hidden for the link-only worlds below — and under that only the fields of the chosen category and direction (product book `docs/spec/07` §7.2):
+  - *Items* — the post form of AC1–AC3 (photos, title, address + display level, item subcategory, condition + estimated value on offer, urgency on request, description, exposure). Items posts reach the items world through the posts → listings sync (migration `0243`).
+  - *Rides* — the rides section of `docs/spec/05` §5.3 (D71, D75): origin, destination and up to 3 meeting points from the official places catalog, departure with shortcuts (required), estimated end, seats on offer, the remembered route / "publish again" seed; plus the cost model (free / expense share, capped) on offer and passengers + luggage on request.
+  - *Food* — offer: food type + expiry (both required), allergens, kosher, pickup / delivery, optional food subcategory; request: household size, dietary needs.
+  - *Housing* — offer: place type, guests, house rules; request: party size. Publishing needs a verified identity (D30, `world_permission_denied`).
+  - *Time* — offer: duration; request: support type (companionship, practical help, escort — emotional support goes to a hotline, §5.4) + duration.
+  - *Money, knowledge, medical, animals, democracy, employment, challenges* (worlds with no feed yet) — the form is **add a link**: URL, display name, optional description, written to that world's community links (`FR-DONATE-008`); a new link is reviewed before it goes live (`D9`) and its submitter sees it as pending meanwhile. After a successful add the form opens the world's screen.
+  - Every listing category also has photos (optional), title, description and city. The kind is derived from the direction (one kind per direction per world), so members never pick a "listing type"; internal schema keys (linked ids, org slugs) are never shown.
+  - The form reopens on the category the member last used (per user, on the device), in the direction (offer / request) last used **in that category** — items may reopen as an offer while rides reopen as a request; a `?category=` deep link wins over the remembered category but keeps that category's remembered direction. The "+" tab opens the form on the giving world on screen (`FR-FEED-020` AC4). A missing required field blocks publish with a message naming it. Date fields open in a sheet (iOS) or the system dialogs (Android) — never an inline native picker (TestFlight 1.6.x crash).
+- AC7. *(KC#1472)* Every category and direction shows the same compact kit Publish action in the screen header and a Publish action at the bottom. Both actions use the category's single submit path, validation, disabled and loading states; repeated taps while a publish is in progress start at most one submission. The header action works in RTL and web.
 
-**Related.** Screens: 2.4 · Domain: `Post.type`, `Post.status`.
+**Related.** Screens: 2.4 · Domain: `Post.type`, `Post.status`, `WorldSubcategory` · Code: `app/(tabs)/create.tsx`, `src/lib/unifiedCreate/`, `src/components/CreatePostForm/`.
 
 ---
 
@@ -251,6 +263,8 @@ A user cannot have more than 20 posts in `open` status simultaneously, including
 
 ## FR-POST-012 — Post lifecycle states
 
+> ⚠️ **Superseded by the project book** — D21 (expiry per post type) and S1 (state machine incl. `hidden_pending_review`). Binding text: `docs/spec/07_cross_cutting_systems.md` §7.1. Evidence and status: `docs/spec/95_reconciliation.md` §2. The text below is kept as history (D35).
+
 **Description.**
 A post moves through a finite state machine.
 
@@ -275,6 +289,8 @@ A post moves through a finite state machine.
 ---
 
 ## FR-POST-013 — Post expiry (300 days)
+
+> ⚠️ **Superseded by the project book** — D21 — expiry per post type; items and all requests never expire (gap G32). Binding text: `docs/spec/07_cross_cutting_systems.md` §7.1. Evidence and status: `docs/spec/95_reconciliation.md` §2. The text below is kept as history (D35).
 
 **Description.**
 A post that has remained `open` for 300 days transitions to `expired` automatically.
@@ -478,6 +494,8 @@ A signed-in user may bookmark any post they can currently read (their own or ano
 ## FR-POST-023 — Share post via link with image preview
 
 > **Status:** 🟡 In progress — ships under BACKLOG P2.33. Replaces the v0.9–v0.12 architecture (Supabase Edge Function) with a Hono web server on the same Railway service that serves the SPA — one canonical URL on `karma-community-kc.com`.
+>
+> **Hosting note (2026-10-31, historical context for AC4–AC5):** Railway is retired; the web app now ships as a static export on Cloudflare Pages (`deploy-web.yml`), which does not run the Hono server in `app/apps/mobile/web-server/`. AC4's crawler OG card is therefore not served until the route is ported (`TD-234`); AC5 holds through the Pages SPA fallback.
 
 **Description.**
 A signed-in viewer of a `Public` post that is `open` or `closed_delivered` may share a link to that post from the post-detail screen. The link is browsable to anyone (signed-in or not); social-media crawlers see an Open Graph card with the first post image, the post title, and the description; non-authenticated humans landing in the app are routed to the sign-in screen and, after sign-in, deep-linked back to the original post.
@@ -521,6 +539,7 @@ A signed-in viewer of a `Public` post that is `open` or `closed_delivered` may s
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
+| 0.16 | 2026-11-01 | `FR-POST-001` AC6 — five create categories (items, rides, food, housing, time) with the last used category + direction remembered; request / offer under the picker; curated per-category fields; no inline native date picker or slider (TestFlight crash). |
 | 0.15 | 2026-05-24 | `FR-POST-023` AC2 — share body adds `*מפרסם:*` (owner identity per `postOwnerDisplayLabel`) and `*שותף/ה:*` on closed posts with a marked recipient (`postRecipientDisplayLabel`). |
 | 0.15 | 2026-05-28 | `FR-POST-021` — `upsert_post_actor_identity` RPC (`0160`) replaces PostgREST `.upsert()` after TD-85 column-scoped UPDATE grants (fixes 403 on hide / exposure sync). |
 | 0.14 | 2026-05-24 | `FR-POST-021` AC3/AC4 + `FR-POST-009` AC5 — dual-surface closed-post privacy (`D-39`). Hidden-screen routing now keys on effective participant `surface_visibility` (migration `0107`); `posts.visibility` fan-out removed from the closed-post Hide control. Counterparty always sees the actor's full identity on post chrome (`D-26` legacy owner-OnlyMe counterparty mask removed). `surface_visibility = OnlyMe` always implies third-party mask on the partner's surface even when `hide_from_counterparty = false`. Migration `0106` (recipients RLS for third-party post detail) shipped in the same set. |

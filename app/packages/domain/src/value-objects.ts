@@ -4,6 +4,7 @@
 // ─────────────────────────────────────────────
 
 import { ValidationError } from './errors';
+import type { NotificationKind } from './notifications';
 
 // ── Authentication ────────────────────────────
 
@@ -37,7 +38,9 @@ export type PostStatus =
   | 'closed_delivered'
   | 'deleted_no_recipient'
   | 'expired'
-  | 'removed_admin';
+  | 'removed_admin'
+  // D33/D61 — 3 reports hide a post until an admin restores or removes it.
+  | 'hidden_pending_review';
 
 export type PostVisibility = 'Public' | 'FollowersOnly' | 'OnlyMe';
 
@@ -137,10 +140,17 @@ export interface QuietHoursPreferences {
   timezone: string;
 }
 
+/**
+ * Per-type opt-outs (spec §7.11 "per-type preferences"). A kind is enabled unless it is
+ * explicitly `false`; missing keys keep the category default. Stored under `kinds` (0256).
+ */
+export type NotificationKindPreferences = Partial<Record<NotificationKind, boolean>>;
+
 export interface NotificationPreferences {
   critical: boolean;
   social: boolean;
   quietHours?: QuietHoursPreferences;
+  kinds?: NotificationKindPreferences;
 }
 
 // ── Donations ─────────────────────────────────
@@ -154,10 +164,14 @@ export type DonationCategorySlug =
   | 'transport'
   | 'knowledge'
   | 'animals'
-  | 'medical';
+  | 'medical'
+  | 'democracy'
+  | 'employment'
+  | 'challenges';
 
 export const DONATION_CATEGORY_SLUGS: readonly DonationCategorySlug[] = [
   'time', 'money', 'food', 'housing', 'transport', 'knowledge', 'animals', 'medical',
+  'democracy', 'employment', 'challenges',
 ] as const;
 
 // Mirrors the CHECK constraints in 0014_donation_categories_and_links.sql.

@@ -1,0 +1,116 @@
+# 90 — Decisions log
+
+Index only — the binding wording lives in the linked spec files. All decided by Nave (PM), 2026-10. `*` = needs further depth. A new row takes a `D` placeholder ID, numbered on merge (`CLAUDE.md` §4 "New registry IDs").
+
+| # | Decision | Lives in | Status |
+|---|---|---|---|
+| D1 | One list of giving worlds | 04, 05 | Approved; extended D39–D44, reshaped D45 |
+| D2 | One Post entity; no "marketplace listings" | 07.1, 07.12 | Approved |
+| D3 | All worlds always shown; inactive = "not active yet" | 04, 14 | Approved |
+| D4 | Money only to orgs / to KC; never between users | 05.5, 08 | Approved |
+| D5 | Main feed + feed per world | 07.3 | Approved |
+| D6* | Uniform form, card and detail screen | 07.2, 07.4 | Needs depth |
+| D7 | Notifications screen | 07.11 | Approved |
+| D8 | Seed only in kc-dev; TestFlight to a clean environment | architecture | Pending check |
+| D9 | Org link requires KC admin approval | 08, 12 | Approved; implemented `0546` (PM 2026-11-03) |
+| D10 | Notify on good match / saved filter | 07.3, 07.11 | Approved |
+| D11 | Closing button per world | 07.5 | Approved |
+| D12 | Karma points menu | 07.6 | Approved |
+| D13 | One chat per pair, post pinned | 07.8 | Existing |
+| D14 | Profile without "marketplace" tab | 07.12 | Approved |
+| D15 | Two-sided rating | 07.7 | Approved |
+| D16 | Anonymity both ways; everything is a Post subtype | 07.13 | Approved |
+| D17 | Closing flow per post type | 07.5 | Approved |
+| D18 | No "app creation/design" world; item subcategories | 05.2 | Approved; "challenges as world" replaced by D43 |
+| D19 | One post table; ride = extension; handoff = closing stage | 07.1, architecture | Approved |
+| D20 | Donation to KC via Grow; JGive vision; section 46 | 05.5, 08 | Approved |
+| D21 | Expiry per post type + relevance reminder | 07.1 | Approved |
+| D22 | Any user offers volunteering; affiliation grants permissions | 07.10, 08 | Approved |
+| D23 | Verification shown, not blocking | 07.14 | Approved |
+| D24 | Users don't see ratings; trust engine | 07.7, 07.14 | Approved |
+| D25 | Likes & comments incl. on comments | 07.9 | Approved |
+| D26 | Rich notifications like IG/FB/WhatsApp | 07.11 | Approved |
+| D27 | Full user control of sort; default = recommendation engine | 07.3 | Approved |
+| D28 | Form per type; photo required only for food offer | 07.2 | Approved |
+| D29 | Karma visible to owner and main admin; values in config | 07.6 | Approved |
+| D30 | Verification exceptions: housing & medical | 05.6, 06, 07.14 | Approved |
+| D31 | Event = org post type | 08 | Approved |
+| D32 | Automatic volunteering karma; hours by affiliation | 07.10 | Approved |
+| D33 | 3 reports on post / 5 on user | 07.15 | Approved |
+| D34 | Friends/Everyone toggle, TikTok style | 07.3 | Approved |
+| D35 | The Hebrew project-book page is the single source of truth | README | Approved |
+| D36 | Every world = world hub; one infra + WorldHubConfig | 04 | Approved |
+| D37 | Cooperate with all nonprofits; KC = community layer | 01, 12 | Approved |
+| D38 | Import the WhatsApp market (rides & items) via bots & chat export | 13 | Approved |
+| D39 | Elderly & loneliness | 06 | Approved; now a domain (D45) |
+| D40 | Rights inside knowledge; democracy; iron constitution & handover; GeoPoll | 05.7, 06, 11 | Approved |
+| D41 | Non-commercial philanthropic job board | 06 | Approved |
+| D42 | Emergency mode by region & world, in levels | 09 | Approved |
+| D43 | Challenges = cross-cutting layer, personal & group, with karma | 10 | Approved; engine kept, challenges also a world since D100 |
+| D44 | Sport, science & tech, history & heritage; registrar mapping | 04, 06 | Approved; became domains in D45 |
+| D45 | Two-layer model: 8 giving worlds + internal domains; one type + one domain per post; domain not on card; feed = giving marketplace; no religion | 04, 05, 06, 07 | Superseded by D100 (no-religion rule kept) |
+| D46 | One challenge engine, openable from any world and from the challenges layer | 10 | Approved |
+| D47 | GTM: migrate one WhatsApp group at a time (items or rides) | 13 | Approved |
+| D48 | Elderly home visit requires ID verification | 06, 07.14 | Approved |
+| D49 | One verified person one vote; small extra org weight (tentative) | 11 | Approved; weight tentative |
+| D50 | Iron-constitution core — open, later | 11 | Deferred |
+| D51 | General emergency — main admin only; org manager/security officer — inside the org | 09 | Approved |
+| D52 | Every challenge interaction earns karma; community > private, large > small | 07.6, 10 | Approved |
+| D53 | Every registered org is verified; can post jobs & recruit; org verification levels | 08 | Approved |
+| D54 | WhatsApp import consent — stays open | 13, 92 | Open |
+| D55 | Everything free for orgs for now; parallel tool for orgs | 08, 11 | Approved |
+| D56 | Verified official/state body declares emergency within its permissions | 09 | Approved |
+| D57 | Social venture = org; any registered org (incl. private person) may post jobs | 08 | Approved |
+| D58 | Standing goals: spec maintenance, store release + updates, modular scalable code | 00 | Approved |
+| D59 | Items and all requests never expire; instead the owner gets relevance reminders (S3: 14 days after publish, then every 30 days) — answers P5 | 07.1 | Approved (PM 2026-10-30) |
+| D60 | Every world is shown in full. Two kinds: **active** worlds (full in-app flow, e.g. items, rides) and **portal** worlds (links + knowledge + org blocks). Launch flags choose active vs portal; they never hide a world — refines D3, answers Q-1 | 04, 14 | Approved (PM 2026-10-30) |
+| D61 | Moderation: 3 distinct reports on a post → `hidden_pending_review` + admin notification; 5 distinct reporters on a user in 30 days → suspended from actions, can still chat with support — confirms D33/S11, answers Q-2 | 07.15 | Approved (PM 2026-10-30) |
+| D62 | Code follows the spec list: 8 giving worlds + 11 domains (D45). Legacy code worlds map to it (`app_design` removed per D18; `medical`, `animals`, `environment`, `creative`→`culture` become domains). Every world and every domain gets its own screen tree under the Donations tab — answers Q-3 | 04, 05, 06 | Superseded by D100 (screen-per-world kept) |
+| D63 | Listing handoffs award the §7.6 karma values (one closing/karma model, G34); applies from the change on, not retroactively — answers Q-5 | 07.5, 07.6 | Approved (PM 2026-10-30) |
+| D64 | Bit / PayBox links to KC are interim transfer links, not clearing: withdrawn automatically once a licensed one-time clearing page exists | 05.5, 08 | Approved |
+| D65 | Brand = "Karma Community" (HE "קהילת קארמה"), nickname "KC"; design tokens in code are the source of truth, mirrored to Figma and Claude Design; automated brand guardrails in `pnpm test` | 17 | Approved |
+| D66 | Brand font Rubik app-wide (via `@kc/ui` Text/TextInput); AA-compliant light `primary` `#C2410C` (vivid orange for decoration); secondary = logo navy; current `logo.png` is the master | 17 | Approved |
+| D67 | Brand system v2: KC = the platform, the KC org is styled like any org, "קיבוץ קפיטליסטי" never shown; radius scale 4/8/12/16/24; tokens for decoration orange, weights and avatars; guard covers colour, type, radius, spacing and RTL sides, and every file a PR touches must be fully clean; admin = same tokens, denser layout; native follows the OS colour scheme | 17 | Approved (PM 2026-10-30) |
+| D68 | Operational alerts reach the PM as a GitHub issue (assigned → email) and by email now, and by WhatsApp once the WhatsApp channel is live | architecture §5.2 | Approved (PM 2026-10-30) |
+| D69 | Monitoring covers both dev and production; production checks are read-only | architecture §5.2 | Approved (PM 2026-10-30) |
+| D70 | One rides flow: ride offers/requests are posts with a ride extension and bookings use the generic handoff stage; the separate legacy ride screens are retired, their emergency button and cost caps move to the one flow | 05.3 | Approved (PM 2026-10-30) |
+| D71 | Ride places (origin, destination, ≤ 3 meeting points) come only from official catalogs — cities, streets, named junctions & interchanges; no free-text places | 05.3, 07.2 | Approved (PM 2026-10-30) |
+| D72 | Every ride shows its route on the map and every ride place has "navigate" to Waze / Google Maps / Apple Maps | 05.3 | Approved (PM 2026-10-30) |
+| D73 | The driver sees every booking on a ride and approves or declines each; every booking change is an `important` push to the other side | 05.3, 07.11 | Approved (PM 2026-10-30) |
+| D74 | Saved route: follow a route (from → to, optional days & hours) and get notified of new rides along it; urgent rides notifications bypass quiet hours | 05.3, 07.11 | Approved (PM 2026-10-30) |
+| D75 | Rides quick publish (remembered route, time shortcuts, "publish again") and a rides feed of offers + requests sorted by departure, departed rides hidden | 05.3 | Approved (PM 2026-10-30) |
+| D76 | Org finance is a sub-tree of every org's Admin Portal; each org (KC included, as the platform org) keeps its own books; new org-scoped roles `org_treasurer` (write) and `org_accountant` (read + export); moderators keep read-only on KC's books | 08, 03 | Approved (PM 2026-10-30) |
+| D77 | Section 46(a): KC records the org's approval (number, validity, certificate, expiry reminders) and tracks receipts per donation (number, date, 46(a)-eligible flag, file); KC never generates official receipts; KC itself holds no 46(a) approval today, so no tax-credit wording is shown until the status is active | 08 | Approved (PM 2026-10-30) |
+| D78 | Books are single-entry (no double-entry): financial accounts (bank / cash / Bit / Paybox / clearing provider), two-level category tree, calendar fiscal year, budget vs actual, bank reconciliation; ILS only; in-kind giving (items, time, rides) never enters the books | 08 | Approved (PM 2026-10-30) |
+| D79 | Finance data sources: manual entry + CSV import (bank, Bit, Paybox, generic) + automatic mirroring of in-app payments, refunds and payouts into the ledger (payment tables stay the source of truth) | 08 | Approved (PM 2026-10-30) |
+| D80 | "Smart tracking" = computed reminders and queues (missing receipt, unreconciled, failed standing order, 46(a) and proper-management expiry, annual-report deadline, budget overrun) + counterparty-based auto-categorization, with a daily digest notification to treasurers | 08 | Approved (PM 2026-10-30) |
+| D81 | Financial transparency is optional per org and published as frozen yearly snapshots (totals, program vs overhead share, public documents, 46(a) badge) — never live books; donor identities are never public under any setting | 08 | Approved (PM 2026-10-30) |
+| D82* | An organization profile is an extended user profile — its own email identity, posts, followers and public page — plus an org Admin Portal whose finance sub-tree is D76–D81; the profile itself is specified as its own domain later | 08, 03 | Approved (PM 2026-10-30); depth pending |
+| D83 | Admin portal shows the whole management structure as a layered view across every organization: one layer per level of the reporting chain, with no depth limit (inside an org a manager can report to a manager, down to a volunteer manager and a volunteer), on a masked, count-only community base; the main admin sees all orgs, org roles see their own org (D29) | 03 | Approved (PM 2026-10-30) |
+| D84 | A suspended user is a regular community member until an admin decides: suspension hides them nowhere in the management hierarchy and they count in the community; only an admin decision (ban) removes them — refines D61 for the hierarchy and its counts | 03, 07.15 | Approved (PM 2026-10-30) |
+| D85 | Admin-portal permissions are role-derived only: each role carries a fixed set of permissions, a person's permissions are the union of their roles', and changing what someone may do means changing their role — no per-person permission overrides; the person screen lists what each role allows | 03 | Approved (PM 2026-10-30) |
+| D86 | Every organization runs its own team in the admin portal: its admins and managers (org admin, org manager, volunteer manager, operations manager) enter the team area of their own organization only, see their org's hierarchy and grant, change, move and revoke roles below them within their authority; the main admin sees and manages every organization (refines D29 for team management) | 03 | Approved (PM 2026-10-30) |
+| D87 | Brand guard covers components, icons, layers and shadows: new tokens `iconSize` (14/16/18/20/22/24), `zIndex` (base 0 · raised 1 · overlay 2 · floating 20 · toast 9999) and `shadow.glow`, each matching the values screens already used most; the ratchet adds icon-size, z-index, shadow, raw `TextInput` (use `TextField`) and raw `Modal` (frozen until the shared modal, #1284); ESLint allows only Ionicons | 17 | Approved (PM 2026-10-30) |
+| D88 | Organization profile = a public profile like a person's, adapted to organizations (logo, cover, what/where, website & social links, contact, badges, posts, followers; later team, activity, impact, transparency). Behind it an organization account: its own sign-in identity **and** members with roles who act in its name from their own accounts via a profile switcher; a private person registering as an org (D57) keeps one account linked to both | 08, 07.12 | Approved (PM 2026-10-30) |
+| D89 | Any non-profit organization may register through a self-service wizard + KC admin approval; a registration number is **optional** (declared non-profit status + terms are mandatory); Registrar lookup only enriches when a number is given | 08 | Approved (PM 2026-10-30) |
+| D90 | An organization profile is always public (no private mode, follows need no approval); an organization may follow people and organizations | 08, 07.13 | Approved (PM 2026-10-30) |
+| D91 | Organizations publish in every world with no post cap; a member may post in the organization's name (card shows the org, detail shows the member only by opt-in). No separate directory screen: Search gets an "ארגונים" parent filter whose sub-filters appear only while it is on; hub directories reuse it with the hub's field pre-set | 08, 07.3 | Approved (PM 2026-10-30) |
+| D92 | No custom page layouts or paid design for organizations; one uniform profile template (PRD V2 §3.1.5 stays long-horizon vision) | 08 | Approved (PM 2026-10-30) |
+| D93 | Verbal brand: the Founder-approved master narrative §7.4/§15/§16 voice rules become spec 17 §7 (one voice, dugri register, ktiv maleh, jargon ban, locked key slogan "לתת — זה גם לקבל."); gender-neutral copy uses the infinitive ("ללחוץ", "יש ללחוץ"); CTAs ≤ 4 words; English follows the same voice; enforced by the copy-voice guard in `pnpm test` (ratchet + touched-file rule), which makes FR-RESP-006 AC19/AC20 checkable. **Refines D67** (PM 2026-10-30): "קיבוץ קפיטליסטי" may appear subtly on the About screen and in its FAQ only; it stays forbidden everywhere else | 17 | Approved (PM 2026-10-30) |
+| D94 | Destructive actions (delete, block, remove) use a red `DangerButton` (`colors.error` fill, `textInverse` label, AA in both palettes); everything else keeps the brand-orange primary | 17 | Approved (PM 2026-11-01) |
+| D95 | Rides urgency: booking notifications always bypass quiet hours; a saved-route alert bypasses them only when the ride departs before the quiet window ends; saved-route alerts are capped at 10 per user per day, separate from the 3/day match cap — approves S44 | 05.3, 07.11 | Approved (PM 2026-11-01) |
+| D96 | A ride booking the driver has not approved expires 12 hours after it was made or at departure, whichever is earlier, and frees its seats — approves S45 | 05.3 | Approved (PM 2026-11-01) |
+| D97 | Rides quick publish defaults: time shortcuts "in 30 min", "in 1 hour", "tomorrow 07:00", "other"; seats default 3 (1–8); estimated end = departure + straight-line distance at 60 km/h + 15 min, rounded up to 15 min, editable — approves S46 | 05.3 | Approved (PM 2026-11-01) |
+| D98 | Junctions catalog: Ministry of Transport junction & interchange names (data.gov.il, CC BY) imported by a versioned migration, existing rows only, credited in About, refreshed by script and never fetched at runtime — approves S47 | 05.3 | Approved (PM 2026-11-01) |
+| D99 | PM delegates visual and UX design calls within the brand system to the lead designer (agent); explicit PM decisions stay binding; every call is recorded in spec 17 | 17 | Approved (PM 2026-11-01) |
+| D100 | One list of giving worlds, no domains layer and no domain hubs: items, food, transport (rides as sub-category), time (elderly & loneliness, sport as sub-categories), money, housing, knowledge (science & technology, history & heritage, culture & art, spirituality & philosophy as sub-categories), medical (verified bodies only publish, no medical advice), animals (everyone may publish and take), democracy (empty for now), employment (give = post a job, take = apply; only verified organizations that may legally employ post jobs), challenges (give = open, take = join; community and personal, every anonymity level). Environment and experiences are removed and their content moves to items and time. Supersedes D45, D62, S37–S39 | 04, 05, 06, 10 | Approved (PM 2026-11-01, refined 2026-11-02) |
+| D101 | A post has one primary world and may be marked for additional worlds; stored once, so edit / pause / cancel apply to every feed; a world's feed shows posts where that world is primary or additional (e.g. recurring volunteering in time and employment; a private lesson in knowledge and time) | 04, 07.2, 07.3 | Approved (PM 2026-11-02) |
+| D102 | The launch wedge is items + rides + food with matching (rides and items first); the rides world flag is on and the rides flow is the WhatsApp ride-group replacement of D70–D75; other worlds open as portals | 14, 96 | Approved (PM 2026-11-01) |
+| D103 | Recurring rides on the one rides flow (#1413): a series = weekdays + departure time (Israel) + optional end date over the ride's details; the server publishes one ordinary ride per upcoming day, 30 days ahead; only the soonest occurrence reaches the main feed, the rides feed folds a series' dates beyond tomorrow into one row, an occurrence lists the series' other dates, and a route follower is alerted once per series; pause / cancel remove upcoming unbooked occurrences while a booked one stays an agreed ride; cancel is terminal; the route is not editable (publish a new series) | 05.3 | Approved (PM 2026-11-02) |
+| D104 | Owner management by status: open — edit / pause / mark delivered / delete; paused — hidden from everyone but the owner, resume unless expired; delivered — hard fields locked, photos may only be added (≤ 10; video later); an active reservation blocks pause / mark delivered / delete; a delivered post with a completed handoff cannot be deleted | 07.1 | Approved (PM 2026-11-03) |
+| D105 | User blocking ships with the first store release (Apple App Review): block from profile / post / chat, unblock from a Blocked Users list; a blocked pair never sees or reaches each other in either direction, at the data layer; supersedes engineering `EXEC-9` | 07.15 | Approved (PM 2026-11-03) |
+| D106 | One statistics model per audience: admins see everything in the portal (world flow funnel with the north-star total, match quality, community); a member sees their own counters, timeline and givings by world (owner only); an organization's profile shows its public impact and its managers their own funnel | 16 | Approved (PM 2026-11-03) |
+| D107 | The Donations tab is one flat list of the 12 giving worlds with a small "portal" tag on every world that has no active flow yet (D60 — never hidden); world screens carry no request / offer buttons — the "+" opens the one create form on the world on screen, and the form remembers give / take **per category**; a world with no feed has a create form that is "add a link" to its community links (reviewed before it goes live, D9); the feed comes first on a world screen and its community links list sits under it; the old domain screens and the experiences screen are deleted, without redirects | 04, 05, 07 | Approved (PM 2026-11-03) |
+| D108 | Deleting an account deactivates it for 30 days (hidden from everyone, data kept) and signing in during that window offers a full restore; after 30 days a purge job deletes everything; no re-registration cooldown — replaces the immediate hard delete (TD-118) and supersedes FR-AUTH-016 | 07.12 | Approved (PM 2026-11-03) |
+| D109 | Profile gains a private date of birth (required at sign-up with a soft-gate skip, minimum age 18, server-enforced), interests, a self-declared organization affiliation (verified organizations, a label only) and "what I can help with" | 07.12 | Approved (PM 2026-11-03) |
+| D110 | Each optional profile field has its own visibility (everyone / approved followers / only me); defaults follow the privacy mode; enforced on the server | 07.12 | Approved (PM 2026-11-03) |

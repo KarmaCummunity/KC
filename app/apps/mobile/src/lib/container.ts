@@ -1,9 +1,8 @@
 // Composition root — singleton instances of all chat use cases bound to Supabase adapters.
 // Screens import the use cases from here, not from @kc/application directly.
 // Mapped to SRS: FR-CHAT-001..013, FR-POST-010, FR-POST-014 AC4, FR-POST-015 AC1, FR-MOD-001, FR-MOD-007, FR-ADMIN-009.
-import { Platform } from 'react-native';
 import { createWhatsAppAdminUseCases } from './whatsappAdminContainer';
-import { createAuthSecureStorage } from '../services/authSecureStorage';
+import { pickAuthStorage } from '../services/authSecureStorage';
 import {
   getSupabaseClient,
   SupabaseUserRepository,
@@ -35,8 +34,8 @@ import {
   SupabaseReportsRepository,
   SupabaseSurveyRepository,
   SupabaseSurveyAdminRepository,
+  SupabaseUserActivityRepository,
   SupabasePublicResearchRepository,
-  type SupabaseAuthStorage,
 } from '@kc/infrastructure-supabase';
 import {
   CheckAccountGateUseCase,
@@ -51,6 +50,7 @@ import {
   ReportChatUseCase,
   ReportPostUseCase,
   SetUserBlockedUseCase,
+  ListMyBlockedUsersUseCase,
   ReportListingUseCase,
   DeletePostUseCase,
   AdminRemovePostUseCase,
@@ -59,6 +59,8 @@ import {
   AddDonationLinkUseCase,
   RemoveDonationLinkUseCase,
   ReportDonationLinkUseCase,
+  ListDonationLinksForReviewUseCase,
+  ReviewDonationLinkUseCase,
   UpdateDonationLinkUseCase,
   RestoreTargetUseCase,
   DismissReportUseCase,
@@ -71,8 +73,10 @@ import {
   GetMyAdminRolesUseCase,
   GrantAdminRoleUseCase,
   RevokeAdminRoleUseCase,
+  ChangeAdminRoleUseCase,
   ListAdminsUseCase,
   GetOrgTreeUseCase,
+  GetHierarchySnapshotUseCase,
   SetManagerUseCase,
   ListAdminTasksUseCase,
   GetAdminTaskDetailUseCase,
@@ -110,27 +114,14 @@ import {
   SubmitFreeFeedbackUseCase,
   GetAdminSurveyOverviewUseCase,
   GetAdminSurveyResultsUseCase,
+  GetPmfSurveyReportUseCase,
+  RecordActiveDayUseCase,
   ListUserFeedbackUseCase,
   LoadPublicResearchBundleUseCase,
   SubmitPublicResearchResponseUseCase,
 } from '@kc/application';
 
-/**
- * Web localStorage exposes async-compatible sync methods; native routes
- * through SecureStore per TD-101 (BACKLOG P2.14). See
- * `apps/mobile/src/services/authComposition.ts:pickStorage` for the full
- * rationale. The Supabase client is a singleton so this duplicate exists
- * for loader-order independence only.
- */
-function pickStorage(): SupabaseAuthStorage | undefined {
-  if (Platform.OS === 'web') {
-    if (typeof window === 'undefined' || !window.localStorage) return undefined;
-    return window.localStorage;
-  }
-  return createAuthSecureStorage();
-}
-
-export const supabase = getSupabaseClient({ storage: pickStorage() });
+export const supabase = getSupabaseClient({ storage: pickAuthStorage() });
 
 const userRepo = new SupabaseUserRepository(supabase);
 const chatRepo = new SupabaseChatRepository(supabase);
@@ -161,6 +152,7 @@ const orgApplicationsRepo = new SupabaseOrgApplicationsRepository(supabase);
 const reportsRepo = new SupabaseReportsRepository(supabase);
 const surveyRepo = new SupabaseSurveyRepository(supabase);
 const surveyAdminRepo = new SupabaseSurveyAdminRepository(supabase);
+const userActivityRepo = new SupabaseUserActivityRepository(supabase);
 const publicResearchRepo = new SupabasePublicResearchRepository(supabase);
 
 const hideChatFromInbox = new HideChatFromInboxUseCase(chatRepo);
@@ -193,7 +185,9 @@ export const container = {
   listAdmins: new ListAdminsUseCase(adminRoleRepo),
   grantAdminRole: new GrantAdminRoleUseCase(adminRoleRepo),
   revokeAdminRole: new RevokeAdminRoleUseCase(adminRoleRepo),
+  changeAdminRole: new ChangeAdminRoleUseCase(adminRoleRepo),
   getOrgTree: new GetOrgTreeUseCase(orgHierarchyRepo),
+  getHierarchySnapshot: new GetHierarchySnapshotUseCase(orgHierarchyRepo),
   setManager: new SetManagerUseCase(orgHierarchyRepo, adminRoleRepo),
   listAdminTasks: new ListAdminTasksUseCase(adminTaskRepo),
   getAdminTaskDetail: new GetAdminTaskDetailUseCase(adminTaskRepo),
@@ -246,6 +240,7 @@ export const container = {
   reportPost: new ReportPostUseCase(reportRepo),
   blockRepo,
   setUserBlocked: new SetUserBlockedUseCase(blockRepo),
+  listMyBlockedUsers: new ListMyBlockedUsersUseCase(blockRepo),
   reportListing: new ReportListingUseCase(reportRepo),
 
   // Post moderation
@@ -271,6 +266,8 @@ export const container = {
   updateDonationLink: new UpdateDonationLinkUseCase(donationLinksRepo),
   removeDonationLink: new RemoveDonationLinkUseCase(donationLinksRepo),
   reportDonationLink: new ReportDonationLinkUseCase(donationLinksRepo),
+  listDonationLinksForReview: new ListDonationLinksForReviewUseCase(donationLinksRepo),
+  reviewDonationLink: new ReviewDonationLinkUseCase(donationLinksRepo),
 
   // Surveys + free feedback (FR-SETTINGS-015..017)
   surveyRepo,
@@ -279,10 +276,13 @@ export const container = {
   saveSurveyAnswers: new SaveSurveyAnswersUseCase(surveyRepo),
   checkSurveyPrompt: new CheckSurveyPromptUseCase(surveyRepo),
   submitFreeFeedback: new SubmitFreeFeedbackUseCase(surveyRepo),
+  // Server-side active days for survey eligibility + PMF retention (KC#1058)
+  recordActiveDay: new RecordActiveDayUseCase(userActivityRepo),
 
   // Admin survey dashboard (FR-ADMIN-021)
   getAdminSurveyOverview: new GetAdminSurveyOverviewUseCase(surveyAdminRepo),
   getAdminSurveyResults: new GetAdminSurveyResultsUseCase(surveyAdminRepo),
+  getPmfSurveyReport: new GetPmfSurveyReportUseCase(surveyAdminRepo),
   listUserFeedback: new ListUserFeedbackUseCase(surveyAdminRepo),
 
   // Public research — Survey B (FR-RESEARCH-001..003)

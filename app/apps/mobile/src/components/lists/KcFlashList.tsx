@@ -1,37 +1,34 @@
 /**
- * FlashList wrapper — #896. Use instead of react-native FlatList for virtualized lists.
+ * Virtualized list wrapper — #896. Backed by React Native FlatList on every platform.
+ * FlashList v1 was removed: it mis-measured cells under the New Architecture and its
+ * Android native module no longer compiles against React Native 0.81.
+ * `estimatedItemSize` is still accepted (and ignored) so call sites stay unchanged.
  */
 import React, { forwardRef } from 'react';
-import { type ViewStyle } from 'react-native';
-import {
-  FlashList,
-  type ContentStyle,
-  type FlashListProps,
-} from '@shopify/flash-list';
+import { FlatList, type FlatListProps, type ViewStyle } from 'react-native';
 
-export type KcFlashListRef<T> = FlashList<T>;
+export type ListRenderItem<T> = NonNullable<FlatListProps<T>['renderItem']>;
+export type ListRenderItemInfo<T> = Parameters<ListRenderItem<T>>[0];
+export type KcFlashListRef<T> = FlatList<T>;
 
-export type KcFlashListProps<T> = Omit<FlashListProps<T>, 'contentContainerStyle'> & {
-  /** FlashList ContentStyle is narrow; we accept RN-style arrays for migration from FlatList. */
-  contentContainerStyle?: ContentStyle | ViewStyle | Array<ViewStyle | false | null | undefined>;
+export type KcFlashListProps<T> = Omit<FlatListProps<T>, 'contentContainerStyle'> & {
+  estimatedItemSize?: number;
+  contentContainerStyle?: ViewStyle | Array<ViewStyle | false | null | undefined>;
 };
 
-function KcFlashListInner<T>(
-  props: KcFlashListProps<T>,
-  ref: React.Ref<FlashList<T>>,
-) {
-  const { estimatedItemSize = 120, contentContainerStyle, ...rest } = props;
-  const containerStyle = contentContainerStyle as ContentStyle | undefined;
+function KcFlashListInner<T>(props: KcFlashListProps<T>, ref: React.Ref<FlatList<T>>) {
+  const { estimatedItemSize: _ignored, contentContainerStyle, ...rest } = props;
   return (
-    <FlashList
+    <FlatList
       ref={ref}
       {...rest}
-      estimatedItemSize={estimatedItemSize}
-      contentContainerStyle={containerStyle}
+      contentContainerStyle={contentContainerStyle as ViewStyle}
+      windowSize={rest.windowSize ?? 11}
+      removeClippedSubviews={rest.removeClippedSubviews ?? false}
     />
   );
 }
 
 export const KcFlashList = forwardRef(KcFlashListInner) as <T>(
-  props: KcFlashListProps<T> & { ref?: React.Ref<FlashList<T>> },
+  props: KcFlashListProps<T> & { ref?: React.Ref<FlatList<T>> },
 ) => React.ReactElement;

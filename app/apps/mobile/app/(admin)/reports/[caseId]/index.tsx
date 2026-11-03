@@ -4,16 +4,18 @@
 // is the routing contract for deep-links (e.g. from chat ReportReceivedBubble
 // or future notification taps).
 import { router, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import type { AdminReportTargetType } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { useReportCaseDetail } from '../../../../src/hooks/useReportCaseDetail';
 import { CaseReporterList } from '../../../../src/components/admin/reports/CaseReporterList';
 import { CaseAuditTimeline } from '../../../../src/components/admin/reports/CaseAuditTimeline';
 import { CaseActions } from '../../../../src/components/admin/reports/CaseActions';
 import { CaseTargetCard } from '../../../../src/components/admin/reports/CaseTargetCard';
 import { useLocaleBundle } from '../../../../src/i18n/useLocaleBundle';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
 
 function parseCaseId(
   raw: string | undefined,
@@ -100,9 +102,9 @@ export default function CaseDetail() {
 }
 
 const useStyles = makeUseStyles(() => ({
-  root:         { padding: 16, gap: 16 },
-  center:       { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  title:        { fontSize: 20, fontWeight: '700' },
-  section:      { gap: 8 },
-  sectionTitle: { fontSize: 14, fontWeight: '600', opacity: 0.7 },
+  root:         { padding: spacing.base, gap: spacing.base },
+  center:       { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
+  title:        { fontSize: typography.h3.fontSize, ...typography.bold },
+  section:      { gap: spacing.sm },
+  sectionTitle: { fontSize: typography.body.fontSize, ...typography.semiBold, opacity: 0.7 },
 }));

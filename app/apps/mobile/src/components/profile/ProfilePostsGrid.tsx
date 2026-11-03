@@ -13,6 +13,7 @@ import { chunkArray } from '../../lib/chunkArray';
 import { postWithOwnerFromPost, type ProfilePostOwnerContext } from '../../lib/postWithOwnerFromPost';
 import { PostCardGrid } from '../PostCardGrid';
 import { EmptyState } from '../EmptyState';
+import { PrimaryButton } from '../ui/Buttons';
 import { PostGridSkeleton } from '../skeletons/PostGridSkeleton';
 
 export type EmptyVariant =
@@ -29,12 +30,14 @@ export type EmptyVariant =
 export interface ProfilePostsGridProps {
   posts: Post[];
   isLoading: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
   empty: EmptyVariant;
   /** Profile owner context for PostMenuButton / post detail (not shown on grid cards). */
   postOwner?: ProfilePostOwnerContext;
 }
 
-export function ProfilePostsGrid({ posts, isLoading, empty, postOwner }: ProfilePostsGridProps) {
+function ProfilePostsGridInner({ posts, isLoading, isError, onRetry, empty, postOwner }: ProfilePostsGridProps) {
   const styles = useStyles();
   const { t } = useTranslation();
   const EMPTY_COPY: Record<EmptyVariant, { title: string; subtitle: string; icon: keyof typeof Ionicons.glyphMap }> = {
@@ -84,8 +87,28 @@ export function ProfilePostsGrid({ posts, isLoading, empty, postOwner }: Profile
       icon: 'archive-outline',
     },
   };
+
+  const chunkedRows = React.useMemo(() => {
+    const hydrated = posts.map((p) => postWithOwnerFromPost(p, postOwner));
+    return chunkArray(hydrated, PROFILE_GRID_COLUMNS);
+  }, [posts, postOwner]);
+
   if (isLoading) {
     return <PostGridSkeleton columns={PROFILE_GRID_COLUMNS} count={PROFILE_GRID_COLUMNS * 3} />;
+  }
+  if (isError && posts.length === 0) {
+    return (
+      <EmptyState
+        icon="cloud-offline-outline"
+        title={t('general.errorTitle')}
+        subtitle={t('errorBoundary.body')}
+        action={
+          onRetry ? (
+            <PrimaryButton testID="profile-posts-retry" label={t('general.retry')} size="md" onPress={onRetry} />
+          ) : undefined
+        }
+      />
+    );
   }
   if (posts.length === 0) {
     const e = EMPTY_COPY[empty];
@@ -93,12 +116,12 @@ export function ProfilePostsGrid({ posts, isLoading, empty, postOwner }: Profile
   }
   return (
     <View style={styles.grid}>
-      {chunkArray(posts, PROFILE_GRID_COLUMNS).map((row, rowIndex) => (
-        <View key={rowIndex} style={styles.row}>
+      {chunkedRows.map((row, rowIndex) => (
+        <View key={row[0]?.postId ?? rowIndex} style={styles.row}>
           {row.map((p) => (
             <PostCardGrid
               key={p.postId}
-              post={postWithOwnerFromPost(p, postOwner)}
+              post={p}
               columns={PROFILE_GRID_COLUMNS}
               gap={spacing.xs}
             />
@@ -108,6 +131,8 @@ export function ProfilePostsGrid({ posts, isLoading, empty, postOwner }: Profile
     </View>
   );
 }
+
+export const ProfilePostsGrid = React.memo(ProfilePostsGridInner);
 
 const useStyles = makeUseStyles(() => ({
   grid: {

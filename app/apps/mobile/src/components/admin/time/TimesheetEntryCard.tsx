@@ -1,7 +1,9 @@
 // V2-ADMIN-TIME-10 — single timesheet entry row.
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { memo } from 'react';
+import { StyleSheet, View } from 'react-native';
 import type { TimesheetEntry } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { DangerButton, PrimaryButton, SecondaryButton } from '../../ui/Buttons';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
 export interface TimesheetEntryCardProps {
@@ -17,7 +19,7 @@ export interface TimesheetEntryCardProps {
 
 function fmtIso(s: string): string { return s.slice(0, 10); }
 
-export function TimesheetEntryCard(props: TimesheetEntryCardProps) {
+function TimesheetEntryCardInner(props: TimesheetEntryCardProps) {
   const { entry, isMine, canApprove } = props;
   const styles = useStyles();
   const L = useLocaleBundle();
@@ -51,42 +53,31 @@ export function TimesheetEntryCard(props: TimesheetEntryCardProps) {
         </Text>
       )}
 
+      {/* Compact admin size (spec 17 §4.3); delete and reject are destructive, so DangerButtons (D94). */}
       <View style={styles.actions}>
         {isMine && entry.status === 'draft' && (
           <>
             {props.onEdit && (
-              <Pressable onPress={props.onEdit} style={[styles.btn, styles.btnMuted]}>
-                <Text style={styles.btnText}>{t.row.edit}</Text>
-              </Pressable>
+              <SecondaryButton label={t.row.edit} size="sm" onPress={props.onEdit} />
             )}
             {props.onSubmit && (
-              <Pressable onPress={props.onSubmit} style={[styles.btn, styles.btnPrimary]}>
-                <Text style={styles.btnPrimaryText}>{t.row.submit}</Text>
-              </Pressable>
+              <PrimaryButton label={t.row.submit} size="sm" onPress={props.onSubmit} />
             )}
             {props.onDelete && (
-              <Pressable onPress={props.onDelete} style={[styles.btn, styles.btnDanger]}>
-                <Text style={styles.btnDangerText}>{t.row.delete}</Text>
-              </Pressable>
+              <DangerButton label={t.row.delete} size="sm" onPress={props.onDelete} />
             )}
           </>
         )}
         {isMine && entry.status === 'rejected' && props.onEdit && (
-          <Pressable onPress={props.onEdit} style={[styles.btn, styles.btnPrimary]}>
-            <Text style={styles.btnPrimaryText}>{t.row.edit}</Text>
-          </Pressable>
+<PrimaryButton label={t.row.edit} size="sm" onPress={props.onEdit} />
         )}
         {canApprove && entry.status === 'submitted' && (
           <>
             {props.onReject && (
-              <Pressable onPress={props.onReject} style={[styles.btn, styles.btnDanger]}>
-                <Text style={styles.btnDangerText}>{t.row.reject}</Text>
-              </Pressable>
+              <DangerButton label={t.row.reject} size="sm" onPress={props.onReject} />
             )}
             {props.onApprove && (
-              <Pressable onPress={props.onApprove} style={[styles.btn, styles.btnPrimary]}>
-                <Text style={styles.btnPrimaryText}>{t.row.approve}</Text>
-              </Pressable>
+              <PrimaryButton label={t.row.approve} size="sm" onPress={props.onApprove} />
             )}
           </>
         )}
@@ -97,30 +88,25 @@ export function TimesheetEntryCard(props: TimesheetEntryCardProps) {
 
 const useStyles = makeUseStyles(({ colors }) => ({
   card: {
-    margin: 12, padding: 14, gap: 4,
-    borderRadius: 10, backgroundColor: colors.surface,
+    margin: spacing.md, padding: spacing.md, gap: spacing.xs,
+    borderRadius: radius.sm, backgroundColor: colors.surface,
     borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
   },
   head:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  workDate:    { fontSize: 14, fontWeight: '700' },
-  headRight:   { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  hoursChip:   { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: colors.primarySurface },
-  hoursChipText: { fontSize: 11, fontWeight: '700', color: colors.primary },
-  statusChip:  { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  workDate:    { fontSize: typography.body.fontSize, ...typography.bold },
+  headRight:   { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  hoursChip:   { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.xs, backgroundColor: colors.primarySurface },
+  hoursChipText: { fontSize: typography.caption.fontSize, ...typography.bold, color: colors.primary },
+  statusChip:  { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.xs },
   status_draft:     { backgroundColor: colors.secondaryLight },
   status_submitted: { backgroundColor: colors.warningLight },
   status_approved:  { backgroundColor: colors.successLight },
   status_rejected:  { backgroundColor: colors.errorLight },
-  statusChipText:   { fontSize: 11, fontWeight: '700' },
-  meta:        { fontSize: 12, opacity: 0.7 },
-  metaSubtle:  { fontSize: 11, opacity: 0.6, marginTop: 2 },
-  description: { fontSize: 12, marginTop: 4, opacity: 0.85 },
-  actions:     { flexDirection: 'row', gap: 6, marginTop: 8, justifyContent: 'flex-end' },
-  btn:         { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
-  btnMuted:    { backgroundColor: colors.secondaryLight },
-  btnText:     { fontSize: 12, fontWeight: '600' },
-  btnPrimary:  { backgroundColor: colors.primary },
-  btnPrimaryText: { fontSize: 12, fontWeight: '700', color: colors.textInverse },
-  btnDanger:   { backgroundColor: colors.errorLight },
-  btnDangerText: { fontSize: 12, fontWeight: '700', color: colors.error },
+  statusChipText:   { fontSize: typography.caption.fontSize, ...typography.bold },
+  meta:        { fontSize: typography.bodySmall.fontSize, opacity: 0.7 },
+  metaSubtle:  { fontSize: typography.caption.fontSize, opacity: 0.6, marginTop: spacing.xs },
+  description: { fontSize: typography.bodySmall.fontSize, marginTop: spacing.xs, opacity: 0.85 },
+  actions:     { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm, justifyContent: 'flex-end' },
 }));
+
+export const TimesheetEntryCard = memo(TimesheetEntryCardInner);

@@ -1,10 +1,10 @@
 // Single inbox row — FR-CHAT-001, FR-CHAT-016.
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import type { ChatWithPreview } from '@kc/application';
-import { makeUseStyles, typography, spacing, useTheme } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, iconSize, useTheme, Text } from '@kc/ui';
 import { AvatarInitials } from '../AvatarInitials';
 import { OnlineDot } from './OnlineDot';
 import { formatRelativeChatTime } from '../../lib/formatRelativeChatTime';
@@ -16,6 +16,8 @@ interface Props {
   readonly onRequestHide: (chatId: string, otherUserId: string | null) => void;
 }
 
+const ELLIPSIS_HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 } as const;
+
 // Memoized: the inbox KcFlashList re-renders on every search keystroke and
 // refresh, but each row only depends on its own `item` and stable parent
 // callbacks — without memo every row re-rendered on each keystroke.
@@ -23,23 +25,27 @@ function InboxChatRowInner({ item, onOpen, onRequestHide }: Props) {
   const { t } = useTranslation();
   const styles = useInboxChatRowStyles();
   const { colors } = useTheme();
+  // Some inbox rows (support/system chats, deleted peers) arrive without a
+  // participant; never dereference it blindly.
+  const other = item.otherParticipant;
+  const otherName = other?.displayName ?? t('common.deletedUser');
   return (
     <View style={styles.chatRow}>
       <TouchableOpacity style={styles.chatRowMain} onPress={() => onOpen(item.chatId)}>
         <View>
           <AvatarInitials
-            name={item.otherParticipant.displayName ?? t('common.deletedUser')}
-            avatarUrl={item.otherParticipant.avatarUrl}
+            name={otherName}
+            avatarUrl={other?.avatarUrl ?? null}
             size={48}
           />
-          <OnlineDot userId={item.otherParticipant.isDeleted ? null : item.otherParticipant.userId} />
+          <OnlineDot userId={!other || other.isDeleted ? null : other.userId} />
         </View>
         <View style={styles.chatInfo}>
           <View style={styles.chatHeader}>
             <Text style={styles.chatTime}>
               {formatRelativeChatTime(item.lastMessage?.createdAt ?? item.lastMessageAt)}
             </Text>
-            <Text style={styles.chatName}>{item.otherParticipant.displayName ?? t('common.deletedUser')}</Text>
+            <Text style={styles.chatName}>{otherName}</Text>
           </View>
           <Text style={styles.chatPreview} numberOfLines={1}>
             {formatInboxPreview(item.lastMessage, t)}
@@ -56,14 +62,14 @@ function InboxChatRowInner({ item, onOpen, onRequestHide }: Props) {
         <View style={{ width: 22 }} />
       )}
       <Pressable
-        onPress={() => onRequestHide(item.chatId, item.otherParticipant.userId)}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        onPress={() => onRequestHide(item.chatId, other?.userId ?? null)}
+        hitSlop={ELLIPSIS_HIT_SLOP}
         accessibilityRole="button"
         accessibilityLabel={t('chat.hideChatA11y')}
         android_ripple={null}
         style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
       >
-        <Ionicons name="ellipsis-horizontal" size={22} color={colors.textSecondary} />
+        <Ionicons name="ellipsis-horizontal" size={iconSize.xl} color={colors.textSecondary} />
       </Pressable>
     </View>
   );
@@ -85,11 +91,11 @@ const useInboxChatRowStyles = makeUseStyles(({ colors }) => ({
     alignItems: 'center',
     gap: spacing.md,
   },
-  chatInfo: { flex: 1, gap: 4 },
+  chatInfo: { flex: 1, gap: spacing.xs },
   chatHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   chatName: {
     ...typography.body,
-    fontWeight: '600' as const,
+    ...typography.semiBold,
     color: colors.textPrimary,
     textAlign: rtlTextAlignStart,
   },
@@ -98,12 +104,12 @@ const useInboxChatRowStyles = makeUseStyles(({ colors }) => ({
   badge: {
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: radius.full,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  badgeText: { ...typography.caption, color: colors.textInverse, fontSize: 11, fontWeight: '600' as const },
+  badgeText: { ...typography.caption, color: colors.textInverse, ...typography.semiBold },
 }));
 
 export function InboxChatRowSeparator() {
@@ -112,5 +118,5 @@ export function InboxChatRowSeparator() {
 }
 
 const useInboxChatRowSeparatorStyles = makeUseStyles(({ colors }) => ({
-  line: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginRight: spacing.base },
+  line: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginEnd: spacing.base },
 }));

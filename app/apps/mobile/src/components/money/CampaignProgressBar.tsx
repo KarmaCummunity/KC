@@ -1,16 +1,16 @@
-import { Text, View } from 'react-native';
-import { makeUseStyles, spacing, typography } from '@kc/ui';
+import { View } from 'react-native';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   track: {
     height: 8,
-    borderRadius: 4,
+    borderRadius: radius.xs,
     backgroundColor: colors.border,
     overflow: 'hidden' as const,
     marginTop: spacing.xs,
   },
-  fill: { height: '100%' as const, backgroundColor: colors.primary, borderRadius: 4 },
-  label: { ...typography.caption, color: colors.textSecondary, marginTop: 4 },
+  fill: { height: '100%' as const, backgroundColor: colors.primary, borderRadius: radius.xs },
+  label: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
 }));
 
 export function CampaignProgressBar({

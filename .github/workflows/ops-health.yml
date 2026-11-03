@@ -1,0 +1,56 @@
+name: Ops health monitor
+
+# Hourly operational health check of dev and prod (G42, D68, D69). Reads
+# ops.run_health_checks() (migration 0463, read-only by construction) through the
+# Supabase Management API and syncs failing checks to GitHub issues labelled `ops-alert`,
+# assigned to the PM (GitHub emails the assignee); recovered checks close their issue.
+# Logic: scripts/ops/ (its unit tests run in CI — static guards). What to do on an alert:
+# docs/SSOT/OPERATOR_RUNBOOK.md § Ops health alerts. Secrets come from the existing
+# `supabase-dev` / `supabase-prod` environments (the same ones DB deploy uses); no new
+# secret is needed.
+
+on:
+  schedule:
+    - cron: '23 * * * *' # hourly, off the :00 rush
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Only print the planned alert actions
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  monitor:
+    name: health · ${{ matrix.target.env }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - { env: dev, environment: supabase-dev }
+          - { env: prod, environment: supabase-prod }
+    environment: ${{ matrix.target.environment }}
+    concurrency:
+      group: ops-health-${{ matrix.target.env }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+      - name: Check health and sync alerts
+        env:
+          OPS_ENV: ${{ matrix.target.env }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          GITHUB_TOKEN: ${{ github.token }}
+          OPS_ALERT_ASSIGNEE: ${{ vars.OPS_ALERT_ASSIGNEE || 'navesarussi' }}
+          OPS_DRY_RUN: ${{ inputs.dry_run }}
+        run: node scripts/ops/health-monitor.mjs

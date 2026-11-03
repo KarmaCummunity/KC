@@ -1,99 +1,48 @@
-# Web Deployment — Railway → `dev3.karma-community-kc.com`
+# Web Deployment — Cloudflare Pages
 
-Operator runbook for the static-SPA web build of the Expo Router app, deployed on Railway with a Dockerfile.
+Operator runbook for the static web export of the Expo Router app. Pipeline details: [`docs/SSOT/ENVIRONMENTS.md` § Deploy pipeline](./SSOT/ENVIRONMENTS.md#deploy-pipeline-d-195-infra-ci-3); release steps: [`docs/SSOT/RELEASE_CHECKLIST.md`](./SSOT/RELEASE_CHECKLIST.md).
 
-> Earlier design considered Cloudflare Pages — kept for context at [`docs/SSOT/archive/superpowers/specs/2026-05-10-cloudflare-pages-web-deploy-design.md`](./SSOT/archive/superpowers/specs/2026-05-10-cloudflare-pages-web-deploy-design.md). The actual production deploy uses Railway because the project + custom domain were already provisioned there.
+## Targets
 
-## What's checked into the repo
+| Branch | Cloudflare Pages project / branch | URL | GitHub environment |
+| ------ | --------------------------------- | --- | ------------------ |
+| `dev` | `karma-community` / `dev` | `https://dev.karma-community.pages.dev` | `cloudflare-dev` |
+| `main` | `karma-community` / `main` (production branch) | `https://karma-community-kc.com` | `cloudflare-prod` |
 
-| File | Purpose |
-| ---- | ------- |
-| [`Dockerfile`](../Dockerfile) | Multistage build: stage 1 runs `pnpm install` + `pnpm build:web`; stage 2 is a tiny `node:20-alpine` image that serves `dist/` with `serve --single` (SPA fallback). |
-| [`railway.json`](../railway.json) | Forces Railway to use the Dockerfile (bypasses Railpack auto-detect, which can't handle our pnpm monorepo). |
-| [`.dockerignore`](../.dockerignore) | Keeps the build context small (excludes `docs/`, `supabase/`, `.git`, `node_modules`, etc.). |
-| `app/package.json` scripts | `pnpm build:web` → `expo export -p web` + writes `_redirects` (no-op on Railway since `serve --single` handles fallback, but harmless). |
+## Deploy flow
 
-The mobile CI/CD (`.github/workflows/ci.yml`) is unchanged — Railway builds in its own infrastructure.
+1. A PR merges into `dev` (merge queue), or a `dev` → `main` release PR merges.
+2. The push runs **CI**; when its `CI gate` is green, **Deploy** (`.github/workflows/deploy.yml`) starts for that exact commit. Prod first waits for the owner's approval.
+3. The web stage (`deploy-web.yml`) builds the export on the runner with the environment's `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` and `EXPO_PUBLIC_ENVIRONMENT`, stamps `/version.json` with the SHA, and uploads it with `wrangler pages deploy --branch=<dev|main> --commit-hash=<sha>`.
+4. The smoke stage (`deploy-smoke.yml`) waits for `/version.json` to report the SHA and checks the page, bundles, Auth health and Edge Functions.
 
-## Railway service configuration (one-time)
-
-In the Railway dashboard for the **MVP-2** service:
-
-### 1. Variables
-
-Add these under **Variables** (all three available at both build time and runtime):
-
-| Name | Value | Source |
-| ---- | ----- | ------ |
-| `EXPO_PUBLIC_SUPABASE_URL` | `https://roeefqpdbftlndzsvhfj.supabase.co` | matches `app/apps/mobile/.env` |
-| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | `sb_publishable_…` | matches `app/apps/mobile/.env` (publishable key — safe to inline in client bundle) |
-| `PORT` | (leave unset; Railway injects it automatically) | — |
-
-The Dockerfile declares `ARG EXPO_PUBLIC_SUPABASE_URL` and `ARG EXPO_PUBLIC_SUPABASE_ANON_KEY` so Railway passes them as build args (they get inlined into the JS bundle by `expo export`).
-
-### 2. Settings
-
-- **Source repo**: `KarmaCummunity/GloWe` (already connected).
-- **Branch**: `main` (production).
-- **Builder**: leave on auto — `railway.json` overrides it to Dockerfile.
-- **Healthcheck**: optional. If you want one, set path `/` and timeout `30s`.
-
-### 3. Public domain
-
-Already configured: `dev3.karma-community-kc.com` is mapped to this service. No DNS changes needed unless you want to confirm:
-
-```bash
-dig CNAME dev3.karma-community-kc.com +short
-# should print Railway's CNAME target
-```
-
-### 4. Supabase Auth → URL Configuration
-
-Required so Google SSO and other OAuth flows accept the deployed origin. Once, in the Supabase dashboard for project `roeefqpdbftlndzsvhfj` → Authentication → URL Configuration → **Redirect URLs**, add:
-
-```
-https://dev3.karma-community-kc.com/**
-```
+Nothing deploys on push alone, and nothing is configured in the Cloudflare dashboard beyond the project. To redeploy dev, dispatch **Deploy** on `dev`.
 
 ## Local commands
 
 | Command | Purpose |
 | ------- | ------- |
-| `pnpm build:web` (from `app/`) | Produce `app/apps/mobile/dist/` exactly the way the Docker builder does (without Docker). |
+| `pnpm build:web` (from `app/`) | Produce `app/apps/mobile/dist/` the way CI does (`expo export -p web` + `_redirects`, `_headers`, `version.json`). |
 | `pnpm preview:web` (from `app/`) | Serve the local `dist/` with SPA fallback on `localhost:3000`. |
-| `docker build --build-arg EXPO_PUBLIC_SUPABASE_URL=… --build-arg EXPO_PUBLIC_SUPABASE_ANON_KEY=… -t kc-web .` | Reproduce the Railway build locally. |
-| `docker run -p 4322:3000 kc-web` | Run the produced image on `localhost:4322`. |
-
-## Deploy flow
-
-1. PR merges to `main`.
-2. Railway picks up the push, runs `docker build` using `Dockerfile` (per `railway.json`).
-3. New image is deployed; old one is replaced once healthchecks pass.
-4. Live at `https://dev3.karma-community-kc.com`.
 
 ## Verifying a deploy
 
 ```bash
-curl -sSI https://dev3.karma-community-kc.com/                # → HTTP/2 200
-curl -sSI https://dev3.karma-community-kc.com/donations       # → HTTP/2 200 (SPA fallback)
-curl -sSI https://dev3.karma-community-kc.com/chat/abc        # → HTTP/2 200 (SPA fallback)
-curl -sSI https://dev3.karma-community-kc.com/favicon.ico     # → HTTP/2 200, image/x-icon
+curl -sS https://dev.karma-community.pages.dev/version.json      # → the deployed SHA
+curl -sSI https://dev.karma-community.pages.dev/donations        # → 200 (SPA fallback via _redirects)
 ```
 
-Manual smoke test in a browser: feed loads → donations grid → sign-in (Google SSO) → post detail. Hebrew RTL must render correctly.
+Manual smoke in a browser: feed loads → donations grid → sign-in → post detail. Hebrew RTL must render correctly.
 
 ## Rollback
 
-- **Bad code went live**: revert the offending commit on `main`. Railway auto-redeploys the previous good state (~2-3 min build time).
-- **Need site down immediately**: Railway dashboard → service → **Settings** → toggle **Public Networking off**, or pause deployments.
+- **Prod:** automatic when the functions, web or smoke stage fails and the release applied no migrations (`deploy-rollback.yml`). By hand: Cloudflare dashboard → Pages → `karma-community` → Deployments → previous production deployment → *Rollback*.
+- **Dev:** revert the commit on `dev`; the next green push redeploys.
 
-## Troubleshooting
+## Supabase Auth redirect URLs
 
-| Symptom | Cause | Fix |
-| ------- | ----- | --- |
-| Railway build fails on "Railpack process exited with an error" | `railway.json` not picked up | Confirm `railway.json` is at the **repo root** (not inside `app/`). |
-| Build succeeds but the bundle has `undefined` instead of Supabase URL | Build args not passed | Check `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` are set under Railway → Variables and that they're enabled for **Build**. |
-| `/donations` returns 404 in the browser | `serve --single` not running | Check the runtime CMD in `Dockerfile`: should be `serve dist --single --listen ${PORT:-3000}`. |
-| Google SSO returns "redirect_uri_mismatch" | Supabase redirect list incomplete | Add `https://dev3.karma-community-kc.com/**` per the Supabase step above. |
-| Build slow (~3 min) on every push | Layer cache miss | Railway caches Docker layers between builds — first build is slow, subsequent builds with unchanged `pnpm-lock.yaml` should reuse the install layer. If they don't, check the Dockerfile for layer-busting `COPY` ordering. |
-| Bundle size warning | RN web app is naturally large | Current bundle is ~4.4 MB pre-gzip. Acceptable for now. Future optimization: enable Hermes/Metro tree-shaking, lazy-load donations sub-routes. |
+OAuth flows need the deployed origin in Supabase → Authentication → URL Configuration → **Redirect URLs** (`https://dev.karma-community.pages.dev/**` on kc-dev `enbqriuxvvuontiwslun`, `https://karma-community-kc.com/**` on prod).
+
+## Historical: Railway (retired)
+
+Before Cloudflare Pages, the web build ran on Railway from the repo-root `Dockerfile` (`railway.json`) at `dev3.karma-community-kc.com`, serving `dist/` through the Hono server in `app/apps/mobile/web-server/` (OG cards for `/post/:id`, `FR-POST-023`). Cloudflare Pages replaced it; the `Dockerfile`, `railway.json` and the Hono server remain in the repo but are not deployed. The crawler OG route is therefore not served today (`TD-234`).

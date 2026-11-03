@@ -1,0 +1,13 @@
+# The notification center opens from the top bar.
+# Spec: docs/spec/07_cross_cutting_systems.md §7.11 (notification center, D26); docs/SSOT/spec/09_notifications.md.
+appId: org.karmacommunity.app
+name: Notifications — inbox opens
+tags: [notifications]
+---
+- runFlow: ../subflows/sign-in.yaml
+- tapOn:
+    id: topbar-notifications
+- extendedWaitUntil:
+    visible:
+      id: notification-inbox-screen
+    timeout: 20000

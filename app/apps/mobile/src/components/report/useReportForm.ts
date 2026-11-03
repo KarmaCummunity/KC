@@ -1,10 +1,9 @@
-// Shared state + submit pipeline for the report-modal family
-// (ReportPostModal / ReportChatModal / ReportUserModal). These modals are
-// structurally identical: reason radio + optional note + a submit that maps
+// Shared state + submit pipeline for the report-sheet family
+// (ReportPostModal / ReportChatModal / ReportListingModal / ReportUserModal),
+// consumed by `ReportSheet`: reason radio + optional note + a submit that maps
 // ReportError codes to a NotifyModal outcome. Centralising the state, the
-// reset-on-close effect, and the error→outcome mapping here keeps the three
-// modals as thin, presentation-only wrappers and removes the duplicated
-// submit/reset blocks that previously diverged per modal.
+// reset-on-close effect, and the error→outcome mapping here keeps the report
+// modals as thin wrappers that only supply copy and the use case.
 import { useEffect, useState } from 'react';
 import type { ReportReason } from '@kc/domain';
 import { ReportError } from '@kc/application';
@@ -25,10 +24,9 @@ export interface ReportOutcomeMessages {
 export type PerformReport = (reason: ReportReason, note: string) => Promise<void>;
 
 /**
- * Outcome copy shared by the two `useTranslation`-backed report modals
- * (post + chat), which resolve everything from the `post.*` / `general.*`
- * namespaces. ReportChatModal overrides only `duplicate.message`. Centralised
- * so the common block isn't copy-pasted between the two files.
+ * Outcome copy for the reports that resolve everything from the `post.*` /
+ * `general.*` namespaces (post, chat, listing) — `ReportSheet`'s default.
+ * ReportChatModal overrides only `duplicate.message`.
  */
 export function postNamespaceReportMessages(t: (key: string) => string): ReportOutcomeMessages {
   return {

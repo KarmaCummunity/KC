@@ -9,6 +9,7 @@ import {
   type SurveyAnswerDraft,
   type SurveyListItem,
   type SurveyPromptEligibility,
+  type SurveyQuestion,
   type SurveyQuestionType,
   type SurveyCompletionStatus,
 } from '@kc/domain';
@@ -36,11 +37,14 @@ interface RawQuestion {
   text_placeholder_he: string;
   rating_anchor_low_he: string;
   rating_anchor_high_he: string;
+  /** `[]` for rating questions (0456). */
+  choice_options: { key: string; label_he: string }[] | null;
 }
 
 interface RawAnswer {
   question_id: string;
-  rating: number;
+  rating: number | null;
+  choice_key: string | null;
   answer_text: string | null;
 }
 
@@ -71,7 +75,7 @@ function mapListItem(r: RawListItem): SurveyListItem {
   };
 }
 
-function mapQuestion(q: RawQuestion) {
+function mapQuestion(q: RawQuestion): SurveyQuestion {
   return {
     id: q.id,
     sortOrder: q.sort_order,
@@ -82,6 +86,7 @@ function mapQuestion(q: RawQuestion) {
     textPlaceholderHe: q.text_placeholder_he,
     ratingAnchorLowHe: q.rating_anchor_low_he,
     ratingAnchorHighHe: q.rating_anchor_high_he,
+    choiceOptions: (q.choice_options ?? []).map((o) => ({ key: o.key, labelHe: o.label_he })),
   };
 }
 
@@ -89,6 +94,7 @@ function mapAnswer(a: RawAnswer): SurveyAnswerDraft {
   return {
     questionId: a.question_id,
     rating: a.rating,
+    choiceKey: a.choice_key ?? null,
     answerText: a.answer_text,
   };
 }
@@ -116,6 +122,7 @@ function mapRpcError(msg: string): SurveyError {
   }
   if (
     msg.startsWith('invalid_rating') ||
+    msg.startsWith('invalid_choice') ||
     msg.startsWith('question_not_in_current_version') ||
     msg.startsWith('answer_text_too_long')
   ) {
@@ -150,6 +157,7 @@ export class SupabaseSurveyRepository implements ISurveyRepository {
     const payload = answers.map((a) => ({
       question_id: a.questionId,
       rating: a.rating,
+      choice_key: a.choiceKey,
       answer_text: a.answerText ?? null,
     }));
     const { error } = await this.client.rpc('upsert_survey_answers', {

@@ -1,10 +1,10 @@
 // SurveyPromptBanner — slim card shown above the feed when the user is eligible.
 // Mapped to: FR-SETTINGS-016 AC6. Hebrew RTL. Non-sticky (scrolls with content).
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { Card } from '../ui/Card';
 import { rowDirectionStart } from '../../lib/rtlLayout';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
@@ -21,7 +21,7 @@ export function SurveyPromptBanner({ slug, onSnooze }: SurveyPromptBannerProps) 
 
   const handleOpen = () => {
     void onSnooze(); // dismiss banner before navigating
-    router.push(`/settings/survey/${slug}` as never);
+    router.push(`/settings/survey/${slug}`);
   };
 
   const handleSnooze = () => {
@@ -76,10 +76,10 @@ const useBannerStyles = makeUseStyles(({ colors }) => ({
     alignItems: 'flex-start' as const,
     gap: spacing.sm,
   },
-  textBlock: { flex: 1, gap: 2 },
+  textBlock: { flex: 1, gap: spacing.xs },
   title: {
     ...typography.bodySmall,
-    fontWeight: '700' as const,
+    ...typography.bold,
     color: colors.textPrimary,
     textAlign: rtlTextAlignStart,
   },
@@ -101,7 +101,7 @@ const useBannerStyles = makeUseStyles(({ colors }) => ({
     justifyContent: 'center' as const,
   },
   btnPrimary: { backgroundColor: colors.primary },
-  btnText: { ...typography.caption, fontWeight: '700' as const },
+  btnText: { ...typography.caption, ...typography.bold },
   btnPrimaryText: { color: colors.textInverse },
   snoozeBtn: { paddingVertical: spacing.xs },
   snoozeText: {

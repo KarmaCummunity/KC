@@ -78,7 +78,7 @@ export function useCreatePostAddressPrefill(ownerId: string | undefined) {
   useEffect(() => {
     if (!ownerId) return;
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         const p = await getEditableProfile(ownerId);
         if (cancelled) return;

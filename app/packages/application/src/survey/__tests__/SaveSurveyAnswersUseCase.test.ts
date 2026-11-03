@@ -1,7 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import { SaveSurveyAnswersUseCase } from '../SaveSurveyAnswersUseCase';
-import { SurveyError } from '@kc/domain';
-import { makeFakeRepo, makeBundle, makeAnswer, makeQuestion } from './surveyFakeRepository';
+import {
+  makeFakeRepo,
+  makeBundle,
+  makeAnswer,
+  makeQuestion,
+  makeChoiceQuestion,
+} from './surveyFakeRepository';
 
 describe('SaveSurveyAnswersUseCase', () => {
   it('calls upsertAnswers with slug and answers when all ratings are valid', async () => {
@@ -99,5 +104,44 @@ describe('SaveSurveyAnswersUseCase', () => {
     const uc = new SaveSurveyAnswersUseCase(repo);
 
     await expect(uc.execute({ slug: 'ux-experience', bundle, answers })).resolves.toBeUndefined();
+  });
+
+  describe('single-choice questions (KC#1058)', () => {
+    const bundle = makeBundle({ questions: [makeChoiceQuestion(), makeQuestion()] });
+
+    it('accepts one of the question options', async () => {
+      const answers = [makeAnswer({ questionId: 'q-pmf', rating: null, choiceKey: 'very_disappointed' })];
+      const repo = makeFakeRepo();
+
+      await new SaveSurveyAnswersUseCase(repo).execute({ slug: 'pmf-sean-ellis', bundle, answers });
+
+      expect(repo.upsertAnswers).toHaveBeenCalledWith('pmf-sean-ellis', answers);
+    });
+
+    it('rejects a key that is not an option', async () => {
+      const answers = [makeAnswer({ questionId: 'q-pmf', rating: null, choiceKey: 'delighted' })];
+      const repo = makeFakeRepo();
+
+      await expect(
+        new SaveSurveyAnswersUseCase(repo).execute({ slug: 'pmf-sean-ellis', bundle, answers }),
+      ).rejects.toMatchObject({ code: 'validation', detail: 'invalid_choice_for_question_q-pmf' });
+      expect(repo.upsertAnswers).not.toHaveBeenCalled();
+    });
+
+    it('rejects a rating on a single-choice question', async () => {
+      const answers = [makeAnswer({ questionId: 'q-pmf', rating: 5, choiceKey: 'very_disappointed' })];
+
+      await expect(
+        new SaveSurveyAnswersUseCase(makeFakeRepo()).execute({ slug: 'pmf-sean-ellis', bundle, answers }),
+      ).rejects.toMatchObject({ code: 'validation', detail: 'invalid_choice_for_question_q-pmf' });
+    });
+
+    it('rejects a choice key on a rating question', async () => {
+      const answers = [makeAnswer({ questionId: 'q1', rating: null, choiceKey: 'very_disappointed' })];
+
+      await expect(
+        new SaveSurveyAnswersUseCase(makeFakeRepo()).execute({ slug: 'pmf-sean-ellis', bundle, answers }),
+      ).rejects.toMatchObject({ code: 'validation', detail: 'invalid_rating_for_question_q1' });
+    });
   });
 });

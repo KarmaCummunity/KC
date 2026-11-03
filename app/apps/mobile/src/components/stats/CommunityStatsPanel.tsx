@@ -1,9 +1,8 @@
 // Community stats panel — FR-STATS-004 AC1 (flat numbers, no charts).
 
 import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, radius, spacing, typography, useTheme } from '@kc/ui';
+import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 type Props = {
@@ -60,7 +59,6 @@ export function CommunityStatsPanel({
 
 function Row({ label, value, last }: { label: string; value: number; last?: boolean }) {
   const styles = useStyles();
-  const { colors } = useTheme();
   return (
     <View style={[styles.row, !last && styles.rowBorder]}>
       <Text style={styles.rowLabel}>{label}</Text>
@@ -69,7 +67,7 @@ function Row({ label, value, last }: { label: string; value: number; last?: bool
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   wrap: { gap: spacing.sm },
   headerRow: {
     flexDirection: 'row',

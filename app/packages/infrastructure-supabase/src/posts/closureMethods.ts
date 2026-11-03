@@ -1,8 +1,7 @@
 // Closure methods extracted from SupabasePostRepository to keep the parent
 // file under the size cap. See FR-CLOSURE-001..005.
 import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js';
-import type { ClosureCandidate } from '@kc/application';
-import { PostError, type PostErrorCode } from '@kc/application';
+import { type ClosureCandidate, PostError, type PostErrorCode } from '@kc/application';
 import type { Post } from '@kc/domain';
 import type { Database } from '../database.types';
 import { mapPostRow, POST_SELECT_BARE, type PostJoinedRow } from './mapPostRow';

@@ -1,7 +1,15 @@
-export { colors, lightColors, darkColors } from './theme/colors';
+export { brand } from './theme/brand';
+export { brandFont, brandFontFamily } from './theme/fonts';
+export type { BrandFontWeight } from './theme/fonts';
+export { BrandFontProvider, Text, TextInput } from './components/BrandText';
+export { contrastRatio, relativeLuminance } from './theme/contrast';
+export { buildDesignTokens } from './theme/designTokens';
+export { avatarPalette, colors, lightColors, darkColors } from './theme/colors';
 export type { ColorToken, ColorPalette } from './theme/colors';
 export { typography, fontFamily } from './theme/typography';
 export { spacing, radius, shadow, shellDimensions } from './theme/spacing';
+export { iconSize } from './theme/iconSize';
+export { zIndex } from './theme/zIndex';
 export {
   ThemeProvider,
   useTheme,

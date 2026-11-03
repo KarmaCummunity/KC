@@ -1,26 +1,25 @@
 // app/apps/mobile/src/components/PostCardGrid.tsx
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { formatDistanceToNow } from 'date-fns';
 import { he as dateFnsHe } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
-import { useTheme, spacing } from '@kc/ui';
+import { avatarPalette, spacing } from '@kc/ui';
 import type { PostWithOwner } from '@kc/application';
 import type { IdentityRoleForViewedProfile } from '@kc/domain';
 import { TranslatableText, type TranslatableStatus } from './TranslatableText';
 import { PROFILE_GRID_COLUMNS, usePostGridCardWidth } from '../hooks/useShellContentWidth';
 import { postOwnerDisplayLabel } from '../lib/postOwnerDisplayLabel';
 import { getSupabasePublicImageUrl, getSupabaseFeedImageUrl } from '../lib/imageUrl';
-import { AvatarInitials } from './AvatarInitials';
 import { PostMenuButton } from './post/PostMenuButton';
-import { KCImage } from './ui/KCImage';
+import { KcCard } from './cards/KcCard';
 import { usePostCardGridStyles } from './PostCardGrid.styles';
 import { finishMark } from '../lib/observability/perfMarks';
+import { cleanDisplayTitle } from '../lib/displayTitle';
+import { feedCardCategory } from '../lib/feedCardCategory';
 
-const OWNER_AVATAR_SIZE = 24;
-const OVERLAY_ICON = '#FFFFFF';
+// The menu sits on the image scrim, which is dark in both themes, so the icon is always white.
+const OVERLAY_ICON = avatarPalette.foreground;
 
 interface PostCardGridProps {
   post: PostWithOwner;
@@ -56,11 +55,12 @@ function PostCardGridInner({
 }: PostCardGridProps) {
   const router = useRouter();
   const { t } = useTranslation();
-  const { colors } = useTheme();
   const styles = usePostCardGridStyles();
   const cardWidth = usePostGridCardWidth(columns, gap);
   const isProfileGrid = columns === PROFILE_GRID_COLUMNS;
   const isGive = post.type === 'Give';
+  // A rides / food / housing / time listing shows its world rather than the "Other" category.
+  const cardCategory = feedCardCategory(post);
 
   const timeAgo = React.useMemo(
     () => formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: dateFnsHe }),
@@ -71,26 +71,28 @@ function PostCardGridInner({
     ? post.address.cityName
     : `${post.address.cityName}, ${post.address.street}`;
 
-  const firstImagePath = post.mediaAssets[0]?.path ?? null;
+  const firstImage = post.mediaAssets[0] ?? null;
+  const firstImagePath = firstImage?.path ?? null;
+  // A feed mirror of a listing borrows its photos from the listing-images bucket (D-206).
+  const imageBucket = firstImage?.bucket ?? 'post-images';
   // PERF-4: serve the 400px thumb for the grid surface (~25-40KB vs ~300-500KB
   // for the 2048px full). KCImage falls back to the full URL if the thumb is
   // missing (e.g., for posts uploaded before the thumb pipeline shipped — the
   // backfill Edge Function eventually fills these in).
   const thumbUrl = React.useMemo(
     () => firstImagePath
-      ? getSupabaseFeedImageUrl('post-images', firstImagePath, cardWidth)
+      ? getSupabaseFeedImageUrl(imageBucket, firstImagePath, cardWidth)
       : null,
-    [firstImagePath, cardWidth],
+    [imageBucket, firstImagePath, cardWidth],
   );
   const fullUrl = React.useMemo(
     () => firstImagePath
-      ? getSupabasePublicImageUrl({ bucket: 'post-images', path: firstImagePath })
+      ? getSupabasePublicImageUrl({ bucket: imageBucket, path: firstImagePath })
       : null,
-    [firstImagePath],
+    [imageBucket, firstImagePath],
   );
 
   const ownerLabel = postOwnerDisplayLabel(post, t);
-  const placeholderBg = isGive ? colors.primarySurface : `${colors.secondary}18`;
   const economicRole = identityRole ? deriveEconomicRole(post.type, identityRole) : null;
 
   const onImageLoadOnce = React.useCallback(() => {
@@ -110,103 +112,44 @@ function PostCardGridInner({
       closedPostsProfileUserId != null
         ? `?fromProfile=${encodeURIComponent(closedPostsProfileUserId)}`
         : '';
-    router.push(`/post/${post.postId}${q}` as never);
+    router.push(`/post/${post.postId}${q}`);
   }, [onCardPress, onPressOverride, post, closedPostsProfileUserId, router]);
 
+  let roleBadgeLabel: string | null = null;
+  if (economicRole) roleBadgeLabel = economicRole === 'giver' ? t('feed.giverBadge') : t('feed.receiverBadge');
+
   return (
-    <TouchableOpacity
-      style={[styles.card, { width: cardWidth }]}
-      activeOpacity={0.86}
+    <KcCard
+      testID="feed-post-card"
+      width={cardWidth}
+      dense={isProfileGrid}
       onPress={navigateToPost}
-    >
-      <View style={[styles.imageArea, { height: cardWidth * 0.78, backgroundColor: placeholderBg }]}>
-        {thumbUrl ? (
-          <KCImage uri={thumbUrl} fallbackUri={fullUrl} style={styles.image} contentFit="cover" onLoad={onImageLoadOnce} />
-        ) : (
-          <View style={styles.placeholderTint}>
-            <Ionicons
-              name={isGive ? 'gift-outline' : 'search-outline'}
-              size={isProfileGrid ? 28 : 40}
-              color={isGive ? colors.giveTag : colors.secondary}
-            />
-          </View>
-        )}
-
-        <View style={[styles.typePill, isProfileGrid && styles.typePillDense]}>
-          <Text
-            style={[
-              styles.typePillText,
-              isGive ? styles.givePillText : styles.requestPillText,
-              isProfileGrid && styles.typePillTextDense,
-            ]}
-          >
-            {isGive ? t('feed.giveTypeShort') : t('feed.requestTypeShort')}
-          </Text>
-        </View>
-
-        {economicRole ? (
-          <View style={[styles.roleBadge, isProfileGrid && styles.roleBadgeDense]}>
-            <Text style={[styles.roleBadgeText, isProfileGrid && styles.roleBadgeTextDense]}>
-              {economicRole === 'giver' ? t('feed.giverBadge') : t('feed.receiverBadge')}
-            </Text>
-          </View>
-        ) : null}
-
-        <View
-          style={[styles.menuOverlay, isProfileGrid && styles.menuOverlayDense]}
-          onStartShouldSetResponder={() => true}
-          onResponderRelease={(e) => e.stopPropagation()}
-        >
-          <PostMenuButton
-            post={post}
-            iconColor={OVERLAY_ICON}
-            overlaySize={isProfileGrid ? 'compact' : 'default'}
-          />
-        </View>
-      </View>
-
-      <View style={styles.content}>
-        {!isProfileGrid ? (
-          <View style={styles.authorRow} accessibilityLabel={ownerLabel}>
-            <AvatarInitials
-              name={ownerLabel}
-              avatarUrl={post.ownerAvatarUrl}
-              size={OWNER_AVATAR_SIZE}
-            />
-            <Text style={styles.ownerName} numberOfLines={1}>{ownerLabel}</Text>
-          </View>
-        ) : null}
-
-        <View style={styles.titleRow}>
-          <View style={styles.titleCol}>
-            <TranslatableText
-              source={post.title}
-              translated={translatedFields?.title}
-              status={titleStatus ?? 'source'}
-              numberOfLines={2}
-              style={[styles.title, isProfileGrid && styles.titleDense]}
-              indicatorStyle={styles.translatingIndicator}
-            />
-          </View>
-          <View style={[styles.categoryChip, isProfileGrid && styles.categoryChipDense]}>
-            <Text
-              style={[styles.categoryChipText, isProfileGrid && styles.categoryChipTextDense]}
-              numberOfLines={1}
-            >
-              {t(`post.category.${post.category}`)}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.metaFooter}>
-          <View style={styles.locationRow}>
-            <Ionicons name="location-outline" size={11} color={colors.textSecondary} />
-            <Text style={styles.locationText} numberOfLines={1}>{locationText}</Text>
-          </View>
-          <Text style={styles.timeAgo} numberOfLines={1}>{timeAgo}</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+      accessibilityLabel={cleanDisplayTitle(post.title)}
+      imageUri={thumbUrl}
+      fallbackUri={fullUrl}
+      onImageLoad={onImageLoadOnce}
+      placeholderIcon={cardCategory.icon}
+      tone={isGive ? 'give' : 'request'}
+      badgeLabel={isGive ? t('feed.giveTypeShort') : t('feed.requestTypeShort')}
+      roleBadgeLabel={roleBadgeLabel}
+      menu={<PostMenuButton post={post} iconColor={OVERLAY_ICON} overlaySize={isProfileGrid ? 'compact' : 'default'} />}
+      author={{ name: ownerLabel, avatarUrl: post.ownerAvatarUrl }}
+      title={
+        <TranslatableText
+          source={cleanDisplayTitle(post.title)}
+          translated={translatedFields?.title}
+          status={titleStatus ?? 'source'}
+          numberOfLines={2}
+          style={[styles.title, isProfileGrid && styles.titleDense]}
+          indicatorStyle={styles.translatingIndicator}
+        />
+      }
+      chip={t(cardCategory.chipKey)}
+      location={locationText}
+      timeAgo={timeAgo}
+      closed={post.status !== 'open'}
+      closedLabel={t('cards.closed')}
+    />
   );
 }
 

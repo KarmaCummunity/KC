@@ -6,10 +6,12 @@ import globals from 'globals';
 
 // ESLint v9 flat config for the Karma Community monorepo.
 //
-// First-pass policy: keep the rule wall friendly to existing code — most
-// "code smell" rules (no-explicit-any, no-unused-vars, no-require-imports)
-// run at `warn` so CI is not blocked. Tighten incrementally per package.
+// Policy: smell rules are `error` once the codebase is clean of them. Rules
+// still at `warn` (no-explicit-any, react-hooks/exhaustive-deps, and in mobile
+// the unused-code rules below) are held by a per-package `--max-warnings`
+// ratchet in each package's `lint` script (TD-201): the count may only go down.
 export default tseslint.config(
+  { linterOptions: { reportUnusedDisableDirectives: 'error' } },
   {
     ignores: [
       '**/node_modules/**',
@@ -24,9 +26,6 @@ export default tseslint.config(
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  // eslint 10 promoted `no-useless-assignment` into js.recommended; keep it at
-  // `warn` to match this repo's smell-as-warning policy (tighten incrementally).
-  { rules: { 'no-useless-assignment': 'warn' } },
   // Node-environment TS packages: domain / application / infrastructure.
   {
     files: [
@@ -40,7 +39,7 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': [
-        'warn',
+        'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
     },
@@ -71,13 +70,16 @@ export default tseslint.config(
       'react/display-name': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': [
-        'warn',
+        'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
-      // `require('./asset.png')` is the canonical RN/Expo asset pattern.
-      // We don't ban it monorepo-wide; flag it at `warn` for visibility.
-      '@typescript-eslint/no-require-imports': 'warn',
-      'prefer-const': 'warn',
+      // `require('./asset.png')` is the canonical RN/Expo static-asset pattern
+      // (Metro resolves it at bundle time); every other require() is banned.
+      '@typescript-eslint/no-require-imports': [
+        'error',
+        { allow: ['\\.(png|jpe?g|gif|webp)$'] },
+      ],
+      'prefer-const': 'error',
       // FR-SETTINGS-018 — importing a locale bundle directly hardcodes one
       // language, so the text ignores the active UI locale. Use
       // useTranslation()/t() or the useLocaleBundle()/localeBundle() accessor.
@@ -86,7 +88,44 @@ export default tseslint.config(
       'no-restricted-imports': [
         'error',
         {
+          // Spec 17 §4 (D66) — text renders in the brand font only through @kc/ui.
+          paths: [
+            {
+              name: 'react-native',
+              importNames: ['Text', 'TextInput'],
+              message: 'Import Text / TextInput from @kc/ui so text uses the brand font (spec 17 §4).',
+            },
+            // Spec 17 §4.2 (D87) — Ionicons is the one icon set; other
+            // @expo/vector-icons families (MaterialIcons, Feather, …) are blocked.
+            {
+              name: '@expo/vector-icons',
+              allowImportNames: ['Ionicons'],
+              message: 'Ionicons is the only icon set (spec 17 §4.2): import { Ionicons } from @expo/vector-icons.',
+            },
+          ],
           patterns: [
+            // Spec 17 §4.2 (D87) — deep imports of other families, and other icon
+            // libraries, would add a second visual language.
+            {
+              group: ['@expo/vector-icons/*', '!@expo/vector-icons/Ionicons'],
+              message: 'Ionicons is the only icon set (spec 17 §4.2): import { Ionicons } from @expo/vector-icons.',
+            },
+            {
+              group: [
+                'lucide-react-native',
+                'lucide-react',
+                'react-native-vector-icons',
+                'react-native-vector-icons/*',
+                '@react-native-vector-icons/*',
+                'react-native-feather',
+                'phosphor-react-native',
+                'react-native-heroicons',
+                'react-native-heroicons/*',
+                '@tabler/icons-react-native',
+                '@fortawesome/*',
+              ],
+              message: 'Ionicons is the only icon set (spec 17 §4.2); another icon library needs a PM decision.',
+            },
             {
               group: [
                 '**/i18n/locales/he',
@@ -100,6 +139,26 @@ export default tseslint.config(
           ],
         },
       ],
+    },
+  },
+  // The brand Text / TextInput wrap the react-native primitives.
+  {
+    files: ['packages/ui/src/components/BrandText.tsx'],
+    rules: { 'no-restricted-imports': 'off' },
+  },
+  // Mobile still has unused-code findings in files that are not yet on design
+  // tokens; changing such a file means migrating all of it (brand guard,
+  // spec 17 §6), so these findings burn down with that work. Until then they
+  // stay warnings under the mobile `--max-warnings` ratchet (TD-201).
+  {
+    files: ['apps/mobile/**/*.{ts,tsx}'],
+    linterOptions: { reportUnusedDisableDirectives: 'warn' },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+      'no-useless-assignment': 'warn',
     },
   },
   // i18n internals legitimately compose/select the raw locale bundles.

@@ -23,12 +23,17 @@ interface Props {
   readonly value: { id: string; name: string } | null;
   readonly onChange: (selection: { id: string; name: string }) => void;
   readonly disabled?: boolean;
+  /**
+   * Accept a street name that is not in the list (default true, for profile addresses).
+   * Rides pass false: a ride place must be an official street (D71).
+   */
+  readonly allowFreeText?: boolean;
 }
 
 const matchStreet = (s: Street, q: string): boolean => s.nameHe.includes(q);
 const renderStreet = (s: Street) => ({ id: String(s.streetId), name: s.nameHe });
 
-export function StreetPicker({ cityId, value, onChange, disabled }: Props) {
+export function StreetPicker({ cityId, value, onChange, disabled, allowFreeText = true }: Props) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const effectivelyDisabled = Boolean(disabled) || cityId == null;
@@ -66,7 +71,7 @@ export function StreetPicker({ cityId, value, onChange, disabled }: Props) {
       onSelect={onChange}
       matchItem={matchStreet}
       renderRow={renderStreet}
-      allowFreeText
+      allowFreeText={allowFreeText}
       emptyText={t('profile.streetPickerEmpty')}
       errorText={t('profile.streetPickerError')}
       onErrorRetry={handleStreetsRetry}

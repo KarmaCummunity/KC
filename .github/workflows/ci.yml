@@ -1,0 +1,241 @@
+name: CI
+
+# The single required status check on `dev` and `main` is the `CI gate` job
+# below (D-195). Every PR check lives behind it: `changes` decides which lanes
+# a change needs, the lanes run as reusable workflows, and the gate fails
+# unless every needed lane succeeded. Path filtering happens only inside
+# scripts/ci-changes.mjs, never in `on:` — a filtered-out required context
+# would hang "Expected", and a skipped one would count as passing.
+#
+# Rule for the reusable workflows: their jobs may only skip on an input this
+# file passes. The gate sees one result per lane, so an inner job that skips
+# on its own would pass unnoticed.
+#
+# deploy.yml triggers on this workflow by its name, `CI`: a successful push
+# run on dev/main is what deploys. Renaming it stops every deploy.
+
+on:
+  pull_request:
+    branches: [dev, main]
+    # `edited` re-runs the gate when the title, body or base branch change, so
+    # PR hygiene and the lane plan always match the current PR.
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+  # An owner approval (or its dismissal) re-judges the gate: the test-integrity
+  # guard and the ci.yml check accept a gate-weakening change only with an
+  # owner approval on the head SHA (INFRA-CI-2). A review run re-runs only the
+  # static lane and reuses the other lanes' results from the PR's latest
+  # completed `pull_request` run for the same head SHA (scripts/ci-gate.mjs).
+  # This event has no branch filter, so `detect changes` and the gate fail a
+  # review run whose PR targets anything but dev or main.
+  pull_request_review:
+    types: [submitted, dismissed]
+  # The full gate: a merge group runs every lane whatever its diff, including
+  # the heavy `bundles` lane that PRs into dev leave to the queue.
+  merge_group:
+    types: [checks_requested]
+  # Post-merge signal on the integration branches (and the main SonarCloud
+  # analysis). Pushes run every lane, so a green push run certifies the whole
+  # tree at that SHA (the nightly mobile builds and deploys rely on it).
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+
+# A PR's `pull_request` runs share one group, so a new push or edit cancels
+# the superseded run. Review runs get their own per-PR group, so a queued
+# review run can never replace (and drop) a pending `pull_request` run; a newer
+# review (e.g. the dismissal of an approval) cancels the one in flight, and a
+# review run waits for a running `pull_request` run before reusing it. Every
+# other event is grouped by commit, so each dev/main push keeps its own result
+# (a shared branch group would drop queued runs).
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request_review' && 'review-' || '' }}${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_review' }}
+
+permissions: {}
+
+# The change detector, the gate verdict and the test-integrity guard run from
+# JUDGE_REF's copy of their scripts, never the PR's: a PR could otherwise
+# weaken its own judge. For PRs, reviews and merge groups that is the base
+# branch tip; pushes and dispatches already run dev/main code. There is no
+# fallback to the PR's copy: a base without a judge fails the gate (the PR
+# that introduces a judge is merged once by the owner — OPERATOR_RUNBOOK.md
+# § Owner setup for D-195 CI/CD). ci.yml itself is read from the PR, so the
+# gate compares its jobs with the base copy and fails on any change no owner
+# approved (TD-203); the native backstop is the code-owner rule on .github/**.
+# Because any branch's workflow can post a check named `CI gate`, the ruleset
+# requires `CI verdict` (ci-verdict.yml), which re-verifies each run.
+env:
+  JUDGE_REF: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.sha }}
+
+jobs:
+  changes:
+    name: detect changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      draft: ${{ steps.plan.outputs.draft }}
+      hygiene: ${{ steps.plan.outputs.hygiene }}
+      static: ${{ steps.plan.outputs.static }}
+      release: ${{ steps.plan.outputs.release }}
+      frontend: ${{ steps.plan.outputs.frontend }}
+      backend: ${{ steps.plan.outputs.backend }}
+      edge: ${{ steps.plan.outputs.edge }}
+      bundles: ${{ steps.plan.outputs.bundles }}
+      sonar: ${{ steps.plan.outputs.sonar }}
+      plan: ${{ steps.plan.outputs.plan }}
+    steps:
+      # Full history without blobs: enough for a merge-base diff, fast to fetch.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          filter: blob:none
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+      - name: Plan lanes from the changed paths
+        id: plan
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DRAFT: ${{ github.event.pull_request.draft }}
+          ACTOR: ${{ github.actor }}
+          REF: ${{ github.ref }}
+          # github.base_ref is empty on review events; the payload has the base.
+          BASE_REF: ${{ github.base_ref || github.event.pull_request.base.ref || github.event.merge_group.base_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+        run: |
+          # Only PRs into dev or main are gated; a PR or review into any other
+          # base gets a red gate (its JUDGE_REF would be an unprotected branch).
+          if [ "$EVENT_NAME" = pull_request ] || [ "$EVENT_NAME" = pull_request_review ]; then
+            case "$BASE_REF" in
+              dev | main) ;;
+              *) echo "::error::PR base is '$BASE_REF'; CI gates only PRs into dev or main"; exit 1 ;;
+            esac
+          fi
+          # The detector always comes from the base commit; a missing copy fails.
+          git show "$JUDGE_REF:scripts/ci-changes.mjs" > "$RUNNER_TEMP/ci-changes.mjs"
+          node "$RUNNER_TEMP/ci-changes.mjs"
+
+  hygiene:
+    name: hygiene
+    needs: changes
+    if: needs.changes.outputs.hygiene == 'true'
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: ./.github/workflows/ci-pr.yml
+
+  # Cheap repo-wide guards (no install) and the test-integrity guard; run on
+  # every non-draft change and on review events. `pull-requests: read` lets
+  # the integrity guard read owner approvals.
+  static:
+    name: static
+    needs: changes
+    if: needs.changes.outputs.static == 'true'
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: ./.github/workflows/ci-static-guards.yml
+
+  # dev → main releases only: source branch, strict migration scan, VERSION
+  # bump, and the dev E2E once dev serves the release head.
+  release:
+    name: release
+    needs: changes
+    if: needs.changes.outputs.release == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci-release.yml
+
+  frontend:
+    name: frontend
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: ./.github/workflows/ci-frontend.yml
+    with:
+      sonar: ${{ needs.changes.outputs.sonar == 'true' }}
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # Web export + budget + smoke and iOS + Android bundles. PRs into dev plan
+  # it as not needed (the merge queue runs it); every other run needs it with
+  # the frontend lane. The gate accepts the skip only on PRs into dev.
+  bundles:
+    name: bundles
+    needs: changes
+    if: needs.changes.outputs.bundles == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci-bundles.yml
+
+  backend:
+    name: backend
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/ci-backend.yml
+
+  edge:
+    name: edge
+    needs: changes
+    if: needs.changes.outputs.edge == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci-edge-functions.yml
+
+  # The only required status check. `always()` makes it report even when a
+  # lane fails or is cancelled; scripts/ci-gate.mjs turns that into a verdict.
+  # Every other job in this file must be a known lane listed in `needs:`
+  # (enforced by scripts/check-required-checks-drift.mjs). Read access to PRs
+  # and Actions lets the judge read owner approvals and, on review events, the
+  # lane results of the PR's latest `pull_request` run; a review run may wait
+  # up to 12 minutes for that run to finish, hence the timeout.
+  gate:
+    name: CI gate
+    needs: [changes, hygiene, static, release, frontend, bundles, backend, edge]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+    steps:
+      # History without blobs: base ci.yml and the owner allowlist are read at
+      # JUDGE_REF, and the PR's own ci.yml change is diffed from the merge-base.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          sparse-checkout: .github/workflows/ci.yml
+          sparse-checkout-cone-mode: false
+      # The judge: the base commit's whole scripts/ directory, so ci-gate.mjs
+      # runs with exactly the modules it was committed with. Never the PR's
+      # copy; a base without scripts/ci-gate.mjs fails the next step.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.JUDGE_REF }}
+          path: .judge
+          persist-credentials: false
+          sparse-checkout: scripts
+      - name: Evaluate lane results
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+          PLAN: ${{ needs.changes.outputs.plan }}
+          DRAFT: ${{ needs.changes.outputs.draft }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          BASE_REF: ${{ github.base_ref || github.event.pull_request.base.ref || github.event.merge_group.base_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .judge/scripts/ci-gate.mjs

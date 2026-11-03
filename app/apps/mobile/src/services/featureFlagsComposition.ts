@@ -1,20 +1,11 @@
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getSupabaseClient, type SupabaseAuthStorage } from '@kc/infrastructure-supabase';
+import { getSupabaseClient } from '@kc/infrastructure-supabase';
 import type { RemoteFeatureFlags } from '../config/featureFlags';
-
-function pickStorage(): SupabaseAuthStorage | undefined {
-  if (Platform.OS === 'web') {
-    if (typeof window === 'undefined' || !window.localStorage) return undefined;
-    return window.localStorage;
-  }
-  return AsyncStorage;
-}
+import { pickAuthStorage } from './authSecureStorage';
 
 /** Reads public.app_flags (0403). Any failure → {} so compiled defaults apply. */
 export async function fetchRemoteFeatureFlags(): Promise<RemoteFeatureFlags> {
   try {
-    const { data, error } = await getSupabaseClient({ storage: pickStorage() })
+    const { data, error } = await getSupabaseClient({ storage: pickAuthStorage() })
       .from('app_flags')
       .select('key, enabled');
     if (error || !data) return {};

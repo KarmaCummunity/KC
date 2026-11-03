@@ -71,7 +71,7 @@ export async function translateSingle(
     targetLanguage: body.targetLanguage,
   };
 
-  let cached = await getCached(writeClient, key);
+  const cached = await getCached(writeClient, key);
   if (cached && isUsableCache(sourceText, body.targetLanguage, cached)) {
     return { status: 'cached', translation: cached };
   }

@@ -1,11 +1,11 @@
 // Full-screen image viewer for post detail — tap carousel to inspect images (contain, no crop).
 // Mapped to: FR-POST-014 AC1.
 import React, { useEffect, useRef, useState } from 'react';
-import { Modal, NativeScrollEvent, NativeSyntheticEvent, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Modal, NativeScrollEvent, NativeSyntheticEvent, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, useTheme } from '@kc/ui';
+import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { KcFlashList, type KcFlashListRef } from './lists/KcFlashList';
 import { KCImage } from './ui/KCImage';
 

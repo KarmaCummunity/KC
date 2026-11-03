@@ -33,6 +33,15 @@ begin
   return v;
 end $$;
 
+-- The official city whose centre is nearest a point (test fixtures speak in coordinates).
+create or replace function pg_temp.nearest_city(p_lat float8, p_lng float8)
+returns text language sql stable as $$
+  select city_id from public.cities
+   where lat is not null and lon is not null
+   order by (lat - p_lat) ^ 2 + (lon - p_lng) ^ 2
+   limit 1;
+$$;
+
 create or replace function pg_temp.mk_ride(p_owner uuid, p_dir text, p_title text,
                                            o_lng float8, o_lat float8, d_lng float8, d_lat float8,
                                            p_dep timestamptz, p_window tstzrange default null,
@@ -45,7 +54,11 @@ begin
           (select kind_id from public.listing_kinds where world_slug = 'rides'
              and slug = case when p_dir = 'give' then 'ride_offer' else 'ride_request' end),
           p_dir, p_title,
-          jsonb_strip_nulls(jsonb_build_object('origin_lat', o_lat, 'origin_lng', o_lng, 'dest_lat', d_lat, 'dest_lng', d_lng,
+          -- Ride places must be official (D71, 0512): each end is the city nearest the given point,
+          -- and the canonical-places trigger stores that city's own coordinates.
+          jsonb_strip_nulls(jsonb_build_object(
+                             'origin_place_kind', 'city', 'origin_place_id', pg_temp.nearest_city(o_lat, o_lng),
+                             'dest_place_kind', 'city', 'dest_place_id', pg_temp.nearest_city(d_lat, d_lng),
                              'departs_at', p_dep, 'seats_available', p_seats, 'passengers', p_passengers)),
           3, p_window)
   returning listing_id into v;

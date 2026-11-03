@@ -9,11 +9,12 @@
 // shadow, orange-tinted IconTile, RTL-aware row layout, and a haptic
 // scale-press handled by the Card / PressableScale primitives.
 import React from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, radius, spacing, typography, useTheme } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, iconSize, useTheme, Text } from '@kc/ui';
 import { PressableScale } from './animations/PressableScale';
 import { Card } from './ui/Card';
+import { MirroredIcon } from './ui/MirroredIcon';
 import { IconTile } from './ui/IconTile';
 import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
 import { rowDirectionStart } from '../lib/rtlLayout';
@@ -44,9 +45,9 @@ const useStyles = makeUseStyles(({ colors }) => ({
   },
   compactIcon: { marginBottom: spacing.xs },
   textBlock: { flex: 1 },
-  title: { ...typography.h3, color: colors.textPrimary, marginBottom: 2, textAlign: rtlTextAlignStart },
+  title: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.xs, textAlign: rtlTextAlignStart },
   subtitle: { ...typography.body, color: colors.textSecondary, textAlign: rtlTextAlignStart },
-  titleCompact: { ...typography.h3, color: colors.textPrimary, textAlign: 'center' as const, fontSize: 16 },
+  titleCompact: { ...typography.h4, color: colors.textPrimary, textAlign: 'center' as const },
   subtitleCompact: {
     ...typography.bodySmall,
     color: colors.textSecondary,
@@ -96,7 +97,7 @@ export function DonationTile({
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.subtitle}>{subtitle}</Text>
         </View>
-        <Ionicons name="chevron-back" size={22} color={colors.textSecondary} />
+        <MirroredIcon name="chevron-forward" size={iconSize.xl} color={colors.textSecondary} />
       </Card>
     </PressableScale>
   );

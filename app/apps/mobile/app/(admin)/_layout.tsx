@@ -5,10 +5,12 @@
 import React, { Suspense, lazy, type ReactElement } from 'react';
 import { Stack } from 'expo-router';
 import { SafeAreaView, StyleSheet, View } from 'react-native';
-import { useBreakpoint, useTheme } from '@kc/ui';
+import { spacing, useBreakpoint, useTheme } from '@kc/ui';
 import { AdminGate } from '../../src/components/admin/AdminGate';
 import { rowDirectionStart } from '../../src/lib/rtlLayout';
 import { SimpleRowListSkeleton } from '../../src/components/skeletons/SimpleRowListSkeleton';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 const AdminNav = lazy(async () => {
   const mod = await import('../../src/components/admin/AdminNav');
@@ -17,7 +19,7 @@ const AdminNav = lazy(async () => {
 
 function AdminNavFallback() {
   return (
-    <View style={{ padding: 16, minWidth: 120 }}>
+    <View style={{ padding: spacing.base, minWidth: 120 }}>
       <SimpleRowListSkeleton rows={4} rowHeight={40} />
     </View>
   );

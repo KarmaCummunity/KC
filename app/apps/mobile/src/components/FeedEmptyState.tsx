@@ -3,10 +3,10 @@
 // helps when muted words / categories / people may be hiding posts.
 
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, useTheme } from '@kc/ui';
+import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { FeedCommunityCounter } from './FeedCommunityCounter';
 import { EmptyStateActions } from './EmptyState';
 

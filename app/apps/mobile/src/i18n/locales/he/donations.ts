@@ -1,27 +1,32 @@
+import { marketplaceMap } from './marketplaceMap';
 // Hebrew — Donations hub + Search tab (D-16, FR-DONATE-001..009, FR-FEED-016).
 // Locale file under `locales/he/`; composed into the bundle via `locales/he/index.ts`.
-// Rides strings (FR-RIDE-*) live in `donations.rides.ts` to keep file sizes
-// under the architecture cap.
+// Rides strings (FR-RIDE-*) live in `donations.rides.ts` (architecture file-size cap).
 import { rides } from './donations.rides';
 import { marketplaceErrors } from './donations.marketplaceErrors';
-import { marketplaceOrgPicker, marketplaceWorldLabels } from './donations.marketplaceExtras';
-import { marketplaceAvailabilityLabels, marketplaceFieldLabels, marketplaceOptionLabels } from './donations.marketplaceFields';
+import { marketplaceBrowseRefine, marketplaceWorldLabels } from './donations.marketplaceExtras';
+import { marketplaceAvailabilityLabels, marketplaceFieldLabels, marketplaceListingStatusLabels, marketplaceOptionLabels } from './donations.marketplaceFields';
+import { worldLaunch } from './donations.worldLaunch';
+import { linkWorldCategories } from './donations.linkWorlds';
+import { marketplaceMyListings } from './donations.myListings';
+import { worldFeed } from './donations.worldFeed';
 export { moneyPayments } from './donations.moneyPayments';
 export { timeVolunteer } from './donations.timeVolunteer';
 
 export const donations = {
   tabLabel: 'תרומות',
   hubTitle: 'תרומות של:',
-  hubHeroTitle: 'תן. קבל. תרום מה שיש לך.',
-  hubHeroSubtitle: 'בחר תחום שמדבר אליך והפוך אותו לפעולה.',
-  hubItemsFeaturedTitle: 'חפצים',
-  hubItemsFeaturedSubtitle: 'תרומה ובקשת חפצים — הפעולה המרכזית באפליקציה',
-  hubCategoriesSectionTitle: 'תחומי תרומה נוספים',
+  hubHeroTitle: 'לתת. לקבל. לתרום מה שיש לך.',
+  hubHeroSubtitle: 'לבחור תחום שמדבר אלינו ולהפוך אותו לפעולה.',
+  hubCategoriesSectionTitle: 'עולמות התרומה',
+  worldLaunch,
+  worldFeed,
   items: { title: 'חפצים', subtitle: 'תרומה ובקשת חפצים' },
   time: { title: 'זמן', subtitle: 'התנדבות וזמן פנוי' },
   money: { title: 'כסף', subtitle: 'תרומה כספית' },
   // FR-DONATE-006 — six new categories.
   categories: {
+    ...linkWorldCategories,
     food: {
       title: 'אוכל',
       subtitle: 'עמותות חלוקת מזון',
@@ -56,14 +61,14 @@ export const donations = {
       title: 'רפואה',
       subtitle: 'תמיכה רפואית וציוד',
       body:
-        'קטגוריית הרפואה תיפתח בהמשך.\nועד אז מזמינים אתכם ללתרום לקהילה עצמה, ולעזור לנו לגדול ולהתפתח.\nלעמותות של ציוד רפואי, טיפול ותמיכה, ותרומת דם ואברים — היכנסו לאחד הקישורים למטה.',
+        'תרומת דם, כרטיס אדי, עזרה ראשונה וציוד רפואי — כאן תמצאו את הגופים המובילים בישראל.\nבחרו גוף, היכנסו לאתר שלו ותצילו חיים.',
     },
   },
   moneyScreen: {
     title: 'תרומה כספית',
     body:
-      'תרומה לעמותות מאומתות באפליקציה (סandbox — ללא חיוב אמיתי). קישורים חיצוניים נשארים למטה.',
-    openLink: 'פתח את jgive.com',
+      'כאן אפשר לתמוך ישירות בקהילת קארמה, למצוא עמותות לתרומה ולשתף קישורים לעמותות שאתם מכירים.',
+    openLink: 'לפתוח את jgive.com',
     linkErrorTitle: 'לא הצלחנו לפתוח את הקישור',
     linkErrorBody: 'נסו דפדפן אחר או הקלידו את הכתובת ידנית.',
   },
@@ -71,12 +76,12 @@ export const donations = {
     title: 'תרומת זמן',
     body:
       'קטגוריית תרומת הזמן תפתח בקרוב.\nועד אז מזמינים אתכם להיכנס ולמצוא הזדמנויות התנדבות בפלטפורמה של ׳לב אחד׳, או בכל אחד מהקישורים פה למטה.',
-    openLink: 'פתח את לב אחד',
+    openLink: 'לפתוח את לב אחד',
     composerHeading: 'ניתן גם להתנדב ישירות בארגון שלנו, ולעזור לקהילה הזאת להפתח! \nהשאירו הודעה ונחזור אליכם.',
     composerPlaceholder: 'הקלידו את ההודעה שלכם — מקצוע, תחום עניין, וזמינות...',
-    sendButton: 'שלח הודעה',
+    sendButton: 'לשלוח הודעה',
     sendError: 'לא נשלח. נסו שוב.',
-    sendRetry: 'נסה שוב',
+    sendRetry: 'לנסות שוב',
     volunteerPrefix: 'התנדבות בארגון: ',
   },
   // FR-DONATE-007/008/009 — community-curated NGO link list.
@@ -90,17 +95,21 @@ export const donations = {
     },
     loading: 'טוען...',
     loadError: 'לא הצלחנו לטעון את הקישורים. נסו שוב.',
-    retry: 'נסה שוב',
+    // D9 — the submitter's own link while it waits, or after a rejection.
+    reviewPending: 'ממתין לאישור צוות KC',
+    reviewRejected: 'לא אושר',
+    reviewRejectedNote: 'לא אושר: {{note}}',
+    retry: 'לנסות שוב',
     rowMenu: {
-      open: 'פתח',
-      report: 'דווח על קישור',
-      edit: 'ערוך',
-      remove: 'מחק',
+      open: 'לפתוח',
+      report: 'לדווח על קישור',
+      edit: 'לערוך',
+      remove: 'למחוק',
     },
     reportSent: 'תודה, הדיווח התקבל.',
     confirmRemoveTitle: 'מחיקת קישור',
     confirmRemoveBody: 'הקישור יוסתר מהרשימה. להמשיך?',
-    confirmRemoveOk: 'מחק',
+    confirmRemoveOk: 'למחוק',
     confirmRemoveCancel: 'ביטול',
   },
   // FR-DONATE-010 — platform-support CTA card embedded on About + Settings.
@@ -108,12 +117,6 @@ export const donations = {
     title: 'תורמים באהבה? תרמו גם לקהילה',
     tagline:
       'קארמה היא קהילה חופשית שרצה על האהבה והנדיבות שלכם. כל תרומה עוזרת לנו להמשיך לבנות מקום של נתינה לכולם.',
-    ctaBit: 'תרומה דרך ביט',
-    ctaPaybox: 'תרומה דרך פייבוקס',
-    ctaBitA11y: 'פתח את אפליקציית ביט לתרומה לקהילת קארמה',
-    ctaPayboxA11y: 'פתח את אפליקציית פייבוקס לתרומה לקהילת קארמה',
-    linkErrorTitle: 'לא הצלחנו לפתוח את הקישור',
-    linkErrorBody: 'נסו לעדכן את האפליקציה או לפתוח את הקישור בדפדפן.',
   },
   // FR-RIDE-001..045 — hitchhiking (rides V3.0). Strings live in donations.rides.ts.
   rides,
@@ -130,11 +133,11 @@ export const donations = {
     descriptionLabel: 'תיאור (אופציונלי)',
     descriptionPlaceholder: 'מה אפשר למצוא בקישור הזה?',
     cancel: 'ביטול',
-    submit: 'הוסף',
-    save: 'שמור',
+    submit: 'להוסיף',
+    save: 'לשמור',
     submitting: 'מאמת קישור...',
-    helperText: 'הקישור יבדק שיהיה תקין לפני ההוספה.',
-    editHelperText: 'השינויים יבדקו מול השרת לפני השמירה.',
+    helperText: 'הקישור ייבדק, ויופיע לכולם אחרי אישור של צוות KC.',
+    editHelperText: 'אחרי שינוי, הקישור חוזר לאישור של צוות KC לפני שיופיע לכולם.',
     errors: {
       invalid_url: 'הקישור לא תקין. ודאו שהוא מתחיל ב-http או https.',
       invalid_input: 'נא לוודא שכל השדות מולאו כראוי.',
@@ -146,14 +149,12 @@ export const donations = {
       unknown: 'שגיאה לא צפויה. נסו שוב.',
     },
   },
-  marketplaceHubTitle: 'שוק התרומות',
-  marketplaceHubSubtitle: 'כל עולמות הנתינה במקום אחד',
 } as const;
 
 export const search = {
   tabLabel: 'חיפוש',
   title: 'חיפוש',
-  placeholder: 'חפש אנשים, פוסטים, קישורים...',
+  placeholder: 'לחפש אנשים, פוסטים, קישורים...',
 
   // Category chips
   all: 'הכל',
@@ -178,7 +179,7 @@ export const search = {
   filterMinFollowers: 'מינימום עוקבים',
   filterRadius: 'רדיוס מהעיר',
   radiusKm: 'עד {km} ק"מ',
-  clearFilters: 'נקה סינון',
+  clearFilters: 'לנקות סינון',
   applyFilters: 'החל סינון',
 
   // Results sections
@@ -188,7 +189,7 @@ export const search = {
   sectionOrgs: 'ארגונים',
   sectionHashtags: 'האשטגים',
   suggested: 'חיפושים מומלצים',
-  showAll: 'הצג הכל',
+  showAll: 'להציג הכל',
 
   // Result info
   followers: '{{count}} עוקבים',
@@ -199,7 +200,7 @@ export const search = {
   noResults: 'לא נמצאו תוצאות',
   noResultsDesc: 'נסו מילות חיפוש אחרות או שנו את הסינון.',
   recentSearches: 'חיפושים אחרונים',
-  clearRecent: 'נקה היסטוריה',
+  clearRecent: 'לנקות היסטוריה',
   startSearching: 'התחילו לחפש',
   startSearchingDesc: 'חפשו אנשים, פוסטים וקישורים בכל הקהילה.',
   minChars: 'הקלידו לפחות 2 תווים',
@@ -235,37 +236,35 @@ export const search = {
     knowledge: 'ידע',
     animals: 'חיות',
     medical: 'רפואה',
+    democracy: 'דמוקרטיה',
+    employment: 'תעסוקה',
+    challenges: 'אתגרים',
   },
 } as const;
 
 export const marketplace = {
-  browseTitle: 'שוק',
-  searchPlaceholder: 'חיפוש מודעות…',
+  ...marketplaceMap,
   allWorlds: 'כל העולמות',
-  openMap: 'תצוגת מפה',
-  createListing: 'פרסום מודעה',
   loading: 'טוען…',
   empty: 'אין מודעות לפי הסינון.',
-  mapTitle: 'אשכולות במפה',
-  mapEmpty: 'אין מודעות עם מיקום באזור.',
   clusterLabel: '{{count}} מודעות',
   notFound: 'המודעה לא נמצאה.',
   startChat: 'שליחת הודעה',
   shareFeed: 'שיתוף בפיד',
+  actionFailed: 'הפעולה לא הושלמה. נסו שוב.',
+  actionErrors: {
+    signInRequired: 'צריך להתחבר כדי לשלוח הודעה.',
+    accountNotActive: 'החשבון שלך עדיין לא פעיל, ולכן אי אפשר לשלוח הודעה.',
+    listingUnavailable: 'המודעה כבר לא זמינה.',
+    ownListing: 'זו המודעה שלך.',
+  },
   chatOpener: 'היי — ראיתי את המודעה שלך בשוק.',
-  createTitle: 'מודעה חדשה — {{world}}',
   fieldTitle: 'כותרת',
   fieldSummary: 'תקציר',
-  publish: 'פרסום',
   publishing: 'מפרסם…',
   forYouTitle: 'בשבילך',
-  createHubTitle: 'בחירת עולם נתינה',
-  fieldKind: 'סוג מודעה',
-  fieldDirection: 'מציע / מבקש',
-  fieldCity: 'עיר / אזור',
-  fieldRadius: 'רדיוס חיפוש: {{km}} ק״מ',
-  fieldPhotos: 'תמונות',
-  fieldPhotosHint: 'מודעות עם תמונה מקבלות יותר תגובות.',
+  fieldWorldSubcategory: 'תת-קטגוריה',
+  fieldWorldSubcategoryHint: 'לא חובה — עוזר למצוא לך התאמות',
   validationFailed: 'בדקו את הטופס ({{code}}).',
   errors: marketplaceErrors,
   shareLink: 'שיתוף קישור',
@@ -276,25 +275,11 @@ export const marketplace = {
   profileListingsTitle: 'מודעות בשוק',
   profileListingsEmpty: 'אין מודעות ציבוריות עדיין.',
   statusClosed: 'הושלם',
-  myListingsNav: 'המודעות שלי',
-  myListingsTitle: 'המודעות שלי',
-  myListingsSubtitle: 'עריכה, השהיה, סימון כהושלם או מחיקה. השלמה מעניקה קארמה.',
-  myListingsEmpty: 'אין לך מודעות עדיין.',
-  myListingsEdit: 'עריכה',
-  myListingsPause: 'השהיה',
-  myListingsResume: 'חידוש',
-  myListingsFulfill: 'סימון כהושלם',
-  myListingsFulfillTitle: 'לסמן כהושלם?',
-  myListingsFulfillHint: 'המודעה תיסגר ותקבלו נקודות קארמה על השלמת נתינה/בקשה.',
-  myListingsDelete: 'מחיקה',
-  myListingsDeleteTitle: 'למחוק את המודעה?',
-  myListingsDeleteHint: 'המודעה תימחק לצמיתות.',
-  myListingsSave: 'שמירת שינויים',
-  myListingsUpdated: 'עודכן {{date}}',
-  mapWebFallback: 'מפה אינטראקטיבית זמינה באפליקציה. האשכולות למטה מגיעים מאותו מקור בשרת.',
+  ...marketplaceMyListings,
   world: marketplaceWorldLabels,
-  orgPicker: marketplaceOrgPicker,
+  browseRefine: marketplaceBrowseRefine,
   field: marketplaceFieldLabels,
   option: marketplaceOptionLabels,
   availability: marketplaceAvailabilityLabels,
+  listingStatus: marketplaceListingStatusLabels,
 } as const;

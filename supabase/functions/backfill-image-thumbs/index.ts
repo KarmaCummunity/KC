@@ -22,8 +22,9 @@
 // Runbook entry: docs/SSOT/OPERATOR_RUNBOOK.md → "Backfill image thumbs".
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { Jimp } from 'https://esm.sh/jimp@1.6.0';
+import { reportError, withObservability } from '../_shared/observability/mod.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -63,7 +64,7 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-type AdminClient = ReturnType<typeof createClient>;
+type AdminClient = SupabaseClient;
 
 /** `a/b/c.jpg` → `a/b/c-thumb.jpg`. Mirrors the FE helper in `apps/mobile/src/lib/imageUrl.ts`. */
 function deriveThumbPath(path: string): string {
@@ -224,7 +225,7 @@ async function backfillBucket(
   return stats;
 }
 
-serve(async (req: Request) => {
+serve(withObservability('backfill-image-thumbs', async (req: Request) => {
   if (req.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405);
 
   const auth = req.headers.get('Authorization') ?? '';
@@ -267,7 +268,7 @@ serve(async (req: Request) => {
     return json({ ok: true, dryRun, results });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[backfill-image-thumbs] fatal', msg);
+    await reportError(err, { fn: 'backfill-image-thumbs', req });
     return json({ ok: false, error: msg }, 500);
   }
-});
+}));

@@ -24,6 +24,7 @@ export const feedEn = {
   refreshFailed: 'Refresh failed — please try again',
   refreshA11y: 'Refresh the feed (R)',
   filterA11y: 'Filter and sort posts',
+  openMapA11y: 'Open map view',
   filterA11yHint: 'Opens a panel to filter and sort the feed',
   newPostsOne: '1 new post — tap to refresh',
   newPostsMany: '{{count}} new posts — tap to refresh',

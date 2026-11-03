@@ -10,6 +10,7 @@ function hierarchyRepo(setManagerError?: Error): IOrgHierarchyRepository {
     setManager: vi.fn(async () => {
       if (setManagerError) throw setManagerError;
     }),
+    getHierarchyCensus: vi.fn(),
   };
 }
 
@@ -19,6 +20,7 @@ function roleRepo(roles: readonly AdminRole[]): IAdminRoleRepository {
     listAdmins: vi.fn(),
     grantRole: vi.fn(),
     revokeRole: vi.fn(),
+    changeRole: vi.fn(),
   };
 }
 

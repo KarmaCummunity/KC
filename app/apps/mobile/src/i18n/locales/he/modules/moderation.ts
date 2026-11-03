@@ -2,10 +2,10 @@
 export const moderationHe = {
   report: {
     user: {
-      title: 'דווח על משתמש',
+      title: 'דווחו על משתמש',
       reasonLabel: 'סיבת הדיווח',
       noteLabel: 'הערה (אופציונלי, עד 500 תווים)',
-      submit: 'שלח דיווח',
+      submit: 'שלחו דיווח',
       successTitle: 'הדיווח נשלח',
       successToast: '✅ הדיווח התקבל. הצוות שלנו יבדוק.',
       duplicateTitle: 'כבר דיווחת',
@@ -36,6 +36,10 @@ export const moderationHe = {
     confirmCopy: 'פעולה זו לצמיתות ואינה ניתנת לביטול. להמשיך?',
     successToast: 'המשתמש נחסם.',
   },
+  suspendedBanner: {
+    body: 'החשבון שלך מושעה כרגע: אפשר לגלוש, אבל לא לפרסם או לשלוח הודעות. אפשר לפנות לתמיכה.',
+    contactSupport: 'פנייה לתמיכה',
+  },
   bubble: {
     reportReceived: {
       title: 'דיווח התקבל',
@@ -48,23 +52,26 @@ export const moderationHe = {
     modActionTaken: {
       body: '✅ טופל ע״י אדמין · {action} · {time}',
     },
+    ownerHiddenForReview: {
+      body: 'הפוסט שלך הוסתר בעקבות דיווחים חוזרים וממתין לבדיקת צוות. נעדכן אותך כאן.',
+    },
     ownerAutoRemoved: {
       body: 'הפוסט שלך הוסר אוטומטית בעקבות דיווחים חוזרים. אם זו טעות, ניתן לערער דרך כתובת התמיכה.',
     },
     donationLinkReported: {
       title: 'דיווח על קישור תרומה',
-      a11yOpen: 'פתח קישור: {name}',
+      a11yOpen: 'פתחו קישור: {name}',
     },
     targetPreview: {
-      open: 'פתח',
+      open: 'פתחו',
       postLabel: 'פוסט',
       profileLabel: 'פרופיל',
       hasImage: '📷 כולל תמונה',
       reporterNoteLabel: 'הערת מדווח:',
       evidenceLabel: 'צילום מצב מרגע הדיווח',
       chatNote: 'דיווח על שיחה — מוצג הצד השני',
-      a11yOpenPost: 'פתח פוסט מאת {who}',
-      a11yOpenProfile: 'פתח פרופיל של {who}',
+      a11yOpenPost: 'פתחו פוסט מאת {who}',
+      a11yOpenProfile: 'פתחו פרופיל של {who}',
     },
   },
   block: {
@@ -76,24 +83,30 @@ export const moderationHe = {
     confirmUnblockBody: 'תוכלו לראות שוב זה את זה. מעקב שהוסר בגלל החסימה לא יחזור.',
     blockedToast: 'המשתמש נחסם.',
     unblockedToast: 'החסימה בוטלה.',
+    // FR-MOD-004 AC1 — the Blocked Users screen (Settings).
+    listTitle: 'משתמשים חסומים',
+    listHint: 'מי שחסמתם לא רואה אתכם ואתם לא רואים אותו. ביטול חסימה מחזיר את הנראות, אבל לא את המעקב.',
+    listEmpty: 'לא חסמתם אף אחד.',
+    listError: 'לא הצלחנו לטעון את הרשימה. נסו שוב.',
+    unnamedUser: 'משתמש',
     failed: 'משהו השתבש. נסו שוב.',
   },
   actions: {
-    restore: '↩ שחזר',
+    restore: '↩ שחזרו',
     dismiss: '🗑 דחה דיווח',
     confirm: '✓ אשר הסרה',
     ban: '🚫 חסום משתמש',
-    removePost: '🗑 הסר פוסט',
-    deleteMessage: '🗑 מחק הודעה',
+    removePost: '🗑 הסירו פוסט',
+    deleteMessage: '🗑 מחקו הודעה',
     cancel: 'ביטול',
     proceed: 'המשך',
     confirmModal: {
       restore: 'פעולה זו תסמן את הדיווחים על המטרה כשגויים, מה שעלול לגרור סנקציה לרֶפּוֹרְטֵרים. להמשיך?',
-      dismiss: 'סמן דיווח זה כשגוי. אין השפעה על דיווחים אחרים. להמשיך?',
+      dismiss: 'סמנו דיווח זה כשגוי. אין השפעה על דיווחים אחרים. להמשיך?',
       confirm: 'אשר את ההסרה האוטומטית כהפרה ודאית. להמשיך?',
       ban: 'פעולה זו לצמיתות ואינה ניתנת לביטול. להמשיך?',
-      removePost: 'הסר פוסט זה כאדמין. להמשיך?',
-      deleteMessage: 'מחק הודעה זו לצמיתות. להמשיך?',
+      removePost: 'הסירו פוסט זה כאדמין. להמשיך?',
+      deleteMessage: 'מחקו הודעה זו לצמיתות. להמשיך?',
     },
     success: {
       restore: 'המטרה שוחזרה.',
@@ -106,7 +119,7 @@ export const moderationHe = {
     errors: {
       forbidden: 'אין לך הרשאה לפעולה זו.',
       invalidRestoreState: 'לא ניתן לשחזר את המטרה במצבה הנוכחי.',
-      networkError: 'תקלה ברשת. נסה שוב.',
+      networkError: 'תקלה ברשת. נסו שוב.',
     },
   },
   supportIssueBubble: {
@@ -118,7 +131,7 @@ export const moderationHe = {
 
 export const auditHe = {
   title: 'אאודיט',
-  searchPlaceholder: 'חפש משתמש לפי שם...',
+  searchPlaceholder: 'חפשו משתמש לפי שם...',
   noResults: 'אין תוצאות.',
   loading: 'טוען...',
   metadataLabel: 'מטא-דאטה',

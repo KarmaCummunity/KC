@@ -9,7 +9,8 @@
 //      shortcuts are enabled.
 // All strips use the same styling so the warning is recognizable.
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { colors, Text, spacing, typography, zIndex } from '@kc/ui';
 import { useTranslation } from 'react-i18next';
 import { isDevGhostSessionEnabled } from '../services/devGhostSession';
 import { isDevAutoSignInEnabled } from '../services/devAutoSignIn';
@@ -45,20 +46,20 @@ const styles = StyleSheet.create({
   bar: {
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 9999,
-    backgroundColor: '#B91C1C',
+    start: 0,
+    end: 0,
+    zIndex: zIndex.toast,
+    backgroundColor: colors.error,
   },
   inner: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
     alignItems: 'center',
   },
   text: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '600',
+    color: colors.textInverse,
+    ...typography.caption,
+    ...typography.semiBold,
     letterSpacing: 0.3,
   },
 });

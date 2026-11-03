@@ -1,8 +1,6 @@
 # Karma Community — Supabase project config
 # See https://supabase.com/docs/reference/cli/config for the full reference.
 # This file is committed; secrets (anon/service-role keys, project URL) live in .env / dashboard.
-# Touch (2026-06-13): refresh the supabase-dev deployment for the dev→main release
-# gate (see .github/workflows/db-deploy.yml note). No behavioral change.
 
 project_id = "karma-community"
 
@@ -46,4 +44,11 @@ enable_confirmations = false
 # Local-only mock auth for E2E / AI agent testing. verify_jwt=false because callers
 # are unauthenticated; the handler itself 404s on hosted Supabase URLs.
 [functions.mock-login]
+verify_jwt = false
+
+# Meta calls the webhook without a Supabase JWT; the handler verifies X-Hub-Signature-256 and fails closed.
+[functions.whatsapp-webhook]
+verify_jwt = false
+
+[functions.revenuecat-webhook]
 verify_jwt = false

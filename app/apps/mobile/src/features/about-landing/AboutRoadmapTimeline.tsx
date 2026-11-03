@@ -1,9 +1,9 @@
 // Vertical numbered timeline for the About roadmap section — summary + per-phase expand.
 import React, { useCallback, useState } from 'react';
-import { View, Text, Pressable, LayoutAnimation, Platform } from 'react-native';
+import { View, Pressable, LayoutAnimation, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, typography, spacing, radius, useTheme } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, iconSize, useTheme, Text } from '@kc/ui';
 import { aboutRtlText, aboutRtlRow } from './aboutWebRtlStyle';
 
 type PhaseSeverity = 'current' | 'soon' | 'future' | 'long-term';
@@ -90,7 +90,7 @@ export function AboutRoadmapTimeline() {
                     <Text style={[styles.expandLabel, { color: accent }]}>
                       {expanded ? t('aboutContent.roadmapExpandLess') : t('aboutContent.roadmapExpandMore')}
                     </Text>
-                    <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color={accent} />
+                    <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={iconSize.sm} color={accent} />
                   </Pressable>
                   {expanded ? (
                     <View style={[styles.detailsBox, { borderStartColor: accent }]}>
@@ -115,7 +115,7 @@ const useAboutRoadmapTimelineStyles = makeUseStyles(({ colors, isDark }) => ({
   dotRing: {
     width: DOT + 8,
     height: DOT + 8,
-    borderRadius: (DOT + 8) / 2,
+    borderRadius: radius.full,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -124,11 +124,11 @@ const useAboutRoadmapTimelineStyles = makeUseStyles(({ colors, isDark }) => ({
   dot: {
     width: DOT,
     height: DOT,
-    borderRadius: DOT / 2,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dotNum: { ...typography.caption, color: colors.textInverse, fontWeight: '800', fontSize: 12 },
+  dotNum: { ...typography.label, color: colors.textInverse, ...typography.extraBold },
   line: { flex: 1, width: 2, marginTop: spacing.xs, minHeight: 24 },
   card: {
     flex: 1,
@@ -163,12 +163,12 @@ const useAboutRoadmapTimelineStyles = makeUseStyles(({ colors, isDark }) => ({
   },
   statusBadge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
+    paddingVertical: spacing.xs,
     borderRadius: radius.full,
   },
-  statusText: { ...typography.caption, color: colors.textInverse, fontWeight: '700', fontSize: 11 },
-  label: { ...typography.label, color: colors.textDisabled, fontWeight: '800', ...aboutRtlText },
-  title: { ...typography.body, fontWeight: '800', color: colors.textPrimary, ...aboutRtlText },
+  statusText: { ...typography.caption, color: colors.textInverse, ...typography.bold },
+  label: { ...typography.label, color: colors.textDisabled, ...typography.extraBold, ...aboutRtlText },
+  title: { ...typography.body, ...typography.extraBold, color: colors.textPrimary, ...aboutRtlText },
   summary: { ...typography.body, color: colors.textSecondary, ...aboutRtlText, lineHeight: 23 },
   expandBtn: {
     flexDirection: aboutRtlRow,
@@ -181,7 +181,7 @@ const useAboutRoadmapTimelineStyles = makeUseStyles(({ colors, isDark }) => ({
     borderRadius: radius.full,
     backgroundColor: isDark ? colors.surfaceRaised : colors.background,
   },
-  expandLabel: { ...typography.caption, fontWeight: '700' },
+  expandLabel: { ...typography.caption, ...typography.bold },
   detailsBox: {
     marginTop: spacing.xs,
     paddingStart: spacing.md,

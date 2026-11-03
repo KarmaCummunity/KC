@@ -1,5 +1,5 @@
-import { Platform, Text, View } from 'react-native';
-import { makeUseStyles, PlatformSwitch, spacing } from '@kc/ui';
+import { Platform, View } from 'react-native';
+import { makeUseStyles, PlatformSwitch, spacing, typography, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../lib/webRtlStyle';
 
@@ -49,16 +49,16 @@ const useStyles = makeUseStyles(({ colors }) => ({
   },
   text: { flex: 1, width: '100%' },
   label: {
-    fontSize: 16,
-    fontWeight: '500',
+    ...typography.bodyLarge,
+    ...typography.medium,
     textAlign: rtlTextAlignStart,
     color: colors.textPrimary,
     ...webTextRtl,
   },
   caption: {
-    fontSize: 12,
+    ...typography.bodySmall,
     color: colors.textSecondary,
-    marginTop: 4,
+    marginTop: spacing.xs,
     textAlign: rtlTextAlignStart,
     ...webTextRtl,
   },

@@ -1,11 +1,11 @@
 // Sticky guest invite on public research — FR-RESEARCH-001 AC2, FR-RESEARCH-004 AC7.
 // Shown only when the visitor is not signed in; keeps the survey fully usable.
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { useRouter, type Href } from 'expo-router';
+import { Pressable, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, spacing, typography, useTheme } from '@kc/ui';
+import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { webTextRtl, webViewRtl } from '../../lib/webRtlStyle';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { useAuthStore } from '../../store/authStore';
@@ -21,7 +21,7 @@ export function ResearchGuestInviteBanner(): React.JSX.Element | null {
   if (isLoading || isAuthenticated) return null;
 
   function handleSignUp() {
-    router.push('/(auth)' as Href);
+    router.push('/(auth)');
   }
 
   return (

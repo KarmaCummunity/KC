@@ -9,29 +9,35 @@
  * SDK never enters the bundle on first paint — important because:
  *   1. Dev builds currently ship without a DSN.
  *   2. Even in prod, deferring the SDK past first paint shaves cold-start time.
+ *
+ * `expo-constants` is loaded lazily too: this module sits behind every error
+ * boundary (KC#1410), so its import graph must stay free of native modules
+ * that cannot load outside the app runtime (jsdom tests, web SSR).
  */
-import Constants from 'expo-constants';
-
-const DSN: string | undefined =
-  (process.env.EXPO_PUBLIC_SENTRY_DSN as string | undefined) ??
-  (Constants.expoConfig?.extra as { sentryDsn?: string } | undefined)?.sentryDsn;
 
 type Env = 'dev' | 'prod';
+
+/** Shape of `Constants.expoConfig` fields read here (kept local to avoid the eager import). */
+type ExpoConfigLike = {
+  extra?: { sentryDsn?: string };
+  updates?: { requestHeaders?: Record<string, string> };
+};
+
+/** DSN from the build-time env var, else from `app.config` extra. */
+function resolveDsn(config: ExpoConfigLike | undefined): string | undefined {
+  return (process.env.EXPO_PUBLIC_SENTRY_DSN as string | undefined) ?? config?.extra?.sentryDsn;
+}
+
 /**
  * Environment comes from the EAS build profile (eas.json sets
  * EXPO_PUBLIC_ENVIRONMENT=production only on the `production` profile),
  * falling back to the EAS Update channel. Everything else reports as `dev`.
  */
-function detectEnv(): Env {
+function detectEnv(config: ExpoConfigLike | undefined): Env {
   const profileEnv = process.env.EXPO_PUBLIC_ENVIRONMENT;
   if (profileEnv) return profileEnv === 'production' ? 'prod' : 'dev';
-  const channel = (Constants.expoConfig?.updates as { requestHeaders?: Record<string, string> } | undefined)
-    ?.requestHeaders?.['expo-channel-name'];
+  const channel = config?.updates?.requestHeaders?.['expo-channel-name'];
   return channel === 'production' ? 'prod' : 'dev';
-}
-
-export function hasDsn(): boolean {
-  return Boolean(DSN);
 }
 
 let initialised = false;
@@ -39,18 +45,21 @@ let sentryModule: typeof import('@sentry/react-native') | null = null;
 
 export async function initSentry(): Promise<void> {
   if (initialised) return;
-  if (!DSN) {
-    if (__DEV__) console.warn('[observability] Sentry DSN missing — skipping init');
-    return;
-  }
   try {
+    const { default: Constants } = await import('expo-constants');
+    const config = Constants.expoConfig as ExpoConfigLike | undefined;
+    const dsn = resolveDsn(config);
+    if (!dsn) {
+      if (__DEV__) console.warn('[observability] Sentry DSN missing — skipping init');
+      return;
+    }
     const mod = await import('@sentry/react-native');
-    const env = detectEnv();
+    const env = detectEnv(config);
     mod.init({
-      dsn: DSN,
+      dsn,
       environment: env,
       enableAutoSessionTracking: true,
-      // Shared kupay-hb free quota: keep prod tracing <= 0.1 (shared-dev conventions).
+      // Free-tier Sentry quota: keep prod tracing <= 0.1 (shared-dev conventions).
       tracesSampleRate: env === 'prod' ? 0.1 : 1.0,
       enableNativeFramesTracking: true,
     });

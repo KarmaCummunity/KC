@@ -1,5 +1,7 @@
 // HOF that wraps an Edge Function handler with timing + cold-start logging.
 // Read logs via `mcp__supabase__get_logs` (service: edge-function).
+// Composed by `_shared/observability` (G41): functions import `withObservability`
+// from there rather than this module directly.
 const MODULE_LOADED_AT = Date.now();
 const COLD_START_WINDOW_MS = 200;
 

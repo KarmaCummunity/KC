@@ -1,9 +1,9 @@
 // Search-screen aside — recent searches (FR-RESP-003).
 // Tapping a row asks the search screen to run that query via the store's
 // requestedQuery handshake (the input state lives inside the screen).
-import { Text, TouchableOpacity } from 'react-native';
+import { TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, useTheme } from '@kc/ui';
+import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { useSearchStore } from '../../store/searchStore';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';

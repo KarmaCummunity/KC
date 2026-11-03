@@ -1,6 +1,6 @@
 # 2.1 Authentication & Onboarding
 
-> **Status:** 🟡 Partial — Google + guest preview shipped; email/password via secondary link on welcome. Full `FR-AUTH-002` picker (Phone OTP, tabbed email) deferred — `TD-151`; Apple SSO (`FR-AUTH-004`) implemented natively (`D-58`, 2026-06-04), live flow pends Supabase Apple provider config. Onboarding + sessions + delete: ✅. **Audit 2026-05-29:** `performFullSignOut` + restore expiry sign-out shipped (TD-164). ⚠️ Audit 2026-05-16: ~~🔴 **FR-AUTH-017 AC3** sign-out leaves Expo push token active~~ addressed by TD-164; welcome screen has no email entry per FR-AUTH-001 AC2 (TD-104); Forgot Password button dead (FR-AUTH-008 unimplemented); FR-AUTH-015 soft-gate wired only to post-create (not follow + chat); FR-AUTH-016 30-day re-registration cooldown unimplemented; FR-AUTH-011 AC2 avatar resize 512 vs spec'd 1024; SignInWithEmail short-circuits `invalid_email` distinct from `authentication_failed` (D-22 spirit). See `docs/SSOT/archive/audit/2026-05-16/02_auth_profile.md`.
+> **Status:** 🟡 Partial — Google + guest preview shipped; email/password via secondary link on welcome. Full `FR-AUTH-002` picker (Phone OTP, tabbed email) deferred — `TD-151`; Apple SSO (`FR-AUTH-004`) implemented natively (`D-58`, 2026-06-04), live flow pends Supabase Apple provider config. Onboarding + sessions + delete: ✅. **Audit 2026-05-29:** `performFullSignOut` + restore expiry sign-out shipped (TD-164). ⚠️ Audit 2026-05-16: ~~🔴 **FR-AUTH-017 AC3** sign-out leaves Expo push token active~~ addressed by TD-164; ~~welcome screen has no email entry per FR-AUTH-001 AC2 (TD-104)~~ ✅ 2026-10-30 — "continue with email" text link restored on every platform (KC#1269, `testID=auth-email-entry`); ~~Forgot Password button dead (FR-AUTH-008 unimplemented)~~ ✅ FR-AUTH-008 implemented 2026-10-30; FR-AUTH-015 soft-gate wired only to post-create (not follow + chat); FR-AUTH-016 30-day re-registration cooldown unimplemented; FR-AUTH-011 AC2 avatar resize 512 vs spec'd 1024; SignInWithEmail short-circuits `invalid_email` distinct from `authentication_failed` (D-22 spirit). See `docs/SSOT/archive/audit/2026-05-16/02_auth_profile.md`.
 
 
 
@@ -64,6 +64,7 @@ A single screen exposes all available authentication methods. The set of methods
 - AC3. The screen offers a single Terms-of-Service consent checkbox required for sign-up; sign-in does not require re-consent.
 - AC4. Selecting a method that is unavailable due to a misconfiguration (e.g. Google client not initialized) surfaces a non-blocking error toast and the screen remains usable for the other methods.
 - AC5. On successful authentication completion (Google / Apple / email-password), the user is routed to the legal consent gate **before** the authenticated shell renders and before the onboarding soft gate is evaluated. The gate is satisfied either by an existing `user_legal_acceptances` row clearing `needs_legal_reacknowledgement` for the current user, or by completing the post-OAuth consent screen (`FR-SETTINGS-010` AC4). Sign-out from the consent screen returns the user to the welcome screen with the auth session terminated.
+- AC5.a. **Minimum age 18 at launch (#1450).** In sign-up mode the consent screen also shows a required "I confirm I am 18 or older" checkbox (copy in locale files, `legal.checkboxAge18`); Continue stays disabled until it and every pending document are checked. Update mode (re-consent to new document versions) does not ask again. The server confirms it against the date of birth (`FR-AUTH-010` AC2.d). A later stage will allow ages 13–17 with parental consent.
 
 **Edge Cases.**
 - A user who already linked one method cannot link a second one in MVP (`FR-AUTH-009`).
@@ -186,12 +187,15 @@ A returning user authenticates using the method they originally signed up with.
 - AC3. The session token is stored in platform-secure storage (Keychain on iOS, EncryptedSharedPreferences on Android, a secure HTTP-only cookie on Web).
 - AC4. Session expiry is 30 days of inactivity. Active use silently refreshes the token.
 - AC6. When `signInWithPassword` returns `email_not_confirmed`, the sign-in screen renders the verification-pending state defined in FR-AUTH-006 AC2 instead of an error alert. The user can then resend, open mail, or change email.
+- AC7. The email sign-in screen reads, top to bottom: title → social sign-in (Google; Apple on iOS) → an "או" ("or") divider → the email and password form. The divider sits **below** the social buttons and leads into the form. The email sign-up screen (`FR-AUTH-006`) follows the same order. Implemented by the shared `AuthSocialSignInBlock`; regression test `components/auth/__tests__/AuthSocialSignInBlock.test.tsx`.
 
 **Related.** Screens: 1.2, 1.3 · Domain: `Session`.
 
 ---
 
 ## FR-AUTH-008 — Forgot password (email method only)
+
+> **Status (2026-10-30):** ✅ Implemented — `RequestPasswordResetUseCase` (AC1 uniform outcome), `ResetPasswordUseCase` (policy check before the single-use token, global sign-out: AC2, AC3), screens `app/(auth)/forgot-password.tsx` and `app/auth/reset-password.tsx`. AC2's 30-minute expiry and the `token_hash` link are hosted Supabase Auth settings (email template + OTP expiry), not repo code — see `docs/spec/95_reconciliation.md` G36.
 
 **Description.**
 A user with the email method can request a password reset link.
@@ -253,7 +257,8 @@ Captures `display_name`, `city` (canonical picker), and optionally `profile_stre
 - AC2. `city` is a dropdown of the canonical Israeli city list seeded by the system. No free-text city.
 - AC2.b. **Optional full address (MVP+):** After choosing a city, the user may enter `profile_street` (1–80 chars) and `profile_street_number` (same validation and storage rule as posts / `FR-PROFILE-007`: digits with an optional single-letter suffix — Latin or Hebrew — e.g. `12`, `12B`, `12א`; see `04_posts.md` street_number AC3). Both must be filled together or both left empty; values persist to `users.profile_street` / `users.profile_street_number` (`FR-PROFILE-007`). Omitting them keeps city-only residence. **Street is a city-dependent canonical picker** over `public.streets` (sourced from data.gov.il package 321; see `D-36`) with a free-text fallback row that lets the user save any string when the typed name is not in the list. **On this screen the street + number fields are progressively disclosed** — hidden until a city is selected, revealed via the existing entry animation, collapsed back to hidden if the user clears the city. Switching the city resets street + number so a Tel Aviv street can never accompany a Jerusalem submission.
 - AC2.c. **Optional contact phone (MVP+):** Below the address, the user may enter a free-text contact phone (`users.contact_phone`, 1–20 chars after trim). The field is **non-verified** in MVP — no OTP, no format validation, no country-code normalization. Null = unset. Distinct from the auth phone (`auth.users.phone`) used for `FR-AUTH-005` OTP sign-in. Surfaced to other users as a tappable `tel:` link on the chat anchored-post card (`FR-CHAT-014`).
-- AC3. A "Skip" option exists. Skipping advances to step 3 (Profile Photo, `FR-AUTH-011`) but marks `User.onboarding_state = pending_basic_info`. The first attempt at a meaningful action (post creation, follow, sending the first chat message) re-prompts to fill these fields (see `FR-AUTH-015`). The system also persists `users.basic_info_skipped = true` on Skip so returning sessions (cold start, app update, re-auth) **land on the Home Feed** instead of forcing the full-screen wizard again; the deferred fields are still collected only via `FR-AUTH-015` until saved.
+- AC2.d. **Date of birth (`D109`):** a required date field (`users.date_of_birth`), private to the owner. The user must be at least 18 on the day of the check; a younger or invalid date is rejected with an inline error and nothing is saved. The server enforces the same rule, so a modified client cannot bypass it.
+- AC3. A "Skip" option exists. Skipping advances to step 3 (Profile Photo, `FR-AUTH-011`) but marks `User.onboarding_state = pending_basic_info` (and leaves the date of birth empty). The first attempt at a meaningful action (post creation, follow, sending the first chat message) re-prompts to fill these fields (see `FR-AUTH-015`). The system also persists `users.basic_info_skipped = true` on Skip so returning sessions (cold start, app update, re-auth) **land on the Home Feed** instead of forcing the full-screen wizard again; the deferred fields are still collected only via `FR-AUTH-015` until saved.
 - AC4. SSO-prefilled values are editable and persisted upon "Continue".
 
 **Edge Cases.**
@@ -353,7 +358,8 @@ A user whose `onboarding_state` is `pending_basic_info` and who attempts to crea
 - PRD: `03_Core_Features.md` §3.1.2 (in spirit).
 
 **Acceptance Criteria.**
-- AC1. The modal contains the same fields as the Basic Info onboarding step (`display_name`, city picker, optional street + house number, optional contact phone) and a single "Save and continue" button.
+- AC1. The modal contains the same fields as the Basic Info onboarding step (`display_name`, city picker, **date of birth**, optional street + house number, optional contact phone) and a single "Save and continue" button.
+- AC1.b. The gate also applies to an existing user whose `date_of_birth` is empty: the first meaningful action asks for it, even when `onboarding_state` is already `completed`.
 - AC2. Cancelling the modal returns the user to the previous screen with no side effects.
 - AC3. After save, the system continues into the originally attempted action.
 
@@ -364,25 +370,22 @@ A user whose `onboarding_state` is `pending_basic_info` and who attempts to crea
 
 ---
 
-## FR-AUTH-016 — Account deletion & re-registration cooldown
+## FR-AUTH-016 — Account deletion grace period (replaces the re-registration cooldown)
 
 **Description.**
-A deleted account's primary identifier (phone, email, or SSO `sub`) cannot be reused for re-registration for 30 days after deletion.
+A deleted account is deactivated for 30 days and can be restored by signing in; there is no re-registration cooldown (`D108`, PM 2026-11-03). The deletion itself is `FR-SETTINGS-012`.
 
 **Source.**
-- Decisions: `D-12`.
-- PRD: `03_Core_Features.md` §3.5 (Account deletion).
+- Decisions: `D-12`, `D108` (supersedes the 30-day identifier cooldown).
 - Constraints: `R-MVP-Privacy-6`.
 
 **Acceptance Criteria.**
-- AC1. On account deletion, the system retains an opaque hash of the identifier with a `deleted_at` timestamp until `deleted_at + 30 days`, after which the record is hard-deleted.
-- AC2. Sign-up attempts whose identifier hashes match an entry in the cooldown table are rejected with the message: *"This identifier was used by an account that was recently deleted. You can register again 30 days after deletion."*
-- AC3. Cooldown rejection events are counted into security telemetry; >5 rejections from the same device fingerprint within 7 days triggers a soft-block on the device.
+- AC1. While an account is pending deletion its email, phone and SSO identity stay attached to it, so nobody else can register with them; there is no `DeletedIdentifier` table.
+- AC2. Signing in during the 30 days does not open the app. It shows a "restore your account" screen with the purge date and two actions: restore, or stay signed out.
+- AC3. Restoring returns the account to `active` with all its data as it was; the restore is audited.
+- AC4. After 30 days the purge job (`FR-SETTINGS-012` AC4) deletes the account and frees the identifiers; signing up again then creates a new account.
 
-**Edge Cases.**
-- Phone reuse by a different person within the cooldown is impossible — by design, prevents privacy leaks (the new owner could see leftover artifacts otherwise).
-
-**Related.** Domain: `DeletedIdentifier`.
+**Related.** Screens: restore screen · Domain: `User`.
 
 ---
 
@@ -411,3 +414,4 @@ The user can log out from the Settings screen, terminating the local session.
 | 0.4 | 2026-05-14 | Migration `0067`: `account_status` lifecycle simplified — email/password sign-up blocked at Supabase Auth boundary until verification link clicked; Google/Apple/phone are `active` on first INSERT; new `auth.users` trigger syncs `email_confirmed_at` → `account_status`; one-time backfill clears legacy stuck rows. FR-AUTH-006 AC2 rewritten. FR-AUTH-007 AC6 added. Supersedes `0046_auth_gate_allow_pending_verification`. |
 | 0.5 | 2026-05-15 | Migration `0068`: closes verification-status gap from `0067`. Phone-only OTP users never set `auth.users.email_confirmed_at` (they set `phone_confirmed_at`), so the previous trigger never promoted them and they stayed stuck in `pending_verification` — the `auth_check_account_gate` then signed them out on every sign-in. Fix: (a) `handle_new_user` picks the initial status from the provider — `google`/`apple` land directly as `active` (no transient state), `phone` is `active` iff `phone_confirmed_at` was set at INSERT, `email` keeps existing semantics; (b) the verified trigger now watches both `email_confirmed_at` and `phone_confirmed_at` and is renamed `on_auth_user_verified`; (c) one-time backfill flips any row already verified at the auth layer. `FR-AUTH-005` AC4 and `FR-AUTH-007` AC1 are unchanged at the user level; only the implementation note expands. |
 | 0.6 | 2026-05-17 | `FR-AUTH-010` AC2.c + `FR-AUTH-015` AC1 extended with optional, non-verified **contact phone** (`users.contact_phone`, 1–20 chars). Distinct from the OTP `auth.users.phone`. Migration `0096`. Surfaced on the chat anchored-post card as a `tel:` link (`FR-CHAT-014`). |
+| 0.7 | 2026-11-01 | `FR-AUTH-007` AC7: sign-in / sign-up reading order — social buttons, then the "or" divider, then the email form (the divider used to render above the Google button). |

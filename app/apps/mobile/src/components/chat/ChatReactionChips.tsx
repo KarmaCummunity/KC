@@ -1,6 +1,6 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { makeUseStyles, spacing, typography } from '@kc/ui';
+import { Pressable, View } from 'react-native';
+import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import type { MessageReactionType } from '@kc/infrastructure-supabase';
 
 const REACTIONS: MessageReactionType[] = ['like', 'love', 'laugh', 'sad'];

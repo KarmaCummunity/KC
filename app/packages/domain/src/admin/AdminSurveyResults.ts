@@ -5,6 +5,8 @@
  * Zero dependencies on node_modules (besides typescript).
  */
 
+import type { SurveyQuestionType } from '../survey/SurveyTypes';
+
 /** One published survey with response counts (overview list). */
 export interface AdminSurveyOverviewItem {
   readonly slug: string;
@@ -26,6 +28,7 @@ export interface AdminSurveyOverviewItem {
 export interface AdminSurveyQuestionStat {
   readonly id: string;
   readonly sortOrder: number;
+  readonly questionType: SurveyQuestionType;
   readonly shortLabelHe: string;
   readonly promptHe: string;
   readonly ratingAnchorLowHe: string;
@@ -33,12 +36,22 @@ export interface AdminSurveyQuestionStat {
   readonly responseCount: number;
   readonly avgRating: number | null;
   readonly distribution: readonly number[];
+  /** Single-choice questions: answers per option, in option order; empty for rating questions. */
+  readonly choiceCounts: readonly AdminSurveyChoiceCount[];
 }
 
-/** A single respondent's answer to one question. */
+/** How many respondents chose one option of a single-choice question (KC#1058). */
+export interface AdminSurveyChoiceCount {
+  readonly key: string;
+  readonly labelHe: string;
+  readonly count: number;
+}
+
+/** A single respondent's answer to one question: a rating or a chosen option key. */
 export interface AdminSurveyRespondentAnswer {
   readonly questionId: string;
-  readonly rating: number;
+  readonly rating: number | null;
+  readonly choiceKey: string | null;
   readonly answerText: string | null;
 }
 

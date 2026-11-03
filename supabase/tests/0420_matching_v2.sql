@@ -364,19 +364,20 @@ begin
     return;
   end if;
   perform pg_temp.mk_user('00000000-0000-0000-0000-0000004200a7', 'mv2_gil');
+  -- Ride places are official cities (D71, 0512): Tel Aviv 5000, Ramat Gan 8600, Haifa 4000.
   insert into public.listings (owner_id, world_slug, kind_id, direction, title, details, anonymity_level)
   values ('00000000-0000-0000-0000-0000004200a7', 'rides', v_kind_r, 'request', 'Ride Tel Aviv to Haifa',
-          jsonb_build_object('origin_lat', 32.0853, 'origin_lng', 34.7818, 'dest_lat', 32.7940, 'dest_lng', 34.9896,
+          jsonb_build_object('origin_place_kind', 'city', 'origin_place_id', '5000', 'dest_place_kind', 'city', 'dest_place_id', '4000',
                              'departs_at', v_dep + interval '1 hour'), 3)
   returning listing_id into v_near;
   insert into public.listings (owner_id, world_slug, kind_id, direction, title, details, anonymity_level)
   values ('00000000-0000-0000-0000-0000004200c3', 'rides', v_kind_r, 'request', 'Late ride to Haifa',
-          jsonb_build_object('origin_lat', 32.0853, 'origin_lng', 34.7818, 'dest_lat', 32.7940, 'dest_lng', 34.9896,
+          jsonb_build_object('origin_place_kind', 'city', 'origin_place_id', '5000', 'dest_place_kind', 'city', 'dest_place_id', '4000',
                              'departs_at', v_dep + interval '9 hours'), 3)
   returning listing_id into v_late;
   insert into public.listings (owner_id, world_slug, kind_id, direction, title, details, anonymity_level)
   values ('00000000-0000-0000-0000-0000004200a1', 'rides', v_kind_o, 'give', 'Driving Ramat Gan to Haifa',
-          jsonb_build_object('origin_lat', 32.0684, 'origin_lng', 34.8248, 'dest_lat', 32.8000, 'dest_lng', 34.9900,
+          jsonb_build_object('origin_place_kind', 'city', 'origin_place_id', '8600', 'dest_place_kind', 'city', 'dest_place_id', '4000',
                              'departs_at', v_dep, 'seats_available', 3), 3)
   returning listing_id into v_offer;
 

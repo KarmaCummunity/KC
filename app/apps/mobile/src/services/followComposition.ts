@@ -3,12 +3,9 @@
 // Mapped to SRS: FR-FOLLOW-001..009, 011; FR-PROFILE-005, 006.
 // ─────────────────────────────────────────────
 
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   getSupabaseClient,
   SupabaseUserRepository,
-  type SupabaseAuthStorage,
 } from '@kc/infrastructure-supabase';
 import {
   FollowUserUseCase,
@@ -24,18 +21,11 @@ import {
   GetFollowStateUseCase,
   UpdatePrivacyModeUseCase,
 } from '@kc/application';
-
-function pickStorage(): SupabaseAuthStorage | undefined {
-  if (Platform.OS === 'web') {
-    if (typeof window === 'undefined' || !window.localStorage) return undefined;
-    return window.localStorage;
-  }
-  return AsyncStorage;
-}
+import { pickAuthStorage } from './authSecureStorage';
 
 let repo: SupabaseUserRepository | null = null;
 function getRepo() {
-  if (!repo) repo = new SupabaseUserRepository(getSupabaseClient({ storage: pickStorage() }));
+  repo ??= new SupabaseUserRepository(getSupabaseClient({ storage: pickAuthStorage() }));
   return repo;
 }
 

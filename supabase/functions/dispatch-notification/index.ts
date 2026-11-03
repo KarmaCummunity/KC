@@ -1,8 +1,8 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { coalesceChat, coalesceFollowStarted } from './coalesce.ts';
 import { sendExpoPush, type ExpoMessage, type ExpoTicket } from './expoPushClient.ts';
 import i18n from './i18n.json' with { type: 'json' };
-import { type Handler, withTiming } from '../_shared/withTiming.ts';
+import { type Handler, reportError, withObservability } from '../_shared/observability/mod.ts';
 
 interface OutboxRow {
   notification_id: string;
@@ -156,6 +156,12 @@ const handler: Handler = async (req) => {
     try {
       tickets = await sendExpoPush([message], EXPO_ACCESS_TOKEN);
     } catch (err) {
+      await reportError(err, {
+        fn: 'dispatch-notification',
+        req,
+        tags: { stage: 'expo_push' },
+        extra: { notification_id: row.notification_id },
+      });
       await bumpAttempt(row.notification_id, String(err));
       return new Response('Retry later', { status: 200 });
     }
@@ -184,10 +190,10 @@ const handler: Handler = async (req) => {
 
     return new Response('OK', { status: 200 });
   } catch (err) {
-    console.error('dispatch-notification error', err);
+    await reportError(err, { fn: 'dispatch-notification', req, extra: { notification_id: row.notification_id } });
     await bumpAttempt(row.notification_id, String(err));
     return new Response('Internal Error', { status: 500 });
   }
 };
 
-Deno.serve(withTiming('dispatch-notification', handler));
+Deno.serve(withObservability('dispatch-notification', handler));

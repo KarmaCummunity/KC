@@ -8,6 +8,8 @@ returns void language plpgsql as $$
 begin
   if p_cond is not true then raise exception 'ASSERT FAILED: %', p_msg; end if;
 end $$;
+-- Called below under `set local role`: new functions are owner-only by default (0520).
+grant execute on function pg_temp.assert(boolean, text) to public;
 
 create or replace function pg_temp.mk_user(p_handle text)
 returns uuid language plpgsql as $$

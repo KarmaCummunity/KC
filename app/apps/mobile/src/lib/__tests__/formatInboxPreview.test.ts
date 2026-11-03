@@ -48,3 +48,15 @@ describe('formatInboxPreview', () => {
       .toBe('chat.inboxSystemPrefix');
   });
 });
+
+describe('formatInboxPreview — closure system messages (TD-148)', () => {
+  it('previews a post_closed message in the UI language, not the stored Hebrew body', () => {
+    const closed = msg({
+      kind: 'system',
+      senderId: null,
+      body: 'הפוסט נמסר למשתמש אחר',
+      systemPayload: { kind: 'post_closed', status: 'closed_delivered', recipient_user_id: null },
+    });
+    expect(formatInboxPreview(closed, t)).toBe('chat.inboxSystemPrefix chat.systemPostClosed.deliveredToOther');
+  });
+});

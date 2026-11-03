@@ -16,32 +16,20 @@ export type { IReportRepository } from './ports/IReportRepository';
 export type { IFeedRealtime, FeedRealtimeCallbacks, NewPublicPostSignal } from './ports/IFeedRealtime';
 export type { IUserRealtime } from './ports/IUserRealtime';
 export type { IRidesRealtime, RidesRealtimeCallbacks } from './ports/IRidesRealtime';
-export type { CommunityStatsSnapshot, IStatsRepository } from './ports/IStatsRepository';
+export type { CommunityStatsSnapshot, IStatsRepository, MyWorldGivings, WorldFlowFunnelRow } from './ports/IStatsRepository';
 export type { IAboutRepository } from './ports/IAboutRepository';
-export * from './auth/errors';
-export * from './auth/SignUpWithEmail';
-export { ResendVerificationEmailUseCase, type ResendVerificationEmailInput } from './auth/ResendVerificationEmail';
-export { VerifyEmailUseCase, type VerifyEmailInput, type VerifyEmailOutput } from './auth/VerifyEmail';
-export * from './auth/SignInWithEmail';
-export * from './auth/SignInWithGoogle';
-export * from './auth/SignInWithApple';
-export * from './auth/SignOut';
-export * from './auth/RestoreSession';
-export * from './auth/CompleteBasicInfoUseCase';
-export * from './auth/CompleteOnboardingUseCase';
-export * from './auth/SetAvatarUseCase';
-export * from './auth/UpdateProfileUseCase';
-export * from './auth/assertSessionUser';
-export * from './auth/ReconcileAuthProfileMetadataUseCase';
-export * from './auth/DeleteAccountUseCase';
+export * from './auth';
 export * from './feed/selectGuestPreviewPosts';
 export * from './feed/GetFeedUseCase';
 export * from './feed/GetActivePostsCountUseCase';
 export * from './feed/DismissFirstPostNudgeUseCase';
 export * from './stats/GetCommunityStatsSnapshotUseCase';
+export * from './stats/StatsByAudienceUseCases';
 export * from './stats/ListMyActivityTimelineUseCase';
 export * from './about/ListAboutTeamMembersUseCase';
 export * from './posts/errors';
+// Port contract tests (G39): run against fakes here and against adapters in infrastructure-supabase.
+export * from './contracts';
 export * from './posts/CreatePostUseCase';
 export * from './posts/UpdatePostUseCase';
 export * from './posts/GetPostByIdUseCase';
@@ -61,7 +49,6 @@ export { ListPostActorIdentityUseCase, type ListPostActorIdentityInput } from '.
 export { UpsertPostActorIdentityUseCase } from './posts/UpsertPostActorIdentityUseCase';
 export * from './posts/AdminRemovePostUseCase';
 export * from './posts/SearchUsersForClosureUseCase';
-export * from './auth/DismissClosureExplainerUseCase';
 
 // Chat use cases
 export { SendMessageUseCase } from './chat/SendMessageUseCase';
@@ -94,14 +81,16 @@ export type {
   IDonationLinksRepository,
   AddDonationLinkInput,
   UpdateDonationLinkInput,
+  DonationLinkReviewItem,
 } from './ports/IDonationLinksRepository';
+export * from './donations/ReviewDonationLinksUseCases'; // D9 review queue + decision
 export { ListDonationLinksUseCase } from './donations/ListDonationLinksUseCase';
 export { AddDonationLinkUseCase } from './donations/AddDonationLinkUseCase';
 export { UpdateDonationLinkUseCase } from './donations/UpdateDonationLinkUseCase';
 export { RemoveDonationLinkUseCase } from './donations/RemoveDonationLinkUseCase';
 export { ReportDonationLinkUseCase } from './donations/ReportDonationLinkUseCase';
 export type { ReportDonationLinkInput } from './donations/ReportDonationLinkUseCase';
-export { DonationLinkError } from './donations/errors';
+export { DonationLinkError, isDonationLinkError } from './donations/errors';
 export type { DonationLinkErrorCode } from './donations/errors';
 
 // Follow use cases (P1.1)
@@ -147,6 +136,7 @@ export type { IDeviceRepository } from './notifications/IDeviceRepository';
 export { RegisterDeviceUseCase } from './notifications/RegisterDeviceUseCase';
 export { DeactivateDeviceUseCase } from './notifications/DeactivateDeviceUseCase';
 export { UpdateNotificationPreferencesUseCase } from './notifications/UpdateNotificationPreferencesUseCase';
+export { applyNotificationPreferencesPatch } from './notifications/applyNotificationPreferencesPatch';
 export * from './ports/ILegalDocumentRepository';
 export * from './legal/LoadLegalDocumentUseCase';
 export * from './legal/CheckPendingLegalAcksUseCase';
@@ -155,6 +145,7 @@ export * from './admin/IAdminRoleRepository';
 export * from './admin/GetMyAdminRolesUseCase';
 export * from './admin/GrantAdminRoleUseCase';
 export * from './admin/RevokeAdminRoleUseCase';
+export * from './admin/ChangeAdminRoleUseCase';
 export * from './admin/ListAdminsUseCase';
 export * from './admin/IAdminTaskRepository';
 export * from './admin/ListAdminTasksUseCase';
@@ -187,6 +178,7 @@ export * from './admin/DecideOrgApplicationUseCase';
 export * from './admin/IOrgHierarchyRepository';
 export * from './admin/GetOrgTreeUseCase';
 export * from './admin/SetManagerUseCase';
+export * from './admin/GetHierarchySnapshotUseCase';
 
 // A1 — admin reports inbox & case detail
 export * from './reports/IReportsRepository';
@@ -291,6 +283,11 @@ export type { ISurveyAdminRepository } from './ports/ISurveyAdminRepository';
 export { GetAdminSurveyOverviewUseCase } from './survey/GetAdminSurveyOverviewUseCase';
 export { GetAdminSurveyResultsUseCase } from './survey/GetAdminSurveyResultsUseCase';
 export { ListUserFeedbackUseCase } from './survey/ListUserFeedbackUseCase';
+export { GetPmfSurveyReportUseCase } from './survey/GetPmfSurveyReportUseCase';
+export type { PmfSurveyReportView } from './survey/GetPmfSurveyReportUseCase';
+// Server-side activity days (KC#1058)
+export type { IUserActivityRepository } from './ports/IUserActivityRepository';
+export { RecordActiveDayUseCase } from './activity/RecordActiveDayUseCase';
 export type { IPublicResearchRepository } from './ports/IPublicResearchRepository';
 export { LoadPublicResearchBundleUseCase } from './research/LoadPublicResearchBundleUseCase';
 export { SubmitPublicResearchResponseUseCase } from './research/SubmitPublicResearchResponseUseCase';

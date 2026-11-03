@@ -4,7 +4,7 @@ export function normalizeForCache(text: string): string {
 }
 
 const URL_ONLY = /^\s*https?:\/\/\S+\s*$/i;
-const NUMBER_ONLY = /^\s*[\d.,\s]+\s*$/;
+const NUMBER_ONLY = /^[\d.,\s]+$/;
 // Strip emoji + symbol + punctuation + whitespace; if nothing remains, it's not
 // translatable natural-language text.
 const NON_TEXT = /[\p{Extended_Pictographic}\p{Emoji_Component}\s\d.,!?()-]/gu;

@@ -1,26 +1,109 @@
-# Default owner for everything in the repo.
-# Add more lines below to scope ownership to specific paths.
-# Syntax: <pattern>  <@user-or-team> [<@user-or-team> ...]
+# Code owners — gate-critical paths only (D-195, INFRA-CI-2).
+#
+# All code in this repo is written by AI agents with no human review, so CI is
+# the only quality gate. The owner (@navesarussi) owns ONLY the files that
+# define or tune that gate: with the dev/main ruleset
+# (.github/rulesets/dev-main.json: 0 required approvals + "Require review from
+# Code Owners"), a PR needs the owner's approval only when it touches a path
+# below. App code, migrations and new test files are deliberately NOT owned,
+# so ordinary agent PRs still merge on a green `CI gate` alone.
+#
+# GitHub reads this file from the PR's BASE branch, so a PR cannot drop its
+# own ownership rules. The last matching pattern wins; a pattern with no owner
+# (bottom of the file) makes a path unowned again.
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
-*           @navesarussi
+# CI and repo automation: workflows (including ci-verdict.yml and auto-merge,
+# which hold merge and verdict credentials), composite
+# actions, this file, the owner allowlist (.github/owners.json), the ruleset,
+# Dependabot and the labeler.
+/.github/                                   @navesarussi
 
-# Architecture / SSOT — extra eyes recommended on changes.
-/docs/SSOT/                       @navesarussi
-/.cursor/rules/                   @navesarussi
-/.github/                         @navesarussi
+# Node pin and workspace membership: changing either changes what every lane
+# runs (dropping a package from the workspace drops its tests from `pnpm test`).
+/.nvmrc                                     @navesarussi
+/app/pnpm-workspace.yaml                    @navesarussi
 
-# Backend / data — Supabase migrations and RLS.
-/supabase/                        @navesarussi
+# CI judges, guards, deploy and release scripts. A guard that is edited to
+# pass everything is as good as deleted. scripts/package*.json pin the guard
+# scripts' only dependency.
+/scripts/ci-*                               @navesarussi
+/scripts/check-*                            @navesarussi
+/scripts/deploy-*                           @navesarussi
+/scripts/smoke-*                            @navesarussi
+/scripts/*-guard*                           @navesarussi
+/scripts/mobile-*                           @navesarussi
+/scripts/testflight-*                        @navesarussi
+/scripts/release-version.mjs                @navesarussi
+/scripts/resolve-green-dev-sha.mjs           @navesarussi
+/scripts/edge-functions.mjs                 @navesarussi
+/scripts/cloudflare-pages.mjs               @navesarussi
+/scripts/extract-hebrew-text.mjs            @navesarussi
+/scripts/generate-typed-routes.mjs          @navesarussi
+/scripts/wait-for-url.mjs                   @navesarussi
+/scripts/package.json                       @navesarussi
+/scripts/package-lock.json                  @navesarussi
+/app/scripts/check-*                        @navesarussi
+/app/scripts/web-version.mjs                @navesarussi
+/app/perf-budgets.json                      @navesarussi
 
-# Domain layer — purity guarded.
-/app/packages/domain/             @navesarussi
+# Scripts that workflows run with write credentials or that decide a lane's
+# result. spec-ids.mjs and bump-app-version.mjs run in the post-merge job that
+# pushes to `dev` as the ruleset's bypass actor; the DB harness decides the
+# backend lane. scripts/check-codeowners-coverage.mjs fails CI when a script a
+# workflow runs is missing here.
+/scripts/spec-ids.mjs                       @navesarussi
+/scripts/bump-app-version.mjs               @navesarussi
+/scripts/close-linked-issues.mjs            @navesarussi
+/scripts/run-db-tests.sh                    @navesarussi
+/scripts/db-explain-dev.sh                  @navesarussi
+/scripts/strip-partition-types.mjs          @navesarussi
+/scripts/maestro-*                          @navesarussi
+/scripts/ops/                               @navesarussi
+/supabase/tests/_harness/                   @navesarussi
 
-# Active product surface for external contributors (triage → @navesarussi).
-/app/apps/mobile/                 @navesarussi
-/README.md                        @navesarussi
-/CONTRIBUTING.md                  @navesarussi
-/CLA.md                           @navesarussi
-/LICENSE                          @navesarussi
-/SECURITY.md                      @navesarussi
-/CODE_OF_CONDUCT.md               @navesarussi
-/scripts/dev-up.sh                @navesarussi
+# Quality thresholds: coverage and test selection (vitest / vite configs and
+# workspaces, Deno task and test config for Edge Functions, Playwright
+# configs), lint rules and warning ratchets (`--max-warnings` lives in each
+# package.json), the task graph, the SonarCloud gate and the AI review config.
+# .gitattributes can mark files binary or change diffs the guards read.
+vitest.config.*                             @navesarussi
+vitest.workspace.*                          @navesarussi
+vite.config.*                               @navesarussi
+deno.json                                   @navesarussi
+deno.jsonc                                  @navesarussi
+playwright.config.*                         @navesarussi
+/.gitattributes                             @navesarussi
+/app/eslint.config.mjs                      @navesarussi
+/app/turbo.json                             @navesarussi
+/app/package.json                           @navesarussi
+/app/apps/mobile/package.json               @navesarussi
+/app/apps/mobile/web-server/package.json    @navesarussi
+/app/packages/*/package.json                @navesarussi
+/tests/e2e/package.json                     @navesarussi
+/sonar-project.properties                   @navesarussi
+/.coderabbit.yaml                           @navesarussi
+
+# TypeScript strictness: `strict`, `noUncheckedIndexedAccess` and
+# `exactOptionalPropertyTypes` are what `pnpm typecheck` enforces.
+/app/apps/mobile/tsconfig.json              @navesarussi
+/app/packages/*/tsconfig.json               @navesarussi
+
+# Process rules every agent follows (CLAUDE.md is the single source of truth;
+# the others are pointers to it).
+/CLAUDE.md                                  @navesarussi
+/AGENTS.md                                  @navesarussi
+/docs/AGENTS.md                             @navesarussi
+/.cursor/rules/                             @navesarussi
+
+# Local Supabase stack the backend lane tests against, and the EAS build
+# profiles the store pipelines ship.
+/supabase/config.toml                       @navesarussi
+/app/apps/mobile/eas.json                   @navesarussi
+
+# Exceptions — script self-tests stay unowned so agents may add tests freely.
+# Deleting a test or removing assertions is caught by the test-integrity guard
+# (scripts/check-test-integrity.mjs) instead.
+/scripts/*.test.mjs
+/scripts/ops/*.test.mjs
+/app/scripts/*.test.mjs

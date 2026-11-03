@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Required by CI — backend (`migration chain lint`); keep in path-filter list.
+// Run by the static-guards lane (.github/workflows/ci-static-guards.yml).
 import { readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';

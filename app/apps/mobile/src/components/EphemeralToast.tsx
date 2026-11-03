@@ -2,9 +2,9 @@
 // Mapped to: FR-POST-001 publish feedback (R-MVP-Core-4 Hebrew copy via i18n in callers).
 
 import React from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { makeUseStyles, radius, spacing, typography, useTheme } from '@kc/ui';
+import { makeUseStyles, radius, shadow, spacing, typography, useTheme, zIndex, Text } from '@kc/ui';
 import { useFeedSessionStore } from '../store/feedSessionStore';
 
 export function EphemeralToast() {
@@ -28,12 +28,12 @@ export function EphemeralToast() {
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   wrap: {
     position: 'absolute',
-    left: spacing.base,
-    right: spacing.base,
-    zIndex: 9999,
+    start: spacing.base,
+    end: spacing.base,
+    zIndex: zIndex.toast,
     alignItems: 'center',
   },
   bubble: {
@@ -43,16 +43,13 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
     paddingHorizontal: spacing.base,
     borderRadius: radius.lg,
     // RN-Web + native shadow
+    ...shadow.modal,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 4,
   },
   text: {
     ...typography.body,
     color: colors.textInverse,
-    fontWeight: '600',
+    ...typography.semiBold,
     textAlign: 'center',
   },
 }));

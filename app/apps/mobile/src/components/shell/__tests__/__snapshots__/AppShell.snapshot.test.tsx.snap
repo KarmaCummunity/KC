@@ -1,3 +1,3 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`AppShell — mobile invariant (375px on web) > renders only its children, no rail or aside 1`] = `"<div dir="auto" class="css-text-146c3p1" data-testid="child">child content</div>"`;
+exports[`AppShell — mobile invariant (375px on web) > renders only its children, no rail or aside 1`] = `"<div dir="auto" class="css-text-146c3p1" style="font-weight: normal;" data-testid="child">child content</div>"`;

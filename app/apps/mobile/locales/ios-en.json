@@ -3,7 +3,8 @@
     "infoPlist": {
       "NSCameraUsageDescription": "KC uses the camera only when you choose to take a photo for a post, listing, chat message or your profile picture.",
       "NSPhotoLibraryUsageDescription": "KC opens your photo library only when you choose a photo to add to a post, listing, chat message or your profile picture.",
-      "NSUserNotificationsUsageDescription": "KC sends notifications about new messages, replies and updates on items and requests you're involved in. You can turn them off in Settings."
+      "NSUserNotificationsUsageDescription": "KC sends notifications about new messages, replies and updates on items and requests you're involved in. You can turn them off in Settings.",
+      "NSLocationWhenInUseUsageDescription": "KC uses your approximate location only while you use the map, to show listings near you. It is never shared or stored."
     }
   }
 }

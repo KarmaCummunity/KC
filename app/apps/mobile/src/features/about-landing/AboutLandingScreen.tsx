@@ -1,10 +1,10 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { View, Text, Platform, ScrollView, TouchableOpacity, type ViewStyle } from 'react-native';
+import { View, Platform, ScrollView, TouchableOpacity, type ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, usePathname } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, typography, spacing, useTheme } from '@kc/ui';
+import { iconSize, makeUseStyles, radius, shadow, typography, spacing, useTheme, Text } from '@kc/ui';
 import { isLayoutRtl } from '../../lib/rtlLayout';
 
 /**
@@ -100,6 +100,7 @@ export function AboutLandingScreen() {
         <View style={styles.footer}>
           <Text style={styles.footerV}>{t('aboutContent.footerVersion')}</Text>
           <Text style={styles.footerR}>{t('aboutContent.footerRights')}</Text>
+          <Text style={styles.footerR}>{t('aboutContent.footerDataCredit')}</Text>
         </View>
       </ScrollView>
 
@@ -109,7 +110,7 @@ export function AboutLandingScreen() {
         accessibilityRole="button"
         accessibilityLabel={t('aboutContent.menuFab')}
       >
-        <Ionicons name="menu" size={26} color={colors.textInverse} />
+        <Ionicons name="menu" size={iconSize['2xl']} color={colors.textInverse} />
       </TouchableOpacity>
 
       <AboutNavDrawer
@@ -160,16 +161,12 @@ const useAboutLandingScreenStyles = makeUseStyles(({ colors }) => ({
     ...fabEndInset(),
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radius.full,
     backgroundColor: colors.secondary,
     alignItems: 'center',
     justifyContent: 'center',
-    ...{
-      shadowColor: colors.shadow,
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: 6,
-    },
+    // The brand lift for floating actions (D87), in the theme's neutral shadow colour.
+    ...shadow.glow,
+    shadowColor: colors.shadow,
   },
 }));

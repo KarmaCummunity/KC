@@ -6,10 +6,11 @@
 import React from 'react';
 import { Platform, Pressable, View, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useSegments } from 'expo-router';
+import { usePathname, useRouter, useSegments } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, useTheme } from '@kc/ui';
+import { makeUseStyles, radius, shadow, spacing, useTheme } from '@kc/ui';
 import { TABS, resolveActiveTabKey, type IoniconName } from './shell/tabs.config';
+import { createCategoryForPath, createRouteFor } from '../lib/unifiedCreate/createCategories';
 
 // Glassmorphism on web — RN-Web forwards unknown style keys to CSS. RN's
 // ViewStyle type doesn't include backdrop-filter, so cast through unknown.
@@ -21,21 +22,24 @@ const webGlass: ViewStyle =
       } as unknown as ViewStyle)
     : ({} as ViewStyle);
 
-export const TAB_BAR_HEIGHT = 50;
+export const TAB_BAR_HEIGHT = 60;
 
 interface IconBtnProps {
   active: boolean;
   onPress: () => void;
   label: string;
+  /** Stable E2E selector (`tab-<key>`), independent of the UI language (KC#1235). */
+  testID: string;
   iconActive: IoniconName;
   iconInactive: IoniconName;
 }
 
-function IconBtn({ active, onPress, label, iconActive, iconInactive }: IconBtnProps) {
+function IconBtn({ active, onPress, label, testID, iconActive, iconInactive }: IconBtnProps) {
   const styles = useTabBarStyles();
   const { colors } = useTheme();
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
@@ -46,7 +50,7 @@ function IconBtn({ active, onPress, label, iconActive, iconInactive }: IconBtnPr
         <Ionicons
           key={active ? iconActive : iconInactive}
           name={active ? iconActive : iconInactive}
-          size={active ? 28 : 24}
+          size={active ? 28 : 24} // brand-guard-allow: active tab glyph grows past the icon scale
           color={active ? colors.tabActive : colors.tabInactive}
         />
       </View>
@@ -58,34 +62,44 @@ interface PlusBtnProps {
   active: boolean;
   onPress: () => void;
   label: string;
+  testID: string;
 }
 
-function PlusBtn({ active, onPress, label }: PlusBtnProps) {
+function PlusBtn({ active, onPress, label, testID }: PlusBtnProps) {
   const styles = useTabBarStyles();
   const { colors } = useTheme();
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
       style={({ pressed }) => [styles.tabBtn, pressed && styles.tabBtnPressed]}
     >
       <View style={[styles.plusCircle, active && styles.plusCircleActive]}>
-        <Ionicons name="add" size={26} color={colors.textInverse} />
+        <Ionicons
+          name="add"
+          size={26} // brand-guard-allow: centre action glyph sized to its 48pt button
+          color={colors.textInverse}
+        />
       </View>
     </Pressable>
   );
 }
 
-export function TabBar() {
+export function TabBar({ bottomInset = 0 }: Readonly<{ bottomInset?: number }> = {}) {
   const router = useRouter();
   const { t } = useTranslation();
   const segments = useSegments() as string[];
+  const pathname = usePathname();
   const active = resolveActiveTabKey(segments);
   const styles = useTabBarStyles();
 
   return (
-    <View style={styles.tabBar}>
+    <View
+      testID="shell-tab-bar"
+      style={[styles.tabBar, { height: TAB_BAR_HEIGHT + bottomInset, paddingBottom: bottomInset }]}
+    >
       {/* RTL reading order: Profile (right) | Search | Plus (center) | Donations | Home (left).
           With dir=rtl on web and I18nManager.isRTL on native, default `row` lays them out
           right-to-left. `row-reverse` would double-flip on web → LTR visual.
@@ -93,9 +107,18 @@ export function TabBar() {
       {TABS.map((tab) => {
         const isActive = active === tab.key;
         const label = t(tab.labelI18nKey);
-        const onPress = () => router.push(tab.route as never);
+        const onPress = () => {
+          // The bar is also shown over root-level screens (post/[id], chat, ...).
+          // Pushing a tab route from there leaves that screen underneath, so the
+          // iOS swipe-back later jumps to it. Pop back to the tabs first.
+          if (segments[0] !== '(tabs)' && router.canDismiss()) router.dismissAll();
+          // "+" opens the form on the giving world on screen (its remembered offer / request).
+          router.push(tab.isComposer ? createRouteFor(createCategoryForPath(pathname)) : tab.route);
+        };
         if (tab.isComposer) {
-          return <PlusBtn key={tab.key} active={isActive} onPress={onPress} label={label} />;
+          return (
+            <PlusBtn key={tab.key} active={isActive} onPress={onPress} label={label} testID={`tab-${tab.key}`} />
+          );
         }
         return (
           <IconBtn
@@ -103,6 +126,7 @@ export function TabBar() {
             active={isActive}
             onPress={onPress}
             label={label}
+            testID={`tab-${tab.key}`}
             iconActive={tab.iconActive}
             iconInactive={tab.iconInactive}
           />
@@ -116,22 +140,25 @@ const useTabBarStyles = makeUseStyles(({ colors, isDark }) => ({
   tabBar: {
     flexDirection: 'row' as const,
     height: TAB_BAR_HEIGHT,
-    borderRadius: TAB_BAR_HEIGHT / 2,
+    // Docked flush with the screen bottom (#1213): only top corners rounded.
+    borderTopStartRadius: radius.xl,
+    borderTopEndRadius: radius.xl,
+    paddingHorizontal: spacing.xs,
     backgroundColor: colors.tabBarGlass,
     alignItems: 'center' as const,
     width: '100%' as const,
-    maxWidth: 480,
     alignSelf: 'center' as const,
     overflow: 'hidden' as const,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: isDark ? 0.45 : 0.1,
-    shadowRadius: 24,
-    elevation: 12,
+    shadowColor: colors.shadow,
+    // brand-guard-allow: the floating pill has no shared shadow preset (deeper than shadow.modal)
+    shadowOffset: { width: 0, height: 10 }, // brand-guard-allow: floating pill shadow
+    shadowOpacity: isDark ? 0.45 : 0.14, // brand-guard-allow: floating pill shadow
+    shadowRadius: 28, // brand-guard-allow: floating pill shadow
+    elevation: 12, // brand-guard-allow: floating pill shadow
     // Subtle hairline so the pill reads as a distinct surface in dark mode
     // where the underlying background and the glass tint are both dark.
-    borderWidth: isDark ? 1 : 0,
-    borderColor: isDark ? colors.border : 'transparent',
+    borderWidth: 1,
+    borderColor: colors.border,
     ...webGlass,
   },
   tabBtn: {
@@ -144,7 +171,7 @@ const useTabBarStyles = makeUseStyles(({ colors, isDark }) => ({
   iconSlot: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.full,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
@@ -152,17 +179,13 @@ const useTabBarStyles = makeUseStyles(({ colors, isDark }) => ({
     backgroundColor: colors.primarySurface,
   },
   plusCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: radius.full,
     backgroundColor: colors.primary,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    ...shadow.glow,
   },
   plusCircleActive: { backgroundColor: colors.primaryDark },
 }));

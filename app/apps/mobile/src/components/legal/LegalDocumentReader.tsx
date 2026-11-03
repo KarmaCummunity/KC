@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { View, ScrollView, Text, ActivityIndicator, Platform, type DimensionValue } from 'react-native';
+import { View, ScrollView, ActivityIndicator, Platform, type DimensionValue } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import { useTranslation } from 'react-i18next';
 import type { LegalDocType, LegalDocumentContent } from '@kc/domain';
-import { typography, spacing, useTheme } from '@kc/ui';
+import { typography, spacing, radius, useTheme, Text } from '@kc/ui';
 import { getLoadLegalDocumentUseCase } from '../../services/legalComposition';
 import { makeLegalMarkdownStyles } from './LegalMarkdownStyles';
 import { makeLegalMarkdownRules } from './legalMarkdownRules';
@@ -35,7 +35,7 @@ export function LegalDocumentReader({ docType }: LegalDocumentReaderProps) {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         const content = await getLoadLegalDocumentUseCase().execute({ docType });
         if (!cancelled) setState({ kind: 'ready', content });
@@ -128,7 +128,7 @@ function LoadingSkeleton({ bgColor }: Readonly<{ bgColor: string }>) {
         width,
         height: 14,
         backgroundColor: bgColor,
-        borderRadius: 4,
+        borderRadius: radius.xs,
         marginTop,
       }}
     />

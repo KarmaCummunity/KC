@@ -67,6 +67,8 @@ describe('SupabasePostRepository.getMyPosts', () => {
     expect(ops.find((o) => o.kind === 'from')?.args).toEqual(['posts']);
     const eq = ops.find((o) => o.kind === 'eq');
     expect(eq?.args).toEqual(['owner_id', 'u_me']);
+    // Feed mirrors of listings are not "my posts" (D-206).
+    expect(ops.find((o) => o.kind === 'is')?.args).toEqual(['listing_id', null]);
     const inOp = ops.find((o) => o.kind === 'in');
     expect(inOp?.args).toEqual(['status', ['open', 'delivered']]);
     expect(ops.find((o) => o.kind === 'order')?.args).toEqual(['created_at', { ascending: false }]);

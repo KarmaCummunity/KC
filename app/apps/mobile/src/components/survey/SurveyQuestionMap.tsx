@@ -1,26 +1,30 @@
 // Production survey question map — accepts SurveyQuestion[] from @kc/domain.
 // FR-SETTINGS-016 AC1: compact map with number + short label + completion dot.
 import React from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, radius, spacing, typography, useTheme } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, useTheme, Text, iconSize } from '@kc/ui';
 import type { SurveyQuestion } from '@kc/domain';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../lib/webRtlStyle';
 
 export type QuestionCompletion = 'empty' | 'partial' | 'done';
 
+/** 'done' once the question has its value: a rating or, for single-choice questions, an option. */
 export function getQuestionCompletion(
   rating: number | null | undefined,
   text: string,
+  choiceKey?: string | null,
 ): QuestionCompletion {
-  if (rating != null) return 'done';
+  if (rating != null || choiceKey != null) return 'done';
   if (text.trim().length > 0) return 'partial';
   return 'empty';
 }
 
-type AnswerMap = Readonly<Record<string, { rating: number | null; answerText: string | null }>>;
+type AnswerMap = Readonly<
+  Record<string, { rating: number | null; choiceKey?: string | null; answerText: string | null }>
+>;
 
 type SurveyQuestionMapProps = {
   readonly questions: readonly SurveyQuestion[];
@@ -44,7 +48,7 @@ export function SurveyQuestionMap({
 
   const renderCompactChip = (q: SurveyQuestion, index: number) => {
     const answer = answers[q.id] ?? { rating: null, answerText: null };
-    const completion = getQuestionCompletion(answer.rating, answer.answerText ?? '');
+    const completion = getQuestionCompletion(answer.rating, answer.answerText ?? '', answer.choiceKey);
     const isActive = index === activeIndex;
     const dotColor =
       completion === 'done'
@@ -78,7 +82,7 @@ export function SurveyQuestionMap({
 
   const renderRailItem = (q: SurveyQuestion, index: number) => {
     const answer = answers[q.id] ?? { rating: null, answerText: null };
-    const completion = getQuestionCompletion(answer.rating, answer.answerText ?? '');
+    const completion = getQuestionCompletion(answer.rating, answer.answerText ?? '', answer.choiceKey);
     const isActive = index === activeIndex;
     const statusIcon =
       completion === 'done'
@@ -111,7 +115,7 @@ export function SurveyQuestionMap({
         >
           {q.shortLabelHe}
         </Text>
-        <Ionicons name={statusIcon as never} size={16} color={statusColor} />
+        <Ionicons name={statusIcon as never} size={iconSize.sm} color={statusColor} />
       </Pressable>
     );
   };
@@ -142,23 +146,23 @@ export function SurveyQuestionMap({
 
 const useMapStyles = makeUseStyles(({ colors, isDark }) => ({
   compactWrap: {
-    paddingVertical: 6,
+    paddingVertical: spacing.xs,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     ...webViewRtl,
   },
   compactRow: {
     paddingHorizontal: spacing.base,
-    gap: 6,
+    gap: spacing.xs,
     alignItems: 'center',
     ...webViewRtl,
   },
   compactChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: 5,
-    paddingHorizontal: 8,
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -171,9 +175,9 @@ const useMapStyles = makeUseStyles(({ colors, isDark }) => ({
     backgroundColor: colors.primarySurface,
   },
   compactNumber: {
-    fontSize: 12,
+    fontSize: typography.bodySmall.fontSize,
     lineHeight: 14,
-    fontWeight: '800',
+    ...typography.extraBold,
     color: colors.textSecondary,
     minWidth: 14,
     textAlign: 'center',
@@ -182,7 +186,7 @@ const useMapStyles = makeUseStyles(({ colors, isDark }) => ({
     color: colors.primary,
   },
   compactLabel: {
-    fontSize: 11,
+    fontSize: typography.caption.fontSize,
     lineHeight: 14,
     color: colors.textSecondary,
     flexShrink: 1,
@@ -191,12 +195,12 @@ const useMapStyles = makeUseStyles(({ colors, isDark }) => ({
   },
   compactLabelActive: {
     color: colors.textPrimary,
-    fontWeight: '600',
+    ...typography.semiBold,
   },
   compactDot: {
     width: 6,
     height: 6,
-    borderRadius: 3,
+    borderRadius: radius.xs,
     flexShrink: 0,
   },
   rail: {
@@ -232,7 +236,7 @@ const useMapStyles = makeUseStyles(({ colors, isDark }) => ({
   },
   itemNumber: {
     ...typography.caption,
-    fontWeight: '700',
+    ...typography.bold,
     color: colors.textSecondary,
     minWidth: 18,
     textAlign: 'center',
@@ -247,6 +251,6 @@ const useMapStyles = makeUseStyles(({ colors, isDark }) => ({
   },
   itemLabelActive: {
     color: colors.textPrimary,
-    fontWeight: '600',
+    ...typography.semiBold,
   },
 }));

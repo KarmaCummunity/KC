@@ -4,8 +4,7 @@
 // Fetched on mount, refreshed every 60 seconds per FR-FEED-014.
 
 import React from 'react';
-import { Text } from 'react-native';
-import { makeUseStyles, typography } from '@kc/ui';
+import { makeUseStyles, typography, Text } from '@kc/ui';
 import { useActivePostsCount } from '../hooks/useActivePostsCount';
 
 interface FeedCommunityCounterProps {

@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { lightColors } from '@kc/ui';
 
 const KC_CHANNEL_ID = 'kc-default';
 
@@ -10,7 +11,8 @@ export async function ensureAndroidNotificationChannel(): Promise<void> {
     name: 'KC',
     importance: Notifications.AndroidImportance.DEFAULT,
     vibrationPattern: [0, 250, 250, 250],
-    lightColor: '#F97316',
+    // LED colour is OS-level and theme-independent; app.json `notification.color` matches it.
+    lightColor: lightColors.primaryVivid,
     sound: 'default',
   });
 }

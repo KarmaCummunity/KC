@@ -1,28 +1,22 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest';
-import { renderHook } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
+import { act, renderHook } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../services/userComposition', () => ({
-  getUserRepo: () => ({ findById: async () => ({ preferredLanguage: 'ru' }) }),
-}));
-vi.mock('../../store/authStore', () => ({
-  useAuthStore: (sel: (s: { session: { userId: string } | null }) => unknown) =>
-    sel({ session: { userId: 'u1' } }),
-}));
-vi.mock('../../i18n/deviceLanguage', () => ({
-  resolveReaderLanguage: (p: string | null) => p ?? 'he',
-}));
+const { mockI18n } = vi.hoisted(() => ({ mockI18n: { language: 'he' } }));
+vi.mock('react-i18next', () => ({ useTranslation: () => ({ i18n: mockI18n }) }));
 
 import { useReaderLanguage } from '../useReaderLanguage';
 
-const wrapper = ({ children }: { children: React.ReactNode }) =>
-  React.createElement(QueryClientProvider, { client: new QueryClient() }, children);
-
 describe('useReaderLanguage', () => {
-  it('falls back to he before the user record loads', () => {
-    const { result } = renderHook(() => useReaderLanguage(), { wrapper });
+  it('returns the app UI language and follows UI language changes', () => {
+    mockI18n.language = 'he';
+    const { result, rerender } = renderHook(() => useReaderLanguage());
     expect(result.current).toBe('he');
+
+    act(() => {
+      mockI18n.language = 'en';
+    });
+    rerender();
+    expect(result.current).toBe('en');
   });
 });

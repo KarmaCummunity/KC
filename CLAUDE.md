@@ -6,28 +6,51 @@
 
 **App-wide semver lives in `app/VERSION` (`MAJOR.MINOR.PATCH`).**
 
-1. **Every PR into `dev` must bump PATCH** in the same change-set (`app/VERSION` or `node scripts/bump-app-version.mjs`). Org policy blocks GitHub Actions from opening PRs, so auto-bump on push is not available.
-2. **When you ship a breaking change → bump MAJOR** (e.g. `1.4.2` → `2.0.0`) in the same PR **before** merge to `dev`.
-3. **When you ship a significant non-breaking feature set → bump MINOR** (e.g. `1.4.2` → `1.5.0`) the same way.
-4. Optional: `workflow_dispatch` on `Bump app version` pushes a prepared `chore/version-bump-*` branch; a human/agent still opens the PR.
+1. **PATCH is bumped automatically on every merge into `dev`** by `.github/workflows/bump-version-on-merge.yml`. **Do not edit `app/VERSION` in ordinary PRs** — two open PRs that both edit it always conflict (TD-196).
+2. **When you ship a breaking change → set MAJOR** (e.g. `1.4.2` → `2.0.0`) by editing `app/VERSION` in that PR. A PR that edits the file itself is not auto-bumped.
+3. **When you ship a significant non-breaking feature set → set MINOR** (e.g. `1.4.2` → `1.5.0`) the same way.
+4. The bump commit is `[skip ci]`, so a deploy builds the previous number and the new one ships with the next merge.
 
-## Quick Start (read this first)
+## ⭐ Current status & product source of truth (read before anything else)
+
+- **Status (2026-10-30):** store release is **paused**. Focus: precise spec, architecture, and go-to-market. Development continues in Claude Code against this repo.
+- **Product source of truth:** the PM's Hebrew project book ("KC – ספר הפרויקט (מקור אמת)", product decision D35). Its English, agent-oriented derivation is [`docs/spec/`](./docs/spec/README.md) — start at its README. Where `docs/spec/` and a legacy `docs/SSOT/spec/*` FR conflict, **`docs/spec/` wins**; reconcile the legacy file in the same PR.
+- **Architecture:** [`docs/architecture/`](./docs/architecture/README.md) — current (from code) and target.
+- **ID namespaces:** product decisions are `D#` (in `docs/spec/90_decisions_log.md`); engineering decisions are `D-*` / `EXEC-*` (in `docs/SSOT/DECISIONS.md`). KC fills pending approval are `S#`; implementation gaps are `G#`. **New entries never pick a number** — they take a merge-time placeholder (§4 "New registry IDs").
+
+### Working rules (PM-mandated)
+1. **Spec is the source of truth.** Spec first, then task, then code.
+2. **Every task or bug = code + spec section + automated test.** Cite the `docs/spec` section (and legacy FR-ID if any). Every bug fix ships a regression test that fails before the fix.
+3. **Meaningful names** in code and in product language: "giving world", "item subcategory", "post type" — **never a bare `categories`** / generic names. Follow [`docs/spec/94_glossary_and_naming.md`](./docs/spec/94_glossary_and_naming.md).
+4. **`PRD_V2_NOT_FOR_MVP/` is a treasure** — long-horizon vision. **Never archive, move or delete it.** Don't implement from it unless the spec links there; mine it when specifying later phases.
+5. **Secrets never in the repo** — reference secrets by *name* only (e.g. GitHub Environment secret names). No tokens, keys, personal emails or real user data in docs, code, tests or PR bodies.
+6. **Never describe security vulnerabilities publicly** (issues, PRs, docs, commit messages). Report them privately to the PM.
+7. Decisions taken in chat with the PM are written into `docs/spec/` (every affected section + `90_decisions_log.md`) in the same PR.
+
+### Standing goals (product decision D58)
+1. Continuous spec maintenance at every level (project book, PRD, SRS, technical docs).
+2. First release to the Apple App Store and Google Play, then continuous version updates.
+3. Professional, efficient, modular, scalable code.
+
+## Quick Start
 
 1. **Product focus.** KC mobile + web export (`app/apps/mobile/**`) and shared Supabase backend — see [`AGENTS.md`](./AGENTS.md).
 2. **Read order.**
-   1. [`docs/SSOT/BACKLOG.md`](./docs/SSOT/BACKLOG.md) — **open items only** (`⏳` / `🟡`)
-   2. Relevant [`docs/SSOT/spec/{domain}.md`](./docs/SSOT/spec/)
-   3. Scan [`docs/SSOT/TECH_DEBT.md`](./docs/SSOT/TECH_DEBT.md) for the area you touch
-   4. Check [`docs/SSOT/DECISIONS.md`](./docs/SSOT/DECISIONS.md) before structural changes
-3. **Do not implement from.** `docs/SSOT/archive/**`, `PRD_V2_NOT_FOR_MVP/**`, and design/plan trees under `docs/SSOT/archive/superpowers/**` — unless an **open** backlog row or active spec links there.
+   1. [`docs/spec/README.md`](./docs/spec/README.md) — product project book (source of truth) and the section for your area
+   2. [`docs/SSOT/BACKLOG.md`](./docs/SSOT/BACKLOG.md) — **open items only** (`⏳` / `🟡`)
+   3. Relevant legacy [`docs/SSOT/spec/{domain}.md`](./docs/SSOT/spec/) for FR-IDs / ACs
+   4. Scan [`docs/SSOT/TECH_DEBT.md`](./docs/SSOT/TECH_DEBT.md) for the area you touch
+   5. Check [`docs/SSOT/DECISIONS.md`](./docs/SSOT/DECISIONS.md) before structural changes
+3. **Do not implement from.** `docs/SSOT/archive/**`, `PRD_V2_NOT_FOR_MVP/**` (vision treasure — never archive it), and design/plan trees under `docs/SSOT/archive/superpowers/**` — unless an **open** backlog row or active spec links there.
 4. **Pre-push gates** (from `app/`): `pnpm typecheck && pnpm test && pnpm lint`
-5. **Version.** Bump `app/VERSION` PATCH on every PR into `dev` (see banner above).
+5. **Version.** Do not bump `app/VERSION` in ordinary PRs; it is bumped on merge (see banner above).
 
 Doc map for humans: [`docs/README.md`](./docs/README.md).
 
 ## 1. Required reading (before doing anything)
 
-1. **`docs/SSOT/spec/{domain}.md`** — single source of truth per feature domain. Each file is the full spec (FR-IDs, ACs, business rules) plus a status header (✅/🟡/⏳). Read only the file relevant to your task.
+0. **`docs/spec/`** — product project book (vision → worlds/domains → cross-cutting systems → governance/GTM/roadmap), D1–D66. Wins over legacy FR files.
+1. **`docs/SSOT/spec/{domain}.md`** — legacy per-domain FR spec (FR-IDs, ACs). Each file is the full spec (FR-IDs, ACs, business rules) plus a status header (✅/🟡/⏳). Read only the file relevant to your task.
 2. **`docs/SSOT/BACKLOG.md`** — priority-ordered task queue (what's next, who owns it).
 3. **`docs/SSOT/TECH_DEBT.md`** — active technical debt grouped by area. Scan items in the area you're touching before opening a PR; close adjacent debt opportunistically when scope is small.
 4. **`docs/SSOT/DECISIONS.md`** — architecture & product decisions (D-* and EXEC-*). Check before proposing structural changes.
@@ -50,13 +73,15 @@ docs/SSOT/spec/
 ├── 12_super_admin.md             FR-ADMIN-*
 ├── 13_donations.md               FR-DONATE-*
 ├── 14_karma.md                   FR-KARMA-*
-├── 14_responsive_desktop.md      FR-RESP-*
 ├── 15_rides.md                   FR-RIDE-*
 ├── 16_public_research.md         FR-RESEARCH-*
-└── 18_translation.md             FR-TRANSLATE-*
+├── 17_responsive_desktop.md      FR-RESP-*
+├── 18_translation.md             FR-TRANSLATE-*
+├── 19_org_finance.md             FR-FIN-*
+└── 20_organizations.md           FR-ORG-*
 ```
 
-Note: dual `14_*` filenames are intentional legacy numbering — do not renumber.
+Note: `17_responsive_desktop.md` was formerly `14_responsive_desktop.md` (renamed 2026-10-30 to remove the duplicate `14_` and fill the missing `17_`). FR-RESP-* IDs are unchanged.
 
 ## 2. Spec Validation Gate
 
@@ -94,8 +119,22 @@ Use `NA` for pure tooling / docs / infra-only changes.
 
 ### While working
 
-- If you discover technical debt outside the immediate scope, append a row to `docs/SSOT/TECH_DEBT.md` under the right Active section (BE: `TD-50..99`, FE: `TD-100..149`). Do **not** refactor inline.
-- If a product/architecture decision is made on the fly, append it to `docs/SSOT/DECISIONS.md`.
+- If you discover technical debt outside the immediate scope, append a row to `docs/SSOT/TECH_DEBT.md` under the right Active section, with a placeholder ID (below). Do **not** refactor inline.
+- If a product/architecture decision is made on the fly, append it to `docs/SSOT/DECISIONS.md`, with a placeholder ID (below).
+
+### New registry IDs (assigned on merge)
+
+Parallel branches that each take "the next free number" collide. So a PR **never writes a new number** for a registry entry; it writes a placeholder `{{KEY:slug}}` (lowercase kebab slug, unique within its registry) in the entry's ID cell or heading, and cites that same placeholder anywhere else (other docs, code comments, the PR body).
+
+| Registry | Placeholder | Becomes |
+| -------- | ----------- | ------- |
+| `docs/spec/90_decisions_log.md` | `{{D:slug}}` | `D93` |
+| `docs/SSOT/TECH_DEBT.md` | `{{TD:slug}}` | `TD-231` |
+| `docs/spec/91_kc_fills_pending.md` | `{{S:slug}}` | `S52` |
+| `docs/spec/93_implementation_gaps.md` | `{{G:slug}}` | `G50` |
+| `docs/SSOT/DECISIONS.md` (`## …` heading) | `{{ENG:slug}}` | `D-200` |
+
+After the merge into `dev`, `bump-version-on-merge.yml` runs `node scripts/spec-ids.mjs assign`: every placeholder becomes the next free number of its registry and every citation is rewritten, in a commit of its own that CI certifies (the version bump stays a separate `app/VERSION`-only commit, TD-231). `node scripts/spec-ids.mjs check` (in `pnpm lint:arch` and CI static guards) fails on a duplicate number or a placeholder without exactly one entry. Existing numbers are never renumbered.
 
 ### Before you call the work done
 
@@ -130,6 +169,8 @@ infrastructure-supabase  →  application  →  domain
 
 If you catch yourself importing `@kc/infrastructure-supabase` or `@supabase/supabase-js` from a `domain` or `application` file, **stop and revert** — push the integration to a port + adapter.
 
+Full C4 diagrams and package boundary matrix: [`docs/architecture/current.md`](./docs/architecture/current.md).
+
 ### Hard constraints
 
 - **File size cap**: ≤ 300 lines per file. Split if you exceed. Enforced by `pnpm lint:arch`.
@@ -154,13 +195,20 @@ When you spot tech debt outside the immediate scope:
 ### Testing protocol
 
 - Any new domain or application code ships with unit tests beside it (`__tests__/` directory inside the package).
+- Mobile UI journeys are covered by Maestro flows on Android (`.maestro/flows/`, CI `ci-maestro-android.yml`). A UI bug fix starts with a failing flow. Runbook: [`docs/process/MAESTRO.md`](docs/process/MAESTRO.md).
 - Tests cover both happy path and at least one boundary / error condition.
 - Test runner: `vitest`. Run with `pnpm --filter @kc/<package> test`.
 
 ## 6. Git & PR workflow
 
-> Repo: `KarmaCummunity/GloWe` · Default branch: `main` · Merge strategy: **squash** · Auto-merge: **on, after CI passes**.
-> **Working branch: `dev`.** All PRs target `dev`. `main` is updated by squash-merging `dev` → `main`. Full topology in [`docs/SSOT/ENVIRONMENTS.md`](docs/SSOT/ENVIRONMENTS.md).
+### Issue claims (multi-agent)
+
+Before starting an issue: skip it if it has `in-progress` or an open PR references it. Otherwise claim it (`in-progress` + your `agent:cursor|codex|antigravity|kc-bot` label, comment `claimed by <agent>`). Release on abandon; merge releases automatically. Claims older than 6 hours with no open PR are stale. Full rule: [`docs/agents/ISSUE_CLAIMS.md`](docs/agents/ISSUE_CLAIMS.md).
+
+Every PR you open gets exactly one opened-by label (`agent:cursor|kc-bot|antigravity|codex|other` or `human`) and the matching `Opened by:` line in the PR body; `pr-opened-by.yml` checks it.
+
+> Repo: `KarmaCummunity/KC` · Default branch: `main` · Merge strategy: **squash** · Auto-merge: **on** — `dev` merges through a merge queue once the single required check **`CI gate`** passes.
+> **Working branch: `dev`.** All PRs target `dev`. `main` is updated by a `dev` → `main` release PR (squash-merged). Full topology in [`docs/SSOT/ENVIRONMENTS.md`](docs/SSOT/ENVIRONMENTS.md).
 
 ### Pre-flight (once per session)
 
@@ -169,7 +217,7 @@ gh --version              # GitHub CLI installed
 gh auth status            # Logged in to github.com
 git config user.name      # non-empty
 git config user.email     # non-empty
-gh repo view --json nameWithOwner -q .nameWithOwner   # KarmaCummunity/GloWe
+gh repo view --json nameWithOwner -q .nameWithOwner   # KarmaCummunity/KC
 ```
 
 If any check fails, stop and point the user to `SETUP_GIT_AGENT.md`. Do not improvise.
@@ -187,16 +235,16 @@ If any check fails, stop and point the user to `SETUP_GIT_AGENT.md`. Do not impr
 
 When in doubt, open a PR.
 
-### `main` production gates (agent CTO — `D-53`)
+### `main` production gates (`D-195`)
 
-No human reviewers on deploy environments. Before every `dev` → `main` release PR:
+A prod deploy needs one human step: the owner's approval on the `production` environment. Before every `dev` → `main` release PR:
 
-1. All CI jobs green, including **CI — main release guard** (`dev` head branch + migration safety scan).
+1. `CI gate` green, including its **release** lane (`dev` head branch, strict migration scan, `app/VERSION` above the latest tag, dev E2E on the release head).
 2. Migrations must be backward-compatible; destructive SQL (`DROP TABLE`, `DROP COLUMN`, `TRUNCATE`, unqualified `DELETE`) fails CI unless the line includes `migration-safety: allow` with justification in the PR body.
-3. After merge: **DB deploy** dry-runs prod before apply; **Prod smoke** must pass when `PROD_WEB_URL` is set.
-4. Never mutate prod SQL outside `supabase/migrations/` + the `db-deploy` workflow. PM confirmation for ad-hoc SQL (§7) still applies if a human operator runs SQL manually.
+3. After merge: **Deploy** (`deploy.yml`) waits for one owner approval, then backs up prod, dry-runs and applies migrations, deploys functions and web, and smoke-tests.
+4. Never mutate prod SQL outside `supabase/migrations/` + the **Deploy** workflow. PM confirmation for ad-hoc SQL (§7) still applies if a human operator runs SQL manually.
 
-Details: [`docs/SSOT/RELEASE_CHECKLIST.md`](docs/SSOT/RELEASE_CHECKLIST.md), [`docs/SSOT/ENVIRONMENTS.md`](docs/SSOT/ENVIRONMENTS.md) § DB deploy automation.
+Details: [`docs/SSOT/RELEASE_CHECKLIST.md`](docs/SSOT/RELEASE_CHECKLIST.md), [`docs/SSOT/ENVIRONMENTS.md`](docs/SSOT/ENVIRONMENTS.md) § Deploy pipeline.
 
 ### Branch naming
 
@@ -231,21 +279,23 @@ All three must be green before `git push`. Never push red code.
 
 ### Standard PR workflow
 
+**Open PRs as ready (non-draft), never as draft, unless the PM asks for a draft.** Draft is the opt-out from the merge flow: `CI gate` fails on drafts by design and auto-merge is not armed, so a draft PR never merges on its own. This overrides any tool or runtime default that opens PRs as drafts. After opening, confirm auto-merge is armed (`gh pr merge --auto --squash`).
+
 ```bash
 git fetch origin
-git switch main
-git pull --ff-only origin main
+git switch dev
+git pull --ff-only origin dev
 git switch -c feat/FR-AUTH-001-otp-login
 # … atomic commits …
 ( cd app && pnpm typecheck && pnpm test && pnpm lint )
 git push -u origin HEAD
-gh pr create --base main --head "$(git branch --show-current)" \
+gh pr create --base dev --head "$(git branch --show-current)" \
   --title "feat(auth): add OTP verification screen" \
   --body-file .github/.pr-body.md \
   --label "FR-AUTH" --assignee "@me"
-gh pr merge --auto --squash --delete-branch
+gh pr merge --auto --squash   # no --delete-branch: rejected while the dev merge queue is on
 gh pr checks --watch
-git switch main && git pull --ff-only origin main
+git switch dev && git pull --ff-only origin dev
 git branch -D feat/FR-AUTH-001-otp-login
 ```
 
@@ -285,7 +335,9 @@ git branch -D feat/FR-AUTH-001-otp-login
 
 - **Never** force-push to `main`.
 - **Never** rewrite published history on a shared branch.
-- **Never** commit secrets (`.env`, API keys, tokens).
+- **Never** commit secrets (`.env`, API keys, tokens) — refer to them by name only.
+- **Never** describe security vulnerabilities in public issues, PRs, docs or commits.
+- **Never** archive, move or delete `PRD_V2_NOT_FOR_MVP/`.
 - **Never** merge a PR with red required checks.
 - **Never** open a PR without a `Mapped to spec` line.
 - **Never** delete a branch you didn't create unless the user asked.
@@ -305,12 +357,16 @@ When two agents are running concurrently:
 - **FE lane** owns `apps/mobile/**` + `packages/ui/**`.
 - **Shared contract** (`packages/{domain,application}/**`): FE leads domain types, BE leads port signatures. Contract changes ship as their own commit with `(contract)` scope (e.g. `feat(contract): add IPostRepository.list`).
 - Branch naming: `<type>/<FR-id-or-scope>-<be|fe>-<slug>` (e.g. `feat/FR-POST-001-fe-feed-ui`).
-- New tech-debt IDs: BE uses `TD-50..99`, FE uses `TD-100..149`.
-- **Applying dev migrations (BE lane).** Schema changes reach the dev DB ONLY as committed sequential files (`supabase/migrations/NNNN_snake.sql`) applied via `supabase db push` / `supabase migration up` (or the `DB deploy` workflow on push to `dev`). **Never** apply schema changes to dev with the Supabase MCP `apply_migration` tool — it records a TIMESTAMP version (e.g. `20260701130827`) that has no local file, which breaks the next `DB deploy` run ("Remote migration versions not found …"). The MCP `execute_sql` tool is fine for read-only inspection. Drift is caught by the `CI — migration drift` workflow; reconcile with `node scripts/reconcile-migration-drift.mjs`. Full runbook: [`docs/SSOT/OPERATOR_RUNBOOK.md`](docs/SSOT/OPERATOR_RUNBOOK.md) → "Migration application rules".
+- New tech-debt IDs: a `{{TD:slug}}` placeholder, numbered on merge (§4 "New registry IDs").
+- **Applying dev migrations (BE lane).** Schema changes reach the dev DB ONLY as committed sequential files (`supabase/migrations/NNNN_snake.sql`) applied via `supabase db push` / `supabase migration up` (or the **Deploy** workflow after a `dev` push passes CI). **Never** apply schema changes to dev with the Supabase MCP `apply_migration` tool — it records a TIMESTAMP version (e.g. `20260701130827`) that has no local file, which breaks the next `DB deploy` run ("Remote migration versions not found …"). The MCP `execute_sql` tool is fine for read-only inspection. Drift is caught by the `CI — migration drift` workflow; reconcile with `node scripts/reconcile-migration-drift.mjs`. Full runbook: [`docs/SSOT/OPERATOR_RUNBOOK.md`](docs/SSOT/OPERATOR_RUNBOOK.md) → "Migration application rules".
 
 ## 10. How to pick the next task
 
-If no task was assigned: open `docs/SSOT/BACKLOG.md` (active open items only — not `archive/`) and pick the highest-priority `⏳ Planned` item. Move it to `🟡 In progress` before you start coding.
+Release is paused (see top), so priorities are:
+1. **Assigned task** from the PM — always first.
+2. **Spec work** — closing open questions / `S#` approvals in `docs/spec/92_open_questions.md` and `91_kc_fills_pending.md` only with the PM.
+3. **Implementation gaps** in `docs/spec/93_implementation_gaps.md` (`G#`) the PM has prioritized — each as a task with code + spec section + automated test.
+4. Otherwise: the highest-priority `⏳ Planned` item in `docs/SSOT/BACKLOG.md` (active open items only — not `archive/`) that does not contradict `docs/spec/`. Move it to `🟡 In progress` before you start coding.
 
 ## 11. Tech stack quick reference
 
@@ -326,9 +382,13 @@ If you don't see a home for something below, **ask the PM** before inventing a n
 
 | Concern                   | File / directory                       |
 | ------------------------- | -------------------------------------- |
-| **App semver (`x.x.x`)**  | **`app/VERSION`** (+ `glowe-version.js`; see banner § above) |
+| **App semver (`x.x.x`)**  | **`app/VERSION`** (see banner § above) |
 | Priority queue            | `docs/SSOT/BACKLOG.md`                 |
-| Feature specs (FR-*)      | `docs/SSOT/spec/{domain}.md`           |
+| Project board workflow    | `docs/process/PROJECT_BOARD.md`        |
+| **Product project book**  | **`docs/spec/`** (English; Hebrew page is the human source of truth) |
+| Architecture (current/target) | `docs/architecture/`               |
+| Feature specs (FR-*, legacy) | `docs/SSOT/spec/{domain}.md`        |
+| Long-horizon vision       | `PRD_V2_NOT_FOR_MVP/` (never archive)  |
 | Tech debt register        | `docs/SSOT/TECH_DEBT.md`               |
 | Architectural decisions   | `docs/SSOT/DECISIONS.md`               |
 | Migration verification    | `docs/SSOT/OPERATOR_RUNBOOK.md`        |
@@ -369,7 +429,7 @@ When this section is active, the agent operates as a continuous self-driven task
 3. **Branch from latest `origin/dev`**: `<type>/<FR-id-or-scope>-<slug>` per §6.
 4. **Implement** under all constraints in §1–§5 (spec validation, clean architecture, file/indent caps, error handling).
 5. **Verify locally** before push: from `app/` run `pnpm typecheck && pnpm test && pnpm lint`. All three green or do not push.
-6. **PR to `dev`** with `gh pr create --base dev` then `gh pr merge --auto --squash --delete-branch`. Body follows the §6 template, including the `Mapped to spec` line.
+6. **PR to `dev`** with `gh pr create --base dev` then `gh pr merge --auto --squash` (no `--delete-branch`: rejected while the `dev` merge queue is on). Body follows the §6 template, including the `Mapped to spec` line.
 7. **CI watch.** If CI fails: up to 3 fix attempts on the same PR. If still red after 3, investigate CI itself (workflow drift, flake, env mismatch) — fix it in-scope. Only after CI repair also fails twice do you close the PR with a blocker note and skip to the next task; the blocked item is added to `TECH_DEBT.md` with a clear reproducer.
 8. **Update SSOT in the same PR**: `BACKLOG.md` → ✅, `spec/<domain>.md` status header if all ACs done, `TECH_DEBT.md` closures/additions.
 9. **Append to `.claude/AUTONOMOUS_LOOP_LOG.md`**: `<ISO-timestamp> | <branch> | <PR url> | <merged|closed|blocked> | <one-line outcome>`.
@@ -379,7 +439,7 @@ When this section is active, the agent operates as a continuous self-driven task
 
 - **Product decisions**: when a task forks on UX/product, decide based on user-visible coherence + simplicity. Record the call in `docs/SSOT/DECISIONS.md` as a new `D-*` entry with a one-paragraph rationale. Do not block on PM input.
 - **CI / tooling repairs**: if `.github/workflows/*`, root configs, or monorepo tooling appear broken, fix as part of the loop — CI is in-scope.
-- **Dev Supabase database**: full read/write/migration authority on project `roeefqpdbftlndzsvhfj` via Supabase MCP tools and the local CLI. Migrations live in `supabase/migrations/` and ship in the same PR as their consumers. Secrets needed by the CLI are in `~/.kc-dev-secrets.env` (outside the repo).
+- **Dev Supabase database**: full read/write/migration authority on project `enbqriuxvvuontiwslun` (kc-dev; verified 2026-10-30 against the deployed dev web bundle, matches `docs/SSOT/ENVIRONMENTS.md`) via Supabase MCP tools and the local CLI. `roeefqpdbftlndzsvhfj` ("MVP-2") and `slxijdfvinbjmrsfgbzx` ("MVP-PROD") are older, paused projects — never target them. Migrations live in `supabase/migrations/` and ship in the same PR as their consumers. Secrets needed by the CLI are in `~/.kc-dev-secrets.env` (outside the repo).
 
 ### Still prohibited (§7 holds regardless of loop mode)
 

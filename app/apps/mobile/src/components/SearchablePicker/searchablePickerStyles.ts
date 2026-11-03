@@ -1,5 +1,8 @@
 import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart } from '../../lib/rtlLayout';
+
+/** Smallest body height of the picker sheet, in points (search field + a few rows). */
+const SHEET_CONTENT_MIN_HEIGHT = 240;
 
 export const useSearchablePickerStyles = makeUseStyles(({ colors, isDark }) => ({
   field: {
@@ -20,44 +23,12 @@ export const useSearchablePickerStyles = makeUseStyles(({ colors, isDark }) => (
   },
   value: { ...typography.body, color: colors.textPrimary, textAlign: rtlTextAlignStart },
   valuePlaceholder: { color: colors.textDisabled },
-  modalRoot: { flex: 1 },
-  backdropPressable: {
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: colors.overlay,
-  },
-  sheetOuter: { flex: 1, justifyContent: 'flex-end' as const },
-  sheet: {
-    height: '70%',
-    backgroundColor: colors.surfaceRaised,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    paddingTop: spacing.base,
-    paddingHorizontal: spacing.base,
-    borderWidth: isDark ? 1 : 0,
-    borderColor: isDark ? colors.border : 'transparent',
-  },
-  sheetTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
-    textAlign: 'center' as const,
-    marginBottom: spacing.sm,
-  },
-  search: {
-    minHeight: 44,
-    textAlign: rtlTextAlignStart,
-    backgroundColor: colors.background,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.base,
-    marginBottom: spacing.sm,
-    ...typography.body,
-    color: colors.textPrimary,
-  },
+  // The kit BottomSheet is content-sized (capped by `maxHeight`), so `flex: 1` here resolves
+  // against an indefinite height and collapses the list to ~0 (only the first row showed).
+  // `flexShrink` lets the list fill up to the cap; `minHeight` keeps the sheet from jumping
+  // in size while a search narrows the results to a few rows.
+  sheetContent: { flexShrink: 1, minHeight: SHEET_CONTENT_MIN_HEIGHT },
+  search: { marginBottom: spacing.sm },
   statusRow: { paddingVertical: spacing.lg, alignItems: 'center' as const },
   errorBlock: { alignItems: 'center' as const, paddingVertical: spacing.md },
   errorText: {
@@ -76,7 +47,7 @@ export const useSearchablePickerStyles = makeUseStyles(({ colors, isDark }) => (
   retryLabel: {
     ...typography.body,
     color: colors.primary,
-    fontWeight: '600' as const,
+    ...typography.semiBold,
     textAlign: 'center' as const,
   },
   emptyText: {
@@ -97,6 +68,6 @@ export const useSearchablePickerStyles = makeUseStyles(({ colors, isDark }) => (
     ...typography.body,
     color: colors.primary,
     textAlign: rtlTextAlignStart,
-    fontWeight: '600' as const,
+    ...typography.semiBold,
   },
 }));

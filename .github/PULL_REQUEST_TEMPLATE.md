@@ -3,6 +3,10 @@ PR description template — keep all sections.
 The agent (or a human) fills these in. CI will block merge if "Mapped to spec" is missing.
 -->
 
+## Opened by
+<!-- Keep exactly one line; delete the rest. CI applies the matching label. -->
+Opened by: agent:cursor | agent:kc-bot | agent:antigravity | agent:codex | agent:other | human
+
 ## Summary
 <!-- 2-4 sentences: what changed and why. -->
 

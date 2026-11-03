@@ -65,7 +65,7 @@ Implementations:
 
 ## Production / CI checklist
 
-When building for production (`expo export`, EAS, Cloudflare Pages, Railway):
+When building for production (`expo export`, EAS, Cloudflare Pages):
 
 - [ ] Verify the production environment does **not** define any `EXPO_PUBLIC_DEV_*` variable. (Even if defined, `__DEV__` is `false` so the code is unreachable — but defense in depth.)
 - [ ] Confirm `EXPO_PUBLIC_DEV_TEST_PASSWORD` is **not** committed to git. The repo's `.gitignore` already excludes `.env`; `.env.example` only contains commented placeholders.

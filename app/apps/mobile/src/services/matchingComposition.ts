@@ -5,6 +5,6 @@ import { getMarketplaceSupabaseClient } from './marketplaceComposition';
 let _repo: SupabaseMatchRepository | null = null;
 
 export function getMatchRepository(): SupabaseMatchRepository {
-  if (!_repo) _repo = new SupabaseMatchRepository(getMarketplaceSupabaseClient());
+  _repo ??= new SupabaseMatchRepository(getMarketplaceSupabaseClient());
   return _repo;
 }

@@ -1,8 +1,8 @@
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '@kc/ui';
+import { useTheme, Text } from '@kc/ui';
 import type { SearchResultType } from '@kc/domain';
 import type { UniversalSearchResults } from '@kc/application';
 import {
@@ -10,8 +10,11 @@ import {
   PostResultCard,
   LinkResultCard,
 } from '../SearchResultCard';
-import { useSearchScreenStyles } from '../../../app/(tabs)/search.styles';
+import { useSearchScreenStyles } from '../../screens/tabs/search.styles';
 import { SearchSocialSections } from './SearchSocialSections';
+import { kcGridCell } from '../cards/KcCard.styles';
+
+const postsGrid = { flexDirection: 'row' as const, flexWrap: 'wrap' as const };
 
 type Props = {
   results: UniversalSearchResults;
@@ -70,9 +73,13 @@ export function SearchResultSections({
               </TouchableOpacity>
             )}
           </View>
-          {results.posts.map((post) => (
-            <PostResultCard key={post.postId} post={post} />
-          ))}
+          <View style={postsGrid}>
+            {results.posts.map((post) => (
+              <View key={post.postId} style={kcGridCell}>
+                <PostResultCard post={post} />
+              </View>
+            ))}
+          </View>
         </View>
       )}
 

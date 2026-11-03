@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_REPO_ROOT = join(__dirname, '..');
 
-const RPC_RE = /\.rpc\(\s*['"]([a-z_][a-z0-9_]*)['"]/g;
+// `\s*` spans newlines, so a call split across lines (`.rpc(\n  'name'`) is still found.
+export const RPC_RE = /\.rpc\(\s*['"]([a-z_][a-z0-9_]*)['"]/g;
 const TABLE_RE = /\.from\(\s*['"]([a-z_][a-z0-9_]*)['"]/g;
 const SKIP_DIRS = new Set(['__tests__', 'node_modules']);
 
@@ -22,7 +23,7 @@ function walkTsFiles(dir, out = []) {
   return out;
 }
 
-function collectSymbols(rootDir, regex) {
+export function collectSymbols(rootDir, regex) {
   const symbols = new Set();
   for (const file of walkTsFiles(rootDir)) {
     const content = readFileSync(file, 'utf8');

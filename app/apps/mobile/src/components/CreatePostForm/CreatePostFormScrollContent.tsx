@@ -1,26 +1,29 @@
-import React from 'react';
+import React, { type ReactNode } from 'react';
 import {
-  ActivityIndicator, ScrollView,
-  Text, TextInput, TouchableOpacity, View,
+  ActivityIndicator,
+  ScrollView,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@kc/ui';
+import { useTheme, Text, TextInput } from '@kc/ui';
 import { ALL_CATEGORIES, ITEM_CONDITIONS } from '@kc/domain';
-import type { Category, ItemCondition, LocationDisplayLevel, PostType, PostVisibility } from '@kc/domain';
+import type { Category, ItemCondition, LocationDisplayLevel, PostVisibility } from '@kc/domain';
 import { CityPicker } from '../CityPicker';
 import { StreetPicker } from '../StreetPicker';
 import { CreatePostExposureSection } from './CreatePostExposureSection';
 import { EstimatedValueSlider } from './EstimatedValueSlider';
 import { PhotoPicker } from './PhotoPicker';
+import { Chip } from '../ui/Chip';
+import { TextField } from '../ui/TextField';
 import type { UploadedAsset } from '../../services/imageUpload';
-import { useCreatePostStyles } from '../../../app/(tabs)/create.styles';
+import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
 import type { CreatePostCitySelection } from '../../hooks/useCreatePostPublish';
 
 export interface CreatePostFormScrollContentProps {
-  readonly type: PostType;
-  readonly onTypeChange: (next: PostType) => void;
+  /** Unified create header (category picker + give/request toggle). */
+  readonly header: ReactNode;
   readonly title: string;
   readonly onTitleChange: (next: string) => void;
   readonly city: CreatePostCitySelection;
@@ -60,8 +63,7 @@ export interface CreatePostFormScrollContentProps {
 }
 
 export function CreatePostFormScrollContent({
-  type,
-  onTypeChange,
+  header,
   title,
   onTitleChange,
   city,
@@ -108,38 +110,7 @@ export function CreatePostFormScrollContent({
       style={styles.scroll}
       contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarPad }]}
     >
-      <View style={styles.typeToggle}>
-        <TouchableOpacity
-          style={[styles.typeBtn, type === 'Request' && styles.typeBtnActive]}
-          onPress={() => onTypeChange('Request')}
-          accessibilityRole="button"
-          accessibilityState={{ selected: type === 'Request' }}
-        >
-          <Ionicons
-            name="search-outline"
-            size={18}
-            color={type === 'Request' ? colors.textInverse : colors.textPrimary}
-          />
-          <Text style={[styles.typeBtnText, type === 'Request' && styles.typeBtnTextActive]}>
-            {t('post.request')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.typeBtn, type === 'Give' && styles.typeBtnActiveGive]}
-          onPress={() => onTypeChange('Give')}
-          accessibilityRole="button"
-          accessibilityState={{ selected: type === 'Give' }}
-        >
-          <Ionicons
-            name="gift-outline"
-            size={18}
-            color={type === 'Give' ? colors.textInverse : colors.textPrimary}
-          />
-          <Text style={[styles.typeBtnText, type === 'Give' && styles.typeBtnTextActive]}>
-            {t('post.give')}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {header}
 
       <PhotoPicker
         uploads={uploads}
@@ -151,17 +122,12 @@ export function CreatePostFormScrollContent({
       />
 
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>
-          {t('post.title')} <Text style={styles.required}>*</Text>
-        </Text>
-        <TextInput
+        <TextField
           testID="create-post-title"
-          style={styles.input}
+          label={`${t('post.title')} *`}
           value={title}
           onChangeText={onTitleChange}
           placeholder={t('post.titlePlaceholder')}
-          placeholderTextColor={colors.textDisabled}
-          textAlign="right"
           maxLength={80}
         />
         <Text style={styles.charCount}>{title.length}/80</Text>
@@ -181,7 +147,7 @@ export function CreatePostFormScrollContent({
               disabled={isPublishing}
             />
           </View>
-          <TextInput
+          <TextInput // brand-guard-allow: compact house-number box inline beside the street picker; TextField stacks a label
             style={[styles.input, styles.streetInputHouse, !city ? { opacity: 0.5 } : null]}
             value={streetNumber}
             onChangeText={onStreetNumberChange}
@@ -202,15 +168,13 @@ export function CreatePostFormScrollContent({
         <Text style={styles.sectionLabel}>{t('post.categoryLabel')}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
           {ALL_CATEGORIES.map((cat) => (
-            <TouchableOpacity
+            <Chip
               key={cat}
-              style={[styles.chip, category === cat && styles.chipActive]}
+              label={t(`post.category.${cat}`)}
+              selected={category === cat}
               onPress={() => onCategoryChange(cat)}
-            >
-              <Text style={[styles.chipText, category === cat && styles.chipTextActive]}>
-                {t(`post.category.${cat}`)}
-              </Text>
-            </TouchableOpacity>
+              style={styles.chipGap}
+            />
           ))}
         </ScrollView>
       </View>
@@ -236,14 +200,11 @@ export function CreatePostFormScrollContent({
       )}
 
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>{t('post.description')}</Text>
-        <TextInput
-          style={[styles.input, styles.textarea]}
+        <TextField
+          label={t('post.description')}
           value={description}
           onChangeText={onDescriptionChange}
           placeholder={t('post.descPlaceholder')}
-          placeholderTextColor={colors.textDisabled}
-          textAlign="right"
           multiline
           maxLength={500}
         />
@@ -252,14 +213,11 @@ export function CreatePostFormScrollContent({
 
       {!isGive && (
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('post.urgency')}</Text>
-          <TextInput
-            style={styles.input}
+          <TextField
+            label={t('post.urgency')}
             value={urgency}
             onChangeText={onUrgencyChange}
             placeholder={t('post.urgencyPlaceholder')}
-            placeholderTextColor={colors.textDisabled}
-            textAlign="right"
             maxLength={100}
           />
         </View>

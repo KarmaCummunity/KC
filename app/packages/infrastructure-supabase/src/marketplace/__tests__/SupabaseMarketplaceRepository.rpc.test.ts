@@ -69,6 +69,21 @@ describe('SupabaseMarketplaceRepository — read RPCs', () => {
     expect(await bad.mapClusters({ swLat: 0, swLng: 0, neLat: 1, neLng: 1 })).toEqual([]);
   });
 
+  it('mapPins maps pin rows and passes filters', async () => {
+    const { repo, rpcCalls } = makeClient({
+      map_listing_pins: ok([
+        { listing_id: 'l1', world_slug: 'food', kind_slug: 'k', direction: 'give', title: 'T', summary: null,
+          lat: 31.95, lng: 34.89, origin_lat: null, origin_lng: null, dest_lat: null, dest_lng: null,
+          origin_label: null, dest_label: null, departs_at: null, seats: null },
+      ]),
+    });
+    const out = await repo.mapPins({ swLat: 31, swLng: 34, neLat: 33, neLng: 35, worldSlug: 'food', limit: 50 });
+    expect(out[0]).toMatchObject({ listingId: 'l1', worldSlug: 'food', lat: 31.95 });
+    expect(rpcCalls[0]?.args).toMatchObject({ p_world_slug: 'food', p_limit: 50 });
+    const { repo: bad } = makeClient({ map_listing_pins: fail });
+    expect(await bad.mapPins({ swLat: 0, swLng: 0, neLat: 1, neLng: 1 })).toEqual([]);
+  });
+
   it('getListingDetail returns null on error and maps json otherwise', async () => {
     const { repo: bad } = makeClient({ get_marketplace_listing_detail: fail });
     expect(await bad.getListingDetail('l1')).toBeNull();
@@ -259,5 +274,13 @@ describe('SupabaseMarketplaceRepository — external bodies', () => {
     const { repo, rpcCalls } = makeClient({ create_marketplace_listing: ok('id') });
     await repo.createListing({ kindId: 'k', title: 'Foster', externalBodyId: 'b1' });
     expect(rpcCalls[0]?.args).toMatchObject({ p_external_body_id: 'b1' });
+  });
+
+  it('createListing forwards the world subcategory and omits it when none was picked (KC#1296)', async () => {
+    const { repo, rpcCalls } = makeClient({ create_marketplace_listing: ok('id') });
+    await repo.createListing({ kindId: 'k', title: 'Bookshelf', categoryId: 'cat-books' });
+    await repo.createListing({ kindId: 'k', title: 'Chair', categoryId: null });
+    expect(rpcCalls[0]?.args).toMatchObject({ p_category_id: 'cat-books' });
+    expect(rpcCalls[1]?.args).toMatchObject({ p_category_id: undefined });
   });
 });

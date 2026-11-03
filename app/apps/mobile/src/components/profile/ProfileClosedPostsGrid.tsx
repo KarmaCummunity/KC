@@ -3,10 +3,10 @@
 // Mapped to: FR-PROFILE-001 AC4 (revised), FR-PROFILE-002 AC2 (revised).
 
 import React from 'react';
-import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, useTheme } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { PROFILE_GRID_COLUMNS } from '../../hooks/useShellContentWidth';
 import type { ProfileClosedPostsItem } from '@kc/domain';
 import { chunkArray } from '../../lib/chunkArray';
@@ -29,7 +29,7 @@ export interface ProfileClosedPostsGridProps {
   postOwner?: ProfilePostOwnerContext;
 }
 
-export function ProfileClosedPostsGrid({
+function ProfileClosedPostsGridInner({
   items,
   isLoading,
   empty,
@@ -63,6 +63,15 @@ export function ProfileClosedPostsGrid({
       icon: 'archive-outline',
     },
   };
+
+  const chunkedRows = React.useMemo(() => {
+    const mapped = items.map((it) => ({
+      postWithOwner: postWithOwnerFromPost(it.post, postOwner),
+      identityRole: it.identityRole,
+    }));
+    return chunkArray(mapped, PROFILE_GRID_COLUMNS);
+  }, [items, postOwner]);
+
   if (isLoading) {
     return (
       <View style={styles.loading}>
@@ -77,12 +86,12 @@ export function ProfileClosedPostsGrid({
   return (
     <>
       <View style={styles.grid}>
-        {chunkArray(items, PROFILE_GRID_COLUMNS).map((row, rowIndex) => (
-          <View key={rowIndex} style={styles.row}>
-            {row.map(({ post, identityRole }) => (
+        {chunkedRows.map((row, rowIndex) => (
+          <View key={row[0]?.postWithOwner.postId ?? rowIndex} style={styles.row}>
+            {row.map(({ postWithOwner, identityRole }) => (
               <PostCardGrid
-                key={post.postId}
-                post={postWithOwnerFromPost(post, postOwner)}
+                key={postWithOwner.postId}
+                post={postWithOwner}
                 columns={PROFILE_GRID_COLUMNS}
                 gap={spacing.xs}
                 identityRole={identityRole}
@@ -112,7 +121,9 @@ export function ProfileClosedPostsGrid({
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+export const ProfileClosedPostsGrid = React.memo(ProfileClosedPostsGridInner);
+
+const useStyles = makeUseStyles(({ colors }) => ({
   loading: { padding: spacing.xl, alignItems: 'center' },
   grid: {
     width: '100%',
@@ -130,12 +141,12 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
   loadMoreBtn: {
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.sm,
-    borderRadius: 999,
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.primary,
     minWidth: 140,
     alignItems: 'center',
   },
   loadMoreBtnBusy: { opacity: 0.6 },
-  loadMoreText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
+  loadMoreText: { color: colors.primary, ...typography.button },
 }));

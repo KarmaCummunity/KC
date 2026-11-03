@@ -95,19 +95,34 @@ export function applyLayoutDirection(lang: AppLanguage): void {
   }
 }
 
+function devReload(): void {
+  try {
+    DevSettings?.reload?.();
+  } catch {
+    /* no-op */
+  }
+}
+
+// expo-updates is loaded lazily so web and every importer of this module skip
+// the native module until a reload is actually requested.
+async function reloadNative(): Promise<void> {
+  const Updates = await import('expo-updates');
+  if (!Updates.isEnabled) {
+    devReload();
+    return;
+  }
+  await Updates.reloadAsync();
+}
+
 /**
  * Reload the app so module-load direction constants and native RTL mirroring
- * re-resolve for the new language. Web reloads the page; native uses DevSettings
- * (production native reload needs expo-updates — tracked as tech debt TD-178).
+ * re-resolve for the new language. Web reloads the page. Native release builds
+ * reload through expo-updates; dev clients (updates disabled) use DevSettings.
  */
 export function reloadApp(): void {
   if (Platform.OS === 'web') {
     if (typeof window !== 'undefined') window.location.reload();
     return;
   }
-  try {
-    DevSettings?.reload?.();
-  } catch {
-    /* no-op */
-  }
+  reloadNative().catch(devReload);
 }

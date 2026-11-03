@@ -8,6 +8,7 @@ const baseRow = (over: Partial<ChatWithPreview> = {}): ChatWithPreview => ({
   participantIds: ['u1', 'u2'],
   anchorPostId: null,
   anchorRideId: null,
+  anchorListingId: null,
   isSupportThread: false,
   lastMessageAt: '2026-01-01T00:00:00.000Z',
   createdAt: '2025-12-01T00:00:00.000Z',

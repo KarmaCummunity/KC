@@ -39,6 +39,7 @@ function mapMediaAsset(row: MediaAssetRow): MediaAsset {
   return {
     mediaAssetId: row.media_asset_id,
     postId: row.post_id,
+    bucket: row.bucket === 'listing-images' ? 'listing-images' : 'post-images',
     path: row.path,
     mimeType: row.mime_type,
     sizeBytes: row.size_bytes,
@@ -82,6 +83,8 @@ export function mapPostRow(row: PostJoinedRow): Post {
         }
       : null,
     reopenCount: row.reopen_count,
+    listingId: row.listing_id ?? null,
+    listingWorldSlug: row.listing_world_slug ?? null,
     deleteAfter: row.delete_after,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

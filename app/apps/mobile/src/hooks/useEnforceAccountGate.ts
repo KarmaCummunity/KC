@@ -1,11 +1,14 @@
 // FR-MOD-010 AC4 — sign-in + periodic mid-session enforcement + fetch-level ban detection.
+// D61: suspended users stay signed in (SuspensionBanner + support chat); banned users are signed out.
 import { useEffect, useRef } from 'react';
 import { useRouter, type Href } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { container, supabase } from '../lib/container';
+import { container } from '../lib/container';
 import { useAuthStore } from '../store/authStore';
 import { setOnForbiddenCallback } from '@kc/infrastructure-supabase';
 import { performFullSignOut } from '../services/performFullSignOut';
+import { accountGateDecision } from '../lib/moderation/accountGateDecision';
+import { useSuspensionStore } from '../store/suspensionStore';
 
 const RECHECK_MS = 60_000;
 
@@ -18,6 +21,7 @@ export function useEnforceAccountGate(userId: string | null) {
   useEffect(() => {
     if (!userId) {
       enforcingRef.current = false;
+      useSuspensionStore.getState().setSuspension(null);
       setOnForbiddenCallback(null);
       return;
     }
@@ -27,10 +31,17 @@ export function useEnforceAccountGate(userId: string | null) {
     const check = async () => {
       if (cancelled || enforcingRef.current) return;
       try {
-        const result = await container.checkAccountGate.execute({ userId });
-        if (cancelled || result.allowed) return;
+        const decision = accountGateDecision(await container.checkAccountGate.execute({ userId }));
+        if (cancelled) return;
+        if (decision.action === 'allow' || decision.action === 'suspended') {
+          useSuspensionStore.getState().setSuspension(
+            decision.action === 'suspended' ? { reason: decision.reason, until: decision.until } : null,
+          );
+          return;
+        }
         enforcingRef.current = true;
-        if ((result.reason as string | undefined) === 'pending_verification') {
+        useSuspensionStore.getState().setSuspension(null);
+        if (decision.action === 'reverify') {
           await performFullSignOut({
             deviceRepo: container.deviceRepo,
             queryClient,
@@ -47,8 +58,8 @@ export function useEnforceAccountGate(userId: string | null) {
         router.replace({
           pathname: '/account-blocked',
           params: {
-            reason: result.reason ?? 'banned',
-            until: result.until ?? '',
+            reason: decision.reason,
+            until: decision.until ?? '',
           },
         } as unknown as Href);
       } catch {

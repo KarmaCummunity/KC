@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { RideParticipantError } from '@kc/domain';
 import { DecideRideJoinUseCase } from '../DecideRideJoinUseCase';
 import { FakeRideParticipantRepository } from './fakeRideParticipantRepository';
 

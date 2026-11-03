@@ -1,0 +1,153 @@
+name: Deploy rollback
+
+# Prod rollback, called only by deploy.yml when the Edge Functions, web or
+# smoke stage of an approved release failed (D-195, INFRA-CI-3):
+#
+#   web        Cloudflare Pages production → the deployment deploy.yml
+#              recorded right before its web deploy in THIS run attempt
+#              (skipped when the web stage never started).
+#   functions  redeploy the previous release tag's Edge Functions (skipped
+#              when there is no earlier tag; the report says so).
+#   smoke      re-check prod; the SHA match only when a previous tag exists.
+#   report     what was and was not rolled back. Always fails, so the run
+#              stays red and the release is not tagged.
+#
+# No automatic code rollback when this release applied migrations
+# (applied_migrations > 0): the old web and functions may not work against
+# the new schema, so the report demands a forward-fix instead. The database
+# itself is never rolled back; the encrypted pre-migration backup on the
+# deploy run is for a manual restore only.
+#
+# Mutating jobs start with the deploy guard (.github/actions/deploy-guard):
+# deploy.yml on main, approval and baseline from this attempt, release still
+# the main tip.
+
+on:
+  workflow_call:
+    inputs:
+      sha:
+        description: The failed release commit
+        type: string
+        required: true
+      previous_sha:
+        description: Commit of the previous release tag (empty if none)
+        type: string
+        required: true
+      previous_web_id:
+        description: Cloudflare deployment id that served prod before the web stage (empty if the web stage never started)
+        type: string
+        required: true
+      baseline_attempt:
+        description: run_attempt in which previous_web_id was recorded
+        type: string
+        required: true
+      approved_attempt:
+        description: run_attempt in which the release was approved
+        type: string
+        required: true
+      applied_migrations:
+        description: Migrations the failed release applied (rollback only when 0)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  web:
+    name: rollback web
+    if: inputs.previous_web_id != '' && inputs.applied_migrations == '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: cloudflare-prod
+    steps:
+      # The guard comes from deploy.yml's own commit, not the deployed one.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .deploy-guard
+          sparse-checkout: |
+            .github/actions/deploy-guard
+            scripts/deploy-guard.mjs
+            scripts/release-version.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - uses: ./.deploy-guard/.github/actions/deploy-guard
+        with:
+          target: prod
+          release-sha: ${{ inputs.sha }}
+          approved-attempt: ${{ inputs.approved_attempt }}
+          baseline-attempt: ${{ inputs.baseline_attempt }}
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.sha }}
+          sparse-checkout: scripts
+          persist-credentials: false
+      - name: Point production back at the recorded deployment
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_PAGES_PROJECT: karma-community
+          PREVIOUS_ID: ${{ inputs.previous_web_id }}
+        run: node scripts/cloudflare-pages.mjs rollback "$PREVIOUS_ID"
+
+  # deploy-functions.yml runs the guard against the failed release, then
+  # redeploys the previous tag's functions.
+  functions:
+    name: rollback functions
+    if: inputs.previous_sha != '' && inputs.applied_migrations == '0'
+    uses: ./.github/workflows/deploy-functions.yml
+    with:
+      target: prod
+      sha: ${{ inputs.previous_sha }}
+      release_sha: ${{ inputs.sha }}
+      approved_attempt: ${{ inputs.approved_attempt }}
+    secrets: inherit
+
+  smoke:
+    name: smoke after rollback
+    needs: [web, functions]
+    if: always() && (needs.web.result == 'success' || needs.functions.result == 'success')
+    uses: ./.github/workflows/deploy-smoke.yml
+    with:
+      target: prod
+      sha: ${{ inputs.previous_sha }}
+      checks: ${{ inputs.previous_sha != '' && 'version,web,supabase,functions' || 'web,supabase,functions' }}
+    secrets: inherit
+
+  report:
+    name: rollback report
+    needs: [web, functions, smoke]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Summarise the rollback
+        env:
+          SHA: ${{ inputs.sha }}
+          PREVIOUS_SHA: ${{ inputs.previous_sha }}
+          APPLIED: ${{ inputs.applied_migrations }}
+          WEB: ${{ needs.web.result }}
+          FUNCTIONS: ${{ needs.functions.result }}
+          SMOKE: ${{ needs.smoke.result }}
+        run: |
+          {
+            echo "### Prod release $SHA failed after approval"
+            if [ "$APPLIED" != 0 ]; then
+              echo "**FORWARD-FIX REQUIRED.** This release applied $APPLIED migration(s), so web and Edge Functions were NOT rolled back:"
+              echo "the previous code may not work against the new schema. Ship a fix on dev, bump app/VERSION and release again."
+            else
+              echo "- Web rollback: $WEB"
+              if [ -n "$PREVIOUS_SHA" ]; then
+                echo "- Edge Functions redeployed from $PREVIOUS_SHA: $FUNCTIONS"
+              else
+                echo "- Edge Functions: no earlier release tag, so they stay at $SHA (redeploy by hand if needed)"
+              fi
+              echo "- Smoke after rollback: $SMOKE"
+            fi
+            echo "- Database: forward-fix only; migrations stay applied (encrypted backup artifact on this run if migrations changed)"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "::error::Prod release $SHA failed; see the rollback summary."
+          exit 1

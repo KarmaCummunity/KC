@@ -1,13 +1,15 @@
-// One "Matches for you" row (matching v2): counterpart listing, why it matched, accept/decline.
+// One "Matches for you" row (matching v2) rendered with the shared base post card (KcCard):
+// counterpart listing + match % / state chip in the status slot, accept/decline in the footer slot.
 import React from 'react';
-import { Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
+import { spacing } from '@kc/ui';
 import type { MatchSuggestion } from '@kc/infrastructure-supabase';
-import { Card } from '../ui/Card';
+import { KcCard } from '../cards/KcCard';
+import { listingWorldIcon } from '../cards/ListingCard';
 import { GhostButton, PrimaryButton, SecondaryButton } from '../ui/Buttons';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { useShellContentWidth } from '../../hooks/useShellContentWidth';
+import { cleanDisplayTitle } from '../../lib/displayTitle';
 import { matchStateOf, scorePercent } from '../../lib/matching';
 
 interface Props {
@@ -16,68 +18,63 @@ interface Props {
   readonly onRespond: (candidateId: string, response: 'accept' | 'decline') => void;
 }
 
-const useStyles = makeUseStyles(({ colors }) => ({
-  title: { ...typography.h3, color: colors.textPrimary, textAlign: rtlTextAlignStart },
-  meta: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs, textAlign: rtlTextAlignStart },
-  reason: { ...typography.body, color: colors.textSecondary, marginTop: spacing.sm, textAlign: rtlTextAlignStart },
-  badge: {
-    alignSelf: 'flex-start' as const,
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    marginBottom: spacing.xs,
-  },
-  badgeText: { ...typography.caption, color: colors.primary },
-  actions: { flexDirection: 'row' as const, gap: spacing.sm, marginTop: spacing.md, flexWrap: 'wrap' as const },
-}));
+const WIDE_IMAGE_RATIO = 0.28;
 
 export function MatchSuggestionCard({ match, busy, onRespond }: Props) {
   const { t } = useTranslation();
-  const styles = useStyles();
   const router = useRouter();
+  const width = useShellContentWidth() - spacing.base * 2;
   const state = matchStateOf(match);
   const owner = match.otherOwner.displayName ?? t('matches.someone');
+  // The counterpart is the opposite side of my listing.
+  const otherIsRequest = match.myRole === 'offer';
   const openListing = () =>
-    router.push({ pathname: '/(tabs)/donations/marketplace/[listingId]', params: { listingId: match.otherListingId } } as never);
+    router.push({ pathname: '/listing/[listingId]', params: { listingId: match.otherListingId } });
+  const canRespond = state === 'new' || state === 'theyAccepted';
+  const details: Array<{ icon: React.ComponentProps<typeof KcCard>['placeholderIcon']; text: string }> = [
+    { icon: 'link-outline', text: t(match.myRole === 'offer' ? 'matches.forYourOffer' : 'matches.forYourRequest', { title: cleanDisplayTitle(match.myListingTitle) }) },
+  ];
+  if (match.reason) details.push({ icon: 'information-circle-outline', text: match.reason });
 
   return (
-    <Card testID={`match-card-${match.candidateId}`}>
-      <View style={styles.badge}>
-        <Text style={styles.badgeText}>
-          {t(`matches.state.${state}`)} · {t('matches.score', { pct: scorePercent(match.score) })}
-        </Text>
-      </View>
-      <Text style={styles.title} numberOfLines={2}>{match.otherListingTitle}</Text>
-      <Text style={styles.meta} numberOfLines={2}>
-        {t(match.myRole === 'offer' ? 'matches.forYourOffer' : 'matches.forYourRequest', { title: match.myListingTitle })}
-      </Text>
-      <Text style={styles.meta}>
-        {owner}
-        {match.distanceKm != null ? ` · ${t('matches.distanceKm', { km: Math.round(match.distanceKm) })}` : ''}
-      </Text>
-      {match.reason ? <Text style={styles.reason}>{match.reason}</Text> : null}
-      <View style={styles.actions}>
-        {state === 'new' || state === 'theyAccepted' ? (
-          <>
-            <PrimaryButton
-              label={t('matches.accept')}
-              icon="checkmark"
-              loading={busy}
-              onPress={() => onRespond(match.candidateId, 'accept')}
-              testID={`match-accept-${match.candidateId}`}
-            />
-            <SecondaryButton
-              label={t('matches.decline')}
-              icon="close"
-              disabled={busy}
-              onPress={() => onRespond(match.candidateId, 'decline')}
-              testID={`match-decline-${match.candidateId}`}
-            />
-          </>
-        ) : null}
-        <GhostButton label={t('matches.viewListing')} icon="open-outline" onPress={openListing} />
-      </View>
-    </Card>
+    <KcCard
+      testID={`match-card-${match.candidateId}`}
+      width={width}
+      imageRatio={WIDE_IMAGE_RATIO}
+      onPress={openListing}
+      accessibilityLabel={cleanDisplayTitle(match.otherListingTitle)}
+      placeholderIcon={listingWorldIcon(match.worldSlug)}
+      tone={otherIsRequest ? 'request' : 'give'}
+      badgeLabel={t(otherIsRequest ? 'feed.requestTypeShort' : 'feed.giveTypeShort')}
+      statusLabel={`${t(`matches.state.${state}`)} · ${t('matches.score', { pct: scorePercent(match.score) })}`}
+      author={{ name: owner, avatarUrl: match.otherOwner.avatarUrl }}
+      title={cleanDisplayTitle(match.otherListingTitle)}
+      chip={t(`marketplace.world.${match.worldSlug}`, { defaultValue: match.worldSlug })}
+      details={details}
+      location={match.distanceKm == null ? null : t('matches.distanceKm', { km: Math.round(match.distanceKm) })}
+      footer={
+        <>
+          {canRespond ? (
+            <>
+              <PrimaryButton
+                label={t('matches.accept')}
+                icon="checkmark"
+                loading={busy}
+                onPress={() => onRespond(match.candidateId, 'accept')}
+                testID={`match-accept-${match.candidateId}`}
+              />
+              <SecondaryButton
+                label={t('matches.decline')}
+                icon="close"
+                disabled={busy}
+                onPress={() => onRespond(match.candidateId, 'decline')}
+                testID={`match-decline-${match.candidateId}`}
+              />
+            </>
+          ) : null}
+          <GhostButton label={t('matches.viewListing')} icon="open-outline" onPress={openListing} />
+        </>
+      }
+    />
   );
 }

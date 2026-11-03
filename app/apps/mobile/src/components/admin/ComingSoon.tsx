@@ -1,7 +1,8 @@
 // app/apps/mobile/src/components/admin/ComingSoon.tsx
 import { router } from 'expo-router';
 import type { ReactElement } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable } from 'react-native';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { useLocaleBundle } from '../../i18n/useLocaleBundle';
 
 export interface ComingSoonProps {
@@ -10,6 +11,7 @@ export interface ComingSoonProps {
 }
 
 export function ComingSoon({ subProject, description }: ComingSoonProps): ReactElement {
+  const styles = useStyles();
   const L = useLocaleBundle();
   const t = L.admin.comingSoon;
   const key = subProject.toLowerCase() as 'a1' | 'a2' | 'a3' | 'a4';
@@ -28,10 +30,10 @@ export function ComingSoon({ subProject, description }: ComingSoonProps): ReactE
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
-  title: { fontSize: 18, fontWeight: '600', textAlign: 'center' },
-  subtitle: { fontSize: 14, opacity: 0.7, textAlign: 'center' },
-  back: { marginTop: 16, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: '#eee' },
-  backText: { fontSize: 14 },
-});
+const useStyles = makeUseStyles(({ colors }) => ({
+  root: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.md },
+  title: { fontSize: typography.h3.fontSize, ...typography.semiBold, textAlign: 'center' },
+  subtitle: { fontSize: typography.body.fontSize, opacity: 0.7, textAlign: 'center' },
+  back: { marginTop: spacing.base, paddingHorizontal: spacing.base, paddingVertical: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.skeleton },
+  backText: { fontSize: typography.body.fontSize },
+}));

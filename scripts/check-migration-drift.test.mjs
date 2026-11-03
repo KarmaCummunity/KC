@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import {
   parseRemoteVersions,
   findDrift,
+  pendingMigrations,
   repairCommands,
 } from './check-migration-drift.mjs';
 
@@ -85,4 +86,10 @@ test('findDrift dedupes and sorts', () => {
     remoteVersions: ['0001', '20260701130827', '20260601120000', '20260701130827'],
   });
   assert.deepEqual(drift.orphans, ['20260601120000', '20260701130827']);
+});
+
+test('pendingMigrations lists the local versions db push is about to apply', () => {
+  const list = ['  LOCAL | REMOTE | TIME', '  ------|--------|-----', '  0001  | 0001   | 0001', '  0002  |        | 0002'].join('\n');
+  assert.deepEqual(pendingMigrations(list, ['0001', '0002', '0003']), ['0002', '0003']);
+  assert.deepEqual(pendingMigrations(list, ['0001']), []);
 });

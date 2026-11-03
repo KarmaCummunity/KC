@@ -19,3 +19,11 @@ export class DonationLinkError extends Error {
     Object.setPrototypeOf(this, DonationLinkError.prototype);
   }
 }
+
+/** Safe across bundle duplicates (Metro may load @kc/application more than once). */
+export function isDonationLinkError(err: unknown): err is DonationLinkError {
+  if (err instanceof DonationLinkError) return true;
+  if (typeof err !== 'object' || err === null) return false;
+  const o = err as { name?: string; code?: unknown };
+  return o.name === 'DonationLinkError' && typeof o.code === 'string';
+}

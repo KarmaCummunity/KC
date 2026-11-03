@@ -34,16 +34,14 @@ jobs:
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
       KC_DEV_REF: enbqriuxvvuontiwslun
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Guard – kc-dev only
         run: |
           set -euo pipefail
           if [ "$SUPABASE_PROJECT_REF" != "$KC_DEV_REF" ]; then
             echo "::error::supabase-dev SUPABASE_PROJECT_REF is not kc-dev; refusing."; exit 1
           fi
-      - uses: supabase/setup-cli@v3
-        with:
-          version: 2.99.0
+      - uses: ./.github/actions/setup-supabase-cli
       - name: Install psql
         run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client >/dev/null
       - name: Link (resolves the pooler URL)

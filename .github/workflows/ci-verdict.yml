@@ -1,0 +1,73 @@
+name: CI verdict
+
+# Trusted verdict for every finished CI run (INFRA-CI-2, D-195). The dev/main
+# ruleset requires the check `CI verdict` from the dedicated CI-verdict GitHub
+# App, because `CI gate` (a plain Actions job) can be imitated on any commit
+# by a workflow on another branch. scripts/ci-verdict.mjs re-verifies the run
+# (ci.yml path, same repository, PR into dev/main bound through its merge
+# commit, head branch and SHA, no sibling PR into another base, newest
+# PR-event run for the SHA, one attempt, `CI gate` job success) and posts a
+# green or red `CI verdict` on the run's head SHA. The verdict is per SHA;
+# push and dispatch runs get none.
+#
+# `workflow_run` always runs this file and the checked-out scripts from the
+# DEFAULT branch (`main`), never from the run's branch, so a PR cannot change
+# its own verifier; changes here take effect only once they reach `main`.
+# `workflows: [CI]` matches by name, so look-alike workflows named CI also
+# trigger this — they get a red verdict. The App credentials live in the
+# `ci-verdict` environment, whose deployment-branch policy allows only `main`,
+# so workflows on other branches or PR refs cannot read them.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions: {}
+
+# Per commit, so the newest finished run's verdict is the one that stays.
+concurrency:
+  group: ci-verdict-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  verdict:
+    # Not named `CI verdict`: the required check is the App's, not this job's.
+    name: post verdict
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: ci-verdict
+    permissions:
+      contents: read
+    steps:
+      # Default-branch copy of the verifier and its two modules only.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/ci-verdict.mjs
+            scripts/ci-run-binding.mjs
+            scripts/ci-github.mjs
+          sparse-checkout-cone-mode: false
+
+      # Installation token of the CI-verdict App, scoped to this repository:
+      # it may post check runs and read runs, commits and PRs, nothing else.
+      - name: Mint CI-verdict App token
+        id: app
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.CI_VERDICT_APP_ID }}
+          private-key: ${{ secrets.CI_VERDICT_APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-checks: write
+          permission-actions: read
+          permission-contents: read
+          permission-pull-requests: read
+
+      - name: Verify the CI run and post CI verdict
+        env:
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          # Lets the verifier post a red verdict even when the run lookup fails.
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          GITHUB_TOKEN: ${{ steps.app.outputs.token }}
+        run: node scripts/ci-verdict.mjs

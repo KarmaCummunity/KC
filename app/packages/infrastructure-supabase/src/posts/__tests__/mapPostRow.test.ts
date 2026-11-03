@@ -59,6 +59,29 @@ describe('mapPostRow (TD-50)', () => {
     expect(mapPostRow(makeRow()).sourceLanguage).toBeNull();
   });
 
+  it('maps listing_id → listingId for a feed mirror, null for a plain post (D-206)', () => {
+    expect(mapPostRow(makeRow({ listing_id: 'l_1' })).listingId).toBe('l_1');
+    expect(mapPostRow(makeRow()).listingId).toBeNull();
+  });
+
+  it('maps listing_world_slug → listingWorldSlug, null when absent (FR-FEED-020)', () => {
+    expect(mapPostRow(makeRow({ listing_id: 'l_1', listing_world_slug: 'rides' })).listingWorldSlug).toBe('rides');
+    expect(mapPostRow(makeRow()).listingWorldSlug).toBeNull();
+  });
+
+  it('maps each media asset bucket, defaulting to post-images (D-206)', () => {
+    const row = makeRow({
+      media_assets: [
+        { media_asset_id: 'm_2', post_id: 'p_1', ordinal: 1, path: 'u/b/1.jpg', mime_type: 'image/jpeg', size_bytes: 10, created_at: 'x', bucket: 'listing-images' },
+        { media_asset_id: 'm_1', post_id: 'p_1', ordinal: 0, path: 'u/b/0.jpg', mime_type: 'image/jpeg', size_bytes: 10, created_at: 'x', bucket: 'post-images' },
+      ] as unknown as PostJoinedRow['media_assets'],
+    });
+    expect(mapPostRow(row).mediaAssets.map((m) => [m.path, m.bucket])).toEqual([
+      ['u/b/0.jpg', 'post-images'],
+      ['u/b/1.jpg', 'listing-images'],
+    ]);
+  });
+
   it('uses city_ref.name_he when present', () => {
     const out = mapPostRow(makeRow({ city_ref: { name_he: 'תל אביב' } }));
     expect(out.address.cityName).toBe('תל אביב');

@@ -15,9 +15,11 @@ import type {
 // State is saved per signed-in user via AsyncStorage so reopening the app
 // restores their last filter set.
 
-interface FilterState {
+export interface FilterState {
   type: PostType | null;
-  categories: Category[];                 // empty = no category filter
+  worlds: string[];                       // giving world slugs; empty = all worlds
+  subcategories: string[];                // world subcategory slugs; empty = all subcategories
+  categories: Category[];                 // legacy item categories, kept unused for migration
   itemConditions: ItemCondition[];        // empty = no condition filter; only meaningful for Give
   locationFilter: LocationFilter | null;  // null = no location filter
   statusFilter: FeedStatusFilter;
@@ -28,6 +30,8 @@ interface FilterState {
   searchQuery: string;                    // FR-FEED-003 — raw input; active when trim length >= 2
 
   setType: (t: PostType | null) => void;
+  setWorlds: (w: string[]) => void;
+  setSubcategories: (s: string[]) => void;
   setCategories: (c: Category[]) => void;
   setItemConditions: (i: ItemCondition[]) => void;
   setLocationFilter: (f: LocationFilter | null) => void;
@@ -40,8 +44,10 @@ interface FilterState {
   activeCount: () => number;
 }
 
-const DEFAULT_STATE = {
+export const DEFAULT_STATE = {
   type: null as PostType | null,
+  worlds: [] as string[],
+  subcategories: [] as string[],
   categories: [] as Category[],
   itemConditions: [] as ItemCondition[],
   locationFilter: null as LocationFilter | null,
@@ -59,6 +65,8 @@ export const useFilterStore = create<FilterState>()(
       ...DEFAULT_STATE,
 
       setType: (type) => set({ type }),
+      setWorlds: (worlds) => set({ worlds }),
+      setSubcategories: (subcategories) => set({ subcategories }),
       setCategories: (categories) => set({ categories }),
       setItemConditions: (itemConditions) => set({ itemConditions }),
       setLocationFilter: (locationFilter) => set({ locationFilter }),
@@ -75,6 +83,8 @@ export const useFilterStore = create<FilterState>()(
         const s = get();
         let count = 0;
         if (s.type) count++;
+        if (s.worlds.length > 0) count++;
+        if (s.subcategories.length > 0) count++;
         if (s.categories.length > 0) count++;
         if (s.itemConditions.length > 0) count++;
         if (s.locationFilter) count++;
@@ -89,13 +99,32 @@ export const useFilterStore = create<FilterState>()(
     {
       name: 'kc-filters',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 4,
-      // Migrating from any prior version drops the persisted state — fields
-      // and shapes have changed multiple times during P1.2. Users land on
-      // defaults and pick their filters again.
-      migrate: () => ({ ...DEFAULT_STATE }),
+      version: 5,
+      migrate: (persistedState: unknown) => {
+        if (!persistedState || typeof persistedState !== 'object') {
+          return { ...DEFAULT_STATE };
+        }
+        const state = persistedState as Record<string, unknown>;
+        return {
+          ...DEFAULT_STATE,
+          type: (state.type as PostType) ?? null,
+          worlds: Array.isArray(state.worlds) ? (state.worlds as string[]) : [],
+          subcategories: Array.isArray(state.subcategories) ? (state.subcategories as string[]) : [],
+          categories: [],
+          itemConditions: Array.isArray(state.itemConditions) ? (state.itemConditions as ItemCondition[]) : [],
+          locationFilter: (state.locationFilter as LocationFilter) ?? null,
+          statusFilter: (state.statusFilter as FeedStatusFilter) ?? 'open',
+          sortOrder: (state.sortOrder as FeedSortOrder) ?? 'newest',
+          proximitySortCity: typeof state.proximitySortCity === 'string' ? state.proximitySortCity : null,
+          proximitySortCityName: typeof state.proximitySortCityName === 'string' ? state.proximitySortCityName : null,
+          followersOnly: Boolean(state.followersOnly),
+          searchQuery: typeof state.searchQuery === 'string' ? state.searchQuery : '',
+        };
+      },
       partialize: (state) => ({
         type: state.type,
+        worlds: state.worlds,
+        subcategories: state.subcategories,
         categories: state.categories,
         itemConditions: state.itemConditions,
         locationFilter: state.locationFilter,

@@ -19,6 +19,14 @@ export interface OnboardingBootstrap {
   readonly basicInfoSkipped: boolean;
 }
 
+/**
+ * FR-NOTIF-014 / FR-NOTIF-017 — partial preference update. Top-level keys replace the stored
+ * value; `kinds` is merged per key so toggling one notification type keeps the others.
+ */
+export type NotificationPreferencesPatch = Partial<
+  Pick<NotificationPreferences, 'critical' | 'social' | 'quietHours' | 'kinds'>
+>;
+
 /** Raw signals from DB used to derive FR-FOLLOW-011 state. */
 export interface FollowStateRaw {
   /** target.privacy_mode + target.account_status. null if target not visible / does not exist. */
@@ -84,13 +92,6 @@ export interface IUserRepository {
    * the DB still applies the length CHECK as defence in depth.
    */
   setBiography(userId: string, biography: string | null): Promise<void>;
-
-  /**
-   * FR-TRANSLATE-001 — persist the reader's BCP-47 preferred output language.
-   * Caller validates the tag (createLanguageTag) upstream. Pass `null` to reset
-   * to the device-locale default. Idempotent at the DB layer.
-   */
-  setPreferredLanguage(userId: string, languageTag: string | null): Promise<void>;
 
   /**
    * FR-PROFILE-005, 006 — flips users.privacy_mode and stamps privacy_changed_at.
@@ -205,11 +206,7 @@ export interface IUserRepository {
    */
   updateNotificationPreferences(
     userId: string,
-    partial: {
-      critical?: boolean;
-      social?: boolean;
-      quietHours?: NotificationPreferences['quietHours'];
-    },
+    partial: NotificationPreferencesPatch,
   ): Promise<NotificationPreferences>;
 
   // Auth identities

@@ -1,0 +1,677 @@
+{
+  "$description": "Karma Community (KC) design tokens — generated from packages/ui/src/theme; do not edit by hand.",
+  "color": {
+    "light": {
+      "primary": {
+        "$type": "color",
+        "$value": "#C2410C"
+      },
+      "primaryDark": {
+        "$type": "color",
+        "$value": "#9A3412"
+      },
+      "primaryLight": {
+        "$type": "color",
+        "$value": "#FED7AA"
+      },
+      "primarySurface": {
+        "$type": "color",
+        "$value": "#FFF7ED"
+      },
+      "primaryVivid": {
+        "$type": "color",
+        "$value": "#F97316"
+      },
+      "secondary": {
+        "$type": "color",
+        "$value": "#203050"
+      },
+      "secondaryLight": {
+        "$type": "color",
+        "$value": "#E3E8F2"
+      },
+      "success": {
+        "$type": "color",
+        "$value": "#22C55E"
+      },
+      "successLight": {
+        "$type": "color",
+        "$value": "#DCFCE7"
+      },
+      "error": {
+        "$type": "color",
+        "$value": "#DC2626"
+      },
+      "errorLight": {
+        "$type": "color",
+        "$value": "#FEE2E2"
+      },
+      "warning": {
+        "$type": "color",
+        "$value": "#F59E0B"
+      },
+      "warningLight": {
+        "$type": "color",
+        "$value": "#FEF3C7"
+      },
+      "info": {
+        "$type": "color",
+        "$value": "#3B82F6"
+      },
+      "infoLight": {
+        "$type": "color",
+        "$value": "#DBEAFE"
+      },
+      "background": {
+        "$type": "color",
+        "$value": "#FFFBF7"
+      },
+      "surfaceCream": {
+        "$type": "color",
+        "$value": "#FFFBF7"
+      },
+      "surface": {
+        "$type": "color",
+        "$value": "#FFFFFF"
+      },
+      "surfaceRaised": {
+        "$type": "color",
+        "$value": "#FFFFFF"
+      },
+      "border": {
+        "$type": "color",
+        "$value": "#E5E7EB"
+      },
+      "borderStrong": {
+        "$type": "color",
+        "$value": "#D1D5DB"
+      },
+      "textPrimary": {
+        "$type": "color",
+        "$value": "#111827"
+      },
+      "textSecondary": {
+        "$type": "color",
+        "$value": "#6B7280"
+      },
+      "textDisabled": {
+        "$type": "color",
+        "$value": "#9CA3AF"
+      },
+      "textInverse": {
+        "$type": "color",
+        "$value": "#FFFFFF"
+      },
+      "tabActive": {
+        "$type": "color",
+        "$value": "#C2410C"
+      },
+      "tabInactive": {
+        "$type": "color",
+        "$value": "#7A818C"
+      },
+      "tabBarGlass": {
+        "$type": "color",
+        "$value": "rgba(255, 255, 255, 0.72)"
+      },
+      "giveTag": {
+        "$type": "color",
+        "$value": "#C2410C"
+      },
+      "giveTagBg": {
+        "$type": "color",
+        "$value": "#FFF7ED"
+      },
+      "requestTag": {
+        "$type": "color",
+        "$value": "#FFF7ED"
+      },
+      "requestTagBg": {
+        "$type": "color",
+        "$value": "#C2410C"
+      },
+      "publicBadge": {
+        "$type": "color",
+        "$value": "#6B7280"
+      },
+      "followersOnlyBadge": {
+        "$type": "color",
+        "$value": "#8B5CF6"
+      },
+      "onlyMeBadge": {
+        "$type": "color",
+        "$value": "#6B7280"
+      },
+      "roleSuperAdmin": {
+        "$type": "color",
+        "$value": "#6D28D9"
+      },
+      "roleModerator": {
+        "$type": "color",
+        "$value": "#1D4ED8"
+      },
+      "roleSupport": {
+        "$type": "color",
+        "$value": "#0F766E"
+      },
+      "roleOperator": {
+        "$type": "color",
+        "$value": "#15803D"
+      },
+      "roleOperatorsManager": {
+        "$type": "color",
+        "$value": "#15803D"
+      },
+      "roleOrgAdmin": {
+        "$type": "color",
+        "$value": "#C2410C"
+      },
+      "roleOrgManager": {
+        "$type": "color",
+        "$value": "#B45309"
+      },
+      "roleOrgEmployee": {
+        "$type": "color",
+        "$value": "#203050"
+      },
+      "roleVolunteerManager": {
+        "$type": "color",
+        "$value": "#BE185D"
+      },
+      "roleOrgVolunteer": {
+        "$type": "color",
+        "$value": "#203050"
+      },
+      "overlay": {
+        "$type": "color",
+        "$value": "rgba(0, 0, 0, 0.5)"
+      },
+      "skeleton": {
+        "$type": "color",
+        "$value": "#F3F4F6"
+      },
+      "shadow": {
+        "$type": "color",
+        "$value": "#000000"
+      }
+    },
+    "dark": {
+      "primary": {
+        "$type": "color",
+        "$value": "#FB923C"
+      },
+      "primaryDark": {
+        "$type": "color",
+        "$value": "#F97316"
+      },
+      "primaryLight": {
+        "$type": "color",
+        "$value": "#7C2D12"
+      },
+      "primarySurface": {
+        "$type": "color",
+        "$value": "#2A1810"
+      },
+      "primaryVivid": {
+        "$type": "color",
+        "$value": "#F97316"
+      },
+      "secondary": {
+        "$type": "color",
+        "$value": "#A5B8DC"
+      },
+      "secondaryLight": {
+        "$type": "color",
+        "$value": "#1F2E4E"
+      },
+      "success": {
+        "$type": "color",
+        "$value": "#4ADE80"
+      },
+      "successLight": {
+        "$type": "color",
+        "$value": "#14532D"
+      },
+      "error": {
+        "$type": "color",
+        "$value": "#F87171"
+      },
+      "errorLight": {
+        "$type": "color",
+        "$value": "#7F1D1D"
+      },
+      "warning": {
+        "$type": "color",
+        "$value": "#FBBF24"
+      },
+      "warningLight": {
+        "$type": "color",
+        "$value": "#78350F"
+      },
+      "info": {
+        "$type": "color",
+        "$value": "#60A5FA"
+      },
+      "infoLight": {
+        "$type": "color",
+        "$value": "#1E3A8A"
+      },
+      "background": {
+        "$type": "color",
+        "$value": "#15110D"
+      },
+      "surfaceCream": {
+        "$type": "color",
+        "$value": "#15110D"
+      },
+      "surface": {
+        "$type": "color",
+        "$value": "#1F1A14"
+      },
+      "surfaceRaised": {
+        "$type": "color",
+        "$value": "#2A231B"
+      },
+      "border": {
+        "$type": "color",
+        "$value": "#332B22"
+      },
+      "borderStrong": {
+        "$type": "color",
+        "$value": "#48402F"
+      },
+      "textPrimary": {
+        "$type": "color",
+        "$value": "#F5EFE6"
+      },
+      "textSecondary": {
+        "$type": "color",
+        "$value": "#B8AFA1"
+      },
+      "textDisabled": {
+        "$type": "color",
+        "$value": "#766C5D"
+      },
+      "textInverse": {
+        "$type": "color",
+        "$value": "#15110D"
+      },
+      "tabActive": {
+        "$type": "color",
+        "$value": "#FB923C"
+      },
+      "tabInactive": {
+        "$type": "color",
+        "$value": "#766C5D"
+      },
+      "tabBarGlass": {
+        "$type": "color",
+        "$value": "rgba(31, 26, 20, 0.78)"
+      },
+      "giveTag": {
+        "$type": "color",
+        "$value": "#FB923C"
+      },
+      "giveTagBg": {
+        "$type": "color",
+        "$value": "#2A1810"
+      },
+      "requestTag": {
+        "$type": "color",
+        "$value": "#2A1810"
+      },
+      "requestTagBg": {
+        "$type": "color",
+        "$value": "#FB923C"
+      },
+      "publicBadge": {
+        "$type": "color",
+        "$value": "#B8AFA1"
+      },
+      "followersOnlyBadge": {
+        "$type": "color",
+        "$value": "#A78BFA"
+      },
+      "onlyMeBadge": {
+        "$type": "color",
+        "$value": "#B8AFA1"
+      },
+      "roleSuperAdmin": {
+        "$type": "color",
+        "$value": "#A78BFA"
+      },
+      "roleModerator": {
+        "$type": "color",
+        "$value": "#60A5FA"
+      },
+      "roleSupport": {
+        "$type": "color",
+        "$value": "#2DD4BF"
+      },
+      "roleOperator": {
+        "$type": "color",
+        "$value": "#4ADE80"
+      },
+      "roleOperatorsManager": {
+        "$type": "color",
+        "$value": "#4ADE80"
+      },
+      "roleOrgAdmin": {
+        "$type": "color",
+        "$value": "#FB923C"
+      },
+      "roleOrgManager": {
+        "$type": "color",
+        "$value": "#FBBF24"
+      },
+      "roleOrgEmployee": {
+        "$type": "color",
+        "$value": "#A5B8DC"
+      },
+      "roleVolunteerManager": {
+        "$type": "color",
+        "$value": "#F472B6"
+      },
+      "roleOrgVolunteer": {
+        "$type": "color",
+        "$value": "#A5B8DC"
+      },
+      "overlay": {
+        "$type": "color",
+        "$value": "rgba(0, 0, 0, 0.65)"
+      },
+      "skeleton": {
+        "$type": "color",
+        "$value": "#2A231B"
+      },
+      "shadow": {
+        "$type": "color",
+        "$value": "#000000"
+      }
+    }
+  },
+  "spacing": {
+    "xs": {
+      "$type": "dimension",
+      "$value": "4px"
+    },
+    "sm": {
+      "$type": "dimension",
+      "$value": "8px"
+    },
+    "md": {
+      "$type": "dimension",
+      "$value": "12px"
+    },
+    "base": {
+      "$type": "dimension",
+      "$value": "16px"
+    },
+    "lg": {
+      "$type": "dimension",
+      "$value": "20px"
+    },
+    "xl": {
+      "$type": "dimension",
+      "$value": "24px"
+    },
+    "2xl": {
+      "$type": "dimension",
+      "$value": "32px"
+    },
+    "3xl": {
+      "$type": "dimension",
+      "$value": "48px"
+    },
+    "4xl": {
+      "$type": "dimension",
+      "$value": "64px"
+    }
+  },
+  "radius": {
+    "xs": {
+      "$type": "dimension",
+      "$value": "4px"
+    },
+    "sm": {
+      "$type": "dimension",
+      "$value": "8px"
+    },
+    "md": {
+      "$type": "dimension",
+      "$value": "12px"
+    },
+    "lg": {
+      "$type": "dimension",
+      "$value": "16px"
+    },
+    "xl": {
+      "$type": "dimension",
+      "$value": "24px"
+    },
+    "full": {
+      "$type": "dimension",
+      "$value": "9999px"
+    }
+  },
+  "iconSize": {
+    "xs": {
+      "$type": "dimension",
+      "$value": "14px"
+    },
+    "sm": {
+      "$type": "dimension",
+      "$value": "16px"
+    },
+    "md": {
+      "$type": "dimension",
+      "$value": "18px"
+    },
+    "lg": {
+      "$type": "dimension",
+      "$value": "20px"
+    },
+    "xl": {
+      "$type": "dimension",
+      "$value": "22px"
+    },
+    "2xl": {
+      "$type": "dimension",
+      "$value": "24px"
+    }
+  },
+  "zIndex": {
+    "base": {
+      "$type": "number",
+      "$value": 0
+    },
+    "raised": {
+      "$type": "number",
+      "$value": 1
+    },
+    "overlay": {
+      "$type": "number",
+      "$value": 2
+    },
+    "floating": {
+      "$type": "number",
+      "$value": 20
+    },
+    "toast": {
+      "$type": "number",
+      "$value": 9999
+    }
+  },
+  "breakpoint": {
+    "mobile": {
+      "$type": "dimension",
+      "$value": "0px"
+    },
+    "tablet": {
+      "$type": "dimension",
+      "$value": "768px"
+    },
+    "desktop": {
+      "$type": "dimension",
+      "$value": "1024px"
+    },
+    "wide": {
+      "$type": "dimension",
+      "$value": "1440px"
+    }
+  },
+  "typography": {
+    "h1": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": [
+          "Rubik",
+          "system-ui"
+        ],
+        "fontSize": "28px",
+        "fontWeight": 700,
+        "lineHeight": "36px"
+      }
+    },
+    "h2": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": [
+          "Rubik",
+          "system-ui"
+        ],
+        "fontSize": "22px",
+        "fontWeight": 700,
+        "lineHeight": "30px"
+      }
+    },
+    "h3": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": [
+          "Rubik",
+          "system-ui"
+        ],
+        "fontSize": "18px",
+        "fontWeight": 600,
+        "lineHeight": "26px"
+      }
+    },
+    "h4": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": [
+          "Rubik",
+          "system-ui"
+        ],
+        "fontSize": "16px",
+        "fontWeight": 600,
+        "lineHeight": "22px"
+      }
+    },
+    "bodyLarge": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": [
+          "Rubik",
+          "system-ui"
+        ],
+        "fontSize": "16px",
+        "fontWeight": 400,
+        "lineHeight": "24px"
+      }
+    },
+    "body": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": [
+          "Rubik",
+          "system-ui"
+        ],
+        "fontSize": "14px",
+        "fontWeight": 400,
+        "lineHeight": "22px"
+      }
+    },
+    "bodySmall": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": [
+          "Rubik",
+          "system-ui"
+        ],
+        "fontSize": "12px",
+        "fontWeight": 400,
+        "lineHeight": "18px"
+      }
+    },
+    "button": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": [
+          "Rubik",
+          "system-ui"
+        ],
+        "fontSize": "15px",
+        "fontWeight": 600,
+        "lineHeight": "22px"
+      }
+    },
+    "label": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": [
+          "Rubik",
+          "system-ui"
+        ],
+        "fontSize": "12px",
+        "fontWeight": 600,
+        "lineHeight": "16px"
+      }
+    },
+    "caption": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": [
+          "Rubik",
+          "system-ui"
+        ],
+        "fontSize": "11px",
+        "fontWeight": 400,
+        "lineHeight": "16px"
+      }
+    }
+  },
+  "shadow": {
+    "card": {
+      "$type": "shadow",
+      "$value": {
+        "color": "rgba(0, 0, 0, 0.06)",
+        "offsetX": "0px",
+        "offsetY": "1px",
+        "blur": "4px",
+        "spread": "0px"
+      }
+    },
+    "modal": {
+      "$type": "shadow",
+      "$value": {
+        "color": "rgba(0, 0, 0, 0.15)",
+        "offsetX": "0px",
+        "offsetY": "4px",
+        "blur": "12px",
+        "spread": "0px"
+      }
+    },
+    "glow": {
+      "$type": "shadow",
+      "$value": {
+        "color": "rgba(194, 65, 12, 0.3)",
+        "offsetX": "0px",
+        "offsetY": "4px",
+        "blur": "8px",
+        "spread": "0px"
+      }
+    }
+  }
+}

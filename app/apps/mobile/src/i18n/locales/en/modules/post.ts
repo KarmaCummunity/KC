@@ -4,11 +4,13 @@
 import { postMenuEn } from './postMenu';
 import { postReportEn } from './postReport';
 import { postEditEn } from './postEdit';
+import { postUnifiedCreateEn } from './postUnifiedCreate';
 
 export const postEn = {
   ...postMenuEn,
   ...postReportEn,
   ...postEditEn,
+  ...postUnifiedCreateEn,
   give: 'Give an item',
   request: 'Request an item',
   title: 'Title',
@@ -189,6 +191,8 @@ export const postEn = {
     publishedBy: 'Posted by',
     // Visibility + lifecycle notices shown to anyone who can still see the post.
     removedAdminNotice: 'The post was removed by an admin and is no longer shown in the feed.',
+    statusHiddenForReview: 'Hidden for review',
+    hiddenForReviewNotice: 'The post was hidden after reports and is waiting for a team review. Others cannot see it meanwhile.',
     expiredNotice: 'The post has expired and is no longer active.',
     visibilityFollowersNotice: 'This post is visible to approved followers only.',
     visibilityOnlyMeNotice: 'Private post — visible only to its owner.',
@@ -211,5 +215,4 @@ export const postEn = {
       thanks: 'Thanks',
     },
   },
-
 } as const;

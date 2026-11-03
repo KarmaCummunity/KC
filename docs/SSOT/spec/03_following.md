@@ -1,6 +1,6 @@
 # 2.3 Following & Follow Requests
 
-> **Status:** ✅ Core Complete — Follow/unfollow, requests, approval/rejection all shipped. ⚠️ Audit 2026-05-16: 🔴 FR-NOTIF-006/008 dedupe keys lack a cycle segment → re-requests after FR-FOLLOW-008 14-day cooldown silently drop the notification (TD-78, BACKLOG P2.13); FR-FOLLOW-002 AC1 unfollow confirm copy missing name interpolation; followers/following pagination cursor disagrees with sort key. TD-95 / TD-112. See `docs/SSOT/archive/audit/2026-05-16/05_following_moderation_admin.md`.
+> **Status:** ✅ Core Complete — Follow/unfollow, requests, approval/rejection all shipped. ⚠️ Audit 2026-05-16: 🔴 FR-NOTIF-006/008 dedupe keys lack a cycle segment → re-requests after FR-FOLLOW-008 14-day cooldown silently drop the notification (TD-78, BACKLOG P2.13); FR-FOLLOW-002 AC1 unfollow confirm copy missing name interpolation; followers/following pagination cursor disagrees with sort key. TD-95 / TD-112. See `docs/SSOT/archive/audit/2026-05-16/05_following_moderation_admin.md`. 2026-11-03: a follow edge to a Private profile is created only through an approved request, enforced by the `follow_edges_insert_self` policy (`0541`, test `supabase/tests/0541_follow_edges_private_by_request.sql`; FR-FOLLOW-003 AC4, FR-FOLLOW-012 AC2).
 
 
 

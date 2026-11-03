@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Propose a GLOWE improvement
+about: Propose a KC improvement
 title: "[feat] "
 labels: enhancement
 ---
@@ -8,4 +8,4 @@ labels: enhancement
 ## Problem
 ## Proposed solution
 ## Scope note
-GLOWE frontend (`app/apps/glowe-web`) is in scope. KC mobile frontend PRs are out of scope (see AGENTS.md / CONTRIBUTING.md). Prefer the **Contributor task** template for well-scoped volunteer work.
+KC mobile + web export (`app/apps/mobile`), `app/packages/**` and the Supabase backend (`supabase/`) are in scope (see CONTRIBUTING.md). Check `docs/spec/` (project book) first — new behavior must fit it. Prefer the **Contributor task** template for well-scoped volunteer work.

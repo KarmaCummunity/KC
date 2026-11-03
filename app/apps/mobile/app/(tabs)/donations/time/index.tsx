@@ -1,113 +1,30 @@
+// Mapped to spec: FR-FEED-020 AC2 / AC3 — the time world screen: request / offer, the world's
+// own screens (shifts, organizer tools, contact), the organisations' volunteering
+// opportunities, then search and the members' feed of open time offers and requests. While
+// the time launch flag is off the world stays a portal (D60).
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { KcFlashList } from '../../../../src/components/lists/KcFlashList';
-import { useRouter } from 'expo-router';
-import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
-import { makeUseStyles, spacing, typography } from '@kc/ui';
-import { Screen } from '../../../../src/components/ui/Screen';
-import { IconTile } from '../../../../src/components/ui/IconTile';
-import { DonationLinksList } from '../../../../src/components/DonationLinksList';
-import { volunteerUseCases } from '../../../../src/services/volunteerComposition';
-import { useShellTabBarScrollInset } from '../../../../src/navigation/useShellTabBarVisibility';
+import { WorldMarketplaceHub } from '../../../../src/components/giving/WorldMarketplaceHub';
+import { worldSubScreens } from '../../../../src/components/giving/worldSubScreens';
+import { TimeOpportunitiesSection } from '../../../../src/components/giving/time/TimeOpportunitiesSection';
+import { WorldLaunchGateByFlag } from '../../../../src/components/worlds/WorldLaunchGate';
 
-const useStyles = makeUseStyles(({ colors }) => ({
-  hero: { alignItems: 'center' as const, gap: spacing.md, padding: spacing.lg },
-  body: { ...typography.body, color: colors.textSecondary, textAlign: 'center' as const },
-  links: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: spacing.md, paddingHorizontal: spacing.lg },
-  link: { ...typography.body, color: colors.primary, fontWeight: '600' as const },
-  row: {
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.sm,
-    padding: spacing.md,
-    borderRadius: 12,
-    backgroundColor: colors.surfaceRaised,
-  },
-  rowTitle: { ...typography.bodyLarge, color: colors.textPrimary },
-  rowMeta: { ...typography.caption, color: colors.textSecondary, marginTop: 4 },
-  section: { ...typography.h3, color: colors.textPrimary, paddingHorizontal: spacing.lg, marginTop: spacing.lg },
-}));
+const TIME_SUB_SCREENS = worldSubScreens('/(tabs)/donations/time/handoffs', [
+  { labelKey: 'timeVolunteer.myShiftsLink', path: '/(tabs)/donations/time/my-shifts', testID: 'time-my-shifts' },
+  { labelKey: 'timeVolunteer.organizerLink', path: '/(tabs)/donations/time/organizer', testID: 'time-organizer' },
+  { labelKey: 'timeVolunteer.contactKcLink', path: '/(tabs)/donations/time/support', testID: 'time-contact-kc' },
+]);
 
-function formatWhen(iso: string | null, locale: string) {
-  if (!iso) return '';
-  try {
-    return new Date(iso).toLocaleString(locale.startsWith('he') ? 'he-IL' : 'en-IL', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    });
-  } catch {
-    return iso;
-  }
-}
-
-export default function TimeVolunteerHubScreen() {
-  const { t, i18n } = useTranslation();
-  const router = useRouter();
-  const styles = useStyles();
-  const inset = useShellTabBarScrollInset();
-  const opportunities = useQuery({
-    queryKey: ['volunteer', 'browse'],
-    queryFn: () => volunteerUseCases.listOpportunities().execute(40, 0),
-    staleTime: 30_000,
-  });
-
+export default function TimeWorldScreen() {
   return (
-    <Screen blobs="content">
-      <KcFlashList
-        data={opportunities.data ?? []}
-        keyExtractor={(item) => item.opportunityId}
-        contentContainerStyle={{ paddingBottom: inset }}
-        ListHeaderComponent={
-          <>
-            <View style={styles.hero}>
-              <IconTile icon="time-outline" size="lg" />
-              <Text style={styles.body}>{t('timeVolunteer.hubIntro')}</Text>
-            </View>
-            <View style={styles.links}>
-              <Pressable onPress={() => router.push('/(tabs)/donations/time/my-shifts')}>
-                <Text style={styles.link}>{t('timeVolunteer.myShiftsLink')}</Text>
-              </Pressable>
-              <Pressable onPress={() => router.push('/(tabs)/donations/time/organizer')}>
-                <Text style={styles.link}>{t('timeVolunteer.organizerLink')}</Text>
-              </Pressable>
-              <Pressable onPress={() => router.push('/(tabs)/donations/time/support')}>
-                <Text style={styles.link}>{t('timeVolunteer.contactKcLink')}</Text>
-              </Pressable>
-            </View>
-            <Text style={styles.section}>{t('timeVolunteer.hubTitle')}</Text>
-          </>
-        }
-        ListEmptyComponent={
-          <Text style={{ padding: spacing.lg, textAlign: 'center' }}>
-            {opportunities.isLoading ? t('timeVolunteer.loading') : t('timeVolunteer.emptyBrowse')}
-          </Text>
-        }
-        renderItem={({ item }) => (
-          <Pressable
-            style={styles.row}
-            onPress={() =>
-              router.push({
-                pathname: '/(tabs)/donations/time/opportunity/[opportunityId]',
-                params: { opportunityId: item.opportunityId },
-              })
-            }
-          >
-            <Text style={styles.rowTitle}>{item.title}</Text>
-            {item.locationLabel ? <Text style={styles.rowMeta}>{item.locationLabel}</Text> : null}
-            <Text style={styles.rowMeta}>
-              {t('timeVolunteer.slotsOpen', { count: item.openSlots })}
-              {item.nextShiftAt
-                ? ` · ${t('timeVolunteer.nextShift', { date: formatWhen(item.nextShiftAt, i18n.language) })}`
-                : ''}
-            </Text>
-          </Pressable>
-        )}
-        ListFooterComponent={
-          <View style={{ marginTop: spacing.lg }}>
-            <DonationLinksList categorySlug="time" />
-          </View>
-        }
+    <WorldLaunchGateByFlag flagKey="world_time_enabled">
+      <WorldMarketplaceHub
+        worldSlug="time"
+        icon="time-outline"
+        introKey="timeVolunteer.hubIntro"
+        linksCategory="time"
+        subScreens={TIME_SUB_SCREENS}
+        headerExtra={<TimeOpportunitiesSection />}
       />
-    </Screen>
+    </WorldLaunchGateByFlag>
   );
 }

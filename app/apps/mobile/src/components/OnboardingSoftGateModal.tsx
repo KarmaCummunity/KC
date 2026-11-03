@@ -1,19 +1,13 @@
-// FR-AUTH-015 modal — display_name + city + optional address, "Save and continue".
-import React, { useState } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-} from 'react-native';
-import { makeUseStyles, typography, spacing, radius, shadow, useTheme } from '@kc/ui';
+// FR-AUTH-015 dialog — display_name + city + optional address, "Save and continue".
+// Built on the kit `Modal` (spec 17 §4.1).
+import { useState } from 'react';
+import { ScrollView } from 'react-native';
+import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { EditProfileAddressBlock } from './EditProfileAddressBlock';
 import { NotifyModal } from './NotifyModal';
+import { PrimaryButton } from './ui/Buttons';
+import { Modal } from './ui/Modal';
+import { TextField } from './ui/TextField';
 import { useAuthStore } from '../store/authStore';
 import { getCompleteBasicInfoUseCase } from '../services/userComposition';
 import { mapEditProfileSaveError } from '../lib/editProfileSaveErrors';
@@ -30,7 +24,6 @@ interface Props {
 
 export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
   const styles = useStyles();
-  const { colors } = useTheme();
   const { t } = useTranslation();
   const session = useAuthStore((s) => s.session);
   const setOnboardingState = useAuthStore((s) => s.setOnboardingState);
@@ -45,7 +38,6 @@ export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
   const addressIssue = getProfileAddressPairIssue(street, streetNumber);
   const hasRequiredFields = displayName.trim().length > 0 && city !== null;
   const canSubmit = hasRequiredFields && addressIssue === null;
-  const canPressSave = hasRequiredFields && !saving;
 
   const showAddressToast = () => {
     if (!addressIssue) return;
@@ -88,132 +80,73 @@ export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
 
   return (
     <>
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.kav}
+      <Modal
+        visible={visible}
+        title={t('onboarding.softGateTitle')}
+        onDismiss={onClose}
+        // The ✕ replaces the old "Cancel" link and keeps its screen-reader name.
+        closeAccessibilityLabel={t('general.cancel')}
+        // Keep the form up while the save is in flight.
+        dismissible={!saving}
+        footer={
+          <PrimaryButton
+            label={t('onboarding.saveAndContinue')}
+            size="md"
+            fullWidth
+            // An address issue keeps the button enabled: pressing it explains the issue in a toast.
+            disabled={!hasRequiredFields}
+            loading={saving}
+            onPress={() => void handleSave()}
+          />
+        }
+      >
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          // iOS: inset the form above the keyboard so the focused field stays visible.
+          automaticallyAdjustKeyboardInsets
         >
-          <View style={styles.card}>
-            <ScrollView contentContainerStyle={styles.cardContent} keyboardShouldPersistTaps="handled">
-              <View style={styles.headerRow}>
-                <Text style={styles.title}>{t('onboarding.softGateTitle')}</Text>
-                <TouchableOpacity
-                  onPress={onClose}
-                  disabled={saving}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('general.cancel')}
-                >
-                  <Text style={styles.cancel}>{t('general.cancel')}</Text>
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.subtitle}>{t('onboarding.basicInfoSubtitle')}</Text>
+          <Text style={styles.subtitle}>{t('onboarding.basicInfoSubtitle')}</Text>
 
-              <View style={styles.field}>
-                <Text style={styles.label}>{t('onboarding.displayName')}</Text>
-                <TextInput
-                  style={styles.input}
-                  value={displayName}
-                  onChangeText={setDisplayName}
-                  placeholder={t('onboarding.fullNamePlaceholder')}
-                  placeholderTextColor={colors.textDisabled}
-                  maxLength={50}
-                  textAlign={rtlTextAlignStart}
-                  editable={!saving}
-                />
-              </View>
+          <TextField
+            label={t('onboarding.displayName')}
+            value={displayName}
+            onChangeText={setDisplayName}
+            placeholder={t('onboarding.fullNamePlaceholder')}
+            maxLength={50}
+            editable={!saving}
+          />
 
-              <EditProfileAddressBlock
-                city={city}
-                onCityChange={setCity}
-                street={street}
-                streetNumber={streetNumber}
-                onStreetChange={setStreet}
-                onStreetNumberChange={setStreetNumber}
-                disabled={saving}
-              />
+          <EditProfileAddressBlock
+            city={city}
+            onCityChange={setCity}
+            street={street}
+            streetNumber={streetNumber}
+            onStreetChange={setStreet}
+            onStreetNumberChange={setStreetNumber}
+            disabled={saving}
+          />
 
-              <View style={styles.field}>
-                <Text style={styles.label}>{t('onboarding.contactPhoneLabel')}</Text>
-                <TextInput
-                  style={styles.input}
-                  value={contactPhone}
-                  onChangeText={setContactPhone}
-                  placeholder={t('onboarding.contactPhonePlaceholder')}
-                  placeholderTextColor={colors.textDisabled}
-                  maxLength={20}
-                  keyboardType="phone-pad"
-                  textAlign={rtlTextAlignStart}
-                  editable={!saving}
-                />
-              </View>
-
-              <TouchableOpacity
-                style={[
-                  styles.cta,
-                  !hasRequiredFields && { opacity: 0.4 },
-                  hasRequiredFields && !canSubmit && { opacity: 0.85 },
-                ]}
-                disabled={!canPressSave}
-                onPress={handleSave}
-              >
-                {saving ? (
-                  <ActivityIndicator color={colors.textInverse} />
-                ) : (
-                  <Text style={styles.ctaText}>{t('onboarding.saveAndContinue')}</Text>
-                )}
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
-    </Modal>
-    <NotifyModal visible={!!saveErrorMsg} title={t('onboarding.saveFailed')} message={saveErrorMsg ?? ''} onDismiss={() => setSaveErrorMsg(null)} />
+          <TextField
+            label={t('onboarding.contactPhoneLabel')}
+            value={contactPhone}
+            onChangeText={setContactPhone}
+            placeholder={t('onboarding.contactPhonePlaceholder')}
+            maxLength={20}
+            keyboardType="phone-pad"
+            editable={!saving}
+          />
+        </ScrollView>
+      </Modal>
+      <NotifyModal visible={!!saveErrorMsg} title={t('onboarding.saveFailed')} message={saveErrorMsg ?? ''} onDismiss={() => setSaveErrorMsg(null)} />
     </>
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.base,
-  },
-  kav: { width: '100%' },
-  card: {
-    backgroundColor: colors.surface,
-
-    borderWidth: isDark ? 1 : 0,
-    borderColor: isDark ? colors.border : 'transparent',
-    borderRadius: radius.lg,
-    maxHeight: '85%',
-    ...shadow.card,
-  },
-  cardContent: { padding: spacing.lg, gap: spacing.base },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { ...typography.h2, color: colors.textPrimary, textAlign: rtlTextAlignStart },
-  cancel: { ...typography.body, color: colors.textSecondary },
+const useStyles = makeUseStyles(({ colors }) => ({
+  // Shrink inside the dialog's height cap so the save button stays on screen.
+  scroll: { flexGrow: 0, flexShrink: 1 },
+  content: { gap: spacing.base },
   subtitle: { ...typography.body, color: colors.textSecondary, textAlign: rtlTextAlignStart },
-  field: { gap: spacing.xs },
-  label: { ...typography.label, color: colors.textSecondary, textAlign: rtlTextAlignStart },
-  input: {
-    height: 50,
-    backgroundColor: colors.background,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.base,
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  cta: {
-    height: 52,
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  ctaText: { ...typography.button, color: colors.textInverse },
 }));

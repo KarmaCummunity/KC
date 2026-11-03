@@ -6,6 +6,7 @@ import {
   chatInboxQueryKey,
   readChatInboxSnapshot,
   upsertChatPreviewInSnapshot,
+  isChatInSnapshot,
   writeChatInboxSnapshot,
 } from '../lib/chatInboxQuery';
 import { reduceBumpInboxForIncomingInsert } from './chatStoreInboxBump';
@@ -40,8 +41,10 @@ export async function runStartInboxSub(
           void qc.invalidateQueries({ queryKey: chatInboxQueryKey(userId) });
           return;
         }
+        const isNew = !isChatInSnapshot(snap, chat.chatId);
         const next = upsertChatPreviewInSnapshot(snap, chat);
         writeChatInboxSnapshot(qc, userId, next);
+        if (isNew) void qc.invalidateQueries({ queryKey: chatInboxQueryKey(userId) });
       },
       onUnreadTotalChanged: (total) => {
         api.setState({ unreadTotal: total });

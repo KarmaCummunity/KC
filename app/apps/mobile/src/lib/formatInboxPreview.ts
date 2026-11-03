@@ -12,6 +12,7 @@
 // currently "(new conversation)" in Hebrew).
 import type { Message } from '@kc/domain';
 import type { TFunction } from 'i18next';
+import { systemMessageText } from './chat/systemMessageText';
 
 const isSystemKind = (kind: string | undefined | null) => kind === 'system';
 
@@ -20,7 +21,7 @@ export function formatInboxPreview(
   t: TFunction,
 ): string {
   if (!lastMessage) return t('chat.inboxNewConversation');
-  const body = (lastMessage.body ?? '').trim();
+  const body = systemMessageText(lastMessage, t).trim();
   if (isSystemKind(lastMessage.kind)) {
     const prefix = t('chat.inboxSystemPrefix');
     return body ? `${prefix} ${body}` : prefix;

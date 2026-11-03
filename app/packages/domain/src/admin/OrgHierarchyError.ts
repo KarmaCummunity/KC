@@ -9,6 +9,8 @@ export type OrgHierarchyErrorCode =
   | 'manager_revoked'
   | 'manager_other_org'
   | 'manager_cycle'
+  /** A report must be strictly junior to its new manager (FR-ADMIN-027). */
+  | 'manager_rank'
   | 'unknown';
 
 export class OrgHierarchyError extends Error {

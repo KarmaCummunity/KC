@@ -45,8 +45,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .nvmrc
       - name: Run the guard's own unit tests
@@ -65,7 +65,7 @@ jobs:
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Always compare the DEV ledger against the DEV branch's migration
           # files. `schedule` runs from main, whose supabase/migrations lags dev
@@ -74,14 +74,11 @@ jobs:
           # migrations (0232-0427, 143 versions) as "remote with no local file".
           ref: dev
 
-      - name: Install Supabase CLI
-        uses: supabase/setup-cli@v3
-        with:
-          # Keep in sync with db-deploy.yml / ci-backend.yml — bump together.
-          version: 2.99.0
+      - name: Install Supabase CLI (version pinned in the composite action)
+        uses: ./.github/actions/setup-supabase-cli
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .nvmrc
 
@@ -96,7 +93,6 @@ jobs:
             echo "::error::SUPABASE_ACCESS_TOKEN must be an account token (starts with sbp_). See https://supabase.com/dashboard/account/tokens"
             exit 1
           fi
-          supabase --version
 
       - name: Link to dev project
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --yes

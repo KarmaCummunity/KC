@@ -1,10 +1,10 @@
 // FR-DONATE-007/009 — single row in the community NGO link list.
 import React, { useState } from 'react';
-import { Image, Pressable, Text, View } from 'react-native';
+import { Image, Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import type { DonationLink } from '@kc/domain';
-import { makeUseStyles, radius, shadow, spacing, typography, useTheme } from '@kc/ui';
+import { makeUseStyles, radius, shadow, spacing, typography, iconSize, useTheme, Text } from '@kc/ui';
 import { openExternalUrl } from '../utils/openExternalUrl';
 import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
 import { rowDirectionStart } from '../lib/rtlLayout';
@@ -13,6 +13,18 @@ interface Props {
   link: DonationLink;
   canRemove: boolean;
   onMenuPress: (link: DonationLink) => void;
+}
+
+/**
+ * D9 — the status line of a link that is not approved yet. Only its submitter (and reviewers)
+ * receive such a link; an approved link has none.
+ */
+function reviewLabelFor(link: DonationLink, t: (key: string, args?: Record<string, string>) => string): string | null {
+  if (link.reviewStatus === 'pending') return t('donations.links.reviewPending');
+  if (link.reviewStatus !== 'rejected') return null;
+  return link.reviewNote
+    ? t('donations.links.reviewRejectedNote', { note: link.reviewNote })
+    : t('donations.links.reviewRejected');
 }
 
 function getHost(url: string): string {
@@ -53,17 +65,18 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
   iconWrap: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radius.full,
     backgroundColor: colors.primaryLight,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     overflow: 'hidden' as const,
   },
   favicon: { width: 28, height: 28 },
-  body: { flex: 1, gap: 2 },
+  body: { flex: 1, gap: spacing.xs },
   title: { ...typography.h3, color: colors.textPrimary, textAlign: rtlTextAlignStart },
   description: { ...typography.body, color: colors.textSecondary, textAlign: rtlTextAlignStart },
   host: { ...typography.caption, color: colors.textDisabled, textAlign: rtlTextAlignStart },
+  reviewBadge: { ...typography.caption, ...typography.semiBold, color: colors.warning, textAlign: rtlTextAlignStart },
   menuBtn: {
     width: 32,
     height: 32,
@@ -82,6 +95,7 @@ export function DonationLinkRow({ link, canRemove, onMenuPress }: Props) {
   const faviconUrl = `https://www.google.com/s2/favicons?domain=${host}&sz=64`;
 
   const open = () => { openExternalUrl(link.url); };
+  const reviewLabel = reviewLabelFor(link, t);
 
   return (
     <View style={styles.row}>
@@ -93,7 +107,7 @@ export function DonationLinkRow({ link, canRemove, onMenuPress }: Props) {
       >
         <View style={styles.iconWrap}>
           {iconError ? (
-            <Ionicons name="link-outline" size={22} color={colors.primary} />
+            <Ionicons name="link-outline" size={iconSize.xl} color={colors.primary} />
           ) : (
             <Image
               source={{ uri: faviconUrl }}
@@ -109,6 +123,11 @@ export function DonationLinkRow({ link, canRemove, onMenuPress }: Props) {
             <Text style={styles.description} numberOfLines={2}>{link.description}</Text>
           ) : null}
           <Text style={styles.host} numberOfLines={1}>{host}</Text>
+          {reviewLabel ? (
+            <Text style={styles.reviewBadge} numberOfLines={2} testID={`donation-link-review-${link.id}`}>
+              {reviewLabel}
+            </Text>
+          ) : null}
         </View>
       </Pressable>
 
@@ -119,7 +138,7 @@ export function DonationLinkRow({ link, canRemove, onMenuPress }: Props) {
         hitSlop={8}
         style={styles.menuBtn}
       >
-        <Ionicons name="ellipsis-horizontal" size={20} color={colors.textSecondary} />
+        <Ionicons name="ellipsis-horizontal" size={iconSize.lg} color={colors.textSecondary} />
       </Pressable>
     </View>
   );

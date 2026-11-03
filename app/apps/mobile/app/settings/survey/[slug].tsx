@@ -6,15 +6,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Text,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, useBreakpoint, useTheme } from '@kc/ui';
-import type { SurveyBundle, SurveyQuestion } from '@kc/domain';
+import { makeUseStyles, spacing, typography, useBreakpoint, useTheme, Text } from '@kc/ui';
+import { hasSurveyAnswerValue, type SurveyBundle, type SurveyQuestion } from '@kc/domain';
 import { useDetailStackScreenOptions } from '../../../src/navigation/detailStackScreenOptions';
 import { SurveyQuestionMap } from '../../../src/components/survey/SurveyQuestionMap';
 import {
@@ -29,20 +28,23 @@ import {
 } from '../../../src/navigation/useShellTabBarVisibility';
 import { webTextRtl, webViewRtl } from '../../../src/lib/webRtlStyle';
 import { container } from '../../../src/lib/container';
-import { useSurveyRunnerState } from '../../../src/hooks/useSurveyRunnerState';
+import {
+  useSurveyRunnerState,
+  type SurveyAnswerEntry,
+} from '../../../src/hooks/useSurveyRunnerState';
 import { track } from '../../../src/lib/analytics';
-import { SurveyQuestionPanel } from './SurveyQuestionPanel';
+import { SurveyQuestionPanel } from '../../../src/screens/settings/survey/SurveyQuestionPanel';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
 // ─── types ───────────────────────────────────────────────────────────────────
-
-type AnswerEntry = { rating: number | null; answerText: string | null };
 
 type RunnerContentProps = {
   readonly bundle: SurveyBundle;
   readonly activeIndex: number;
   readonly setActiveIndex: React.Dispatch<React.SetStateAction<number>>;
-  readonly answers: Record<string, AnswerEntry>;
-  readonly onAnswerChange: (qid: string, rating: number | null, text: string | null) => void;
+  readonly answers: Record<string, SurveyAnswerEntry>;
+  readonly onAnswerChange: (qid: string, entry: SurveyAnswerEntry) => void;
   readonly floatNavBottom: number;
   readonly scrollBottomPad: number;
   readonly useSideRail: boolean;
@@ -66,7 +68,7 @@ function RunnerContent({
   const questions = bundle.questions as SurveyQuestion[];
   const total = questions.length;
   const question = questions[activeIndex];
-  const answer = answers[question.id] ?? { rating: null, answerText: null };
+  const answer = answers[question.id] ?? { rating: null, choiceKey: null, answerText: null };
 
   const mapProps = { questions, activeIndex, answers, onSelect: setActiveIndex };
   const goPrev = () => setActiveIndex((i) => Math.max(0, i - 1));
@@ -99,10 +101,12 @@ function RunnerContent({
           <SurveyQuestionPanel
             question={question}
             index={activeIndex}
-            ratingValue={answer.rating ?? null}
+            ratingValue={answer.rating}
+            choiceValue={answer.choiceKey}
             textValue={answer.answerText ?? ''}
-            onRating={(rating) => onAnswerChange(question.id, rating, answer.answerText)}
-            onText={(text) => onAnswerChange(question.id, answer.rating, text)}
+            onRating={(rating) => onAnswerChange(question.id, { ...answer, rating })}
+            onChoice={(choiceKey) => onAnswerChange(question.id, { ...answer, choiceKey })}
+            onText={(answerText) => onAnswerChange(question.id, { ...answer, answerText })}
           />
         </ScrollView>
       </View>
@@ -160,14 +164,14 @@ export default function SurveyRunnerScreen() {
     }
   }, [bundle, slug]);
 
-  // Analytics: survey_completed when all questions have a rating.
+  // Analytics: survey_completed when every question has its value (rating or choice).
   const completedTrackedRef = useRef(false);
   const [thankYouOpen, setThankYouOpen] = useState(false);
   useEffect(() => {
     if (!bundle || completedTrackedRef.current) return;
     const total = bundle.questions.length;
     if (total === 0) return;
-    const answeredCount = Object.values(answers).filter((a) => a.rating != null).length;
+    const answeredCount = Object.values(answers).filter(hasSurveyAnswerValue).length;
     if (answeredCount >= total) {
       completedTrackedRef.current = true;
       track('survey_completed', { slug, version: bundle.version });
@@ -241,7 +245,7 @@ const useRunnerStyles = makeUseStyles(({ colors }) => ({
   },
   progressText: {
     ...typography.bodySmall,
-    fontWeight: '700',
+    ...typography.bold,
     color: colors.textPrimary,
     ...webTextRtl,
   },

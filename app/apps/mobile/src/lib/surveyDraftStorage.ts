@@ -13,7 +13,12 @@
 //   'research' → kc-research-draft-<slug>  (public anonymous Survey B)
 //   'survey'   → kc-survey-draft-<slug>    (in-app authenticated Survey A)
 
-export type SurveyDraftAnswer = { rating: number | null; answerText: string | null };
+// `choiceKey` is set for single-choice questions (KC#1058); drafts saved before it lack the field.
+export type SurveyDraftAnswer = {
+  rating: number | null;
+  choiceKey?: string | null;
+  answerText: string | null;
+};
 
 export type SurveyDraft = {
   version: number;

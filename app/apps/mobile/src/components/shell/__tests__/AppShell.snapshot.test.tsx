@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
-import { Text } from 'react-native';
+import { Text } from '@kc/ui';
 import { AppShell } from '../AppShell';
 
 // Stub expo-router so the test does not need a real router context.

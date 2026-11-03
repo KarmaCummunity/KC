@@ -1,29 +1,19 @@
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   getSupabaseClient,
   SupabaseMarketplaceRepository,
-  type SupabaseAuthStorage,
 } from '@kc/infrastructure-supabase';
 import type { IMarketplaceRepository } from '@kc/application';
+import { pickAuthStorage } from './authSecureStorage';
 
 let _repo: IMarketplaceRepository | null = null;
 
-function pickStorage(): SupabaseAuthStorage | undefined {
-  if (Platform.OS === 'web') {
-    if (typeof window === 'undefined' || !window.localStorage) return undefined;
-    return window.localStorage;
-  }
-  return AsyncStorage;
-}
-
 export function getMarketplaceSupabaseClient() {
-  return getSupabaseClient({ storage: pickStorage() });
+  return getSupabaseClient({ storage: pickAuthStorage() });
 }
 
 export function marketplaceRepository(): IMarketplaceRepository {
   if (!_repo) {
-    _repo = new SupabaseMarketplaceRepository(getSupabaseClient({ storage: pickStorage() }));
+    _repo = new SupabaseMarketplaceRepository(getSupabaseClient({ storage: pickAuthStorage() }));
   }
   return _repo;
 }

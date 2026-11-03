@@ -1,0 +1,16 @@
+# Fresh install → welcome screen → email sign-in form (FR-AUTH-001 AC2, KC#1269).
+appId: org.karmacommunity.app
+---
+- launchApp:
+    clearState: true
+    permissions:
+      all: allow
+- runFlow: dismiss-gates.yaml
+- extendedWaitUntil:
+    visible:
+      id: auth-email-entry
+    timeout: 30000
+- tapOn:
+    id: auth-email-entry
+- assertVisible:
+    id: auth-email

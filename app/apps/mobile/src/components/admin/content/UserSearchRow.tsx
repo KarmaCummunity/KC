@@ -3,24 +3,32 @@
 // V2-ADMIN-USERS-6 — inline "Ban" affordance routes the admin through the
 // existing FR-ADMIN-004 BanUserModal without forcing them through the user
 // profile screen first.
-import { useState } from 'react';
+// FR-ADMIN-030 — inline "Roles" opens the admin person screen, where any user
+// can be given a role, moved or re-roled.
+import { memo, useState } from 'react';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
-import type { AdminUserSearchResult } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
+import { Pressable, StyleSheet, View } from 'react-native';
+import {
+  type AdminPermission,
+  type AdminRole,
+  hasPermission,
+  type AdminUserSearchResult,
+} from '@kc/domain';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { Chip } from '../../ui/Chip';
 import { useAdminRoles } from '../../../hooks/useAdminRoles';
 import { BanUserModal } from '../../profile/BanUserModal';
+import { rowDirectionStart, textAlignStart } from '../../../lib/rtlLayout';
 import { useLocaleBundle, type LocaleBundle } from '../../../i18n/useLocaleBundle';
 
 export interface UserSearchRowProps {
   readonly row: AdminUserSearchResult;
 }
 
-function statusTone(status: string): 'good' | 'warn' | 'bad' | 'muted' {
-  if (status === 'active') return 'good';
-  if (status === 'pending_verification') return 'warn';
-  if (status === 'banned' || status === 'deleted') return 'bad';
+function statusTone(status: string): 'success' | 'warning' | 'error' | 'muted' {
+  if (status === 'active') return 'success';
+  if (status === 'pending_verification') return 'warning';
+  if (status === 'banned' || status === 'deleted') return 'error';
   return 'muted';
 }
 
@@ -30,13 +38,14 @@ function canShowBanButton(status: string): boolean {
   return status !== 'banned' && status !== 'deleted';
 }
 
-export function UserSearchRow({ row }: UserSearchRowProps) {
+function UserSearchRowInner({ row }: UserSearchRowProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   const tone = statusTone(row.accountStatus);
   const { roles } = useAdminRoles();
   const can = (perm: AdminPermission) => hasPermission(roles as readonly AdminRole[], perm);
   const showBan = can('reports.permanent_ban') && canShowBanButton(row.accountStatus);
+  const showRoles = can('admins.view');
   const [banOpen, setBanOpen] = useState(false);
 
   return (
@@ -56,12 +65,28 @@ export function UserSearchRow({ row }: UserSearchRowProps) {
           {row.shareHandle && <Text style={styles.handle} numberOfLines={1}>@{row.shareHandle}</Text>}
           {row.cityName && <Text style={styles.meta} numberOfLines={1}>{row.cityName}</Text>}
         </View>
-        <View style={[styles.chip, styles[`chip_${tone}` as const]]}>
-          <Text style={styles.chipText}>
-            {L.admin.content.userStatus[row.accountStatus as keyof LocaleBundle['admin']['content']['userStatus']]
-              ?? row.accountStatus}
-          </Text>
-        </View>
+        <Chip
+          variant="tag"
+          tone={tone}
+          label={
+            L.admin.content.userStatus[row.accountStatus as keyof LocaleBundle['admin']['content']['userStatus']]
+              ?? row.accountStatus
+          }
+          size="sm"
+        />
+        {showRoles && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={L.admin.admins.team.manageFromSearch}
+            onPress={(e) => {
+              e.stopPropagation();
+              router.push({ pathname: '/(admin)/admins/[userId]', params: { userId: row.userId } });
+            }}
+            style={styles.rolesBtn}
+          >
+            <Text style={styles.rolesText}>{L.admin.admins.team.manageFromSearch}</Text>
+          </Pressable>
+        )}
         {showBan && (
           <Pressable
             accessibilityRole="button"
@@ -89,23 +114,24 @@ export function UserSearchRow({ row }: UserSearchRowProps) {
 
 const useStyles = makeUseStyles(({ colors }) => ({
   root: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingVertical: 12, paddingHorizontal: 16,
+    flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.md,
+    paddingVertical: spacing.md, paddingHorizontal: spacing.base,
     borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
   },
-  main:        { flex: 1, gap: 2 },
-  name:        { fontSize: 15, fontWeight: '600' },
-  handle:      { fontSize: 12, color: colors.primary },
-  meta:        { fontSize: 11, opacity: 0.55 },
-  chip:        { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  chip_good:   { backgroundColor: colors.successLight },
-  chip_warn:   { backgroundColor: colors.warningLight },
-  chip_bad:    { backgroundColor: colors.errorLight },
-  chip_muted:  { backgroundColor: colors.border },
-  chipText:    { fontSize: 11, fontWeight: '700' },
-  actionBtn:   {
-    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6,
+  main:        { flex: 1, gap: spacing.xs },
+  name:        { ...typography.body, ...typography.semiBold, color: colors.textPrimary, textAlign: textAlignStart() },
+  handle:      { ...typography.caption, color: colors.primary, textAlign: textAlignStart() },
+  meta:        { ...typography.caption, color: colors.textSecondary, textAlign: textAlignStart() },
+  rolesBtn: {
+    paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.sm,
+    backgroundColor: colors.primarySurface,
+  },
+  rolesText:   { ...typography.caption, ...typography.bold, color: colors.primary },
+  actionBtn: {
+    paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.sm,
     backgroundColor: colors.errorLight,
   },
-  actionText:  { fontSize: 11, fontWeight: '700', color: colors.error },
+  actionText:  { ...typography.caption, ...typography.bold, color: colors.error },
 }));
+
+export const UserSearchRow = memo(UserSearchRowInner);

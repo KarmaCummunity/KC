@@ -119,9 +119,6 @@ export function makeFakeUserRepo(seed: Record<string, Row> = {}): FakeUserRepo {
       };
       rows.set(userId, { ...row, biography });
     },
-    async setPreferredLanguage() {
-      /* no-op: not exercised by onboarding tests */
-    },
     async getEditableProfile(userId) {
       const row = rows.get(userId);
       if (!row) throw new Error(`onboardingFakeUserRepo: no row for userId=${userId}`);

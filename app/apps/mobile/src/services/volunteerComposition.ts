@@ -1,9 +1,6 @@
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   SupabaseVolunteerRepository,
   getSupabaseClient,
-  type SupabaseAuthStorage,
 } from '@kc/infrastructure-supabase';
 import {
   AddVolunteerShiftUseCase,
@@ -21,19 +18,12 @@ import {
   PublishVolunteerOpportunityUseCase,
   SignUpVolunteerShiftUseCase,
 } from '@kc/application';
-
-function pickStorage(): SupabaseAuthStorage | undefined {
-  if (Platform.OS === 'web') {
-    if (typeof window === 'undefined' || !window.localStorage) return undefined;
-    return window.localStorage;
-  }
-  return AsyncStorage;
-}
+import { pickAuthStorage } from './authSecureStorage';
 
 let _repo: SupabaseVolunteerRepository | null = null;
 
 function repo() {
-  if (!_repo) _repo = new SupabaseVolunteerRepository(getSupabaseClient({ storage: pickStorage() }));
+  _repo ??= new SupabaseVolunteerRepository(getSupabaseClient({ storage: pickAuthStorage() }));
   return _repo;
 }
 

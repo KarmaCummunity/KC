@@ -30,6 +30,7 @@ export const adminSurveysEn = {
     avgLabel: 'Average',
     responsesLabel: 'Responses',
     noData: 'No data',
+    choiceDistributionTitle: 'Choice distribution',
     distributionTitle: 'Rating distribution (1–7)',
   },
 
@@ -49,6 +50,26 @@ export const adminSurveysEn = {
     anonymous: 'Unnamed user',
     ratingLabel: (n: number) => `Rating: ${n}/7`,
     noRating: 'No rating',
+  },
+
+  // KC#1058 — Sean Ellis product/market-fit score (survey pmf-sean-ellis).
+  pmf: {
+    sectionTitle: 'Product/market fit (Sean Ellis)',
+    scoreCaption: 'answered "very disappointed"',
+    marginOfError: (pct: string) => `±${pct} (95% confidence)`,
+    benchmark: 'Target: 40% or more',
+    aboveBenchmark: 'Above target',
+    belowBenchmark: 'Below target',
+    sample: (n: number, total: number) => `n = ${n} active respondents (of ${total} who answered)`,
+    qualifiedHint: (days: number) =>
+      `Only respondents who opened the app on at least ${days} days in the 14 days before answering count.`,
+    smallSample: (min: number) => `Fewer than ${min} answers — the score is not stable yet.`,
+    optionShare: (pct: string, count: number) => `${pct} · ${count}`,
+    retention: (pct: string, retained: number, base: number) => `Back after a week: ${pct} (${retained}/${base})`,
+    retentionPending: 'Back after a week: no data yet',
+    retentionHint: 'Retention: answered 7+ days ago and opened the app again 7+ days after answering.',
+    emptyTitle: 'No answers from active respondents yet.',
+    errorTitle: 'Could not load the fit score.',
   },
 
   backToList: 'Back to survey list',

@@ -1,0 +1,75 @@
+name: Deploy smoke
+
+# Post-deploy smoke (scripts/smoke-deploy.mjs), called by deploy.yml after the
+# web stage and again after a prod rollback. Read-only, so it may also be
+# dispatched by hand against dev or prod (from dev/main) to check a live
+# environment. Replaces the old sleep-then-HTTP-200 prod-smoke.yml.
+#
+# Checks: /version.json serves the expected SHA (polled with backoff), the
+# page and its JS bundle load, Supabase Auth health answers with the anon
+# key, and every probe-able Edge Function answers one side-effect-free
+# OPTIONS request with the exact status its handler's first check returns
+# (scripts/edge-functions.mjs SMOKE_PROBES). The checkout is the deployed
+# commit, so the function list and probes match what was deployed.
+# Environment cloudflare-<target> supplies the public Supabase URL
+# and anon key the web build uses; the web URL is the DEV_WEB_URL /
+# KC_PROD_URL repository variable.
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: dev or prod
+        type: string
+        required: true
+      sha:
+        description: Commit whose checks to run and whose SHA /version.json must report (empty = any)
+        type: string
+        required: true
+      checks:
+        description: Comma-separated subset of version,web,supabase,functions
+        type: string
+        default: version,web,supabase,functions
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Environment to check (read-only)
+        type: choice
+        options: [dev, prod]
+        default: dev
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: smoke · ${{ inputs.target }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: cloudflare-${{ inputs.target }}
+    steps:
+      - name: Only dev and main may run the smoke
+        if: github.ref != 'refs/heads/dev' && github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Run the deploy smoke from dev or main (got $GITHUB_REF)."
+          exit 1
+
+      # Without an explicit SHA (a dispatch, or a rollback with no earlier
+      # release tag) the function list comes from the dispatched ref.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.sha || github.sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Smoke the deployed environment
+        env:
+          SMOKE_WEB_URL: ${{ inputs.target == 'prod' && vars.KC_PROD_URL || vars.DEV_WEB_URL }}
+          SMOKE_SHA: ${{ inputs.sha }}
+          SMOKE_CHECKS: ${{ inputs.checks || 'version,web,supabase,functions' }}
+          SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+        run: node scripts/smoke-deploy.mjs

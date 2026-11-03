@@ -213,7 +213,7 @@ Triggers `FR-AUTH-017`.
 ## FR-SETTINGS-012 — Delete account
 
 **Description.**
-The user permanently deletes their own account.
+The user deletes their own account: it is deactivated for 30 days, restorable, then purged.
 
 **Source.**
 - PRD: `03_Core_Features.md` §3.5.
@@ -221,17 +221,14 @@ The user permanently deletes their own account.
 - Decisions: `D-12`, `D-14`.
 
 **Acceptance Criteria.**
-- AC1. The action requires a two-step confirmation: a warning modal listing consequences, followed by typing the user's display name to confirm.
-- AC2. On confirm:
-   - All `Post`s owned by the user are hard-deleted (with image assets), regardless of status.
-   - All `Chat`s and `Message`s authored by the user are kept on the counterpart side as per `D-14` ("Deleted user" placeholder).
-   - The `User` row is moved to a soft-deleted state (`account_status = deleted`, anonymized fields).
-   - A `DeletedIdentifier` cooldown row is created (`FR-AUTH-016`).
-   - All `FollowEdge` and `FollowRequest` rows involving the user are hard-deleted.
-   - All push tokens are unregistered.
-- AC3. After 30 days, a hard-delete job purges the soft-deleted `User` row.
-- AC4. An email confirmation (`FR-NOTIF-012`) is sent on initial deletion if an email is on file.
-- AC5. Audit event recorded.
+- AC1. The action requires a two-step confirmation: a warning modal listing consequences (including that the account is kept for 30 days and can be restored by signing in), followed by typing the user's display name to confirm.
+- AC2. On confirm the account is **deactivated**, not deleted (`D108`): `account_status` becomes `pending_deletion` and a purge date 30 days ahead is stored. Immediately:
+   - The profile, posts, listings and chats of the user disappear for everyone else (feeds, search, map, profile, chat lists); counterparts see the "Deleted user" placeholder per `D-14`.
+   - All push tokens are unregistered and the user is signed out on every device.
+   - Nothing is deleted yet: posts, media, follows, blocks and chats stay as they were so a restore is complete.
+- AC3. **Restore:** signing in within the 30 days shows the restore screen (`FR-AUTH-016` AC2); restoring returns the account to `active` with everything visible again.
+- AC4. **Purge:** a daily job finds accounts whose purge date has passed and deletes them for good: all `Post`s with their image assets, every Storage object under `<user_id>/…` (`purgeUserFolders`, #1065), follow edges, requests, blocks, reports, and finally the auth identity. Chats and messages are kept on the counterpart side per `D-14`. A failing bucket is reported and the others still run.
+- AC5. Audit events are recorded for the deactivation, a restore and the purge.
 
 **Related.** Domain: `User`, `Post`, `Chat`, `FollowEdge`, `DeletedIdentifier`.
 
@@ -300,7 +297,9 @@ The MVP does not allow self-service phone/email changes; the Settings screen exp
 - AC5. New published version resets completion for that survey; banner may reappear per FR-SETTINGS-016 AC6.
 - AC6. Prompt banner when milestones met and survey incomplete: CTA + "אחר כך" snoozes 7 days (AsyncStorage key `kc-survey-snooze-{slug}`).
 - AC7. Question copy editable in Supabase without app deploy (`publish_survey_version` RPC).
-- AC8. In-progress answers persist across reloads. Every answer change is mirrored to `localStorage` (key `kc-survey-draft-{slug}`, version-tagged) in addition to the debounced server upsert (AC4); on remount the local draft is overlaid over the server snapshot, so a refresh mid-survey never reverts to the last saved answers — including text typed before a rating is set, which the server schema (`rating NOT NULL`) cannot store. The draft is ignored on version change or after a 14-day TTL. Shared `surveyDraftStorage` helper with the public research form (FR-RESEARCH-001 AC7).
+- AC8. In-progress answers persist across reloads. Every answer change is mirrored to `localStorage` (key `kc-survey-draft-{slug}`, version-tagged) in addition to the debounced server upsert (AC4); on remount the local draft is overlaid over the server snapshot, so a refresh mid-survey never reverts to the last saved answers — including text typed before a rating or choice is set, which the server cannot store (an answer row needs a rating or a choice key). The draft is ignored on version change or after a 14-day TTL. Shared `surveyDraftStorage` helper with the public research form (FR-RESEARCH-001 AC7).
+- AC9. *(KC#1058, 2026-10-30)* A question may be **single choice** (`single_choice_with_optional_text`): the user picks exactly one of the question's `choice_options` (2–6, published with the version) instead of a rating, plus the same optional text. An answer row holds a rating **or** a choice key, never both; the server rejects a key that is not an option (migrations `0455`–`0456`).
+- AC10. *(KC#1058)* **Sean Ellis PMF survey** (`pmf-sean-ellis`, seeded in `0457`): the standard question "How would you feel if you could no longer use Karma Community?" with exactly 3 options — very disappointed / somewhat disappointed / not disappointed (it isn't really useful) — and an optional "main benefit" text. The prompt rule `min_active_days_14d: 2` shows it only to users who opened the app while signed in on ≥ 2 distinct Israel days in the last 14 (server-side `user_active_days`, recorded once per day on app open and foreground via `rpc_record_active_day`). The banner offers it before `ux-experience`; each survey has its own 7-day snooze.
 
 ---
 
@@ -345,3 +344,4 @@ A Settings row opening a language picker that switches the app UI locale between
 | 0.2 | 2026-05-19 | Added FR-SETTINGS-014 (Appearance — light / dark / system) per PM request. |
 | 0.3 | 2026-05-26 | Added FR-SETTINGS-015..017 (Surveys & feedback hub, server-driven survey runner, free feedback form). Updated status header with ⏳ note. |
 | 0.4 | 2026-07-05 | Added FR-SETTINGS-018 (App language — opt-in Hebrew/English UI switch; machine-translated English). |
+| 0.5 | 2026-10-30 | FR-SETTINGS-016 AC9–AC10 (KC#1058): single-choice questions and the Sean Ellis PMF survey gated by server-side active days (`0455`–`0457`). |

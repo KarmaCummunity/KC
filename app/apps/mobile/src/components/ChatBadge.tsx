@@ -1,11 +1,11 @@
 // FR-CHAT-012 — unread badge in top-bar.
 import React from 'react';
-import { Platform, View, Text, TouchableOpacity, type ViewStyle } from 'react-native';
+import { Platform, View, TouchableOpacity, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../store/chatStore';
-import { makeUseStyles, typography, useTheme } from '@kc/ui';
+import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { isLayoutRtl } from '../lib/rtlLayout';
 
 /**
@@ -27,7 +27,7 @@ export function ChatBadge() {
   const display = total > 9 ? '9+' : String(total);
   return (
     <TouchableOpacity onPress={() => router.push('/chat')} style={styles.wrap} accessibilityLabel={t('chat.title')}>
-      <Ionicons name="chatbubbles-outline" size={22} color={colors.textPrimary} />
+      <Ionicons name="chatbubbles-outline" size={iconSize.xl} color={colors.textPrimary} />
       {total > 0 && (
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{display}</Text>
@@ -37,13 +37,13 @@ export function ChatBadge() {
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
-  wrap: { padding: 6, position: 'relative' },
+const useStyles = makeUseStyles(({ colors }) => ({
+  wrap: { padding: spacing.xs, position: 'relative' },
   badge: {
     position: 'absolute', top: 0, ...badgeCornerEnd(),
-    backgroundColor: colors.primary, borderRadius: 10,
-    minWidth: 18, height: 18, paddingHorizontal: 4,
+    backgroundColor: colors.primary, borderRadius: radius.full,
+    minWidth: 18, height: 18, paddingHorizontal: spacing.xs,
     justifyContent: 'center', alignItems: 'center',
   },
-  badgeText: { ...typography.caption, color: colors.textInverse, fontWeight: '700' as const, fontSize: 10 },
+  badgeText: { ...typography.caption, color: colors.textInverse, ...typography.bold },
 }));

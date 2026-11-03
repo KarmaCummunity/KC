@@ -31,3 +31,25 @@ export function keywordReply(action: KeywordAction, lang: string | null | undefi
 export function replyKind(action: KeywordAction): 'consent_confirmation' | 'help' {
   return action === 'help' ? 'help' : 'consent_confirmation';
 }
+
+// #1086: the personal bot is Pro only. Sent at most once per 24h per number.
+const UPSELL: Record<'unlinked' | 'not_pro', Record<Lang, string>> = {
+  unlinked: {
+    he: 'הבוט האישי של קהילת קארמה בוואטסאפ זמין למנויי Pro. כדי להתחיל: באפליקציה, הגדרות > וואטסאפ, צור/י קוד ושלח/י אותו כאן.',
+    en: 'The personal Karma Community WhatsApp bot is for Pro members. To start: in the app, Settings > WhatsApp, create a code and send it here.',
+  },
+  not_pro: {
+    he: 'הבוט האישי בוואטסאפ זמין למנויי Pro. אפשר לשדרג באפליקציה, ואז פשוט לכתוב לי כאן.',
+    en: 'The personal WhatsApp bot is for Pro members. Upgrade in the app, then just message me here.',
+  },
+};
+
+export function upsellReply(access: 'unlinked' | 'not_pro', lang: Lang): string {
+  return UPSELL[access][lang];
+}
+
+/** Hebrew letters anywhere → he; otherwise en if there are Latin letters; default he. */
+export function detectLang(text: string): Lang {
+  if (/[\u0590-\u05ff]/.test(text)) return 'he';
+  return /[a-z]/i.test(text) ? 'en' : 'he';
+}

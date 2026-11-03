@@ -24,8 +24,9 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="KC" />
 
-        {/* Theme colour for Android Chrome */}
-        <meta name="theme-color" content="#F97316" />
+        {/* Theme colour for Android Chrome — kept literal so the static head has no app imports;
+            brandGuard.test pins it to the `primaryVivid` token. */}
+        <meta name="theme-color" content="#F97316" /> {/* brand-guard-allow: static HTML head, pinned by test */}
 
         <ScrollViewStyleReset />
       </head>

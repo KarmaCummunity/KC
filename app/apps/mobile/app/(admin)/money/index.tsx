@@ -1,14 +1,16 @@
 // app/apps/mobile/app/(admin)/money/index.tsx
 // V2-ADMIN-MONEY-9 — V2 §13.3 Admin Money — minimal donations / expenses ledger.
-import { useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { adminChipScroll } from '../../../src/components/admin/adminChipScroll';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   hasPermission, isFinanceLedgerError,
   type AdminPermission, type AdminRole,
   type FinanceDirection, type FinanceEntry,
 } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { PrimaryButton } from '../../../src/components/ui/Buttons';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { container } from '../../../src/lib/container';
 import { FinanceEntryCard } from '../../../src/components/admin/money/FinanceEntryCard';
@@ -18,6 +20,8 @@ import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
 import { confirmAction as platformConfirm } from '../../../src/services/platformConfirm';
 import { useLocaleBundle, type LocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
 type DirFilter = FinanceDirection | 'all';
 
@@ -35,6 +39,23 @@ function fmtAmount(cents: number, currency: string): string {
   try { return new Intl.NumberFormat('he-IL', { style: 'currency', currency }).format(major); }
   catch { return `${major.toFixed(2)} ${currency}`; }
 }
+
+const financeKeyExtractor = (e: FinanceEntry) => e.entryId;
+
+const FinanceRowItem = React.memo(function FinanceRowItem({
+  entry,
+  onEdit,
+  onDelete,
+}: {
+  entry: FinanceEntry;
+  onEdit: (entry: FinanceEntry) => void;
+  onDelete: (entryId: string) => void;
+}) {
+  const handleEdit = useCallback(() => onEdit(entry), [entry, onEdit]);
+  const handleDelete = useCallback(() => onDelete(entry.entryId), [entry.entryId, onDelete]);
+
+  return <FinanceEntryCard entry={entry} onEdit={handleEdit} onDelete={handleDelete} />;
+});
 
 export default function MoneyScreen() {
   const styles = useStyles();
@@ -74,6 +95,33 @@ export default function MoneyScreen() {
     },
   });
 
+  const handleEdit = useCallback((entry: FinanceEntry) => setEditing(entry), []);
+  const handleDelete = useCallback(
+    async (entryId: string) => {
+      const ok = await confirmDelete(t.confirm.delete, L);
+      if (!ok) return;
+      try {
+        await remove.mutateAsync(entryId);
+      } catch (err) {
+        const code = isFinanceLedgerError(err) ? err.code : 'unknown';
+        const msg = t.errors[code as keyof typeof t.errors] ?? t.errors.unknown;
+        if (Platform.OS === 'web') {
+          if (typeof window !== 'undefined') window.alert(msg);
+        } else {
+          Alert.alert(msg);
+        }
+      }
+    },
+    [L, remove, t],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: FinanceEntry }) => (
+      <FinanceRowItem entry={item} onEdit={handleEdit} onDelete={handleDelete} />
+    ),
+    [handleDelete, handleEdit],
+  );
+
   if (rolesLoading) {
     return <View style={styles.center}><Text>{t.loading}</Text></View>;
   }
@@ -85,9 +133,7 @@ export default function MoneyScreen() {
     <View style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.title}>{t.title}</Text>
-        <Pressable accessibilityRole="button" onPress={() => setCreating(true)} style={styles.newBtn}>
-          <Text style={styles.newBtnText}>{t.newBtn}</Text>
-        </Pressable>
+        <PrimaryButton testID="admin-money-new" label={t.newBtn} size="sm" onPress={() => setCreating(true)} />
       </View>
 
       <View style={styles.summaryBox}>
@@ -111,7 +157,7 @@ export default function MoneyScreen() {
         ))}
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+      <ScrollView horizontal style={adminChipScroll.scroll} showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.chips, adminChipScroll.content]}>
         {(['all', 'in', 'out'] as readonly DirFilter[]).map((d) => (
           <AdminFilterChip
             key={d}
@@ -124,25 +170,10 @@ export default function MoneyScreen() {
       <Text style={styles.totalLabel}>{t.totalCount(list.data?.totalCount ?? 0)}</Text>
 
       <KcFlashList
-        data={[...(list.data?.rows ?? [])]}
-        keyExtractor={(e) => e.entryId}
-        renderItem={({ item }) => (
-          <FinanceEntryCard
-            entry={item}
-            onEdit={() => setEditing(item)}
-            onDelete={async () => {
-              const ok = await confirmDelete(t.confirm.delete, L);
-              if (!ok) return;
-              try { await remove.mutateAsync(item.entryId); }
-              catch (err) {
-                const code = isFinanceLedgerError(err) ? err.code : 'unknown';
-                const msg = t.errors[code as keyof typeof t.errors] ?? t.errors.unknown;
-                if (Platform.OS === 'web') { if (typeof window !== 'undefined') window.alert(msg); }
-                else Alert.alert(msg);
-              }
-            }}
-          />
-        )}
+        data={list.data?.rows ?? []}
+        keyExtractor={financeKeyExtractor}
+        estimatedItemSize={120}
+        renderItem={renderItem}
         refreshControl={
           <RefreshControl refreshing={list.isRefetching} onRefresh={() => { void list.refetch(); void summary.refetch(); }} />
         }
@@ -169,27 +200,25 @@ export default function MoneyScreen() {
 
 const useStyles = makeUseStyles(({ colors }) => ({
   root:        { flex: 1, backgroundColor: colors.background },
-  center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  deniedTitle: { fontSize: 18, fontWeight: '700' },
-  header:      { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8,
+  center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+  deniedTitle: { fontSize: typography.h3.fontSize, ...typography.bold },
+  header:      { paddingHorizontal: spacing.base, paddingTop: spacing.base, paddingBottom: spacing.sm,
                  flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title:       { fontSize: 22, fontWeight: '700' },
-  newBtn:      { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.primary },
-  newBtnText:  { color: colors.textInverse, fontSize: 13, fontWeight: '700' },
+  title:       { fontSize: typography.h2.fontSize, ...typography.bold },
 
-  summaryBox: { marginHorizontal: 16, marginBottom: 8, padding: 12, borderRadius: 10,
+  summaryBox: { marginHorizontal: spacing.base, marginBottom: spacing.sm, padding: spacing.md, borderRadius: radius.sm,
                 backgroundColor: colors.surface,
-                borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: 6 },
-  summaryHeading: { fontSize: 11, fontWeight: '700', opacity: 0.65 },
-  summaryEmpty:   { fontSize: 12, opacity: 0.55 },
-  summaryRow:     { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  summaryCurrency:{ fontSize: 12, fontWeight: '700' },
-  summaryIncome:  { fontSize: 12, color: colors.success },
-  summaryExpense: { fontSize: 12, color: colors.error },
-  summaryNet:     { fontSize: 12, fontWeight: '700' },
+                borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, gap: spacing.xs },
+  summaryHeading: { fontSize: typography.caption.fontSize, ...typography.bold, opacity: 0.65 },
+  summaryEmpty:   { fontSize: typography.bodySmall.fontSize, opacity: 0.55 },
+  summaryRow:     { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
+  summaryCurrency:{ fontSize: typography.bodySmall.fontSize, ...typography.bold },
+  summaryIncome:  { fontSize: typography.bodySmall.fontSize, color: colors.success },
+  summaryExpense: { fontSize: typography.bodySmall.fontSize, color: colors.error },
+  summaryNet:     { fontSize: typography.bodySmall.fontSize, ...typography.bold },
   netPositive:    { color: colors.success },
   netNegative:    { color: colors.error },
 
-  chips:          { paddingHorizontal: 16, gap: 8, paddingBottom: 8 },
-  totalLabel:     { paddingHorizontal: 16, paddingBottom: 8, fontSize: 11, opacity: 0.6 },
+  chips:          { paddingHorizontal: spacing.base, gap: spacing.sm, paddingBottom: spacing.sm },
+  totalLabel:     { paddingHorizontal: spacing.base, paddingBottom: spacing.sm, fontSize: typography.caption.fontSize, opacity: 0.6 },
 }));

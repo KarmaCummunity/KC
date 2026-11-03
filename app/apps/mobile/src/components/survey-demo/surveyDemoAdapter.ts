@@ -16,6 +16,7 @@ export function toProductionQuestions(
     textPlaceholderHe: q.textPlaceholder,
     ratingAnchorLowHe: '',
     ratingAnchorHighHe: '',
+    choiceOptions: [],
   }));
 }
 

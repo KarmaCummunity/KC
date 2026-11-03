@@ -1,15 +1,36 @@
 // Top-level error boundary. Mapped to TD-33 (AUDIT-P2-10).
 // Catches unexpected throws from descendant components so the app shell
 // renders a recoverable fallback instead of unmounting to a white screen.
+// Route segments have their own boundary (RouteErrorBoundary) that shares
+// this fallback and report.
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, typography, spacing, radius, useTheme } from '@kc/ui';
+import { makeUseStyles, typography, spacing, Text } from '@kc/ui';
+import { PrimaryButton } from './ui/Buttons';
+import { getSentryIfInit } from '../lib/observability/sentry';
 
-type Props = { children: React.ReactNode };
+export type ErrorBoundaryProps = {
+  children: React.ReactNode;
+  boundary?: string;
+  tags?: Record<string, string>;
+  onReset?: () => void;
+  fallback?: (props: { error: Error; onRetry: () => void }) => React.ReactNode;
+};
 type State = { error: Error | null };
 
-function ErrorBoundaryFallback({ error, onRetry }: { error: Error; onRetry: () => void }) {
+/** Report a caught render error to Sentry. Never throws. */
+export function reportRenderError(error: Error, context: { tags?: Record<string, string>; componentStack?: string | null }): void {
+  if (__DEV__) console.error('ErrorBoundary caught:', error, context.componentStack ?? '');
+  try {
+    getSentryIfInit()?.captureException(error, {
+      tags: context.tags,
+      extra: { componentStack: context.componentStack ?? null },
+    });
+  } catch { /* never crash the boundary */ }
+}
+
+export function ErrorBoundaryFallback({ error, onRetry }: { error: Error; onRetry: () => void }) {
   const styles = useStyles();
   const { t } = useTranslation();
   return (
@@ -17,14 +38,17 @@ function ErrorBoundaryFallback({ error, onRetry }: { error: Error; onRetry: () =
       <Text style={styles.title}>{t('errorBoundary.title')}</Text>
       <Text style={styles.body}>{t('errorBoundary.body')}</Text>
       {__DEV__ ? <Text style={styles.errMessage}>{error.message}</Text> : null}
-      <TouchableOpacity style={styles.cta} onPress={onRetry} accessibilityRole="button">
-        <Text style={styles.ctaText}>{t('general.retry')}</Text>
-      </TouchableOpacity>
+      <PrimaryButton
+        testID="error-boundary-retry"
+        label={t('general.retry')}
+        size="md"
+        onPress={onRetry}
+      />
     </View>
   );
 }
 
-export class ErrorBoundary extends React.Component<Props, State> {
+export class ErrorBoundary extends React.Component<ErrorBoundaryProps, State> {
   state: State = { error: null };
 
   static getDerivedStateFromError(error: Error): State {
@@ -32,27 +56,28 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo): void {
-    if (__DEV__) console.error('ErrorBoundary caught:', error, info.componentStack);
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { getSentryIfInit } = require('../lib/observability/sentry');
-      const Sentry = getSentryIfInit();
-      if (Sentry) {
-        Sentry.captureException(error, { extra: { componentStack: info.componentStack ?? null } });
-      }
-    } catch { /* never crash the boundary */ }
+    reportRenderError(error, {
+      tags: { boundary: this.props.boundary ?? 'root', ...this.props.tags },
+      componentStack: info.componentStack,
+    });
   }
 
-  reset = (): void => this.setState({ error: null });
+  reset = (): void => {
+    this.props.onReset?.();
+    this.setState({ error: null });
+  };
 
   render(): React.ReactNode {
     const { error } = this.state;
     if (!error) return this.props.children;
+    if (this.props.fallback) {
+      return this.props.fallback({ error, onRetry: this.reset });
+    }
     return <ErrorBoundaryFallback error={error} onRetry={this.reset} />;
   }
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -64,14 +89,4 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
   title: { ...typography.h1, color: colors.textPrimary, textAlign: 'center' },
   body: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
   errMessage: { ...typography.caption, color: colors.textDisabled, textAlign: 'center' },
-  cta: {
-    height: 52,
-    paddingHorizontal: spacing.xl,
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: spacing.base,
-  },
-  ctaText: { ...typography.button, color: colors.textInverse },
 }));

@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text } from 'react-native';
-import { makeUseStyles, typography, radius, useTheme } from '@kc/ui';
+import { View } from 'react-native';
+import { avatarPalette, makeUseStyles, typography, Text } from '@kc/ui';
 import {
   getSupabasePublicImageUrl,
   getSupabaseImageThumbUrl,
@@ -14,22 +14,19 @@ interface AvatarInitialsProps {
   size?: number;
 }
 
-const AVATAR_COLORS = [
-  '#F97316', '#6366F1', '#22C55E', '#EC4899',
-  '#14B8A6', '#F59E0B', '#8B5CF6', '#3B82F6',
-];
+const AVATAR_COLORS = avatarPalette.backgrounds;
 
+/** Stable per-name background from the brand avatar palette (spec 17 §4). */
 function getAvatarColor(name: string): string {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    hash = (name.codePointAt(i) ?? 0) + ((hash << 5) - hash);
   }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length] ?? AVATAR_COLORS[0]!;
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length] ?? AVATAR_COLORS[0];
 }
 
 function AvatarInitialsInner({ name, avatarUrl, size = 40 }: AvatarInitialsProps) {
   const styles = useStyles();
-  const { colors } = useTheme();
   const initials = name
     .split(' ')
     .slice(0, 2)
@@ -85,15 +82,16 @@ function AvatarInitialsInner({ name, avatarUrl, size = 40 }: AvatarInitialsProps
 
 export const AvatarInitials = React.memo(AvatarInitialsInner);
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(() => ({
   /** No outer margin — parents use `gap` / padding so fixed-size clips (e.g. search cards) stay circular on iOS. */
   avatar: {
     justifyContent: 'center',
     alignItems: 'center',
   },
   initials: {
-    color: colors.textInverse,
-    fontWeight: '700',
+    // Fixed white: avatar backgrounds are theme-independent (AA in both themes).
+    color: avatarPalette.foreground,
+    ...typography.bold,
     textAlign: 'center',
   },
 }));

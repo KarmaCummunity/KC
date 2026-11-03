@@ -1,17 +1,15 @@
 import React from 'react';
-import { Text } from 'react-native';
-import { useTranslation } from 'react-i18next';
-import { spacing, typography } from '@kc/ui';
+import { useLocalSearchParams } from 'expo-router';
 import { Screen } from '../../../../src/components/ui/Screen';
-import { MarketplaceMapView } from '../../../../src/components/marketplace/MarketplaceMapView';
+import { MapExplorer } from '../../../../src/components/map/MapExplorer';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
 
 export default function MarketplaceMapScreen() {
-  const { t } = useTranslation();
-
+  const { world } = useLocalSearchParams<{ world?: string }>();
   return (
-    <Screen>
-      <Text style={{ ...typography.h2, padding: spacing.md }}>{t('marketplace.mapTitle')}</Text>
-      <MarketplaceMapView />
+    <Screen scroll={false} blobs="off" tabBarInset={false}>
+      <MapExplorer initialWorld={typeof world === 'string' && world ? world : null} />
     </Screen>
   );
 }

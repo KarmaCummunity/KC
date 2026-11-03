@@ -2,27 +2,33 @@
 // FR-ADMIN-019 — single row for the admin posts search.
 // V2-ADMIN-POSTS-6 — inline "Remove" / "Restore" affordance so admins can act
 // straight from the search results instead of opening every post detail.
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { memo, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
-import type { AdminPostSearchResult } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
+import {
+  type AdminPermission,
+  type AdminRole,
+  hasPermission,
+  type AdminPostSearchResult,
+} from '@kc/domain';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { Chip } from '../../ui/Chip';
 import { useAdminRoles } from '../../../hooks/useAdminRoles';
 import { container } from '../../../lib/container';
 import { confirmAction as platformConfirm } from '../../../services/platformConfirm';
 import { useLocaleBundle, type LocaleBundle } from '../../../i18n/useLocaleBundle';
+import { adminPostActions } from '../../../lib/moderation/postModeration';
 
 export interface PostSearchRowProps {
   readonly row: AdminPostSearchResult;
 }
 
-function statusTone(status: string): 'good' | 'warn' | 'bad' | 'muted' {
-  if (status === 'open') return 'good';
+function statusTone(status: string): 'success' | 'warning' | 'error' | 'muted' {
+  if (status === 'open') return 'success';
   if (status === 'closed_delivered') return 'muted';
-  if (status === 'removed_admin' || status === 'expired') return 'bad';
-  return 'warn';
+  if (status === 'removed_admin' || status === 'expired') return 'error';
+  return 'warning';
 }
 
 function confirmAction(message: string, L: LocaleBundle): Promise<boolean> {
@@ -32,7 +38,7 @@ function confirmAction(message: string, L: LocaleBundle): Promise<boolean> {
   });
 }
 
-export function PostSearchRow({ row }: PostSearchRowProps) {
+function PostSearchRowInner({ row }: PostSearchRowProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   const tone = statusTone(row.status);
@@ -41,8 +47,10 @@ export function PostSearchRow({ row }: PostSearchRowProps) {
   const can = (perm: AdminPermission) => hasPermission(roles as readonly AdminRole[], perm);
   const [busy, setBusy] = useState(false);
 
-  const canRemove  = can('reports.confirm_or_dismiss') && row.status === 'open';
-  const canRestore = can('reports.restore_target')    && row.status === 'removed_admin';
+  const { remove: canRemove, restore: canRestore } = adminPostActions(row.status, {
+    canRemove: can('reports.confirm_or_dismiss'),
+    canRestore: can('reports.restore_target'),
+  });
 
   async function doRemove() {
     const ok = await confirmAction(L.admin.content.postInline.confirmRemove, L);
@@ -83,12 +91,15 @@ export function PostSearchRow({ row }: PostSearchRowProps) {
               {L.admin.content.byOwner(row.ownerDisplayName)}
             </Text>
           )}
-          <View style={[styles.chip, styles[`chip_${tone}` as const]]}>
-            <Text style={styles.chipText}>
-              {L.admin.content.postStatus[row.status as keyof LocaleBundle['admin']['content']['postStatus']]
-                ?? row.status}
-            </Text>
-          </View>
+          <Chip
+            variant="tag"
+            tone={tone}
+            label={
+              L.admin.content.postStatus[row.status as keyof LocaleBundle['admin']['content']['postStatus']]
+                ?? row.status
+            }
+            size="sm"
+          />
         </View>
       </View>
       {canRemove && (
@@ -117,23 +128,19 @@ export function PostSearchRow({ row }: PostSearchRowProps) {
 
 const useStyles = makeUseStyles(({ colors }) => ({
   root: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    paddingVertical: 12, paddingHorizontal: 16,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    paddingVertical: spacing.md, paddingHorizontal: spacing.base,
     borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
   },
-  main:       { flex: 1, gap: 4 },
-  title:      { fontSize: 14, fontWeight: '600' },
-  metaRow:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  meta:       { fontSize: 11, opacity: 0.6, flex: 1 },
-  chip:       { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  chip_good:  { backgroundColor: colors.successLight },
-  chip_warn:  { backgroundColor: colors.warningLight },
-  chip_bad:   { backgroundColor: colors.errorLight },
-  chip_muted: { backgroundColor: colors.border },
-  chipText:   { fontSize: 11, fontWeight: '700' },
-  actionBtnRemove:  { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: colors.errorLight },
-  actionTextRemove: { fontSize: 11, fontWeight: '700', color: colors.error },
-  actionBtnRestore:  { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: colors.successLight },
-  actionTextRestore: { fontSize: 11, fontWeight: '700', color: colors.success },
+  main:       { flex: 1, gap: spacing.xs },
+  title:      { ...typography.body, ...typography.semiBold },
+  metaRow:    { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  meta:       { ...typography.caption, opacity: 0.6, flex: 1 },
+  actionBtnRemove:  { paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: radius.xs, backgroundColor: colors.errorLight },
+  actionTextRemove: { ...typography.caption, ...typography.bold, color: colors.error },
+  actionBtnRestore:  { paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: radius.xs, backgroundColor: colors.successLight },
+  actionTextRestore: { ...typography.caption, ...typography.bold, color: colors.success },
   actionBtnDisabled: { opacity: 0.5 },
 }));
+
+export const PostSearchRow = memo(PostSearchRowInner);

@@ -53,12 +53,6 @@ export const CHAT_PARTICIPANT_COUNT = 2;
 export const FOLLOW_REQUEST_COOLDOWN_DAYS = 14;
 
 /**
- * Post expiry (days).
- * Mapped to: R-MVP-Items-5
- */
-export const POST_EXPIRY_DAYS = 300;
-
-/**
  * Deleted_no_recipient grace period (days).
  * Mapped to: R-MVP-Items-4
  */

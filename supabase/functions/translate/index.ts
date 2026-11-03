@@ -8,9 +8,10 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { corsHeaders, isAllowedOrigin } from '../_shared/cors.ts';
+import { reportError, withObservability } from '../_shared/observability/mod.ts';
 import { isSupportedTarget } from '../_shared/translation/supportedLanguages.ts';
 import { getAuthedUser } from './auth.ts';
-import { isValidSingle, translateSingle } from './single.ts';
+import { isValidSingle, translateSingle, type SingleBody } from './single.ts';
 import { resolveBatch, type TranslateItem } from './resolveBatch.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
@@ -41,11 +42,11 @@ function toBatch(raw: unknown): { targetLanguage: string; items: TranslateItem[]
   return null;
 }
 
-function isLegacySingle(raw: unknown): boolean {
-  return isValidSingle(raw) && !Array.isArray((raw as Record<string, unknown>).items);
+function isLegacySingle(raw: unknown): raw is SingleBody {
+  return isValidSingle(raw) && !Array.isArray((raw as unknown as Record<string, unknown>).items);
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withObservability('translate', async (req) => {
   const origin = req.headers.get('origin');
   if (req.method === 'OPTIONS') {
     return isAllowedOrigin(origin)
@@ -75,7 +76,7 @@ Deno.serve(async (req) => {
       const results = await resolveBatch(authed.userClient, svc, batch.targetLanguage, batch.items);
       return json({ results }, 200, hdrs);
     } catch (e) {
-      console.warn('[translate] batch failed', { detail: e instanceof Error ? e.message : String(e) });
+      await reportError(e, { fn: 'translate', req, tags: { mode: 'batch' } });
       return json({ error: 'internal' }, 500, hdrs);
     }
   }
@@ -93,7 +94,7 @@ Deno.serve(async (req) => {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg === 'forbidden') return json({ error: 'forbidden' }, 403, hdrs);
     if (msg === 'provider_failed') return json({ error: 'provider_failed' }, 502, hdrs);
-    console.warn('[translate] single failed', { detail: msg });
+    await reportError(e, { fn: 'translate', req, tags: { mode: 'single' } });
     return json({ error: 'internal' }, 500, hdrs);
   }
-});
+}));

@@ -1,18 +1,13 @@
-// FR-ADMIN-004 — Ban modal opened from a user profile by a super admin.
-// KeyboardAvoidingView + ScrollView keep the inputs visible while typing.
-// Defence-in-depth: self-ban / admin-ban are also rejected by the use case + DB.
+// FR-ADMIN-004 — Ban sheet opened from a user profile by a super admin.
+// Shared `ReasonNoteSheet` with a destructive (red) submit; the kit sheet keeps
+// the note above the keyboard. Defence-in-depth: self-ban / admin-ban are also
+// rejected by the use case + DB.
 import React, { useEffect, useState } from 'react';
-import {
-  Modal, View, Text, TextInput, Pressable,
-  KeyboardAvoidingView, Platform, ScrollView,
-} from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { container } from '../../lib/container';
 import { useAuthStore } from '../../store/authStore';
 import { confirmAndRun, showAdminToast } from '../chat/system/adminActions';
-import { makeUseStyles, useTheme } from '@kc/ui';
-import { useTranslation } from 'react-i18next';
-import { rowDirectionStart } from '../../lib/rtlLayout';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { ReasonNoteSheet } from '../report/ReasonNoteSheet';
 
 type BanReason = 'spam' | 'harassment' | 'policy_violation' | 'other';
 
@@ -30,14 +25,13 @@ interface Props {
 }
 
 export function BanUserModal({ targetUserId, visible, onClose }: Props) {
-  const styles = useStyles();
-  const { colors } = useTheme();
   const { t } = useTranslation();
   const adminId = useAuthStore((s) => s.session?.userId);
   const [reason, setReason] = useState<BanReason>('spam');
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Start fresh on the next open.
   useEffect(() => {
     if (!visible) {
       setReason('spam');
@@ -68,97 +62,29 @@ export function BanUserModal({ targetUserId, visible, onClose }: Props) {
         setSubmitting(false);
         showAdminToast(msg);
       },
+      // TD-251 — backing out of the confirm frees the sheet again.
+      onCancel: () => setSubmitting(false),
     });
   };
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose} transparent>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <View style={styles.backdrop}>
-          <View style={styles.sheet}>
-            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scrollContent}>
-              <Text style={styles.title}>{t('moderation.ban.title')}</Text>
-              <Text style={styles.label}>{t('moderation.ban.reasonLabel')}</Text>
-              {REASONS.map((r) => (
-                <Pressable
-                  key={r.value}
-                  style={[styles.reasonRow, reason === r.value && styles.reasonRowActive]}
-                  onPress={() => setReason(r.value)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: reason === r.value }}
-                >
-                  <Text style={styles.reasonText}>{t(r.labelKey)}</Text>
-                </Pressable>
-              ))}
-              <Text style={styles.label}>{t('moderation.ban.noteLabel')}</Text>
-              <TextInput
-                style={styles.note}
-                value={note}
-                onChangeText={setNote}
-                multiline
-                maxLength={500}
-                textAlign="right"
-                placeholderTextColor={colors.textSecondary}
-              />
-              <View style={styles.actions}>
-                <Pressable
-                  style={[styles.btn, styles.btnGhost]}
-                  onPress={onClose}
-                  disabled={submitting}
-                >
-                  <Text style={styles.btnGhostText}>{t('moderation.actions.cancel')}</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.btn, styles.btnDanger, submitting && styles.btnDisabled]}
-                  onPress={submit}
-                  disabled={submitting}
-                  accessibilityState={{ disabled: submitting }}
-                >
-                  <Text style={styles.btnDangerText}>
-                    {submitting ? '...' : t('moderation.ban.submit')}
-                  </Text>
-                </Pressable>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+    <ReasonNoteSheet
+      visible={visible}
+      onClose={onClose}
+      title={t('moderation.ban.title')}
+      reasonLabel={t('moderation.ban.reasonLabel')}
+      reasons={REASONS.map((r) => ({ value: r.value, label: t(r.labelKey) }))}
+      reason={reason}
+      onReasonChange={setReason}
+      noteLabel={t('moderation.ban.noteLabel')}
+      note={note}
+      onNoteChange={setNote}
+      noteMaxLength={500}
+      submitLabel={t('moderation.ban.submit')}
+      submitting={submitting}
+      onSubmit={submit}
+      cancelLabel={t('moderation.actions.cancel')}
+      destructive
+    />
   );
 }
-
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
-  flex: { flex: 1 },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: colors.surface,
-
-    borderWidth: isDark ? 1 : 0,
-    borderColor: isDark ? colors.border : 'transparent',
-    borderTopLeftRadius: 16, borderTopRightRadius: 16,
-    maxHeight: '90%',
-  },
-  scrollContent: { padding: 16, gap: 8 },
-  title: { fontSize: 18, fontWeight: '600', color: colors.textPrimary, textAlign: rtlTextAlignStart, marginBottom: 4 },
-  label: { fontSize: 13, color: colors.textSecondary, textAlign: rtlTextAlignStart, marginTop: 4 },
-  reasonRow: {
-    paddingVertical: 12, paddingHorizontal: 14,
-    borderRadius: 10, borderWidth: 1, borderColor: colors.border,
-  },
-  reasonRowActive: { borderColor: colors.error, backgroundColor: colors.primarySurface },
-  reasonText: { fontSize: 15, color: colors.textPrimary, textAlign: rtlTextAlignStart },
-  note: {
-    borderWidth: 1, borderColor: colors.border, borderRadius: 10,
-    padding: 12, minHeight: 80, fontSize: 15, color: colors.textPrimary,
-  },
-  actions: { flexDirection: rowDirectionStart, gap: 8, marginTop: 8 },
-  btn: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  btnDanger: { backgroundColor: colors.error },
-  btnGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border },
-  btnDangerText: { color: colors.textInverse, fontSize: 15, fontWeight: '600' },
-  btnGhostText: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
-  btnDisabled: { opacity: 0.5 },
-}));

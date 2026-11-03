@@ -1,7 +1,7 @@
-import { Text, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, typography, spacing } from '@kc/ui';
+import { makeUseStyles, typography, spacing, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
 
 export function ConfigErrorScreen() {

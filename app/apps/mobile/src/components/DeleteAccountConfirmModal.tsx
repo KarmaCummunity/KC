@@ -1,23 +1,16 @@
-// FR-SETTINGS-012 V1 — delete-account confirmation modal.
+// FR-SETTINGS-012 V1 — delete-account confirmation dialog, on the kit `Modal` (spec 17 §4.1).
 // States: idle / ready / submitting / error_recoverable / error_critical / blocked_suspended.
-// error_critical is non-dismissible (no tap-outside, no back, no X).
+// submitting and error_critical are non-dismissible (no tap-outside, no back, no ✕, no Escape).
 
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  BackHandler,
-  Modal,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { DeleteAccountError } from '@kc/application';
-import { useTheme } from '@kc/ui';
+import { Text } from '@kc/ui';
 import { useDeleteAccountConfirmModalStyles } from './DeleteAccountConfirmModal.styles';
+import { DangerButton, SecondaryButton } from './ui/Buttons';
+import { Modal } from './ui/Modal';
+import { TextField } from './ui/TextField';
 
 export type AccountStatusForDelete =
   | 'pending_verification'
@@ -41,10 +34,16 @@ type LocalState =
   | { kind: 'error'; error: 'recoverable' | 'critical' }
   | { kind: 'blocked' };
 
+const BULLET_KEYS = ['posts', 'follows', 'moderation', 'donations', 'devices'] as const;
+
+/** Locale key of one "what gets deleted" bullet. */
+function bulletCopyKey(key: (typeof BULLET_KEYS)[number]) {
+  return `settings.deleteAccountModal.bullets.${key}` as const;
+}
+
 export function DeleteAccountConfirmModal(props: DeleteAccountConfirmModalProps) {
   const { t } = useTranslation();
   const styles = useDeleteAccountConfirmModalStyles();
-  const { colors } = useTheme();
   const { visible, accountStatus, onCancel, onConfirm } = props;
   const [typed, setTyped] = useState('');
   const [state, setState] = useState<LocalState>({ kind: 'idle' });
@@ -60,16 +59,6 @@ export function DeleteAccountConfirmModal(props: DeleteAccountConfirmModalProps)
     if (visible && isBlocked) setState({ kind: 'blocked' });
     else if (visible) setState((s) => (s.kind === 'blocked' ? { kind: 'idle' } : s));
   }, [visible, isBlocked]);
-
-  React.useEffect(() => {
-    if (Platform.OS !== 'android') return;
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (state.kind === 'submitting') return true;
-      if (state.kind === 'error' && state.error === 'critical') return true;
-      return false;
-    });
-    return () => sub.remove();
-  }, [state]);
 
   const ready = typed.trim() === keyword;
 
@@ -95,109 +84,87 @@ export function DeleteAccountConfirmModal(props: DeleteAccountConfirmModalProps)
     }
   }, [ready, onConfirm]);
 
-  const allowDismiss
-    = state.kind === 'idle'
-    || (state.kind === 'error' && state.error === 'recoverable')
-    || state.kind === 'blocked';
+  const submitting = state.kind === 'submitting';
+  const critical = state.kind === 'error' && state.error === 'critical';
+  const blocked = state.kind === 'blocked';
+  const allowDismiss = state.kind === 'idle' || (state.kind === 'error' && !critical) || blocked;
 
-  if (!visible) return null;
+  const footer = blocked ? (
+    <SecondaryButton label={t('settings.deleteAccountModal.buttons.close')} size="md" fullWidth onPress={onCancel} />
+  ) : (
+    <>
+      <DangerButton
+        label={critical ? t('settings.deleteAccountModal.buttons.retry') : t('settings.deleteAccountModal.buttons.delete')}
+        size="md"
+        fullWidth
+        disabled={!ready}
+        loading={submitting}
+        onPress={() => void handleConfirm()}
+      />
+      {critical ? null : (
+        <SecondaryButton
+          label={t('settings.deleteAccountModal.buttons.cancel')}
+          size="md"
+          fullWidth
+          disabled={submitting}
+          onPress={onCancel}
+        />
+      )}
+    </>
+  );
 
+  // One dialog for every state, so a state change swaps its content instead of re-opening it.
   return (
     <Modal
       visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={() => {
-        if (allowDismiss) onCancel();
-      }}
+      title={blocked ? t('settings.deleteAccountModal.blocked.title') : t('settings.deleteAccountModal.title')}
+      onDismiss={onCancel}
+      dismissible={allowDismiss}
+      footer={footer}
     >
-      <Pressable
-        style={styles.overlay}
-        onPress={() => {
-          if (allowDismiss) onCancel();
-        }}
-      >
-        <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
-          {state.kind === 'blocked' ? (
-            <>
-              <Text style={styles.blockedTitle}>{t('settings.deleteAccountModal.blocked.title')}</Text>
-              <Text style={styles.blockedBody}>{t('settings.deleteAccountModal.blocked.body')}</Text>
-              <View style={styles.buttonsRow}>
-                <TouchableOpacity style={styles.buttonCancel} onPress={onCancel}>
-                  <Text style={styles.buttonCancelText}>{t('settings.deleteAccountModal.buttons.close')}</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          ) : (
-            <>
-              <Text style={styles.title}>{t('settings.deleteAccountModal.title')}</Text>
+      {blocked ? (
+        <Text style={styles.body}>{t('settings.deleteAccountModal.blocked.body')}</Text>
+      ) : (
+        // Long copy: scroll it on short screens so the actions below stay in reach.
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          // iOS: inset the content above the keyboard so the confirm field stays visible.
+          automaticallyAdjustKeyboardInsets
+        >
+          <View style={styles.bulletList}>
+            {BULLET_KEYS.map((key) => (
+              <Text key={key} style={styles.bullet}>{`• ${t(bulletCopyKey(key))}`}</Text>
+            ))}
+          </View>
 
-              <View style={styles.bulletList}>
-                <Text style={styles.bullet}>{`• ${t('settings.deleteAccountModal.bullets.posts')}`}</Text>
-                <Text style={styles.bullet}>{`• ${t('settings.deleteAccountModal.bullets.follows')}`}</Text>
-                <Text style={styles.bullet}>{`• ${t('settings.deleteAccountModal.bullets.moderation')}`}</Text>
-                <Text style={styles.bullet}>{`• ${t('settings.deleteAccountModal.bullets.donations')}`}</Text>
-                <Text style={styles.bullet}>{`• ${t('settings.deleteAccountModal.bullets.devices')}`}</Text>
-              </View>
+          <Text style={styles.chatsRetention}>
+            {t('settings.deleteAccountModal.chatsRetention', { deletedUserLabel: t('common.deletedUser') })}
+          </Text>
+          <Text style={styles.body}>{t('settings.deleteAccountModal.warning')}</Text>
 
-              <Text style={styles.chatsRetention}>{t('settings.deleteAccountModal.chatsRetention', { deletedUserLabel: t('common.deletedUser') })}</Text>
-              <Text style={styles.warning}>{t('settings.deleteAccountModal.warning')}</Text>
-
-              {state.kind === 'error' && (
-                <View style={[styles.errorBanner, state.error === 'critical' && styles.errorBannerCritical]}>
-                  <Text style={[styles.errorBannerText, state.error === 'critical' && styles.errorBannerCriticalText]}>
-                    {state.error === 'critical'
-                      ? t('settings.deleteAccountModal.errors.critical')
-                      : t('settings.deleteAccountModal.errors.recoverable')}
-                  </Text>
-                </View>
-              )}
-
-              <Text style={styles.inputLabel}>{t('settings.deleteAccountModal.confirmInputLabel')}</Text>
-              <TextInput
-                value={typed}
-                onChangeText={setTyped}
-                placeholder={t('settings.deleteAccountModal.confirmInputPlaceholder')}
-                placeholderTextColor="#aaa"
-                editable={state.kind !== 'submitting'}
-                style={styles.input}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-
-              <View style={styles.buttonsRow}>
-                <TouchableOpacity
-                  style={[styles.buttonDelete, !ready && styles.buttonDeleteDisabled]}
-                  disabled={!ready || state.kind === 'submitting'}
-                  onPress={handleConfirm}
-                >
-                  {state.kind === 'submitting' ? (
-                    <ActivityIndicator color={colors.textInverse} />
-                  ) : (
-                    <Text style={styles.buttonDeleteText}>
-                      {state.kind === 'error' && state.error === 'critical'
-                        ? t('settings.deleteAccountModal.buttons.retry')
-                        : t('settings.deleteAccountModal.buttons.delete')}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-
-                {!(state.kind === 'error' && state.error === 'critical') && (
-                  <TouchableOpacity
-                    style={styles.buttonCancel}
-                    disabled={state.kind === 'submitting'}
-                    onPress={onCancel}
-                  >
-                    <Text style={styles.buttonCancelText}>
-                      {t('settings.deleteAccountModal.buttons.cancel')}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </>
+          {state.kind === 'error' && (
+            <View style={[styles.errorBanner, critical && styles.errorBannerCritical]}>
+              <Text style={[styles.errorBannerText, critical && styles.errorBannerCriticalText]}>
+                {critical
+                  ? t('settings.deleteAccountModal.errors.critical')
+                  : t('settings.deleteAccountModal.errors.recoverable')}
+              </Text>
+            </View>
           )}
-        </Pressable>
-      </Pressable>
+
+          <TextField
+            label={t('settings.deleteAccountModal.confirmInputLabel')}
+            value={typed}
+            onChangeText={setTyped}
+            placeholder={t('settings.deleteAccountModal.confirmInputPlaceholder')}
+            editable={!submitting}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </ScrollView>
+      )}
     </Modal>
   );
 }

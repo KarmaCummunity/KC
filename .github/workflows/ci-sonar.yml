@@ -1,71 +1,55 @@
-# SonarCloud — fail PRs when Quality Gate fails on new code.
-# Requires repo/org secret SONAR_TOKEN (SonarCloud user token).
-# See docs/dev/SONAR.md for setup, waivers, and branch protection.
-#
-# `SonarCloud quality gate` is a REQUIRED status check on dev/main (branch
-# protection) — keep the job name stable. Because it is required, the
-# pull_request trigger runs on every non-draft PR (no path filter): the gate
-# context is posted by the SonarCloud scan, so the scan must run for the context
-# to report. Path-filtering it left the required context permanently "Expected"
-# on backend-only / docs-only PRs and blocked their merge (same fix as
-# ci-backend.yml / ci-contract.yml / ci-frontend.yml). A PR with no new code
-# passes the gate trivially.
-
 name: CI — SonarCloud
 
-on:
-  push:
-    # SonarCloud free plan analyses the main branch only; dev is covered by PR scans.
-    branches: [main]
-  pull_request:
-    branches: [main, dev]
-    types: [opened, synchronize, reopened, ready_for_review]
-  workflow_dispatch:
+# SonarCloud quality gate on new code, called by ci-frontend.yml after the
+# tests job. It scans with that job's `coverage` artifact instead of
+# re-running the test suite. ci.yml enables it for PRs into `main` and pushes
+# to `main` only: the free plan analyses only `main` and pull requests, so
+# merge groups and dev pushes cannot be scanned, and PRs into dev get fast
+# feedback only (D-195 addendum, TD-236). Dependabot runs get no secrets.
+# Setup, waivers: docs/dev/SONAR.md.
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+on:
+  workflow_call:
+    secrets:
+      SONAR_TOKEN:
+        required: false
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   sonarcloud:
     name: SonarCloud quality gate
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - name: Require SONAR_TOKEN
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
+          if [ -z "$SONAR_TOKEN" ]; then
             echo "::error::Missing SONAR_TOKEN repository/org secret. See docs/dev/SONAR.md"
             exit 1
           fi
 
-      - name: Checkout
-        uses: actions/checkout@v6
+      # Full history: Sonar uses blame to tell new code from old.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
-      - name: Setup pnpm + Turbo cache
-        uses: ./.github/actions/setup-pnpm-turbo
-
-      - name: Install dependencies
-        working-directory: app
-        env:
-          TURBO_TELEMETRY_DISABLED: '1'
-        run: pnpm install --frozen-lockfile
-
-      - name: Generate coverage (vitest lcov per package)
-        working-directory: app
-        env:
-          TURBO_TELEMETRY_DISABLED: '1'
-        run: pnpm test:coverage
+      # The artifact root is `app/`, so this restores the lcov paths that
+      # sonar-project.properties lists.
+      - name: Download coverage from the tests job
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: coverage
+          path: app
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v8.3.0
+        uses: SonarSource/sonarqube-scan-action@4d1dc0c91ee400dcf8a6dddf2f705ac36542e304 # v8.4.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

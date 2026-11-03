@@ -3,6 +3,6 @@ contact_links:
   - name: Ask a question (Discussions)
     url: https://github.com/KarmaCummunity/KC/discussions
     about: Setup help, ideas, and Q&A before opening an issue.
-  - name: GloWe project board
+  - name: KC project board
     url: https://github.com/orgs/KarmaCummunity/projects/2
     about: Track contributor-facing work and good first issues.

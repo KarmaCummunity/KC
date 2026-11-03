@@ -147,6 +147,31 @@ export class SupabaseAuthService implements IAuthService {
     return toSession(data.session);
   }
 
+  async requestPasswordReset(email: string, options?: { redirectTo?: string }): Promise<void> {
+    const { error } = await this.client.auth.resetPasswordForEmail(email, {
+      redirectTo: options?.redirectTo,
+    });
+    if (error) throw mapAuthError(error);
+  }
+
+  async verifyPasswordRecovery(tokenHash: string): Promise<AuthSession> {
+    const { data, error } = await this.client.auth.verifyOtp({
+      type: 'recovery',
+      token_hash: tokenHash,
+    });
+    if (error) throw mapAuthError(error);
+    if (!data.session) throw new AuthError('unknown', 'recovery_no_session');
+    return toSession(data.session);
+  }
+
+  async updatePasswordAndSignOutEverywhere(newPassword: string): Promise<void> {
+    const { error } = await this.client.auth.updateUser({ password: newPassword });
+    if (error) throw mapAuthError(error);
+    // FR-AUTH-008 AC2/AC3: revoke every refresh token of the user, on all devices.
+    const { error: signOutError } = await this.client.auth.signOut({ scope: 'global' });
+    if (signOutError) throw mapAuthError(signOutError);
+  }
+
   async syncProfileMetadata(patch: AuthProfileMetadataPatch): Promise<void> {
     const data = buildAuthMetadataPayload(patch);
     if (Object.keys(data).length === 0) return;
@@ -181,6 +206,7 @@ function toSession(s: SbSession): AuthSession {
     expiresAt: s.expires_at ?? Math.floor(Date.now() / 1000) + (s.expires_in ?? 3600),
     displayName: pickString(meta, ['full_name', 'name']),
     avatarUrl: pickString(meta, ['avatar_url', 'picture']),
+    accountCreatedAt: s.user.created_at ?? null,
   };
 }
 

@@ -3,36 +3,26 @@
 // Mapped to SRS: FR-FEED-017+ (universal search engine).
 // ─────────────────────────────────────────────
 
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   getSupabaseClient,
   SupabaseSearchRepository,
-  type SupabaseAuthStorage,
 } from '@kc/infrastructure-supabase';
 import {
   UniversalSearchUseCase,
   type ISearchRepository,
 } from '@kc/application';
+import { pickAuthStorage } from './authSecureStorage';
 
 let _repo: ISearchRepository | null = null;
 let _search: UniversalSearchUseCase | null = null;
 
-function pickStorage(): SupabaseAuthStorage | undefined {
-  if (Platform.OS === 'web') {
-    if (typeof window === 'undefined' || !window.localStorage) return undefined;
-    return window.localStorage;
-  }
-  return AsyncStorage;
-}
-
 function getRepo(): ISearchRepository {
   if (_repo) return _repo;
-  _repo = new SupabaseSearchRepository(getSupabaseClient({ storage: pickStorage() }));
+  _repo = new SupabaseSearchRepository(getSupabaseClient({ storage: pickAuthStorage() }));
   return _repo;
 }
 
 export function getUniversalSearchUseCase(): UniversalSearchUseCase {
-  if (!_search) _search = new UniversalSearchUseCase(getRepo());
+  _search ??= new UniversalSearchUseCase(getRepo());
   return _search;
 }

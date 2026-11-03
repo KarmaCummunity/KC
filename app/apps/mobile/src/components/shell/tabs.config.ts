@@ -4,6 +4,7 @@
 // lockstep on order, routes, labels and iconography.
 // Mapped to: SRS §6.1 — 5 tabs (RTL: Profile | Search | Plus | Donations | Home), per D-16.
 import type { Ionicons } from '@expo/vector-icons';
+import type { Href } from 'expo-router';
 
 export type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -11,7 +12,7 @@ export type TabKey = 'home' | 'donations' | 'create' | 'search' | 'profile';
 
 export type TabDefinition = {
   key: TabKey;
-  route: string;
+  route: Extract<Href, string>;
   labelI18nKey: string;
   iconActive: IoniconName;
   iconInactive: IoniconName;

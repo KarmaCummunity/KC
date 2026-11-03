@@ -50,6 +50,8 @@ function mapQuestion(q: RawQuestion) {
     textPlaceholderHe: q.text_placeholder_he,
     ratingAnchorLowHe: q.rating_anchor_low_he,
     ratingAnchorHighHe: q.rating_anchor_high_he,
+    // Public research questions are rating-only.
+    choiceOptions: [],
   };
 }
 

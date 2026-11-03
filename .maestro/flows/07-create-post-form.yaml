@@ -1,0 +1,15 @@
+# The composer opens with the unified create header (direction + category).
+# Spec: docs/SSOT/spec/04_posts.md FR-POST-001; docs/spec/07_cross_cutting_systems.md §7.2 (one form, D28).
+appId: org.karmacommunity.app
+name: Posts — composer opens
+tags: [posts]
+---
+- runFlow: ../subflows/sign-in.yaml
+- tapOn:
+    id: tab-create
+- extendedWaitUntil:
+    visible:
+      id: unified-create-header
+    timeout: 15000
+- assertVisible:
+    id: create-post-screen

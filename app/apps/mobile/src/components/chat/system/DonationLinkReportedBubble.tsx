@@ -2,9 +2,9 @@
 // Renders a tappable card that opens the reported URL in the external
 // browser. Admin-gated (consistent with ReportReceivedBubble).
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, useTheme } from '@kc/ui';
+import { makeUseStyles, spacing, radius, typography, iconSize, useTheme, Text } from '@kc/ui';
 import { hasPermission, type AdminRole } from '@kc/domain';
 import { useAdminRoles } from '../../../hooks/useAdminRoles';
 import { openExternalUrl } from '../../../utils/openExternalUrl';
@@ -39,7 +39,7 @@ export function DonationLinkReportedBubble({
           <Text style={styles.snippet} numberOfLines={2}>{url}</Text>
           {categorySlug ? <Text style={styles.snippet}>{`#${categorySlug}`}</Text> : null}
           <View style={styles.openRow}>
-            <Ionicons name="open-outline" size={16} color={colors.secondary} />
+            <Ionicons name="open-outline" size={iconSize.sm} color={colors.secondary} />
             <Text style={styles.openText}>{t('moderation.bubble.targetPreview.open')}</Text>
           </View>
         </Pressable>
@@ -50,26 +50,26 @@ export function DonationLinkReportedBubble({
 
 const useDonationLinkReportedBubbleStyles = makeUseStyles(({ colors }) => ({
   bubble: {
-    padding: 8,
+    padding: spacing.sm,
     backgroundColor: colors.warningLight,
-    borderRadius: 8,
-    marginVertical: 4,
+    borderRadius: radius.sm,
+    marginVertical: spacing.xs,
     alignSelf: 'center' as const,
     maxWidth: '90%',
   },
   dimmed: { opacity: 0.5 },
-  title: { fontWeight: '600' as const, color: colors.textPrimary },
+  title: { ...typography.semiBold, color: colors.textPrimary },
   card: {
-    marginTop: 6,
-    padding: 8,
+    marginTop: spacing.xs,
+    padding: spacing.sm,
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderStrong,
     minHeight: 44,
   },
-  handle: { fontWeight: '600' as const, color: colors.textPrimary },
-  snippet: { fontSize: 13, marginTop: 2, color: colors.textSecondary },
-  openRow: { flexDirection: 'row' as const, alignItems: 'center' as const, marginTop: 6, gap: 4 },
-  openText: { color: colors.secondary, fontWeight: '600' as const, fontSize: 13 },
+  handle: { ...typography.semiBold, color: colors.textPrimary },
+  snippet: { ...typography.body, marginTop: spacing.xs, color: colors.textSecondary },
+  openRow: { flexDirection: 'row' as const, alignItems: 'center' as const, marginTop: spacing.xs, gap: spacing.xs },
+  openText: { color: colors.secondary, ...typography.semiBold, ...typography.body },
 }));

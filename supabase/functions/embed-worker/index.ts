@@ -3,6 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+import { withObservability } from '../_shared/observability/mod.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -37,7 +38,7 @@ function stubEmbed(text: string, dims = 1536): number[] {
   return out.map((v) => v / norm);
 }
 
-serve(async (req) => {
+serve(withObservability('embed-worker', async (req) => {
   const auth = req.headers.get('Authorization') ?? '';
   if (!isServiceRoleJwt(auth)) {
     return json({ ok: false, error: 'unauthenticated' }, 401);
@@ -58,7 +59,7 @@ serve(async (req) => {
 
   let processed = 0;
   for (const job of jobs) {
-    const listing = (job as { listings: { title: string; summary: string | null; details: unknown } })
+    const listing = (job as unknown as { listings: { title: string; summary: string | null; details: unknown } })
       .listings;
     const text = [listing.title, listing.summary ?? '', JSON.stringify(listing.details ?? {})]
       .join('\n')
@@ -88,4 +89,4 @@ serve(async (req) => {
   }
 
   return json({ ok: true, processed });
-});
+}));

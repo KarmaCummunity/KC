@@ -4,8 +4,11 @@
 
 import { type FetchFn, type MetaConfig, sendMessage } from '../_shared/whatsapp/meta.ts';
 import { type RpcFn, runSenderBatch } from '../_shared/whatsapp/sender.ts';
+import { isServiceRoleRequest, serviceRoleRequiredResponse } from '../_shared/serviceRoleGuard.ts';
 
 export type SenderDeps = {
+  /** The only accepted bearer token (`SUPABASE_SERVICE_ROLE_KEY`). */
+  serviceKey: string;
   rpc: RpcFn;
   /** Returns the single whatsapp_channel_config row (or null). */
   loadChannelConfig: () => Promise<
@@ -23,6 +26,7 @@ const json = (body: unknown, status = 200) =>
 export function createSenderHandler(deps: SenderDeps) {
   return async (req: Request): Promise<Response> => {
     if (req.method !== 'POST') return new Response('method not allowed', { status: 405 });
+    if (!isServiceRoleRequest(req, deps.serviceKey)) return serviceRoleRequiredResponse();
     const opts = (await req.json().catch(() => ({}))) as { batch?: number };
 
     const channel = await deps.loadChannelConfig();

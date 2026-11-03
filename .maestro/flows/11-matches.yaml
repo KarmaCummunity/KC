@@ -1,0 +1,12 @@
+# "Matches for you" opens by deep link and renders its list or empty state.
+# Spec: docs/SSOT/MATCHING_V2.md (Read: rpc_my_matches); docs/spec/07_cross_cutting_systems.md §7.3 (D10).
+appId: org.karmacommunity.app
+name: Matching — matches screen opens
+tags: [matching]
+---
+- runFlow: ../subflows/sign-in.yaml
+- openLink: karmacommunity://matches
+- extendedWaitUntil:
+    visible:
+      id: matches-screen
+    timeout: 20000

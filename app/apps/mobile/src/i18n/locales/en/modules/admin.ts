@@ -4,7 +4,10 @@ import { adminTimeEn } from './adminTime';
 import { adminMoneyEn } from './adminMoney';
 import { adminCrmEn } from './adminCrm';
 import { adminOrgApprovalsEn } from './adminOrgApprovals';
+import { adminDonationLinksEn } from './adminDonationLinks';
 import { adminWhatsAppEn } from './adminWhatsApp';
+import { adminMatchingEn } from './adminMatching';
+import { adminStatsEn } from './adminStats';
 import { adminSurveysEn } from './adminSurveys';
 import { adminTasksEn } from './adminTasks';
 import { adminAdminsEn } from './adminAdmins';
@@ -26,6 +29,9 @@ export const adminEn = {
     orgApprovals:  'Org Approvals',
     audit:         'Audit Log',
     whatsapp:      'WhatsApp',
+    matching:      'Match quality',
+    donationLinks: 'Donation links',
+    stats:         'Statistics',
   },
   roles: {
     super_admin: 'Super Admin',
@@ -139,7 +145,10 @@ export const adminEn = {
   time: adminTimeEn,
   money: adminMoneyEn,
   whatsapp: adminWhatsAppEn,
+  matching: adminMatchingEn,
+  stats: adminStatsEn,
   crm: adminCrmEn,
   orgApprovals: adminOrgApprovalsEn,
+  donationLinks: adminDonationLinksEn,
   surveys: adminSurveysEn,
 } as const;

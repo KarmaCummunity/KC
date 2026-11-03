@@ -1,12 +1,12 @@
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@kc/ui';
+import { iconSize, useTheme, Text } from '@kc/ui';
 import { CounterpartyIdentityCard } from '../post/CounterpartyIdentityCard';
 import type { LocationDisplayLevel, PostVisibility } from '@kc/domain';
 import { useFeedSessionStore } from '../../store/feedSessionStore';
-import { useCreatePostStyles } from '../../../app/(tabs)/create.styles';
+import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { LocationDisplayLevelChooser } from './LocationDisplayLevelChooser';
 import { VisibilityChooser } from '../post/VisibilityChooser';
 
@@ -51,7 +51,7 @@ export function CreatePostExposureSection({
         <Text style={styles.exposureAccordionTitle}>{t('post.exposureSettingsSectionTitle')}</Text>
         <Ionicons
           name={open ? 'chevron-up' : 'chevron-down'}
-          size={22}
+          size={iconSize.xl}
           color={colors.textSecondary}
         />
       </TouchableOpacity>

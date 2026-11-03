@@ -4,17 +4,15 @@ import React, { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
-  Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ChatError } from '@kc/application';
-import { makeUseStyles, typography, spacing, radius, useTheme } from '@kc/ui';
+import { iconSize, makeUseStyles, typography, spacing, radius, useTheme, Text } from '@kc/ui';
+import { Chip, TextField } from '../../src/components/ui';
 import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
 import { Card } from '../../src/components/ui/Card';
 import { PrimaryButton } from '../../src/components/ui/Buttons';
@@ -81,7 +79,7 @@ export default function ReportIssueScreen() {
         >
           <View style={styles.introRow}>
             <View style={styles.introIcon}>
-              <Ionicons name="chatbubbles-outline" size={22} color={colors.primary} />
+              <Ionicons name="chatbubbles-outline" size={iconSize.xl} color={colors.primary} />
             </View>
             <Text style={styles.copy}>{t('settings.reportIssueScreen.copy')}</Text>
           </View>
@@ -92,23 +90,19 @@ export default function ReportIssueScreen() {
               {CATEGORIES.map((cat) => {
                 const selected = category === cat;
                 return (
-                  <Pressable
+                  <Chip
                     key={cat}
-                    style={[styles.chip, selected && styles.chipSelected]}
+                    size="md"
+                    selected={selected}
                     onPress={() => setCategory(selected ? null : cat)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                  >
-                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                      {t(`settings.reportIssueScreen.categories.${cat}`)}
-                    </Text>
-                  </Pressable>
+                    label={t(`settings.reportIssueScreen.categories.${cat}`)}
+                  />
                 );
               })}
             </View>
 
-            <Text style={[styles.label, styles.labelSpaced]}>{t('settings.reportIssueScreen.descriptionLabel')}</Text>
-            <TextInput
+            <TextField
+              label={t('settings.reportIssueScreen.descriptionLabel')}
               style={styles.input}
               multiline
               numberOfLines={6}
@@ -149,7 +143,7 @@ export default function ReportIssueScreen() {
   );
 }
 
-const useReportIssueScreenStyles = makeUseStyles(({ colors, isDark }) => ({
+const useReportIssueScreenStyles = makeUseStyles(({ colors }) => ({
   safe: { flex: 1, backgroundColor: colors.background, ...webViewRtl },
   flex: { flex: 1, ...webViewRtl },
   body: { padding: spacing.base, gap: spacing.lg, paddingBottom: spacing.xl, ...webViewRtl },
@@ -179,47 +173,15 @@ const useReportIssueScreenStyles = makeUseStyles(({ colors, isDark }) => ({
   label: {
     ...typography.bodySmall,
     color: colors.textPrimary,
-    fontWeight: '600',
+    ...typography.semiBold,
     textAlign: rtlTextAlignStart,
     width: '100%',
     ...webTextRtl,
   },
-  labelSpaced: { marginTop: spacing.xs },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, ...webViewRtl },
-  chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    minHeight: 44,
-    justifyContent: 'center',
-    borderRadius: radius.full,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-  },
-  chipSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryLight,
-  },
-  chipText: {
-    ...typography.bodySmall,
-    color: colors.textPrimary,
-    fontWeight: '500',
-    textAlign: 'center',
-    ...webTextRtl,
-  },
-  chipTextSelected: { color: colors.primary, fontWeight: '700' },
   input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.sm,
     minHeight: 140,
     textAlignVertical: 'top',
-    ...typography.body,
-    color: colors.textPrimary,
-    backgroundColor: isDark ? colors.background : colors.surface,
-    textAlign: rtlTextAlignStart,
-    ...webTextRtl,
   },
   inputFooter: {
     flexDirection: 'row',

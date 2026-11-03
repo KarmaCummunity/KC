@@ -1,0 +1,89 @@
+name: Deploy tag
+
+# Last stage of a prod release, called only by deploy.yml after the smoke
+# passed (D-195, INFRA-CI-3): an annotated tag vX.Y.Z (app/VERSION) on the
+# deployed commit and a GitHub Release with generated notes since the
+# previous tag. Re-running a deploy of the same commit reuses its tag; the
+# same version on another commit fails (forgotten app/VERSION bump —
+# deploy.yml's resolve job already refuses that before deploying). The job
+# starts with the deploy guard (.github/actions/deploy-guard).
+
+on:
+  workflow_call:
+    inputs:
+      sha:
+        description: The released commit
+        type: string
+        required: true
+      approved_attempt:
+        description: run_attempt in which the release was approved (empty on dev)
+        type: string
+        required: true
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  tag:
+    name: tag release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SHA: ${{ inputs.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      # The guard comes from deploy.yml's own commit, not the deployed one.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .deploy-guard
+          sparse-checkout: |
+            .github/actions/deploy-guard
+            scripts/deploy-guard.mjs
+            scripts/release-version.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - uses: ./.deploy-guard/.github/actions/deploy-guard
+        with:
+          target: prod
+          release-sha: ${{ inputs.sha }}
+          approved-attempt: ${{ inputs.approved_attempt }}
+
+      # Full history and tags: the plan compares against existing v* tags,
+      # and the push uses the persisted token.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.sha }}
+          fetch-depth: 0
+          filter: blob:none
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Plan the tag
+        id: plan
+        run: node scripts/release-version.mjs tag-plan "$SHA"
+
+      - name: Push the annotated tag
+        if: steps.plan.outputs.action == 'create'
+        env:
+          TAG: ${{ steps.plan.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -a "$TAG" "$SHA" -m "KC $TAG (deploy run $GITHUB_RUN_ID)"
+          git push origin "refs/tags/$TAG"
+
+      - name: Create the GitHub Release
+        env:
+          TAG: ${{ steps.plan.outputs.tag }}
+          PREVIOUS: ${{ steps.plan.outputs.previous }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then echo "Release $TAG exists."; exit 0; fi
+          args=(--verify-tag --title "$TAG" --generate-notes)
+          if [ -n "$PREVIOUS" ]; then args+=(--notes-start-tag "$PREVIOUS"); fi
+          gh release create "$TAG" "${args[@]}"

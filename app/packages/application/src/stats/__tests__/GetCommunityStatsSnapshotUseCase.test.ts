@@ -13,6 +13,8 @@ function makeStats(s: Partial<CommunityStatsSnapshot> & { activePublicPosts: num
     getActivePublicPostsCount: async () => full.activePublicPosts,
     getCommunityStatsSnapshot: async () => full,
     listMyActivityTimeline: async () => [],
+    getWorldFlowFunnel: async () => [],
+    listMyWorldGivings: async () => [],
   };
 }
 
@@ -24,6 +26,18 @@ describe('GetCommunityStatsSnapshotUseCase', () => {
     await expect(uc.execute()).resolves.toEqual({
       registeredUsers: 12,
       activePublicPosts: 3,
+      itemsDeliveredTotal: 0,
+      asOf: null,
+    });
+  });
+
+  it('handles non-finite values (NaN, Infinity) by defaulting to 0', async () => {
+    const uc = new GetCommunityStatsSnapshotUseCase(
+      makeStats({ registeredUsers: Number.NaN, activePublicPosts: Infinity, itemsDeliveredTotal: -Infinity }),
+    );
+    await expect(uc.execute()).resolves.toEqual({
+      registeredUsers: 0,
+      activePublicPosts: 0,
       itemsDeliveredTotal: 0,
       asOf: null,
     });

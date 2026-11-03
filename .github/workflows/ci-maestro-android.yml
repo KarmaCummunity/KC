@@ -1,0 +1,141 @@
+name: CI — Maestro Android E2E
+
+# KC#1235 — taps through the critical journeys (.maestro/flows) on an Android emulator against
+# kc-dev. The APK is a local Gradle release build (no EAS, no EXPO_TOKEN) with OTA updates off
+# (KC_E2E_BUILD=1), so it runs exactly this PR's JS. Not a required check yet (AC6 once stable).
+# Runbook: docs/process/MAESTRO.md
+
+on:
+  pull_request:
+    branches: [dev]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'app/apps/mobile/**'
+      - 'app/packages/**'
+      - 'app/pnpm-lock.yaml'
+      - '.maestro/**'
+      - 'scripts/maestro-*'
+      - '.github/workflows/ci-maestro-android.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-maestro-android-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  MAESTRO_VERSION: 2.12.0
+  # The emulator image runs x86_64; building one ABI keeps the native compile short.
+  E2E_ABI: x86_64
+
+jobs:
+  android-e2e:
+    name: maestro · android emulator
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Unit-test the E2E helpers and the flow ↔ testID contract
+        run: node --test scripts/maestro-dev-env.test.mjs scripts/maestro-flows.test.mjs
+
+      - name: Resolve kc-dev environment (public anon key + seed password)
+        env:
+          DEV_WEB_URL: ${{ vars.DEV_WEB_URL }}
+          E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
+        run: |
+          set -euo pipefail
+          node scripts/maestro-dev-env.mjs > "$RUNNER_TEMP/kc-dev.env"
+          while IFS='=' read -r key value; do
+            echo "::add-mask::$value"
+            echo "$key=$value" >> "$GITHUB_ENV"
+          done < "$RUNNER_TEMP/kc-dev.env"
+
+      - uses: ./.github/actions/setup-pnpm-turbo
+
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+      - name: Build E2E release APK (expo prebuild + Gradle)
+        id: build-apk
+        continue-on-error: true
+        working-directory: app/apps/mobile
+        env:
+          KC_E2E_BUILD: '1'
+          SENTRY_DISABLE_AUTO_UPLOAD: 'true'
+          NODE_ENV: production
+        run: |
+          set -euo pipefail
+          npx expo prebuild --platform android --no-install --clean
+          cd android
+          # The template's 512m Metaspace runs out in :expo-modules-core:lintVitalAnalyzeRelease;
+          # the 16 GB runner affords a larger daemon. Fail fast if the template line ever changes.
+          sed -i 's/^org\.gradle\.jvmargs=.*/org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1536m/' gradle.properties
+          grep -q '^org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1536m$' gradle.properties
+          ./gradlew assembleRelease -PreactNativeArchitectures="$E2E_ABI" --console=plain
+          echo "E2E_APK=$PWD/app/build/outputs/apk/release/app-release.apk" >> "$GITHUB_ENV"
+
+      - name: Retry build E2E release APK on failure
+        if: steps.build-apk.outcome == 'failure'
+        working-directory: app/apps/mobile
+        env:
+          KC_E2E_BUILD: '1'
+          SENTRY_DISABLE_AUTO_UPLOAD: 'true'
+          NODE_ENV: production
+        run: |
+          set -euo pipefail
+          echo "::warning::First Gradle build attempt failed; retrying assembleRelease..."
+          if [ ! -d "android" ]; then
+            npx expo prebuild --platform android --no-install --clean
+          fi
+          cd android
+          sed -i 's/^org\.gradle\.jvmargs=.*/org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1536m/' gradle.properties
+          grep -q '^org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1536m$' gradle.properties || true
+          ./gradlew --stop || true
+          ./gradlew assembleRelease -PreactNativeArchitectures="$E2E_ABI" --console=plain
+          echo "E2E_APK=$PWD/app/build/outputs/apk/release/app-release.apk" >> "$GITHUB_ENV"
+
+      - name: Install Maestro
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://get.maestro.mobile.dev" | MAESTRO_VERSION="$MAESTRO_VERSION" bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Enable KVM for the emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run Maestro flows on the emulator
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          # One command: the action runs each script line in its own shell.
+          script: bash scripts/maestro-run-android.sh "$E2E_APK" "$RUNNER_TEMP/maestro"
+
+      - name: Upload Maestro reports, screenshots and failure videos
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: maestro-android
+          path: ${{ runner.temp }}/maestro
+          if-no-files-found: ignore
+          retention-days: 14

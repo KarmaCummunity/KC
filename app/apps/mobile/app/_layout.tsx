@@ -1,12 +1,18 @@
-import { initSentry } from '../src/lib/observability/sentry';
-import { initPosthog } from '../src/lib/observability/posthog';
-void initSentry();
-void initPosthog();
+import '../src/lib/polyfills';
 import { startMark, finishMark } from '../src/lib/observability/perfMarks';
 startMark('app.cold_start');
-import '../src/i18n';
+import { initSentry } from '../src/lib/observability/sentry';
+import { initPosthog } from '../src/lib/observability/posthog';
+import { installGlobalErrorHandlers } from '../src/lib/observability/globalErrorHandlers';
+import { useUncaughtErrorStore } from '../src/store/uncaughtErrorStore';
+// KC#1410: the global handlers wrap Sentry's, so they install once init settled.
+void initSentry().then(() =>
+  installGlobalErrorHandlers((error) => useUncaughtErrorStore.getState().show(error)),
+);
+void initPosthog();
 import i18n from '../src/i18n';
 import React, { useEffect } from 'react';
+import { RevenueCatSync } from '../src/services/purchases/RevenueCatSync';
 import { Stack } from 'expo-router';
 import { I18nManager, Platform } from 'react-native';
 import {
@@ -20,14 +26,16 @@ import '../src/lib/webDocumentBootstrap';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import { queryClient, persistOptions } from '../src/lib/queryPersist';
+import { queryClient, persistOptions, setupQueryLifecycleSync } from '../src/lib/queryPersist';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { useTheme } from '@kc/ui';
+import { BrandFontProvider, useTheme } from '@kc/ui';
 import { ShellWithResponsiveChrome } from '../src/components/shell/ShellWithResponsiveChrome';
 import { AppThemeProvider } from '../src/components/AppThemeProvider';
 import { NotificationsBridge } from '../src/components/NotificationsBridge';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
+export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
+import { UncaughtErrorGate } from '../src/components/UncaughtErrorGate';
 import { SoftGateProvider } from '../src/components/OnboardingSoftGate';
 import { AuthGate } from '../src/components/AuthGate';
 import { useDetailStackScreenOptions } from '../src/navigation/detailStackScreenOptions';
@@ -35,12 +43,23 @@ import { rootStackGestureEnabled, rootStackScreenAnimation } from '../src/naviga
 import { ConfigErrorScreen } from '../src/components/ConfigErrorScreen';
 import { isSupabaseConfigured } from '../src/lib/supabasePublicConfig';
 import { DevBanner } from '../src/components/DevBanner';
+import { SuspensionBanner } from '../src/components/SuspensionBanner';
 import { LegalConsentGate } from '../src/components/legal/LegalConsentGate';
 import { ModalStackProvider } from '../src/components/legal/useActiveModalStack';
 import { useMeRealtime } from '../src/hooks/useMeRealtime';
+import { useBrandFonts } from '../src/lib/useBrandFonts';
 import { useOnlinePresenceLifecycle } from '../src/hooks/useOnlinePresence';
+import { useCoreLoopReturnVisit } from '../src/hooks/useCoreLoopReturnVisit';
+import { useRecordActiveDay } from '../src/hooks/useRecordActiveDay';
+import * as NavigationBar from 'expo-navigation-bar';
 
-function MeRealtimeMount() { useMeRealtime(); useOnlinePresenceLifecycle(); return null; }
+function MeRealtimeMount() {
+  useMeRealtime();
+  useOnlinePresenceLifecycle();
+  useCoreLoopReturnVisit();
+  useRecordActiveDay();
+  return null;
+}
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -52,6 +71,11 @@ function ThemedRootShell() {
   React.useEffect(() => { finishMark('app.cold_start'); }, []);
   const { colors, isDark } = useTheme();
   const detailStackScreenOptions = useDetailStackScreenOptions();
+
+  React.useEffect(() => {
+    // expo-navigation-bar on SDK 54 is imperative and Android-only (KC#1276).
+    if (Platform.OS === 'android') NavigationBar.setStyle(isDark ? 'dark' : 'light');
+  }, [isDark]);
 
   React.useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -66,6 +90,7 @@ function ThemedRootShell() {
     <>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <DevBanner />
+      <SuspensionBanner />
       <NotificationsBridge />
       <AuthGate>
         <ModalStackProvider>
@@ -111,6 +136,7 @@ function ThemedRootShell() {
               <Stack.Screen name="research" options={{ headerShown: false }} />
               <Stack.Screen name="edit-profile" options={{ ...detailStackScreenOptions, headerTitle: i18n.t('settings.editProfileTitle') }} />
               <Stack.Screen name="post/[id]" options={{ ...detailStackScreenOptions, headerTitle: i18n.t('post.detailTitle') }} />
+              <Stack.Screen name="listing/[listingId]" options={{ ...detailStackScreenOptions, headerTitle: '' }} />
               {/* user/[handle]/* owns its own header via the nested _layout */}
               <Stack.Screen name="user/[handle]" options={{ headerShown: false }} />
               {/* In-screen `ChatConversationHeader` owns the top bar; a native-stack header
@@ -129,6 +155,10 @@ function ThemedRootShell() {
 }
 
 function RootLayoutContent() {
+  useEffect(() => {
+    return setupQueryLifecycleSync();
+  }, []);
+
   useEffect(() => {
     // FR-SETTINGS-018: keep layout direction aligned with the active UI language.
     // Web resolved its direction at module load from localStorage; here we align
@@ -159,8 +189,13 @@ function RootLayoutContent() {
         <ErrorBoundary>
           <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
             <MeRealtimeMount />
+            <RevenueCatSync />
             <AppThemeProvider>
-              <ThemedRootShell />
+              {/* KC#1410: a fatal uncaught JS error shows the themed fallback;
+                  retry remounts the shell instead of the OS killing the app. */}
+              <UncaughtErrorGate>
+                <ThemedRootShell />
+              </UncaughtErrorGate>
             </AppThemeProvider>
           </PersistQueryClientProvider>
         </ErrorBoundary>
@@ -170,14 +205,20 @@ function RootLayoutContent() {
 }
 
 export default function RootLayout() {
-  if (!isSupabaseConfigured()) {
-    return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <SafeAreaProvider>
-          <ConfigErrorScreen />
-        </SafeAreaProvider>
-      </GestureHandlerRootView>
-    );
-  }
-  return <RootLayoutContent />;
+  // Splash stays up (preventAutoHideAsync) until the brand font settles.
+  const brandFontStatus = useBrandFonts();
+  if (brandFontStatus === 'loading') return null;
+  return (
+    <BrandFontProvider available={brandFontStatus === 'loaded'}>
+      {isSupabaseConfigured() ? (
+        <RootLayoutContent />
+      ) : (
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <SafeAreaProvider>
+            <ConfigErrorScreen />
+          </SafeAreaProvider>
+        </GestureHandlerRootView>
+      )}
+    </BrandFontProvider>
+  );
 }

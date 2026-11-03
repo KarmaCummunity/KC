@@ -1,9 +1,12 @@
-import { Linking, Modal, View, Text, Pressable } from 'react-native';
+// FR-NOTIF-015 — push pre-prompt shown before the OS permission dialog.
+// Built on the kit `Modal` (spec 17 §4.1); dismissing it declines.
+import { Linking } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, typography, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
 import type { PrePromptTrigger } from '../lib/notifications/usePushPermissionGate';
-import { useModalHardwareBack } from '../hooks/useModalHardwareBack';
+import { GhostButton, PrimaryButton } from './ui/Buttons';
+import { Modal } from './ui/Modal';
 
 interface Props {
   visible: boolean;
@@ -23,45 +26,48 @@ export function EnablePushModal({
 }: Readonly<Props>) {
   const { t } = useTranslation();
   const styles = useEnablePushModalStyles();
-  useModalHardwareBack(visible, onDecline);
   const bodyKey = trigger === 'first-post-published'
     ? 'notifications.enablePushBodyFromPost'
     : 'notifications.enablePushBodyFromChat';
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onDecline}>
-      <View style={styles.backdrop}>
-        <View style={styles.card}>
-          <Text style={styles.title}>{t('notifications.enablePushTitle')}</Text>
-          <Text style={styles.body}>{t(bodyKey)}</Text>
+    <Modal
+      visible={visible}
+      title={t('notifications.enablePushTitle')}
+      onDismiss={onDecline}
+      footer={
+        <>
           {showOpenSettings ? (
-            <Pressable
-              style={[styles.button, styles.accept]}
+            <PrimaryButton
+              label={t('notifications.openOsSettings')}
+              size="md"
+              fullWidth
               onPress={() => void Linking.openSettings()}
-            >
-              <Text style={styles.acceptText}>{t('notifications.openOsSettings')}</Text>
-            </Pressable>
+            />
           ) : (
-            <Pressable style={[styles.button, styles.accept]} onPress={onAccept}>
-              <Text style={styles.acceptText}>{t('notifications.enablePushAccept')}</Text>
-            </Pressable>
+            <PrimaryButton
+              testID="push-gate-accept"
+              label={t('notifications.enablePushAccept')}
+              size="md"
+              fullWidth
+              onPress={onAccept}
+            />
           )}
-          <Pressable style={styles.button} onPress={onDecline}>
-            <Text style={styles.declineText}>{t('notifications.enablePushDecline')}</Text>
-          </Pressable>
-        </View>
-      </View>
+          <GhostButton
+            testID="push-gate-decline"
+            label={t('notifications.enablePushDecline')}
+            size="md"
+            fullWidth
+            onPress={onDecline}
+          />
+        </>
+      }
+    >
+      <Text style={styles.body}>{t(bodyKey)}</Text>
     </Modal>
   );
 }
 
 const useEnablePushModalStyles = makeUseStyles(({ colors }) => ({
-  backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', padding: 24 },
-  card: { backgroundColor: colors.surfaceRaised, borderRadius: 12, padding: 20 },
-  title: { fontSize: 18, fontWeight: '600', marginBottom: 12, textAlign: rtlTextAlignStart, color: colors.textPrimary },
-  body: { fontSize: 14, color: colors.textSecondary, marginBottom: 20, textAlign: rtlTextAlignStart },
-  button: { paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginTop: 8 },
-  accept: { backgroundColor: colors.primary },
-  acceptText: { color: colors.textInverse, fontWeight: '600' },
-  declineText: { color: colors.textSecondary },
+  body: { ...typography.body, color: colors.textSecondary, textAlign: rtlTextAlignStart },
 }));

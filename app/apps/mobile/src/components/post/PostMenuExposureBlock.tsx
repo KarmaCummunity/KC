@@ -1,7 +1,7 @@
 // FR-POST-003, FR-POST-021 + D-32 — exposure controls inside post ⋮ menu (detail).
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { CounterpartyIdentityCard } from './CounterpartyIdentityCard';
 import { usePostActorPrivacyModel } from '../../hooks/usePostActorPrivacyModel';
 import type { PostWithOwner } from '@kc/application';
@@ -81,8 +81,7 @@ const usePostMenuExposureBlockStyles = makeUseStyles(({ colors }) => ({
   },
   header: { gap: spacing.xs, alignItems: crossAxisAlignStart },
   title: {
-    ...typography.semiBold,
-    fontSize: 15,
+    ...typography.button,
     color: colors.textPrimary,
     textAlign: textAlignStart(),
     ...layoutWritingDirectionStyle(),

@@ -24,6 +24,7 @@ export function mapListingDetail(raw: unknown): MarketplaceListingDetail | null 
     cityId: o.city_id != null ? String(o.city_id) : null,
     urgencyLevel: Number(o.urgency_level ?? 2),
     availabilityStatus: String(o.availability_status ?? 'ongoing'),
+    listingStatus: String(o.status ?? ''),
     publishedAt: o.published_at != null ? String(o.published_at) : null,
     lat: coords && coords.length >= 2 ? coords[1] : null,
     lng: coords && coords.length >= 2 ? coords[0] : null,
@@ -41,5 +42,6 @@ export function mapListingDetail(raw: unknown): MarketplaceListingDetail | null 
           cityId: ownerRaw.city_id != null ? String(ownerRaw.city_id) : null,
         }
       : null,
+    feedPostId: o.feed_post_id != null ? String(o.feed_post_id) : null,
   };
 }

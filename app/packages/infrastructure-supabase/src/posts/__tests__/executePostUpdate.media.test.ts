@@ -64,6 +64,8 @@ const FAKE_POST: Post = {
   itemCondition: 'Good',
   urgency: null,
   reopenCount: 0,
+  listingId: null,
+  listingWorldSlug: null,
   deleteAfter: null,
   createdAt: '2026-05-16T10:00:00.000Z',
   updatedAt: '2026-05-16T12:00:00.000Z',

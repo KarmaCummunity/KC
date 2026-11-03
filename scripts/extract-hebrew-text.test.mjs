@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
+import { execFileSync } from 'node:child_process';
 import { collectHebrewViolations, isSkippedHebrewScanRel } from './extract-hebrew-text.mjs';
 
 const HE = 'שלום עולם';
@@ -92,4 +93,29 @@ test('isSkippedHebrewScanRel encodes the documented skip rules', () => {
     true,
   );
   assert.equal(isSkippedHebrewScanRel('app/apps/mobile/src/components/Foo.tsx'), false);
+});
+
+function withGitRoot(files, fn) {
+  withRoot(files, (root) => {
+    execFileSync('git', ['init', '-q'], { cwd: root });
+    fn(root);
+  });
+}
+
+test('skips gitignored files such as a local `expo prebuild` android tree', () => {
+  withGitRoot(
+    {
+      '.gitignore': '/android/\n',
+      'android/app/src/main/res/values/strings.xml': `<string>${HE}</string>`,
+      'src/a.ts': `export const s = '${HE}';`,
+    },
+    (root) => assert.deepEqual(collectHebrewViolations(root).map((v) => v.rel), ['src/a.ts']),
+  );
+});
+
+test('still flags new untracked files that are not gitignored', () => {
+  withGitRoot(
+    { '.gitignore': 'dist-local/\n', 'src/new-screen.tsx': `const t = '${HE}';` },
+    (root) => assert.deepEqual(collectHebrewViolations(root).map((v) => v.rel), ['src/new-screen.tsx']),
+  );
 });

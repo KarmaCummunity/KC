@@ -1,11 +1,14 @@
-// Thank-you modal — FR-RESEARCH-001 (public research finish), FR-SETTINGS-016 (in-app).
+// Thank-you dialog — FR-RESEARCH-001 (public research finish), FR-SETTINGS-016 (in-app).
+// Built on the kit `Modal` (spec 17 §4.1).
 import React from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, spacing, typography, useTheme } from '@kc/ui';
-import { webTextRtl, webViewRtl } from '../../lib/webRtlStyle';
+import { makeUseStyles, radius, typography, useTheme, Text } from '@kc/ui';
+import { webTextRtl } from '../../lib/webRtlStyle';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { GhostButton, PrimaryButton } from '../ui/Buttons';
+import { Modal } from '../ui/Modal';
 
 export type SurveyThankYouVariant = 'inApp' | 'publicResearch';
 
@@ -15,6 +18,9 @@ type Props = Readonly<{
   onDismiss: () => void;
   onShare?: () => void;
 }>;
+
+/** Side of the round heart tile, in points (a layout size). */
+const HEART_TILE_SIZE = 52;
 
 export function SurveyThankYouModal({
   visible,
@@ -27,118 +33,57 @@ export function SurveyThankYouModal({
   const { colors } = useTheme();
 
   const isPublic = variant === 'publicResearch';
+  const dismissLabel = isPublic ? t('research.thankYouModal.dismiss') : t('survey.thankYouModal.dismiss');
+  const DismissButton = isPublic ? GhostButton : PrimaryButton;
 
   return (
-    <Modal visible={visible} animationType="fade" transparent onRequestClose={onDismiss}>
-      <View style={styles.backdrop}>
-        <View style={[styles.sheet, webViewRtl]}>
-          <View style={styles.iconWrap}>
-            <Ionicons name="heart" size={28} color={colors.primary} />
-          </View>
-          <Text style={styles.title}>
-            {isPublic ? t('research.thankYouModal.title') : t('survey.thankYouModal.title')}
-          </Text>
-          <Text style={styles.message}>
-            {isPublic ? t('research.thankYouModal.message') : t('survey.thankYouModal.message')}
-          </Text>
-
+    <Modal
+      visible={visible}
+      title={isPublic ? t('research.thankYouModal.title') : t('survey.thankYouModal.title')}
+      onDismiss={onDismiss}
+      footer={
+        <>
           {isPublic && onShare ? (
-            <Pressable
-              style={styles.primaryBtn}
+            <PrimaryButton
+              label={t('research.share.endSurveyCta')}
+              icon="share-social-outline"
+              size="md"
+              fullWidth
               onPress={onShare}
-              accessibilityRole="button"
-              accessibilityLabel={t('research.share.endSurveyCta')}
-            >
-              <Ionicons name="share-social-outline" size={20} color={colors.textInverse} />
-              <Text style={styles.primaryBtnText}>{t('research.share.endSurveyCta')}</Text>
-            </Pressable>
+            />
           ) : null}
-
-          <Pressable
-            style={isPublic ? styles.secondaryBtn : styles.primaryBtn}
-            onPress={onDismiss}
-            accessibilityRole="button"
-            accessibilityLabel={
-              isPublic ? t('research.thankYouModal.dismiss') : t('survey.thankYouModal.dismiss')
-            }
-          >
-            <Text style={isPublic ? styles.secondaryBtnText : styles.primaryBtnText}>
-              {isPublic ? t('research.thankYouModal.dismiss') : t('survey.thankYouModal.dismiss')}
-            </Text>
-          </Pressable>
-        </View>
+          <DismissButton label={dismissLabel} size="md" fullWidth onPress={onDismiss} />
+        </>
+      }
+    >
+      <View style={styles.iconWrap}>
+        <Ionicons
+          name="heart"
+          size={28} // brand-guard-allow: hero glyph above the copy (spec 17 §4.2)
+          color={colors.primary}
+        />
       </View>
+      <Text style={styles.message}>
+        {isPublic ? t('research.thankYouModal.message') : t('survey.thankYouModal.message')}
+      </Text>
     </Modal>
   );
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  backdrop: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: 'center',
-    padding: spacing.lg,
-  },
-  sheet: {
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: 16,
-    padding: spacing.xl,
-    gap: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    maxWidth: 420,
-    width: '100%',
-    alignSelf: 'center',
-  },
   iconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: HEART_TILE_SIZE,
+    height: HEART_TILE_SIZE,
+    borderRadius: radius.full,
     backgroundColor: colors.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
   },
-  title: {
-    ...typography.h3,
-    color: colors.textPrimary,
-    textAlign: rtlTextAlignStart,
-    ...webTextRtl,
-  },
   message: {
     ...typography.body,
     color: colors.textSecondary,
     textAlign: rtlTextAlignStart,
-    lineHeight: 24,
-    ...webTextRtl,
-  },
-  primaryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    marginTop: spacing.sm,
-  },
-  primaryBtnText: {
-    ...typography.button,
-    color: colors.textInverse,
-    fontWeight: '700',
-    ...webTextRtl,
-  },
-  secondaryBtn: {
-    borderRadius: 12,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    alignItems: 'center',
-  },
-  secondaryBtnText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    fontWeight: '600',
     ...webTextRtl,
   },
 }));

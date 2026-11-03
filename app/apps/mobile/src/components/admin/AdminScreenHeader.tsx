@@ -7,8 +7,9 @@
 //   1. `right` — arbitrary node (e.g. a custom button or toggle).
 //   2. `newLabel` + `onNew` — renders the default primary "new" button.
 import type { ReactElement, ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { makeUseStyles, typography } from '@kc/ui';
+import { View } from 'react-native';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
+import { PrimaryButton } from '../ui/Buttons';
 import { rowDirectionStart, textAlignStart } from '../../lib/rtlLayout';
 
 export interface AdminScreenHeaderProps {
@@ -28,9 +29,7 @@ export function AdminScreenHeader({
 }: AdminScreenHeaderProps): ReactElement {
   const styles = useStyles();
   const trailing = right ?? (newLabel && onNew ? (
-    <Pressable accessibilityRole="button" onPress={onNew} style={styles.newBtn}>
-      <Text style={styles.newBtnText}>{newLabel}</Text>
-    </Pressable>
+    <PrimaryButton testID="admin-screen-header-new" label={newLabel} size="sm" onPress={onNew} />
   ) : null);
 
   return (
@@ -48,15 +47,15 @@ export function AdminScreenHeader({
 
 const useStyles = makeUseStyles(({ colors }) => ({
   header: {
-    paddingHorizontal: 16,
-    paddingTop: 18,
-    paddingBottom: 12,
-    gap: 2,
+    paddingHorizontal: spacing.base,
+    paddingTop: spacing.base,
+    paddingBottom: spacing.md,
+    gap: spacing.xs,
     backgroundColor: colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  row: { flexDirection: rowDirectionStart, alignItems: 'center', gap: 12 },
+  row: { flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.md },
   title: {
     flex: 1,
     ...typography.h2,
@@ -69,6 +68,4 @@ const useStyles = makeUseStyles(({ colors }) => ({
     color: colors.textSecondary,
     textAlign: textAlignStart(),
   },
-  newBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.primary },
-  newBtnText: { color: colors.textInverse, fontSize: 13, fontWeight: '700' },
 }));

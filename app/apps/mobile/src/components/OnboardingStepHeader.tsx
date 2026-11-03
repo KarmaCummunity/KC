@@ -1,9 +1,9 @@
 // FR-AUTH-018 + FR-AUTH-010..012 — onboarding chrome: skip · step · back (4 steps).
 import React from 'react';
-import { View, Text, TouchableOpacity, Pressable } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, TouchableOpacity, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, useTheme } from '@kc/ui';
+import { iconSize, makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { MirroredIcon, useDirectionalBackIcon } from './ui/MirroredIcon';
 import { OnboardingProgressBar } from './animations/OnboardingProgressBar';
 import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
 
@@ -26,12 +26,14 @@ export function OnboardingStepHeader({
   const styles = useStyles();
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const backIcon = useDirectionalBackIcon();
   const showBack = step > 1;
 
   return (
     <View style={styles.wrap}>
       <View style={styles.row}>
         <TouchableOpacity
+          testID="onboarding-skip"
           onPress={onSkip}
           disabled={skipDisabled}
           accessibilityRole="button"
@@ -52,9 +54,9 @@ export function OnboardingStepHeader({
             hitSlop={12}
             style={({ pressed }) => [styles.side, pressed && { opacity: 0.6 }]}
           >
-            <Ionicons
-              name="arrow-forward"
-              size={22}
+            <MirroredIcon
+              name={backIcon}
+              size={iconSize.xl}
               color={backDisabled ? colors.textDisabled : colors.primary}
             />
           </Pressable>
@@ -67,7 +69,7 @@ export function OnboardingStepHeader({
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   wrap: { gap: spacing.sm },
   row: {
     flexDirection: 'row',

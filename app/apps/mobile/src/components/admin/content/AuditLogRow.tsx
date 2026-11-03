@@ -1,8 +1,9 @@
 // app/apps/mobile/src/components/admin/content/AuditLogRow.tsx
 // FR-ADMIN-020 — single row in the admin audit log viewer.
-import { StyleSheet, Text, View } from 'react-native';
+import { memo } from 'react';
+import { StyleSheet, View } from 'react-native';
 import type { AdminAuditRow } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { useLocaleBundle, type LocaleBundle } from '../../../i18n/useLocaleBundle';
 
 export interface AuditLogRowProps {
@@ -15,7 +16,7 @@ function fmtTs(d: Date): string {
   });
 }
 
-export function AuditLogRow({ row }: AuditLogRowProps) {
+function AuditLogRowInner({ row }: AuditLogRowProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   return (
@@ -40,14 +41,16 @@ export function AuditLogRow({ row }: AuditLogRowProps) {
   );
 }
 
+export const AuditLogRow = memo(AuditLogRowInner);
+
 const useStyles = makeUseStyles(({ colors }) => ({
   root: {
-    paddingVertical: 10, paddingHorizontal: 16, gap: 4,
+    paddingVertical: spacing.sm, paddingHorizontal: spacing.base, gap: spacing.xs,
     borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
   },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  action:    { fontSize: 13, fontWeight: '700', color: colors.primary },
-  ts:        { fontSize: 11, opacity: 0.55 },
-  actor:     { fontSize: 12, opacity: 0.85 },
-  meta:      { fontSize: 11, opacity: 0.55, fontFamily: 'monospace' },
+  action:    { ...typography.bodySmall, ...typography.bold, color: colors.primary },
+  ts:        { ...typography.caption, color: colors.textSecondary },
+  actor:     { ...typography.caption, color: colors.textPrimary },
+  meta:      { ...typography.caption, color: colors.textSecondary },
 }));

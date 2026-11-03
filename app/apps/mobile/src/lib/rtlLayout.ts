@@ -43,14 +43,28 @@ export function layoutWritingDirectionStyle(): TextStyle {
 }
 
 /**
- * Text aligned to the reading-start edge for the active layout direction.
- * - Web RTL: `right`; web LTR: `left`.
- * - Native: physical `left` (mirrors to inline-start when forceRTL is on).
+ * `textAlign` toward the reading-start edge for the active layout direction.
+ * - Web RTL (Hebrew, `dir="rtl"`): inline-start is physical `right`.
+ * - Web LTR (English, `dir="ltr"`): inline-start is physical `left`.
+ * - Native + `I18nManager.forceRTL`: physical `left` mirrors to inline-start.
+ *
+ * FR-SETTINGS-018: direction-aware on web so English aligns left. Typed as
+ * `'left' | 'right'` (narrower than `TextStyle['textAlign']`) so it also satisfies the
+ * `TextInput` `textAlign` prop, which excludes `'auto'` / `'justify'`.
  */
-export function textAlignStart(): NonNullable<TextStyle['textAlign']> {
+export function textAlignStart(): 'left' | 'right' {
   if (Platform.OS === 'web') return isLayoutRtl() ? 'right' : 'left';
   return 'left';
 }
+
+/** {@link textAlignStart} resolved once at module load (the app reloads on a language switch). */
+export const rtlTextAlignStart: 'left' | 'right' = textAlignStart();
+
+/**
+ * Reading-end edge (visual left in RTL Hebrew, visual right in LTR English).
+ * Pair with actions such as a "show all" affordance pinned to the end gutter.
+ */
+export const rtlTextAlignEnd: 'left' | 'right' = rtlTextAlignStart === 'left' ? 'right' : 'left';
 
 /**
  * `flexDirection` for a row laid out from the reading-start edge.

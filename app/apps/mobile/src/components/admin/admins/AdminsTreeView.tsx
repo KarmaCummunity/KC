@@ -3,7 +3,7 @@
 // + collapsible hierarchy. Split out of the screen to keep each unit small.
 import { useMemo, useState } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, spacing } from '@kc/ui';
 import { useOrgTree } from '../../../hooks/useOrgTree';
 import { OrgTree } from './OrgTree';
 import { OrgSwitcher, type OrgOption } from './OrgSwitcher';
@@ -43,6 +43,6 @@ export function AdminsTreeView({ isWide, isSuper, onSelect }: AdminsTreeViewProp
 }
 
 const useStyles = makeUseStyles(() => ({
-  content:     { paddingBottom: 24 },
+  content:     { paddingBottom: spacing.xl },
   contentWide: { width: '100%', maxWidth: 760, alignSelf: 'center' },
 }));

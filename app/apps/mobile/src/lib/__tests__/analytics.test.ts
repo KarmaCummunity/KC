@@ -25,6 +25,8 @@ describe('track()', () => {
     expect(() => track('listing_created', { world: 'items' })).not.toThrow();
     expect(() => track('match_made', { world: 'items' })).not.toThrow();
     expect(() => track('donation', { channel: 'money' })).not.toThrow();
+    expect(() => track('activation', { world: 'items', city: 'lod' })).not.toThrow();
+    expect(() => track('match_feedback', { response: 'accept', world: 'food', city: 'other' })).not.toThrow();
     expect(capturePosthog).toHaveBeenCalledWith('signup', { method: 'email' });
     expect(capturePosthog).toHaveBeenCalledWith('donation', { channel: 'money' });
   });

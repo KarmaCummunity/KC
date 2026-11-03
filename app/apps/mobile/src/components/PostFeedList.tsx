@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import React, { useCallback, useMemo } from 'react';
-import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { KcRefreshControl } from './lists/KcRefreshControl';
 import type { ViewToken } from 'react-native';
-import { makeUseStyles, spacing, typography, useTheme } from '@kc/ui';
+import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import type { PostWithOwner } from '@kc/application';
 import type { useTranslatedPosts } from '../hooks/useTranslatedPosts';
 import { HOME_FEED_GRID_COLUMNS, usePostGridCardWidth } from '../hooks/useShellContentWidth';
@@ -13,6 +13,7 @@ import { getSupabaseFeedImageUrl } from '../lib/imageUrl';
 import { useShellTabBarScrollInset } from '../navigation/useShellTabBarVisibility';
 import { PostCardGrid } from './PostCardGrid';
 import { EmptyState } from './EmptyState';
+import { PrimaryButton } from './ui/Buttons';
 import { PostGridSkeleton } from './skeletons/PostGridSkeleton';
 import { finishMark } from '../lib/observability/perfMarks';
 import { KcFlashList, type KcFlashListRef } from './lists/KcFlashList';
@@ -69,6 +70,7 @@ export function PostFeedList({
 
   const renderItem = useCallback(
     ({ item }: { item: PostWithOwner }) => (
+      <View style={styles.cell}>
       <PostCardGrid
         post={item}
         onCardPress={onCardPress}
@@ -76,8 +78,9 @@ export function PostFeedList({
         titleStatus={translations?.getStatus(item.postId, 'title')}
         descriptionStatus={translations?.getStatus(item.postId, 'description')}
       />
+      </View>
     ),
-    [onCardPress, translations],
+    [onCardPress, translations, styles.cell],
   );
 
   const keyExtractor = useCallback((p: PostWithOwner) => p.postId, []);
@@ -93,8 +96,8 @@ export function PostFeedList({
     const tail = (data ?? []).slice(-20);
     prefetchImages(
       tail.map((p) => {
-        const path = p.mediaAssets[0]?.path;
-        return path ? getSupabaseFeedImageUrl('post-images', path, cardWidth) : null;
+        const first = p.mediaAssets[0];
+        return first ? getSupabaseFeedImageUrl(first.bucket, first.path, cardWidth) : null;
       }),
     );
   }, [data, cardWidth]);
@@ -102,13 +105,11 @@ export function PostFeedList({
   if (isLoading && !data) {
     return <PostGridSkeleton columns={HOME_FEED_GRID_COLUMNS} count={HOME_FEED_GRID_COLUMNS * 3} />;
   }
-  if (isError && !data) {
+  if (isError && (!data || data.length === 0)) {
     return (
       <View style={styles.center}>
         <Text style={styles.errorTitle}>{t('feed.loadErrorTitle')}</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={onRetry}>
-          <Text style={styles.retryText}>{t('general.retry')}</Text>
-        </TouchableOpacity>
+        <PrimaryButton testID="feed-load-error-retry" label={t('general.retry')} size="md" onPress={onRetry} />
       </View>
     );
   }
@@ -161,14 +162,9 @@ const usePostFeedListStyles = makeUseStyles(({ colors }) => ({
     gap: spacing.base,
   },
   errorTitle: { ...typography.h3, color: colors.textPrimary, textAlign: 'center' as const },
-  retryBtn: {
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.primary,
-    borderRadius: 999,
-  },
-  retryText: { ...typography.button, color: colors.textInverse },
   row: { paddingHorizontal: spacing.base, gap: spacing.sm, marginBottom: spacing.sm },
   listContent: { paddingTop: spacing.base },
+  /** Even grid: each column cell takes an equal share and centres its card. */
+  cell: { width: `${100 / HOME_FEED_GRID_COLUMNS}%` as const, alignItems: 'center' as const, marginBottom: spacing.md },
   footer: { paddingVertical: spacing.base, alignItems: 'center' as const },
 }));

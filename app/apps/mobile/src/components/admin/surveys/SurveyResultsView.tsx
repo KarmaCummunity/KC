@@ -1,25 +1,31 @@
 // app/apps/mobile/src/components/admin/surveys/SurveyResultsView.tsx
-// FR-ADMIN-021 — survey detail: per-question stats + per-user answers.
+// FR-ADMIN-021 — survey detail: per-question stats + per-user answers; the Sean Ellis
+// survey also shows its PMF score card (KC#1058).
 import type { ReactElement } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator, Pressable, View } from 'react-native';
+import { MirroredIcon } from '../../ui/MirroredIcon';
 import type { AdminSurveyResults } from '@kc/domain';
-import { makeUseStyles, useTheme } from '@kc/ui';
+import type { PmfSurveyReportView } from '@kc/application';
+import { makeUseStyles, spacing, typography, useTheme, Text, iconSize } from '@kc/ui';
 import { textAlignStart, rowDirectionStart } from '../../../lib/rtlLayout';
 import { AdminListEmpty } from '../AdminListEmpty';
 import { QuestionStatCard } from './QuestionStatCard';
 import { RespondentCard } from './RespondentCard';
+import { PmfReportCard } from './PmfReportCard';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
 export interface SurveyResultsViewProps {
   readonly results: AdminSurveyResults | null;
   readonly isLoading: boolean;
+  /** PMF score state for the Sean Ellis survey; null for every other survey. */
+  readonly pmf: { readonly view: PmfSurveyReportView | null; readonly isLoading: boolean } | null;
   readonly onBack: () => void;
 }
 
 export function SurveyResultsView({
   results,
   isLoading,
+  pmf,
   onBack,
 }: SurveyResultsViewProps): ReactElement {
   const styles = useStyles();
@@ -30,7 +36,7 @@ export function SurveyResultsView({
   return (
     <View style={styles.root}>
       <Pressable onPress={onBack} accessibilityRole="button" style={styles.back}>
-        <Ionicons name="arrow-forward" size={16} color={colors.primary} />
+        <MirroredIcon name="arrow-back" size={iconSize.sm} color={colors.primary} />
         <Text style={styles.backText}>{t.backToList}</Text>
       </Pressable>
 
@@ -44,6 +50,8 @@ export function SurveyResultsView({
           <Text style={styles.subheading}>
             {t.overview.versionLabel(results.version)} · {t.overview.respondents(results.respondentCount)}
           </Text>
+
+          {pmf ? <PmfReportCard view={pmf.view} isLoading={pmf.isLoading} /> : null}
 
           <Text style={styles.sectionTitle}>{t.stats.sectionTitle}</Text>
           <View style={styles.list}>
@@ -69,15 +77,15 @@ export function SurveyResultsView({
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  root: { gap: 12 },
-  back: { flexDirection: rowDirectionStart, alignItems: 'center', gap: 6, paddingVertical: 4 },
-  backText: { fontSize: 14, fontWeight: '700', color: colors.primary },
-  center: { paddingVertical: 40, alignItems: 'center' },
-  heading: { fontSize: 22, fontWeight: '800', color: colors.textPrimary, textAlign: textAlignStart() },
-  subheading: { fontSize: 13, color: colors.textSecondary, textAlign: textAlignStart() },
+  root: { gap: spacing.md },
+  back: { flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs },
+  backText: { fontSize: typography.body.fontSize, ...typography.bold, color: colors.primary },
+  center: { paddingVertical: spacing['2xl'], alignItems: 'center' },
+  heading: { fontSize: typography.h2.fontSize, ...typography.extraBold, color: colors.textPrimary, textAlign: textAlignStart() },
+  subheading: { fontSize: typography.bodySmall.fontSize, color: colors.textSecondary, textAlign: textAlignStart() },
   sectionTitle: {
-    fontSize: 14, fontWeight: '800', color: colors.textSecondary,
-    textAlign: textAlignStart(), marginTop: 8,
+    fontSize: typography.body.fontSize, ...typography.extraBold, color: colors.textSecondary,
+    textAlign: textAlignStart(), marginTop: spacing.sm,
   },
-  list: { gap: 12 },
+  list: { gap: spacing.md },
 }));

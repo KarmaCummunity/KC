@@ -27,6 +27,8 @@ describe('createLanguageTag', () => {
     try { createLanguageTag(''); } catch (e) { captured = e as ValidationError; }
     expect(captured).toBeInstanceOf(ValidationError);
     expect(captured?.field).toBe('languageTag');
+
+    expect(() => createLanguageTag(null as unknown as string)).toThrow(ValidationError);
   });
 
   it('throws ValidationError on malformed tags', () => {
@@ -64,5 +66,13 @@ describe('resolvePreferredLanguage', () => {
       userPreference: 'english', deviceLocales: ['ar'], fallback: 'he',
     });
     expect(out).toBe('ar');
+  });
+
+  it('handles undefined deviceLocales gracefully', () => {
+    const out = resolvePreferredLanguage({
+      userPreference: null,
+      fallback: 'en',
+    });
+    expect(out).toBe('en');
   });
 });

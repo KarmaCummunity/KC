@@ -24,6 +24,12 @@ export interface AuthSession {
    * adapter from `user.user_metadata.avatar_url` / `picture`.
    */
   readonly avatarUrl: string | null;
+  /**
+   * Auth account creation time (ISO 8601), from Supabase `user.created_at`. Used only for the
+   * time-to-first-post funnel metric (#1042). Optional: sessions built outside the adapter
+   * (dev ghost session, fakes) may omit it.
+   */
+  readonly accountCreatedAt?: string | null;
 }
 
 /** Patch for `IAuthService.syncProfileMetadata` — mirrors `public.users` display fields. */
@@ -89,6 +95,25 @@ export interface IAuthService {
    * link) for an authenticated session.
    */
   verifyEmail(tokenHash: string): Promise<AuthSession>;
+
+  /**
+   * FR-AUTH-008: email a password-reset link to `email`. Resolves for
+   * unregistered addresses too (anti-enumeration, AC1). Throws
+   * AuthError('rate_limited', ...) on too-frequent calls.
+   */
+  requestPasswordReset(email: string, options?: { redirectTo?: string }): Promise<void>;
+
+  /**
+   * FR-AUTH-008: exchange the single-use recovery token from the reset link
+   * for a short-lived session that may change the password.
+   */
+  verifyPasswordRecovery(tokenHash: string): Promise<AuthSession>;
+
+  /**
+   * FR-AUTH-008 AC2/AC3: set the new password for the current (recovery)
+   * session, then revoke every session of the user on every device.
+   */
+  updatePasswordAndSignOutEverywhere(newPassword: string): Promise<void>;
 
   /**
    * FR-PROFILE-007 / FR-AUTH-003 AC5: keep Supabase Auth `user_metadata` aligned with

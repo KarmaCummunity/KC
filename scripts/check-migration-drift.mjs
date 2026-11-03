@@ -20,7 +20,7 @@
 // emits the same repair commands. Convention it enforces lives in
 // docs/SSOT/OPERATOR_RUNBOOK.md ("Migration application rules") + CLAUDE.md §9.
 
-import { readFileSync, readdirSync } from 'node:fs';
+import { appendFileSync, readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -107,6 +107,17 @@ function readCliOutput(fileArg) {
   return readFileSync(fileArg ?? 0, 'utf8');
 }
 
+/**
+ * Local migrations the remote ledger does not have yet: what `db push` is
+ * about to apply. The deploy pipeline records this count before applying so
+ * a failed release after a schema change skips the automatic code rollback.
+ * @param {string} cliOutput `supabase migration list --linked` output
+ * @param {string[]} localVersions
+ */
+export function pendingMigrations(cliOutput, localVersions) {
+  return findDrift({ localVersions, remoteVersions: parseRemoteVersions(cliOutput) }).missing;
+}
+
 function main() {
   const fileArg = process.argv.slice(2).find((a) => !a.startsWith('--'));
   const cliOutput = readCliOutput(fileArg);
@@ -121,6 +132,13 @@ function main() {
   }
 
   const localVersions = readLocalVersions(DEFAULT_MIGRATIONS_DIR);
+  // --count-pending: report how many migrations `db push` will apply (deploy-db.yml).
+  if (process.argv.includes('--count-pending')) {
+    const line = `pending=${pendingMigrations(cliOutput, localVersions).length}`;
+    console.log(line);
+    if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `${line}\n`);
+    return;
+  }
   const drift = findDrift({ localVersions, remoteVersions });
 
   if (drift.ok) {

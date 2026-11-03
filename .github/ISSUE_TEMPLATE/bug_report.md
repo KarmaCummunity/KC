@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Something broken in GLOWE (or shared backend)
+about: Something broken in KC (app or shared backend)
 title: "[bug] "
 labels: bug
 ---

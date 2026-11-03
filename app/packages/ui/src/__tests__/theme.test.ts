@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { colors, spacing, radius, shadow, typography, fontFamily, shellDimensions } from '../index';
+import { colors, spacing, radius, shadow, typography, fontFamily, shellDimensions, iconSize, zIndex } from '../index';
 
 describe('theme/colors', () => {
   it('exposes the brand primary token', () => {
-    expect(colors.primary).toBe('#F97316');
+    expect(colors.primary).toBe('#C2410C');
   });
 
   it('exposes semantic status tokens (success / error / warning / info)', () => {
@@ -59,10 +59,11 @@ describe('theme/spacing', () => {
 
 describe('theme/radius', () => {
   it('exposes the standard radius scale plus `full`', () => {
-    expect(radius.sm).toBe(6);
-    expect(radius.md).toBe(10);
-    expect(radius.lg).toBe(14);
-    expect(radius.xl).toBe(20);
+    expect(radius.xs).toBe(4);
+    expect(radius.sm).toBe(8);
+    expect(radius.md).toBe(12);
+    expect(radius.lg).toBe(16);
+    expect(radius.xl).toBe(24);
     expect(radius.full).toBeGreaterThan(1000);
   });
 });
@@ -79,6 +80,41 @@ describe('theme/shadow', () => {
       }),
     );
     expect(shadow.modal.elevation).toBeGreaterThan(shadow.card.elevation);
+  });
+
+  it('exposes a brand-coloured glow for primary calls to action (D87)', () => {
+    expect(shadow.glow.shadowColor).toBe(colors.primary);
+    expect(shadow.glow.shadowOffset).toEqual({ width: 0, height: 4 });
+    expect(shadow.glow.shadowOpacity).toBe(0.3);
+    expect(shadow.glow.shadowRadius).toBe(8);
+    expect(shadow.glow.elevation).toBe(4);
+  });
+});
+
+describe('theme/iconSize', () => {
+  it('exposes the six-step Ionicons scale (D87)', () => {
+    expect(iconSize).toEqual({ xs: 14, sm: 16, md: 18, lg: 20, xl: 22, '2xl': 24 });
+  });
+
+  it('keeps the scale strictly increasing and on even points', () => {
+    const ordered = Object.values(iconSize);
+    for (let i = 1; i < ordered.length; i += 1) {
+      expect(ordered[i]).toBeGreaterThan(ordered[i - 1]);
+    }
+    for (const size of ordered) expect(size % 2).toBe(0);
+  });
+});
+
+describe('theme/zIndex', () => {
+  it('names the stacking layers the app uses (D87)', () => {
+    expect(zIndex).toEqual({ base: 0, raised: 1, overlay: 2, floating: 20, toast: 9999 });
+  });
+
+  it('orders the layers from the document flow up to toasts', () => {
+    const ordered = [zIndex.base, zIndex.raised, zIndex.overlay, zIndex.floating, zIndex.toast];
+    for (let i = 1; i < ordered.length; i += 1) {
+      expect(ordered[i]).toBeGreaterThan(ordered[i - 1]);
+    }
   });
 });
 

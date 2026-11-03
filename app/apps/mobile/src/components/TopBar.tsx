@@ -6,11 +6,11 @@
 // `extraIcon` slot: the feed renders the filter/sort icon there so it's visible
 // only on the feed and disappears when navigating to another tab (FR-FEED-004).
 import React from 'react';
-import { Image, Platform, Text, TouchableOpacity, View, type ViewStyle } from 'react-native';
+import { Image, Platform, TouchableOpacity, View, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, useTheme } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, useTheme, Text, iconSize } from '@kc/ui';
 import { useChatStore } from '../store/chatStore';
 import { useAuthStore } from '../store/authStore';
 import { useNotificationInboxBadge } from '../hooks/useNotificationInboxBadge';
@@ -44,8 +44,13 @@ export function TopBar({ extraIcon }: TopBarProps = {}) {
 
   return (
     <View style={styles.topBar}>
-      <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/chat/')} accessibilityLabel={t('chat.title')}>
-        <Ionicons name="chatbubbles-outline" size={24} color={colors.textPrimary} />
+      <TouchableOpacity
+        testID="topbar-chat"
+        style={styles.iconBtn}
+        onPress={() => router.push('/chat/')}
+        accessibilityLabel={t('chat.title')}
+      >
+        <Ionicons name="chatbubbles-outline" size={iconSize['2xl']} color={colors.textPrimary} />
         {chatUnread > 0 && (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{chatDisplay}</Text>
@@ -56,19 +61,25 @@ export function TopBar({ extraIcon }: TopBarProps = {}) {
       <View style={styles.rightGroup}>
         {extraIcon}
         <TouchableOpacity
+          testID="topbar-notifications"
           style={styles.iconBtn}
           onPress={() => router.push('/notifications/inbox')}
           accessibilityLabel={t('notifications.inboxTitle')}
         >
-          <Ionicons name="notifications-outline" size={24} color={colors.textPrimary} />
+          <Ionicons name="notifications-outline" size={iconSize['2xl']} color={colors.textPrimary} />
           {notifUnread > 0 ? (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{notifDisplay}</Text>
             </View>
           ) : null}
         </TouchableOpacity>
-        <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/settings')} accessibilityLabel={t('settings.title')}>
-          <Ionicons name="settings-outline" size={24} color={colors.textPrimary} />
+        <TouchableOpacity
+          testID="topbar-settings"
+          style={styles.iconBtn}
+          onPress={() => router.push('/settings')}
+          accessibilityLabel={t('settings.title')}
+        >
+          <Ionicons name="settings-outline" size={iconSize['2xl']} color={colors.textPrimary} />
         </TouchableOpacity>
       </View>
     </View>
@@ -94,12 +105,12 @@ const useTopBarStyles = makeUseStyles(({ colors }) => ({
     top: 0,
     ...badgeCornerEnd(),
     backgroundColor: colors.primary,
-    borderRadius: 10,
+    borderRadius: radius.full,
     minWidth: 18,
     height: 18,
-    paddingHorizontal: 4,
+    paddingHorizontal: spacing.xs,
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
   },
-  badgeText: { color: colors.textInverse, fontWeight: '700' as const, fontSize: 10 },
+  badgeText: { ...typography.caption, ...typography.bold, color: colors.textInverse },
 }));

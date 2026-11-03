@@ -8,7 +8,7 @@ Prefix: `FR-TRANSLATE-*`
 
 ## Scope
 
-Translate user-generated content into each reader's preferred language so the platform is linguistically accessible to everyone. This is **shared infrastructure** serving both KC and GLOWE — it must stay world/product-agnostic.
+Translate user-generated content into each reader's app UI language so the platform is linguistically accessible to everyone. For KC mobile, the active i18n locale is always the target language; there is no separate translation-language setting. This is **shared infrastructure** serving both KC and GLOWE — it must stay world/product-agnostic.
 
 Architecture (see design doc `docs/SSOT/archive/superpowers/specs/2026-06-29-ugc-translation-design.md`): **demand-driven (lazy) materialization** — translate per `(content, field, target_language)` only when a real reader requests it, then cache in Postgres. This supports unlimited target languages while paying for and storing only the few actually demanded per item. Translation never runs on the read path (translate-ahead-of-read; cache hits served inline as ordinary fields). LLM-flash provider behind a Supabase Edge Function holding the API key; provider must be zero-retention / under DPA.
 
@@ -24,7 +24,7 @@ Non-goals (out of scope):
 ## FR-TRANSLATE-001 — Language foundations
 
 **Description.**
-Inert language primitives the rest of the system depends on: a validated, normalized BCP-47 `LanguageTag`; a pure resolver for "which language does this reader want"; a persisted `preferred_language` on users; and nullable `source_language` plumbing on posts and messages. No translation, LLM, or UI in this phase.
+Inert language primitives the rest of the system depends on: a validated, normalized BCP-47 `LanguageTag`; and nullable `source_language` plumbing on posts and messages. The `users.preferred_language` column is legacy and unused by KC mobile translation. No translation, LLM, or UI in this phase.
 
 **Source.**
 - Design spec: `docs/SSOT/archive/superpowers/specs/2026-06-29-ugc-translation-design.md` §3, §4, §8.
@@ -33,11 +33,11 @@ Inert language primitives the rest of the system depends on: a validated, normal
 
 **Acceptance Criteria.**
 - AC1. `createLanguageTag(raw)` (in `@kc/domain`) validates a pragmatic BCP-47 subset (language + optional script + optional region, incl. UN M.49 numeric region), normalizes casing (language lower, script Title, region UPPER), trims whitespace, and throws `ValidationError(field='languageTag')` on empty/malformed input.
-- AC2. `resolvePreferredLanguage({ userPreference, deviceLocales, fallback })` returns the explicit valid user preference, else the first device locale that parses, else the (valid) fallback.
-- AC3. `users.preferred_language` (nullable BCP-47 text) persists the reader's chosen output language; `null` means resolve from device locale at runtime. DB CHECK guards length 2..35.
+- AC2. `resolvePreferredLanguage({ userPreference, deviceLocales, fallback })` is a retained domain primitive; KC mobile translation does not use it.
+- AC3. `users.preferred_language` (nullable BCP-47 text) is a legacy column retained for compatibility. It is unused as a translation target and is not written by the app. DB CHECK guards length 2..35.
 - AC4. `posts.source_language` + `posts.source_language_confidence` and `messages.source_language` + `messages.source_language_confidence` exist (nullable); confidence constrained to 0..1. Set later by the translate pipeline (Phase 1).
-- AC5. `IUserRepository.setPreferredLanguage(userId, languageTag | null)` persists/resets the preference; adapter writes `users.preferred_language` and surfaces a prefixed error on failure.
-- AC6. The mobile app exposes `resolveReaderLanguage(userPreference)` wiring the device locale (via `expo-localization`) into the pure resolver with Hebrew (`he`) fallback.
+- AC5. The app exposes no setter for `users.preferred_language`; the existing column and read mapping remain for compatibility.
+- AC6. KC mobile translation uses the active i18n UI locale as its target, with no device-locale resolver or separate preference.
 
 **Related.** Migration `0207_ugc_translation_language_columns.sql`. Consumed by FR-TRANSLATE-002+ (translation core).
 
@@ -80,12 +80,12 @@ Demand-driven materialization for posts. Phase 1a delivers the inert cache subst
 
 ## FR-TRANSLATE-003 — Reader UX (Phase 2, ✅ Done)
 
-> **Status:** ✅ Landed. Settings language picker + viewport-gated feed translation + translated post detail with show-original toggle. Design: `docs/SSOT/archive/superpowers/specs/2026-07-01-ugc-translation-phase-2-reader-ux-design.md`; plan: `docs/SSOT/archive/superpowers/plans/2026-07-01-ugc-translation-phase-2-reader-ux.md`.
+> **Status:** ✅ Landed. App-language setting + viewport-gated feed translation + translated post detail with show-original toggle. UGC translations always target the active app UI language; there is no separate translation-language setting. Design: `docs/SSOT/archive/superpowers/specs/2026-07-01-ugc-translation-phase-2-reader-ux-design.md`; plan: `docs/SSOT/archive/superpowers/plans/2026-07-01-ugc-translation-phase-2-reader-ux.md`.
 
-Demand-driven reader UX over the Phase 1 substrate: a Settings picker sets the reader's target language; the feed translates only the visible window on-demand (source-then-swap); the full post renders translated with a per-post show-original toggle. All failures degrade silently to source text.
+Demand-driven reader UX over the Phase 1 substrate: the app UI language is the reader's target language; the feed translates only the visible window on-demand (source-then-swap); the full post renders translated with a per-post show-original toggle. All failures degrade silently to source text. The `ugc_auto_translation` feature flag remains off.
 
-- AC1. Settings exposes a translation-language picker listing the supported target languages (`he`/`en`/`ar`/`ru`, from the mobile-owned `SUPPORTED_TRANSLATION_LANGUAGES` constant) plus a "device default" option; selecting persists `users.preferred_language` (or `null` for device default) via `setPreferredLanguage`, and invalidates the current-user + `['post-translations', …]` queries so the reader language and rendered translations refresh. **Note (2026-07-24):** the shared Edge allow-list additionally accepts `am` for GLOWE readers (FR-GLOWE-005); the mobile picker keeps its own constant and is deliberately unchanged, so the two lists are no longer identical.
-- AC2. `useReaderLanguage()` resolves the effective language from the persisted preference, else device locale, else `he` (reusing `resolveReaderLanguage`, FR-TRANSLATE-001 AC6).
+- AC1. Settings has no separate translation-language picker. The active app i18n locale (`he` or `en`) is always the target language and changing it updates translation reads/materialization reactively. `users.preferred_language` is legacy and unused; its column and read mapping remain. The `ugc_auto_translation` flag remains off.
+- AC2. `useReaderLanguage()` returns the active app UI language reactively via the i18n hook.
 - AC3. The feed renders a post's translatable fields translated when a cache hit exists for the reader language; posts already in the reader language render unchanged. The feed translates only the fields it renders (title) to bound cost.
 - AC4. On a feed cache miss for an eligible field, the card shows the source text with a discreet "translating…" indicator and swaps to the translation once background materialization caches it (no manual action).
 - AC5. The full post renders translated fields by default with a discreet "auto-translated" indicator, plus a per-post (non-persisted) "show original / show translation" toggle that is hidden when the post's source language equals the reader language.
@@ -125,7 +125,7 @@ GLOWE's user-generated content (posts, opportunities/events, wishes, projects, o
 
 ## FR-TRANSLATE-006 — GLOWE web translation performance (✅ Done)
 
-> **Status:** ✅ Done. Efficiency-first cold path + viewport prefetch + a rare localized loading indicator over the FR-TRANSLATE-005 substrate. Design: `docs/superpowers/specs/2026-07-19-glowe-web-translation-performance-design.md`; plan: `docs/superpowers/plans/2026-07-19-glowe-web-translation-performance.md`. Reuses `glowe_content_translations` (no migration, no new table). The KC path (`translate`, `content_translations`, `get_post_translations`) is untouched.
+> **Status:** ✅ Done. Efficiency-first cold path + viewport prefetch + a rare localized loading indicator over the FR-TRANSLATE-005 substrate. Design: `docs/SSOT/archive/superpowers/specs/2026-07-19-glowe-web-translation-performance-design.md`; plan: `docs/SSOT/archive/superpowers/plans/2026-07-19-glowe-web-translation-performance.md`. Reuses `glowe_content_translations` (no migration, no new table). The KC path (`translate`, `content_translations`, `get_post_translations`) is untouched.
 
 A per-field decision ladder in `js/glowe-translate.js` — (1) same-language short-circuit → (2) sessionStorage cache → (3) batched DB cache read → (4) one batched `glowe-translate` call for the genuine misses — triggered by an IntersectionObserver lookahead with a scroll/resize sweep and a `setTimeout` flush fallback (so it fires in background tabs / embedded webviews where `requestAnimationFrame` is paused). A discreet, interface-language "Translating…" indicator appears only for cold misses still unresolved after 400ms.
 

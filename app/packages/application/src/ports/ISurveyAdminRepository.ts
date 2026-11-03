@@ -2,6 +2,7 @@ import type {
   AdminSurveyOverviewItem,
   AdminSurveyResults,
   AdminFeedbackEntry,
+  PmfSurveyReport,
 } from '@kc/domain';
 
 /**
@@ -14,6 +15,12 @@ export interface ISurveyAdminRepository {
 
   /** Per-question statistics + per-user answers for a survey's current version. */
   getResults(slug: string): Promise<AdminSurveyResults>;
+
+  /**
+   * Sean Ellis PMF counts per option among qualified respondents, with the 7-day
+   * retention cross-check (KC#1058). Raw counts; the use case derives the rates.
+   */
+  getPmfReport(slug: string): Promise<PmfSurveyReport>;
 
   /** Paginated free-text feedback with submitter display name. */
   listFeedback(limit: number, offset: number): Promise<AdminFeedbackEntry[]>;

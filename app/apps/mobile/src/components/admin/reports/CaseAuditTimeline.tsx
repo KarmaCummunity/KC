@@ -1,8 +1,8 @@
 // app/apps/mobile/src/components/admin/reports/CaseAuditTimeline.tsx
 // FR-ADMIN-013 — chronological list of moderation events on a case.
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import type { ReportCaseAuditEntry } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 
 export interface CaseAuditTimelineProps {
   readonly entries: readonly ReportCaseAuditEntry[];
@@ -31,11 +31,11 @@ export function CaseAuditTimeline({ entries }: CaseAuditTimelineProps) {
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  list:      { gap: 8 },
-  item:      { padding: 10, borderRadius: 6, backgroundColor: colors.skeleton, gap: 2 },
-  action:    { fontSize: 13, fontWeight: '600' },
-  time:      { fontSize: 11, opacity: 0.6 },
-  actor:     { fontSize: 11, opacity: 0.5 },
-  empty:     { padding: 24, alignItems: 'center' },
-  emptyText: { fontSize: 14, opacity: 0.5 },
+  list:      { gap: spacing.sm },
+  item:      { padding: spacing.sm, borderRadius: radius.xs, backgroundColor: colors.skeleton, gap: spacing.xs },
+  action:    { fontSize: typography.bodySmall.fontSize, ...typography.semiBold },
+  time:      { fontSize: typography.caption.fontSize, opacity: 0.6 },
+  actor:     { fontSize: typography.caption.fontSize, opacity: 0.5 },
+  empty:     { padding: spacing.xl, alignItems: 'center' },
+  emptyText: { fontSize: typography.body.fontSize, opacity: 0.5 },
 }));

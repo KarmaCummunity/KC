@@ -1,11 +1,12 @@
 // FR-AUTH-011 AC1 — bottom-sheet action picker for profile photo source.
 // Camera button auto-hidden on web (no native camera).
+// The frame, dismissal and motion come from the kit `BottomSheet` (spec 17 §4.1).
 import React from 'react';
-import {
-  Modal, Text, TouchableOpacity, Pressable,
-} from 'react-native';
+import { TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, typography, spacing, radius, shadow } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, Text } from '@kc/ui';
+import { BottomSheet } from './ui/BottomSheet';
+import { GhostButton } from './ui/Buttons';
 import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
 import { isCameraAvailable, type AvatarSource } from '../services/avatarUpload';
 
@@ -21,77 +22,47 @@ export function PhotoSourceSheet({ visible, canRemove, onPick, onRemove, onClose
   const { t } = useTranslation();
   const styles = usePhotoSourceSheetStyles();
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
-          <Text style={styles.title}>{t('profile.photoSourceTitle')}</Text>
+    <BottomSheet
+      visible={visible}
+      onDismiss={onClose}
+      title={t('profile.photoSourceTitle')}
+      footer={<GhostButton label={t('general.cancel')} size="md" fullWidth onPress={onClose} />}
+    >
+      {isCameraAvailable && (
+        <TouchableOpacity
+          style={styles.option}
+          onPress={() => onPick('camera')}
+          accessibilityRole="button"
+          accessibilityLabel={t('profile.photoSourceCameraA11y')}
+        >
+          <Text style={styles.optionText}>{t('profile.photoSourceCameraOption')}</Text>
+        </TouchableOpacity>
+      )}
 
-          {isCameraAvailable && (
-            <TouchableOpacity
-              style={styles.option}
-              onPress={() => onPick('camera')}
-              accessibilityRole="button"
-              accessibilityLabel={t('profile.photoSourceCameraA11y')}
-            >
-              <Text style={styles.optionText}>{t('profile.photoSourceCameraOption')}</Text>
-            </TouchableOpacity>
-          )}
+      <TouchableOpacity
+        style={styles.option}
+        onPress={() => onPick('gallery')}
+        accessibilityRole="button"
+        accessibilityLabel={t('profile.photoSourceGalleryA11y')}
+      >
+        <Text style={styles.optionText}>{t('profile.photoSourceGalleryOption')}</Text>
+      </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.option}
-            onPress={() => onPick('gallery')}
-            accessibilityRole="button"
-            accessibilityLabel={t('profile.photoSourceGalleryA11y')}
-          >
-            <Text style={styles.optionText}>{t('profile.photoSourceGalleryOption')}</Text>
-          </TouchableOpacity>
-
-          {canRemove && (
-            <TouchableOpacity
-              style={styles.option}
-              onPress={onRemove}
-              accessibilityRole="button"
-              accessibilityLabel={t('profile.photoSourceRemoveA11y')}
-            >
-              <Text style={[styles.optionText, styles.removeText]}>{t('profile.photoSourceRemoveOption')}</Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            style={[styles.option, styles.cancel]}
-            onPress={onClose}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.optionText, styles.cancelText]}>{t('general.cancel')}</Text>
-          </TouchableOpacity>
-        </Pressable>
-      </Pressable>
-    </Modal>
+      {canRemove && (
+        <TouchableOpacity
+          style={styles.option}
+          onPress={onRemove}
+          accessibilityRole="button"
+          accessibilityLabel={t('profile.photoSourceRemoveA11y')}
+        >
+          <Text style={[styles.optionText, styles.removeText]}>{t('profile.photoSourceRemoveOption')}</Text>
+        </TouchableOpacity>
+      )}
+    </BottomSheet>
   );
 }
 
 const usePhotoSourceSheetStyles = makeUseStyles(({ colors }) => ({
-  backdrop: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    paddingHorizontal: spacing.base,
-    paddingTop: spacing.base,
-    paddingBottom: spacing.xl,
-    gap: spacing.xs,
-    ...shadow.card,
-  },
-  title: {
-    ...typography.label,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    paddingVertical: spacing.sm,
-  },
   option: {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.base,
@@ -100,6 +71,4 @@ const usePhotoSourceSheetStyles = makeUseStyles(({ colors }) => ({
   },
   optionText: { ...typography.body, color: colors.textPrimary, textAlign: rtlTextAlignStart },
   removeText: { color: colors.error },
-  cancel: { backgroundColor: 'transparent', marginTop: spacing.xs },
-  cancelText: { color: colors.textSecondary, textAlign: 'center' },
 }));

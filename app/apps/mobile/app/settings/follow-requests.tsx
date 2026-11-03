@@ -1,14 +1,14 @@
 // app/apps/mobile/app/settings/follow-requests.tsx
 // FR-FOLLOW-007: pending follow-request inbox. Reachable only when Private.
 
-import React from 'react';
-import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback } from 'react';
+import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { makeUseStyles, radius, spacing, typography, useTheme } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import type { FollowRequestWithUser } from '@kc/application';
 import { AvatarInitials } from '../../src/components/AvatarInitials';
 import { NotifyModal } from '../../src/components/NotifyModal';
@@ -21,6 +21,63 @@ import {
 } from '../../src/services/followComposition';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
+import { KcFlashList } from '../../src/components/lists/KcFlashList';
+
+const requestKeyExtractor = (r: FollowRequestWithUser) => r.requester.userId;
+
+const FollowRequestRow = React.memo(function FollowRequestRow({
+  req,
+  fallbackName,
+  cityNotSet,
+  approveLabel,
+  rejectLabel,
+  onOpenProfile,
+  onResolve,
+  styles,
+}: {
+  req: FollowRequestWithUser;
+  fallbackName: string;
+  cityNotSet: string;
+  approveLabel: string;
+  rejectLabel: string;
+  onOpenProfile: (handle: string) => void;
+  onResolve: (req: FollowRequestWithUser, action: 'accept' | 'reject') => void;
+  styles: ReturnType<typeof useFollowRequestsScreenStyles>;
+}) {
+  const handleOpen = React.useCallback(() => {
+    onOpenProfile(req.requester.shareHandle);
+  }, [req.requester.shareHandle, onOpenProfile]);
+
+  const handleApprove = React.useCallback(() => {
+    onResolve(req, 'accept');
+  }, [req, onResolve]);
+
+  const handleReject = React.useCallback(() => {
+    onResolve(req, 'reject');
+  }, [req, onResolve]);
+
+  const name = req.requester.displayName ?? fallbackName;
+
+  return (
+    <View style={styles.row}>
+      <TouchableOpacity style={styles.who} onPress={handleOpen}>
+        <AvatarInitials name={name} avatarUrl={req.requester.avatarUrl} size={44} />
+        <View style={styles.text}>
+          <Text style={styles.name}>{name}</Text>
+          <Text style={styles.city}>{req.requester.cityName ?? cityNotSet}</Text>
+        </View>
+      </TouchableOpacity>
+      <View style={styles.actions}>
+        <TouchableOpacity style={styles.btnApprove} onPress={handleApprove}>
+          <Text style={styles.btnApproveText}>{approveLabel}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.btnReject} onPress={handleReject}>
+          <Text style={styles.btnRejectText}>{rejectLabel}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+});
 
 export default function FollowRequestsScreen() {
   const detailStackScreenOptions = useDetailStackScreenOptions();
@@ -52,28 +109,57 @@ export default function FollowRequestsScreen() {
     if (userQuery.data && !isPrivate) router.back();
   }, [isPrivate, userQuery.data, router]);
 
-  const onResolve = async (req: FollowRequestWithUser, action: 'accept' | 'reject') => {
-    if (!me) return;
-    try {
-      if (action === 'accept') {
-        await getAcceptFollowRequestUseCase().execute({
-          sessionUserId: me,
-          targetId: me,
-          requesterId: req.requester.userId,
-        });
-      } else {
-        await getRejectFollowRequestUseCase().execute({
-          targetId: me,
-          requesterId: req.requester.userId,
-        });
+  const onResolve = useCallback(
+    async (req: FollowRequestWithUser, action: 'accept' | 'reject') => {
+      if (!me) return;
+      try {
+        if (action === 'accept') {
+          await getAcceptFollowRequestUseCase().execute({
+            sessionUserId: me,
+            targetId: me,
+            requesterId: req.requester.userId,
+          });
+        } else {
+          await getRejectFollowRequestUseCase().execute({
+            targetId: me,
+            requesterId: req.requester.userId,
+          });
+        }
+        qc.invalidateQueries({ queryKey: ['pending-requests', me] });
+        qc.invalidateQueries({ queryKey: ['pending-requests-count', me] });
+        qc.invalidateQueries({ queryKey: ['user-profile', me] });
+      } catch {
+        setErrorOpen(true);
       }
-      qc.invalidateQueries({ queryKey: ['pending-requests', me] });
-      qc.invalidateQueries({ queryKey: ['pending-requests-count', me] });
-      qc.invalidateQueries({ queryKey: ['user-profile', me] });
-    } catch {
-      setErrorOpen(true);
-    }
-  };
+    },
+    [me, qc],
+  );
+
+  const handleOpenProfile = useCallback(
+    (handle: string) => {
+      router.push({
+        pathname: '/user/[handle]',
+        params: { handle },
+      });
+    },
+    [router],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: FollowRequestWithUser }) => (
+      <FollowRequestRow
+        req={item}
+        fallbackName={t('profile.fallbackName')}
+        cityNotSet={t('profile.cityNotSet')}
+        approveLabel={t('settings.followRequestsScreen.approve')}
+        rejectLabel={t('settings.followRequestsScreen.reject')}
+        onOpenProfile={handleOpenProfile}
+        onResolve={onResolve}
+        styles={styles}
+      />
+    ),
+    [handleOpenProfile, onResolve, styles, t],
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -85,52 +171,17 @@ export default function FollowRequestsScreen() {
       />
       {requestsQuery.isLoading ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />
-      ) : (requestsQuery.data?.requests.length ?? 0) === 0 ? (
-        <Text style={styles.empty}>{t('settings.followRequestsScreen.empty')}</Text>
       ) : (
-        <View style={styles.list}>
-          {requestsQuery.data!.requests.map((r) => (
-            <View key={r.requester.userId} style={styles.row}>
-              <TouchableOpacity
-                style={styles.who}
-                onPress={() =>
-                  router.push({
-                    pathname: '/user/[handle]',
-                    params: { handle: r.requester.shareHandle },
-                  })
-                }
-              >
-                <AvatarInitials
-                  name={r.requester.displayName ?? t('profile.fallbackName')}
-                  avatarUrl={r.requester.avatarUrl}
-                  size={44}
-                />
-                <View style={styles.text}>
-                  <Text style={styles.name}>{r.requester.displayName ?? t('profile.fallbackName')}</Text>
-                  <Text style={styles.city}>{r.requester.cityName ?? t('profile.cityNotSet')}</Text>
-                </View>
-              </TouchableOpacity>
-              <View style={styles.actions}>
-                <TouchableOpacity
-                  style={styles.btnApprove}
-                  onPress={() => onResolve(r, 'accept')}
-                >
-                  <Text style={styles.btnApproveText}>
-                    {t('settings.followRequestsScreen.approve')}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.btnReject}
-                  onPress={() => onResolve(r, 'reject')}
-                >
-                  <Text style={styles.btnRejectText}>
-                    {t('settings.followRequestsScreen.reject')}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
-        </View>
+        <KcFlashList
+          data={requestsQuery.data?.requests ?? []}
+          keyExtractor={requestKeyExtractor}
+          estimatedItemSize={72}
+          contentContainerStyle={styles.list}
+          renderItem={renderItem}
+          ListEmptyComponent={
+            <Text style={styles.empty}>{t('settings.followRequestsScreen.empty')}</Text>
+          }
+        />
       )}
       <NotifyModal
         visible={errorOpen}
@@ -191,7 +242,7 @@ const useFollowRequestsScreenStyles = makeUseStyles(({ colors }) => ({
     paddingVertical: spacing.xs,
     borderRadius: radius.sm,
   },
-  btnApproveText: { ...typography.button, color: colors.textInverse, fontWeight: '700' as const },
+  btnApproveText: { ...typography.button, ...typography.bold, color: colors.textInverse },
   btnReject: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,

@@ -4,16 +4,18 @@
 // user can see the palette before committing. Mode is persisted by
 // `themeStore` and resolved against the OS scheme in AppThemeProvider.
 import React from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import {
   darkColors,
   lightColors,
   makeUseStyles,
+  radius,
   spacing,
   typography,
   useTheme,
+  Text,
 } from '@kc/ui';
 import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
@@ -122,7 +124,7 @@ const useScreenStyles = makeUseStyles(({ colors }) => ({
   },
   optionGroup: {
     backgroundColor: colors.surface,
-    borderRadius: 14,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden' as const,

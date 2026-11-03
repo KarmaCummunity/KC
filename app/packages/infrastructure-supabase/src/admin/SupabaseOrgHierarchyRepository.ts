@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IOrgHierarchyRepository } from '@kc/application';
 import {
+  type HierarchyCensus,
+  type HierarchyOrgCensus,
   type OrgTreeMember,
   OrgHierarchyError,
   type OrgHierarchyErrorCode,
@@ -32,6 +34,7 @@ const KNOWN_ERROR_MESSAGES: ReadonlySet<OrgHierarchyErrorCode> = new Set([
   'manager_revoked',
   'manager_other_org',
   'manager_cycle',
+  'manager_rank',
 ]);
 
 function mapRpcError(err: { message?: string; code?: string } | null): OrgHierarchyError {
@@ -43,6 +46,49 @@ function mapRpcError(err: { message?: string; code?: string } | null): OrgHierar
     return new OrgHierarchyError('forbidden', 'forbidden');
   }
   return new OrgHierarchyError('unknown', raw || 'unknown_org_hierarchy_rpc_error');
+}
+
+/** Shape of one `orgs[]` entry in the `admin_hierarchy_census` JSON payload. */
+interface CensusOrgJson {
+  org_id?: unknown;
+  name?: unknown;
+  is_platform?: unknown;
+  is_verified?: unknown;
+  affiliated_count?: unknown;
+}
+
+/** Non-negative integer from an untyped JSON value (0 for anything else). */
+function toCount(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+}
+
+function mapCensusOrg(raw: CensusOrgJson): HierarchyOrgCensus | null {
+  if (typeof raw.org_id !== 'string') return null;
+  return {
+    orgId: raw.org_id,
+    name: typeof raw.name === 'string' ? raw.name : '',
+    isPlatform: raw.is_platform === true,
+    isVerified: raw.is_verified === true,
+    affiliatedCount: toCount(raw.affiliated_count),
+  };
+}
+
+/** Parse the census JSON defensively: malformed org entries are dropped and
+ *  missing counts read as zero, so a partial payload never crashes the view. */
+function mapCensus(data: unknown): HierarchyCensus {
+  const obj = (data ?? {}) as { community_total?: unknown; role_holder_total?: unknown; orgs?: unknown };
+  const orgs: HierarchyOrgCensus[] = [];
+  if (Array.isArray(obj.orgs)) {
+    for (const raw of obj.orgs as CensusOrgJson[]) {
+      const mapped = mapCensusOrg(raw ?? {});
+      if (mapped !== null) orgs.push(mapped);
+    }
+  }
+  return {
+    communityTotal: toCount(obj.community_total),
+    roleHolderTotal: toCount(obj.role_holder_total),
+    orgs,
+  };
 }
 
 function mapRow(row: OrgTreeRow): OrgTreeMember | null {
@@ -86,5 +132,11 @@ export class SupabaseOrgHierarchyRepository implements IOrgHierarchyRepository {
       p_manager_grant_id: managerGrantId,
     });
     if (error) throw mapRpcError(error);
+  }
+
+  async getHierarchyCensus(): Promise<HierarchyCensus> {
+    const { data, error } = await this.client.rpc('admin_hierarchy_census');
+    if (error) throw mapRpcError(error);
+    return mapCensus(data);
   }
 }

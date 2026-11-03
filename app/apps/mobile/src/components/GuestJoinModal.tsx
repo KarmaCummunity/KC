@@ -1,12 +1,9 @@
+// Guest sign-up prompt on the kit `BottomSheet` (spec 17 §4.1); the join CTA leads the footer.
 import React from 'react';
-import {
-  Modal,
-  Text,
-  TouchableOpacity,
-  Pressable,
-} from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, radius, typography, shadow } from '@kc/ui';
+import { makeUseStyles, typography, Text } from '@kc/ui';
+import { BottomSheet } from './ui/BottomSheet';
+import { GhostButton, PrimaryButton } from './ui/Buttons';
 
 export interface GuestJoinModalProps {
   visible: boolean;
@@ -27,80 +24,21 @@ export function GuestJoinModal({
   const { t } = useTranslation();
   const styles = useGuestJoinModalStyles();
   return (
-    <Modal
+    <BottomSheet
       visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onDismiss}
+      onDismiss={onDismiss}
+      footer={
+        <>
+          <PrimaryButton label={joinLabel} size="md" fullWidth onPress={onJoin} />
+          <GhostButton label={t('general.close')} size="md" fullWidth onPress={onDismiss} />
+        </>
+      }
     >
-      <Pressable
-        style={styles.backdrop}
-        onPress={onDismiss}
-        accessibilityLabel={t('general.close')}
-      >
-        <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
-          <Text style={styles.message}>{message}</Text>
-          <TouchableOpacity
-            style={styles.joinBtn}
-            onPress={onJoin}
-            activeOpacity={0.9}
-            accessibilityRole="button"
-            accessibilityLabel={joinLabel}
-          >
-            <Text style={styles.joinBtnText}>{joinLabel}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.dismissBtn}
-            onPress={onDismiss}
-            accessibilityRole="button"
-            accessibilityLabel={t('general.close')}
-          >
-            <Text style={styles.dismissText}>{t('general.close')}</Text>
-          </TouchableOpacity>
-        </Pressable>
-      </Pressable>
-    </Modal>
+      <Text style={styles.message}>{message}</Text>
+    </BottomSheet>
   );
 }
 
 const useGuestJoinModalStyles = makeUseStyles(({ colors }) => ({
-  backdrop: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing['2xl'],
-    ...shadow.card,
-  },
-  message: {
-    ...typography.bodyLarge,
-    color: colors.textPrimary,
-    textAlign: 'center',
-    marginBottom: spacing.lg,
-  },
-  joinBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  joinBtnText: {
-    ...typography.button,
-    color: colors.textInverse,
-  },
-  dismissBtn: {
-    marginTop: spacing.md,
-    alignItems: 'center',
-    padding: spacing.sm,
-  },
-  dismissText: {
-    ...typography.body,
-    color: colors.textSecondary,
-  },
+  message: { ...typography.bodyLarge, color: colors.textPrimary, textAlign: 'center' },
 }));

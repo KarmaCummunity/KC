@@ -1,7 +1,9 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Text } from '@kc/ui';
 import { useTranslation } from 'react-i18next';
-import { useSearchScreenStyles } from '../../../app/(tabs)/search.styles';
+import { useSearchScreenStyles } from '../../screens/tabs/search.styles';
+import { Chip } from '../ui/Chip';
 import { localizeSuggestedTag } from './localizeSuggestedTag';
 
 type Props = {
@@ -21,9 +23,13 @@ export function SearchSuggestedQueries({ queries, onSelect }: Props) {
         {queries.map((q) => {
           const label = localizeSuggestedTag(q, t);
           return (
-            <Pressable key={q} style={styles.chip} onPress={() => onSelect(label)}>
-              <Text style={styles.chipText}>#{label}</Text>
-            </Pressable>
+            <Chip
+              key={q}
+              size="sm"
+              label={`#${label}`}
+              selected={false}
+              onPress={() => onSelect(label)}
+            />
           );
         })}
       </View>

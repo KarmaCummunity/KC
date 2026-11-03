@@ -1,0 +1,140 @@
+name: Bump app version on merge
+
+# Post-merge bookkeeping on `dev`, in one commit per merge:
+# 1. Assigns registry IDs: each ID placeholder a PR added becomes the next free
+#    number (scripts/spec-ids.mjs), so parallel PRs never collide on a
+#    D# / TD-# / S# / G# / engineering D-# number.
+# 2. Bumps `app/VERSION` PATCH, so PRs no longer edit the file themselves
+#    (TD-196): two open PRs that both bump it always conflict.
+#
+# A PR that edits `app/VERSION` itself (a MINOR/MAJOR release) gets no bump, but
+# its placeholders are still assigned.
+#
+# The ID commit runs CI like any merge (no `[skip ci]`): it may rewrite
+# citations anywhere, so it must be certified on its own. The bump commit
+# carries `[skip ci]`: it changes one file, and a full CI run per merge would
+# double the cost. The dev deploy still ships it: deploy.yml also triggers on
+# this workflow's name, and scripts/deploy-target.mjs deploys the bump commit
+# on its parent's green `CI gate` (TD-231). That inheritance keys on the bump
+# commit's exact output — the git identity, the commit subject and
+# app/VERSION as the only changed file — so keep the three in sync with
+# deploy-target.mjs (BUMP_IDENTITY, BUMP_SUBJECT, VERSION_FILE), never fold the
+# ID rewrite into the bump commit, and renaming this workflow requires the same
+# rename in deploy.yml's `workflows:` list.
+#
+# Pushes as the `kc-version-bump` GitHub App (Contents write, nothing else),
+# whose ID and key live only in the `dev`-only `version-bump` environment. The
+# App is the `dev` ruleset's bypass actor, so its push skips the merge queue;
+# it has no Pull requests permission, so it cannot merge or approve anything.
+# GITHUB_TOKEN cannot replace it: its pushes start no workflows, so the ID
+# commit would never be certified by CI.
+
+on:
+  push:
+    branches: [dev]
+
+# One run at a time; each run re-reads the tip of `dev`. GitHub keeps only one
+# pending run per group, so a newer pending run replaces an older one. The run
+# triggered by this workflow's own ID commit is skipped by the job `if` below,
+# so it takes a group of its own and never displaces a merge's pending run.
+concurrency:
+  group: "${{ startsWith(github.event.head_commit.message, 'chore(release): assign spec ids') && format('bump-version-on-merge-own-{0}', github.run_id) || 'bump-version-on-merge' }}"
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  bump:
+    name: assign spec ids and bump patch
+    # Skip our own commit, otherwise the push below would trigger this again.
+    if: >-
+      ${{ !startsWith(github.event.head_commit.message, 'chore(release): bump app version')
+        && !startsWith(github.event.head_commit.message, 'chore(release): assign spec ids') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Branch-restricted to `dev`: a workflow pushed on any other branch cannot
+    # read the App key (repository-level secrets would be readable, TD-223).
+    environment: version-bump
+    steps:
+      - name: Require the version-bump App
+        env:
+          APP_ID: ${{ secrets.VERSION_BUMP_APP_ID }}
+          APP_KEY: ${{ secrets.VERSION_BUMP_APP_PRIVATE_KEY }}
+        run: |
+          if [ -z "$APP_ID" ] || [ -z "$APP_KEY" ]; then
+            echo "::error::VERSION_BUMP_APP_ID / VERSION_BUMP_APP_PRIVATE_KEY are not set in the version-bump environment; the version cannot be bumped. See docs/SSOT/OPERATOR_RUNBOOK.md § Owner setup for D-195 CI/CD."
+            exit 1
+          fi
+
+      # Short-lived installation token, scoped to this repository only.
+      - name: Mint the version-bump App token
+        id: app
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.VERSION_BUMP_APP_ID }}
+          private-key: ${{ secrets.VERSION_BUMP_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+          token: ${{ steps.app.outputs.token }}
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Assign spec ids, bump patch and push to dev
+        run: |
+          set -euo pipefail
+          # An explicit version edit in the merged change wins over the automatic bump.
+          # Captured first: `grep -q` exiting early under pipefail would fail the pipeline.
+          changed="$(git show --name-only --format= HEAD)"
+          bump_version=true
+          if grep -qx 'app/VERSION' <<<"$changed"; then
+            echo "The merged change edits app/VERSION itself; no version bump."
+            bump_version=false
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # `dev` may move between checkout and push, so retry on a fresh tip.
+          # Each attempt re-reads the registries, so numbers stay unique even
+          # when several merges land close together.
+          for attempt in 1 2 3; do
+            git fetch --depth=2 origin dev
+            git reset --hard origin/dev
+
+            # 1. Registry IDs, pushed on their own so CI certifies them and the
+            #    bump below stays a VERSION-only child of a gated commit. A
+            #    retry after this push finds no placeholders left.
+            node scripts/spec-ids.mjs assign
+            git add -u
+            if ! git diff --cached --quiet; then
+              git commit -m "chore(release): assign spec ids"
+              if ! git push origin HEAD:dev; then
+                echo "Push rejected (attempt ${attempt}); retrying on the new tip of dev"
+                sleep $((attempt * 5))
+                continue
+              fi
+            fi
+
+            # 2. Version bump: app/VERSION only, `[skip ci]` (see the header).
+            if [ "$bump_version" != true ]; then
+              exit 0
+            fi
+            node scripts/bump-app-version.mjs
+            version="$(tr -d '[:space:]' < app/VERSION)"
+            git add app/VERSION
+            git commit -m "chore(release): bump app version to ${version} [skip ci]"
+            if git push origin HEAD:dev; then
+              echo "Bumped to ${version}"
+              exit 0
+            fi
+            echo "Push rejected (attempt ${attempt}); retrying on the new tip of dev"
+            sleep $((attempt * 5))
+          done
+
+          echo "::error::Could not push the post-merge commit to dev. If the ruleset rejected it, add the kc-version-bump App as the dev ruleset's bypass actor (TD-231)."
+          exit 1

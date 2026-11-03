@@ -10,6 +10,7 @@ function grant(over: Partial<AdminGrant> & Pick<AdminGrant, 'userId' | 'role'>):
     displayName: over.displayName ?? 'User',
     avatarUrl: over.avatarUrl ?? null,
     role: over.role,
+    scopeOrgId: over.scopeOrgId ?? null,
     grantedAt: over.grantedAt ?? new Date('2026-01-01T00:00:00Z'),
     grantedBy: over.grantedBy ?? null,
     grantedByDisplayName: over.grantedByDisplayName ?? null,
@@ -23,6 +24,11 @@ describe('adminRoleRank', () => {
   it('orders super_admin above org roles', () => {
     expect(adminRoleRank('super_admin')).toBeLessThan(adminRoleRank('moderator'));
     expect(adminRoleRank('moderator')).toBeLessThan(adminRoleRank('org_volunteer'));
+  });
+
+  it('assigns the lowest rank to an unknown role', () => {
+    // @ts-expect-error testing unknown role rank
+    expect(adminRoleRank('unknown_role')).toBe(10);
   });
 });
 
@@ -74,5 +80,34 @@ describe('groupGrantsByUser', () => {
     ]);
     expect(people[0]!.activeRoles).toEqual(['moderator']);
     expect(people[0]!.grants).toHaveLength(2);
+  });
+
+  it('orders duplicate active roles by grantedAt descending', () => {
+    const people = groupGrantsByUser([
+      grant({ userId: 'u1', role: 'moderator', grantedAt: new Date('2026-01-01T00:00:00Z') }),
+      grant({ userId: 'u1', role: 'moderator', grantedAt: new Date('2026-02-01T00:00:00Z') }),
+    ]);
+    expect(people[0]!.grants[0]!.grantedAt).toEqual(new Date('2026-02-01T00:00:00Z'));
+  });
+
+  it('tie-breaks equal rank and lastSeenAt by displayName', () => {
+    const seenDate = new Date('2026-03-01T00:00:00Z');
+    const people = groupGrantsByUser([
+      grant({ userId: 'u2', role: 'moderator', displayName: 'Bob', lastSeenAt: seenDate }),
+      grant({ userId: 'u1', role: 'moderator', displayName: 'Alice', lastSeenAt: seenDate }),
+    ]);
+    expect(people.map((p) => p.displayName)).toEqual(['Alice', 'Bob']);
+  });
+
+  it('handles user with null displayName and avatarUrl gracefully', () => {
+    const people = groupGrantsByUser([
+      {
+        ...grant({ userId: 'u1', role: 'moderator' }),
+        displayName: null,
+        avatarUrl: null,
+      },
+    ]);
+    expect(people[0]!.displayName).toBeNull();
+    expect(people[0]!.avatarUrl).toBeNull();
   });
 });

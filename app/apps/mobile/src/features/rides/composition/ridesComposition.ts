@@ -1,8 +1,6 @@
 // Composition root for ride listings — mirrors searchComposition.ts.
 // Mapped to spec: FR-RIDE-002..005, FR-RIDE-016 (realtime), FR-RIDE-011..014 (participants),
 //                 FR-RIDE-021..022 (templates), FR-RIDE-024..025 (dashboard + my-requests).
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   getSupabaseClient,
   SupabaseRideListingRepository,
@@ -13,7 +11,6 @@ import {
   SupabaseDriverDeclarationRepository,
   SupabaseRidesRealtime,
   SupabaseCityRepository,
-  type SupabaseAuthStorage,
 } from '@kc/infrastructure-supabase';
 import {
   CreateRideListingUseCase,
@@ -52,6 +49,7 @@ import {
 } from '@kc/application';
 import { container } from '../../../lib/container';
 import { CachedCityRepository } from '../../../services/cityStreetCache';
+import { pickAuthStorage } from '../../../services/authSecureStorage';
 
 let _repo: IRideListingRepository | null = null;
 let _participants: IRideParticipantRepository | null = null;
@@ -87,16 +85,8 @@ let _listMyTemplates: ListMyRideTemplatesUseCase | null = null;
 let _setTemplateStatus: SetRideTemplateStatusUseCase | null = null;
 let _deleteTemplate: DeleteRideTemplateUseCase | null = null;
 
-function pickStorage(): SupabaseAuthStorage | undefined {
-  if (Platform.OS === 'web') {
-    if (typeof window === 'undefined' || !window.localStorage) return undefined;
-    return window.localStorage;
-  }
-  return AsyncStorage;
-}
-
 function getClient() {
-  return getSupabaseClient({ storage: pickStorage() });
+  return getSupabaseClient({ storage: pickAuthStorage() });
 }
 
 function getRepo(): IRideListingRepository {

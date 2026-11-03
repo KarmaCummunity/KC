@@ -18,6 +18,7 @@ export const makeQuestion = (overrides: Partial<SurveyQuestion> = {}): SurveyQue
   textPlaceholderHe: 'ספר/י לנו...',
   ratingAnchorLowHe: 'בשום פנים לא',
   ratingAnchorHighHe: 'בהחלט כן',
+  choiceOptions: [],
   ...overrides,
 });
 
@@ -61,6 +62,20 @@ export const makeFakeRepo = (
 export const makeAnswer = (overrides: Partial<SurveyAnswerDraft> = {}): SurveyAnswerDraft => ({
   questionId: 'q1',
   rating: 5,
+  choiceKey: null,
   answerText: null,
   ...overrides,
 });
+
+/** The Sean Ellis question: single choice with the standard 3 options (KC#1058). */
+export const makeChoiceQuestion = (overrides: Partial<SurveyQuestion> = {}): SurveyQuestion =>
+  makeQuestion({
+    id: 'q-pmf',
+    questionType: 'single_choice_with_optional_text',
+    choiceOptions: [
+      { key: 'very_disappointed', labelHe: 'מאוד מאוכזב/ת' },
+      { key: 'somewhat_disappointed', labelHe: 'קצת מאוכזב/ת' },
+      { key: 'not_disappointed', labelHe: 'לא מאוכזב/ת' },
+    ],
+    ...overrides,
+  });

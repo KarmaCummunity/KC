@@ -1,6 +1,6 @@
 # Social realtime & RLS conventions (KC epic #884)
 
-> **Scope:** Post engagement (KC#867) and scale-oriented realtime (KC#878). Product vision references live in the external `PRD_V2_NOT_FOR_MVP` tree; this doc is the **implemented** contract in-repo.
+> **Scope:** Post engagement (KC#867) and scale-oriented realtime (KC#878). Mechanism choice, auth and lifecycle rules: [ADR-003](../architecture/adr/ADR-003-realtime.md) (`D-201`); this file is the topic registry. Product vision references live in the external `PRD_V2_NOT_FOR_MVP` tree; this doc is the **implemented** contract in-repo.
 
 ## Realtime channels (Broadcast, private)
 

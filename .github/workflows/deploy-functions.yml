@@ -1,0 +1,132 @@
+name: Edge Functions deploy
+
+# Edge Functions stage of the deploy pipeline (D-195, INFRA-CI-3). Called only
+# by deploy.yml: after the DB stage, and again on a failed prod release to
+# redeploy the previous release tag's functions (rollback). No push or manual
+# trigger; to redeploy dev, dispatch the Deploy workflow on `dev`.
+#
+# Deploys every function scripts/edge-functions.mjs lists (all of
+# supabase/functions except shared code and local-only mock-login) to the
+# target project, so the remote cannot drift behind the branch (TD-53), then
+# checks the project lists each one as ACTIVE. The deploy smoke probes the
+# ones that can be probed without side effects. The job starts with the
+# deploy guard (.github/actions/deploy-guard).
+#
+# Environment supabase-<target> (no reviewers): SUPABASE_ACCESS_TOKEN,
+# SUPABASE_DB_PASSWORD, SUPABASE_PROJECT_REF; optional variable
+# PUBLIC_RESEARCH_ALLOWED_ORIGINS (Survey B CORS allowlist, synced as a
+# function secret); optional secret EDGE_SENTRY_DSN (G41, D-202: synced as
+# SENTRY_DSN + SENTRY_ENVIRONMENT + SENTRY_RELEASE; without it every function
+# reports errors to its logs only).
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: dev or prod
+        type: string
+        required: true
+      sha:
+        description: Exact commit whose functions to deploy
+        type: string
+        required: true
+      release_sha:
+        description: The release being deployed (differs from sha only in a rollback)
+        type: string
+        required: true
+      approved_attempt:
+        description: run_attempt in which the release was approved (empty on dev)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  deploy:
+    name: functions · ${{ inputs.target }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: supabase-${{ inputs.target }}
+    env:
+      TARGET: ${{ inputs.target }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      BACKUP_AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+      EDGE_SENTRY_DSN: ${{ secrets.EDGE_SENTRY_DSN }}
+    steps:
+      # The guard comes from deploy.yml's own commit, not the deployed one.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .deploy-guard
+          sparse-checkout: |
+            .github/actions/deploy-guard
+            scripts/deploy-guard.mjs
+            scripts/release-version.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - uses: ./.deploy-guard/.github/actions/deploy-guard
+        with:
+          target: ${{ inputs.target }}
+          release-sha: ${{ inputs.release_sha }}
+          approved-attempt: ${{ inputs.approved_attempt }}
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+
+      # Pins the project ref per target, so functions never land on the wrong project.
+      - name: Preflight (secrets present, project ref matches the target)
+        run: node scripts/deploy-preflight.mjs supabase "$TARGET"
+
+      - uses: ./.github/actions/setup-supabase-cli
+
+      # Before the deploy, so new function instances start with the current
+      # value. Passed through env: a variable is data, never script text.
+      - name: Sync public-research CORS origins
+        if: vars.PUBLIC_RESEARCH_ALLOWED_ORIGINS != ''
+        env:
+          ORIGINS: ${{ vars.PUBLIC_RESEARCH_ALLOWED_ORIGINS }}
+        run: supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" "PUBLIC_RESEARCH_ALLOWED_ORIGINS=$ORIGINS"
+
+      # G41 / D-202: every function reports errors through _shared/observability.
+      # The environment name is the deploy target (dev | prod); the release is the
+      # commit being deployed. Secrets are referenced by name only.
+      - name: Sync Sentry error-reporting secrets
+        if: env.EDGE_SENTRY_DSN != ''
+        env:
+          RELEASE_SHA: ${{ inputs.release_sha }}
+        run: |
+          set -euo pipefail
+          supabase secrets set --project-ref "$SUPABASE_PROJECT_REF" \
+            "SENTRY_DSN=$EDGE_SENTRY_DSN" \
+            "SENTRY_ENVIRONMENT=$TARGET" \
+            "SENTRY_RELEASE=functions@${RELEASE_SHA::12}"
+
+      # --use-api bundles server-side (no Docker); verify_jwt per function
+      # comes from supabase/config.toml.
+      - name: Deploy every function
+        run: |
+          set -euo pipefail
+          names=$(node scripts/edge-functions.mjs)
+          for name in $names; do
+            echo "::group::$name"
+            supabase functions deploy "$name" --project-ref "$SUPABASE_PROJECT_REF" --use-api
+            echo "::endgroup::"
+          done
+
+      # A function that failed to deploy is not ACTIVE; this also covers the
+      # functions the smoke has no probe for.
+      - name: Every function is ACTIVE
+        run: |
+          set -euo pipefail
+          supabase functions list --project-ref "$SUPABASE_PROJECT_REF" -o json > "$RUNNER_TEMP/functions.json"
+          node scripts/edge-functions.mjs --verify-active "$RUNNER_TEMP/functions.json"

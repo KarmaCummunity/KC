@@ -14,20 +14,37 @@ function propTypes(prop: SchemaProp): string[] {
 }
 
 function matchesType(value: unknown, types: string[]): boolean {
-  if (types.includes('null') && value === null) return true;
-  if (types.includes('boolean') && typeof value === 'boolean') return true;
-  if (types.includes('integer') && typeof value === 'number' && Number.isInteger(value)) return true;
-  if (types.includes('number') && typeof value === 'number') return true;
-  if (types.includes('string') && typeof value === 'string') return true;
-  if (types.includes('object') && value !== null && typeof value === 'object' && !Array.isArray(value)) {
-    return true;
-  }
-  if (types.includes('array') && Array.isArray(value)) return true;
-  return false;
+  return types.some((t) => TYPE_CHECKS[t]?.(value) ?? false);
 }
 
 function isIsoDateTime(s: string): boolean {
   return !Number.isNaN(Date.parse(s));
+}
+
+const TYPE_CHECKS: Record<string, (value: unknown) => boolean> = {
+  null: (v) => v === null,
+  boolean: (v) => typeof v === 'boolean',
+  integer: (v) => typeof v === 'number' && Number.isInteger(v),
+  number: (v) => typeof v === 'number',
+  string: (v) => typeof v === 'string',
+  object: (v) => v !== null && typeof v === 'object' && !Array.isArray(v),
+  array: (v) => Array.isArray(v),
+};
+
+function isBlank(val: unknown): boolean {
+  return val === undefined || val === null || (typeof val === 'string' && val.trim() === '');
+}
+
+/** Returns the error code prefix for a single present value, or null when valid. */
+function checkProp(prop: SchemaProp, val: unknown): string | null {
+  if (prop.const !== undefined && val !== prop.const) return 'const';
+  if (!matchesType(val, propTypes(prop))) return 'type';
+  if (prop.enum && !prop.enum.includes(val)) return 'enum';
+  if (prop.format === 'date-time' && typeof val === 'string' && !isIsoDateTime(val)) return 'format';
+  if (prop.items?.type === 'string' && Array.isArray(val) && !val.every((x) => typeof x === 'string')) {
+    return 'array';
+  }
+  return null;
 }
 
 export function validateListingDetails(
@@ -37,12 +54,8 @@ export function validateListingDetails(
   const props = (schema.properties ?? {}) as Record<string, SchemaProp>;
   const required = (schema.required ?? []) as string[];
 
-  for (const key of required) {
-    const val = details[key];
-    if (val === undefined || val === null || (typeof val === 'string' && val.trim() === '')) {
-      return `required:${key}`;
-    }
-  }
+  const missing = required.find((key) => isBlank(details[key]));
+  if (missing !== undefined) return `required:${missing}`;
 
   for (const [key, val] of Object.entries(details)) {
     const prop = props[key];
@@ -51,20 +64,8 @@ export function validateListingDetails(
       continue;
     }
     if (val === undefined || val === null) continue;
-
-    if (prop.const !== undefined && val !== prop.const) return `const:${key}`;
-
-    if (!matchesType(val, propTypes(prop))) return `type:${key}`;
-
-    if (prop.enum && !prop.enum.includes(val)) return `enum:${key}`;
-
-    if (prop.format === 'date-time' && typeof val === 'string' && !isIsoDateTime(val)) {
-      return `format:${key}`;
-    }
-
-    if (prop.items?.type === 'string' && Array.isArray(val)) {
-      if (!val.every((x) => typeof x === 'string')) return `array:${key}`;
-    }
+    const code = checkProp(prop, val);
+    if (code) return `${code}:${key}`;
   }
 
   return null;

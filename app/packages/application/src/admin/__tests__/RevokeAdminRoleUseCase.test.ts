@@ -11,6 +11,7 @@ function fakeRepo(opts: { revokeRoleError?: Error } = {}): IAdminRoleRepository 
     revokeRole: vi.fn(async () => {
       if (opts.revokeRoleError) throw opts.revokeRoleError;
     }),
+    changeRole: vi.fn(),
   };
 }
 

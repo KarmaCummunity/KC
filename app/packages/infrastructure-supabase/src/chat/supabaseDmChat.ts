@@ -42,8 +42,9 @@ async function maybeReanchorPost(
   row: ChatRow,
   postId: string,
 ): Promise<Chat> {
+  // One context per chat (0464): a ride or listing anchor also gives way to the post.
   const needsReanchor =
-    row.anchor_post_id !== postId || row.anchor_ride_id != null;
+    row.anchor_post_id !== postId || row.anchor_ride_id != null || row.anchor_listing_id != null;
   if (!needsReanchor) return rowToChat(row);
 
   const { data, error } = await client.rpc('rpc_chat_set_anchor', {
@@ -61,7 +62,7 @@ async function maybeReanchorRide(
   rideId: string,
 ): Promise<Chat> {
   const needsReanchor =
-    row.anchor_ride_id !== rideId || row.anchor_post_id != null;
+    row.anchor_ride_id !== rideId || row.anchor_post_id != null || row.anchor_listing_id != null;
   if (!needsReanchor) return rowToChat(row);
 
   const { data, error } = await client.rpc('rpc_chat_set_anchor_ride', {

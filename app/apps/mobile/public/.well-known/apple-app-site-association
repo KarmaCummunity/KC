@@ -2,7 +2,7 @@
   "applinks": {
     "details": [
       {
-        "appID": "REPLACE_WITH_APPLE_TEAM_ID.com.karmacommunity.app",
+        "appID": "REPLACE_WITH_APPLE_TEAM_ID.org.karmacommunity.app",
         "paths": [
           "/auth/verify",
           "/auth/verify*",

@@ -1,7 +1,10 @@
 export type AdminRoleErrorCode =
   | 'forbidden'
+  | 'forbidden_grant'
+  | 'forbidden_revoke'
   | 'invalid_input'
   | 'invalid_role'
+  | 'invalid_scope'
   | 'target_not_found'
   | 'target_not_active'
   | 'role_already_active'

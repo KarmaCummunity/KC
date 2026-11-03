@@ -13,14 +13,16 @@ function deps(over: Partial<Parameters<typeof createRerankHandler>[0]> = {}) {
   const calls: { fn: string; args: Record<string, unknown> }[] = [];
   let fetched = 0;
   const d = {
-    rpc: async (fn: string, args: Record<string, unknown>) => {
+    rpc: (fn: string, args: Record<string, unknown>) => {
       calls.push({ fn, args });
-      return fn === 'api_match_llm_pending' ? { data: [PAIR], error: null } : { data: true, error: null };
+      return Promise.resolve(
+        fn === 'api_match_llm_pending' ? { data: [PAIR], error: null } : { data: true, error: null },
+      );
     },
-    fetchFn: (async () => {
+    fetchFn: (() => {
       fetched++;
-      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text:
-        JSON.stringify({ results: [{ id: 'c1', score: 0.9, reason: 'fits' }] }) }] } }] }));
+      return Promise.resolve(new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text:
+        JSON.stringify({ results: [{ id: 'c1', score: 0.9, reason: 'fits' }] }) }] } }] })));
     }) as typeof fetch,
     geminiKey: 'test-key', model: 'm', serviceKey: 'svc', ...over,
   };
@@ -46,7 +48,7 @@ Deno.test('no-ops without a Gemini key (no RPC, no fetch)', async () => {
 });
 
 Deno.test('no-ops when the flag is off (pending is empty)', async () => {
-  const { d, fetched } = deps({ rpc: async () => ({ data: [], error: null }) });
+  const { d, fetched } = deps({ rpc: () => Promise.resolve({ data: [], error: null }) });
   const res = await createRerankHandler(d)(req('svc'));
   assertEquals((await res.json()).skipped, 'nothing_pending_or_flag_off');
   assertEquals(fetched(), 0);
@@ -60,7 +62,7 @@ Deno.test('scores pending pairs and stores verdicts', async () => {
 });
 
 Deno.test('reports upstream failure without storing', async () => {
-  const { d, calls } = deps({ fetchFn: (async () => new Response('x', { status: 429 })) as typeof fetch });
+  const { d, calls } = deps({ fetchFn: (() => Promise.resolve(new Response('x', { status: 429 }))) as typeof fetch });
   const res = await createRerankHandler(d)(req('svc'));
   assertEquals(res.status, 502);
   assertEquals(calls.length, 1);

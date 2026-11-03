@@ -8,6 +8,7 @@
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+import { withObservability } from '../_shared/observability/mod.ts';
 import { isMockAuthEnvironment } from '../_shared/mockAuthGuard.ts';
 import { ensureMockUser, MOCK_DEV_PASSWORD, type MockLoginInput } from './ensureUser.ts';
 
@@ -40,7 +41,7 @@ function notFound(origin: string | null): Response {
   return json({ error: 'not_found' }, 404, origin);
 }
 
-serve(async (req) => {
+serve(withObservability('mock-login', async (req) => {
   const origin = req.headers.get('Origin');
 
   if (req.method === 'OPTIONS') {
@@ -98,4 +99,4 @@ serve(async (req) => {
   };
 
   return json({ session, user }, 200, origin);
-});
+}));

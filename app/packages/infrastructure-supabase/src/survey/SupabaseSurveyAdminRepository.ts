@@ -10,8 +10,11 @@ import {
   type AdminSurveyQuestionStat,
   type AdminSurveyRespondent,
   type AdminFeedbackEntry,
+  type PmfSurveyReport,
+  type SurveyQuestionType,
 } from '@kc/domain';
 import type { Database } from '../database.types';
+import { mapPmfSurveyReport, type RawPmfSurveyReport } from './mapPmfSurveyReport';
 
 // ---------------------------------------------------------------------------
 // Raw JSON shapes (snake_case from Postgres)
@@ -32,6 +35,7 @@ interface RawOverview {
 interface RawQuestionStat {
   id: string;
   sort_order: number;
+  question_type: SurveyQuestionType;
   short_label_he: string;
   prompt_he: string;
   rating_anchor_low_he: string;
@@ -39,13 +43,20 @@ interface RawQuestionStat {
   response_count: number;
   avg_rating: number | string | null;
   distribution: number[];
+  /** `[]` for rating questions (0458). */
+  choice_counts: { key: string; label_he: string; count: number }[] | null;
 }
 
 interface RawRespondent {
   user_id: string;
   display_name: string | null;
   submitted_at: string;
-  answers: { question_id: string; rating: number; answer_text: string | null }[];
+  answers: {
+    question_id: string;
+    rating: number | null;
+    choice_key: string | null;
+    answer_text: string | null;
+  }[];
 }
 
 interface RawResults {
@@ -89,6 +100,7 @@ function mapQuestionStat(q: RawQuestionStat): AdminSurveyQuestionStat {
   return {
     id: q.id,
     sortOrder: q.sort_order,
+    questionType: q.question_type,
     shortLabelHe: q.short_label_he,
     promptHe: q.prompt_he,
     ratingAnchorLowHe: q.rating_anchor_low_he,
@@ -96,6 +108,11 @@ function mapQuestionStat(q: RawQuestionStat): AdminSurveyQuestionStat {
     responseCount: q.response_count,
     avgRating: avg,
     distribution: q.distribution ?? [],
+    choiceCounts: (q.choice_counts ?? []).map((c) => ({
+      key: c.key,
+      labelHe: c.label_he,
+      count: c.count,
+    })),
   };
 }
 
@@ -107,6 +124,7 @@ function mapRespondent(r: RawRespondent): AdminSurveyRespondent {
     answers: (r.answers ?? []).map((a) => ({
       questionId: a.question_id,
       rating: a.rating,
+      choiceKey: a.choice_key ?? null,
       answerText: a.answer_text,
     })),
   };
@@ -137,6 +155,7 @@ function mapFeedback(r: RawFeedback): AdminFeedbackEntry {
 function mapError(msg: string): SurveyError {
   if (msg.includes('forbidden')) return new SurveyError('validation', msg);
   if (msg.includes('survey_not_found')) return new SurveyError('not_found', msg);
+  if (msg.includes('survey_has_no_choice_question')) return new SurveyError('validation', msg);
   return new SurveyError('network', msg);
 }
 
@@ -160,6 +179,12 @@ export class SupabaseSurveyAdminRepository implements ISurveyAdminRepository {
     });
     if (error) throw mapError(error.message);
     return mapResults(data as unknown as RawResults);
+  }
+
+  async getPmfReport(slug: string): Promise<PmfSurveyReport> {
+    const { data, error } = await this.client.rpc('admin_pmf_survey_report', { p_slug: slug });
+    if (error) throw mapError(error.message);
+    return mapPmfSurveyReport(data as unknown as RawPmfSurveyReport);
   }
 
   async listFeedback(limit: number, offset: number): Promise<AdminFeedbackEntry[]> {

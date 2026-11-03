@@ -49,3 +49,6 @@ scripts/hebrew-text-report.md
 
 # Local Cursor editor settings (per-machine, not shared)
 .cursor/settings.json
+
+# Repo-root guard script dependencies (npm ci --prefix scripts).
+scripts/node_modules/

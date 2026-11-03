@@ -50,6 +50,11 @@ export const marketplaceFieldLabels = {
   age_min: 'גיל מינימלי',
   age_max: 'גיל מקסימלי',
   radius_km: 'רדיוס (ק״מ)',
+  departs_at: 'מועד יציאה',
+  reward_model: 'עלות הנסיעה',
+  cost_share_ils: 'השתתפות בהוצאות (₪)',
+  place_type: 'סוג המקום',
+  house_rules: 'כללי הבית',
 } as const;
 
 export const marketplaceOptionLabels = {
@@ -89,10 +94,30 @@ export const marketplaceOptionLabels = {
   emotional: 'תמיכה רגשית',
   practical: 'עזרה מעשית',
   escort: 'ליווי',
+  room: 'חדר',
+  couch: 'ספה',
+  apartment: 'דירה שלמה',
+  gluten: 'גלוטן',
+  milk: 'חלב',
+  eggs: 'ביצים',
+  nuts: 'אגוזים',
+  peanuts: 'בוטנים',
+  soy: 'סויה',
+  fish: 'דגים',
+  sesame: 'שומשום',
 } as const;
 
 export const marketplaceAvailabilityLabels = {
   immediate: 'מיידי',
   scheduled: 'מתוזמן',
   ongoing: 'זמין תמיד',
+} as const;
+
+/** Owner-facing listing status pill in "My listings" (`marketplace.listingStatus.<status>`). */
+export const marketplaceListingStatusLabels = {
+  open: 'פתוחה',
+  cancelled: 'מושהית',
+  closed: 'הושלמה',
+  expired: 'פג תוקף',
+  hidden_pending_review: 'מוסתרת לבדיקה',
 } as const;

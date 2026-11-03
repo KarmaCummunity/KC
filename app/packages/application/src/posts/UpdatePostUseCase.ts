@@ -24,20 +24,7 @@ export class UpdatePostUseCase {
       throw new PostError('forbidden', 'forbidden');
     }
 
-    if (current.status !== 'open') {
-      // FR-POST-009 + D-34: on closed_delivered / deleted_no_recipient, only a
-      // visibility-only patch is allowed (owner-driven Hide / Unhide).
-      // removed_admin and expired remain fully locked.
-      const isClosedHideable =
-        current.status === 'closed_delivered' || current.status === 'deleted_no_recipient';
-      const patchKeys = Object.keys(input.patch).filter(
-        (k) => (input.patch as Record<string, unknown>)[k] !== undefined,
-      );
-      const isVisibilityOnly = patchKeys.length === 1 && patchKeys[0] === 'visibility';
-      if (!(isClosedHideable && isVisibilityOnly)) {
-        throw new PostError('post_not_open', `cannot edit post with status ${current.status}`);
-      }
-    }
+    assertEditable(current, input.patch);
 
     const patch = this.validate(input.patch, current);
     const post = await this.repo.update(input.postId, patch);
@@ -46,39 +33,63 @@ export class UpdatePostUseCase {
 
   private validate(raw: UpdatePostInput, current: Post): UpdatePostInput {
     const patch: UpdatePostInput = { ...raw };
-
-    if (typeof patch.title === 'string') {
-      const t = patch.title.trim();
-      if (t.length === 0) throw new PostError('title_required', 'title_required');
-      if (t.length > TITLE_MAX_CHARS)
-        throw new PostError('title_too_long', `title_too_long (>${TITLE_MAX_CHARS})`);
-      patch.title = t;
-    }
-
+    if (typeof patch.title === 'string') patch.title = normalizeTitle(patch.title);
     if (typeof patch.description === 'string' || patch.description === null) {
-      const d = patch.description?.trim() ?? null;
-      if (d && d.length > DESCRIPTION_MAX_CHARS)
-        throw new PostError('description_too_long', `description_too_long (>${DESCRIPTION_MAX_CHARS})`);
-      patch.description = d;
+      patch.description = normalizeDescription(patch.description);
     }
-
     if (typeof patch.urgency === 'string' || patch.urgency === null) {
-      const u = patch.urgency?.trim() ?? null;
-      patch.urgency = u && u.length > 0 ? u : null;
+      patch.urgency = patch.urgency?.trim() || null;
     }
-
-    if (patch.address) {
-      if (!patch.address.city || !patch.address.street || !patch.address.streetNumber)
-        throw new PostError('address_required', 'address_required');
-    }
-
-    if (patch.mediaAssets !== undefined) {
-      if (patch.mediaAssets.length > MAX_MEDIA_ASSETS)
-        throw new PostError('too_many_media_assets', `too_many_media_assets (>${MAX_MEDIA_ASSETS})`);
-      if (current.type === 'Give' && patch.mediaAssets.length === 0)
-        throw new PostError('image_required_for_give', 'image_required_for_give');
-    }
-
+    if (patch.address) assertAddress(patch.address);
+    if (patch.mediaAssets !== undefined) assertMedia(patch.mediaAssets, current);
     return patch;
+  }
+}
+
+/**
+ * FR-POST-009 + D-34: on closed_delivered / deleted_no_recipient, only a
+ * visibility-only patch is allowed (owner-driven Hide / Unhide).
+ * removed_admin and expired remain fully locked.
+ */
+function assertEditable(current: Post, patch: UpdatePostInput): void {
+  if (current.status === 'open') return;
+  const isClosedHideable =
+    current.status === 'closed_delivered' || current.status === 'deleted_no_recipient';
+  const patchKeys = Object.keys(patch).filter(
+    (k) => (patch as Record<string, unknown>)[k] !== undefined,
+  );
+  const isVisibilityOnly = patchKeys.length === 1 && patchKeys[0] === 'visibility';
+  if (!(isClosedHideable && isVisibilityOnly)) {
+    throw new PostError('post_not_open', `cannot edit post with status ${current.status}`);
+  }
+}
+
+function normalizeTitle(title: string): string {
+  const t = title.trim();
+  if (t.length === 0) throw new PostError('title_required', 'title_required');
+  if (t.length > TITLE_MAX_CHARS) throw new PostError('title_too_long', `title_too_long (>${TITLE_MAX_CHARS})`);
+  return t;
+}
+
+function normalizeDescription(description: string | null): string | null {
+  const d = description?.trim() ?? null;
+  if (d && d.length > DESCRIPTION_MAX_CHARS) {
+    throw new PostError('description_too_long', `description_too_long (>${DESCRIPTION_MAX_CHARS})`);
+  }
+  return d;
+}
+
+function assertAddress(address: NonNullable<UpdatePostInput['address']>): void {
+  if (!address.city || !address.street || !address.streetNumber) {
+    throw new PostError('address_required', 'address_required');
+  }
+}
+
+function assertMedia(mediaAssets: NonNullable<UpdatePostInput['mediaAssets']>, current: Post): void {
+  if (mediaAssets.length > MAX_MEDIA_ASSETS) {
+    throw new PostError('too_many_media_assets', `too_many_media_assets (>${MAX_MEDIA_ASSETS})`);
+  }
+  if (current.type === 'Give' && mediaAssets.length === 0) {
+    throw new PostError('image_required_for_give', 'image_required_for_give');
   }
 }

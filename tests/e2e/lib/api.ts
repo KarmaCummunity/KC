@@ -28,3 +28,20 @@ export async function rest<T = unknown>(
 }
 
 export const runTag = () => `[e2e ${new Date().toISOString().slice(0, 16)}]`;
+
+/**
+ * Best-effort removal of this user's e2e-tagged posts and open listings so test
+ * data never lingers in the user-visible kc-dev feed. Never throws.
+ */
+export async function cleanupE2eContent(user: { email: string; password: string }): Promise<void> {
+  try {
+    const { session } = await sessionFor(user);
+    const token = session.access_token as string;
+    const me = (session.user as { id: string }).id;
+    const tag = encodeURIComponent('[e2e*');
+    await rest(token, `posts?owner_id=eq.${me}&title=like.${tag}`, { method: 'DELETE' }).catch(() => undefined);
+    await rest(token, `listings?owner_id=eq.${me}&title=like.${tag}`, { method: 'DELETE' }).catch(() => undefined);
+  } catch {
+    // cleanup must never fail the suite
+  }
+}

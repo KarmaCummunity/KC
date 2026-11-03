@@ -1,7 +1,6 @@
 // FR-CHAT-001..013, FR-CHAT-016 — Zustand store for threads + realtime lifecycle; inbox in React Query.
 import { create } from 'zustand';
-import type { Message } from '@kc/domain';
-import type { Chat } from '@kc/domain';
+import type { Message, Chat } from '@kc/domain';
 import type { ChatState, OptimisticMessage } from './chatStoreTypes';
 import { runRefreshInbox, runStartInboxSub } from './chatStoreInboxLifecycle';
 import { useAuthStore } from './authStore';
@@ -10,6 +9,7 @@ import {
   chatInboxQueryKey,
   readChatInboxSnapshot,
   upsertChatPreviewInSnapshot,
+  isChatInSnapshot,
   markChatReadInSnapshot,
   writeChatInboxSnapshot,
 } from '../lib/chatInboxQuery';
@@ -42,7 +42,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
       void queryClient.invalidateQueries({ queryKey: chatInboxQueryKey(userId) });
       return;
     }
+    const isNew = !isChatInSnapshot(snap, chat.chatId);
     writeChatInboxSnapshot(queryClient, userId, upsertChatPreviewInSnapshot(snap, chat));
+    if (isNew) void queryClient.invalidateQueries({ queryKey: chatInboxQueryKey(userId) });
   },
 
   setUnreadTotal: (n) => set({ unreadTotal: n }),

@@ -1,14 +1,15 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import React from 'react';
-import { Text, type ViewStyle } from 'react-native';
+import { type ViewStyle } from 'react-native';
+import { Text } from '@kc/ui';
 import { render } from '@testing-library/react';
 import { Screen } from '../Screen';
 
 vi.mock('../../../navigation/useShellTabBarVisibility', () => ({
   useShellTabBarVisibility: () => true,
-  useShellTabBarScrollInset: () => 92, // 76 (pill) + 16 (extra)
-  shellTabBarHeightPx: (v: boolean) => (v ? 76 : 0),
+  useShellTabBarScrollInset: () => 76, // 60 (pill) + 16 (extra)
+  shellTabBarHeightPx: (v: boolean) => (v ? 60 : 0),
 }));
 
 // AmbientBlobs pulls in react-native-reanimated → react-native-worklets,
@@ -66,7 +67,7 @@ describe('Screen — tab-bar inset wiring', () => {
       </Screen>,
     );
     const style = flattenStyle(capturedContentStyles.at(-1));
-    expect(style.paddingBottom).toBe(92);
+    expect(style.paddingBottom).toBe(76);
   });
 
   it('omits tab-bar paddingBottom when tabBarInset=false', () => {

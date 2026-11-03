@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, typography, spacing, radius, useTheme } from '@kc/ui';
-import { hapticLightTap } from '../lib/haptics';
+import { makeUseStyles, typography, spacing, useTheme, Text } from '@kc/ui';
 import { rowDirectionStart } from '../lib/rtlLayout';
+import { PrimaryButton, SecondaryButton } from './ui/Buttons';
 
 interface EmptyStateProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -17,7 +17,12 @@ export function EmptyState({ icon, title, subtitle, action }: EmptyStateProps) {
   const { colors } = useTheme();
   return (
     <View style={styles.container}>
-      <Ionicons name={icon} size={56} color={colors.textDisabled} style={styles.icon} />
+      <Ionicons
+        name={icon}
+        size={56} // brand-guard-allow: empty-state illustration glyph, past the icon scale (spec 17 §4.2)
+        color={colors.textDisabled}
+        style={styles.icon}
+      />
       <Text style={styles.title}>{title}</Text>
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       {action ? <View style={styles.action}>{action}</View> : null}
@@ -31,38 +36,23 @@ interface EmptyStateAction {
   testID?: string;
 }
 
-/** Primary (filled) + optional secondary (outlined) CTA buttons for empty states. */
-export function EmptyStateActions({ primary, secondary }: { primary: EmptyStateAction; secondary?: EmptyStateAction }) {
+/**
+ * The empty state's call to action and an optional secondary one beside it, on the kit buttons
+ * (`md`, inside a centred status — spec 17 §8.1 call 5). The kit plays the light haptic.
+ */
+export function EmptyStateActions({ primary, secondary }: Readonly<{ primary: EmptyStateAction; secondary?: EmptyStateAction }>) {
   const styles = useStyles();
-  const press = (a: EmptyStateAction) => () => {
-    hapticLightTap();
-    a.onPress();
-  };
   return (
     <View style={styles.actions}>
       {secondary ? (
-        <Pressable
-          style={[styles.btn, styles.btnSecondary]}
-          onPress={press(secondary)}
-          accessibilityRole="button"
-          testID={secondary.testID}
-        >
-          <Text style={styles.btnTextSecondary}>{secondary.label}</Text>
-        </Pressable>
+        <SecondaryButton label={secondary.label} size="md" testID={secondary.testID} onPress={secondary.onPress} />
       ) : null}
-      <Pressable
-        style={[styles.btn, styles.btnPrimary]}
-        onPress={press(primary)}
-        accessibilityRole="button"
-        testID={primary.testID}
-      >
-        <Text style={styles.btnTextPrimary}>{primary.label}</Text>
-      </Pressable>
+      <PrimaryButton label={primary.label} size="md" testID={primary.testID} onPress={primary.onPress} />
     </View>
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   container: {
     flex: 1,
     justifyContent: 'center',
@@ -88,15 +78,4 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
     marginTop: spacing.xl,
   },
   actions: { flexDirection: rowDirectionStart, flexWrap: 'wrap' as const, justifyContent: 'center' as const, gap: spacing.sm },
-  btn: {
-    minHeight: 48,
-    paddingHorizontal: spacing.xl,
-    borderRadius: radius.lg,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  btnPrimary: { backgroundColor: colors.primary },
-  btnSecondary: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border },
-  btnTextPrimary: { ...typography.body, color: colors.textInverse, fontWeight: '700' as const },
-  btnTextSecondary: { ...typography.body, color: colors.textPrimary, fontWeight: '700' as const },
 }));

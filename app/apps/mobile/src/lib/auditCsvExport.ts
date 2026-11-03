@@ -38,7 +38,7 @@ function escapeCsvField(value: unknown): string {
   // Quote whenever the value contains a delimiter, quote, or newline. Double
   // any embedded quotes per RFC 4180.
   if (/[",\r\n]/.test(s)) {
-    return `"${s.replace(/"/g, '""')}"`;
+    return `"${s.replaceAll('"', '""')}"`;
   }
   return s;
 }

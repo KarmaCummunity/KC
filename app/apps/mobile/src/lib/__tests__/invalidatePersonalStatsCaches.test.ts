@@ -2,8 +2,6 @@ import { describe, it, expect, vi } from 'vitest';
 import type { QueryClient } from '@tanstack/react-query';
 import { invalidatePersonalStatsCaches } from '../invalidatePersonalStatsCaches';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 function makeFakeQc(): { qc: QueryClient; calls: Array<{ queryKey: unknown }> } {
   const calls: Array<{ queryKey: unknown }> = [];
   const qc = {

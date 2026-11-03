@@ -1,7 +1,7 @@
 // FR-POST-003, FR-POST-009, FR-POST-021 — exposure block on edit-post screen.
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import type { PostVisibility } from '@kc/domain';
 import { useFeedSessionStore } from '../../store/feedSessionStore';
 import { layoutDirectionStyle, layoutWritingDirectionStyle, textAlignStart } from '../../lib/rtlLayout';
@@ -70,8 +70,7 @@ const useEditPostExposureSectionStyles = makeUseStyles(({ colors }) => ({
     ...layoutDirectionStyle(),
   },
   sectionTitle: {
-    ...typography.semiBold,
-    fontSize: 15,
+    ...typography.button,
     color: colors.textPrimary,
     textAlign: textAlignStart(),
     ...layoutWritingDirectionStyle(),

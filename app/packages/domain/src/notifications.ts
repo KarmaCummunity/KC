@@ -1,3 +1,5 @@
+import type { NotificationPreferences } from './value-objects';
+
 export type NotificationCategory = 'critical' | 'social';
 
 export type NotificationKind =
@@ -5,6 +7,8 @@ export type NotificationKind =
   | 'support_message'
   | 'system_message'
   | 'post_expiring'
+  // D59 / S3 — "still relevant?" reminder to the owner (replaces expiry for items/requests).
+  | 'post_relevance_check'
   | 'mark_recipient'
   | 'unmark_recipient'
   | 'auto_removed'
@@ -29,7 +33,27 @@ export type NotificationKind =
   // Matching v2 (0420–0423) — automatic offer↔request suggestions + responses.
   | 'match_suggested'
   | 'match_interest'
-  | 'match_accepted';
+  | 'match_accepted'
+  // KC#1316 — food offer expiring within 24 h / expired unclaimed (spec 05 §5.1, S4).
+  | 'listing_expiring'
+  | 'listing_expired'
+  // D73 / D96 (0511) — rides on the listing flow: every booking change reaches the other side.
+  | 'ride_booking_requested'
+  | 'ride_booking_confirmed'
+  | 'ride_booking_declined'
+  | 'ride_booking_expired'
+  | 'ride_booking_cancelled'
+  // D74 (0516) — a new ride on a route the user follows.
+  | 'ride_route_match'
+  // D70 (0517) — an emergency raised on a ride of the one rides flow.
+  | 'ride_listing_emergency'
+  // FR-NOTIF-018 (0528) — item and food handoffs: every change reaches the other side.
+  | 'giving_handoff_requested'
+  | 'giving_handoff_claimed'
+  | 'giving_handoff_confirmed'
+  | 'giving_handoff_declined'
+  | 'giving_handoff_cancelled'
+  | 'giving_handoff_completed';
 
 /** Payload attached to every Expo push under `data`. The client reads this on tap. */
 export interface PushData {
@@ -48,4 +72,16 @@ export interface DeviceRegistration {
   readonly userId: string;
   readonly pushToken: string;
   readonly platform: 'ios' | 'android' | 'web';
+}
+
+/**
+ * Whether the user still wants notifications of `kind` (spec §7.11, FR-NOTIF-017).
+ * Opt-out model: only an explicit `false` under `prefs.kinds` disables a kind, so
+ * rows written before per-kind preferences existed keep receiving everything.
+ */
+export function isNotificationKindEnabled(
+  prefs: Pick<NotificationPreferences, 'kinds'> | null | undefined,
+  kind: NotificationKind,
+): boolean {
+  return prefs?.kinds?.[kind] !== false;
 }

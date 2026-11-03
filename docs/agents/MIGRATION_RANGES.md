@@ -47,11 +47,68 @@ Last applied on kc-dev when this was written: `0239`.
 | 0420–0423 | matching engine v2: `match_candidates` + scorer across worlds (PostGIS/time/trust/mutes/blocks), pg_cron sweep + on-write trigger, in-app/WhatsApp delivery (consent, quiet hours, daily cap), accept/decline feedback, LLM re-rank hooks (flag off) — see `docs/SSOT/MATCHING_V2.md` | merged (#1004) |
 | 0424–0427 | matching v2 quality: Hebrew-aware head-noun/keyword text score + notify text floor, rides route corridor/direction/window/seats + re-score, kc-dev demo ride requests (guarded), kc-dev daily e2e listing cleanup (guarded) | merged (#1006) |
 | 0428–0429 | matching engine v2 follow-ups (reserved) | claimed (matching v2) |
-| 0430+ | — | free |
+| 0430–0439 | Pro entitlement + WhatsApp Pro bot (#1083, #1089, #1090, #1086, #1091) | in progress |
+| 0440 | #1041 world launch wedge `app_flags` | in progress |
+| 0440 (file) | Note 2026-10-30: the file actually numbered `0440` is `chat_media_storage_rls_user_first` (#1216); the world launch flags shipped as `0441_world_launch_app_flags.sql` | merged |
+| 0442 | #1228 admin hierarchy position permissions | in review |
+| 0443–0444 | — | free |
+| 0445–0449 | `claude/launch-readiness` (storage media access scope + launch fixes) | in progress |
+| 0450 | G32 / D59 items and requests never expire + owner reminders (#1259) | in progress |
+| 0451 | G3 / D16 listing anonymity both ways (#1254) | in progress |
+| 0452 | G33 / G20 / D61: hide reported posts for review, user suspension 5/30 d, support while suspended | in progress |
+| 0453 | G34 / D63 listing-handoff karma per the §7.6 table (#1262) | in progress |
+| 0460 | #1120 per-type notification opt-outs (`kinds`), match-suggestion opt-out in delivery | in review |
+| 0454 | #1122 admin match-quality metrics (`admin_match_quality`; moved from 0461, which #1268 uses) | in review |
+| 0455–0458 | #1058 Sean Ellis PMF survey (single-choice questions, `user_active_days`, admin PMF report) | in review |
+| 0459 | #1294 listing expiry from `details.expires_at`, food urgency on the 1–3 scale | in review |
+| 0461 | FR-ADMIN-028 layered hierarchy census RPC (`admin_hierarchy_census`, #1268) | in progress |
+| 0462 | #1296 listing world subcategory must match the listing's world | in review |
+| 0463 | #1298 listing reports recorded, reported listings hidden for review | in review |
+| 0464 | #1297 chat from a listing opens and anchors the listing | in review |
+| 0469 | #1102 / #1111 `browse_listings` world subcategory filter | in review |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0430+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0466+`.
+| 0470–0489 | Org finance & transparency — `SSOT/spec/19_org_finance.md` FR-FIN-001..021 (P1 `0470–0479`, P2 `0480–0485`, P3 `0486–0489`) | claimed (spec only, no files yet) |
+| 0463 | G42 / D68 / D69 ops health registry + first platform and rides checks (#1321) | in review |
+| 0464 | #1297 chat from a listing opens and anchors the listing; one context per chat | in review |
+| 0465 | FR-ADMIN-030 team management: org-scoped `admin_list_admins` + atomic `admin_change_role` (D-197) | in progress |
+| 0490–0509 | Organization profile & accounts — `SSOT/spec/20_organizations.md` FR-ORG-001..020 (P1 `0490–0499`, P2 `0500–0505`, P3 `0506–0509`) | claimed (spec only, no files yet) |
+| 0468 | #1298 listing reports recorded (reporter hide, audit), reported listings hidden for review, admin restore, moderation-only review states | in review |
+| 0466 | KC#1101 / KC#1109 AC4 — native items and food listings mirror into the main feed (`posts.listing_id`, `worlds.feed_mirror`, D-206) | in review |
+| 0510 | KC#1306 "Rating given" karma (2 per handoff or ride rating) | in review |
+| 0511–0519 | Rides end to end — `docs/spec/05_giving_worlds.md` §5.3, gaps G44–G49 (`0511` G47 driver bookings) | in progress |
+| 0520 | KC#1063 function `EXECUTE` explicit grants: new functions private by default, SECURITY DEFINER triggers and internal helpers service-role only | in review |
+| 0521 | KC#1064 `chat-media` bucket private: read policy by chat visibility, signed URLs in the app | in review |
+| 0522–0526 | FEED-WORLDS / FR-FEED-020 — main feed of every create category + a feed per world (`0522` every create category mirrors into the feed, merged #1376; `0523` time world active) | in progress |
+| 0527 | KC#1411 `list_ride_places` total order (label, kind, id) so the app can page past `max_rows` | in review |
+| 0528 | KC#1391 FR-NOTIF-018 item and food handoff pushes (`giving_handoffs_giving_notify`) | in review |
+| 0529 | Feed filter giving worlds + subcategories (#1457) | in progress |
+| 0530 | KC#1128 ride completion RPC: owner closes ride and completes confirmed bookings | in review |
+| 0531 | KC#1413 FR-RIDE-046 recurring rides: `ride_series`, materializer + sweep, series RPCs, rides-feed folding, `list_ride_series_occurrences` | in review |
+| 0532 | Item reservations return `item_already_reserved` (#1500) | in review |
+| 0533 | Ride booking approval rechecks seat capacity under the listing lock (#1499) | in review |
+| 0534 | #880 server-side write rate limits: listings, giving handoffs, follows | in progress |
+| 0535 | #1468 knowledge world subcategories | in progress |
+| 0536 | FK and hot-path indexes | in progress |
+| 0537 | RPC input bounds | in progress |
+| 0539 | food expiry: offers only, no food TTL (G38, D21 / D28) | merged (#1554) |
+| 0540 | listing detail schemas enforced for native listings | in progress |
+| 0541 | follow edges to Private profiles only through an approved request (FR-FOLLOW-003/005/012) | in progress |
+| 0542 | admin per-world flow funnel (G43) | in progress |
+| 0543 | listing owner management by status (spec 07 §7.1) | in progress |
+| 0544 | block filtering in both directions (FR-MOD-009) | in progress |
+| 0545 | Blocked Users list (FR-MOD-004) | in progress |
+| 0546 | donation link approval (D9) | in progress |
+| 0547 | my givings by world (FR-STATS-008) | in progress |
+| 0548 | donation link world categories | in progress |
+| 0549 | account deletion grace period + purge (FR-SETTINGS-012) | in progress |
+| 0550+ | — | free |
+
+## Next free ranges
+
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0550+`.
 
 ## How to claim
 

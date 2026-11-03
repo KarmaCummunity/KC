@@ -3,9 +3,9 @@
 // focused on form orchestration. The parent receives the new URL (or null)
 // via `onChange` and is responsible for persisting on Save.
 import React, { useState } from 'react';
-import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, useTheme } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { AvatarInitials } from './AvatarInitials';
 import { NotifyModal } from './NotifyModal';
 import { PhotoSourceSheet } from './PhotoSourceSheet';
@@ -80,11 +80,11 @@ export function EditProfileAvatar({ userId, displayName, avatarUrl, disabled, on
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   wrap: { alignItems: 'center', marginVertical: spacing.base, gap: spacing.sm },
   spinner: {
-    position: 'absolute', width: 104, height: 104, borderRadius: 52,
-    backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center',
+    position: 'absolute', width: 104, height: 104, borderRadius: radius.full,
+    backgroundColor: colors.overlay, justifyContent: 'center', alignItems: 'center',
   },
   hint: { ...typography.caption, color: colors.primary },
 }));

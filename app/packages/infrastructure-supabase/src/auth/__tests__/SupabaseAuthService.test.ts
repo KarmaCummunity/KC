@@ -31,7 +31,10 @@ function sbSession(over: any = {}): any {
     access_token: 'access',
     refresh_token: 'refresh',
     expires_at: 1_750_000_000,
-    user: { id: 'u_1', email: 'a@b.test', email_confirmed_at: '2026-05-16T12:00:00.000Z', user_metadata: { full_name: 'Alice', avatar_url: 'a.jpg' } },
+    user: {
+      id: 'u_1', email: 'a@b.test', email_confirmed_at: '2026-05-16T12:00:00.000Z', created_at: '2026-05-16T11:59:00.000Z',
+      user_metadata: { full_name: 'Alice', avatar_url: 'a.jpg' },
+    },
     ...over,
   };
 }
@@ -41,6 +44,12 @@ describe('SupabaseAuthService — signUpWithEmail', () => {
     const client = makeAuthClient({ signUpResult: { data: { session: sbSession() }, error: null } });
     const out = await new SupabaseAuthService(client).signUpWithEmail('a@b.test', 'pw');
     expect(out).toMatchObject({ userId: 'u_1', email: 'a@b.test', displayName: 'Alice', emailVerified: true });
+  });
+
+  it('maps the auth account creation time for the time-to-first-post metric (#1042)', async () => {
+    const client = makeAuthClient({ signUpResult: { data: { session: sbSession() }, error: null } });
+    const out = await new SupabaseAuthService(client).signUpWithEmail('a@b.test', 'pw');
+    expect(out?.accountCreatedAt).toBe('2026-05-16T11:59:00.000Z');
   });
 
   it('returns null when the sign-up succeeds without a session (email-verification flow)', async () => {
@@ -167,6 +176,7 @@ describe('SupabaseAuthService — toSession mapping defaults', () => {
     const out = await new SupabaseAuthService(client).getCurrentSession();
     expect(out?.displayName).toBeNull();
     expect(out?.avatarUrl).toBeNull();
+    expect(out?.accountCreatedAt).toBeNull();
   });
 
   it('computes a fallback expiresAt when expires_at is missing (Date.now()/1000 + expires_in)', async () => {

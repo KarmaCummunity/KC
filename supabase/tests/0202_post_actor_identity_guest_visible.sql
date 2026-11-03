@@ -51,6 +51,8 @@ begin
     raise exception 'ASSERT FAILED (%): expected % identity row(s) for OnlyMe post, got %', p_who, p_expect_only, n_only;
   end if;
 end $$;
+-- Called below under `set local role`: new functions are owner-only by default (0520).
+grant execute on function pg_temp.assert_counts(integer, integer, text) to public;
 
 -- Guest (anon, NULL uid): sees the Public post's identity, NOT the OnlyMe one.
 select set_config('request.jwt.claims', jsonb_build_object('role','anon')::text, true);

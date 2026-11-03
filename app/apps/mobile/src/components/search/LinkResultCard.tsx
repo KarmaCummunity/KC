@@ -1,8 +1,8 @@
 // FR-FEED-017 — donation link result card for universal search.
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@kc/ui';
+import { useTheme, Text } from '@kc/ui';
 import type { DonationLinkSearchResult } from '@kc/domain';
 import { openExternalUrl } from '../../utils/openExternalUrl';
 import { useSearchResultCardStyles } from './searchResultCard.styles';

@@ -1,0 +1,18 @@
+name: Setup Supabase CLI
+description: >
+  Install the Supabase CLI at the one version every workflow uses. This file is
+  the single place the version is pinned; bump it here in its own PR, which
+  re-runs the backend lane (local stack) against the new CLI before any deploy
+  uses it. Callers must check out the repository first.
+
+runs:
+  using: composite
+  steps:
+    - name: Install Supabase CLI
+      uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3
+      with:
+        version: 2.99.0
+
+    - name: Print Supabase CLI version
+      shell: bash
+      run: supabase --version

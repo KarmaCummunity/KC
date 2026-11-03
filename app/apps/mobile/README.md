@@ -1,7 +1,9 @@
 # KC mobile (Expo / React Native)
 
 Native KC app (`@kc/mobile`) — resumed for App Store / Google Play (issues #836, #837).
-Uses the shared Supabase backend in `supabase/` (same as GLOWE web).
+Uses the shared Supabase backend in `supabase/` (same project as the KC web export).
+
+If `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` are missing at runtime, the app shows a configuration error screen instead of crashing on launch (#857).
 
 ## Prerequisites
 
@@ -67,12 +69,12 @@ Set Supabase and Sentry values as [EAS secrets](https://docs.expo.dev/build-refe
    - App Store Connect app for `org.karmacommunity.app`.
    - App Store Connect API key → secrets `ASC_API_KEY_ID`, `ASC_API_KEY_ISSUER_ID`, `ASC_API_KEY_P8` (contents of the `.p8` file).
    - Team id → secret `KC_IOS_TEAM_ID`. Variable `KC_ASC_APP_ID` (numeric App Store Connect app id).
-   - Run workflow **TestFlight iOS** (`testflight-ios.yml`: macOS `eas build --local` + upload only, no App Review).
+   - **Mobile nightly** uploads every night; manual runs: **TestFlight iOS** (`testflight-ios.yml`: macOS `eas build --local` + upload only, no App Review).
 
 3. **Google Play (internal track)**
    - Play Console app with package `org.karmacommunity.app`.
    - Service account JSON → secret `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`.
-   - Run workflow **Play Internal Android** (`play-internal.yml`: EAS cloud AAB + internal-track submit).
+   - **Mobile nightly** uploads every night; manual runs: **Play Internal Android** (`play-internal.yml`: EAS cloud AAB + internal-track submit).
 
 4. **Store listings** — screenshots, privacy policy URLs, and review metadata are out of scope for CI; prepare in App Store Connect / Play Console before public release.
 
@@ -81,10 +83,11 @@ Set Supabase and Sentry values as [EAS secrets](https://docs.expo.dev/build-refe
 | Workflow | Purpose |
 | -------- | ------- |
 | [`kc-mobile-eas-preview.yml`](../../../.github/workflows/kc-mobile-eas-preview.yml) | Manual EAS preview builds (no store submit) |
-| [`testflight-ios.yml`](../../../.github/workflows/testflight-ios.yml) | Manual TestFlight upload (macOS local EAS build) |
-| [`play-internal.yml`](../../../.github/workflows/play-internal.yml) | Manual Play internal-track upload |
+| [`mobile-nightly.yml`](../../../.github/workflows/mobile-nightly.yml) | Nightly: newest green `dev` commit → P0 E2E → TestFlight + Play internal |
+| [`testflight-ios.yml`](../../../.github/workflows/testflight-ios.yml) | TestFlight upload (macOS local EAS build); nightly or manual on `dev` |
+| [`play-internal.yml`](../../../.github/workflows/play-internal.yml) | Play internal-track upload; nightly or manual on `dev` |
 
-Store workflows are `workflow_dispatch` only (never auto-run on push). They fail fast when required secrets are missing.
+Store builds only build commits with a green `CI` push run and fail fast when required secrets are missing. They use the eas.json `nightly` profile and the kc-dev Supabase backend (key in the GitHub Environment `mobile-store`), and refuse to upload a build whose bundle points elsewhere ([`ENVIRONMENTS.md`](../../../docs/SSOT/ENVIRONMENTS.md)).
 
 ## OTA updates
 

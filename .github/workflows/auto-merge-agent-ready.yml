@@ -1,39 +1,108 @@
-name: Auto-merge agent-ready PRs
+name: Auto-merge PRs
 
-# Enables squash auto-merge on PRs into `dev` labeled `agent-ready`.
-# GitHub then merges by itself once the branch protection's required checks pass.
+# Enables squash auto-merge on every non-draft, same-repo PR whose base is not
+# `main` (no label needed). Draft PRs are the opt-out. GitHub then merges by
+# itself once the dev ruleset is satisfied (`CI gate` green, via the merge queue).
 # Never touches `main`. Docs: docs/agents/OPERATING_MODEL.md.
-# Safe as pull_request_target: no checkout, and no PR code runs.
+#
+# Works from `dev` only (no change to `main` needed):
+# 1. `request` runs on `pull_request` (the PR's own workflow copy, which is
+#    based on dev). It holds NO secrets: it only dispatches this workflow on
+#    `--ref dev` with the PR number (GITHUB_TOKEN may trigger workflow_dispatch).
+# 2. `enable` runs on `workflow_dispatch` from `dev`'s copy, so the
+#    `agent-merge` environment (deployment branch: dev only) releases the agent
+#    GitHub App credentials. A PR branch can never read them: its own run has
+#    no environment, and the dispatched run always executes dev's file.
+# It re-checks the PR (open, not draft, same repo, base != main) before
+# enabling auto-merge. GITHUB_TOKEN is never used for the merge: a merge made
+# with it triggers no push CI and no deploy (TD-197). No PR code is checked out.
 
 on:
-  pull_request_target:
-    branches: [dev]
-    types: [labeled, opened, reopened, synchronize, ready_for_review]
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: PR number to arm auto-merge on
+        required: true
+        type: string
 
-permissions:
-  contents: write
-  pull-requests: write
-
-concurrency:
-  group: auto-merge-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+permissions: {}
 
 jobs:
-  enable-auto-merge:
-    name: enable auto-merge (squash)
+  request:
+    name: request auto-merge
     if: >-
-      github.event.pull_request.base.ref == 'dev' &&
-      github.event.pull_request.draft == false &&
-      contains(github.event.pull_request.labels.*.name, 'agent-ready')
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.base.ref != 'main' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      actions: write
     steps:
-      - name: Enable auto-merge
+      - name: Dispatch the enable job on dev
         env:
-          # Optional AGENT_MERGE_TOKEN (fine-grained PAT or App token) lets the
-          # merge push trigger DB deploy / Deploy Web. A merge done with
-          # GITHUB_TOKEN does not trigger downstream workflows.
-          GH_TOKEN: ${{ secrets.AGENT_MERGE_TOKEN || github.token }}
+          GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
-        run: gh pr merge "$PR" --repo "$REPO" --auto --squash --delete-branch
+        run: gh workflow run auto-merge-agent-ready.yml --repo "$REPO" --ref dev -f pr="$PR"
+
+  enable-auto-merge:
+    name: enable auto-merge (squash)
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev'
+    concurrency:
+      group: auto-merge-${{ inputs.pr }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: agent-merge
+    permissions: {}
+    steps:
+      # Step `if:` cannot read secrets, so this step turns "are the App
+      # credentials configured?" into an output.
+      - name: Detect the agent App credentials
+        id: identity
+        env:
+          APP_ID: ${{ secrets.AGENT_APP_ID }}
+          APP_KEY: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+        run: |
+          if [ -n "$APP_ID" ] && [ -n "$APP_KEY" ]; then
+            echo "app=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "app=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Installation token scoped to this repository and to what enabling
+      # auto-merge and deleting the head branch need. It expires within an
+      # hour and the action revokes it when the job ends.
+      - name: Mint agent GitHub App token
+        id: app
+        if: steps.identity.outputs.app == 'true'
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Enable auto-merge
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token || secrets.AGENT_MERGE_TOKEN }}
+          PR: ${{ inputs.pr }}
+          REPO: ${{ github.repository }}
+        # No --delete-branch: GitHub rejects it while the `dev` merge queue is enabled
+        # ("Cannot use -d or --delete-branch when merge queue enabled"); the queue's
+        # merge removes the head branch per the repository's delete-on-merge setting.
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::No agent merge identity: set AGENT_APP_ID + AGENT_APP_PRIVATE_KEY (GitHub App, preferred) or AGENT_MERGE_TOKEN in the agent-merge environment (deployment branch dev). GITHUB_TOKEN is not used because a merge made with it triggers no push CI and no deploy (TD-197). See docs/SSOT/OPERATOR_RUNBOOK.md § Owner setup for D-195 CI/CD."
+            exit 1
+          fi
+          case "$PR" in ''|*[!0-9]*) echo "::error::bad PR number"; exit 1;; esac
+          ok=$(gh pr view "$PR" --repo "$REPO" --json state,isDraft,baseRefName,isCrossRepository \
+            --jq '.state=="OPEN" and (.isDraft|not) and .baseRefName!="main" and (.isCrossRepository|not)')
+          if [ "$ok" != "true" ]; then echo "PR #$PR is not eligible; skipping."; exit 0; fi
+          gh pr merge "$PR" --repo "$REPO" --auto --squash

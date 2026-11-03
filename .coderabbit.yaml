@@ -1,5 +1,6 @@
-# CodeRabbit — AI PR review (non-merging). Install the GitHub App on
-# KarmaCummunity/GloWe before this config takes effect.
+# CodeRabbit — AI PR review (non-merging), installed on KarmaCummunity/KC.
+# Reviews the KC app, backend and scripts. (The former GloWe web tree was
+# removed in 0238 / D-190, so it is no longer a review target.)
 # https://github.com/apps/coderabbitai
 
 language: en-US
@@ -9,14 +10,29 @@ reviews:
   request_changes_workflow: false
   high_level_summary: true
   poem: false
+  # Each status update or edit wakes the Claude session that owns the PR
+  # (.claude/skills/babysit/SKILL.md), so CodeRabbit posts reviews only:
+  # no "review skipped / in progress / rate limited" status comment
+  # (review_status), no commit status (commit_status), no fortune text while
+  # a requested review runs (in_progress_fortune).
+  review_status: false
+  commit_status: false
+  in_progress_fortune: false
   path_filters:
-    - "app/apps/glowe-web/**"
+    - "app/**"
+    - "supabase/**"
+    - "scripts/**"
+    - "docs/spec/**"
     - "CONTRIBUTING.md"
     - "README.md"
-    - "!.github/**"
     - "!**/*.lock"
+    - "!**/pnpm-lock.yaml"
     - "!**/coverage/**"
-    - "!app/apps/mobile/**"
+    - "!**/database.types.ts"
   auto_review:
-    enabled: true
+    enabled: false
     drafts: false
+    # All PRs target `dev` (CLAUDE.md §6); without this CodeRabbit only
+    # auto-reviews PRs into the default branch (`main`).
+    base_branches:
+      - "dev"

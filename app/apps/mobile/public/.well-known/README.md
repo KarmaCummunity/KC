@@ -8,7 +8,7 @@ public bundle so the dev web server + production hosting both serve them.
 
 Both files still contain placeholder fingerprints:
 
-- `apple-app-site-association` → `appID: "REPLACE_WITH_APPLE_TEAM_ID.com.karmacommunity.app"`
+- `apple-app-site-association` → `appID: "REPLACE_WITH_APPLE_TEAM_ID.org.karmacommunity.app"`
 - `assetlinks.json` → `sha256_cert_fingerprints: ["REPLACE_WITH_ANDROID_RELEASE_SHA256"]`
 
 Until both placeholders are filled in with real values, the universal-link /

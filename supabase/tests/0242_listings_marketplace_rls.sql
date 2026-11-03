@@ -76,8 +76,7 @@ begin
   end if;
 end $$;
 
--- Anonymity may not loosen after publish (3 → 2 allowed is decrease in restriction? 3→2 is tighten)
--- Loosen 2 → 3 must fail after published_at set.
+-- Anonymity may change both ways after publish (D16, 0451): 2 → 3 is allowed.
 do $$
 declare
   v_id uuid;
@@ -101,12 +100,11 @@ begin
   from public.listing_kinds where world_slug = 'items' and slug = 'give_item'
   returning listing_id into v_id;
 
-  begin
-    update public.listings set anonymity_level = 3 where listing_id = v_id;
-    raise exception 'ASSERT FAILED: anonymity loosen should have been blocked';
-  exception when check_violation then
-    null;
-  end;
+  -- D16 (0451): anonymity changes both ways after publish.
+  update public.listings set anonymity_level = 3 where listing_id = v_id;
+  if (select anonymity_level from public.listings where listing_id = v_id) <> 3 then
+    raise exception 'ASSERT FAILED: anonymity loosen after publish should be allowed (D16)';
+  end if;
 end $$;
 
 -- Medical routed kinds require external_body_id for native listings.

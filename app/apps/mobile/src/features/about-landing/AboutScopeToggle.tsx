@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { makeUseStyles, typography, spacing, radius } from '@kc/ui';
+import { View, Pressable } from 'react-native';
+import { makeUseStyles, typography, spacing, radius, shadow, Text } from '@kc/ui';
 import { useTranslation } from 'react-i18next';
 import { useAboutContentScope } from './AboutContentScopeContext';
 import { aboutRtlText, aboutRtlRow } from './aboutWebRtlStyle';
@@ -67,24 +67,18 @@ const useAboutScopeToggleStyles = makeUseStyles(({ colors }) => ({
   },
   pillOn: {
     backgroundColor: colors.primary,
+    ...shadow.glow,
     shadowColor: colors.primaryDark,
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
   },
   pillOnVision: {
     backgroundColor: colors.secondary,
+    ...shadow.glow,
     shadowColor: colors.secondary,
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
   },
   pillText: {
     ...typography.caption,
     color: colors.textSecondary,
-    fontWeight: '700',
+    ...typography.bold,
     ...aboutRtlText,
   },
   pillTextOn: { color: colors.textInverse },

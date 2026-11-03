@@ -9,6 +9,7 @@ function fakeRepo(roles: readonly AdminRole[]): IAdminRoleRepository {
     listAdmins: vi.fn(),
     grantRole: vi.fn(),
     revokeRole: vi.fn(),
+    changeRole: vi.fn(),
   };
 }
 

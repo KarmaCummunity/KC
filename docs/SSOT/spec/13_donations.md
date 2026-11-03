@@ -1,6 +1,10 @@
 # 2.13 Donations Hub
 
-> **Status:** ✅ Core Complete — Hub, 6 categories, donation links, Edge Function shipped. ⚠️ Audit 2026-05-16: 🔴 **`validate-donation-link` SSRF** — no host allow-list, no private-IP block, follows redirects (TD-79, BACKLOG P2.12). 🟠 FR-DONATE-003 AC2 missing jgive CTA; FR-DONATE-001/006 layout is 2-col grid instead of vertical stacked with divider; FR-DONATE-008 AC3 reachability rule diverged (`!= 404` instead of `200..399`); error-code parity gaps. TD-97. See `docs/SSOT/archive/audit/2026-05-16/06_donations_stats_settings.md`.
+> **Status:** ✅ Core Complete — Hub, 6 categories, donation links, Edge Function shipped. ⚠️ Audit 2026-05-16: ✅ **`validate-donation-link` SSRF closed** — port allow-list, private / loopback / metadata hosts, IPv4-mapped IPv6 (dotted and hex form), a DNS-resolution check (`dnsGuard.ts`, #1234), all re-validated on every manual redirect hop (TD-79). Residual lookup-vs-fetch race: TD-265. 🟠 FR-DONATE-003 AC2 missing jgive CTA; FR-DONATE-001/006 layout is 2-col grid instead of vertical stacked with divider; FR-DONATE-008 AC3 reachability rule diverged (`!= 404` instead of `200..399`); error-code parity gaps. TD-97. See `docs/SSOT/archive/audit/2026-05-16/06_donations_stats_settings.md`.
+>
+> **Money hub (2026-10-30):** `FR-DONATE-011` ✅ — direct support for KC (one-time via Bit / PayBox / card page, monthly standing order via a hosted card page) with a donor legal notice; channel URLs are server config (`kc_support_channels`, migration `0447`). `FR-DONATE-003` jgive CTA and community links restored; the sandbox in-app org flow (#850) is hidden behind `money_in_app_org_payments` (default off). Payment confirmation + karma (D20 "receives confirmation", 07.6) remain open — G8.
+>
+> **Status correction (2026-10-30):** the `validate-donation-link` item from the 2026-05-16 audit (TD-79 there) is resolved in code — host/port/redirect validation is implemented in `supabase/functions/validate-donation-link/index.ts`. Remaining open items: layout, reachability rule (FR-DONATE-008 is superseded by D9, see `docs/spec/95_reconciliation.md`).
 >
 > **Behavior update (2026-05-12)** — Donation link **remove** is a hard **`DELETE`** on `donation_links` (authorized by RLS policy `donation_links_delete_own_or_admin`); the app no longer sets `hidden_at` / `hidden_by` on remove. **Edit** must always invoke `validate-donation-link` with body field **`link_id`** set to the UUID of the row being edited so the Edge Function performs an **UPDATE**, never a second INSERT. One-time DB cleanup: migration `0050_donation_links_purge_soft_deleted.sql` deletes rows that were previously soft-hidden (`hidden_at IS NOT NULL`). עברית: מחיקה = מחיקת שורה מהטבלה; עריכה = עדכון אותה שורה ב־UUID שנבחר, לא יצירת קישור חדש.
 
@@ -16,42 +20,44 @@ Non-goals (out of scope):
 
 - Server-side filtering, ranking, or recommendations on the Hub.
 - Per-organization volunteer dispatch beyond a single admin thread.
-- Native fundraising / donation flow (deferred — Money sub-screen is link-out only).
+- Native fundraising / in-app payment processing (deferred — phase 2, D20). Donations to KC itself (`FR-DONATE-011`) and to partner nonprofits are link-outs to licensed providers; the app never handles payment data.
 - Universal search across donation categories — that lives in `FR-FEED-016` (placeholder) and a future `FR-FEED-017+` (engine).
 
 ---
 
-## FR-DONATE-001 — Donations Hub: 3 tiles
+## FR-DONATE-001 — Donations Hub: one list of giving worlds
 
 **Description.**
-The Donations tab opens to a Hub screen showing three vertically stacked tiles for the three donation modalities.
+The Donations tab opens to a Hub screen with ONE list of tiles, one per giving world (project book `D100`): items, food, transport, time, money, housing, knowledge, medical, animals, democracy, employment, challenges. There is no featured card and no second "domains" section.
 
 **Source.**
-- Design spec: [`docs/SSOT/archive/superpowers/specs/2026-05-09-donations-and-search-tabs-design.md`](../../archive/superpowers/specs/2026-05-09-donations-and-search-tabs-design.md).
-- Decisions: `D-16`.
+- Design spec: [`docs/SSOT/archive/superpowers/specs/2026-05-09-donations-and-search-tabs-design.md`](../../archive/superpowers/specs/2026-05-09-donations-and-search-tabs-design.md) (original three-tile hub, superseded).
+- Decisions: `D-16`, `D100`, `D107`; product book `docs/spec/04_product_structure.md`.
 
 **Acceptance Criteria.**
-- AC1. Tile order (visual top-to-bottom in RTL): **🎁 חפצים** → **⏰ זמן** → **💰 כסף**.
+- AC1. *(D100)* Tiles appear in the order of `GIVING_WORLD_SLUGS`: חפצים, אוכל, תחבורה, זמן, כסף, דיור, ידע, רפואה, בעלי חיים, דמוקרטיה, תעסוקה, אתגרים — in one 2-column grid under one heading, all tiles looking alike (no featured tile). The retired domains and the experiences world have no tile and no screen, and no redirect.
 - AC2. Each tile shows an icon, a title, and a one-line subtitle. Tap target ≥ 44×44.
 - AC3. Each tile is `accessibilityRole="button"` with `accessibilityLabel` = title + subtitle.
 - AC4. The Hub screen is reachable from the bottom-tab `💝 תרומות` icon and from any screen that has a global TabBar.
-- AC5. Hub layout is responsive: tiles stack vertically on all breakpoints; on Tablet/Desktop the container max-width is 480px and remains centered.
+- AC5. Hub layout is responsive: the container max-width stays centered on Tablet/Desktop.
+- AC6. *(2026-11-01, `D-207`)* The hub has **no "donations marketplace" (שוק התרומות) entry** and the marketplace browse screen is gone: listings are found in the main feed and in each giving world's screen (`06_feed_and_search.md`). The old URL `/donations/marketplace` redirects to the hub; single-listing pages (`/donations/marketplace/<id>`), the listings map and "my listings" (profile menu → *המודעות שלי*) stay.
+- AC7. *(2026-11-03)* A world whose launch flag is off (D60) is **never hidden**: its tile carries a small **"פורטל"** tag and the subtitle "קישורים וידע"; an active world has no tag. Opening a portal world shows its links and knowledge, with no feed. Worlds without a screen of their own (medical, animals, democracy, employment, challenges) open `/(tabs)/donations/category/<slug>`.
 
-**Related.** Screens: 2.6 · `FR-DONATE-002`, `FR-DONATE-003`, `FR-DONATE-004`.
+**Related.** Screens: 2.6 · `FR-DONATE-002`, `FR-DONATE-003`, `FR-DONATE-004`, `FR-POST-001` AC6, `FR-FEED-020`.
 
 ---
 
 ## FR-DONATE-002 — Items tile navigation
 
 **Description.**
-Tapping the Items tile navigates the user to the Home Feed unchanged.
+Tapping the Items tile opens the items world screen (`/(tabs)/donations/items`) like every other world tile (`D100`; before 2026-11-03 it opened the Home Feed).
 
 **Source.**
 - Design spec: §5.2.
 
 **Acceptance Criteria.**
-- AC1. Tap on the **🎁 חפצים** tile pushes `/(tabs)` (Home Feed).
-- AC2. **No filter is pre-applied** to the feed; the user sees the feed in whatever filter state they last left it (per `FR-FEED-005`).
+- AC1. Tap on the **חפצים** tile pushes `/(tabs)/donations/items` — the items world's own feed (`FR-FEED-020` AC2).
+- AC2. The main Home Feed stays reachable from the Home tab; its filter state is untouched (per `FR-FEED-005`).
 - AC3. Back navigation from the feed returns to the previous screen per OS / expo-router defaults.
 
 **Related.** Screens: 2.1 · `FR-FEED-001`, `FR-FEED-005`.
@@ -61,19 +67,20 @@ Tapping the Items tile navigates the user to the Home Feed unchanged.
 ## FR-DONATE-003 — Money sub-screen
 
 **Description.**
-A coming-soon screen for the Money modality that links out to the partner platform `jgive`.
+The Money hub. Top to bottom: hero → *Support KC directly* card (`FR-DONATE-011`) → partner-nonprofits card linking out to `jgive` → community NGO links (`FR-DONATE-007`) → the in-app verified-nonprofit flow (#850), rendered only while the `money_in_app_org_payments` flag is on (it runs on a sandbox provider). The screen is a single vertical `ScrollView` (`FR-DONATE-007 AC6`).
 
 **Source.**
 - Design spec: §5.3.
-- Decisions: `D-16`.
+- Decisions: `D-16`, `D20`, `D37` (project book `docs/spec/05_giving_worlds.md` §5.5).
 
 **Acceptance Criteria.**
-- AC1. Body copy (Hebrew, verbatim): *"קטגוריית הכסף תפתח בקרוב. ועד אז מזמינים אתכם להיכנס ולתרום / לחפש תורמים דרך עמותת jgive."*
-- AC2. A primary button labeled *"פתח את jgive.com ↗"* invokes `Linking.openURL('https://jgive.com')`.
+- AC1. Hero body copy comes from `donations.moneyScreen.body` (2026-10-30: support KC, find nonprofits, share links — replaces the coming-soon and sandbox wording).
+- AC2. The partner card (`PartnerNonprofitsCard`) shows `supportKc.partnersTitle` / `partnersBody` and a secondary button `donations.moneyScreen.openLink` that opens `https://www.jgive.com`.
 - AC3. The link opens in the platform's external browser (no in-app WebView).
-- AC4. If `Linking.canOpenURL` returns false, an inline error is shown: *"לא הצלחנו לפתוח את הקישור. נסו דפדפן אחר."*
+- AC4. If the link cannot be opened, the user sees `donations.moneyScreen.linkErrorBody`.
 - AC5. The screen is auth-required in MVP-core (`FR-DONATE-005`); see TD-112 for future guest-scope mirror.
 - AC6. **(FR-DONATE-007 augmentation, 2026-05-10)** Below the existing CTA, the screen renders a `<DonationLinksList categorySlug="money" />` section — same component as the new category screens — listing community-curated links and exposing the *"+"* add-link button.
+- AC7. **(2026-10-30)** The in-app verified-nonprofit section (nonprofit list, donation history and standing-order links, sandbox banner) renders only when `useFeatureFlag('money_in_app_org_payments')` is true. Compiled default `false`; remote override row seeded `false` by migration `0447`.
 
 **Related.** Screens: 2.7 · External link target: `jgive.com`.
 
@@ -152,7 +159,7 @@ The Donations Hub is extended with 6 community-driven category tiles below the e
 A reusable component renders the community-curated NGO link list for any category slug in `('time','money','food','housing','transport','knowledge','animals','medical')`. Used both on the new dynamic category screen and embedded below the existing Time and Money screens.
 
 **Acceptance Criteria.**
-- AC1. Lists rows for the slug where the row still exists and is visible: `donation_links.category_slug = slug AND hidden_at IS NULL`, newest first. (Hard-deleted rows are gone from the table; `hidden_at` remains in the schema only for legacy rows until purged.)
+- AC1. Lists rows for the slug where the row still exists and is visible: `donation_links.category_slug = slug AND hidden_at IS NULL`, newest first. *(2026-11-03, D9, `0546`)* Other members see only rows with `review_status = 'approved'`; the submitter also sees their own pending or rejected row, with its status ("waiting for KC team approval" / "not approved" and the reviewer's note). (Hard-deleted rows are gone from the table; `hidden_at` remains in the schema only for legacy rows until purged.)
 - AC2. Header row shows the section title (*"עמותות וקישורים"*) and a small *"+"* icon button (32×32, primary color) on the leading RTL edge.
 - AC3. Each row shows: site favicon (with `link-outline` Ionicon fallback on image error), display name (h3), description (body, 2-line clamp), and tiny domain chip. Tap → `Linking.openURL(url)`.
 - AC4. Empty state shows a friendly message + centered *"הוספת קישור ראשון"* CTA that opens the add-link modal.
@@ -163,6 +170,8 @@ A reusable component renders the community-curated NGO link list for any categor
 ---
 
 ## FR-DONATE-008 — Add / edit link flow + Edge Function validation
+
+> ⚠️ **Superseded by the project book** — D9 — an org link goes live only after KC admin approval. Binding text: `docs/spec/08_organizations.md`. Evidence and status: `docs/spec/95_reconciliation.md` §2. The text below is kept as history (D35).
 
 **Description.**
 Any signed-in user can submit a new donation link via a modal sheet, or **edit their own** link (same modal; FR-DONATE-009). The submission is validated server-side by the `validate-donation-link` Edge Function which performs a URL reachability check and inserts or updates the row using the service-role key. Direct `donation_links` INSERT from client roles is blocked by RLS.
@@ -201,28 +210,67 @@ Each row's overflow (`…`) menu opens an action sheet with: *"פתח"*, *"דו�
 ## FR-DONATE-010 — Platform-support donation card
 
 **Description.**
-A reusable presentational card prompting the viewer (guest or signed-in — see AC5) to back the platform itself by tapping through to **Bit** or **Paybox**. The destination URLs are stable, app-wide constants — not a community-curated list. Embedded in the About screen (twice — directly after the hero, and after the Vision section) and at the very top of the Settings screen.
+A warm card prompting the viewer (guest or signed-in — see AC5) to back the platform itself. Embedded in the About screen (twice — directly after the hero, and after the Vision section) and at the very top of the Settings screen. Since 2026-10-30 it is a thin wrapper over the `FR-DONATE-011` card: same server-configured channels, same legal notice; only the heading and tagline differ.
 
 **Source.**
-- Product request 2026-05-18 (PM).
+- Product request 2026-05-18 (PM); 2026-10-30 alignment with `FR-DONATE-011` and `D64`.
 
 **Acceptance Criteria.**
-- AC1. Component `DonationSupportCard` renders a single warm-tinted card (background = `colors.primarySurface`, border = `colors.primaryLight`) with: a centered heart icon badge, an h3 title, a body tagline, and two side-by-side CTA buttons.
-- AC2. Buttons map to:
-  - Primary (filled, `colors.primary`): label `donations.supportUs.ctaBit` → opens `https://www.bitpay.co.il/app/share-info?i=192485429007_19nlt4Un`.
-  - Secondary (white + 1.5 px primary border): label `donations.supportUs.ctaPaybox` → opens `https://links.payboxapp.com/XR2JbQRxMUb`.
-  - Each button shows an `open-outline` Ionicon as a trailing affordance.
-- AC3. Tapping a button invokes `Linking.canOpenURL` → `Linking.openURL`. On failure, an `Alert` shows `donations.supportUs.linkError{Title,Body}`.
-- AC4. All visible strings come from `donations.supportUs.*` (Hebrew bundle); no inline strings in component.
-- AC5. Card is auth-agnostic — it renders identically for guest and signed-in users (Settings is auth-required today; About is reachable by guests through the existing route).
+- AC1. `DonationSupportCard` renders `SupportKcCard` with `titleKey = donations.supportUs.title` and `taglineKey = donations.supportUs.tagline` (warm surface, heart icon badge, h3 title, body tagline).
+- AC2. Buttons, their order and their destinations come from `FR-DONATE-011 AC1–AC3` (`kc_support_channels`). No payment URL is compiled into the app. While only the interim Bit / PayBox rows are active they are what the card shows; once a `card_one_time` clearing page is configured they are withdrawn (`D64`).
+- AC3. Opening and link-failure behavior follow `FR-DONATE-011 AC4`.
+- AC4. All visible strings come from `donations.supportUs.{title,tagline}` and `supportKc.*`; no inline strings in components.
+- AC5. Card is auth-agnostic — it renders for guest and signed-in users (`kc_support_channels` is readable by `anon`). The standing-order cancellation link is shown to signed-in users only (`FR-DONATE-011 AC6`).
 - AC6. Placement:
   - `AboutLandingScreen` — between `AboutHero` and `AboutSectionBlocksTop`, wrapped in `<AnimatedEntry delay={240}>` so it appears after the hero stagger completes.
   - `AboutSectionBlocksTop` — between the Vision section card and the Problems section card, wrapped in the same `AnimatedEntry` stagger as adjacent sections.
   - `settings.tsx` — first element inside the outer `ScrollView`, padded with `spacing.base` on both axes (`supportCardWrap`).
-- AC7. Touch targets ≥ 44 × 44 px. Accessibility labels distinguish Bit vs Paybox (`ctaBitA11y`, `ctaPayboxA11y`).
-- AC8. No network or storage side-effects — the component is fully presentational + `Linking`.
+- AC7. Touch targets ≥ 44 × 44 px; each button's accessibility label names the channel and provider (`supportKc.channelA11y`).
+- AC8. The only network read is the channel list; when it cannot load, the card shows `supportKc.unavailable` and no payment link.
 
-**Related.** None — independent of `FR-DONATE-001..009` (which target community-curated NGO links). The two systems coexist without coupling.
+**Related.** `FR-DONATE-011` (shared card, channels and legal notice). Independent of the community-curated NGO links (`FR-DONATE-007..009`).
+
+---
+
+## FR-DONATE-011 — Support KC directly: one-time + monthly standing order
+
+**Description.**
+A *Support KC directly* card at the top of the Money hub lets a donor give to Karma Community itself — once (Bit, PayBox, or a credit-card hosted page) or as a monthly credit-card standing order. Per `D20` the app **only redirects**: every option is a licensed provider's hosted page opened outside the app, so card and bank details never pass through KC (no PCI-DSS scope) and App Store 3.2.2(iv) / Google Play donation rules are respected. Destination URLs are server configuration so the provider can be swapped without a release (`D20`).
+
+**Source.**
+- PM request 2026-10-30; project book `D4`, `D20`, `D64` (`docs/spec/05_giving_worlds.md` §5.5, `docs/spec/08_organizations.md`), gap `G8`.
+
+**Acceptance Criteria.**
+- AC1. **Configuration.** Channels live in `public.kc_support_channels` (migration `0447`): `channel ∈ {bit, paybox, card_one_time, card_standing_order}` (PK), `url`, `provider_label`, `is_active`. A CHECK accepts only `https://` URLs without credentials or whitespace. RLS: `anon` + `authenticated` read active rows; only `has_admin_role(auth.uid(),'super_admin')` may write. `bit` and `paybox` are seeded with the `FR-DONATE-010` URLs; card rows are added by the operator once the Grow merchant account exists (launch plan A11, `docs/SSOT/OPERATOR_RUNBOOK.md` → *KC support channels*).
+- AC2. **Resolution.** `GetKcSupportOptionsUseCase` returns `{ oneTime, standingOrder }`: insecure URLs are dropped (domain `isSecureSupportUrl`, mirrors the CHECK), the first row per kind wins, one-time order is `bit → paybox → card_one_time`. **`D64`:** Bit / PayBox are interim transfer links, not clearing — when an active, secure `card_one_time` row exists they are omitted. The server list is the single source: there is no compiled fallback; a load failure surfaces as the *unavailable* state (AC3), and an empty list is respected (operator disabled all).
+- AC3. **Buttons.** One-time heading + one full-width button per one-time channel (first = primary style, rest = secondary); standing-order heading, body naming the provider (`supportKc.standingOrderBody`), and a *Set up a standing order* button — each section only when it has a channel. Every button carries an `open-outline` icon and an accessibility label naming the provider and that it opens outside the app. While loading, a spinner; with no channels, `supportKc.unavailable`.
+- AC4. **Opening.** A tap opens the exact configured URL in the external browser / provider app (`Linking.openURL`; `window.open` on web). Never an in-app WebView. Failure → `supportKc.linkError`.
+- AC5. **Legal notice** (`SupportKcDisclosure`, always shown): payment is processed off-app by a licensed provider and card/account details are neither seen nor stored by KC; the money goes to KC and funds building and running the platform; KC is not yet a registered nonprofit, so **no section-46 tax credit**, and the provider sends the payment confirmation; the donation is voluntary and grants no in-app benefit, service or priority.
+- AC6. **Standing-order cancellation.** When a standing order is offered, the notice adds that it can be cancelled at any time, effective within 3 business days at the latest (Israeli Consumer Protection Law §13D), and — for signed-in users — a *Request to cancel a standing order* link: confirm dialog → the fixed text `supportKc.cancelMessage` is posted to the user's support thread (`FR-CHAT-007`) → navigate to that chat. Send failure keeps the user on the screen with `supportKc.cancelError`. Operator obligation: stop the order at the provider and confirm in that chat within 3 business days.
+- AC7. All strings live in `supportKc.*` (he + en); the disclosure wording changes only with PM approval.
+- AC8. Out of scope (open, `G8`): provider confirmation webhook, recording donations to KC, and the karma award for donations / standing orders (`docs/spec/07_cross_cutting_systems.md` §7.6) — they require the Grow API credentials.
+
+**Related.** `FR-DONATE-003` (host screen), `FR-DONATE-010` (same card on About + Settings), `FR-CHAT-007`.
+
+---
+
+## FR-DONATE-011 — Medical category: curated life-saving bodies directory
+
+**Description.**
+The `medical` category screen (`/(tabs)/donations/category/medical`) renders a static, app-wide directory of leading Israeli life-saving and medical bodies above the community-curated `DonationLinksList`. Unlike `FR-DONATE-007` links, entries are shipped with the app (not user-submitted) and are not editable by users.
+
+**Source.**
+- Product request 2026-10-30 (PM).
+
+**Acceptance Criteria.**
+- AC1. Entries are grouped into five sections, in order: blood donation, organ & bone marrow donation (ADI card), first aid & rescue, medical equipment loans, patient & family support.
+- AC2. Each entry shows a name, a short description and an `open-outline` affordance; tapping opens the official https URL in the external browser (`Linking.canOpenURL` → `Linking.openURL`). On failure an `Alert` shows `medicalBodies.linkError`.
+- AC3. All visible strings come from `medicalBodies.*` (he + en bundles); URLs and section structure live in `features/donations/medicalBodies.ts`.
+- AC4. Each card has `accessibilityRole="link"`, an `accessibilityLabel` naming the body, and a touch target ≥ 44 px.
+- AC5. The section renders only for slug `medical`; other categories are unchanged. The community `DonationLinksList` remains below it.
+- AC6. No network or storage side-effects.
+
+**Related.** `FR-DONATE-006`, `FR-DONATE-007`.
 
 ---
 
@@ -235,3 +283,7 @@ A reusable presentational card prompting the viewer (guest or signed-in — see 
 | 0.7 | 2026-05-12 | Status banner + `FR-DONATE-008 AC3c` (client edit vs add contract); `FR-DONATE-007 AC1` + `FR-DONATE-009` description clarify DELETE vs Edge update; Hebrew summary in status. |
 | 0.8 | 2026-05-12 | `FR-DONATE-007 AC7` — silent server refetch after add/edit/remove so the list re-renders without manual reload. |
 | 0.9 | 2026-05-18 | Adds `FR-DONATE-010` — platform-support card (Bit + Paybox) embedded on About + Settings. |
+| 0.10 | 2026-10-30 | Adds `FR-DONATE-011` — curated medical / life-saving bodies directory on the `medical` category screen. |
+| 1.0 | 2026-10-30 | Adds `FR-DONATE-011` — direct support for KC (one-time + monthly standing order, legal notice, server-configured channels). `FR-DONATE-003` rewritten to the current Money hub; jgive CTA + community links restored; sandbox org flow behind `money_in_app_org_payments`. |
+| 1.1 | 2026-10-30 | `D64` — Bit / PayBox are withdrawn once a one-time clearing page exists; no compiled payment URLs or offline fallback; `FR-DONATE-010` card now wraps the `FR-DONATE-011` card (same channels + legal notice). |
+| 1.2 | 2026-11-01 | `FR-DONATE-001` AC6 — the "donations marketplace" hub card and browse screen are removed; `/donations/marketplace` redirects to the hub, listing pages / map / my listings stay. |

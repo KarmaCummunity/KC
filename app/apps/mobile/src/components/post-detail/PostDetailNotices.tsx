@@ -2,10 +2,10 @@
 // viewer who can still see the post (owner or permitted follower / admin).
 // Mapped to FR-POST-014 (viewer detail), FR-POST-015 AC2/AC3 (visibility banners).
 import React from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography, useTheme } from '@kc/ui';
+import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import type { PostWithOwner } from '@kc/application';
 import { textAlignStart } from '../../lib/rtlLayout';
 
@@ -28,6 +28,9 @@ function collectNotices(
   const notices: Notice[] = [];
   if (post.status === 'removed_admin') {
     notices.push({ key: 'removed', icon: 'shield-outline', text: t('post.detail.removedAdminNotice'), tone: 'danger' });
+  }
+  if (post.status === 'hidden_pending_review') {
+    notices.push({ key: 'hidden', icon: 'eye-off-outline', text: t('post.detail.hiddenForReviewNotice'), tone: 'warning' });
   }
   if (post.status === 'expired') {
     notices.push({ key: 'expired', icon: 'time-outline', text: t('post.detail.expiredNotice'), tone: 'warning' });
@@ -60,7 +63,7 @@ export function PostDetailNotices({ post }: Readonly<{ post: PostWithOwner }>) {
           accessibilityRole="alert"
           accessibilityLabel={n.text}
         >
-          <Ionicons name={n.icon} size={16} color={toneColor(n.tone)} />
+          <Ionicons name={n.icon} size={iconSize.sm} color={toneColor(n.tone)} />
           <Text style={[styles.text, { color: toneColor(n.tone) }]}>{n.text}</Text>
         </View>
       ))}
@@ -82,7 +85,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   },
   text: {
     ...typography.caption,
-    fontWeight: '600',
+    ...typography.semiBold,
     flex: 1,
     textAlign: textAlignStart(),
   },

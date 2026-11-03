@@ -2,10 +2,10 @@
 // (deleted, unauthorized, or never existed). Replaces the prior broken-empty
 // header + empty bubble list with a clear "not available" screen.
 import React from 'react';
-import { Text, TouchableOpacity } from 'react-native';
+import { TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, typography, spacing, useTheme } from '@kc/ui';
+import { makeUseStyles, typography, spacing, Text } from '@kc/ui';
 import { EmptyState } from '../EmptyState';
 
 interface Props {
@@ -14,7 +14,6 @@ interface Props {
 
 export function ChatNotFoundView({ onBack }: Props) {
   const styles = useStyles();
-  const { colors } = useTheme();
   const { t } = useTranslation();
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -32,7 +31,7 @@ export function ChatNotFoundView({ onBack }: Props) {
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   container: { flex: 1, backgroundColor: colors.surface },
   cta: { ...typography.body, color: colors.primary, paddingVertical: spacing.sm },
 }));

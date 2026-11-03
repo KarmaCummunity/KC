@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, typography, spacing, radius } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, Text } from '@kc/ui';
 import { aboutRtlText } from './aboutWebRtlStyle';
 
 /**
@@ -72,7 +72,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
     ...typography.h4,
     color: colors.error,
     ...aboutRtlText,
-    fontWeight: '800',
+    ...typography.extraBold,
     marginBottom: spacing.md,
   },
   layerList: { gap: spacing.sm },
@@ -87,13 +87,13 @@ const useStyles = makeUseStyles(({ colors }) => ({
   toneFuture: { backgroundColor: colors.warningLight, borderColor: colors.warning },
   layerPhase: {
     ...typography.label,
-    fontWeight: '800',
+    ...typography.extraBold,
     color: colors.textPrimary,
     ...aboutRtlText,
   },
   layerTitle: {
     ...typography.body,
-    fontWeight: '700',
+    ...typography.bold,
     color: colors.textPrimary,
     ...aboutRtlText,
   },
@@ -114,7 +114,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   },
   redLinesTitle: {
     ...typography.label,
-    fontWeight: '800',
+    ...typography.extraBold,
     color: colors.error,
     ...aboutRtlText,
   },

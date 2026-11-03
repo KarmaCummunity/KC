@@ -1,27 +1,17 @@
 // Home-feed aside — quick links into the giving worlds (FR-RESP-003).
-// Curated subset of the Donations Hub tiles; reuses the hub's i18n keys.
-import { Text, TouchableOpacity, View } from 'react-native';
+// The first giving-world tiles of the Donations hub; reuses the hub's config.
+import { TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, radius, spacing, typography, useTheme } from '@kc/ui';
+import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { rowDirectionStart } from '../../lib/rtlLayout';
 import { AsideCard } from './AsideCard';
+import { DONATIONS_HUB_TILES } from '../../navigation/donationsHubTiles';
 
-type WorldLink = {
-  key: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  titleKey: string;
-  href: string;
-};
-
-const WORLDS: WorldLink[] = [
-  { key: 'time', icon: 'time-outline', titleKey: 'donations.time.title', href: '/(tabs)/donations/time' },
-  { key: 'money', icon: 'cash-outline', titleKey: 'donations.money.title', href: '/(tabs)/donations/money' },
-  { key: 'food', icon: 'restaurant-outline', titleKey: 'donations.categories.food.title', href: '/(tabs)/donations/category/food' },
-  { key: 'medical', icon: 'medical-outline', titleKey: 'donations.categories.medical.title', href: '/(tabs)/donations/category/medical' },
-];
+// D62 — the first world tiles of the Donations hub (one list, G2); domains are not worlds.
+const WORLDS = DONATIONS_HUB_TILES.slice(0, 4);
 
 export function GivingWorldsAside() {
   const styles = useStyles();
@@ -37,10 +27,10 @@ export function GivingWorldsAside() {
           style={styles.row}
           accessibilityRole="button"
           testID={`aside-world-${world.key}`}
-          onPress={() => router.push(world.href as never)}
+          onPress={() => router.push(world.href)}
         >
           <View style={styles.iconWrap}>
-            <Ionicons name={world.icon} size={16} color={colors.primary} />
+            <Ionicons name={world.icon} size={iconSize.sm} color={colors.primary} />
           </View>
           <Text style={styles.rowLabel} numberOfLines={1}>
             {t(world.titleKey)}
@@ -51,10 +41,10 @@ export function GivingWorldsAside() {
         style={styles.row}
         accessibilityRole="button"
         testID="aside-follow-suggestions"
-        onPress={() => router.push('/follow/suggestions' as never)}
+        onPress={() => router.push('/follow/suggestions')}
       >
         <View style={styles.iconWrap}>
-          <Ionicons name="person-add-outline" size={16} color={colors.primary} />
+          <Ionicons name="person-add-outline" size={iconSize.sm} color={colors.primary} />
         </View>
         <Text style={styles.rowLabel} numberOfLines={1}>
           {t('follow.suggestionsTitle')}
@@ -63,7 +53,7 @@ export function GivingWorldsAside() {
       <TouchableOpacity
         accessibilityRole="button"
         testID="aside-world-all"
-        onPress={() => router.push('/(tabs)/donations' as never)}
+        onPress={() => router.push('/(tabs)/donations')}
       >
         <Text style={styles.allLink}>{t('aside.givingWorldsAll')}</Text>
       </TouchableOpacity>

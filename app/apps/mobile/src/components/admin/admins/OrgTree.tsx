@@ -4,9 +4,9 @@
 // indented by level. Trees are small (a single org's management chain), so a
 // plain mapped list is sufficient — no nested virtualisation.
 import { useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import type { OrgTreeNode } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { OrgTreeRow } from './OrgTreeRow';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
@@ -79,7 +79,7 @@ export function OrgTree({ forest, onSelect }: OrgTreeProps) {
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  root:      { paddingHorizontal: 8, paddingVertical: 4 },
-  empty:     { padding: 24, alignItems: 'center' },
-  emptyText: { fontSize: 13, color: colors.textSecondary, textAlign: 'center' },
+  root:      { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+  empty:     { padding: spacing.xl, alignItems: 'center' },
+  emptyText: { fontSize: typography.bodySmall.fontSize, color: colors.textSecondary, textAlign: 'center' },
 }));

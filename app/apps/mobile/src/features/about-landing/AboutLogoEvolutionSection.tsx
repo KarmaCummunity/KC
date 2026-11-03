@@ -1,8 +1,8 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, Image, Pressable, ScrollView, LayoutAnimation, Platform } from 'react-native';
+import { View, Image, Pressable, ScrollView, LayoutAnimation, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, typography, spacing, radius, useTheme } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, iconSize, useTheme, Text } from '@kc/ui';
 import { aboutRtlText, aboutRtlRow } from './aboutWebRtlStyle';
 
 /**
@@ -57,7 +57,7 @@ export function AboutLogoEvolutionSection() {
         accessibilityState={{ expanded: open }}
         style={({ pressed }) => [styles.expandHead, pressed && styles.expandHeadPressed]}
       >
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={22} color={colors.secondary} />
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={iconSize.xl} color={colors.secondary} />
         <Text style={styles.expandTitle}>
           {open ? t('aboutContent.logoExpandClose') : t('aboutContent.logoExpandOpen')}
         </Text>
@@ -149,7 +149,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
     flex: 1,
     ...typography.body,
     ...aboutRtlText,
-    fontWeight: '700',
+    ...typography.bold,
     color: colors.textPrimary,
   },
 
@@ -174,9 +174,9 @@ const useStyles = makeUseStyles(({ colors }) => ({
     opacity: 0.5,
   },
   pullQuoteText: {
-    fontSize: 28,
+    fontSize: typography.h1.fontSize,
     lineHeight: 36,
-    fontWeight: '800',
+    ...typography.extraBold,
     color: colors.primary,
     letterSpacing: 0.5,
     textAlign: 'center',
@@ -200,7 +200,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
     ...typography.label,
     color: colors.secondary,
     ...aboutRtlText,
-    fontWeight: '800',
+    ...typography.extraBold,
     marginBottom: spacing.xs,
     textTransform: 'uppercase',
     letterSpacing: 1,

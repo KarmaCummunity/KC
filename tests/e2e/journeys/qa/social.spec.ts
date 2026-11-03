@@ -53,11 +53,21 @@ test('donations hub shows every giving world with translated titles', async ({ p
   expect(errors).toEqual([]);
 });
 
-test('money world lists at least one verified nonprofit', async ({ page }) => {
+test('money world: an active hub lists verified nonprofits, a portal shows links (D60)', async ({ page }) => {
+  const a = await sessionFor(USER_A);
+  const [flag] = await rest<{ enabled: boolean }[]>(
+    a.session.access_token as string,
+    'app_flags?select=enabled&key=eq.world_money_enabled',
+  );
   await gotoApp(page, '/donations/money');
-  await expect(page.getByText('עמותות מאומתות')).toBeVisible();
-  await page.waitForLoadState('networkidle');
-  await expect(page.getByText('אין עמותות מאומתות ברשימה עדיין.')).toHaveCount(0);
+  if (flag?.enabled) {
+    await expect(page.getByText('עמותות מאומתות')).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByText('אין עמותות מאומתות ברשימה עדיין.')).toHaveCount(0);
+  } else {
+    // Launch flag off: the world is shown as a portal (links + knowledge), never hidden.
+    await expect(page.getByTestId('world-portal')).toBeVisible();
+  }
 });
 
 test('he is RTL; switching to English flips to LTR', async ({ page }) => {

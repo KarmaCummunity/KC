@@ -13,7 +13,8 @@
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
-import { type Handler, withTiming } from '../_shared/withTiming.ts';
+import { type Handler, withObservability } from '../_shared/observability/mod.ts';
+import { denoResolve, ipv4FromMappedIPv6, resolvesOnlyToPublic } from './dnsGuard.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -21,6 +22,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const ALLOWED_SLUGS = new Set([
   'time', 'money', 'food', 'housing', 'transport', 'knowledge', 'animals', 'medical',
+  'democracy', 'employment', 'challenges',
 ]);
 
 const MAX_LINKS_PER_HOUR = 10;
@@ -97,10 +99,9 @@ function isPrivateIPv6Literal(host: string): boolean {
   if (h.startsWith('fc') || h.startsWith('fd')) return true;
   // ff00::/8 multicast
   if (h.startsWith('ff')) return true;
-  // IPv4-mapped IPv6: ::ffff:a.b.c.d — check the embedded IPv4.
-  const mapped = h.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
-  if (mapped) return isPrivateIPv4(mapped[1]);
-  return false;
+  // IPv4-mapped IPv6 (dotted or the hex form `new URL()` produces) — check the embedded IPv4.
+  const mapped = ipv4FromMappedIPv6(h);
+  return mapped !== null && isPrivateIPv4(mapped);
 }
 
 function isSafeHost(url: URL): { ok: true } | { ok: false; reason: string } {
@@ -113,6 +114,20 @@ function isSafeHost(url: URL): { ok: true } | { ok: false; reason: string } {
   if (isPrivateIPv4(host)) return { ok: false, reason: 'ipv4_private' };
   if (isPrivateIPv6Literal(host)) return { ok: false, reason: 'ipv6_private' };
   return { ok: true };
+}
+
+/** IP literals were already checked by isSafeHost; names must resolve to public addresses only. */
+function isIpLiteral(host: string): boolean {
+  return /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.includes(':') || host.startsWith('[');
+}
+
+function hostResolvesToPublic(hostname: string): Promise<boolean> {
+  const host = hostname.toLowerCase();
+  if (isIpLiteral(host)) return Promise.resolve(true);
+  return resolvesOnlyToPublic(host, denoResolve, {
+    isPrivateIPv4,
+    isPrivateIPv6: isPrivateIPv6Literal,
+  });
 }
 
 const CORS_HEADERS = {
@@ -148,6 +163,7 @@ async function checkReachable(initial: URL): Promise<boolean> {
   for (let hop = 0; hop <= MAX_REDIRECT_HOPS; hop++) {
     const safety = isSafeHost(url);
     if (!safety.ok) return false;
+    if (!(await hostResolvesToPublic(url.hostname))) return false;
     for (const method of ['HEAD', 'GET'] as const) {
       try {
         const resp = await fetch(url.toString(), {
@@ -330,4 +346,4 @@ const handler: Handler = async (req) => {
   return jsonResponse({ ok: true, link: inserted }, 200);
 };
 
-serve(withTiming('validate-donation-link', handler));
+serve(withObservability('validate-donation-link', handler));

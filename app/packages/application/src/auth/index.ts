@@ -1,0 +1,21 @@
+// Barrel for the auth use cases and errors (re-exported by `src/index.ts`).
+export * from './errors';
+export * from './SignUpWithEmail';
+export { ResendVerificationEmailUseCase, type ResendVerificationEmailInput } from './ResendVerificationEmail';
+export { VerifyEmailUseCase, type VerifyEmailInput, type VerifyEmailOutput } from './VerifyEmail';
+export { RequestPasswordResetUseCase, type RequestPasswordResetInput } from './RequestPasswordReset';
+export { ResetPasswordUseCase, type ResetPasswordInput } from './ResetPassword';
+export { assertPasswordPolicy, MIN_PASSWORD_LEN } from './passwordPolicy';
+export * from './SignInWithEmail';
+export * from './SignInWithGoogle';
+export * from './SignInWithApple';
+export * from './SignOut';
+export * from './RestoreSession';
+export * from './CompleteBasicInfoUseCase';
+export * from './CompleteOnboardingUseCase';
+export * from './SetAvatarUseCase';
+export * from './UpdateProfileUseCase';
+export * from './assertSessionUser';
+export * from './ReconcileAuthProfileMetadataUseCase';
+export * from './DeleteAccountUseCase';
+export * from './DismissClosureExplainerUseCase';

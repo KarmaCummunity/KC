@@ -74,34 +74,6 @@ function makeFakeClient(opts: {
   return { client, calls };
 }
 
-const FAKE_USER_ROW = {
-  user_id: 'u_1',
-  auth_provider: 'google',
-  share_handle: 'alice',
-  display_name: 'Alice',
-  city: 'IL-001',
-  city_name: 'Tel Aviv',
-  profile_street: null,
-  profile_street_number: null,
-  biography: null,
-  avatar_url: null,
-  privacy_mode: 'Public',
-  privacy_changed_at: null,
-  account_status: 'active',
-  onboarding_state: 'completed',
-  notification_preferences: {},
-  is_super_admin: false,
-  closure_explainer_dismissed: false,
-  first_post_nudge_dismissed: false,
-  items_given_count: 0,
-  items_received_count: 0,
-  active_posts_count_internal: 0,
-  followers_count: 0,
-  following_count: 0,
-  created_at: '2026-01-01T00:00:00.000Z',
-  updated_at: '2026-05-16T00:00:00.000Z',
-};
-
 describe('searchUsers — query length gating', () => {
   it('returns [] without calling the DB for an empty query', async () => {
     const { client, calls } = makeFakeClient({});

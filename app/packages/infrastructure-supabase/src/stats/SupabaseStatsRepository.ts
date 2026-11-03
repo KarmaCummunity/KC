@@ -1,10 +1,11 @@
 // SupabaseStatsRepository — adapter for IStatsRepository.
 // Mapped to SRS: FR-FEED-014, FR-STATS-003, FR-STATS-004.
 //
-// Reads from `community_stats` (0006) and `rpc_my_activity_timeline` (0030).
+// Reads from `community_stats` (0006) and `rpc_my_activity_timeline` (0030); FR-STATS-007 / 008
+// read `admin_world_flow_funnel` (0542) and `my_world_givings` (0547).
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { CommunityStatsSnapshot, IStatsRepository } from '@kc/application';
+import type { CommunityStatsSnapshot, IStatsRepository, MyWorldGivings, WorldFlowFunnelRow } from '@kc/application';
 import type { PersonalActivityItem, PersonalActivityKind } from '@kc/domain';
 import type { Database } from '../database.types';
 
@@ -100,6 +101,39 @@ export class SupabaseStatsRepository implements IStatsRepository {
       postId: r.post_id,
       postTitle: r.post_title,
       actorDisplayName: r.actor_display_name,
+    }));
+  }
+
+  async getWorldFlowFunnel(days: number): Promise<WorldFlowFunnelRow[]> {
+    const { data, error } = await this.client.rpc('admin_world_flow_funnel', { p_days: days });
+    if (error) throw new Error(`admin_world_flow_funnel: ${error.message}`);
+    return (data ?? []).map((r) => ({
+      worldSlug: r.world_slug,
+      worldLabelHe: r.world_label_he,
+      worldLabelEn: r.world_label_en,
+      direction: r.direction as WorldFlowFunnelRow['direction'],
+      published: r.published,
+      // Generated types say number; the function returns null outside the handoff worlds.
+      booked: r.booked ?? null,
+      confirmed: r.confirmed ?? null,
+      completed: r.completed ?? null,
+      cancelled: r.cancelled ?? null,
+      closed: r.closed,
+      medianHoursToBooking: r.median_hours_to_booking ?? null,
+      medianHoursToCompletion: r.median_hours_to_completion ?? null,
+    }));
+  }
+
+  async listMyWorldGivings(): Promise<MyWorldGivings[]> {
+    const { data, error } = await this.client.rpc('my_world_givings');
+    if (error) throw new Error(`my_world_givings: ${error.message}`);
+    return (data ?? []).map((r) => ({
+      worldSlug: r.world_slug,
+      worldLabelHe: r.world_label_he,
+      worldLabelEn: r.world_label_en,
+      given: r.given,
+      received: r.received,
+      closed: r.closed,
     }));
   }
 }

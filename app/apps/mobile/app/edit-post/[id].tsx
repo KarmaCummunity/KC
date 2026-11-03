@@ -1,17 +1,14 @@
 // FR-POST-008, FR-POST-009, FR-POST-015 AC1, FR-ADMIN-006. Edit form for open posts (owner or super-admin).
 // FR-POST-005 — images: same picker + upload pipeline as create.
 // Closes TD-130.
-import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Text, TouchableOpacity, View,
-} from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '@kc/ui';
+import { iconSize, useTheme, Text } from '@kc/ui';
 import type { Category, ItemCondition, LocationDisplayLevel, PostVisibility } from '@kc/domain';
 import { isPostError } from '@kc/application';
 import { getSupabaseClient } from '@kc/infrastructure-supabase';
@@ -20,12 +17,14 @@ import { useIsSuperAdmin } from '../../src/hooks/useIsSuperAdmin';
 import {
   getListPostActorIdentityUseCase,
   getPostByIdUseCase,
-  getRepublishPostUseCase,
   getUpdatePostUseCase,
 } from '../../src/services/postsComposition';
 import { ExpiredRepublishView } from '../../src/components/post/ExpiredRepublishView';
 import {
-  newUploadBatchId, pickPostImages, resizeAndUploadImage, type UploadedAsset,
+  newUploadBatchId,
+  pickPostImages,
+  resizeAndUploadImage,
+  type UploadedAsset,
 } from '../../src/services/imageUpload';
 import { useAddressStateWithCityReset } from '../../src/hooks/useAddressStateWithCityReset';
 import { EmptyState } from '../../src/components/EmptyState';
@@ -34,7 +33,7 @@ import { mapPostErrorToHebrew } from '../../src/services/postMessages';
 import { NotifyModal } from '../../src/components/NotifyModal';
 import { syncOwnerPostActorIdentity } from '../../src/lib/syncOwnerPostActorIdentity';
 import { getUserRepo } from '../../src/services/userComposition';
-import { useEditPostScreenStyles } from './editPostScreen.styles';
+import { useEditPostScreenStyles } from '../../src/screens/edit-post/editPostScreen.styles';
 
 const POST_IMAGES_BUCKET = 'post-images';
 function assetUrl(path: string): string {
@@ -68,6 +67,8 @@ export default function EditPostScreen() {
   const {
     city, street, streetNumber, setCity, setStreet, setStreetNumber,
   } = useAddressStateWithCityReset({});
+  const addressSetters = useRef({ setCity, setStreet, setStreetNumber });
+  addressSetters.current = { setCity, setStreet, setStreetNumber };
   const [locationDisplayLevel, setLocationDisplayLevel] =
     useState<LocationDisplayLevel>('CityAndStreet');
   const [visibility, setVisibility] = useState<PostVisibility>('Public');
@@ -104,9 +105,9 @@ export default function EditPostScreen() {
     setCategory(post.category);
     setCondition(post.itemCondition ?? 'Good');
     setUrgency(post.urgency ?? '');
-    setCity({ id: post.address.city, name: post.address.cityName });
-    setStreet(post.address.street);
-    setStreetNumber(post.address.streetNumber);
+    addressSetters.current.setCity({ id: post.address.city, name: post.address.cityName });
+    addressSetters.current.setStreet(post.address.street);
+    addressSetters.current.setStreetNumber(post.address.streetNumber);
     setLocationDisplayLevel(post.locationDisplayLevel);
     setVisibility(post.visibility);
     setUploads(
@@ -286,7 +287,7 @@ export default function EditPostScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.headerClose}>
-          <Ionicons name="close" size={24} color={colors.textPrimary} />
+          <Ionicons name="close" size={iconSize['2xl']} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('post.editPost.headerTitle')}</Text>
         <TouchableOpacity

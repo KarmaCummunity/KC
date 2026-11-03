@@ -7,14 +7,13 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography, useTheme } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { TextField } from '../../src/components/ui';
 import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
 import { SurveyRatingRow } from '../../src/components/survey/SurveyRatingRow';
 import {
@@ -100,9 +99,9 @@ export default function FreeFeedbackScreen() {
             ratingAnchorHigh={t('survey.feedbackRatingHigh')}
           />
 
-          <Text style={styles.fieldLabel}>{t('survey.feedbackBodyLabel')}</Text>
           <View style={styles.inputWrap}>
-            <TextInput
+            <TextField
+              label={t('survey.feedbackBodyLabel')}
               style={[styles.textInput, hebrewSurveyFieldTextStyle()]}
               value={body}
               onChangeText={handleBodyChange}
@@ -158,23 +157,17 @@ const useFeedbackStyles = makeUseStyles(({ colors }) => ({
   },
   fieldLabel: {
     ...typography.bodySmall,
-    fontWeight: '600',
+    ...typography.semiBold,
     color: colors.textSecondary,
     textAlign: rtlTextAlignStart,
     ...webTextRtl,
   },
-  inputWrap: { gap: 4 },
+  inputWrap: { gap: spacing.xs },
   textInput: {
-    ...typography.body,
-    fontSize: 15,
+    ...typography.button,
     lineHeight: 22,
     minHeight: 120,
-    padding: spacing.md,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    color: colors.textPrimary,
+    textAlignVertical: 'top',
   },
   counter: {
     ...typography.caption,
@@ -204,7 +197,7 @@ const useFeedbackStyles = makeUseStyles(({ colors }) => ({
   submitText: {
     ...typography.button,
     color: colors.textInverse,
-    fontWeight: '700',
+    ...typography.bold,
     ...webTextRtl,
   },
 }));

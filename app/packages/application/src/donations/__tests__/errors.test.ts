@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DonationLinkError } from '../errors';
+import { DonationLinkError, isDonationLinkError } from '../errors';
 
 describe('DonationLinkError', () => {
   it('is an Error subclass with name="DonationLinkError", carries code/message/cause', () => {
@@ -21,6 +21,13 @@ describe('DonationLinkError', () => {
     const err = new DonationLinkError('rate_limited', 'x');
     expect(err instanceof DonationLinkError).toBe(true);
     expect(err instanceof Error).toBe(true);
+  });
+
+  it('isDonationLinkError recognizes plain objects with name/code', () => {
+    const err = new DonationLinkError('unreachable', 'x');
+    expect(isDonationLinkError(err)).toBe(true);
+    expect(isDonationLinkError({ name: 'DonationLinkError', code: 'invalid_url', message: 'm' })).toBe(true);
+    expect(isDonationLinkError(new Error('nope'))).toBe(false);
   });
 
   it('preserves every code in the DonationLinkErrorCode union', () => {

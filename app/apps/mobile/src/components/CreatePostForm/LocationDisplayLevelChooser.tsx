@@ -1,9 +1,9 @@
 // LocationDisplayLevelChooser — FR-POST-003 AC3.
 // Three-option pill selector for how much of the address shows publicly.
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import type { LocationDisplayLevel } from '@kc/domain';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
@@ -32,7 +32,7 @@ const useLocationDisplayLevelChooserStyles = makeUseStyles(({ colors, isDark }) 
     borderColor: colors.border,
     alignItems: 'center' as const,
     backgroundColor: colors.surface,
-    gap: 2,
+    gap: spacing.xs,
   },
   btnActive: { backgroundColor: colors.primarySurface, borderColor: colors.primary },
   btnLabel: { ...typography.label, color: colors.textSecondary },

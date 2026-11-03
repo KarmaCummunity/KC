@@ -2,9 +2,10 @@
 // Times are committed on blur after normalising to HH:MM, so partial typing never
 // reaches the server (the server casts them to `time`).
 import React, { useEffect, useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
+import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { TextField } from '../ui/TextField';
 import type { NotificationPreferences } from '@kc/domain';
 import { NotificationToggleRow } from '../NotificationToggleRow';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
@@ -42,9 +43,10 @@ function TimeField({ label, value, onCommit }: { label: string; value: string; o
   return (
     <View>
       <View style={styles.row}>
-        <Text style={styles.label}>{label}</Text>
-        <TextInput
-          style={[styles.input, invalid && styles.inputInvalid]}
+        <TextField
+          containerStyle={styles.timeField}
+          label={label}
+          errorText={invalid ? t('feedSettings.quietTimeInvalid') : undefined}
           value={text}
           onChangeText={setText}
           onBlur={commit}
@@ -55,7 +57,6 @@ function TimeField({ label, value, onCommit }: { label: string; value: string; o
           accessibilityLabel={label}
         />
       </View>
-      {invalid ? <Text style={styles.error}>{t('feedSettings.quietTimeInvalid')}</Text> : null}
     </View>
   );
 }
@@ -112,17 +113,5 @@ const useStyles = makeUseStyles(({ colors }) => ({
     gap: spacing.sm,
     ...webViewRtl,
   },
-  label: { ...typography.body, color: colors.textPrimary, flex: 1, textAlign: rtlTextAlignStart, ...webTextRtl },
-  input: {
-    minWidth: 88,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    textAlign: 'center' as const,
-    color: colors.textPrimary,
-  },
-  inputInvalid: { borderColor: colors.error },
-  error: { ...typography.caption, color: colors.error, paddingHorizontal: spacing.base, textAlign: rtlTextAlignStart },
+  timeField: { flex: 1, minWidth: 88 },
 }));

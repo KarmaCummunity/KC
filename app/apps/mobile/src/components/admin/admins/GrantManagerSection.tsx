@@ -1,15 +1,20 @@
 // app/apps/mobile/src/components/admin/admins/GrantManagerSection.tsx
-// FR-ADMIN-025 — direct-manager + subordinates for a single grant, with an
-// assign/change/clear affordance gated by `admins.set_manager`. The read-only
-// display lives in ManagerSummary; this owns the mutation + picker.
+// FR-ADMIN-025 / FR-ADMIN-030 — direct manager + subordinates for a single
+// grant, with assign / change / clear offered only within the viewer's
+// authority (`admins.set_manager` + GrantAuthority, FR-ADMIN-027). The
+// read-only display lives in ManagerSummary; this owns the mutation + picker.
 import { useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { isOrgHierarchyError, type OrgTreeMember } from '@kc/domain';
-import { makeUseStyles, radius } from '@kc/ui';
+import { View } from 'react-native';
+import {
+  canDetachManager, canManageGrant, isOrgHierarchyError, managerCandidatesFor, type OrgTreeMember,
+} from '@kc/domain';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { PrimaryButton, SecondaryButton } from '../../ui/Buttons';
 import { RoleBadge } from './RoleBadge';
 import { ManagerSummary } from './ManagerSummary';
 import { ManagerPickerModal } from './ManagerPickerModal';
 import { useSetManager } from '../../../hooks/useSetManager';
+import { useGrantAuthority } from '../../../hooks/useGrantAuthority';
 import { rowDirectionStart } from '../../../lib/rtlLayout';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
@@ -19,14 +24,11 @@ export interface GrantManagerSectionProps {
   readonly canManage: boolean;
 }
 
-function sameScope(a: OrgTreeMember, b: OrgTreeMember): boolean {
-  return a.orgId === b.orgId || a.isPlatform;
-}
-
 export function GrantManagerSection({ member, members, canManage }: GrantManagerSectionProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   const setManager = useSetManager();
+  const { authority } = useGrantAuthority();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -39,9 +41,12 @@ export function GrantManagerSection({ member, members, canManage }: GrantManager
     [members, member.grantId],
   );
   const candidates = useMemo(
-    () => members.filter((m) => m.grantId !== member.grantId && sameScope(m, member)),
-    [members, member],
+    () => managerCandidatesFor(authority, member, members),
+    [authority, member, members],
   );
+  // The permission opens the affordance; the position decides this grant.
+  const canAct = canManage && canManageGrant(authority, member);
+  const canDetach = canDetachManager(authority);
 
   async function pick(managerGrantId: string | null): Promise<void> {
     setErr(null);
@@ -66,27 +71,24 @@ export function GrantManagerSection({ member, members, canManage }: GrantManager
         errCode={err}
       />
 
-      {canManage && (
+      {canAct && (
         <View style={styles.actions}>
-          <Pressable
-            accessibilityRole="button"
+          {/* Compact admin size (spec 17 §4.3). */}
+          <PrimaryButton
+            testID="grant-manager-assign"
+            label={manager ? L.admin.admins.detail.changeManager : L.admin.admins.detail.assignManager}
+            size="sm"
             disabled={setManager.isPending}
             onPress={() => { setErr(null); setPickerOpen(true); }}
-            style={styles.assignBtn}
-          >
-            <Text style={styles.assignText}>
-              {manager ? L.admin.admins.detail.changeManager : L.admin.admins.detail.assignManager}
-            </Text>
-          </Pressable>
-          {manager && (
-            <Pressable
-              accessibilityRole="button"
+          />
+          {manager && canDetach && (
+            <SecondaryButton
+              testID="grant-manager-clear"
+              label={L.admin.admins.detail.clearManager}
+              size="sm"
               disabled={setManager.isPending}
               onPress={() => { void pick(null); }}
-              style={styles.clearBtn}
-            >
-              <Text style={styles.clearText}>{L.admin.admins.detail.clearManager}</Text>
-            </Pressable>
+            />
           )}
         </View>
       )}
@@ -95,6 +97,7 @@ export function GrantManagerSection({ member, members, canManage }: GrantManager
         visible={pickerOpen}
         candidates={candidates}
         busy={setManager.isPending}
+        allowDetach={canDetach}
         onPick={(id) => { void pick(id); }}
         onClose={() => setPickerOpen(false)}
       />
@@ -103,12 +106,11 @@ export function GrantManagerSection({ member, members, canManage }: GrantManager
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  card: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: 14, gap: 4, marginTop: 8 },
-  head: { flexDirection: rowDirectionStart, alignItems: 'center', gap: 8, marginBottom: 4 },
-  org:  { fontSize: 12, color: colors.textSecondary },
-  actions: { flexDirection: rowDirectionStart, gap: 8, marginTop: 10 },
-  assignBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.primary },
-  assignText: { color: colors.textInverse, fontWeight: '700', fontSize: 13 },
-  clearBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.surfaceCream },
-  clearText: { color: colors.textSecondary, fontWeight: '700', fontSize: 13 },
+  card: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, gap: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  head: { flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
+  org:  { ...typography.caption, color: colors.textSecondary },
+  actions: { flexDirection: rowDirectionStart, gap: spacing.sm, marginTop: spacing.md },
 }));

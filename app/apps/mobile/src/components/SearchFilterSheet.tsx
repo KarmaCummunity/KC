@@ -1,28 +1,27 @@
 // Bottom sheet for advanced search filters (FR-FEED-017+).
 // Local state mirrors store so the user can preview before applying.
+// Rebuilt on top of the shared filterKit (issue #1457).
 import React, { useState } from 'react';
-import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@kc/ui';
+import { View } from 'react-native';
+import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { ALL_CATEGORIES, DONATION_CATEGORY_SLUGS, RADIUS_OPTIONS_KM } from '@kc/domain';
 import type { Category, DonationCategorySlug, PostType, SearchSortBy } from '@kc/domain';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { useSearchStore } from '../store/searchStore';
 import { CityPicker } from './CityPicker';
-import { SearchChip } from './search/SearchChip';
-import { useSearchFilterSheetStyles } from './search/searchFilterSheet.styles';
+import { FilterSheetFrame, FilterSection, SortSection } from './filterKit';
+import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
 
 const DEFAULT_RADIUS_KM = 5;
 
 interface Props {
-  visible: boolean;
-  onClose: () => void;
+  readonly visible: boolean;
+  readonly onClose: () => void;
 }
 
 export function SearchFilterSheet({ visible, onClose }: Props) {
-  const styles = useSearchFilterSheetStyles();
-  const { colors } = useTheme();
+  const styles = useStyles();
   const { t } = useTranslation();
   const store = useSearchStore(
     useShallow((s) => ({
@@ -84,103 +83,100 @@ export function SearchFilterSheet({ visible, onClose }: Props) {
     onClose();
   };
 
-  const sortLabels: Record<string, string> = {
-    relevance: t('search.sortRelevance'),
-    newest: t('search.sortNewest'),
-    followers: t('search.sortFollowers'),
-  };
+  const sortOptions = (['relevance', 'newest', 'followers'] as SearchSortBy[]).map((s) => ({
+    value: s,
+    label: s === 'relevance'
+      ? t('search.sortRelevance')
+      : s === 'newest'
+        ? t('search.sortNewest')
+        : t('search.sortFollowers'),
+  }));
+
+  const postTypeOptions = [
+    { value: 'Give' as const, label: t('search.give') },
+    { value: 'Request' as const, label: t('search.request') },
+  ];
+
+  const categoryOptions = ALL_CATEGORIES.map((c) => ({
+    value: c,
+    label: t(`search.categories.${c}`),
+  }));
+
+  const donationCategoryOptions = DONATION_CATEGORY_SLUGS.map((slug) => ({
+    value: slug,
+    label: t(`search.donationCategories.${slug}`),
+  }));
+
+  const radiusOptions = RADIUS_OPTIONS_KM.map((km) => ({
+    value: km,
+    label: t('search.radiusKm').replace('{km}', String(km)),
+  }));
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
-        <View style={styles.sheet}>
-          <View style={styles.header}>
-            <Pressable onPress={onClose} hitSlop={12}>
-              <Ionicons name="close" size={24} color={colors.textPrimary} />
-            </Pressable>
-            <Text style={styles.headerTitle}>{t('search.filters')}</Text>
-            <Pressable onPress={handleClear}>
-              <Text style={styles.clearText}>{t('search.clearFilters')}</Text>
-            </Pressable>
-          </View>
+    <FilterSheetFrame
+      visible={visible}
+      onDismiss={onClose}
+      title={t('search.filters')}
+      applyLabel={t('search.applyFilters')}
+      onApply={handleApply}
+      clearLabel={t('search.clearFilters')}
+      onClear={handleClear}
+    >
+      <SortSection<SearchSortBy>
+        title={t('search.sortBy')}
+        options={sortOptions}
+        value={sortBy}
+        onChange={setSortBy}
+      />
 
-          <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
-            <Text style={styles.sectionTitle}>{t('search.sortBy')}</Text>
-            <View style={styles.chipRow}>
-              {(['relevance', 'newest', 'followers'] as SearchSortBy[]).map((s) => (
-                <SearchChip key={s} label={sortLabels[s] ?? s} active={sortBy === s} onPress={() => setSortBy(s)} />
-              ))}
-            </View>
+      <FilterSection<PostType>
+        title={t('search.filterPostType')}
+        allLabel={t('search.all')}
+        options={postTypeOptions}
+        value={postType}
+        onChange={setPostType}
+      />
 
-            <Text style={styles.sectionTitle}>{t('search.filterPostType')}</Text>
-            <View style={styles.chipRow}>
-              <SearchChip label={t('search.all')} active={!postType} onPress={() => setPostType(null)} />
-              <SearchChip label={t('search.give')} active={postType === 'Give'} onPress={() => setPostType(postType === 'Give' ? null : 'Give')} />
-              <SearchChip label={t('search.request')} active={postType === 'Request'} onPress={() => setPostType(postType === 'Request' ? null : 'Request')} />
-            </View>
+      <FilterSection<Category>
+        title={t('search.filterCategory')}
+        allLabel={t('search.all')}
+        options={categoryOptions}
+        value={category}
+        onChange={setCategory}
+      />
 
-            <Text style={styles.sectionTitle}>{t('search.filterCategory')}</Text>
-            <View style={styles.chipRow}>
-              <SearchChip label={t('search.all')} active={!category} onPress={() => setCategory(null)} />
-              {ALL_CATEGORIES.map((c) => (
-                <SearchChip
-                  key={c}
-                  label={t(`search.categories.${c}`)}
-                  active={category === c}
-                  onPress={() => setCategory(category === c ? null : c)}
-                />
-              ))}
-            </View>
+      <FilterSection<DonationCategorySlug>
+        title={t('search.filterDonationCategory')}
+        allLabel={t('search.all')}
+        options={donationCategoryOptions}
+        value={donationCategory}
+        onChange={setDonationCategory}
+      />
 
-            <Text style={styles.sectionTitle}>{t('search.filterDonationCategory')}</Text>
-            <View style={styles.chipRow}>
-              <SearchChip label={t('search.all')} active={!donationCategory} onPress={() => setDonationCategory(null)} />
-              {DONATION_CATEGORY_SLUGS.map((slug) => (
-                <SearchChip
-                  key={slug}
-                  label={t(`search.donationCategories.${slug}`)}
-                  active={donationCategory === slug}
-                  onPress={() => setDonationCategory(donationCategory === slug ? null : slug)}
-                />
-              ))}
-            </View>
-
-            <Text style={styles.sectionTitle}>{t('search.filterCity')}</Text>
-            <CityPicker
-              value={city}
-              onChange={(sel: { id: string; name: string }) => handleCityChange(sel)}
-            />
-
-            {/* Radius picker — only visible after a city is selected. Mirrors
-                the PostFilterSheet pattern (FR-FEED-006). */}
-            {city && (
-              <>
-                <Text style={styles.sectionTitle}>{t('search.filterRadius')}</Text>
-                <View style={styles.chipRow}>
-                  {RADIUS_OPTIONS_KM.map((km) => (
-                    <SearchChip
-                      key={km}
-                      label={t('search.radiusKm').replace('{km}', String(km))}
-                      active={radiusKm === km}
-                      onPress={() => setRadiusKm(km)}
-                    />
-                  ))}
-                </View>
-              </>
-            )}
-          </ScrollView>
-
-          <View style={styles.footer}>
-            <Pressable
-              style={({ pressed }) => [styles.applyBtn, pressed && styles.applyBtnPressed]}
-              onPress={handleApply}
-            >
-              <Text style={styles.applyBtnText}>{t('search.applyFilters')}</Text>
-            </Pressable>
-          </View>
-        </View>
+      <View style={styles.citySection}>
+        <Text style={styles.cityTitle}>{t('search.filterCity')}</Text>
+        <CityPicker
+          value={city}
+          onChange={(sel: { id: string; name: string }) => handleCityChange(sel)}
+        />
       </View>
-    </Modal>
+
+      {/* Radius picker — only visible after a city is selected. Mirrors
+          the PostFilterSheet pattern (FR-FEED-006). */}
+      {city && (
+        <FilterSection<number>
+          title={t('search.filterRadius')}
+          showAllChip={false}
+          options={radiusOptions}
+          value={radiusKm}
+          onChange={setRadiusKm}
+        />
+      )}
+    </FilterSheetFrame>
   );
 }
+
+const useStyles = makeUseStyles(({ colors }) => ({
+  citySection: { gap: spacing.xs, marginBottom: spacing.md },
+  cityTitle: { ...typography.label, color: colors.textPrimary, textAlign: rtlTextAlignStart },
+}));

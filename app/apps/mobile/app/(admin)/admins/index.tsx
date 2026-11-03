@@ -1,29 +1,37 @@
 // app/apps/mobile/app/(admin)/admins/index.tsx
-// FR-ADMIN-015 / FR-ADMIN-016 / FR-ADMIN-022 / FR-ADMIN-025 — Admin RBAC screen.
+// FR-ADMIN-015 / FR-ADMIN-016 / FR-ADMIN-022 / FR-ADMIN-025 / FR-ADMIN-028 /
+// FR-ADMIN-030 — Admin RBAC screen.
 //
-// Thin orchestrator: a list/tree view toggle + the grant affordance. The two
-// view bodies (cards list, hierarchy tree) own their own data and live in
-// AdminsListView / AdminsTreeView.
+// Thin orchestrator: a layers/list/tree view toggle + the grant affordance. The
+// three view bodies (layered pyramid, cards list, hierarchy tree) own their own
+// data and live in AdminsLayersView / AdminsListView / AdminsTreeView. Every
+// person opens the person screen, where roles and managers are managed.
 //
-// Visibility per PERMISSION_MATRIX['admins.view']:
-//   - super_admin: full list + grant + revoke (revoke on detail screen).
-//   - moderator:   read-only list.
-//   - support:     no access (denial card; AdminGate may also block earlier).
+// Visibility per PERMISSION_MATRIX['admins.view'] (the server scopes the data):
+//   - super_admin:             every org; grant / change / revoke anywhere.
+//   - org admins and managers: their own org; manage within their authority (D86).
+//   - moderator:               the platform team, read-only.
+//   - support, org members:    no access (denial card).
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
-import { makeUseStyles, useBreakpoint } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography, useBreakpoint } from '@kc/ui';
+import { PrimaryButton } from '../../../src/components/ui/Buttons';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { rowDirectionStart } from '../../../src/lib/rtlLayout';
 import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
 import { GrantRoleModal } from '../../../src/components/admin/admins/GrantRoleModal';
 import { AdminsListView } from '../../../src/components/admin/admins/AdminsListView';
 import { AdminsTreeView } from '../../../src/components/admin/admins/AdminsTreeView';
+import { AdminsLayersView } from '../../../src/components/admin/admins/layers/AdminsLayersView';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 
-type ViewMode = 'list' | 'tree';
-const VIEW_MODES: readonly ViewMode[] = ['list', 'tree'];
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+
+type ViewMode = 'layers' | 'list' | 'tree';
+// The layered pyramid is the overview and opens first (FR-ADMIN-028 AC5).
+const VIEW_MODES: readonly ViewMode[] = ['layers', 'list', 'tree'];
 
 export default function AdminsScreen() {
   const styles = useStyles();
@@ -32,7 +40,7 @@ export default function AdminsScreen() {
   const isWide = useBreakpoint() !== 'mobile';
   const { roles, isLoading: rolesLoading } = useAdminRoles();
   const [grantOpen, setGrantOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>('layers');
 
   const can = (perm: AdminPermission) => hasPermission(roles as readonly AdminRole[], perm);
 
@@ -50,7 +58,12 @@ export default function AdminsScreen() {
 
   const canGrant = can('admins.grant_role');
   const openDetail = (userId: string) =>
-    router.push({ pathname: '/(admin)/admins/[userId]' as never, params: { userId } } as never);
+    router.push({ pathname: '/(admin)/admins/[userId]', params: { userId } });
+  const viewLabel: Readonly<Record<ViewMode, string>> = {
+    layers: L.admin.admins.viewLayers,
+    list:   L.admin.admins.viewList,
+    tree:   L.admin.admins.viewTree,
+  };
 
   return (
     <View style={styles.root}>
@@ -61,25 +74,24 @@ export default function AdminsScreen() {
             <Pressable
               key={m}
               accessibilityRole="button"
+              accessibilityState={{ selected: viewMode === m }}
               onPress={() => setViewMode(m)}
               style={[styles.segmentBtn, viewMode === m && styles.segmentBtnActive]}
             >
               <Text style={[styles.segmentText, viewMode === m && styles.segmentTextActive]}>
-                {m === 'list' ? L.admin.admins.viewList : L.admin.admins.viewTree}
+                {viewLabel[m]}
               </Text>
             </Pressable>
           ))}
         </View>
         {canGrant && (
-          <Pressable accessibilityRole="button" onPress={() => setGrantOpen(true)} style={styles.grantBtn}>
-            <Text style={styles.grantBtnText}>{L.admin.admins.grantBtn}</Text>
-          </Pressable>
+          <PrimaryButton testID="admin-grant" label={L.admin.admins.grantBtn} size="sm" onPress={() => setGrantOpen(true)} />
         )}
       </View>
 
-      {viewMode === 'list' ? (
-        <AdminsListView isWide={isWide} onSelect={openDetail} />
-      ) : (
+      {viewMode === 'layers' && <AdminsLayersView isWide={isWide} onSelect={openDetail} />}
+      {viewMode === 'list' && <AdminsListView isWide={isWide} onSelect={openDetail} />}
+      {viewMode === 'tree' && (
         <AdminsTreeView isWide={isWide} isSuper={roles.includes('super_admin')} onSelect={openDetail} />
       )}
 
@@ -90,18 +102,17 @@ export default function AdminsScreen() {
 
 const useStyles = makeUseStyles(({ colors }) => ({
   root:        { flex: 1, backgroundColor: colors.background },
-  center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 8 },
-  deniedTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
-  deniedHint:  { fontSize: 13, opacity: 0.6, textAlign: 'center', color: colors.textSecondary },
+  center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.sm },
+  deniedTitle: { ...typography.h3, ...typography.bold, color: colors.textPrimary },
+  deniedHint:  { ...typography.bodySmall, opacity: 0.6, textAlign: 'center', color: colors.textSecondary },
+  // Wraps so three view tabs + the grant button never overflow a phone width.
   headerControls: {
-    flexDirection: rowDirectionStart, alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12, gap: 12,
+    flexDirection: rowDirectionStart, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: spacing.base, paddingVertical: spacing.md, gap: spacing.md,
   },
-  segment:     { flexDirection: rowDirectionStart, backgroundColor: colors.surface, borderRadius: 999, padding: 3 },
-  segmentBtn:  { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999 },
+  segment:     { flexDirection: rowDirectionStart, backgroundColor: colors.surface, borderRadius: radius.full, padding: spacing.xs },
+  segmentBtn:  { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full },
   segmentBtnActive: { backgroundColor: colors.primary },
-  segmentText: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
+  segmentText: { ...typography.bodySmall, ...typography.bold, color: colors.textSecondary },
   segmentTextActive: { color: colors.textInverse },
-  grantBtn:    { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.primary },
-  grantBtnText: { color: colors.textInverse, fontWeight: '700', fontSize: 13 },
 }));

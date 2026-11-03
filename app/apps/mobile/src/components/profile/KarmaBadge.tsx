@@ -1,37 +1,51 @@
 // FR-KARMA-007 — self-only karma number + "how to earn" explainer.
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, Pressable } from 'react-native';
+import { useState } from 'react';
+import { TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography, useTheme } from '@kc/ui';
+import { useRouter } from 'expo-router';
+import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { rowDirectionStart, selfAlignStart } from '../../lib/rtlLayout';
+import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { GhostButton } from '../ui/Buttons';
+import { Modal } from '../ui/Modal';
+
+const EARN_RULES = ['earnRegistration', 'earnPost', 'earnOutreach', 'earnFollower', 'earnClosure'] as const;
 
 export function KarmaBadge({ points }: { readonly points: number }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useKarmaBadgeStyles();
   const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const close = () => setOpen(false);
   return (
     <>
-      <TouchableOpacity style={styles.badge} onPress={() => setOpen(true)} accessibilityRole="button">
-        <Ionicons name="sparkles" size={18} color={colors.primary} />
+      <TouchableOpacity
+        style={styles.badge}
+        onPress={() => router.push('/karma-history')}
+        accessibilityRole="button"
+        accessibilityHint={t('karma.historyOpen')}
+      >
+        <Ionicons name="sparkles" size={iconSize.md} color={colors.primary} />
         <Text style={styles.points}>{points}</Text>
         <Text style={styles.label}>{t('karma.badgeLabel')}</Text>
-        <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
+        <TouchableOpacity onPress={() => setOpen(true)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('karma.howToEarnTitle')}>
+          <Ionicons name="information-circle-outline" size={iconSize.sm} color={colors.textSecondary} />
+        </TouchableOpacity>
       </TouchableOpacity>
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
-          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.sheetTitle}>{t('karma.howToEarnTitle')}</Text>
-            <Text style={styles.sheetIntro}>{t('karma.howToEarnIntro')}</Text>
-            {(['earnRegistration', 'earnPost', 'earnOutreach', 'earnFollower', 'earnClosure'] as const).map((k) => (
-              <Text key={k} style={styles.rule}>• {t(`karma.${k}`)}</Text>
-            ))}
-            <TouchableOpacity style={styles.closeBtn} onPress={() => setOpen(false)}>
-              <Text style={styles.closeText}>{t('karma.close')}</Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
+      <Modal
+        visible={open}
+        title={t('karma.howToEarnTitle')}
+        onDismiss={close}
+        footer={<GhostButton label={t('karma.close')} size="md" fullWidth onPress={close} />}
+      >
+        <View style={styles.rules}>
+          <Text style={styles.intro}>{t('karma.howToEarnIntro')}</Text>
+          {EARN_RULES.map((k) => (
+            <Text key={k} style={styles.rule}>• {t(`karma.${k}`)}</Text>
+          ))}
+        </View>
       </Modal>
     </>
   );
@@ -56,31 +70,7 @@ const useKarmaBadgeStyles = makeUseStyles(({ colors }) => ({
   },
   points: { ...typography.h4, color: colors.primary },
   label: { ...typography.caption, color: colors.textPrimary },
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center' as const,
-    padding: spacing.lg,
-  },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.xs,
-  },
-  sheetTitle: { ...typography.h3, color: colors.textPrimary, textAlign: 'right' as const },
-  sheetIntro: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'right' as const,
-    marginBottom: spacing.xs,
-  },
-  rule: { ...typography.body, color: colors.textPrimary, textAlign: 'right' as const },
-  closeBtn: {
-    marginTop: spacing.base,
-    alignSelf: 'center' as const,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  closeText: { ...typography.button, color: colors.primary },
+  rules: { gap: spacing.xs },
+  intro: { ...typography.body, color: colors.textSecondary, textAlign: rtlTextAlignStart },
+  rule: { ...typography.body, color: colors.textPrimary, textAlign: rtlTextAlignStart },
 }));

@@ -42,4 +42,34 @@ describe('createTranslationRequest', () => {
       field: 'title', sourceLanguage: null, targetLanguage: 'english',
     })).toThrow(ValidationError);
   });
+
+  it('rejects empty contentId', () => {
+    expect(() => createTranslationRequest({
+      contentType: 'post', contentId: '',
+      field: 'title', sourceLanguage: null, targetLanguage: 'en',
+    })).toThrow(ValidationError);
+  });
+
+  it('rejects a field that is completely invalid as a translation field', () => {
+    expect(() => createTranslationRequest({
+      contentType: 'post', contentId: '11111111-1111-1111-1111-111111111111',
+      field: 'unsupported_field', sourceLanguage: null, targetLanguage: 'en',
+    })).toThrow(ValidationError);
+  });
+
+  it('accepts valid ride_listing and user content types with appropriate fields', () => {
+    const rideReq = createTranslationRequest({
+      contentType: 'ride_listing', contentId: '11111111-1111-1111-1111-111111111111',
+      field: 'description', sourceLanguage: null, targetLanguage: 'en',
+    });
+    expect(rideReq.contentType).toBe('ride_listing');
+    expect(rideReq.field).toBe('description');
+
+    const userReq = createTranslationRequest({
+      contentType: 'user', contentId: '11111111-1111-1111-1111-111111111111',
+      field: 'biography', sourceLanguage: null, targetLanguage: 'en',
+    });
+    expect(userReq.contentType).toBe('user');
+    expect(userReq.field).toBe('biography');
+  });
 });

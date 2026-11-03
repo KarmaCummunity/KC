@@ -10,6 +10,7 @@ function makeGrant(overrides: Partial<AdminGrant> = {}): AdminGrant {
     displayName: 'Alice',
     avatarUrl: null,
     role: 'moderator',
+    scopeOrgId: null,
     grantedAt: new Date('2026-01-01T00:00:00Z'),
     grantedBy: 'admin-1',
     grantedByDisplayName: 'Root',
@@ -26,6 +27,7 @@ function fakeRepo(grants: readonly AdminGrant[]): IAdminRoleRepository {
     listAdmins: vi.fn(async (_includeRevoked: boolean) => grants),
     grantRole: vi.fn(),
     revokeRole: vi.fn(),
+    changeRole: vi.fn(),
   };
 }
 

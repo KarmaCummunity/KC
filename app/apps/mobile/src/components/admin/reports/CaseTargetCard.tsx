@@ -9,9 +9,10 @@
 //   chat → hidden/active label (no link — chats are private; we link to
 //          the reporter side from the reporter list instead)
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import type { AdminReportTargetType } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { PrimaryButton } from '../../ui/Buttons';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
 export interface CaseTargetCardProps {
@@ -53,20 +54,16 @@ export function CaseTargetCard({ targetType, targetId, target }: CaseTargetCardP
           {authorId && (
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push(`/user/${authorId}` as never)}
+              onPress={() => router.push(`/user/${authorId}`)}
             >
               <Text style={styles.link}>{t.openAuthor}</Text>
             </Pressable>
           )}
           {created && <Text style={styles.metaText}>{t.createdAt(created)}</Text>}
         </View>
-        <Pressable
-          accessibilityRole="button"
-          style={styles.primaryBtn}
-          onPress={() => router.push(`/post/${targetId}` as never)}
-        >
-          <Text style={styles.primaryBtnText}>{t.openPost}</Text>
-        </Pressable>
+        <View style={styles.primaryBtn}>
+          <PrimaryButton testID="case-target-open-post" label={t.openPost} size="sm" onPress={() => router.push(`/post/${targetId}`)} />
+        </View>
       </View>
     );
   }
@@ -100,18 +97,14 @@ export function CaseTargetCard({ targetType, targetId, target }: CaseTargetCardP
         {ownerId ? (
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.push(`/user/${ownerId}` as never)}
+            onPress={() => router.push(`/user/${ownerId}`)}
           >
             <Text style={styles.link}>{t.openOwner}</Text>
           </Pressable>
         ) : null}
-        <Pressable
-          accessibilityRole="button"
-          style={styles.primaryBtn}
-          onPress={() => router.push(`/(tabs)/donations/marketplace/${targetId}` as never)}
-        >
-          <Text style={styles.primaryBtnText}>{t.openListing}</Text>
-        </Pressable>
+        <View style={styles.primaryBtn}>
+          <PrimaryButton testID="case-target-open-listing" label={t.openListing} size="sm" onPress={() => router.push(`/listing/${targetId}`)} />
+        </View>
       </View>
     );
   }
@@ -128,13 +121,9 @@ export function CaseTargetCard({ targetType, targetId, target }: CaseTargetCardP
         </View>
         <Text style={styles.preview}>{displayName ?? t.unnamedUser}</Text>
         {created && <Text style={styles.metaText}>{t.signedUpAt(created)}</Text>}
-        <Pressable
-          accessibilityRole="button"
-          style={styles.primaryBtn}
-          onPress={() => router.push(`/user/${targetId}` as never)}
-        >
-          <Text style={styles.primaryBtnText}>{t.openProfile}</Text>
-        </Pressable>
+        <View style={styles.primaryBtn}>
+          <PrimaryButton testID="case-target-open-profile" label={t.openProfile} size="sm" onPress={() => router.push(`/user/${targetId}`)} />
+        </View>
       </View>
     );
   }
@@ -165,17 +154,17 @@ function Badge({ label }: { readonly label: string }) {
 
 const useStyles = makeUseStyles(({ colors }) => ({
   card: {
-    padding: 14, gap: 10, borderRadius: 10, backgroundColor: colors.surface,
+    padding: spacing.md, gap: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.surface,
     borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
   },
-  headerRow:    { flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'space-between' },
-  kind:         { fontSize: 12, fontWeight: '700', opacity: 0.6 },
-  badge:        { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: colors.secondaryLight },
-  badgeText:    { fontSize: 11, fontWeight: '700', color: colors.textPrimary },
-  preview:      { fontSize: 14, lineHeight: 20 },
-  metaRow:      { flexDirection: 'row', gap: 12, alignItems: 'center', flexWrap: 'wrap' },
-  metaText:     { fontSize: 12, opacity: 0.65 },
-  link:         { fontSize: 12, color: colors.primary, textDecorationLine: 'underline' },
-  primaryBtn:   { alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.primary },
-  primaryBtnText: { color: colors.textInverse, fontSize: 13, fontWeight: '700' },
+  headerRow:    { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, justifyContent: 'space-between' },
+  kind:         { fontSize: typography.bodySmall.fontSize, ...typography.bold, opacity: 0.6 },
+  badge:        { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.xs, backgroundColor: colors.secondaryLight },
+  badgeText:    { fontSize: typography.caption.fontSize, ...typography.bold, color: colors.textPrimary },
+  preview:      { fontSize: typography.body.fontSize, lineHeight: 20 },
+  metaRow:      { flexDirection: 'row', gap: spacing.md, alignItems: 'center', flexWrap: 'wrap' },
+  metaText:     { fontSize: typography.bodySmall.fontSize, opacity: 0.65 },
+  link:         { fontSize: typography.bodySmall.fontSize, color: colors.primary, textDecorationLine: 'underline' },
+  // Compact admin size (spec 17 §4.3), kept at its own width.
+  primaryBtn:   { alignSelf: 'flex-start' },
 }));

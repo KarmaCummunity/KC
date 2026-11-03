@@ -1,27 +1,20 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable } from 'react-native';
+import { KcRowCard } from '../../../../src/components/cards/KcRowCard';
 import { KcFlashList } from '../../../../src/components/lists/KcFlashList';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { makeUseStyles, spacing, typography } from '@kc/ui';
+import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../../../../src/components/ui/Screen';
 import { volunteerUseCases } from '../../../../src/services/volunteerComposition';
 import { useShellTabBarScrollInset } from '../../../../src/navigation/useShellTabBarVisibility';
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  row: {
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.sm,
-    padding: spacing.md,
-    borderRadius: 12,
-    backgroundColor: colors.surfaceRaised,
-  },
-  title: { ...typography.bodyLarge, color: colors.textPrimary },
-  meta: { ...typography.caption, color: colors.textSecondary, marginTop: 4 },
-  actions: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: spacing.md, marginTop: spacing.sm },
-  action: { ...typography.bodySmall, color: colors.primary, fontWeight: '600' as const },
+  action: { ...typography.bodySmall, ...typography.semiBold, color: colors.primary },
 }));
+
+const ROW = { marginHorizontal: spacing.lg };
 
 function statusLabel(status: string, t: (k: string) => string) {
   if (status === 'waitlisted') return t('timeVolunteer.statusWaitlisted');
@@ -92,37 +85,39 @@ export default function MyVolunteerShiftsScreen() {
             { dateStyle: 'medium', timeStyle: 'short' },
           );
           return (
-            <View style={styles.row}>
-              <Pressable
-                onPress={() =>
-                  router.push({
-                    pathname: '/(tabs)/donations/time/opportunity/[opportunityId]',
-                    params: { opportunityId: item.opportunityId },
-                  })
-                }
-              >
-                <Text style={styles.title}>{item.title}</Text>
-                <Text style={styles.meta}>
-                  {when} · {statusLabel(item.status, t)}
-                  {item.hoursLogged != null ? ` · ${item.hoursLogged}h` : ''}
-                </Text>
-              </Pressable>
-              <View style={styles.actions}>
-                {item.status === 'registered' ? (
-                  <Pressable onPress={() => onCheckIn(item.signupId)}>
-                    <Text style={styles.action}>{t('timeVolunteer.checkIn')}</Text>
+            <KcRowCard
+              testID={`shift-row-${item.signupId}`}
+              containerStyle={ROW}
+              tone="give"
+              badgeLabel={t('marketplace.world.time', { defaultValue: 'time' })}
+              placeholderIcon="time-outline"
+              title={item.title}
+              meta={[`${when}${item.hoursLogged != null ? ` · ${item.hoursLogged}h` : ''}`]}
+              statusLabel={statusLabel(item.status, t)}
+              onPress={() =>
+                router.push({
+                  pathname: '/(tabs)/donations/time/opportunity/[opportunityId]',
+                  params: { opportunityId: item.opportunityId },
+                })
+              }
+              footer={
+                <>
+                  {item.status === 'registered' ? (
+                    <Pressable onPress={() => onCheckIn(item.signupId)}>
+                      <Text style={styles.action}>{t('timeVolunteer.checkIn')}</Text>
+                    </Pressable>
+                  ) : null}
+                  {item.status === 'registered' || item.status === 'waitlisted' ? (
+                    <Pressable onPress={() => onCancel(item.signupId)}>
+                      <Text style={styles.action}>{t('timeVolunteer.cancelSignup')}</Text>
+                    </Pressable>
+                  ) : null}
+                  <Pressable onPress={() => onIcs(item.shiftId)}>
+                    <Text style={styles.action}>{t('timeVolunteer.addCalendar')}</Text>
                   </Pressable>
-                ) : null}
-                {item.status === 'registered' || item.status === 'waitlisted' ? (
-                  <Pressable onPress={() => onCancel(item.signupId)}>
-                    <Text style={styles.action}>{t('timeVolunteer.cancelSignup')}</Text>
-                  </Pressable>
-                ) : null}
-                <Pressable onPress={() => onIcs(item.shiftId)}>
-                  <Text style={styles.action}>{t('timeVolunteer.addCalendar')}</Text>
-                </Pressable>
-              </View>
-            </View>
+                </>
+              }
+            />
           );
         }}
       />

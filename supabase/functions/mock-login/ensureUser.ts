@@ -1,6 +1,6 @@
 // Local mock-login only — ensures auth.users + public.users (+ optional admin grant).
 
-import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 
 export const MOCK_DEV_PASSWORD = 'KcLocal!2026';
 export const DEFAULT_MOCK_EMAIL = 'test-user@local.dev';

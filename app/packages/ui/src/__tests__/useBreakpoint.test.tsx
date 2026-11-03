@@ -13,6 +13,7 @@ vi.mock('react-native', async () => {
   };
 });
 
+// eslint-disable-next-line no-restricted-imports -- namespace import reaches the mocked width setter, not Text
 import * as RN from 'react-native';
 const setMockWidth = (RN as unknown as { __setMockWidth: (w: number) => void }).__setMockWidth;
 

@@ -1,6 +1,7 @@
 // FR-TRANSLATE-003 — renders one translatable field with source-then-swap UX.
 import React from 'react';
-import { View, Text, type StyleProp, type TextStyle } from 'react-native';
+import { View, type StyleProp, type TextStyle } from 'react-native';
+import { Text } from '@kc/ui';
 import { useTranslation } from 'react-i18next';
 
 export type TranslatableStatus = 'hit' | 'translating' | 'source';

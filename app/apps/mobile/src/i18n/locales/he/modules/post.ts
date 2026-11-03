@@ -4,23 +4,25 @@
 import { postMenuHe } from './postMenu';
 import { postReportHe } from './postReport';
 import { postEditHe } from './postEdit';
+import { postUnifiedCreateHe } from './postUnifiedCreate';
 
 export const postHe = {
   ...postMenuHe,
   ...postReportHe,
   ...postEditHe,
+  ...postUnifiedCreateHe,
   give: 'לתת חפץ',
   request: 'לבקש חפץ',
   title: 'כותרת',
-  titlePlaceholder: 'מה אתה נותן/מבקש?',
+  titlePlaceholder: 'מה נותנים או מבקשים?',
   description: 'תיאור (אופציונלי)',
   descPlaceholder: 'פרטים נוספים על החפץ...',
   urgency: 'דחיפות (אופציונלי)',
   urgencyPlaceholder: 'לדוגמה: צריך עד שישי',
   photos: 'תמונות',
-  addPhoto: 'הוסף תמונה',
-  removePhoto: 'הסר תמונה',
-  sendMessageA11y: 'שלח הודעה למפרסם',
+  addPhoto: 'הוסיפו תמונה',
+  removePhoto: 'הסירו תמונה',
+  sendMessageA11y: 'שלחו הודעה למפרסם',
   address: 'כתובת',
   cityLabel: 'עיר',
   streetLabel: 'רחוב',
@@ -33,21 +35,21 @@ export const postHe = {
   visibilityPublic: '🌍 כולם',
   visibilityFollowers: '👥 רק העוקבים שלי',
   visibilityOnlyMe: '🔒 רק אני',
-  publish: 'פרסם',
-  draft: 'שמור טיוטה',
+  publish: 'פרסמו',
+  draft: 'שמרו טיוטה',
   publishSuccess: 'הפוסט שלך פורסם!',
   draftRestored: 'יש לך טיוטה שלא פורסמה',
   draftRestoredBody: 'התחלת לכתוב פוסט ולא פרסמת אותו. להמשיך מאיפה שעצרת או להתחיל מחדש?',
-  draftMissingImage: 'התמונה אינה זמינה — הוסף שוב.',
+  draftMissingImage: 'התמונה אינה זמינה — הוסיפו שוב.',
   continueDraft: 'המשך לערוך',
-  discardDraft: 'התחל מחדש',
-  sendMessage: '💬 שלח הודעה למפרסם',
-  followAuthor: 'עקוב אחרי המפרסם',
-  report: 'דווח',
-  markDelivered: 'סמן כ-נמסר',
-  edit: 'ערוך',
-  delete: 'מחק',
-  reopen: '📤 פתח מחדש',
+  discardDraft: 'התחילו מחדש',
+  sendMessage: '💬 שלחו הודעה למפרסם',
+  followAuthor: 'עקבו אחרי המפרסם',
+  report: 'דווחו',
+  markDelivered: 'סמנו כ-נמסר',
+  edit: 'ערכו',
+  delete: 'מחקו',
+  reopen: '📤 פתחו מחדש',
   conditionNew: 'חדש',
   conditionLikeNew: 'כמו חדש',
   conditionGood: 'טוב',
@@ -68,7 +70,7 @@ export const postHe = {
 
   // PhotoPicker
   photosRequiredSuffix: '* (חובה עבור "לתת")',
-  photosHint: 'בחר עד {{max}} תמונות מהגלריה.',
+  photosHint: 'בחרו עד {{max}} תמונות מהגלריה.',
 
   // VisibilityChooser sub-labels (FR-POST-003)
   visibilityPublicSub: 'הפוסט יוצג בפיד הראשי לכל המשתמשים',
@@ -118,9 +120,9 @@ export const postHe = {
   conditionLabel: 'מצב החפץ',
   reauthRequired: 'יש להתחבר מחדש לפני פרסום פוסט.',
   uploadFailedTitle: 'העלאת התמונה נכשלה',
-  uploadRetry: 'נסה שוב.',
-  uploadPartial: '{{ok}}/{{total}} הועלו — נסה שוב את היתר.',
-  networkError: 'שגיאת רשת. נסה שוב.',
+  uploadRetry: 'נסו שוב.',
+  uploadPartial: '{{ok}}/{{total}} הועלו — נסו שוב את היתר.',
+  networkError: 'שגיאת רשת. נסו שוב.',
   publishFailed: 'פרסום נכשל: {{message}}',
 
   // FR-POST-006 AC2 — publish with Followers-only visibility (create flow).
@@ -128,7 +130,7 @@ export const postHe = {
   publishFollowersBody:
     'הפוסט יופיע בפיד של עד {{count}} עוקבים מאושרים (לפי המונה בפרופיל).',
   publishFollowersConfirmCta: 'רק עוקבים',
-  publishFollowersMakePublicCta: 'הפוך לציבורי',
+  publishFollowersMakePublicCta: 'הפכו לציבורי',
 
   /** Collapsible block on create post — address display, visibility, partner-surface mask. */
   exposureSettingsSectionTitle: 'הגדרות חשיפה',
@@ -142,17 +144,17 @@ export const postHe = {
   counterpartyMaskLabel: 'להסתיר את הזהות שלי מצופים אחרים ב״פוסטים סגורים״ של המתאם',
   createCounterpartyPrivacyTitle: 'מי רואה אותי ליד הפוסט אצל המתאם?',
   createCounterpartyPrivacyHint:
-    'בצ׳אט המתאם כבר רואה מי אתה. כאן מדובר במשתמשים שלישיים שנכנסים לרשימת הפוסטים הסגורים בפרופיל של המתאם — הם לא ייראו את השם והתמונה שלך בכרטיס הפוסט. בפיד ובמקומות אחרים זה לפי הגדרות הנראות למעלה.',
+    'בצ׳אט המתאם כבר רואה מי כותב לו. כאן מדובר במשתמשים שלישיים שנכנסים לרשימת הפוסטים הסגורים בפרופיל של המתאם — הם לא ייראו את השם והתמונה שלך בכרטיס הפוסט. בפיד ובמקומות אחרים זה לפי הגדרות הנראות למעלה.',
 
   // Post detail screen (post/[id].tsx) — PR5b i18n sweep.
   detail: {
     loadErrorTitle: 'שגיאה בטעינת הפוסט',
-    retry: 'נסה שוב',
+    retry: 'נסו שוב',
     notFoundTitle: 'הפוסט לא נמצא',
     notFoundSubtitle: 'ייתכן שהוא נסגר או שאין לך הרשאה לצפייה.',
     streetPrefix: 'רחוב',
     // FR-POST-023 — share post via link (P2.33).
-    shareA11y: 'שתף את הפוסט',
+    shareA11y: 'שתפו את הפוסט',
     shareDialogTitle: 'שיתוף פוסט',
     shareHeadlineGiveOpen: '🎁 חפץ שמחכה לבית חדש בקהילת קארמה',
     shareHeadlineGiveClosed: '✅ חפץ שנמסר בהצלחה בקהילת קארמה',
@@ -176,9 +178,9 @@ export const postHe = {
     typeRequestLabel: 'לבקש',
     conditionPrefix: 'מצב: ',
     urgencyPrefix: '⚡ דחיפות: ',
-    contactA11y: 'שלח הודעה למפרסם',
+    contactA11y: 'שלחו הודעה למפרסם',
     contactOpeningA11y: 'פותח שיחה עם המפרסם',
-    contactCta: 'שלח הודעה למפרסם',
+    contactCta: 'שלחו הודעה למפרסם',
     anonymousUser: 'אנונימי',
     statusOpen: 'פעיל',
     statusOpenHint: 'הפוסט פתוח ומחפש התאמה',
@@ -189,6 +191,8 @@ export const postHe = {
     publishedBy: 'פורסם על-ידי',
     // Visibility + lifecycle notices shown to anyone who can still see the post.
     removedAdminNotice: 'הפוסט הוסר על ידי מנהל ואינו מוצג בפיד.',
+    statusHiddenForReview: 'מוסתר לבדיקה',
+    hiddenForReviewNotice: 'הפוסט הוסתר בעקבות דיווחים וממתין לבדיקת צוות. הוא לא מוצג לאחרים בינתיים.',
     expiredNotice: 'הפוסט פג תוקף ואינו פעיל יותר.',
     visibilityFollowersNotice: 'פוסט זה גלוי לעוקבים מאושרים בלבד.',
     visibilityOnlyMeNotice: 'פוסט פרטי — גלוי רק לבעליו.',
@@ -196,20 +200,19 @@ export const postHe = {
 
   // FR-TRANSLATE-003 — translation reader UX
   translating: 'מתרגם…',
-  showOriginal: 'הצג מקור',
-  showTranslation: 'הצג תרגום',
+  showOriginal: 'הציגו מקור',
+  showTranslation: 'הציגו תרגום',
   autoTranslated: 'תורגם אוטומטית',
 
   engagement: {
     title: 'תגובות',
     meta: '{{reactions}} רגשות · {{comments}} תגובות',
     commentPlaceholder: 'כתוב תגובה…',
-    commentSend: 'פרסם תגובה',
+    commentSend: 'פרסמו תגובה',
     reaction: {
       like: 'אהבתי',
       support: 'תמיכה',
       thanks: 'תודה',
     },
   },
-
 } as const;

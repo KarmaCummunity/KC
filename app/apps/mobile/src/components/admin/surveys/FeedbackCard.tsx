@@ -1,9 +1,9 @@
 // app/apps/mobile/src/components/admin/surveys/FeedbackCard.tsx
 // FR-ADMIN-021 — one free-text feedback entry (FR-SETTINGS-017).
 import type { ReactElement } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import type { AdminFeedbackEntry } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { textAlignStart, rowDirectionStart } from '../../../lib/rtlLayout';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
@@ -43,20 +43,20 @@ const useStyles = makeUseStyles(({ colors }) => ({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 16,
-    padding: 14,
-    gap: 8,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    gap: spacing.sm,
   },
-  header: { flexDirection: rowDirectionStart, alignItems: 'center', gap: 8 },
-  name: { flex: 1, fontSize: 14, fontWeight: '800', color: colors.textPrimary, textAlign: textAlignStart() },
+  header: { flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.sm },
+  name: { flex: 1, fontSize: typography.body.fontSize, ...typography.extraBold, color: colors.textPrimary, textAlign: textAlignStart() },
   ratingPill: {
     backgroundColor: colors.primarySurface,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
-  ratingText: { fontSize: 12, fontWeight: '800', color: colors.primaryDark },
-  noRating: { fontSize: 11, color: colors.textDisabled },
-  body: { fontSize: 14, color: colors.textPrimary, textAlign: textAlignStart(), lineHeight: 20 },
-  meta: { fontSize: 11, color: colors.textSecondary, textAlign: textAlignStart() },
+  ratingText: { fontSize: typography.bodySmall.fontSize, ...typography.extraBold, color: colors.primaryDark },
+  noRating: { fontSize: typography.caption.fontSize, color: colors.textDisabled },
+  body: { fontSize: typography.body.fontSize, color: colors.textPrimary, textAlign: textAlignStart(), lineHeight: 20 },
+  meta: { fontSize: typography.caption.fontSize, color: colors.textSecondary, textAlign: textAlignStart() },
 }));

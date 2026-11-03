@@ -32,6 +32,8 @@ export default defineConfig({
         // UI surfaces — covered (or not) via RNTL slice TD-150
         'src/components/**',
         'src/features/**',
+        // Screen bodies / styles moved out of expo-router `app/` (TD-195); `app/` itself is not measured.
+        'src/screens/**',
         'src/navigation/**/*.tsx',
         'src/navigation/useShellTabBarVisibility.ts',
         // React-bound hooks need RNTL infra — out of scope until TD-150
@@ -41,19 +43,9 @@ export default defineConfig({
         // Composition roots — exercised end-to-end, not unit-tested
         'src/services/*Composition.ts',
         'src/services/devAutoSignIn.ts',
-        'src/services/avatarUpload.ts',
-        'src/services/imageUpload.ts',
-        'src/services/mediaEncoding.ts',
-        'src/services/postMessages.ts',
-        'src/services/authMessages.ts',
-        'src/services/postFormConfirm.ts',
-        'src/services/hostPostSession.ts',
-        // Zustand stores that are just facades over services
-        'src/store/authStore.ts',
+        // Type-only module (no runtime statements)
         'src/store/chatStoreTypes.ts',
-        'src/store/allStoresReset.ts',
-        // Misc one-liners
-        'src/utils/openExternalUrl.ts',
+        // DI container — composition root
         'src/lib/container.ts',
         // Query-cache persistence wiring (singleton QueryClient + AsyncStorage
         // persister) — composition root, exercised end-to-end like container.ts
@@ -62,12 +54,14 @@ export default defineConfig({
         // pure routing logic lives in tapRouting.ts and IS unit-tested.
         'src/lib/notifications/tapHandler.ts',
         'src/lib/permissionGate.ts',
+        // Brand font loader: expo-font wiring around @kc/ui brandFont (unit-tested there).
+        'src/lib/useBrandFonts.ts',
       ],
       thresholds: {
-        lines: 60,
-        functions: 60,
-        branches: 60,
-        statements: 60,
+        lines: 80,
+        functions: 85,
+        branches: 75,
+        statements: 80,
       },
       reporter: ['text', 'json-summary', 'lcov'],
     },

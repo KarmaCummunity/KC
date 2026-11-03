@@ -5,20 +5,24 @@ import {
   ActivityIndicator,
   Platform,
   Pressable,
-  Text,
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import type { DonationCategorySlug, DonationLink } from '@kc/domain';
-import { useTheme } from '@kc/ui';
+import {
+  type DonationCategorySlug,
+  type DonationLink,
+  hasPermission,
+  type AdminRole,
+} from '@kc/domain';
+import { iconSize, useTheme, Text } from '@kc/ui';
 import { useAuthStore } from '../store/authStore';
 import { AddDonationLinkModal } from './AddDonationLinkModal';
 import { useDonationLinksListStyles } from './DonationLinksList.styles';
+import { PrimaryButton } from './ui/Buttons';
 import { DonationLinkRow } from './DonationLinkRow';
 import { DonationLinkRowMenu } from './DonationLinkRowMenu';
 import { useDonationLinkActions } from './useDonationLinkActions';
-import { hasPermission, type AdminRole } from '@kc/domain';
 import { useAdminRoles } from '../hooks/useAdminRoles';
 import { useDonationLinksListState } from './useDonationLinksListState';
 
@@ -69,7 +73,7 @@ export function DonationLinksList({ categorySlug }: Readonly<Props>) {
           hitSlop={6}
           style={({ pressed }) => [styles.plusBtn, pressed && styles.plusBtnPressed]}
         >
-          <Ionicons name="add" size={20} color={colors.textInverse} />
+          <Ionicons name="add" size={iconSize.lg} color={colors.textInverse} />
         </Pressable>
       </View>
     ),
@@ -96,25 +100,21 @@ export function DonationLinksList({ categorySlug }: Readonly<Props>) {
       return (
         <View style={styles.empty}>
           <Text style={styles.emptyBody}>{t('donations.links.loadError')}</Text>
-          <Pressable onPress={() => void load()} style={({ pressed }) => [styles.emptyCta, pressed && styles.emptyCtaPressed]}>
-            <Text style={styles.emptyCtaText}>{t('donations.links.retry')}</Text>
-          </Pressable>
+          <View style={styles.emptyCta}>
+            <PrimaryButton testID="donation-links-retry" label={t('donations.links.retry')} size="md" onPress={() => void load()} />
+          </View>
         </View>
       );
     }
     if (links.length === 0) {
       return (
         <View style={styles.empty}>
-          <Ionicons name="link-outline" size={36} color={colors.textDisabled} />
+          <Ionicons name="link-outline" size={36} color={colors.textDisabled} /> {/* brand-guard-allow: empty-state glyph above the copy (spec 17 §4.2) */}
           <Text style={styles.emptyTitle}>{t('donations.links.empty.title')}</Text>
           <Text style={styles.emptyBody}>{t('donations.links.empty.body')}</Text>
-          <Pressable
-            onPress={openAddModal}
-            style={({ pressed }) => [styles.emptyCta, pressed && styles.emptyCtaPressed]}
-            accessibilityRole="button"
-          >
-            <Text style={styles.emptyCtaText}>{t('donations.links.empty.cta')}</Text>
-          </Pressable>
+          <View style={styles.emptyCta}>
+            <PrimaryButton testID="donation-links-empty-cta" label={t('donations.links.empty.cta')} size="md" onPress={openAddModal} />
+          </View>
         </View>
       );
     }

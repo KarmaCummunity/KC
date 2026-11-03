@@ -1,239 +1,99 @@
 name: CI — frontend
 
-# `typecheck · test · lint` and `Hebrew source scan (no inline UI copy)` are
-# REQUIRED status checks on dev/main (branch protection) — keep the job names
-# stable. Because they are required, the pull_request trigger MUST run on every
-# non-draft PR (no path filter on `on:`): path-filtering left those required
-# contexts permanently "Expected" on backend-only / docs-only PRs and blocked
-# their merge (same root cause and fix as ci-backend.yml / ci-contract.yml). A
-# cheap `changes` job (dorny/paths-filter) gates the heavy `quality` + `web
-# export` steps so a non-frontend PR gets a fast pass while still reporting the
-# required contexts. `push` stays path-filtered. Turbo local cache
-# (`.github/actions/setup-pnpm-turbo`) speeds typecheck/test/lint/web on hits.
-# Keep the `changes` filter list in sync with the real inputs.
+# Frontend lane, called by ci.yml when app/** or a build input changed
+# (scripts/ci-changes.mjs). checks and tests run in parallel; sonar starts as
+# soon as tests finish:
+#   • checks — typecheck, ESLint. The dependency audit covers every lockfile
+#     in the static lane (scripts/check-dependency-audit.mjs, #1373).
+#   • tests  — unit tests with coverage; the coverage artifact feeds the
+#     SonarCloud scan (no second test run).
+#   • sonar  — SonarCloud quality gate on the tests job's coverage.
+# The web export and native bundles are the separate `bundles` lane
+# (ci-bundles.yml), which PRs into dev leave to the merge queue.
+# Jobs skip only on the `sonar` input (ci.yml's gate sees one lane result).
 
 on:
-  pull_request:
-    branches: [main, dev]
-    types: [opened, synchronize, reopened, ready_for_review]
-  push:
-    branches: [main, dev]
-    paths:
-      - 'app/**'
-      - 'Dockerfile'
-      - 'scripts/extract-hebrew-text.mjs'
-      - 'scripts/smoke-web-bundle.mjs'
-      - '.github/workflows/ci-frontend.yml'
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_call:
+    inputs:
+      sonar:
+        description: Run the SonarCloud quality gate (only PRs into main and main pushes; false for Dependabot).
+        type: boolean
+        required: true
+    secrets:
+      SONAR_TOKEN:
+        required: false
 
 permissions:
   contents: read
-  pull-requests: read
+
+env:
+  TURBO_TELEMETRY_DISABLED: '1'
 
 jobs:
-  changes:
-    name: detect frontend changes
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    outputs:
-      frontend: ${{ steps.filter.outputs.frontend }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - name: Detect frontend-relevant changes
-        uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            frontend:
-              - 'app/**'
-              - 'Dockerfile'
-              - 'scripts/extract-hebrew-text.mjs'
-              - 'scripts/smoke-web-bundle.mjs'
-              - '.github/workflows/ci-frontend.yml'
-
-  quality:
-    # REQUIRED status check — always runs so the context reports on every PR.
-    # Heavy steps are gated on `needs.changes.outputs.frontend == 'true'`; a
-    # non-frontend PR runs only the skip-notice step and concludes success.
-    name: typecheck · test · lint
-    needs: changes
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+  tests:
+    name: unit tests · coverage
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: app
-
-    env:
-      TURBO_TELEMETRY_DISABLED: '1'
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history: the brand guard's touched-file rule diffs against the PR base (spec 17 §6).
+          fetch-depth: 0
 
-      - name: No frontend changes — typecheck/test/lint not required
-        if: needs.changes.outputs.frontend != 'true'
-        run: echo "No app/** or build-input changes in this PR — skipping typecheck/test/lint."
+      - uses: ./.github/actions/setup-pnpm-turbo
 
-      - name: Setup pnpm + Turbo cache
-        if: needs.changes.outputs.frontend == 'true'
-        uses: ./.github/actions/setup-pnpm-turbo
+      - run: pnpm install --frozen-lockfile
 
-      - name: Install dependencies
-        if: needs.changes.outputs.frontend == 'true'
-        env:
-          TURBO_TELEMETRY_DISABLED: '1'
-        run: pnpm install --frozen-lockfile
-
-      - name: Typecheck
-        if: needs.changes.outputs.frontend == 'true'
-        run: pnpm typecheck
-
-      - name: Test
-        if: needs.changes.outputs.frontend == 'true'
+      - name: Unit tests with coverage
         run: pnpm test:coverage
 
-      - name: Upload coverage artifacts
-        if: always() && needs.changes.outputs.frontend == 'true'
-        uses: actions/upload-artifact@v4
+      - name: Upload coverage for SonarCloud
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: coverage-${{ github.run_id }}
+          name: coverage
+          overwrite: true
+          retention-days: 3
           path: |
             app/packages/domain/coverage/
             app/packages/application/coverage/
             app/packages/infrastructure-supabase/coverage/
             app/packages/ui/coverage/
             app/apps/mobile/coverage/
-          retention-days: 14
 
-      - name: Lint
-        if: needs.changes.outputs.frontend == 'true'
-        run: pnpm lint
-
-      - name: Dependency audit
-        if: needs.changes.outputs.frontend == 'true'
-        env:
-          NODE_OPTIONS: --max-old-space-size=8192
-        run: |
-          # The legacy npm audit endpoint is being retired and now returns HTTP
-          # 410 (ERR_PNPM_AUDIT_BAD_RESPONSE), which is an infra/registry error,
-          # not a real advisory. Tolerate that specific failure so it doesn't
-          # red-wall every frontend PR, but still fail CI on genuine advisories.
-          set +e
-          out="$(pnpm audit --audit-level=high 2>&1)"
-          code=$?
-          echo "$out"
-          if [ "$code" -ne 0 ] && echo "$out" | grep -q "ERR_PNPM_AUDIT_BAD_RESPONSE"; then
-            echo "::warning::pnpm audit registry endpoint unavailable (HTTP 410, retired) — dependency audit skipped"
-            exit 0
-          fi
-          if [ "$code" -ne 0 ] && { [ "$code" -eq 134 ] || echo "$out" | grep -q "JavaScript heap out of memory"; }; then
-            echo "::warning::pnpm audit exceeded Node heap — dependency audit skipped (infra)"
-            exit 0
-          fi
-          exit "$code"
-
-  web-build:
-    name: web export (production bundle)
-    # REQUIRED status check on `main` (dev→main promotion PRs). Must always
-    # report so the context isn't stuck "Expected" on a promotion whose tree
-    # already matches `main` under app/** (e.g. a pure infra/migration fix) —
-    # same failure mode and fix as the `quality` job above. Heavy steps
-    # (build + Playwright smoke) are gated on frontend changes; a non-frontend
-    # PR runs only the skip-notice step and concludes success.
-    needs: changes
-    if: github.event.pull_request.draft != true
+  checks:
+    name: typecheck · lint
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: app
-
-    env:
-      EXPO_PUBLIC_ENVIRONMENT: production
-      EXPO_PUBLIC_SUPABASE_URL: https://roeefqpdbftlndzsvhfj.supabase.co
-      EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-web-build-placeholder-not-for-runtime
-      # Pinned so the smoke step is deterministic; browser binaries are cached
-      # under this key. Bump deliberately (cache key rolls with it).
-      PLAYWRIGHT_VERSION: 1.60.0
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: No frontend changes — web export not required
-        if: needs.changes.outputs.frontend != 'true'
-        run: echo "No app/** or build-input changes in this PR — skipping web export."
+      - uses: ./.github/actions/setup-pnpm-turbo
 
-      - name: Setup pnpm + Turbo cache
-        if: needs.changes.outputs.frontend == 'true'
-        uses: ./.github/actions/setup-pnpm-turbo
+      - run: pnpm install --frozen-lockfile
 
-      - name: Install dependencies
-        if: needs.changes.outputs.frontend == 'true'
-        env:
-          TURBO_TELEMETRY_DISABLED: '1'
-        run: pnpm install --frozen-lockfile
+      # ESLint only: the architecture, SSOT-link and Hebrew guards that
+      # `pnpm lint` also chains run in the static-guards lane. Turbo runs each
+      # package's typecheck before its lint, so typecheck runs once.
+      - name: Typecheck + ESLint (per-package --max-warnings ratchet)
+        run: pnpm exec turbo run typecheck lint
 
-      - name: Build web bundle (same env wiring as Dockerfile)
-        if: needs.changes.outputs.frontend == 'true'
-        run: pnpm build:web
-
-      - name: Verify dist output
-        if: needs.changes.outputs.frontend == 'true'
-        run: test -f apps/mobile/dist/index.html
-
-      - name: Cache Playwright browsers
-        if: needs.changes.outputs.frontend == 'true'
-        id: playwright-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ env.PLAYWRIGHT_VERSION }}
-
-      - name: Install Playwright (Chromium only)
-        if: needs.changes.outputs.frontend == 'true'
-        working-directory: ${{ github.workspace }}
-        run: |
-          npm init -y --silent
-          npm install --no-save --silent "playwright@${PLAYWRIGHT_VERSION}"
-          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
-            # Browser binaries restored from cache — only OS deps needed.
-            npx playwright install-deps chromium
-          else
-            npx playwright install --with-deps chromium
-          fi
-
-      - name: Smoke-load web bundle (headless Chromium)
-        if: needs.changes.outputs.frontend == 'true'
-        working-directory: ${{ github.workspace }}
-        run: node scripts/smoke-web-bundle.mjs --dist app/apps/mobile/dist
-
-  hebrew-source-scan:
-    # REQUIRED status check. Cheap (scans the whole repo regardless of which
-    # files changed), so it runs unconditionally on every non-draft PR.
-    name: Hebrew source scan (no inline UI copy)
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-
-      - name: Scan for Hebrew outside allowed paths
-        run: node scripts/extract-hebrew-text.mjs --check
-
-      - name: Run Hebrew scanner guard unit tests
-        run: node --test scripts/extract-hebrew-text.test.mjs
+  sonar:
+    name: sonar
+    needs: tests
+    if: inputs.sonar
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: ./.github/workflows/ci-sonar.yml
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

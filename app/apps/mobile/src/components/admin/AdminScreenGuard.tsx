@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { Text, View } from 'react-native';
-import { makeUseStyles } from '@kc/ui';
+import { View } from 'react-native';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 
 export interface AdminScreenGuardProps {
   readonly isLoading:      boolean;
@@ -24,6 +24,6 @@ export function AdminScreenGuard({
 }
 
 const useStyles = makeUseStyles(() => ({
-  center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  deniedTitle: { fontSize: 18, fontWeight: '700' },
+  center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+  deniedTitle: { fontSize: typography.h3.fontSize, ...typography.bold },
 }));

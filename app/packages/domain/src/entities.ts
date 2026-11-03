@@ -117,6 +117,8 @@ export interface Chat {
   readonly participantIds: [string | null, string | null];
   readonly anchorPostId: string | null;
   readonly anchorRideId: string | null;
+  /** Listing the chat was last opened from (items/food/…; KC#1297). At most one anchor is set. */
+  readonly anchorListingId: string | null;
   readonly isSupportThread: boolean;
   lastMessageAt: string | null;
   readonly createdAt: string;

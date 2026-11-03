@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, LayoutChangeEvent } from 'react-native';
-import { makeUseStyles, typography, spacing, radius } from '@kc/ui';
+import { View, LayoutChangeEvent } from 'react-native';
+import { makeUseStyles, typography, spacing, radius, shadow, Text } from '@kc/ui';
 import { aboutRtlText } from './aboutWebRtlStyle';
 import { useTranslation } from 'react-i18next';
 import { AnimatedEntry } from '../../components/animations/AnimatedEntry';
@@ -211,14 +211,10 @@ const useAboutSectionBlocksTopStyles = makeUseStyles(({ colors }) => ({
     padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    shadowColor: colors.shadow,
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    ...shadow.card,
   },
   h: { ...typography.h4, color: colors.textPrimary, ...aboutRtlText, marginBottom: spacing.sm },
-  lead: { ...typography.body, fontWeight: '600', color: colors.textPrimary, ...aboutRtlText, marginBottom: spacing.sm },
+  lead: { ...typography.body, ...typography.semiBold, color: colors.textPrimary, ...aboutRtlText, marginBottom: spacing.sm },
   p: { ...typography.body, color: colors.textSecondary, ...aboutRtlText, lineHeight: 24 },
   liveStatsWrap: { marginTop: spacing.lg },
   valuesSpacer: { height: spacing.sm },

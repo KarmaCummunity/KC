@@ -1,7 +1,7 @@
 // Client-side mirror of the server world rules (0266 listings_enforce_world_rules) and a
 // mapper from server error codes to stable codes the UI can translate.
 // Items photos are optional (product decision; 0357 dropped the 0351 items image check).
-// Keep in sync with supabase/migrations/0266, 0357.
+// Keep in sync with supabase/migrations/0266, 0357, 0539 (food expiry binds offers only).
 
 export const ROUTED_WORLDS = ['medical', 'animals', 'environment'] as const;
 
@@ -20,6 +20,7 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'ride_departure_past',
   'knowledge_slot_invalid',
   'seats_exhausted',
+  'ride_seats_exhausted',
   'slots_exhausted',
   'already_booked',
   'ride_departed',
@@ -28,6 +29,7 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'session_not_started',
   'own_listing',
   'listing_not_available',
+  'item_already_reserved',
   'medical_listing_requires_external_body',
   'external_body_invalid',
   'world_permission_denied',
@@ -41,12 +43,43 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'member_inactive',
   'auth_required',
   'kind_not_found',
+  // D73 (0511) — ride booking management: wrong side, stale state or a vanished booking.
+  'owner_only',
+  'not_participant',
+  'invalid_status',
+  'handoff_not_found',
+  // Items & food handoffs (0382, 0453, 0510).
+  'invalid_pickup_mode',
+  'handoff_not_confirmed',
+  'invalid_rating',
+  // D71 (0512) — ride places come only from official catalogs; at most 3 meeting points.
+  'ride_place_invalid',
+  'too_many_meeting_points',
+  // D21 / D75 (0514) — the estimated end must follow the departure.
+  'ride_arrival_before_departure',
+  'ride_time_invalid',
+  // D74 (0516) — saved routes: at most 10, and a route must go somewhere.
+  'saved_routes_limit',
+  'same_route',
+  // D70 (0517) — the emergency button works only during the ride, once per 5 minutes.
+  'ride_not_active',
+  'emergency_throttled',
+  // FR-RIDE-046 (0531) — recurring rides: the schedule, ownership and the terminal cancelled state.
+  'ride_series_weekdays_invalid',
+  'ride_series_duration_invalid',
+  'ride_series_ends_in_past',
+  'ride_series_no_occurrence',
+  'ride_series_not_found',
+  'ride_series_cancelled',
+  'ride_series_status_invalid',
 ] as const;
 
 export type MarketplaceServerErrorCode = (typeof MARKETPLACE_SERVER_ERROR_CODES)[number];
 
 export interface WorldRulesInput {
   worldSlug: string;
+  /** Offer (`give`) or request: some rules bind one side only (food expiry, D21 / D28). */
+  direction: 'give' | 'request';
   details: Record<string, unknown>;
   /** Number of attached photos. Informational only: photos are optional in every world. */
   photoCount: number;
@@ -61,7 +94,8 @@ function nonEmptyString(v: unknown): boolean {
 export function validateMarketplaceWorldRules(input: WorldRulesInput): MarketplaceRuleErrorCode | null {
   const { worldSlug, details } = input;
 
-  if (worldSlug === 'food') {
+  // A food offer carries the giver's future expiry (D28); a food request has none (D21).
+  if (worldSlug === 'food' && input.direction === 'give') {
     const raw = details.expires_at;
     const ts = typeof raw === 'string' ? Date.parse(raw) : Number.NaN;
     const now = (input.now ?? new Date()).getTime();
@@ -119,37 +153,6 @@ export function validateKnowledgeSlot(
   return null;
 }
 
-/** Ride route keys filled by the route picker rather than raw schema inputs. */
-export const RIDE_ROUTE_DETAIL_KEYS = [
-  'origin_label', 'origin_lat', 'origin_lng', 'origin_city_id',
-  'dest_label', 'dest_lat', 'dest_lng', 'dest_city_id',
-] as const;
-
-export interface RideEndpoint {
-  cityId: string;
-  label: string;
-  lat: number;
-  lng: number;
-}
-
-/** Writes one route end (origin or destination) into ride listing details. */
-export function withRideEndpoint(
-  details: Record<string, unknown>,
-  end: 'origin' | 'dest',
-  point: RideEndpoint | null,
-): Record<string, unknown> {
-  const next = { ...details };
-  for (const k of ['label', 'lat', 'lng', 'city_id']) delete next[`${end}_${k}`];
-  if (!point) return next;
-  return {
-    ...next,
-    [`${end}_label`]: point.label,
-    [`${end}_lat`]: point.lat,
-    [`${end}_lng`]: point.lng,
-    [`${end}_city_id`]: point.cityId,
-  };
-}
-
 /** Extracts a known listing error code from a PostgREST / Postgres error (or null). */
 export function mapMarketplaceServerError(err: unknown): MarketplaceServerErrorCode | null {
   if (!err || typeof err !== 'object') {
@@ -158,6 +161,9 @@ export function mapMarketplaceServerError(err: unknown): MarketplaceServerErrorC
   const e = err as { message?: unknown; details?: unknown; hint?: unknown };
   for (const field of [e.message, e.details, e.hint]) {
     if (typeof field === 'string') {
+      if (field.includes('giving_handoffs_active_listing_uidx')) {
+        return 'listing_not_available';
+      }
       const code = matchCode(field);
       if (code) return code;
     }

@@ -1,15 +1,11 @@
 // FR-CHAT-016 — confirm before removing a thread from the viewer's inbox only.
-import React from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
+// Built on the kit `Modal` (spec 17 §4.1); removing is destructive, so the
+// confirm is the red `DangerButton` (D94).
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, typography, spacing, radius, useTheme } from '@kc/ui';
+import { makeUseStyles, typography, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
+import { DangerButton, SecondaryButton } from './ui/Buttons';
+import { Modal } from './ui/Modal';
 
 interface Props {
   readonly visible: boolean;
@@ -20,66 +16,38 @@ interface Props {
 
 export function HideChatConfirmModal({ visible, loading, onCancel, onConfirm }: Props) {
   const styles = useStyles();
-  const { colors } = useTheme();
   const { t } = useTranslation();
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <View style={styles.backdrop}>
-        <View style={styles.card}>
-          <Text style={styles.title}>{t('chat.hideFromInboxTitle')}</Text>
-          <Text style={styles.body}>{t('chat.hideFromInboxBody')}</Text>
-          <View style={styles.row}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={onCancel} disabled={loading}>
-              <Text style={styles.cancelTxt}>{t('chat.hideFromInboxCancel')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.confirmBtn} onPress={onConfirm} disabled={loading}>
-              {loading ? (
-                <ActivityIndicator color={colors.textInverse} />
-              ) : (
-                <Text style={styles.confirmTxt}>{t('chat.hideFromInboxConfirm')}</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+    <Modal
+      visible={visible}
+      title={t('chat.hideFromInboxTitle')}
+      onDismiss={onCancel}
+      // Keep the dialog while the hide request is in flight.
+      dismissible={!loading}
+      footer={
+        <>
+          <DangerButton
+            label={t('chat.hideFromInboxConfirm')}
+            size="md"
+            fullWidth
+            loading={loading}
+            onPress={onConfirm}
+          />
+          <SecondaryButton
+            label={t('chat.hideFromInboxCancel')}
+            size="md"
+            fullWidth
+            disabled={loading}
+            onPress={onCancel}
+          />
+        </>
+      }
+    >
+      <Text style={styles.body}>{t('chat.hideFromInboxBody')}</Text>
     </Modal>
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
-  backdrop: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: 'center',
-    padding: spacing.lg,
-  },
-  card: {
-    backgroundColor: colors.surface,
-
-    borderWidth: isDark ? 1 : 0,
-    borderColor: isDark ? colors.border : 'transparent',
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  title: { ...typography.h3, color: colors.textPrimary, textAlign: rtlTextAlignStart },
+const useStyles = makeUseStyles(({ colors }) => ({
   body: { ...typography.body, color: colors.textSecondary, textAlign: rtlTextAlignStart },
-  row: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm, marginTop: spacing.sm },
-  cancelBtn: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cancelTxt: { ...typography.body, color: colors.textSecondary },
-  confirmBtn: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.error,
-    minWidth: 100,
-    alignItems: 'center',
-  },
-  confirmTxt: { ...typography.semiBold, color: colors.textInverse },
 }));

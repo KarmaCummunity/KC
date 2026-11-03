@@ -10,7 +10,6 @@ import {
   I18nManager,
   Platform,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
   type ViewStyle,
@@ -19,7 +18,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography, useTheme } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, iconSize, zIndex, useTheme, Text } from '@kc/ui';
+import { MirroredIcon } from '../ui/MirroredIcon';
 import { TopBar } from '../TopBar';
 import { ProfileHeader } from './ProfileHeader';
 import { ProfileStatsRow } from './ProfileStatsRow';
@@ -116,13 +116,13 @@ export function MyProfileChrome({ activeTab }: Readonly<{ activeTab: ProfilePost
                   enabled={Boolean(user)}
                   onPressFollowers={() =>
                     router.push({
-                      pathname: '/user/[handle]/followers' as never,
+                      pathname: '/user/[handle]/followers',
                       params: { handle: user?.shareHandle ?? '' },
                     })
                   }
                   onPressFollowing={() =>
                     router.push({
-                      pathname: '/user/[handle]/following' as never,
+                      pathname: '/user/[handle]/following',
                       params: { handle: user?.shareHandle ?? '' },
                     })
                   }
@@ -135,7 +135,7 @@ export function MyProfileChrome({ activeTab }: Readonly<{ activeTab: ProfilePost
                 <Text style={styles.editBtnText}>{t('profile.editProfile')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.shareBtn}>
-                <Ionicons name="share-outline" size={18} color={colors.primary} />
+                <Ionicons name="share-outline" size={iconSize.md} color={colors.primary} />
               </TouchableOpacity>
             </View>
             <TouchableOpacity
@@ -144,9 +144,9 @@ export function MyProfileChrome({ activeTab }: Readonly<{ activeTab: ProfilePost
               accessibilityRole="button"
               accessibilityLabel={t('settings.stats')}
             >
-              <Ionicons name="stats-chart-outline" size={20} color={colors.primary} />
+              <Ionicons name="stats-chart-outline" size={iconSize.lg} color={colors.primary} />
               <Text style={styles.statsLinkText}>{t('settings.stats')}</Text>
-              <Ionicons name="chevron-back" size={18} color={colors.textSecondary} />
+              <MirroredIcon name="chevron-forward" size={iconSize.md} color={colors.textSecondary} />
             </TouchableOpacity>
           </Card>
         </View>
@@ -171,7 +171,7 @@ const useMyProfileChromeStyles = makeUseStyles(({ colors }) => ({
   profileMenuCorner: {
     position: 'absolute' as const,
     top: spacing.sm,
-    zIndex: 2,
+    zIndex: zIndex.overlay,
   },
   profileCard: { gap: spacing.base },
   profileLoading: {

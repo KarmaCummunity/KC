@@ -27,6 +27,7 @@ export function rowToChat(r: ChatRow): Chat {
     participantIds: [r.participant_a ?? null, r.participant_b ?? null],
     anchorPostId: r.anchor_post_id,
     anchorRideId: r.anchor_ride_id ?? null,
+    anchorListingId: r.anchor_listing_id ?? null,
     isSupportThread: r.is_support_thread,
     // Domain allows null; DB column is non-null but treat empty as null defensively.
     lastMessageAt: r.last_message_at ?? null,

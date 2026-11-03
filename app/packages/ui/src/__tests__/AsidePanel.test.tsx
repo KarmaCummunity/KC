@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
-import { Text } from 'react-native';
+import { Text } from '../components/BrandText';
 import { AsideProvider, useAside } from '../components/AsideContext';
 import { AsidePanel } from '../components/AsidePanel';
 

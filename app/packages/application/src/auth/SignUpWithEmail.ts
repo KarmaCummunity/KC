@@ -2,8 +2,7 @@
 import { EMAIL_PATTERN } from '@kc/domain';
 import type { IAuthService, AuthSession } from '../ports/IAuthService';
 import { AuthError } from './errors';
-
-const MIN_PASSWORD_LEN = 8;
+import { assertPasswordPolicy } from './passwordPolicy';
 
 export interface SignUpWithEmailInput {
   email: string;
@@ -38,13 +37,6 @@ export class SignUpWithEmailUseCase {
     if (!EMAIL_PATTERN.test(email)) {
       throw new AuthError('invalid_email', 'invalid_email');
     }
-    if (password.length < MIN_PASSWORD_LEN) {
-      throw new AuthError('weak_password', 'weak_password_too_short');
-    }
-    const hasLetter = /[a-zA-Z]/.test(password);
-    const hasDigit = /\d/.test(password);
-    if (!hasLetter || !hasDigit) {
-      throw new AuthError('weak_password', 'weak_password_letter_digit');
-    }
+    assertPasswordPolicy(password);
   }
 }

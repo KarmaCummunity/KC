@@ -4,14 +4,11 @@
 // Mapped to SRS: FR-AUTH-007 AC2, FR-AUTH-010, FR-AUTH-012.
 // ─────────────────────────────────────────────
 
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   getSupabaseClient,
   SupabaseUserRepository,
   SupabaseCityRepository,
   SupabaseStreetRepository,
-  type SupabaseAuthStorage,
 } from '@kc/infrastructure-supabase';
 import {
   CompleteBasicInfoUseCase,
@@ -29,6 +26,7 @@ import {
 import type { City, OnboardingState, Street } from '@kc/domain';
 import { getAuthService } from './authComposition';
 import { CachedCityRepository, CachedStreetRepository } from './cityStreetCache';
+import { pickAuthStorage } from './authSecureStorage';
 
 let _userRepo: IUserRepository | null = null;
 let _cityRepo: ICityRepository | null = null;
@@ -42,17 +40,9 @@ let _searchUsersForClosure: SearchUsersForClosureUseCase | null = null;
 let _deleteAccount: DeleteAccountUseCase | null = null;
 let _reconcileAuthProfile: ReconcileAuthProfileMetadataUseCase | null = null;
 
-function pickStorage(): SupabaseAuthStorage | undefined {
-  if (Platform.OS === 'web') {
-    if (typeof window === 'undefined' || !window.localStorage) return undefined;
-    return window.localStorage;
-  }
-  return AsyncStorage;
-}
-
 export function getUserRepo(): IUserRepository {
   if (_userRepo) return _userRepo;
-  _userRepo = new SupabaseUserRepository(getSupabaseClient({ storage: pickStorage() }));
+  _userRepo = new SupabaseUserRepository(getSupabaseClient({ storage: pickAuthStorage() }));
   return _userRepo;
 }
 
@@ -61,7 +51,7 @@ function getCityRepo(): ICityRepository {
   // PERF-6: AsyncStorage-backed cache layer; cuts onboarding city-picker
   // open-to-first-row from 600-1500ms cold to <100ms on warm cache.
   _cityRepo = new CachedCityRepository(
-    new SupabaseCityRepository(getSupabaseClient({ storage: pickStorage() })),
+    new SupabaseCityRepository(getSupabaseClient({ storage: pickAuthStorage() })),
   );
   return _cityRepo;
 }
@@ -69,7 +59,7 @@ function getCityRepo(): ICityRepository {
 function getStreetRepo(): IStreetRepository {
   if (_streetRepo) return _streetRepo;
   _streetRepo = new CachedStreetRepository(
-    new SupabaseStreetRepository(getSupabaseClient({ storage: pickStorage() })),
+    new SupabaseStreetRepository(getSupabaseClient({ storage: pickAuthStorage() })),
   );
   return _streetRepo;
 }

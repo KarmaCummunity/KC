@@ -43,6 +43,8 @@ begin
     raise exception 'ASSERT FAILED: should have been blocked: %', p_sql;
   end if;
 end $$;
+-- Called below under `set local role`: new functions are owner-only by default (0520).
+grant execute on function pg_temp.expect_blocked(text, text) to public;
 
 -- Seed: active A + active B + suspended S; S owns an open post; A owns a
 -- closed_delivered post (B is its recipient) + a public open post; A-B chat.
@@ -66,7 +68,7 @@ begin
   values ('00000000-0000-0000-0000-00000200c007','00000000-0000-0000-0000-0000020000a1','00000000-0000-0000-0000-0000020000b2', false);
 end $$;
 
--- ── BLOCKED: a suspended user cannot drive any of the six RPCs ──
+-- ── BLOCKED: a suspended user cannot drive five of the six RPCs (support stays open, D61) ──
 select set_config('request.jwt.claims', jsonb_build_object('sub','00000000-0000-0000-0000-0000020000c3','role','authenticated')::text, true);
 set local role authenticated;
 
@@ -78,7 +80,8 @@ select pg_temp.expect_blocked($q$select public.reopen_post_deleted_no_recipient(
 -- these three gate immediately after the auth.uid() check:
 select pg_temp.expect_blocked($q$select public.rpc_recipient_unmark_self('00000000-0000-0000-0000-00000200d401')$q$,'account_not_active');
 select pg_temp.expect_blocked($q$select public.rpc_chat_set_anchor('00000000-0000-0000-0000-00000200c007','00000000-0000-0000-0000-00000200f603')$q$,'account_not_active');
-select pg_temp.expect_blocked($q$select public.rpc_submit_support_issue('Bug','a sufficiently long description')$q$,'account_not_active');
+-- D61 (0452): a suspended user may still contact support.
+select public.rpc_submit_support_issue('Bug','a sufficiently long description');
 
 -- ── ALLOWED: active recipient B can unmark themselves ──
 reset role;
@@ -106,7 +109,7 @@ begin
 end $$;
 select public.rpc_submit_support_issue('Bug','this is a valid support description');
 
-do $$ begin raise notice '✓ 0200: suspended user blocked on 6 RPCs; active users pass'; end $$;
+do $$ begin raise notice '✓ 0200: suspended user blocked on 5 RPCs, may still contact support; active users pass'; end $$;
 
 reset role;
 rollback;

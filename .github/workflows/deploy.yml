@@ -1,0 +1,330 @@
+name: Deploy
+
+# The only workflow that deploys KC (D-195, INFRA-CI-3). Nothing deploys on
+# push: a dev/main push runs CI, and when that CI run succeeds this workflow
+# deploys exactly the commit CI tested — or, on dev, that commit's `[skip ci]`
+# version-bump child, which inherits its parent's certification (TD-231,
+# scripts/deploy-target.mjs).
+#
+#   dev  → supabase-dev + cloudflare-dev, automatic.
+#   main → one approval click by the owner on the `production` environment,
+#          then supabase-prod + cloudflare-prod.
+#
+# Order: resolve → preflight (supabase + web) → approve (prod) → DB (backup on
+# prod, dry-run, apply) → Edge Functions → web baseline (prod) → web → smoke →
+# tag (prod). On prod, a failed functions/web/smoke stage rolls web back to
+# the recorded Cloudflare deployment and functions to the previous release
+# tag, then re-runs the smoke (deploy-rollback.yml). The DB is forward-fix
+# only. Each stage is a reusable deploy-*.yml workflow with no trigger of its
+# own (scripts/check-deploy-isolation.mjs enforces that statically), and every
+# job that changes an environment starts with the deploy guard
+# (scripts/deploy-guard.mjs): it fails unless this file on main called it and,
+# for prod, the release was approved in the current run attempt and is still
+# the main tip — so "Re-run failed jobs" cannot redeploy without a new click
+# ("Re-run all jobs" asks for one).
+#
+# Environments: `production` holds only the required reviewer (the owner) and
+# no secrets; one job uses it, so a release costs exactly one click. The
+# secrets live on supabase-{dev,prod} and cloudflare-{dev,prod}, which must
+# have NO reviewers (each would add a click). Restrict the prod environments
+# and `production` to the `main` branch: `workflow_run` jobs run on the default
+# branch, and that restriction stops a dispatch from any other ref using them.
+#
+# `workflow_run` always runs this file as it is on the default branch (main),
+# so deploy-pipeline changes take effect only after a release. Dispatch runs
+# use the dispatched ref's copy and are limited to dev and main.
+
+# Two `workflow_run` sources. `CI` is the real one. `Bump app version on
+# merge` (bump-version-on-merge.yml) is a wake-up only: its `[skip ci]` bump
+# commit never gets a CI run, so when the merge's CI run finishes BEFORE the
+# bump lands, CI deploys the merge and nothing would ever deploy the bump.
+# The bump run's completion re-runs the resolver, which deploys the bump
+# child only if the merge's CI gate is already green (and otherwise leaves it
+# to the CI run's completion). Both are matched by name; deploy-target.mjs
+# accepts only runs of these two workflow files and always reads the
+# certification from ci.yml's runs, never from the triggering run.
+#
+# dev push (TD #1430). `workflow_run` only fires for a file on the default
+# branch (main), so until a release carries deploy.yml no dev push would ever
+# deploy kc-dev. A push to dev therefore also starts this workflow from dev's
+# own copy: resolve waits for that commit's push CI run to finish, then judges
+# it exactly like a dispatch (same CI-gate and bump-inheritance rules). Push is
+# dev-only — prod still deploys only through workflow_run/dispatch on main with
+# the owner's approval. A `[skip ci]` bump push starts nothing; the merge's
+# push run picks up the bump child once CI is green.
+on:
+  push:
+    branches: [dev]
+  workflow_run:
+    workflows: [CI, Bump app version on merge]
+    types: [completed]
+    branches: [dev, main]
+  workflow_dispatch:
+
+# One deploy per environment at a time; a running deploy is never cancelled.
+# Runs that cannot deploy (PR events, failures) get a unique group so they
+# never displace a queued real deploy. A bump run shares its branch's group
+# with CI-triggered deploys, so they never run concurrently.
+concurrency:
+  group: >-
+    deploy-${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success'))
+    && (github.event.workflow_run.head_branch || github.ref_name) || format('noop-{0}', github.run_id) }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  # Which commit, which target, and proof that CI gated it (directly, or for a
+  # dev version-bump commit through its parent). The judge,
+  # scripts/deploy-target.mjs, runs from this workflow's own commit
+  # (github.workflow_sha: main for workflow_run), never from the judged
+  # commit. On prod it also requires a merged dev → main PR of this repo for
+  # the commit, app/VERSION above the latest v* tag, and no v<VERSION> tag on
+  # another commit; and it finds the previous release for rollback.
+  resolve:
+    name: resolve target
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    outputs:
+      deploy: ${{ steps.target.outputs.deploy }}
+      target: ${{ steps.target.outputs.target }}
+      sha: ${{ steps.target.outputs.sha }}
+      previous_sha: ${{ steps.release.outputs.previous_sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .trusted
+          sparse-checkout: scripts/deploy-target.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      # dev push only: wait (max ~70 min) for this commit's push CI run to
+      # complete; the judge below then requires its CI gate to be green.
+      - name: Wait for the push CI run (dev push)
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 140); do
+            st=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$SHA&event=push&per_page=5" \
+              --jq '[.workflow_runs[].status] | if length == 0 then "none" elif all(. == "completed") then "completed" else "running" end')
+            echo "CI for $SHA: $st"
+            [ "$st" = completed ] && exit 0
+            sleep 30
+          done
+          echo "::error::CI for $SHA did not complete in time"; exit 1
+      - name: Resolve and verify the CI gate
+        id: target
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+          WORKFLOW_RUN: ${{ toJSON(github.event.workflow_run) }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .trusted/scripts/deploy-target.mjs
+      # The judged commit with tags, for its app/VERSION and the release tags.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.target.outputs.deploy == 'true' && steps.target.outputs.target == 'prod'
+        with:
+          ref: ${{ steps.target.outputs.sha }}
+          path: release
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+      - name: Release version and tag checks (prod)
+        id: release
+        if: steps.target.outputs.deploy == 'true' && steps.target.outputs.target == 'prod'
+        working-directory: release
+        env:
+          SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          set -euo pipefail
+          node scripts/release-version.mjs tag-plan "$SHA" | tee "$RUNNER_TEMP/plan"
+          # A re-run of an already tagged release is the only case where
+          # VERSION may equal the latest tag.
+          if grep -qx 'action=create' "$RUNNER_TEMP/plan"; then node scripts/release-version.mjs check-bump; fi
+          {
+            echo "### Release $(cat app/VERSION) — \`$SHA\`"
+            echo "Approve the \`production\` environment to deploy it."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Secrets present and pointing at the target's projects (deploy-preflight.yml).
+  preflight:
+    name: preflight
+    needs: resolve
+    if: needs.resolve.outputs.deploy == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/deploy-preflight.yml
+    with:
+      target: ${{ needs.resolve.outputs.target }}
+      sha: ${{ needs.resolve.outputs.sha }}
+    secrets: inherit
+
+  # The owner's one click. Fails closed if `production` has no required
+  # reviewer: the run's approvals must include one for this environment.
+  approve:
+    name: approve release
+    needs: [resolve, preflight]
+    if: needs.resolve.outputs.target == 'prod'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: production
+      url: ${{ vars.KC_PROD_URL }}
+    permissions:
+      actions: read
+    outputs:
+      attempt: ${{ steps.approved.outputs.attempt }}
+    steps:
+      - name: Confirm a reviewer approved this run
+        id: approved
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          approvers=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/approvals" \
+            --jq '[.[] | select(.state == "approved" and any(.environments[]; .name == "production")) | .user.login] | join(",")')
+          if [ -z "$approvers" ]; then
+            echo "::error::The production environment let this run through without an approval. Add the owner as its required reviewer (Settings → Environments → production)."
+            exit 1
+          fi
+          echo "Release approved by $approvers."
+          # Stages refuse to run unless this equals their own run_attempt, so a
+          # "Re-run failed jobs" attempt cannot reuse this approval.
+          echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+
+  db:
+    name: database
+    needs: [resolve, preflight, approve]
+    # Explicit: on prod `approve` must succeed; on dev it is skipped.
+    if: >-
+      !cancelled() && needs.preflight.result == 'success'
+      && (needs.approve.result == 'success' || (needs.approve.result == 'skipped' && needs.resolve.outputs.target == 'dev'))
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/deploy-db.yml
+    with:
+      target: ${{ needs.resolve.outputs.target }}
+      sha: ${{ needs.resolve.outputs.sha }}
+      approved_attempt: ${{ needs.approve.outputs.attempt }}
+    secrets: inherit
+
+  functions:
+    name: edge functions
+    needs: [resolve, approve, db]
+    if: ${{ !cancelled() && needs.db.result == 'success' }}
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/deploy-functions.yml
+    with:
+      target: ${{ needs.resolve.outputs.target }}
+      sha: ${{ needs.resolve.outputs.sha }}
+      release_sha: ${{ needs.resolve.outputs.sha }}
+      approved_attempt: ${{ needs.approve.outputs.attempt }}
+    secrets: inherit
+
+  # Records the Cloudflare deployment serving prod right before the web
+  # deploy replaces it; rollback-web returns to it.
+  web-baseline:
+    name: web baseline (prod)
+    needs: [resolve, functions]
+    if: needs.resolve.outputs.target == 'prod'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: cloudflare-prod
+    permissions:
+      contents: read
+    outputs:
+      previous_id: ${{ steps.current.outputs.previous_id }}
+      attempt: ${{ steps.current.outputs.attempt }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+          sparse-checkout: scripts
+          persist-credentials: false
+      - name: Record the live production deployment
+        id: current
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_PAGES_PROJECT: karma-community
+        run: |
+          node scripts/cloudflare-pages.mjs current main
+          echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+
+  web:
+    name: web
+    needs: [resolve, approve, functions, web-baseline]
+    if: >-
+      !cancelled() && needs.functions.result == 'success'
+      && (needs.web-baseline.result == 'success' || (needs.web-baseline.result == 'skipped' && needs.resolve.outputs.target == 'dev'))
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/deploy-web.yml
+    with:
+      target: ${{ needs.resolve.outputs.target }}
+      sha: ${{ needs.resolve.outputs.sha }}
+      approved_attempt: ${{ needs.approve.outputs.attempt }}
+    secrets: inherit
+
+  smoke:
+    name: smoke
+    needs: [resolve, web]
+    # Explicit: the default success() also needs every upstream job, and on dev
+    # the prod-only approve/web-baseline jobs are always skipped.
+    if: ${{ !cancelled() && needs.web.result == 'success' }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/deploy-smoke.yml
+    with:
+      target: ${{ needs.resolve.outputs.target }}
+      sha: ${{ needs.resolve.outputs.sha }}
+    secrets: inherit
+
+  # vX.Y.Z tag + GitHub Release on the released commit (deploy-tag.yml).
+  tag:
+    name: tag release
+    needs: [resolve, approve, smoke]
+    if: needs.resolve.outputs.target == 'prod'
+    permissions:
+      contents: write
+      actions: read
+    uses: ./.github/workflows/deploy-tag.yml
+    with:
+      sha: ${{ needs.resolve.outputs.sha }}
+      approved_attempt: ${{ needs.approve.outputs.attempt }}
+
+  # Prod only, when functions, web or smoke failed after the approval: web
+  # back to the deployment web-baseline recorded (empty when the web stage
+  # never started), functions back to the previous release tag — unless the
+  # release applied migrations, which demands a forward-fix instead.
+  rollback:
+    name: rollback (prod)
+    needs: [resolve, approve, db, functions, web-baseline, web, smoke]
+    if: >-
+      always() && needs.resolve.outputs.target == 'prod'
+      && (needs.functions.result == 'failure' || needs.web.result == 'failure' || needs.smoke.result == 'failure')
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/deploy-rollback.yml
+    with:
+      sha: ${{ needs.resolve.outputs.sha }}
+      previous_sha: ${{ needs.resolve.outputs.previous_sha }}
+      previous_web_id: ${{ needs.web-baseline.outputs.previous_id }}
+      baseline_attempt: ${{ needs.web-baseline.outputs.attempt }}
+      approved_attempt: ${{ needs.approve.outputs.attempt }}
+      applied_migrations: ${{ needs.db.outputs.applied_migrations }}
+    secrets: inherit

@@ -1,12 +1,12 @@
 // Animated input with orange border glow on focus — RTL-ready.
 import React, { useState } from 'react';
-import { View, TextInput, Text, type TextInputProps } from 'react-native';
+import { View, type TextInputProps } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
-import { makeUseStyles, spacing, radius, typography, useTheme } from '@kc/ui';
+import { makeUseStyles, spacing, radius, typography, useTheme, TextInput, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 interface AnimatedAuthInputProps extends TextInputProps {

@@ -5,16 +5,19 @@
 // Two palettes share the same token shape so the rest of the app can swap
 // at runtime via `useTheme()` (see `theme/ThemeContext.tsx`). The static
 // `colors` export keeps pointing at the light palette as the legacy default
-// for files that haven't migrated to the hook yet (tracked under TD-130).
+// for files that haven't migrated to the hook yet (tracked under TD-199).
 
 export interface ColorPalette {
-  // Brand — warm orange, symbolizes generosity
+  // Brand — warm orange, symbolizes generosity (light `primary` darkened for AA, D66)
   primary: string;
   primaryDark: string;
   primaryLight: string;
   primarySurface: string;
+  // Vivid brand orange for decoration only (ambient blobs, illustrations,
+  // browser chrome) — it fails AA, so never put text or meaning on it (D66).
+  primaryVivid: string;
 
-  // Secondary — calm indigo for social/community feel
+  // Secondary — navy from the logo (K and globe ring), D66
   secondary: string;
   secondaryLight: string;
 
@@ -63,6 +66,18 @@ export interface ColorPalette {
   followersOnlyBadge: string;
   onlyMeBadge: string;
 
+  // Admin role badges (FR-ADMIN-022, spec 17 §4.3)
+  roleSuperAdmin: string;
+  roleModerator: string;
+  roleSupport: string;
+  roleOperator: string;
+  roleOperatorsManager: string;
+  roleOrgAdmin: string;
+  roleOrgManager: string;
+  roleOrgEmployee: string;
+  roleVolunteerManager: string;
+  roleOrgVolunteer: string;
+
   // Misc
   overlay: string;
   skeleton: string;
@@ -70,17 +85,18 @@ export interface ColorPalette {
 }
 
 export const lightColors: ColorPalette = {
-  primary: '#F97316',
-  primaryDark: '#EA580C',
+  primary: '#C2410C',  // AA: 5.2:1 with white text (D66); vivid #F97316 stays for decoration
+  primaryDark: '#9A3412',  // pressed state
   primaryLight: '#FED7AA',
   primarySurface: '#FFF7ED',
+  primaryVivid: '#F97316',
 
-  secondary: '#6366F1',
-  secondaryLight: '#E0E7FF',
+  secondary: '#203050',  // logo navy (D66)
+  secondaryLight: '#E3E8F2',
 
   success: '#22C55E',
   successLight: '#DCFCE7',
-  error: '#EF4444',
+  error: '#DC2626',  // AA on white
   errorLight: '#FEE2E2',
   warning: '#F59E0B',
   warningLight: '#FEF3C7',
@@ -100,18 +116,29 @@ export const lightColors: ColorPalette = {
   textDisabled: '#9CA3AF',
   textInverse: '#FFFFFF',
 
-  tabActive: '#F97316',
-  tabInactive: '#9CA3AF',
+  tabActive: '#C2410C',
+  tabInactive: '#7A818C',  // 3.9:1 on white (UI glyph AA)
   tabBarGlass: 'rgba(255, 255, 255, 0.72)',
 
-  giveTag: '#F97316',
+  giveTag: '#C2410C',
   giveTagBg: '#FFF7ED',
   requestTag: '#FFF7ED',
-  requestTagBg: '#F97316',
+  requestTagBg: '#C2410C',
 
   publicBadge: '#6B7280',
   followersOnlyBadge: '#8B5CF6',
   onlyMeBadge: '#6B7280',
+
+  roleSuperAdmin: '#6D28D9',
+  roleModerator: '#1D4ED8',
+  roleSupport: '#0F766E',
+  roleOperator: '#15803D',
+  roleOperatorsManager: '#15803D',
+  roleOrgAdmin: '#C2410C',
+  roleOrgManager: '#B45309',
+  roleOrgEmployee: '#203050',
+  roleVolunteerManager: '#BE185D',
+  roleOrgVolunteer: '#203050',
 
   overlay: 'rgba(0, 0, 0, 0.5)',
   skeleton: '#F3F4F6',
@@ -127,9 +154,10 @@ export const darkColors: ColorPalette = {
   primaryDark: '#F97316',
   primaryLight: '#7C2D12',     // used for soft-brand tints on dark surfaces
   primarySurface: '#2A1810',   // deep warm brown for brand-chip backgrounds
+  primaryVivid: '#F97316',     // same decoration orange in both palettes
 
-  secondary: '#818CF8',
-  secondaryLight: '#312E81',
+  secondary: '#A5B8DC',  // logo navy, lifted for dark surfaces
+  secondaryLight: '#1F2E4E',
 
   // Semantic — lifted toward HSL "brighter" variants for AA contrast on dark
   success: '#4ADE80',
@@ -171,6 +199,17 @@ export const darkColors: ColorPalette = {
   followersOnlyBadge: '#A78BFA',
   onlyMeBadge: '#B8AFA1',
 
+  roleSuperAdmin: '#A78BFA',
+  roleModerator: '#60A5FA',
+  roleSupport: '#2DD4BF',
+  roleOperator: '#4ADE80',
+  roleOperatorsManager: '#4ADE80',
+  roleOrgAdmin: '#FB923C',
+  roleOrgManager: '#FBBF24',
+  roleOrgEmployee: '#A5B8DC',
+  roleVolunteerManager: '#F472B6',
+  roleOrgVolunteer: '#A5B8DC',
+
   overlay: 'rgba(0, 0, 0, 0.65)',
   skeleton: '#2A231B',
   shadow: '#000000',
@@ -178,6 +217,16 @@ export const darkColors: ColorPalette = {
 
 export type ColorToken = keyof ColorPalette;
 
+/**
+ * Initials-avatar colours (theme-independent). Each background is picked from
+ * a name hash and carries white initials at AA 4.5:1 in both themes; the
+ * first two are the brand primary and the logo navy.
+ */
+export const avatarPalette = {
+  foreground: '#FFFFFF',
+  backgrounds: ['#C2410C', '#203050', '#15803D', '#BE185D', '#0F766E', '#B45309', '#6D28D9', '#1D4ED8'],
+} as const;
+
 // Legacy export — files that haven't migrated to `useTheme()` keep importing
-// `colors` and silently render in light. Tracked under TD-130 (FE).
+// `colors` and silently render in light. Tracked under TD-199 (FE).
 export const colors: ColorPalette = lightColors;

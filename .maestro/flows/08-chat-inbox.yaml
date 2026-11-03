@@ -1,0 +1,13 @@
+# The chat inbox opens from the top bar.
+# Spec: docs/SSOT/spec/07_chat.md (inbox).
+appId: org.karmacommunity.app
+name: Chat — inbox opens
+tags: [chat, smoke]
+---
+- runFlow: ../subflows/sign-in.yaml
+- tapOn:
+    id: topbar-chat
+- extendedWaitUntil:
+    visible:
+      id: chat-inbox-screen
+    timeout: 20000

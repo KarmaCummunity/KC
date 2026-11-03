@@ -1,9 +1,9 @@
 // Audience block — visually emphasized on About (FR-SETTINGS-001 About narrative).
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, typography, spacing, radius, useTheme } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, shadow, iconSize, useTheme, Text } from '@kc/ui';
 import { aboutRtlText, aboutRtlRow } from './aboutWebRtlStyle';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -25,7 +25,7 @@ export function AboutAudienceSection() {
     <View style={styles.card} accessibilityRole="summary">
       <View style={styles.headerRow}>
         <View style={styles.iconBadge}>
-          <Ionicons name="people" size={26} color={colors.textInverse} />
+          <Ionicons name="people" size={iconSize['2xl']} color={colors.textInverse} />
         </View>
         <Text style={styles.title} accessibilityRole="header">
           {t('aboutContent.audienceTitle')}
@@ -36,7 +36,7 @@ export function AboutAudienceSection() {
         {groups.map((group) => (
           <View key={group.label} style={styles.groupRow}>
             <View style={styles.groupIconWrap}>
-              <Ionicons name={group.icon} size={18} color={colors.primary} />
+            <Ionicons name={group.icon} size={iconSize.md} color={colors.primary} />
             </View>
             <Text style={styles.groupLabel}>{group.label}</Text>
           </View>
@@ -55,11 +55,8 @@ const useAboutAudienceSectionStyles = makeUseStyles(({ colors, isDark }) => ({
     borderWidth: 1.5,
     borderColor: isDark ? colors.primary : colors.primaryLight,
     gap: spacing.md,
+    ...shadow.glow,
     shadowColor: colors.primary,
-    shadowOpacity: isDark ? 0.12 : 0.14,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: isDark ? 2 : 4,
   },
   headerRow: {
     flexDirection: aboutRtlRow,
@@ -69,15 +66,12 @@ const useAboutAudienceSectionStyles = makeUseStyles(({ colors, isDark }) => ({
   iconBadge: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radius.full,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    ...shadow.glow,
     shadowColor: colors.primary,
-    shadowOpacity: isDark ? 0 : 0.3,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: isDark ? 0 : 3,
   },
   title: {
     ...typography.h3,
@@ -87,7 +81,7 @@ const useAboutAudienceSectionStyles = makeUseStyles(({ colors, isDark }) => ({
   },
   lead: {
     ...typography.body,
-    fontWeight: '600',
+    ...typography.semiBold,
     color: colors.textPrimary,
     ...aboutRtlText,
     lineHeight: 24,
@@ -110,7 +104,7 @@ const useAboutAudienceSectionStyles = makeUseStyles(({ colors, isDark }) => ({
   groupIconWrap: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.full,
     backgroundColor: colors.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',

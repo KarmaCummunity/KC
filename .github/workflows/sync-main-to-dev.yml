@@ -1,13 +1,15 @@
-# Keeps the `dev` branch always >= `main` by merging main into dev on every
-# push to main. Fast-forwards when possible; creates a merge commit otherwise.
+# Sync main → dev after a release.
 #
-# Why this matters: dev is our working branch — every PR targets dev — so any
-# hotfix that lands directly on main (rare but allowed for docs/CI typos) MUST
-# also reach dev, otherwise dev silently drifts behind production.
+# Releases are squash-merged (repo allows squash only), so every release leaves
+# one commit on main that dev's history lacks; without syncing, the NEXT
+# dev → main PR conflicts. dev is protected (PR + required checks), so this
+# workflow can't push to dev directly (that is why the old direct-push version
+# failed). Instead it opens a zero-diff PR: dev + `git merge -s ours main`.
+# Because main's tree is always a snapshot of dev, `-s ours` loses nothing.
 #
-# If the merge has conflicts the workflow fails loudly and an operator must
-# resolve manually. That's the right failure mode — silent conflict resolution
-# would lose work.
+# The PR MUST land as a MERGE COMMIT (a squash would drop the ancestry):
+# temporarily enable "Allow merge commits", merge, disable again. See
+# docs/SSOT/RELEASE_CHECKLIST.md → "Immediately after squash-merge to main".
 
 name: Sync main → dev
 
@@ -18,6 +20,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: sync-main-to-dev
@@ -29,23 +32,33 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout dev
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: dev
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Configure git identity
+      - name: Open ancestry-only sync PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Merge main into dev
-        run: |
           git fetch origin main
-          # --no-edit keeps the default merge commit message if a merge commit
-          # is needed; fast-forwards otherwise (no merge commit, clean history).
-          git merge --no-edit origin/main
-
-      - name: Push
-        run: git push origin dev
+          if git merge-base --is-ancestor origin/main HEAD; then
+            echo "dev already contains main; nothing to sync."; exit 0
+          fi
+          short=$(git rev-parse --short origin/main)
+          branch="sync/main-into-dev-$short"
+          git checkout -b "$branch"
+          git merge -s ours --no-edit origin/main -m "chore: sync main ($short) into dev (ancestry only)"
+          if ! git diff --quiet origin/dev HEAD; then
+            echo "::error::-s ours merge unexpectedly changed files"; exit 1
+          fi
+          git push -f origin "$branch"
+          if gh pr list --head "$branch" --state open --json number -q '.[0].number' | grep -q .; then
+            echo "Sync PR already open."; exit 0
+          fi
+          gh pr create --base dev --head "$branch" \
+            --title "chore: sync main ($short) into dev (ancestry only)" \
+            --body "Mapped to spec: INFRA/release. Zero-diff \`-s ours\` merge of main into dev so the next release PR doesn't conflict. **Merge as a merge commit** (temporarily allow merge commits), not squash."

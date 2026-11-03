@@ -25,9 +25,8 @@ const FILE_SIZE_CAP = 300;
 // below the cap triggers a STALE-ALLOWLIST error, prompting removal from this list.
 const FILE_SIZE_ALLOWLIST = new Map([
   // Create post screen split: `useCreatePostPublish` + `CreatePostFormScrollContent` (2026-05-16); TD-116 closed.
-  // Search screen: styles extracted to search.styles.ts in this PR (was 634).
-  // Further split into result-section subcomponents is still open under TD-133.
-  ['apps/mobile/app/(tabs)/search.tsx', { td: 'TD-133', max: 398 }],
+  // Search screen: styles extracted to search.styles.ts; filter kit migration reduced to 291 lines (TD-133 closed).
+
   // SearchFilterSheet.tsx split → 127 lines (TD-133); entry removed.
   // SearchResultCard.tsx barrel (TD-133); entry removed.
   // Edit-post screen — large form, acceptable as single screen. Bumped 404→415 (P1.1 merged from main).
@@ -99,10 +98,10 @@ function walk(dir, files = []) {
   return files;
 }
 
-const IMPORT_REGEX = /(?:^|\n)(?:\s*(?:import|export)\b[^'"\n]*from\s+|\s*import\s*\(\s*)['"]([^'"]+)['"]/g;
+const IMPORT_REGEX = /(?:^|\n)(?:\s*(?:import|export)\b[^'"\n]*from\s+|\s*import\s*\(\s*)['"]([^'"]+)['"]/g; // NOSONAR S8786 — dev-only lint script over repo-owned source files, line-bounded
 
 function checkFile(absPath, violations) {
-  const rel = relative(ROOT, absPath).replace(/\\/g, '/');
+  const rel = relative(ROOT, absPath).replaceAll('\\', '/');
   const content = readFileSync(absPath, 'utf8');
   const lines = content.split('\n');
   // Match `wc -l` semantics: count newlines, not segments. A file ending in '\n'
@@ -175,11 +174,35 @@ function checkNotificationsCoalesceMirror(violations) {
   }
 }
 
+/**
+ * TD-195: expo-router registers every file under `apps/mobile/app/` as a
+ * route, so styles and helper components placed there become reachable URLs
+ * (`/settings.styles`, `/post/PostDetailScreen`). Route files must default-
+ * export a screen; everything else belongs in `apps/mobile/src/`.
+ */
+const ROUTE_DIR = 'apps/mobile/app/';
+const ROUTE_SPECIAL_FILES = /^(_layout|\+html|\+not-found|\+native-intent)(\.[a-z]+)?\.tsx?$/;
+const ROUTE_COMPONENT_NAME = /^[A-Z]/;
+
+function checkRouteFile(absPath, violations) {
+  const rel = relative(ROOT, absPath).replaceAll('\\', '/');
+  if (!rel.startsWith(ROUTE_DIR)) return;
+  const name = rel.slice(rel.lastIndexOf('/') + 1);
+  if (ROUTE_SPECIAL_FILES.test(name)) return;
+  const hint = 'expo-router turns every file in app/ into a route — move non-screen modules to apps/mobile/src/ (TD-195).';
+  if (/\.styles\.tsx?$/.test(name) || ROUTE_COMPONENT_NAME.test(name)) {
+    violations.push(`ROUTE: ${rel} is a style/component module inside app/. ${hint}`);
+  } else if (!/\bexport\s+default\b/.test(readFileSync(absPath, 'utf8'))) {
+    violations.push(`ROUTE: ${rel} has no default export. ${hint}`);
+  }
+}
+
 const targets = [join(ROOT, 'packages'), join(ROOT, 'apps', 'mobile')];
 const files = targets.flatMap((t) => walk(t));
 const violations = [];
 checkNotificationsCoalesceMirror(violations);
 for (const f of files) checkFile(f, violations);
+for (const f of files) checkRouteFile(f, violations);
 
 if (violations.length > 0) {
   console.error(

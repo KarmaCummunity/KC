@@ -16,6 +16,7 @@ interface AdminGrantRow {
   display_name: string | null;
   avatar_url: string | null;
   role: string;
+  scope_org_id: string | null;
   granted_at: string;
   granted_by: string | null;
   granted_by_display_name: string | null;
@@ -26,8 +27,11 @@ interface AdminGrantRow {
 
 const KNOWN_ERROR_MESSAGES: ReadonlySet<AdminRoleErrorCode> = new Set([
   'forbidden',
+  'forbidden_grant',
+  'forbidden_revoke',
   'invalid_input',
   'invalid_role',
+  'invalid_scope',
   'target_not_found',
   'target_not_active',
   'role_already_active',
@@ -56,6 +60,7 @@ function mapRowToGrant(row: AdminGrantRow): AdminGrant | null {
     displayName: row.display_name,
     avatarUrl: row.avatar_url,
     role,
+    scopeOrgId: row.scope_org_id ?? null,
     grantedAt: new Date(row.granted_at),
     grantedBy: row.granted_by,
     grantedByDisplayName: row.granted_by_display_name,
@@ -86,10 +91,16 @@ export class SupabaseAdminRoleRepository implements IAdminRoleRepository {
     return out;
   }
 
-  async grantRole(targetUserId: string, role: GrantableAdminRole): Promise<string> {
+  async grantRole(
+    targetUserId: string,
+    role: GrantableAdminRole,
+    scopeOrgId: string | null,
+  ): Promise<string> {
     const { data, error } = await this.client.rpc('admin_grant_role', {
       p_target_user_id: targetUserId,
       p_role: role,
+      // Platform roles send no scope so the RPC's default (null) applies.
+      ...(scopeOrgId === null ? {} : { p_scope_org_id: scopeOrgId }),
     });
     if (error) throw mapRpcError(error);
     if (typeof data !== 'string') {
@@ -101,5 +112,17 @@ export class SupabaseAdminRoleRepository implements IAdminRoleRepository {
   async revokeRole(grantId: string): Promise<void> {
     const { error } = await this.client.rpc('admin_revoke_role', { p_grant_id: grantId });
     if (error) throw mapRpcError(error);
+  }
+
+  async changeRole(grantId: string, newRole: GrantableAdminRole): Promise<string> {
+    const { data, error } = await this.client.rpc('admin_change_role', {
+      p_grant_id: grantId,
+      p_new_role: newRole,
+    });
+    if (error) throw mapRpcError(error);
+    if (typeof data !== 'string') {
+      throw new AdminRoleError('unknown', 'admin_change_role returned non-string grant_id');
+    }
+    return data;
   }
 }

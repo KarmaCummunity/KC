@@ -1,34 +1,98 @@
-# Manual TestFlight upload (ported from KupaPay): macOS runner + `eas build --local`
-# (no EAS cloud build quota). Uploads to TestFlight only; never submits for App Store review.
-# Secrets (names only): EXPO_TOKEN, ASC_API_KEY_ID, ASC_API_KEY_ISSUER_ID, ASC_API_KEY_P8, KC_IOS_TEAM_ID
-# Optional: SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_URL. Variables: KC_ASC_APP_ID (numeric App Store Connect app id), KC_EAS_PROJECT_ID,
-# EXPO_PUBLIC_SENTRY_DSN, EXPO_PUBLIC_POSTHOG_KEY. Skips cleanly (green, with a notice) when a required one is unset.
+# TestFlight upload: macOS runner + local `eas build` (no EAS cloud build quota),
+# then `eas submit`. Uploads to TestFlight only; never submits for App Store review.
+#
+# Callers: the nightly pipeline (mobile-nightly.yml, `workflow_call` with the
+# green SHA) and manual dispatch on dev. Manual dispatch resolves the newest dev
+# commit with a successful CI push run (scripts/mobile-store-target.mjs), or
+# accepts an optional `ref` input validated the same way. The commit built must
+# have a successful `CI` push run on dev (D-195 "Mobile nightly"). Tester builds use the eas.json
+# `nightly` profile and the kc-dev Supabase backend; store builds from main
+# (prod backend) are not wired yet, and scripts/mobile-store-config.mjs refuses them.
+#
+# Runs in the `mobile-store` GitHub Environment (deployment branches: dev, main).
+# Required, fail closed when unset:
+#   secrets  EXPO_TOKEN, ASC_API_KEY_ID, ASC_API_KEY_ISSUER_ID, ASC_API_KEY_P8, KC_IOS_TEAM_ID,
+#            KC_IOS_DIST_P12_B64, KC_IOS_DIST_P12_PASSWORD,
+#            MOBILE_SUPABASE_ANON_KEY (kc-dev publishable key, mobile-store environment)
+#   vars     KC_ASC_APP_ID (numeric App Store Connect app id), KC_EAS_PROJECT_ID, KC_IOS_DIST_CERT_ID
+# Optional: secret SENTRY_AUTH_TOKEN; vars SENTRY_ORG, SENTRY_URL, EXPO_PUBLIC_SENTRY_DSN, EXPO_PUBLIC_POSTHOG_KEY.
 name: TestFlight iOS
 
 on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit SHA to build (must have a successful CI push run on dev)
+        type: string
+        required: true
+    outputs:
+      build_number:
+        description: CFBundleVersion of the uploaded build
+        value: ${{ jobs.testflight.outputs.build_number }}
   workflow_dispatch:
-
-concurrency:
-  group: testflight-ios
-  cancel-in-progress: true
+    inputs:
+      ref:
+        description: Commit SHA to build (must have a successful CI push run on dev); default resolves the newest green dev commit
+        type: string
+        required: false
 
 permissions:
   contents: read
 
 env:
   BUNDLE_ID: org.karmacommunity.app
+  # Same eas-cli pin in play-internal.yml and kc-mobile-eas-preview.yml; bump all three together.
+  EAS_CLI_VERSION: 24.12.1
 
 jobs:
   testflight:
     name: Build & upload to TestFlight
     runs-on: macos-latest
-    timeout-minutes: 90
+    timeout-minutes: 150
+    environment: mobile-store
+    permissions:
+      contents: read
+      actions: read # read CI runs to verify the commit is green
+    # Never cancel an in-flight build: it has already consumed an EAS build
+    # number. The group is per caller (`github.workflow` is the caller's name in
+    # a called run), so queued manual runs can only displace each other, never a
+    # nightly run, which mobile-nightly.yml already serialises.
+    concurrency:
+      group: testflight-ios-${{ github.workflow }}
+      cancel-in-progress: false
+    outputs:
+      build_number: ${{ steps.build.outputs.build_number }}
     defaults:
       run:
         working-directory: app/apps/mobile
     steps:
-      - name: Preflight secrets (skip cleanly when unset)
-        id: preflight
+      # Sparse checkout only under .store-target so the full build checkout
+      # below never inherits sparse state (pnpm/action-setup needs app/package.json).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .store-target
+          sparse-checkout: |
+            .nvmrc
+            scripts/resolve-green-dev-sha.mjs
+            scripts/mobile-store-target.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .store-target/.nvmrc
+      - name: Verify the commit passed CI on dev
+        id: target
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          INPUT_REF: ${{ inputs.ref }}
+          EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF: ${{ github.ref }}
+          LOOKBACK: '30'
+        working-directory: .
+        run: node .store-target/scripts/mobile-store-target.mjs
+
+      - name: Preflight secrets (fail closed)
         working-directory: .
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
@@ -36,48 +100,57 @@ jobs:
           ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
           ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
           KC_IOS_TEAM_ID: ${{ secrets.KC_IOS_TEAM_ID }}
+          KC_IOS_DIST_P12_B64: ${{ secrets.KC_IOS_DIST_P12_B64 }}
+          KC_IOS_DIST_P12_PASSWORD: ${{ secrets.KC_IOS_DIST_P12_PASSWORD }}
+          MOBILE_SUPABASE_ANON_KEY: ${{ secrets.MOBILE_SUPABASE_ANON_KEY }}
           KC_ASC_APP_ID: ${{ vars.KC_ASC_APP_ID }}
           KC_EAS_PROJECT_ID: ${{ vars.KC_EAS_PROJECT_ID }}
+          KC_IOS_DIST_CERT_ID: ${{ vars.KC_IOS_DIST_CERT_ID }}
         run: |
           set -euo pipefail
           missing=()
-          for n in EXPO_TOKEN ASC_API_KEY_ID ASC_API_KEY_ISSUER_ID ASC_API_KEY_P8 KC_IOS_TEAM_ID KC_ASC_APP_ID KC_EAS_PROJECT_ID; do
+          for n in EXPO_TOKEN ASC_API_KEY_ID ASC_API_KEY_ISSUER_ID ASC_API_KEY_P8 KC_IOS_TEAM_ID \
+                   KC_IOS_DIST_P12_B64 KC_IOS_DIST_P12_PASSWORD MOBILE_SUPABASE_ANON_KEY \
+                   KC_ASC_APP_ID KC_EAS_PROJECT_ID KC_IOS_DIST_CERT_ID; do
             [ -n "${!n:-}" ] || missing+=("$n")
           done
           if [ ${#missing[@]} -gt 0 ]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Skipping TestFlight — missing secrets/variables: ${missing[*]}"
-            exit 0
+            echo "::error::TestFlight cannot run — missing secrets/variables (repo or mobile-store environment): ${missing[*]}"
+            exit 1
           fi
-          echo "ready=true" >> "$GITHUB_OUTPUT"
           echo "All TestFlight secrets present."
 
-      - uses: actions/checkout@v4
-        if: steps.preflight.outputs.ready == 'true'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.target.outputs.sha }}
 
-      - uses: pnpm/action-setup@v4
-        if: steps.preflight.outputs.ready == 'true'
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           package_json_file: app/package.json
 
-      - uses: actions/setup-node@v7
-        if: steps.preflight.outputs.ready == 'true'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: "20"
+          node-version-file: .nvmrc
           cache: pnpm
           cache-dependency-path: app/pnpm-lock.yaml
 
+      # Writes the kc-dev backend into the eas.json `nightly` profile env (runner
+      # only); fails for a main commit or a key of another project.
+      - name: Pin the Supabase backend
+        working-directory: .
+        env:
+          SOURCE_BRANCH: ${{ steps.target.outputs.branch }}
+          MOBILE_SUPABASE_ANON_KEY: ${{ secrets.MOBILE_SUPABASE_ANON_KEY }}
+        run: node scripts/mobile-store-config.mjs pin
+
       - name: Install dependencies
-        if: steps.preflight.outputs.ready == 'true'
         working-directory: app
         run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Install EAS CLI
-        if: steps.preflight.outputs.ready == 'true'
-        run: npm install -g eas-cli@24.12.1 --ignore-scripts
+        run: npm install -g "eas-cli@$EAS_CLI_VERSION" --ignore-scripts
 
       - name: Verify bundle identifier
-        if: steps.preflight.outputs.ready == 'true'
         run: |
           set -euo pipefail
           actual="$(npx --yes expo config --json --type public | jq -r '.ios.bundleIdentifier')"
@@ -87,7 +160,6 @@ jobs:
           fi
 
       - name: Write ASC API key (runner temp, never committed)
-        if: steps.preflight.outputs.ready == 'true'
         env:
           ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
         run: |
@@ -95,8 +167,29 @@ jobs:
           umask 077
           printf '%s\n' "$ASC_API_KEY_P8" > "$RUNNER_TEMP/asc-api-key.p8"
 
-      - name: Build iOS locally & upload to TestFlight
-        if: steps.preflight.outputs.ready == 'true'
+      - name: Create signing credentials via ASC API (runner only)
+        env:
+          EXPO_ASC_API_KEY_PATH: ${{ runner.temp }}/asc-api-key.p8
+          EXPO_ASC_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          EXPO_ASC_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+          KC_IOS_DIST_P12_B64: ${{ secrets.KC_IOS_DIST_P12_B64 }}
+          KC_IOS_DIST_P12_PASSWORD: ${{ secrets.KC_IOS_DIST_P12_PASSWORD }}
+          KC_IOS_DIST_CERT_ID: ${{ vars.KC_IOS_DIST_CERT_ID }}
+        run: |
+          set -euo pipefail
+          umask 077
+          sd="$RUNNER_TEMP/sign"; mkdir -p "$sd"
+          printf '%s' "$KC_IOS_DIST_P12_B64" | base64 --decode > "$sd/dist.p12"
+          gem list -i fastlane >/dev/null || sudo gem install fastlane --no-document >/dev/null
+          ruby -rspaceship -e1 2>/dev/null || sudo gem install fastlane --no-document >/dev/null
+          ruby "$GITHUB_WORKSPACE/.github/scripts/ios-signing.rb" "$sd"
+          pw="$KC_IOS_DIST_P12_PASSWORD"
+          jq -n --arg p "$sd/kc.mobileprovision" --arg c "$sd/dist.p12" --arg pw "$pw" \
+            '{ios:{provisioningProfilePath:$p,distributionCertificate:{path:$c,password:$pw}}}' > credentials.json
+          tmp="$(mktemp)"; jq '.build.nightly.ios.credentialsSource = "local"' eas.json > "$tmp" && mv "$tmp" eas.json
+
+      - name: Build iOS locally, verify the backend & upload to TestFlight
+        id: build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_ASC_API_KEY_PATH: ${{ runner.temp }}/asc-api-key.p8
@@ -105,22 +198,48 @@ jobs:
           EXPO_APPLE_TEAM_ID: ${{ secrets.KC_IOS_TEAM_ID }}
           ASC_APP_ID: ${{ vars.KC_ASC_APP_ID }}
           EAS_PROJECT_ID: ${{ vars.KC_EAS_PROJECT_ID }}
-          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
-          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
           EXPO_PUBLIC_SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
           EXPO_PUBLIC_POSTHOG_KEY: ${{ vars.EXPO_PUBLIC_POSTHOG_KEY }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           SENTRY_URL: ${{ vars.SENTRY_URL }}
+          BUILD_SHA: ${{ steps.target.outputs.sha }}
         run: |
           set -euo pipefail
           [ -n "${SENTRY_AUTH_TOKEN:-}" ] || export SENTRY_DISABLE_AUTO_UPLOAD=true
-          eas build --platform ios --profile production --local --non-interactive --output ./build-kc.ipa
+          eas build --platform ios --profile nightly --local --non-interactive --output ./build-kc.ipa
+          # Refuse to upload unless the shipped JS bundle points at kc-dev only.
+          unzip -p ./build-kc.ipa 'Payload/*.app/main.jsbundle' > "$RUNNER_TEMP/main.jsbundle"
+          node "$GITHUB_WORKSPACE/scripts/mobile-store-config.mjs" verify "$RUNNER_TEMP/main.jsbundle"
+          # The build number actually inside the IPA (EAS remote autoIncrement assigned it).
+          unzip -p ./build-kc.ipa 'Payload/*.app/Info.plist' > "$RUNNER_TEMP/Info.plist"
+          build_number="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$RUNNER_TEMP/Info.plist")"
+          [ -n "$build_number" ] || { echo "::error::Could not read CFBundleVersion from the IPA"; exit 1; }
           # eas.json keeps a placeholder (public repo); inject the real ASC app id on the runner only.
-          tmp="$(mktemp)"; jq --arg id "$ASC_APP_ID" '.submit.production.ios.ascAppId = $id' eas.json > "$tmp" && mv "$tmp" eas.json
+          tmp="$(mktemp)"; jq --arg id "$ASC_APP_ID" --arg k "$EXPO_ASC_API_KEY_PATH" --arg kid "$EXPO_ASC_KEY_ID" --arg iss "$EXPO_ASC_ISSUER_ID" '.submit.production.ios += {ascAppId: $id, ascApiKeyPath: $k, ascApiKeyId: $kid, ascApiKeyIssuerId: $iss}' eas.json > "$tmp" && mv "$tmp" eas.json
           eas submit --platform ios --profile production --path ./build-kc.ipa --non-interactive
-          echo "EAS remote iOS buildNumber: $(eas build:version:get -p ios 2>/dev/null | grep -oE '[0-9]+$' || echo unknown)"
+          echo "build_number=$build_number" >> "$GITHUB_OUTPUT"
+          echo "TestFlight upload: iOS build $build_number from $BUILD_SHA (kc-dev backend)" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Remove key file
-        if: always() && steps.preflight.outputs.ready == 'true'
-        run: rm -f "$RUNNER_TEMP/asc-api-key.p8"
+      - name: Distribute to external testers & submit for Beta App Review (non-fatal)
+        if: success()
+        continue-on-error: true
+        timeout-minutes: 50
+        working-directory: .
+        env:
+          ASC_KEY_PATH: ${{ runner.temp }}/asc-api-key.p8
+          ASC_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+          ASC_APP_ID: ${{ vars.KC_ASC_APP_ID }}
+          BUILD_NUMBER: ${{ steps.build.outputs.build_number }}
+          BUILD_SHA: ${{ steps.target.outputs.sha }}
+          TF_GROUPS: KC Beta,KC Real Users
+          TF_TIMEOUT_MIN: '45'
+        run: |
+          export TF_WHATS_NEW="Karma Community dev build ${BUILD_NUMBER} (${BUILD_SHA:0:7}). General testing of Karma Community."
+          node scripts/testflight-distribute.mjs
+
+      - name: Remove key files
+        if: always()
+        working-directory: .
+        run: rm -rf "$RUNNER_TEMP/asc-api-key.p8" "$RUNNER_TEMP/sign" app/apps/mobile/credentials.json

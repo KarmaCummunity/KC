@@ -5,27 +5,57 @@
 
 ## Pyramid
 
-1. **Unit** — `cd app && pnpm test` (vitest). Required on every PR to `dev`.
-2. **Contract / migrations** — `ci-backend`, `ci-contract`. Required on `dev`.
-3. **Bundle smoke** — `scripts/smoke-web-bundle.mjs` on exported dist. Required on `dev`.
-4. **E2E (Web)** — Playwright vs `DEV_WEB_URL`. **Required** on PR `dev` → `main` (P0 journeys).
+All PR checks run behind the single required check `CI gate` (`.github/workflows/ci.yml`, `D-195`); the lanes below are jobs inside it, planned from the changed paths.
+
+1. **Unit** — `cd app && pnpm test` (vitest). `frontend` lane of `CI gate`.
+2. **Contract / migrations / DB flows** — `backend` lane (fresh local stack, `supabase/tests/*.sql`, types drift, sqlProbes) and the RPC contract + migration-chain checks in the `static` lane. DB tests run through `scripts/run-db-tests.sh` (shared `kc_test` harness, per-migration tests, per-world lifecycle flows) — see [`supabase/tests/_harness/README.md`](../../supabase/tests/_harness/README.md).
+3. **Bundle smoke** — `scripts/smoke-web-bundle.mjs` on the exported dist. `frontend` lane.
+4. **E2E (Web)** — Playwright vs `DEV_WEB_URL`. **Required** on PR `dev` → `main` (P0 journeys, `release` lane), plus the nightly QA suite.
 5. **Performance** — Lighthouse + k6. Scheduled on `dev` (Wave 4); blocking only after budgets stabilize.
 6. **Accessibility** — axe Playwright on critical routes (Wave 5).
 7. **Native E2E** — Maestro. Nightly until stable (Wave 6).
 
 ## CI feedback lanes (agents)
 
-| Event | Fast checks | E2E |
+| Event | Checks | E2E |
 | --- | --- | --- |
-| PR → `staging` | unit, lint, migrations, bundle smoke | **GloWe journeys + visual** (`CI — GloWe E2E`) against `GLOWE_STAGING_URL` |
-| PR → `dev` | same | **GloWe journeys + visual** against `GLOWE_PROD_URL` |
-| PR → `main` | same + release guard | **P0 required** (`CI — E2E dev`) + GloWe |
-| push → `dev` / `staging` | deploy + GloWe E2E | blocking on path-filtered GloWe changes |
-| push → `dev` | deploy + `glowe-prod-smoke` | prod-health synthetics every 15 min |
+| PR → `dev` (and its merge-queue group) | `CI gate`: hygiene (PR runs only), static guards, plus the frontend / backend / edge lanes the diff needs | none |
+| PR → `main` (release) | same, plus the `release` lane | **P0 journeys required** against `DEV_WEB_URL` once it serves the release head SHA |
+| push → `dev` / `main` | every lane, then **Deploy** (kc-dev automatically; prod after the owner's approval) with its smoke stage | none |
+| nightly | — | QA suite (`e2e-nightly-dev.yml`); P0 journeys before the mobile store builds (`mobile-nightly.yml`) |
+
+## Port contract tests (G39, `D-204`)
+
+One suite per application port, written once and run twice:
+
+| Leg | Where | Runs |
+| --- | --- | --- |
+| In-memory fake | `app/packages/application/src/<area>/__tests__/*.contract.test.ts` against a behavioural `InMemory*Repository` | every `pnpm test` (frontend lane) |
+| Supabase adapter | `app/packages/infrastructure-supabase/src/<area>/__tests__/*.contract.integration.test.ts` against the real adapter with a signed-in (RLS-scoped) client | `ci-backend` on the local stack; `vitest.config.ts` collects these files only when `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are set (the lane exports them from `supabase status -o env`) |
+
+The cases live in `app/packages/application/src/contracts/<port>.contract.ts` as a plain `ContractCase[]` with framework-agnostic assertions (`ContractViolation`), so the module ships in `@kc/application` without a vitest import and any adapter package can import it. A fake that drifts from the adapter fails the same case the adapter passes.
+
+Adding a port: write `contracts/<port>.contract.ts` (fresh actors per case; a second actor only where the port's behaviour is two-sided, as a bookmark on another user's post is — admin flows and ranking stay in per-adapter tests), a behavioural in-memory fake beside the use-case tests, the two runners, and export the contract from `contracts/index.ts`. Run the adapter leg locally: `supabase start`, then `eval "$(supabase status -o env)"` and `SUPABASE_URL=$API_URL SUPABASE_ANON_KEY=$ANON_KEY SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY pnpm --filter @kc/infrastructure-supabase test contract.integration`. No stack key is ever written in the repo (GitGuardian scans every PR), and the suite files carry no skip marker (the test-integrity judge rejects added ones).
+
+Shipped: `IPostRepository`, `ISavedPostsRepository` (the posts-area fakes share one `InMemoryPostStore`, whose `isPostVisibleTo` models the owner / hidden-status / OnlyMe slice of `is_post_visible_to`), `IChatRepository` (11 participant-side cases over one `InMemoryChatStore`: one thread per pair, paging, the 2000-character body limit, unread counts, inbox rows, participants-only access, personal inbox hide; the support thread needs a super admin and stays in its own tests), `IReportRepository` (8 cases over user and chat targets; its fake shares the chat store's members and chats, and post / listing targets stay in the DB tests), the follow graph (the follow / follow-request slice of `IUserRepository`, typed as a `Pick` so the fake implements only what the 10 cases use), and profile editing (the Edit Profile / onboarding slice, `ProfileEditing`, 11 cases; its fake models the `public.users` CHECKs, the city foreign key and the owner-only update policy). The adapter legs share the seeded, signed-in users of `infrastructure-supabase/src/__tests__/contractUsers.ts`. Queue: BACKLOG `OPS-G39`.
+
+## Two-user world journeys (G40, `D-205`)
+
+`tests/e2e/journeys/<world>.spec.ts` — one Playwright journey per live giving world, two seeded users, against the dev deployment:
+
+1. **A publishes** through `create_marketplace_listing` (the RPC the unified create form calls), so the journey tests the giving flow, not the form widgets (the form has its own qa spec).
+2. **B claims** on the listing page — items reserve (`reserved`, owner must confirm), food quick-claims (`confirmed` at once, migration 0383).
+3. **A confirms** when the world needs it; **A hands over** — the listing closes and the giver's karma ledger row exists; **B rates** — the rating is stored for the rater (D24).
+
+Every UI step is re-read over REST as the acting user, so RLS is exercised as in the app. The shape lives once in `tests/e2e/lib/worldJourney.ts`; a world is a fixture (`kindSlug`, claim action and the status it results in, kind details such as food expiry). Locators prefer the `giving-handoff-*` / `handoff-rating-*` testIDs and fall back to the Hebrew labels. No skip markers: a step that cannot run fails.
+
+Runs: nightly (`e2e-nightly-dev.yml`), the mobile nightly P0 gate and the release lane (`ci-release.yml`) — top-level `journeys/*.spec.ts`. A PR-time run would exercise the previous dev deployment, not the PR, so journeys are not a PR lane.
+
+Shipped: `items`, `food`. Queue: BACKLOG `OPS-G40`.
 
 ## E2E test user (dev only)
 
-**Canonical dev CI user** (Supabase dev `roeefqpdbftlndzsvhfj`):
+**Manual / agent super-admin user** (Supabase dev `enbqriuxvvuontiwslun`). CI no longer uses it: the Playwright suites sign in as the public kc-dev seed users ([`tests/e2e/README.md`](../../tests/e2e/README.md)).
 
 | Field | Value |
 | --- | --- |
@@ -36,9 +66,9 @@
 
 Re-create if deleted: `source ~/.kc-dev-secrets.env && node scripts/create-e2e-user.mjs` (uses service role from management API).
 
-GitHub Actions secrets (repo settings): `E2E_TEST_EMAIL`, `E2E_TEST_PASSWORD`, `E2E_SUPABASE_ANON_KEY_DEV` (dev publishable anon — dev-scoped secret name, wired to the `E2E_SUPABASE_ANON_KEY` env var in CI).
+The repository secrets `E2E_TEST_EMAIL`, `E2E_TEST_PASSWORD` and `E2E_SUPABASE_ANON_KEY_DEV` are no longer read by any workflow.
 
-Because this account is a **super-admin**, it lands on the admin portal (`/(admin)`) rather than the public home feed on first paint. The P0 journeys (`auth.setup.ts`, `feed.spec.ts`) therefore switch to the Home tab (`getByRole('tab', { name: 'בית' })`) when `feed-screen` is not already the active surface — a no-op for a normal user.
+Because this account is a **super-admin**, it lands on the admin portal (`/(admin)`) rather than the public home feed on first paint; a session for it must switch to the Home tab (`getByRole('tab', { name: 'בית' })`) first.
 
 The human `/sign-in` UI may be broken — E2E uses API session injection, not that form.
 
@@ -47,7 +77,7 @@ Preflight: `set -a && source ~/.kc-dev-secrets.env && set +a && node scripts/ens
 
 ## Agent test users (dev only)
 
-Two canonical "looks-real" users for AI agent testing on Supabase dev `roeefqpdbftlndzsvhfj`.
+Two canonical "looks-real" users for AI agent testing on Supabase dev `enbqriuxvvuontiwslun`.
 Unlike the CI E2E user above, these users have completed onboarding, realistic Hebrew profiles,
 and are used for multi-user interaction tests (chat, post closure, follow flows, etc.).
 
@@ -133,16 +163,9 @@ Maps to `RELEASE_CHECKLIST.md` dev smoke:
 3. Write — create-post screen loads; title field accepts input.
 4. Chat — inbox screen opens.
 
-## GloWe suite (FR-GLOWE-*)
+## GloWe suite (historical)
 
-The GloWe static frontend has its own Playwright projects (`glowe-setup` + `glowe`), separate from the KC P0 journeys — the dev deployment is currently GloWe-only, so this suite is the effective E2E gate.
-
-- **Specs:** `tests/e2e/journeys/glowe-*.spec.ts` — `glowe-public` (guest browsing, join gates, HE/RTL toggle), `glowe-member` (adaptive home, create menu, saved toggles, messaging, reporting), `glowe-org` (org create menu, event publish + cleanup, applicant inbox), `glowe-admin` (org approval + report queue; needs `E2E_TEST_EMAIL/PASSWORD`), `glowe-full-flow` (volunteer offers help on a need → KC chat visible to both personas; duplicate-application guard), `glowe-visual` (screenshot regression on stable chrome).
-- **Target URL:** `DEV_WEB_URL + /glowe` in CI; locally `GLOWE_WEB_URL=http://127.0.0.1:4321` after `npx serve app/apps/glowe-web -l 4321`. The Supabase URL + publishable key are parsed from `backend-config.js`.
-- **Personas:** seeded by `scripts/seed-glowe-dev.mjs` (run via the manual **Seed GloWe dev data** workflow; dev-only, idempotent, prod-ref-guarded). Signed-in specs mint sessions by password grant in `glowe-auth.setup.ts` and inject them as `glowe-auth-v1` + `gloweUser` localStorage. When the seed hasn't run, member/org/full-flow specs **skip** (guest specs still assert), so the job stays meaningful pre-seed.
-- **CI:** `CI — GloWe E2E (dev + staging)` (`ci-e2e-glowe.yml`) runs `glowe` + `glowe-visual` on every PR/push to `staging` and `dev`. The legacy `GloWe journeys` job in `CI — E2E dev` still gates `dev` → `main` release PRs.
-- **Visual regression:** `glowe-visual.spec.ts` (`glowe-visual` project) — `toHaveScreenshot()` on stable chrome (hero, forums, filters, RTL header). Update baselines: `GLOWE_WEB_URL=… npx playwright test --project=glowe-visual --update-snapshots`.
-- **Local browser pin:** set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` when the environment ships its own Chromium instead of the Playwright download.
+The GloWe frontend, its Playwright projects (`glowe*`, `prod-health`) and their workflows (`ci-e2e-glowe.yml`, `glowe-prod-smoke.yml`, `seed-glowe-dev.yml`) were removed with the GloWe sunset (`D-190`). Only stale screenshot baselines remain under `tests/e2e/journeys/glowe-visual.spec.ts-snapshots/`.
 
 ## Flake protocol (agents)
 
@@ -160,22 +183,6 @@ The GloWe static frontend has its own Playwright projects (`glowe-setup` + `glow
 
 After merge to `main`: incognito prod URL, sign-in, one write path, chat inbox. See `RELEASE_CHECKLIST.md` post-deploy section.
 
-## Production synthetics (GloWe, `INFRA-QA-W7`)
+## Deploy smoke (`INFRA-QA-W7`)
 
-Read-only Playwright probes against **`GLOWE_PROD_URL`** — GloWe's live site (`https://dev.karma-community.pages.dev/glowe`). **Not** `karma-community-kc.com/glowe`.
-
-- **Spec:** `tests/e2e/journeys/prod-health.spec.ts` (`prod-health` project).
-- **CI:** `.github/workflows/glowe-prod-smoke.yml` — post-merge on `dev`, `workflow_dispatch`, every 15 minutes.
-- **KC smoke (separate):** `.github/workflows/prod-smoke.yml` — HTTP 200 on `KC_PROD_URL` after `main` merge.
-- **Ingest:** `scripts/record-prod-health.mjs` → `glowe_health_checks` on **dev** Supabase via `supabase-dev` environment.
-- **Admin UI:** `admin.html` → System health panel.
-
-Local run:
-
-```bash
-export GLOWE_PROD_URL=https://dev.karma-community.pages.dev/glowe
-cd tests/e2e && npm install && npx playwright install chromium
-npx playwright test --project=prod-health
-```
-
-## Flake protocol (agents)
+The smoke stage of **Deploy** (`deploy-smoke.yml`, `scripts/smoke-deploy.mjs`) runs after every dev and prod deploy: `/version.json` SHA, page + bundle, Supabase Auth health, every Edge Function. It can also be dispatched read-only against dev or prod. There are no scheduled production synthetics.

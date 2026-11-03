@@ -24,12 +24,15 @@
  * - `app/apps/mobile/ios/**` + `.plist` suffix — native permission copy (to be aligned with D-24 / InfoPlist.strings).
  * - Repo-root `CLAUDE.md` — agent-facing Hebrew examples.
  * - `SKIP_HEBREW_SCAN_EXACT_RELS` — narrow ASCII-path exceptions until moved to locale-backed data.
+ * - Anything gitignored (e.g. a local `expo prebuild` android/ tree): in a git checkout only files
+ *   git sees are scanned — tracked plus new untracked ones. Outside git, the whole tree is walked.
  *
  * Usage:
  *   node scripts/extract-hebrew-text.mjs [outputPath]
  *   node scripts/extract-hebrew-text.mjs --check [outputPath]   # exit 1 if any violation remains
  */
 
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -52,6 +55,8 @@ const SKIP_HEBREW_SCAN_EXACT_RELS = new Set([
   "app/apps/mobile/public/privacy.html",
   "app/apps/mobile/public/terms.html",
   "app/apps/mobile/public/support.html",
+  "app/apps/mobile/public/delete-account.html",
+  "app/apps/mobile/public/child-safety.html",
 ]);
 
 function parseArgs(argv) {
@@ -171,7 +176,34 @@ function isProbablyTextFile(filePath) {
   return false;
 }
 
-function* walk(dir, skipScanAbs, repoRoot) {
+/**
+ * Repo-relative paths git sees (tracked + untracked, minus gitignored) and every parent
+ * directory of them, or null when `repoRoot` is not a git checkout.
+ */
+function gitVisiblePaths(repoRoot) {
+  let out;
+  try {
+    out = execFileSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      maxBuffer: 64 * 1024 * 1024,
+    });
+  } catch {
+    return null;
+  }
+  const visible = new Set();
+  for (const file of out.split("\0").filter(Boolean)) {
+    let p = file;
+    while (p !== "." && !visible.has(p)) {
+      visible.add(p);
+      p = path.posix.dirname(p);
+    }
+  }
+  return visible;
+}
+
+function* walk(dir, skipScanAbs, repoRoot, visible) {
   let entries;
   try {
     entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -182,9 +214,10 @@ function* walk(dir, skipScanAbs, repoRoot) {
     const full = path.join(dir, ent.name);
     const relPosix = path.relative(repoRoot, full).replace(/\\/g, "/");
     if (isSkippedHebrewScanRel(relPosix)) continue;
+    if (visible && !visible.has(relPosix)) continue;
     if (ent.isDirectory()) {
       if (shouldSkipDir(ent.name)) continue;
-      yield* walk(full, skipScanAbs, repoRoot);
+      yield* walk(full, skipScanAbs, repoRoot, visible);
     } else if (ent.isFile()) {
       if (SKIP_FILE_NAMES.has(ent.name)) continue;
       const resolved = path.resolve(full);
@@ -213,13 +246,13 @@ function extractFromFile(absPath, repoRoot) {
 }
 
 /**
- * Pure scan entry point (testable): walk `repoRoot` and return the sorted list of
+ * Scan entry point (testable): walk `repoRoot` and return the sorted list of
  * `{ rel, hits }` for every non-skipped text file that contains Hebrew codepoints.
  * `skipScanAbs` is an absolute path to omit from the walk (the report output file).
  */
 export function collectHebrewViolations(repoRoot = REPO_ROOT, skipScanAbs = null) {
   const byFile = [];
-  for (const abs of walk(repoRoot, skipScanAbs, repoRoot)) {
+  for (const abs of walk(repoRoot, skipScanAbs, repoRoot, gitVisiblePaths(repoRoot))) {
     const row = extractFromFile(abs, repoRoot);
     if (row) byFile.push(row);
   }

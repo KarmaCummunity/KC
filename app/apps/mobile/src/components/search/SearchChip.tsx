@@ -1,18 +1,15 @@
-// Reusable filter chip for SearchFilterSheet.
-import { Pressable, Text } from 'react-native';
-import { useSearchFilterSheetStyles } from './searchFilterSheet.styles';
+// Filter chip of the search and ride filter sheets and the date/time field.
+// A thin adapter over the kit `Chip` (spec 17 §4.1) that keeps the callers' `active` prop.
+// Compact `sm`, like every chip in a filter sheet (design-lead call, D99);
+// the kit's `hitSlop` keeps the 44pt touch target.
+import { Chip } from '../ui/Chip';
 
 interface Props {
-  label: string;
-  active: boolean;
-  onPress: () => void;
+  readonly label: string;
+  readonly active: boolean;
+  readonly onPress: () => void;
 }
 
 export function SearchChip({ label, active, onPress }: Props) {
-  const styles = useSearchFilterSheetStyles();
-  return (
-    <Pressable style={[styles.chip, active && styles.chipActive]} onPress={onPress}>
-      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
-    </Pressable>
-  );
+  return <Chip size="sm" label={label} selected={active} onPress={onPress} />;
 }

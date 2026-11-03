@@ -49,6 +49,7 @@ export const adminContentEn = {
     closed:             'Closed (Delivered)',
     deletedNoRecipient: 'Closed Without Recipient',
     removedAdmin:       'Removed by Admin',
+    hiddenForReview:    'Hidden for Review',
     expired:            'Expired',
   },
   postStatus: {
@@ -56,6 +57,7 @@ export const adminContentEn = {
     closed_delivered:     'Delivered',
     deleted_no_recipient: 'Closed Without Recipient',
     removed_admin:        'Removed by Admin',
+    hidden_pending_review: 'Hidden for Review',
     expired:              'Expired',
   },
 

@@ -39,6 +39,10 @@ const KIND_ROUTES: Record<NotificationKind, KindHandler> = {
     const id = requireUuid(d.params?.id);
     return id ? { pathname: '/post/[id]', params: { id } } : null;
   },
+  post_relevance_check: (d) => {
+    const id = requireUuid(d.params?.id);
+    return id ? { pathname: '/post/[id]', params: { id } } : null;
+  },
   mark_recipient: (d) => {
     const id = requireUuid(d.params?.id);
     return id ? { pathname: '/post/[id]', params: { id } } : null;
@@ -111,7 +115,33 @@ const KIND_ROUTES: Record<NotificationKind, KindHandler> = {
   match_suggested: () => ({ pathname: '/matches', params: {} }),
   match_interest: () => ({ pathname: '/matches', params: {} }),
   match_accepted: () => ({ pathname: '/matches', params: {} }),
+  // KC#1316 — food expiry notices open the listing.
+  listing_expiring: (d) => listingRoute(d.params?.listingId),
+  listing_expired: (d) => listingRoute(d.params?.listingId),
+  // D73 — ride booking changes open the ride, where the driver manages bookings.
+  ride_booking_requested: (d) => listingRoute(d.params?.listingId),
+  ride_booking_confirmed: (d) => listingRoute(d.params?.listingId),
+  ride_booking_declined: (d) => listingRoute(d.params?.listingId),
+  ride_booking_expired: (d) => listingRoute(d.params?.listingId),
+  ride_booking_cancelled: (d) => listingRoute(d.params?.listingId),
+  // D74 — a new ride on a followed route opens the ride.
+  ride_route_match: (d) => listingRoute(d.params?.listingId),
+  // D70 — an emergency on a ride opens that ride.
+  ride_listing_emergency: (d) => listingRoute(d.params?.listingId),
+  // FR-NOTIF-018 (0528) — item and food handoff changes open the listing.
+  giving_handoff_requested: (d) => listingRoute(d.params?.listingId),
+  giving_handoff_claimed: (d) => listingRoute(d.params?.listingId),
+  giving_handoff_confirmed: (d) => listingRoute(d.params?.listingId),
+  giving_handoff_declined: (d) => listingRoute(d.params?.listingId),
+  giving_handoff_cancelled: (d) => listingRoute(d.params?.listingId),
+  giving_handoff_completed: (d) => listingRoute(d.params?.listingId),
 };
+
+/** Marketplace listing detail, only for a well-formed listing id. */
+function listingRoute(raw: string | undefined): ResolvedRoute | null {
+  const listingId = requireUuid(raw);
+  return listingId ? { pathname: '/listing/[listingId]', params: { listingId } } : null;
+}
 
 export function resolvePushRoute(data: Partial<PushData>): ResolvedRoute | null {
   const kind = data.kind;

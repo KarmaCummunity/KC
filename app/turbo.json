@@ -21,7 +21,11 @@
       "dependsOn": [
         "typecheck"
       ],
-      "outputs": []
+      "outputs": [],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/eslint.config.mjs"
+      ]
     },
     "typecheck": {
       "dependsOn": [
@@ -42,6 +46,9 @@
       ]
     },
     "test:coverage": {
+      "dependsOn": [
+        "^build"
+      ],
       "outputs": [
         "coverage/**"
       ],

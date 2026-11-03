@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-import { makeUseStyles, typography, spacing } from '@kc/ui';
+import { makeUseStyles, typography, spacing, Text } from '@kc/ui';
 import { aboutRtlText, aboutRtlRow } from './aboutWebRtlStyle';
 import { MOTION } from '../../lib/animations/motion';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
@@ -103,8 +103,8 @@ const useAboutScopedSectionStyles = makeUseStyles(({ colors }) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeNum: { ...typography.caption, color: colors.secondary, fontWeight: '800' },
+  badgeNum: { ...typography.caption, color: colors.secondary, ...typography.extraBold },
   copy: { flex: 1, gap: spacing.xs },
-  title: { ...typography.body, color: colors.textPrimary, ...aboutRtlText, fontWeight: '700' },
+  title: { ...typography.body, color: colors.textPrimary, ...aboutRtlText, ...typography.bold },
   body: { ...typography.body, color: colors.textSecondary, ...aboutRtlText, lineHeight: 22 },
 }));

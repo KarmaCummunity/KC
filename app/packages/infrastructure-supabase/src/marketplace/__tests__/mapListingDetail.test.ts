@@ -28,5 +28,20 @@ describe('mapListingDetail', () => {
     expect(out?.listingId).toBe('l1');
     expect(out?.lat).toBe(32.08);
     expect(out?.media).toHaveLength(1);
+    expect(out?.feedPostId).toBeNull();
+  });
+
+  it('maps the feed mirror post id when the listing has one (D-206)', () => {
+    const out = mapListingDetail({
+      listing_id: 'l1',
+      owner_id: 'u1',
+      world_slug: 'food',
+      kind_slug: 'give_food',
+      direction: 'give',
+      title: 'Bread',
+      details: {},
+      feed_post_id: 'p_mirror',
+    });
+    expect(out?.feedPostId).toBe('p_mirror');
   });
 });

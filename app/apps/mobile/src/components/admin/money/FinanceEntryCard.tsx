@@ -1,7 +1,9 @@
 // V2-ADMIN-MONEY-9 — single ledger entry card.
-import { StyleSheet, Text, View } from 'react-native';
+import { memo } from 'react';
+import { StyleSheet, View } from 'react-native';
 import type { FinanceEntry } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { Chip } from '../../ui/Chip';
 import { AdminCardActions } from '../AdminCardActions';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
@@ -24,7 +26,7 @@ function fmtAmount(cents: number, currency: string): string {
   }
 }
 
-export function FinanceEntryCard({ entry, onEdit, onDelete }: FinanceEntryCardProps) {
+function FinanceEntryCardInner({ entry, onEdit, onDelete }: FinanceEntryCardProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   const t = L.admin.money;
@@ -39,10 +41,13 @@ export function FinanceEntryCard({ entry, onEdit, onDelete }: FinanceEntryCardPr
           <Text style={styles.meta}>{t.row.occurredAt(fmtDate(entry.occurredAt))}</Text>
         </View>
         <View style={styles.headRight}>
-          <View style={styles.chip}><Text style={styles.chipText}>{t.kind[entry.kind]}</Text></View>
-          <View style={[styles.chip, styles[`status_${entry.status}` as const]]}>
-            <Text style={styles.chipText}>{t.status[entry.status]}</Text>
-          </View>
+          <Chip variant="tag" tone="neutral" label={t.kind[entry.kind]} size="sm" />
+          <Chip
+            variant="tag"
+            tone={entry.status === 'cleared' ? 'success' : entry.status === 'pending' ? 'warning' : 'muted'}
+            label={t.status[entry.status]}
+            size="sm"
+          />
         </View>
       </View>
       {entry.counterparty && (
@@ -66,22 +71,19 @@ export function FinanceEntryCard({ entry, onEdit, onDelete }: FinanceEntryCardPr
 
 const useStyles = makeUseStyles(({ colors }) => ({
   card: {
-    margin: 12, padding: 14, gap: 6,
-    borderRadius: 10, backgroundColor: colors.surface,
+    margin: spacing.md, padding: spacing.md, gap: spacing.sm,
+    borderRadius: radius.md, backgroundColor: colors.surface,
     borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
   },
   head:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  headLeft:    { gap: 2 },
-  headRight:   { gap: 4, alignItems: 'flex-end' },
-  amount:      { fontSize: 16, fontWeight: '700' },
+  headLeft:    { gap: spacing.xs },
+  headRight:   { gap: spacing.xs, alignItems: 'flex-end' },
+  amount:      { ...typography.bodyLarge, ...typography.bold },
   amountIn:    { color: colors.success },
   amountOut:   { color: colors.error },
-  meta:        { fontSize: 11, opacity: 0.65 },
-  chip:        { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: colors.secondaryLight },
-  chipText:    { fontSize: 11, fontWeight: '700' },
-  status_pending:  { backgroundColor: colors.warningLight },
-  status_cleared:  { backgroundColor: colors.successLight },
-  status_canceled: { backgroundColor: colors.border },
-  metaText:    { fontSize: 12, opacity: 0.7 },
-  description: { fontSize: 12, marginTop: 4 },
+  meta:        { ...typography.caption, color: colors.textSecondary },
+  metaText:    { ...typography.bodySmall, color: colors.textSecondary },
+  description: { ...typography.bodySmall, color: colors.textPrimary, marginTop: spacing.xs },
 }));
+
+export const FinanceEntryCard = memo(FinanceEntryCardInner);

@@ -25,6 +25,13 @@ export const chatEn = {
   // Inbox preview prefixes — TD-110 bug 2.
   inboxSystemPrefix: '(system message)',
   inboxNewConversation: '(new conversation)',
+  // Post-closure system messages (FR-CHAT-015 AC4-AC6, TD-148) — rendered from
+  // system_payload; Hebrew matches the body the DB trigger (0031) stores.
+  systemPostClosed: {
+    deliveredToYou: 'Post marked as delivered ✓ · Thank you!',
+    deliveredToOther: 'The post was delivered to another user',
+    closedNotDelivered: 'The publisher closed the post — the item was not delivered',
+  },
 
   // AnchoredPostCard (FR-CHAT-014/015)
   anchoredOpenA11y: 'Open the post',

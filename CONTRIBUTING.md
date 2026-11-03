@@ -21,7 +21,7 @@ EAS and store CI: [`app/apps/mobile/README.md`](app/apps/mobile/README.md).
 ## Pull requests
 
 - Target branch: **`dev`** (not `main`)
-- Bump `app/VERSION` PATCH in every PR
+- Do not edit `app/VERSION` (PATCH is bumped automatically on merge into `dev`)
 - Pre-push (from `app/`): `pnpm typecheck && pnpm test && pnpm lint`
 - Include **Mapped to spec** in the PR body (see `CLAUDE.md`)
 

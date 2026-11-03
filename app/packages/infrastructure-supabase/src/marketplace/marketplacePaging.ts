@@ -10,10 +10,18 @@ import type {
   MarketplaceSearchCursor,
   MyListingsCursor,
 } from '@kc/application';
-import type { MarketplaceBrowseRow, MyListingRow } from '@kc/domain';
+import type { ListingCardPublisher, MarketplaceBrowseRow, MyListingRow, RideCardSummary } from '@kc/domain';
 import type { Database } from '../database.types';
 
 type Client = SupabaseClient<Database>;
+
+/**
+ * PostgREST embed of a listing's owner. RLS on `users` (users_select_active) returns null for an
+ * owner the viewer may not read, and the card then shows no author row.
+ */
+const PUBLISHER_EMBED = 'publisher:users!listings_owner_id_fkey(display_name, avatar_url)';
+
+type PublisherEmbed = { display_name: string | null; avatar_url: string | null };
 type BrowseRow = Database['public']['Functions']['browse_listings']['Returns'][number];
 type MyRow = Database['public']['Functions']['list_my_listings']['Returns'][number];
 
@@ -73,6 +81,7 @@ export async function fetchBrowsePage(
     p_lat: filters.lat ?? undefined,
     p_lng: filters.lng ?? undefined,
     p_radius_km: filters.radiusKm ?? undefined,
+    p_category_id: filters.categoryId ?? undefined,
     p_limit: limit,
     p_offset: c ? 0 : (filters.offset ?? 0),
     p_cursor_sort: c?.sortKey,
@@ -81,7 +90,8 @@ export async function fetchBrowsePage(
     p_cursor_id: c?.listingId,
   });
   if (error || !data) return { rows: [], nextCursor: null };
-  return { rows: data.map(mapBrowseRow), nextCursor: browseCursorFrom(data, limit) };
+  const rows = await attachCardExtras(client, data.map(mapBrowseRow));
+  return { rows, nextCursor: browseCursorFrom(data, limit) };
 }
 
 export async function fetchSearchPage(
@@ -114,7 +124,7 @@ export async function fetchListingCards(
   const { data, error } = await client
     .from('listings')
     .select(
-      'listing_id, world_slug, direction, title, summary, urgency_level, availability_status, city_id, kind:listing_kinds(slug)',
+      `listing_id, world_slug, direction, title, summary, urgency_level, availability_status, city_id, details, kind:listing_kinds(slug), ${PUBLISHER_EMBED}`,
     )
     .in('listing_id', [...ids]);
   if (error || !data) return [];
@@ -127,7 +137,9 @@ export async function fetchListingCards(
     urgency_level: number;
     availability_status: string;
     city_id: string | null;
+    details?: unknown;
     kind: { slug: string } | Array<{ slug: string }> | null;
+    publisher?: PublisherEmbed | PublisherEmbed[] | null;
   };
   const byId = new Map<string, MarketplaceBrowseRow>();
   for (const r of data as unknown as CardRow[]) {
@@ -143,6 +155,8 @@ export async function fetchListingCards(
       availabilityStatus: r.availability_status,
       cityId: r.city_id,
       distanceKm: null,
+      ride: r.world_slug === 'rides' ? rideSummaryFromDetails(r.details as RideDetails | null) : null,
+      publisher: mapCardPublisher(r.publisher),
     });
   }
   return ids.map((id) => byId.get(id)).filter((r): r is MarketplaceBrowseRow => r !== undefined);
@@ -167,4 +181,65 @@ export async function fetchMyListingsPage(
     rows,
     nextCursor: last && rows.length >= limit ? { updatedAt: last.updatedAt, listingId: last.listingId } : null,
   };
+}
+
+type RideDetails = {
+  origin_label?: string; dest_label?: string; departs_at?: string;
+  seats_available?: number; passengers?: number;
+};
+
+/** Pure mapper from listing `details` jsonb to the card summary. */
+export function rideSummaryFromDetails(d: RideDetails | null | undefined): RideCardSummary | null {
+  if (!d) return null;
+  let seats: number | null = null;
+  if (typeof d.seats_available === 'number') seats = d.seats_available;
+  else if (typeof d.passengers === 'number') seats = d.passengers;
+  return {
+    originLabel: d.origin_label?.trim() || null,
+    destLabel: d.dest_label?.trim() || null,
+    departsAt: d.departs_at || null,
+    seats,
+  };
+}
+
+/** Pure mapper from the owner embed (an object, or a one-element array) to the card's publisher. */
+export function mapCardPublisher(
+  embed: PublisherEmbed | PublisherEmbed[] | null | undefined,
+): ListingCardPublisher | null {
+  const owner = Array.isArray(embed) ? embed[0] : embed;
+  if (!owner) return null;
+  return { displayName: owner.display_name?.trim() || null, avatarUrl: owner.avatar_url || null };
+}
+
+/**
+ * Attach what the browse RPC does not return to its rows, in one batched, RLS-scoped read: every
+ * row's publisher, and a ride's route, time and seats. On any failure the rows come back unchanged,
+ * so the cards still render, only without these lines.
+ */
+export async function attachCardExtras(
+  client: Client,
+  rows: MarketplaceBrowseRow[],
+): Promise<MarketplaceBrowseRow[]> {
+  if (rows.length === 0) return rows;
+  let data: unknown[] | null;
+  try {
+    const res = await client
+      .from('listings')
+      .select(`listing_id, details, ${PUBLISHER_EMBED}`)
+      .in('listing_id', rows.map((r) => r.listingId));
+    if (res.error) return rows;
+    data = res.data;
+  } catch {
+    return rows;
+  }
+  if (!data) return rows;
+  type ExtrasRow = { listing_id: string; details: unknown; publisher?: PublisherEmbed | PublisherEmbed[] | null };
+  const byId = new Map<string, ExtrasRow>();
+  for (const r of data as ExtrasRow[]) byId.set(r.listing_id, r);
+  return rows.map((r) => {
+    const extras = byId.get(r.listingId);
+    if (!extras) return r;
+    const ride = r.worldSlug === 'rides' ? { ride: rideSummaryFromDetails((extras.details ?? null) as RideDetails | null) } : {};
+    return { ...r, ...ride, publisher: mapCardPublisher(extras.publisher) };
+  });
 }

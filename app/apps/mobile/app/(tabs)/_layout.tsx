@@ -6,6 +6,8 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
+
 export default function TabsLayout() {
   return (
     <Tabs

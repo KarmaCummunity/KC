@@ -1,8 +1,8 @@
 // FR-POST-003 — audience picker (Public / Followers / Only me). Shared by create + post menu.
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import type { PostVisibility } from '@kc/domain';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../lib/webRtlStyle';
@@ -27,7 +27,7 @@ const useVisibilityChooserStyles = makeUseStyles(({ colors, isDark }) => ({
   section: { gap: spacing.xs, ...webViewRtl },
   sectionLabel: {
     ...typography.caption,
-    fontWeight: '600',
+    ...typography.semiBold,
     color: colors.textSecondary,
     textAlign: rtlTextAlignStart,
     ...webTextRtl,
@@ -50,21 +50,21 @@ const useVisibilityChooserStyles = makeUseStyles(({ colors, isDark }) => ({
   radio: {
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: radius.sm,
     borderWidth: 2,
     borderColor: colors.border,
   },
   radioActive: { borderColor: colors.primary, backgroundColor: colors.primary },
   label: {
     ...typography.caption,
-    fontWeight: '600',
+    ...typography.semiBold,
     color: colors.textPrimary,
     textAlign: rtlTextAlignStart,
     ...webTextRtl,
   },
   sub: {
     ...typography.caption,
-    fontSize: 11,
+    fontSize: typography.caption.fontSize,
     color: colors.textSecondary,
     textAlign: rtlTextAlignStart,
     lineHeight: 16,

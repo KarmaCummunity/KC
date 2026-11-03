@@ -19,15 +19,6 @@ export const useOtherProfileScreenStyles = makeUseStyles(({ colors, isDark }) =>
     shadowOpacity: isDark ? 0 : shadow.card.shadowOpacity,
     elevation: isDark ? 0 : shadow.card.elevation,
   },
-  karmaRow: {
-    flexDirection: 'row' as const,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    gap: S.xs,
-    paddingVertical: S.xs,
-  },
-  karmaLabel: { ...typography.caption, color: colors.textSecondary },
-  karmaValue: { ...typography.bodyLarge, color: colors.textPrimary, fontWeight: '700' as const },
   actionRow: { flexDirection: 'row' as const, gap: S.sm, alignItems: 'center' as const },
   btnFlex: { flex: 1 },
   msgBtn: {

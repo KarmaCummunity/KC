@@ -1,4 +1,4 @@
-# SonarCloud + Cursor + CI (GloWe)
+# SonarCloud + Cursor + CI (KC)
 
 Project: [KarmaCummunity_MVP-2](https://sonarcloud.io/project/overview?id=KarmaCummunity_MVP-2)  
 Organization: `karmacummunity`
@@ -12,15 +12,17 @@ Organization: `karmacummunity`
 5. **Save Connection**, then bind workspace to project **KarmaCummunity_MVP-2**.
 6. Open the repo root (not only `app/`).
 
-## 2. CI — block PRs with new Sonar issues
+## 2. CI — block PRs into main with new Sonar issues
 
 Workflow: [`.github/workflows/ci-sonar.yml`](../../.github/workflows/ci-sonar.yml)
 
-On every PR to `main` / `dev` (when `app/**` changes):
+Called by the `frontend` lane of `CI gate` (`ci-frontend.yml`) on PRs into `main` whose `frontend` lane runs (not for Dependabot) and on pushes to `main`. PRs into `dev` do not run it: they get fast feedback only, and the free SonarCloud plan analyses only `main` and pull requests, so neither the `dev` merge queue nor `dev` pushes can be scanned (`D-195` addendum, `TD-236`). New-code findings therefore surface on the release PR:
 
-1. Runs SonarCloud analysis on the PR branch.
+1. Downloads the tests job's lcov coverage and runs SonarCloud analysis on the PR branch.
 2. Waits for the **Quality Gate** (`sonar.qualitygate.wait=true`).
-3. **Fails the check** if the gate fails on **new code** → merge blocked when branch protection is enabled.
+3. **Fails the lane** if the gate fails on **new code**, which fails `CI gate` and blocks the merge.
+
+New-code coverage only counts files that vitest measures. Keep `sonar.coverage.exclusions` a superset of each package's vitest coverage `exclude` list; a file vitest skips shows 0% here and fails the gate on any PR that touches it.
 
 ### One-time setup (repo admin)
 
@@ -28,7 +30,7 @@ On every PR to `main` / `dev` (when `app/**` changes):
    SonarCloud → **My Account → Security** → Generate token (e.g. `github-actions`).
 
 2. **GitHub secret**  
-   GitHub repo `KarmaCummunity/GloWe` → **Settings → Secrets and variables → Actions** →  
+   GitHub repo `KarmaCummunity/KC` → **Settings → Secrets and variables → Actions** →  
    New secret: `SONAR_TOKEN` = the token above.  
    (Prefer **organization** secret if multiple repos use the same Sonar org.)
 
@@ -36,10 +38,7 @@ On every PR to `main` / `dev` (when `app/**` changes):
    SonarCloud → **MVP-2 → Administration → Analysis Method** → turn off **Automatic Analysis**  
    (CI workflow replaces it; avoids double scans.)
 
-4. **Branch protection** (blocks merge; closest thing to “no bad push”)  
-   GitHub → **Settings → Branches** → rule for `dev` and `main`:
-   - Require status check: **`SonarCloud quality gate`** (job name from workflow).
-   - Also keep existing checks (`typecheck · test · lint`, etc.).
+4. **No separate required check.** Sonar runs inside `CI gate`, the only required check on `dev` and `main` (`D-195`); never require `SonarCloud quality gate` on its own.
 
 > **Note:** Git cannot reject `git push` from the server before upload. Protection works by **required PR checks** + **no merge** until Sonar passes. Direct pushes to `dev`/`main` should be disallowed by branch rules.
 

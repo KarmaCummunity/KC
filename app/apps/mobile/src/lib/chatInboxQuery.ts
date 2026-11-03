@@ -39,6 +39,28 @@ export function writeChatInboxSnapshot(
 
 const lastAtMs = (iso: string | null | undefined) => (iso ? Date.parse(iso) : 0);
 
+// A Realtime/locally created chat arrives as a bare `Chat` with no participant
+// or preview. Inserting it as-is crashed InboxChatRow (otherParticipant
+// undefined). Fill safe defaults; callers refetch to get the real peer.
+function toPlaceholderPreview(chat: Chat): ChatWithPreview {
+  return {
+    ...chat,
+    otherParticipant: {
+      userId: null,
+      displayName: null,
+      avatarUrl: null,
+      shareHandle: null,
+      isDeleted: false,
+    },
+    lastMessage: null,
+    unreadCount: 0,
+  } as ChatWithPreview;
+}
+
+export function isChatInSnapshot(snapshot: ChatInboxSnapshot, chatId: string): boolean {
+  return snapshot.chats.some((c) => c.chatId === chatId);
+}
+
 export function upsertChatPreviewInSnapshot(
   snapshot: ChatInboxSnapshot,
   chat: Chat,
@@ -48,7 +70,7 @@ export function upsertChatPreviewInSnapshot(
   const next =
     idx >= 0
       ? inbox.map((c, i) => (i === idx ? { ...c, ...chat } : c))
-      : [...inbox, chat as ChatWithPreview];
+      : [...inbox, toPlaceholderPreview(chat)];
   next.sort((a, b) => lastAtMs(b.lastMessageAt) - lastAtMs(a.lastMessageAt));
   return { ...snapshot, chats: next };
 }

@@ -6,9 +6,9 @@
 // ─────────────────────────────────────────────
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { IUserRepository, OnboardingBootstrap } from '@kc/application';
+import type { IUserRepository, NotificationPreferencesPatch, OnboardingBootstrap } from '@kc/application';
 import { DeleteAccountError } from '@kc/application';
-import type { OnboardingState, User } from '@kc/domain';
+import type { NotificationPreferences, OnboardingState, User } from '@kc/domain';
 import {
   supabaseClearBasicInfoSkipped,
   supabaseGetOnboardingBootstrap,
@@ -97,14 +97,6 @@ export class SupabaseUserRepository implements IUserRepository {
       .update({ biography })
       .eq('user_id', userId);
     if (error) throw new Error(`setBiography: ${error.message}`);
-  }
-
-  async setPreferredLanguage(userId: string, languageTag: string | null): Promise<void> {
-    const { error } = await this.client
-      .from('users')
-      .update({ preferred_language: languageTag })
-      .eq('user_id', userId);
-    if (error) throw new Error(`setPreferredLanguage: ${error.message}`);
   }
 
   async setPrivacyMode(userId: string, mode: import('@kc/domain').PrivacyMode): Promise<User> {
@@ -200,7 +192,7 @@ export class SupabaseUserRepository implements IUserRepository {
       if (status === 401) throw new DeleteAccountError('unauthenticated', 'no valid session', error);
       if (status === 403) throw new DeleteAccountError('suspended', 'account is suspended', error);
       // Read the body for the auth_delete_failed signal (critical zombie state).
-      let body: { error?: string } | null = null;
+      let body: { error?: string } | null;
       try {
         body = await ctx!.clone().json();
       } catch {
@@ -263,22 +255,20 @@ export class SupabaseUserRepository implements IUserRepository {
 
   async updateNotificationPreferences(
     userId: string,
-    partial: {
-      critical?: boolean;
-      social?: boolean;
-      quietHours?: { enabled: boolean; start: string; end: string; timezone: string };
-    },
-  ): Promise<{ critical: boolean; social: boolean; quietHours?: typeof partial.quietHours }> {
+    partial: NotificationPreferencesPatch,
+  ): Promise<NotificationPreferences> {
     const merge: Record<string, unknown> = {};
     if (partial.critical !== undefined) merge.critical = partial.critical;
     if (partial.social !== undefined) merge.social = partial.social;
     if (partial.quietHours !== undefined) merge.quietHours = partial.quietHours;
+    // The RPC merges `kinds` per key (0460), so only the toggled kinds are sent.
+    if (partial.kinds !== undefined) merge.kinds = partial.kinds;
     const { data, error } = await this.client.rpc(
       'users_merge_notification_preferences',
       { p_user_id: userId, p_merge: merge },
     );
     if (error) throw new Error(`updateNotificationPreferences: ${error.message}`);
-    return data as { critical: boolean; social: boolean; quietHours?: typeof partial.quietHours };
+    return data as NotificationPreferences;
   }
 
   findByAuthIdentity(_provider: string, _subject: string): Promise<never> {

@@ -1,5 +1,6 @@
-import { Pressable, Text, View } from 'react-native';
-import { makeUseStyles } from '@kc/ui';
+import { View } from 'react-native';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
+import { GhostButton, PrimaryButton } from '../ui/Buttons';
 
 export interface AdminFormActionsProps {
   readonly cancelLabel:    string;
@@ -19,27 +20,21 @@ export function AdminFormActions({
     <>
       {errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
       <View style={styles.row}>
-        <Pressable style={styles.cancel} onPress={onCancel} disabled={isPending}>
-          <Text style={styles.cancelText}>{cancelLabel}</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.submit, isPending && styles.submitDisabled]}
-          onPress={onSubmit}
+        {/* Compact admin size (spec 17 §4.3); the submit keeps its "saving" label while blocked. */}
+        <GhostButton label={cancelLabel} size="sm" disabled={isPending} onPress={onCancel} />
+        <PrimaryButton
+          testID="admin-form-submit"
+          label={isPending ? submittingLabel : submitLabel}
+          size="sm"
           disabled={isPending}
-        >
-          <Text style={styles.submitText}>{isPending ? submittingLabel : submitLabel}</Text>
-        </Pressable>
+          onPress={onSubmit}
+        />
       </View>
     </>
   );
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  errorText:      { color: colors.error, fontSize: 12 },
-  row:            { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 },
-  cancel:         { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8 },
-  cancelText:     { fontSize: 13, fontWeight: '500' },
-  submit:         { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, backgroundColor: colors.primary },
-  submitDisabled: { opacity: 0.5 },
-  submitText:     { color: colors.textInverse, fontSize: 13, fontWeight: '700' },
+  errorText:      { color: colors.error, fontSize: typography.bodySmall.fontSize },
+  row:            { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm, marginTop: spacing.sm },
 }));

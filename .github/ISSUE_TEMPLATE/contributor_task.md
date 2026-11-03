@@ -1,6 +1,6 @@
 ---
 name: Contributor task
-about: A well-scoped GLOWE task for external contributors
+about: A well-scoped KC task for external contributors
 title: "[contrib] "
 labels: ["contributor-facing", "good first issue"]
 ---
@@ -21,11 +21,11 @@ labels: ["contributor-facing", "good first issue"]
 
 ## Files likely to touch
 
-- `app/apps/glowe-web/...`
+- `app/apps/mobile/...`
 
 ## Out of scope
 
-- `app/apps/mobile/**` (paused — do not change)
+- Store release configuration (`eas.json`, signing) and production deploy workflows
 - Hosted Supabase credentials / env secrets
 -
 
@@ -33,7 +33,7 @@ labels: ["contributor-facing", "good first issue"]
 
 1. `./scripts/dev-up.sh` (if DB needed)
 2. `cd app && pnpm install`
-3. `pnpm --filter @kc/glowe-web dev` → http://localhost:4321
+3. Copy `app/.env.example` → `app/.env.local`, then `pnpm mobile` (or `pnpm --filter @kc/mobile web`)
 4. `cd app && pnpm typecheck && pnpm test && pnpm lint`
 5. Manual checks:
 

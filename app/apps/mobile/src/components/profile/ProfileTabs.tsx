@@ -3,9 +3,9 @@
 // Mapped to: FR-PROFILE-001 AC4. Saved / hidden / removed lists use the profile stack header.
 
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography } from '@kc/ui';
+import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 
 /** Tabs shown in the strip (two lanes per FR-PROFILE-001 AC4). */
 /** Open / closed lane highlighted in the tab strip under the profile card. */

@@ -1,10 +1,10 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import { KcFlashList } from '../../../../../../src/components/lists/KcFlashList';
 import { useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { makeUseStyles, spacing, typography } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../../../../../../src/components/ui/Screen';
 import { volunteerUseCases } from '../../../../../../src/services/volunteerComposition';
 
@@ -13,11 +13,11 @@ const useStyles = makeUseStyles(({ colors }) => ({
     marginHorizontal: spacing.lg,
     marginBottom: spacing.sm,
     padding: spacing.md,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: colors.surfaceRaised,
   },
   name: { ...typography.bodyLarge, color: colors.textPrimary },
-  meta: { ...typography.caption, color: colors.textSecondary, marginTop: 4 },
+  meta: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
 }));
 
 export default function ShiftVolunteersRosterScreen() {

@@ -3,8 +3,8 @@
 // FR-AUTH-014 (guest preview entry point).
 // docs/SSOT/spec/01_auth_and_onboarding.md
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
-import { useRouter, type Href } from 'expo-router';
+import { View, TouchableOpacity, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +17,7 @@ import Animated, {
   withRepeat,
   withSequence,
 } from 'react-native-reanimated';
-import { useTheme } from '@kc/ui';
+import { useTheme, Text, iconSize } from '@kc/ui';
 import { isAuthError } from '@kc/application';
 import { useAuthStore } from '../../src/store/authStore';
 import {
@@ -28,9 +28,11 @@ import {
 } from '../../src/services/authComposition';
 import { mapAuthErrorToHebrew } from '../../src/services/authMessages';
 import { NotifyModal } from '../../src/components/NotifyModal';
-import { AuthBackground } from '../../src/components/auth/AuthBackground';
+import { AmbientBlobs } from '../../src/components/ui/AmbientBlobs';
 import { AuthMiniAboutTeaser } from '../../src/components/auth/AuthMiniAboutTeaser';
 import { useWelcomeScreenStyles } from '../../src/components/auth/welcomeScreen.styles';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 const VALUE_PROPS: Array<{ icon: React.ComponentProps<typeof Ionicons>['name']; key: string }> = [
   { icon: 'gift-outline', key: 'welcomeValueProp1' },
@@ -87,7 +89,7 @@ export default function WelcomeScreen() {
         false,
       ),
     );
-  }, []);
+  }, [buttonsOpacity, buttonsTranslateY, heroOpacity, heroTranslateY, propsOpacity, propsTranslateX, ringOpacity, ringScale]);
 
   const heroStyle = useAnimatedStyle(() => ({
     opacity: heroOpacity.value,
@@ -164,7 +166,7 @@ export default function WelcomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <AuthBackground />
+      <AmbientBlobs density="auth" />
       <ScrollView contentContainerStyle={styles.scroll} bounces={false}>
 
         {/* Hero */}
@@ -183,7 +185,7 @@ export default function WelcomeScreen() {
             <View key={key} style={styles.valuePropRow}>
               <Text style={styles.valuePropText}>{t(`auth.${key}`)}</Text>
               <View style={styles.valuePropIconWrap}>
-                <Ionicons name={icon} size={22} color={colors.primary} />
+                <Ionicons name={icon} size={iconSize.xl} color={colors.primary} />
               </View>
             </View>
           ))}
@@ -199,7 +201,7 @@ export default function WelcomeScreen() {
               textStyle={styles.appleBtnText}
               onPress={handleApple}
               loading={appleLoading}
-              icon={<Ionicons name="logo-apple" size={20} color="#FFFFFF" />}
+              icon={<Ionicons name="logo-apple" size={20} color="#FFFFFF" />} // brand-guard-allow: Apple's logo keeps its own white on the Apple button
             />
           )}
           <AuthButton
@@ -211,10 +213,20 @@ export default function WelcomeScreen() {
             icon={<Text style={styles.googleGLetter}>G</Text>}
           />
           <TouchableOpacity
+            testID="auth-guest-preview"
             style={styles.guestBtn}
-            onPress={() => { setGuest(true); router.replace('/(guest)/feed' as Href); }}
+            onPress={() => { setGuest(true); router.replace('/(guest)/feed'); }}
           >
             <Text style={styles.guestBtnText}>{t('auth.guestPreviewCta')}</Text>
+          </TouchableOpacity>
+          {/* FR-AUTH-001 AC2: the only route to email/password sign-in (and sign-up from there). */}
+          <TouchableOpacity
+            testID="auth-email-entry"
+            style={styles.guestBtn}
+            onPress={() => router.push('/(auth)/sign-in')}
+            accessibilityRole="link"
+          >
+            <Text style={styles.emailEntryText}>{t('auth.continueWithEmail')}</Text>
           </TouchableOpacity>
         </Animated.View>
 

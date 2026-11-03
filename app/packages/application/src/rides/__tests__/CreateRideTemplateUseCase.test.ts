@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { RideError } from '@kc/domain';
 import type { ICityRepository } from '../../ports/ICityRepository';
 import { CreateRideTemplateUseCase } from '../CreateRideTemplateUseCase';
 import { FakeRideTemplateRepository } from './fakeRideTemplateRepository';
@@ -122,6 +121,10 @@ describe('CreateRideTemplateUseCase', () => {
 
     await expect(
       uc.execute({ ...base(), originCityId: 'X' }),
-    ).rejects.toBeInstanceOf(RideError);
+    ).rejects.toMatchObject({ code: 'city_not_found' });
+
+    await expect(
+      uc.execute({ ...base(), destCityId: 'Y' }),
+    ).rejects.toMatchObject({ code: 'city_not_found' });
   });
 });

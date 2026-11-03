@@ -1,4 +1,7 @@
-# Internal EAS builds (preview profile) without store submit — smoke for mobile CI.
+# Internal EAS builds (preview profile) without store submit — manual smoke for mobile.
+# Cloud builds take EXPO_PUBLIC_* from the eas.json "preview" profile and the EAS
+# "preview" environment; the runner's env never reaches the EAS builder.
+# Required secret: EXPO_TOKEN (fails closed when unset).
 name: KC mobile — EAS preview build
 
 on:
@@ -17,61 +20,62 @@ concurrency:
   group: kc-mobile-eas-preview
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
+env:
+  # Same eas-cli pin in testflight-ios.yml and play-internal.yml; bump all three together.
+  EAS_CLI_VERSION: 24.12.1
+
 jobs:
   preview:
     name: EAS preview build
     runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: app/apps/mobile
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Preflight EXPO_TOKEN
-        id: preflight
+      - name: Preflight EXPO_TOKEN (fail closed)
+        working-directory: .
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           if [ -z "${EXPO_TOKEN:-}" ]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Skipping — set EXPO_TOKEN to run EAS preview builds."
-            exit 0
+            echo "::error::EAS preview build cannot run — missing secret: EXPO_TOKEN"
+            exit 1
           fi
-          echo "ready=true" >> "$GITHUB_OUTPUT"
 
-      - uses: pnpm/action-setup@v4
-        if: steps.preflight.outputs.ready == 'true'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           package_json_file: app/package.json
           run_install: false
 
-      - uses: actions/setup-node@v7
-        if: steps.preflight.outputs.ready == 'true'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
           cache-dependency-path: app/pnpm-lock.yaml
 
       - name: Install dependencies
-        if: steps.preflight.outputs.ready == 'true'
         working-directory: app
         run: pnpm install --frozen-lockfile
 
       - name: Install EAS CLI
-        if: steps.preflight.outputs.ready == 'true'
-        run: npm install -g eas-cli@16.28.0 --ignore-scripts
+        run: npm install -g "eas-cli@$EAS_CLI_VERSION" --ignore-scripts
 
       - name: EAS build (preview profile)
-        if: steps.preflight.outputs.ready == 'true'
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
-          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
-          EXPO_PUBLIC_WEB_BASE_URL: https://karma-community-kc.com
+          PLATFORM: ${{ inputs.platform }}
         run: |
           eas build \
-            --platform "${{ inputs.platform }}" \
+            --platform "$PLATFORM" \
             --profile preview \
             --non-interactive \
             --wait

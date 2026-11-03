@@ -1,21 +1,24 @@
 // Guest preview feed — FR-AUTH-014 (screen 1.7) — wired to live IPostRepository (P0.4-FE).
 import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, Platform, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, TouchableOpacity, Platform, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { selectGuestPreviewPosts } from '@kc/application';
-import { spacing, useTheme } from '@kc/ui';
-import { PostCard } from '../../src/components/PostCard';
+import { spacing, useTheme, Text, iconSize } from '@kc/ui';
+import { kcGridCell } from '../../src/components/cards/KcCard.styles';
+import { PostCardGrid } from '../../src/components/PostCardGrid';
 import { GuestJoinModal } from '../../src/components/GuestJoinModal';
 import { FeedCommunityCounter } from '../../src/components/FeedCommunityCounter';
 import { useAuthStore } from '../../src/store/authStore';
 import { getFeedUseCase } from '../../src/services/postsComposition';
 import { useActivePostsCount } from '../../src/hooks/useActivePostsCount';
-import { useGuestFeedStyles } from './feed.styles';
+import { useGuestFeedStyles } from '../../src/screens/guest/feed.styles';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 export default function GuestPreviewFeedScreen() {
   const styles = useGuestFeedStyles();
@@ -83,6 +86,7 @@ export default function GuestPreviewFeedScreen() {
       <KcFlashList
         data={posts}
         keyExtractor={(item) => item.postId}
+        numColumns={2}
         contentContainerStyle={styles.list}
         refreshControl={
           <RefreshControl
@@ -95,14 +99,14 @@ export default function GuestPreviewFeedScreen() {
           <Text style={styles.empty}>{t('feed.noResults')}</Text>
         }
         renderItem={({ item }) => (
-          <PostCard post={item} onPressOverride={openGate} />
+          <View style={kcGridCell}><PostCardGrid post={item} onPressOverride={openGate} /></View>
         )}
       />
     );
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView testID="guest-feed-screen" style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backBtn}
@@ -112,7 +116,7 @@ export default function GuestPreviewFeedScreen() {
         >
           <Ionicons
             name={Platform.OS === 'ios' ? 'chevron-forward' : 'arrow-forward'}
-            size={24}
+            size={iconSize['2xl']}
             color={colors.primary}
           />
         </TouchableOpacity>

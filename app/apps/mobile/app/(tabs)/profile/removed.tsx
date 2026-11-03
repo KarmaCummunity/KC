@@ -4,12 +4,12 @@
 // D-35 (status_before_admin_removal).
 // RLS allows this: is_post_visible_to() returns true when owner_id = viewer.
 import React, { useMemo } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, useTheme } from '@kc/ui';
+import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { ProfilePostsGrid } from '../../../src/components/profile/ProfilePostsGrid';
 import { useShellTabBarScrollInset } from '../../../src/navigation/useShellTabBarVisibility';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -17,6 +17,9 @@ import { getMyPostsUseCase } from '../../../src/services/postsComposition';
 import { useMyProfilePostOwner } from '../../../src/hooks/useProfilePostOwner';
 import { rowDirectionStart } from '../../../src/lib/rtlLayout';
 import { rtlTextAlignStart } from '../../../src/lib/rtlTextAlignStart';
+import { OWNER_MODERATED_POST_STATUSES } from '../../../src/lib/moderation/postModeration';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
 export default function MyProfileRemovedScreen() {
   const styles = useStyles();
@@ -31,7 +34,7 @@ export default function MyProfileRemovedScreen() {
     queryFn: () =>
       getMyPostsUseCase().execute({
         userId: userId!,
-        status: ['removed_admin'],
+        status: [...OWNER_MODERATED_POST_STATUSES],
         limit: 30,
       }),
     enabled: Boolean(userId),
@@ -61,7 +64,7 @@ export default function MyProfileRemovedScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.banner}>
-          <Ionicons name="shield-outline" size={18} color={colors.textSecondary} />
+          <Ionicons name="shield-outline" size={iconSize.md} color={colors.textSecondary} />
           <Text style={styles.bannerText}>{t('profile.removedBanner')}</Text>
         </View>
         <Text style={styles.sectionTitle}>{t('profile.removedSectionOpen')}</Text>
@@ -97,7 +100,7 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
 
     borderWidth: isDark ? 1 : 0,
     borderColor: isDark ? colors.border : 'transparent',
-    borderRadius: 8,
+    borderRadius: radius.sm,
     borderStartWidth: 3,
     borderStartColor: colors.error,
   },

@@ -2,9 +2,9 @@
 // FR-ADMIN-025 — direct-manager + subordinates blocks on the admin-detail
 // screen, one per org membership. Owns the org-tree read so the screen stays
 // thin.
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, radius, useTheme } from '@kc/ui';
+import { iconSize, makeUseStyles, radius, spacing, Text, typography, useTheme } from '@kc/ui';
 import { useOrgTree } from '../../../hooks/useOrgTree';
 import { GrantManagerSection } from './GrantManagerSection';
 import { rowDirectionStart, textAlignStart } from '../../../lib/rtlLayout';
@@ -27,7 +27,7 @@ export function AdminManagerSections({ userId, canManage }: AdminManagerSections
       <Text style={styles.sectionTitle}>{L.admin.admins.detail.managerSection}</Text>
       {memberships.length === 0 ? (
         <View style={styles.placeholder}>
-          <Ionicons name="git-network-outline" size={20} color={colors.textSecondary} />
+          <Ionicons name="git-network-outline" size={iconSize.lg} color={colors.textSecondary} />
           <Text style={styles.hint}>{L.admin.admins.detail.managerNone}</Text>
         </View>
       ) : (
@@ -40,10 +40,10 @@ export function AdminManagerSections({ userId, canManage }: AdminManagerSections
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  sectionTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, marginTop: 12, textAlign: textAlignStart() },
+  sectionTitle: { fontSize: typography.body.fontSize, ...typography.extraBold, color: colors.textPrimary, marginTop: spacing.md, textAlign: textAlignStart() },
   placeholder: {
-    flexDirection: rowDirectionStart, alignItems: 'center', gap: 10,
-    backgroundColor: colors.surface, borderRadius: radius.lg, padding: 14,
+    flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.sm,
+    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md,
   },
-  hint: { flex: 1, fontSize: 13, color: colors.textSecondary, textAlign: textAlignStart() },
+  hint: { flex: 1, fontSize: typography.bodySmall.fontSize, color: colors.textSecondary, textAlign: textAlignStart() },
 }));

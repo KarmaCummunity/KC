@@ -55,6 +55,8 @@ export async function countProfileOpenPosts(
     .from('posts')
     .select('post_id', { count: 'exact', head: true })
     .eq('owner_id', ownerId)
+    // Feed mirrors of listings are counted with the listings, not here (D-206).
+    .is('listing_id', null)
     .eq('status', 'open');
   if (options?.excludeOnlyMe) q = q.neq('visibility', 'OnlyMe');
   const { count, error } = await q;

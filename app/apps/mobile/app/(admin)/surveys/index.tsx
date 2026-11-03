@@ -3,11 +3,12 @@
 // Two tabs: "Surveys" (overview → per-survey stats + per-user answers) and
 // "Feedback" (free-text entries). RBAC-gated by surveys.view.
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
-import { type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
-import { makeUseStyles, useTheme } from '@kc/ui';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { PMF_SURVEY_SLUG, type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
+import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import {
+  useAdminPmfReport,
   useAdminSurveyOverview,
   useAdminSurveyResults,
   useAdminUserFeedback,
@@ -19,6 +20,8 @@ import { SurveyResultsView } from '../../../src/components/admin/surveys/SurveyR
 import { FeedbackCard } from '../../../src/components/admin/surveys/FeedbackCard';
 import { rowDirectionStart } from '../../../src/lib/rtlLayout';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
 type Tab = 'surveys' | 'feedback';
 
@@ -36,6 +39,8 @@ export default function AdminSurveysScreen() {
 
   const overview = useAdminSurveyOverview(allowed && tab === 'surveys');
   const results = useAdminSurveyResults(allowed && selectedSlug ? selectedSlug : null);
+  // The Sean Ellis survey also loads its PMF score (KC#1058).
+  const pmf = useAdminPmfReport(allowed && selectedSlug === PMF_SURVEY_SLUG ? selectedSlug : null);
   const feedback = useAdminUserFeedback(allowed && tab === 'feedback');
 
   if (rolesLoading) {
@@ -56,7 +61,7 @@ export default function AdminSurveysScreen() {
 
   const onRefresh = () => {
     if (tab === 'feedback') { feedback.refetch(); return; }
-    if (selectedSlug) { results.refetch(); return; }
+    if (selectedSlug) { results.refetch(); pmf.refetch(); return; }
     overview.refetch();
   };
 
@@ -77,6 +82,7 @@ export default function AdminSurveysScreen() {
           <SurveyResultsView
             results={results.results}
             isLoading={results.isLoading}
+            pmf={selectedSlug === PMF_SURVEY_SLUG ? pmf : null}
             onBack={() => setSelectedSlug(null)}
           />
         ) : tab === 'surveys' ? (
@@ -145,34 +151,34 @@ function TabButton({ label, active, onPress }: { label: string; active: boolean;
 
 const useStyles = makeUseStyles(({ colors }) => ({
   root: { flex: 1, backgroundColor: colors.background },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  deniedTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
-  loadingBox: { paddingVertical: 40, alignItems: 'center' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+  deniedTitle: { fontSize: typography.h3.fontSize, ...typography.bold, color: colors.textPrimary, textAlign: 'center' },
+  loadingBox: { paddingVertical: spacing['2xl'], alignItems: 'center' },
   tabs: {
     flexDirection: rowDirectionStart,
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 10,
-    borderRadius: 12,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
   },
   tabActive: { backgroundColor: colors.primarySurface, borderColor: colors.primaryLight },
-  tabText: { fontSize: 14, fontWeight: '700', color: colors.textSecondary },
+  tabText: { fontSize: typography.body.fontSize, ...typography.bold, color: colors.textSecondary },
   tabTextActive: { color: colors.primaryDark },
   content: {
-    padding: 16,
-    paddingBottom: 96,
-    gap: 12,
+    padding: spacing.base,
+    paddingBottom: spacing['2xl'],
+    gap: spacing.md,
     width: '100%',
     maxWidth: 900,
     alignSelf: 'center',
   },
-  list: { gap: 12 },
+  list: { gap: spacing.md },
 }));

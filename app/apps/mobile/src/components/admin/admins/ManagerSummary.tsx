@@ -1,9 +1,9 @@
 // app/apps/mobile/src/components/admin/admins/ManagerSummary.tsx
 // FR-ADMIN-025 — read-only display of a grant's direct manager + subordinates
 // (+ any mutation error). Presentational; mutation lives in GrantManagerSection.
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import type { OrgTreeMember } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { textAlignStart } from '../../../lib/rtlLayout';
 import { useLocaleBundle, type LocaleBundle } from '../../../i18n/useLocaleBundle';
 
@@ -42,7 +42,7 @@ export function ManagerSummary({ managerName, subordinates, errCode }: ManagerSu
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  label: { fontSize: 12, fontWeight: '800', color: colors.textSecondary, marginTop: 6, textAlign: textAlignStart() },
-  value: { fontSize: 14, color: colors.textPrimary, textAlign: textAlignStart() },
-  error: { fontSize: 12, color: '#7f1d1d', marginTop: 6, textAlign: textAlignStart() },
+  label: { fontSize: typography.bodySmall.fontSize, ...typography.extraBold, color: colors.textSecondary, marginTop: spacing.xs, textAlign: textAlignStart() },
+  value: { fontSize: typography.body.fontSize, color: colors.textPrimary, textAlign: textAlignStart() },
+  error: { fontSize: typography.bodySmall.fontSize, color: colors.error, marginTop: spacing.xs, textAlign: textAlignStart() },
 }));

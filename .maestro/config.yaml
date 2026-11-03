@@ -1,0 +1,6 @@
+# Maestro workspace (KC#1235). Runs every flow under flows/ in name order; subflows/ holds
+# reusable steps and is never run on its own. Docs: docs/process/MAESTRO.md
+flows:
+  - "flows/*"
+executionOrder:
+  continueOnFailure: true

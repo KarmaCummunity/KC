@@ -2,8 +2,8 @@
 // Visual treatment matches Karma tokens (warm orange, compact row for all platforms).
 
 import React from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
-import { makeUseStyles, radius, spacing, typography, useTheme } from '@kc/ui';
+import { ActivityIndicator, View } from 'react-native';
+import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 
 type Props = {
   readonly given: number;

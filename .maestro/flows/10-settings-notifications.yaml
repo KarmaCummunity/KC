@@ -1,0 +1,21 @@
+# Settings → Notifications shows the preference toggles.
+# Spec: docs/SSOT/spec/09_notifications.md FR-NOTIF-014; docs/SSOT/spec/11_settings.md FR-SETTINGS-005.
+appId: org.karmacommunity.app
+name: Settings — notification preferences open
+tags: [settings]
+---
+- runFlow: ../subflows/sign-in.yaml
+- tapOn:
+    id: topbar-settings
+# The donation card at the top of settings pushes this row below the fold on a phone screen.
+- scrollUntilVisible:
+    element:
+      id: settings-row-notifications
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    id: settings-row-notifications
+- extendedWaitUntil:
+    visible:
+      id: notification-settings-screen
+    timeout: 15000

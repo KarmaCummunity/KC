@@ -3,16 +3,18 @@
  * listFeedback. Uses a manually-crafted RPC mock — no live Supabase instance.
  */
 import { describe, it, expect, vi } from 'vitest';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '../../database.types';
 import { SupabaseSurveyAdminRepository } from '../SupabaseSurveyAdminRepository';
 
 type RpcOverrides = Record<string, { data: unknown; error: { message: string } | null }>;
 
-function makeClient(rpcResults: RpcOverrides = {}): any {
+function makeClient(rpcResults: RpcOverrides = {}): SupabaseClient<Database> {
   return {
     rpc: vi.fn().mockImplementation((name: string) =>
       Promise.resolve(rpcResults[name] ?? { data: null, error: null }),
     ),
-  };
+  } as unknown as SupabaseClient<Database>;
 }
 
 describe('SupabaseSurveyAdminRepository.listOverview', () => {
@@ -87,13 +89,29 @@ describe('SupabaseSurveyAdminRepository.getResults', () => {
               avg_rating: '5.00',
               distribution: [0, 0, 0, 0, 1, 0, 0],
             },
+            {
+              id: 'q2',
+              sort_order: 2,
+              question_type: 'single_choice_with_optional_text',
+              short_label_he: 'PMF',
+              prompt_he: 'בלי?',
+              rating_anchor_low_he: '',
+              rating_anchor_high_he: '',
+              response_count: 1,
+              avg_rating: null,
+              distribution: [0, 0, 0, 0, 0, 0, 0],
+              choice_counts: [{ key: 'very_disappointed', label_he: 'מאוד', count: 1 }],
+            },
           ],
           respondents: [
             {
               user_id: 'u1',
               display_name: 'דנה',
               submitted_at: '2026-06-01T00:00:00Z',
-              answers: [{ question_id: 'q1', rating: 5, answer_text: 'טוב' }],
+              answers: [
+                { question_id: 'q1', rating: 5, answer_text: 'טוב' },
+                { question_id: 'q2', rating: null, choice_key: 'very_disappointed', answer_text: null },
+              ],
             },
           ],
         },
@@ -109,8 +127,14 @@ describe('SupabaseSurveyAdminRepository.getResults', () => {
     expect(res.respondents[0]?.answers[0]).toEqual({
       questionId: 'q1',
       rating: 5,
+      choiceKey: null,
       answerText: 'טוב',
     });
+    // Single-choice question (KC#1058): option counts and the chosen key; rating rows stay empty.
+    expect(res.questions[0]?.choiceCounts).toEqual([]);
+    expect(res.questions[1]?.questionType).toBe('single_choice_with_optional_text');
+    expect(res.questions[1]?.choiceCounts).toEqual([{ key: 'very_disappointed', labelHe: 'מאוד', count: 1 }]);
+    expect(res.respondents[0]?.answers[1]?.choiceKey).toBe('very_disappointed');
   });
 
   it('throws SurveyError(not_found) when RPC raises survey_not_found', async () => {

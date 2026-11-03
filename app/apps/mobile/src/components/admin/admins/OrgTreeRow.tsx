@@ -1,9 +1,9 @@
 // app/apps/mobile/src/components/admin/admins/OrgTreeRow.tsx
 // FR-ADMIN-025 — a single, indented node row in the org hierarchy tree.
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { OrgTreeNode } from '@kc/domain';
-import { makeUseStyles, useTheme } from '@kc/ui';
+import { iconSize, makeUseStyles, radius, spacing, Text, typography, useTheme } from '@kc/ui';
 import { AvatarInitials } from '../../AvatarInitials';
 import { RoleBadge } from './RoleBadge';
 import { LevelBadge } from './LevelBadge';
@@ -36,7 +36,7 @@ export function OrgTreeRow({ node, hasChildren, collapsed, onToggle, onSelect }:
         {hasChildren && (
           <Ionicons
             name={collapsed ? 'chevron-forward' : 'chevron-down'}
-            size={16}
+            size={iconSize.sm}
             color={colors.textSecondary}
           />
         )}
@@ -64,16 +64,16 @@ export function OrgTreeRow({ node, hasChildren, collapsed, onToggle, onSelect }:
 
 const useStyles = makeUseStyles(({ colors }) => ({
   row: {
-    flexDirection: rowDirectionStart, alignItems: 'center', gap: 4,
-    paddingVertical: 6, paddingHorizontal: 8,
+    flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.xs,
+    paddingVertical: spacing.xs, paddingHorizontal: spacing.sm,
   },
   chevron: { width: 20, alignItems: 'center', justifyContent: 'center' },
   body: {
-    flex: 1, flexDirection: rowDirectionStart, alignItems: 'center', gap: 10,
-    backgroundColor: colors.surface, borderRadius: 12, padding: 8,
+    flex: 1, flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.sm,
+    backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.sm,
   },
-  texts: { flex: 1, gap: 4 },
-  titleRow: { flexDirection: rowDirectionStart, alignItems: 'center', gap: 8 },
-  name: { flex: 1, fontSize: 14, fontWeight: '700', color: colors.textPrimary, textAlign: textAlignStart() },
-  badges: { flexDirection: rowDirectionStart, flexWrap: 'wrap', gap: 6 },
+  texts: { flex: 1, gap: spacing.xs },
+  titleRow: { flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.sm },
+  name: { flex: 1, fontSize: typography.body.fontSize, ...typography.bold, color: colors.textPrimary, textAlign: textAlignStart() },
+  badges: { flexDirection: rowDirectionStart, flexWrap: 'wrap', gap: spacing.xs },
 }));

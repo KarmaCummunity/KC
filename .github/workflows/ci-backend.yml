@@ -1,148 +1,47 @@
 name: CI — backend
 
-# Backend correctness gate. Boots a fresh Supabase local stack and runs all DB
-# tests (incl. rls-lint.sql), the database.types.ts drift check, and the
-# SECURITY DEFINER SQL probe integration tests.
-#
-# `apply migrations · rls · types · sql probes` is a REQUIRED status check on
-# `dev` / `main`, so it MUST report on every non-draft PR — including PRs that
-# don't touch the backend. Path-filtering the workflow at the `on:` level left
-# that required check permanently "Expected" on FE/docs/domain-only PRs and
-# blocked their merge. Instead the workflow now runs unconditionally and a cheap
-# `changes` job gates the heavy steps: non-backend PRs get a fast pass; backend
-# PRs boot the full local stack. Keep the `changes` filter list in sync with the
-# heavy job's real inputs.
+# Database lane, called by ci.yml when migrations, seed/config, the Supabase
+# adapter package or CI plumbing changed. Boots a fresh local Supabase stack
+# (all migrations + seed.sql), then runs every supabase/tests/*.sql file
+# (incl. rls-lint.sql), the database.types.ts drift check and the SECURITY
+# DEFINER SQL probe integration tests. The migration chain and destructive-op
+# scans are static and run in ci-static-guards.yml.
 
 on:
-  pull_request:
-    branches: [main, dev]
-    types: [opened, synchronize, reopened, ready_for_review]
-  push:
-    branches: [main, dev]
-    paths:
-      - 'supabase/**'
-      - 'scripts/check-migration-chain.mjs'
-      - 'app/packages/infrastructure-supabase/src/database.types.ts'
-      - 'app/packages/infrastructure-supabase/src/rpc/__tests__/sqlProbes.integration.test.ts'
-      - '.github/workflows/ci-backend.yml'
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_call:
 
 permissions:
   contents: read
-  pull-requests: read
   packages: read
 
 jobs:
-  changes:
-    name: detect backend changes
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - name: Detect backend-relevant changes
-        uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            backend:
-              - 'supabase/**'
-              - 'scripts/check-migration-chain.mjs'
-              - 'app/packages/infrastructure-supabase/src/database.types.ts'
-              - 'app/packages/infrastructure-supabase/src/rpc/__tests__/sqlProbes.integration.test.ts'
-              - 'supabase/functions/**'
-              - '.github/workflows/ci-backend.yml'
-
-  migration-chain:
-    name: migration chain lint
-    needs: changes
-    if: >-
-      needs.changes.outputs.backend == 'true' &&
-      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-      - name: Verify Alembic-style single-head migration chain
-        run: node scripts/check-migration-chain.mjs
-
-
-  whatsapp-deno:
-    name: WhatsApp edge unit + e2e (Deno)
-    needs: changes
-    if: >-
-      needs.changes.outputs.backend == 'true' &&
-      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v6
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-      - name: Deno test WhatsApp handlers (mocked Meta, no secrets)
-        working-directory: supabase/functions
-        run: deno test _shared/whatsapp whatsapp-webhook whatsapp-sender _shared/matching match-rerank --allow-read
-
   db-validate:
-    # REQUIRED status check — always runs so the context reports on every PR.
-    # Heavy steps are gated on `needs.changes.outputs.backend == 'true'`; a
-    # non-backend PR runs only the skip-notice step and concludes success.
     name: apply migrations · rls · types · sql probes
-    needs: changes
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 20
-
+    permissions:
+      contents: read
+      packages: read
     steps:
-      - name: No backend changes — DB validation not required
-        if: needs.changes.outputs.backend != 'true'
-        run: echo "No supabase/** or backend-input changes in this PR — skipping DB validation."
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Checkout
-        if: needs.changes.outputs.backend == 'true'
-        uses: actions/checkout@v6
-
-      - name: Install Supabase CLI
-        if: needs.changes.outputs.backend == 'true'
-        uses: supabase/setup-cli@v3
-        with:
-          # Keep in sync with db-deploy.yml — bump both in the same PR.
-          version: 2.99.0
-
-      - name: Print Supabase CLI version
-        if: needs.changes.outputs.backend == 'true'
-        run: supabase --version
+      - name: Install Supabase CLI (version pinned in the composite action)
+        uses: ./.github/actions/setup-supabase-cli
 
       - name: Install psql client
-        if: needs.changes.outputs.backend == 'true'
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
       - name: Log in to ghcr.io (authenticated image pulls avoid anonymous rate limits)
-        if: needs.changes.outputs.backend == 'true'
-        run: echo "$GH_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+        run: echo "$GH_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
 
       - name: Start Supabase (applies all migrations + seed.sql)
-        if: needs.changes.outputs.backend == 'true'
-        # Retry: image pulls from the public registry intermittently fail with
-        # `toomanyrequests` (registry rate limit), which is infra, not a code error.
         run: |
-          # Image pulls are rate-limited intermittently per registry.
-          # Rotate registries: anonymous/auth pulls hit `toomanyrequests` on
-          # ghcr.io and `Data limit exceeded` on public.ecr.aws at times.
+          # Image pulls hit registry rate limits intermittently (`toomanyrequests`
+          # on ghcr.io, `Data limit exceeded` on public.ecr.aws) — infra, not a
+          # code error — so rotate registries before giving up.
           for reg in docker.io public.ecr.aws ghcr.io docker.io; do
             export SUPABASE_INTERNAL_IMAGE_REGISTRY=$reg
             timeout 300 supabase start -x studio,inbucket,imgproxy,edge-runtime,realtime,storage-api && exit 0
@@ -152,51 +51,63 @@ jobs:
           done
           exit 1
 
-      - name: Run all DB tests (supabase/tests/*.sql)
-        if: needs.changes.outputs.backend == 'true'
-        env:
-          PGPASSWORD: postgres
-        run: |
-          set -euo pipefail
-          shopt -s nullglob
-          for f in supabase/tests/*.sql; do
-            echo "── Running $f ──"
-            psql -h 127.0.0.1 -p 54322 -U postgres -d postgres \
-              -v ON_ERROR_STOP=1 \
-              -f "$f"
-          done
+      - name: Run all DB tests (harness + supabase/tests + flows)
+        # Same runner agents use locally: installs supabase/tests/_harness, then runs the
+        # per-migration tests and the per-world lifecycle flows (G44).
+        run: scripts/run-db-tests.sh
 
-      - name: Check database.types.ts drift
-        if: needs.changes.outputs.backend == 'true'
+      - name: Check every client RPC is granted to a client role
+        # Functions are owner/service_role-only by default (0520), so a client RPC whose
+        # migration forgot its `grant execute … to authenticated` fails here, not in the app.
         run: |
           set -euo pipefail
-          supabase gen types typescript --local > /tmp/database.types.ts
+          DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')" node scripts/check-rpc-grants.mjs
+
+      # Monthly partition children are created relative to now(), so they are
+      # stripped before the diff; otherwise the check breaks on every 1st of the month.
+      - name: Check database.types.ts drift
+        run: |
+          set -euo pipefail
+          supabase gen types typescript --local | node scripts/strip-partition-types.mjs > /tmp/database.types.ts
           if ! diff -u app/packages/infrastructure-supabase/src/database.types.ts /tmp/database.types.ts; then
-            echo "::error::database.types.ts is out of date. Run: supabase gen types typescript --local > app/packages/infrastructure-supabase/src/database.types.ts"
+            echo "::error::database.types.ts is out of date. Run: supabase gen types typescript --local | node scripts/strip-partition-types.mjs > app/packages/infrastructure-supabase/src/database.types.ts"
             exit 1
           fi
 
       # Node 22 is deliberate (sqlProbes need native WebSocket; do not use .nvmrc).
       - name: Setup pnpm + Turbo cache (Node 22)
-        if: needs.changes.outputs.backend == 'true'
         uses: ./.github/actions/setup-pnpm-turbo
         with:
           node-version: '22'
 
       - name: Install dependencies
-        if: needs.changes.outputs.backend == 'true'
         working-directory: app
         env:
           TURBO_TELEMETRY_DISABLED: '1'
         run: pnpm install --frozen-lockfile
 
-      - name: SQL probe integration tests (against local stack)
-        if: needs.changes.outputs.backend == 'true'
+      # The port contract suites (G39) sign in through the anon key, so the three
+      # credentials come from the running stack — no CLI demo key is written in
+      # the repo. Local-only values; GITHUB_ENV scopes them to this job.
+      - name: Export local stack credentials for the integration suites
+        run: |
+          set -euo pipefail
+          eval "$(supabase status -o env)"
+          {
+            echo "SUPABASE_URL=$API_URL"
+            echo "SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
+
+      # sqlProbes: SECURITY DEFINER RPC probes. contract.integration: the port
+      # contract suites run against the Supabase adapters with RLS; the same
+      # cases run against the in-memory fakes in the frontend lane.
+      - name: SQL probes + port contracts (against local stack)
         working-directory: app
         env:
           CI_LOCAL_SUPABASE: 'true'
-        run: pnpm --filter @kc/infrastructure-supabase test sqlProbes
+        run: pnpm --filter @kc/infrastructure-supabase test sqlProbes contract.integration
 
       - name: Stop Supabase
-        if: always() && needs.changes.outputs.backend == 'true'
+        if: always()
         run: supabase stop || true

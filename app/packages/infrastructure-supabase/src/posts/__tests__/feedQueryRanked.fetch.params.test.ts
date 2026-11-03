@@ -101,6 +101,18 @@ describe('fetchRankedFeedPage — RPC params + early-exit branches', () => {
     expect(rpcCalls[0]?.params.p_page_limit).toBe(6);
   });
 
+  it('forwards worlds and subcategories to the feed_ranked_ids RPC', async () => {
+    const { client, rpcCalls } = makeFakeClient({ rpc: { data: [] } });
+    const filter: PostFeedFilter = {
+      worlds: ['items', 'food'],
+      subcategories: ['books', 'bakery'],
+    };
+    await fetchRankedFeedPage(client, 'viewer-1', filter, undefined, 10);
+    expect(rpcCalls).toHaveLength(1);
+    expect(rpcCalls[0]?.params.p_filter_worlds).toEqual(['items', 'food']);
+    expect(rpcCalls[0]?.params.p_filter_subcategories).toEqual(['books', 'bakery']);
+  });
+
   it('decodes the cursor and forwards the three cursor params to the RPC', async () => {
     const { client, rpcCalls } = makeFakeClient({ rpc: { data: [] } });
     const cursor = encodeRankedCursor({

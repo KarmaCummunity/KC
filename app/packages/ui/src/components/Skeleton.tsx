@@ -43,8 +43,8 @@ export function Skeleton({ width = '100%', height = 14, radius = 6, style }: Ske
     }
     const anim = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: PULSE_MAX, duration: PULSE_MS, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: PULSE_MIN, duration: PULSE_MS, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: PULSE_MAX, duration: PULSE_MS, useNativeDriver: false }),
+        Animated.timing(pulse, { toValue: PULSE_MIN, duration: PULSE_MS, useNativeDriver: false }),
       ]),
     );
     anim.start();

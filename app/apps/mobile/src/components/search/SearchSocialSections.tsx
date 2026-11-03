@@ -1,10 +1,10 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '@kc/ui';
+import { useTheme, Text } from '@kc/ui';
 import type { UniversalSearchResults } from '@kc/application';
-import { useSearchScreenStyles } from '../../../app/(tabs)/search.styles';
+import { useSearchScreenStyles } from '../../screens/tabs/search.styles';
 
 type Props = {
   results: UniversalSearchResults;

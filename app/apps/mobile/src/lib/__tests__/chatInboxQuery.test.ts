@@ -42,3 +42,14 @@ describe('chatInboxQuery', () => {
     expect(chatInboxQueryKey('u1')).toEqual(['chat-inbox', 'u1']);
   });
 });
+
+describe('chatInboxQuery new chat', () => {
+  it('inserts a new bare chat with a safe participant placeholder', () => {
+    const next = upsertChatPreviewInSnapshot({ chats: [], unreadTotal: 0 }, {
+      chatId: 'c_new',
+      lastMessageAt: '2026-05-17T12:00:00.000Z',
+    } as never);
+    expect(next.chats[0]?.otherParticipant).toBeDefined();
+    expect(next.chats[0]?.unreadCount).toBe(0);
+  });
+});

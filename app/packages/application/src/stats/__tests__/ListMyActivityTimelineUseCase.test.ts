@@ -12,6 +12,8 @@ function makeStats(): IStatsRepository {
       asOf: null,
     }),
     listMyActivityTimeline: vi.fn(async () => []),
+    getWorldFlowFunnel: async () => [],
+    listMyWorldGivings: async () => [],
   };
 }
 

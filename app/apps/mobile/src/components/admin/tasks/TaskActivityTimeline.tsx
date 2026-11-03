@@ -1,11 +1,11 @@
 // app/apps/mobile/src/components/admin/tasks/TaskActivityTimeline.tsx
 // FR-ADMIN-018 — activity timeline (comments + status/assignment/priority/due changes).
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import {
   type AdminTaskActivity, type AdminTaskActivityKind, type AdminTaskCategory,
   parseAdminTaskCategory,
 } from '@kc/domain';
-import { makeUseStyles } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { useLocaleBundle, type LocaleBundle } from '../../../i18n/useLocaleBundle';
 
 function categoryLabel(value: unknown, L: LocaleBundle): string {
@@ -90,14 +90,14 @@ export function TaskActivityTimeline({ activities }: TaskActivityTimelineProps) 
 
 const useStyles = makeUseStyles(({ colors }) => ({
   row: {
-    flexDirection: 'row', gap: 10, paddingVertical: 10,
+    flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
   },
   commentRow: { backgroundColor: colors.surface },
-  bullet:     { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, marginTop: 6 },
-  content:    { flex: 1, gap: 4 },
-  body:       { fontSize: 13 },
-  meta:       { fontSize: 11, opacity: 0.55 },
-  empty:      { padding: 20, alignItems: 'center' },
-  emptyText:  { fontSize: 13, opacity: 0.5 },
+  bullet:     { width: 8, height: 8, borderRadius: radius.xs, backgroundColor: colors.primary, marginTop: spacing.xs },
+  content:    { flex: 1, gap: spacing.xs },
+  body:       { fontSize: typography.bodySmall.fontSize },
+  meta:       { fontSize: typography.caption.fontSize, opacity: 0.55 },
+  empty:      { padding: spacing.lg, alignItems: 'center' },
+  emptyText:  { fontSize: typography.bodySmall.fontSize, opacity: 0.5 },
 }));

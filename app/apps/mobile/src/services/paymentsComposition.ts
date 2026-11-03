@@ -1,10 +1,8 @@
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   SandboxPaymentProvider,
+  SupabaseKcSupportChannelsRepository,
   SupabasePaymentsRepository,
   getSupabaseClient,
-  type SupabaseAuthStorage,
 } from '@kc/infrastructure-supabase';
 import {
   CancelStandingOrderUseCase,
@@ -12,6 +10,7 @@ import {
   CreateStandingOrderUseCase,
   DonateNowUseCase,
   GetDonationReceiptUseCase,
+  GetKcSupportOptionsUseCase,
   GetNonprofitPublicPageUseCase,
   ListDonationHistoryUseCase,
   ListMyStandingOrdersUseCase,
@@ -20,25 +19,22 @@ import {
   ResumeStandingOrderUseCase,
 } from '@kc/application';
 import * as Crypto from 'expo-crypto';
-
-function pickStorage(): SupabaseAuthStorage | undefined {
-  if (Platform.OS === 'web') {
-    if (typeof window === 'undefined' || !window.localStorage) return undefined;
-    return window.localStorage;
-  }
-  return AsyncStorage;
-}
+import { pickAuthStorage } from './authSecureStorage';
 
 let _repo: SupabasePaymentsRepository | null = null;
 let _provider: SandboxPaymentProvider | null = null;
 
+function client() {
+  return getSupabaseClient({ storage: pickAuthStorage() });
+}
+
 function repo() {
-  if (!_repo) _repo = new SupabasePaymentsRepository(getSupabaseClient({ storage: pickStorage() }));
+  _repo ??= new SupabasePaymentsRepository(client());
   return _repo;
 }
 
 function provider() {
-  if (!_provider) _provider = new SandboxPaymentProvider(repo());
+  _provider ??= new SandboxPaymentProvider(repo());
   return _provider;
 }
 
@@ -54,6 +50,8 @@ export const paymentsUseCases = {
   resumeStandingOrder: () => new ResumeStandingOrderUseCase(repo()),
   listHistory: () => new ListDonationHistoryUseCase(repo()),
   getReceipt: () => new GetDonationReceiptUseCase(repo()),
+  /** FR-DONATE-011 — direct support for KC; channels are server config only (D20, D64). */
+  kcSupportOptions: () => new GetKcSupportOptionsUseCase(new SupabaseKcSupportChannelsRepository(client())),
 };
 
 export function newIdempotencyKey(prefix: string): string {

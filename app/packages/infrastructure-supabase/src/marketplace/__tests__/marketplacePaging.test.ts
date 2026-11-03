@@ -78,6 +78,14 @@ describe('marketplacePaging — browse', () => {
     expect(page.nextCursor).toBeNull(); // short page = last page
   });
 
+  it('forwards the world subcategory and omits it when unset (KC#1102)', async () => {
+    const { c, rpcCalls } = client({ browse_listings: { data: [], error: null } });
+    await fetchBrowsePage(c, { worldSlug: 'items', categoryId: 'cat-books', radiusKm: 10 });
+    await fetchBrowsePage(c, { worldSlug: 'items' });
+    expect(rpcCalls[0]?.args).toMatchObject({ p_world_slug: 'items', p_category_id: 'cat-books', p_radius_km: 10 });
+    expect(rpcCalls[1]?.args).toMatchObject({ p_category_id: undefined });
+  });
+
   it('returns an empty page on error', async () => {
     const { c } = client({ browse_listings: { data: null, error: { message: 'x' } } });
     expect(await fetchBrowsePage(c, {})).toEqual({ rows: [], nextCursor: null });
@@ -130,6 +138,29 @@ describe('marketplacePaging — cards', () => {
       ['a', 'give_item'],
       ['b', 'meal'],
     ]);
+  });
+
+  // #1412 — a card shows its publisher like a feed card does (docs/spec/07 §7.4).
+  it('maps the publisher embed, and no publisher when RLS hides the owner', async () => {
+    const card = (id: string, publisher: unknown) => ({
+      listing_id: id, world_slug: 'rides', direction: 'give', title: id, summary: null, urgency_level: 0,
+      availability_status: 'a', city_id: null, kind: null, details: { seats_available: 2 }, publisher,
+    });
+    const { c } = client({}, {
+      data: [
+        card('a', { display_name: ' Dana ', avatar_url: 'https://cdn/a.png' }),
+        card('b', [{ display_name: null, avatar_url: '' }]),
+        card('c', null),
+      ],
+      error: null,
+    });
+    const cards = await fetchListingCards(c, ['a', 'b', 'c']);
+    expect(cards.map((r) => r.publisher)).toEqual([
+      { displayName: 'Dana', avatarUrl: 'https://cdn/a.png' },
+      { displayName: null, avatarUrl: null },
+      null,
+    ]);
+    expect(cards[0]?.ride?.seats).toBe(2);
   });
 
   it('skips the query for no ids and returns [] on error', async () => {

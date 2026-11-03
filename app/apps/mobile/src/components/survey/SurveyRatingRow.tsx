@@ -1,9 +1,9 @@
 // Production survey rating row — accepts per-question anchor labels as props.
 // FR-SETTINGS-016 AC2: per-question anchor labels (low/high) loaded from server.
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { webTextRtl, webViewRtl } from '../../lib/webRtlStyle';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
@@ -93,7 +93,7 @@ const useRatingStyles = makeUseStyles(({ colors }) => ({
   },
   cellText: {
     ...typography.body,
-    fontWeight: '600',
+    ...typography.semiBold,
     color: colors.textSecondary,
   },
   cellTextSelected: {

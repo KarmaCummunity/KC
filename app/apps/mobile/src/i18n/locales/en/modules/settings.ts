@@ -166,4 +166,18 @@ export const settingsEn = {
     restartNote: 'Changing the language will reload the app.',
     saveFailed: 'Changing the language failed. Please try again.',
   },
+  whatsappRow: 'WhatsApp connection',
+  whatsapp: {
+    title: 'WhatsApp bot',
+    intro: 'Link your WhatsApp number to your account to post and search through the bot. Available to Pro members.',
+    notPro: 'The WhatsApp bot is available to Pro members only.',
+    linked: 'Linked to {{number}}',
+    notLinked: 'Not linked yet',
+    getCode: 'Get a link code',
+    codeLabel: 'Send this code to the bot on WhatsApp:',
+    codeExpires: 'Valid until {{time}}',
+    unlink: 'Unlink number',
+    unlinkConfirm: 'Unlink your WhatsApp number from this account?',
+    failed: 'Something went wrong. Please try again.',
+  },
 } as const;

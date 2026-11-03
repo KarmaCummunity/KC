@@ -1,16 +1,19 @@
 // Matching v2 — "Matches for you": automatic offer↔request pairs computed in Postgres.
-import React, { useCallback, useState } from 'react';
-import { RefreshControl, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { RefreshControl, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography } from '@kc/ui';
+import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { useDetailStackScreenOptions } from '../src/navigation/detailStackScreenOptions';
 import { KcFlashList } from '../src/components/lists/KcFlashList';
 import { SimpleRowListSkeleton } from '../src/components/skeletons/SimpleRowListSkeleton';
 import { MatchSuggestionCard } from '../src/components/matching/MatchSuggestionCard';
 import { useMyMatches, useRefreshMyMatches, useRespondToMatch } from '../src/hooks/useMyMatches';
-import { sortMatches } from '../src/lib/matching';
+import { sortMatches, matchStateOf } from '../src/lib/matching';
+import { trackCoreLoop } from '../src/lib/analyticsCoreLoop';
 import { rtlTextAlignStart } from '../src/lib/rtlTextAlignStart';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
 
 export default function MatchesScreen() {
   const { t } = useTranslation();
@@ -21,22 +24,34 @@ export default function MatchesScreen() {
   const refresh = useRefreshMyMatches();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const shownRef = useRef(false);
+
+  useEffect(() => {
+    if (shownRef.current || query.isLoading || !query.data?.length) return;
+    const open = query.data.filter((m) => matchStateOf(m) !== 'waiting');
+    if (open.length === 0) return;
+    shownRef.current = true;
+    trackCoreLoop('match_shown', { count: open.length });
+  }, [query.data, query.isLoading]);
 
   const onRespond = useCallback(
     (candidateId: string, response: 'accept' | 'decline') => {
       setBusyId(candidateId);
       setNotice(null);
+      const match = query.data?.find((m) => m.candidateId === candidateId);
       respond.mutate(
         { candidateId, response },
         {
-          onSuccess: (r) =>
-            setNotice(t(response === 'decline' ? 'matches.declined' : r.mutual ? 'matches.mutual' : 'matches.accepted')),
+          onSuccess: (r) => {
+            trackCoreLoop('match_feedback', { response, world: match?.worldSlug ?? 'unknown' });
+            setNotice(t(response === 'decline' ? 'matches.declined' : r.mutual ? 'matches.mutual' : 'matches.accepted'));
+          },
           onError: () => setNotice(t('matches.error')),
           onSettled: () => setBusyId(null),
         },
       );
     },
-    [respond, t],
+    [query.data, respond, t],
   );
 
   return (

@@ -10,12 +10,13 @@
 const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 const lookup = new Uint8Array(256);
 for (let i = 0; i < chars.length; i++) {
-  lookup[chars.charCodeAt(i)] = i;
+  lookup[chars.codePointAt(i)!] = i;
 }
 
 export function base64ToUint8Array(base64: string): Uint8Array {
+  const len = base64.length;
   let bufferLength = base64.length * 0.75,
-    len = base64.length, i, p = 0,
+    i, p = 0,
     encoded1, encoded2, encoded3, encoded4;
 
   if (base64[base64.length - 1] === "=") {
@@ -28,10 +29,10 @@ export function base64ToUint8Array(base64: string): Uint8Array {
   const bytes = new Uint8Array(bufferLength);
 
   for (i = 0; i < len; i += 4) {
-    encoded1 = lookup[base64.charCodeAt(i)];
-    encoded2 = lookup[base64.charCodeAt(i + 1)];
-    encoded3 = lookup[base64.charCodeAt(i + 2)];
-    encoded4 = lookup[base64.charCodeAt(i + 3)];
+    encoded1 = lookup[base64.codePointAt(i)!];
+    encoded2 = lookup[base64.codePointAt(i + 1)!];
+    encoded3 = lookup[base64.codePointAt(i + 2)!];
+    encoded4 = lookup[base64.codePointAt(i + 3)!];
 
     bytes[p++] = (encoded1 << 2) | (encoded2 >> 4);
     bytes[p++] = ((encoded2 & 15) << 4) | (encoded3 >> 2);

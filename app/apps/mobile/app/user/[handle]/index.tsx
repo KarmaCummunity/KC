@@ -6,7 +6,7 @@
 // Mapped to SRS: FR-PROFILE-002, 003, 004; FR-FOLLOW-001..006, 011, 012.
 
 import React from 'react';
-import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,8 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useProfileClosedPosts } from '../../../src/hooks/useProfileClosedPosts';
 import { useProfileTabCounts } from '../../../src/hooks/useProfileTabCounts';
-import { useShellTabBarScrollInset } from '../../../src/navigation/useShellTabBarVisibility';
-import { useTheme } from '@kc/ui';
+import { iconSize, spacing, useTheme, Text } from '@kc/ui';
 import { ProfileHeader } from '../../../src/components/profile/ProfileHeader';
 import { ProfileStatsRow } from '../../../src/components/profile/ProfileStatsRow';
 import { ProfileTabs, type ProfilePostsTab } from '../../../src/components/profile/ProfileTabs';
@@ -26,9 +25,12 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { getUserRepo } from '../../../src/services/userComposition';
 import { getMyPostsUseCase } from '../../../src/services/postsComposition';
 import { getGetFollowStateUseCase } from '../../../src/services/followComposition';
-import { useOptimisticFollowAction, type FollowActionError } from '../../../src/hooks/useOptimisticFollowAction';
+import {
+  useOptimisticFollowAction,
+  type FollowActionError,
+} from '../../../src/hooks/useOptimisticFollowAction';
 import { useOtherProfileActions } from '../../../src/hooks/useOtherProfileActions';
-import { hasPermission, type AdminRole } from '@kc/domain';
+import { hasPermission, type AdminRole, type User } from '@kc/domain';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { useAdminPerson } from '../../../src/hooks/useAdminPerson';
 import { NotifyModal } from '../../../src/components/NotifyModal';
@@ -36,9 +38,13 @@ import { ProfileOverflowMenu } from '../../../src/components/profile/ProfileOver
 import { formatUserLocationLine } from '../../../src/lib/formatUserLocationLine';
 import { profilePostOwnerFromUser } from '../../../src/lib/profilePostOwnerContext';
 import { getRestoredProfileTab, persistProfileTab } from '../../../src/lib/profileTabSession';
-import { useOtherProfileScreenStyles } from '../../../src/components/profile/otherProfileScreen.styles';
+import {
+  useOtherProfileScreenStyles,
+} from '../../../src/components/profile/otherProfileScreen.styles';
 import { nativeStackHeaderRightIconOnly } from '../../../src/navigation/nativeHeaderIconOnly';
-import { ProfileMarketplaceListings } from '../../../src/components/profile/ProfileMarketplaceListings';
+import {
+  ProfileMarketplaceListings,
+} from '../../../src/components/profile/ProfileMarketplaceListings';
 
 export default function OtherProfileScreen() {
   const styles = useOtherProfileScreenStyles();
@@ -93,7 +99,7 @@ export default function OtherProfileScreen() {
   // When `u` is null (still loading), we pass a safe fallback so the hook is always called.
   const dispatchFollowAction = useOptimisticFollowAction({
     viewerId: me,
-    target: u ?? { userId: '', shareHandle: '', privacyMode: 'Public' } as any,
+    target: u ?? ({ userId: '', shareHandle: '', privacyMode: 'Public' } as User),
     handle: handle ?? '',
     onError: setError,
   });
@@ -136,7 +142,7 @@ export default function OtherProfileScreen() {
   });
 
   if (!handle || userQuery.isLoading)
-    return <SafeAreaView style={styles.container} edges={['bottom']}><ActivityIndicator style={{ marginTop: 80 }} color={colors.primary} /></SafeAreaView>;
+    return <SafeAreaView style={styles.container} edges={['bottom']}><ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} /></SafeAreaView>;
 
   if (!u) return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -179,21 +185,16 @@ export default function OtherProfileScreen() {
             followingCount={u.followingCount}
             postsCount={tabCounts.totalCount ?? 0}
             enabled
-            onPressFollowers={() => router.push({ pathname: '/user/[handle]/followers' as never, params: { handle } } as never)}
-            onPressFollowing={() => router.push({ pathname: '/user/[handle]/following' as never, params: { handle } } as never)}
+            onPressFollowers={() => router.push({ pathname: '/user/[handle]/followers', params: { handle } })}
+            onPressFollowing={() => router.push({ pathname: '/user/[handle]/following', params: { handle } })}
           />
-
-          <View style={styles.karmaRow}>
-            <Text style={styles.karmaLabel}>{t('karma.badgeLabel')}</Text>
-            <Text style={styles.karmaValue}>{u.karmaPoints}</Text>
-          </View>
 
           {showAdminLink ? (
             <TouchableOpacity
               style={styles.adminLink}
-              onPress={() => router.push({ pathname: '/(admin)/admins/[userId]' as never, params: { userId: u.userId } } as never)}
+              onPress={() => router.push({ pathname: '/(admin)/admins/[userId]', params: { userId: u.userId } })}
             >
-              <Ionicons name="shield-checkmark-outline" size={16} color={colors.primary} />
+              <Ionicons name="shield-checkmark-outline" size={iconSize.sm} color={colors.primary} />
               <Text style={styles.adminLinkText}>{t('admin.admins.profileLink')}</Text>
             </TouchableOpacity>
           ) : null}
@@ -212,7 +213,7 @@ export default function OtherProfileScreen() {
                 </View>
               ) : null}
               <TouchableOpacity style={styles.msgBtn} onPress={startChat}>
-                <Ionicons name="chatbubble-outline" size={18} color={colors.primary} />
+                <Ionicons name="chatbubble-outline" size={iconSize.md} color={colors.primary} />
                 <Text style={styles.msgBtnText}>{t('profile.otherScreen.sendMessage')}</Text>
               </TouchableOpacity>
             </View>

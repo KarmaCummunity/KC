@@ -1,0 +1,68 @@
+name: Close issues on dev merge
+
+# GitHub honors "Closes #N" only on merges into the default branch (`main`),
+# but every PR targets `dev`, so fixed issues stayed open and the project board
+# showed done work as Ready. This applies the closing keywords on dev merges.
+# Logic + tests: scripts/close-linked-issues.mjs. Docs: docs/agents/OPERATING_MODEL.md.
+#
+# Safe as pull_request_target: checkout is the base branch (default), no PR code
+# runs, and the PR body is read from the event file, never interpolated.
+# The daily sweep is a backstop for merges done with GITHUB_TOKEN, which do not
+# trigger workflows.
+
+# pull_request_target and schedule only run from the default branch (main), so
+# they never fired before the first release (TD-240). `push` to dev runs the
+# workflow file from dev itself and sweeps the PRs merged in the last day.
+on:
+  push:
+    branches: [dev]
+  pull_request_target:
+    branches: [dev]
+    types: [closed]
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+    inputs:
+      since_days:
+        description: Sweep PRs merged into dev in the last N days
+        default: '14'
+      dry_run:
+        description: Only print what would close
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: close-issues-on-dev-merge
+  cancel-in-progress: false
+
+jobs:
+  close-linked-issues:
+    name: close linked issues
+    if: github.event_name != 'pull_request_target' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+      - name: Close issues referenced by the merged PR(s)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          SINCE_DAYS: ${{ inputs.since_days || '3' }}
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
+        run: |
+          if [ "$EVENT_NAME" = push ]; then
+            node scripts/close-linked-issues.mjs --since-days 1
+          elif [ "$EVENT_NAME" = pull_request_target ]; then
+            node scripts/close-linked-issues.mjs --event
+          elif [ "$DRY_RUN" = true ]; then
+            node scripts/close-linked-issues.mjs --since-days "$SINCE_DAYS" --dry-run
+          else
+            node scripts/close-linked-issues.mjs --since-days "$SINCE_DAYS"
+          fi

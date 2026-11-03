@@ -1,0 +1,216 @@
+name: DB deploy
+
+# Database stage of the deploy pipeline (D-195, INFRA-CI-3). Called only by
+# deploy.yml after preflight (and, for prod, after the owner's approval); it
+# has no trigger of its own. Both jobs start with the deploy guard
+# (.github/actions/deploy-guard), which fails unless the caller is deploy.yml
+# and, on prod, the release is approved in this run attempt and still current.
+#
+#   backup   prod only: an encrypted `supabase db dump` (roles, schema, data)
+#            taken before migrating, when supabase/migrations changed since
+#            the last release tag. Storage objects (avatars, post images) are
+#            NOT included. Stored as a 14-day workflow artifact for a manual
+#            restore (docs/SSOT/OPERATOR_RUNBOOK.md "Restore a pre-migration
+#            backup"). DB changes are forward-fix only.
+#   migrate  counts the pending migrations (output `applied_migrations`, so a
+#            failed release after a schema change skips the code rollback),
+#            then dry-runs and applies them. On prod `db push` runs WITHOUT
+#            --include-all, so the CLI refuses when the remote has a version
+#            with no local file (remote ahead) or a local migration sorts
+#            before the last applied one (out of order). Dev keeps
+#            --include-all.
+#
+# Secrets come from the job's GitHub Environment (supabase-dev / supabase-prod;
+# neither has reviewers — the approval click lives on `production`):
+# SUPABASE_ACCESS_TOKEN, SUPABASE_DB_PASSWORD, SUPABASE_PROJECT_REF, and on
+# prod the variable BACKUP_AGE_RECIPIENT.
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: dev or prod
+        type: string
+        required: true
+      sha:
+        description: Exact commit to deploy
+        type: string
+        required: true
+      approved_attempt:
+        description: run_attempt in which the release was approved (empty on dev)
+        type: string
+        required: true
+    outputs:
+      applied_migrations:
+        description: Number of migrations this run applied
+        value: ${{ jobs.migrate.outputs.applied }}
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  backup:
+    name: backup (prod)
+    if: inputs.target == 'prod'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: supabase-prod
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      BACKUP_AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+      SHA: ${{ inputs.sha }}
+    steps:
+      # The guard comes from deploy.yml's own commit, not the deployed one.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .deploy-guard
+          sparse-checkout: |
+            .github/actions/deploy-guard
+            scripts/deploy-guard.mjs
+            scripts/release-version.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - uses: ./.deploy-guard/.github/actions/deploy-guard
+        with:
+          target: prod
+          release-sha: ${{ inputs.sha }}
+          approved-attempt: ${{ inputs.approved_attempt }}
+
+      # Full history + tags: the diff against the last release tag needs both.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Preflight (fails closed without the backup key)
+        run: node scripts/deploy-preflight.mjs supabase prod
+
+      - name: Did migrations change since the last release?
+        id: changed
+        run: |
+          set -euo pipefail
+          node scripts/release-version.mjs latest > "$RUNNER_TEMP/latest"
+          last_sha=$(sed -n 's/^sha=//p' "$RUNNER_TEMP/latest")
+          if [ -z "$last_sha" ]; then
+            echo "No release tag yet; backing up."
+            echo "dump=true" >> "$GITHUB_OUTPUT"
+          elif git diff --quiet "$last_sha" "$SHA" -- supabase/migrations; then
+            echo "No migration changes since $last_sha; no backup needed."
+            echo "dump=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "dump=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: ./.github/actions/setup-supabase-cli
+        if: steps.changed.outputs.dump == 'true'
+
+      - name: Install age
+        if: steps.changed.outputs.dump == 'true'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq age >/dev/null
+
+      # Each dump streams straight into age, so plaintext (PII) never touches
+      # the disk or the log; only ciphertext is written and uploaded.
+      - name: Dump roles, schema and data, encrypted
+        if: steps.changed.outputs.dump == 'true'
+        run: |
+          set -euo pipefail
+          supabase link --project-ref "$SUPABASE_PROJECT_REF" --yes >/dev/null
+          out="$RUNNER_TEMP/backup"
+          mkdir -p "$out"
+          supabase db dump --linked --role-only | age -r "$BACKUP_AGE_RECIPIENT" -o "$out/roles.sql.age"
+          supabase db dump --linked | age -r "$BACKUP_AGE_RECIPIENT" -o "$out/schema.sql.age"
+          supabase db dump --linked --data-only --use-copy | age -r "$BACKUP_AGE_RECIPIENT" -o "$out/data.sql.age"
+          for f in "$out"/*.age; do
+            test -s "$f" || { echo "::error::empty backup file $(basename "$f")"; exit 1; }
+          done
+          ls -l "$out"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: steps.changed.outputs.dump == 'true'
+        with:
+          name: prod-db-backup-${{ inputs.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/backup/
+          retention-days: 14
+          if-no-files-found: error
+
+  migrate:
+    name: migrations · ${{ inputs.target }}
+    needs: backup
+    # `backup` is skipped on dev and must succeed on prod.
+    if: ${{ !cancelled() && (needs.backup.result == 'success' || (needs.backup.result == 'skipped' && inputs.target == 'dev')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: supabase-${{ inputs.target }}
+    outputs:
+      applied: ${{ steps.pending.outputs.pending }}
+    env:
+      TARGET: ${{ inputs.target }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      BACKUP_AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .deploy-guard
+          sparse-checkout: |
+            .github/actions/deploy-guard
+            scripts/deploy-guard.mjs
+            scripts/release-version.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - uses: ./.deploy-guard/.github/actions/deploy-guard
+        with:
+          target: ${{ inputs.target }}
+          release-sha: ${{ inputs.sha }}
+          approved-attempt: ${{ inputs.approved_attempt }}
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Preflight (secrets present, project ref matches the target)
+        run: node scripts/deploy-preflight.mjs supabase "$TARGET"
+
+      - uses: ./.github/actions/setup-supabase-cli
+
+      - name: Link to remote project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --yes
+
+      - name: Count pending migrations
+        id: pending
+        run: |
+          set -euo pipefail
+          supabase migration list --linked --yes | tee "$RUNNER_TEMP/migrations.txt"
+          node scripts/check-migration-drift.mjs --count-pending "$RUNNER_TEMP/migrations.txt"
+
+      # Prod omits --include-all so out-of-order or remote-ahead histories fail
+      # here, before anything is applied.
+      - name: Dry-run push
+        run: |
+          set -euo pipefail
+          flags=(--linked --yes)
+          if [ "$TARGET" = dev ]; then flags+=(--include-all); fi
+          supabase db push --dry-run "${flags[@]}"
+
+      - name: Apply migrations
+        run: |
+          set -euo pipefail
+          flags=(--linked --yes)
+          if [ "$TARGET" = dev ]; then flags+=(--include-all); fi
+          supabase db push "${flags[@]}"

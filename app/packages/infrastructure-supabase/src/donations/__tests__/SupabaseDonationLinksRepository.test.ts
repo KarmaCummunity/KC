@@ -23,7 +23,7 @@ interface Calls {
 
 function makeFakeClient(opts: FakeOpts = {}): { client: SupabaseClient<any>; calls: Calls } {
   const calls: Calls = { invokes: [], rpcs: [], updates: [] };
-  const result = (kind: 'list') => Promise.resolve({ data: opts.listData ?? [], error: opts.listError ?? null });
+  const result = () => Promise.resolve({ data: opts.listData ?? [], error: opts.listError ?? null });
   const client = {
     auth: {
       getUser: async () => ({ data: { user: opts.userId ? { id: opts.userId } : null } }),
@@ -43,7 +43,7 @@ function makeFakeClient(opts: FakeOpts = {}): { client: SupabaseClient<any>; cal
         eq: () => ({
           is: () => ({
             order: () => ({
-              limit: () => result('list'),
+              limit: () => result(),
             }),
           }),
         }),

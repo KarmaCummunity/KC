@@ -1,19 +1,25 @@
 import React from 'react';
-import { Pressable, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { KcFlashList } from '../lists/KcFlashList';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { makeUseStyles, spacing } from '@kc/ui';
+import { spacing, Text } from '@kc/ui';
 import { Screen } from '../ui/Screen';
-import { worldHubBaseStyles } from './worldHubStyles';
+import { KcRowCard } from '../cards/KcRowCard';
+import { listingWorldIcon } from '../cards/ListingCard';
+import { cleanDisplayTitle } from '../../lib/displayTitle';
 import { givingHandoffUseCases } from '../../services/givingHandoffComposition';
 
-const useStyles = makeUseStyles(({ colors }) => worldHubBaseStyles(colors));
+const ROW = { marginHorizontal: spacing.lg };
 
 /** My handoffs (as owner or recipient) for one giving world. */
-export function MyWorldHandoffsList({ worldSlug }: { readonly worldSlug: 'items' | 'food' | 'rides' | 'knowledge' }) {
+export function MyWorldHandoffsList({
+  worldSlug,
+}: {
+  readonly worldSlug: 'items' | 'food' | 'rides' | 'knowledge' | 'housing' | 'time';
+}) {
   const router = useRouter();
-  const styles = useStyles();
+  const { t } = useTranslation();
   const rows = useQuery({
     queryKey: ['giving-handoffs', worldSlug],
     queryFn: async () => {
@@ -30,15 +36,17 @@ export function MyWorldHandoffsList({ worldSlug }: { readonly worldSlug: 'items'
         contentContainerStyle={{ paddingVertical: spacing.md }}
         ListEmptyComponent={<Text style={{ padding: spacing.lg, textAlign: 'center' }}>—</Text>}
         renderItem={({ item }) => (
-          <Pressable
-            style={styles.row}
-            onPress={() => router.push(`/(tabs)/donations/marketplace/${item.listingId}` as never)}
-          >
-            <Text style={styles.rowTitle}>{item.title}</Text>
-            <Text style={styles.rowMeta}>
-              {item.status} · {item.role}
-            </Text>
-          </Pressable>
+          <KcRowCard
+            testID={`handoff-row-${item.handoffId}`}
+            containerStyle={ROW}
+            tone={item.role === 'owner' ? 'give' : 'request'}
+            badgeLabel={t(`marketplace.world.${item.worldSlug}`, { defaultValue: item.worldSlug })}
+            placeholderIcon={listingWorldIcon(item.worldSlug)}
+            title={cleanDisplayTitle(item.title)}
+            meta={[item.role]}
+            statusLabel={t(`givingHandoff.statusLabel.${item.status}`, { defaultValue: item.status })}
+            onPress={() => router.push(`/(tabs)/donations/marketplace/${item.listingId}`)}
+          />
         )}
       />
     </Screen>
