@@ -108,7 +108,7 @@ begin
 
   perform public.pause_my_listing(v_listing);
   v_mirror := pg_temp.mirror_of(v_listing);
-  perform kc_test.assert_eq(v_mirror.status, 'deleted_no_recipient', 'a paused listing leaves the feed');
+  perform kc_test.assert_eq(v_mirror.status, 'paused', 'a paused listing is a paused post (0551), out of the feed');
   perform kc_test.assert_true(not pg_temp.in_feed(p.viewer, v_mirror.post_id), 'the paused mirror is not in the feed');
 
   perform public.resume_my_listing(v_listing);
