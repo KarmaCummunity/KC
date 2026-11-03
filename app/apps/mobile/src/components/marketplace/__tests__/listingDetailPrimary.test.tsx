@@ -31,6 +31,10 @@ vi.mock('../../../services/rideBookingComposition', () => ({
   rideBookingsQueryKey: (listingId: string) => ['ride-bookings', listingId],
 }));
 vi.mock('../../../services/platformConfirm', () => ({ confirmAction: vi.fn().mockResolvedValue(false) }));
+// The block-owner button's hook reaches the app container; blocking is covered in ListingDetailActions.test.
+vi.mock('../../../hooks/useUserBlock', () => ({
+  useUserBlock: () => ({ canBlock: false, isBlocked: false, busy: false, toggle: vi.fn() }),
+}));
 vi.mock('../../../services/ridesKnowledgeComposition', () => ({ ridesKnowledgeRpcs: {} }));
 vi.mock('../../../services/rideSafetyComposition', () => ({ raiseRideEmergency: vi.fn() }));
 vi.mock('../../../lib/analytics', () => ({ track: vi.fn() }));

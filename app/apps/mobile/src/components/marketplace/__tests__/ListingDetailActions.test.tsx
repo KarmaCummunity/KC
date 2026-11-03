@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 // KC#1310 — listing detail actions per viewer role, and a failed server action alerts instead of
-// failing silently; #1412 — a known refusal gets its own copy, an unknown one is reported.
+// failing silently; #1412 — a known refusal gets its own copy, an unknown one is reported;
+// FR-MOD-003 AC1 — a non-owner can block the owner and leaves the listing once blocked.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { cleanup, fireEvent, render } from '@testing-library/react';
@@ -10,8 +11,18 @@ import type { MarketplaceListingDetail } from '@kc/domain';
 const push = vi.fn();
 const startChat = vi.fn();
 const shareToFeed = vi.fn();
+const back = vi.fn();
+// The block hook is driven per test: who it targets, its state and what toggle resolves to.
+const blockState = { canBlock: true, isBlocked: false, busy: false, toggle: vi.fn(async () => true) };
+const blockTargets: string[] = [];
 
-vi.mock('expo-router', () => ({ useRouter: () => ({ push }) }));
+vi.mock('expo-router', () => ({ useRouter: () => ({ push, back, canGoBack: () => true }) }));
+vi.mock('../../../hooks/useUserBlock', () => ({
+  useUserBlock: (target: string) => {
+    blockTargets.push(target);
+    return { ...blockState, canBlock: blockState.canBlock && target !== '' };
+  },
+}));
 // The kit buttons pull in reanimated and haptics; their press feedback is not under test here.
 vi.mock('react-native-reanimated', async () => (await import('../../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
 vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogTestKit')).hapticsDouble);
@@ -119,5 +130,26 @@ describe('ListingDetailActions', () => {
 
     finish('c_2');
     await vi.waitFor(() => expect(message.getAttribute('aria-disabled')).not.toBe('true'));
+  });
+
+  it('lets a non-owner block the owner and leaves the listing once the block lands', async () => {
+    const { getByTestId } = renderActions('u_viewer');
+    expect(blockTargets).toContain('u_owner');
+
+    fireEvent.click(getByTestId('listing-action-block-owner'));
+    await vi.waitFor(() => expect(back).toHaveBeenCalled());
+    expect(blockState.toggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('stays on the listing when the block is cancelled, and never offers the owner to block', async () => {
+    blockState.toggle.mockResolvedValueOnce(false);
+    const viewer = renderActions('u_viewer');
+    fireEvent.click(viewer.getByTestId('listing-action-block-owner'));
+    await vi.waitFor(() => expect(blockState.toggle).toHaveBeenCalled());
+    expect(back).not.toHaveBeenCalled();
+    viewer.unmount();
+
+    const owner = renderActions('u_owner');
+    expect(owner.queryByTestId('listing-action-block-owner')).toBeNull();
   });
 });

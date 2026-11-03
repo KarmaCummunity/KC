@@ -98,11 +98,12 @@ Last applied on kc-dev when this was written: `0239`.
 | 0541 | follow edges to Private profiles only through an approved request (FR-FOLLOW-003/005/012) | in progress |
 | 0542 | admin per-world flow funnel (G43) | in progress |
 | 0544 | block filtering in both directions (FR-MOD-009) | in progress |
-| 0545+ | — | free |
+| 0545 | Blocked Users list (FR-MOD-004) | in progress |
+| 0546+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0545+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0546+`.
 
 ## How to claim
 
