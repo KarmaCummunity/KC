@@ -10,7 +10,7 @@ export interface UsersSelfPrivateSlice {
   active_posts_count_internal: number;
   /** FR-KARMA-007 — self-only; added to RPC in migration 0191. */
   karma_points: number;
-  /** FR-AUTH-010 AC2.d — ISO `YYYY-MM-DD`; added to the RPC in migration 0550. */
+  /** FR-AUTH-010 AC2.d — ISO `YYYY-MM-DD`; added to the RPC in migration 0570. */
   date_of_birth: string | null;
 }
 

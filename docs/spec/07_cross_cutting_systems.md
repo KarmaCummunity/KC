@@ -18,7 +18,7 @@ Statuses: `open`, `closed_delivered`, `deleted_no_recipient`, `expired`, `remove
   - **A delivered post with a completed handoff cannot be deleted**: it is the other side's record too (their rating and karma), as FR-POST-010 already rules for posts with a recipient.
   - A refusal tells the owner why (wrong status, active handoff, handoff history, expired, photo limit).
 
-Tech: D2,D16,D19,D21,D30,D31,D33,D41 · FR-POST-012/013, R-Items-5 superseded by D21 · `posts` + `listings` with triggers; `ride_listings`; `giving_handoffs`; owner management on listings: `pause / resume / fulfill / delete / add_my_listing_media` RPCs (`0543`, test `supabase/tests/0543_listing_owner_lifecycle.sql`) · G1, G11
+Tech: D2,D16,D19,D21,D30,D31,D33,D41 · FR-POST-012/013, R-Items-5 superseded by D21 · `posts` + `listings` with triggers; `ride_listings`; `giving_handoffs`; owner management on listings: `pause / resume / fulfill / delete / add_my_listing_media` RPCs (`0543`, test `supabase/tests/0543_listing_owner_lifecycle.sql`) · G1, G11 · unification plan: `docs/architecture/adr/ADR-006-one-post-model.md` (BACKLOG `G1-S1`…`G1-S6`)
 
 ## 7.2 Form and procedure per post type
 One form creates a Post: giving world first, then the world's sub-category where it has one, then optional additional worlds (D101); no "general", there is "other"; offer/request toggle worded per world, then a type-specific form defined in world config (D6*, D28, D36). Anonymity chosen in the form (D16); affiliated volunteer posts on the org's behalf (D22); emergency templates appear during emergencies (D42). No form in money (D4). Common rules: title ≤ 80 chars, description ≤ 500, ≤ 5 images with EXIF stripped, local draft. Location: offer = address at chosen display level, request = city; max 20 open posts per private user, none for orgs (S34).
@@ -32,7 +32,10 @@ One form creates a Post: giving world first, then the world's sub-category where
 | Ride | no (D28) | origin, destination, ≤ 3 meeting points — official places only (D71) | offer: +30 min | departure, est. end, seats |
 | Time / elderly / consulting | no | city or "remote" | none | estimated duration (D32) |
 | Event (org) | no | address | date | capacity, registration policy (D31) |
-| Housing stay | no | city; exact after approval | stay dates | nights, house rules (D30) |
+| Housing stay | no | city + neighborhood; exact after approval | stay dates | place type, capacity, nights, house rules (D30) |
+| Event & gathering space | no | city + neighborhood; exact after approval | event date | capacity, hours, quiet hour, event types (`S55`) |
+| Storage space | no | city + neighborhood; exact after approval | end of availability / request start + 7 d | m³, period, access, goods accepted (`S56`) |
+| Shelter request (assisted) | no | district / city | closed by the organization | urgency, people, needs — never public (`S57`) |
 | Job (org) | no | city or remote | closing date | scope, field, link (D41) |
 | Experience | no | venue | date | type, date, seats (D45) |
 
@@ -49,7 +52,7 @@ Uniform card and detail for all types (D2, D6*): image or world icon, world/dire
 Tech: · FR-FEED-002, FR-POST-014–018 · `KcRowCard` · design pending
 
 ## 7.5 Closing and handoff
-Each post type has its own closing flow on a generic handoff stage (D17, D19): "mark delivered", "ride completed", "stay completed", "volunteering done", "I attended". Closing earns karma (D12, D29), opens a two-sided internal rating (D15), and for volunteering follows 7.10 (D32). Auto-close on expiry (D21). Reopening reverses the karma (S20). Intermediate stages later.
+Each post type has its own closing flow on a generic handoff stage (D17, D19): "mark delivered", "ride completed", "stay completed", "event completed", "goods returned" (storage), "volunteering done", "I attended". Closing earns karma (D12, D29), opens a two-sided internal rating (D15), and for volunteering follows 7.10 (D32). Auto-close on expiry (D21). Reopening reverses the karma (S20). Intermediate stages later.
 
 Tech: · FR-CLOSURE-001–010, FR-RIDE-031–034 · three separate state machines today · G1
 
@@ -70,6 +73,8 @@ All engagement earns; closed giving earns most (D12). Visible only to the owner;
 | Ride completed | driver 25; passenger 10 | – |
 | Volunteering incl. elderly & consulting (D32) | 10 / hour | 80/day |
 | Hosting | host 30 / night; guest 10 | 7 nights |
+| Event space lent (`S58`) | host 15; guest 5 | host 2/day |
+| Storage lent (`S58`) | host 5 per started week; guest 3 | host 40 per booking |
 | Event attendance | 10 | – |
 | Open a challenge (D52): private / community | 2 / 3 | 2/day |
 | Challenge report (per cadence): private / community / large community (50+) | 1 / 2 / 3 | one per cycle |
@@ -112,12 +117,14 @@ Avatar, name, city, bio, counters; posts in "Open" / "Closed" tabs (D2, D14) —
 Tech: · FR-PROFILE-001–006, FR-PROFILE-007 · FR-SETTINGS-012, FR-AUTH-016 · FR-ORG-003 (`20_organizations`) · `ProfileMarketplaceListings` adds a "marketplace" tab · G6
 
 ## 7.13 Anonymity, privacy, location
-Visibility `Public / FollowersOnly / OnlyMe` and counterpart masking, chosen in the form and changeable **both ways** (D16). The counterpart in a handoff sees the real name. Location: `CityOnly / CityAndStreet` (default) `/ FullAddress`; profile shows city only; housing exact only after approval (D30). EXIF stripped. WhatsApp import keeps no identity of non-members (S21). No commercial use of community data.
+Visibility `Public / FollowersOnly / OnlyMe` and counterpart masking, chosen in the form and changeable **both ways** (D16). The counterpart in a handoff sees the real name. Location: `CityOnly / CityAndStreet` (default) `/ FullAddress`; profile shows city only; housing exact only after approval (D30) — public = city + neighborhood and a fuzzed map circle, the exact address and access instructions open to the confirmed guest from approval until 24 h after the end (`S53`). EXIF stripped. WhatsApp import keeps no identity of non-members (S21). No commercial use of community data.
 Tech: · PRD_V2 rule 7 superseded · both ways on `posts` (0094) and `listings` (0451) · G3 ✅
 
 ## 7.14 Verification and trust engine
 Levels phone → ID → blue check, plus reliability data (completed handoffs, seniority), shown on post, card and profile (D23). **Not blocking**, including drivers. Exceptions: housing — both sides verified; medical — only medical bodies (D30); elderly home visit — ID-verified volunteer (D48); an event may require verified users (D31). The trust engine weighs ratings and reports in ranking/matching and reports anomalies to admins (D24). ID provider chosen at implementation.
-Tech: · PRD_V2 rule 13 superseded · phone only · G10, G13
+- **ID level (`D117`, PM 2026-11-03):** a government ID document (Israeli identity card or a passport) **and** a live selfie with liveness, matched to the document photo by a certified provider. KC keeps the result, document type, country, expiry and date of birth, never the images or the document number (a keyed hash stops one person from verifying two accounts). Detailed FRs: [`SSOT/spec/22_identity_verification.md`](../SSOT/spec/22_identity_verification.md) (`FR-VERIFY-*`).
+
+Tech: · PRD_V2 rule 13 superseded · phone only; ID level specified (FR-VERIFY), provider not chosen · G10, G13
 
 ## 7.15 Reports and moderation
 Anyone can report a post, comment or user. **3 reports on a post → hidden until human review, and admins are notified; 5 on a user → suspended from actions, still sees everything and can chat with support** (D33, D61). "5" = 5 distinct reporters within 30 days; suspended user's open posts are hidden (S11). Review within 48h; malicious reports count against the reporter (S12). False emergency reports are handled with priority (D42).
