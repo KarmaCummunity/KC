@@ -80,7 +80,9 @@
       "metro-transform-plugins@0.83": "0.83.8",
       "metro-transform-worker@0.83": "0.83.8",
       "markdown-it@10": "^14.3.3",
-      "postcss@>=8.4 <8.5": "^8.5.29"
+      "postcss@>=8.4 <8.5": "^8.5.29",
+      "ajv@8": "^8.18.0",
+      "@babel/core@7": "^7.29.6"
     }
   }
 }
