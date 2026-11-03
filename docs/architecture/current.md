@@ -268,7 +268,7 @@ KC relies on two scheduling planes: database-level `pg_cron` jobs running direct
 | Shared | `_shared/` |
 
 ### Core data (as-is)
-- Content lives in **both** `posts` and `listings` (with sync triggers), plus `ride_listings` and `giving_handoffs` — three state machines. Unification plan: [ADR-006](./adr/ADR-006-one-post-model.md). `world_slug` + `MARKETPLACE_WORLD_SLUGS`; `listing_kinds`; `public.categories`.
+- Content lives in **both** `posts` and `listings` (with sync triggers), plus `ride_listings` and `giving_handoffs` — three state machines. Unification plan: [ADR-006](./adr/ADR-006-one-post-model.md). Step 1 shipped (`0551`–`0553`): `posts` carries every listing column (`world_slug`, `direction`, `post_type`, `expires_at`, `source`, `details`, …) and the `paused` status; `ride_post_details` and `post_handoffs` mirror the ride details and `giving_handoffs` by trigger. `world_slug` + `MARKETPLACE_WORLD_SLUGS`; `listing_kinds`; `public.categories`.
 - Karma: `karma_ledger`, values hard-coded (migration 0099).
 - Ratings: `ride_ratings`, `giving_handoff_ratings` (currently readable via RLS; spec says admin-only — G4).
 - Engagement: likes/comments (migration 0250). Chat: one conversation per pair with pinned post. Moderation: `reports` + suspects queue. Orgs: `donation_links`. Matching: `match_candidates` (MATCHING_V2).
