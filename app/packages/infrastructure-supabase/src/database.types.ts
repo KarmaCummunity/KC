@@ -9378,6 +9378,23 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number }
         Returns: Json
       }
+      admin_world_flow_funnel: {
+        Args: { p_days?: number }
+        Returns: {
+          booked: number
+          cancelled: number
+          closed: number
+          completed: number
+          confirmed: number
+          direction: string
+          median_hours_to_booking: number
+          median_hours_to_completion: number
+          published: number
+          world_label_en: string
+          world_label_he: string
+          world_slug: string
+        }[]
+      }
       anonymity_level_to_visibility: {
         Args: { p_level: number }
         Returns: string
