@@ -1694,7 +1694,7 @@ Owner rules that go with it:
 
 **Affected.** Store listings (#920), KC Pro paywall (#1088), support copy (#1036).
 
-## {{ENG:one-post-model-migration}} — One Post model: reverse the mirror, move one flow at a time, drop `listings` last (2026-11-03)
+## D-214 — One Post model: reverse the mirror, move one flow at a time, drop `listings` last (2026-11-03)
 
 **Decision.** Gap `G1` (D2, D19) closes in six backward-compatible PRs into `dev` (BACKLOG `G1-S1`…`G1-S6`, plan in [`docs/architecture/adr/ADR-006-one-post-model.md`](../architecture/adr/ADR-006-one-post-model.md)). Step 1 adds to `posts` every column the listing side has and posts lack (`world_slug`, `direction`, `post_type`, `expires_at`, `source`, `details`, `category_id`, `geo`, `time_window`, `urgency_level`, external body / beneficiary) plus the `paused` status of D104, creates `ride_post_details` and `post_handoffs`, backfills them from `listings` / `giving_handoffs` and keeps them in sync by triggers, with a report function whose zero-mismatch result is asserted by SQL tests. Step 2 reverses the `D-206` direction: the create form writes `posts` for every category and `listings` becomes the derived copy for every world (generalising the `0243` items sync), so matching, handoffs and the marketplace screens keep working unchanged. Steps 3–5 move the type-specific flows, the detail screen and events onto posts one PR each; step 6 enforces the single S1 state machine, drops the sync triggers and finally `listings` and its tables, after the report proves the data identical.
 
@@ -1724,7 +1724,7 @@ Owner rules that go with it:
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
-| 4.40 | 2026-11-03 | Added `{{ENG:one-post-model-migration}}` (G1 plan: reverse the listing mirror, move flows one PR at a time, drop `listings` last; ADR-006). |
+| 4.40 | 2026-11-03 | Added `D-214` (G1 plan: reverse the listing mirror, move flows one PR at a time, drop `listings` last; ADR-006). |
 | 4.39 | 2026-11-03 | Added `D-213` (live public finance numbers behind organization-controlled toggles, default off; refines `D-196` for the public view; `FIN-P0`). |
 >>>>>>> origin/dev
 | 4.38 | 2026-11-03 | Added `D-210` (store review on the Cloudflare Pages domain until a domain is bought; KC Pro free year then $30/$100 monthly; support mailbox). |
@@ -1818,3 +1818,12 @@ Owner rules that go with it:
 
 **Affected.** `app/packages/domain/src/worlds/givingWorlds.ts`, `launch/launchWorlds.ts`, `value-objects.ts`; `app/apps/mobile/src/navigation/donationsHubTiles.ts`, `lib/unifiedCreate/*`, `hooks/useUnifiedCreateCategory.tsx`, `components/CreatePostForm/{LinkCreateForm,UnifiedCreateHeader}.tsx`, `components/{TabBar,DonationLinkFields}.tsx`, `components/giving/*`, `app/(tabs)/donations/index.tsx`; `supabase/migrations/0548_donation_link_world_categories.sql`, `supabase/functions/validate-donation-link`. Spec: `FR-DONATE-001`, `FR-POST-001` AC6, `FR-FEED-020` AC2.
 
+## D-215 — Knowledge library resources are a catalog entity, not posts (2026-11-03)
+
+**Decision.** A knowledge library resource (course, article, link, book, video, document, podcast, tool, dataset) is its own entity, `knowledge_resources`, with its own review state machine, versions, chunks and embeddings. Exchange posts of the knowledge world (lesson offer, mentoring, consulting hour, learning request, mentoring request, question) stay on `listings` / `giving_handoffs` like every other world. Both carry the same three axes (shelf = `public.categories`, subject = `knowledge_topics`, format = kind) and are served by one retrieval call, `knowledge_search`, and by the `api_knowledge_*` service contract. Spec: `docs/spec/18_knowledge_world.md` §18.2, §18.7; `docs/SSOT/spec/23_knowledge.md`.
+
+**Why.** A resource has no offer / request direction, no counterpart, no closing and no expiry; it must stay findable for years, and it carries structure (modules, lessons, quizzes, chunk citations) that the one Post model (D2, D19) was never meant to hold. Forcing it onto `listings` would spread knowledge-only columns and states across the shared post triggers, matching and feeds. Community links (`donation_links`, D107) and the organization catalog already set the precedent of non-post catalog entities beside the feed.
+
+**Rejected.** A `resource` listing kind on `listings` (pollutes the post state machine and matching; expiry and direction would be meaningless). Storing resources only as community links (`donation_links` has no topics, kinds, versions, chunks or review beyond approval). A separate search index service (one Postgres hybrid search with RRF already exists; adding lanes keeps one source of truth and RLS).
+
+**Affected.** New `knowledge_*` tables and RPCs (migration range `0570–0589`), `supabase/functions/knowledge-*`, `embed-worker` provider, `packages/{domain,application,infrastructure-supabase}/src/knowledge/`, `apps/mobile` knowledge hub tabs and admin knowledge screens.

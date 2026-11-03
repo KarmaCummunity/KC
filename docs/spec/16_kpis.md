@@ -10,6 +10,7 @@ Numeric targets set after launch.
 | Engagement | Actions per visit, likes & comments, challenge participants |
 | Giving | Volunteer hours, rides, kg food, donations to KC |
 | Impact per world | Closed givings per world and sub-category (D100) |
+| Knowledge | Sessions completed; questions answered within 48h; resources published and share verified; "helped me" per resource; enrollments, lesson completion rate, course completions; demand gaps closed; search success; agent answers citing a KC resource ([18 §18.10](./18_knowledge_world.md)) |
 | Organizations | Active orgs, events, jobs |
 | Trust | % verified, reports per 1,000 posts, review time |
 | Emergency | Time from declaration to first response, requests answered |

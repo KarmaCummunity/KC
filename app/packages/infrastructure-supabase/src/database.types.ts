@@ -8166,6 +8166,7 @@ export type Database = {
           closure_explainer_dismissed: boolean
           contact_phone: string | null
           created_at: string
+          date_of_birth: string | null
           deletion_purge_at: string | null
           deletion_requested_at: string | null
           display_name: string | null
@@ -8212,6 +8213,7 @@ export type Database = {
           closure_explainer_dismissed?: boolean
           contact_phone?: string | null
           created_at?: string
+          date_of_birth?: string | null
           deletion_purge_at?: string | null
           deletion_requested_at?: string | null
           display_name?: string | null
@@ -8258,6 +8260,7 @@ export type Database = {
           closure_explainer_dismissed?: boolean
           contact_phone?: string | null
           created_at?: string
+          date_of_birth?: string | null
           deletion_purge_at?: string | null
           deletion_requested_at?: string | null
           display_name?: string | null
@@ -12867,6 +12870,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      rpc_set_date_of_birth: {
+        Args: { p_date_of_birth: string }
+        Returns: undefined
       }
       rpc_set_message_reaction: {
         Args: { p_message_id: string; p_reaction_type: string }

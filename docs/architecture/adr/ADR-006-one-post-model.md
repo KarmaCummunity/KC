@@ -1,7 +1,7 @@
 # ADR-006 — One Post model: `listings` → `posts`, `ride_post_details`, `post_handoffs`
 
 - **Status:** Accepted (2026-11-03) · plan for gap `G1` (product decisions `D2`, `D19`, `D104`)
-- **Decision log:** `{{ENG:one-post-model-migration}}` in [`../../SSOT/DECISIONS.md`](../../SSOT/DECISIONS.md)
+- **Decision log:** `D-214` in [`../../SSOT/DECISIONS.md`](../../SSOT/DECISIONS.md)
 - **Related:** [`target.md` §1](../target.md), [`docs/spec/07`](../../spec/07_cross_cutting_systems.md) §7.1–7.5, [`docs/spec/93`](../../spec/93_implementation_gaps.md) G1 / G11 / G34, `D-206`, `D-207`, [ADR-002](./ADR-002-data-layer.md)
 
 ## Context
