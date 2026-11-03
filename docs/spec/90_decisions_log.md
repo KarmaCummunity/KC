@@ -12,7 +12,7 @@ Index only — the binding wording lives in the linked spec files. All decided b
 | D6* | Uniform form, card and detail screen | 07.2, 07.4 | Needs depth |
 | D7 | Notifications screen | 07.11 | Approved |
 | D8 | Seed only in kc-dev; TestFlight to a clean environment | architecture | Pending check |
-| D9 | Org link requires KC admin approval | 08, 12 | Approved |
+| D9 | Org link requires KC admin approval | 08, 12 | Approved; implemented `0546` (PM 2026-11-03) |
 | D10 | Notify on good match / saved filter | 07.3, 07.11 | Approved |
 | D11 | Closing button per world | 07.5 | Approved |
 | D12 | Karma points menu | 07.6 | Approved |

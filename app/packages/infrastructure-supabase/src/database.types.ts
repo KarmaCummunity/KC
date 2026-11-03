@@ -1387,6 +1387,10 @@ export type Database = {
           hidden_at: string | null
           hidden_by: string | null
           id: string
+          review_note: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
           search_vector: unknown
           submitted_by: string
           tags: string | null
@@ -1401,6 +1405,10 @@ export type Database = {
           hidden_at?: string | null
           hidden_by?: string | null
           id?: string
+          review_note?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           search_vector?: unknown
           submitted_by: string
           tags?: string | null
@@ -1415,6 +1423,10 @@ export type Database = {
           hidden_at?: string | null
           hidden_by?: string | null
           id?: string
+          review_note?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           search_vector?: unknown
           submitted_by?: string
           tags?: string | null
@@ -9125,6 +9137,21 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_list_donation_links_for_review: {
+        Args: { p_status?: string }
+        Returns: {
+          category_slug: string
+          created_at: string
+          description: string
+          display_name: string
+          id: string
+          review_note: string
+          review_status: string
+          submitted_by: string
+          submitter_name: string
+          url: string
+        }[]
+      }
       admin_list_external_bodies: {
         Args: { p_world_slug?: string }
         Returns: {
@@ -9220,6 +9247,10 @@ export type Database = {
       admin_restore_target: {
         Args: { p_target_id: string; p_target_type: string }
         Returns: undefined
+      }
+      admin_review_donation_link: {
+        Args: { p_approve: boolean; p_link_id: string; p_note?: string }
+        Returns: string
       }
       admin_revoke_role: { Args: { p_grant_id: string }; Returns: undefined }
       admin_search_posts: {
@@ -10555,6 +10586,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_donation_link_reviewer: { Args: { p_uid: string }; Returns: boolean }
       is_following: {
         Args: { followed: string; follower: string }
         Returns: boolean

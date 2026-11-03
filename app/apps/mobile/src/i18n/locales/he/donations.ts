@@ -97,6 +97,10 @@ export const donations = {
     },
     loading: 'טוען...',
     loadError: 'לא הצלחנו לטעון את הקישורים. נסו שוב.',
+    // D9 — the submitter's own link while it waits, or after a rejection.
+    reviewPending: 'ממתין לאישור צוות KC',
+    reviewRejected: 'לא אושר',
+    reviewRejectedNote: 'לא אושר: {{note}}',
     retry: 'לנסות שוב',
     rowMenu: {
       open: 'לפתוח',
@@ -134,8 +138,8 @@ export const donations = {
     submit: 'להוסיף',
     save: 'לשמור',
     submitting: 'מאמת קישור...',
-    helperText: 'הקישור יבדק שיהיה תקין לפני ההוספה.',
-    editHelperText: 'השינויים יבדקו מול השרת לפני השמירה.',
+    helperText: 'הקישור ייבדק, ויופיע לכולם אחרי אישור של צוות KC.',
+    editHelperText: 'אחרי שינוי, הקישור חוזר לאישור של צוות KC לפני שיופיע לכולם.',
     errors: {
       invalid_url: 'הקישור לא תקין. ודאו שהוא מתחיל ב-http או https.',
       invalid_input: 'נא לוודא שכל השדות מולאו כראוי.',

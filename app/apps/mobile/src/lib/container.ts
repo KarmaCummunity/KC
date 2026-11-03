@@ -59,6 +59,8 @@ import {
   AddDonationLinkUseCase,
   RemoveDonationLinkUseCase,
   ReportDonationLinkUseCase,
+  ListDonationLinksForReviewUseCase,
+  ReviewDonationLinkUseCase,
   UpdateDonationLinkUseCase,
   RestoreTargetUseCase,
   DismissReportUseCase,
@@ -264,6 +266,8 @@ export const container = {
   updateDonationLink: new UpdateDonationLinkUseCase(donationLinksRepo),
   removeDonationLink: new RemoveDonationLinkUseCase(donationLinksRepo),
   reportDonationLink: new ReportDonationLinkUseCase(donationLinksRepo),
+  listDonationLinksForReview: new ListDonationLinksForReviewUseCase(donationLinksRepo),
+  reviewDonationLink: new ReviewDonationLinkUseCase(donationLinksRepo),
 
   // Surveys + free feedback (FR-SETTINGS-015..017)
   surveyRepo,
