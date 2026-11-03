@@ -15,6 +15,11 @@ do $$ begin
   end if;
 end $$;
 
+-- Bulk dev fixture writes bypass user-facing abuse-resistance caps.
+alter table public.listings disable trigger listings_rate_limit;
+alter table public.giving_handoffs disable trigger giving_handoffs_rate_limit;
+alter table public.follow_edges disable trigger follow_edges_rate_limit;
+
 delete from public.chats where participant_a in (select id from auth.users where email like '%@seed.kc.test') or participant_b in (select id from auth.users where email like '%@seed.kc.test');
 delete from auth.users where email like '%@seed.kc.test';
 
@@ -157,6 +162,9 @@ select c.chat_id, case when k%2=1 then c.asker else c.owner_id end, 'user',
   'read', now() - ((7-k)||' hours')::interval, now() - ((7-k)||' hours')::interval, now() - ((7-k)||' hours')::interval + interval '1 minute', 'he'
 from s_chats c cross join generate_series(1,6) k;
 alter table public.messages enable trigger messages_rate_limit;
+alter table public.listings enable trigger listings_rate_limit;
+alter table public.giving_handoffs enable trigger giving_handoffs_rate_limit;
+alter table public.follow_edges enable trigger follow_edges_rate_limit;
 
 -- #982: demo verified nonprofits (money world). Clearly marked [DEMO]; same rows as migration 0400.
 insert into public.organizations (

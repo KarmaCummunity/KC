@@ -83,4 +83,133 @@ describe('ride booking use cases', () => {
     repo.decline.mockRejectedValueOnce(new Error('invalid_status'));
     await expect(new DeclineRideBookingUseCase(repo).execute('h1')).rejects.toThrow('invalid_status');
   });
+
+  describe('ApproveRideBookingUseCase — capacity and status validation', () => {
+    it('approves when requested seats fit in remaining capacity', async () => {
+      const repo = makeRepo();
+      const target: RideBooking = { ...BOOKING, handoffId: 'h1', seats: 2, status: 'reserved' };
+      const other: RideBooking = { ...BOOKING, handoffId: 'h2', seats: 1, status: 'confirmed' };
+      // capacity 4, confirmed takes 1, remaining 3. target needs 2 -> OK.
+      await new ApproveRideBookingUseCase(repo).execute('h1', { capacity: 4, bookings: [target, other] });
+      expect(repo.approve).toHaveBeenCalledWith('h1');
+    });
+
+    it('rejects approval beyond capacity without calling server', async () => {
+      const repo = makeRepo();
+      const target: RideBooking = { ...BOOKING, handoffId: 'h1', seats: 2, status: 'reserved' };
+      const other: RideBooking = { ...BOOKING, handoffId: 'h2', seats: 2, status: 'confirmed' };
+      // capacity 3, confirmed takes 2, remaining 1. target needs 2 -> exceeds capacity.
+      const uc = new ApproveRideBookingUseCase(repo);
+      await expect(uc.execute('h1', { capacity: 3, bookings: [target, other] })).rejects.toMatchObject({
+        code: 'seats_exhausted',
+      });
+      expect(repo.approve).not.toHaveBeenCalled();
+    });
+
+    it('rejects approval of non-reserved booking (invalid transition)', async () => {
+      const repo = makeRepo();
+      const alreadyConfirmed: RideBooking = { ...BOOKING, handoffId: 'h1', status: 'confirmed' };
+      const uc = new ApproveRideBookingUseCase(repo);
+      await expect(uc.execute('h1', { capacity: 3, bookings: [alreadyConfirmed] })).rejects.toMatchObject({
+        code: 'invalid_status',
+      });
+      expect(repo.approve).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('DeclineRideBookingUseCase — status validation', () => {
+    it('rejects declining a confirmed booking (invalid transition)', async () => {
+      const repo = makeRepo();
+      const confirmed: RideBooking = { ...BOOKING, handoffId: 'h1', status: 'confirmed' };
+      const uc = new DeclineRideBookingUseCase(repo);
+      await expect(uc.execute('h1', { bookings: [confirmed] })).rejects.toMatchObject({
+        code: 'invalid_status',
+      });
+      expect(repo.decline).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('CancelRideBookingUseCase — status validation', () => {
+    it.each(['handed_over', 'cancelled'] as const)(
+      'rejects cancelling a %s booking (invalid transition)',
+      async (status) => {
+        const repo = makeRepo();
+        const uc = new CancelRideBookingUseCase(repo);
+        await expect(uc.execute('h1', { status })).rejects.toMatchObject({
+          code: 'invalid_status',
+        });
+        expect(repo.cancel).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(['reserved', 'confirmed'] as const)('cancels a %s booking', async (status) => {
+      const repo = makeRepo();
+      await new CancelRideBookingUseCase(repo).execute('h1', { status });
+      expect(repo.cancel).toHaveBeenCalledWith('h1');
+    });
+  });
+
+  describe('CompleteRideTripUseCase — status and timing validation', () => {
+    it('rejects completion on already completed trip', async () => {
+      const repo = makeRepo();
+      const uc = new CompleteRideTripUseCase(repo);
+      await expect(uc.execute('h1', { status: 'handed_over' })).rejects.toMatchObject({
+        code: 'invalid_status',
+      });
+      expect(repo.complete).not.toHaveBeenCalled();
+    });
+
+    it('rejects completion when ride is more than 1 hour in the future', async () => {
+      const repo = makeRepo();
+      const uc = new CompleteRideTripUseCase(repo);
+      const future = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+      await expect(uc.execute('h1', { status: 'confirmed', departsAt: future })).rejects.toMatchObject({
+        code: 'ride_not_started',
+      });
+      expect(repo.complete).not.toHaveBeenCalled();
+    });
+
+    it('completes trip when within 1 hour before departure', async () => {
+      const repo = makeRepo();
+      const uc = new CompleteRideTripUseCase(repo);
+      const soon = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+      await uc.execute('h1', { status: 'confirmed', departsAt: soon });
+      expect(repo.complete).toHaveBeenCalledWith('h1');
+    });
+  });
+
+  describe('BookRideSeatUseCase — seat count and departure validation', () => {
+    it('rejects booking on departed ride', async () => {
+      const repo = makeRepo();
+      const past = new Date(Date.now() - 1000).toISOString();
+      await expect(new BookRideSeatUseCase(repo).execute('l1', 1, { departsAt: past })).rejects.toMatchObject({
+        code: 'ride_departed',
+      });
+      expect(repo.bookSeat).not.toHaveBeenCalled();
+    });
+
+    it('rejects booking when no seats left (freeSeats == 0)', async () => {
+      const repo = makeRepo();
+      await expect(new BookRideSeatUseCase(repo).execute('l1', 1, { freeSeats: 0 })).rejects.toMatchObject({
+        code: 'seats_exhausted',
+      });
+      expect(repo.bookSeat).not.toHaveBeenCalled();
+    });
+
+    it('rejects booking when requested seats exceed free seats', async () => {
+      const repo = makeRepo();
+      await expect(new BookRideSeatUseCase(repo).execute('l1', 3, { freeSeats: 2 })).rejects.toMatchObject({
+        code: 'seats_exhausted',
+      });
+      expect(repo.bookSeat).not.toHaveBeenCalled();
+    });
+
+    it('rejects booking when requested seats exceed capacity', async () => {
+      const repo = makeRepo();
+      await expect(new BookRideSeatUseCase(repo).execute('l1', 4, { capacity: 3 })).rejects.toMatchObject({
+        code: 'seats_exhausted',
+      });
+      expect(repo.bookSeat).not.toHaveBeenCalled();
+    });
+  });
 });

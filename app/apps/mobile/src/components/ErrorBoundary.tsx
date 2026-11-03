@@ -10,7 +10,13 @@ import { makeUseStyles, typography, spacing, Text } from '@kc/ui';
 import { PrimaryButton } from './ui/Buttons';
 import { getSentryIfInit } from '../lib/observability/sentry';
 
-type Props = { children: React.ReactNode };
+export type ErrorBoundaryProps = {
+  children: React.ReactNode;
+  boundary?: string;
+  tags?: Record<string, string>;
+  onReset?: () => void;
+  fallback?: (props: { error: Error; onRetry: () => void }) => React.ReactNode;
+};
 type State = { error: Error | null };
 
 /** Report a caught render error to Sentry. Never throws. */
@@ -32,12 +38,17 @@ export function ErrorBoundaryFallback({ error, onRetry }: { error: Error; onRetr
       <Text style={styles.title}>{t('errorBoundary.title')}</Text>
       <Text style={styles.body}>{t('errorBoundary.body')}</Text>
       {__DEV__ ? <Text style={styles.errMessage}>{error.message}</Text> : null}
-      <PrimaryButton testID="error-boundary-retry" label={t('general.retry')} size="md" onPress={onRetry} />
+      <PrimaryButton
+        testID="error-boundary-retry"
+        label={t('general.retry')}
+        size="md"
+        onPress={onRetry}
+      />
     </View>
   );
 }
 
-export class ErrorBoundary extends React.Component<Props, State> {
+export class ErrorBoundary extends React.Component<ErrorBoundaryProps, State> {
   state: State = { error: null };
 
   static getDerivedStateFromError(error: Error): State {
@@ -45,14 +56,23 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo): void {
-    reportRenderError(error, { tags: { boundary: 'root' }, componentStack: info.componentStack });
+    reportRenderError(error, {
+      tags: { boundary: this.props.boundary ?? 'root', ...this.props.tags },
+      componentStack: info.componentStack,
+    });
   }
 
-  reset = (): void => this.setState({ error: null });
+  reset = (): void => {
+    this.props.onReset?.();
+    this.setState({ error: null });
+  };
 
   render(): React.ReactNode {
     const { error } = this.state;
     if (!error) return this.props.children;
+    if (this.props.fallback) {
+      return this.props.fallback({ error, onRetry: this.reset });
+    }
     return <ErrorBoundaryFallback error={error} onRetry={this.reset} />;
   }
 }

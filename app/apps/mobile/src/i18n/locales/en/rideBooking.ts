@@ -29,4 +29,9 @@ export const rideBooking = {
   confirmed: 'Your seat is approved. Have a good ride!',
   cancelBooking: 'Cancel my booking',
   loadError: "We couldn't load the bookings. Tap to try again.",
+  exceedsCapacity: 'Cannot approve: exceeds available seats',
+  departed: 'This ride has already departed',
+  full: 'No free seats left on this ride',
+  chat: 'Message',
+  completedAndRated: 'Ride completed and rated. Thank you!',
 } as const;

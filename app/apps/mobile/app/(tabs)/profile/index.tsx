@@ -47,6 +47,8 @@ export default function MyProfileOpenScreen() {
         <ProfilePostsGrid
           posts={myPostsQuery.data?.posts ?? []}
           isLoading={myPostsQuery.isLoading}
+          isError={myPostsQuery.isError}
+          onRetry={() => void myPostsQuery.refetch()}
           empty="self_open"
           postOwner={postOwner}
         />

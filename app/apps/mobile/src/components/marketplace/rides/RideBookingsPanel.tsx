@@ -2,12 +2,18 @@
 // (docs/spec/05_giving_worlds.md §5.3 step 3 — the driver approves or declines each, D73).
 import React from 'react';
 import { Pressable, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Text, typography } from '@kc/ui';
-import { summarizeRideSeats } from '@kc/domain';
+import { canApproveRideBooking, summarizeRideSeats } from '@kc/domain';
+import { useAuthStore } from '../../../store/authStore';
 import { givingHandoffUseCases } from '../../../services/givingHandoffComposition';
-import { rideBookingsQueryKey, rideBookingUseCases } from '../../../services/rideBookingComposition';
+import {
+  openRidePassengerChat,
+  rideBookingsQueryKey,
+  rideBookingUseCases,
+} from '../../../services/rideBookingComposition';
 import { RideBookingRow, type RideBookingRowActions } from './RideBookingRow';
 import { HandoffActionButton } from '../HandoffActionButton';
 import { confirmAction } from '../../../services/platformConfirm';
@@ -25,7 +31,9 @@ interface Props {
 
 export function RideBookingsPanel({ listingId, cityId, capacity, listingStatus, departsAt }: Props) {
   const { t } = useTranslation();
+  const router = useRouter();
   const styles = useRideBookingStyles();
+  const viewerId = useAuthStore((s) => s.session?.userId ?? null);
   const { busy, run } = useRideBookingAction(listingId, cityId);
   const bookings = useQuery({
     queryKey: rideBookingsQueryKey(listingId),
@@ -47,16 +55,27 @@ export function RideBookingsPanel({ listingId, cityId, capacity, listingStatus, 
     await run(() => rideBookingUseCases.completeRide().execute(listingId), 'handover_completed');
   }
 
+  const onChat = async (recipientId: string) => {
+    if (!viewerId) return;
+    try {
+      const chatId = await openRidePassengerChat(viewerId, recipientId);
+      router.push(`/chat/${chatId}`);
+    } catch {
+      alert(t('givingHandoff.errorGeneric'));
+    }
+  };
+
   const actions: RideBookingRowActions = {
-    approve: (id) => void run(() => rideBookingUseCases.approve().execute(id), 'match_made'),
-    decline: (id) => void run(() => rideBookingUseCases.decline().execute(id)),
-    complete: (id) => void run(() => rideBookingUseCases.complete().execute(id), 'handover_completed'),
-    cancel: (id) => void run(() => rideBookingUseCases.cancel().execute(id)),
+    approve: (id) => void run(() => rideBookingUseCases.approve().execute(id, { capacity, bookings: list }), 'match_made'),
+    decline: (id) => void run(() => rideBookingUseCases.decline().execute(id, { bookings: list })),
+    complete: (id) => void run(() => rideBookingUseCases.complete().execute(id, { bookings: list }), 'handover_completed'),
+    cancel: (id) => void run(() => rideBookingUseCases.cancel().execute(id, { bookings: list })),
     rate: (id, rating, note) =>
       void run(async () => {
         await givingHandoffUseCases.rate().execute(id, rating, note);
         alert(t('givingHandoff.ratingThanks'));
       }),
+    chat: (recipientId) => void onChat(recipientId),
   };
 
   return (
@@ -85,7 +104,13 @@ export function RideBookingsPanel({ listingId, cityId, capacity, listingStatus, 
       ) : null}
 
       {list.map((booking) => (
-        <RideBookingRow key={booking.handoffId} booking={booking} busy={busy} actions={actions} />
+        <RideBookingRow
+          key={booking.handoffId}
+          booking={booking}
+          busy={busy}
+          actions={actions}
+          canApprove={canApproveRideBooking(capacity, list, booking)}
+        />
       ))}
     </View>
   );

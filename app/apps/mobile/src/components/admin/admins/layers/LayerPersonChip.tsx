@@ -35,7 +35,7 @@ export function LayerPersonChip({ person, orgName, orgAccent, onSelect }: LayerP
       accessibilityRole="button"
       accessibilityLabel={L.admin.admins.layers.personA11y(name, roleLabel, orgName, extraRoles)}
       onPress={() => onSelect(person.userId)}
-      style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
     >
       <View style={[styles.ring, { borderColor: orgAccent }]}>
         <AvatarInitials name={name} avatarUrl={person.avatarUrl} size={AVATAR_SIZE} />
@@ -52,7 +52,7 @@ export function LayerPersonChip({ person, orgName, orgAccent, onSelect }: LayerP
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  chip: {
+  tile: {
     width: 84, alignItems: 'center', gap: spacing.xs,
     paddingVertical: spacing.sm, paddingHorizontal: spacing.xs, borderRadius: radius.md,
   },

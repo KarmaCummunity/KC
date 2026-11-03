@@ -13,6 +13,7 @@ import { KcRefreshControl } from '../lists/KcRefreshControl';
 import { ListingCard } from '../cards/ListingCard';
 import { kcGridCell } from '../cards/KcCard.styles';
 import { EmptyState, EmptyStateActions } from '../EmptyState';
+import { PrimaryButton } from '../ui/Buttons';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
 import { LIST_END_THRESHOLD } from '../../hooks/usePrefetchNextPage';
 import { useWorldFeed, type WorldFeedState } from '../../hooks/useWorldFeed';
@@ -27,6 +28,7 @@ export type WorldMarketplaceHubProps = WorldHubHeaderProps & {
 
 export function WorldMarketplaceHub({ rowMeta, ...headerProps }: WorldMarketplaceHubProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const inset = useShellTabBarScrollInset();
   const feed = useWorldFeed(headerProps.worldSlug);
 
@@ -56,7 +58,25 @@ export function WorldMarketplaceHub({ rowMeta, ...headerProps }: WorldMarketplac
             />
           </View>
         )}
-        ListEmptyComponent={feed.isLoading ? null : <WorldFeedEmpty worldSlug={headerProps.worldSlug} feed={feed} />}
+        ListEmptyComponent={
+          feed.isLoading ? null : feed.isError && feed.rows.length === 0 ? (
+            <EmptyState
+              icon="cloud-offline-outline"
+              title={t('general.errorTitle')}
+              subtitle={t('errorBoundary.body')}
+              action={
+                <PrimaryButton
+                  testID="world-feed-retry"
+                  label={t('general.retry')}
+                  size="md"
+                  onPress={feed.refresh}
+                />
+              }
+            />
+          ) : (
+            <WorldFeedEmpty worldSlug={headerProps.worldSlug} feed={feed} />
+          )
+        }
       />
     </Screen>
   );

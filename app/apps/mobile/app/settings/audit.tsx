@@ -4,7 +4,8 @@ import { View, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, Redirect } from 'expo-router';
 import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
-import { makeUseStyles, spacing, typography, useTheme, Text, TextInput } from '@kc/ui';
+import { fontFamily, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { TextField } from '../../src/components/ui';
 import type { AuditEvent } from '@kc/domain';
 import { useIsSuperAdmin } from '../../src/hooks/useIsSuperAdmin';
 import { container } from '../../src/lib/container';
@@ -77,7 +78,8 @@ export default function AuditScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['bottom']}>
       <Stack.Screen options={{ ...detailStackScreenOptions, headerTitle: t('audit.title') }} />
-      <TextInput
+      <TextField
+        label={t('audit.searchPlaceholder')}
         value={query}
         onChangeText={onSearchChange}
         placeholder={t('audit.searchPlaceholder')}
@@ -144,7 +146,7 @@ const useAuditScreenStyles = makeUseStyles(({ colors }) => ({
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.sm,
-    borderRadius: 6,
+    borderRadius: radius.sm,
     marginBottom: spacing.sm,
     ...typography.body,
     color: colors.textPrimary,
@@ -156,7 +158,7 @@ const useAuditScreenStyles = makeUseStyles(({ colors }) => ({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 6,
+    borderRadius: radius.sm,
     marginBottom: spacing.sm,
     ...webViewRtl,
   },
@@ -184,13 +186,13 @@ const useAuditScreenStyles = makeUseStyles(({ colors }) => ({
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    gap: 4,
+    gap: spacing.xs,
     ...webViewRtl,
   },
   rowAction: {
     ...typography.body,
     color: colors.textPrimary,
-    fontWeight: '600',
+    ...typography.semiBold,
     textAlign: rtlTextAlignStart,
     ...webTextRtl,
   },
@@ -200,6 +202,6 @@ const useAuditScreenStyles = makeUseStyles(({ colors }) => ({
     textAlign: rtlTextAlignStart,
     ...webTextRtl,
   },
-  metaJson: { fontSize: 11, color: colors.textSecondary, fontFamily: 'Courier' },
+  metaJson: { ...typography.caption, color: colors.textSecondary, fontFamily },
   empty: { textAlign: 'center', color: colors.textSecondary, padding: spacing.lg, ...webTextRtl },
 }));

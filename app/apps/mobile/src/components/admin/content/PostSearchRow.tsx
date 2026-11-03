@@ -13,6 +13,7 @@ import {
   type AdminPostSearchResult,
 } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { Chip } from '../../ui/Chip';
 import { useAdminRoles } from '../../../hooks/useAdminRoles';
 import { container } from '../../../lib/container';
 import { confirmAction as platformConfirm } from '../../../services/platformConfirm';
@@ -23,12 +24,11 @@ export interface PostSearchRowProps {
   readonly row: AdminPostSearchResult;
 }
 
-function statusTone(status: string): 'good' | 'warn' | 'bad' | 'muted' {
-  if (status === 'open') return 'good';
+function statusTone(status: string): 'success' | 'warning' | 'error' | 'muted' {
+  if (status === 'open') return 'success';
   if (status === 'closed_delivered') return 'muted';
-  if (status === 'removed_admin' || status === 'expired') return 'bad';
-  if (status === 'hidden_pending_review') return 'warn';
-  return 'warn';
+  if (status === 'removed_admin' || status === 'expired') return 'error';
+  return 'warning';
 }
 
 function confirmAction(message: string, L: LocaleBundle): Promise<boolean> {
@@ -91,12 +91,15 @@ export function PostSearchRow({ row }: PostSearchRowProps) {
               {L.admin.content.byOwner(row.ownerDisplayName)}
             </Text>
           )}
-          <View style={[styles.chip, styles[`chip_${tone}` as const]]}>
-            <Text style={styles.chipText}>
-              {L.admin.content.postStatus[row.status as keyof LocaleBundle['admin']['content']['postStatus']]
-                ?? row.status}
-            </Text>
-          </View>
+          <Chip
+            variant="tag"
+            tone={tone}
+            label={
+              L.admin.content.postStatus[row.status as keyof LocaleBundle['admin']['content']['postStatus']]
+                ?? row.status
+            }
+            size="sm"
+          />
         </View>
       </View>
       {canRemove && (
@@ -133,12 +136,6 @@ const useStyles = makeUseStyles(({ colors }) => ({
   title:      { ...typography.body, ...typography.semiBold },
   metaRow:    { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   meta:       { ...typography.caption, opacity: 0.6, flex: 1 },
-  chip:       { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.xs },
-  chip_good:  { backgroundColor: colors.successLight },
-  chip_warn:  { backgroundColor: colors.warningLight },
-  chip_bad:   { backgroundColor: colors.errorLight },
-  chip_muted: { backgroundColor: colors.border },
-  chipText:   { ...typography.caption, ...typography.bold },
   actionBtnRemove:  { paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: radius.xs, backgroundColor: colors.errorLight },
   actionTextRemove: { ...typography.caption, ...typography.bold, color: colors.error },
   actionBtnRestore:  { paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: radius.xs, backgroundColor: colors.successLight },

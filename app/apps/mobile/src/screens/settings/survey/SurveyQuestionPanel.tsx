@@ -3,7 +3,8 @@
 // AC8 (KC#1058): a single-choice question shows its options instead of the rating row.
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography, useTheme, Text, TextInput } from '@kc/ui';
+import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { TextField } from '../../../components/ui';
 import type { SurveyQuestion } from '@kc/domain';
 import { Card } from '../../../components/ui/Card';
 import { SurveyRatingRow } from '../../../components/survey/SurveyRatingRow';
@@ -63,10 +64,8 @@ export function SurveyQuestionPanel({
         />
       )}
 
-      <Text style={styles.fieldLabel} accessibilityRole="text">
-        {t('survey.textFieldLabel')}
-      </Text>
-      <TextInput // brand-guard-allow: free-text survey answer; the kit has no TextField yet
+      <TextField
+        label={t('survey.textFieldLabel')}
         style={[styles.textInput, hebrewSurveyFieldTextStyle()]}
         value={textValue}
         onChangeText={onText}
@@ -115,16 +114,10 @@ const usePanelStyles = makeUseStyles(({ colors }) => ({
     ...webTextRtl,
   },
   textInput: {
-    ...typography.body,
     fontSize: typography.body.fontSize,
     lineHeight: 22,
     minHeight: 88,
     maxHeight: 128,
-    padding: spacing.md,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    color: colors.textPrimary,
+    textAlignVertical: 'top',
   },
 }));

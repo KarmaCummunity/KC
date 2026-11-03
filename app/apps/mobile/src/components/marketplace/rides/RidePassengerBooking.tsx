@@ -30,6 +30,7 @@ export function RidePassengerBooking({ listingId, cityId, capacity, details }: P
   const styles = useRideBookingStyles();
   const { busy, run } = useRideBookingAction(listingId, cityId);
   const [seats, setSeats] = useState(1);
+  const [rated, setRated] = useState(false);
   // The caller's own active (or completed, unrated) booking on this ride.
   const booking = useQuery({
     queryKey: ['giving-handoff', listingId],
@@ -37,6 +38,12 @@ export function RidePassengerBooking({ listingId, cityId, capacity, details }: P
   });
 
   const h = booking.data;
+  const departsAtRaw = details['departs_at'];
+  const departsAtIso = typeof departsAtRaw === 'string' ? departsAtRaw : null;
+  const departsTime = departsAtIso ? new Date(departsAtIso).getTime() : null;
+  const isDeparted = departsTime !== null && !Number.isNaN(departsTime) && departsTime <= Date.now();
+  const isFull = capacity <= 0;
+
   const maxSeats = Math.max(1, capacity);
   const changeSeats = (delta: number) => {
     const next = seats + delta;
@@ -50,7 +57,7 @@ export function RidePassengerBooking({ listingId, cityId, capacity, details }: P
       label={t('rideBooking.cancelBooking')}
       busy={busy}
       secondary
-      onPress={() => void run(() => rideBookingUseCases.cancel().execute(handoffId))}
+      onPress={() => void run(() => rideBookingUseCases.cancel().execute(handoffId, { status: h?.status }))}
     />
   );
 
@@ -58,21 +65,42 @@ export function RidePassengerBooking({ listingId, cityId, capacity, details }: P
     <View style={styles.box} testID="ride-passenger-booking">
       <Text style={typography.h3}>{t('rideBooking.passengerTitle')}</Text>
 
-      {!h && booking.isSuccess ? (
-        <>
-          <Text style={styles.caption}>{t('rideBooking.seatsToBook')}</Text>
-          <View style={styles.stepper}>
-            <StepperButton label="−" a11y={t('rideBooking.fewerSeats')} disabled={busy || seats <= 1} onPress={() => changeSeats(-1)} />
-            <Text style={styles.stepperValue} testID="ride-booking-seats">{seats}</Text>
-            <StepperButton label="+" a11y={t('rideBooking.moreSeats')} disabled={busy || seats >= maxSeats} onPress={() => changeSeats(1)} />
-          </View>
-          <HandoffActionButton
-            testID="giving-handoff-book-seat"
-            label={t('rideBooking.book')}
-            busy={busy}
-            onPress={() => void run(() => rideBookingUseCases.book().execute(listingId, seats), 'match_made')}
-          />
-        </>
+      {rated ? (
+        <Text style={styles.caption} testID="ride-booking-completed-rated">
+          {t('rideBooking.completedAndRated')}
+        </Text>
+      ) : null}
+
+      {!h && booking.isSuccess && !rated ? (
+        isDeparted ? (
+          <Text style={styles.caption} testID="ride-booking-departed">
+            {t('rideBooking.departed')}
+          </Text>
+        ) : isFull ? (
+          <Text style={styles.caption} testID="ride-booking-full">
+            {t('rideBooking.full')}
+          </Text>
+        ) : (
+          <>
+            <Text style={styles.caption}>{t('rideBooking.seatsToBook')}</Text>
+            <View style={styles.stepper}>
+              <StepperButton label="−" a11y={t('rideBooking.fewerSeats')} disabled={busy || seats <= 1} onPress={() => changeSeats(-1)} />
+              <Text style={styles.stepperValue} testID="ride-booking-seats">{seats}</Text>
+              <StepperButton label="+" a11y={t('rideBooking.moreSeats')} disabled={busy || seats >= maxSeats} onPress={() => changeSeats(1)} />
+            </View>
+            <HandoffActionButton
+              testID="giving-handoff-book-seat"
+              label={t('rideBooking.book')}
+              busy={busy}
+              onPress={() =>
+                void run(
+                  () => rideBookingUseCases.book().execute(listingId, seats, { capacity, departsAt: departsAtIso }),
+                  'match_made',
+                )
+              }
+            />
+          </>
+        )
       ) : null}
 
       {h?.status === 'reserved' ? (
@@ -95,19 +123,25 @@ export function RidePassengerBooking({ listingId, cityId, capacity, details }: P
               testID="giving-handoff-complete"
               label={t('rideBooking.completeTrip')}
               busy={busy}
-              onPress={() => void run(() => rideBookingUseCases.complete().execute(h.handoffId), 'handover_completed')}
+              onPress={() =>
+                void run(
+                  () => rideBookingUseCases.complete().execute(h.handoffId, { status: h.status, departsAt: departsAtIso }),
+                  'handover_completed',
+                )
+              }
             />
             {cancelMine(h.handoffId, true)}
           </View>
         </>
       ) : null}
 
-      {h?.status === 'handed_over' ? (
+      {h?.status === 'handed_over' && !rated ? (
         <HandoffRatingForm
           busy={busy}
           onSubmit={(rating, note) =>
             void run(async () => {
               await givingHandoffUseCases.rate().execute(h.handoffId, rating, note);
+              setRated(true);
               alert(t('givingHandoff.ratingThanks'));
             })
           }
