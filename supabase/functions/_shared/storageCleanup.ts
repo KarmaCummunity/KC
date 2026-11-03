@@ -1,4 +1,4 @@
-// delete-account/storageCleanup.ts
+// _shared/storageCleanup.ts
 //
 // Collects every object a user owns in a userId-first bucket so account
 // deletion can purge it (R-MVP-Privacy-6). Buckets covered here store
