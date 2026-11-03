@@ -1,0 +1,63 @@
+// @vitest-environment jsdom
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import type { ListingKindOption } from '@kc/domain';
+import type { PropsWithChildren } from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+const { repo, auth, upload, track, activation, remember } = vi.hoisted(() => ({
+  repo: { listKindsForWorld: vi.fn(), createListing: vi.fn() },
+  auth: { current: 'u1' as string | null }, upload: vi.fn(), track: vi.fn(), activation: vi.fn(), remember: vi.fn(),
+}));
+vi.hoisted(() => { (globalThis as { __DEV__?: boolean }).__DEV__ = false; });
+vi.mock('../../components/giving/RideCreateSection', () => ({ RIDE_CREATE_DETAIL_KEYS: [] }));
+vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+vi.mock('../../store/authStore', () => ({ useAuthStore: Object.assign((selector: (s: { session: { userId: string } | null }) => unknown) => selector({ session: auth.current ? { userId: auth.current } : null }), { getState: () => ({ session: { accountCreatedAt: 'today' } }) }) }));
+vi.mock('../../services/marketplaceComposition', () => ({ marketplaceRepository: () => repo }));
+vi.mock('../../services/listingImageUpload', () => ({ uploadListingImages: upload }));
+vi.mock('../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: track, trackActivationIfFirst: activation }));
+vi.mock('../../lib/rides/rideStartDetails', () => ({ rememberRideRoute: remember }));
+vi.mock('../../services/rideSeriesComposition', () => ({ rideSeriesUseCases: { create: () => ({ execute: vi.fn() }) } }));
+import { useListingCreateForm } from '../useListingCreateForm';
+function wrapper({ children }: PropsWithChildren) { const client = new QueryClient({ defaultOptions: { queries: { retry: false } } }); return <QueryClientProvider client={client}>{children}</QueryClientProvider>; }
+const kind = { kindId: 'k1', slug: 'give_food', direction: 'give', detailSchema: { properties: { food_type: {}, expires_at: {} } } } as unknown as ListingKindOption;
+describe('useListingCreateForm', () => {
+  beforeEach(() => { vi.clearAllMocks(); auth.current = 'u1'; repo.listKindsForWorld.mockResolvedValue([kind]); repo.createListing.mockResolvedValue('l1'); });
+  it('reports title, required field, and city guards without publishing', async () => {
+    const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'food', direction: 'give', title: ' ', summary: '', onPublished: vi.fn() }), { wrapper });
+    await waitFor(() => expect(result.current.kind?.kindId).toBe('k1'));
+    await act(() => result.current.publish());
+    expect(result.current.error).toBe('post.unifiedCreate.errors.titleRequired');
+    result.current.setDetail('title', 'unused');
+    const validTitle = renderHook(() => useListingCreateForm({ worldSlug: 'food', direction: 'give', title: 'Bread', summary: '', onPublished: vi.fn() }), { wrapper });
+    await waitFor(() => expect(validTitle.result.current.kind).toBeTruthy());
+    await act(() => validTitle.result.current.publish());
+    expect(validTitle.result.current.error).toContain('fieldRequired');
+    act(() => { validTitle.result.current.setDetail('food_type', 'fresh'); validTitle.result.current.setDetail('expires_at', '2030-01-01'); });
+    await act(() => validTitle.result.current.publish());
+    expect(validTitle.result.current.error).toBe('post.unifiedCreate.errors.cityRequired');
+    expect(repo.createListing).not.toHaveBeenCalled();
+  });
+  it('publishes valid details and maps repository errors while releasing busy lock', async () => {
+    const onPublished = vi.fn();
+    const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'food', direction: 'give', title: ' Bread ', summary: ' fresh ', onPublished }), { wrapper });
+    await waitFor(() => expect(result.current.kind).toBeTruthy());
+    act(() => { result.current.setDetail('food_type', 'fresh'); result.current.setDetail('expires_at', '2030-01-01'); result.current.setCity({ id: 'city-1', name: 'Town' }); });
+    await act(() => result.current.publish());
+    expect(repo.createListing).toHaveBeenCalledWith({ kindId: 'k1', title: 'Bread', summary: 'fresh', details: { food_type: 'fresh', expires_at: '2030-01-01' }, direction: null, cityId: 'city-1', lat: null, lng: null, maxRadiusKm: 25, mediaPaths: [], externalBodyId: null, categoryId: null });
+    expect(onPublished).toHaveBeenCalledWith('l1');
+    expect(track).toHaveBeenCalledWith('listing_created', { world: 'food', cityId: 'city-1' });
+    expect(activation).toHaveBeenCalledWith({ world: 'food', cityId: 'city-1', accountCreatedAt: 'today' });
+    repo.createListing.mockRejectedValueOnce(new Error('offline'));
+    await act(() => result.current.publish());
+    expect(result.current.error).toBe('marketplace.errors.generic');
+    expect(result.current.busy).toBe(false);
+  });
+  it('does not publish while signed out', async () => {
+    auth.current = null;
+    const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'food', direction: 'give', title: 'Bread', summary: '', onPublished: vi.fn() }), { wrapper });
+    await waitFor(() => expect(result.current.kindsQuery.isSuccess).toBe(true));
+    expect(result.current.canPublish).toBe(false);
+    await act(() => result.current.publish());
+    expect(repo.createListing).not.toHaveBeenCalled();
+  });
+});

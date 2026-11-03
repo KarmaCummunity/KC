@@ -76,23 +76,6 @@
       "shadowLiteral": 3,
       "rawTextInput": 1
     },
-    "src/components/auth/AuthMiniAboutTeaser.tsx": {
-      "colorLiteral": 1,
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 3,
-      "radiusLiteral": 1,
-      "spacingLiteral": 1,
-      "shadowLiteral": 4,
-      "iconSizeLiteral": 2,
-      "unmirroredDirectionalIcon": 1
-    },
-    "src/components/auth/welcomeScreen.styles.ts": {
-      "colorLiteral": 7,
-      "fontSizeLiteral": 3,
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 3,
-      "shadowLiteral": 8
-    },
     "src/components/cards/KcCard.styles.ts": {
       "fontSizeLiteral": 3,
       "fontWeightLiteral": 1,
@@ -114,33 +97,6 @@
       "spacingLiteral": 1,
       "adHocChip": 1
     },
-    "src/components/chat/InboxChatRow.tsx": {
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 1,
-      "spacingLiteral": 1,
-      "physicalSide": 1,
-      "iconSizeLiteral": 1
-    },
-    "src/components/chat/system/AutoRemovedBubble.tsx": {
-      "fontSizeLiteral": 3,
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 1,
-      "spacingLiteral": 7
-    },
-    "src/components/chat/system/DonationLinkReportedBubble.tsx": {
-      "fontSizeLiteral": 2,
-      "fontWeightLiteral": 3,
-      "radiusLiteral": 2,
-      "spacingLiteral": 7,
-      "iconSizeLiteral": 1
-    },
-    "src/components/chat/system/ReportReceivedBubble.tsx": {
-      "fontSizeLiteral": 5,
-      "fontWeightLiteral": 4,
-      "radiusLiteral": 1,
-      "spacingLiteral": 10
-    },
     "src/components/legal/LegalConsentGate.tsx": {
       "radiusLiteral": 5,
       "physicalSide": 2,
@@ -161,14 +117,6 @@
     },
     "src/components/marketplace/listingChipStyles.ts": {
       "adHocChip": 1
-    },
-    "src/components/post-detail/RecipientCallout.tsx": {
-      "colorLiteral": 1,
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 1,
-      "spacingLiteral": 1,
-      "iconSizeLiteral": 2,
-      "unmirroredDirectionalIcon": 1
     },
     "src/components/post-detail/RecipientUnmarkBar.tsx": {
       "fontWeightLiteral": 1
@@ -216,28 +164,12 @@
       "radiusLiteral": 2,
       "spacingLiteral": 8
     },
-    "src/components/settings/appearanceParts.tsx": {
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 3,
-      "spacingLiteral": 2,
-      "iconSizeLiteral": 1
-    },
     "src/components/stats/ActivityTimelineList.tsx": {
       "radiusLiteral": 1,
       "iconSizeLiteral": 1
     },
     "src/components/ui/SectionHeading.tsx": {
       "fontSizeLiteral": 1
-    },
-    "src/components/warmPromptCardStyles.ts": {
-      "radiusLiteral": 1,
-      "shadowLiteral": 8
-    },
-    "src/features/about-landing/AboutAudienceSection.tsx": {
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 2,
-      "shadowLiteral": 8,
-      "iconSizeLiteral": 2
     },
     "src/features/about-landing/AboutHero.tsx": {
       "colorLiteral": 5,
@@ -261,16 +193,6 @@
       "rawModal": 1,
       "iconSizeLiteral": 3,
       "unmirroredDirectionalIcon": 1
-    },
-    "src/features/about-landing/AboutRoadmapTimeline.tsx": {
-      "fontSizeLiteral": 2,
-      "fontWeightLiteral": 5,
-      "spacingLiteral": 1,
-      "iconSizeLiteral": 1
-    },
-    "src/features/about-landing/AboutScopeToggle.tsx": {
-      "fontWeightLiteral": 1,
-      "shadowLiteral": 8
     },
     "src/features/about-landing/AboutSectionBlocksTop.tsx": {
       "fontWeightLiteral": 1,
