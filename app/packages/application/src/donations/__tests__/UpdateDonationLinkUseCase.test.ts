@@ -66,6 +66,44 @@ describe('UpdateDonationLinkUseCase', () => {
     ).rejects.toMatchObject({ code: 'invalid_url' });
   });
 
+  it('rejects display name that is too short or too long', async () => {
+    const repo = new FakeDonationLinksRepository();
+    const uc = new UpdateDonationLinkUseCase(repo);
+
+    await expect(
+      uc.execute({
+        linkId: 'id1',
+        categorySlug: 'food',
+        url: 'https://example.org',
+        displayName: ' ',
+      }),
+    ).rejects.toMatchObject({ code: 'invalid_input' });
+
+    await expect(
+      uc.execute({
+        linkId: 'id1',
+        categorySlug: 'food',
+        url: 'https://example.org',
+        displayName: 'a'.repeat(101),
+      }),
+    ).rejects.toMatchObject({ code: 'invalid_input' });
+  });
+
+  it('rejects description exceeding maximum allowed length', async () => {
+    const repo = new FakeDonationLinksRepository();
+    const uc = new UpdateDonationLinkUseCase(repo);
+
+    await expect(
+      uc.execute({
+        linkId: 'id1',
+        categorySlug: 'food',
+        url: 'https://example.org',
+        displayName: 'Example',
+        description: 'a'.repeat(301),
+      }),
+    ).rejects.toMatchObject({ code: 'invalid_input' });
+  });
+
   it('propagates repository errors', async () => {
     const repo = new FakeDonationLinksRepository();
     repo.updateError = new DonationLinkError('forbidden', 'not owner');
