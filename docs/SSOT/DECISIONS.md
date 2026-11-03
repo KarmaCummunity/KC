@@ -1694,7 +1694,7 @@ Owner rules that go with it:
 
 **Affected.** Store listings (#920), KC Pro paywall (#1088), support copy (#1036).
 
-## D-211 — Post and listing detail pages share one hero + content-card frame (2026-11-03)
+## {{ENG:detail-hero-frame}} — Post and listing detail pages share one hero + content-card frame (2026-11-03)
 
 **Decision.** The listing page (items, food, rides, knowledge) uses the same hero frame (`DetailHeroCard`, with the photo gallery or a placeholder icon) and the same content card as the post page. Each type keeps its own fields and actions (route card, handoff, booking, messaging).
 
@@ -1708,7 +1708,6 @@ Owner rules that go with it:
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
-| 4.39 | 2026-11-03 | Added `D-211` (post and listing detail pages share one hero + content-card frame). |
 | 4.38 | 2026-11-03 | Added `D-210` (store review on the Cloudflare Pages domain until a domain is bought; KC Pro free year then $30/$100 monthly; support mailbox). |
 | 4.37 | 2026-11-03 | Added `D-209` (one dependency audit over every lockfile; reviewed exceptions expire within 90 days; gate audits on dependency changes, daily schedule otherwise; #1373). |
 | 4.36 | 2026-11-02 | `D-195` addendum: an owner's approval is required for gate-weakening changes only into `main`; on `dev` the judges pass with warnings and the release PR surfaces the changes to the owner. |
