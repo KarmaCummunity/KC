@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { Platform } from 'react-native';
 import type { AdminAuditRow } from '@kc/domain';
-import { rowsToCsv } from '../auditCsvExport';
+import { rowsToCsv, isCsvExportSupported, downloadAuditCsv } from '../auditCsvExport';
 
 const BOM = '\ufeff';
 
@@ -84,5 +85,87 @@ describe('auditCsvExport.rowsToCsv', () => {
     // The HYPERLINK payload contains a comma, so after the quote prefix it is
     // also RFC-4180 quoted (embedded quotes doubled).
     expect(lines[4]).toContain(`"'=HYPERLINK(""http://evil"",""x"")"`);
+  });
+});
+
+describe('isCsvExportSupported', () => {
+  it('returns true only on web platform', () => {
+    Platform.OS = 'web';
+    expect(isCsvExportSupported()).toBe(true);
+
+    Platform.OS = 'ios';
+    expect(isCsvExportSupported()).toBe(false);
+
+    Platform.OS = 'android';
+    expect(isCsvExportSupported()).toBe(false);
+  });
+});
+
+describe('downloadAuditCsv', () => {
+  const originalWindow = globalThis.window;
+  const originalDocument = globalThis.document;
+
+  beforeEach(() => {
+    Platform.OS = 'web';
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    globalThis.window = originalWindow;
+    globalThis.document = originalDocument;
+  });
+
+  it('returns false when platform is not web', () => {
+    Platform.OS = 'ios';
+    expect(downloadAuditCsv([row()], 'audit.csv')).toBe(false);
+  });
+
+  it('returns false when window or document is undefined on web', () => {
+    Platform.OS = 'web';
+    // @ts-expect-error simulating non-browser
+    delete globalThis.window;
+    // @ts-expect-error simulating non-browser
+    delete globalThis.document;
+
+    expect(downloadAuditCsv([row()], 'audit.csv')).toBe(false);
+  });
+
+  it('triggers browser download link and revokes object URL on web', () => {
+    Platform.OS = 'web';
+
+    const mockCreateObjectURL = vi.fn().mockReturnValue('blob:http://localhost/mock-uuid');
+    const mockRevokeObjectURL = vi.fn();
+    globalThis.URL.createObjectURL = mockCreateObjectURL;
+    globalThis.URL.revokeObjectURL = mockRevokeObjectURL;
+
+    const mockClick = vi.fn();
+    const mockAppendChild = vi.fn();
+    const mockRemoveChild = vi.fn();
+    const mockAnchor = {
+      href: '',
+      download: '',
+      style: { display: '' },
+      click: mockClick,
+    };
+
+    globalThis.window = {} as unknown as Window & typeof globalThis;
+    globalThis.document = {
+      body: {
+        appendChild: mockAppendChild,
+        removeChild: mockRemoveChild,
+      },
+      createElement: vi.fn((tagName: string) => {
+        if (tagName === 'a') return mockAnchor;
+        return {};
+      }),
+    } as unknown as Document;
+
+    const success = downloadAuditCsv([row()], 'audit.csv');
+
+    expect(success).toBe(true);
+    expect(mockCreateObjectURL).toHaveBeenCalledTimes(1);
+    expect(mockClick).toHaveBeenCalledTimes(1);
+    expect(mockAppendChild).toHaveBeenCalledWith(mockAnchor);
+    expect(mockRemoveChild).toHaveBeenCalledWith(mockAnchor);
   });
 });
