@@ -15,6 +15,7 @@ export function AgeConfirmationCheckbox({ checked, onToggle }: AgeConfirmationCh
   const { colors } = useTheme();
   return (
     <Pressable
+      testID="legal-consent-age-checkbox"
       accessibilityRole="checkbox"
       accessibilityState={{ checked }}
       accessibilityLabel={t('legal.checkboxAge18')}
