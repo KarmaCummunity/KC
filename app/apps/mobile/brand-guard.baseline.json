@@ -93,13 +93,6 @@
       "spacingLiteral": 1,
       "iconSizeLiteral": 2
     },
-    "src/components/ChatBadge.tsx": {
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 1,
-      "spacingLiteral": 2,
-      "iconSizeLiteral": 1
-    },
     "src/components/CreatePostForm/CreatePostExposureSection.tsx": {
       "iconSizeLiteral": 1
     },
@@ -139,11 +132,6 @@
     "src/components/EditProfileAvatar.tsx": {
       "colorLiteral": 1,
       "radiusLiteral": 1
-    },
-    "src/components/EphemeralToast.tsx": {
-      "fontWeightLiteral": 1,
-      "zIndexLiteral": 1,
-      "shadowLiteral": 4
     },
     "src/components/FeedEmptyState.tsx": {
       "fontWeightLiteral": 1,
@@ -310,12 +298,6 @@
       "spacingLiteral": 5,
       "iconSizeLiteral": 1,
       "unmirroredDirectionalIcon": 1
-    },
-    "src/components/closure/RecipientPickerRow.tsx": {
-      "fontSizeLiteral": 3,
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 3,
-      "spacingLiteral": 4
     },
     "src/components/giving/worldHubStyles.ts": {
       "fontWeightLiteral": 1,
