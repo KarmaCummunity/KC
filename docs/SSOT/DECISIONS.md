@@ -1779,7 +1779,7 @@ Owner rules that go with it:
 | 1.7 | 2026-05-16 | Added `D-26` (Post visibility vs per-actor identity on posts; `FR-POST-021`) and `D-27` (About copy: transparency vs optional anonymity). |
 | 1.8 | 2026-05-16 | Added `D-28` (per-participant `surface_visibility` for closed posts; supersedes `D-19`'s third-party visibility clause in part and refines `D-26`; rewrites `FR-POST-021`; migration `0085`). |
 
-## {{ENG:one-world-list-hub}} — One world registry drives the hub, the create form and the "+" button (2026-11-03)
+## D-211 — One world registry drives the hub, the create form and the "+" button (2026-11-03)
 
 **Decision.** `GIVING_WORLD_SLUGS` (`@kc/domain`) is the single list of the 12 giving worlds of `D100`; `FEED_WORLD_SLUGS` marks the five with a feed and an in-app form (items, food, rides, time, housing). The Donations hub tiles (`donationsHubTiles`), the create-form categories (`CREATE_CATEGORIES`) and the main-feed world filter are all derived from them. A create category has one of three engines: `post` (items), `listing` (the feed worlds) or `link` (every other world: the form is "add a link", written through `AddDonationLinkUseCase` to the world's `donation_categories` row, reviewed per `D9`). Remembered create preferences are `{ categoryId, directions }` — the direction (give / request) is stored per category, and the first-release `{ categoryId, direction }` value is migrated on read. The tab-bar "+" asks `createCategoryForPath(pathname)` and opens the form on the world on screen. Migration `0548` widens the `donation_categories` slug CHECK (and the `validate-donation-link` allow-list) with `democracy`, `employment` and `challenges`.
 

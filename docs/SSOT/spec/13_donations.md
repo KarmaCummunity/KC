@@ -1,6 +1,6 @@
 # 2.13 Donations Hub
 
-> **Status:** ✅ Core Complete — Hub, 6 categories, donation links, Edge Function shipped. ⚠️ Audit 2026-05-16: ✅ **`validate-donation-link` SSRF closed** — port allow-list, private / loopback / metadata hosts, IPv4-mapped IPv6 (dotted and hex form), a DNS-resolution check (`dnsGuard.ts`, #1234), all re-validated on every manual redirect hop (TD-79). Residual lookup-vs-fetch race: {{TD:ssrf-guard-ip-pinning}}. 🟠 FR-DONATE-003 AC2 missing jgive CTA; FR-DONATE-001/006 layout is 2-col grid instead of vertical stacked with divider; FR-DONATE-008 AC3 reachability rule diverged (`!= 404` instead of `200..399`); error-code parity gaps. TD-97. See `docs/SSOT/archive/audit/2026-05-16/06_donations_stats_settings.md`.
+> **Status:** ✅ Core Complete — Hub, 6 categories, donation links, Edge Function shipped. ⚠️ Audit 2026-05-16: ✅ **`validate-donation-link` SSRF closed** — port allow-list, private / loopback / metadata hosts, IPv4-mapped IPv6 (dotted and hex form), a DNS-resolution check (`dnsGuard.ts`, #1234), all re-validated on every manual redirect hop (TD-79). Residual lookup-vs-fetch race: TD-265. 🟠 FR-DONATE-003 AC2 missing jgive CTA; FR-DONATE-001/006 layout is 2-col grid instead of vertical stacked with divider; FR-DONATE-008 AC3 reachability rule diverged (`!= 404` instead of `200..399`); error-code parity gaps. TD-97. See `docs/SSOT/archive/audit/2026-05-16/06_donations_stats_settings.md`.
 >
 > **Money hub (2026-10-30):** `FR-DONATE-011` ✅ — direct support for KC (one-time via Bit / PayBox / card page, monthly standing order via a hosted card page) with a donor legal notice; channel URLs are server config (`kc_support_channels`, migration `0447`). `FR-DONATE-003` jgive CTA and community links restored; the sandbox in-app org flow (#850) is hidden behind `money_in_app_org_payments` (default off). Payment confirmation + karma (D20 "receives confirmation", 07.6) remain open — G8.
 >
@@ -32,7 +32,7 @@ The Donations tab opens to a Hub screen with ONE list of tiles, one per giving w
 
 **Source.**
 - Design spec: [`docs/SSOT/archive/superpowers/specs/2026-05-09-donations-and-search-tabs-design.md`](../../archive/superpowers/specs/2026-05-09-donations-and-search-tabs-design.md) (original three-tile hub, superseded).
-- Decisions: `D-16`, `D100`, `{{D:worlds-hub-and-create-ux}}`; product book `docs/spec/04_product_structure.md`.
+- Decisions: `D-16`, `D100`, `D107`; product book `docs/spec/04_product_structure.md`.
 
 **Acceptance Criteria.**
 - AC1. *(D100)* Tiles appear in the order of `GIVING_WORLD_SLUGS`: חפצים, אוכל, תחבורה, זמן, כסף, דיור, ידע, רפואה, בעלי חיים, דמוקרטיה, תעסוקה, אתגרים — in one 2-column grid under one heading, all tiles looking alike (no featured tile). The retired domains and the experiences world have no tile and no screen, and no redirect.
