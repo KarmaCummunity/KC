@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { LegalDocumentContent, LegalPendingItem } from '@kc/domain';
-import { typography, spacing, useTheme, Text } from '@kc/ui';
+import { typography, spacing, useTheme, Text, radius } from '@kc/ui';
 import { getLoadLegalDocumentUseCase } from '../../services/legalComposition';
 import { rowDirectionStart } from '../../lib/rtlLayout';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
@@ -50,7 +50,7 @@ export function LegalConsentCard({ item, checked, onToggle, onOpenReader }: Lega
     <View
       style={{
         backgroundColor: colors.surfaceRaised,
-        borderRadius: 12,
+        borderRadius: radius.md,
         padding: spacing.md,
         marginBottom: spacing.md,
       }}
@@ -119,7 +119,7 @@ export function LegalConsentCard({ item, checked, onToggle, onOpenReader }: Lega
           style={{
             width: 22,
             height: 22,
-            borderRadius: 4,
+            borderRadius: radius.xs,
             borderWidth: 2,
             borderColor: colors.primary,
             backgroundColor: checked ? colors.primary : 'transparent',

@@ -6,7 +6,7 @@ import React from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, useTheme, Text, iconSize } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { useKcStandingOrderCancelRequest } from '../../hooks/useKcStandingOrderCancelRequest';
 
@@ -36,7 +36,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
     alignItems: 'center' as const,
     gap: spacing.xs,
   },
-  cancelText: { ...typography.body, color: colors.primary, fontWeight: '600' as const },
+  cancelText: { ...typography.body, color: colors.primary, ...typography.semiBold },
   error: { ...typography.bodySmall, color: colors.error, textAlign: rtlTextAlignStart },
 }));
 
@@ -75,7 +75,7 @@ export function SupportKcDisclosure({ hasStandingOrder }: { readonly hasStanding
       <Text style={styles.title} accessibilityRole="header">{t('supportKc.disclosureTitle')}</Text>
       {lines.map(({ key, icon }) => (
         <View key={key} style={styles.line}>
-          <Ionicons name={icon} size={16} color={colors.textSecondary} />
+          <Ionicons name={icon} size={iconSize.sm} color={colors.textSecondary} />
           <Text style={styles.lineText}>{t(`supportKc.${key}`)}</Text>
         </View>
       ))}

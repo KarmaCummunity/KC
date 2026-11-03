@@ -7,28 +7,8 @@
     "app/(tabs)/donations/money/history.tsx": {
       "spacingLiteral": 1
     },
-    "app/(tabs)/donations/money/receipt/[paymentId].tsx": {
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 1
-    },
-    "app/(tabs)/donations/money/standing-orders.tsx": {
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 1
-    },
     "app/(tabs)/donations/time/my-shifts.tsx": {
       "fontWeightLiteral": 1
-    },
-    "app/(tabs)/donations/time/shift/[shiftId]/volunteers.tsx": {
-      "radiusLiteral": 1,
-      "spacingLiteral": 1
-    },
-    "app/(tabs)/profile/hidden.tsx": {
-      "radiusLiteral": 1,
-      "iconSizeLiteral": 1
-    },
-    "app/(tabs)/profile/saved.tsx": {
-      "radiusLiteral": 1,
-      "iconSizeLiteral": 1
     },
     "app/chat/[id].tsx": {
       "physicalSide": 1
@@ -40,9 +20,6 @@
     },
     "app/edit-post/[id].tsx": {
       "iconSizeLiteral": 1
-    },
-    "app/follow/suggestions.tsx": {
-      "radiusLiteral": 2
     },
     "app/karma-history.tsx": {
       "fontWeightLiteral": 3,
@@ -80,14 +57,6 @@
       "adHocChip": 1,
       "iconSizeLiteral": 4,
       "unmirroredDirectionalIcon": 2
-    },
-    "app/settings/whatsapp.tsx": {
-      "radiusLiteral": 2
-    },
-    "app/stats.tsx": {
-      "spacingLiteral": 1,
-      "iconSizeLiteral": 1,
-      "unmirroredDirectionalIcon": 1
     },
     "app/user/[handle]/index.tsx": {
       "spacingLiteral": 1,
@@ -243,10 +212,6 @@
       "fontWeightLiteral": 3,
       "spacingLiteral": 3
     },
-    "src/components/cards/KcRowCard.tsx": {
-      "iconSizeLiteral": 2,
-      "unmirroredDirectionalIcon": 1
-    },
     "src/components/cards/PostDetailHeader.tsx": {
       "fontSizeLiteral": 1,
       "fontWeightLiteral": 1,
@@ -271,10 +236,6 @@
       "spacingLiteral": 1,
       "physicalSide": 1,
       "iconSizeLiteral": 1
-    },
-    "src/components/chat/chatConversationHeader.styles.ts": {
-      "zIndexLiteral": 1,
-      "shadowLiteral": 1
     },
     "src/components/chat/system/AutoRemovedBubble.tsx": {
       "fontSizeLiteral": 3,
@@ -317,14 +278,6 @@
       "radiusLiteral": 3,
       "spacingLiteral": 4
     },
-    "src/components/giving/worldHubStyles.ts": {
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 1,
-      "spacingLiteral": 1
-    },
-    "src/components/legal/LegalConsentCard.tsx": {
-      "radiusLiteral": 2
-    },
     "src/components/legal/LegalConsentGate.tsx": {
       "radiusLiteral": 5,
       "physicalSide": 2,
@@ -332,11 +285,6 @@
     },
     "src/components/legal/LegalDocumentReader.tsx": {
       "radiusLiteral": 1
-    },
-    "src/components/legal/LegalMarkdownStyles.ts": {
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 1,
-      "physicalSide": 1
     },
     "src/components/legal/legalMarkdownRules.tsx": {
       "radiusLiteral": 1,
@@ -354,18 +302,10 @@
     "src/components/marketplace/listingChipStyles.ts": {
       "adHocChip": 1
     },
-    "src/components/money/CampaignProgressBar.tsx": {
-      "radiusLiteral": 2,
-      "spacingLiteral": 1
-    },
     "src/components/money/ExternalDonationNotice.tsx": {
       "radiusLiteral": 1
     },
     "src/components/money/SupportKcCard.tsx": {
-      "iconSizeLiteral": 1
-    },
-    "src/components/money/SupportKcDisclosure.tsx": {
-      "fontWeightLiteral": 1,
       "iconSizeLiteral": 1
     },
     "src/components/money/VerifiedNonprofitsSection.tsx": {
@@ -391,23 +331,12 @@
     "src/components/post-detail/RecipientUnmarkBar.tsx": {
       "fontWeightLiteral": 1
     },
-    "src/components/post/CounterpartyIdentityCard.tsx": {
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 1
-    },
     "src/components/post/EditPostExposureSection.tsx": {
       "fontSizeLiteral": 1
     },
     "src/components/post/EditPostFormScrollContent.tsx": {
       "physicalSide": 4,
       "rawTextInput": 4
-    },
-    "src/components/post/ExpiredRepublishView.tsx": {
-      "iconSizeLiteral": 2
-    },
-    "src/components/post/PostMenuButton.tsx": {
-      "spacingLiteral": 2,
-      "iconSizeLiteral": 1
     },
     "src/components/post/PostMenuExposureBlock.tsx": {
       "fontSizeLiteral": 1
@@ -434,10 +363,6 @@
       "fontSizeLiteral": 1,
       "fontWeightLiteral": 1,
       "radiusLiteral": 1
-    },
-    "src/components/profile/ProfileHeader.tsx": {
-      "spacingLiteral": 1,
-      "iconSizeLiteral": 1
     },
     "src/components/profile/ProfileStatsRow.tsx": {
       "spacingLiteral": 1
@@ -500,10 +425,6 @@
       "spacingLiteral": 1,
       "iconSizeLiteral": 1
     },
-    "src/components/skeletons/InboxListSkeleton.tsx": {
-      "spacingLiteral": 1,
-      "physicalSide": 1
-    },
     "src/components/skeletons/PostGridSkeleton.tsx": {
       "spacingLiteral": 1
     },
@@ -518,19 +439,11 @@
       "iconSizeLiteral": 2,
       "unmirroredDirectionalIcon": 2
     },
-    "src/components/survey/SurveyPromptBanner.tsx": {
-      "fontWeightLiteral": 2,
-      "spacingLiteral": 1
-    },
     "src/components/survey/SurveyRatingRow.tsx": {
       "fontWeightLiteral": 1
     },
     "src/components/ui/Card.tsx": {
       "shadowLiteral": 4
-    },
-    "src/components/ui/FormFieldLabel.tsx": {
-      "fontSizeLiteral": 1,
-      "spacingLiteral": 1
     },
     "src/components/ui/SectionHeading.tsx": {
       "fontSizeLiteral": 1
@@ -554,13 +467,6 @@
       "radiusLiteral": 1,
       "spacingLiteral": 1,
       "iconSizeLiteral": 1
-    },
-    "src/features/about-landing/AboutFaqAccordion.tsx": {
-      "fontWeightLiteral": 1,
-      "iconSizeLiteral": 1
-    },
-    "src/features/about-landing/AboutGovernanceSection.tsx": {
-      "fontWeightLiteral": 3
     },
     "src/features/about-landing/AboutHero.tsx": {
       "colorLiteral": 5,
@@ -603,9 +509,6 @@
       "fontWeightLiteral": 1,
       "shadowLiteral": 8
     },
-    "src/features/about-landing/AboutScopedSection.tsx": {
-      "fontWeightLiteral": 2
-    },
     "src/features/about-landing/AboutSectionBlocksBottom.tsx": {
       "shadowLiteral": 4
     },
@@ -627,14 +530,6 @@
     "src/features/about-landing/AboutVisionSection.tsx": {
       "fontWeightLiteral": 4,
       "iconSizeLiteral": 1
-    },
-    "src/navigation/nativeHeaderIconOnly.tsx": {
-      "spacingLiteral": 1,
-      "iconSizeLiteral": 1
-    },
-    "src/screens/chat/chatScreenStyles.ts": {
-      "radiusLiteral": 2,
-      "physicalSide": 1
     },
     "src/screens/edit-post/editPostScreen.styles.ts": {
       "radiusLiteral": 2,
