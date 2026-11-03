@@ -5,5 +5,9 @@ name: Auth — email sign-in reaches the feed
 tags: [auth, smoke]
 ---
 - runFlow: ../subflows/sign-in.yaml
+- extendedWaitUntil:
+    visible:
+      id: feed-screen
+    timeout: 90000
 - assertVisible:
     id: shell-tab-bar

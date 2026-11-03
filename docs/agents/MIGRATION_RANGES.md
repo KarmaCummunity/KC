@@ -92,6 +92,7 @@ Last applied on kc-dev when this was written: `0239`.
 | 0534 | #880 server-side write rate limits: listings, giving handoffs, follows | in progress |
 | 0535 | #1468 knowledge world subcategories | in progress |
 | 0536 | FK and hot-path indexes | in progress |
+| 0537 | RPC input bounds | in progress |
 | 0538 | RLS auth initplan | in progress |
 | 0539+ | — | free |
 

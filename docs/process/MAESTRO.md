@@ -31,9 +31,15 @@ Tracking issue: KC#1235. Workflow: [`ci-maestro-android.yml`](../../.github/work
 3. `scripts/maestro-run-android.sh` installs the APK on an API 34 emulator and runs each flow on its own, screen-recording it.
 4. Artifacts (`maestro-android`): JUnit per flow, Maestro debug output (screenshots, logs), and a video **only for failed flows**.
 
-Known emulator quirks the job handles:
+Known emulator quirks and CI flakes the job handles:
 - The release lint step needs more than the template's 512 MB Metaspace; the workflow raises the Gradle daemon to `-Xmx4096m -XX:MaxMetaspaceSize=1536m` after prebuild.
-- A cold-booted emulator can show a system "Pixel Launcher isn't responding" dialog over the app. The runner sets `hide_error_dialogs`, and `dismiss-gates.yaml` taps "Wait" if one still appears. If every flow fails on its first assertion, check the failure video for a system dialog before suspecting the app.
+- Transient Gradle build failures: occasionally `assembleRelease` fails due to daemon Metaspace or lock contention on cold runners. The workflow adds an automatic single retry step (`if: steps.build-apk.outcome == 'failure'`) that stops the daemon (`./gradlew --stop`) and retries the build cleanly. Both Gradle caches (`setup-gradle`) and emulator AVD snapshot caches (`actions/cache` on `~/.android/avd/*` with `force-avd-creation: false`) are active.
+- A cold-booted emulator can show a system "Pixel Launcher isn't responding" dialog over the app. The runner sets `hide_error_dialogs`, and `dismiss-gates.yaml` taps "Wait" if one still appears.
+- First-launch interstitials and consent gates: signing in on a fresh install or when documents/onboarding update can present blocking interstitials before `feed-screen` mounts:
+  1. The server-driven legal consent modal + required 18+ age checkbox (#1450), where the continue button stays disabled until all terms and age checkboxes are checked.
+  2. Multi-step onboarding flows (`(onboarding)/...`).
+  3. System (Android 13+ / API 33+) or in-app push notification permission dialogs.
+  Previously, these caused `extendedWaitUntil: visible: id: feed-screen` to fail after ~1m24s across all flows. Now, `.maestro/subflows/dismiss-gates.yaml` conditionally checks and taps the exact testIDs (`legal-consent-terms-checkbox`, `legal-consent-privacy-checkbox`, `legal-consent-age-checkbox`, `legal-consent-submit`, `onboarding-skip`, `push-gate-decline`) and text fallbacks. The shared `.maestro/subflows/sign-in.yaml` waits for auth submission to transition, loops `dismiss-gates` while `feed-screen` is not visible, and uses generous timeouts (60–90s) without hiding real failures.
 
 The check is **not required** for merge yet. Make it required (issue AC6) after it has been green for a week of PRs.
 

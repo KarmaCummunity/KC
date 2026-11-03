@@ -1,13 +1,89 @@
-# Dismisses first-launch gates (consent / intro dialogs) when they appear; no-op otherwise.
+# Dismisses first-launch gates (consent / intro dialogs, 18+ age checkbox, onboarding,
+# notification permission prompts) when they appear; no-op otherwise.
 # Also answers a system "<app> isn't responding" dialog from the emulator (not from KC) with
 # "Wait", so it cannot cover the app; the runner already suppresses most of them.
 appId: org.karmacommunity.app
 ---
+# 1. Emulator system ANR dialog
 - runFlow:
     when:
       visible: "isn't responding"
     commands:
       - tapOn: "Wait"
+
+# 2. Android system notification permission dialog (Android 13+ / API 33+)
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+- runFlow:
+    when:
+      visible: "התר"
+    commands:
+      - tapOn: "התר"
+
+# 3. In-app push notification pre-prompt modal
+- runFlow:
+    when:
+      visible:
+        id: push-gate-decline
+    commands:
+      - tapOn:
+          id: push-gate-decline
+
+# 4. Legal consent screen + required 18+ age checkbox (#1450)
+- runFlow:
+    when:
+      visible:
+        id: legal-consent-terms-checkbox
+    commands:
+      - tapOn:
+          id: legal-consent-terms-checkbox
+- runFlow:
+    when:
+      visible:
+        id: legal-consent-privacy-checkbox
+    commands:
+      - tapOn:
+          id: legal-consent-privacy-checkbox
+- runFlow:
+    when:
+      visible:
+        id: legal-consent-age-checkbox
+    commands:
+      - tapOn:
+          id: legal-consent-age-checkbox
+- runFlow:
+    when:
+      visible:
+        id: legal-consent-submit
+    commands:
+      - tapOn:
+          id: legal-consent-submit
+
+# 5. Non-blocking legal update sheet
+- runFlow:
+    when:
+      visible: "אישור עכשיו"
+    commands:
+      - tapOn: "אישור עכשיו"
+
+# 6. Onboarding screens (steps 1–4)
+- runFlow:
+    when:
+      visible:
+        id: onboarding-skip
+    commands:
+      - tapOn:
+          id: onboarding-skip
+- runFlow:
+    when:
+      visible: "דילוג"
+    commands:
+      - tapOn: "דילוג"
+
+# 7. Generic legacy dismiss actions
 - runFlow:
     when:
       visible: "המשך"

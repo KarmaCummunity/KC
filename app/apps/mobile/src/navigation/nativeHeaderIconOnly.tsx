@@ -4,7 +4,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Platform, Pressable } from 'react-native';
 import type { ReactElement } from 'react';
-import { useTheme } from '@kc/ui';
+import { useTheme, iconSize, spacing } from '@kc/ui';
 
 function AndroidOverflowIcon({ options }: { options: { a11yLabel: string; onPress: () => void; iconColor?: string } }) {
   const { colors } = useTheme();
@@ -16,9 +16,9 @@ function AndroidOverflowIcon({ options }: { options: { a11yLabel: string; onPres
       onPress={options.onPress}
       hitSlop={8}
       android_ripple={null}
-      style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1, padding: 4 }]}
+      style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1, padding: spacing.xs }]}
     >
-      <Ionicons name="ellipsis-vertical" size={22} color={iconColor} />
+      <Ionicons name="ellipsis-vertical" size={iconSize.xl} color={iconColor} />
     </Pressable>
   );
 }

@@ -7,7 +7,7 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { colors, radius, spacing, typography, Text } from '@kc/ui';
+import { colors, radius, spacing, typography, Text, iconSize } from '@kc/ui';
 import { isPostError, type PostErrorCode } from '@kc/application';
 import { getRepublishPostUseCase } from '../../services/postsComposition';
 import { ConfirmActionModal } from './ConfirmActionModal';
@@ -76,7 +76,11 @@ export function ExpiredRepublishView({ postId, viewerId, onRepublished }: Expire
   return (
     <View style={styles.container}>
       <View style={styles.iconWrap}>
-        <Ionicons name="time-outline" size={56} color={colors.textSecondary} />
+        <Ionicons
+          name="time-outline"
+          size={56} // brand-guard-allow: empty-state hero glyph, above the icon scale
+          color={colors.textSecondary}
+        />
       </View>
       <Text style={styles.title}>{t('post.editPost.notEditableTitle')}</Text>
       <Text style={styles.body}>{t('post.editPost.notEditableExpired')}</Text>
@@ -86,7 +90,7 @@ export function ExpiredRepublishView({ postId, viewerId, onRepublished }: Expire
         accessibilityRole="button"
         accessibilityLabel={t('post.editPost.republishCta')}
       >
-        <Ionicons name="refresh-outline" size={18} color={colors.surface} />
+        <Ionicons name="refresh-outline" size={iconSize.md} color={colors.surface} />
         <Text style={styles.ctaText}>{t('post.editPost.republishCta')}</Text>
       </TouchableOpacity>
 

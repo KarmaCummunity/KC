@@ -103,8 +103,8 @@ const useAboutScopedSectionStyles = makeUseStyles(({ colors }) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeNum: { ...typography.caption, color: colors.secondary, fontWeight: '800' },
+  badgeNum: { ...typography.caption, color: colors.secondary, ...typography.extraBold },
   copy: { flex: 1, gap: spacing.xs },
-  title: { ...typography.body, color: colors.textPrimary, ...aboutRtlText, fontWeight: '700' },
+  title: { ...typography.body, color: colors.textPrimary, ...aboutRtlText, ...typography.bold },
   body: { ...typography.body, color: colors.textSecondary, ...aboutRtlText, lineHeight: 22 },
 }));
