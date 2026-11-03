@@ -9107,6 +9107,10 @@ export type Database = {
         Args: { p_message_id: string }
         Returns: undefined
       }
+      admin_demo_data_status: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       admin_dismiss_report: {
         Args: { p_report_id: string }
         Returns: undefined
@@ -9411,6 +9415,10 @@ export type Database = {
       }
       admin_user_feedback_list: {
         Args: { p_limit?: number; p_offset?: number }
+        Returns: Json
+      }
+      admin_wipe_demo_data: {
+        Args: Record<PropertyKey, never>
         Returns: Json
       }
       admin_world_flow_funnel: {

@@ -1,0 +1,45 @@
+import { describe, it, expect, vi } from 'vitest';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import {
+  SupabaseDemoDataRepository, mapDemoDataStatus, mapDemoDataWipeResult,
+} from '../SupabaseDemoDataRepository';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+function repo(result: { data: unknown; error: { message: string } | null }) {
+  const rpc = vi.fn(async () => result);
+  return { rpc, r: new SupabaseDemoDataRepository({ rpc } as unknown as SupabaseClient<any>) };
+}
+
+describe('demo data mappers', () => {
+  it('maps status counts and defaults missing keys to 0', () => {
+    expect(mapDemoDataStatus({ demo_users: 200, demo_organizations: 3 })).toEqual({ demoUsers: 200, demoOrganizations: 3 });
+    expect(mapDemoDataStatus(null)).toEqual({ demoUsers: 0, demoOrganizations: 0 });
+  });
+
+  it('maps wipe counts including kept organizations', () => {
+    expect(mapDemoDataWipeResult({ users_deleted: 200, organizations_deleted: 2, organizations_kept: 1 }))
+      .toEqual({ usersDeleted: 200, organizationsDeleted: 2, organizationsKept: 1 });
+    expect(mapDemoDataWipeResult(undefined)).toEqual({ usersDeleted: 0, organizationsDeleted: 0, organizationsKept: 0 });
+  });
+});
+
+describe('SupabaseDemoDataRepository', () => {
+  it('getStatus calls admin_demo_data_status', async () => {
+    const { rpc, r } = repo({ data: { demo_users: 5, demo_organizations: 1 }, error: null });
+    await expect(r.getStatus()).resolves.toEqual({ demoUsers: 5, demoOrganizations: 1 });
+    expect(rpc).toHaveBeenCalledWith('admin_demo_data_status');
+  });
+
+  it('wipe calls admin_wipe_demo_data', async () => {
+    const { rpc, r } = repo({ data: { users_deleted: 5, organizations_deleted: 1, organizations_kept: 0 }, error: null });
+    await expect(r.wipe()).resolves.toMatchObject({ usersDeleted: 5 });
+    expect(rpc).toHaveBeenCalledWith('admin_wipe_demo_data');
+  });
+
+  it('surfaces RPC errors', async () => {
+    const { r } = repo({ data: null, error: { message: 'forbidden' } });
+    await expect(r.getStatus()).rejects.toThrow('getDemoDataStatus: forbidden');
+    await expect(r.wipe()).rejects.toThrow('wipeDemoData: forbidden');
+  });
+});
