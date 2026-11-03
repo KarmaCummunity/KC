@@ -398,7 +398,7 @@ Shared behaviour:
 
 ## Lean first slice (FIN-P0) — shipped 2026-11-03
 
-PM request (2026-11-03): start recording real donations and expenses simply, keep it modular so it can deepen later, and show it nicely on the organization page and in statistics. PM ruled that public numbers are **live** (not yearly snapshots) as long as the organization controls privacy ({{D:finance-live-transparency}}, engineering `{{ENG:finance-live-transparency}}`). FIN-P0 builds on the `0170` ledger and is forward-compatible with Phase 1: every column and table below uses the Phase 1 names.
+PM request (2026-11-03): start recording real donations and expenses simply, keep it modular so it can deepen later, and show it nicely on the organization page and in statistics. PM ruled that public numbers are **live** (not yearly snapshots) as long as the organization controls privacy (D111, engineering `D-213`). FIN-P0 builds on the `0170` ledger and is forward-compatible with Phase 1: every column and table below uses the Phase 1 names.
 
 **What FIN-P0 delivers of the Phase 1 acceptance criteria (the rest stays in `FIN-P1`):**
 

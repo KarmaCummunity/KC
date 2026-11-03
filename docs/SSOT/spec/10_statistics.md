@@ -181,7 +181,7 @@ An organization's profile shows its public impact numbers; its team sees the ful
 ## FR-STATS-010 — Public financial transparency
 
 **Description.**
-When the organization chooses to publish them, its finances appear live on the statistics screen and in the About "numbers" card (`FR-FIN-022`, {{D:finance-live-transparency}}).
+When the organization chooses to publish them, its finances appear live on the statistics screen and in the About "numbers" card (`FR-FIN-022`, D111).
 
 **Acceptance Criteria.**
 - AC1. `OrgTransparencySection` renders directly below the community panel on `/stats`; it renders nothing unless a super admin switched at least one block on and that block has data.
