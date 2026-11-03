@@ -185,7 +185,7 @@ begin
     format($q$select public.create_marketplace_listing(
         p_kind_id => kc_test.listing_kind_id('food', 'give_food'), p_title => 'soup',
         p_details => '{"food_type":"cooked"}'::jsonb, p_city_id => 'tel-aviv')$q$),
-    'details_schema_mismatch', 'a food offer still needs its expiry (schema) before anything is written');
+    'food_expiry_required', 'the food world rule (D21, 0539) still refuses an offer without an expiry through the post path');
   perform kc_test.assert_row_count(
     format('select 1 from public.posts where owner_id = %L', p.cook), 0, 'a refused create leaves no post behind');
 end $$;
