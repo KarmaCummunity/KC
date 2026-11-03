@@ -16,6 +16,7 @@
 
 | ID | Task | Owner | Status | Spec |
 |----|------|-------|--------|------|
+| FR-CHALLENGE-001 | Challenges world — personal and community challenges, per-cycle reports, streaks, leaderboard, karma (G26) | agent-fullstack | 🟡 In progress | `spec/10_challenges.md`, `docs/spec/10_challenges.md` |
 | P1.7 | FR-RESEARCH-001..003 — Public market research form | agent-be + agent-fe | 🟡 In progress (post-merge QA) | `spec/16_public_research.md` |
 | P1.8 | FR-RESEARCH-004 — Share affordance for public research survey | agent-fe | 🟡 Code complete, post-merge QA pending | `spec/16_public_research.md` |
 | INFRA-QA-W1 | Playwright P0 E2E gate on dev + release (release lane `ci-release.yml`, `tests/e2e/`) | infra | 🟡 In progress | Wave 1 |
