@@ -1,6 +1,6 @@
 # 2.19 Organization Finance & Transparency
 
-> **Status:** ⏳ Planned — spec v0.1 (2026-10-30, PM-approved scope). No `FR-FIN-*` code shipped yet. **Phase 1** `FR-FIN-001..011` (org-scoped ledger, roles, accounts, categories, attachments, Section 46(a) tracking, receipt tracking, payment mirroring, exports, portal sub-tree). **Phase 2** `FR-FIN-012..017` (CSV import, bank reconciliation, reports, budgets, smart alerts, overview dashboard). **Phase 3** `FR-FIN-018..021` (documents vault, transparency snapshots, public transparency section, donor-side receipt view). Supersedes the minimal `V2-ADMIN-MONEY-9` ledger at `/admin/money` (migration `0170_finance_ledger.sql`), which is the migration baseline for Phase 1.
+> **Status:** 🟡 In progress — spec v0.2. **FIN-P0 (lean first slice) shipped 2026-11-03** (migration `0470`): financial accounts with balances (`FR-FIN-003`), account + public-visibility columns on ledger entries, default category keys, an admin donors overview (`FR-FIN-023`) and **live public transparency controlled by the organization** (`FR-FIN-022`, shown on About and Statistics), plus the missing `/admin/money` nav entry. Everything else below is still ⏳ Planned. **Phase 1** `FR-FIN-001..011` (org-scoped ledger, roles, accounts, categories, attachments, Section 46(a) tracking, receipt tracking, payment mirroring, exports, portal sub-tree). **Phase 2** `FR-FIN-012..017` (CSV import, bank reconciliation, reports, budgets, smart alerts, overview dashboard). **Phase 3** `FR-FIN-018..021` (documents vault, transparency snapshots, public transparency section, donor-side receipt view). Supersedes the minimal `V2-ADMIN-MONEY-9` ledger at `/admin/money` (migration `0170_finance_ledger.sql`), which is the migration baseline for Phase 1.
 
 Prefix: `FR-FIN-*` · Migration range claimed: `0470–0489` (see `docs/agents/MIGRATION_RANGES.md`) · Product decisions: `D76–D82` + fills `S48`/`S49` in `docs/spec/90_decisions_log.md` / `91_kc_fills_pending.md` · Engineering decision: `D-196` in `docs/SSOT/DECISIONS.md`.
 
@@ -396,6 +396,43 @@ Shared behaviour:
 
 ---
 
+## Lean first slice (FIN-P0) — shipped 2026-11-03
+
+PM request (2026-11-03): start recording real donations and expenses simply, keep it modular so it can deepen later, and show it nicely on the organization page and in statistics. PM ruled that public numbers are **live** (not yearly snapshots) as long as the organization controls privacy ({{D:finance-live-transparency}}, engineering `{{ENG:finance-live-transparency}}`). FIN-P0 builds on the `0170` ledger and is forward-compatible with Phase 1: every column and table below uses the Phase 1 names.
+
+**What FIN-P0 delivers of the Phase 1 acceptance criteria (the rest stays in `FIN-P1`):**
+
+| Spec item | Delivered by FIN-P0 | Still open |
+| --------- | ------------------- | ---------- |
+| `FR-FIN-001` AC1 | `org_id` on every entry, backfilled to the platform org, `NOT NULL` + FK | `p_org_id` RPC parameter, `finance_assert`, RLS persona test (RPCs are platform-org only for now) |
+| `FR-FIN-003` AC1, AC2 | Accounts list with balance = opening + cleared in − cleared out (ILS); create / edit / deactivate; last 4 digits for bank; opening balance + date | `account_has_entries` delete guard (accounts are never deleted, only deactivated) |
+| `FR-FIN-003` AC3 | Platform org seeded with "מזומן", "Bit", "Paybox" (idempotent in the migration) | "ספק סליקה" + `admin_finance_bootstrap` for other orgs |
+| `FR-FIN-003` AC4 | Entry form picks an account, defaulting to the most recently used one | Account is optional (legacy rows have none) |
+| `FR-FIN-004` AC1 (partial) | Default category **keys** (`FINANCE_INCOME_CATEGORIES` / `FINANCE_EXPENSE_CATEGORIES`) stored in `category`; free text still allowed | Tree, rules, `is_program` editing (the `program` key is the only program category) |
+
+### FR-FIN-022 — Live public transparency, controlled by the organization
+
+**Description.** The organization decides which finance blocks the public sees, and the numbers are live: they change as soon as the treasurer saves an entry. Nothing is public until a super admin switches a block on. Donor identities are never exposed (`FR-FIN-019` AC6 still holds).
+
+**Acceptance Criteria.**
+- AC1. `organizations.transparency_settings` holds five booleans, all **off** by default: `show_totals`, `show_donations_count`, `show_program_ratio`, `show_category_breakdown`, `show_monthly_trend`. Only a super admin may change them (`finance_transparency_settings_set`); unknown keys or non-boolean values are rejected with `invalid_settings`. Admin UI: `/admin/money/visibility`, with a preview that renders the exact public component.
+- AC2. `rpc_org_transparency(p_slug)` is callable by `anon` and `authenticated` (`p_slug` omitted = the platform org). It returns `{"enabled": false}` for an unknown org or when every toggle is off; otherwise it returns **only** the blocks whose toggle is on, computed over entries that are cleared, not deleted, `ILS`, `is_public`, and not transfers. Expense categories outside the known keys are folded into `other_out`.
+- AC3. The payload has no field for counterparties, entry ids, account names or user ids. A domain unit test pins the field allow-list and a SQL test asserts no counterparty text appears.
+- AC4. Per-entry privacy: `finance_ledger_entries.is_public` (default `true`) is set in the entry form; entries with `false` never count in the public numbers and show a "not public" chip in the admin list.
+- AC5. `OrgTransparencySection` renders nothing while loading, on error, when disabled, or when every enabled block is empty. It is mounted in the About "numbers" card and on the Statistics screen (`FR-STATS-010`).
+- AC6. Out of scope here (tracked as `FIN-DONOR-PRIVACY`): a **donor's own** choice per donation. It needs payment mirroring (`FR-FIN-009`) so in-app donors can decide at donation time.
+
+### FR-FIN-023 — Donors overview (admin)
+
+**Description.** Admins see who donated and how much, grouped by the party name on cleared donation and grant entries.
+
+**Acceptance Criteria.**
+- AC1. `/admin/money/donors` lists groups (case- and space-insensitive on `counterparty`), each with donations count, total, first and last date, largest total first; entries without a party name form one "anonymous" group.
+- AC2. Admin only (`finance_donors_summary` checks the role); never exposed publicly or exported to the public.
+- AC3. Pending, canceled, deleted and non-ILS entries are excluded.
+
+---
+
 ## Dependencies & contract with the organization profile (`spec/20_organizations.md`)
 
 Specified in `spec/20_organizations.md` (FR-ORG-001..020, D87–D91). The PM's definition (2026-10-30): an **organization profile is an extended user profile** — it has its own email identity, posts, followers and a public page like a user, plus an **Admin Portal** for running the organization in which **this spec is the finance sub-tree**. That domain is not specified here. What this spec assumes from it, so the two can ship independently:
@@ -435,3 +472,4 @@ Tracked in `BACKLOG.md` as `ORG-P1..P3`. The transparency tab mounts via `FR-ORG
 | Version | Date | Summary |
 | ------- | ---- | ------- |
 | 0.1 | 2026-10-30 | Initial end-to-end spec from PM Q&A. Defines `FR-FIN-001..021` in three phases, roles `org_treasurer` / `org_accountant`, data model, portal sub-tree, Section 46(a) tracking, payment mirroring, exports, imports, reconciliation, reports, alerts, documents vault, transparency snapshots, donor receipt view. Claims migrations `0470–0489`. Records product decisions D76–D82 (+ S48/S49) and engineering decision `D-196`. |
+| 0.2 | 2026-11-03 | FIN-P0 lean first slice shipped (`0470`): accounts, `account_id` / `is_public` on entries, default category keys, donors overview `FR-FIN-023`, live organization-controlled transparency `FR-FIN-022` (PM: live numbers with privacy controls; refines `D81` for the public view). |

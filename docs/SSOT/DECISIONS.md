@@ -1702,12 +1702,19 @@ Owner rules that go with it:
 
 **Affected.** `apps/mobile/src/components/marketplace/MarketplaceListingDetailView.tsx`, `ListingMediaGallery.tsx`, `components/post-detail/DetailHeroCard.tsx`, `screens/post/PostDetailScrollContent.tsx`. No `FR-*` AC changes.
 
----
+## {{ENG:finance-live-transparency}} — Live public finance numbers behind organization-controlled toggles; refines `D-196` for the public view (2026-11-03)
+
+**Decision.** The public view of an organization's finances is **live** aggregates, not only frozen snapshots, under three guards: (1) every block (`show_totals`, `show_donations_count`, `show_program_ratio`, `show_category_breakdown`, `show_monthly_trend`) is a boolean in `organizations.transparency_settings`, **default off**, changed only by a super admin through `finance_transparency_settings_set`; (2) each ledger entry carries `is_public` (default true) so a single entry can be excluded; (3) the anon-safe RPC `rpc_org_transparency(p_slug)` returns aggregates only, built from cleared, non-deleted, ILS, public, non-transfer entries, with expense categories folded into the known keys. Its return type has no counterparty, donor, entry or account field. The snapshot flow of `FR-FIN-018..020` stays planned for yearly, reviewed reporting; the two views coexist. A donor's own per-donation choice is deferred to payment mirroring (`FIN-DONOR-PRIVACY`).
+
+**Why.** PM request (2026-11-03): numbers should be live, with the organization deciding what is exposed and, later, donors deciding per donation. Defaulting everything to off keeps the old guarantee that nothing becomes public by accident, and the aggregate-only shape keeps donor privacy structural instead of a convention.
+
+**Affected.** `supabase/migrations/0470_finance_accounts_transparency.sql`, `app/packages/domain/src/admin/FinanceTransparency.ts`, `app/packages/infrastructure-supabase/src/admin/SupabaseOrgTransparencyRepository.ts`, `app/apps/mobile/src/components/finance/**`, `app/apps/mobile/app/(admin)/money/visibility.tsx`. Product decision: {{D:finance-live-transparency}}.
 
 ## Change Log
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
+| 4.39 | 2026-11-03 | Added `{{ENG:finance-live-transparency}}` (live public finance numbers behind organization-controlled toggles, default off; refines `D-196` for the public view; `FIN-P0`). |
 | 4.38 | 2026-11-03 | Added `D-210` (store review on the Cloudflare Pages domain until a domain is bought; KC Pro free year then $30/$100 monthly; support mailbox). |
 | 4.37 | 2026-11-03 | Added `D-209` (one dependency audit over every lockfile; reviewed exceptions expire within 90 days; gate audits on dependency changes, daily schedule otherwise; #1373). |
 | 4.36 | 2026-11-02 | `D-195` addendum: an owner's approval is required for gate-weakening changes only into `main`; on `dev` the judges pass with warnings and the release PR surfaces the changes to the owner. |
