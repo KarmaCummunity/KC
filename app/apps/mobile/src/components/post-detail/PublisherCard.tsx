@@ -4,10 +4,10 @@ import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Ionicons } from '@expo/vector-icons';
 import { iconSize, makeUseStyles, radius, spacing, Text, typography, useTheme } from '@kc/ui';
 import { AvatarInitials } from '../AvatarInitials';
 import { rowDirectionStart, textAlignStart } from '../../lib/rtlLayout';
+import { MirroredIcon } from '../ui/MirroredIcon';
 
 /** Avatar size of the post page's publisher card. */
 const AVATAR_SIZE = 44;
@@ -46,7 +46,7 @@ export function PublisherCard({ name, avatarUrl, cityName, profileRef }: Props) 
           onPress={() => router.push(`/user/${profileRef}`)}
         >
           {row}
-          <Ionicons name="chevron-back" size={iconSize.lg} color={colors.textSecondary} />
+          <MirroredIcon name="chevron-forward" size={iconSize.lg} color={colors.textSecondary} />
         </TouchableOpacity>
       ) : (
         <View style={styles.row}>{row}</View>

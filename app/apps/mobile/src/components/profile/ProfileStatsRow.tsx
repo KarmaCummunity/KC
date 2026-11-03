@@ -70,7 +70,7 @@ const useProfileStatsRowStyles = makeUseStyles(({ colors }) => ({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  stat: { flex: 1, alignItems: 'center' as const, gap: 2 },
+  stat: { flex: 1, alignItems: 'center' as const, gap: spacing.xs },
   statTouch: { flex: 1 },
   divider: { width: 1, height: 32, backgroundColor: colors.border },
   count: { ...typography.h2, color: colors.textPrimary },
