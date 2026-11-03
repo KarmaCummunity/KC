@@ -75,4 +75,13 @@ describe('BrowseRefineChips', () => {
     fireEvent.click(getByTestId('browse-refine-radius-10'));
     expect(onRadiusChange).toHaveBeenCalledWith(10);
   });
+
+  it('loads knowledge subcategories for browse refinements', async () => {
+    listWorldSubcategories.mockResolvedValue([
+      { categoryId: 'c-science', slug: 'science_technology', labelHe: 'science-he', labelEn: 'Science & technology' },
+    ]);
+    const { findByTestId } = renderChips('knowledge');
+    expect(await findByTestId('browse-refine-subcategory-science_technology')).toBeTruthy();
+    expect(listWorldSubcategories).toHaveBeenCalledWith('knowledge');
+  });
 });
