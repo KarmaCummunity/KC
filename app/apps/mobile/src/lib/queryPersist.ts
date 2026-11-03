@@ -13,8 +13,15 @@ export const RQ_CACHE_KEY = 'kc-rq-cache';
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 import { isPersistableQueryKey } from './queryPersistKeys';
+import { shouldRetryQuery, queryRetryDelay } from './queryRetryPolicy';
 
 export { isPersistableQueryKey } from './queryPersistKeys';
+export { shouldRetryQuery, queryRetryDelay, isNonRetryableError } from './queryRetryPolicy';
+export {
+  setupQueryLifecycleSync,
+  setupFocusManager,
+  setupOnlineManager,
+} from './queryLifecycleSync';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,10 +31,12 @@ export const queryClient = new QueryClient({
       networkMode: 'offlineFirst',
       refetchOnWindowFocus: false,
       refetchOnMount: true,
-      retry: 2,
+      retry: (failureCount, error) => shouldRetryQuery(failureCount, error),
+      retryDelay: queryRetryDelay,
       throwOnError: false,
     },
     mutations: {
+      retry: 0,
       throwOnError: false,
     },
   },
