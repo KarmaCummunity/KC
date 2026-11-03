@@ -41,7 +41,7 @@ begin
         and p.policyname = v_policy.policyname
         and regexp_replace(
           concat_ws(' ', p.qual, p.with_check),
-          '\(select\s+auth\.(uid|jwt|role)\s*\(\)\)',
+          '\(\s*select\s+auth\.(uid|jwt|role)\s*\(\)(\s+as\s+\w+)?\s*\)',
           'INITPLAN_AUTH_CALL', 'gi'
         ) ~* 'auth\.(uid|jwt|role)\s*\('
     ) then
