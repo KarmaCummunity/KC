@@ -3,7 +3,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, typography, spacing, radius, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, iconSize, useTheme, Text } from '@kc/ui';
 import { aboutRtlText } from './aboutWebRtlStyle';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -37,7 +37,7 @@ export function AboutContributionsGrid() {
           <View key={it.label} style={tileStyle}>
             <Ionicons
               name={it.icon}
-              size={26}
+              size={iconSize['2xl']}
               color={it.available ? colors.primary : colors.textDisabled}
             />
             <Text style={labelStyle} numberOfLines={2}>
@@ -70,16 +70,16 @@ const useAboutContributionsGridStyles = makeUseStyles(({ colors }) => ({
   label: {
     ...typography.caption,
     ...aboutRtlText,
-    fontWeight: '600',
+    ...typography.semiBold,
     lineHeight: 16,
     width: '100%',
   },
   labelActive: { color: colors.textPrimary },
   labelSoon: { color: colors.textDisabled },
-  badge: { borderRadius: 10, paddingHorizontal: spacing.sm, paddingVertical: 2 },
+  badge: { borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
   badgeActive: { backgroundColor: colors.primary },
   badgeSoon: { backgroundColor: colors.border },
-  badgeText: { fontSize: 10, fontWeight: '700', ...aboutRtlText },
+  badgeText: { fontSize: typography.caption.fontSize, ...typography.bold, ...aboutRtlText },
   badgeTextActive: { color: colors.textInverse },
   badgeTextSoon: { color: colors.textDisabled },
 }));

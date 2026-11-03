@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, useBreakpoint, useTheme, spacing, shellDimensions, Text } from '@kc/ui';
+import { makeUseStyles, useBreakpoint, useTheme, spacing, shellDimensions, radius, typography, iconSize, Text } from '@kc/ui';
 import { TABS, isTabActive, type TabDefinition } from './tabs.config';
 
 type NavigationRailProps = {
@@ -55,7 +55,7 @@ function NavigationRailItem({ tab, expanded }: { tab: TabDefinition; expanded: b
       accessibilityState={{ selected: active }}
       accessibilityLabel={t(tab.labelI18nKey)}
     >
-      <Ionicons name={iconName} size={24} color={active ? colors.primary : colors.textSecondary} />
+      <Ionicons name={iconName} size={iconSize['2xl']} color={active ? colors.primary : colors.textSecondary} />
       {expanded && (
         <Text style={[styles.label, { color: active ? colors.primary : colors.textPrimary }]}>
           {t(tab.labelI18nKey)}
@@ -77,12 +77,12 @@ const useStyles = makeUseStyles(() => ({
     alignItems: 'center',
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.sm,
-    marginVertical: 2,
+    marginVertical: spacing.xs,
     marginHorizontal: spacing.xs,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     gap: spacing.sm,
   },
   itemExpanded: { justifyContent: 'flex-start' },
   itemCollapsed: { justifyContent: 'center' },
-  label: { fontSize: 14, fontWeight: '500' },
+  label: { ...typography.body, ...typography.medium },
 }));
