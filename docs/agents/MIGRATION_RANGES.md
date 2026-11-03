@@ -103,12 +103,13 @@ Last applied on kc-dev when this was written: `0239`.
 | 0546 | donation link approval (D9) | in progress |
 | 0547 | my givings by world (FR-STATS-008) | in progress |
 | 0548 | D-211 donation link world categories | merged |
+| 0549 | account deletion grace period + purge (FR-SETTINGS-012) | merged |
 | 0550–0569 | G1 one Post model (ADR-006): `0550–0552` step 1 additive schema, `0553–0556` step 2, `0557–0562` step 3, `0563` step 5, `0564+` step 6 | in progress |
 | 0570+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0549`, `0570+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0570+`.
 
 ## How to claim
 
