@@ -11499,6 +11499,10 @@ export type Database = {
         Args: { p_listing_id: string }
         Returns: boolean
       }
+      listing_kind_for_post: {
+        Args: { p_direction: string; p_world_slug: string }
+        Returns: string
+      }
       listing_lock_own: {
         Args: { p_listing_id: string }
         Returns: {
@@ -11544,6 +11548,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      listing_set_post_status: {
+        Args: {
+          p_listing: Database["public"]["Tables"]["listings"]["Row"]
+          p_status: string
+        }
+        Returns: boolean
+      }
+      listing_status_for_post: { Args: { p_status: string }; Returns: string }
       listing_upsert_from_post: {
         Args: { p_post: Database["public"]["Tables"]["posts"]["Row"] }
         Returns: undefined
@@ -11830,6 +11842,10 @@ export type Database = {
         Returns: undefined
       }
       post_id_of_listing: { Args: { p_listing_id: string }; Returns: string }
+      post_owns_listing: {
+        Args: { p_post: Database["public"]["Tables"]["posts"]["Row"] }
+        Returns: boolean
+      }
       post_relevance_reminder_due: {
         Args: { p_age_days: number }
         Returns: boolean
@@ -11841,6 +11857,10 @@ export type Database = {
           p_reaction_delta?: number
           p_share_delta?: number
         }
+        Returns: undefined
+      }
+      post_sync_from_listing: {
+        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
         Returns: undefined
       }
       post_unification_report: { Args: never; Returns: Json }
