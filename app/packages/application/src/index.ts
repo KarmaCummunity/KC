@@ -80,7 +80,9 @@ export type {
   IDonationLinksRepository,
   AddDonationLinkInput,
   UpdateDonationLinkInput,
+  DonationLinkReviewItem,
 } from './ports/IDonationLinksRepository';
+export * from './donations/ReviewDonationLinksUseCases'; // D9 review queue + decision
 export { ListDonationLinksUseCase } from './donations/ListDonationLinksUseCase';
 export { AddDonationLinkUseCase } from './donations/AddDonationLinkUseCase';
 export { UpdateDonationLinkUseCase } from './donations/UpdateDonationLinkUseCase';

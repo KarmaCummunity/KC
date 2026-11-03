@@ -8,7 +8,7 @@ Spec is clear; code does not match yet. These are **tasks, not contradictions**.
 | G2 | 🟡 2026-10-30 — One world list in code: `GIVING_WORLD_SLUGS` (8) + `DOMAIN_SLUGS` (11) in `@kc/domain` (`worlds/givingWorlds.ts`). Remaining: `MARKETPLACE_WORLD_SLUGS` and the DB `world_slug` values still hold legacy slugs (G35) (D1) | 04 |
 | G3 | ✅ 2026-10-30 — Anonymity changes both ways: the `listings` tighten-only trigger is dropped (migration `0451`, test `supabase/tests/0451_*`) (D16) | 07.13 |
 | G4 | ✅ 2026-10-30 — Ratings readable only by their rater and super admins (migration `0446`, probe in `supabase/tests/`) (D24) | 07.7 |
-| G5 | Org links without approval; two org entities (D9) | 08 |
+| G5 | 🟡 Links ✅ 2026-11-03: a suggested donation link goes live only after a super admin or moderator approves it (D9, `0546`, admin screen `/admin/donation-links`). Open: two org entities | 08 |
 | G6 | 'Marketplace listings' profile tab (D14) | 07.12 |
 | G7 | Which DB TestFlight connects to (D8) | architecture |
 | G8 | 🟡 2026-10-30 — Donation to KC via Grow (D20): redirect half shipped (`FR-DONATE-011`: one-time + standing-order hosted pages, server-configured channels, migration `0447`). Open: Grow merchant account + page URLs (launch plan A11), confirmation webhook, donation record, karma award (07.6) | 08 |

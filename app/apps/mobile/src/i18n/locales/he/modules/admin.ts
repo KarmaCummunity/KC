@@ -4,6 +4,7 @@ import { adminTimeHe } from './adminTime';
 import { adminMoneyHe } from './adminMoney';
 import { adminCrmHe } from './adminCrm';
 import { adminOrgApprovalsHe } from './adminOrgApprovals';
+import { adminDonationLinksHe } from './adminDonationLinks';
 import { adminWhatsAppHe } from './adminWhatsApp';
 import { adminMatchingHe } from './adminMatching';
 import { adminSurveysHe } from './adminSurveys';
@@ -28,6 +29,7 @@ export const adminHe = {
     audit:         'יומן פעולות',
     whatsapp:      'וואטסאפ',
     matching:      'איכות התאמות',
+    donationLinks: 'קישורי תרומה',
   },
   roles: {
     super_admin: 'מנהל-על',
@@ -144,5 +146,6 @@ export const adminHe = {
   matching: adminMatchingHe,
   crm: adminCrmHe,
   orgApprovals: adminOrgApprovalsHe,
+  donationLinks: adminDonationLinksHe,
   surveys: adminSurveysHe,
 } as const;
