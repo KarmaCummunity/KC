@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MessageReactionType } from '@kc/infrastructure-supabase';
 import { container } from '../lib/container';
 import { useAuthStore } from '../store/authStore';
@@ -8,17 +8,21 @@ export type ReactionSummary = Partial<Record<MessageReactionType, number>>;
 
 export function useChatMessageReactions(chatId: string, messageIds: string[]) {
   const viewerId = useAuthStore((s) => s.session?.userId);
+  const messageIdsKey = messageIds.join('|');
+  const messageIdsRef = useRef(messageIds);
+  messageIdsRef.current = messageIds;
   const [byMessage, setByMessage] = useState<Record<string, ReactionSummary>>({});
   const [mine, setMine] = useState<Record<string, MessageReactionType | null>>({});
 
   useEffect(() => {
-    if (messageIds.length === 0) return;
+    const currentMessageIds = messageIdsRef.current;
+    if (currentMessageIds.length === 0) return;
     let cancelled = false;
-    void container.chatV2Repo.listMessageReactions(messageIds).then((rows) => {
+    void container.chatV2Repo.listMessageReactions(currentMessageIds).then((rows) => {
       if (cancelled) return;
       const counts: Record<string, ReactionSummary> = {};
       const own: Record<string, MessageReactionType | null> = {};
-      for (const id of messageIds) {
+      for (const id of currentMessageIds) {
         counts[id] = {};
         own[id] = null;
       }
@@ -33,7 +37,7 @@ export function useChatMessageReactions(chatId: string, messageIds: string[]) {
     return () => {
       cancelled = true;
     };
-  }, [chatId, messageIds.join('|')]);
+  }, [chatId, messageIdsKey, viewerId]);
 
   const toggle = useCallback(async (messageId: string, reaction: MessageReactionType) => {
     hapticLightTap();

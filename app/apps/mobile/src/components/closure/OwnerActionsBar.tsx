@@ -5,7 +5,7 @@
 //   deleted_no_recipient (in grace)   → "reopen"
 //   deleted_no_recipient (past grace) → no CTA (post is on its way out)
 //   removed_admin / expired           → no CTA
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -41,6 +41,8 @@ export function OwnerActionsBar(props: Readonly<Props>) {
   const styles = useStyles();
   const { colors } = useTheme();
   const { post, ownerId, tabBarOverlayInset = 0, onClosed, onReopened } = props;
+  const postRef = useRef(post);
+  postRef.current = post;
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const startClosure = useClosureStore((s) => s.start);
@@ -63,7 +65,7 @@ export function OwnerActionsBar(props: Readonly<Props>) {
   useEffect(() => {
     if (closureStep !== 'done' || closureInitiator === 'chat') return;
     hapticSuccess();
-    trackSocialHandoverCompleted(post);
+    trackSocialHandoverCompleted(postRef.current);
     const closedPostId = post.postId;
     resetClosure();
     void (async () => {

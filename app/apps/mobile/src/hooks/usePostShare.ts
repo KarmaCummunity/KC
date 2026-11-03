@@ -1,5 +1,5 @@
 // FR-POST-023 — share sheet orchestration (header button + post ⋮ menu).
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
 import type { PostWithOwner } from '@kc/application';
@@ -22,9 +22,12 @@ export function usePostShare(post: PostWithOwner) {
   const viewerId = useAuthStore((s) => s.session?.userId ?? null);
   const showToast = useFeedSessionStore((s) => s.showEphemeralToast);
   const [busy, setBusy] = useState(false);
+  const postRef = useRef(post);
+  postRef.current = post;
   const canShare = canSharePost(post, viewerId);
 
   const share = useCallback(async () => {
+    const currentPost = postRef.current;
     if (busy || !canShare) return;
     hapticLightTap();
     setBusy(true);
@@ -32,40 +35,40 @@ export function usePostShare(post: PostWithOwner) {
       const webBaseUrl = resolveWebBaseUrl({
         EXPO_PUBLIC_WEB_BASE_URL: process.env.EXPO_PUBLIC_WEB_BASE_URL,
       });
-      const postedAt = formatDistanceToNow(new Date(post.createdAt), {
+      const postedAt = formatDistanceToNow(new Date(currentPost.createdAt), {
         addSuffix: true,
         locale: resolveDateFnsLocale(i18n.language),
       });
-      const shareStatus = post.status === 'closed_delivered' ? 'closed_delivered' : 'open';
-      const recipientNavigable = (post.recipientProfileNavigableFromPost ?? true) === true;
+      const shareStatus = currentPost.status === 'closed_delivered' ? 'closed_delivered' : 'open';
+      const recipientNavigable = (currentPost.recipientProfileNavigableFromPost ?? true) === true;
       const counterpartyLabel =
-        shareStatus === 'closed_delivered' && post.recipientUser
-          ? postRecipientDisplayLabel(post.recipientUser, recipientNavigable, t)
+        shareStatus === 'closed_delivered' && currentPost.recipientUser
+          ? postRecipientDisplayLabel(currentPost.recipientUser, recipientNavigable, t)
           : null;
       const message = buildPostShareMessage(
         {
-          type: post.type,
+          type: currentPost.type,
           status: shareStatus,
-          title: post.title,
-          description: post.description,
-          category: post.category,
-          address: post.address,
-          locationDisplayLevel: post.locationDisplayLevel,
+          title: currentPost.title,
+          description: currentPost.description,
+          category: currentPost.category,
+          address: currentPost.address,
+          locationDisplayLevel: currentPost.locationDisplayLevel,
           postedAt,
-          publisherLabel: postOwnerDisplayLabel(post, t),
+          publisherLabel: postOwnerDisplayLabel(currentPost, t),
           counterpartyLabel,
         },
         t,
       );
-      const firstAsset = post.mediaAssets[0];
+      const firstAsset = currentPost.mediaAssets[0];
       const remoteImageUrl = firstAsset
         ? getSupabaseClient().storage
             .from(POST_IMAGES_BUCKET)
             .getPublicUrl(firstAsset.path).data.publicUrl
         : undefined;
       const outcome = await sharePost({
-        postId: post.postId,
-        title: post.title,
+        postId: currentPost.postId,
+        title: currentPost.title,
         message,
         webBaseUrl,
         remoteImageUrl,
@@ -85,20 +88,6 @@ export function usePostShare(post: PostWithOwner) {
   }, [
     busy,
     canShare,
-    post.postId,
-    post.title,
-    post.type,
-    post.status,
-    post.description,
-    post.category,
-    post.address,
-    post.locationDisplayLevel,
-    post.createdAt,
-    post.mediaAssets,
-    post.ownerName,
-    post.ownerProfileNavigableFromPost,
-    post.recipientUser,
-    post.recipientProfileNavigableFromPost,
     showToast,
     t,
     i18n.language,

@@ -29,7 +29,8 @@ export function usePostDraftAutosave(input: PostDraftAutosaveInput): void {
   latestRef.current = input;
 
   useEffect(() => {
-    if (!shouldAutosaveDraft(input, input)) return;
+    const currentInput = latestRef.current;
+    if (!shouldAutosaveDraft(currentInput, currentInput)) return;
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       const s = latestRef.current;
