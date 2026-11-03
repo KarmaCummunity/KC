@@ -3,7 +3,7 @@
 // like account-blocked, so AuthGate does not move the user away from it.
 import React, { useState } from 'react';
 import { View } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
@@ -47,7 +47,7 @@ export default function RestoreAccountScreen() {
   const goToApp = async () => {
     // Everything cached while the account was hidden is stale; refetch it all.
     await queryClient.invalidateQueries();
-    router.replace('/(tabs)' as Href);
+    router.replace('/(tabs)');
   };
 
   const handleRestore = async () => {
@@ -72,7 +72,7 @@ export default function RestoreAccountScreen() {
     } finally {
       setBusy(false);
     }
-    router.replace('/(auth)' as Href);
+    router.replace('/(auth)');
   };
 
   const expired = errorKey === 'expired';

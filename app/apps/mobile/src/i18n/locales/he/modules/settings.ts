@@ -21,7 +21,7 @@ export const settingsHe = {
   },
   logout: 'התנתקות',
   loggingOut: 'מתנתק...',
-  deleteAccount: 'מחק חשבון',
+  deleteAccount: 'מחיקת חשבון',
   deleteAccountModal: {
     title: 'מחיקת חשבון',
     bullets: {
@@ -35,17 +35,17 @@ export const settingsHe = {
       'שיחות שניהלת יישארו אצל האנשים שדיברת איתם. הם יראו את ההודעות שכתבת, אבל לא את שמך, התמונה או הפרופיל — רק "{{deletedUserLabel}}".',
     warning:
       'החשבון יושבת ל-30 יום. אם תיכנס אליו שוב בתקופה הזו תוכל לשחזר אותו במלואו. אחרי 30 יום הכל נמחק לצמיתות.',
-    confirmInputLabel: 'הקלד "מחק" כדי לאשר',
-    confirmInputPlaceholder: 'מחק',
-    confirmKeyword: 'מחק',
+    confirmInputLabel: 'להקליד "מחק" כדי לאשר',
+    confirmInputPlaceholder: 'מחק', // copy-voice-allow: confirm keyword the user types
+    confirmKeyword: 'מחק', // copy-voice-allow: confirm keyword the user types
     buttons: {
       cancel: 'ביטול',
-      delete: 'מחק את החשבון',
-      retry: 'נסה שוב',
+      delete: 'מחיקת החשבון',
+      retry: 'לנסות שוב',
       close: 'סגור',
     },
     errors: {
-      recoverable: 'המחיקה נכשלה — נסה שוב',
+      recoverable: 'המחיקה נכשלה — אפשר לנסות שוב',
       critical:
         'המחיקה לא הושלמה. הפוסטים והעוקבים שלך כבר נמחקו, אבל סגירת החשבון לא הסתיימה. חובה ללחוץ "נסה שוב" עכשיו — אם תסגור את האפליקציה ייווצר חשבון לא תקין.',
     },
@@ -79,9 +79,9 @@ export const settingsHe = {
     previewPrimary: 'נתינה',
     previewSecondary: 'בקשה',
   },
-  reportIssue: 'דווח על בעיה',
+  reportIssue: 'דיווח על בעיה',
   reportIssueScreen: {
-    title: 'דווח על בעיה',
+    title: 'דיווח על בעיה',
     copy: 'תאר את הבעיה ואנחנו נחזור אליך בהקדם.',
     categoryLabel: 'קטגוריה (אופציונלי)',
     categories: {
@@ -93,10 +93,10 @@ export const settingsHe = {
     descriptionLabel: 'תיאור (חובה)',
     descriptionPlaceholder: 'תאר את הבעיה... (לפחות 10 תווים)',
     descriptionMinLength: 'התיאור חייב להכיל לפחות 10 תווים',
-    submitBtn: 'שלח ופתח שיחה',
+    submitBtn: 'שליחה ופתיחת שיחה',
     submitting: 'שולח...',
-    errorGeneric: 'אירעה שגיאה. נסה שוב.',
-    errorAdminNotFound: 'שירות התמיכה לא זמין. נסה שוב מאוחר יותר.',
+    errorGeneric: 'אירעה שגיאה. אפשר לנסות שוב.',
+    errorAdminNotFound: 'שירות התמיכה לא זמין. אפשר לנסות שוב מאוחר יותר.',
   },
   devTools: 'כלי פיתוח',
   resetOnboarding: 'איפוס אונבורדינג (דיבוג)',
@@ -108,7 +108,7 @@ export const settingsHe = {
   resetOnboardingConfirmMsg: 'הפעולה תחזיר את מצב האונבורדינג להתחלה ותפתח את אשף ההרשמה מחדש. הפרופיל לא יימחק.\n\nלהמשיך?',
   resetOnboardingConfirmTitle: 'איפוס אונבורדינג',
   resetOnboardingBtn: 'איפוס',
-  signOutFailed: 'ההתנתקות נכשלה. נסה שוב.',
+  signOutFailed: 'ההתנתקות נכשלה. אפשר לנסות שוב.',
 
   // PR5d (UI sweep, Pattern #1) — Stack header title for /edit-profile.
   editProfileTitle: 'עריכת פרופיל',
@@ -132,11 +132,11 @@ export const settingsHe = {
     confirmPrivateTitle: 'להפוך את הפרופיל לפרטי?',
     confirmPublicTitle: 'להפוך את הפרופיל לציבורי?',
     confirmPrivateMessage:
-      'בקשות עקיבה חדשות ידרשו אישור. עוקבים קיימים יישארו (אפשר להסיר אותם ידנית). פוסטים פתוחים יישארו פתוחים. תוכלי לפרסם פוסטים חדשים לעוקבים בלבד.',
+      'בקשות עקיבה חדשות ידרשו אישור. עוקבים קיימים יישארו (אפשר להסיר אותם ידנית). פוסטים פתוחים יישארו פתוחים. אפשר לפרסם פוסטים חדשים לעוקבים בלבד.',
     confirmPublicMessage:
       'כל הבקשות הממתינות יאושרו אוטומטית. פוסטים שפורסמו לעוקבים בלבד יישארו גלויים לכל עוקב חדש מעכשיו.',
-    confirmPrivateCta: 'הפוך לפרטי',
-    confirmPublicCta: 'הפוך לציבורי',
+    confirmPrivateCta: 'להפוך לפרטי',
+    confirmPublicCta: 'להפוך לציבורי',
   },
 
   // Report-issue notify-modal title (FR-MOD-002 / FR-CHAT-007 AC3)

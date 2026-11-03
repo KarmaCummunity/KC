@@ -73,10 +73,6 @@
     "src/i18n/locales/he/modules/research.ts": {
       "genderedImperative": 2
     },
-    "src/i18n/locales/he/modules/settings.ts": {
-      "genderedImperative": 15,
-      "genderedAddress": 1
-    },
     "src/i18n/locales/he/modules/surveyDemo.ts": {
       "genderedAddress": 1,
       "genderedImperative": 1
