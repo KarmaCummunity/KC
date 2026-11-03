@@ -4,7 +4,7 @@
 // reject each one. The "approval = create organization" side-effect is
 // out of scope here — it lands in a separate slice when the org world
 // schema is built.
-import { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { adminChipScroll } from '../../../src/components/admin/adminChipScroll';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -25,6 +25,8 @@ import { KcFlashList } from '../../../src/components/lists/KcFlashList';
 type StatusFilter = OrgApplicationStatus | 'all';
 
 const STATUS_TABS: readonly StatusFilter[] = ['pending', 'approved', 'rejected', 'all'];
+
+const orgApplicationKeyExtractor = (a: OrgApplication) => a.applicationId;
 
 async function confirmAction(message: string, L: LocaleBundle): Promise<boolean> {
   if (Platform.OS === 'web') {
@@ -78,6 +80,36 @@ export default function OrgApprovalsScreen() {
     },
   });
 
+  const handleDecide = useCallback(
+    async (applicationId: string, approve: boolean, note: string) => {
+      const ok = await confirmAction(approve ? t.actions.confirmApprove : t.actions.confirmReject, L);
+      if (!ok) return;
+      try {
+        await decide.mutateAsync({ applicationId, approve, note });
+      } catch (err) {
+        const code = isOrgApplicationError(err) ? err.code : 'unknown';
+        const msg = t.errors[code as keyof typeof t.errors] ?? t.errors.unknown;
+        if (Platform.OS === 'web') {
+          if (typeof window !== 'undefined') window.alert(msg);
+        } else {
+          Alert.alert(msg);
+        }
+      }
+    },
+    [L, decide, t],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: OrgApplication }) => (
+      <ApplicationCard
+        application={item}
+        busy={decide.isPending}
+        onDecide={handleDecide}
+      />
+    ),
+    [decide.isPending, handleDecide],
+  );
+
   if (rolesLoading) {
     return <View style={styles.center}><Text>{t.loading}</Text></View>;
   }
@@ -101,29 +133,10 @@ export default function OrgApprovalsScreen() {
       </ScrollView>
       <Text style={styles.totalLabel}>{t.totalCount(query.data?.totalCount ?? 0)}</Text>
       <KcFlashList
-        data={[...(query.data?.rows ?? [])]}
-        keyExtractor={(a) => a.applicationId}
-        renderItem={({ item }) => (
-          <ApplicationCard
-            application={item}
-            busy={decide.isPending}
-            onDecide={async (approve, note) => {
-              const ok = await confirmAction(approve ? t.actions.confirmApprove : t.actions.confirmReject, L);
-              if (!ok) return;
-              try {
-                await decide.mutateAsync({ applicationId: item.applicationId, approve, note });
-              } catch (err) {
-                const code = isOrgApplicationError(err) ? err.code : 'unknown';
-                const msg = t.errors[code as keyof typeof t.errors] ?? t.errors.unknown;
-                if (Platform.OS === 'web') {
-                  if (typeof window !== 'undefined') window.alert(msg);
-                } else {
-                  Alert.alert(msg);
-                }
-              }
-            }}
-          />
-        )}
+        data={query.data?.rows ?? []}
+        keyExtractor={orgApplicationKeyExtractor}
+        estimatedItemSize={180}
+        renderItem={renderItem}
         refreshControl={
           <RefreshControl refreshing={query.isRefetching} onRefresh={() => { void query.refetch(); }} />
         }
@@ -143,10 +156,10 @@ export default function OrgApprovalsScreen() {
 interface ApplicationCardProps {
   readonly application: OrgApplication;
   readonly busy: boolean;
-  readonly onDecide: (approve: boolean, note: string) => Promise<void>;
+  readonly onDecide: (applicationId: string, approve: boolean, note: string) => Promise<void>;
 }
 
-function ApplicationCard({ application, busy, onDecide }: ApplicationCardProps) {
+function ApplicationCardInner({ application, busy, onDecide }: ApplicationCardProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   const t = L.admin.orgApprovals;
@@ -205,13 +218,13 @@ function ApplicationCard({ application, busy, onDecide }: ApplicationCardProps) 
               label={busy ? t.actions.busy : t.actions.reject}
               size="sm"
               disabled={busy}
-              onPress={() => { void onDecide(false, note); }}
+              onPress={() => { void onDecide(application.applicationId, false, note); }}
             />
             <PrimaryButton
               label={busy ? t.actions.busy : t.actions.approve}
               size="sm"
               disabled={busy}
-              onPress={() => { void onDecide(true, note); }}
+              onPress={() => { void onDecide(application.applicationId, true, note); }}
             />
           </View>
         </>
@@ -219,6 +232,8 @@ function ApplicationCard({ application, busy, onDecide }: ApplicationCardProps) 
     </View>
   );
 }
+
+const ApplicationCard = React.memo(ApplicationCardInner);
 
 const useStyles = makeUseStyles(({ colors }) => ({
   root:        { flex: 1, backgroundColor: colors.background },

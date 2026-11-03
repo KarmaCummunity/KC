@@ -29,7 +29,7 @@ export interface ProfileClosedPostsGridProps {
   postOwner?: ProfilePostOwnerContext;
 }
 
-export function ProfileClosedPostsGrid({
+function ProfileClosedPostsGridInner({
   items,
   isLoading,
   empty,
@@ -63,6 +63,15 @@ export function ProfileClosedPostsGrid({
       icon: 'archive-outline',
     },
   };
+
+  const chunkedRows = React.useMemo(() => {
+    const mapped = items.map((it) => ({
+      postWithOwner: postWithOwnerFromPost(it.post, postOwner),
+      identityRole: it.identityRole,
+    }));
+    return chunkArray(mapped, PROFILE_GRID_COLUMNS);
+  }, [items, postOwner]);
+
   if (isLoading) {
     return (
       <View style={styles.loading}>
@@ -77,12 +86,12 @@ export function ProfileClosedPostsGrid({
   return (
     <>
       <View style={styles.grid}>
-        {chunkArray(items, PROFILE_GRID_COLUMNS).map((row, rowIndex) => (
-          <View key={rowIndex} style={styles.row}>
-            {row.map(({ post, identityRole }) => (
+        {chunkedRows.map((row, rowIndex) => (
+          <View key={row[0]?.postWithOwner.postId ?? rowIndex} style={styles.row}>
+            {row.map(({ postWithOwner, identityRole }) => (
               <PostCardGrid
-                key={post.postId}
-                post={postWithOwnerFromPost(post, postOwner)}
+                key={postWithOwner.postId}
+                post={postWithOwner}
                 columns={PROFILE_GRID_COLUMNS}
                 gap={spacing.xs}
                 identityRole={identityRole}
@@ -111,6 +120,8 @@ export function ProfileClosedPostsGrid({
     </>
   );
 }
+
+export const ProfileClosedPostsGrid = React.memo(ProfileClosedPostsGridInner);
 
 const useStyles = makeUseStyles(({ colors }) => ({
   loading: { padding: spacing.xl, alignItems: 'center' },

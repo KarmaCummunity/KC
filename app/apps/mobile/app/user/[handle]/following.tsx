@@ -3,18 +3,22 @@
 // `privacy_mode` no longer hides this list; it only governs follow approval.
 // FR-PROFILE-010.
 
-import React from 'react';
-import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { spacing, useTheme, Text } from '@kc/ui';
 import { FilterSearchBar } from '../../../src/components/filterKit/FilterSearchBar';
-import { AvatarInitials } from '../../../src/components/AvatarInitials';
+import type { User } from '@kc/domain';
 import { getUserRepo } from '../../../src/services/userComposition';
 import { getListFollowingUseCase } from '../../../src/services/followComposition';
 import { useFollowListStyles } from '../../../src/screens/followList.styles';
+import { KcFlashList } from '../../../src/components/lists/KcFlashList';
+import { FollowUserRow } from '../../../src/components/profile/FollowUserRow';
+
+const userKeyExtractor = (u: User) => u.userId;
 
 export default function FollowingListScreen() {
   const styles = useFollowListStyles();
@@ -39,13 +43,37 @@ export default function FollowingListScreen() {
     staleTime: 60_000, // PERF-3: profile (others) — follow action invalidates explicitly
   });
 
+  const filtered = useMemo(() => {
+    const list = followingQuery.data?.users ?? [];
+    if (!search) return list;
+    const needle = search.toLowerCase();
+    return list.filter((u) => (u.displayName ?? '').toLowerCase().startsWith(needle));
+  }, [followingQuery.data?.users, search]);
+
+  const handleOpenUser = useCallback(
+    (targetHandle: string) => {
+      router.push({ pathname: '/user/[handle]', params: { handle: targetHandle } });
+    },
+    [router],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: User }) => (
+      <FollowUserRow
+        user={item}
+        fallbackName={t('profile.fallbackName')}
+        cityNotSet={t('profile.cityNotSet')}
+        onOpen={handleOpenUser}
+        styles={styles}
+        textColorSecondary={colors.textSecondary}
+      />
+    ),
+    [colors.textSecondary, handleOpenUser, styles, t],
+  );
+
   if (!owner) {
     return <SafeAreaView style={styles.container} edges={['bottom']}><ActivityIndicator color={colors.primary} /></SafeAreaView>;
   }
-
-  const filtered = (followingQuery.data?.users ?? []).filter((u) =>
-    !search || (u.displayName ?? '').toLowerCase().startsWith(search.toLowerCase()),
-  );
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -58,22 +86,14 @@ export default function FollowingListScreen() {
       />
       {followingQuery.isLoading ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />
-      ) : filtered.length === 0 ? (
-        <Text style={styles.empty}>{t('profile.followingScreen.empty')}</Text>
       ) : (
-        filtered.map((u) => (
-          <TouchableOpacity
-            key={u.userId}
-            style={styles.row}
-            onPress={() => router.push({ pathname: '/user/[handle]', params: { handle: u.shareHandle } })}
-          >
-            <AvatarInitials name={u.displayName ?? t('profile.fallbackName')} avatarUrl={u.avatarUrl} size={44} />
-            <View style={styles.rowText}>
-              <Text style={styles.name}>{u.displayName ?? t('profile.fallbackName')}</Text>
-              <Text style={styles.city}>{u.cityName ?? t('profile.cityNotSet')}</Text>
-            </View>
-          </TouchableOpacity>
-        ))
+        <KcFlashList
+          data={filtered}
+          keyExtractor={userKeyExtractor}
+          estimatedItemSize={60}
+          renderItem={renderItem}
+          ListEmptyComponent={<Text style={styles.empty}>{t('profile.followingScreen.empty')}</Text>}
+        />
       )}
     </SafeAreaView>
   );

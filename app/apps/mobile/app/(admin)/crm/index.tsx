@@ -1,7 +1,7 @@
 // app/apps/mobile/app/(admin)/crm/index.tsx
 // V2-ADMIN-CRM-8 — V2 §13.9 Admin CRM (minimal contacts tracker).
 // List + search + status filter + per-row edit / delete / "mark contacted".
-import { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, Pressable, RefreshControl, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -20,6 +20,39 @@ import { FilterSearchBar } from '../../../src/components/filterKit/FilterSearchB
 import { FilterChipRow } from '../../../src/components/filterKit/FilterChipRow';
 
 type StatusFilter = CrmContactStatus | 'all';
+
+const crmContactKeyExtractor = (c: CrmContact) => c.contactId;
+
+const CrmContactItemRow = React.memo(function CrmContactItemRow({
+  contact,
+  onEdit,
+  onMarkContacted,
+  onDelete,
+}: {
+  contact: CrmContact;
+  onEdit: (c: CrmContact) => void;
+  onMarkContacted: (contactId: string) => void;
+  onDelete: (contactId: string) => void;
+}) {
+  const handleEdit = useCallback(() => onEdit(contact), [contact, onEdit]);
+  const handleMark = useCallback(
+    () => onMarkContacted(contact.contactId),
+    [contact.contactId, onMarkContacted],
+  );
+  const handleDelete = useCallback(
+    () => onDelete(contact.contactId),
+    [contact.contactId, onDelete],
+  );
+
+  return (
+    <ContactCard
+      contact={contact}
+      onEdit={handleEdit}
+      onMarkContacted={handleMark}
+      onDelete={handleDelete}
+    />
+  );
+});
 
 async function confirmAction(message: string, L: LocaleBundle): Promise<boolean> {
   if (Platform.OS === 'web') {
@@ -68,12 +101,52 @@ export default function CrmScreen() {
     onSuccess:  () => { void queryClient.invalidateQueries({ queryKey: ['admin.crm.list'] }); },
   });
 
+  const handleEdit = useCallback((contact: CrmContact) => setEditing(contact), []);
+  const handleMarkContacted = useCallback(
+    (contactId: string) => {
+      void markContacted.mutateAsync(contactId);
+    },
+    [markContacted],
+  );
+  const handleDelete = useCallback(
+    async (contactId: string) => {
+      const ok = await confirmAction(t.confirm.delete, L);
+      if (!ok) return;
+      try {
+        await remove.mutateAsync(contactId);
+      } catch (err) {
+        const code = isCrmContactError(err) ? err.code : 'unknown';
+        const msg = t.errors[code as keyof typeof t.errors] ?? t.errors.unknown;
+        if (Platform.OS === 'web') {
+          if (typeof window !== 'undefined') window.alert(msg);
+        } else {
+          Alert.alert(msg);
+        }
+      }
+    },
+    [L, remove, t],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: CrmContact }) => (
+      <CrmContactItemRow
+        contact={item}
+        onEdit={handleEdit}
+        onMarkContacted={handleMarkContacted}
+        onDelete={handleDelete}
+      />
+    ),
+    [handleDelete, handleEdit, handleMarkContacted],
+  );
+
   if (rolesLoading) {
     return <View style={styles.center}><Text>{t.loading}</Text></View>;
   }
   if (!can('crm.manage')) {
     return <View style={styles.center}><Text style={styles.deniedTitle}>{t.forbiddenTitle}</Text></View>;
   }
+
+  const rows = list.data?.rows ?? [];
 
   return (
     <View style={styles.root}>
@@ -106,26 +179,10 @@ export default function CrmScreen() {
       <Text style={styles.totalLabel}>{t.totalCount(list.data?.totalCount ?? 0)}</Text>
 
       <KcFlashList
-        data={[...(list.data?.rows ?? [])]}
-        keyExtractor={(c) => c.contactId}
-        renderItem={({ item }) => (
-          <ContactCard
-            contact={item}
-            onEdit={() => setEditing(item)}
-            onMarkContacted={() => { void markContacted.mutateAsync(item.contactId); }}
-            onDelete={async () => {
-              const ok = await confirmAction(t.confirm.delete, L);
-              if (!ok) return;
-              try { await remove.mutateAsync(item.contactId); }
-              catch (err) {
-                const code = isCrmContactError(err) ? err.code : 'unknown';
-                const msg = t.errors[code as keyof typeof t.errors] ?? t.errors.unknown;
-                if (Platform.OS === 'web') { if (typeof window !== 'undefined') window.alert(msg); }
-                else Alert.alert(msg);
-              }
-            }}
-          />
-        )}
+        data={rows}
+        keyExtractor={crmContactKeyExtractor}
+        estimatedItemSize={140}
+        renderItem={renderItem}
         refreshControl={
           <RefreshControl refreshing={list.isRefetching} onRefresh={() => { void list.refetch(); }} />
         }

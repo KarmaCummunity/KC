@@ -33,13 +33,15 @@ import { ChatConversationHeader } from '../../src/components/chat/ChatConversati
 import { useChatTypingIndicator } from '../../src/hooks/useChatTypingIndicator';
 import { useChatMessageReactions } from '../../src/hooks/useChatMessageReactions';
 import { pickChatImage, uploadChatImageAndSend } from '../../src/services/chatMediaUpload';
+import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import type { MessageReactionType } from '@kc/infrastructure-supabase';
 import { webEnterToSend } from '../../src/components/chat/webEnterToSend';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 const EMPTY_MESSAGES: OptimisticMessage[] = [];
+const chatThreadKeyExtractor = (row: ChatThreadListRow) =>
+  row.rowType === 'message' ? row.message.clientId : row.rowKey;
 
 function routeStringParam(v: string | string[] | undefined): string | undefined {
   const s = Array.isArray(v) ? v[0] : v;
@@ -165,11 +167,7 @@ export default function ChatScreen() {
           myReaction={
             item.message.messageId ? myReactions[item.message.messageId] ?? null : null
           }
-          onReactionPick={
-            item.message.messageId
-              ? (r) => handleReactionPick(item.message.messageId!, r)
-              : undefined
-          }
+          onReactionPick={handleReactionPick}
         />
       ),
     [userId, handleRetry, handledIds, byMessage, myReactions, handleReactionPick],
@@ -226,7 +224,8 @@ export default function ChatScreen() {
         <KcFlashList
           data={listRows}
           inverted
-          keyExtractor={(row) => (row.rowType === 'message' ? row.message.clientId : row.rowKey)}
+          keyExtractor={chatThreadKeyExtractor}
+          estimatedItemSize={72}
           contentContainerStyle={styles.messageList}
           renderItem={renderItem}
         />
