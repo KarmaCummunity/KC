@@ -11,6 +11,7 @@ import {
   darkColors,
   lightColors,
   makeUseStyles,
+  radius,
   spacing,
   typography,
   useTheme,
@@ -123,7 +124,7 @@ const useScreenStyles = makeUseStyles(({ colors }) => ({
   },
   optionGroup: {
     backgroundColor: colors.surface,
-    borderRadius: 14,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden' as const,

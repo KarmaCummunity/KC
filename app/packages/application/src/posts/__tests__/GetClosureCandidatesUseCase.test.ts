@@ -43,6 +43,17 @@ describe('GetClosureCandidatesUseCase', () => {
     });
   });
 
+  it('throws post_not_found when the post does not exist', async () => {
+    const postRepo = new FakePostRepository();
+    postRepo.findByIdResult = null;
+    const uc = new GetClosureCandidatesUseCase(postRepo);
+
+    await expect(uc.execute({ postId: 'missing', ownerId: 'u_owner' })).rejects.toMatchObject({
+      code: 'unknown',
+      message: 'post_not_found',
+    });
+  });
+
   it('forwards postId to the repo', async () => {
     const postRepo = new FakePostRepository();
     postRepo.findByIdResult = makePostWithOwner({ postId: 'p_xyz', ownerId: 'u_owner' });

@@ -81,8 +81,7 @@ const usePostMenuExposureBlockStyles = makeUseStyles(({ colors }) => ({
   },
   header: { gap: spacing.xs, alignItems: crossAxisAlignStart },
   title: {
-    ...typography.semiBold,
-    fontSize: 15,
+    ...typography.button,
     color: colors.textPrimary,
     textAlign: textAlignStart(),
     ...layoutWritingDirectionStyle(),
