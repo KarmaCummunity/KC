@@ -1,3 +1,4 @@
+import type { User } from '@kc/domain';
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -8,7 +9,7 @@ vi.mock('../../services/followComposition', () => Object.fromEntries(['getFollow
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
 import { useOptimisticFollowAction } from '../useOptimisticFollowAction';
 import { FollowError } from '@kc/application';
-const target = { userId: 'target', privacyMode: 'Private' as const, followersCount: 2 };
+const target = { userId: 'target', privacyMode: 'Private' as const, followersCount: 2 } as unknown as User;
 describe('useOptimisticFollowAction', () => {
   let client: QueryClient;
   const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
