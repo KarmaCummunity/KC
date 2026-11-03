@@ -197,9 +197,6 @@
       "iconSizeLiteral": 1,
       "unmirroredDirectionalIcon": 1
     },
-    "src/components/EditProfileAddressBlock.tsx": {
-      "rawTextInput": 1
-    },
     "src/components/EditProfileAvatar.tsx": {
       "colorLiteral": 1,
       "radiusLiteral": 1
@@ -536,10 +533,6 @@
       "radiusLiteral": 2,
       "spacingLiteral": 1
     },
-    "src/components/post-detail/PostEngagementSection.tsx": {
-      "fontWeightLiteral": 2,
-      "rawTextInput": 1
-    },
     "src/components/post-detail/PublisherCard.tsx": {
       "unmirroredDirectionalIcon": 1
     },
@@ -560,10 +553,6 @@
     },
     "src/components/post/EditPostExposureSection.tsx": {
       "fontSizeLiteral": 1
-    },
-    "src/components/post/EditPostFormScrollContent.tsx": {
-      "physicalSide": 4,
-      "rawTextInput": 4
     },
     "src/components/post/ExpiredRepublishView.tsx": {
       "iconSizeLiteral": 2
@@ -641,9 +630,6 @@
       "fontWeightLiteral": 3,
       "radiusLiteral": 2,
       "spacingLiteral": 8
-    },
-    "src/components/settings/QuietHoursSection.tsx": {
-      "rawTextInput": 1
     },
     "src/components/settings/appearanceParts.tsx": {
       "fontWeightLiteral": 2,
