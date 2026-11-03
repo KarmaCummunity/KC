@@ -2887,6 +2887,7 @@ export type Database = {
         Row: {
           channel: string
           is_active: boolean
+          payee_phone: string | null
           provider_label: string
           updated_at: string
           url: string
@@ -2894,6 +2895,7 @@ export type Database = {
         Insert: {
           channel: string
           is_active?: boolean
+          payee_phone?: string | null
           provider_label: string
           updated_at?: string
           url: string
@@ -2901,6 +2903,7 @@ export type Database = {
         Update: {
           channel?: string
           is_active?: boolean
+          payee_phone?: string | null
           provider_label?: string
           updated_at?: string
           url?: string
@@ -10831,6 +10834,15 @@ export type Database = {
       kc_dev_is_e2e_title: { Args: { p_title: string }; Returns: boolean }
       kc_dev_is_seeded: { Args: never; Returns: boolean }
       list_active_surveys: { Args: never; Returns: Json }
+      list_kc_support_channels: {
+        Args: never
+        Returns: {
+          channel: string
+          payee_phone: string
+          provider_label: string
+          url: string
+        }[]
+      }
       list_my_blocked_users: {
         Args: never
         Returns: {

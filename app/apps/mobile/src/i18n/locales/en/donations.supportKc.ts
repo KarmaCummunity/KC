@@ -15,11 +15,16 @@ export const supportKc = {
   channelA11y: '{{label}} — opens outside the app, on the {{provider}} payment page',
   loading: 'Loading donation options…',
   unavailable: 'Direct donation options are unavailable right now. Please try again later.',
+  payeePhone: 'Or transfer manually to {{phone}}',
+  copyPhone: 'Copy',
+  copyPhoneA11y: 'Copy the phone number {{phone}}',
+  phoneCopied: 'Number copied',
   linkError: 'We couldn’t open the payment page. Try again or open it in a browser.',
   disclosureTitle: 'Before you donate',
   disclosureSecure:
     'Payment happens outside the app, with a licensed payment provider. Your card and account details never pass through us and are never stored by us.',
-  disclosureRecipient: 'The money goes to Karma Community and is used only to build and run the platform.',
+  disclosureRecipient:
+    'The money goes to the personal account of Karma Community’s founder and is used only to build and run the platform.',
   disclosureTax:
     'Karma Community is not yet a registered nonprofit, so this donation is not eligible for a section 46 tax credit. The payment provider will send you a payment confirmation.',
   disclosureVoluntary: 'Donating is voluntary and does not grant any benefit, service or priority in the app.',
