@@ -46,8 +46,14 @@ describe('listing field specs — per kind', () => {
     // Route, departure, estimated end and seats are rendered by RideCreateSection (D71, D75).
     expect(keysOf('ride_offer')).toEqual(['reward_model', 'cost_share_ils']);
     expect(keysOf('ride_request')).toEqual(['passengers', 'luggage']);
-    expect(keysOf('host_offer')).toEqual(['place_type', 'capacity', 'house_rules']);
-    expect(keysOf('stay_request')).toEqual(['party_size']);
+    expect(keysOf('host_offer')).toEqual([
+      'place_type', 'capacity', 'exclusive', 'min_nights', 'max_nights', 'check_in_from', 'check_in_until',
+      'check_out_by', 'guest_policy', 'children_ok', 'pets_ok', 'smoking', 'amenities', 'accessibility',
+      'household', 'house_rules', 'availability',
+    ]);
+    expect(keysOf('stay_request')).toEqual([
+      'stay_purpose', 'check_in_date', 'check_out_date', 'flexible_days', 'adults', 'minors', 'near_trail', 'gear', 'needs',
+    ]);
     expect(keysOf('volunteer_shift')).toEqual(['duration_minutes']);
     expect(keysOf('support_request')).toEqual(['support_type', 'duration_minutes']);
   });
@@ -122,6 +128,37 @@ describe('listing field specs — values', () => {
       kosher: 'yes',
     });
     expect(validateListingDetails(KINDS_BY_WORLD.food![0]!.detailSchema, details)).toBeNull();
+  });
+});
+
+describe('listing field specs — housing stays (FR-HOUSING-005, 006)', () => {
+  const hostOffer = fieldsForKind(KINDS_BY_WORLD.housing![0]!);
+  const stayRequest = fieldsForKind(KINDS_BY_WORLD.housing![1]!);
+  // `required` of the host_offer schema in migration 0591.
+  const OFFER_REQUIRED = [
+    'place_type', 'capacity', 'exclusive', 'min_nights', 'max_nights', 'check_in_from', 'check_in_until',
+    'check_out_by', 'guest_policy', 'children_ok', 'pets_ok', 'smoking', 'availability',
+  ];
+
+  it('a host who changes nothing still sends every key the server requires', () => {
+    const submitted = detailsForSubmit(hostOffer, initialDetailsFor(hostOffer));
+    expect(Object.keys(submitted)).toEqual(expect.arrayContaining(OFFER_REQUIRED));
+    // Booleans set to false are values, not empty fields.
+    expect(submitted).toMatchObject({ exclusive: false, pets_ok: false, availability: { mode: 'ongoing' } });
+  });
+
+  it('a stay request is incomplete until both dates are picked', () => {
+    const start = initialDetailsFor(stayRequest);
+    expect(firstMissingRequiredField(stayRequest, start)?.key).toBe('check_in_date');
+    expect(firstMissingRequiredField(stayRequest, { ...start, check_in_date: '2030-01-10' })?.key).toBe('check_out_date');
+    expect(firstMissingRequiredField(stayRequest, { ...start, check_in_date: '2030-01-10', check_out_date: '2030-01-12' })).toBeNull();
+  });
+
+  it('shows trail fields only to trail walkers', () => {
+    const visible = (details: Record<string, unknown>) =>
+      stayRequest.filter((spec) => isFieldVisible(spec, details)).map((spec) => spec.key);
+    expect(visible({ stay_purpose: 'travel_tourism' })).not.toContain('near_trail');
+    expect(visible({ stay_purpose: 'trail_walk' })).toEqual(expect.arrayContaining(['near_trail', 'gear']));
   });
 });
 
