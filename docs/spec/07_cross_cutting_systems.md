@@ -10,10 +10,10 @@ Statuses: `open`, `closed_delivered`, `deleted_no_recipient`, `expired`, `remove
 - **Permissions (S2):** edit/delete — owner and super-admin; hide — KC admin; a suspended user cannot create, edit or comment.
 - **Expiry by type (D21):** food offer — at expiry date (alert 24h before and at expiry; close at midnight of expiry date, S4); ride offer — 30 min after estimated end; event & ticket — at their date; items and all requests — no expiry; the owner gets relevance reminders instead (D59).
 - **Relevance reminder (S3):** 14 days after publish, then every 30 days: "Still relevant?" → bump / close. Bump updates sort time, not `created_at`.
-- **Owner management ({{D:listing-owner-lifecycle}}, PM 2026-11-03):** what the owner may do with their own post, by status, enforced on the server:
+- **Owner management (D104, PM 2026-11-03):** what the owner may do with their own post, by status, enforced on the server:
   - **open** — edit, pause, mark delivered, delete, add photos.
   - **paused** — hidden from everyone but the owner: feeds, world screens, search, map, profile and a shared link. The owner may edit, resume (not after the post's own expiry), delete and add photos.
-  - **closed (delivered)** — the hard fields are locked (title, description, details, city, radius, urgency, direction, world). The owner may only **add** photos, up to 10 in all (for example a handoff or thank-you photo); existing photos are never replaced or removed. Video ("reels") joins when post media supports video ({{G:post-video-media}}).
+  - **closed (delivered)** — the hard fields are locked (title, description, details, city, radius, urgency, direction, world). The owner may only **add** photos, up to 10 in all (for example a handoff or thank-you photo); existing photos are never replaced or removed. Video ("reels") joins when post media supports video (G53).
   - **An active reservation or booking** (reserved or confirmed handoff) blocks pause, mark delivered and delete: the handoff is finished or cancelled first, so a taker is never left stranded and karma is never granted twice.
   - **A delivered post with a completed handoff cannot be deleted**: it is the other side's record too (their rating and karma), as FR-POST-010 already rules for posts with a recipient.
   - A refusal tells the owner why (wrong status, active handoff, handoff history, expired, photo limit).
