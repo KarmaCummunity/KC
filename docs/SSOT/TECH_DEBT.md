@@ -20,7 +20,7 @@
 | ID | Sev | Item | Closing slice |
 | -- | -- | ---- | ------- |
 <<<<<<< HEAD
-| {{TD:db-test-0300-commits}} | 🟢 | **`supabase/tests/0300_whatsapp_bot_contract.sql` commits its rows.** It ends with `commit;` instead of `rollback;` and creates users with fixed UUIDs, so a second `scripts/run-db-tests.sh` on the same local stack fails with `users_pkey` and the leftover users change later results (`0280` follow suggestions). CI is unaffected (fresh stack per run). Fix: end it with `rollback;` like every other test and drop the fixed UUIDs for `kc_test.create_user`. | Opportunistic |
+| TD-262 | 🟢 | **`supabase/tests/0300_whatsapp_bot_contract.sql` commits its rows.** It ends with `commit;` instead of `rollback;` and creates users with fixed UUIDs, so a second `scripts/run-db-tests.sh` on the same local stack fails with `users_pkey` and the leftover users change later results (`0280` follow suggestions). CI is unaffected (fresh stack per run). Fix: end it with `rollback;` like every other test and drop the fixed UUIDs for `kc_test.create_user`. | Opportunistic |
 =======
 >>>>>>> origin/dev
 | TD-259 | 🟢 | **Legacy `ride_templates` materializer still runs.** `ride_templates_materialize` (`0148`, FR-RIDE-021) is scheduled daily and inserts into the retired `ride_listings` table; recurring rides now live in `ride_series` (`0531`, FR-RIDE-046). Unschedule the job and drop `ride_templates` + the `RideTemplate` domain / application / adapter code once no row is active. | rides cleanup |
