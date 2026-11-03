@@ -311,14 +311,6 @@
       "iconSizeLiteral": 1,
       "unmirroredDirectionalIcon": 1
     },
-    "src/components/closure/ClosureRecipientPanes.tsx": {
-      "fontSizeLiteral": 2,
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 3,
-      "spacingLiteral": 10,
-      "physicalSide": 1,
-      "rawTextInput": 1
-    },
     "src/components/closure/RecipientPickerRow.tsx": {
       "fontSizeLiteral": 3,
       "fontWeightLiteral": 2,
