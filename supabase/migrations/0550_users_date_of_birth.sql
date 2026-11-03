@@ -1,4 +1,4 @@
--- 0550_users_date_of_birth | FR-AUTH-010 AC2.d, FR-PROFILE-007 AC7 ({{D:profile-extra-fields}})
+-- 0550_users_date_of_birth | FR-AUTH-010 AC2.d, FR-PROFILE-007 AC7 (D109)
 --
 -- A private date of birth, required at sign-up and at least 18 years old (the consent screen
 -- already makes every new member confirm 18+, FR-AUTH-005 AC5.a; this stores and enforces it).

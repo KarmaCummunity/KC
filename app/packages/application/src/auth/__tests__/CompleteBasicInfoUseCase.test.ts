@@ -46,6 +46,7 @@ describe('CompleteBasicInfoUseCase', () => {
       profileStreet: null,
       profileStreetNumber: null,
       contactPhone: null,
+      dateOfBirth: DOB,
     });
   });
 

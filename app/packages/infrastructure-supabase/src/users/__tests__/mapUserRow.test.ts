@@ -47,6 +47,7 @@ describe('mapUserRow', () => {
       profileStreet: 'Allenby',
       profileStreetNumber: '12',
       contactPhone: null,
+      dateOfBirth: null,
       biography: 'I give books.',
       avatarUrl: 'https://cdn.example.com/avatars/u_1.jpg',
       privacyMode: 'Public',
