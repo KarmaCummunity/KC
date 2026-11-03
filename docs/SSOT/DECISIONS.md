@@ -1681,10 +1681,24 @@ Owner rules that go with it:
 
 **Affected.** `scripts/check-dependency-audit*.mjs` (+ tests), `scripts/check-dependency-audit.allowlist.json`, `scripts/package.json` (`semver`), `.github/workflows/{ci-static-guards,ci-frontend,dependency-audit}.yml`, `app/package.json` (ignore list removed, scoped postcss override), `SECURITY.md` § Dependency audit, `TECH_DEBT.md` (`TD-140` closed, `TD-254` part 1 done).
 
+## {{ENG:launch-owner-decisions}} — Store-launch owner decisions: temporary web domain, KC Pro pricing, support mailbox (2026-11-03)
+
+**Decision.** Owner decisions for the first store submission (#920, #1088, #1036):
+1. **Store-review URLs use the Cloudflare Pages domain** `karma-community.pages.dev` until a permanent domain is bought (privacy policy: `https://karma-community.pages.dev/privacy`). When the domain is bought, the store listings switch to it.
+2. **KC Pro pricing:** free for the first year after launch. After that, $30/month for a private person (mainly for the WhatsApp bot) and $100/month for an organization (includes the full admin portal).
+3. **Support email:** the single operated KC mailbox of `D-59`, `karmacommunity2.0@gmail.com`, which the app, web pages and store copy already use.
+
+**Why.** Store review needs live, stable policy URLs now; the custom domain is not available yet. Pricing and support contact are owner decisions recorded here so the store listing, paywall and support copy share one source.
+
+**Rejected.** Waiting for a purchased domain before submitting (blocks review with no benefit).
+
+**Affected.** Store listings (#920), KC Pro paywall (#1088), support copy (#1036).
+
 ## Change Log
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
+| 4.38 | 2026-11-03 | Added `{{ENG:launch-owner-decisions}}` (store review on the Cloudflare Pages domain until a domain is bought; KC Pro free year then $30/$100 monthly; support mailbox). |
 | 4.37 | 2026-11-03 | Added `D-209` (one dependency audit over every lockfile; reviewed exceptions expire within 90 days; gate audits on dependency changes, daily schedule otherwise; #1373). |
 | 4.36 | 2026-11-02 | `D-195` addendum: an owner's approval is required for gate-weakening changes only into `main`; on `dev` the judges pass with warnings and the release PR surfaces the changes to the owner. |
 | 4.35 | 2026-11-01 | Added `D-207` (five create categories with remembered choice, items on the post engine, curated listing fields, marketplace browse removed, no inline native pickers). |
