@@ -70,8 +70,7 @@ const useEditPostExposureSectionStyles = makeUseStyles(({ colors }) => ({
     ...layoutDirectionStyle(),
   },
   sectionTitle: {
-    ...typography.semiBold,
-    fontSize: 15,
+    ...typography.button,
     color: colors.textPrimary,
     textAlign: textAlignStart(),
     ...layoutWritingDirectionStyle(),

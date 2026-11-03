@@ -11,7 +11,7 @@ import { paymentsUseCases } from '../../../../src/services/paymentsComposition';
 const useStyles = makeUseStyles(({ colors }) => ({
   row: { padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
   title: { ...typography.bodyLarge, color: colors.textPrimary },
-  meta: { ...typography.caption, color: colors.textSecondary, marginTop: 4 },
+  meta: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
 }));
 
 export default function DonationHistoryScreen() {
