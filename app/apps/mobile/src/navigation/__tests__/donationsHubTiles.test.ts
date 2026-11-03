@@ -2,12 +2,24 @@
 // A launch flag decides whether a world is "active" (full in-app flow) or a
 // "portal" (links + knowledge) — it never removes the world from the hub (G37).
 import { describe, expect, it } from 'vitest';
-import { LAUNCH_WORLD_FLAG_DEFAULTS } from '@kc/domain';
+import { GIVING_WORLD_SLUGS, LAUNCH_WORLD_FLAG_DEFAULTS } from '@kc/domain';
 import { DONATIONS_HUB_TILES, donationsHubTiles } from '../donationsHubTiles';
 
 const ALL_OFF = Object.fromEntries(Object.keys(LAUNCH_WORLD_FLAG_DEFAULTS).map((k) => [k, false]));
 
 describe('donationsHubTiles', () => {
+  it('lists exactly the 12 giving worlds in one list — no domains, no experiences (D100)', () => {
+    const worldOf = (key: string) => (key === 'transport' ? 'rides' : key);
+    expect(DONATIONS_HUB_TILES.map((t) => worldOf(t.key))).toEqual([...GIVING_WORLD_SLUGS]);
+  });
+
+  it('opens a world without its own screen on the generic links screen', () => {
+    const href = (key: string) => DONATIONS_HUB_TILES.find((t) => t.key === key)?.href;
+    expect(href('items')).toBe('/(tabs)/donations/items');
+    expect(href('medical')).toBe('/(tabs)/donations/category/medical');
+    expect(href('challenges')).toBe('/(tabs)/donations/category/challenges');
+  });
+
   it('shows every world tile with the default launch flags', () => {
     expect(donationsHubTiles(undefined).map((t) => t.tile.key)).toEqual(DONATIONS_HUB_TILES.map((t) => t.key));
   });

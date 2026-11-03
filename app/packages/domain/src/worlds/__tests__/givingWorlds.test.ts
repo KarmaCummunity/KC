@@ -1,28 +1,40 @@
-// D45 / D62 (docs/spec/04_product_structure.md): the code holds one list of the
-// 8 giving worlds and one list of the 11 domains, exactly as the project book.
+// D100 (docs/spec/04_product_structure.md): one list of 12 giving worlds, no domain layer.
 import { describe, expect, it } from 'vitest';
-import { DOMAIN_SLUGS, GIVING_WORLD_SLUGS, isDomainSlug, isGivingWorldSlug } from '../givingWorlds';
+import {
+  FEED_WORLD_SLUGS,
+  GIVING_WORLD_SLUGS,
+  isFeedWorldSlug,
+  isGivingWorldSlug,
+  linkCategoryForWorld,
+} from '../givingWorlds';
+import { DONATION_CATEGORY_SLUGS } from '../../value-objects';
 
-describe('giving worlds and domains (spec 04)', () => {
-  it('lists the 8 giving worlds of the project book', () => {
+describe('giving worlds (spec 04, D100)', () => {
+  it('lists the 12 giving worlds of the project book', () => {
     expect([...GIVING_WORLD_SLUGS].sort()).toEqual(
-      ['experiences', 'food', 'housing', 'items', 'knowledge', 'money', 'rides', 'time'].sort(),
+      ['animals', 'challenges', 'democracy', 'employment', 'food', 'housing', 'items', 'knowledge',
+        'medical', 'money', 'rides', 'time'].sort(),
     );
   });
 
-  it('lists the 11 domains, with no overlap with worlds', () => {
-    expect([...DOMAIN_SLUGS].sort()).toEqual(
-      ['animals', 'culture', 'democracy', 'elderly', 'employment', 'environment', 'heritage', 'medical',
-        'spirituality', 'sport', 'tech'].sort(),
-    );
-    expect(GIVING_WORLD_SLUGS.filter((w) => (DOMAIN_SLUGS as readonly string[]).includes(w))).toEqual([]);
+  it('keeps feed worlds a subset of the worlds', () => {
+    for (const slug of FEED_WORLD_SLUGS) expect(isGivingWorldSlug(slug)).toBe(true);
+    expect(isFeedWorldSlug('rides')).toBe(true);
+    expect(isFeedWorldSlug('medical')).toBe(false);
   });
 
-  it('classifies slugs, rejecting retired ones like app_design (D18)', () => {
-    expect(isGivingWorldSlug('experiences')).toBe(true);
-    expect(isDomainSlug('medical')).toBe(true);
-    expect(isGivingWorldSlug('medical')).toBe(false);
-    expect(isGivingWorldSlug('app_design')).toBe(false);
-    expect(isDomainSlug('app_design')).toBe(false);
+  it('rejects retired slugs: domains, experiences and app_design', () => {
+    for (const retired of ['experiences', 'environment', 'elderly', 'sport', 'tech', 'app_design']) {
+      expect(isGivingWorldSlug(retired)).toBe(false);
+    }
+  });
+
+  it('maps every world except items to a links category that exists', () => {
+    expect(linkCategoryForWorld('items')).toBeNull();
+    expect(linkCategoryForWorld('rides')).toBe('transport');
+    expect(linkCategoryForWorld('nope')).toBeNull();
+    for (const world of GIVING_WORLD_SLUGS.filter((w) => w !== 'items')) {
+      expect(DONATION_CATEGORY_SLUGS).toContain(linkCategoryForWorld(world));
+    }
   });
 });

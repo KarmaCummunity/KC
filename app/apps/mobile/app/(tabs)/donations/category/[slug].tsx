@@ -1,5 +1,6 @@
 // FR-DONATE-006/007 — generic donation category screen.
-// Renders DonationLinksList for any of: food, housing, transport, knowledge, animals, medical.
+// Renders DonationLinksList for any link-only world: medical, animals, democracy, employment,
+// challenges (D100), plus the legacy food / housing / transport / knowledge category links.
 import React from 'react';
 import { ScrollView, View } from 'react-native';
 import { Redirect, useLocalSearchParams } from 'expo-router';
@@ -29,11 +30,14 @@ const ICON_BY_SLUG: Record<DonationCategorySlug, keyof typeof Ionicons.glyphMap>
   knowledge: 'school-outline',
   animals: 'paw-outline',
   medical: 'medical-outline',
+  democracy: 'megaphone-outline',
+  employment: 'briefcase-outline',
+  challenges: 'trophy-outline',
 };
 
 const I18N_KEY_BY_SLUG: Record<
   Exclude<DonationCategorySlug, 'time' | 'money'>,
-  'food' | 'housing' | 'transport' | 'knowledge' | 'animals' | 'medical'
+  'food' | 'housing' | 'transport' | 'knowledge' | 'animals' | 'medical' | 'democracy' | 'employment' | 'challenges'
 > = {
   food: 'food',
   housing: 'housing',
@@ -41,6 +45,9 @@ const I18N_KEY_BY_SLUG: Record<
   knowledge: 'knowledge',
   animals: 'animals',
   medical: 'medical',
+  democracy: 'democracy',
+  employment: 'employment',
+  challenges: 'challenges',
 };
 
 function isCategorySlug(value: unknown): value is DonationCategorySlug {

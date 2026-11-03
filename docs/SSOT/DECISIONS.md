@@ -1694,6 +1694,14 @@ Owner rules that go with it:
 
 **Affected.** Store listings (#920), KC Pro paywall (#1088), support copy (#1036).
 
+## D-212 — Post and listing detail pages share one hero + content-card frame (2026-11-03)
+
+**Decision.** The listing page (items, food, rides, knowledge) uses the same hero frame (`DetailHeroCard`, with the photo gallery or a placeholder icon) and the same content card as the post page. Each type keeps its own fields and actions (route card, handoff, booking, messaging).
+
+**Rationale.** PM feedback: a ride request and an item request looked like two different apps. Sharing the frame keeps new listing types consistent by default.
+
+**Affected.** `apps/mobile/src/components/marketplace/MarketplaceListingDetailView.tsx`, `ListingMediaGallery.tsx`, `components/post-detail/DetailHeroCard.tsx`, `screens/post/PostDetailScrollContent.tsx`. No `FR-*` AC changes.
+
 ## {{ENG:finance-live-transparency}} — Live public finance numbers behind organization-controlled toggles; refines `D-196` for the public view (2026-11-03)
 
 **Decision.** The public view of an organization's finances is **live** aggregates, not only frozen snapshots, under three guards: (1) every block (`show_totals`, `show_donations_count`, `show_program_ratio`, `show_category_breakdown`, `show_monthly_trend`) is a boolean in `organizations.transparency_settings`, **default off**, changed only by a super admin through `finance_transparency_settings_set`; (2) each ledger entry carries `is_public` (default true) so a single entry can be excluded; (3) the anon-safe RPC `rpc_org_transparency(p_slug)` returns aggregates only, built from cleared, non-deleted, ILS, public, non-transfer entries, with expense categories folded into the known keys. Its return type has no counterparty, donor, entry or account field. The snapshot flow of `FR-FIN-018..020` stays planned for yearly, reviewed reporting; the two views coexist. A donor's own per-donation choice is deferred to payment mirroring (`FIN-DONOR-PRIVACY`).
@@ -1787,3 +1795,14 @@ Owner rules that go with it:
 | 1.6 | 2026-05-16 | Added `D-25` (`users.display_name`/`city`/`city_name` nullable; migration `0084` removes the Hebrew defaults — first concrete delivery against `D-24`). |
 | 1.7 | 2026-05-16 | Added `D-26` (Post visibility vs per-actor identity on posts; `FR-POST-021`) and `D-27` (About copy: transparency vs optional anonymity). |
 | 1.8 | 2026-05-16 | Added `D-28` (per-participant `surface_visibility` for closed posts; supersedes `D-19`'s third-party visibility clause in part and refines `D-26`; rewrites `FR-POST-021`; migration `0085`). |
+
+## D-211 — One world registry drives the hub, the create form and the "+" button (2026-11-03)
+
+**Decision.** `GIVING_WORLD_SLUGS` (`@kc/domain`) is the single list of the 12 giving worlds of `D100`; `FEED_WORLD_SLUGS` marks the five with a feed and an in-app form (items, food, rides, time, housing). The Donations hub tiles (`donationsHubTiles`), the create-form categories (`CREATE_CATEGORIES`) and the main-feed world filter are all derived from them. A create category has one of three engines: `post` (items), `listing` (the feed worlds) or `link` (every other world: the form is "add a link", written through `AddDonationLinkUseCase` to the world's `donation_categories` row, reviewed per `D9`). Remembered create preferences are `{ categoryId, directions }` — the direction (give / request) is stored per category, and the first-release `{ categoryId, direction }` value is migrated on read. The tab-bar "+" asks `createCategoryForPath(pathname)` and opens the form on the world on screen. Migration `0548` widens the `donation_categories` slug CHECK (and the `validate-donation-link` allow-list) with `democracy`, `employment` and `challenges`.
+
+**Why.** The hub, the form and the filter each kept their own list (a featured items card plus two tile grids; five create categories; eight filter chips), so every world change had to be made in three places and the three drifted — the PM saw a hub that still showed the retired domains. One registry makes a new world a one-line change, and the link engine lets worlds with no feed still take contributions through the same form instead of a second entry point.
+
+**Rejected.** Redirects from the deleted `/donations/domain/*` and `/donations/experiences` routes (the PM wants the screens gone, not kept alive). Per-world request / offer buttons on every world screen (a second way to open the same form; the "+" already does it). One global remembered direction (items given while rides are asked for kept flipping the toggle). A separate "add link" button outside the create form for portal worlds.
+
+**Affected.** `app/packages/domain/src/worlds/givingWorlds.ts`, `launch/launchWorlds.ts`, `value-objects.ts`; `app/apps/mobile/src/navigation/donationsHubTiles.ts`, `lib/unifiedCreate/*`, `hooks/useUnifiedCreateCategory.tsx`, `components/CreatePostForm/{LinkCreateForm,UnifiedCreateHeader}.tsx`, `components/{TabBar,DonationLinkFields}.tsx`, `components/giving/*`, `app/(tabs)/donations/index.tsx`; `supabase/migrations/0548_donation_link_world_categories.sql`, `supabase/functions/validate-donation-link`. Spec: `FR-DONATE-001`, `FR-POST-001` AC6, `FR-FEED-020` AC2.
+
