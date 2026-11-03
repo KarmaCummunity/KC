@@ -1,7 +1,8 @@
 import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useTheme, Text, TextInput } from '@kc/ui';
+import { Text } from '@kc/ui';
+import { TextField } from '../ui/TextField';
 import { ALL_CATEGORIES, ITEM_CONDITIONS } from '@kc/domain';
 import type { Category, ItemCondition, LocationDisplayLevel, PostVisibility } from '@kc/domain';
 import { CityPicker } from '../CityPicker';
@@ -76,7 +77,6 @@ export function EditPostFormScrollContent({
   onHideFromCounterpartyChange,
 }: EditPostFormScrollContentProps) {
   const { t } = useTranslation();
-  const { colors } = useTheme();
   const styles = useEditPostScreenStyles();
 
   return (
@@ -98,16 +98,11 @@ export function EditPostFormScrollContent({
       />
 
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>
-          {t('post.editPost.sectionTitle')} <Text style={styles.required}>*</Text>
-        </Text>
-        <TextInput
-          style={styles.input}
+        <TextField
+          label={`${t('post.editPost.sectionTitle')} *`}
           value={title}
           onChangeText={onTitleChange}
           placeholder={t('post.editPost.titlePlaceholder')}
-          placeholderTextColor={colors.textDisabled}
-          textAlign="right"
           maxLength={80}
         />
         <Text style={styles.charCount}>{title.length}/80</Text>
@@ -127,27 +122,23 @@ export function EditPostFormScrollContent({
               disabled={isSaving}
             />
           </View>
-          <TextInput
-            style={[styles.input, styles.streetInputHouse, !city ? { opacity: 0.5 } : null]}
+          <TextField
+            containerStyle={styles.streetInputHouse}
+            label={t('profile.streetNumberShort')}
             value={streetNumber}
             onChangeText={onStreetNumberChange}
             placeholder={t('post.editPost.streetNumberPlaceholder')}
-            placeholderTextColor={colors.textDisabled}
-            textAlign="right"
             editable={!isSaving && !!city}
           />
         </View>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>{t('post.editPost.sectionDescription')}</Text>
-        <TextInput
-          style={[styles.input, styles.textarea]}
+        <TextField
+          label={t('post.editPost.sectionDescription')}
           value={description}
           onChangeText={onDescriptionChange}
           placeholder={t('post.editPost.descriptionPlaceholder')}
-          placeholderTextColor={colors.textDisabled}
-          textAlign="right"
           multiline
           maxLength={500}
         />
@@ -198,14 +189,11 @@ export function EditPostFormScrollContent({
 
       {!isGive && (
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('post.editPost.sectionUrgency')}</Text>
-          <TextInput
-            style={styles.input}
+          <TextField
+            label={t('post.editPost.sectionUrgency')}
             value={urgency}
             onChangeText={onUrgencyChange}
             placeholder={t('post.editPost.urgencyPlaceholder')}
-            placeholderTextColor={colors.textDisabled}
-            textAlign="right"
             maxLength={100}
           />
         </View>

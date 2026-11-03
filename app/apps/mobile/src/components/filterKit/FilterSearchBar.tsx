@@ -21,7 +21,7 @@ export interface FilterSearchBarProps {
   readonly inputRowStyle?: StyleProp<ViewStyle>;
   readonly inputStyle?: StyleProp<TextStyle>;
   readonly onClear?: () => void;
-  readonly inputRef?: React.Ref<any>;
+  readonly inputRef?: React.Ref<React.ComponentRef<typeof TextInput>>;
 }
 
 export function FilterSearchBar({

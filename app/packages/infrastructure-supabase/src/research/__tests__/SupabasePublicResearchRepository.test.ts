@@ -5,17 +5,30 @@
  * (no local-Supabase fixture in CI per existing repo pattern).
  */
 import { describe, it, expect, vi } from 'vitest';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { PublicResearchError } from '@kc/domain';
+import type { Database } from '../../database.types';
 import { SupabasePublicResearchRepository } from '../SupabasePublicResearchRepository';
 
 // ---------------------------------------------------------------------------
 // Mock factory
 // ---------------------------------------------------------------------------
 
+type MockClient = SupabaseClient<Database> & {
+  rpc: ReturnType<typeof vi.fn>;
+  functions: {
+    invoke: {
+      mock: {
+        calls: [[string, { body: Record<string, unknown> }], ...unknown[]];
+      };
+    };
+  };
+};
+
 function makeClient(opts: {
   rpcResult?: { data: unknown; error: { message: string } | null };
   invokeResult?: { data: unknown; error: unknown };
-} = {}): any {
+} = {}): MockClient {
   const rpcResult = opts.rpcResult ?? { data: null, error: null };
   const invokeResult = opts.invokeResult ?? { data: null, error: null };
 
@@ -24,7 +37,7 @@ function makeClient(opts: {
     functions: {
       invoke: vi.fn().mockResolvedValue(invokeResult),
     },
-  };
+  } as unknown as MockClient;
 }
 
 // ---------------------------------------------------------------------------
