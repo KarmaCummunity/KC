@@ -123,7 +123,7 @@ function ProfileClosedPostsGridInner({
 
 export const ProfileClosedPostsGrid = React.memo(ProfileClosedPostsGridInner);
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   loading: { padding: spacing.xl, alignItems: 'center' },
   grid: {
     width: '100%',
@@ -148,5 +148,5 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
     alignItems: 'center',
   },
   loadMoreBtnBusy: { opacity: 0.6 },
-  loadMoreText: { ...typography.button, color: colors.primary },
+  loadMoreText: { color: colors.primary, ...typography.button },
 }));

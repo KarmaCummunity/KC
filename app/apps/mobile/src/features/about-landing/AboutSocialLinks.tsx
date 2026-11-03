@@ -2,7 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { View, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, typography, spacing, radius, useTheme, Text } from '@kc/ui';
+import { iconSize, makeUseStyles, typography, spacing, radius, useTheme, Text } from '@kc/ui';
 import {
   ABOUT_FACEBOOK_PROFILE_URL,
   ABOUT_INSTAGRAM_PROFILE_URL,
@@ -10,6 +10,7 @@ import {
 } from './aboutExternalLinks';
 import { aboutOpenExternalUrl } from './aboutOpenExternalUrl';
 import { aboutRtlText, aboutRtlRow } from './aboutWebRtlStyle';
+import { MirroredIcon } from '../../components/ui/MirroredIcon';
 
 type Row = {
   readonly key: string;
@@ -66,9 +67,9 @@ export function AboutSocialLinks() {
           accessibilityRole="link"
           accessibilityLabel={row.label}
         >
-          <Ionicons name="chevron-back" size={18} color={colors.textDisabled} />
+          <MirroredIcon name="chevron-forward" size={iconSize.md} color={colors.textDisabled} />
           <Text style={styles.label}>{row.label}</Text>
-          <Ionicons name={row.icon} size={22} color={colors.primary} />
+          <Ionicons name={row.icon} size={iconSize.xl} color={colors.primary} />
         </Pressable>
       ))}
     </View>
@@ -97,5 +98,5 @@ const useAboutSocialLinksStyles = makeUseStyles(({ colors }) => ({
     backgroundColor: colors.surfaceRaised,
   },
   rowPressed: { opacity: 0.92, backgroundColor: colors.primarySurface },
-  label: { flex: 1, ...typography.body, color: colors.textPrimary, ...aboutRtlText, fontWeight: '600' },
+  label: { flex: 1, ...typography.body, color: colors.textPrimary, ...aboutRtlText, ...typography.semiBold },
 }));
