@@ -1,0 +1,74 @@
+// Behavioural in-memory IReportRepository (G39 contract fake). Unlike the spy
+// FakeReportRepository (call capture + injected error), it applies the rules of
+// the reports table and its validation trigger, and must pass the same
+// reportRepositoryContract cases as SupabaseReportRepository. Bound to one actor,
+// the way RLS and auth.uid() scope the adapter to its signed-in user.
+//
+// Members and chats (report targets) come from the chat contract's store, so one
+// store plays the database for both ports.
+
+import type { ReportSubmission } from '@kc/domain';
+import { REPORT_NOTE_MAX_LENGTH } from '@kc/domain';
+import type { IReportRepository } from '../../ports/IReportRepository';
+import type { InMemoryChatStore } from '../../chat/__tests__/inMemoryChatStore';
+import { ReportError } from '../errors';
+
+/** reports_validate_before_insert: one report per reporter and target per 24 hours. */
+const DUPLICATE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/** One stored `reports` row: what the duplicate rule needs. */
+export interface StoredReport {
+  readonly reporterId: string;
+  readonly targetType: ReportSubmission['targetType'];
+  readonly targetId: string | null;
+  readonly createdAtMs: number;
+}
+
+export class InMemoryReportRepository implements IReportRepository {
+  constructor(
+    private readonly store: InMemoryChatStore,
+    private readonly reports: StoredReport[],
+    private readonly actorId: string,
+  ) {}
+
+  async submit(reporterId: string, input: ReportSubmission): Promise<void> {
+    // reports_insert_self: a member reports only in their own name (RLS refusal).
+    if (reporterId !== this.actorId) throw new ReportError('unknown', 'new row violates row-level security policy');
+    if (input.note !== undefined && input.note.length > REPORT_NOTE_MAX_LENGTH) {
+      throw new ReportError('invalid_target', 'reports_note_check');
+    }
+    this.assertTargetAllowed(input);
+    const nowMs = Date.now();
+    if (input.targetType !== 'none' && this.reportedRecently(input, nowMs)) {
+      throw new ReportError('duplicate_within_24h', 'duplicate_report');
+    }
+    this.reports.push({ reporterId, targetType: input.targetType, targetId: input.targetId, createdAtMs: nowMs });
+  }
+
+  /** The target rules: it must exist (a chat: the reporter is in it) and must not be the reporter. */
+  private assertTargetAllowed(input: ReportSubmission): void {
+    if (input.targetType === 'user') {
+      if (!input.targetId || !this.store.users.has(input.targetId)) throw new ReportError('invalid_target', 'report_target_not_visible');
+      if (input.targetId === this.actorId) throw new ReportError('invalid_target', 'cannot_report_self');
+    }
+    if (input.targetType === 'chat') {
+      const row = input.targetId ? this.store.chats.get(input.targetId) : undefined;
+      if (!row || !this.store.isParticipant(row, this.actorId)) throw new ReportError('invalid_target', 'report_target_not_visible');
+    }
+    if (input.targetType === 'post' || input.targetType === 'listing') {
+      // Posts and listings live in other stores; this fake does not model them.
+      throw new ReportError('invalid_target', `${input.targetType} targets are not modelled by this fake`);
+    }
+  }
+
+  private reportedRecently(input: ReportSubmission, nowMs: number): boolean {
+    return this.reports.some(
+      (r) =>
+        r.reporterId === this.actorId &&
+        r.targetType === input.targetType &&
+        r.targetId === input.targetId &&
+        nowMs - r.createdAtMs < DUPLICATE_WINDOW_MS,
+    );
+  }
+}
+

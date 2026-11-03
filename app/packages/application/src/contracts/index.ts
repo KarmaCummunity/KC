@@ -20,3 +20,14 @@ export {
   type SavedPostsActor,
   type SavedPostsContractContext,
 } from './savedPostsRepository.contract';
+export {
+  CHAT_MESSAGE_MAX_LENGTH,
+  chatRepositoryContract,
+  type ChatActor,
+  type ChatContractContext,
+} from './chatRepository.contract';
+export {
+  reportRepositoryContract,
+  type ReportActor,
+  type ReportContractContext,
+} from './reportRepository.contract';
