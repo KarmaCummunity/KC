@@ -7,7 +7,7 @@ More than a third of food in Israel is thrown away while families lack it. Conne
 1. Photograph & post — offer requires photo, expiry date, allergens (D28, D21).
 2. Matching — notify only on good match or saved filter (D10).
 3. Chat & pickup — one chat per pair, post pinned (D13).
-4. "Mark delivered" — karma, internal rating (D12, D15, D24). Unclaimed offers auto-close at expiry, alert 24h before (S4). Tech: hourly `food_expired_listings_sweep` → status `expired`, `notifications_food_expiry_check` (`0467`, KC#1316); "close at midnight of the expiry date" (S4) not applied — the giver's own expiry time is used.
+4. "Mark delivered" — karma, internal rating (D12, D15, D24). Unclaimed offers auto-close at expiry, alert 24h before (S4). Tech: hourly `food_expired_listings_sweep` → status `expired`, `notifications_food_expiry_check` (`0467`, KC#1316); "close at midnight of the expiry date" (S4) not applied — the giver's own expiry time is used. An offer without the giver's expiry is rejected (`food_expiry_required`) and a request never expires: food has no world TTL (`0539`); lifecycle covered by `supabase/tests/flows/food_lifecycle.sql`.
 Hub: food-safety knowledge; food banks; distribution points & community fridges; plug-in "event leftovers" routing (S36). Requests have no expiry (D21). Emergency food-shortage template (D42).
 
 ## 5.2 Items (`items`) — MVP, live

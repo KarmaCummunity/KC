@@ -18,14 +18,17 @@ describe('marketplaceServerErrorKey', () => {
 
 describe('marketplaceRuleFieldError', () => {
   it('items without photos → no error (photos are optional)', () => {
-    expect(marketplaceRuleFieldError({ worldSlug: 'items', details: {}, photoCount: 0 })).toBeNull();
-    expect(marketplaceRuleFieldError({ worldSlug: 'items', details: {}, photoCount: 2 })).toBeNull();
+    expect(marketplaceRuleFieldError({ worldSlug: 'items', direction: 'give', details: {}, photoCount: 0 })).toBeNull();
+    expect(marketplaceRuleFieldError({ worldSlug: 'items', direction: 'give', details: {}, photoCount: 2 })).toBeNull();
   });
-  it('food without expiry → inline details error', () => {
-    expect(marketplaceRuleFieldError({ worldSlug: 'food', details: {}, photoCount: 0 })?.field).toBe('details');
+  it('food offer without expiry → inline details error', () => {
+    expect(marketplaceRuleFieldError({ worldSlug: 'food', direction: 'give', details: {}, photoCount: 0 })?.field).toBe('details');
+  });
+  it('food request without expiry → no error (requests never expire, D21)', () => {
+    expect(marketplaceRuleFieldError({ worldSlug: 'food', direction: 'request', details: {}, photoCount: 0 })).toBeNull();
   });
   it('routed worlds → inline organisation-picker error', () => {
-    expect(marketplaceRuleFieldError({ worldSlug: 'medical', details: {}, photoCount: 0 })?.field).toBe('org');
+    expect(marketplaceRuleFieldError({ worldSlug: 'medical', direction: 'give', details: {}, photoCount: 0 })?.field).toBe('org');
   });
 });
 
@@ -41,7 +44,7 @@ describe('handoffErrorKey', () => {
 
 describe('marketplaceRuleFieldError — rides / knowledge', () => {
   it('missing ride route → inline details error', () => {
-    expect(marketplaceRuleFieldError({ worldSlug: 'rides', details: {}, photoCount: 0 })).toEqual({
+    expect(marketplaceRuleFieldError({ worldSlug: 'rides', direction: 'give', details: {}, photoCount: 0 })).toEqual({
       code: 'ride_route_required',
       field: 'details',
       key: 'marketplace.errors.ride_route_required',
@@ -51,6 +54,7 @@ describe('marketplaceRuleFieldError — rides / knowledge', () => {
     expect(
       marketplaceRuleFieldError({
         worldSlug: 'knowledge',
+        direction: 'give',
         details: { slot_starts_at: '2000-01-01T00:00:00Z', slot_ends_at: '2000-01-01T01:00:00Z' },
         photoCount: 0,
       })?.code,

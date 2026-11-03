@@ -93,11 +93,12 @@ Last applied on kc-dev when this was written: `0239`.
 | 0535 | #1468 knowledge world subcategories | in progress |
 | 0536 | FK and hot-path indexes | in progress |
 | 0537 | RPC input bounds | in progress |
-| 0538+ | — | free |
+| 0539 | food expiry: offers only, no food TTL (G38, D21 / D28) | in progress |
+| 0540+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0538+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0540+`.
 
 ## How to claim
 

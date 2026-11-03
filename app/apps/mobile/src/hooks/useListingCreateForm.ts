@@ -84,7 +84,7 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
     const missing = firstMissingRequiredField(specs, details);
     if (missing) return t('post.unifiedCreate.errors.fieldRequired', { field: t(`marketplace.field.${missing.key}`) });
     if (!isRides && !city) return t('post.unifiedCreate.errors.cityRequired');
-    const rule = marketplaceRuleFieldError({ worldSlug, details: submitted, photoCount: photos.length });
+    const rule = marketplaceRuleFieldError({ worldSlug, direction, details: submitted, photoCount: photos.length });
     if (rule) return t(rule.key);
     if (isRides && recurrence && recurrence.weekdays.length === 0) return t('rideSeries.errors.weekdaysRequired');
     const schemaErr = kind ? validateListingDetails(kind.detailSchema, submitted) : null;
