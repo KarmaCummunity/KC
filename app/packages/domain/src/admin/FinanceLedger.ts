@@ -45,6 +45,10 @@ export interface FinanceEntry {
   readonly description: string | null;
   readonly referenceUrl: string | null;
   readonly status: FinanceEntryStatus;
+  /** FR-FIN-003: the financial account the money moved through; null for legacy entries. */
+  readonly accountId: string | null;
+  /** FR-FIN-022: false excludes the entry from the public transparency aggregates. */
+  readonly isPublic: boolean;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -70,6 +74,12 @@ export type FinanceLedgerErrorCode =
   | 'invalid_direction'
   | 'missing_required_fields'
   | 'entry_not_found'
+  | 'account_not_found'
+  | 'account_name_taken'
+  | 'invalid_name'
+  | 'invalid_last4'
+  | 'invalid_settings'
+  | 'org_not_found'
   | 'unknown';
 
 export class FinanceLedgerError extends Error {

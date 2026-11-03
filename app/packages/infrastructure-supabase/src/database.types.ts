@@ -2158,8 +2158,83 @@ export type Database = {
           },
         ]
       }
+      finance_accounts: {
+        Row: {
+          account_id: string
+          created_at: string
+          created_by: string | null
+          is_active: boolean
+          kind: string
+          last4: string | null
+          name: string
+          opening_balance_at: string | null
+          opening_balance_cents: number
+          org_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string
+          created_at?: string
+          created_by?: string | null
+          is_active?: boolean
+          kind: string
+          last4?: string | null
+          name: string
+          opening_balance_at?: string | null
+          opening_balance_cents?: number
+          org_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          created_by?: string | null
+          is_active?: boolean
+          kind?: string
+          last4?: string | null
+          name?: string
+          opening_balance_at?: string | null
+          opening_balance_cents?: number
+          org_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_accounts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "finance_accounts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "finance_accounts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "finance_accounts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["org_id"]
+          },
+        ]
+      }
       finance_ledger_entries: {
         Row: {
+          account_id: string | null
           amount_cents: number
           category: string | null
           counterparty: string | null
@@ -2170,14 +2245,17 @@ export type Database = {
           description: string | null
           direction: string
           entry_id: string
+          is_public: boolean
           kind: string
           occurred_at: string
+          org_id: string
           reference_url: string | null
           status: string
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          account_id?: string | null
           amount_cents: number
           category?: string | null
           counterparty?: string | null
@@ -2188,14 +2266,17 @@ export type Database = {
           description?: string | null
           direction: string
           entry_id?: string
+          is_public?: boolean
           kind: string
           occurred_at?: string
+          org_id: string
           reference_url?: string | null
           status?: string
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          account_id?: string | null
           amount_cents?: number
           category?: string | null
           counterparty?: string | null
@@ -2206,14 +2287,23 @@ export type Database = {
           description?: string | null
           direction?: string
           entry_id?: string
+          is_public?: boolean
           kind?: string
           occurred_at?: string
+          org_id?: string
           reference_url?: string | null
           status?: string
           updated_at?: string
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "finance_ledger_entries_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "finance_accounts"
+            referencedColumns: ["account_id"]
+          },
           {
             foreignKeyName: "finance_ledger_entries_created_by_fkey"
             columns: ["created_by"]
@@ -2234,6 +2324,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users_public"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "finance_ledger_entries_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["org_id"]
           },
           {
             foreignKeyName: "finance_ledger_entries_updated_by_fkey"
@@ -4662,6 +4759,7 @@ export type Database = {
           public_tagline_en: string | null
           public_tagline_he: string | null
           slug: string
+          transparency_settings: Json
           verification_method: string | null
           verified_at: string | null
         }
@@ -4676,6 +4774,7 @@ export type Database = {
           public_tagline_en?: string | null
           public_tagline_he?: string | null
           slug: string
+          transparency_settings?: Json
           verification_method?: string | null
           verified_at?: string | null
         }
@@ -4690,6 +4789,7 @@ export type Database = {
           public_tagline_en?: string | null
           public_tagline_he?: string | null
           slug?: string
+          transparency_settings?: Json
           verification_method?: string | null
           verified_at?: string | null
         }
@@ -10437,6 +10537,44 @@ export type Database = {
           rank_score: number
         }[]
       }
+      finance_account_upsert: {
+        Args: {
+          p_account_id?: string
+          p_is_active?: boolean
+          p_kind?: string
+          p_last4?: string
+          p_name?: string
+          p_opening_balance_at?: string
+          p_opening_balance_cents?: number
+          p_sort_order?: number
+        }
+        Returns: string
+      }
+      finance_accounts_list: {
+        Args: never
+        Returns: {
+          account_id: string
+          balance_cents: number
+          entry_count: number
+          is_active: boolean
+          kind: string
+          last4: string
+          name: string
+          opening_balance_at: string
+          opening_balance_cents: number
+          sort_order: number
+        }[]
+      }
+      finance_donors_summary: {
+        Args: { p_limit?: number }
+        Returns: {
+          donations_count: number
+          donor_name: string
+          first_at: string
+          last_at: string
+          total_cents: number
+        }[]
+      }
       finance_ledger_delete: {
         Args: { p_entry_id: string }
         Returns: undefined
@@ -10452,6 +10590,7 @@ export type Database = {
           p_to?: string
         }
         Returns: {
+          account_id: string
           amount_cents: number
           category: string
           counterparty: string
@@ -10460,6 +10599,7 @@ export type Database = {
           description: string
           direction: string
           entry_id: string
+          is_public: boolean
           kind: string
           occurred_at: string
           reference_url: string
@@ -10480,18 +10620,26 @@ export type Database = {
       }
       finance_ledger_upsert: {
         Args: {
+          p_account_id?: string
           p_amount_cents?: number
           p_category?: string
           p_counterparty?: string
           p_currency?: string
           p_description?: string
           p_entry_id?: string
+          p_is_public?: boolean
           p_kind?: string
           p_occurred_at?: string
           p_reference_url?: string
           p_status?: string
         }
         Returns: string
+      }
+      finance_platform_org_id: { Args: never; Returns: string }
+      finance_transparency_settings_get: { Args: never; Returns: Json }
+      finance_transparency_settings_set: {
+        Args: { p_settings: Json }
+        Returns: Json
       }
       find_matches: {
         Args: { p_limit?: number; p_listing_id: string; p_viewer?: string }
@@ -12061,6 +12209,7 @@ export type Database = {
         }
       }
       rpc_notification_inbox_unread_count: { Args: never; Returns: number }
+      rpc_org_transparency: { Args: { p_slug?: string }; Returns: Json }
       rpc_profile_completeness: { Args: { p_user_id?: string }; Returns: Json }
       rpc_recipient_unmark_self: {
         Args: { p_post_id: string }

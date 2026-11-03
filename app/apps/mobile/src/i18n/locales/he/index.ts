@@ -20,9 +20,11 @@ import { chatHe } from './modules/chat';
 import { notificationsHe } from './modules/notifications';
 import { emptyStatesHe, feedSettingsHe } from './modules/feedSettings';
 import { moderationHe, auditHe, accountBlockedHe } from './modules/moderation';
+import { restoreAccountHe } from './modules/restoreAccount';
 import { postHe } from './modules/post';
 import { settingsHe } from './modules/settings';
 import { stats } from './stats';
+import { transparencyHe } from './modules/transparency';
 import { aboutContentMerged } from './modules/aboutContentBundle';
 import { tabsHe } from './modules/tabs';
 import { errorBoundaryHe, devBannerHe, optionsMenuHe } from './modules/ui';
@@ -87,6 +89,7 @@ const he = {
   moderation: moderationHe,
   audit: auditHe,
   accountBlocked: accountBlockedHe,
+  restoreAccount: restoreAccountHe,
 
   // Admin portal (FR-ADMIN-010/011) — see modules/admin.ts
   admin: adminHe,
@@ -96,6 +99,9 @@ const he = {
 
   // Stats (FR-STATS-001..004) — see stats.ts
   stats,
+
+  // Live public financial transparency (FR-FIN-022) — see modules/transparency.ts
+  transparency: transparencyHe,
 
   // Desktop aside panels (FR-RESP-003) — see modules/aside.ts
   aside: asideHe,

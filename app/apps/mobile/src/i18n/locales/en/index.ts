@@ -22,9 +22,11 @@ import { chatEn } from './modules/chat';
 import { notificationsEn } from './modules/notifications';
 import { emptyStatesEn, feedSettingsEn } from './modules/feedSettings';
 import { moderationEn, auditEn, accountBlockedEn } from './modules/moderation';
+import { restoreAccountEn } from './modules/restoreAccount';
 import { postEn } from './modules/post';
 import { settingsEn } from './modules/settings';
 import { stats } from './stats';
+import { transparencyEn } from './modules/transparency';
 import { aboutContentMerged } from './modules/aboutContentBundle';
 import { tabsEn } from './modules/tabs';
 import { errorBoundaryEn, devBannerEn, optionsMenuEn } from './modules/ui';
@@ -89,6 +91,7 @@ const en = {
   moderation: moderationEn,
   audit: auditEn,
   accountBlocked: accountBlockedEn,
+  restoreAccount: restoreAccountEn,
 
   // Admin portal (FR-ADMIN-010/011) — see modules/admin.ts
   admin: adminEn,
@@ -98,6 +101,9 @@ const en = {
 
   // Stats (FR-STATS-001..004) — see stats.ts
   stats,
+
+  // Live public financial transparency (FR-FIN-022) — see modules/transparency.ts
+  transparency: transparencyEn,
 
   // Desktop aside panels (FR-RESP-003) — see modules/aside.ts
   aside: asideEn,
