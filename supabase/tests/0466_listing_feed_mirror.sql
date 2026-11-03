@@ -39,7 +39,7 @@ begin
     p_kind_id     => kc_test.listing_kind_id('items', 'give_item'),
     p_title       => p_title,
     p_summary     => 'Solid oak, two shelves',
-    p_details     => '{"item_condition":"good"}'::jsonb,
+    p_details     => '{"item_condition":"Good"}'::jsonb,
     p_category_id => (select category_id from public.categories where world_slug = 'items' and slug = 'books'),
     p_lat         => 32.0853,
     p_lng         => 34.7818,

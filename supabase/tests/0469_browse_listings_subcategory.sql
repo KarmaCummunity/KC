@@ -33,7 +33,7 @@ begin
   return public.create_marketplace_listing(
     p_kind_id     => (select kind_id from public.listing_kinds where world_slug = 'items' and slug = 'give_item'),
     p_title       => p_title,
-    p_details     => '{"item_condition":"good","image_url":"https://example.test/i.jpg"}'::jsonb,
+    p_details     => '{"item_condition":"Good","image_url":"https://example.test/i.jpg"}'::jsonb,
     p_category_id => p_category,
     p_lat         => 32.0853,
     p_lng         => 34.7818
