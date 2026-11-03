@@ -823,12 +823,6 @@
       "zIndexLiteral": 2,
       "shadowLiteral": 16
     },
-    "src/screens/research/ResearchQuestionPanel.tsx": {
-      "fontSizeLiteral": 4,
-      "fontWeightLiteral": 3,
-      "radiusLiteral": 3,
-      "rawTextInput": 3
-    },
     "src/screens/research/ResearchRunner.tsx": {
       "fontWeightLiteral": 1,
       "radiusLiteral": 2

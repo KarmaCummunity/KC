@@ -77,7 +77,19 @@ export interface TextFieldProps extends TextInputProps {
  * the inner `@kc/ui` TextInput, and the forwarded ref is that native input.
  */
 export const TextField = forwardRef<TextInput, TextFieldProps>(function TextField(
-  { label, helperText, errorText, leadingIcon, containerStyle, style, onFocus, onBlur, onChangeText, ...inputProps },
+  {
+    label,
+    helperText,
+    errorText,
+    leadingIcon,
+    containerStyle,
+    style,
+    accessibilityLabel,
+    onFocus,
+    onBlur,
+    onChangeText,
+    ...inputProps
+  },
   ref,
 ) {
   const styles = useTextFieldStyles();
@@ -91,6 +103,8 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   const disabled = inputProps.editable === false;
   const hasError = Boolean(errorText);
   const multiline = Boolean(inputProps.multiline);
+  const baseAccessibilityLabel = accessibilityLabel ?? label;
+  const inputAccessibilityLabel = hasError ? `${baseAccessibilityLabel}, ${errorText}` : baseAccessibilityLabel;
   const accentColor = fieldAccentColor(colors, hasError, focused);
 
   const handleFocus = (e: FocusEvent) => {
@@ -137,7 +151,8 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
           onFocus={handleFocus}
           onBlur={handleBlur}
           // aria-* props work on native and web alike (RN-Web drops accessibilityState).
-          aria-label={hasError ? `${label}, ${errorText}` : label}
+          aria-label={inputAccessibilityLabel}
+          accessibilityLabel={inputAccessibilityLabel}
           aria-disabled={disabled}
           accessibilityHint={helperText}
           style={[
