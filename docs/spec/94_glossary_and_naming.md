@@ -38,14 +38,14 @@
 | חשבון ארגוני | Organization account | The organization's own sign-in identity, bound 1:1 to the organization; members with roles act in its name from their own accounts (D88) |
 | פועל בשם | Acting as | The active profile context of a session: the person or one of their organizations, chosen in the profile switcher (D88) |
 | ארגון לא נתבע | Unclaimed organization | Catalog profile imported from open data with no account yet; claimable by the real organization (FR-ORG-017) |
-| מארח / אורח | Host / guest | The side that lends a space / the side that uses it, in every housing sub-category (`{{D:housing-space-sharing}}`) |
+| מארח / אורח | Host / guest | The side that lends a space / the side that uses it, in every housing sub-category (`D112`) |
 | תת-קטגוריית דיור | Housing sub-category | Stays & hosting, emergency shelter, event & gathering space, storage space |
 | הזמנה | Booking | One guest's reservation of a housing offer for a date range or time slot; a handoff with `world_slug='housing'` |
 | פרטים חסויים | Private details | Exact address, entrance and access instructions; shown only to the confirmed guest in the booking window |
 | מאגר אירוח מוגן | Shelter pool | Hosts who agreed to host people placed by a verified organization; never public |
 | רכז/ת אירוח | Housing coordinator | Member of a verified organization with housing coordination who takes shelter requests and places people |
 | שיבוץ | Placement | A booking created by a coordinator on behalf of a person in need, possibly off-platform |
-| אימות זהות | Identity verification | Level 2 of D23: an ID document + a live selfie matched by a certified provider (`{{D:identity-verification-document-selfie}}`); code `VerificationLevel`, `identity_verifications` |
+| אימות זהות | Identity verification | Level 2 of D23: an ID document + a live selfie matched by a certified provider (`D117`); code `VerificationLevel`, `identity_verifications` |
 
 ## Naming rules
 1. Always the precise name: "giving world", "item subcategory", "post type" — **never a bare "categories"**.

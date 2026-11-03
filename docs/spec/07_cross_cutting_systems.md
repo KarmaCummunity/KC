@@ -33,9 +33,9 @@ One form creates a Post: giving world first, then the world's sub-category where
 | Time / elderly / consulting | no | city or "remote" | none | estimated duration (D32) |
 | Event (org) | no | address | date | capacity, registration policy (D31) |
 | Housing stay | no | city + neighborhood; exact after approval | stay dates | place type, capacity, nights, house rules (D30) |
-| Event & gathering space | no | city + neighborhood; exact after approval | event date | capacity, hours, quiet hour, event types (`{{S:housing-event-space-rules}}`) |
-| Storage space | no | city + neighborhood; exact after approval | end of availability / request start + 7 d | m³, period, access, goods accepted (`{{S:housing-storage-rules}}`) |
-| Shelter request (assisted) | no | district / city | closed by the organization | urgency, people, needs — never public (`{{S:housing-assisted-track}}`) |
+| Event & gathering space | no | city + neighborhood; exact after approval | event date | capacity, hours, quiet hour, event types (`S55`) |
+| Storage space | no | city + neighborhood; exact after approval | end of availability / request start + 7 d | m³, period, access, goods accepted (`S56`) |
+| Shelter request (assisted) | no | district / city | closed by the organization | urgency, people, needs — never public (`S57`) |
 | Job (org) | no | city or remote | closing date | scope, field, link (D41) |
 | Experience | no | venue | date | type, date, seats (D45) |
 
@@ -73,8 +73,8 @@ All engagement earns; closed giving earns most (D12). Visible only to the owner;
 | Ride completed | driver 25; passenger 10 | – |
 | Volunteering incl. elderly & consulting (D32) | 10 / hour | 80/day |
 | Hosting | host 30 / night; guest 10 | 7 nights |
-| Event space lent (`{{S:housing-karma-values}}`) | host 15; guest 5 | host 2/day |
-| Storage lent (`{{S:housing-karma-values}}`) | host 5 per started week; guest 3 | host 40 per booking |
+| Event space lent (`S58`) | host 15; guest 5 | host 2/day |
+| Storage lent (`S58`) | host 5 per started week; guest 3 | host 40 per booking |
 | Event attendance | 10 | – |
 | Open a challenge (D52): private / community | 2 / 3 | 2/day |
 | Challenge report (per cadence): private / community / large community (50+) | 1 / 2 / 3 | one per cycle |
@@ -117,12 +117,12 @@ Avatar, name, city, bio, counters; posts in "Open" / "Closed" tabs (D2, D14) —
 Tech: · FR-PROFILE-001–006, FR-PROFILE-007 · FR-SETTINGS-012, FR-AUTH-016 · FR-ORG-003 (`20_organizations`) · `ProfileMarketplaceListings` adds a "marketplace" tab · G6
 
 ## 7.13 Anonymity, privacy, location
-Visibility `Public / FollowersOnly / OnlyMe` and counterpart masking, chosen in the form and changeable **both ways** (D16). The counterpart in a handoff sees the real name. Location: `CityOnly / CityAndStreet` (default) `/ FullAddress`; profile shows city only; housing exact only after approval (D30) — public = city + neighborhood and a fuzzed map circle, the exact address and access instructions open to the confirmed guest from approval until 24 h after the end (`{{S:housing-location-reveal}}`). EXIF stripped. WhatsApp import keeps no identity of non-members (S21). No commercial use of community data.
+Visibility `Public / FollowersOnly / OnlyMe` and counterpart masking, chosen in the form and changeable **both ways** (D16). The counterpart in a handoff sees the real name. Location: `CityOnly / CityAndStreet` (default) `/ FullAddress`; profile shows city only; housing exact only after approval (D30) — public = city + neighborhood and a fuzzed map circle, the exact address and access instructions open to the confirmed guest from approval until 24 h after the end (`S53`). EXIF stripped. WhatsApp import keeps no identity of non-members (S21). No commercial use of community data.
 Tech: · PRD_V2 rule 7 superseded · both ways on `posts` (0094) and `listings` (0451) · G3 ✅
 
 ## 7.14 Verification and trust engine
 Levels phone → ID → blue check, plus reliability data (completed handoffs, seniority), shown on post, card and profile (D23). **Not blocking**, including drivers. Exceptions: housing — both sides verified; medical — only medical bodies (D30); elderly home visit — ID-verified volunteer (D48); an event may require verified users (D31). The trust engine weighs ratings and reports in ranking/matching and reports anomalies to admins (D24). ID provider chosen at implementation.
-- **ID level (`{{D:identity-verification-document-selfie}}`, PM 2026-11-03):** a government ID document (Israeli identity card or a passport) **and** a live selfie with liveness, matched to the document photo by a certified provider. KC keeps the result, document type, country, expiry and date of birth, never the images or the document number (a keyed hash stops one person from verifying two accounts). Detailed FRs: [`SSOT/spec/22_identity_verification.md`](../SSOT/spec/22_identity_verification.md) (`FR-VERIFY-*`).
+- **ID level (`D117`, PM 2026-11-03):** a government ID document (Israeli identity card or a passport) **and** a live selfie with liveness, matched to the document photo by a certified provider. KC keeps the result, document type, country, expiry and date of birth, never the images or the document number (a keyed hash stops one person from verifying two accounts). Detailed FRs: [`SSOT/spec/22_identity_verification.md`](../SSOT/spec/22_identity_verification.md) (`FR-VERIFY-*`).
 
 Tech: · PRD_V2 rule 13 superseded · phone only; ID level specified (FR-VERIFY), provider not chosen · G10, G13
 

@@ -4,7 +4,7 @@
 
 Prefix: `FR-HOUSING-*`
 
-> **Source of truth.** Product book [`docs/spec/05_giving_worlds.md` §5.6](../../spec/05_giving_worlds.md) wins where it disagrees with this file (D35). This file is the detailed FR layer under it. Decisions: D30 (both sides verified), D24 (no visible ratings), D21 (expiry by type), D42 (emergency mode), D104 (owner management), D105 (blocking), `{{D:housing-space-sharing}}` (scope of this world), `{{D:housing-shelter-via-orgs}}`, `{{D:housing-storage-personal-and-nonprofit}}`, `{{D:orgs-offer-request-every-world}}`, `{{D:housing-verification-every-subcategory}}`, `{{D:identity-verification-document-selfie}}`, `{{D:housing-legal-drafts-lawyer-review}}`. Fills pending approval: S16 and `{{S:housing-booking-lifecycle}}`, `{{S:housing-location-reveal}}`, `{{S:housing-limits}}`, `{{S:housing-event-space-rules}}`, `{{S:housing-storage-rules}}`, `{{S:housing-assisted-track}}`, `{{S:housing-karma-values}}`, `{{S:housing-safety}}`. Legal texts: [`docs/legal/drafts/housing_and_verification_he.md`](../../legal/drafts/housing_and_verification_he.md) (drafts, counsel review before launch). Vision mined from `PRD_V2_NOT_FOR_MVP/donation_worlds/05_Housing.md` (R-Housing-1…10).
+> **Source of truth.** Product book [`docs/spec/05_giving_worlds.md` §5.6](../../spec/05_giving_worlds.md) wins where it disagrees with this file (D35). This file is the detailed FR layer under it. Decisions: D30 (both sides verified), D24 (no visible ratings), D21 (expiry by type), D42 (emergency mode), D104 (owner management), D105 (blocking), `D112` (scope of this world), `D113`, `D114`, `D115`, `D116`, `D117`, `D118`. Fills pending approval: S16 and `S52`, `S53`, `S54`, `S55`, `S56`, `S57`, `S58`, `S59`. Legal texts: [`docs/legal/drafts/housing_and_verification_he.md`](../../legal/drafts/housing_and_verification_he.md) (drafts, counsel review before launch). Vision mined from `PRD_V2_NOT_FOR_MVP/donation_worlds/05_Housing.md` (R-Housing-1…10).
 
 > **Scope.** The housing world lends **space**, for free, between verified members and organizations: a bed for a night, a roof in a crisis, a room for a gathering, a corner to store belongings. Four sub-categories share one booking engine (on `giving_handoffs`), one privacy model (exact place only after approval) and one safety layer (verification, code of conduct, emergency button, incident reports).
 
@@ -55,7 +55,7 @@ The world has four **housing sub-categories** (the "item subcategory" pattern, D
 - AC3. Emergency-shelter listings never appear in the hub (FR-HOUSING-030 AC4).
 
 ## FR-HOUSING-003 — Eligibility gate (D30, R-Housing-1, R-Housing-2)
-- AC1. **Verified identity on both sides, in every sub-category** (`{{D:housing-verification-every-subcategory}}`). Publishing any housing offer or request, booking an offer, and approving a booking all require verification level 2 — an ID document + live selfie match (`{{D:identity-verification-document-selfie}}`, [`22_identity_verification.md`](./22_identity_verification.md) FR-VERIFY-001). Server: `has_world_permission(uid, 'housing', 'publish'|'book'|'decide')` → `world_permission_denied` otherwise. Organization accounts use the organization's verification (level ≥ 2). The only exception is asking for an emergency roof (FR-HOUSING-031 AC1).
+- AC1. **Verified identity on both sides, in every sub-category** (`D116`). Publishing any housing offer or request, booking an offer, and approving a booking all require verification level 2 — an ID document + live selfie match (`D117`, [`22_identity_verification.md`](./22_identity_verification.md) FR-VERIFY-001). Server: `has_world_permission(uid, 'housing', 'publish'|'book'|'decide')` → `world_permission_denied` otherwise. Organization accounts use the organization's verification (level ≥ 2). The only exception is asking for an emergency roof (FR-HOUSING-031 AC1).
 - AC2. **Pre-check (closes `TD-245`).** When housing is picked in the create form, or "book" is tapped, the client reads the viewer's verification state first; an unverified member sees a "verify your identity" card with the verification entry point **instead of** the fields. No form is ever filled in vain.
 - AC3. **Code of conduct.** Before a member's first housing publish or booking, a full-screen code of conduct (text: legal drafts §1) (respect, no payment, no alcohol to minors, no discrimination beyond the host's declared house policy, safety, privacy of the other side, reporting) must be accepted. Acceptance is stored per user and version in `housing_conduct_acceptances (user_id, version, accepted_at)`; a new version re-prompts. Server error: `housing_conduct_required`.
 - AC4. **Age.** Every member is 18+ (D109, server-enforced at sign-up); the verified document's date of birth confirms it (FR-VERIFY-006 AC2, FR-VERIFY-007 AC3). Minors travelling with a parent follow FR-HOUSING-026.
@@ -69,7 +69,7 @@ The world has four **housing sub-categories** (the "item subcategory" pattern, D
 - AC4. Visibility `Public` (default) / `FollowersOnly`; `OnlyMe` is drafts only. Anonymity: the host is always shown by name on an offer (a guest must know who hosts them); a request may hide the poster's name until a booking is confirmed (anonymity level 2, D16).
 - AC5. **Free-only declaration**: every offer form ends with a non-editable line "Hosting in KC is free. Asking for money, a deposit or work in return is forbidden." and the publish button reads "Publish for free".
 - AC6. Open-listing cap: housing listings count towards the 20-open-posts cap of a private member (S34); an organization account has no cap.
-- AC8. **Organizations give and take** (`{{D:orgs-offer-request-every-world}}`): an organization account (D88, acting through a member with an org role) may publish offers and requests in every community sub-category, book offers and search, exactly like a member; the organization's verification replaces the personal one (FR-HOUSING-003 AC1). In the assisted track an organization offers through the shelter pool and requests through placements (FR-HOUSING-030, 032), never through a shelter request.
+- AC8. **Organizations give and take** (`D115`): an organization account (D88, acting through a member with an org role) may publish offers and requests in every community sub-category, book offers and search, exactly like a member; the organization's verification replaces the personal one (FR-HOUSING-003 AC1). In the assisted track an organization offers through the shelter pool and requests through placements (FR-HOUSING-030, 032), never through a shelter request.
 - AC7. Domain validation lives in `@kc/domain` (`validateHousingDraft` per kind) and mirrors the server checks exactly; the server is the source of truth (`listings_enforce_world_rules` extended for housing).
 
 ## FR-HOUSING-005 — Stay offer (`host_offer`) fields
@@ -78,7 +78,7 @@ The world has four **housing sub-categories** (the "item subcategory" pattern, D
 | Place type | `place_type` | `private_room` · `shared_room` · `couch` · `whole_unit` · `secondary_unit` (cabin, caravan, granny flat) · `tent_pitch` (yard / plot) | ✅ |
 | Beds / guests capacity per night | `capacity` | integer 1–20 | ✅ |
 | Exclusive use | `exclusive` | boolean — true for `whole_unit` / `secondary_unit` by default: one booking per night | ✅ |
-| Min / max nights per booking | `min_nights`, `max_nights` | 1 ≤ min ≤ max ≤ 30 (`{{S:housing-limits}}`) | ✅ (defaults 1 / 3) |
+| Min / max nights per booking | `min_nights`, `max_nights` | 1 ≤ min ≤ max ≤ 30 (`S54`) | ✅ (defaults 1 / 3) |
 | Check-in window | `check_in_from`, `check_in_until` | `HH:MM` local, from < until (until may be after midnight ≤ 02:00) | ✅ (defaults 16:00 / 22:00) |
 | Check-out by | `check_out_by` | `HH:MM` local | ✅ (default 10:00) |
 | Who the host accepts | `guest_policy` | `any` · `women_only` · `men_only` · `families_only` · `couples_and_families` | ✅ (default `any`) |
@@ -114,7 +114,7 @@ The world has four **housing sub-categories** (the "item subcategory" pattern, D
 - AC1. Location of a request = city (or the trail point), never an address (§7.2).
 - AC2. A request expires at the end of its check-out date (D21 "stay dates"); with `flexible_days` the latest possible check-out.
 
-## FR-HOUSING-007 — Event space offer (`event_space_offer`) fields (`{{S:housing-event-space-rules}}`)
+## FR-HOUSING-007 — Event space offer (`event_space_offer`) fields (`S55`)
 | Field | Key | Type / bounds | Required |
 |---|---|---|---|
 | Space type | `place_type` | `living_room` · `yard_garden` · `rooftop` · `hall_club` · `meeting_room` · `studio` · `outdoor_plot` | ✅ |
@@ -146,7 +146,7 @@ The world has four **housing sub-categories** (the "item subcategory" pattern, D
 
 - AC1. A request expires at `event_ends_at` (D21 "event at its date").
 
-## FR-HOUSING-009 — Storage offer (`storage_offer`) fields (`{{S:housing-storage-rules}}`)
+## FR-HOUSING-009 — Storage offer (`storage_offer`) fields (`S56`)
 | Field | Key | Type / bounds | Required |
 |---|---|---|---|
 | Space type | `place_type` | `room` · `closet_corner` · `storeroom` (מחסן) · `basement` · `garage_parking` · `yard_covered` · `yard_open` · `warehouse` | ✅ |
@@ -159,7 +159,7 @@ The world has four **housing sub-categories** (the "item subcategory" pattern, D
 | Max single-item weight | `max_item_kg` | 1–500 | — |
 
 - AC1. Banned goods (fixed list, shown on offer and booking): hazardous or flammable materials, gas cylinders, weapons and ammunition, illegal goods, perishable food, live animals or plants needing care, cash and valuables above a declared value, anything requiring a licence to store. The guest acknowledges the list on every booking (`banned_goods_ack=true`); server error `housing_storage_banned_goods_ack_required`.
-- AC2. **Personal and nonprofit only** (`{{D:housing-storage-personal-and-nonprofit}}`): `nonprofit` goods are accepted only if the host ticked `nonprofit`, and only from an organization account whose type is nonprofit association, public-benefit company, public body or informal initiative (D88, `20_organizations.md`); a private venture or any for-profit business cannot book storage for its goods (`housing_storage_for_profit_forbidden`). The storage stays free (no rent, no "handling fee").
+- AC2. **Personal and nonprofit only** (`D114`): `nonprofit` goods are accepted only if the host ticked `nonprofit`, and only from an organization account whose type is nonprofit association, public-benefit company, public body or informal initiative (D88, `20_organizations.md`); a private venture or any for-profit business cannot book storage for its goods (`housing_storage_for_profit_forbidden`). The storage stays free (no rent, no "handling fee").
 
 ## FR-HOUSING-010 — Storage request (`storage_request`) fields
 | Field | Key | Type / bounds | Required |
@@ -180,7 +180,7 @@ The world has four **housing sub-categories** (the "item subcategory" pattern, D
 - AC4. The server computes availability from `availability` − `blackout_dates` − confirmed bookings (FR-HOUSING-016 AC3). The detail screen renders the next 60 days as a calendar (stays, storage) or a day list with free hours (event space).
 - AC5. `ongoing` offers never expire; they receive relevance reminders 14 days after publish and every 30 days (D59). `window` offers expire at `until`; `weekly` offers at `end_date` or never.
 
-## FR-HOUSING-012 — Location privacy and private details (D30, R-Housing-3, `{{S:housing-location-reveal}}`)
+## FR-HOUSING-012 — Location privacy and private details (D30, R-Housing-3, `S53`)
 - AC1. An offer stores the exact location (city + official street + house number, D71 catalogs) but publishes only the city and the neighborhood name. The map shows a **fuzzed point**: a stable point 300–700 m from the true location, computed once at publish and stored in `listings.geo`; the true point lives only in the private table. A circle of 700 m is drawn around the fuzzed point.
 - AC2. Private details live in `housing_private_details (listing_id PK, street_id, house_number, apartment, floor, entrance_notes ≤ 300, access_instructions ≤ 500, true_geo)`. RLS: SELECT by the owner; by a guest whose booking on that listing is `confirmed` or `handed_over`, from confirmation until **end + 24 h** (storage: until the return is confirmed + 24 h); by super-admins and support when handling an emergency or incident. No other path (no RPC, no view) returns them.
 - AC3. Access codes (key box, door code) may be written in `access_instructions` only; the form warns "change the code after the stay".
@@ -203,7 +203,7 @@ The world has four **housing sub-categories** (the "item subcategory" pattern, D
 ## FR-HOUSING-015 — Booking request
 - AC1. A verified guest who accepted the code of conduct taps **Request to book** on an offer and fills a booking sheet: dates / slot / storage period (pre-filled from the search), party (adults + minors / attendees / volume), a short message to the host (1–500 chars, required: "say who you are and why"), the acknowledgements of the sub-category (banned goods, free event, minors accompanied).
 - AC2. RPC `request_housing_booking(p_listing_id, p_range, p_party, p_message, p_acks)` inserts a `giving_handoffs` row (`world_slug='housing'`, `status='reserved'`, `slot_starts_at`/`slot_ends_at` = check-in / check-out instant, event start / end, or storage start / end) plus a `housing_booking_details` row (FR § Data contract). Errors: `own_listing`, `listing_not_available`, `housing_dates_unavailable`, `housing_nights_out_of_range`, `housing_capacity_exceeded`, `housing_policy_mismatch` (guest policy, children, pets), `housing_minor_unaccompanied`, `housing_pending_cap`, `housing_booking_overlap`.
-- AC3. **Pending cap** (`{{S:housing-limits}}`): a guest holds at most 3 `reserved` housing bookings at a time. When one is confirmed, the guest's other `reserved` bookings whose range overlaps it are withdrawn automatically (`cancel_reason='superseded'`) and their hosts are told politely ("the guest found another place").
+- AC3. **Pending cap** (`S54`): a guest holds at most 3 `reserved` housing bookings at a time. When one is confirmed, the guest's other `reserved` bookings whose range overlaps it are withdrawn automatically (`cancel_reason='superseded'`) and their hosts are told politely ("the guest found another place").
 - AC4. **No double booking**: a guest cannot hold two confirmed bookings with overlapping ranges in the same sub-category (`housing_booking_overlap`).
 - AC5. The booking opens (or reuses) the pair's chat anchored on the listing (D13) and posts the guest's message there as the first message.
 - AC6. **Host-to-request proposal**: a host who sees a matching request may tap **Offer my place**, pick one of their open offers and the request's range; this creates a booking with the request poster as guest in `status='reserved'` and `proposed_by='host'`; the **guest** then accepts or declines (same RPC pair, roles swapped). On acceptance the request listing closes as fulfilled.
@@ -215,7 +215,7 @@ The world has four **housing sub-categories** (the "item subcategory" pattern, D
 - AC4. Approving reveals the private details to the guest (FR-HOUSING-012 AC2) and posts a system message in the chat ("booking confirmed — address available on the booking card").
 - AC5. A host may approve at most one booking per guest per offer per range; re-requests after a decline are allowed after 7 days (anti-pressure).
 
-## FR-HOUSING-017 — Booking expiry and reminders (`{{S:housing-booking-lifecycle}}`)
+## FR-HOUSING-017 — Booking expiry and reminders (`S52`)
 - AC1. An unanswered `reserved` booking expires **24 h after it was made or at its start, whichever is earlier** (rides D96 pattern), `cancel_reason='expired'`; the guest is notified with up to 3 similar open offers (R-Housing-8 rewritten: KC suggests, never forwards a request on its own).
 - AC2. Sweep `housing_bookings_expire_sweep` every 10 minutes.
 - AC3. Reminders (`important` group, D26): host — new request (immediately), 4 h before expiry if still unanswered; guest — 24 h before start ("your stay with N tomorrow"), at start ("check-in from 16:00"); both — at end ("mark the stay completed").
@@ -246,7 +246,7 @@ The world has four **housing sub-categories** (the "item subcategory" pattern, D
 - AC2. Ratings are visible only to their rater and to KC admins (D24, G4). Profile and cards show verification level, completed housing bookings and seniority only (S16).
 - AC3. The trust engine (G10) weighs housing ratings, late cancellations, no-shows and incidents; three ratings ≤ 2 from distinct guests within 90 days open an admin review of the host (R-Housing-9 rewritten: review, not an automatic suspension).
 
-## FR-HOUSING-022 — Karma (§7.6, `{{S:housing-karma-values}}`)
+## FR-HOUSING-022 — Karma (§7.6, `S58`)
 | Action | Points | Cap |
 |---|---|---|
 | Stay completed — host | 30 per night (existing row) | 7 nights per booking |
@@ -264,7 +264,7 @@ The world has four **housing sub-categories** (the "item subcategory" pattern, D
 - AC2. System messages on: request, proposal, confirm, decline, expiry, cancellation (with who), start, completion, no-show, emergency call (to the caller's support thread, FR-HOUSING-024).
 - AC3. Blocking (D105) between the sides cancels every `reserved` booking between them and hides each side's listings from the other; a `confirmed` future booking is cancelled with `cancel_reason='blocked'` and support is told; an **active** stay is not silently cancelled — support is alerted to check on both sides.
 
-## FR-HOUSING-024 — Emergency button (R-Housing-4, `{{S:housing-safety}}`)
+## FR-HOUSING-024 — Emergency button (R-Housing-4, `S59`)
 - AC1. Visible on the booking card to the host and the guest of a `confirmed` booking from start − 1 h until end + 2 h (storage: on the drop-off and pickup dates only).
 - AC2. Two taps (confirm sheet) send an emergency call: optional location (if permitted) and note; the call alerts KC support and super-admins (`housing_emergency`, `emergency` group — bypasses quiet hours, D42) and, for a placement, the coordinator of the placing organization. The caller sees the emergency-services numbers at once (KC-maintained block).
 - AC3. Throttle: once per user per booking per 5 minutes (`housing_emergency_throttled`). Stored in `housing_emergency_events`; RLS: caller, the other side (existence only, no location), support and super-admins.
@@ -298,7 +298,7 @@ The world has four **housing sub-categories** (the "item subcategory" pattern, D
 
 ---
 
-## Assisted track — emergency shelter (`{{S:housing-assisted-track}}`, D30, S16, R-Housing-10)
+## Assisted track — emergency shelter (`S57`, D30, S16, R-Housing-10)
 
 The assisted track gives a roof to people in crisis **only through professional bodies**. A member never hosts a person in crisis directly from a public post; members donate space to the shelter pool and organizations place people into it.
 
@@ -406,7 +406,7 @@ i18n keys live in the mobile `notifications` locale module and the `dispatch-not
 | Freeze / lift a housing freeze | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
 | Grant housing coordination to an org | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 
-An **organization account** (acting through a member with an org role) has the rights of a verified member in every row above — publish, book, propose, approve, join the shelter pool — through the organization's own verification (FR-HOUSING-004 AC8, `{{D:orgs-offer-request-every-world}}`); it never submits a shelter request, and it coordinates placements only with housing coordination granted (FR-HOUSING-032 AC1).
+An **organization account** (acting through a member with an org role) has the rights of a verified member in every row above — publish, book, propose, approve, join the shelter pool — through the organization's own verification (FR-HOUSING-004 AC8, `D115`); it never submits a shelter request, and it coordinates placements only with housing coordination granted (FR-HOUSING-032 AC1).
 
 ## Server error codes (mirrored in `MARKETPLACE_SERVER_ERROR_CODES`)
 
@@ -475,5 +475,5 @@ Open questions for the PM: [`docs/spec/92_open_questions.md`](../../spec/92_open
 
 | Version | Date | Change |
 |---|---|---|
-| 0.1 | 2026-11-03 | New domain file. Housing becomes free space sharing with four sub-categories (stays, emergency shelter via organizations, event & gathering space, storage) — `{{D:housing-space-sharing}}`; FR-HOUSING-001…039; nine housing fills pending PM approval (`docs/spec/91`). |
+| 0.1 | 2026-11-03 | New domain file. Housing becomes free space sharing with four sub-categories (stays, emergency shelter via organizations, event & gathering space, storage) — `D112`; FR-HOUSING-001…039; nine housing fills pending PM approval (`docs/spec/91`). |
 | 0.2 | 2026-11-03 | PM answers: shelter only via organizations; storage for personal and nonprofit goods, never for-profit; organizations offer, request and search in every world; verification in every sub-category; verification = ID document + live selfie (`22_identity_verification.md`) replacing the interim manual path; legal texts drafted for counsel (`docs/legal/drafts/`). Minors rule aligned with D109. |

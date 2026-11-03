@@ -4,7 +4,7 @@
 
 Prefix: `FR-VERIFY-*`
 
-> **Source of truth.** Product book [`docs/spec/07_cross_cutting_systems.md` §7.14](../../spec/07_cross_cutting_systems.md) wins where it disagrees (D35). Decisions: D23 (levels phone → ID → blue check, shown on post, card and profile; not blocking in general), D30 (housing: both sides; medical: bodies only), D31 (an event may require verified users), D48 (elderly home visit: ID-verified volunteer), D109 (private date of birth, minimum age 18), `{{D:identity-verification-document-selfie}}` (what "ID verified" means). Fills pending approval: `{{S:idv-data-retention}}`, `{{S:idv-attempt-limits}}`, `{{S:idv-validity}}`.
+> **Source of truth.** Product book [`docs/spec/07_cross_cutting_systems.md` §7.14](../../spec/07_cross_cutting_systems.md) wins where it disagrees (D35). Decisions: D23 (levels phone → ID → blue check, shown on post, card and profile; not blocking in general), D30 (housing: both sides; medical: bodies only), D31 (an event may require verified users), D48 (elderly home visit: ID-verified volunteer), D109 (private date of birth, minimum age 18), `D117` (what "ID verified" means). Fills pending approval: `S60`, `S61`, `S62`.
 
 > **Scope.** A professional identity check that proves a real, adult person stands behind an account: a government identity document **and** a live face that matches it, run by a certified verification provider. KC keeps the result, never the images.
 
@@ -24,7 +24,7 @@ Prefix: `FR-VERIFY-*`
 - AC2. The level is shown as a badge on profile, card and detail (D23). The badge never shows the document type, number, nationality or date of birth.
 
 ## FR-VERIFY-002 — Where verification is required
-- AC1. **Required** (server-enforced, `world_permission_denied` / `verification_required`): every housing action of FR-HOUSING-003 AC1 (D30, `{{D:housing-verification-every-subcategory}}`); an elderly home-visit volunteer (D48); joining an event whose organizer requires it (D31).
+- AC1. **Required** (server-enforced, `world_permission_denied` / `verification_required`): every housing action of FR-HOUSING-003 AC1 (D30, `D116`); an elderly home-visit volunteer (D48); joining an event whose organizer requires it (D31).
 - AC2. **Voluntary** everywhere else: any member may verify to earn the badge and the trust weight (D23 "not blocking").
 - AC3. **Pre-check before effort.** A gated action reads the level first and shows the verification card instead of a form the member cannot submit (TD-245 pattern).
 
@@ -45,7 +45,7 @@ Prefix: `FR-VERIFY-*`
 - AC5. Outcomes: `approved` → level 2; `declined` (forged / mismatch / underage / duplicate) → reason shown, retry rules of FR-VERIFY-007; `resubmit` (blurry, glare, expired document) → retry with tips; `review` → provider's or KC's manual review (FR-VERIFY-008).
 - AC6. Median end-to-end time target: ≤ 3 minutes for the member, ≤ 2 minutes for an automatic decision.
 
-## FR-VERIFY-006 — What KC stores (`{{S:idv-data-retention}}`)
+## FR-VERIFY-006 — What KC stores (`S60`)
 - AC1. `identity_verifications` (one row per attempt): `user_id`, `provider`, `provider_session_id`, `status`, `decision_reason_code`, `document_type` (`il_id_card` · `il_passport` · `foreign_passport`), `document_country` (ISO 3166-1), `document_expires_on`, `name_match` (boolean, legal name vs profile name), `created_at`, `decided_at`. **No images, no document number, no face template, no address.**
 - AC2. `users`: `verified_at`, `verification_method='provider'`, `verification_expires_at` (FR-VERIFY-009); the document's date of birth is written to the private date of birth (D109) — if the member's self-declared date differs, the document wins and the change is logged.
 - AC3. The provider deletes images and biometric data within 30 days of the decision (contract term, FR-VERIFY-011); a declined attempt under fraud review may be kept up to 90 days.
@@ -54,7 +54,7 @@ Prefix: `FR-VERIFY-*`
 - AC6. Account deletion (D108): at purge, `identity_verifications` rows are deleted; the identity hash is kept 12 months only for an account that was banned, to stop re-registration of a banned person, then deleted.
 - AC7. RLS: a member reads only their own `identity_verifications` status columns; support and super-admins read all; no anon access. Every admin read is audited.
 
-## FR-VERIFY-007 — Attempts and abuse (`{{S:idv-attempt-limits}}`)
+## FR-VERIFY-007 — Attempts and abuse (`S61`)
 - AC1. At most 3 sessions per member per 24 h and 5 per 30 days (cost and fraud control); beyond that → `verification_attempts_exhausted`, with the support path.
 - AC2. Two `declined` results for forgery or face mismatch → no further automatic attempts; KC manual review only (FR-VERIFY-008) and an admin task.
 - AC3. Underage result (document date of birth < 18, D109) → declined; the account is flagged for review under the minimum-age rule.
@@ -64,7 +64,7 @@ Prefix: `FR-VERIFY-*`
 - AC2. Target: 48 h. The member sees "in review".
 - AC3. Every manual decision is in the admin audit log.
 
-## FR-VERIFY-009 — Validity and re-verification (`{{S:idv-validity}}`)
+## FR-VERIFY-009 — Validity and re-verification (`S62`)
 - AC1. A verification is valid until the earlier of the document's expiry date and 5 years after `verified_at` (`verification_expires_at`).
 - AC2. 30 days before expiry the member is reminded; at expiry the level drops to 1 and gated actions show the verification card again. Confirmed housing bookings already made are not cancelled by an expiry.
 - AC3. An admin may revoke a verification (fraud, impersonation): level drops at once, the member is told, and FR-HOUSING-025 applies to their housing activity.
@@ -99,4 +99,4 @@ Prefix: `FR-VERIFY-*`
 ## Change log
 | Version | Date | Change |
 |---|---|---|
-| 0.1 | 2026-11-03 | New domain file: ID document + live selfie via a certified provider (`{{D:identity-verification-document-selfie}}`); FR-VERIFY-001…011. |
+| 0.1 | 2026-11-03 | New domain file: ID document + live selfie via a certified provider (`D117`); FR-VERIFY-001…011. |

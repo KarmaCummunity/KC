@@ -117,7 +117,7 @@ Stages 1, 2, 3 and 6 (`INFRA-CI-1` unified PR gate, `INFRA-CI-2` gate integrity,
 | PROFILE-FIELDS | **New profile fields.** Date of birth (required at sign-up, minimum age 13, private, closes TD-102), interests, organization affiliation (self-declared, from approved organizations; separate from `org_memberships`), "what I can help with". The last three are public and hidden from non-approved viewers of a private profile. | agent-fullstack | 🟡 In progress | `spec/02_profile_and_privacy.md` FR-PROFILE-007 |
 | PROFILE-FIELD-VISIBILITY | **Per-field visibility (follow-up to PROFILE-FIELDS).** Every optional profile field gets its own hide control, independent of the profile's privacy mode: the owner chooses, per field, who sees it (everyone / approved followers / only me). Covers interests, organization affiliation, "what I can help with" and the existing optional fields (street, contact phone, biography). Date of birth stays private. AC: one visibility value per field stored server-side and enforced in the RLS / view that serves other-user profiles, not only in the client; edit-profile control per field; SQL test per visibility value. | agent-fullstack | ⏳ Planned | `spec/02_profile_and_privacy.md` |
 
-## HOUSING — Free space sharing (`spec/21_housing.md`, `{{D:housing-space-sharing}}`)
+## HOUSING — Free space sharing (`spec/21_housing.md`, `D112`)
 
 | ID | Task | Owner | Status | Spec |
 |----|------|-------|--------|------|
