@@ -21,6 +21,7 @@ import { chatEn } from './modules/chat';
 import { notificationsEn } from './modules/notifications';
 import { emptyStatesEn, feedSettingsEn } from './modules/feedSettings';
 import { moderationEn, auditEn, accountBlockedEn } from './modules/moderation';
+import { restoreAccountEn } from './modules/restoreAccount';
 import { postEn } from './modules/post';
 import { settingsEn } from './modules/settings';
 import { stats } from './stats';
@@ -87,6 +88,7 @@ const en = {
   moderation: moderationEn,
   audit: auditEn,
   accountBlocked: accountBlockedEn,
+  restoreAccount: restoreAccountEn,
 
   // Admin portal (FR-ADMIN-010/011) — see modules/admin.ts
   admin: adminEn,

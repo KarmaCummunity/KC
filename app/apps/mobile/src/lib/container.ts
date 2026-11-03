@@ -39,6 +39,7 @@ import {
 } from '@kc/infrastructure-supabase';
 import {
   CheckAccountGateUseCase,
+  RestoreAccountUseCase,
   ListChatsUseCase,
   OpenOrCreateChatUseCase,
   HideChatFromInboxUseCase,
@@ -259,6 +260,8 @@ export const container = {
 
   // FR-MOD-010 — sign-in + mid-session account gate.
   checkAccountGate: new CheckAccountGateUseCase(accountGateRepo),
+  // FR-AUTH-016 — restore a deleted account within its 30-day grace period.
+  restoreAccount: new RestoreAccountUseCase(accountGateRepo),
 
   // Donation links
   listDonationLinks: new ListDonationLinksUseCase(donationLinksRepo),
