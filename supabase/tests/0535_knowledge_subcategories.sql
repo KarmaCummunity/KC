@@ -2,6 +2,7 @@
 begin;
 
 select kc_test.create_user('k1468_owner') as owner \gset
+select kc_test.create_user('k1468_viewer') as viewer \gset
 update public.users
    set verified_at = now(), privacy_mode = 'Public'
  where user_id = :'owner';
@@ -30,8 +31,10 @@ declare
   v_category uuid := (select category_id from public.categories where world_slug='knowledge' and slug='science_technology');
   v_listing uuid;
   v_seen uuid;
+  v_owner uuid := (select user_id from public.users where share_handle='k1468_owner');
+  v_viewer uuid := (select user_id from public.users where share_handle='k1468_viewer');
 begin
-  perform kc_test.act_as((select user_id from public.users where share_handle='k1468_owner'));
+  perform kc_test.act_as(v_owner);
   v_listing := public.create_marketplace_listing(
     p_kind_id => (select kind_id from public.listing_kinds where world_slug='knowledge' and slug='course'),
     p_title => 'Intro to science',
@@ -45,6 +48,14 @@ begin
   );
   perform kc_test.assert_eq((select category_id from public.listings where listing_id=v_listing),
     v_category, 'knowledge listing stores its selected subcategory');
+
+  -- Knowledge listings require moderator review: the insert trigger forces pending_review,
+  -- which browse_listings intentionally excludes. No listing approval RPC exists yet, so
+  -- simulate the post-approval state as the postgres test harness, then browse as another user.
+  perform kc_test.assert_eq((select moderation_status from public.listings where listing_id=v_listing),
+    'pending_review'::text, 'new knowledge listing waits for moderator approval');
+  update public.listings set moderation_status='published' where listing_id=v_listing;
+  perform kc_test.act_as(v_viewer);
 
   select b.listing_id into v_seen
     from public.browse_listings(p_world_slug=>'knowledge', p_viewer=>auth.uid(), p_category_id=>v_category) b
