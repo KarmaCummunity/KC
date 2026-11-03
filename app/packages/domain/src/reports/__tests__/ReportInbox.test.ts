@@ -37,4 +37,33 @@ describe('ReportInbox', () => {
     expect(first.targetType).toBe<ReportInboxRow['targetType']>('post');
     expect(out.nextCursor?.targetType).toBe('post');
   });
+
+  it('handles row fallback defaults and malformed cursors', () => {
+    const input = {
+      rows: [
+        null,
+        'string-row',
+        {
+          target_type: 'user',
+          target_id: 'u-1',
+          reporter_count: 'not-a-number',
+          oldest_at: null,
+          latest_reporter_id: 123,
+          target: null,
+        },
+      ],
+      next_cursor: { oldest_at: 123, target_type: 'post', target_id: 'c' },
+    };
+    const out = parseReportInboxPage(input);
+    expect(out.rows).toHaveLength(1);
+    expect(out.rows[0]).toEqual({
+      targetType: 'user',
+      targetId: 'u-1',
+      reporterCount: 0,
+      oldestAt: '',
+      latestReporterId: null,
+      target: {},
+    });
+    expect(out.nextCursor).toBeNull();
+  });
 });

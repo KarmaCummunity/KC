@@ -28,4 +28,16 @@ describe('GetCommunityStatsSnapshotUseCase', () => {
       asOf: null,
     });
   });
+
+  it('handles non-finite values (NaN, Infinity) by defaulting to 0', async () => {
+    const uc = new GetCommunityStatsSnapshotUseCase(
+      makeStats({ registeredUsers: Number.NaN, activePublicPosts: Infinity, itemsDeliveredTotal: -Infinity }),
+    );
+    await expect(uc.execute()).resolves.toEqual({
+      registeredUsers: 0,
+      activePublicPosts: 0,
+      itemsDeliveredTotal: 0,
+      asOf: null,
+    });
+  });
 });

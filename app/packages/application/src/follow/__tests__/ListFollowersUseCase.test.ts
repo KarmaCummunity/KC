@@ -24,11 +24,17 @@ describe('ListFollowersUseCase', () => {
     expect(out.nextCursor).toBe('u_49');
   });
 
-  it('clamps limit to a sensible max (100)', async () => {
+  it('clamps limit to a sensible max (100) and min (1), defaults to 50', async () => {
     const repo = new FollowFakeUserRepository();
     const uc = new ListFollowersUseCase(repo);
 
     await uc.execute({ userId: 'u_owner', limit: 9999 });
     expect(repo.lastGetFollowers?.limit).toBe(100);
+
+    await uc.execute({ userId: 'u_owner', limit: 0 });
+    expect(repo.lastGetFollowers?.limit).toBe(1);
+
+    await uc.execute({ userId: 'u_owner' });
+    expect(repo.lastGetFollowers?.limit).toBe(50);
   });
 });

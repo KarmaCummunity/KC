@@ -69,4 +69,53 @@ describe('parseReportCaseDetail', () => {
     expect(reporter.reason).toBe('');
     expect(detail!.timeline).toEqual([]);
   });
+
+  it('handles resolved reporter fields, invalid timeline entries, and non-array collections', () => {
+    const detail = parseReportCaseDetail({
+      target_type: 'chat',
+      target_id: 'c1',
+      target: null,
+      reporters: [
+        {
+          report_id: 'r3',
+          reporter_id: 'u3',
+          status: 'confirmed_violation',
+          resolved_at: '2026-01-02T00:00:00Z',
+          resolved_by: 'admin_1',
+        },
+      ],
+      timeline: [
+        null,
+        'not-an-object',
+        {
+          event_id: 'e2',
+          actor_id: 123,
+          action: null,
+          metadata: 'invalid-meta',
+          created_at: 456,
+        },
+      ],
+    });
+    expect(detail).not.toBeNull();
+    expect(detail!.target).toEqual({});
+    expect(detail!.reporters[0]!.resolvedAt).toBe('2026-01-02T00:00:00Z');
+    expect(detail!.reporters[0]!.resolvedBy).toBe('admin_1');
+    expect(detail!.timeline).toHaveLength(1);
+    expect(detail!.timeline[0]).toEqual({
+      eventId: 'e2',
+      actorId: null,
+      action: '',
+      metadata: {},
+      createdAt: '',
+    });
+
+    const nonArrayDetail = parseReportCaseDetail({
+      target_type: 'post',
+      target_id: 'p2',
+      reporters: 'not-array',
+      timeline: null,
+    });
+    expect(nonArrayDetail!.reporters).toEqual([]);
+    expect(nonArrayDetail!.timeline).toEqual([]);
+  });
 });

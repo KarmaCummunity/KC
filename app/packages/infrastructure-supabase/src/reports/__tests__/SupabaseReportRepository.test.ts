@@ -112,6 +112,30 @@ describe('SupabaseReportRepository', () => {
       });
     });
 
+    it('maps message containing duplicate_report → ReportError("duplicate_within_24h")', async () => {
+      const { client } = makeFakeClient({
+        error: { message: 'trigger: duplicate_report error' },
+      });
+      const repo = new SupabaseReportRepository(client);
+
+      await expect(repo.submit('u_reporter', POST_SUBMISSION)).rejects.toMatchObject({
+        name: 'ReportError',
+        code: 'duplicate_within_24h',
+      });
+    });
+
+    it('maps SQLSTATE P0020 → ReportError("target_already_moderated")', async () => {
+      const { client } = makeFakeClient({
+        error: { code: 'P0020', message: 'target has already been removed' },
+      });
+      const repo = new SupabaseReportRepository(client);
+
+      await expect(repo.submit('u_reporter', POST_SUBMISSION)).rejects.toMatchObject({
+        name: 'ReportError',
+        code: 'target_already_moderated',
+      });
+    });
+
     it('maps SQLSTATE 23514 (CHECK violation) → ReportError("invalid_target")', async () => {
       const { client } = makeFakeClient({
         error: { code: '23514', message: 'reports_target_check' },
