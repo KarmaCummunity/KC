@@ -104,11 +104,12 @@ Last applied on kc-dev when this was written: `0239`.
 | 0547 | my givings by world (FR-STATS-008) | in progress |
 | 0548 | donation link world categories | in progress |
 | 0549 | account deletion grace period + purge (FR-SETTINGS-012) | in progress |
-| 0550+ | — | free |
+| 0550 | users.date_of_birth + rpc_set_date_of_birth (FR-AUTH-010 AC2.d) | in progress |
+| 0551+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0550+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0551+`.
 
 ## How to claim
 

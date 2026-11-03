@@ -14,6 +14,7 @@ import {
   supabaseGetOnboardingBootstrap,
   supabaseMarkBasicInfoSkipped,
   supabaseSetBasicInfo,
+  supabaseSetDateOfBirth,
 } from './onboardingSupabase';
 import {
   supabaseGetEditableProfile,
@@ -141,6 +142,10 @@ export class SupabaseUserRepository implements IUserRepository {
 
   setContactPhone(userId: string, contactPhone: string | null): Promise<void> {
     return supabaseSetContactPhone(this.client, userId, contactPhone);
+  }
+
+  setDateOfBirth(isoDate: string): Promise<void> {
+    return supabaseSetDateOfBirth(this.client, isoDate);
   }
 
   updateEditableProfile(userId: string, patch: EditableProfilePatch): Promise<void> {

@@ -12,6 +12,7 @@ import {
 } from '@kc/infrastructure-supabase';
 import {
   CompleteBasicInfoUseCase,
+  SetDateOfBirthUseCase,
   CompleteOnboardingUseCase,
   DeleteAccountUseCase,
   DismissClosureExplainerUseCase,
@@ -32,6 +33,7 @@ let _userRepo: IUserRepository | null = null;
 let _cityRepo: ICityRepository | null = null;
 let _streetRepo: IStreetRepository | null = null;
 let _completeBasicInfo: CompleteBasicInfoUseCase | null = null;
+let _setDateOfBirth: SetDateOfBirthUseCase | null = null;
 let _completeOnboarding: CompleteOnboardingUseCase | null = null;
 let _setAvatar: SetAvatarUseCase | null = null;
 let _updateProfile: UpdateProfileUseCase | null = null;
@@ -69,6 +71,12 @@ export function getCompleteBasicInfoUseCase(): CompleteBasicInfoUseCase {
     _completeBasicInfo = new CompleteBasicInfoUseCase(getUserRepo(), getAuthService());
   }
   return _completeBasicInfo;
+}
+
+/** FR-AUTH-015 AC1.b — date of birth alone, for a member who already finished onboarding. */
+export function getSetDateOfBirthUseCase(): SetDateOfBirthUseCase {
+  if (!_setDateOfBirth) _setDateOfBirth = new SetDateOfBirthUseCase(getUserRepo());
+  return _setDateOfBirth;
 }
 
 export function getCompleteOnboardingUseCase(): CompleteOnboardingUseCase {

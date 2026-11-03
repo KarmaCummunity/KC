@@ -55,6 +55,8 @@ export function mapUserRow(row: UserRow): User {
     profileStreet: row.profile_street ?? null,
     profileStreetNumber: row.profile_street_number ?? null,
     contactPhone: row.contact_phone ?? null,
+    // Private: only users_get_self_private_fields() carries it, never the users row.
+    dateOfBirth: null,
     biography: row.biography,
     avatarUrl: row.avatar_url,
     privacyMode: asPrivacyMode(row.privacy_mode),
