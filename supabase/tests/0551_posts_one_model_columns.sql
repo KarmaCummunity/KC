@@ -1,4 +1,4 @@
--- supabase/tests/0550_posts_one_model_columns.sql | 0550 (G1 step 1, ADR-006): every post
+-- supabase/tests/0551_posts_one_model_columns.sql | 0551 (G1 step 1, ADR-006): every post
 -- carries its giving world, direction, type, expiry and detail fields; a native post derives
 -- them from the legacy columns, a mirror copies its listing; a paused listing is a paused post
 -- that only its owner sees.
@@ -153,4 +153,4 @@ begin
 end $$;
 
 rollback;
-\echo '✓ 0550_posts_one_model_columns.sql passed'
+\echo '✓ 0551_posts_one_model_columns.sql passed'

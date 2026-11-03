@@ -1,4 +1,4 @@
--- 0550_posts_one_model_columns | G1 step 1 (ADR-006, D2 / D19 / D104, BACKLOG G1-S1)
+-- 0551_posts_one_model_columns | G1 step 1 (ADR-006, D2 / D19 / D104, BACKLOG G1-S1)
 --
 -- `posts` becomes able to describe every post type the listing side describes today, so the
 -- later steps can move each flow without a schema change of their own:
@@ -40,9 +40,9 @@ alter table public.posts
   add column if not exists beneficiary_org_id uuid references public.organizations(org_id) on delete set null;
 
 comment on column public.posts.world_slug is
-  'Primary giving world of the post (D100). items for the post engine; a mirror follows its listing (G1 step 1, 0550).';
+  'Primary giving world of the post (D100). items for the post engine; a mirror follows its listing (G1 step 1, 0551).';
 comment on column public.posts.direction is
-  'offer | request (D19). Derived from the legacy `type` on insert; a later change of either keeps the other in step (0550).';
+  'offer | request (D19). Derived from the legacy `type` on insert; a later change of either keeps the other in step (0551).';
 comment on column public.posts.post_type is
   'Extension discriminator: standard | ride (ride_post_details) | event | housing_stay | job (ADR-006).';
 comment on column public.posts.expires_at is
@@ -188,7 +188,7 @@ $$;
 -- ── 7. The mirror upsert carries every one-model column ─────────────────────────────
 -- Same body as 0522 §3 plus the new columns in the insert, the update and the no-op
 -- comparison; after the row is current it fills the ride extension and the post handoffs
--- (0551 / 0552 define those two functions; the calls are guarded until then).
+-- (0552 / 0553 define those two functions; the calls are guarded until then).
 create or replace function public.listing_feed_mirror_upsert(p_listing public.listings)
 returns uuid
 language plpgsql
@@ -301,7 +301,7 @@ begin
 
   perform public.listing_feed_mirror_sync_media(p_listing.listing_id, v_post_id);
 
-  -- Extensions (0551) and the closing stage (0552) follow the post; absent until those run.
+  -- Extensions (0552) and the closing stage (0553) follow the post; absent until those run.
   if v_post_type = 'ride' and to_regproc('public.ride_post_details_upsert') is not null then
     perform public.ride_post_details_upsert(v_post_id, v_details);
   end if;

@@ -1,11 +1,11 @@
--- 0551_ride_post_details | G1 step 1 (ADR-006, D19, BACKLOG G1-S1)
+-- 0552_ride_post_details | G1 step 1 (ADR-006, D19, BACKLOG G1-S1)
 --
 -- The ride extension of a post: one row per post of post_type 'ride', holding what the ride
 -- listings keep in their `details` JSON today (0391, 0512, 0514, 0517, 0531): the two route
 -- ends as official places (D71), up to three meeting points, departure and estimated end, seats
 -- or passengers, cargo flags, the cost model (D70) and the recurring-series marker (D103).
 -- Filled from the listing by `ride_post_details_upsert`, which `listing_feed_mirror_upsert`
--- (0550) calls on every ride write, and backfilled here for every existing ride mirror.
+-- (0551) calls on every ride write, and backfilled here for every existing ride mirror.
 -- Readable through the post's own visibility; no client writes (RLS at least as strict as the
 -- listing detail it copies). Additive and idempotent.
 

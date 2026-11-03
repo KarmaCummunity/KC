@@ -1,4 +1,4 @@
--- supabase/tests/0552_post_handoffs.sql | 0552 (G1 step 1, ADR-006, D19): every giving handoff
+-- supabase/tests/0553_post_handoffs.sql | 0553 (G1 step 1, ADR-006, D19): every giving handoff
 -- is copied to post_handoffs under the post it closes — a listing's mirror post, or the post an
 -- items listing was synced from — with the same id, status, seats and timestamps; a handoff of
 -- a listing that has no post yet is copied the moment the post appears; the report agrees.
@@ -189,4 +189,4 @@ begin
 end $$;
 
 rollback;
-\echo '✓ 0552_post_handoffs.sql passed'
+\echo '✓ 0553_post_handoffs.sql passed'

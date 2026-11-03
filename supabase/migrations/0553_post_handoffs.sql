@@ -1,4 +1,4 @@
--- 0552_post_handoffs | G1 step 1 (ADR-006, D19 "handoff is the closing stage", BACKLOG G1-S1)
+-- 0553_post_handoffs | G1 step 1 (ADR-006, D19 "handoff is the closing stage", BACKLOG G1-S1)
 --
 -- `post_handoffs` is the closing stage of every post: the same shape as `giving_handoffs`
 -- (reserve → confirm → hand over, or cancel / no-show; seats for rides, slots for knowledge),
@@ -6,7 +6,7 @@
 -- its rows is copied here with the same `handoff_id` by trigger, so ratings and notifications
 -- can be re-pointed one at a time in step 3. A handoff whose listing has no post yet (a world
 -- that does not mirror, or a listing closed before 0466) is copied as soon as the post exists
--- (`listing_feed_mirror_upsert` calls `post_handoffs_sync_listing` on insert, 0550).
+-- (`listing_feed_mirror_upsert` calls `post_handoffs_sync_listing` on insert, 0551).
 -- Participants read their own rows, as today; no client writes.
 -- `post_unification_report()` (service_role) counts both sides and their mismatches; the SQL
 -- tests assert zero and the operator runs it on kc-dev before every later step.

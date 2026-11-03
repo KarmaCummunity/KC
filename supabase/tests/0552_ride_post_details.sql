@@ -1,4 +1,4 @@
--- supabase/tests/0551_ride_post_details.sql | 0551 (G1 step 1, ADR-006): a ride post has a
+-- supabase/tests/0552_ride_post_details.sql | 0552 (G1 step 1, ADR-006): a ride post has a
 -- ride_post_details row that copies the listing's ride details (route ends, schedule, seats,
 -- passengers), follows every listing edit, disappears with the post, and is readable only
 -- through the post's visibility.
@@ -118,4 +118,4 @@ begin
 end $$;
 
 rollback;
-\echo '✓ 0551_ride_post_details.sql passed'
+\echo '✓ 0552_ride_post_details.sql passed'

@@ -41,7 +41,7 @@ export type PostStatus =
   | 'removed_admin'
   // D33/D61 — 3 reports hide a post until an admin restores or removes it.
   | 'hidden_pending_review'
-  // D104 — the owner paused the post: hidden from everyone but the owner (G1, migration 0550).
+  // D104 — the owner paused the post: hidden from everyone but the owner (G1, migration 0551).
   | 'paused';
 
 export type PostVisibility = 'Public' | 'FollowersOnly' | 'OnlyMe';
