@@ -104,11 +104,12 @@ Last applied on kc-dev when this was written: `0239`.
 | 0547 | my givings by world (FR-STATS-008) | in progress |
 | 0548 | donation link world categories | in progress |
 | 0549 | account deletion grace period + purge (FR-SETTINGS-012) | in progress |
-| 0550+ | — | free |
+| 0550–0569 | knowledge world K1–K2 (`spec/21_knowledge.md` FR-KNOW-001..020) | claimed (spec only, no files yet) |
+| 0570+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0550+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0570+`.
 
 ## How to claim
 

@@ -8,4 +8,11 @@
 
 5. **Private profile scope (PM 2026-11-03):** should a private profile hide the whole profile (bio, posts, counters) from people who are not approved followers, or only the optional fields of D110? Today a private profile looks like a public one (FR-PROFILE-003, D-21); hiding all of it reverses that. → [07.12](./07_cross_cutting_systems.md)
 
+6. **Knowledge world ([18](./18_knowledge_world.md), PM 2026-11-03):**
+   - Default hub tab: the give & take feed (D107) or the library once usage shows which one people open? ({{S:knowledge-hub-tabs}})
+   - Who reviews library resources in K1: KC admins only, or also a community "knowledge curator" role from the start? ({{S:knowledge-review-before-publish}})
+   - File uploads (PDF, slides) in the library: none in K1 as proposed ({{S:knowledge-no-file-uploads-k1}}), or allowed from the start with a copyright attestation?
+   - Consulting hour: require ID verification as proposed ({{S:knowledge-consulting-hour-verification}}), or phone verification with a declared profession only?
+   - Wording and look of the completion record ({{S:knowledge-completion-record}}): "KC completion record" vs "certificate of participation".
+
 Also pending: card/detail design depth (D6*); D8 TestFlight DB check (G7); size of extra org vote weight (D49).
