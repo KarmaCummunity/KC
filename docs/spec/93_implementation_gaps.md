@@ -4,7 +4,7 @@ Spec is clear; code does not match yet. These are **tasks, not contradictions**.
 
 | # | Gap | Section |
 |---|---|---|
-| G1 | Unify listings → posts, ride_post_details, post_handoffs (D19) | 07.1 |
+| G1 | 🟡 2026-11-03 — Unify listings → posts, ride_post_details, post_handoffs (D19). Plan: [ADR-006](../architecture/adr/ADR-006-one-post-model.md), six steps tracked as BACKLOG `G1-S1`…`G1-S6`; step 1 (additive schema + backfill + sync) in progress | 07.1 |
 | G2 | 🟡 2026-10-30 — One world list in code: `GIVING_WORLD_SLUGS` (8) + `DOMAIN_SLUGS` (11) in `@kc/domain` (`worlds/givingWorlds.ts`). Remaining: `MARKETPLACE_WORLD_SLUGS` and the DB `world_slug` values still hold legacy slugs (G35) (D1) | 04 |
 | G3 | ✅ 2026-10-30 — Anonymity changes both ways: the `listings` tighten-only trigger is dropped (migration `0451`, test `supabase/tests/0451_*`) (D16) | 07.13 |
 | G4 | ✅ 2026-10-30 — Ratings readable only by their rater and super admins (migration `0446`, probe in `supabase/tests/`) (D24) | 07.7 |
@@ -16,7 +16,7 @@ Spec is clear; code does not match yet. These are **tasks, not contradictions**.
 | G10 | Trust engine (D24) | 07.14 |
 | G11 | Expiry & reminders (D21) | 07.1 |
 | G12 | Like & reply on comments (D25) | 07.9 |
-| G13 | ID verification, blue check, provider choice (D23) | 07.14 |
+| G13 | ID verification, blue check, provider choice (D23). ID level specified (`D117`, FR-VERIFY-001…011): ID document + live selfie through a certified provider; needs the provider contract (96 A12) | 07.14 |
 | G14 | 🟡 2026-11-01 — Form per type without 'general' (D28): the create form offers items, rides, food, housing and time, each with its own field set (FR-POST-001 AC6, `listingFieldSpecs.ts`). Open: domain auto-suggest (S39), forms for knowledge / experiences / events | 07.2 |
 | G15 | Recommendation engine & toggle (D27, D34) | 07.3 |
 | G16 | Karma values config (D29) | 07.6 |
@@ -24,7 +24,7 @@ Spec is clear; code does not match yet. These are **tasks, not contradictions**.
 | G18 | Event post & registration (D31) | 08 |
 | G19 | Volunteer hours (D32) | 07.10 |
 | G20 | ✅ 2026-10-30 — Report & suspension thresholds: post 3 reports (14 d) → hidden for review; user 5 distinct reporters (30 d) → suspended; support stays reachable (D33, D61; migration `0452`) | 07.15 |
-| G21 | Housing world (D30) | 05.6 |
+| G21 | Housing & spaces world (D30, `D112`) per `SSOT/spec/21_housing.md`: today only the world row, kinds `host_offer` / `stay_request` with a loose schema, three curated create fields and the feed mirror exist; `giving_handoffs` has no `housing` world, there is no private-details table, booking lifecycle, capacity, emergency button, code of conduct or assisted track, and verification is phone only. Phases H0 (verification + `TD-245`) → H1 stays → H2 event space + storage → H3 assisted track → H4 emergency template | 05.6 |
 | G22 | Wire the medical directory into the hub (D30) | 06 |
 | G23 | World hub infra + WorldHubConfig (D36) | 04 |
 | G24 | 🟡 2026-10-30 — 8 world slugs incl. `experiences` and the 11 domains exist in code; the Donations tab has a tile and a screen for every world and every domain (D62). Remaining: `domain_slug` on posts, challenges not a world (D45) | 04 |

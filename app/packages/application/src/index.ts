@@ -132,6 +132,7 @@ export type { ReportUserInput } from './moderation/ReportUserUseCase';
 export { AdminRemoveListingUseCase, type AdminRemoveListingInput } from './moderation/AdminRemoveListingUseCase';
 export { CheckAccountGateUseCase } from './moderation/CheckAccountGateUseCase';
 export type { CheckAccountGateInput } from './moderation/CheckAccountGateUseCase';
+export { RestoreAccountUseCase } from './moderation/RestoreAccountUseCase';
 export type { IDeviceRepository } from './notifications/IDeviceRepository';
 export { RegisterDeviceUseCase } from './notifications/RegisterDeviceUseCase';
 export { DeactivateDeviceUseCase } from './notifications/DeactivateDeviceUseCase';

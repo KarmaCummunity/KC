@@ -6,7 +6,7 @@ import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { TextField } from '../../ui';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
-/** Mirrors the server rule in admin_seed_demo_data (0551). */
+/** Mirrors the server rule in admin_seed_demo_data (0571). */
 export const MIN_SEED_PASSWORD_LENGTH = 8;
 
 interface Props {

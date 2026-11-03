@@ -1694,6 +1694,16 @@ Owner rules that go with it:
 
 **Affected.** Store listings (#920), KC Pro paywall (#1088), support copy (#1036).
 
+## {{ENG:one-post-model-migration}} — One Post model: reverse the mirror, move one flow at a time, drop `listings` last (2026-11-03)
+
+**Decision.** Gap `G1` (D2, D19) closes in six backward-compatible PRs into `dev` (BACKLOG `G1-S1`…`G1-S6`, plan in [`docs/architecture/adr/ADR-006-one-post-model.md`](../architecture/adr/ADR-006-one-post-model.md)). Step 1 adds to `posts` every column the listing side has and posts lack (`world_slug`, `direction`, `post_type`, `expires_at`, `source`, `details`, `category_id`, `geo`, `time_window`, `urgency_level`, external body / beneficiary) plus the `paused` status of D104, creates `ride_post_details` and `post_handoffs`, backfills them from `listings` / `giving_handoffs` and keeps them in sync by triggers, with a report function whose zero-mismatch result is asserted by SQL tests. Step 2 reverses the `D-206` direction: the create form writes `posts` for every category and `listings` becomes the derived copy for every world (generalising the `0243` items sync), so matching, handoffs and the marketplace screens keep working unchanged. Steps 3–5 move the type-specific flows, the detail screen and events onto posts one PR each; step 6 enforces the single S1 state machine, drops the sync triggers and finally `listings` and its tables, after the report proves the data identical.
+
+**Why.** The two engines (`D-207`) make every feature exist on one side only (likes, comments and closure on posts; booking, handoffs, matching and owner management on listings) and keep three state machines alive. Reversing the mirror keeps the feed, cards, chat anchors and profile reading `posts` as today and lets each flow move with its own tests, which a rename of `listings` to `posts` could not do without stopping the app.
+
+**Rejected.** A union feed over `posts` + `listings` (already rejected in `D-206`). Renaming `listings` to `posts` in one migration (no step-wise verification, every adapter breaks at once). Keeping `listings` as the entity and renaming it in the UI only (contradicts D19: one table, extensions, handoff as the closing stage).
+
+**Affected.** `supabase/migrations/0550–0569`, `posts`, `ride_post_details`, `post_handoffs`, `listing_feed_mirror_upsert`, `@kc/domain` `PostStatus`, later every listing port and adapter, `/listing/*`, the create form and `docs/spec/07` §7.1–7.5.
+
 ## D-212 — Post and listing detail pages share one hero + content-card frame (2026-11-03)
 
 **Decision.** The listing page (items, food, rides, knowledge) uses the same hero frame (`DetailHeroCard`, with the photo gallery or a placeholder icon) and the same content card as the post page. Each type keeps its own fields and actions (route card, handoff, booking, messaging).
@@ -1714,7 +1724,9 @@ Owner rules that go with it:
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
+| 4.40 | 2026-11-03 | Added `{{ENG:one-post-model-migration}}` (G1 plan: reverse the listing mirror, move flows one PR at a time, drop `listings` last; ADR-006). |
 | 4.39 | 2026-11-03 | Added `D-213` (live public finance numbers behind organization-controlled toggles, default off; refines `D-196` for the public view; `FIN-P0`). |
+>>>>>>> origin/dev
 | 4.38 | 2026-11-03 | Added `D-210` (store review on the Cloudflare Pages domain until a domain is bought; KC Pro free year then $30/$100 monthly; support mailbox). |
 | 4.37 | 2026-11-03 | Added `D-209` (one dependency audit over every lockfile; reviewed exceptions expire within 90 days; gate audits on dependency changes, daily schedule otherwise; #1373). |
 | 4.36 | 2026-11-02 | `D-195` addendum: an owner's approval is required for gate-weakening changes only into `main`; on `dev` the judges pass with warnings and the release PR surfaces the changes to the owner. |

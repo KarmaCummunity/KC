@@ -224,9 +224,9 @@ The user deletes their own account: it is deactivated for 30 days, restorable, t
 - AC1. The action requires a two-step confirmation: a warning modal listing consequences (including that the account is kept for 30 days and can be restored by signing in), followed by typing the user's display name to confirm.
 - AC2. On confirm the account is **deactivated**, not deleted (`D108`): `account_status` becomes `pending_deletion` and a purge date 30 days ahead is stored. Immediately:
    - The profile, posts, listings and chats of the user disappear for everyone else (feeds, search, map, profile, chat lists); counterparts see the "Deleted user" placeholder per `D-14`.
-   - All push tokens are unregistered and the user is signed out on every device.
+   - All push tokens are unregistered. The device that deleted the account signs out; another signed-in device is sent to the restore screen on its next account check (within a minute).
    - Nothing is deleted yet: posts, media, follows, blocks and chats stay as they were so a restore is complete.
-- AC3. **Restore:** signing in within the 30 days shows the restore screen (`FR-AUTH-016` AC2); restoring returns the account to `active` with everything visible again.
+- AC3. **Restore:** signing in within the 30 days shows the restore screen (`FR-AUTH-016` AC2); restoring returns the account to `active` with everything visible again. The screen (`/restore-account`) shows the purge date with two actions, restore or sign out; an account whose period has ended is shown that it was deleted.
 - AC4. **Purge:** a daily job finds accounts whose purge date has passed and deletes them for good: all `Post`s with their image assets, every Storage object under `<user_id>/…` (`purgeUserFolders`, #1065), follow edges, requests, blocks, reports, and finally the auth identity. Chats and messages are kept on the counterpart side per `D-14`. A failing bucket is reported and the others still run.
 - AC5. Audit events are recorded for the deactivation, a restore and the purge.
 

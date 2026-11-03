@@ -1,4 +1,4 @@
--- supabase/tests/0551_admin_seed_demo_data.sql | 0551 (FR-ADMIN-031): restore demo data from the portal.
+-- supabase/tests/0571_admin_seed_demo_data.sql | 0571 (FR-ADMIN-031): restore demo data from the portal.
 -- Access control (super admin only), the dev-marker guard, password rules, the seeded shape
 -- (200 flagged users, content, 3 demo nonprofits, usable login hash), the saved password hash,
 -- the audit row, and that the seed does not trip on the caller's JWT. Rolled back at the end.
@@ -100,4 +100,4 @@ end $$;
 
 rollback;
 
-\echo '✓ 0551_admin_seed_demo_data.sql passed'
+\echo '✓ 0571_admin_seed_demo_data.sql passed'

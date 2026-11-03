@@ -13,12 +13,14 @@ nonprofit_job_post_details 1:1 (scope, field, apply_link)                       
 post_handoffs             closing stage for every type (recipient, closed_at)
 post_ratings              one generic two-sided rating, admin-only RLS (D24)      — G4
 ```
-### Migration plan (listings → posts)
-1. Add missing columns (`domain_slug`, `direction`, `expires_at`, `source`) to `posts`; backfill from `listings`.
-2. Move ride fields from `ride_listings` into `ride_post_details`; `giving_handoffs` → `post_handoffs`.
-3. Switch reads in `infrastructure-supabase` adapters behind ports (no UI change); then writes.
-4. Single state machine (S1) enforced in DB + domain; drop sync triggers; drop `listings` last.
-Each step = its own migration + contract tests + regression tests; no data loss; dry-run on kc-dev first.
+### Migration plan (listings → posts) — [ADR-006](./adr/ADR-006-one-post-model.md), BACKLOG `G1-S1`…`G1-S6`
+1. Additive schema: `posts` gains `world_slug`, `direction`, `post_type`, `expires_at`, `source`, `details`, `category_id`, `geo`, `time_window`, `urgency_level` (+ `paused`); `ride_post_details` and `post_handoffs` are created and backfilled from `listings` / `giving_handoffs`, kept in sync by triggers, verified by a report function + SQL tests.
+2. `posts` becomes the source of truth for every create category (create form, edit, owner management on posts); `listings` turns into a derived copy for every world.
+3. Type-specific flows move onto posts: reserve / claim / book, handoffs, ratings, matching, ride series, notifications, karma (one closing system, G34), admin funnel, deep links.
+4. One detail screen `/post/[id]` for every type with likes and comments; `/listing/*` redirects.
+5. Volunteering events as `event_post_details` in the same form (G18).
+6. Single S1 state machine in DB + domain; drop sync triggers; drop `listings` last, after the report shows identical data.
+Each step = its own migration(s) + contract tests + regression tests; no data loss; dry-run on kc-dev first.
 
 ## 2. World & domain registry — G2, G23, G24
 - `DONATION_WORLD_SLUGS` (8) and `POST_DOMAIN_SLUGS` (11) defined **once** in `packages/domain`, mirrored by DB enums/check constraints.
