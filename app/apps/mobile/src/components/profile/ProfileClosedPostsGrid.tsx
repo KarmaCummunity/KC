@@ -6,7 +6,7 @@ import React from 'react';
 import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { PROFILE_GRID_COLUMNS } from '../../hooks/useShellContentWidth';
 import type { ProfileClosedPostsItem } from '@kc/domain';
 import { chunkArray } from '../../lib/chunkArray';
@@ -112,7 +112,7 @@ export function ProfileClosedPostsGrid({
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   loading: { padding: spacing.xl, alignItems: 'center' },
   grid: {
     width: '100%',
@@ -130,12 +130,12 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
   loadMoreBtn: {
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.sm,
-    borderRadius: 999,
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.primary,
     minWidth: 140,
     alignItems: 'center',
   },
   loadMoreBtnBusy: { opacity: 0.6 },
-  loadMoreText: { color: colors.primary, fontSize: 15, fontWeight: '600' },
+  loadMoreText: { color: colors.primary, ...typography.button },
 }));

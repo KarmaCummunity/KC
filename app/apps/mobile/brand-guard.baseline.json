@@ -38,9 +38,6 @@
       "fontWeightLiteral": 2,
       "radiusLiteral": 1
     },
-    "app/edit-post/[id].tsx": {
-      "iconSizeLiteral": 1
-    },
     "app/follow/suggestions.tsx": {
       "radiusLiteral": 2
     },
@@ -89,10 +86,6 @@
       "iconSizeLiteral": 1,
       "unmirroredDirectionalIcon": 1
     },
-    "app/user/[handle]/index.tsx": {
-      "spacingLiteral": 1,
-      "iconSizeLiteral": 2
-    },
     "src/components/ChatBadge.tsx": {
       "fontSizeLiteral": 1,
       "fontWeightLiteral": 1,
@@ -135,10 +128,6 @@
     },
     "src/components/EditProfileAddressBlock.tsx": {
       "rawTextInput": 1
-    },
-    "src/components/EditProfileAvatar.tsx": {
-      "colorLiteral": 1,
-      "radiusLiteral": 1
     },
     "src/components/EphemeralToast.tsx": {
       "fontWeightLiteral": 1,
@@ -338,10 +327,6 @@
       "radiusLiteral": 1,
       "physicalSide": 1
     },
-    "src/components/legal/legalMarkdownRules.tsx": {
-      "radiusLiteral": 1,
-      "physicalSide": 2
-    },
     "src/components/map/MapExplorer.styles.ts": {
       "colorLiteral": 3,
       "fontWeightLiteral": 4,
@@ -388,9 +373,6 @@
       "iconSizeLiteral": 2,
       "unmirroredDirectionalIcon": 1
     },
-    "src/components/post-detail/RecipientUnmarkBar.tsx": {
-      "fontWeightLiteral": 1
-    },
     "src/components/post/CounterpartyIdentityCard.tsx": {
       "fontSizeLiteral": 1,
       "fontWeightLiteral": 1
@@ -421,19 +403,10 @@
       "fontWeightLiteral": 2,
       "radiusLiteral": 1
     },
-    "src/components/profile/FollowButton.tsx": {
-      "fontWeightLiteral": 1,
-      "spacingLiteral": 1
-    },
     "src/components/profile/MyProfileChrome.tsx": {
       "zIndexLiteral": 1,
       "iconSizeLiteral": 3,
       "unmirroredDirectionalIcon": 1
-    },
-    "src/components/profile/ProfileClosedPostsGrid.tsx": {
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 1
     },
     "src/components/profile/ProfileHeader.tsx": {
       "spacingLiteral": 1,
@@ -507,10 +480,6 @@
     "src/components/skeletons/PostGridSkeleton.tsx": {
       "spacingLiteral": 1
     },
-    "src/components/stats/ActivityTimelineList.tsx": {
-      "radiusLiteral": 1,
-      "iconSizeLiteral": 1
-    },
     "src/components/survey/SurveyFloatingNav.tsx": {
       "fontSizeLiteral": 2,
       "zIndexLiteral": 1,
@@ -531,9 +500,6 @@
     "src/components/ui/FormFieldLabel.tsx": {
       "fontSizeLiteral": 1,
       "spacingLiteral": 1
-    },
-    "src/components/ui/SectionHeading.tsx": {
-      "fontSizeLiteral": 1
     },
     "src/components/warmPromptCardStyles.ts": {
       "radiusLiteral": 1,

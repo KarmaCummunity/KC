@@ -14,7 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useProfileClosedPosts } from '../../../src/hooks/useProfileClosedPosts';
 import { useProfileTabCounts } from '../../../src/hooks/useProfileTabCounts';
-import { useTheme, Text } from '@kc/ui';
+import { iconSize, spacing, useTheme, Text } from '@kc/ui';
 import { ProfileHeader } from '../../../src/components/profile/ProfileHeader';
 import { ProfileStatsRow } from '../../../src/components/profile/ProfileStatsRow';
 import { ProfileTabs, type ProfilePostsTab } from '../../../src/components/profile/ProfileTabs';
@@ -30,7 +30,7 @@ import {
   type FollowActionError,
 } from '../../../src/hooks/useOptimisticFollowAction';
 import { useOtherProfileActions } from '../../../src/hooks/useOtherProfileActions';
-import { hasPermission, type AdminRole } from '@kc/domain';
+import { hasPermission, type AdminRole, type User } from '@kc/domain';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { useAdminPerson } from '../../../src/hooks/useAdminPerson';
 import { NotifyModal } from '../../../src/components/NotifyModal';
@@ -99,7 +99,7 @@ export default function OtherProfileScreen() {
   // When `u` is null (still loading), we pass a safe fallback so the hook is always called.
   const dispatchFollowAction = useOptimisticFollowAction({
     viewerId: me,
-    target: u ?? { userId: '', shareHandle: '', privacyMode: 'Public' } as any,
+    target: u ?? ({ userId: '', shareHandle: '', privacyMode: 'Public' } as User),
     handle: handle ?? '',
     onError: setError,
   });
@@ -142,7 +142,7 @@ export default function OtherProfileScreen() {
   });
 
   if (!handle || userQuery.isLoading)
-    return <SafeAreaView style={styles.container} edges={['bottom']}><ActivityIndicator style={{ marginTop: 80 }} color={colors.primary} /></SafeAreaView>;
+    return <SafeAreaView style={styles.container} edges={['bottom']}><ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} /></SafeAreaView>;
 
   if (!u) return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -194,7 +194,7 @@ export default function OtherProfileScreen() {
               style={styles.adminLink}
               onPress={() => router.push({ pathname: '/(admin)/admins/[userId]', params: { userId: u.userId } })}
             >
-              <Ionicons name="shield-checkmark-outline" size={16} color={colors.primary} />
+              <Ionicons name="shield-checkmark-outline" size={iconSize.sm} color={colors.primary} />
               <Text style={styles.adminLinkText}>{t('admin.admins.profileLink')}</Text>
             </TouchableOpacity>
           ) : null}
@@ -213,7 +213,7 @@ export default function OtherProfileScreen() {
                 </View>
               ) : null}
               <TouchableOpacity style={styles.msgBtn} onPress={startChat}>
-                <Ionicons name="chatbubble-outline" size={18} color={colors.primary} />
+                <Ionicons name="chatbubble-outline" size={iconSize.md} color={colors.primary} />
                 <Text style={styles.msgBtnText}>{t('profile.otherScreen.sendMessage')}</Text>
               </TouchableOpacity>
             </View>
