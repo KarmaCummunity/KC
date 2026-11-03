@@ -14,6 +14,7 @@ import {
 } from './aboutExternalLinks';
 import { aboutOpenExternalUrl } from './aboutOpenExternalUrl';
 import { aboutRtlText, aboutRtlRow } from './aboutWebRtlStyle';
+import { MirroredIcon } from '../../components/ui/MirroredIcon';
 
 type Row = {
   readonly key: string;
@@ -70,7 +71,7 @@ export function AboutContactLinks() {
           accessibilityRole="link"
           accessibilityLabel={r.label}
         >
-          <Ionicons name="chevron-back" size={iconSize.md} color={colors.textDisabled} />
+          <MirroredIcon name="chevron-forward" size={iconSize.md} color={colors.textDisabled} />
           <Text style={styles.label}>{r.label}</Text>
           <Ionicons name={r.icon} size={iconSize.xl} color={colors.primary} />
         </Pressable>

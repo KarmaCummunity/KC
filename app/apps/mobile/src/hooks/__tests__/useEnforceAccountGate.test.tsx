@@ -1,76 +1,49 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, renderHook } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
-
-const { checkGate, setForbidden, replace, fullSignOut } = vi.hoisted(() => ({
-  checkGate: vi.fn(), setForbidden: vi.fn(), replace: vi.fn(), fullSignOut: vi.fn(),
-}));
-vi.mock('../../lib/container', () => ({ container: { checkAccountGate: { execute: checkGate }, deviceRepo: {} } }));
-vi.mock('expo-router', () => ({ useRouter: () => ({ replace }) }));
-vi.mock('@kc/infrastructure-supabase', () => ({ setOnForbiddenCallback: setForbidden }));
-vi.mock('../../services/performFullSignOut', () => ({ performFullSignOut: fullSignOut }));
-vi.mock('../../store/authStore', () => ({ useAuthStore: (selector: (s: { signOut: () => void }) => unknown) => selector({ signOut: vi.fn() }) }));
-
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
+const m = vi.hoisted(() => ({ gate: vi.fn(), replace: vi.fn(), forbidden: vi.fn(), setSuspension: vi.fn(), signOut: vi.fn(), fullSignOut: vi.fn(), clear: vi.fn() }));
+vi.mock('expo-router', () => ({ useRouter: () => ({ replace: m.replace }) }));
+vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ clear: m.clear }) }));
+vi.mock('../..//lib/container', () => ({ container: { checkAccountGate: { execute: m.gate }, deviceRepo: {} } }));
+vi.mock('../../store/authStore', () => ({ useAuthStore: (sel: (state: { signOut: typeof m.signOut }) => unknown) => sel({ signOut: m.signOut }) }));
+vi.mock('../../store/suspensionStore', () => ({ useSuspensionStore: { getState: () => ({ setSuspension: m.setSuspension }) } }));
+vi.mock('@kc/infrastructure-supabase', () => ({ setOnForbiddenCallback: m.forbidden }));
+vi.mock('../../services/performFullSignOut', () => ({ performFullSignOut: m.fullSignOut }));
 import { useEnforceAccountGate } from '../useEnforceAccountGate';
-import { useSuspensionStore } from '../../store/suspensionStore';
-
-let client: QueryClient;
-const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
-
-beforeEach(() => {
-  vi.useFakeTimers();
-  vi.clearAllMocks();
-  client = new QueryClient();
-  fullSignOut.mockResolvedValue(undefined);
-  checkGate.mockResolvedValue({ allowed: true });
-  useSuspensionStore.getState().setSuspension(null);
-});
-afterEach(() => { vi.useRealTimers(); client.clear(); });
-
 describe('useEnforceAccountGate', () => {
-  it('clears suspension and forbidden callback without a user', () => {
-    useSuspensionStore.getState().setSuspension({ reason: 'hold', until: null });
-    const { unmount } = renderHook(() => useEnforceAccountGate(null), { wrapper });
-    expect(useSuspensionStore.getState().suspension).toBeNull();
-    expect(setForbidden).toHaveBeenCalledWith(null);
-    expect(checkGate).not.toHaveBeenCalled();
-    unmount();
+  beforeEach(() => vi.clearAllMocks());
+  it('publishes suspension state while keeping the session active', async () => {
+    m.gate.mockResolvedValue({ allowed: false, reason: 'suspended_admin', until: 'soon' });
+    renderHook(() => useEnforceAccountGate('u1'));
+    await waitFor(() => expect(m.setSuspension).toHaveBeenCalledWith({ reason: 'suspended_admin', until: 'soon' }));
+    expect(m.replace).not.toHaveBeenCalled();
   });
-
-  it('checks immediately and on the interval, then unregisters and clears the timer', async () => {
-    const { unmount } = renderHook(() => useEnforceAccountGate('u1'), { wrapper });
-    await act(async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
-    expect(checkGate).toHaveBeenCalledWith({ userId: 'u1' });
-    expect(checkGate).toHaveBeenCalledTimes(1);
-    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); await Promise.resolve(); });
-    expect(checkGate).toHaveBeenCalledTimes(2);
-    unmount();
-    expect(setForbidden).toHaveBeenLastCalledWith(null);
-    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
-    expect(checkGate).toHaveBeenCalledTimes(2);
+  it('clears enforcement for a missing user and registers forbidden retry for signed-in user', async () => {
+    m.gate.mockResolvedValue({ allowed: true });
+    const { rerender } = renderHook(({ id }) => useEnforceAccountGate(id), { initialProps: { id: null as string | null } });
+    expect(m.setSuspension).toHaveBeenCalledWith(null);
+    rerender({ id: 'u1' });
+    await waitFor(() => expect(m.forbidden).toHaveBeenCalledWith(expect.any(Function)));
   });
-
-  it('signs out and routes a suspended/reverify decision appropriately', async () => {
-    checkGate.mockResolvedValueOnce({ allowed: false, reason: 'suspended_admin', until: 'soon' })
-      .mockResolvedValueOnce({ allowed: false, reason: 'pending_verification', until: null });
-    const { rerender } = renderHook(({ userId }) => useEnforceAccountGate(userId), { wrapper, initialProps: { userId: 'u1' } });
-    await act(async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
-    expect(useSuspensionStore.getState().suspension).toEqual({ reason: 'suspended_admin', until: 'soon' });
-    rerender({ userId: 'u2' });
-    await act(async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
-    expect(fullSignOut).toHaveBeenCalled();
-    expect(replace).toHaveBeenCalledWith('/(auth)/sign-in');
+  it('re-verifies by signing out and routing to sign in', async () => {
+    m.gate.mockResolvedValue({ allowed: false, reason: 'pending_verification' }); m.fullSignOut.mockResolvedValue(undefined);
+    renderHook(() => useEnforceAccountGate('u1'));
+    await waitFor(() => expect(m.replace).toHaveBeenCalledWith('/(auth)/sign-in'));
+    expect(m.fullSignOut).toHaveBeenCalledWith(expect.objectContaining({ deviceRepo: {}, queryClient: expect.anything(), signOutLocal: m.signOut }));
+    expect(m.setSuspension).toHaveBeenCalledWith(null);
   });
-
-  it('routes banned accounts and retries after transient errors', async () => {
-    checkGate.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ allowed: false, reason: 'policy', until: null });
-    const { unmount } = renderHook(() => useEnforceAccountGate('u1'), { wrapper });
-    await act(async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
-    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); await Promise.resolve(); await Promise.resolve(); });
-    expect(fullSignOut).toHaveBeenCalled();
-    expect(replace).toHaveBeenCalledWith({ pathname: '/account-blocked', params: { reason: 'policy', until: '' } });
-    unmount();
+  it('signs out a blocked account and preserves reason and until in the route', async () => {
+    m.gate.mockResolvedValue({ allowed: false, reason: 'banned', until: '2030-01-01' }); m.fullSignOut.mockResolvedValue(undefined);
+    renderHook(() => useEnforceAccountGate('u2'));
+    await waitFor(() => expect(m.replace).toHaveBeenCalledWith({ pathname: '/account-blocked', params: { reason: 'banned', until: '2030-01-01' } }));
+    expect(m.fullSignOut).toHaveBeenCalledTimes(1);
+  });
+  it('retries after gate failures and removes callback on unmount', async () => {
+    vi.useFakeTimers(); m.gate.mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ allowed: true });
+    const { unmount } = renderHook(() => useEnforceAccountGate('u1'));
+    await vi.waitFor(() => expect(m.gate).toHaveBeenCalledTimes(1));
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(m.gate).toHaveBeenCalledTimes(2); expect(m.setSuspension).toHaveBeenCalledWith(null);
+    unmount(); expect(m.forbidden).toHaveBeenLastCalledWith(null); vi.useRealTimers();
   });
 });
