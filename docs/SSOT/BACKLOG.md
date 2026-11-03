@@ -107,6 +107,17 @@ Stages 1, 2, 3 and 6 (`INFRA-CI-1` unified PR gate, `INFRA-CI-2` gate integrity,
 | UI-KIT-2 | **Phase 2 — migrate screens onto the kit**, one area per PR (sheets, dialogs, chips, CTAs), lowering the brand-guard baseline each time. Sheets: all 9 sheet components on `BottomSheet` (`SearchablePicker` migrated in UI-KIT-2 / #1286). Dialogs: 13 of 14 centred dialogs on `Modal` (`LegalConsentScreen` exit confirm waits for `LegalConsentGate`). Chips: 7 of 8 exported and all 3 local chip components on `Chip` (`ChatReactionChips` kept: a reaction counter, not a kit chip). CTAs: onboarding, auth and closure (CTAs 1), tabs, marketplace and About (CTAs 2) the root components (CTAs 3) and the token-clean admin files (CTAs 4) on kit buttons; the baseline-dirty admin files follow UI-ADMIN-1. See `TD-243`. | agent-fe | 🟡 In progress | §4.1.1 · `TD-243` |
 | UI-ADMIN-1 | **Admin surfaces on brand tokens (#1287, D67).** One admin area per PR to zero brand-guard findings, values snapped to the nearest token (the smaller on a tie: admin is the denser layout). ✅ `components/admin/admins` (13 files); ✅ shared admin components, `reports`, `tasks` rows (16 files); ✅ admin home, `money`, `whatsapp`, `time`, `crm`, survey cards (8 files). Left: 23 admin files in the baseline (spec 17 §4.3 progress line). | agent-fe | 🟡 In progress | [`spec/17`](../spec/17_brand_and_design_system.md) §4.3 |
 
+## HOUSING — Free space sharing (`spec/21_housing.md`, `{{D:housing-space-sharing}}`)
+
+| ID | Task | Owner | Status | Spec |
+|----|------|-------|--------|------|
+| HOUSING-SPEC | **Housing & spaces spec v1.** Four sub-categories (stays, emergency shelter via organizations, event & gathering space, storage) on one booking engine; FR-HOUSING-001…039. Remaining: PM review of the nine housing fills in `docs/spec/91` and open questions Q-H1…Q-H7 (`docs/spec/92` item 5). | agent-fullstack | 🟡 Drafted — PM review pending | `spec/21_housing.md` |
+| HOUSING-H0 | **Verification before housing.** Interim document verification + admin queue (FR-HOUSING-003 AC5), form pre-check (`TD-245`, AC2), code of conduct with versioned acceptances (AC3). | agent-fullstack | ⏳ Planned | FR-HOUSING-003 |
+| HOUSING-H1 | **Stays end to end, then turn `world_housing_enabled` on.** Kinds + binding schemas, sub-category migration, availability + blackout, private details + fuzzed map, booking request / proposal / decision with capacity, expiry sweep, cancellations, completion, no-show, ratings, karma, chat system messages, emergency button, safety freeze, my hosting / my stays, search + map filters, matching v2. | agent-fullstack | ⏳ Planned | FR-HOUSING-001…006, 011–027, 034–037, 039 |
+| HOUSING-H2 | **Event space + storage sub-categories.** Kinds, forms, event rules, storage inventory + agreement summary + end-of-term sweep. Needs Q-H5 (legal text) before storage ships. | agent-fullstack | ⏳ Planned | FR-HOUSING-007…010, 028, 029 |
+| HOUSING-H3 | **Assisted track.** Shelter pool, confidential shelter request with SLA sweep, coordinator placement and check-ins, organization housing scopes. Depends on ORG-P1. | agent-fullstack | ⏳ Planned | FR-HOUSING-030…032 |
+| HOUSING-H4 | **Emergency-mode evacuee hosting.** "Host evacuees" template, evacuee ranking and emergency-group notifications. Depends on G25. | agent-fullstack | ⏳ Planned | FR-HOUSING-033 |
+
 ## Deferred (post-MVP, still tracked)
 
 | ID | Task | Status | Spec |
