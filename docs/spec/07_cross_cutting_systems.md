@@ -122,7 +122,9 @@ Tech: · PRD_V2 rule 7 superseded · both ways on `posts` (0094) and `listings` 
 
 ## 7.14 Verification and trust engine
 Levels phone → ID → blue check, plus reliability data (completed handoffs, seniority), shown on post, card and profile (D23). **Not blocking**, including drivers. Exceptions: housing — both sides verified; medical — only medical bodies (D30); elderly home visit — ID-verified volunteer (D48); an event may require verified users (D31). The trust engine weighs ratings and reports in ranking/matching and reports anomalies to admins (D24). ID provider chosen at implementation.
-Tech: · PRD_V2 rule 13 superseded · phone only · G10, G13
+- **ID level (`{{D:identity-verification-document-selfie}}`, PM 2026-11-03):** a government ID document (Israeli identity card or a passport) **and** a live selfie with liveness, matched to the document photo by a certified provider. KC keeps the result, document type, country, expiry and date of birth, never the images or the document number (a keyed hash stops one person from verifying two accounts). Detailed FRs: [`SSOT/spec/22_identity_verification.md`](../SSOT/spec/22_identity_verification.md) (`FR-VERIFY-*`).
+
+Tech: · PRD_V2 rule 13 superseded · phone only; ID level specified (FR-VERIFY), provider not chosen · G10, G13
 
 ## 7.15 Reports and moderation
 Anyone can report a post, comment or user. **3 reports on a post → hidden until human review, and admins are notified; 5 on a user → suspended from actions, still sees everything and can chat with support** (D33, D61). "5" = 5 distinct reporters within 30 days; suspended user's open posts are hidden (S11). Review within 48h; malicious reports count against the reporter (S12). False emergency reports are handled with priority (D42).

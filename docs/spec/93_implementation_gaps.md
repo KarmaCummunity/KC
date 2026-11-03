@@ -16,7 +16,7 @@ Spec is clear; code does not match yet. These are **tasks, not contradictions**.
 | G10 | Trust engine (D24) | 07.14 |
 | G11 | Expiry & reminders (D21) | 07.1 |
 | G12 | Like & reply on comments (D25) | 07.9 |
-| G13 | ID verification, blue check, provider choice (D23) | 07.14 |
+| G13 | ID verification, blue check, provider choice (D23). ID level specified (`{{D:identity-verification-document-selfie}}`, FR-VERIFY-001…011): ID document + live selfie through a certified provider; needs the provider contract (96 A12) | 07.14 |
 | G14 | 🟡 2026-11-01 — Form per type without 'general' (D28): the create form offers items, rides, food, housing and time, each with its own field set (FR-POST-001 AC6, `listingFieldSpecs.ts`). Open: domain auto-suggest (S39), forms for knowledge / experiences / events | 07.2 |
 | G15 | Recommendation engine & toggle (D27, D34) | 07.3 |
 | G16 | Karma values config (D29) | 07.6 |

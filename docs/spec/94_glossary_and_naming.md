@@ -45,6 +45,7 @@
 | מאגר אירוח מוגן | Shelter pool | Hosts who agreed to host people placed by a verified organization; never public |
 | רכז/ת אירוח | Housing coordinator | Member of a verified organization with housing coordination who takes shelter requests and places people |
 | שיבוץ | Placement | A booking created by a coordinator on behalf of a person in need, possibly off-platform |
+| אימות זהות | Identity verification | Level 2 of D23: an ID document + a live selfie matched by a certified provider (`{{D:identity-verification-document-selfie}}`); code `VerificationLevel`, `identity_verifications` |
 
 ## Naming rules
 1. Always the precise name: "giving world", "item subcategory", "post type" — **never a bare "categories"**.
