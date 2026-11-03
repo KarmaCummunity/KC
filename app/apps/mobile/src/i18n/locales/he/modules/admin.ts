@@ -6,6 +6,7 @@ import { adminCrmHe } from './adminCrm';
 import { adminOrgApprovalsHe } from './adminOrgApprovals';
 import { adminWhatsAppHe } from './adminWhatsApp';
 import { adminMatchingHe } from './adminMatching';
+import { adminStatsHe } from './adminStats';
 import { adminSurveysHe } from './adminSurveys';
 import { adminTasksHe } from './adminTasks';
 import { adminAdminsHe } from './adminAdmins';
@@ -28,6 +29,7 @@ export const adminHe = {
     audit:         'יומן פעולות',
     whatsapp:      'וואטסאפ',
     matching:      'איכות התאמות',
+    stats:         'סטטיסטיקות',
   },
   roles: {
     super_admin: 'מנהל-על',
@@ -142,6 +144,7 @@ export const adminHe = {
   money: adminMoneyHe,
   whatsapp: adminWhatsAppHe,
   matching: adminMatchingHe,
+  stats: adminStatsHe,
   crm: adminCrmHe,
   orgApprovals: adminOrgApprovalsHe,
   surveys: adminSurveysHe,

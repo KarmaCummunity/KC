@@ -6,6 +6,7 @@ import { adminCrmEn } from './adminCrm';
 import { adminOrgApprovalsEn } from './adminOrgApprovals';
 import { adminWhatsAppEn } from './adminWhatsApp';
 import { adminMatchingEn } from './adminMatching';
+import { adminStatsEn } from './adminStats';
 import { adminSurveysEn } from './adminSurveys';
 import { adminTasksEn } from './adminTasks';
 import { adminAdminsEn } from './adminAdmins';
@@ -28,6 +29,7 @@ export const adminEn = {
     audit:         'Audit Log',
     whatsapp:      'WhatsApp',
     matching:      'Match quality',
+    stats:         'Statistics',
   },
   roles: {
     super_admin: 'Super Admin',
@@ -142,6 +144,7 @@ export const adminEn = {
   money: adminMoneyEn,
   whatsapp: adminWhatsAppEn,
   matching: adminMatchingEn,
+  stats: adminStatsEn,
   crm: adminCrmEn,
   orgApprovals: adminOrgApprovalsEn,
   surveys: adminSurveysEn,
