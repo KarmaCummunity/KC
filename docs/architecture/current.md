@@ -246,6 +246,7 @@ KC relies on two scheduling planes: database-level `pg_cron` jobs running direct
 | `ci-migration-drift` | `.github/workflows/ci-migration-drift.yml` | `17 */6 * * *` (every 6h) | Verifies schema consistency between the `supabase/migrations/` ledger and the active `kc-dev` database. |
 | `ops-health` | `.github/workflows/ops-health.yml` | `23 * * * *` (hourly) | Probes public API health and web endpoints to detect service degradations. |
 | `issue-claims` | `.github/workflows/issue-claims.yml` | `23 * * * *` (hourly) | Releases stale agent issue claims older than 6 hours without active pull requests. |
+| `dependency-audit` | `.github/workflows/dependency-audit.yml` | `41 2 * * *` (daily) | Audits every lockfile and Edge Function npm import on `dev` and `main` against the npm advisory database; keeps one tracking issue open while it fails (#1373). |
 | `close-issues-on-dev-merge` | `.github/workflows/close-issues-on-dev-merge.yml` | `17 3 * * *` (daily) | Reconciles issues closed by merged PRs into the `dev` branch. |
 | `stale-stack-report` | `.github/workflows/stale-stack-report.yml` | `0 6 * * 0` (weekly Sundays) | Generates a report of open branches and pull requests across stacked development branches. |
 

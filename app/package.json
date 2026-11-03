@@ -63,36 +63,8 @@
       "compression": "^1.8.2",
       "decode-uri-component": ">=0.5.1",
       "vite@6": "^6.4.4",
+      "postcss@>=8.5 <9": "^8.5.29",
       "zod@4": "^4.6.6"
-    },
-    "auditConfig": {
-      "ignoreGhsas": [
-        "GHSA-gv7w-rqvm-qjhr",
-        "GHSA-22p9-wv53-3rq4",
-        "GHSA-v245-v573-v5vm",
-        "GHSA-2g4f-4pwh-qvx6",
-        "GHSA-3qcw-2rhx-2726",
-        "GHSA-4x5r-pxfx-6jf8",
-        "GHSA-6g55-p6wh-862q",
-        "GHSA-6v5v-wf23-fmfq",
-        "GHSA-6vfc-qv3f-vr6c",
-        "GHSA-frvp-7c67-39w9",
-        "GHSA-hcf7-66rw-9f5r",
-        "GHSA-hvrm-45r6-mjfj",
-        "GHSA-mh99-v99m-4gvg",
-        "GHSA-pm4m-ph32-ghv5",
-        "GHSA-qx2v-qp2m-jg93",
-        "GHSA-r28c-9q8g-f849",
-        "GHSA-w5hq-g745-h8pq",
-        "GHSA-w62v-xxxg-mg59",
-        "GHSA-xgm2-5f3f-mvvc",
-        "GHSA-86w9-cpqp-85rv",
-        "GHSA-vfj7-8cjw-p6xm",
-        "GHSA-5p2g-fcmc-qvqq",
-        "GHSA-w3rx-r6r6-pgpr",
-        "GHSA-r7fv-28h4-cvq7",
-        "GHSA-qr28-fpjm-wq7f"
-      ]
     }
   }
 }

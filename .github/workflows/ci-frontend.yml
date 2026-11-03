@@ -3,7 +3,8 @@ name: CI — frontend
 # Frontend lane, called by ci.yml when app/** or a build input changed
 # (scripts/ci-changes.mjs). checks and tests run in parallel; sonar starts as
 # soon as tests finish:
-#   • checks — typecheck, ESLint, dependency audit.
+#   • checks — typecheck, ESLint. The dependency audit covers every lockfile
+#     in the static lane (scripts/check-dependency-audit.mjs, #1373).
 #   • tests  — unit tests with coverage; the coverage artifact feeds the
 #     SonarCloud scan (no second test run).
 #   • sonar  — SonarCloud quality gate on the tests job's coverage.
@@ -65,7 +66,7 @@ jobs:
             app/apps/mobile/coverage/
 
   checks:
-    name: typecheck · lint · audit
+    name: typecheck · lint
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -85,29 +86,6 @@ jobs:
       # package's typecheck before its lint, so typecheck runs once.
       - name: Typecheck + ESLint (per-package --max-warnings ratchet)
         run: pnpm exec turbo run typecheck lint
-
-      - name: Dependency audit
-        if: ${{ !cancelled() }}
-        env:
-          NODE_OPTIONS: --max-old-space-size=8192
-        run: |
-          # The legacy npm audit endpoint is being retired and returns HTTP 410
-          # (ERR_PNPM_AUDIT_BAD_RESPONSE), and the audit can exhaust the Node
-          # heap; both are registry/infra errors, not advisories, so they warn.
-          # Genuine high-severity advisories still fail the job.
-          set +e
-          out="$(pnpm audit --audit-level=high 2>&1)"
-          code=$?
-          echo "$out"
-          if [ "$code" -ne 0 ] && echo "$out" | grep -q "ERR_PNPM_AUDIT_BAD_RESPONSE"; then
-            echo "::warning::pnpm audit registry endpoint unavailable (HTTP 410, retired) — dependency audit skipped"
-            exit 0
-          fi
-          if [ "$code" -ne 0 ] && { [ "$code" -eq 134 ] || echo "$out" | grep -q "JavaScript heap out of memory"; }; then
-            echo "::warning::pnpm audit exceeded Node heap — dependency audit skipped (infra)"
-            exit 0
-          fi
-          exit "$code"
 
   sonar:
     name: sonar

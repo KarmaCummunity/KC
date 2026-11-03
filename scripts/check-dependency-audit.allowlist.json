@@ -1,0 +1,54 @@
+{
+  "description": "Reviewed exceptions for scripts/check-dependency-audit.mjs. Only high/critical advisories need one. Each entry names one advisory in one package, why it cannot be fixed now, the review date and an expiry at most 90 days later. Rules: scripts/check-dependency-audit-policy.mjs; process: SECURITY.md (Dependency audit). This file is code-owned.",
+  "exceptions": [
+    {
+      "advisory": "GHSA-22p9-wv53-3rq4",
+      "package": "linkify-it",
+      "reason": "Pinned at 2.x by markdown-it@10 inside the unmaintained react-native-markdown-display@7.0.2; no compatible fixed release. The renderer is used only by the legal documents reader (components/legal), whose Markdown the team publishes, never user text. Replacement tracked in TD-132.",
+      "reviewed": "2026-11-03",
+      "expires": "2027-01-31"
+    },
+    {
+      "advisory": "GHSA-v245-v573-v5vm",
+      "package": "linkify-it",
+      "reason": "Same chain as GHSA-22p9-wv53-3rq4: react-native-markdown-display@7.0.2 > markdown-it@10 > linkify-it@2, used only for the team-published legal documents. Replacement tracked in TD-132.",
+      "reviewed": "2026-11-03",
+      "expires": "2027-01-31"
+    },
+    {
+      "advisory": "GHSA-r7fv-28h4-cvq7",
+      "package": "markdown-it",
+      "reason": "Pinned at 10.x by the unmaintained react-native-markdown-display@7.0.2; no compatible fixed release. Parses only the team-published legal documents. Replacement tracked in TD-132.",
+      "reviewed": "2026-11-03",
+      "expires": "2027-01-31"
+    },
+    {
+      "advisory": "GHSA-5p2g-fcmc-qvqq",
+      "package": "image-size",
+      "reason": "Metro 0.83 (Expo SDK 54 bundler) depends on image-size 1.x; the fix exists only in 2.x, which drops the default export Metro requires. Build time only, reading the repository's own committed assets. Clears with the Expo SDK upgrade, which moves as one unit (#1433).",
+      "reviewed": "2026-11-03",
+      "expires": "2027-01-31"
+    },
+    {
+      "advisory": "GHSA-w3rx-r6r6-pgpr",
+      "package": "image-size",
+      "reason": "Same Metro 0.83 chain as GHSA-5p2g-fcmc-qvqq: build time only, on the repository's own committed assets; fixed only in image-size 2.x. Clears with the Expo SDK upgrade (#1433).",
+      "reviewed": "2026-11-03",
+      "expires": "2027-01-31"
+    },
+    {
+      "advisory": "GHSA-6g55-p6wh-862q",
+      "package": "postcss",
+      "reason": "@expo/metro-config@54 pins postcss ~8.4 (the 8.5 copies used by vite are overridden to a fixed release in app/package.json). Build time only, processing the repository's own CSS during the web export. Clears with the Expo SDK upgrade (#1433).",
+      "reviewed": "2026-11-03",
+      "expires": "2027-01-31"
+    },
+    {
+      "advisory": "GHSA-r28c-9q8g-f849",
+      "package": "postcss",
+      "reason": "Same @expo/metro-config@54 pin of postcss ~8.4 as GHSA-6g55-p6wh-862q: build time only, on the repository's own CSS. Clears with the Expo SDK upgrade (#1433).",
+      "reviewed": "2026-11-03",
+      "expires": "2027-01-31"
+    }
+  ]
+}
