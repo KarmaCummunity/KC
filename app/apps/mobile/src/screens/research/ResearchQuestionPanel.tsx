@@ -4,13 +4,10 @@
 import React from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, useTheme, Text, TextInput } from '@kc/ui';
+import { makeUseStyles, spacing, radius, typography, useTheme, Text } from '@kc/ui';
+import { TextField } from '../../components/ui/TextField';
 import type { SurveyQuestion } from '@kc/domain';
 import { SurveyRatingRow } from '../../components/survey/SurveyRatingRow';
-import {
-  hebrewSurveyFieldTextStyle,
-  SURVEY_TEXT_ALIGN,
-} from '../../components/survey/hebrewSurveyFieldStyle';
 import { webTextRtl } from '../../lib/webRtlStyle';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
@@ -67,14 +64,14 @@ export function ResearchQuestionPanel({
         ratingAnchorHigh={question.ratingAnchorHighHe || undefined}
       />
 
-      <Text style={styles.fieldLabel}>{t('research.textFieldLabel')}</Text>
-      <TextInput
-        style={[styles.textInput, hebrewSurveyFieldTextStyle()]}
+      <TextField
+        label={t('research.textFieldLabel')}
+        style={styles.textInput}
         value={answer.answerText ?? ''}
         onChangeText={onText}
         placeholder={question.textPlaceholderHe}
         placeholderTextColor={colors.textDisabled}
-        textAlign={SURVEY_TEXT_ALIGN}
+        textAlign={rtlTextAlignStart}
         multiline
         maxLength={500}
         accessibilityLabel={question.textPlaceholderHe}
@@ -83,27 +80,27 @@ export function ResearchQuestionPanel({
       {isQ11 ? (
         <View style={styles.contactSection}>
           <Text style={styles.contactTitle}>{t('research.contactSectionTitle')}</Text>
-          <Text style={styles.fieldLabel}>{t('research.contactEmailLabel')}</Text>
-          <TextInput
-            style={[styles.singleInput, hebrewSurveyFieldTextStyle()]}
+          <TextField
+            label={t('research.contactEmailLabel')}
+            style={typography.body}
             value={contactEmail}
             onChangeText={onContactEmail}
             placeholder={t('research.contactEmailPlaceholder')}
             placeholderTextColor={colors.textDisabled}
-            textAlign={SURVEY_TEXT_ALIGN}
+            textAlign={rtlTextAlignStart}
             keyboardType="email-address"
             autoCapitalize="none"
             maxLength={320}
             accessibilityLabel={t('research.contactEmailLabel')}
           />
-          <Text style={styles.fieldLabel}>{t('research.contactWindowLabel')}</Text>
-          <TextInput
-            style={[styles.singleInput, hebrewSurveyFieldTextStyle()]}
+          <TextField
+            label={t('research.contactWindowLabel')}
+            style={typography.body}
             value={contactWindowHe}
             onChangeText={onContactWindow}
             placeholder={t('research.contactWindowPlaceholder')}
             placeholderTextColor={colors.textDisabled}
-            textAlign={SURVEY_TEXT_ALIGN}
+            textAlign={rtlTextAlignStart}
             maxLength={200}
             accessibilityLabel={t('research.contactWindowLabel')}
           />
@@ -117,7 +114,7 @@ const usePanelStyles = makeUseStyles(({ colors }) => ({
   card: {
     gap: spacing.md,
     backgroundColor: colors.surface,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
@@ -125,30 +122,24 @@ const usePanelStyles = makeUseStyles(({ colors }) => ({
   questionIndex: {
     ...typography.caption,
     color: colors.primary,
-    fontWeight: '700',
     letterSpacing: 0.4,
     textAlign: rtlTextAlignStart,
     ...webTextRtl,
   },
   prompt: {
     ...typography.h3,
-    fontSize: 20,
     color: colors.textPrimary,
     textAlign: rtlTextAlignStart,
-    lineHeight: 30,
     ...webTextRtl,
   },
   context: {
     ...typography.body,
-    fontSize: 16,
     color: colors.textSecondary,
     textAlign: rtlTextAlignStart,
-    lineHeight: 25,
     ...webTextRtl,
   },
   fieldLabel: {
     ...typography.bodySmall,
-    fontWeight: '600',
     color: colors.textSecondary,
     textAlign: rtlTextAlignStart,
     marginTop: spacing.sm,
@@ -156,16 +147,9 @@ const usePanelStyles = makeUseStyles(({ colors }) => ({
   },
   textInput: {
     ...typography.body,
-    fontSize: 16,
-    lineHeight: 24,
     minHeight: 120,
     maxHeight: 168,
-    padding: spacing.base,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-    color: colors.textPrimary,
+    textAlignVertical: 'top',
   },
   contactSection: {
     gap: spacing.md,
@@ -176,20 +160,8 @@ const usePanelStyles = makeUseStyles(({ colors }) => ({
   },
   contactTitle: {
     ...typography.body,
-    fontWeight: '700',
     color: colors.textPrimary,
     textAlign: rtlTextAlignStart,
     ...webTextRtl,
-  },
-  singleInput: {
-    ...typography.body,
-    fontSize: 16,
-    height: 48,
-    padding: spacing.base,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-    color: colors.textPrimary,
   },
 }));

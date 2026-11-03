@@ -8,7 +8,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint . --max-warnings=3"
+    "lint": "eslint . --max-warnings=0"
   },
   "dependencies": {
     "@kc/domain": "workspace:*"

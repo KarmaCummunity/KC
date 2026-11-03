@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { MessageReactionType } from '@kc/infrastructure-supabase';
 import { container } from '../lib/container';
 import { useAuthStore } from '../store/authStore';
@@ -8,21 +8,20 @@ export type ReactionSummary = Partial<Record<MessageReactionType, number>>;
 
 export function useChatMessageReactions(chatId: string, messageIds: string[]) {
   const viewerId = useAuthStore((s) => s.session?.userId);
-  const messageIdsKey = messageIds.join('|');
-  const messageIdsRef = useRef(messageIds);
-  messageIdsRef.current = messageIds;
   const [byMessage, setByMessage] = useState<Record<string, ReactionSummary>>({});
   const [mine, setMine] = useState<Record<string, MessageReactionType | null>>({});
 
+  const messageIdsKey = messageIds.join('|');
+
   useEffect(() => {
-    const currentMessageIds = messageIdsRef.current;
-    if (currentMessageIds.length === 0) return;
+    if (!messageIdsKey) return;
+    const ids = messageIdsKey.split('|');
     let cancelled = false;
-    void container.chatV2Repo.listMessageReactions(currentMessageIds).then((rows) => {
+    void container.chatV2Repo.listMessageReactions(ids).then((rows) => {
       if (cancelled) return;
       const counts: Record<string, ReactionSummary> = {};
       const own: Record<string, MessageReactionType | null> = {};
-      for (const id of currentMessageIds) {
+      for (const id of ids) {
         counts[id] = {};
         own[id] = null;
       }

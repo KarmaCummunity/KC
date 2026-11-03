@@ -29,16 +29,16 @@ export function usePostDraftAutosave(input: PostDraftAutosaveInput): void {
   latestRef.current = input;
 
   useEffect(() => {
-    const currentInput = latestRef.current;
-    if (!shouldAutosaveDraft(currentInput, currentInput)) return;
+    const s = latestRef.current;
+    if (!shouldAutosaveDraft(s, s)) return;
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      const s = latestRef.current;
-      if (!shouldAutosaveDraft(s, s)) return;
+      const current = latestRef.current;
+      if (!shouldAutosaveDraft(current, current)) return;
       // ownerId presence checked by the guard above.
       usePostDraftStore
         .getState()
-        .setDraft(buildDraftPayload(s.ownerId as string, Date.now(), s));
+        .setDraft(buildDraftPayload(current.ownerId as string, Date.now(), current));
     }, AUTOSAVE_DEBOUNCE_MS);
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);

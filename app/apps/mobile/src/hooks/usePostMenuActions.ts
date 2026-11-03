@@ -67,9 +67,10 @@ export function usePostMenuActions({ post, onAfterRemoval, onSettle }: Args): Po
             ownerId: post.ownerId,
           }),
         {
-        errorCopy: t('post.deleteError'),
-        successToast: t('post.deleteSuccess'),
-      }),
+          errorCopy: t('post.deleteError'),
+          successToast: t('post.deleteSuccess'),
+        },
+      ),
     [run, post.postId, post.ownerId, t],
   );
 

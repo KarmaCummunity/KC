@@ -41,8 +41,6 @@ export function OwnerActionsBar(props: Readonly<Props>) {
   const styles = useStyles();
   const { colors } = useTheme();
   const { post, ownerId, tabBarOverlayInset = 0, onClosed, onReopened } = props;
-  const postRef = useRef(post);
-  postRef.current = post;
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const startClosure = useClosureStore((s) => s.start);
@@ -53,6 +51,9 @@ export function OwnerActionsBar(props: Readonly<Props>) {
   const [reopenOpen, setReopenOpen] = useState(false);
   const [isReopening, setIsReopening] = useState(false);
   const [reopenError, setReopenError] = useState<string | null>(null);
+
+  const postRef = useRef(post);
+  postRef.current = post;
 
   // When the closure flow finishes, refresh the parent's data. MUST run in
   // useEffect — calling parent setState during render is a React anti-pattern
@@ -66,7 +67,7 @@ export function OwnerActionsBar(props: Readonly<Props>) {
     if (closureStep !== 'done' || closureInitiator === 'chat') return;
     hapticSuccess();
     trackSocialHandoverCompleted(postRef.current);
-    const closedPostId = post.postId;
+    const closedPostId = postRef.current.postId;
     resetClosure();
     void (async () => {
       await queryClient.invalidateQueries({ queryKey: ['feed'] });
@@ -75,7 +76,7 @@ export function OwnerActionsBar(props: Readonly<Props>) {
       invalidatePersonalStatsCaches(queryClient, ownerId);
       await Promise.resolve(onClosed());
     })();
-  }, [closureStep, closureInitiator, resetClosure, post.postId, onClosed, queryClient, ownerId]);
+  }, [closureStep, closureInitiator, resetClosure, onClosed, queryClient, ownerId]);
 
   const isOpen = post.status === 'open';
   const isReopenable =

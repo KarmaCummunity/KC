@@ -2,8 +2,10 @@
 
 import type { IUserRepository } from '../ports/IUserRepository';
 
+export type IDeleteAccountUserRepository = Pick<IUserRepository, 'deleteAccountViaEdgeFunction'>;
+
 export class DeleteAccountUseCase {
-  constructor(private readonly repo: IUserRepository) {}
+  constructor(private readonly repo: IDeleteAccountUserRepository) {}
 
   async execute(): Promise<void> {
     await this.repo.deleteAccountViaEdgeFunction();
