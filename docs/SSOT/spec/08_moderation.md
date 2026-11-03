@@ -1,6 +1,6 @@
 # 2.8 Reports & Moderation
 
-> **Status:** ✅ Done (P1.3 slice) — FR-MOD-001/002/005/007/010/011/012 shipped end-to-end. FR-MOD-008 (suspect-queue producers) deferred to TECH_DEBT. Block/unblock deferred per EXEC-9. ⚠️ Audit 2026-05-16: 🔴 FR-MOD-005 AC5 user-target auto-removal enqueues no `auto_removed` notification (TD-76, BACKLOG P2.13); 🔴 FR-MOD-005 AC2 auto-removed chats vanish silently with no per-party banner/system message (TD-77, BACKLOG P2.13); FR-MOD-002 support-issue writes no `reports` row despite spec Related="Report (target_type=none)"; `is_post_visible_to` has no admin bypass. TD-94. See `docs/SSOT/archive/audit/2026-05-16/05_following_moderation_admin.md`.
+> **Status:** ✅ Done (P1.3 slice) — FR-MOD-001/002/005/007/010/011/012 shipped end-to-end. FR-MOD-008 (suspect-queue producers) deferred to TECH_DEBT. Block/unblock back in the launch scope ({{D:blocking-at-launch}}): bilateral data-layer filter ✅ (`0544`); Blocked Users screen and post / chat entry points 🟡 (BACKLOG P3.1). ⚠️ Audit 2026-05-16: 🔴 FR-MOD-005 AC5 user-target auto-removal enqueues no `auto_removed` notification (TD-76, BACKLOG P2.13); 🔴 FR-MOD-005 AC2 auto-removed chats vanish silently with no per-party banner/system message (TD-77, BACKLOG P2.13); FR-MOD-002 support-issue writes no `reports` row despite spec Related="Report (target_type=none)"; `is_post_visible_to` has no admin bypass. TD-94. See `docs/SSOT/archive/audit/2026-05-16/05_following_moderation_admin.md`.
 
 
 
@@ -18,7 +18,7 @@ The user-facing safety mechanisms:
 - False-report sanctions (graduated suspensions).
 - Suspect-flag pipeline that surfaces problematic content for admin review.
 
-> **Out of MVP scope (per `EXEC-9`, 2026-05-11).** Per-user blocking / unblocking and bilateral block-based visibility filtering are deferred post-MVP. The specs for `FR-MOD-003`, `FR-MOD-004`, and `FR-MOD-009` below are retained for reference and carry a `DEPRECATED — post-MVP` banner.
+> **In the launch scope again ({{D:blocking-at-launch}}, PM 2026-11-03), superseding `EXEC-9`.** Per-user blocking / unblocking and bilateral block-based filtering (`FR-MOD-003`, `FR-MOD-004`, `FR-MOD-009`) ship with the first store release: Apple App Review requires a way to block abusive users. The data layer filters a blocked pair in both directions since migration `0544`; the Blocked Users screen and the post / chat entry points are tracked in BACKLOG `P3.1`.
 
 The Super Admin's actions on reports (restore, manual ban, manual delete) are documented in [`12_super_admin.md`](./12_super_admin.md).
 
@@ -68,9 +68,9 @@ A user files a support / bug / feedback report from Settings, which becomes a ch
 
 ---
 
-## FR-MOD-003 — Block a user — **DEPRECATED (post-MVP)**
+## FR-MOD-003 — Block a user
 
-**Status.** ⚠️ Out of MVP scope per `EXEC-9` (2026-05-11). No UI, use case, port, or adapter ships in MVP. The DB schema (`public.blocks` table, `is_blocked()` / `has_blocked()` predicates) remains in migrations `0003`/`0004`/`0005` but stays unpopulated. Restored when post-MVP block work is greenlit.
+**Status.** 🟡 Launch scope ({{D:blocking-at-launch}}). Shipped: `public.blocks`, `SetUserBlockedUseCase`, the Other Profile `⋮` entry, the side effects of AC4 (`blocks_apply_side_effects`). Open: the Post Detail and Conversation entry points (AC1).
 
 **Description.**
 A user blocks another user.
@@ -95,9 +95,9 @@ A user blocks another user.
 
 ---
 
-## FR-MOD-004 — Unblock a user — **DEPRECATED (post-MVP)**
+## FR-MOD-004 — Unblock a user
 
-**Status.** ⚠️ Out of MVP scope per `EXEC-9` (2026-05-11). `D-11` (Unblock restores visibility) is superseded.
+**Status.** 🟡 Launch scope ({{D:blocking-at-launch}}); `D-11` (unblock restores visibility) applies again. Open: the Blocked Users screen (AC1).
 
 **Description.**
 A user removes a block via the Blocked Users screen.
@@ -191,9 +191,9 @@ A virtual queue surfaces posts that need attention before reaching the auto-remo
 
 ---
 
-## FR-MOD-009 — Mutual filtering of blocked users — **DEPRECATED (post-MVP)**
+## FR-MOD-009 — Mutual filtering of blocked users
 
-**Status.** ⚠️ Out of MVP scope per `EXEC-9` (2026-05-11). The DB-level `is_blocked()` / `has_blocked()` predicates remain in place but always return `false` because no UI populates `public.blocks`; visibility filters that reference them stay correct (no rows ⇒ no exclusions).
+**Status.** ✅ Data layer ({{D:blocking-at-launch}}): every surface of AC1 filters a blocked pair in both directions (AC3). `0544` applies the bilateral `is_blocked` to chats and messages (hidden from and closed to both), new chats, profile rows of chat counterparts, comments and reactions by the other member, food claims, the closure recipient, and notifications caused by the other member (except ones that bypass preferences). Test: `supabase/tests/0544_block_filtering_both_ways.sql`.
 
 **Description.**
 The system enforces full bilateral invisibility between blocked pairs across all surfaces.
@@ -274,3 +274,4 @@ Every moderation-relevant event is recorded.
 | 0.1 | 2026-05-05 | Initial draft from PRD §3.5, Flow 9, and Decisions D-11, D-13. |
 | 0.2 | 2026-05-11 | `EXEC-9` — `FR-MOD-003`, `FR-MOD-004`, `FR-MOD-009` marked `DEPRECATED — post-MVP`. `FR-MOD-007 AC2` no longer references "Block". `FR-MOD-012 AC1` audit list drops `block_user` / `unblock_user` from MVP-required emitters. |
 | 0.3 | 2026-05-12 | `FR-MOD-010 AC1` clarified — sanction count is computed via `Report.sanction_consumed_at` (added in migration 0032), not `User.false_reports_count`. The latter is retained as informational only. |
+| 0.4 | 2026-11-03 | {{D:blocking-at-launch}} — `FR-MOD-003`, `FR-MOD-004`, `FR-MOD-009` back in the launch scope (Apple App Review); `0544` makes the block filter bilateral on every surface. |

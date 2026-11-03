@@ -110,4 +110,6 @@ Tech: · PRD_V2 rule 13 superseded · phone only · G10, G13
 
 ## 7.15 Reports and moderation
 Anyone can report a post, comment or user. **3 reports on a post → hidden until human review, and admins are notified; 5 on a user → suspended from actions, still sees everything and can chat with support** (D33, D61). "5" = 5 distinct reporters within 30 days; suspended user's open posts are hidden (S11). Review within 48h; malicious reports count against the reporter (S12). False emergency reports are handled with priority (D42).
-Tech: · `spec/08`, R-Food superseded · `reports`, suspects queue · G20 · posts `0452`, items/food listings `0468` (KC#1298)
+- **Blocking ({{D:blocking-at-launch}}, PM 2026-11-03):** a member can block another from a profile, a post or a chat, and unblock from a Blocked Users list. Once either has blocked the other, the two never see or reach each other, in both directions: posts, listings, profiles, search, follower lists, chats and messages, comments and likes, claims and bookings, the closure recipient, notifications. The blocked member is never told. Part of the first store release (Apple App Review requires it).
+
+Tech: · `spec/08`, R-Food superseded · `reports`, suspects queue · G20 · posts `0452`, items/food listings `0468` (KC#1298) · blocking: bilateral `is_blocked` at the data layer (`0544`), legacy FR-MOD-003/004/009
