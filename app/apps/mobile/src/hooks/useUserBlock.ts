@@ -44,8 +44,10 @@ export function useUserBlock(targetUserId: string) {
     enabled,
   });
 
-  const toggle = useCallback(async () => {
-    if (!enabled || busy) return;
+  // Resolves true when the block state changed, so a caller can leave a screen the pair can no
+  // longer share (a chat, the other member's listing).
+  const toggle = useCallback(async (): Promise<boolean> => {
+    if (!enabled || busy) return false;
     const next = !isBlocked;
     const ok = await confirmAction(
       t(next ? 'moderation.block.confirmBlockTitle' : 'moderation.block.confirmUnblockTitle'),
@@ -53,15 +55,17 @@ export function useUserBlock(targetUserId: string) {
       t(next ? 'moderation.block.block' : 'moderation.block.unblock'),
       t('moderation.actions.cancel'),
     );
-    if (!ok) return;
+    if (!ok) return false;
     setBusy(true);
     try {
       await container.setUserBlocked.execute({ blockerId: me!, targetUserId, blocked: next });
       queryClient.setQueryData(key, next);
       await queryClient.invalidateQueries();
       notify(t(next ? 'moderation.block.blockedToast' : 'moderation.block.unblockedToast'));
+      return true;
     } catch {
       notify(t('moderation.block.failed'));
+      return false;
     } finally {
       setBusy(false);
     }

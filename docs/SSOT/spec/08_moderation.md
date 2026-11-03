@@ -1,6 +1,6 @@
 # 2.8 Reports & Moderation
 
-> **Status:** ✅ Done (P1.3 slice) — FR-MOD-001/002/005/007/010/011/012 shipped end-to-end. FR-MOD-008 (suspect-queue producers) deferred to TECH_DEBT. Block/unblock back in the launch scope (D105): bilateral data-layer filter ✅ (`0544`); Blocked Users screen and post / chat entry points 🟡 (BACKLOG P3.1). ⚠️ Audit 2026-05-16: 🔴 FR-MOD-005 AC5 user-target auto-removal enqueues no `auto_removed` notification (TD-76, BACKLOG P2.13); 🔴 FR-MOD-005 AC2 auto-removed chats vanish silently with no per-party banner/system message (TD-77, BACKLOG P2.13); FR-MOD-002 support-issue writes no `reports` row despite spec Related="Report (target_type=none)"; `is_post_visible_to` has no admin bypass. TD-94. See `docs/SSOT/archive/audit/2026-05-16/05_following_moderation_admin.md`.
+> **Status:** ✅ Done (P1.3 slice) — FR-MOD-001/002/005/007/010/011/012 shipped end-to-end. FR-MOD-008 (suspect-queue producers) deferred to TECH_DEBT. Block/unblock back in the launch scope (D105): bilateral data-layer filter (`0544`), Blocked Users screen (`0545`) and the profile / chat / listing entry points ✅. ⚠️ Audit 2026-05-16: 🔴 FR-MOD-005 AC5 user-target auto-removal enqueues no `auto_removed` notification (TD-76, BACKLOG P2.13); 🔴 FR-MOD-005 AC2 auto-removed chats vanish silently with no per-party banner/system message (TD-77, BACKLOG P2.13); FR-MOD-002 support-issue writes no `reports` row despite spec Related="Report (target_type=none)"; `is_post_visible_to` has no admin bypass. TD-94. See `docs/SSOT/archive/audit/2026-05-16/05_following_moderation_admin.md`.
 
 
 
@@ -18,7 +18,7 @@ The user-facing safety mechanisms:
 - False-report sanctions (graduated suspensions).
 - Suspect-flag pipeline that surfaces problematic content for admin review.
 
-> **In the launch scope again (D105, PM 2026-11-03), superseding `EXEC-9`.** Per-user blocking / unblocking and bilateral block-based filtering (`FR-MOD-003`, `FR-MOD-004`, `FR-MOD-009`) ship with the first store release: Apple App Review requires a way to block abusive users. The data layer filters a blocked pair in both directions since migration `0544`; the Blocked Users screen and the post / chat entry points are tracked in BACKLOG `P3.1`.
+> **In the launch scope again (D105, PM 2026-11-03), superseding `EXEC-9`.** Per-user blocking / unblocking and bilateral block-based filtering (`FR-MOD-003`, `FR-MOD-004`, `FR-MOD-009`) ship with the first store release: Apple App Review requires a way to block abusive users. The data layer filters a blocked pair in both directions since migration `0544`; the Blocked Users screen (`0545`) and the profile / chat / listing entry points ship with it.
 
 The Super Admin's actions on reports (restore, manual ban, manual delete) are documented in [`12_super_admin.md`](./12_super_admin.md).
 
@@ -70,7 +70,7 @@ A user files a support / bug / feedback report from Settings, which becomes a ch
 
 ## FR-MOD-003 — Block a user
 
-**Status.** 🟡 Launch scope (D105). Shipped: `public.blocks`, `SetUserBlockedUseCase`, the Other Profile `⋮` entry, the side effects of AC4 (`blocks_apply_side_effects`). Open: the Post Detail and Conversation entry points (AC1).
+**Status.** ✅ Launch scope (D105). `public.blocks`, `SetUserBlockedUseCase` and the side effects of AC4 (`blocks_apply_side_effects`). AC1 entry points: the Other Profile `⋮` menu, the conversation menu (not on the support thread) and the listing detail ("block" beside "report", for non-owners); after a block the chat or listing closes, since the pair can no longer see it.
 
 **Description.**
 A user blocks another user.
@@ -97,7 +97,7 @@ A user blocks another user.
 
 ## FR-MOD-004 — Unblock a user
 
-**Status.** 🟡 Launch scope (D105); `D-11` (unblock restores visibility) applies again. Open: the Blocked Users screen (AC1).
+**Status.** ✅ Launch scope (D105); `D-11` (unblock restores visibility) applies again. AC1: Settings → "Blocked users" (`app/settings/blocked-users.tsx`) lists the caller's blocks through `list_my_blocked_users` (`0545`; the blocked member's profile row is hidden from the blocker), each with an "Unblock" button behind a confirm.
 
 **Description.**
 A user removes a block via the Blocked Users screen.

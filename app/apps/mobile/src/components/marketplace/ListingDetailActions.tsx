@@ -1,6 +1,6 @@
 // KC#1310 — the listing detail's action row, shown per viewer role: the owner can share the
 // listing to the feed (unless it is already mirrored there, D-206); anyone else can message the
-// owner and report the listing. Everyone can share the link. Server failures surface as an
+// owner, report the listing or block its owner (FR-MOD-003 AC1). Everyone can share the link. Server failures surface as an
 // alert instead of a silent no-op: a known refusal gets its own copy, anything else the generic
 // copy and a report (#1412).
 //
@@ -17,6 +17,7 @@ import { trackCoreLoop } from '../../lib/analyticsCoreLoop';
 import { listingActionErrorKey, reportListingActionError } from '../../lib/listingActionError';
 import { PrimaryButton, SecondaryButton } from '../ui/Buttons';
 import { listingFlowHasViewerAction } from './listingFlow';
+import { useUserBlock } from '../../hooks/useUserBlock';
 
 interface Props {
   readonly detail: MarketplaceListingDetail;
@@ -31,6 +32,13 @@ export function ListingDetailActions({ detail, viewerId, onReport }: Props) {
   const styles = useStyles();
   const [busy, setBusy] = useState(false);
   const isOwner = viewerId !== null && viewerId === detail.ownerId;
+  // A signed-in non-owner may block the owner; the listing is then hidden from them, so leave.
+  const block = useUserBlock(isOwner ? '' : detail.ownerId);
+  const blockOwner = () => {
+    void block.toggle().then((changed) => {
+      if (changed && router.canGoBack()) router.back();
+    });
+  };
   // Items and food listings are mirrored into the feed on publish; the manual share is for
   // listings that are not in the feed yet.
   const canShareToFeed = isOwner && detail.feedPostId === null;
@@ -96,6 +104,15 @@ export function ListingDetailActions({ detail, viewerId, onReport }: Props) {
       ) : null}
       {!isOwner ? (
         <SecondaryButton testID="listing-action-report" label={t('marketplace.report')} size="md" onPress={onReport} />
+      ) : null}
+      {block.canBlock && !block.isBlocked ? (
+        <SecondaryButton
+          testID="listing-action-block-owner"
+          label={t('moderation.block.block')}
+          size="md"
+          disabled={block.busy}
+          onPress={blockOwner}
+        />
       ) : null}
     </View>
   );

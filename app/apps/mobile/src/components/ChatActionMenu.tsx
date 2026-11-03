@@ -13,9 +13,12 @@ interface Props {
   readonly onReport: () => void;
   readonly deleteLabel?: string;
   readonly onDeleteFromInbox?: () => void;
+  /** FR-MOD-003 AC1 — block the counterpart from the conversation; absent for the support thread. */
+  readonly blockLabel?: string;
+  readonly onBlock?: () => void;
 }
 
-export function ChatActionMenu({ visible, onClose, onReport, deleteLabel, onDeleteFromInbox }: Props) {
+export function ChatActionMenu({ visible, onClose, onReport, deleteLabel, onDeleteFromInbox, blockLabel, onBlock }: Props) {
   const { t } = useTranslation();
   return (
     <ActionMenuSheet visible={visible} onDismiss={onClose} cancelLabel={t('general.cancel')}>
@@ -30,6 +33,17 @@ export function ChatActionMenu({ visible, onClose, onReport, deleteLabel, onDele
         />
       ) : null}
       <SheetActionRow label={t('chat.menuReport')} onPress={onReport} />
+      {onBlock && blockLabel ? (
+        <SheetActionRow
+          label={blockLabel}
+          destructive
+          testID="chat-menu-block"
+          onPress={() => {
+            onClose();
+            onBlock();
+          }}
+        />
+      ) : null}
     </ActionMenuSheet>
   );
 }
