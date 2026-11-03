@@ -9,8 +9,11 @@ create temp table personas as
 select kc_test.create_user('every_world_giver')  as giver,
        kc_test.create_user('every_world_viewer') as viewer;
 
--- Housing publishes only for a verified identity (worlds.requires_verification).
+-- Housing publishes only for a verified identity (worlds.requires_verification) who accepted
+-- the housing code of conduct (0591).
 update public.users set verified_at = now() where user_id = (select giver from personas);
+insert into public.housing_conduct_acceptances (user_id, version)
+select giver, public.housing_conduct_version() from personas;
 
 /** The mirror post of a listing, or null. */
 create function pg_temp.mirror_of(p_listing uuid)
@@ -98,13 +101,16 @@ begin
 
   for r in
     select * from (values
-      ('housing', 'host_offer',      'give',    'Guest room for a night', 'Give'),
-      ('housing', 'stay_request',    'request', 'Bed for two hikers',     'Request'),
-      ('time',    'volunteer_shift', 'give',    'Two hours of tutoring',  'Give'),
-      ('time',    'support_request', 'request', 'Company for a walk',     'Request')
-    ) as t(world, kind, direction, title, post_type)
+      -- Housing stay kinds carry binding schemas since 0591.
+      ('housing', 'host_offer',      'give',    'Guest room for a night', 'Give', kc_test.housing_offer_details()),
+      ('housing', 'stay_request',    'request', 'Bed for two hikers',     'Request', jsonb_build_object(
+        'stay_purpose', 'trail_walk', 'adults', 2, 'minors', 0,
+        'check_in_date', (public.housing_today() + 3)::text, 'check_out_date', (public.housing_today() + 4)::text)),
+      ('time',    'volunteer_shift', 'give',    'Two hours of tutoring',  'Give', '{}'::jsonb),
+      ('time',    'support_request', 'request', 'Company for a walk',     'Request', '{}'::jsonb)
+    ) as t(world, kind, direction, title, post_type, details)
   loop
-    v_listing := kc_test.create_listing(p.giver, r.world, r.kind, r.direction, r.title, '{}'::jsonb);
+    v_listing := kc_test.create_listing(p.giver, r.world, r.kind, r.direction, r.title, r.details);
     update public.listings set anonymity_level = 3 where listing_id = v_listing;
     v_mirror := pg_temp.mirror_of(v_listing);
     perform kc_test.assert_true(v_mirror.post_id is not null, format('a %s %s listing gets a mirror', r.world, r.kind));
@@ -115,8 +121,9 @@ begin
   end loop;
 end $$;
 
--- 3b) Housing and time default to followers-only (worlds.default_anonymity_level = 2): the
---     mirror keeps that privacy, so a follower sees it in the feed and a stranger does not.
+-- 3b) Time defaults to followers-only (worlds.default_anonymity_level = 2): the mirror keeps
+--     that privacy, so a follower sees it in the feed and a stranger does not. Housing is
+--     public by default since 0591 (FR-HOUSING-004 AC4).
 do $$
 declare
   p personas;
@@ -127,9 +134,14 @@ begin
   select * into p from personas;
   insert into public.follow_edges (follower_id, followed_id) values (v_follower, p.giver);
 
-  v_listing := kc_test.create_listing(p.giver, 'housing', 'host_offer', 'give', 'Sofa for a night', '{}'::jsonb);
+  v_listing := kc_test.create_listing(p.giver, 'housing', 'host_offer', 'give', 'Sofa for a night',
+                                      kc_test.housing_offer_details());
+  perform kc_test.assert_eq((pg_temp.mirror_of(v_listing)).visibility, 'Public',
+                            'a default housing listing mirrors as public (FR-HOUSING-004 AC4)');
+
+  v_listing := kc_test.create_listing(p.giver, 'time', 'volunteer_shift', 'give', 'An hour of company', '{}'::jsonb);
   v_mirror := pg_temp.mirror_of(v_listing);
-  perform kc_test.assert_eq(v_mirror.visibility, 'FollowersOnly', 'a default housing listing mirrors as followers-only');
+  perform kc_test.assert_eq(v_mirror.visibility, 'FollowersOnly', 'a default time listing mirrors as followers-only');
   perform kc_test.assert_true(pg_temp.in_feed(v_follower, v_mirror.post_id), 'a follower sees the followers-only listing');
   perform kc_test.assert_true(not pg_temp.in_feed(p.viewer, v_mirror.post_id), 'a stranger does not see it');
 end $$;
