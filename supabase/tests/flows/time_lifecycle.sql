@@ -37,7 +37,8 @@ begin
   select * into p from personas;
   -- Time listings inherit anonymity level 2 (followers-only) from the world.
   insert into public.follow_edges (follower_id, followed_id)
-  values (p.viewer, p.giver), (p.viewer, p.requester);
+  values (p.viewer, p.giver), (p.viewer, p.requester)
+  on conflict do nothing;
   v_offer := kc_test.create_listing(p.giver, 'time', 'volunteer_shift', 'give',
     'Tutor offers tutoring', '{"duration_minutes":60,"skills":["tutoring"],"org_host_slug":"community"}'::jsonb);
   v_request := kc_test.create_listing(p.requester, 'time', 'support_request', 'request',
@@ -70,7 +71,8 @@ begin
   select * into p from personas;
   -- Matching requires each listing to be visible to the opposite owner.
   insert into public.follow_edges (follower_id, followed_id)
-  values (p.giver, p.requester), (p.requester, p.giver);
+  values (p.giver, p.requester), (p.requester, p.giver)
+  on conflict do nothing;
   v_offer := kc_test.create_listing(p.giver, 'time', 'volunteer_shift', 'give',
     'Tutor offers tutoring', '{"duration_minutes":60,"skills":["tutoring"]}'::jsonb);
   v_request := kc_test.create_listing(p.requester, 'time', 'support_request', 'request',
@@ -107,7 +109,8 @@ begin
   -- Report validation checks that each reporter can see the target listing.
   insert into public.follow_edges (follower_id, followed_id)
   values (p.reporter1, p.giver), (p.reporter2, p.giver), (p.reporter3, p.giver),
-         (p.viewer, p.giver);
+         (p.viewer, p.giver)
+  on conflict do nothing;
   v_listing := kc_test.create_listing(p.giver, 'time', 'volunteer_shift', 'give',
     'Volunteer shift for review', '{"duration_minutes":60,"skills":["tutoring"]}'::jsonb);
   perform kc_test.act_as(p.reporter1);
