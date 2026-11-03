@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, typography, Text } from '@kc/ui';
+import { makeUseStyles, typography, spacing, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 const useStyles = makeUseStyles(({ colors }) => ({
@@ -9,7 +9,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     justifyContent: 'flex-end' as const,
-    gap: 2,
+    gap: spacing.xs,
   },
   label: {
     ...typography.label,
@@ -19,7 +19,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   required: {
     ...typography.label,
     color: colors.error,
-    fontSize: 14,
+    fontSize: typography.body.fontSize,
     lineHeight: 18,
   },
 }));

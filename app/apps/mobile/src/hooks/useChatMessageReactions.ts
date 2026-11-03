@@ -32,6 +32,8 @@ export function useChatMessageReactions(chatId: string, messageIds: string[]) {
       }
       setByMessage(counts);
       setMine(own);
+    }).catch(() => {
+      // Reactions are supplemental; keep the chat usable when their read fails.
     });
     return () => {
       cancelled = true;

@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, iconSize, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { ProfilePostsGrid } from '../../../src/components/profile/ProfilePostsGrid';
 import { ProfileClosedPostsGrid } from '../../../src/components/profile/ProfileClosedPostsGrid';
 import { useShellTabBarScrollInset } from '../../../src/navigation/useShellTabBarVisibility';
@@ -52,7 +52,7 @@ export default function MyProfileHiddenScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.banner}>
-          <Ionicons name="eye-off-outline" size={18} color={colors.textSecondary} />
+          <Ionicons name="eye-off-outline" size={iconSize.md} color={colors.textSecondary} />
           <Text style={styles.bannerText}>{t('profile.hiddenBanner')}</Text>
         </View>
         <Text style={styles.sectionTitle}>{t('profile.hiddenSectionOpen')}</Text>
@@ -92,7 +92,7 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
 
     borderWidth: isDark ? 1 : 0,
     borderColor: isDark ? colors.border : 'transparent',
-    borderRadius: 8,
+    borderRadius: radius.sm,
     borderStartWidth: 3,
     borderStartColor: colors.textSecondary,
   },

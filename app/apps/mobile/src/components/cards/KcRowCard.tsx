@@ -6,7 +6,8 @@
 import React from 'react';
 import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme, iconSize, Text } from '@kc/ui';
+import { MirroredIcon } from '../ui/MirroredIcon';
+import { useTheme, Text, iconSize } from '@kc/ui';
 import { KCImage } from '../ui/KCImage';
 import { MirroredIcon } from '../ui/MirroredIcon';
 import { useKcRowCardStyles } from './KcRowCard.styles';
@@ -83,7 +84,7 @@ function KcRowCardInner(p: KcRowCardProps) {
           {p.openLinkLabel ? (
             <View style={s.openLink} testID="kc-row-open-link" accessibilityRole="link">
               <Text style={s.openLinkText}>{p.openLinkLabel}</Text>
-              <MirroredIcon name="chevron-back" size={iconSize.xs} color={colors.primary} />
+              <MirroredIcon name="chevron-forward" size={iconSize.xs} color={colors.primary} />
             </View>
           ) : null}
         </View>

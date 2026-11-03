@@ -3,7 +3,7 @@ import { View, ScrollView, ActivityIndicator, Platform, type DimensionValue } fr
 import Markdown from 'react-native-markdown-display';
 import { useTranslation } from 'react-i18next';
 import type { LegalDocType, LegalDocumentContent } from '@kc/domain';
-import { typography, spacing, useTheme, Text } from '@kc/ui';
+import { typography, spacing, radius, useTheme, Text } from '@kc/ui';
 import { getLoadLegalDocumentUseCase } from '../../services/legalComposition';
 import { makeLegalMarkdownStyles } from './LegalMarkdownStyles';
 import { makeLegalMarkdownRules } from './legalMarkdownRules';
@@ -128,7 +128,7 @@ function LoadingSkeleton({ bgColor }: Readonly<{ bgColor: string }>) {
         width,
         height: 14,
         backgroundColor: bgColor,
-        borderRadius: 4,
+        borderRadius: radius.xs,
         marginTop,
       }}
     />

@@ -76,10 +76,10 @@ const useBannerStyles = makeUseStyles(({ colors }) => ({
     alignItems: 'flex-start' as const,
     gap: spacing.sm,
   },
-  textBlock: { flex: 1, gap: 2 },
+  textBlock: { flex: 1, gap: spacing.xs },
   title: {
     ...typography.bodySmall,
-    fontWeight: '700' as const,
+    ...typography.bold,
     color: colors.textPrimary,
     textAlign: rtlTextAlignStart,
   },
@@ -101,7 +101,7 @@ const useBannerStyles = makeUseStyles(({ colors }) => ({
     justifyContent: 'center' as const,
   },
   btnPrimary: { backgroundColor: colors.primary },
-  btnText: { ...typography.caption, fontWeight: '700' as const },
+  btnText: { ...typography.caption, ...typography.bold },
   btnPrimaryText: { color: colors.textInverse },
   snoozeBtn: { paddingVertical: spacing.xs },
   snoozeText: {

@@ -4,7 +4,7 @@ import { View, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import type { ChatWithPreview } from '@kc/application';
-import { makeUseStyles, typography, spacing, useTheme, Text, iconSize, radius } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, iconSize, useTheme, Text } from '@kc/ui';
 import { AvatarInitials } from '../AvatarInitials';
 import { OnlineDot } from './OnlineDot';
 import { formatRelativeChatTime } from '../../lib/formatRelativeChatTime';
@@ -109,7 +109,7 @@ const useInboxChatRowStyles = makeUseStyles(({ colors }) => ({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  badgeText: { ...typography.caption, ...typography.semiBold, color: colors.textInverse },
+  badgeText: { ...typography.caption, color: colors.textInverse, ...typography.semiBold },
 }));
 
 export function InboxChatRowSeparator() {
