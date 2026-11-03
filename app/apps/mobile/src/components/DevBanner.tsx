@@ -9,14 +9,15 @@
 //      shortcuts are enabled.
 // All strips use the same styling so the warning is recognizable.
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { Text } from '@kc/ui';
+import { Pressable, View } from 'react-native';
+import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { useTranslation } from 'react-i18next';
 import { isDevGhostSessionEnabled } from '../services/devGhostSession';
 import { isDevAutoSignInEnabled } from '../services/devAutoSignIn';
 import { isDevEnvironment } from '../config/environment';
 
 export function DevBanner() {
+  const styles = useStyles();
   const { t } = useTranslation();
   const envDev = isDevEnvironment();
   const metroDev = typeof __DEV__ !== 'undefined' && __DEV__;
@@ -42,24 +43,24 @@ export function DevBanner() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeUseStyles(({ colors }) => ({
   bar: {
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 9999,
-    backgroundColor: '#B91C1C',
+    start: 0,
+    end: 0,
+    zIndex: 9999, // brand-guard-allow: global development banner overlay
+    backgroundColor: colors.error,
   },
   inner: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
     alignItems: 'center',
   },
   text: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '600',
+    color: colors.textInverse,
+    ...typography.caption,
+    ...typography.semiBold,
     letterSpacing: 0.3,
   },
-});
+}));

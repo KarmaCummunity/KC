@@ -3,7 +3,7 @@ import { View, ActivityIndicator, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, typography, spacing, radius, useTheme, Text } from '@kc/ui';
+import { iconSize, makeUseStyles, typography, spacing, radius, useTheme, Text } from '@kc/ui';
 import { aboutRtlText, aboutRtlRow } from './aboutWebRtlStyle';
 import { AvatarInitials } from '../../components/AvatarInitials';
 import { useAboutTeamMembers } from '../../hooks/useAboutTeamMembers';
@@ -82,7 +82,7 @@ function TeamCard({ displayName, avatarUrl, shareHandle, copy }: TeamCardProps) 
           >
             <Ionicons
               name={expanded ? 'chevron-up' : 'chevron-down'}
-              size={16}
+              size={iconSize.sm}
               color={colors.primary}
             />
             <Text style={styles.actionText}>
@@ -100,7 +100,7 @@ function TeamCard({ displayName, avatarUrl, shareHandle, copy }: TeamCardProps) 
           style={({ pressed }) => [styles.actionBtn, pressed && styles.actionBtnPressed]}
           hitSlop={8}
         >
-          <Ionicons name="open-outline" size={16} color={colors.primary} />
+          <Ionicons name="open-outline" size={iconSize.sm} color={colors.primary} />
           <Text style={styles.actionText}>{t('aboutContent.teamProfileLinkLabel')}</Text>
         </Pressable>
       </View>
@@ -176,7 +176,7 @@ const useAboutMissionTeamSectionStyles = makeUseStyles(({ colors }) => ({
     gap: spacing.xs,
   },
   errorText: { ...typography.caption, color: colors.textSecondary, ...aboutRtlText, lineHeight: 20 },
-  errorRetry: { ...typography.label, color: colors.primary, ...aboutRtlText, fontWeight: '700' },
+  errorRetry: { ...typography.label, color: colors.primary, ...aboutRtlText, ...typography.bold },
   list: { gap: spacing.md },
   card: {
     borderRadius: radius.lg,
@@ -193,9 +193,9 @@ const useAboutMissionTeamSectionStyles = makeUseStyles(({ colors }) => ({
     opacity: 0.85,
   },
   row: { flexDirection: aboutRtlRow, alignItems: 'center', gap: spacing.md },
-  meta: { flex: 1, gap: 2 },
+  meta: { flex: 1, gap: spacing.xs },
   name: { ...typography.h4, color: colors.textPrimary, ...aboutRtlText },
-  role: { ...typography.body, color: colors.primary, ...aboutRtlText, fontWeight: '700' },
+  role: { ...typography.body, color: colors.primary, ...aboutRtlText, ...typography.bold },
   bio: { ...typography.body, color: colors.textSecondary, ...aboutRtlText, lineHeight: 22 },
   bioFull: {
     ...typography.body,
@@ -224,7 +224,7 @@ const useAboutMissionTeamSectionStyles = makeUseStyles(({ colors }) => ({
     ...typography.label,
     color: colors.primary,
     ...aboutRtlText,
-    fontWeight: '700',
+    ...typography.bold,
   },
   ctaBox: {
     marginTop: spacing.lg,
@@ -235,6 +235,6 @@ const useAboutMissionTeamSectionStyles = makeUseStyles(({ colors }) => ({
     borderColor: colors.info,
     gap: spacing.xs,
   },
-  ctaH: { ...typography.label, color: colors.textPrimary, ...aboutRtlText, fontWeight: '800' },
+  ctaH: { ...typography.label, color: colors.textPrimary, ...aboutRtlText, ...typography.extraBold },
   ctaP: { ...typography.caption, color: colors.textSecondary, ...aboutRtlText, lineHeight: 20 },
 }));

@@ -3,7 +3,7 @@
 // language: primary-tinted surface with a circular icon badge, centered title,
 // short body line. Each consumer composes these into its own `useStyles` via
 // `makeUseStyles` and adds its own action row / buttons on top.
-import { radius, spacing, typography } from '@kc/ui';
+import { radius, shadow, spacing, typography } from '@kc/ui';
 import type { TextStyle, ViewStyle } from 'react-native';
 
 type WarmCardTheme = Readonly<{
@@ -37,26 +37,18 @@ export function warmPromptCardBase({ colors, isDark }: WarmCardTheme): WarmPromp
       borderColor: isDark ? colors.border : colors.primaryLight,
       alignItems: 'stretch',
       gap: spacing.sm,
-      shadowColor: colors.shadow,
-      shadowOpacity: isDark ? 0 : 0.06,
-      shadowRadius: 12,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: isDark ? 0 : 2,
+      ...(isDark ? {} : shadow.card),
     },
     iconBadge: {
       alignSelf: 'center',
       width: 52,
       height: 52,
-      borderRadius: 26,
+      borderRadius: radius.full,
       backgroundColor: colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: spacing.xs,
-      shadowColor: colors.primary,
-      shadowOpacity: isDark ? 0 : 0.35,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: isDark ? 0 : 4,
+      ...(isDark ? {} : { ...shadow.glow, shadowColor: colors.primary }),
     },
     title: {
       ...typography.h3,

@@ -6,7 +6,8 @@ import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { MirroredIcon } from '../ui/MirroredIcon';
 import type { PostType } from '@kc/domain';
 import { AvatarInitials } from '../AvatarInitials';
 import { textAlignStart } from '../../lib/rtlLayout';
@@ -36,7 +37,7 @@ export function RecipientCallout({ postType, recipient, profileNavigable = true 
   const inner = (
     <View style={styles.card}>
       <View style={styles.iconRing}>
-        <Ionicons name="checkmark-circle" size={26} color={colors.success} />
+        <Ionicons name="checkmark-circle" size={iconSize["2xl"]} color={colors.success} />
       </View>
       <View style={styles.textCol}>
         <Text style={styles.sublabel}>{sublabel}</Text>
@@ -51,7 +52,7 @@ export function RecipientCallout({ postType, recipient, profileNavigable = true 
         size={48}
       />
       {profileNavigable ? (
-        <Ionicons name="chevron-back" size={20} color={colors.textSecondary} />
+        <MirroredIcon name="chevron-forward" size={iconSize.lg} color={colors.textSecondary} />
       ) : null}
     </View>
   );
@@ -89,17 +90,17 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
   iconRing: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: isDark ? `${colors.success}22` : '#FFFFFF',
+    borderRadius: radius.full,
+    backgroundColor: isDark ? colors.successLight : colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  textCol: { flex: 1, gap: 2 },
+  textCol: { flex: 1, gap: spacing.xs },
   sublabel: {
     ...typography.caption,
     color: colors.textSecondary,
     textAlign: textAlignStart(),
-    fontWeight: '600',
+    ...typography.semiBold,
   },
   label: {
     ...typography.body,
@@ -107,5 +108,5 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
     textAlign: textAlignStart(),
     lineHeight: 22,
   },
-  name: { fontWeight: '700', color: colors.success },
+  name: { ...typography.bold, color: colors.success },
 }));
