@@ -14,7 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useProfileClosedPosts } from '../../../src/hooks/useProfileClosedPosts';
 import { useProfileTabCounts } from '../../../src/hooks/useProfileTabCounts';
-import { iconSize, spacing, useTheme, Text } from '@kc/ui';
+import { iconSize, useTheme, Text } from '@kc/ui';
 import { ProfileHeader } from '../../../src/components/profile/ProfileHeader';
 import { ProfileStatsRow } from '../../../src/components/profile/ProfileStatsRow';
 import { ProfileTabs, type ProfilePostsTab } from '../../../src/components/profile/ProfileTabs';
