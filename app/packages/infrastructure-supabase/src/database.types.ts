@@ -9127,11 +9127,32 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "posts_beneficiary_org_id_fkey"
+            columns: ["beneficiary_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["org_id"]
+          },
+          {
+            foreignKeyName: "posts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["category_id"]
+          },
+          {
             foreignKeyName: "posts_city_fkey"
             columns: ["city"]
             isOneToOne: false
             referencedRelation: "cities"
             referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "posts_external_body_id_fkey"
+            columns: ["external_body_id"]
+            isOneToOne: false
+            referencedRelation: "external_bodies"
+            referencedColumns: ["body_id"]
           },
           {
             foreignKeyName: "posts_listing_id_fkey"
@@ -9174,6 +9195,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users_public"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "posts_world_slug_fkey"
+            columns: ["world_slug"]
+            isOneToOne: false
+            referencedRelation: "worlds"
+            referencedColumns: ["slug"]
           },
         ]
       }
@@ -10480,31 +10508,43 @@ export type Database = {
       close_post_with_recipient: {
         Args: { p_post_id: string; p_recipient_user_id: string }
         Returns: {
+          beneficiary_org_id: string | null
           category: string
+          category_id: string | null
           city: string
           created_at: string
           delete_after: string | null
           description: string | null
+          details: Json
+          direction: string
           estimated_value: number | null
+          expires_at: string | null
+          external_body_id: string | null
+          geo: unknown
           item_condition: string | null
           listing_id: string | null
           listing_world_slug: string | null
           location_display_level: string
           owner_id: string
           post_id: string
+          post_type: string
           reopen_count: number
           search_vector: unknown
+          source: string
           source_language: string | null
           source_language_confidence: number | null
           status: string
           status_before_admin_removal: string | null
           street: string
           street_number: string
+          time_window: unknown
           title: string
           type: string
           updated_at: string
           urgency: string | null
+          urgency_level: number | null
           visibility: string
+          world_slug: string
         }
         SetofOptions: {
           from: "*"
@@ -11866,31 +11906,43 @@ export type Database = {
       reopen_post_deleted_no_recipient: {
         Args: { p_post_id: string }
         Returns: {
+          beneficiary_org_id: string | null
           category: string
+          category_id: string | null
           city: string
           created_at: string
           delete_after: string | null
           description: string | null
+          details: Json
+          direction: string
           estimated_value: number | null
+          expires_at: string | null
+          external_body_id: string | null
+          geo: unknown
           item_condition: string | null
           listing_id: string | null
           listing_world_slug: string | null
           location_display_level: string
           owner_id: string
           post_id: string
+          post_type: string
           reopen_count: number
           search_vector: unknown
+          source: string
           source_language: string | null
           source_language_confidence: number | null
           status: string
           status_before_admin_removal: string | null
           street: string
           street_number: string
+          time_window: unknown
           title: string
           type: string
           updated_at: string
           urgency: string | null
+          urgency_level: number | null
           visibility: string
+          world_slug: string
         }
         SetofOptions: {
           from: "*"
@@ -11902,31 +11954,43 @@ export type Database = {
       reopen_post_marked: {
         Args: { p_post_id: string }
         Returns: {
+          beneficiary_org_id: string | null
           category: string
+          category_id: string | null
           city: string
           created_at: string
           delete_after: string | null
           description: string | null
+          details: Json
+          direction: string
           estimated_value: number | null
+          expires_at: string | null
+          external_body_id: string | null
+          geo: unknown
           item_condition: string | null
           listing_id: string | null
           listing_world_slug: string | null
           location_display_level: string
           owner_id: string
           post_id: string
+          post_type: string
           reopen_count: number
           search_vector: unknown
+          source: string
           source_language: string | null
           source_language_confidence: number | null
           status: string
           status_before_admin_removal: string | null
           street: string
           street_number: string
+          time_window: unknown
           title: string
           type: string
           updated_at: string
           urgency: string | null
+          urgency_level: number | null
           visibility: string
+          world_slug: string
         }
         SetofOptions: {
           from: "*"
