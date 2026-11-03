@@ -89,7 +89,7 @@ export default function WelcomeScreen() {
         false,
       ),
     );
-  }, []);
+  }, [buttonsOpacity, buttonsTranslateY, heroOpacity, heroTranslateY, propsOpacity, propsTranslateX, ringOpacity, ringScale]);
 
   const heroStyle = useAnimatedStyle(() => ({
     opacity: heroOpacity.value,

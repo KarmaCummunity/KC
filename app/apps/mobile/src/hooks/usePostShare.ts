@@ -23,6 +23,7 @@ export function usePostShare(post: PostWithOwner) {
   const showToast = useFeedSessionStore((s) => s.showEphemeralToast);
   const [busy, setBusy] = useState(false);
   const canShare = canSharePost(post, viewerId);
+  const publisherLabel = postOwnerDisplayLabel(post, t);
 
   const share = useCallback(async () => {
     if (busy || !canShare) return;
@@ -52,7 +53,7 @@ export function usePostShare(post: PostWithOwner) {
           address: post.address,
           locationDisplayLevel: post.locationDisplayLevel,
           postedAt,
-          publisherLabel: postOwnerDisplayLabel(post, t),
+          publisherLabel,
           counterpartyLabel,
         },
         t,
@@ -95,8 +96,7 @@ export function usePostShare(post: PostWithOwner) {
     post.locationDisplayLevel,
     post.createdAt,
     post.mediaAssets,
-    post.ownerName,
-    post.ownerProfileNavigableFromPost,
+    publisherLabel,
     post.recipientUser,
     post.recipientProfileNavigableFromPost,
     showToast,

@@ -1,8 +1,9 @@
 // In-memory fake covering only deleteAccountViaEdgeFunction for DeleteAccountUseCase tests.
 
+import type { IDeleteAccountUserRepository } from '../DeleteAccountUseCase';
 import { DeleteAccountError } from '../errors';
 
-export class FakeUserRepositoryForDeleteAccount {
+export class FakeUserRepositoryForDeleteAccount implements IDeleteAccountUserRepository {
   deleteAccountCallCount = 0;
   errorToThrow: DeleteAccountError | null = null;
 
