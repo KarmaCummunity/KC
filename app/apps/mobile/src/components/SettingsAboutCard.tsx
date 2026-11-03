@@ -4,7 +4,8 @@ import { TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, spacing, typography, iconSize, useTheme, Text } from '@kc/ui';
+import { MirroredIcon } from './ui/MirroredIcon';
 import { warmPromptCardBase } from './warmPromptCardStyles';
 
 const useStyles = makeUseStyles((theme) => {
@@ -28,7 +29,7 @@ const useStyles = makeUseStyles((theme) => {
     cta: {
       ...typography.button,
       color: colors.primary,
-      fontWeight: '600' as const,
+      ...typography.semiBold,
     },
   };
 });
@@ -49,7 +50,7 @@ export function SettingsAboutCard() {
       testID="settings-about-card"
     >
       <View style={styles.iconBadge}>
-        <Ionicons name="information-circle" size={28} color={colors.textInverse} />
+        <Ionicons name="information-circle" size={iconSize['2xl']} color={colors.textInverse} />
       </View>
       <Text style={styles.title} accessibilityRole="header">
         {t('settings.aboutCard.title')}
@@ -57,7 +58,7 @@ export function SettingsAboutCard() {
       <Text style={styles.subtitle}>{t('settings.aboutCard.subtitle')}</Text>
       <View style={styles.ctaRow}>
         <Text style={styles.cta}>{t('settings.aboutCard.cta')}</Text>
-        <Ionicons name="chevron-back" size={18} color={colors.primary} />
+        <MirroredIcon name="chevron-forward" size={iconSize.md} color={colors.primary} />
       </View>
     </TouchableOpacity>
   );

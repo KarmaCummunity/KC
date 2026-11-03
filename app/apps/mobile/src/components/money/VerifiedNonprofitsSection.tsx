@@ -6,7 +6,7 @@ import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { makeUseStyles, spacing, radius, typography, Text } from '@kc/ui';
 import type { VerifiedNonprofitRow } from '@kc/domain';
 import { paymentsUseCases } from '../../services/paymentsComposition';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
@@ -16,11 +16,11 @@ const useStyles = makeUseStyles(({ colors }) => ({
   title: { ...typography.h3, color: colors.textPrimary, textAlign: rtlTextAlignStart },
   body: { ...typography.body, color: colors.textSecondary, textAlign: rtlTextAlignStart },
   links: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: spacing.md },
-  link: { ...typography.body, color: colors.primary, fontWeight: '600' as const },
-  row: { padding: spacing.md, borderRadius: 12, backgroundColor: colors.surfaceRaised },
+  link: { ...typography.body, color: colors.primary, ...typography.semiBold },
+  row: { padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceRaised },
   rowTitle: { ...typography.bodyLarge, color: colors.textPrimary },
-  rowMeta: { ...typography.caption, color: colors.textSecondary, marginTop: 4 },
-  sandbox: { padding: spacing.sm, borderRadius: 8, backgroundColor: colors.secondaryLight },
+  rowMeta: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
+  sandbox: { padding: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.secondaryLight },
   sandboxText: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' as const },
 }));
 
