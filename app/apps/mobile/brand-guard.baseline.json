@@ -16,12 +16,6 @@
     "app/edit-post/[id].tsx": {
       "iconSizeLiteral": 1
     },
-    "app/karma-history.tsx": {
-      "fontWeightLiteral": 3,
-      "spacingLiteral": 3,
-      "iconSizeLiteral": 3,
-      "unmirroredDirectionalIcon": 1
-    },
     "app/research/[slug].web.tsx": {
       "fontWeightLiteral": 1,
       "radiusLiteral": 1
@@ -189,14 +183,6 @@
       "radiusLiteral": 1,
       "spacingLiteral": 10
     },
-    "src/components/chat/system/targetPreviewCard.tsx": {
-      "fontSizeLiteral": 2,
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 1,
-      "spacingLiteral": 5,
-      "iconSizeLiteral": 1,
-      "unmirroredDirectionalIcon": 1
-    },
     "src/components/legal/LegalConsentGate.tsx": {
       "radiusLiteral": 5,
       "physicalSide": 2,
@@ -309,13 +295,6 @@
       "radiusLiteral": 1,
       "iconSizeLiteral": 1
     },
-    "src/components/survey/SurveyFloatingNav.tsx": {
-      "fontSizeLiteral": 2,
-      "zIndexLiteral": 1,
-      "shadowLiteral": 4,
-      "iconSizeLiteral": 2,
-      "unmirroredDirectionalIcon": 2
-    },
     "src/components/survey/SurveyRatingRow.tsx": {
       "fontWeightLiteral": 1
     },
@@ -368,9 +347,6 @@
       "fontWeightLiteral": 1,
       "shadowLiteral": 8
     },
-    "src/features/about-landing/AboutSectionBlocksBottom.tsx": {
-      "shadowLiteral": 4
-    },
     "src/features/about-landing/AboutSectionBlocksTop.tsx": {
       "fontWeightLiteral": 1,
       "shadowLiteral": 4
@@ -386,10 +362,6 @@
       "adHocChip": 1,
       "iconSizeLiteral": 1
     },
-    "src/features/about-landing/AboutVisionSection.tsx": {
-      "fontWeightLiteral": 4,
-      "iconSizeLiteral": 1
-    },
     "src/screens/edit-post/editPostScreen.styles.ts": {
       "radiusLiteral": 2,
       "spacingLiteral": 1,
@@ -398,10 +370,6 @@
     },
     "src/screens/guest/feed.styles.ts": {
       "spacingLiteral": 1
-    },
-    "src/screens/post/PostDetailScrollContent.tsx": {
-      "iconSizeLiteral": 6,
-      "unmirroredDirectionalIcon": 1
     },
     "src/screens/post/postDetailScreen.styles.ts": {
       "colorLiteral": 6,

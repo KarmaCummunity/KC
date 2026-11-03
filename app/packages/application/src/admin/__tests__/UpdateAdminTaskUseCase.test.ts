@@ -33,4 +33,19 @@ describe('UpdateAdminTaskUseCase', () => {
       uc.execute({ taskId: 't1', patch: { priority: 'crit' } }),
     ).rejects.toMatchObject({ code: 'invalid_priority' });
   });
+
+  it('rejects title longer than 200 characters', async () => {
+    const uc = new UpdateAdminTaskUseCase(fakeAdminTaskRepo());
+    await expect(
+      uc.execute({ taskId: 't1', patch: { title: 'a'.repeat(201) } }),
+    ).rejects.toMatchObject({ code: 'title_too_long' });
+  });
+
+  it('rejects category outside the allowlist', async () => {
+    const uc = new UpdateAdminTaskUseCase(fakeAdminTaskRepo());
+    await expect(
+      // @ts-expect-error testing runtime rejection
+      uc.execute({ taskId: 't1', patch: { category: 'unsupported_cat' } }),
+    ).rejects.toMatchObject({ code: 'invalid_category' });
+  });
 });

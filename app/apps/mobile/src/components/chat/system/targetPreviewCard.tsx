@@ -6,10 +6,10 @@
 import React from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, useTheme, Text } from '@kc/ui';
+import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { useTranslation } from 'react-i18next';
 import { isOpaqueSystemShareHandle } from '../../../lib/shareHandleDisplay';
+import { MirroredIcon } from '../../ui/MirroredIcon';
 
 export type LinkTarget = { type: 'post' | 'user'; id: string; handle: string };
 export type PostPreview = {
@@ -135,7 +135,7 @@ export function TargetPreviewCard({
         </>
       )}
       <View style={styles.openRow}>
-        <Ionicons name="chevron-back" size={16} color={colors.secondary} />
+        <MirroredIcon name="chevron-forward" size={iconSize.sm} color={colors.secondary} />
         <Text style={styles.openText}>{t('moderation.bubble.targetPreview.open')}</Text>
       </View>
     </Pressable>
@@ -144,15 +144,15 @@ export function TargetPreviewCard({
 
 const useTargetPreviewCardStyles = makeUseStyles(({ colors }) => ({
   card: {
-    marginTop: 6,
-    padding: 8,
+    marginTop: spacing.xs,
+    padding: spacing.sm,
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     borderWidth: StyleSheet.hairlineWidth,
     minHeight: 44,
   },
-  handle: { fontWeight: '600' as const, color: colors.textPrimary },
-  snippet: { fontSize: 13, marginTop: 2, color: colors.textSecondary },
-  openRow: { flexDirection: 'row' as const, alignItems: 'center' as const, marginTop: 6, gap: 4 },
-  openText: { color: colors.secondary, fontWeight: '600' as const, fontSize: 13 },
+  handle: { ...typography.semiBold, color: colors.textPrimary },
+  snippet: { fontSize: typography.body.fontSize, marginTop: spacing.xs, color: colors.textSecondary },
+  openRow: { flexDirection: 'row' as const, alignItems: 'center' as const, marginTop: spacing.xs, gap: spacing.xs },
+  openText: { color: colors.secondary, ...typography.semiBold, fontSize: typography.body.fontSize },
 }));

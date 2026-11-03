@@ -9,6 +9,7 @@ export const marketplaceErrors = {
   ride_departure_past: 'בחרו שעת יציאה עתידית.',
   knowledge_slot_invalid: 'בחרו שעת התחלה עתידית ושעת סיום אחריה.',
   seats_exhausted: 'לא נשארו מקומות בנסיעה הזו.',
+  ride_seats_exhausted: 'לא נשארו מספיק מקומות לאישור ההזמנה הזו.',
   slots_exhausted: 'לא נשארו משבצות למפגש הזה.',
   already_booked: 'כבר יש לכם הזמנה כאן.',
   ride_departed: 'הנסיעה הזו כבר יצאה.',

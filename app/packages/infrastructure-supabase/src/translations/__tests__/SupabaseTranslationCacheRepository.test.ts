@@ -13,6 +13,7 @@ const ROW = {
 function makeClient(opts: {
   selectData?: any; selectError?: any;
   insertError?: any; insertConflict?: boolean;
+  deleteError?: any;
 } = {}) {
   const calls: any = { selectFilters: {}, inserted: undefined, deletedFilters: {} };
   const client = {
@@ -34,9 +35,16 @@ function makeClient(opts: {
           return Promise.resolve({ error });
         },
         delete() {
-          return {
-            eq(col: string, val: unknown) { calls.deletedFilters[col] = val; return this; },
+          const chain: any = {
+            eq(col: string, val: unknown) {
+              calls.deletedFilters[col] = val;
+              return chain;
+            },
+            then(resolve: any, reject: any) {
+              return Promise.resolve({ error: opts.deleteError ?? null }).then(resolve, reject);
+            },
           };
+          return chain;
         },
       };
     },
@@ -57,6 +65,14 @@ describe('SupabaseTranslationCacheRepository', () => {
     const { client } = makeClient({ selectData: null });
     const repo = new SupabaseTranslationCacheRepository(client);
     expect(await repo.get({ contentType: 'post', contentId: 'p1', field: 'title', targetLanguage: 'en' })).toBeNull();
+  });
+
+  it('get() throws on database error', async () => {
+    const { client } = makeClient({ selectError: { message: 'connection dropped' } });
+    const repo = new SupabaseTranslationCacheRepository(client);
+    await expect(
+      repo.get({ contentType: 'post', contentId: 'p1', field: 'title', targetLanguage: 'en' }),
+    ).rejects.toThrow('getTranslation: connection dropped');
   });
 
   it('putIfAbsent() returns true when inserted', async () => {
@@ -87,5 +103,25 @@ describe('SupabaseTranslationCacheRepository', () => {
       contentType: 'post', contentId: 'p1', field: 'title', targetLanguage: 'en',
       sourceLanguage: 'he', translatedText: 'Hello', model: null, confidence: null,
     })).rejects.toThrow('putIfAbsent');
+  });
+
+  it('deleteForContent() deletes cache entries matching contentType and contentId', async () => {
+    const { client, calls } = makeClient({});
+    const repo = new SupabaseTranslationCacheRepository(client);
+
+    await repo.deleteForContent('post', 'p_123');
+    expect(calls.deletedFilters).toEqual({
+      content_type: 'post',
+      content_id: 'p_123',
+    });
+  });
+
+  it('deleteForContent() throws when deletion fails', async () => {
+    const { client } = makeClient({ deleteError: { message: 'delete failed' } });
+    const repo = new SupabaseTranslationCacheRepository(client);
+
+    await expect(repo.deleteForContent('post', 'p_123')).rejects.toThrow(
+      'deleteForContent: delete failed',
+    );
   });
 });

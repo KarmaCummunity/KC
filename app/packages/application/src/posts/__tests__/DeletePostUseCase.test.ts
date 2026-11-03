@@ -21,6 +21,16 @@ describe('DeletePostUseCase', () => {
     });
   });
 
+  it('throws post_not_found when the post does not exist', async () => {
+    const repo = new FakePostRepository();
+    repo.findByIdResult = null;
+    const uc = new DeletePostUseCase(repo);
+    await expect(uc.execute({ postId: 'missing', ownerId: 'u_owner' })).rejects.toMatchObject({
+      code: 'unknown',
+      message: 'post_not_found',
+    });
+  });
+
   it('propagates repo errors', async () => {
     const repo = new FakePostRepository();
     repo.findByIdResult = makePostWithOwner({ postId: 'p_1', ownerId: 'u_owner' });

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { SupabaseRideBookingRepository } from '../SupabaseRideBookingRepository';
+import { SupabaseRideBookingRepository, mapBookingRow } from '../SupabaseRideBookingRepository';
 
 type AnyClient = ConstructorParameters<typeof SupabaseRideBookingRepository>[0];
 
@@ -28,6 +28,11 @@ describe('SupabaseRideBookingRepository', () => {
     expect(rpc).toHaveBeenCalledWith('book_ride_seat', { p_listing_id: 'l1', p_seats: 2 });
   });
 
+  it('throws when bookSeat RPC returns an error', async () => {
+    const { repo } = repoWith({ data: null, error: { message: 'no_seats_available' } });
+    await expect(repo.bookSeat('l1', 5)).rejects.toThrow('no_seats_available');
+  });
+
   it('maps the driver bookings list to camelCase', async () => {
     const { rpc, repo } = repoWith({ data: [ROW], error: null });
     await expect(repo.listForRide('l1')).resolves.toEqual([
@@ -51,6 +56,11 @@ describe('SupabaseRideBookingRepository', () => {
     await expect(repo.listForRide('l1')).resolves.toEqual([]);
   });
 
+  it('throws when listForRide returns an error', async () => {
+    const { repo } = repoWith({ data: null, error: { message: 'db error' } });
+    await expect(repo.listForRide('l1')).rejects.toThrow('db error');
+  });
+
   it.each([
     ['approve', 'confirm_ride_booking'],
     ['decline', 'decline_ride_booking'],
@@ -65,5 +75,49 @@ describe('SupabaseRideBookingRepository', () => {
   it('keeps the server error code in the thrown message', async () => {
     const { repo } = repoWith({ data: null, error: { message: 'owner_only' } });
     await expect(repo.decline('h1')).rejects.toThrow('owner_only');
+  });
+
+  describe('completeRide', () => {
+    it('calls complete_ride_listing and returns count', async () => {
+      const { rpc, repo } = repoWith({ data: 3, error: null });
+      const completedCount = await repo.completeRide('l1');
+      expect(rpc).toHaveBeenCalledWith('complete_ride_listing', { p_listing_id: 'l1' });
+      expect(completedCount).toBe(3);
+    });
+
+    it('defaults to 0 when complete_ride_listing returns null', async () => {
+      const { repo } = repoWith({ data: null, error: null });
+      const completedCount = await repo.completeRide('l1');
+      expect(completedCount).toBe(0);
+    });
+
+    it('throws when complete_ride_listing returns an error', async () => {
+      const { repo } = repoWith({ data: null, error: { message: 'not_owner' } });
+      await expect(repo.completeRide('l1')).rejects.toThrow('not_owner');
+    });
+  });
+
+  describe('mapBookingRow edge cases', () => {
+    it('handles nullable fields correctly', () => {
+      const mapped = mapBookingRow({
+        ...ROW,
+        passenger_name: null as unknown as string,
+        avatar_url: 'https://example.com/avatar.jpg',
+        confirm_by: null as unknown as string,
+        rated_by_me: null as unknown as boolean,
+      });
+
+      expect(mapped).toEqual({
+        handoffId: 'h1',
+        recipientId: 'u1',
+        passengerName: '',
+        avatarUrl: 'https://example.com/avatar.jpg',
+        seats: 2,
+        status: 'reserved',
+        reservedAt: '2026-11-01T08:00:00Z',
+        confirmBy: null,
+        ratedByMe: false,
+      });
+    });
   });
 });
