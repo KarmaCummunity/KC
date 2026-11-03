@@ -64,7 +64,7 @@ A single screen exposes all available authentication methods. The set of methods
 - AC3. The screen offers a single Terms-of-Service consent checkbox required for sign-up; sign-in does not require re-consent.
 - AC4. Selecting a method that is unavailable due to a misconfiguration (e.g. Google client not initialized) surfaces a non-blocking error toast and the screen remains usable for the other methods.
 - AC5. On successful authentication completion (Google / Apple / email-password), the user is routed to the legal consent gate **before** the authenticated shell renders and before the onboarding soft gate is evaluated. The gate is satisfied either by an existing `user_legal_acceptances` row clearing `needs_legal_reacknowledgement` for the current user, or by completing the post-OAuth consent screen (`FR-SETTINGS-010` AC4). Sign-out from the consent screen returns the user to the welcome screen with the auth session terminated.
-- AC5.a. **Minimum age 18 at launch (#1450).** In sign-up mode the consent screen also shows a required "I confirm I am 18 or older" checkbox (copy in locale files, `legal.checkboxAge18`); Continue stays disabled until it and every pending document are checked. Update mode (re-consent to new document versions) does not ask again. A later stage will allow ages 13–17 with parental consent.
+- AC5.a. **Minimum age 18 at launch (#1450).** In sign-up mode the consent screen also shows a required "I confirm I am 18 or older" checkbox (copy in locale files, `legal.checkboxAge18`); Continue stays disabled until it and every pending document are checked. Update mode (re-consent to new document versions) does not ask again. The server confirms it against the date of birth (`FR-AUTH-010` AC2.d). A later stage will allow ages 13–17 with parental consent.
 
 **Edge Cases.**
 - A user who already linked one method cannot link a second one in MVP (`FR-AUTH-009`).
@@ -257,7 +257,8 @@ Captures `display_name`, `city` (canonical picker), and optionally `profile_stre
 - AC2. `city` is a dropdown of the canonical Israeli city list seeded by the system. No free-text city.
 - AC2.b. **Optional full address (MVP+):** After choosing a city, the user may enter `profile_street` (1–80 chars) and `profile_street_number` (same validation and storage rule as posts / `FR-PROFILE-007`: digits with an optional single-letter suffix — Latin or Hebrew — e.g. `12`, `12B`, `12א`; see `04_posts.md` street_number AC3). Both must be filled together or both left empty; values persist to `users.profile_street` / `users.profile_street_number` (`FR-PROFILE-007`). Omitting them keeps city-only residence. **Street is a city-dependent canonical picker** over `public.streets` (sourced from data.gov.il package 321; see `D-36`) with a free-text fallback row that lets the user save any string when the typed name is not in the list. **On this screen the street + number fields are progressively disclosed** — hidden until a city is selected, revealed via the existing entry animation, collapsed back to hidden if the user clears the city. Switching the city resets street + number so a Tel Aviv street can never accompany a Jerusalem submission.
 - AC2.c. **Optional contact phone (MVP+):** Below the address, the user may enter a free-text contact phone (`users.contact_phone`, 1–20 chars after trim). The field is **non-verified** in MVP — no OTP, no format validation, no country-code normalization. Null = unset. Distinct from the auth phone (`auth.users.phone`) used for `FR-AUTH-005` OTP sign-in. Surfaced to other users as a tappable `tel:` link on the chat anchored-post card (`FR-CHAT-014`).
-- AC3. A "Skip" option exists. Skipping advances to step 3 (Profile Photo, `FR-AUTH-011`) but marks `User.onboarding_state = pending_basic_info`. The first attempt at a meaningful action (post creation, follow, sending the first chat message) re-prompts to fill these fields (see `FR-AUTH-015`). The system also persists `users.basic_info_skipped = true` on Skip so returning sessions (cold start, app update, re-auth) **land on the Home Feed** instead of forcing the full-screen wizard again; the deferred fields are still collected only via `FR-AUTH-015` until saved.
+- AC2.d. **Date of birth (`{{D:profile-extra-fields}}`):** a required date field (`users.date_of_birth`), private to the owner. The user must be at least 18 on the day of the check; a younger or invalid date is rejected with an inline error and nothing is saved. The server enforces the same rule, so a modified client cannot bypass it.
+- AC3. A "Skip" option exists. Skipping advances to step 3 (Profile Photo, `FR-AUTH-011`) but marks `User.onboarding_state = pending_basic_info` (and leaves the date of birth empty). The first attempt at a meaningful action (post creation, follow, sending the first chat message) re-prompts to fill these fields (see `FR-AUTH-015`). The system also persists `users.basic_info_skipped = true` on Skip so returning sessions (cold start, app update, re-auth) **land on the Home Feed** instead of forcing the full-screen wizard again; the deferred fields are still collected only via `FR-AUTH-015` until saved.
 - AC4. SSO-prefilled values are editable and persisted upon "Continue".
 
 **Edge Cases.**
@@ -357,7 +358,8 @@ A user whose `onboarding_state` is `pending_basic_info` and who attempts to crea
 - PRD: `03_Core_Features.md` §3.1.2 (in spirit).
 
 **Acceptance Criteria.**
-- AC1. The modal contains the same fields as the Basic Info onboarding step (`display_name`, city picker, optional street + house number, optional contact phone) and a single "Save and continue" button.
+- AC1. The modal contains the same fields as the Basic Info onboarding step (`display_name`, city picker, **date of birth**, optional street + house number, optional contact phone) and a single "Save and continue" button.
+- AC1.b. The gate also applies to an existing user whose `date_of_birth` is empty: the first meaningful action asks for it, even when `onboarding_state` is already `completed`.
 - AC2. Cancelling the modal returns the user to the previous screen with no side effects.
 - AC3. After save, the system continues into the originally attempted action.
 
@@ -368,25 +370,22 @@ A user whose `onboarding_state` is `pending_basic_info` and who attempts to crea
 
 ---
 
-## FR-AUTH-016 — Account deletion & re-registration cooldown
+## FR-AUTH-016 — Account deletion grace period (replaces the re-registration cooldown)
 
 **Description.**
-A deleted account's primary identifier (phone, email, or SSO `sub`) cannot be reused for re-registration for 30 days after deletion.
+A deleted account is deactivated for 30 days and can be restored by signing in; there is no re-registration cooldown (`{{D:account-restore-grace}}`, PM 2026-11-03). The deletion itself is `FR-SETTINGS-012`.
 
 **Source.**
-- Decisions: `D-12`.
-- PRD: `03_Core_Features.md` §3.5 (Account deletion).
+- Decisions: `D-12`, `{{D:account-restore-grace}}` (supersedes the 30-day identifier cooldown).
 - Constraints: `R-MVP-Privacy-6`.
 
 **Acceptance Criteria.**
-- AC1. On account deletion, the system retains an opaque hash of the identifier with a `deleted_at` timestamp until `deleted_at + 30 days`, after which the record is hard-deleted.
-- AC2. Sign-up attempts whose identifier hashes match an entry in the cooldown table are rejected with the message: *"This identifier was used by an account that was recently deleted. You can register again 30 days after deletion."*
-- AC3. Cooldown rejection events are counted into security telemetry; >5 rejections from the same device fingerprint within 7 days triggers a soft-block on the device.
+- AC1. While an account is pending deletion its email, phone and SSO identity stay attached to it, so nobody else can register with them; there is no `DeletedIdentifier` table.
+- AC2. Signing in during the 30 days does not open the app. It shows a "restore your account" screen with the purge date and two actions: restore, or stay signed out.
+- AC3. Restoring returns the account to `active` with all its data as it was; the restore is audited.
+- AC4. After 30 days the purge job (`FR-SETTINGS-012` AC4) deletes the account and frees the identifiers; signing up again then creates a new account.
 
-**Edge Cases.**
-- Phone reuse by a different person within the cooldown is impossible — by design, prevents privacy leaks (the new owner could see leftover artifacts otherwise).
-
-**Related.** Domain: `DeletedIdentifier`.
+**Related.** Screens: restore screen · Domain: `User`.
 
 ---
 
