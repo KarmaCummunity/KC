@@ -1,14 +1,14 @@
 # 03 — Users, personas, roles
 
 ## Personas (S31)
-| Persona | Who | Needs from KC | Worlds/domains |
+| Persona | Who | Needs from KC | Worlds |
 |---|---|---|---|
 | Michal, occasional giver | 34, moving house | Give away fast and safely, no haggling | items, food |
 | Danny, daily driver | Commutes TLV–Jerusalem | Fill seats without managing a group | rides |
 | Ruth, quiet requester | Single mother | Ask without exposure | food, items, knowledge |
 | Noam, young volunteer | 22, student | One-off volunteering, recognized hours | time; sport, tech |
 | Sarah, volunteer coordinator | Mid-size nonprofit | Publish events, approve hours, recruit | orgs, events, jobs |
-| Avraham, lonely elder | 81, lives alone (often via family) | Regular call, help with errands | elderly domain |
+| Avraham, lonely elder | 81, lives alone (often via family) | Regular call, help with errands | time · elderly & loneliness |
 | Yossi, WhatsApp group admin | Runs 3 ride groups | Better tool without losing the community | rides, growth (D38) |
 | KC admin | Team | Moderation, trust, emergencies | everything |
 
@@ -22,7 +22,7 @@
 | Organization account | Public profile + own sign-in identity; members with roles act in its name via a profile switcher (D88); always public, may follow (D90); publishes in every world, no cap (D91); always verified on approval (D53) | MVP → Phase 2 |
 | Org treasurer | Keeps the org's books in the Admin Portal finance sub-tree: entries, receipts, 46(a) status, imports, reconciliation, exports (D76–D80) | Phase 2 |
 | Org accountant | External accountant / auditor: reads the org's books and exports; never writes (D76) | Phase 2 |
-| Medical body | Only publisher in the medical domain (D30) | Later |
+| Medical body | Only publisher in the medical world (D30) | Later |
 | Org manager / authorized security officer | Activates emergency mode **inside the org only** (D51) | Phase 2 |
 | Verified official/state body | Declares emergency within its permissions (D56, S42) | Phase 2 |
 | Hotline operator | Sensitive requests | Later |

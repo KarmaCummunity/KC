@@ -47,6 +47,10 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'not_participant',
   'invalid_status',
   'handoff_not_found',
+  // Items & food handoffs (0382, 0453, 0510).
+  'invalid_pickup_mode',
+  'handoff_not_confirmed',
+  'invalid_rating',
   // D71 (0512) — ride places come only from official catalogs; at most 3 meeting points.
   'ride_place_invalid',
   'too_many_meeting_points',
@@ -59,6 +63,14 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   // D70 (0517) — the emergency button works only during the ride, once per 5 minutes.
   'ride_not_active',
   'emergency_throttled',
+  // FR-RIDE-046 (0531) — recurring rides: the schedule, ownership and the terminal cancelled state.
+  'ride_series_weekdays_invalid',
+  'ride_series_duration_invalid',
+  'ride_series_ends_in_past',
+  'ride_series_no_occurrence',
+  'ride_series_not_found',
+  'ride_series_cancelled',
+  'ride_series_status_invalid',
 ] as const;
 
 export type MarketplaceServerErrorCode = (typeof MARKETPLACE_SERVER_ERROR_CODES)[number];
@@ -145,6 +157,9 @@ export function mapMarketplaceServerError(err: unknown): MarketplaceServerErrorC
   const e = err as { message?: unknown; details?: unknown; hint?: unknown };
   for (const field of [e.message, e.details, e.hint]) {
     if (typeof field === 'string') {
+      if (field.includes('giving_handoffs_active_listing_uidx')) {
+        return 'listing_not_available';
+      }
       const code = matchCode(field);
       if (code) return code;
     }
