@@ -2887,6 +2887,7 @@ export type Database = {
         Row: {
           channel: string
           is_active: boolean
+          payee_phone: string | null
           provider_label: string
           updated_at: string
           url: string
@@ -2894,6 +2895,7 @@ export type Database = {
         Insert: {
           channel: string
           is_active?: boolean
+          payee_phone?: string | null
           provider_label: string
           updated_at?: string
           url: string
@@ -2901,6 +2903,7 @@ export type Database = {
         Update: {
           channel?: string
           is_active?: boolean
+          payee_phone?: string | null
           provider_label?: string
           updated_at?: string
           url?: string
@@ -7840,6 +7843,7 @@ export type Database = {
           closure_explainer_dismissed: boolean
           contact_phone: string | null
           created_at: string
+          date_of_birth: string | null
           deletion_purge_at: string | null
           deletion_requested_at: string | null
           display_name: string | null
@@ -7886,6 +7890,7 @@ export type Database = {
           closure_explainer_dismissed?: boolean
           contact_phone?: string | null
           created_at?: string
+          date_of_birth?: string | null
           deletion_purge_at?: string | null
           deletion_requested_at?: string | null
           display_name?: string | null
@@ -7932,6 +7937,7 @@ export type Database = {
           closure_explainer_dismissed?: boolean
           contact_phone?: string | null
           created_at?: string
+          date_of_birth?: string | null
           deletion_purge_at?: string | null
           deletion_requested_at?: string | null
           display_name?: string | null
@@ -10840,6 +10846,15 @@ export type Database = {
       kc_dev_is_e2e_title: { Args: { p_title: string }; Returns: boolean }
       kc_dev_is_seeded: { Args: never; Returns: boolean }
       list_active_surveys: { Args: never; Returns: Json }
+      list_kc_support_channels: {
+        Args: never
+        Returns: {
+          channel: string
+          payee_phone: string
+          provider_label: string
+          url: string
+        }[]
+      }
       list_my_blocked_users: {
         Args: never
         Returns: {
@@ -12503,6 +12518,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      rpc_set_date_of_birth: {
+        Args: { p_date_of_birth: string }
+        Returns: undefined
       }
       rpc_set_message_reaction: {
         Args: { p_message_id: string; p_reaction_type: string }

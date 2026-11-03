@@ -10,6 +10,7 @@ export * from './audit';
 export * from './posts';
 export * from './donations';
 export * from './value-objects';
+export * from './dateOfBirth';
 export * from './invariants';
 export * from './searchTypes';
 export * from './geo';

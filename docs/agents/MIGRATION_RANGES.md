@@ -105,13 +105,15 @@ Last applied on kc-dev when this was written: `0239`.
 | 0548 | D-211 donation link world categories | merged |
 | 0549 | account deletion grace period + purge (FR-SETTINGS-012) | merged |
 | 0550–0569 | G1 one Post model (ADR-006): `0550–0552` step 1 additive schema, `0553–0556` step 2, `0557–0562` step 3, `0563` step 5, `0564+` step 6 | in progress |
-| 0570 | admin demo-data status + wipe (FR-ADMIN-031) | in progress |
-| 0571 | admin restore demo data: seed moved into the DB (FR-ADMIN-031) | in progress |
-| 0572+ | — | free |
+| 0570–0589 | knowledge world K1–K2 (`spec/23_knowledge.md` FR-KNOW-001..020) | claimed (spec only, no files yet) |
+| 0590 | users.date_of_birth + rpc_set_date_of_birth (FR-AUTH-010 AC2.d) | in progress |
+| 0591 | admin demo-data status + wipe (FR-ADMIN-031) | in progress |
+| 0592 | admin restore demo data: seed moved into the DB (FR-ADMIN-031) | in progress |
+| 0593+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0572+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0593+`.
 
 ## How to claim
 

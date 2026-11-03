@@ -107,6 +107,8 @@ export type ProfileErrorCode =
   | 'invalid_profile_street'
   | 'invalid_profile_street_number'
   | 'invalid_contact_phone'
+  | 'invalid_date_of_birth'
+  | 'underage'
   | 'empty_patch';
 
 export class ProfileError extends Error {

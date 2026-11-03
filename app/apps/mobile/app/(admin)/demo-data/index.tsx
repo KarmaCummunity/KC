@@ -1,5 +1,5 @@
 // FR-ADMIN-031 — Demo data: shows how much kc-dev fake data exists and lets a super admin
-// delete it in one press (admin_wipe_demo_data, 0570) and bring it back (admin_seed_demo_data, 0571).
+// delete it in one press (admin_wipe_demo_data, 0591) and bring it back (admin_seed_demo_data, 0592).
 import { Alert, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { hasPermission, type AdminRole } from '@kc/domain';
