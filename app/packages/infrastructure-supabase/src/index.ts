@@ -1,5 +1,11 @@
 export { getSupabaseClient, resetSupabaseClient, setOnForbiddenCallback } from './client';
-export type { SupabaseAuthStorage } from './client';
+export type { SupabaseAuthStorage, SupabaseClientOptions } from './client';
+export {
+  createTimeoutFetch,
+  DEFAULT_SUPABASE_TIMEOUT_MS,
+  FetchTimeoutError,
+  isTimeoutError,
+} from './timeoutFetch';
 export type { Database } from './database.types';
 
 export { SupabaseAuthService } from './auth/SupabaseAuthService';
