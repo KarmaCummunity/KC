@@ -16,9 +16,6 @@
     "src/i18n/locales/he/modules/adminLayers.ts": {
       "genderedImperative": 2
     },
-    "src/i18n/locales/he/modules/adminMoney.ts": {
-      "genderedImperative": 6
-    },
     "src/i18n/locales/he/modules/adminOrgApprovals.ts": {
       "genderedImperative": 1
     },

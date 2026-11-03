@@ -115,7 +115,7 @@ select pg_temp.assert_none($q$
        'list_profile_listings',
        'list_ride_series_occurrences', 'list_rides_feed', 'list_verified_nonprofits', 'list_volunteer_opportunities',
        'map_listing_clusters', 'map_listing_pins', 'marketplace_search', 'profile_closed_posts',
-       'profile_closed_posts_count', 'ride_listings_search', 'search_listings', 'search_posts_page',
+       'profile_closed_posts_count', 'ride_listings_search', 'rpc_org_transparency', 'search_listings', 'search_posts_page',
        'search_users_page', 'similar_listings'])
 $q$, 'SECURITY DEFINER functions executable by anon outside the public-read list');
 
