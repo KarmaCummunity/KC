@@ -3,9 +3,7 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
 import {
-  Pressable,
   ScrollView,
-  StyleSheet,
   View,
 } from 'react-native';
 import {
@@ -14,7 +12,10 @@ import {
   type AdminTaskCategory, type AdminTaskPriority,
   hasPermission, isAdminTaskError,
 } from '@kc/domain';
-import { makeUseStyles, Text, TextInput } from '@kc/ui';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
+import { TextField } from '../../../src/components/ui/TextField';
+import { Chip } from '../../../src/components/ui/Chip';
+import { AdminFormActions } from '../../../src/components/admin/AdminFormActions';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { useCreateAdminTask } from '../../../src/hooks/useAdminTaskMutations';
 import { AssigneePicker } from '../../../src/components/admin/tasks/AssigneePicker';
@@ -81,18 +82,16 @@ export default function NewTaskScreen() {
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <Text style={styles.title}>{L.admin.tasks.form.newTitle}</Text>
 
-      <Text style={styles.label}>{L.admin.tasks.form.titleLabel}</Text>
-      <TextInput
-        style={styles.input}
+      <TextField
+        label={L.admin.tasks.form.titleLabel}
         value={title}
         onChangeText={setTitle}
         placeholder={L.admin.tasks.form.titlePlaceholder}
         maxLength={200}
       />
 
-      <Text style={styles.label}>{L.admin.tasks.form.descriptionLabel}</Text>
-      <TextInput
-        style={[styles.input, styles.multiline]}
+      <TextField
+        label={L.admin.tasks.form.descriptionLabel}
         value={description}
         onChangeText={setDescription}
         placeholder={L.admin.tasks.form.descriptionPlaceholder}
@@ -103,15 +102,13 @@ export default function NewTaskScreen() {
       <Text style={styles.label}>{L.admin.tasks.form.priorityLabel}</Text>
       <View style={styles.priorityRow}>
         {ADMIN_TASK_PRIORITIES.map((p) => (
-          <Pressable
+          <Chip
             key={p}
+            label={L.admin.tasks.priority[p]}
+            selected={priority === p}
             onPress={() => setPriority(p)}
-            style={[styles.priorityChip, priority === p && styles.priorityChipActive]}
-          >
-            <Text style={[styles.priorityChipText, priority === p && styles.priorityChipTextActive]}>
-              {L.admin.tasks.priority[p]}
-            </Text>
-          </Pressable>
+            size="sm"
+          />
         ))}
       </View>
 
@@ -125,71 +122,37 @@ export default function NewTaskScreen() {
         </>
       )}
 
-      <Text style={styles.label}>{L.admin.tasks.form.labelsLabel}</Text>
-      <TextInput
-        style={styles.input}
+      <TextField
+        label={L.admin.tasks.form.labelsLabel}
         value={labelsRaw}
         onChangeText={setLabelsRaw}
         placeholder={L.admin.tasks.form.labelsPlaceholder}
       />
 
-      {errorCode !== null && (
-        <>
-          <Text style={styles.error}>
-            {L.admin.tasks.errors[errorCode as keyof LocaleBundle['admin']['tasks']['errors']]
-              ?? L.admin.tasks.errors.unknown}
-          </Text>
-          {errorDetail !== null && (
-            <Text style={styles.errorDetail}>{errorDetail}</Text>
-          )}
-        </>
-      )}
-
-      <View style={styles.actions}>
-        <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
-          <Text style={styles.cancelBtnText}>{L.admin.tasks.form.cancel}</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.submitBtn, !canSubmit && styles.submitBtnDisabled]}
-          disabled={!canSubmit}
-          onPress={() => { void submit(); }}
-        >
-          <Text style={styles.submitBtnText}>{L.admin.tasks.form.submit}</Text>
-        </Pressable>
-      </View>
+      <AdminFormActions
+        cancelLabel={L.admin.tasks.form.cancel}
+        submitLabel={L.admin.tasks.form.submit}
+        submittingLabel={L.admin.tasks.form.submit}
+        isPending={create.isPending}
+        onCancel={() => router.back()}
+        onSubmit={() => { void submit(); }}
+        errorMsg={
+          errorCode !== null
+            ? (L.admin.tasks.errors[errorCode as keyof LocaleBundle['admin']['tasks']['errors']]
+                ?? L.admin.tasks.errors.unknown) + (errorDetail ? `: ${errorDetail}` : '')
+            : null
+        }
+      />
     </ScrollView>
   );
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  root:           { flex: 1, backgroundColor: colors.background },
-  content:        { padding: 16, gap: 8 },
-  center:         { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  deniedTitle:    { fontSize: 18, fontWeight: '700' },
-  title:          { fontSize: 22, fontWeight: '700', marginBottom: 8 },
-  label:          { fontSize: 12, opacity: 0.7, marginTop: 8 },
-  input: {
-    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: 8,
-    padding: 10, fontSize: 14, textAlign: 'right', backgroundColor: colors.surface,
-  },
-  multiline:      { minHeight: 80, textAlignVertical: 'top' },
-  priorityRow:    { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  priorityChip: {
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8,
-    backgroundColor: colors.secondaryLight,
-  },
-  priorityChipActive:     { backgroundColor: colors.primary },
-  priorityChipText:       { fontSize: 13, fontWeight: '600' },
-  priorityChipTextActive: { color: colors.textInverse },
-  error:                  { color: colors.error, fontSize: 12, marginTop: 8 },
-  errorDetail:            { color: colors.error, fontSize: 11, marginTop: 2, opacity: 0.65 },
-  actions:                { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 16 },
-  cancelBtn:              { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 },
-  cancelBtnText:          { fontSize: 14, fontWeight: '500' },
-  submitBtn: {
-    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8,
-    backgroundColor: colors.primary,
-  },
-  submitBtnDisabled:      { opacity: 0.5 },
-  submitBtnText:          { color: colors.textInverse, fontSize: 14, fontWeight: '700' },
+  root:        { flex: 1, backgroundColor: colors.background },
+  content:     { padding: spacing.base, gap: spacing.sm },
+  center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+  deniedTitle: { ...typography.h3, ...typography.bold, color: colors.textPrimary },
+  title:       { ...typography.h2, ...typography.bold, color: colors.textPrimary, marginBottom: spacing.sm },
+  label:       { ...typography.label, color: colors.textSecondary, marginTop: spacing.xs },
+  priorityRow: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
 }));

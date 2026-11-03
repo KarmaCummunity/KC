@@ -1,9 +1,11 @@
 // V2-ADMIN-TIME-10 — modal for create/edit own timesheet draft.
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
 import { isTimesheetError, type TimesheetEntry } from '@kc/domain';
-import { makeUseStyles, Text, TextInput } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { TextField } from '../../ui/TextField';
+import { AdminFormActions } from '../AdminFormActions';
 import { container } from '../../../lib/container';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
@@ -52,75 +54,32 @@ export function TimesheetFormModal({ initial, onClose, onSaved }: TimesheetFormM
       <ScrollView style={styles.sheet} contentContainerStyle={styles.content}>
         <Text style={styles.title}>{isEdit ? t.form.editTitle : t.form.createTitle}</Text>
 
-        <Field label={t.form.workDateLabel}    value={workDate}    onChange={setWorkDate} />
-        <Field label={t.form.hoursLabel}       value={hoursText}   onChange={setHoursText} numeric />
-        <Field label={t.form.projectLabel}     value={project}     onChange={setProject} />
-        <Field label={t.form.descriptionLabel} value={description} onChange={setDescription} multiline />
+        <TextField label={t.form.workDateLabel}    value={workDate}    onChangeText={setWorkDate} />
+        <TextField label={t.form.hoursLabel}       value={hoursText}   onChangeText={setHoursText} keyboardType="decimal-pad" />
+        <TextField label={t.form.projectLabel}     value={project}     onChangeText={setProject} />
+        <TextField label={t.form.descriptionLabel} value={description} onChangeText={setDescription} multiline />
 
-        {errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
-
-        <View style={styles.actions}>
-          <Pressable style={styles.cancel} onPress={onClose} disabled={save.isPending}>
-            <Text style={styles.cancelText}>{t.form.cancel}</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.submit, save.isPending && styles.submitDisabled]}
-            onPress={() => { void save.mutateAsync(); }}
-            disabled={save.isPending}
-          >
-            <Text style={styles.submitText}>{t.form.submit}</Text>
-          </Pressable>
-        </View>
+        <AdminFormActions
+          cancelLabel={t.form.cancel}
+          submitLabel={t.form.submit}
+          submittingLabel={t.form.submit}
+          isPending={save.isPending}
+          onCancel={onClose}
+          onSubmit={() => { void save.mutateAsync(); }}
+          errorMsg={errorMsg}
+        />
       </ScrollView>
-    </View>
-  );
-}
-
-function Field({
-  label, value, onChange, multiline = false, numeric = false,
-}: {
-  readonly label: string;
-  readonly value: string;
-  readonly onChange: (v: string) => void;
-  readonly multiline?: boolean;
-  readonly numeric?: boolean;
-}) {
-  const styles = useStyles();
-  return (
-    <View style={styles.fieldRow}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        style={[styles.input, multiline && styles.inputMultiline]}
-        value={value}
-        onChangeText={onChange}
-        multiline={multiline}
-        keyboardType={numeric ? 'decimal-pad' : 'default'}
-      />
     </View>
   );
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
   backdrop: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end',
+    position: 'absolute', top: 0, start: 0, end: 0, bottom: 0,
+    backgroundColor: colors.overlay, justifyContent: 'flex-end',
   },
   sheet:   { maxHeight: '90%', backgroundColor: colors.surface,
-             borderTopLeftRadius: 16, borderTopRightRadius: 16 },
-  content: { padding: 16, gap: 10 },
-  title:   { fontSize: 18, fontWeight: '700' },
-  fieldRow:{ gap: 4 },
-  label:   { fontSize: 12, opacity: 0.7 },
-  input: {
-    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: 8,
-    padding: 10, fontSize: 13, backgroundColor: colors.background, textAlign: 'right',
-  },
-  inputMultiline: { minHeight: 80, textAlignVertical: 'top' },
-  errorText:  { color: colors.error, fontSize: 12 },
-  actions:    { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 },
-  cancel:     { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8 },
-  cancelText: { fontSize: 13, fontWeight: '500' },
-  submit:     { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, backgroundColor: colors.primary },
-  submitDisabled: { opacity: 0.5 },
-  submitText: { color: colors.textInverse, fontSize: 13, fontWeight: '700' },
+             borderTopStartRadius: radius.lg, borderTopEndRadius: radius.lg },
+  content: { padding: spacing.base, gap: spacing.md },
+  title:   { ...typography.h3, ...typography.bold, color: colors.textPrimary },
 }));

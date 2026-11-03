@@ -1,12 +1,13 @@
 // V2-ADMIN-MONEY-9 — bottom-sheet modal for create/edit a ledger entry.
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
 import {
   FINANCE_ENTRY_KINDS, FINANCE_ENTRY_STATUSES, isFinanceLedgerError,
   type FinanceEntry, type FinanceEntryKind, type FinanceEntryStatus,
 } from '@kc/domain';
-import { makeUseStyles, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { Chip } from '../../ui/Chip';
 import { container } from '../../../lib/container';
 import { AdminFormField } from '../AdminFormField';
 import { AdminFormActions } from '../AdminFormActions';
@@ -79,15 +80,13 @@ export function FinanceEntryFormModal({ initial, onClose, onSaved }: FinanceEntr
         <Text style={styles.label}>{t.form.kindLabel}</Text>
         <View style={styles.optionsRow}>
           {FINANCE_ENTRY_KINDS.map((k) => (
-            <Pressable
+            <Chip
               key={k}
+              label={t.kind[k]}
+              selected={kind === k}
               onPress={() => setKind(k)}
-              style={[styles.option, kind === k && styles.optionActive]}
-            >
-              <Text style={[styles.optionText, kind === k && styles.optionTextActive]}>
-                {t.kind[k]}
-              </Text>
-            </Pressable>
+              size="sm"
+            />
           ))}
         </View>
 
@@ -102,15 +101,13 @@ export function FinanceEntryFormModal({ initial, onClose, onSaved }: FinanceEntr
         <Text style={styles.label}>{t.form.statusLabel}</Text>
         <View style={styles.optionsRow}>
           {FINANCE_ENTRY_STATUSES.map((s) => (
-            <Pressable
+            <Chip
               key={s}
+              label={t.status[s]}
+              selected={status === s}
               onPress={() => setStatus(s)}
-              style={[styles.option, status === s && styles.optionActive]}
-            >
-              <Text style={[styles.optionText, status === s && styles.optionTextActive]}>
-                {t.status[s]}
-              </Text>
-            </Pressable>
+              size="sm"
+            />
           ))}
         </View>
 
@@ -130,17 +127,13 @@ export function FinanceEntryFormModal({ initial, onClose, onSaved }: FinanceEntr
 
 const useStyles = makeUseStyles(({ colors }) => ({
   backdrop: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end',
+    position: 'absolute', top: 0, start: 0, end: 0, bottom: 0,
+    backgroundColor: colors.overlay, justifyContent: 'flex-end',
   },
   sheet:   { maxHeight: '90%', backgroundColor: colors.surface,
-             borderTopLeftRadius: 16, borderTopRightRadius: 16 },
-  content: { padding: 16, gap: 10 },
-  title:   { fontSize: 18, fontWeight: '700' },
-  label:   { fontSize: 12, opacity: 0.7 },
-  optionsRow:    { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-  option:        { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: colors.secondaryLight },
-  optionActive:  { backgroundColor: colors.primary },
-  optionText:       { fontSize: 12, fontWeight: '600' },
-  optionTextActive: { color: colors.textInverse },
+             borderTopStartRadius: radius.lg, borderTopEndRadius: radius.lg },
+  content: { padding: spacing.base, gap: spacing.md },
+  title:   { ...typography.h3, ...typography.bold, color: colors.textPrimary },
+  label:   { ...typography.label, color: colors.textSecondary },
+  optionsRow: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
 }));

@@ -2,26 +2,22 @@
 // FR-ADMIN-022 — compact role pill used on the unified admin card and detail.
 import { StyleSheet, View } from 'react-native';
 import type { AdminRole } from '@kc/domain';
-import { avatarPalette, makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography, useTheme, type ColorToken } from '@kc/ui';
 import { rowDirectionStart } from '../../../lib/rtlLayout';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
-// Accent per role, taken from the brand's categorical palette (spec 17 §4:
-// admin screens introduce no colours of their own). Exhaustive by type. The
-// accent marks the dot and border only; the label uses theme text colours so
-// it meets AA in both light and dark mode.
-const [orange, navy, green, pink, teal, amber, violet, blue] = avatarPalette.backgrounds;
-const ROLE_ACCENT: Readonly<Record<AdminRole, string>> = {
-  super_admin:       violet,
-  moderator:         blue,
-  support:           teal,
-  operators_manager: green,
-  operator:          green,
-  org_admin:         orange,
-  org_manager:       amber,
-  volunteer_manager: pink,
-  org_employee:      navy,
-  org_volunteer:     navy,
+// Accent per role token (spec 17 §4.3: role colours live in brand tokens and meet AA in both palettes).
+const ROLE_TOKEN: Readonly<Record<AdminRole, ColorToken>> = {
+  super_admin:       'roleSuperAdmin',
+  moderator:         'roleModerator',
+  support:           'roleSupport',
+  operators_manager: 'roleOperatorsManager',
+  operator:          'roleOperator',
+  org_admin:         'roleOrgAdmin',
+  org_manager:       'roleOrgManager',
+  volunteer_manager: 'roleVolunteerManager',
+  org_employee:      'roleOrgEmployee',
+  org_volunteer:     'roleOrgVolunteer',
 };
 
 export interface RoleBadgeProps {
@@ -30,9 +26,10 @@ export interface RoleBadgeProps {
 }
 
 export function RoleBadge({ role, muted }: RoleBadgeProps) {
+  const { colors } = useTheme();
   const styles = useStyles();
   const L = useLocaleBundle();
-  const accent = ROLE_ACCENT[role];
+  const accent = colors[ROLE_TOKEN[role]];
   return (
     <View style={[styles.badge, { borderColor: accent }, muted && styles.muted]}>
       <View style={[styles.dot, { backgroundColor: accent }]} />

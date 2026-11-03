@@ -103,6 +103,16 @@ describe('brand guard', () => {
   it('keeps the baseline tight after cleanups (rerun with KC_BRAND_BASELINE=update)', () => {
     expect(shrank).toEqual([]);
   });
+
+  it('keeps admin surfaces completely free of brand-guard findings (spec 17 §4.3, issue #1287)', () => {
+    const adminFindings = Object.entries(current)
+      .filter(([file]) => file.startsWith('app/(admin)/') || file.startsWith('src/components/admin/'))
+      .map(([file, counts]) => `${file}: ${JSON.stringify(counts)}`);
+    expect(
+      adminFindings,
+      'admin surfaces must remain 100% on tokens — no findings permitted even in the baseline',
+    ).toEqual([]);
+  });
 });
 
 describe('touched-file rule (spec 17 §6, D67)', () => {
