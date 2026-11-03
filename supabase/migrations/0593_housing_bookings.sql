@@ -38,6 +38,15 @@ alter table public.giving_handoffs
     'superseded', 'guest_cancelled', 'host_cancelled', 'not_completed'
   ));
 
+-- post_handoffs (0553, G1) mirrors every giving_handoffs write, so it accepts the same reasons.
+alter table public.post_handoffs drop constraint if exists post_handoffs_cancel_reason_check;
+alter table public.post_handoffs
+  add constraint post_handoffs_cancel_reason_check
+  check (cancel_reason is null or cancel_reason in (
+    'declined', 'expired', 'passenger_cancelled', 'driver_cancelled', 'system',
+    'superseded', 'guest_cancelled', 'host_cancelled', 'not_completed'
+  ));
+
 create index if not exists giving_handoffs_housing_recipient_status_idx
   on public.giving_handoffs (recipient_id, status)
   where world_slug = 'housing';

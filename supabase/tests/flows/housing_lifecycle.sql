@@ -342,6 +342,12 @@ begin
   perform kc_test.act_as(p.guest2);
   perform kc_test.assert_true((select count(*) > 0 from public.list_my_housing_stays()),
     'the guest lists their stays');
+
+  -- G1 (0553): every housing booking, with its housing cancel reasons, mirrors into post_handoffs.
+  perform kc_test.assert_eq((public.post_unification_report() ->> 'handoff_field_mismatches')::int, 0,
+    'housing bookings mirror into post_handoffs without mismatches');
+  perform kc_test.assert_eq((public.post_unification_report() ->> 'handoff_rows_missing')::int, 0,
+    'no housing booking is missing from post_handoffs');
 end $$;
 
 \echo '✓ housing_lifecycle passed'
