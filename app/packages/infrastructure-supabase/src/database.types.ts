@@ -2883,6 +2883,24 @@ export type Database = {
         }
         Relationships: []
       }
+      kc_dev_demo_config: {
+        Row: {
+          created_at: string
+          password_hash: string | null
+          singleton: boolean
+        }
+        Insert: {
+          created_at?: string
+          password_hash?: string | null
+          singleton?: boolean
+        }
+        Update: {
+          created_at?: string
+          password_hash?: string | null
+          singleton?: boolean
+        }
+        Relationships: []
+      }
       kc_support_channels: {
         Row: {
           channel: string
@@ -9228,14 +9246,7 @@ export type Database = {
         Args: { p_message_id: string }
         Returns: undefined
       }
-      admin_demo_data_status: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      admin_seed_demo_data: {
-        Args: { p_password?: string }
-        Returns: Json
-      }
+      admin_demo_data_status: { Args: never; Returns: Json }
       admin_dismiss_report: {
         Args: { p_report_id: string }
         Returns: undefined
@@ -9420,6 +9431,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_seed_demo_data: { Args: { p_password?: string }; Returns: Json }
       admin_set_external_body_status: {
         Args: {
           p_body_id: string
@@ -9542,10 +9554,7 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number }
         Returns: Json
       }
-      admin_wipe_demo_data: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      admin_wipe_demo_data: { Args: never; Returns: Json }
       admin_world_flow_funnel: {
         Args: { p_days?: number }
         Returns: {
@@ -10772,6 +10781,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_demo_seed_user: { Args: { p_user_id: string }; Returns: boolean }
       is_donation_link_reviewer: { Args: { p_uid: string }; Returns: boolean }
       is_following: {
         Args: { followed: string; follower: string }
@@ -10845,6 +10855,11 @@ export type Database = {
       }
       kc_dev_is_e2e_title: { Args: { p_title: string }; Returns: boolean }
       kc_dev_is_seeded: { Args: never; Returns: boolean }
+      kc_dev_seed_demo_data: {
+        Args: { p_password_hash: string }
+        Returns: Json
+      }
+      kc_dev_wipe_demo_data: { Args: never; Returns: Json }
       list_active_surveys: { Args: never; Returns: Json }
       list_kc_support_channels: {
         Args: never
