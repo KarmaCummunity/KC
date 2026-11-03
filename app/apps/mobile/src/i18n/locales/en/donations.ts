@@ -7,8 +7,8 @@ import { marketplaceErrors } from './donations.marketplaceErrors';
 import { marketplaceBrowseRefine, marketplaceWorldLabels } from './donations.marketplaceExtras';
 import { marketplaceAvailabilityLabels, marketplaceFieldLabels, marketplaceListingStatusLabels, marketplaceOptionLabels } from './donations.marketplaceFields';
 import { worldLaunch } from './donations.worldLaunch';
+import { linkWorldCategories } from './donations.linkWorlds';
 import { marketplaceMyListings } from './donations.myListings';
-import { worldsHub } from './donations.worldsHub';
 import { worldFeed } from './donations.worldFeed';
 export { moneyPayments } from './donations.moneyPayments';
 export { timeVolunteer } from './donations.timeVolunteer';
@@ -18,17 +18,15 @@ export const donations = {
   hubTitle: 'Donations by:',
   hubHeroTitle: 'Give. Receive. Donate what you have.',
   hubHeroSubtitle: 'Pick a cause that speaks to you and turn it into action.',
-  hubItemsFeaturedTitle: 'Items',
-  hubItemsFeaturedSubtitle: 'Donate and request items — the core action in the app',
-  hubCategoriesSectionTitle: 'More donation categories',
+  hubCategoriesSectionTitle: 'Giving worlds',
   worldLaunch,
-  worldsHub,
   worldFeed,
   items: { title: 'Items', subtitle: 'Donate and request items' },
   time: { title: 'Time', subtitle: 'Volunteering and free time' },
   money: { title: 'Money', subtitle: 'Monetary donation' },
   // FR-DONATE-006 — six new categories.
   categories: {
+    ...linkWorldCategories,
     food: {
       title: 'Food',
       subtitle: 'Food distribution nonprofits',
@@ -238,6 +236,9 @@ export const search = {
     knowledge: 'Knowledge',
     animals: 'Animals',
     medical: 'Medical',
+    democracy: 'Democracy',
+    employment: 'Employment',
+    challenges: 'Challenges',
   },
 } as const;
 

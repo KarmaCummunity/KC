@@ -21,7 +21,7 @@ const REFRESH_MS = 60_000;
 /** Today and tomorrow need only the time; later rides need the day too. */
 const TIME_FORMAT: Record<RideFeedGroup, string> = { today: 'HH:mm', tomorrow: 'HH:mm', later: 'EEEE d/M · HH:mm' };
 
-export function RidesFeedList({ header }: Readonly<{ header: React.ReactElement }>) {
+export function RidesFeedList({ header, footer }: Readonly<{ header: React.ReactElement; footer?: React.ReactElement }>) {
   const { t } = useTranslation();
   const router = useRouter();
   const styles = useStyles();
@@ -48,6 +48,7 @@ export function RidesFeedList({ header }: Readonly<{ header: React.ReactElement 
       sections={sections}
       keyExtractor={(item) => item.listingId}
       ListHeaderComponent={header}
+      ListFooterComponent={footer}
       contentContainerStyle={{ paddingBottom: inset }}
       stickySectionHeadersEnabled={false}
       refreshControl={<RefreshControl refreshing={feed.isRefetching} onRefresh={() => void feed.refetch()} />}

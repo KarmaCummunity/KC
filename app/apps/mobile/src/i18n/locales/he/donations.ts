@@ -7,8 +7,8 @@ import { marketplaceErrors } from './donations.marketplaceErrors';
 import { marketplaceBrowseRefine, marketplaceWorldLabels } from './donations.marketplaceExtras';
 import { marketplaceAvailabilityLabels, marketplaceFieldLabels, marketplaceListingStatusLabels, marketplaceOptionLabels } from './donations.marketplaceFields';
 import { worldLaunch } from './donations.worldLaunch';
+import { linkWorldCategories } from './donations.linkWorlds';
 import { marketplaceMyListings } from './donations.myListings';
-import { worldsHub } from './donations.worldsHub';
 import { worldFeed } from './donations.worldFeed';
 export { moneyPayments } from './donations.moneyPayments';
 export { timeVolunteer } from './donations.timeVolunteer';
@@ -18,17 +18,15 @@ export const donations = {
   hubTitle: 'תרומות של:',
   hubHeroTitle: 'לתת. לקבל. לתרום מה שיש לך.',
   hubHeroSubtitle: 'לבחור תחום שמדבר אלינו ולהפוך אותו לפעולה.',
-  hubItemsFeaturedTitle: 'חפצים',
-  hubItemsFeaturedSubtitle: 'תרומה ובקשת חפצים — הפעולה המרכזית באפליקציה',
-  hubCategoriesSectionTitle: 'תחומי תרומה נוספים',
+  hubCategoriesSectionTitle: 'עולמות התרומה',
   worldLaunch,
-  worldsHub,
   worldFeed,
   items: { title: 'חפצים', subtitle: 'תרומה ובקשת חפצים' },
   time: { title: 'זמן', subtitle: 'התנדבות וזמן פנוי' },
   money: { title: 'כסף', subtitle: 'תרומה כספית' },
   // FR-DONATE-006 — six new categories.
   categories: {
+    ...linkWorldCategories,
     food: {
       title: 'אוכל',
       subtitle: 'עמותות חלוקת מזון',
@@ -238,6 +236,9 @@ export const search = {
     knowledge: 'ידע',
     animals: 'חיות',
     medical: 'רפואה',
+    democracy: 'דמוקרטיה',
+    employment: 'תעסוקה',
+    challenges: 'אתגרים',
   },
 } as const;
 

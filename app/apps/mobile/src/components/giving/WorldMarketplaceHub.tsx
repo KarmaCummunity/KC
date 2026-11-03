@@ -6,7 +6,7 @@ import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { spacing } from '@kc/ui';
-import type { MarketplaceBrowseRow } from '@kc/domain';
+import type { DonationCategorySlug, MarketplaceBrowseRow } from '@kc/domain';
 import { Screen } from '../ui/Screen';
 import { KcFlashList } from '../lists/KcFlashList';
 import { KcRefreshControl } from '../lists/KcRefreshControl';
@@ -19,18 +19,22 @@ import { LIST_END_THRESHOLD } from '../../hooks/usePrefetchNextPage';
 import { useWorldFeed, type WorldFeedState } from '../../hooks/useWorldFeed';
 import { createRouteFor } from '../../lib/unifiedCreate/createCategories';
 import { WorldHubHeader, type WorldHubHeaderProps } from './WorldHubHeader';
+import { WorldLinksSection } from './WorldLinksSection';
 import { WorldFeedControls } from './WorldFeedControls';
 
 export type WorldMarketplaceHubProps = WorldHubHeaderProps & {
+  readonly worldSlug: string;
+  /** Community links list shown under the feed (FR-DONATE-007). */
+  readonly linksCategory?: DonationCategorySlug;
   /** Secondary line per card; defaults to the listing summary. */
   readonly rowMeta?: (item: MarketplaceBrowseRow) => string | null;
 };
 
-export function WorldMarketplaceHub({ rowMeta, ...headerProps }: WorldMarketplaceHubProps) {
+export function WorldMarketplaceHub({ rowMeta, worldSlug, linksCategory, ...headerProps }: WorldMarketplaceHubProps) {
   const router = useRouter();
   const { t } = useTranslation();
   const inset = useShellTabBarScrollInset();
-  const feed = useWorldFeed(headerProps.worldSlug);
+  const feed = useWorldFeed(worldSlug);
 
   return (
     <Screen blobs="content">
@@ -42,9 +46,10 @@ export function WorldMarketplaceHub({ rowMeta, ...headerProps }: WorldMarketplac
         ListHeaderComponent={
           <>
             <WorldHubHeader {...headerProps} />
-            <WorldFeedControls worldSlug={headerProps.worldSlug} feed={feed} />
+            <WorldFeedControls worldSlug={worldSlug} feed={feed} />
           </>
         }
+        ListFooterComponent={linksCategory ? <WorldLinksSection categorySlug={linksCategory} /> : null}
         numColumns={2}
         onEndReached={feed.loadMore}
         onEndReachedThreshold={LIST_END_THRESHOLD}
@@ -74,7 +79,7 @@ export function WorldMarketplaceHub({ rowMeta, ...headerProps }: WorldMarketplac
               }
             />
           ) : (
-            <WorldFeedEmpty worldSlug={headerProps.worldSlug} feed={feed} />
+            <WorldFeedEmpty worldSlug={worldSlug} feed={feed} />
           )
         }
       />
