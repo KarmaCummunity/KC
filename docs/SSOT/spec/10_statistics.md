@@ -150,7 +150,7 @@ Personal statistics are visible only to the user themselves.
 ## FR-STATS-007 — Platform statistics (admins)
 
 **Description.**
-The team sees the whole platform's statistics in the admin portal ({{D:statistics-by-audience}}).
+The team sees the whole platform's statistics in the admin portal (D106).
 
 **Acceptance Criteria.**
 - AC1. Admin portal → "Statistics" (`/admin/stats`), for the roles with `stats.view_platform` (super admin, moderator); the server re-checks the roles.
@@ -161,7 +161,7 @@ The team sees the whole platform's statistics in the admin portal ({{D:statistic
 ## FR-STATS-008 — My givings by world
 
 **Description.**
-A member's statistics screen also breaks their givings down by world ({{D:statistics-by-audience}}).
+A member's statistics screen also breaks their givings down by world (D106).
 
 **Acceptance Criteria.**
 - AC1. Below the personal counters (`FR-STATS-001`): one row per world in which the member has activity, with **given** (handoffs on their listings that were handed over), **received** (handoffs they received that were handed over) and **closed** (their own listings closed).
@@ -171,12 +171,12 @@ A member's statistics screen also breaks their givings down by world ({{D:statis
 ## FR-STATS-009 — Organization impact
 
 **Description.**
-An organization's profile shows its public impact numbers; its team sees the fuller set ({{D:statistics-by-audience}}).
+An organization's profile shows its public impact numbers; its team sees the fuller set (D106).
 
 **Acceptance Criteria.**
 - AC1. Public, on the organization profile: givings closed, people helped (distinct recipients), volunteer hours approved, and active listings, all-time and the last 30 days.
 - AC2. The organization's managers additionally see their own flow funnel (as `FR-STATS-007` AC3, scoped to the organization's listings).
-- AC3. Built on the organization entity (BACKLOG `ORG-P1`); tracked as {{G:org-impact-stats}} until then.
+- AC3. Built on the organization entity (BACKLOG `ORG-P1`); tracked as G54 until then.
 
 
 ---
@@ -184,4 +184,4 @@ An organization's profile shows its public impact numbers; its team sees the ful
 | Version | Date | Summary |
 | ------- | ---- | ------- |
 | 0.1 | 2026-05-05 | Initial draft from PRD §3.6. |
-| 0.2 | 2026-11-03 | {{D:statistics-by-audience}} — `FR-STATS-007` platform statistics for admins (`/admin/stats`, flow funnel `0542`), `FR-STATS-008` my givings by world (`0547`), `FR-STATS-009` organization impact (pending `ORG-P1`). |
+| 0.2 | 2026-11-03 | D106 — `FR-STATS-007` platform statistics for admins (`/admin/stats`, flow funnel `0542`), `FR-STATS-008` my givings by world (`0547`), `FR-STATS-009` organization impact (pending `ORG-P1`). |
