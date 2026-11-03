@@ -7,6 +7,7 @@ import { AnimatedEntry } from '../../components/animations/AnimatedEntry';
 import { MOTION } from '../../lib/animations/motion';
 import type { AboutSectionId } from './aboutSectionModel';
 import { AboutLiveNumbers } from './AboutLiveNumbers';
+import { OrgTransparencySection } from '../../components/finance/OrgTransparencySection';
 import { AboutValuesGrid } from './AboutValuesGrid';
 import { AboutVisionSection } from './AboutVisionSection';
 import { AboutScopedSection } from './AboutScopedSection';
@@ -69,6 +70,7 @@ export function AboutSectionBlocksTop({ onSectionY }: AboutSectionBlocksTopProps
             <View style={styles.liveStatsWrap}>
               <AboutLiveNumbers />
             </View>
+            <OrgTransparencySection style={styles.liveStatsWrap} />
           </SectionCard>
         </AnimatedEntry>
       </View>
