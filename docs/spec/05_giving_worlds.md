@@ -62,13 +62,29 @@ Sub-categories (D100): elderly & loneliness (D39, S24; home visit requires volun
 ## 5.5 Money (`money`) — MVP (Grow) → phase 2
 No money between users (D4). Now: donate to KC, one-time or recurring, via a Grow hosted payment page (D20) — the app only redirects and receives confirmation, so the provider can be swapped without code. Bit / PayBox transfer links are interim only and disappear once the one-time clearing page is live (D64). Vision: a JGive-like platform inside the app for every approved org, section-46 receipts, with JGive as partner (D37). No post form. Org directory with proper-management badge (S35).
 
-## 5.6 Housing (`housing`) — next to launch (D30)
-Two tracks: (a) community hosting à la Couchsurfing; (b) housing for at-risk populations (street people, at-risk youth, foster care, people fleeing violence) — only via professional bodies. **ID verification required for both sides** (D30).
-1. Verified host posts — room/couch, dates, nights, house rules; city only.
-2. Verified guest requests — both see verification level, completed stays, seniority — not ratings (S16, D24).
-3. Chat before approval — exact address revealed only after approval.
-4. "Hosting done" — karma, internal rating. At-risk track: confidential request via org, not in the public feed.
-Always free. Minors only with a parent; at-risk youth only via an org (S16). Emergency: evacuee hosting (D42).
+## 5.6 Housing & spaces (`housing`) — next to launch (D30, `{{D:housing-space-sharing}}`)
+Free sharing of **space** (`{{D:housing-space-sharing}}`): a bed for a night, a roof in a crisis, a room for a gathering, a corner to store belongings. Commercial platforms (Airbnb, Booking, storage companies) do not serve giving; WhatsApp "who can host" messages have no trust, privacy or follow-up. Detailed FRs: [`SSOT/spec/21_housing.md`](../SSOT/spec/21_housing.md) (`FR-HOUSING-*`).
+
+Four sub-categories on one booking engine:
+| Sub-category | Who it serves | Track | Public |
+|---|---|---|---|
+| Stays & hosting | travellers, tourists, trail walkers ("trail angels"), family visits, medical-treatment companions | community | ✅ |
+| Emergency shelter | homeless people, people fleeing violence, at-risk youth, evacuees without a host | assisted — only via professional bodies | ❌ never |
+| Event & gathering space | a party, a birthday, a meeting or study session, a workshop, a rehearsal, a community gathering | community | ✅ |
+| Storage space | personal belongings (moving, abroad, renovation) or equipment of a nonprofit organization — never for-profit goods (`{{D:housing-storage-personal-and-nonprofit}}`) | community | ✅ |
+
+**Rules for every sub-category.** ID verification for both sides in every sub-category (D30, `{{D:housing-verification-every-subcategory}}`) — an ID document + live selfie (`{{D:identity-verification-document-selfie}}`, 07.14) — checked **before** the form is filled (`TD-245`); organizations offer, request and search like members (`{{D:orgs-offer-request-every-world}}`); a code of conduct accepted once per version (`{{S:housing-safety}}`); always free — no rent, deposit, fee or work as a condition, and an event held in a lent space is free for its attendees (`{{S:housing-event-space-rules}}`); city + neighborhood and a fuzzed map circle in public, the exact address and access instructions only for the confirmed guest from approval until 24 h after the end (`{{S:housing-location-reveal}}`); users see verification level, completed stays and seniority, never ratings (S16, D24); minors only with a parent, at-risk youth only via an organization (S16).
+
+Community journey:
+1. Verified host posts an offer — place type, capacity, availability (window / weekly / ongoing, blackout dates), rules, amenities, accessibility; or a verified guest posts a request (dates, party, needs).
+2. Guest requests to book (or a host proposes a place to a request) with a message; up to 3 pending requests at a time, the first confirmation withdraws the overlapping others (`{{S:housing-limits}}`).
+3. Host approves or declines; the server enforces capacity per night / slot / m³. An unanswered request expires 24 h after it was made or at its start, whichever is earlier (`{{S:housing-booking-lifecycle}}`).
+4. Chat per pair (D13); emergency button from 1 h before start to 2 h after the end (`{{S:housing-safety}}`); a safety-incident report freezes the reported member in housing at once pending a 24 h review.
+5. "Stay completed" / "event completed" / "goods returned" — karma (07.6), internal rating, within 7 days of the end; nothing auto-completes. Storage records an inventory with a photo at drop-off (`{{S:housing-storage-rules}}`).
+
+Assisted track (`{{D:housing-shelter-via-orgs}}`; details `{{S:housing-assisted-track}}`): members join a **shelter pool** (visible only to coordinators of verified organizations in their districts); a person in need sends a **confidential shelter request** (verification not required to ask; the hotline block appears at once) that the organizations in the district take within an urgency SLA (tonight 2 h); a **coordinator** places the person with a pool host, may represent an off-platform guest, and checks in at least every 72 h. KC never places a person itself.
+
+Limits: community stays 1–30 nights; events 1–12 h, ending by the host's quiet hour; storage 7–180 days (`{{S:housing-limits}}`). Emergency: "host evacuees" template, evacuee requests first in the declared region (D42). Legal texts are drafted by KC and reviewed by counsel before launch (`{{D:housing-legal-drafts-lawyer-review}}`, [`docs/legal/drafts/`](../legal/drafts/housing_and_verification_he.md)). Phases: H0 verification → H1 stays → H2 event space + storage → H3 assisted track (needs ORG-P1) → H4 emergency template (G25). Gap: G21.
 
 ## 5.7 Knowledge, rights & legal aid (`knowledge`) — phase 2
 Content exists (Kol Zchut, Campus IL); the missing piece is personal connection. Lessons and mentoring for free, plus rights and legal aid (D40): a pro-bono "consulting hour" post by lawyers, accountants, advisors (S36). No binding legal advice in posts — refer to an authorized party.

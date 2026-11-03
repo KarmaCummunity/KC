@@ -19,7 +19,7 @@
 | Community member | All post types, volunteering (D22), likes/comments (D25), event registration (D31), challenges (D43); sees only own karma (D29) | MVP |
 | Suspended user | Sees everything, cannot act, can chat with support (D33) | MVP |
 | Org-affiliated volunteer | Post on org's behalf, register to its events without verification (D22); logs hours approved by manager (D32) | MVP |
-| Organization account | Public profile + own sign-in identity; members with roles act in its name via a profile switcher (D88); always public, may follow (D90); publishes in every world, no cap (D91); always verified on approval (D53) | MVP → Phase 2 |
+| Organization account | Public profile + own sign-in identity; members with roles act in its name via a profile switcher (D88); always public, may follow (D90); publishes in every world, no cap (D91), and offers, requests and searches in every world like a member (`{{D:orgs-offer-request-every-world}}`); always verified on approval (D53) | MVP → Phase 2 |
 | Org treasurer | Keeps the org's books in the Admin Portal finance sub-tree: entries, receipts, 46(a) status, imports, reconciliation, exports (D76–D80) | Phase 2 |
 | Org accountant | External accountant / auditor: reads the org's books and exports; never writes (D76) | Phase 2 |
 | Medical body | Only publisher in the medical world (D30) | Later |
