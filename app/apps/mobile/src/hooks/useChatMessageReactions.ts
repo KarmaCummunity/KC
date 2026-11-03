@@ -11,14 +11,17 @@ export function useChatMessageReactions(chatId: string, messageIds: string[]) {
   const [byMessage, setByMessage] = useState<Record<string, ReactionSummary>>({});
   const [mine, setMine] = useState<Record<string, MessageReactionType | null>>({});
 
+  const messageIdsKey = messageIds.join('|');
+
   useEffect(() => {
-    if (messageIds.length === 0) return;
+    if (!messageIdsKey) return;
+    const ids = messageIdsKey.split('|');
     let cancelled = false;
-    void container.chatV2Repo.listMessageReactions(messageIds).then((rows) => {
+    void container.chatV2Repo.listMessageReactions(ids).then((rows) => {
       if (cancelled) return;
       const counts: Record<string, ReactionSummary> = {};
       const own: Record<string, MessageReactionType | null> = {};
-      for (const id of messageIds) {
+      for (const id of ids) {
         counts[id] = {};
         own[id] = null;
       }
@@ -33,7 +36,7 @@ export function useChatMessageReactions(chatId: string, messageIds: string[]) {
     return () => {
       cancelled = true;
     };
-  }, [chatId, messageIds.join('|')]);
+  }, [chatId, messageIdsKey, viewerId]);
 
   const toggle = useCallback(async (messageId: string, reaction: MessageReactionType) => {
     hapticLightTap();

@@ -67,10 +67,11 @@ export function usePostMenuActions({ post, onAfterRemoval, onSettle }: Args): Po
             ownerId: post.ownerId,
           }),
         {
-        errorCopy: t('post.deleteError'),
-        successToast: t('post.deleteSuccess'),
-      }),
-    [run, post.postId],
+          errorCopy: t('post.deleteError'),
+          successToast: t('post.deleteSuccess'),
+        },
+      ),
+    [run, post.postId, post.ownerId, t],
   );
 
   const handleAdminRemove = useCallback(
@@ -79,7 +80,7 @@ export function usePostMenuActions({ post, onAfterRemoval, onSettle }: Args): Po
         errorCopy: t('post.adminRemoveError'),
         successToast: t('post.adminRemoveSuccess'),
       }),
-    [run, post.postId],
+    [run, post.postId, t],
   );
 
   const clearError = useCallback(() => setError(null), []);

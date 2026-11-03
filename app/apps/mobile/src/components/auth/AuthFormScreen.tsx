@@ -12,7 +12,6 @@ import { View, TouchableOpacity, KeyboardAvoidingView, Platform, Image } from 'r
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, withDelay } from 'react-native-reanimated';
 import { makeUseStyles, typography, spacing, radius, shadow, iconSize, useTheme, Text } from '@kc/ui';
 import { VerificationPendingPanel } from './VerificationPendingPanel';
