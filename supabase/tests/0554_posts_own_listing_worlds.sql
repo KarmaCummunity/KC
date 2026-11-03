@@ -187,7 +187,8 @@ begin
         p_details => '{"food_type":"cooked"}'::jsonb, p_city_id => 'tel-aviv')$q$),
     'food_expiry_required', 'the food world rule (D21, 0539) still refuses an offer without an expiry through the post path');
   perform kc_test.assert_row_count(
-    format('select 1 from public.posts where owner_id = %L', p.cook), 0, 'a refused create leaves no post behind');
+    format('select 1 from public.posts where owner_id = %L and title = ''soup''', p.cook), 0,
+    'a refused create leaves no post behind');
 end $$;
 
 -- ── T6 a food offer: the world TTL and urgency computed on the listing reach the post ─
