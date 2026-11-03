@@ -30,9 +30,6 @@
       "radiusLiteral": 1,
       "iconSizeLiteral": 1
     },
-    "app/chat/[id].tsx": {
-      "physicalSide": 1
-    },
     "app/dev/shell-preview.tsx": {
       "fontSizeLiteral": 2,
       "fontWeightLiteral": 2,
@@ -102,9 +99,6 @@
     },
     "src/components/CreatePostForm/CreatePostExposureSection.tsx": {
       "iconSizeLiteral": 1
-    },
-    "src/components/CreatePostForm/CreatePostFormScrollContent.tsx": {
-      "physicalSide": 1
     },
     "src/components/CreatePostForm/EstimatedValueSlider.tsx": {
       "spacingLiteral": 1
@@ -251,14 +245,6 @@
       "radiusLiteral": 1,
       "spacingLiteral": 1,
       "adHocChip": 1
-    },
-    "src/components/chat/InboxChatRow.tsx": {
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 1,
-      "spacingLiteral": 1,
-      "physicalSide": 1,
-      "iconSizeLiteral": 1
     },
     "src/components/chat/chatConversationHeader.styles.ts": {
       "zIndexLiteral": 1,
@@ -477,10 +463,6 @@
       "spacingLiteral": 1,
       "iconSizeLiteral": 1
     },
-    "src/components/skeletons/InboxListSkeleton.tsx": {
-      "spacingLiteral": 1,
-      "physicalSide": 1
-    },
     "src/components/skeletons/PostGridSkeleton.tsx": {
       "spacingLiteral": 1
     },
@@ -608,10 +590,6 @@
     "src/navigation/nativeHeaderIconOnly.tsx": {
       "spacingLiteral": 1,
       "iconSizeLiteral": 1
-    },
-    "src/screens/chat/chatScreenStyles.ts": {
-      "radiusLiteral": 2,
-      "physicalSide": 1
     },
     "src/screens/edit-post/editPostScreen.styles.ts": {
       "radiusLiteral": 2,
