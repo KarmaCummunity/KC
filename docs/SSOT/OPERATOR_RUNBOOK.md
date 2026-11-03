@@ -524,7 +524,7 @@ on conflict (channel) do update
   set url = excluded.url, provider_label = excluded.provider_label, is_active = true;
 ```
 
-**Payee phone (interim, {{D:kc-support-personal-phone}}).** Set the number donors transfer to in Bit / PayBox — digits only, never in the repo. Signed-in users see it under the Bit / PayBox buttons; guests never receive it:
+**Payee phone (interim, D121).** Set the number donors transfer to in Bit / PayBox — digits only, never in the repo. Signed-in users see it under the Bit / PayBox buttons; guests never receive it:
 
 ```sql
 update public.kc_support_channels set payee_phone = '05XXXXXXXX' where channel in ('bit', 'paybox');
