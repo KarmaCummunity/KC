@@ -7,7 +7,7 @@ import React, { useEffect } from 'react';
 import { Platform, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, useTheme } from '@kc/ui';
+import { iconSize, makeUseStyles, spacing, useTheme } from '@kc/ui';
 interface WebRefreshButtonProps {
   onPress: () => void;
   isLoading: boolean;
@@ -46,7 +46,7 @@ export function WebRefreshButton({ onPress, isLoading }: WebRefreshButtonProps) 
     >
       <Ionicons
         name="refresh-outline"
-        size={22}
+        size={iconSize.xl}
         color={isLoading ? colors.textDisabled : colors.textPrimary}
       />
     </TouchableOpacity>
