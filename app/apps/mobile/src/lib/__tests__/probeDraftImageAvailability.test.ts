@@ -1,6 +1,19 @@
-import { describe, it, expect } from 'vitest';
-import { probeDraftImageAvailability } from '../probeDraftImageAvailability';
+import { describe, it, expect, vi } from 'vitest';
+import { probeDraftImageAvailability, defaultStorageProbe } from '../probeDraftImageAvailability';
 import type { UploadedAsset } from '../../services/imageUpload';
+
+const mockCreateSignedUrl = vi.fn();
+const mockSupabase = {
+  storage: {
+    from: vi.fn(() => ({
+      createSignedUrl: mockCreateSignedUrl,
+    })),
+  },
+};
+
+vi.mock('@kc/infrastructure-supabase', () => ({
+  getSupabaseClient: () => mockSupabase,
+}));
 
 const asset = (path: string): UploadedAsset => ({
   path,
@@ -57,5 +70,47 @@ describe('probeDraftImageAvailability', () => {
     // The default adapter does so; here we assert the consumer-side guarantee
     // by ensuring a throwing probe does not crash the helper.
     await expect(probeDraftImageAvailability(uploads, probe)).rejects.toThrow('network');
+  });
+});
+
+describe('defaultStorageProbe', () => {
+  it('returns true when createSignedUrl returns a valid signedUrl', async () => {
+    mockCreateSignedUrl.mockResolvedValueOnce({
+      data: { signedUrl: 'https://example.com/signed/photo.jpg' },
+      error: null,
+    });
+
+    const isAvailable = await defaultStorageProbe('drafts/photo.jpg');
+
+    expect(isAvailable).toBe(true);
+    expect(mockSupabase.storage.from).toHaveBeenCalledWith('post-images');
+    expect(mockCreateSignedUrl).toHaveBeenCalledWith('drafts/photo.jpg', 60);
+  });
+
+  it('returns false when storage returns an error', async () => {
+    mockCreateSignedUrl.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Object not found' },
+    });
+
+    const isAvailable = await defaultStorageProbe('drafts/missing.jpg');
+    expect(isAvailable).toBe(false);
+  });
+
+  it('returns false when signedUrl is empty or null', async () => {
+    mockCreateSignedUrl.mockResolvedValueOnce({
+      data: { signedUrl: null },
+      error: null,
+    });
+
+    const isAvailable = await defaultStorageProbe('drafts/photo.jpg');
+    expect(isAvailable).toBe(false);
+  });
+
+  it('catches exceptions and returns false', async () => {
+    mockCreateSignedUrl.mockRejectedValueOnce(new Error('Network error'));
+
+    const isAvailable = await defaultStorageProbe('drafts/error.jpg');
+    expect(isAvailable).toBe(false);
   });
 });
