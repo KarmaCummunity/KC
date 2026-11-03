@@ -59,7 +59,11 @@ create table if not exists public.kc_dev_demo_config (
 );
 
 alter table public.kc_dev_demo_config enable row level security;
--- No policies: only SECURITY DEFINER functions and the service role read or write it.
+-- Explicit deny-all policy (the RLS lint wants every table to carry one): clients never read or
+-- write this table; only SECURITY DEFINER functions and the service role do.
+create policy kc_dev_demo_config_deny_all on public.kc_dev_demo_config
+  for all to anon, authenticated
+  using (false) with check (false);
 revoke all on public.kc_dev_demo_config from public, anon, authenticated;
 
 insert into public.kc_dev_demo_config (password_hash)
