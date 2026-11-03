@@ -26,3 +26,8 @@ export {
   type ChatActor,
   type ChatContractContext,
 } from './chatRepository.contract';
+export {
+  reportRepositoryContract,
+  type ReportActor,
+  type ReportContractContext,
+} from './reportRepository.contract';
