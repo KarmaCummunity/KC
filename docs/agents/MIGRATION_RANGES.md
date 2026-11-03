@@ -70,7 +70,7 @@ Last applied on kc-dev when this was written: `0239`.
 ## Next free ranges
 
 `0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0466+`.
-| 0470–0489 | Org finance & transparency — `SSOT/spec/19_org_finance.md` FR-FIN-001..021 (P1 `0470–0479`, P2 `0480–0485`, P3 `0486–0489`) | claimed (spec only, no files yet) |
+| 0470–0489 | Org finance & transparency — `SSOT/spec/19_org_finance.md` FR-FIN-001..021 (P1 `0470–0479`, P2 `0480–0485`, P3 `0486–0489`). `0470` = FIN-P0 lean slice (accounts, public display, donors) | `0470` in review; rest claimed (spec only) |
 | 0463 | G42 / D68 / D69 ops health registry + first platform and rides checks (#1321) | in review |
 | 0464 | #1297 chat from a listing opens and anchors the listing; one context per chat | in review |
 | 0465 | FR-ADMIN-030 team management: org-scoped `admin_list_admins` + atomic `admin_change_role` (D-197) | in progress |

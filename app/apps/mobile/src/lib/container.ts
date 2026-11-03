@@ -29,7 +29,6 @@ import {
   SupabaseOrgApplicationsRepository,
   SupabaseAdminContentRepository,
   SupabaseTimesheetsRepository,
-  SupabaseFinanceLedgerRepository,
   SupabaseCrmContactsRepository,
   SupabaseReportsRepository,
   SupabaseSurveyRepository,
@@ -97,10 +96,6 @@ import {
   ApproveTimesheetUseCase,
   RejectTimesheetUseCase,
   DeleteTimesheetUseCase,
-  ListFinanceLedgerUseCase,
-  GetFinanceSummaryUseCase,
-  UpsertFinanceEntryUseCase,
-  DeleteFinanceEntryUseCase,
   ListCrmContactsUseCase,
   UpsertCrmContactUseCase,
   DeleteCrmContactUseCase,
@@ -120,6 +115,7 @@ import {
   LoadPublicResearchBundleUseCase,
   SubmitPublicResearchResponseUseCase,
 } from '@kc/application';
+import { createFinanceUseCases } from './financeContainer';
 
 export const supabase = getSupabaseClient({ storage: pickAuthStorage() });
 
@@ -146,7 +142,6 @@ const adminTaskRepo = new SupabaseAdminTaskRepository(supabase);
 const orgHierarchyRepo = new SupabaseOrgHierarchyRepository(supabase);
 const adminContentRepo = new SupabaseAdminContentRepository(supabase);
 const timesheetsRepo = new SupabaseTimesheetsRepository(supabase);
-const financeLedgerRepo = new SupabaseFinanceLedgerRepository(supabase);
 const crmContactsRepo = new SupabaseCrmContactsRepository(supabase);
 const orgApplicationsRepo = new SupabaseOrgApplicationsRepository(supabase);
 const reportsRepo = new SupabaseReportsRepository(supabase);
@@ -207,12 +202,9 @@ export const container = {
   approveTimesheet: new ApproveTimesheetUseCase(timesheetsRepo),
   rejectTimesheet:  new RejectTimesheetUseCase(timesheetsRepo),
   deleteTimesheet:  new DeleteTimesheetUseCase(timesheetsRepo),
-  // V2-ADMIN-MONEY-9
-  listFinanceLedger:   new ListFinanceLedgerUseCase(financeLedgerRepo),
+  // V2-ADMIN-MONEY-9 (+ accounts, donors, public display: FR-FIN-003/022/023)
+  ...createFinanceUseCases(supabase),
   ...createWhatsAppAdminUseCases(supabase),
-  getFinanceSummary:   new GetFinanceSummaryUseCase(financeLedgerRepo),
-  upsertFinanceEntry:  new UpsertFinanceEntryUseCase(financeLedgerRepo),
-  deleteFinanceEntry:  new DeleteFinanceEntryUseCase(financeLedgerRepo),
   // V2-ADMIN-CRM-8
   listCrmContacts: new ListCrmContactsUseCase(crmContactsRepo),
   upsertCrmContact: new UpsertCrmContactUseCase(crmContactsRepo),

@@ -178,10 +178,22 @@ An organization's profile shows its public impact numbers; its team sees the ful
 - AC2. The organization's managers additionally see their own flow funnel (as `FR-STATS-007` AC3, scoped to the organization's listings).
 - AC3. Built on the organization entity (BACKLOG `ORG-P1`); tracked as G54 until then.
 
+## FR-STATS-010 — Public financial transparency
+
+**Description.**
+When the organization chooses to publish them, its finances appear live on the statistics screen and in the About "numbers" card (`FR-FIN-022`, {{D:finance-live-transparency}}).
+
+**Acceptance Criteria.**
+- AC1. `OrgTransparencySection` renders directly below the community panel on `/stats`; it renders nothing unless a super admin switched at least one block on and that block has data.
+- AC2. Blocks (each independently switchable): income / expense / balance totals, number of donations, share of expenses spent on programs, expense breakdown by category, 12-month income-and-expense trend.
+- AC3. Aggregates only: no donor, counterparty, entry or account is ever shown.
+- AC4. Visible to guests too (anonymous RPC), same as the About card.
+
 
 ---
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
 | 0.1 | 2026-05-05 | Initial draft from PRD §3.6. |
+| 0.3 | 2026-11-03 | `FR-STATS-010` public financial transparency on the statistics screen (`FR-FIN-022`). |
 | 0.2 | 2026-11-03 | D106 — `FR-STATS-007` platform statistics for admins (`/admin/stats`, flow funnel `0542`), `FR-STATS-008` my givings by world (`0547`), `FR-STATS-009` organization impact (pending `ORG-P1`). |
