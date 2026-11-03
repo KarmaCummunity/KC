@@ -53,6 +53,20 @@ export class AccountGateError extends Error {
   }
 }
 
+export type RestoreAccountErrorCode =
+  | 'not_pending_deletion'
+  | 'grace_expired'
+  | 'unauthenticated'
+  | 'network';
+
+/** FR-AUTH-016 — why a restore did not go through; the UI maps the code to a message. */
+export class RestoreAccountError extends Error {
+  constructor(public readonly code: RestoreAccountErrorCode, public readonly cause?: unknown) {
+    super(`restore_account:${code}`);
+    this.name = 'RestoreAccountError';
+  }
+}
+
 /** Wraps unexpected infrastructure-layer failures so the UI can react with a
  *  generic "network error" message and the use case still sees a typed error. */
 export class InfrastructureError extends Error {
