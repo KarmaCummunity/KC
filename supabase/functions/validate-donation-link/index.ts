@@ -22,6 +22,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const ALLOWED_SLUGS = new Set([
   'time', 'money', 'food', 'housing', 'transport', 'knowledge', 'animals', 'medical',
+  'democracy', 'employment', 'challenges',
 ]);
 
 const MAX_LINKS_PER_HOUR = 10;

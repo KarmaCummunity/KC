@@ -5,6 +5,7 @@ import React from 'react';
 import { Screen } from '../../../components/ui/Screen';
 import { WorldHubHeader } from '../../../components/giving/WorldHubHeader';
 import { worldSubScreens } from '../../../components/giving/worldSubScreens';
+import { WorldLinksSection } from '../../../components/giving/WorldLinksSection';
 import { RideMatchSearch } from '../../../components/giving/RideMatchSearch';
 import { RidesFeedList } from '../../../components/giving/RidesFeedList';
 
@@ -14,16 +15,16 @@ export function RidesHubScreen() {
       <RidesFeedList
         header={
           <WorldHubHeader
-            worldSlug="rides"
             icon="car-outline"
             introKey="donations.rides.hubBody"
-            linksCategory="transport"
             subScreens={worldSubScreens('/(tabs)/donations/rides/handoffs', [
               { labelKey: 'rideSeries.mine', path: '/(tabs)/donations/rides/series', testID: 'world-hub-ride-series' },
             ])}
             headerExtra={<RideMatchSearch />}
           />
         }
+        // The NGO links come after the feed so the rides are the first thing on screen.
+        footer={<WorldLinksSection categorySlug="transport" />}
       />
     </Screen>
   );

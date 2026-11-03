@@ -6,10 +6,11 @@
 import React from 'react';
 import { Platform, Pressable, View, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useSegments } from 'expo-router';
+import { usePathname, useRouter, useSegments } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, shadow, spacing, useTheme } from '@kc/ui';
 import { TABS, resolveActiveTabKey, type IoniconName } from './shell/tabs.config';
+import { createCategoryForPath, createRouteFor } from '../lib/unifiedCreate/createCategories';
 
 // Glassmorphism on web — RN-Web forwards unknown style keys to CSS. RN's
 // ViewStyle type doesn't include backdrop-filter, so cast through unknown.
@@ -90,6 +91,7 @@ export function TabBar({ bottomInset = 0 }: Readonly<{ bottomInset?: number }> =
   const router = useRouter();
   const { t } = useTranslation();
   const segments = useSegments() as string[];
+  const pathname = usePathname();
   const active = resolveActiveTabKey(segments);
   const styles = useTabBarStyles();
 
@@ -110,7 +112,8 @@ export function TabBar({ bottomInset = 0 }: Readonly<{ bottomInset?: number }> =
           // Pushing a tab route from there leaves that screen underneath, so the
           // iOS swipe-back later jumps to it. Pop back to the tabs first.
           if (segments[0] !== '(tabs)' && router.canDismiss()) router.dismissAll();
-          router.push(tab.route);
+          // "+" opens the form on the giving world on screen (its remembered offer / request).
+          router.push(tab.isComposer ? createRouteFor(createCategoryForPath(pathname)) : tab.route);
         };
         if (tab.isComposer) {
           return (

@@ -81,16 +81,8 @@ function renderHub(worldSlug: 'food' | 'knowledge' = 'food') {
 const lastBrowseFilters = () => mocks.browsePage.mock.calls.at(-1)?.[0];
 
 describe('WorldMarketplaceHub — the world feed', () => {
-  it('opens the create form preset to the world and direction', () => {
+  it('has no request / offer buttons: the "+" tab opens the form on this world (D100)', () => {
     renderHub();
-    fireEvent.click(screen.getByTestId('world-hub-request'));
-    expect(mocks.push).toHaveBeenLastCalledWith('/(tabs)/create?category=food&direction=request');
-    fireEvent.click(screen.getByTestId('world-hub-offer'));
-    expect(mocks.push).toHaveBeenLastCalledWith('/(tabs)/create?category=food&direction=give');
-  });
-
-  it('shows no request / offer buttons for a world the create form does not offer', () => {
-    renderHub('knowledge');
     expect(screen.queryByTestId('world-hub-request')).toBeNull();
     expect(screen.queryByTestId('world-hub-offer')).toBeNull();
   });
