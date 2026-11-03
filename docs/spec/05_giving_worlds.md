@@ -62,20 +62,36 @@ Sub-categories (D100): elderly & loneliness (D39, S24; home visit requires volun
 ## 5.5 Money (`money`) — MVP (Grow) → phase 2
 No money between users (D4). Now: donate to KC, one-time or recurring, via a Grow hosted payment page (D20) — the app only redirects and receives confirmation, so the provider can be swapped without code. Bit / PayBox transfer links are interim only and disappear once the one-time clearing page is live (D64). Vision: a JGive-like platform inside the app for every approved org, section-46 receipts, with JGive as partner (D37). No post form. Org directory with proper-management badge (S35).
 
-## 5.6 Housing (`housing`) — next to launch (D30)
-Two tracks: (a) community hosting à la Couchsurfing; (b) housing for at-risk populations (street people, at-risk youth, foster care, people fleeing violence) — only via professional bodies. **ID verification required for both sides** (D30).
-1. Verified host posts — room/couch, dates, nights, house rules; city only.
-2. Verified guest requests — both see verification level, completed stays, seniority — not ratings (S16, D24).
-3. Chat before approval — exact address revealed only after approval.
-4. "Hosting done" — karma, internal rating. At-risk track: confidential request via org, not in the public feed.
-Always free. Minors only with a parent; at-risk youth only via an org (S16). Emergency: evacuee hosting (D42).
+## 5.6 Housing & spaces (`housing`) — next to launch (D30, `D112`)
+Free sharing of **space** (`D112`): a bed for a night, a roof in a crisis, a room for a gathering, a corner to store belongings. Commercial platforms (Airbnb, Booking, storage companies) do not serve giving; WhatsApp "who can host" messages have no trust, privacy or follow-up. Detailed FRs: [`SSOT/spec/21_housing.md`](../SSOT/spec/21_housing.md) (`FR-HOUSING-*`).
+
+Four sub-categories on one booking engine:
+| Sub-category | Who it serves | Track | Public |
+|---|---|---|---|
+| Stays & hosting | travellers, tourists, trail walkers ("trail angels"), family visits, medical-treatment companions | community | ✅ |
+| Emergency shelter | homeless people, people fleeing violence, at-risk youth, evacuees without a host | assisted — only via professional bodies | ❌ never |
+| Event & gathering space | a party, a birthday, a meeting or study session, a workshop, a rehearsal, a community gathering | community | ✅ |
+| Storage space | personal belongings (moving, abroad, renovation) or equipment of a nonprofit organization — never for-profit goods (`D114`) | community | ✅ |
+
+**Rules for every sub-category.** ID verification for both sides in every sub-category (D30, `D116`) — an ID document + live selfie (`D117`, 07.14) — checked **before** the form is filled (`TD-245`); organizations offer, request and search like members (`D115`); a code of conduct accepted once per version (`S59`); always free — no rent, deposit, fee or work as a condition, and an event held in a lent space is free for its attendees (`S55`); city + neighborhood and a fuzzed map circle in public, the exact address and access instructions only for the confirmed guest from approval until 24 h after the end (`S53`); users see verification level, completed stays and seniority, never ratings (S16, D24); minors only with a parent, at-risk youth only via an organization (S16).
+
+Community journey:
+1. Verified host posts an offer — place type, capacity, availability (window / weekly / ongoing, blackout dates), rules, amenities, accessibility; or a verified guest posts a request (dates, party, needs).
+2. Guest requests to book (or a host proposes a place to a request) with a message; up to 3 pending requests at a time, the first confirmation withdraws the overlapping others (`S54`).
+3. Host approves or declines; the server enforces capacity per night / slot / m³. An unanswered request expires 24 h after it was made or at its start, whichever is earlier (`S52`).
+4. Chat per pair (D13); emergency button from 1 h before start to 2 h after the end (`S59`); a safety-incident report freezes the reported member in housing at once pending a 24 h review.
+5. "Stay completed" / "event completed" / "goods returned" — karma (07.6), internal rating, within 7 days of the end; nothing auto-completes. Storage records an inventory with a photo at drop-off (`S56`).
+
+Assisted track (`D113`; details `S57`): members join a **shelter pool** (visible only to coordinators of verified organizations in their districts); a person in need sends a **confidential shelter request** (verification not required to ask; the hotline block appears at once) that the organizations in the district take within an urgency SLA (tonight 2 h); a **coordinator** places the person with a pool host, may represent an off-platform guest, and checks in at least every 72 h. KC never places a person itself.
+
+Limits: community stays 1–30 nights; events 1–12 h, ending by the host's quiet hour; storage 7–180 days (`S54`). Emergency: "host evacuees" template, evacuee requests first in the declared region (D42). Legal texts are drafted by KC and reviewed by counsel before launch (`D118`, [`docs/legal/drafts/`](../legal/drafts/housing_and_verification_he.md)). Phases: H0 verification → H1 stays → H2 event space + storage → H3 assisted track (needs ORG-P1) → H4 emergency template (G25). Gap: G21.
 
 ## 5.7 Knowledge, rights & legal aid (`knowledge`) — phase 2
 Full spec: [18 — Knowledge world](./18_knowledge_world.md) ({{D:knowledge-world-scope}}, PM 2026-11-03). Content exists (Kol Zchut, Campus IL); the missing pieces are personal connection and a trustworthy, searchable map of free knowledge. Two layers on one world ({{S:knowledge-two-layers}}):
 1. **Give & take posts** — lesson offer (slots, recurring like rides), mentoring offer, pro-bono consulting hour by lawyers, accountants, advisors (S36; ID-verified, {{S:knowledge-consulting-hour-verification}}), learning request, mentoring request, question with an accepted answer. Booking → session completed → karma and rating (7.5–7.7). A lesson may also be marked for the time world (D101).
 2. **Free knowledge library** — curated resources (course, article, link, book, video, document, podcast, tool, dataset) with provenance, license, review before publish ({{S:knowledge-review-before-publish}}), quality signals and link health; native courses with modules, lessons, quizzes, private progress and a completion record ({{S:knowledge-completion-record}}); external courses can be tracked too.
 Rules: everything free; no binding legal or medical advice (D40) — a disclaimer on rights & legal aid and consulting hours; shelf rules of [06](./06_domain_hubs.md). Sub-categories (D100) are the **shelf** axis: science & technology, history & heritage, culture & art, spirituality & philosophy, rights & legal aid, lessons & mentoring; subjects come from a curated **topic graph** with aliases ({{S:knowledge-topic-graph}}); format is the kind. Storage and one retrieval call are built so AI agents can search the library and the open offers with citations ({{S:knowledge-agent-contract}}). Listing approval rule (KC#1037) is answered by the review rule above.
-Tech: `listing_kinds` course / private_lesson / mentorship_request (`0241`, `0395`), slot booking on `giving_handoffs` (`0396`), four sub-categories seeded (`0535`); engineering contract `SSOT/spec/21_knowledge.md` (FR-KNOW-001..024). Gaps: {{G:knowledge-topic-graph}}, {{G:knowledge-exchange-form}}, {{G:knowledge-library}}, {{G:knowledge-search-agent-api}}, {{G:knowledge-courses}}, {{G:knowledge-review-queue}}.
+Tech: `listing_kinds` course / private_lesson / mentorship_request (`0241`, `0395`), slot booking on `giving_handoffs` (`0396`), four sub-categories seeded (`0535`); engineering contract `SSOT/spec/23_knowledge.md` (FR-KNOW-001..024). Gaps: {{G:knowledge-topic-graph}}, {{G:knowledge-exchange-form}}, {{G:knowledge-library}}, {{G:knowledge-search-agent-api}}, {{G:knowledge-courses}}, {{G:knowledge-review-queue}}.
 
 ## 5.8 Medical (`medical`) — directory now, feed later
 A world of its own (D100; was a domain under D45). **Only verified medical bodies publish** (D30, S17) — Yad Sarah, MDA, Ezer Mizion, ADI; regular users view, contact, borrow and return. The curated philanthropic medical directory (24 bodies, 10 topics, KC#1314) feeds the hub.

@@ -1,8 +1,8 @@
-# 2.21 Knowledge world — give & take, free library, courses, agent retrieval
+# 2.23 Knowledge world — give & take, free library, courses, agent retrieval
 
 > **Status:** ⏳ Planned — spec v0.1 (2026-11-03, PM scope decision `{{D:knowledge-world-scope}}`; details are KC fills pending approval). Code today: knowledge `listing_kinds` (`course`, `private_lesson`, `mentorship_request`, migrations `0241`, `0395`), slot booking and session completion on `giving_handoffs` (`0396`), four seeded sub-categories (`0535`), hybrid `search_listings` (`0262`) with a placeholder vector lane and a stub `embed-worker` (`{{TD:embedding-stub}}`). **K1** `FR-KNOW-001..012`, **K2** `FR-KNOW-013..020`, **K3** `FR-KNOW-021..024`.
 
-Prefix: `FR-KNOW-*` · Migration range claimed: `0550–0569` (`docs/agents/MIGRATION_RANGES.md`) · Product spec (binding): [`docs/spec/18_knowledge_world.md`](../../spec/18_knowledge_world.md) · Decisions: `D40`, `D100`, `D101`, `D107`, `{{D:knowledge-world-scope}}` · Fills: `{{S:knowledge-two-layers}}`, `{{S:knowledge-topic-graph}}`, `{{S:knowledge-review-before-publish}}`, `{{S:knowledge-hub-tabs}}`, `{{S:knowledge-agent-contract}}`, `{{S:knowledge-link-health}}`, `{{S:knowledge-completion-record}}`, `{{S:knowledge-consulting-hour-verification}}`, `{{S:knowledge-no-file-uploads-k1}}`, `{{S:knowledge-karma-values}}` · Engineering decision: `{{ENG:knowledge-library-entity}}` (`docs/SSOT/DECISIONS.md`).
+Prefix: `FR-KNOW-*` · Migration range claimed: `0570–0589` (`docs/agents/MIGRATION_RANGES.md`) · Product spec (binding): [`docs/spec/18_knowledge_world.md`](../../spec/18_knowledge_world.md) · Decisions: `D40`, `D100`, `D101`, `D107`, `{{D:knowledge-world-scope}}` · Fills: `{{S:knowledge-two-layers}}`, `{{S:knowledge-topic-graph}}`, `{{S:knowledge-review-before-publish}}`, `{{S:knowledge-hub-tabs}}`, `{{S:knowledge-agent-contract}}`, `{{S:knowledge-link-health}}`, `{{S:knowledge-completion-record}}`, `{{S:knowledge-consulting-hour-verification}}`, `{{S:knowledge-no-file-uploads-k1}}`, `{{S:knowledge-karma-values}}` · Engineering decision: `{{ENG:knowledge-library-entity}}` (`docs/SSOT/DECISIONS.md`).
 
 ---
 
@@ -56,7 +56,7 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
 - AC4. `resolve_knowledge_topics(p_text text) returns setof topic_id`: matches query terms against slugs, labels and aliases (case-insensitive, unaccent, final-letter normalized for Hebrew) and returns the matched topics plus their descendants. Used by search (FR-KNOW-009) and the form's auto-suggest.
 - AC5. Any member may **propose** a topic from the contribute / create form (status `proposed`, used at once); admins (`is_listing_operator`) approve, rename or **merge**. A merge sets `status = merged`, `merged_into_id`, re-points every `knowledge_post_topics` / `knowledge_resource_topics` row, and inserts the old slug as an alias of the target. Links by old slug keep resolving.
 - AC6. RLS: everyone reads active and proposed topics; only operators write status / merges; a proposer may edit their own proposed topic's labels until approved.
-- AC7. Tests: `supabase/tests/0550_knowledge_topics.sql` — depth cap, cycle rejection, alias resolution with Hebrew final letters, merge re-pointing and alias creation.
+- AC7. Tests: `supabase/tests/0570_knowledge_topics.sql` — depth cap, cycle rejection, alias resolution with Hebrew final letters, merge re-pointing and alias creation.
 
 ## FR-KNOW-002 — Shelf, topics and kind on every knowledge object
 
@@ -83,7 +83,7 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
 - AC3. Location: offers city or `remote`; requests city; question none. Photo: none required. Expiry (D21): `lesson_offer` and `consulting_hour` close 30 min after their last slot ends (one-off) — recurring and all others never expire and get the relevance reminder (D59). A `question` auto-closes 30 days after an accepted answer.
 - AC4. A lesson offer may be marked for the `time` world (D101, G51); until G51 ships the form shows the switch disabled with "soon".
 - AC5. Rename the UI copy: `knowledge` category chip in the create form, request / offer wording per type, in `apps/mobile/src/i18n/locales/he/`.
-- AC6. Tests: `listingFieldSpecs` unit tests per kind; DB test `0551_knowledge_post_kinds.sql` (schema enforcement, expiry sweep on a one-off lesson, no expiry on a recurring one).
+- AC6. Tests: `listingFieldSpecs` unit tests per kind; DB test `0571_knowledge_post_kinds.sql` (schema enforcement, expiry sweep on a one-off lesson, no expiry on a recurring one).
 
 ## FR-KNOW-004 — Slots, booking and session completion
 
@@ -93,7 +93,7 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
 - AC3. `complete_knowledge_session(p_handoff_id)` stays; karma moves to the table values of `docs/spec/07_cross_cutting_systems.md` §7.6 (`{{S:knowledge-karma-values}}`): giver 10 per hour of the slot (rounded up to the half hour, cap 80/day, D32), learner 5; volunteering hours are written for the giver (7.10) when the post is also in `time`.
 - AC4. A learning / mentoring request closes with "found a teacher" (links the booking handoff) or "found it in the library" (links a `resource_id`); both grant the request's closing karma once.
 - AC5. Notifications (`important`): booking requested (giver), approved / declined (learner), 24h reminder (both), slot cancelled (booked learners). Per-slot grouping.
-- AC6. Tests: `0552_knowledge_slots.sql` — concurrency on the last seat, expiry of an unconfirmed booking, series materialization and cancel with a booked slot kept; the knowledge flow on the shared harness (`supabase/tests/flows/knowledge_lifecycle.sql`, closes the open part of G38).
+- AC6. Tests: `0572_knowledge_slots.sql` — concurrency on the last seat, expiry of an unconfirmed booking, series materialization and cancel with a booked slot kept; the knowledge flow on the shared harness (`supabase/tests/flows/knowledge_lifecycle.sql`, closes the open part of G38).
 
 ## FR-KNOW-005 — Question with accepted answer
 
@@ -101,7 +101,7 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
 - AC1. A `question` post uses comments (7.9) as answers. `accept_knowledge_answer(p_listing_id, p_comment_id)`: asker only, one accepted answer at a time (re-accepting replaces), writes `listings.details.accepted_comment_id`, grants the answerer 5 karma once per question and the asker's "question asked" 2 at publish (cap 5/day).
 - AC2. The accepted answer is pinned on the post detail with an "accepted" chip; the asker may close the question; it auto-closes 30 days after acceptance.
 - AC3. On acceptance, a `knowledge_chunks` row of `source_type = community_answer` is written (question + answer + topics) and embedded (FR-KNOW-009), removed if the answer is deleted or the post is removed.
-- AC4. Tests: `0553_knowledge_questions.sql` — only the asker accepts, replace accepted, karma once, chunk written and removed.
+- AC4. Tests: `0573_knowledge_questions.sql` — only the asker accepts, replace accepted, karma once, chunk written and removed.
 
 ## FR-KNOW-006 — Knowledge resources (library entity)
 
@@ -115,7 +115,7 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
 - AC4. Versions: `knowledge_resource_versions(resource_id, version int, snapshot jsonb, edited_by, edited_at)`; every published edit writes a version; `ai_stale = true` on any human edit of title / summary / contributor_note / body.
 - AC5. RLS: anyone reads `published`; the contributor reads their own rows in any status; operators read all; inserts go through `submit_knowledge_resource` (FR-KNOW-007); updates by the contributor only while `draft` / `pending_review` / `rejected` (resubmit) and for `contributor_note` after publish; status transitions only via RPCs.
 - AC6. Member actions: `save_knowledge_resource` (toggle; `knowledge_saves(user_id, resource_id)`), `mark_knowledge_helpful` (toggle, one per member, `knowledge_helpful_votes`; grants the contributor 1 karma per distinct voter, cap 20/day), `report` via the existing `reports` with `target_type = knowledge_resource` (3 reports → `pending_review` + admins notified, 7.15).
-- AC7. Tests: `0554_knowledge_resources.sql` — canonical URL cases, duplicate detection, kind schema validation, RLS per status, helpful once per member, version on edit.
+- AC7. Tests: `0574_knowledge_resources.sql` — canonical URL cases, duplicate detection, kind schema validation, RLS per status, helpful once per member, version on edit.
 
 ## FR-KNOW-007 — Contribute flow: link enrichment, AI enrichment, review
 
@@ -125,7 +125,7 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
 - AC3. Contribute UI (mobile + web): paste link → enrichment preview (editable) → shelf + topics (AI suggestions pre-selected, labelled "suggested") → license / free-access statement + shelf rules acknowledgement → submit. "Write an article" and "build a course" entry points are K2 (FR-KNOW-013/014); in K1 they show "soon".
 - AC4. `submit_knowledge_resource(p_input jsonb)`: validates, canonicalizes, checks duplicates, inserts `pending_review` (or `published` for a trusted contributor, FR-KNOW-021), enqueues AI enrichment and, on publish, embedding. Karma 5 on publish (cap 5/day), reversed on later rejection / removal (S20 pattern).
 - AC5. Review queue (admin portal, `/admin/knowledge`): list pending (oldest first, filters by shelf / kind), detail with the AI suggestions as hints and the per-shelf checklist, actions `approve` (optionally editing shelf / topics / level / authority tier), `reject` with reason (notifies the contributor, `important`), `request changes`. `review_knowledge_resource(p_resource_id, p_action, p_reason, p_overrides)`; operators only; every action audited (`admin_audit`).
-- AC6. Tests: Edge Function unit tests (SSRF guard, redirect cap, kind guess for YouTube / ISBN / PDF); DB test `0555_knowledge_review.sql` (state machine, karma grant and reversal, audit row).
+- AC6. Tests: Edge Function unit tests (SSRF guard, redirect cap, kind guess for YouTube / ISBN / PDF); DB test `0575_knowledge_review.sql` (state machine, karma grant and reversal, audit row).
 
 ## FR-KNOW-008 — Resource detail, cards, library tab, follow a topic
 
@@ -146,7 +146,7 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
 - AC3. `knowledge_search(p_query text, p_filters jsonb, p_limit int ≤ 50, p_viewer uuid default auth.uid()) returns table (hit_type in (resource, chunk, post, topic, teacher), id, resource_id, listing_id, topic_id, title, snippet, heading_path, score, fts_rank, trgm_rank, vector_rank, topic_rank, citation jsonb)`: RRF over four lanes — FTS (`simple` + unaccent, Hebrew and English tokens), trigram on titles and topic aliases, vector cosine over `knowledge_chunks` + `knowledge_resources.embedding` (query embedded by the worker's provider through `knowledge_embed_query` cache table `knowledge_query_embeddings(hash, embedding, created_at)` with 7-day TTL), topic lane (`resolve_knowledge_topics` + descendants). Filters as in FR-KNOW-008 AC2 plus `hit_types`. Posts respect `is_listing_visible_to(p_viewer)` and block filtering; resources only `published`. `citation = {resource_id, slug, version, heading_path, contributor_id, reviewed_at, license, authority_tier, last_verified_at}`.
 - AC4. `similar_knowledge_resources(p_resource_id, p_limit)`: vector neighbours among published resources sharing at least one topic ancestor.
 - AC5. Search header suggestions: `knowledge_suggest(p_prefix)` returns topics (by alias prefix), resources (title trigram) and teachers (open offers' topics) in ≤ 100 ms p95 on the dev dataset.
-- AC6. Tests: `0556_knowledge_search.sql` — a Hebrew query finds an English-titled resource through a topic alias; a chunk hit carries its heading path; a blocked member's post never appears; a `pending_review` resource never appears; RRF ordering with a forced tie.
+- AC6. Tests: `0576_knowledge_search.sql` — a Hebrew query finds an English-titled resource through a topic alias; a chunk hit carries its heading path; a blocked member's post never appears; a `pending_review` resource never appears; RRF ordering with a forced tie.
 
 ## FR-KNOW-010 — Agent contract (`api_knowledge_*`, MCP)
 
@@ -160,7 +160,7 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
 - AC5. `api_knowledge_suggest_topics(p_text)` → `resolve_knowledge_topics` + the AI suggestion path (no write).
 - AC6. `api_knowledge_submit_resource(p_contributor_id, p_input jsonb)` → `submit_knowledge_resource` as that member (always `pending_review`; never trusted-path).
 - AC7. Every function: `revoke all from public`, `grant execute to service_role`; input bounds (`0537` pattern); a `comment on function` that states the contract. MCP tool descriptions for these six functions are added to the bot tool registry (`supabase/functions/_shared/whatsapp/agent/`), and the WhatsApp intake bot answers "where can I learn X for free" with up to three cited resources and one open offer.
-- AC8. Tests: `0557_knowledge_api.sql` — anonymous viewer sees no `FollowersOnly` post; demand excludes topics with a published resource; submit lands in review even for a trusted contributor.
+- AC8. Tests: `0577_knowledge_api.sql` — anonymous viewer sees no `FollowersOnly` post; demand excludes topics with a published resource; submit lands in review even for a trusted contributor.
 
 ## FR-KNOW-011 — Link health
 
@@ -200,7 +200,7 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
 - AC3. Course builder (web export first; mobile reads and edits metadata): outline editor with drag order, lesson editor (markdown / video link / external link / reading from the library), quiz editor with preview, "publish" runs the review (FR-KNOW-007) — a course with zero lessons cannot be submitted; a course with `has_quizzes` must have at least one quiz with ≥ 3 questions.
 - AC4. **External course tracking shell:** an external `course` resource may carry modules and lessons with `lesson_kind = external` only (a syllabus), so learners track it (FR-KNOW-015) and take KC quizzes the contributor wrote.
 - AC5. Author sees aggregate counts only (enrolled, completed, average quiz score); never individual learners (D110, privacy by construction).
-- AC6. Tests: outline limits; question version bump on edit after an attempt; publish gate (no lessons / quiz too small); DB test `0558_knowledge_courses.sql`.
+- AC6. Tests: outline limits; question version bump on edit after an attempt; publish gate (no lessons / quiz too small); DB test `0578_knowledge_courses.sql`.
 
 ## FR-KNOW-015 — Enrollment, progress, quiz attempts, completion (learner side)
 
@@ -305,7 +305,7 @@ Edge Functions: `knowledge-link-enrich`, `knowledge-ai-enrich`, `knowledge-link-
 - File cap ≤ 300 lines and ≤ 3 indentation levels apply; the search RPC is split into lane functions.
 
 ## Tests (summary)
-DB: `0550`–`0558` as listed; harness flow `flows/knowledge_lifecycle.sql` (G38). Unit: domain rules, grading, URL canonicalization, sanitizer, chunker. Component: cards, tabs, player, stepper. Maestro: `knowledge_library_browse`, `knowledge_course_complete`, `knowledge_book_lesson`. E2E journey fixture `journeys/knowledge.spec.ts` on the shared `worldJourney` shape (G40).
+DB: `0570`–`0578` as listed; harness flow `flows/knowledge_lifecycle.sql` (G38). Unit: domain rules, grading, URL canonicalization, sanitizer, chunker. Component: cards, tabs, player, stepper. Maestro: `knowledge_library_browse`, `knowledge_course_complete`, `knowledge_book_lesson`. E2E journey fixture `journeys/knowledge.spec.ts` on the shared `worldJourney` shape (G40).
 
 ## SSOT links
 `docs/spec/18_knowledge_world.md` (binding product spec) · `04_product_structure.md` (world row) · `05_giving_worlds.md` §5.7 · `07_cross_cutting_systems.md` §7.2, §7.6, §7.11 · `16_kpis.md` · `93_implementation_gaps.md` (`{{G:knowledge-topic-graph}}`, `{{G:knowledge-exchange-form}}`, `{{G:knowledge-library}}`, `{{G:knowledge-search-agent-api}}`, `{{G:knowledge-courses}}`, `{{G:knowledge-review-queue}}`) · `docs/SSOT/BACKLOG.md` § KNOWLEDGE.
