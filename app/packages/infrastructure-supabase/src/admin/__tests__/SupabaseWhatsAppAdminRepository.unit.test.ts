@@ -154,4 +154,85 @@ describe('SupabaseWhatsAppAdminRepository', () => {
     expect(await repo.listConversations()).toEqual([]);
   });
 
+  it('handles null data in all list methods and resend fallback', async () => {
+    const repo = new SupabaseWhatsAppAdminRepository(
+      mockClient(() => ({ data: null, error: null })),
+    );
+    expect(await repo.listConsent()).toEqual({ rows: [], totalCount: 0 });
+    expect(await repo.listOutbound({})).toEqual({ rows: [], totalCount: 0 });
+    expect(await repo.listRateHits()).toEqual([]);
+    expect(await repo.listRecentMatches()).toEqual([]);
+    expect(await repo.listConversations()).toEqual([]);
+    expect(await repo.resend('o_1')).toBe('queued');
+  });
+
+  it('overview coalesces missing counts to 0', async () => {
+    const repo = new SupabaseWhatsAppAdminRepository(
+      mockClient(() => ({ data: { since: '2026-10-10T00:00:00.000Z' }, error: null })),
+    );
+    const o = await repo.overview();
+    expect(o.outboundQueued).toBe(0);
+    expect(o.outboundSent).toBe(0);
+    expect(o.outboundFailed).toBe(0);
+    expect(o.outboundSkipped).toBe(0);
+    expect(o.consentOptedIn).toBe(0);
+    expect(o.consentOptedOut).toBe(0);
+    expect(o.sessions7d).toBe(0);
+    expect(o.matchesSent7d).toBe(0);
+    expect(o.rateHits7d).toBe(0);
+  });
+
+  it('toError maps forbidden message and not_found message', async () => {
+    const repoForbidden = new SupabaseWhatsAppAdminRepository(
+      mockClient(() => ({ data: null, error: { message: 'forbidden' } })),
+    );
+    await expect(repoForbidden.overview()).rejects.toSatisfy(
+      (e) => isWhatsAppAdminError(e) && e.code === 'forbidden',
+    );
+
+    const repoNotFound = new SupabaseWhatsAppAdminRepository(
+      mockClient(() => ({ data: null, error: { message: 'item_not_found' } })),
+    );
+    await expect(repoNotFound.overview()).rejects.toSatisfy(
+      (e) => isWhatsAppAdminError(e) && e.code === 'not_found',
+    );
+  });
+
+  it('maps non-string fields with defaults in listOutbound and listConsent', async () => {
+    const repo = new SupabaseWhatsAppAdminRepository(
+      mockClient((name) => {
+        if (name === 'api_whatsapp_admin_list_outbound') {
+          return {
+            data: [{
+              outbound_id: 'o_no_type',
+              kind: null,
+              language: null,
+              status: 'queued',
+              created_at: '2026-10-17T00:00:00.000Z',
+              total_count: 1,
+            }],
+            error: null,
+          };
+        }
+        if (name === 'api_whatsapp_admin_list_consent') {
+          return {
+            data: [{
+              consent_status: null,
+              updated_at: '2026-10-17T00:00:00.000Z',
+              total_count: 1,
+            }],
+            error: null,
+          };
+        }
+        return { data: null, error: null };
+      }),
+    );
+    const outbound = await repo.listOutbound({});
+    expect(outbound.rows[0]?.kind).toBe('template');
+    expect(outbound.rows[0]?.language).toBe('he');
+
+    const consent = await repo.listConsent();
+    expect(consent.rows[0]?.consentStatus).toBe('unknown');
+  });
+
 });

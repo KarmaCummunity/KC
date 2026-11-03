@@ -128,12 +128,19 @@ const KIND_ROUTES: Record<NotificationKind, KindHandler> = {
   ride_route_match: (d) => listingRoute(d.params?.listingId),
   // D70 — an emergency on a ride opens that ride.
   ride_listing_emergency: (d) => listingRoute(d.params?.listingId),
+  // FR-NOTIF-018 (0528) — item and food handoff changes open the listing.
+  giving_handoff_requested: (d) => listingRoute(d.params?.listingId),
+  giving_handoff_claimed: (d) => listingRoute(d.params?.listingId),
+  giving_handoff_confirmed: (d) => listingRoute(d.params?.listingId),
+  giving_handoff_declined: (d) => listingRoute(d.params?.listingId),
+  giving_handoff_cancelled: (d) => listingRoute(d.params?.listingId),
+  giving_handoff_completed: (d) => listingRoute(d.params?.listingId),
 };
 
 /** Marketplace listing detail, only for a well-formed listing id. */
 function listingRoute(raw: string | undefined): ResolvedRoute | null {
   const listingId = requireUuid(raw);
-  return listingId ? { pathname: '/(tabs)/donations/marketplace/[listingId]', params: { listingId } } : null;
+  return listingId ? { pathname: '/listing/[listingId]', params: { listingId } } : null;
 }
 
 export function resolvePushRoute(data: Partial<PushData>): ResolvedRoute | null {

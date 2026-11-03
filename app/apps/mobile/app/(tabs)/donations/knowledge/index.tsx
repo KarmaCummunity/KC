@@ -2,6 +2,8 @@ import { WorldMarketplaceHub } from '../../../../src/components/giving/WorldMark
 import { WorldLaunchGateBySlug } from '../../../../src/components/worlds/WorldLaunchGate';
 import { worldSubScreens } from '../../../../src/components/giving/worldSubScreens';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
+
 export default function KnowledgeHubScreen() {
   return (
     <WorldLaunchGateBySlug worldSlug="knowledge">

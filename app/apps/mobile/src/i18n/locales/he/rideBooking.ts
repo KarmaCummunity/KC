@@ -11,6 +11,9 @@ export const rideBooking = {
   approve: 'אישור',
   decline: 'דחייה',
   completeTrip: 'הנסיעה הסתיימה',
+  finishRide: 'סיום הנסיעה וסגירת המודעה',
+  finishRideConfirmTitle: 'לסיים את הנסיעה?',
+  finishRideConfirmMessage: 'בקשות ממתינות יבוטלו והזמנות שאושרו יסומנו כהושלמו.',
   cancel: 'ביטול',
   statusLabel: {
     reserved: 'ממתין לאישור',
@@ -26,4 +29,9 @@ export const rideBooking = {
   confirmed: 'המקום שלך מאושר. נסיעה טובה!',
   cancelBooking: 'ביטול ההזמנה',
   loadError: 'לא הצלחנו לטעון את ההזמנות. הקישו כדי לנסות שוב.',
+  exceedsCapacity: 'אי אפשר לאשר: חורג ממספר המקומות הפנויים',
+  departed: 'הנסיעה כבר יצאה לדרך',
+  full: 'לא נשארו מקומות פנויים בנסיעה זו',
+  chat: 'הודעה',
+  completedAndRated: 'הנסיעה הסתיימה ודורגה. תודה!',
 } as const;

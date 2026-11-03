@@ -31,6 +31,11 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
 }));
 // The city picker loads cities from the network; a placeholder is enough here.
 vi.mock('../CityPicker', () => ({ CityPicker: () => <span data-testid="city-picker" /> }));
+vi.mock('../../services/marketplaceComposition', () => ({
+  marketplaceRepository: () => ({
+    listWorldSubcategories: async () => [],
+  }),
+}));
 vi.mock('../../services/avatarUpload', () => ({ isCameraAvailable: true }));
 
 import { RADIUS_OPTIONS_KM } from '@kc/domain';
@@ -55,6 +60,8 @@ function expectCompactChips(chips: HTMLElement[]) {
 
 const FEED_FILTER: PostFilterValue = {
   type: null,
+  worlds: [],
+  subcategories: [],
   categories: [],
   itemConditions: [],
   locationFilter: null,

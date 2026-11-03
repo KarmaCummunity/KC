@@ -1,14 +1,14 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import type { ExternalDonationKind } from '../../config/featureFlags';
 import { useExternalDonations } from '../../hooks/useExternalDonations';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   body: { padding: spacing.lg, gap: spacing.md },
   text: { ...typography.body, color: colors.textSecondary },
-  btn: { padding: spacing.md, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center' as const },
+  btn: { padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.primary, alignItems: 'center' as const },
   btnText: { ...typography.button, color: colors.textInverse },
 }));
 

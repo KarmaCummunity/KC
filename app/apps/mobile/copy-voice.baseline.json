@@ -49,14 +49,8 @@
     "src/i18n/locales/he/modules/feed.ts": {
       "genderedImperative": 15
     },
-    "src/i18n/locales/he/modules/filters.ts": {
-      "genderedImperative": 2
-    },
     "src/i18n/locales/he/modules/follow.ts": {
       "genderedImperative": 1
-    },
-    "src/i18n/locales/he/modules/legal.ts": {
-      "genderedImperative": 4
     },
     "src/i18n/locales/he/modules/onboarding.ts": {
       "genderedImperative": 13,

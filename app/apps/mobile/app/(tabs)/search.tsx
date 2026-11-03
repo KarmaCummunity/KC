@@ -2,15 +2,13 @@
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useShallow } from 'zustand/react/shallow';
-import { useTheme, Text, TextInput, iconSize } from '@kc/ui';
+import { useTheme, Text } from '@kc/ui';
 import type { SearchResultType, SearchSortBy } from '@kc/domain';
 import { useTranslation } from 'react-i18next';
 
@@ -27,6 +25,13 @@ import { useSearchScreenStyles } from '../../src/screens/tabs/search.styles';
 import { SearchSuggestedQueries } from '../../src/components/search/SearchSuggestedQueries';
 import { SearchRecentSection } from '../../src/components/search/SearchRecentSection';
 import { SearchResultSections } from '../../src/components/search/SearchResultSections';
+import { FilterSearchBar } from '../../src/components/filterKit/FilterSearchBar';
+import { FilterButton } from '../../src/components/filterKit/FilterButton';
+import { FilterChipRow } from '../../src/components/filterKit/FilterChipRow';
+import { Chip } from '../../src/components/ui/Chip';
+import { PrimaryButton } from '../../src/components/ui/Buttons';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 // ── Constants ─────────────────────────────────
 const DEBOUNCE_MS = 300; // debounce delay for search input
@@ -45,27 +50,23 @@ export default function SearchScreen() {
     useDebouncedSearchInput(DEBOUNCE_MS);
 
   // ── Store (filters, recent searches) ────────
-  const store = useSearchStore(
-    useShallow((s) => ({
-      recentSearches: s.recentSearches,
-      addRecentSearch: s.addRecentSearch,
-      clearRecentSearches: s.clearRecentSearches,
-      setResultType: s.setResultType,
-      setSortBy: s.setSortBy,
-    })),
-  );
-  const filters = useSearchStore(
-    useShallow((s) => ({
-      resultType: s.resultType,
-      postType: s.postType,
-      category: s.category,
-      donationCategory: s.donationCategory,
-      city: s.city,
-      radiusKm: s.radiusKm,
-      sortBy: s.sortBy,
-      minFollowers: s.minFollowers,
-    })),
-  );
+  const store = useSearchStore(useShallow((s) => ({
+    recentSearches: s.recentSearches,
+    addRecentSearch: s.addRecentSearch,
+    clearRecentSearches: s.clearRecentSearches,
+    setResultType: s.setResultType,
+    setSortBy: s.setSortBy,
+  })));
+  const filters = useSearchStore(useShallow((s) => ({
+    resultType: s.resultType,
+    postType: s.postType,
+    category: s.category,
+    donationCategory: s.donationCategory,
+    city: s.city,
+    radiusKm: s.radiusKm,
+    sortBy: s.sortBy,
+    minFollowers: s.minFollowers,
+  })));
   const filterCount = useSearchStore((s) => s.activeFilterCount());
 
   // ── Expanded section state ──────────────────
@@ -88,11 +89,7 @@ export default function SearchScreen() {
         query: debouncedQuery,
         filters,
         viewerId,
-        limits: {
-          posts: expandedSection === 'post' ? FULL_LIMIT : PREVIEW_LIMIT,
-          users: expandedSection === 'user' ? FULL_LIMIT : PREVIEW_LIMIT,
-          links: expandedSection === 'link' ? FULL_LIMIT : PREVIEW_LIMIT,
-        },
+        limits: { posts: expandedSection === 'post' ? FULL_LIMIT : PREVIEW_LIMIT, users: expandedSection === 'user' ? FULL_LIMIT : PREVIEW_LIMIT, links: expandedSection === 'link' ? FULL_LIMIT : PREVIEW_LIMIT },
       }),
     // Always enabled — empty query triggers explore mode
     enabled: !isSingleCharTyped,
@@ -100,13 +97,9 @@ export default function SearchScreen() {
   });
 
   const results = query.data;
-  const hasResults =
-    results
-    && (results.posts.length > 0
-      || results.users.length > 0
-      || results.links.length > 0
-      || results.orgs.length > 0
-      || results.hashtags.length > 0);
+  const hasResults = Boolean(
+    results && (results.posts.length || results.users.length || results.links.length || results.orgs.length || results.hashtags.length),
+  );
 
   // ── Handlers ────────────────────────────────
 
@@ -147,108 +140,62 @@ export default function SearchScreen() {
 
       {/* ── Search bar + filter button ──────── */}
       <MotionEntry variant="hero" delay={ENTRY_DELAY.hero} style={styles.searchRow}>
-        <View style={styles.searchInput}>
-          <Ionicons name="search" size={iconSize.md} color={colors.textSecondary} style={styles.searchIcon} />
-          <TextInput // brand-guard-allow: search bar is a non-form input
-            style={styles.searchText}
-            value={inputText}
-            onChangeText={handleTextChange}
-            onSubmitEditing={handleSubmit}
-            placeholder={t('search.placeholder')}
-            placeholderTextColor={colors.textDisabled}
-            textAlign="right"
-            returnKeyType="search"
-            autoCorrect={false}
-          />
-          {inputText ? (
-            <TouchableOpacity onPress={handleClear}>
-              <Ionicons name="close-circle" size={iconSize.md} color={colors.textDisabled} />
-            </TouchableOpacity>
-          ) : null}
-        </View>
+        <FilterSearchBar
+          style={styles.searchBarWrap}
+          inputRowStyle={styles.searchBarRow}
+          value={inputText}
+          onChangeText={handleTextChange}
+          onSubmitEditing={handleSubmit}
+          placeholder={t('search.placeholder')}
+          onClear={handleClear}
+          testID="search-input"
+        />
 
         {/* Filter button with active count badge */}
-        <TouchableOpacity
-          style={[styles.filterBtn, filterCount > 0 && styles.filterBtnActive]}
+        <FilterButton
+          activeCount={filterCount}
           onPress={() => setFilterVisible(true)}
-        >
-          <Ionicons
-            name="options-outline"
-            size={iconSize.lg}
-            color={filterCount > 0 ? colors.textInverse : colors.textPrimary}
-          />
-          {filterCount > 0 && (
-            <View style={styles.filterBadge}>
-              <Text style={styles.filterBadgeText}>{filterCount}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+          variant="boxed"
+          testID="search-filter-button"
+        />
       </MotionEntry>
 
       {/* ── Category type chips ─────────────── */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chipRow}
+      <FilterChipRow<SearchResultType>
+        scrollable
+        showAllChip
+        allLabel={t('search.all')}
+        options={[
+          { value: 'post', label: t('search.posts') },
+          { value: 'user', label: t('search.people') },
+          { value: 'link', label: t('search.links') },
+          { value: 'org', label: t('search.orgs') },
+          { value: 'hashtag', label: t('search.hashtags') },
+        ]}
+        value={filters.resultType}
+        onChange={(type) => {
+          store.setResultType(type);
+          setExpandedSection(null);
+        }}
         style={styles.chipContainer}
+        contentContainerStyle={styles.chipRow}
       >
-        {([null, 'post', 'user', 'link', 'org', 'hashtag'] as (SearchResultType | null)[]).map((type) => {
-          const labels: Record<string, string> = {
-            '': t('search.all'),
-            post: t('search.posts'),
-            user: t('search.people'),
-            link: t('search.links'),
-            org: t('search.orgs'),
-            hashtag: t('search.hashtags'),
-          };
-          const active = filters.resultType === type;
-          return (
-            <Pressable
-              key={type ?? 'all'}
-              style={[styles.chip, active && styles.chipActive]}
-              onPress={() => {
-                store.setResultType(type);
-                setExpandedSection(null);
-              }}
-            >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                {labels[type ?? '']}
-              </Text>
-            </Pressable>
-          );
-        })}
-
         {/* Sort chips — only visible when actively searching */}
         {isSearchMode && (
           <>
             <View style={styles.chipDivider} />
-            {(['relevance', 'newest', 'followers'] as SearchSortBy[]).map((s) => {
-              const labels: Record<string, string> = {
-                relevance: t('search.sortRelevance'),
-                newest: t('search.sortNewest'),
-                followers: t('search.sortFollowers'),
-              };
-              const active = filters.sortBy === s;
-              return (
-                <Pressable
-                  key={s}
-                  style={[styles.sortChip, active && styles.sortChipActive]}
-                  onPress={() => store.setSortBy(s)}
-                >
-                  <Ionicons
-                    name="swap-vertical-outline"
-                    size={12} // brand-guard-allow: sort chip glyph sits below the 14pt scale floor
-                    color={active ? colors.textInverse : colors.textSecondary}
-                  />
-                  <Text style={[styles.sortChipText, active && styles.sortChipTextActive]}>
-                    {labels[s]}
-                  </Text>
-                </Pressable>
-              );
-            })}
+            {(['relevance', 'newest', 'followers'] as SearchSortBy[]).map((s) => (
+              <Chip
+                key={s}
+                size="sm"
+                label={s === 'relevance' ? t('search.sortRelevance') : s === 'newest' ? t('search.sortNewest') : t('search.sortFollowers')}
+                selected={filters.sortBy === s}
+                onPress={() => store.setSortBy(s)}
+              />
+            ))}
           </>
         )}
-      </ScrollView>
+      </FilterChipRow>
 
       {/* ── Content area ────────────────────── */}
       <ScrollView
@@ -273,6 +220,25 @@ export default function SearchScreen() {
           <View style={styles.loadingWrap}>
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loadingText}>{t('search.loading')}</Text>
+          </View>
+        )}
+
+        {/* Error state */}
+        {!isSingleCharTyped && query.isError && (
+          <View style={styles.emptyState}>
+            <Ionicons
+              name="alert-circle-outline"
+              size={48} // brand-guard-allow: empty-state hero glyph
+              color={colors.textDisabled}
+            />
+            <Text style={styles.emptyTitle}>{t('general.errorTitle')}</Text>
+            <Text style={styles.emptySubtitle}>{t('errorBoundary.body')}</Text>
+            <PrimaryButton
+              testID="search-load-error-retry"
+              label={t('general.retry')}
+              size="md"
+              onPress={() => void query.refetch()}
+            />
           </View>
         )}
 

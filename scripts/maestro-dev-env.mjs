@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 // KC#1235 — resolves the environment for the Maestro Android E2E build against kc-dev,
-// without repository secrets:
+// with one repository secret (E2E_SEED_PASSWORD):
 //   EXPO_PUBLIC_SUPABASE_URL       kc-dev project URL (public)
 //   EXPO_PUBLIC_SUPABASE_ANON_KEY  publishable key, read from the deployed dev web bundle (public)
-//   KC_E2E_PASSWORD                kc-dev seed users' password, read from the committed seed
+//   KC_E2E_PASSWORD                kc-dev seed users' password, from the E2E_SEED_PASSWORD env (secret)
 // Prints `KEY=value` lines (append them to $GITHUB_ENV). Refuses to target production.
 //
 // Usage: node scripts/maestro-dev-env.mjs [--web-url https://dev.karma-community.pages.dev]
 
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 export const KC_DEV_SUPABASE_URL = 'https://enbqriuxvvuontiwslun.supabase.co';
@@ -40,11 +39,11 @@ export function extractAnonKey(js, ref) {
   return js.match(PUBLISHABLE_PATTERN)?.[0] ?? null;
 }
 
-/** The seed users' password from `supabase/seed/kc-dev/seed.sql` (dev-only, already public). */
-export function extractSeedPassword(seedSql) {
-  const match = seedSql.match(/@seed\.kc\.test',\s*crypt\('([^']+)'/);
-  if (!match) throw new Error('Could not read the seed password from supabase/seed/kc-dev/seed.sql');
-  return match[1];
+/** The seed users' password from the E2E_SEED_PASSWORD env (GitHub Actions secret). Throws when unset. */
+export function seedPasswordFromEnv(env = process.env) {
+  const value = env.E2E_SEED_PASSWORD?.trim();
+  if (!value) throw new Error('E2E_SEED_PASSWORD is not set (seed password secret); refusing to continue.');
+  return value;
 }
 
 /** Script URLs of the Expo web export referenced by the dev site's index.html. */
@@ -72,11 +71,10 @@ async function main() {
   const webUrl = (flag > -1 ? process.argv[flag + 1] : process.env.DEV_WEB_URL) || DEFAULT_DEV_WEB_URL;
   assertNotProduction(KC_DEV_SUPABASE_URL, webUrl);
 
-  const seedPath = fileURLToPath(new URL('../supabase/seed/kc-dev/seed.sql', import.meta.url));
   const lines = [
     `EXPO_PUBLIC_SUPABASE_URL=${KC_DEV_SUPABASE_URL}`,
     `EXPO_PUBLIC_SUPABASE_ANON_KEY=${await resolveAnonKey(webUrl)}`,
-    `KC_E2E_PASSWORD=${extractSeedPassword(readFileSync(seedPath, 'utf8'))}`,
+    `KC_E2E_PASSWORD=${seedPasswordFromEnv()}`,
   ];
   process.stdout.write(`${lines.join('\n')}\n`);
 }

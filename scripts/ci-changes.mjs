@@ -25,12 +25,10 @@
 // optional lane (whether it runs in this workflow run), sonar, and plan — a
 // JSON object mapping every lane job id to whether the change needs it.
 // scripts/ci-gate.mjs requires the plan to name every lane explicitly; an
-// optional lane is named only when it is needed or, for a heavy lane, wired.
-// Also reads .github/workflows/ci.yml (the running copy) to see which heavy
-// lanes it wires.
+// optional lane is named only when it is needed.
 
 import { execFileSync } from 'node:child_process';
-import { appendFileSync, readFileSync } from 'node:fs';
+import { appendFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 // CI plumbing and the Node pin can break any lane, so they trigger all of them.
@@ -63,9 +61,6 @@ export const INERT = [
 
 const LANES = Object.keys(LANE_RULES);
 
-/** Every lane job id in ci.yml; the gate and the drift guard key on this list. */
-export const LANE_JOBS = ['hygiene', 'static', ...LANES];
-
 /** Lanes only PR events need (the PR title and body); every other event plans them false. */
 export const PR_ONLY_LANES = ['hygiene'];
 
@@ -80,39 +75,18 @@ export const PR_ONLY_LANES = ['hygiene'];
  */
 export const HEAVY_LANES = ['bundles'];
 
-/**
- * Lanes the plan may leave out. `release`, the dev → main lane (source
- * branch, strict migration scan, VERSION bump, dev E2E), is named only when
- * needed: for every PR or merge group whose base is main, whatever it
- * touches. Never planned as `false`, so a ci.yml without the job (and the
- * gate copy that predates it) keeps passing. A heavy lane is named, as true or
- * false, only once the running ci.yml wires its job (`wiredLanes`); until
- * then the frontend lane runs those builds itself. scripts/ci-gate.mjs
- * accepts an optional lane as skipped when the plan omits it. Keep in sync
- * with OPTIONAL_LANES there.
- */
-export const OPTIONAL_LANES = ['release', ...HEAVY_LANES];
+/** Every lane job id in ci.yml; the gate and the drift guard key on this list. */
+export const LANE_JOBS = ['hygiene', 'static', ...LANES, ...HEAVY_LANES];
 
 /**
- * The heavy lanes `ciYml` (the text of ci.yml) defines as top-level jobs.
- * ci.yml runs this file alone, without the YAML parser, so it accepts only
- * the canonical `  <lane>:` job line and throws (failing the detector, hence
- * the gate) on any other key line for the lane at job depth, such as a
- * trailing comment, quotes or a flow value, instead of reading it as unwired.
+ * Lanes that appear in the plan only when needed: `release`, the dev → main
+ * lane (source branch, strict migration scan, VERSION bump, dev E2E), needed
+ * for every PR or merge group whose base is main, whatever it touches. Never
+ * planned as `false`, so a ci.yml without the job (and the gate copy that
+ * predates it) keeps passing; scripts/ci-gate.mjs accepts the job as skipped
+ * when the plan omits it. Keep in sync with OPTIONAL_LANES there.
  */
-export function wiredLanes(ciYml) {
-  const wired = new Set();
-  for (const lane of HEAVY_LANES) {
-    const keyLines = ciYml.split('\n').filter((line) => new RegExp(`^ {0,3}["']?${lane}["']?[ \\t]*:`).test(line));
-    for (const line of keyLines) {
-      if (!new RegExp(`^ {2}${lane}:[ \\t]*$`).test(line)) {
-        throw new Error(`ci.yml: cannot read the "${lane}" job line ${JSON.stringify(line)}; write it as "  ${lane}:"`);
-      }
-      wired.add(lane);
-    }
-  }
-  return wired;
-}
+export const OPTIONAL_LANES = ['release'];
 
 /** Map changed paths to the heavy lanes they need. */
 export function classify(files) {
@@ -142,11 +116,11 @@ export const REVIEW_LANES = ['static'];
 /**
  * Build the CI plan. `files` is null when the diff could not be computed;
  * that (like a merge group, a push or a manual dispatch) runs every lane.
- * `wired` is the set of heavy lanes ci.yml defines (`wiredLanes`). `plan` is
- * what the change needs; `run` is what this workflow run executes (they
- * differ only on review events, which run REVIEW_LANES and reuse the rest).
+ * `plan` is what the change needs; `run` is what this workflow run executes
+ * (they differ only on review events, which run REVIEW_LANES and reuse the
+ * rest).
  */
-export function plan({ event, draft, actor, ref, baseRef, files, wired = new Set() }) {
+export function plan({ event, draft, actor, ref, baseRef, files }) {
   const isPr = PR_EVENTS.has(event);
   if (isPr && draft) {
     const none = Object.fromEntries(LANE_JOBS.map((j) => [j, false]));
@@ -160,10 +134,12 @@ export function plan({ event, draft, actor, ref, baseRef, files, wired = new Set
   const allLanes = files === null || !DIFF_EVENTS.has(event);
   const lanes = allLanes ? Object.fromEntries(LANES.map((l) => [l, true])) : classify(files);
   const deferHeavy = isPr && base === 'dev';
-  const heavy = Object.fromEntries(HEAVY_LANES.filter((l) => wired.has(l)).map((l) => [l, lanes.frontend && !deferHeavy]));
-  // SonarCloud's free plan analyses PRs and `main` only, and Dependabot-triggered
-  // runs get no secrets, so the scan cannot run for them.
-  const sonarTarget = (isPr && actor !== 'dependabot[bot]') || (!isPr && event !== 'merge_group' && ref === 'refs/heads/main');
+  const heavy = Object.fromEntries(HEAVY_LANES.map((l) => [l, lanes.frontend && !deferHeavy]));
+  // SonarCloud's free plan analyses only `main` and pull requests, so neither
+  // merge-group commits nor dev pushes can be scanned; with the per-PR scan
+  // gone from PRs into dev (D-195 addendum, TD-236), it gates PRs into main
+  // and main pushes. Dependabot-triggered runs get no secrets.
+  const sonarTarget = (isPr && base === 'main' && actor !== 'dependabot[bot]') || (!isPr && event !== 'merge_group' && ref === 'refs/heads/main');
   const needed = { hygiene: isPr, static: true, ...lanes, ...heavy, ...(release ? { release: true } : {}) };
   if (event === 'pull_request_review') {
     const jobs = [...LANE_JOBS, ...OPTIONAL_LANES];
@@ -206,7 +182,6 @@ function main() {
     ref: env.REF,
     baseRef: env.BASE_REF,
     files,
-    wired: wiredLanes(readFileSync('.github/workflows/ci.yml', 'utf8')),
   });
   const lines = [
     `draft=${result.draft}`,

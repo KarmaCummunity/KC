@@ -7,10 +7,10 @@ import React from 'react';
 import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { spacing, useTheme, Text, TextInput } from '@kc/ui';
+import { spacing, useTheme, Text } from '@kc/ui';
+import { FilterSearchBar } from '../../../src/components/filterKit/FilterSearchBar';
 import { AvatarInitials } from '../../../src/components/AvatarInitials';
 import { getUserRepo } from '../../../src/services/userComposition';
 import { getListFollowingUseCase } from '../../../src/services/followComposition';
@@ -50,16 +50,12 @@ export default function FollowingListScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <Stack.Screen options={{ headerTitle: t('profile.followingScreen.headerTitle') }} />
-      <View style={styles.searchRow}>
-        <Ionicons name="search" size={18} color={colors.textSecondary} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder={t('profile.followingScreen.searchPlaceholder')}
-          placeholderTextColor={colors.textSecondary}
-          value={search}
-          onChangeText={setSearch}
-        />
-      </View>
+      <FilterSearchBar
+        style={styles.searchWrap}
+        placeholder={t('profile.followingScreen.searchPlaceholder')}
+        value={search}
+        onChangeText={setSearch}
+      />
       {followingQuery.isLoading ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />
       ) : filtered.length === 0 ? (

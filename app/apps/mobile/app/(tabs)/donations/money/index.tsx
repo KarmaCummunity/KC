@@ -18,6 +18,8 @@ import { useShellTabBarScrollInset } from '../../../../src/navigation/useShellTa
 import { WorldLaunchGateByFlag } from '../../../../src/components/worlds/WorldLaunchGate';
 import { rtlTextAlignStart } from '../../../../src/lib/rtlTextAlignStart';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
+
 const useStyles = makeUseStyles(({ colors }) => ({
   scrollView: { flex: 1 },
   // `paddingBottom` comes from `useShellTabBarScrollInset()` so the last section

@@ -8,6 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@kc/ui';
 import { ResearchGuestInviteBanner } from '../../src/components/research/ResearchGuestInviteBanner';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
+
 export default function ResearchLayout() {
   const { colors } = useTheme();
 

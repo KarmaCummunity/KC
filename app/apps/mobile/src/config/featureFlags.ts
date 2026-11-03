@@ -12,6 +12,11 @@ export const FEATURE_FLAG_DEFAULTS = {
    * flip per environment via `public.app_flags` (key `money_in_app_org_payments`).
    */
   money_in_app_org_payments: false,
+  /**
+   * Read-time machine translation of user content (FR-TRANSLATE-003). Off for now;
+   * flip via `public.app_flags` (key `ugc_auto_translation`).
+   */
+  ugc_auto_translation: false,
 } as const satisfies Record<string, boolean>;
 
 export type FeatureFlagKey = keyof typeof FEATURE_FLAG_DEFAULTS;

@@ -1,14 +1,13 @@
 // KC#1102 / KC#1111 — refine the hub's browse list: world subcategory chips (items / food, from the
 // `categories` rows the create form uses) and a distance-from-home choice. `browse_listings` anchors
 // on the viewer's home location, so the radius needs no device location permission.
+// Rebuilt on top of the shared filterKit (issue #1457).
 import React from 'react';
-import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { marketplaceRepository } from '../../services/marketplaceComposition';
 import { WORLDS_WITH_SUBCATEGORY_PICKER } from '../../lib/unifiedCreate/createCategories';
-import { Chip } from '../ui/Chip';
-import { useListingChipStyles } from './listingChipStyles';
+import { FilterChipRow } from '../filterKit/FilterChipRow';
 
 /** Distance choices in km; 25 matches the server's default radius (`browse_listings`, 0410). */
 export const BROWSE_RADIUS_OPTIONS_KM = [5, 10, 25, 50] as const;
@@ -24,7 +23,6 @@ interface Props {
 
 export function BrowseRefineChips({ worldSlug, categoryId, onCategoryChange, radiusKm, onRadiusChange }: Props) {
   const { t, i18n } = useTranslation();
-  const chipStyles = useListingChipStyles();
   const hasSubcategories =
     worldSlug !== null && (WORLDS_WITH_SUBCATEGORY_PICKER as readonly string[]).includes(worldSlug);
 
@@ -37,30 +35,37 @@ export function BrowseRefineChips({ worldSlug, categoryId, onCategoryChange, rad
   const rows = hasSubcategories ? (subcategories.data ?? []) : [];
   const hebrew = i18n.language.startsWith('he');
 
-  // Kit filter chips (spec 17 §4.1): one look for every refine row.
-  const chip = (key: string, label: string, selected: boolean, onPress: () => void) => (
-    <Chip key={key} testID={`browse-refine-${key}`} size="sm" label={label} selected={selected} onPress={onPress} />
-  );
+  const subcategoryOptions = rows.map((s) => ({
+    value: s.categoryId,
+    label: hebrew ? s.labelHe : (s.labelEn ?? s.labelHe),
+    testID: `browse-refine-subcategory-${s.slug}`,
+  }));
+
+  const radiusOptions = BROWSE_RADIUS_OPTIONS_KM.map((km) => ({
+    value: km,
+    label: t('marketplace.browseRefine.radius', { km }),
+    testID: `browse-refine-radius-${km}`,
+  }));
 
   return (
     <>
       {rows.length > 0 ? (
-        <View style={chipStyles.chipRow} accessibilityLabel={t('marketplace.browseRefine.subcategoryRowA11y')}>
-          {chip('subcategory-all', t('marketplace.browseRefine.allSubcategories'), categoryId === null, () =>
-            onCategoryChange(null),
-          )}
-          {rows.map((s) =>
-            chip(`subcategory-${s.slug}`, hebrew ? s.labelHe : (s.labelEn ?? s.labelHe), s.categoryId === categoryId, () =>
-              onCategoryChange(s.categoryId),
-            ),
-          )}
-        </View>
+        <FilterChipRow<string>
+          options={subcategoryOptions}
+          value={categoryId}
+          onChange={onCategoryChange}
+          showAllChip
+          allLabel={t('marketplace.browseRefine.allSubcategories')}
+          testID="browse-refine-subcategory"
+          accessibilityLabel={t('marketplace.browseRefine.subcategoryRowA11y')}
+        />
       ) : null}
-      <View style={chipStyles.chipRow} accessibilityLabel={t('marketplace.browseRefine.radiusRowA11y')}>
-        {BROWSE_RADIUS_OPTIONS_KM.map((km) =>
-          chip(`radius-${km}`, t('marketplace.browseRefine.radius', { km }), km === radiusKm, () => onRadiusChange(km)),
-        )}
-      </View>
+      <FilterChipRow<number>
+        options={radiusOptions}
+        value={radiusKm}
+        onChange={(r) => { if (r !== null) onRadiusChange(r); }}
+        accessibilityLabel={t('marketplace.browseRefine.radiusRowA11y')}
+      />
     </>
   );
 }

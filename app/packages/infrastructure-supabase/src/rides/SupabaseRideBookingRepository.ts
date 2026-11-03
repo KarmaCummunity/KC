@@ -46,6 +46,12 @@ export class SupabaseRideBookingRepository implements IRideBookingRepository {
     return this.runHandoffRpc('complete_ride_trip', handoffId);
   }
 
+  async completeRide(listingId: string): Promise<number> {
+    const { data, error } = await this.client.rpc('complete_ride_listing', { p_listing_id: listingId });
+    if (error) throw new Error(error.message);
+    return data ?? 0;
+  }
+
   /** Every booking transition takes one handoff id and returns the updated row, unused here. */
   private async runHandoffRpc(fn: HandoffRpc, handoffId: string): Promise<void> {
     const { error } = await this.client.rpc(fn, { p_handoff_id: handoffId });

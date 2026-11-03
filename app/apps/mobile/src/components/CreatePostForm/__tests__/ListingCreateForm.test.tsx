@@ -14,6 +14,7 @@ import { KINDS_BY_WORLD } from '../../../lib/unifiedCreate/__tests__/listingKind
 const mocks = vi.hoisted(() => ({
   listKindsForWorld: vi.fn(),
   createListing: vi.fn(),
+  createRideSeries: vi.fn(),
   rememberRideRoute: vi.fn(),
   nativeDatePicker: vi.fn(() => null),
 }));
@@ -38,24 +39,33 @@ vi.mock('../../../services/marketplaceComposition', () => ({
   }),
 }));
 vi.mock('../../../lib/rides/rideStartDetails', () => ({ rememberRideRoute: mocks.rememberRideRoute }));
+vi.mock('../../../services/rideSeriesComposition', () => ({
+  rideSeriesUseCases: { create: () => ({ execute: mocks.createRideSeries }) },
+}));
 // Ride section stand-in (route + schedule are tested in RideRouteFields / RideScheduleFields):
-// one tap fills a full route and departure through the form's state setter.
+// one tap fills a full route and departure through the form's state setter; another makes the
+// ride recur on Sundays and Thursdays (FR-RIDE-046).
 vi.mock('../../giving/RideCreateSection', () => ({
   RIDE_CREATE_DETAIL_KEYS: ['origin_lat', 'origin_lng', 'dest_lat', 'dest_lng', 'origin_city_id', 'dest_city_id', 'departs_at', 'arrives_at', 'seats_available'],
   RideCreateSection: (p: {
     setDetails: (u: (prev: Record<string, unknown>) => Record<string, unknown>) => void;
     onOriginCity: (c: { id: string; name: string }) => void;
+    onRecurrenceChange: (next: { weekdays: number[]; endsOn: Date | null } | null) => void;
   }) => (
-    <button
-      type="button"
-      data-testid="ride-section-fill"
-      onClick={() => {
-        p.setDetails((prev) => ({ ...prev, ...RIDE_FILL }));
-        p.onOriginCity({ id: '7000', name: 'לוד' });
-      }}
-    >
-      <span data-testid="ride-section" />
-    </button>
+    <>
+      <button
+        type="button"
+        data-testid="ride-section-fill"
+        onClick={() => {
+          p.setDetails((prev) => ({ ...prev, ...RIDE_FILL }));
+          p.onOriginCity({ id: '7000', name: 'לוד' });
+        }}
+      >
+        <span data-testid="ride-section" />
+      </button>
+      <button type="button" data-testid="ride-section-recur" onClick={() => p.onRecurrenceChange({ weekdays: [0, 4], endsOn: null })} />
+      <button type="button" data-testid="ride-section-recur-nodays" onClick={() => p.onRecurrenceChange({ weekdays: [], endsOn: null })} />
+    </>
   ),
 }));
 vi.mock('../../../services/listingImageUpload', () => ({ pickListingImages: vi.fn(async () => []), uploadListingImages: vi.fn() }));
@@ -102,6 +112,7 @@ function renderForm(worldSlug: string, direction: 'give' | 'request', title = '�
           summary=""
           onSummaryChange={() => {}}
           onPublished={onPublished}
+          onPublishActionChange={() => {}}
         />
       </ThemeProvider>
     </QueryClientProvider>
@@ -216,6 +227,36 @@ describe('ListingCreateForm — publish', () => {
     expect(payload.details).toMatchObject({ ...RIDE_FILL, reward_model: 'free' });
     expect(payload.details).not.toHaveProperty('cost_share_ils');
     expect(mocks.rememberRideRoute).toHaveBeenCalledWith(expect.objectContaining(RIDE_FILL));
+  });
+
+  it('a recurring ride publishes a series and opens its first occurrence (FR-RIDE-046)', async () => {
+    mocks.createRideSeries.mockResolvedValue({ seriesId: 'series-1', firstListingId: 'occurrence-1' });
+    const { onPublished } = renderForm('rides', 'give');
+    fireEvent.click(await screen.findByTestId('ride-section-fill'));
+    fireEvent.click(screen.getByTestId('ride-section-recur'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('listing-publish'));
+    });
+    await waitFor(() => expect(onPublished).toHaveBeenCalledWith('occurrence-1'));
+    expect(mocks.createListing).not.toHaveBeenCalled();
+    const input = mocks.createRideSeries.mock.calls[0]![0] as {
+      kindId: string; details: Record<string, unknown>; schedule: { weekdays: number[]; time: string; endsOn: string | null }; durationMinutes: number | null;
+    };
+    expect(input.kindId).toBe('k-ride_offer');
+    // The time of day of the departure, as the device shows it; the template carries no times.
+    expect(input.schedule).toEqual({ weekdays: [0, 4], time: expect.stringMatching(/^\d{2}:\d{2}$/), endsOn: null });
+    expect(input.details).not.toHaveProperty('departs_at');
+    expect(input.details).toMatchObject({ origin_lat: RIDE_FILL.origin_lat, reward_model: 'free' });
+    expect(mocks.rememberRideRoute).toHaveBeenCalled();
+  });
+
+  it('a recurring ride needs at least one weekday', async () => {
+    renderForm('rides', 'give');
+    fireEvent.click(await screen.findByTestId('ride-section-fill'));
+    fireEvent.click(screen.getByTestId('ride-section-recur-nodays'));
+    fireEvent.click(screen.getByTestId('listing-publish'));
+    expect((await screen.findByTestId('listing-error')).textContent).toBe('rideSeries.errors.weekdaysRequired');
+    expect(mocks.createRideSeries).not.toHaveBeenCalled();
   });
 
   it('keeps the ride route and departure when the direction switches', async () => {

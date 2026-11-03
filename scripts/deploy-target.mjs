@@ -96,6 +96,10 @@ export function resolveTarget({ event, ref, sha, workflowRun, repo }) {
     sha = workflowRun.head_sha;
   } else if (event === 'workflow_dispatch') {
     branch = ref?.replace(/^refs\/heads\//, '');
+  } else if (event === 'push') {
+    // dev only (#1430): judged like a dispatch of the pushed SHA.
+    if (ref !== 'refs/heads/dev') throw new Error(`only dev deploys on push (got ${ref})`);
+    branch = 'dev';
   } else {
     throw new Error(`deploy cannot run on ${event}`);
   }

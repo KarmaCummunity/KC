@@ -32,11 +32,16 @@ export default function EditMyListingScreen() {
 
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
+  // Seed the form once per listing; a background refetch must not overwrite edits.
+  const loadedListingId = detailQuery.data?.listingId;
+  const detailRef = React.useRef(detailQuery.data);
+  detailRef.current = detailQuery.data;
   React.useEffect(() => {
-    if (!detailQuery.data) return;
-    setTitle(detailQuery.data.title);
-    setSummary(detailQuery.data.summary ?? '');
-  }, [detailQuery.data?.listingId]);
+    const detail = detailRef.current;
+    if (!detail) return;
+    setTitle(detail.title);
+    setSummary(detail.summary ?? '');
+  }, [loadedListingId]);
 
   const save = async () => {
     setSaving(true);

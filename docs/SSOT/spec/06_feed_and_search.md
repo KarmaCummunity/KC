@@ -114,17 +114,19 @@ of active filters when >0; the old in-feed "X filters active" chip
 **Acceptance Criteria.**
 - AC1. Filter set:
    - **Search** (top of sheet): free-text field per `FR-FEED-003`.
-   - **Sort**: `Newest first` (default) / `Oldest first` / `By proximity`. When
+   - **Sort**: `Newest first` (default) / `Oldest first` / `By proximity` / `For you`. When
      `By proximity` is selected, a city picker resolves the center of the
      ranking; default is the viewer's registered city.
    - **Type**: `All` / `Givers only` / `Requesters only`.
-   - **Category**: multi-select from the canonical 10 categories.
-   - **Item condition**: multi-select; rendered only when `Type = Givers only`
-     (`New` / `LikeNew` / `Good` / `Fair`).
+   - **Giving world**: single-select giving world (`All` chip, plus items, rides, food, housing, time, money, knowledge, medical, animals, environment, creative, app design).
+   - **World subcategory**: multi-select row displayed when a giving world is selected, loaded dynamically from that world's active child categories. Tapping `All` selects all subcategories; changing or clearing the giving world clears any selected subcategories.
+   - **Item condition**: multi-select; rendered only when `Type = Givers only` and the selected world is items (or `All` / none)
+     (`New` / `LikeNew` / `Good` / `Fair` / `Damaged`).
    - **Location**: city picker + radius slider (`5 / 10 / 25 / 50 / 100` km).
      When set, the feed includes only posts whose city is within the radius
      of the chosen center city. Defaults to no spatial filter.
    - **Status**: 3-mode — `Open only` (default) / `Closed only` / `All`.
+   - **Source**: `All` / `Only people I follow` (`FR-FEED-020`).
 - AC2. Filters compose with AND semantics. Sort is independent of filters.
 - AC3. Changes **auto-commit** to the persisted store on every control change
    (chips immediately; search text after `FR-FEED-003` debounce). There is
@@ -137,6 +139,7 @@ of active filters when >0; the old in-feed "X filters active" chip
    state.
 
 **Related.** Screens: 2.2 · `FR-FEED-013` (deprecated) · `FR-FEED-018`.
+**Shared filter kit (#1457).** Implemented on top of `@kc/mobile`'s shared `filterKit` (`FilterSearchBar`, `FilterButton`, `FilterChipRow`, `FilterSection`, `SortSection`, `FilterSheetFrame`). Full component and surface inventory in spec 17 §4.1.2.
 
 ---
 
@@ -501,7 +504,7 @@ The main feed shows open posts of **every** create category (items, rides, food,
 **Source.** PM request 2026-11-01 (create-form cleanup); `docs/spec/07_cross_cutting_systems.md` §7.3; `D-206` (feed mirror).
 
 **Acceptance Criteria.**
-- AC1. ✅ A published open listing of rides, housing or time appears in the main feed like items and food do today (`worlds.feed_mirror`, migration `0466`), and opening it from the feed opens the listing detail. Shipped in `0522`: `feed_mirror` on for every create category; the mirror records `posts.listing_world_slug`, so the feed card shows the world chip and icon (rides / food / housing / time) instead of "Other" (`feedCardCategory`); the mirror keeps the listing's privacy (housing and time default to followers-only, `worlds.default_anonymity_level`); launch flags never hide listings from the main feed (D60). `feed_visible_posts` re-created so the signed-in feed returns `listing_id` and the world. Tests: `supabase/tests/0522_feed_mirror_every_world.sql`, `feedCardCategory.test.ts`, `PostCardGrid.world.test.tsx`.
+- AC1. ✅ A published open listing of rides, housing or time appears in the main feed like items and food do today (`worlds.feed_mirror`, migration `0466`), and opening it from the feed opens the listing detail; Back returns to the feed in one step. Shipped in `0522`: `feed_mirror` on for every create category; the mirror records `posts.listing_world_slug`, so the feed card shows the world chip and icon (rides / food / housing / time) instead of "Other" (`feedCardCategory`); the mirror keeps the listing's privacy (housing and time default to followers-only, `worlds.default_anonymity_level`); launch flags never hide listings from the main feed (D60). `feed_visible_posts` re-created so the signed-in feed returns `listing_id` and the world. Tests: `supabase/tests/0522_feed_mirror_every_world.sql`, `feedCardCategory.test.ts`, `PostCardGrid.world.test.tsx`; Maestro `06-feed-open-post` covers feed → listing → Back → feed.
 - AC2. ✅ Each active world screen (items, rides, food, housing, time) shows: search within the world, a "request" and an "offer" button that open the create form preset to that category and direction, and the world's feed of open offers and requests (subcategory + distance refinements where the world has them, `BrowseRefineChips`), plus the world's own sub-screens (my handoffs, my rides, shifts…). Done for items, food and rides (2026-11-01): `WorldHubHeader` ("לבקש" / "להציע" → `createRouteFor(world, direction)`, the create form honours `&direction=`; my handoffs + my listings), `WorldMarketplaceHub` for items / food (search within the world, all / offers / requests chips, `BrowseRefineChips`, keyset paging, empty state with clear) and the rides feed with its route search. Housing and time (2026-11-02): `/donations/housing` and the time world screen run on the same hub; the time screen keeps the organisations' volunteering opportunities (three-row preview that expands in place) and its shifts / organizer / contact screens. Tests also: `housingTimeWorldScreens.test.tsx`, `TimeOpportunitiesSection.test.tsx`. Tests: `worldFeed.test.ts`, `WorldMarketplaceHub.test.tsx`, `useUnifiedCreateCategory.test.tsx`, Maestro `14-world-feed`.
 - AC3. ✅ A world whose launch flag is off stays a portal (D60) and shows no feed. `WorldLaunchGate` on every world screen; tested for housing and time. The time world is active (`0523`); housing stays a portal until TD-245 (verification pre-check on the create form) ships.
 

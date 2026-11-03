@@ -92,8 +92,16 @@ const steps = (job) => (Array.isArray(job.steps) ? job.steps : []);
 function checkTriggers(file, doc) {
   const on = triggers(doc);
   if (file === ORCHESTRATOR) {
-    const extra = on.filter((t) => !['workflow_run', 'workflow_dispatch'].includes(t));
-    return extra.length ? [`${file}: may trigger only on workflow_run / workflow_dispatch (found ${extra.join(', ')})`] : [];
+    const extra = on.filter((t) => !['workflow_run', 'workflow_dispatch', 'push'].includes(t));
+    const errors = extra.length ? [`${file}: may trigger only on workflow_run / workflow_dispatch / push to dev (found ${extra.join(', ')})`] : [];
+    if (on.includes('push')) {
+      const push = (doc?.on ?? doc?.[true])?.push;
+      const branches = push?.branches;
+      const devOnly = Array.isArray(branches) && branches.length === 1 && branches[0] === 'dev'
+        && Object.keys(push).every((k) => k === 'branches');
+      if (!devOnly) errors.push(`${file}: a push trigger must be exactly branches: [dev] (prod never deploys on push)`);
+    }
+    return errors;
   }
   if (!Object.hasOwn(STAGES, file)) return [];
   const extra = on.filter((t) => t !== 'workflow_call' && !STAGES[file].includes(t));

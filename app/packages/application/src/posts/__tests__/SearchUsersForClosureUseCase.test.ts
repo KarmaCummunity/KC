@@ -61,4 +61,16 @@ describe('SearchUsersForClosureUseCase', () => {
 
     expect(capturedLimit).toBe(20);
   });
+
+  it('maps missing or null cityName to null in candidate', async () => {
+    const userRepo: Partial<IUserRepository> = {
+      async searchUsers() {
+        return [mkUser({ userId: 'u_b', displayName: 'User B', cityName: null })];
+      },
+    };
+    const uc = new SearchUsersForClosureUseCase(userRepo as IUserRepository);
+
+    const results = await uc.execute({ query: 'b', ownerId: 'u_owner' });
+    expect(results[0]?.cityName).toBeNull();
+  });
 });

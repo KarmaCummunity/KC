@@ -2,6 +2,8 @@
 
 Demand-driven translation for Karma Community user-generated content. Translations are materialized lazily per `(content_type, content_id, field, target_language)`, cached in Postgres, and served on subsequent reads.
 
+For the KC mobile app, `target_language` is always the active app UI language from the i18n module (`he` or `en`). There is no separate translation-language setting; changing the app language changes the target reactively. `users.preferred_language` is a legacy, unused column for this behavior: its database column and read mapping remain, but mobile translation does not read or write it. The `ugc_auto_translation` feature flag remains off.
+
 ## Architecture
 
 ```mermaid

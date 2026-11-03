@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { brand, lightColors } from '@kc/ui';
@@ -103,6 +103,16 @@ describe('brand guard', () => {
   it('keeps the baseline tight after cleanups (rerun with KC_BRAND_BASELINE=update)', () => {
     expect(shrank).toEqual([]);
   });
+
+  it('keeps admin surfaces completely free of brand-guard findings (spec 17 §4.3, issue #1287)', () => {
+    const adminFindings = Object.entries(current)
+      .filter(([file]) => file.startsWith('app/(admin)/') || file.startsWith('src/components/admin/'))
+      .map(([file, counts]) => `${file}: ${JSON.stringify(counts)}`);
+    expect(
+      adminFindings,
+      'admin surfaces must remain 100% on tokens — no findings permitted even in the baseline',
+    ).toEqual([]);
+  });
 });
 
 describe('touched-file rule (spec 17 §6, D67)', () => {
@@ -129,8 +139,18 @@ describe('touched-file rule (spec 17 §6, D67)', () => {
 
 describe('brand identity in the shipped app', () => {
   const appJson = JSON.parse(readFileSync(path.join(MOBILE_ROOT, 'app.json'), 'utf8')) as {
-    expo: { name: string; userInterfaceStyle: string; web: { themeColor: string }; plugins: unknown[] };
+    expo: {
+      name: string;
+      userInterfaceStyle: string;
+      splash: { backgroundColor: string };
+      android: { adaptiveIcon: { backgroundColor: string } };
+      web: { themeColor: string; backgroundColor: string; favicon: string };
+      plugins: unknown[];
+    };
   };
+  /** The `[name, options]` plugin entry, or undefined. */
+  const pluginOptions = <T,>(name: string): T | undefined =>
+    (appJson.expo.plugins.find((plugin) => Array.isArray(plugin) && plugin[0] === name) as [string, T] | undefined)?.[1];
 
   it('uses the English brand name in the English bundle', () => {
     expect(en.appName).toBe(`${brand.shortName} - ${brand.name}`);
@@ -143,13 +163,26 @@ describe('brand identity in the shipped app', () => {
 
   // Config files cannot import tokens, so these copies of the decoration orange are pinned here.
   it('keeps browser chrome and notification colours on the primaryVivid token', () => {
-    const notificationPlugin = appJson.expo.plugins.find(
-      (plugin): plugin is [string, { color: string }] => Array.isArray(plugin) && plugin[0] === 'expo-notifications',
-    );
+    const notificationPlugin = pluginOptions<{ color: string }>('expo-notifications');
     const htmlHead = readFileSync(path.join(MOBILE_ROOT, 'app/+html.tsx'), 'utf8');
     expect(appJson.expo.web.themeColor).toBe(lightColors.primaryVivid);
-    expect(notificationPlugin?.[1].color).toBe(lightColors.primaryVivid);
+    expect(notificationPlugin?.color).toBe(lightColors.primaryVivid);
     expect(htmlHead).toContain(`name="theme-color" content="${lightColors.primaryVivid}"`);
+  });
+
+  // Spec 17 §2 (#1290): the logo lands on the cream the app opens with, not on white.
+  it('sits the splash, adaptive icon and web page on the light background token', () => {
+    const splashPlugin = pluginOptions<{ backgroundColor: string }>('expo-splash-screen');
+    expect(appJson.expo.splash.backgroundColor).toBe(lightColors.background);
+    expect(splashPlugin?.backgroundColor).toBe(lightColors.background);
+    expect(appJson.expo.android.adaptiveIcon.backgroundColor).toBe(lightColors.background);
+    expect(appJson.expo.web.backgroundColor).toBe(lightColors.background);
+  });
+
+  // Spec 17 §2: the favicon is the derived asset, not the full-size store icon.
+  it('points the web favicon at the derived favicon asset', () => {
+    expect(appJson.expo.web.favicon).toBe('./assets/favicon.png');
+    expect(existsSync(path.join(MOBILE_ROOT, 'assets/favicon.png'))).toBe(true);
   });
 
   // FR-SETTINGS-014: a forced "light" style made the OS report light forever, so

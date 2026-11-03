@@ -109,6 +109,8 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Run P0 journeys
         working-directory: tests/e2e
+        env:
+          E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
         run: npm test
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()

@@ -10,10 +10,13 @@ vi.mock('../../services/postsComposition', () => ({
   getTranslatedPostsUseCase: () => ({ execute: getExec }),
   materializePostTranslationsUseCase: () => ({ execute: matExec }),
 }));
+const flagOn = { value: true };
+vi.mock('../useFeatureFlag', () => ({ useFeatureFlag: () => flagOn.value }));
 
 import { useTranslatedPosts } from '../useTranslatedPosts';
+import type { PostWithOwner } from '@kc/application';
 
-const post = { postId: 'p1', title: 'Hello', description: null, sourceLanguage: 'en' } as any;
+const post = { postId: 'p1', title: 'Hello', description: null, sourceLanguage: 'en' } as unknown as PostWithOwner;
 const TITLE_ONLY = ['title'] as const;
 const wrapper = ({ children }: { children: React.ReactNode }) =>
   React.createElement(QueryClientProvider, { client: new QueryClient() }, children);
@@ -36,10 +39,22 @@ describe('useTranslatedPosts', () => {
 
   it('only requests the fields in the filter', async () => {
     getExec.mockResolvedValue({ hits: [], misses: [] });
-    const both = { postId: 'p2', title: 'Hello', description: 'World', sourceLanguage: 'en' } as any;
+    const both = { postId: 'p2', title: 'Hello', description: 'World', sourceLanguage: 'en' } as unknown as PostWithOwner;
     renderHook(() => useTranslatedPosts([both], 'he', TITLE_ONLY), { wrapper });
     await waitFor(() => expect(getExec).toHaveBeenCalled());
-    const fieldsArg = getExec.mock.calls[0][0].fields.map((f: any) => f.field);
+    const fieldsArg = getExec.mock.calls[0][0].fields.map((f: { field: string }) => f.field);
     expect(fieldsArg).toEqual(['title']); // description excluded by the filter
+  });
+});
+
+describe('useTranslatedPosts flag off', () => {
+  it('does not call translation when ugc_auto_translation is off', async () => {
+    flagOn.value = false;
+    getExec.mockClear();
+    const { result } = renderHook(() => useTranslatedPosts([post], 'he'), { wrapper });
+    expect(result.current.getTranslatedFields('p1').title).toBeUndefined();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(getExec).not.toHaveBeenCalled();
+    flagOn.value = true;
   });
 });

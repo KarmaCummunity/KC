@@ -52,7 +52,9 @@ test('a dispatch deploys the dispatched ref SHA, from dev or main only', () => {
 });
 
 test('other events and malformed SHAs are refused', () => {
-  assert.throws(() => resolveTarget({ event: 'push', ref: 'refs/heads/dev', sha: SHA }), /cannot run on push/);
+  assert.throws(() => resolveTarget({ event: 'push', ref: 'refs/heads/main', sha: SHA }), /only dev deploys on push/);
+  assert.throws(() => resolveTarget({ event: 'pull_request', ref: 'refs/heads/dev', sha: SHA }), /cannot run on pull_request/);
+  assert.deepEqual(resolveTarget({ event: 'push', ref: 'refs/heads/dev', sha: SHA }), { branch: 'dev', sha: SHA, target: 'dev', trigger: 'dispatch' });
   assert.throws(() => resolveTarget({ event: 'workflow_dispatch', ref: 'refs/heads/dev', sha: 'abc' }), /not a commit SHA/);
 });
 

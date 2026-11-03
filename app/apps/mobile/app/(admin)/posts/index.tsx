@@ -1,17 +1,18 @@
 // app/apps/mobile/app/(admin)/posts/index.tsx
 // FR-ADMIN-019 — admin posts search screen.
+// Rebuilt on top of the shared filterKit (issue #1457).
 import { useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { adminChipScroll } from '../../../src/components/admin/adminChipScroll';
+import { RefreshControl, View } from 'react-native';
 import { type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
-import { makeUseStyles, radius, spacing, Text, TextInput, typography } from '@kc/ui';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { useAdminPostSearch } from '../../../src/hooks/useAdminContentSearch';
 import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
 import { PostSearchRow } from '../../../src/components/admin/content/PostSearchRow';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
-import { rtlTextAlignStart } from '../../../src/lib/rtlTextAlignStart';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
+import { FilterSearchBar } from '../../../src/components/filterKit/FilterSearchBar';
+import { FilterChipRow } from '../../../src/components/filterKit/FilterChipRow';
 
 const STATUS_OPTIONS = [
   { value: null,                       key: 'all' as const },
@@ -48,27 +49,23 @@ export default function PostsScreen() {
   return (
     <View style={styles.root}>
       <AdminScreenHeader title={L.admin.content.postsTitle} />
-      <TextInput // brand-guard-allow: search bar, not a form field (spec 17 §4.1)
-        style={styles.search}
+      <FilterSearchBar
+        style={styles.searchWrap}
         value={query}
         onChangeText={setQuery}
         placeholder={L.admin.content.searchPostsPlaceholder}
         autoCapitalize="none"
-        autoCorrect={false}
       />
-      <ScrollView horizontal style={adminChipScroll.scroll} showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.chips, adminChipScroll.content]}>
-        {STATUS_OPTIONS.map((s) => (
-          <Pressable
-            key={s.key}
-            onPress={() => setStatusFilter(s.value)}
-            style={[styles.chip, statusFilter === s.value && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, statusFilter === s.value && styles.chipTextActive]}>
-              {L.admin.content.postStatusFilter[s.key]}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      <FilterChipRow<string>
+        scrollable
+        options={STATUS_OPTIONS.map((s) => ({
+          value: s.value ?? '__all__',
+          label: L.admin.content.postStatusFilter[s.key],
+        }))}
+        value={statusFilter ?? '__all__'}
+        onChange={(val) => setStatusFilter(val === '__all__' || val === null ? null : val)}
+        contentContainerStyle={styles.chips}
+      />
       <Text style={styles.totalLabel}>{L.admin.content.totalCount(result.page.totalCount)}</Text>
       <KcFlashList
         data={[...result.page.rows]}
@@ -91,18 +88,9 @@ const useStyles = makeUseStyles(({ colors }) => ({
   root:        { flex: 1, backgroundColor: colors.background },
   center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   deniedTitle: { ...typography.h3, ...typography.bold },
-  search: {
-    marginHorizontal: spacing.base, marginBottom: spacing.sm, padding: spacing.md,
-    borderRadius: radius.md, backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border,
-    textAlign: rtlTextAlignStart, ...typography.body,
-  },
-  chips:          { paddingHorizontal: spacing.base, gap: spacing.sm, paddingBottom: spacing.sm },
-  chip:           { paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: radius.lg, backgroundColor: colors.secondaryLight },
-  chipActive:     { backgroundColor: colors.primary },
-  chipText:       { ...typography.label },
-  chipTextActive: { color: colors.textInverse },
-  totalLabel:     { paddingHorizontal: spacing.base, paddingBottom: spacing.xs, ...typography.caption, opacity: 0.6 },
-  empty:          { padding: spacing['2xl'], alignItems: 'center' },
-  emptyText:      { ...typography.body, opacity: 0.6 },
+  searchWrap:  { marginHorizontal: spacing.base, marginBottom: spacing.sm },
+  chips:       { paddingHorizontal: spacing.base, gap: spacing.sm, paddingBottom: spacing.sm },
+  totalLabel:  { paddingHorizontal: spacing.base, paddingBottom: spacing.xs, ...typography.caption, color: colors.textSecondary },
+  empty:       { padding: spacing['2xl'], alignItems: 'center' },
+  emptyText:   { ...typography.body, color: colors.textSecondary },
 }));

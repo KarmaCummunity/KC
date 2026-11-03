@@ -6,7 +6,7 @@ import React from 'react';
 import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, iconSize, shadow, useTheme, Text } from '@kc/ui';
 
 interface NewPostsBannerProps {
   count: number;
@@ -22,7 +22,7 @@ export function NewPostsBanner({ count, onPress }: NewPostsBannerProps) {
   return (
     <View style={styles.wrap}>
       <Pressable style={styles.pill} onPress={onPress} accessibilityRole="button" accessibilityLabel={label}>
-        <Ionicons name="arrow-up" size={16} color={colors.textInverse} />
+        <Ionicons name="arrow-up" size={iconSize.sm} color={colors.textInverse} />
         <Text style={styles.text}>{label}</Text>
       </Pressable>
     </View>
@@ -39,11 +39,10 @@ const useNewPostsBannerStyles = makeUseStyles(({ colors, isDark }) => ({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: radius.full,
+    ...shadow.glow,
     shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: isDark ? 0 : 0.25,
-    shadowRadius: 10,
-    elevation: isDark ? 0 : 4,
+    shadowOpacity: isDark ? 0 : shadow.glow.shadowOpacity,
+    elevation: isDark ? 0 : shadow.glow.elevation,
   },
-  text: { ...typography.caption, color: colors.textInverse, fontWeight: '700' as const },
+  text: { ...typography.caption, color: colors.textInverse, ...typography.bold },
 }));

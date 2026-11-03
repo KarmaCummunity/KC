@@ -7,7 +7,7 @@ import React from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import i18n from '../../src/i18n';
 import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
@@ -100,7 +100,7 @@ const useScreenStyles = makeUseStyles(({ colors }) => ({
   },
   optionGroup: {
     backgroundColor: colors.surface,
-    borderRadius: 14,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden' as const,

@@ -32,7 +32,7 @@ const useLocationDisplayLevelChooserStyles = makeUseStyles(({ colors, isDark }) 
     borderColor: colors.border,
     alignItems: 'center' as const,
     backgroundColor: colors.surface,
-    gap: 2,
+    gap: spacing.xs,
   },
   btnActive: { backgroundColor: colors.primarySurface, borderColor: colors.primary },
   btnLabel: { ...typography.label, color: colors.textSecondary },

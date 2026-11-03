@@ -1,11 +1,15 @@
 import '../src/lib/polyfills';
-import { initSentry } from '../src/lib/observability/sentry';
-import { initPosthog } from '../src/lib/observability/posthog';
-void initSentry();
-void initPosthog();
 import { startMark, finishMark } from '../src/lib/observability/perfMarks';
 startMark('app.cold_start');
-import '../src/i18n';
+import { initSentry } from '../src/lib/observability/sentry';
+import { initPosthog } from '../src/lib/observability/posthog';
+import { installGlobalErrorHandlers } from '../src/lib/observability/globalErrorHandlers';
+import { useUncaughtErrorStore } from '../src/store/uncaughtErrorStore';
+// KC#1410: the global handlers wrap Sentry's, so they install once init settled.
+void initSentry().then(() =>
+  installGlobalErrorHandlers((error) => useUncaughtErrorStore.getState().show(error)),
+);
+void initPosthog();
 import i18n from '../src/i18n';
 import React, { useEffect } from 'react';
 import { RevenueCatSync } from '../src/services/purchases/RevenueCatSync';
@@ -30,6 +34,8 @@ import { ShellWithResponsiveChrome } from '../src/components/shell/ShellWithResp
 import { AppThemeProvider } from '../src/components/AppThemeProvider';
 import { NotificationsBridge } from '../src/components/NotificationsBridge';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
+export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
+import { UncaughtErrorGate } from '../src/components/UncaughtErrorGate';
 import { SoftGateProvider } from '../src/components/OnboardingSoftGate';
 import { AuthGate } from '../src/components/AuthGate';
 import { useDetailStackScreenOptions } from '../src/navigation/detailStackScreenOptions';
@@ -130,6 +136,7 @@ function ThemedRootShell() {
               <Stack.Screen name="research" options={{ headerShown: false }} />
               <Stack.Screen name="edit-profile" options={{ ...detailStackScreenOptions, headerTitle: i18n.t('settings.editProfileTitle') }} />
               <Stack.Screen name="post/[id]" options={{ ...detailStackScreenOptions, headerTitle: i18n.t('post.detailTitle') }} />
+              <Stack.Screen name="listing/[listingId]" options={{ ...detailStackScreenOptions, headerTitle: '' }} />
               {/* user/[handle]/* owns its own header via the nested _layout */}
               <Stack.Screen name="user/[handle]" options={{ headerShown: false }} />
               {/* In-screen `ChatConversationHeader` owns the top bar; a native-stack header
@@ -180,7 +187,11 @@ function RootLayoutContent() {
             <MeRealtimeMount />
             <RevenueCatSync />
             <AppThemeProvider>
-              <ThemedRootShell />
+              {/* KC#1410: a fatal uncaught JS error shows the themed fallback;
+                  retry remounts the shell instead of the OS killing the app. */}
+              <UncaughtErrorGate>
+                <ThemedRootShell />
+              </UncaughtErrorGate>
             </AppThemeProvider>
           </PersistQueryClientProvider>
         </ErrorBoundary>

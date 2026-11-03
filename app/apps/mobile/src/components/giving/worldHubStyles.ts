@@ -1,4 +1,4 @@
-import { spacing, typography } from '@kc/ui';
+import { radius, spacing, typography } from '@kc/ui';
 
 type HubColors = {
   readonly textPrimary: string;
@@ -18,15 +18,15 @@ export function worldHubBaseStyles(colors: HubColors) {
       gap: spacing.md,
       paddingHorizontal: spacing.lg,
     },
-    link: { ...typography.body, color: colors.primary, fontWeight: '600' as const },
+    link: { ...typography.body, color: colors.primary, ...typography.semiBold },
     row: {
       marginHorizontal: spacing.lg,
       marginBottom: spacing.sm,
       padding: spacing.md,
-      borderRadius: 12,
+      borderRadius: radius.md,
       backgroundColor: colors.surfaceRaised,
     },
     rowTitle: { ...typography.bodyLarge, color: colors.textPrimary },
-    rowMeta: { ...typography.caption, color: colors.textSecondary, marginTop: 4 },
+    rowMeta: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
   };
 }

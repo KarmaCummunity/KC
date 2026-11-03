@@ -19,6 +19,8 @@ import { usePasswordResetStyles } from '../../src/components/auth/passwordResetS
 import { AuthStatusScreen } from '../../src/components/auth/AuthStatusScreen';
 import { PrimaryButton } from '../../src/components/ui/Buttons';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
+
 type Phase = 'form' | 'done' | 'invalid';
 
 /** Errors meaning the link itself is unusable (expired, used, or malformed). */

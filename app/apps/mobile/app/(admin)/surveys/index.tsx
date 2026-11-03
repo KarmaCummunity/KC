@@ -21,6 +21,8 @@ import { FeedbackCard } from '../../../src/components/admin/surveys/FeedbackCard
 import { rowDirectionStart } from '../../../src/lib/rtlLayout';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+
 type Tab = 'surveys' | 'feedback';
 
 export default function AdminSurveysScreen() {

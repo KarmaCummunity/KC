@@ -46,6 +46,7 @@ jobs:
       - name: Resolve kc-dev environment (public anon key + seed password)
         env:
           DEV_WEB_URL: ${{ vars.DEV_WEB_URL }}
+          E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
         run: |
           set -euo pipefail
           node scripts/maestro-dev-env.mjs > "$RUNNER_TEMP/kc-dev.env"
@@ -68,6 +69,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       - name: Build E2E release APK (expo prebuild + Gradle)
+        id: build-apk
+        continue-on-error: true
         working-directory: app/apps/mobile
         env:
           KC_E2E_BUILD: '1'
@@ -84,6 +87,26 @@ jobs:
           ./gradlew assembleRelease -PreactNativeArchitectures="$E2E_ABI" --console=plain
           echo "E2E_APK=$PWD/app/build/outputs/apk/release/app-release.apk" >> "$GITHUB_ENV"
 
+      - name: Retry build E2E release APK on failure
+        if: steps.build-apk.outcome == 'failure'
+        working-directory: app/apps/mobile
+        env:
+          KC_E2E_BUILD: '1'
+          SENTRY_DISABLE_AUTO_UPLOAD: 'true'
+          NODE_ENV: production
+        run: |
+          set -euo pipefail
+          echo "::warning::First Gradle build attempt failed; retrying assembleRelease..."
+          if [ ! -d "android" ]; then
+            npx expo prebuild --platform android --no-install --clean
+          fi
+          cd android
+          sed -i 's/^org\.gradle\.jvmargs=.*/org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1536m/' gradle.properties
+          grep -q '^org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1536m$' gradle.properties || true
+          ./gradlew --stop || true
+          ./gradlew assembleRelease -PreactNativeArchitectures="$E2E_ABI" --console=plain
+          echo "E2E_APK=$PWD/app/build/outputs/apk/release/app-release.apk" >> "$GITHUB_ENV"
+
       - name: Install Maestro
         run: |
           set -euo pipefail
@@ -96,6 +119,17 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: AVD cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-34-${{ runner.os }}
+          restore-keys: |
+            avd-34-
+
       - name: Run Maestro flows on the emulator
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
@@ -103,6 +137,7 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_6
+          force-avd-creation: false
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           # One command: the action runs each script line in its own shell.

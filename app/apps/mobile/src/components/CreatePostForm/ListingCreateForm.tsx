@@ -1,7 +1,7 @@
 // Mapped to spec: FR-POST-001 AC6 — the create form of the listing categories (rides, food,
 // housing, time). Same layout and controls as the items post form: header → photos → title
 // → category-specific fields → description → location → publish.
-import React, { type ReactNode } from 'react';
+import React, { useEffect, useRef, type ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { MAX_MEDIA_ASSETS } from '@kc/domain';
@@ -31,6 +31,7 @@ interface Props {
   readonly summary: string;
   readonly onSummaryChange: (v: string) => void;
   readonly onPublished: (listingId: string) => void;
+  readonly onPublishActionChange: (action: (() => void) | null, loading: boolean) => void;
 }
 
 export function ListingCreateForm({
@@ -42,12 +43,20 @@ export function ListingCreateForm({
   summary,
   onSummaryChange,
   onPublished,
+  onPublishActionChange,
 }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useCreatePostStyles();
   const tabBarPad = useShellTabBarScrollInset();
   const form = useListingCreateForm({ worldSlug, direction, title, summary, onPublished });
+  const publishRef = useRef(form.publish);
+  publishRef.current = form.publish;
+
+  useEffect(() => {
+    onPublishActionChange(() => void publishRef.current(), form.busy);
+    return () => onPublishActionChange(null, false);
+  }, [form.busy, onPublishActionChange]);
 
   const addPhotos = async () => {
     const next = await pickListingImages(form.photos.length);
@@ -95,6 +104,8 @@ export function ListingCreateForm({
             setDetails={form.setDetails}
             onOriginCity={form.setCity}
             isOffer={direction === 'give'}
+            recurrence={form.recurrence}
+            onRecurrenceChange={form.setRecurrence}
             disabled={form.busy}
           />
         ) : null}

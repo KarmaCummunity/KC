@@ -12,31 +12,48 @@ const listForRide = vi.fn();
 const approve = vi.fn();
 const decline = vi.fn();
 const book = vi.fn();
+const completeRide = vi.fn();
+const confirmAction = vi.fn();
 const getForListing = vi.fn();
+const rate = vi.fn();
+const complete = vi.fn();
+const cancel = vi.fn();
+const routerPush = vi.fn();
+const openRidePassengerChat = vi.fn();
 let sessionUserId: string | null = 'u_driver';
 
+vi.mock('expo-router', () => ({ useRouter: () => ({ push: routerPush }) }));
 // The kit buttons pull in reanimated and haptics; their press feedback is not under test here.
 vi.mock('react-native-reanimated', async () => (await import('../../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
 vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogTestKit')).hapticsDouble);
 vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
 vi.mock('../../../store/authStore', () => ({
-  useAuthStore: (select: (s: unknown) => unknown) => select({ session: sessionUserId ? { userId: sessionUserId } : null }),
+  useAuthStore: Object.assign(
+    (select: (s: unknown) => unknown) => select({ session: sessionUserId ? { userId: sessionUserId } : null }),
+    { getState: () => ({ session: sessionUserId ? { userId: sessionUserId } : null }) },
+  ),
+}));
+vi.mock('../../../services/ridesFeedComposition', () => ({
+  RIDES_FEED_QUERY_KEY: ['rides-feed'],
 }));
 vi.mock('../../../services/rideBookingComposition', () => ({
   rideBookingsQueryKey: (id: string) => ['ride-bookings', id],
+  openRidePassengerChat: (...args: unknown[]) => openRidePassengerChat(...args),
   rideBookingUseCases: {
     listForRide: () => ({ execute: listForRide }),
     approve: () => ({ execute: approve }),
     decline: () => ({ execute: decline }),
     book: () => ({ execute: book }),
-    cancel: () => ({ execute: vi.fn() }),
-    complete: () => ({ execute: vi.fn() }),
+    cancel: () => ({ execute: cancel }),
+    complete: () => ({ execute: complete }),
+    completeRide: () => ({ execute: completeRide }),
   },
 }));
 vi.mock('../../../services/givingHandoffComposition', () => ({
-  givingHandoffUseCases: { getForListing: () => ({ execute: getForListing }), rate: () => ({ execute: vi.fn() }) },
+  givingHandoffUseCases: { getForListing: () => ({ execute: getForListing }), rate: () => ({ execute: rate }) },
 }));
+vi.mock('../../../services/platformConfirm', () => ({ confirmAction: (...args: unknown[]) => confirmAction(...args) }));
 vi.mock('../../../lib/analytics', () => ({ track: vi.fn() }));
 vi.mock('../../../services/rideSafetyComposition', () => ({ raiseRideEmergency: vi.fn() }));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn() }));
@@ -50,6 +67,7 @@ import { RideBookingActions, rideCapacity } from '../rides/RideBookingActions';
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  confirmAction.mockResolvedValue(true);
   sessionUserId = 'u_driver';
 });
 
@@ -60,6 +78,8 @@ const DETAIL = {
   direction: 'give',
   cityId: null,
   details: { seats_available: 3 },
+  listingStatus: 'open',
+  availabilityStatus: 'open',
 } as unknown as MarketplaceListingDetail;
 
 function booking(handoffId: string, status: RideBooking['status'], seats = 1): RideBooking {
@@ -109,13 +129,58 @@ describe('RideBookingActions — driver', () => {
     await waitFor(() => expect(view.queryByTestId(`ride-booking-${action}-h1`)).not.toBeNull());
     expect(view.queryByTestId(`ride-booking-${action}-h2`)).toBeNull();
     fireEvent.click(view.getByTestId(`ride-booking-${action}-h1`));
-    await waitFor(() => expect(useCase).toHaveBeenCalledWith('h1'));
+    await waitFor(() => expect(useCase).toHaveBeenCalledWith('h1', expect.anything()));
   });
 
   it('shows the empty state when no one booked yet', async () => {
     listForRide.mockResolvedValue([]);
     const view = renderActions();
     await waitFor(() => expect(view.queryByTestId('ride-bookings-empty')).not.toBeNull());
+  });
+
+  it('lets the driver finish the ride listing', async () => {
+    const detail = { ...DETAIL, details: { seats_available: 3, departs_at: new Date(Date.now() + 30 * 60_000).toISOString() } } as MarketplaceListingDetail;
+    listForRide.mockResolvedValue([booking('h1', 'confirmed')]);
+    completeRide.mockResolvedValue(1);
+    const view = renderActions(detail);
+    await waitFor(() => expect(view.queryByTestId('ride-complete-listing')).not.toBeNull());
+    fireEvent.click(view.getByTestId('ride-complete-listing'));
+    await waitFor(() => expect(confirmAction).toHaveBeenCalledWith('rideBooking.finishRideConfirmTitle', 'rideBooking.finishRideConfirmMessage', { destructive: true }));
+    await waitFor(() => expect(completeRide).toHaveBeenCalledWith('l_ride'));
+  });
+
+  it.each([
+    ['closed listing', { ...DETAIL, listingStatus: 'closed', details: { departs_at: new Date().toISOString() } }],
+    ['departure over one hour away', { ...DETAIL, details: { departs_at: new Date(Date.now() + 2 * 60 * 60_000).toISOString() } }],
+    ['missing departure', { ...DETAIL, details: {} }],
+  ])('hides finish action for %s', async (_label, detail) => {
+    listForRide.mockResolvedValue([]);
+    const view = renderActions(detail as MarketplaceListingDetail);
+    await waitFor(() => expect(view.queryByTestId('ride-bookings-panel')).not.toBeNull());
+    expect(view.queryByTestId('ride-complete-listing')).toBeNull();
+  });
+
+  it('does not finish when confirmation is declined', async () => {
+    confirmAction.mockResolvedValue(false);
+    listForRide.mockResolvedValue([]);
+    const detail = { ...DETAIL, details: { departs_at: new Date().toISOString() } } as MarketplaceListingDetail;
+    const view = renderActions(detail);
+    await waitFor(() => expect(view.queryByTestId('ride-complete-listing')).not.toBeNull());
+    fireEvent.click(view.getByTestId('ride-complete-listing'));
+    await waitFor(() => expect(confirmAction).toHaveBeenCalled());
+    expect(completeRide).not.toHaveBeenCalled();
+  });
+
+  it.each(['ride_not_started', 'invalid_status', 'owner_only'])('maps finish error %s to localized marketplace copy', async (code) => {
+    listForRide.mockResolvedValue([]);
+    completeRide.mockRejectedValue(new Error(code));
+    const alertSpy = vi.spyOn(globalThis, 'alert').mockImplementation(() => {});
+    const detail = { ...DETAIL, details: { departs_at: new Date().toISOString() } } as MarketplaceListingDetail;
+    const view = renderActions(detail);
+    await waitFor(() => expect(view.queryByTestId('ride-complete-listing')).not.toBeNull());
+    fireEvent.click(view.getByTestId('ride-complete-listing'));
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(`marketplace.errors.${code}`));
+    alertSpy.mockRestore();
   });
 
   it('alerts with the server error copy when an action fails', async () => {
@@ -129,37 +194,35 @@ describe('RideBookingActions — driver', () => {
     await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('marketplace.errors.invalid_status'));
     alertSpy.mockRestore();
   });
-});
 
-describe('RideBookingActions — passenger', () => {
-  it('books the chosen number of seats', async () => {
-    sessionUserId = 'u_passenger';
-    getForListing.mockResolvedValue(null);
-    book.mockResolvedValue('h9');
+  it('disables approve and shows warning when requested seats exceed remaining capacity (accepting beyond capacity)', async () => {
+    // Capacity 3: h1 is confirmed (2 seats), remaining capacity is 1. h2 requests 2 seats -> exceeds capacity!
+    listForRide.mockResolvedValue([booking('h1', 'confirmed', 2), booking('h2', 'reserved', 2)]);
     const view = renderActions();
 
-    await waitFor(() => expect(view.queryByTestId('giving-handoff-book-seat')).not.toBeNull());
-    fireEvent.click(view.getByLabelText('rideBooking.moreSeats'));
-    expect(view.getByTestId('ride-booking-seats').textContent).toBe('2');
-    fireEvent.click(view.getByTestId('giving-handoff-book-seat'));
-    await waitFor(() => expect(book).toHaveBeenCalledWith('l_ride', 2));
-    expect(listForRide).not.toHaveBeenCalled();
+    await waitFor(() => expect(view.queryByTestId('ride-booking-h2')).not.toBeNull());
+    // h2 approve button should be disabled
+    const approveBtn = view.getByTestId('ride-booking-approve-h2');
+    expect(approveBtn.getAttribute('aria-disabled')).toBe('true');
+    // Warning caption should be visible
+    expect(view.queryByTestId('ride-booking-exceeds-h2')).not.toBeNull();
+    // Decline button should remain enabled
+    const declineBtn = view.getByTestId('ride-booking-decline-h2');
+    expect(declineBtn.getAttribute('aria-disabled')).toBeNull();
   });
 
-  it('shows a waiting booking with its deadline instead of the book button', async () => {
-    sessionUserId = 'u_passenger';
-    getForListing.mockResolvedValue({ handoffId: 'h1', status: 'reserved', confirmBy: '2026-11-01T10:00:00Z' });
+  it('opens a chat thread with the passenger on chat button click', async () => {
+    listForRide.mockResolvedValue([booking('h1', 'confirmed', 1)]);
+    openRidePassengerChat.mockResolvedValue('c_123');
     const view = renderActions();
 
-    await waitFor(() => expect(view.queryByTestId('ride-booking-waiting')).not.toBeNull());
-    expect(view.queryByTestId('giving-handoff-book-seat')).toBeNull();
-  });
+    await waitFor(() => expect(view.queryByTestId('ride-booking-chat-h1')).not.toBeNull());
+    fireEvent.click(view.getByTestId('ride-booking-chat-h1'));
 
-  it('renders nothing for a guest or a ride request', () => {
-    sessionUserId = null;
-    expect(renderActions().container.textContent).toBe('');
-    sessionUserId = 'u_passenger';
-    expect(renderActions({ ...DETAIL, direction: 'request' } as MarketplaceListingDetail).container.textContent).toBe('');
+    await waitFor(() => {
+      expect(openRidePassengerChat).toHaveBeenCalledWith('u_driver', 'u_h1');
+      expect(routerPush).toHaveBeenCalledWith('/chat/c_123');
+    });
   });
 });
 

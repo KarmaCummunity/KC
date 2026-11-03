@@ -12,7 +12,6 @@ import { View, TouchableOpacity, KeyboardAvoidingView, Platform, Image } from 'r
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, withDelay } from 'react-native-reanimated';
 import { makeUseStyles, typography, spacing, radius, shadow, iconSize, useTheme, Text } from '@kc/ui';
 import { VerificationPendingPanel } from './VerificationPendingPanel';
@@ -21,6 +20,7 @@ import { NotifyModal } from '../NotifyModal';
 import { AmbientBlobs } from '../ui/AmbientBlobs';
 import { AnimatedAuthInput } from './AnimatedAuthInput';
 import { PrimaryButton } from '../ui/Buttons';
+import { MirroredIcon, useDirectionalBackIcon } from '../ui/MirroredIcon';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import type { AuthEmailForm } from './useAuthEmailForm';
 
@@ -62,12 +62,21 @@ function useEntryMotion() {
   };
 }
 
-export function AuthFormScreen(props: AuthFormScreenProps) {
-  const { title, subtitle, form, footer } = props;
+export function AuthFormScreen({
+  title,
+  subtitle,
+  form,
+  passwordLabel,
+  passwordPlaceholder,
+  submitLabel,
+  beforeSubmit,
+  footer,
+}: AuthFormScreenProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   const router = useRouter();
   const motion = useEntryMotion();
+  const backIcon = useDirectionalBackIcon();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -77,7 +86,7 @@ export function AuthFormScreen(props: AuthFormScreenProps) {
           <View style={styles.content}>
             <Animated.View style={[styles.header, motion.header]}>
               <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-                <Ionicons name="arrow-forward" size={iconSize.xl} color={colors.primary} />
+                <MirroredIcon name={backIcon} size={iconSize.xl} color={colors.primary} />
               </TouchableOpacity>
               <Image source={require('../../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
             </Animated.View>
@@ -94,7 +103,13 @@ export function AuthFormScreen(props: AuthFormScreenProps) {
 
               {/* Kept mounted while an address is pending, so "change address" returns to the typed values. */}
               <View style={[styles.form, form.pendingEmail ? styles.hidden : null]}>
-                <AuthCredentialFields {...props} />
+                <AuthCredentialFields
+                  form={form}
+                  passwordLabel={passwordLabel}
+                  passwordPlaceholder={passwordPlaceholder}
+                  submitLabel={submitLabel}
+                  beforeSubmit={beforeSubmit}
+                />
               </View>
 
               {form.pendingEmail ? null : <View style={styles.footer}>{footer}</View>}
@@ -112,9 +127,14 @@ export function AuthFormScreen(props: AuthFormScreenProps) {
   );
 }
 
+/** The props the credential fields read: the form state, the password labels and the submit. */
+type AuthCredentialFieldsProps = Pick<
+  AuthFormScreenProps,
+  'form' | 'passwordLabel' | 'passwordPlaceholder' | 'submitLabel' | 'beforeSubmit'
+>;
+
 /** Address and password inputs, the optional extra action and the submit. */
-function AuthCredentialFields(props: AuthFormScreenProps) {
-  const { form, passwordLabel, passwordPlaceholder, submitLabel, beforeSubmit } = props;
+function AuthCredentialFields({ form, passwordLabel, passwordPlaceholder, submitLabel, beforeSubmit }: AuthCredentialFieldsProps) {
   const { t } = useTranslation();
   return (
     <>

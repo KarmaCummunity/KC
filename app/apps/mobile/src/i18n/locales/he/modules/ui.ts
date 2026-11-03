@@ -6,6 +6,7 @@
 export const errorBoundaryHe = {
   title: 'משהו השתבש',
   body: 'אפשר לנסות שוב או לרענן את האפליקציה.',
+  retry: 'לנסות שוב',
 } as const;
 
 export const devBannerHe = 'סביבת פיתוח · DEV — לא הפרודקשן';

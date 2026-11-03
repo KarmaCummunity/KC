@@ -23,6 +23,14 @@ vi.mock('../WorldMarketplaceHub', () => ({
   },
 }));
 vi.mock('../time/TimeOpportunitiesSection', () => ({ TimeOpportunitiesSection: () => null }));
+// The route files export the shared RouteErrorBoundary (KC#1410), whose expo-router
+// import is untransformed TSX under vitest; the screens themselves never navigate here.
+vi.mock('expo-router', () => ({ usePathname: () => '/' }));
+// The empty-state actions are kit buttons, which pull in reanimated and haptics (CTAs 3).
+vi.mock('react-native-reanimated', async () => (await import('../../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
+vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogTestKit')).hapticsDouble);
+vi.mock('@expo/vector-icons', async () => (await import('../../ui/__tests__/kitDialogTestKit')).iconsDouble);
+vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 
 import HousingWorldScreen from '../../../../app/(tabs)/donations/housing/index';
 import TimeWorldScreen from '../../../../app/(tabs)/donations/time/index';

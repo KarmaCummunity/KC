@@ -23,6 +23,10 @@ vi.mock('../../../../../hooks/useHierarchyPyramid', () => ({
   }),
 }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+// The retry is a kit button, which pulls in reanimated and haptics; its press feedback is not under test here.
+vi.mock('react-native-reanimated', async () => (await import('../../../../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
+vi.mock('expo-haptics', async () => (await import('../../../../ui/__tests__/kitDialogTestKit')).hapticsDouble);
+vi.mock('../../../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 // Entry animation pulls in reanimated; the layout under test does not depend on it.
 vi.mock('../../../../ui/MotionEntry', () => ({
   MotionEntry: ({ children }: { children: ReactNode }) => <>{children}</>,

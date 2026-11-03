@@ -52,7 +52,7 @@ const useSliderStyles = makeUseStyles(({ colors }) => ({
     borderColor: colors.border,
   },
   title: { ...typography.h4, color: colors.textPrimary, textAlign: 'center' as const },
-  amount: { ...typography.h3, color: colors.primary, textAlign: 'center' as const, marginTop: 2 },
+  amount: { ...typography.h3, color: colors.primary, textAlign: 'center' as const, marginTop: spacing.xs },
   slider: { width: '100%' as const, height: 40, marginTop: spacing.xs },
   hint: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' as const },
 }));

@@ -5,11 +5,13 @@
 import React from 'react';
 import { Pressable } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { iconSize, spacing } from '@kc/ui';
 import i18n from '../i18n';
+import { MirroredIcon, useDirectionalBackIcon } from './ui/MirroredIcon';
 
 /** Native-stack header views may mount outside the main tree, so `useTranslation()` has no context. */
 export function BackButton({ tintColor }: Readonly<{ tintColor: string }>) {
+  const backIcon = useDirectionalBackIcon();
   const onPress = () => {
     if (router.canGoBack()) {
       router.back();
@@ -23,9 +25,9 @@ export function BackButton({ tintColor }: Readonly<{ tintColor: string }>) {
       hitSlop={12}
       accessibilityRole="button"
       accessibilityLabel={i18n.t('general.back')}
-      style={{ paddingHorizontal: 8 }}
+      style={{ paddingHorizontal: spacing.sm }}
     >
-      <Ionicons name="arrow-forward" size={24} color={tintColor} />
+      <MirroredIcon name={backIcon} size={iconSize['2xl']} color={tintColor} />
     </Pressable>
   );
 }

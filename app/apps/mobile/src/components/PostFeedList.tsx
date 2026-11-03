@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import React, { useCallback, useMemo } from 'react';
-import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { KcRefreshControl } from './lists/KcRefreshControl';
 import type { ViewToken } from 'react-native';
-import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import type { PostWithOwner } from '@kc/application';
 import type { useTranslatedPosts } from '../hooks/useTranslatedPosts';
 import { HOME_FEED_GRID_COLUMNS, usePostGridCardWidth } from '../hooks/useShellContentWidth';
@@ -13,6 +13,7 @@ import { getSupabaseFeedImageUrl } from '../lib/imageUrl';
 import { useShellTabBarScrollInset } from '../navigation/useShellTabBarVisibility';
 import { PostCardGrid } from './PostCardGrid';
 import { EmptyState } from './EmptyState';
+import { PrimaryButton } from './ui/Buttons';
 import { PostGridSkeleton } from './skeletons/PostGridSkeleton';
 import { finishMark } from '../lib/observability/perfMarks';
 import { KcFlashList, type KcFlashListRef } from './lists/KcFlashList';
@@ -104,13 +105,11 @@ export function PostFeedList({
   if (isLoading && !data) {
     return <PostGridSkeleton columns={HOME_FEED_GRID_COLUMNS} count={HOME_FEED_GRID_COLUMNS * 3} />;
   }
-  if (isError && !data) {
+  if (isError && (!data || data.length === 0)) {
     return (
       <View style={styles.center}>
         <Text style={styles.errorTitle}>{t('feed.loadErrorTitle')}</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={onRetry}>
-          <Text style={styles.retryText}>{t('general.retry')}</Text>
-        </TouchableOpacity>
+        <PrimaryButton testID="feed-load-error-retry" label={t('general.retry')} size="md" onPress={onRetry} />
       </View>
     );
   }
@@ -163,13 +162,6 @@ const usePostFeedListStyles = makeUseStyles(({ colors }) => ({
     gap: spacing.base,
   },
   errorTitle: { ...typography.h3, color: colors.textPrimary, textAlign: 'center' as const },
-  retryBtn: {
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.primary,
-    borderRadius: radius.full,
-  },
-  retryText: { ...typography.button, color: colors.textInverse },
   row: { paddingHorizontal: spacing.base, gap: spacing.sm, marginBottom: spacing.sm },
   listContent: { paddingTop: spacing.base },
   /** Even grid: each column cell takes an equal share and centres its card. */

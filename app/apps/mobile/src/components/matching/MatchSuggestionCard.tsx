@@ -29,7 +29,7 @@ export function MatchSuggestionCard({ match, busy, onRespond }: Props) {
   // The counterpart is the opposite side of my listing.
   const otherIsRequest = match.myRole === 'offer';
   const openListing = () =>
-    router.push({ pathname: '/(tabs)/donations/marketplace/[listingId]', params: { listingId: match.otherListingId } });
+    router.push({ pathname: '/listing/[listingId]', params: { listingId: match.otherListingId } });
   const canRespond = state === 'new' || state === 'theyAccepted';
   const details: Array<{ icon: React.ComponentProps<typeof KcCard>['placeholderIcon']; text: string }> = [
     { icon: 'link-outline', text: t(match.myRole === 'offer' ? 'matches.forYourOffer' : 'matches.forYourRequest', { title: cleanDisplayTitle(match.myListingTitle) }) },

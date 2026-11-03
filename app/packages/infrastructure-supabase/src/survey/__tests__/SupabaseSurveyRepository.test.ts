@@ -7,7 +7,9 @@
  * and submitFreeFeedback.
  */
 import { describe, it, expect, vi } from 'vitest';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { SurveyError } from '@kc/domain';
+import type { Database } from '../../database.types';
 import { SupabaseSurveyRepository } from '../SupabaseSurveyRepository';
 
 // ---------------------------------------------------------------------------
@@ -21,7 +23,7 @@ export function makeClient(opts: {
   insertResult?: { error: { message: string } | null };
   userId?: string | null;
   authError?: { message: string } | null;
-} = {}): any {
+} = {}): SupabaseClient<Database> {
   const rpcResults = opts.rpcResults ?? {};
   const insertResult = opts.insertResult ?? { error: null };
   const userId = 'userId' in opts ? opts.userId : 'user-uuid';
@@ -41,7 +43,7 @@ export function makeClient(opts: {
         error: authError,
       }),
     },
-  };
+  } as unknown as SupabaseClient<Database>;
 }
 
 // ---------------------------------------------------------------------------

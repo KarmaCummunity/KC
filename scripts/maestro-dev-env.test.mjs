@@ -4,7 +4,7 @@ import {
   assertNotProduction,
   bundleUrls,
   extractAnonKey,
-  extractSeedPassword,
+  seedPasswordFromEnv,
   KC_DEV_SUPABASE_URL,
   DEFAULT_DEV_WEB_URL,
 } from './maestro-dev-env.mjs';
@@ -25,10 +25,10 @@ test('extractAnonKey falls back to a publishable key, else null', () => {
   assert.equal(extractAnonKey('no keys here', 'devref'), null);
 });
 
-test('extractSeedPassword reads the kc-dev seed format and fails loudly otherwise', () => {
-  const sql = "'user'||i||'@seed.kc.test', crypt('Seed-Pass-1', gen_salt('bf')), now(),";
-  assert.equal(extractSeedPassword(sql), 'Seed-Pass-1');
-  assert.throws(() => extractSeedPassword('select 1;'), /seed password/);
+test('seedPasswordFromEnv reads E2E_SEED_PASSWORD and fails loudly when unset', () => {
+  assert.equal(seedPasswordFromEnv({ E2E_SEED_PASSWORD: 'Seed-Pass-1' }), 'Seed-Pass-1');
+  assert.throws(() => seedPasswordFromEnv({}), /E2E_SEED_PASSWORD/);
+  assert.throws(() => seedPasswordFromEnv({ E2E_SEED_PASSWORD: '  ' }), /E2E_SEED_PASSWORD/);
 });
 
 test('assertNotProduction blocks the prod project and the prod domain', () => {

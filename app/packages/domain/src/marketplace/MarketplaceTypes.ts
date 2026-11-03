@@ -30,6 +30,14 @@ export interface MarketplaceBrowseRow {
   readonly distanceKm: number | null;
   /** Rides world only — route/time/seats from listing details (filled client-side). */
   readonly ride?: RideCardSummary | null;
+  /** Who published the listing, for the card's author row (docs/spec/07 §7.4); filled client-side. */
+  readonly publisher?: ListingCardPublisher | null;
+}
+
+/** The publisher a listing card shows: the same person the listing page shows. */
+export interface ListingCardPublisher {
+  readonly displayName: string | null;
+  readonly avatarUrl: string | null;
 }
 
 export interface RideCardSummary {
@@ -76,6 +84,8 @@ export interface MarketplaceListingDetail {
   readonly cityId: string | null;
   readonly urgencyLevel: number;
   readonly availabilityStatus: string;
+  /** Lifecycle state of the listing row (open, closed, cancelled, etc.). */
+  readonly listingStatus?: string;
   readonly publishedAt: string | null;
   readonly lat: number | null;
   readonly lng: number | null;

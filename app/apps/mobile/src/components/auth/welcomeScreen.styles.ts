@@ -1,5 +1,5 @@
 import { Platform, type ViewStyle } from 'react-native';
-import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
+import { makeUseStyles, radius, shadow, spacing, typography } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { isLayoutRtl } from '../../lib/rtlLayout';
 
@@ -41,18 +41,17 @@ export const useWelcomeScreenStyles = makeUseStyles(({ colors, isDark }) => ({
     position: 'absolute' as const,
     width: 148,
     height: 148,
-    borderRadius: 74,
+    borderRadius: radius.full,
     borderWidth: 2,
     borderColor: colors.primary,
   },
   logo: {
     width: 108,
     height: 108,
-    borderRadius: 24,
+    borderRadius: radius.xl,
   },
   appName: {
     ...typography.h1,
-    fontSize: 32,
     color: colors.textPrimary,
     marginBottom: spacing.xs,
     letterSpacing: -0.5,
@@ -81,16 +80,12 @@ export const useWelcomeScreenStyles = makeUseStyles(({ colors, isDark }) => ({
     paddingHorizontal: spacing.base,
     borderWidth: isDark ? 1 : 0,
     borderColor: isDark ? colors.border : 'transparent',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: isDark ? 0 : 0.05,
-    shadowRadius: 4,
-    elevation: isDark ? 0 : 1,
+    ...(isDark ? {} : shadow.card),
   },
   valuePropIconWrap: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: colors.primarySurface,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
@@ -100,7 +95,7 @@ export const useWelcomeScreenStyles = makeUseStyles(({ colors, isDark }) => ({
     color: colors.textPrimary,
     flex: 1,
     textAlign: rtlTextAlignStart,
-    fontWeight: '500' as const,
+    ...typography.medium,
   },
 
   // ── Buttons ───────────────────────────────────────────────────────────
@@ -126,7 +121,8 @@ export const useWelcomeScreenStyles = makeUseStyles(({ colors, isDark }) => ({
   },
   authBtnText: {
     ...typography.button,
-    fontSize: 16,
+    ...typography.bodyLarge,
+    ...typography.semiBold,
     textAlign: 'center' as const,
   },
   authBtnDisabled: { opacity: 0.6 },
@@ -136,23 +132,19 @@ export const useWelcomeScreenStyles = makeUseStyles(({ colors, isDark }) => ({
     backgroundColor: colors.surface,
     borderWidth: 1.5,
     borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: isDark ? 0 : 0.06,
-    shadowRadius: 6,
-    elevation: isDark ? 0 : 2,
+    ...(isDark ? {} : shadow.card),
   },
   googleBtnText: { color: colors.textPrimary },
   googleGLetter: {
-    fontSize: 18,
-    fontWeight: '700' as const,
+    ...typography.h3,
+    ...typography.bold,
     // Google blue stays the same in both modes — brand-locked.
-    color: '#4285F4',
+    color: '#4285F4', // brand-guard-allow: Google brand mark color
   },
 
   // Apple: brand-locked black; on dark mode invert so it doesn't disappear.
-  appleBtn: { backgroundColor: isDark ? '#FFFFFF' : '#000000' },
-  appleBtnText: { color: isDark ? '#000000' : '#FFFFFF' },
+  appleBtn: { backgroundColor: isDark ? '#FFFFFF' : '#000000' }, // brand-guard-allow: Apple brand button colors
+  appleBtnText: { color: isDark ? '#000000' : '#FFFFFF' }, // brand-guard-allow: Apple brand button colors
 
   // Guest: ghost
   guestBtn: {

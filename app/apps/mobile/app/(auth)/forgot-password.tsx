@@ -17,6 +17,8 @@ import { usePasswordResetStyles } from '../../src/components/auth/passwordResetS
 import { AuthStatusScreen } from '../../src/components/auth/AuthStatusScreen';
 import { GhostButton, PrimaryButton } from '../../src/components/ui/Buttons';
 
+export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
+
 export default function ForgotPasswordScreen() {
   const styles = usePasswordResetStyles();
   const router = useRouter();

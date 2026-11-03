@@ -10,7 +10,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { TouchableOpacity, View, type ViewToken } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '@kc/ui';
+import { useTheme, iconSize, spacing } from '@kc/ui';
 import { useRouter } from 'expo-router';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useShallow } from 'zustand/react/shallow';
@@ -45,13 +45,9 @@ import { usePrefetchNextPage } from '../../src/hooks/usePrefetchNextPage';
 // detail translates the description on open). FR-TRANSLATE-003.
 const FEED_TRANSLATABLE_FIELDS = ['title'] as const;
 
-// Module-scope guard: fires once per JS context (cold home-tab mount).
-let feedFirstRenderStarted = false;
-if (!feedFirstRenderStarted) {
-  feedFirstRenderStarted = true;
-  startMark('feed.first_render');
-  startMark('image.first_paint');
-}
+// Cold home-tab mount: fires once per JS context on module load.
+startMark('feed.first_render');
+startMark('image.first_paint');
 
 export default function HomeFeedScreen() {
   const router = useRouter();
@@ -64,6 +60,8 @@ export default function HomeFeedScreen() {
   const filter = useFilterStore(
     useShallow((s) => ({
       type: s.type,
+      worlds: s.worlds,
+      subcategories: s.subcategories,
       categories: s.categories,
       itemConditions: s.itemConditions,
       locationFilter: s.locationFilter,
@@ -73,15 +71,6 @@ export default function HomeFeedScreen() {
       proximitySortCityName: s.proximitySortCityName,
       followersOnly: s.followersOnly,
       searchQuery: s.searchQuery,
-      setType: s.setType,
-      setCategories: s.setCategories,
-      setItemConditions: s.setItemConditions,
-      setLocationFilter: s.setLocationFilter,
-      setStatusFilter: s.setStatusFilter,
-      setSortOrder: s.setSortOrder,
-      setProximitySortCity: s.setProximitySortCity,
-      setFollowersOnly: s.setFollowersOnly,
-      setSearchQuery: s.setSearchQuery,
       clearAll: s.clearAll,
     })),
   );
@@ -95,6 +84,8 @@ export default function HomeFeedScreen() {
   const feedFilter = useMemo(
     () => ({
       type: filter.type ?? undefined,
+      worlds: filter.worlds,
+      subcategories: filter.subcategories,
       categories: filter.categories,
       itemConditions: filter.itemConditions,
       locationFilter: filter.locationFilter ?? undefined,
@@ -107,6 +98,8 @@ export default function HomeFeedScreen() {
     }),
     [
       filter.type,
+      filter.worlds,
+      filter.subcategories,
       filter.categories,
       filter.itemConditions,
       filter.locationFilter,
@@ -186,6 +179,8 @@ export default function HomeFeedScreen() {
 
   const sheetValue: PostFilterValue = {
     type: filter.type,
+    worlds: filter.worlds,
+    subcategories: filter.subcategories,
     categories: filter.categories,
     itemConditions: filter.itemConditions,
     locationFilter: filter.locationFilter,
@@ -202,6 +197,8 @@ export default function HomeFeedScreen() {
   const handleFilterPatch = useCallback((patch: Partial<PostFilterValue>) => {
     const s = useFilterStore.getState();
     if ('type' in patch) s.setType(patch.type ?? null);
+    if ('worlds' in patch) s.setWorlds(patch.worlds ?? []);
+    if ('subcategories' in patch) s.setSubcategories(patch.subcategories ?? []);
     if ('categories' in patch) s.setCategories(patch.categories ?? []);
     if ('itemConditions' in patch) s.setItemConditions(patch.itemConditions ?? []);
     if ('locationFilter' in patch) s.setLocationFilter(patch.locationFilter ?? null);
@@ -241,9 +238,9 @@ export default function HomeFeedScreen() {
               accessibilityRole="button"
               accessibilityLabel={t('feed.openMapA11y')}
               testID="feed-open-map"
-              style={{ padding: 4 }}
+              style={{ padding: spacing.xs }}
             >
-              <Ionicons name="map-outline" size={24} color={colors.textPrimary} />
+              <Ionicons name="map-outline" size={iconSize['2xl']} color={colors.textPrimary} />
             </TouchableOpacity>
             <FeedFilterIcon activeCount={activeCount} onPress={() => setSheetOpen(true)} />
           </View>

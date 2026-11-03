@@ -4,7 +4,8 @@ import { View, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, typography, spacing, radius, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, shadow, iconSize, useTheme, Text } from '@kc/ui';
+import { MirroredIcon } from '../ui/MirroredIcon';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -29,7 +30,7 @@ export function AuthMiniAboutTeaser() {
         {PILLARS.map((p) => (
           <View key={p.key} style={styles.pillar}>
             <View style={styles.pillarIcon}>
-              <Ionicons name={p.icon} size={18} color={colors.primary} />
+              <Ionicons name={p.icon} size={iconSize.md} color={colors.primary} />
             </View>
             <Text style={styles.pillarLabel}>{t(`onboarding.${p.key}`)}</Text>
           </View>
@@ -43,7 +44,7 @@ export function AuthMiniAboutTeaser() {
         accessibilityLabel={t('auth.welcomeAboutLearnMore')}
       >
         <Text style={styles.learnMoreText}>{t('auth.welcomeAboutLearnMore')}</Text>
-        <Ionicons name="chevron-back" size={18} color={colors.primary} />
+        <MirroredIcon name="chevron-forward" size={iconSize.md} color={colors.primary} />
       </TouchableOpacity>
     </View>
   );
@@ -57,15 +58,11 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
     gap: spacing.sm,
     borderWidth: isDark ? 1 : 0,
     borderColor: isDark ? colors.border : 'transparent',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: isDark ? 0 : 0.06,
-    shadowRadius: 8,
-    elevation: isDark ? 0 : 2,
+    ...(isDark ? {} : shadow.card),
   },
   tagline: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...typography.bodyLarge,
+    ...typography.semiBold,
     color: colors.primaryDark,
     textAlign: 'center',
     lineHeight: 22,
@@ -82,11 +79,11 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
     gap: spacing.xs,
     marginTop: spacing.xs,
   },
-  pillar: { flex: 1, alignItems: 'center', gap: 4 },
+  pillar: { flex: 1, alignItems: 'center', gap: spacing.xs },
   pillarIcon: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radius.full,
     backgroundColor: colors.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -95,7 +92,7 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
     ...typography.caption,
     color: colors.textPrimary,
     textAlign: 'center',
-    fontWeight: '600',
+    ...typography.semiBold,
   },
   learnMore: {
     flexDirection: 'row',
@@ -108,6 +105,6 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
   learnMoreText: {
     ...typography.body,
     color: colors.primary,
-    fontWeight: '600',
+    ...typography.semiBold,
   },
 }));

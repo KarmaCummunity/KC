@@ -3,7 +3,7 @@ import { ScrollView, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../../../../../src/components/ui/Screen';
 import { paymentsUseCases } from '../../../../../src/services/paymentsComposition';
 
@@ -11,8 +11,8 @@ const useStyles = makeUseStyles(({ colors }) => ({
   body: { padding: spacing.lg, gap: spacing.md },
   title: { ...typography.h2, color: colors.textPrimary },
   line: { ...typography.body, color: colors.textSecondary },
-  serial: { ...typography.bodyLarge, color: colors.primary, fontWeight: '700' as const },
-  badge: { padding: spacing.sm, borderRadius: 8, backgroundColor: colors.secondaryLight },
+  serial: { ...typography.bodyLarge, color: colors.primary, ...typography.bold },
+  badge: { padding: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.secondaryLight },
 }));
 
 export default function DonationReceiptScreen() {

@@ -1,9 +1,11 @@
 // A date + time field that works on every platform (gap G49):
-//   • iOS — the native spinner in a bottom sheet, applied on "done";
+//   • iOS — the native spinner in a bottom sheet, applied on "done", drawn in the app's theme
+//     (not the phone's) so its digits stay visible on the sheet;
 //   • Android — the native picker does not do date and time at once, so it opens the date
 //     dialog and then the time dialog;
 //   • web — the browser's `datetime-local` input in the same sheet.
 // Optional shortcut chips set common values in one tap (e.g. ride departure "in 30 min").
+// `mode` narrows the field to a date or a time alone (recurring rides, FR-RIDE-046).
 import React, { createElement, useState } from 'react';
 import { Modal, Platform, Pressable, View } from 'react-native';
 import DateTimePicker, { DateTimePickerAndroid, type DateTimePickerEvent } from '@react-native-community/datetimepicker';
@@ -22,9 +24,23 @@ export interface DateTimeShortcut {
   readonly at: () => Date;
 }
 
+/** What the field picks: a moment (default), a day, or a time of day. */
+export type DateTimeFieldMode = 'datetime' | 'date' | 'time';
+
+/** How a picked value reads in the field, per mode. */
+const DISPLAY_FORMAT: Record<DateTimeFieldMode, string> = {
+  datetime: 'EEEE, d MMMM · HH:mm',
+  date: 'EEEE, d MMMM',
+  time: 'HH:mm',
+};
+
+/** The browser input type per mode. */
+const WEB_INPUT_TYPE: Record<DateTimeFieldMode, string> = { datetime: 'datetime-local', date: 'date', time: 'time' };
+
 interface Props {
   /** Field label; also the picker sheet's title and the field's accessibility label. */
   readonly label: string;
+  readonly mode?: DateTimeFieldMode;
   /** Null shows the placeholder until a value is picked. */
   readonly value: Date | null;
   readonly onChange: (next: Date) => void;
@@ -46,17 +62,34 @@ export function fromWebLocalValue(value: string): Date | null {
   return value && !Number.isNaN(parsed.getTime()) ? parsed : null;
 }
 
-export function DateTimeField({ label, value, onChange, placeholder, minimumDate, shortcuts, disabled, testID }: Props) {
+/** The browser input's value for a date, per mode (`yyyy-MM-dd`, `HH:mm` or the local datetime). */
+export function toWebInputValue(d: Date, mode: DateTimeFieldMode): string {
+  if (mode === 'date') return format(d, 'yyyy-MM-dd');
+  if (mode === 'time') return format(d, 'HH:mm');
+  return toWebLocalValue(d);
+}
+
+/**
+ * A browser input's value as a Date, per mode. A day is read at midnight; a time keeps the day of
+ * `base`. Null for an empty or broken value.
+ */
+export function fromWebInputValue(value: string, mode: DateTimeFieldMode, base: Date): Date | null {
+  if (mode === 'date') return fromWebLocalValue(value ? `${value}T00:00` : '');
+  if (mode === 'time') return fromWebLocalValue(value ? `${format(base, 'yyyy-MM-dd')}T${value}` : '');
+  return fromWebLocalValue(value);
+}
+
+export function DateTimeField({ label, mode = 'datetime', value, onChange, placeholder, minimumDate, shortcuts, disabled, testID }: Props) {
   const { t } = useTranslation();
   const styles = useStyles();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Date>(value ?? minimumDate ?? new Date());
 
   const openPicker = () => {
     const start = value ?? minimumDate ?? new Date();
     if (Platform.OS === 'android') {
-      openAndroidPicker(start, minimumDate, onChange);
+      openAndroidPicker(start, minimumDate, onChange, mode);
       return;
     }
     setDraft(start);
@@ -78,9 +111,9 @@ export function DateTimeField({ label, value, onChange, placeholder, minimumDate
         accessibilityLabel={label}
       >
         <Text style={[styles.value, value ? null : styles.placeholder]}>
-          {value ? format(value, 'EEEE, d MMMM · HH:mm', { locale: dateFnsHe }) : (placeholder ?? label)}
+          {value ? format(value, DISPLAY_FORMAT[mode], { locale: dateFnsHe }) : (placeholder ?? label)}
         </Text>
-        <Ionicons name="calendar-outline" size={iconSize.xl} color={colors.primary} />
+        <Ionicons name={mode === 'time' ? 'time-outline' : 'calendar-outline'} size={iconSize.xl} color={colors.primary} />
       </Pressable>
 
       {shortcuts && shortcuts.length > 0 ? (
@@ -97,9 +130,9 @@ export function DateTimeField({ label, value, onChange, placeholder, minimumDate
             <Text style={styles.title}>{label}</Text>
             {Platform.OS === 'web' ? (
               createElement('input', {
-                type: 'datetime-local',
-                value: toWebLocalValue(draft),
-                min: minimumDate ? toWebLocalValue(minimumDate) : undefined,
+                type: WEB_INPUT_TYPE[mode],
+                value: toWebInputValue(draft, mode),
+                min: minimumDate ? toWebInputValue(minimumDate, mode) : undefined,
                 dir: 'ltr',
                 style: {
                   ...typography.bodyLarge,
@@ -111,17 +144,22 @@ export function DateTimeField({ label, value, onChange, placeholder, minimumDate
                   backgroundColor: colors.surface,
                 },
                 onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                  const next = fromWebLocalValue(e.target.value);
+                  const next = fromWebInputValue(e.target.value, mode, draft);
                   if (next) setDraft(next);
                 },
               })
             ) : (
               <DateTimePicker
                 value={draft}
-                mode="datetime"
+                mode={mode}
                 display="spinner"
                 minimumDate={minimumDate}
                 locale="he-IL"
+                // The spinner follows the phone's appearance unless told otherwise, while the sheet
+                // follows the app's theme (light by default). On a phone in dark mode it drew white
+                // digits on the light sheet, so the picker looked empty (#1398).
+                themeVariant={isDark ? 'dark' : 'light'}
+                textColor={colors.textPrimary}
                 onChange={(_e: DateTimePickerEvent, d?: Date) => d && setDraft(d)}
               />
             )}
@@ -140,22 +178,35 @@ export function DateTimeField({ label, value, onChange, placeholder, minimumDate
   );
 }
 
-/** Android: the date dialog, then the time dialog on the chosen day; dismissing either cancels. */
-function openAndroidPicker(start: Date, minimumDate: Date | undefined, onChange: (next: Date) => void) {
+/** Android: the time dialog on a given day; dismissing it cancels. */
+function openAndroidTimePicker(day: Date, onChange: (next: Date) => void) {
+  DateTimePickerAndroid.open({
+    value: day,
+    mode: 'time',
+    is24Hour: true,
+    onChange: (timeEvent, time) => {
+      if (timeEvent.type === 'set' && time) onChange(time);
+    },
+  });
+}
+
+/**
+ * Android has no combined picker: a moment is the date dialog, then the time dialog on the chosen
+ * day; a day or a time alone is its one dialog. Dismissing any dialog cancels.
+ */
+function openAndroidPicker(start: Date, minimumDate: Date | undefined, onChange: (next: Date) => void, mode: DateTimeFieldMode) {
+  if (mode === 'time') {
+    openAndroidTimePicker(start, onChange);
+    return;
+  }
   DateTimePickerAndroid.open({
     value: start,
     mode: 'date',
     minimumDate,
     onChange: (dateEvent, day) => {
       if (dateEvent.type !== 'set' || !day) return;
-      DateTimePickerAndroid.open({
-        value: day,
-        mode: 'time',
-        is24Hour: true,
-        onChange: (timeEvent, time) => {
-          if (timeEvent.type === 'set' && time) onChange(time);
-        },
-      });
+      if (mode === 'date') onChange(day);
+      else openAndroidTimePicker(day, onChange);
     },
   });
 }

@@ -11,6 +11,9 @@ export const rideBooking = {
   approve: 'Approve',
   decline: 'Decline',
   completeTrip: 'Ride completed',
+  finishRide: 'Finish ride and close listing',
+  finishRideConfirmTitle: 'Finish this ride?',
+  finishRideConfirmMessage: 'Waiting bookings will be cancelled, and approved bookings will be marked complete.',
   cancel: 'Cancel',
   statusLabel: {
     reserved: 'Waiting for approval',
@@ -26,4 +29,9 @@ export const rideBooking = {
   confirmed: 'Your seat is approved. Have a good ride!',
   cancelBooking: 'Cancel my booking',
   loadError: "We couldn't load the bookings. Tap to try again.",
+  exceedsCapacity: 'Cannot approve: exceeds available seats',
+  departed: 'This ride has already departed',
+  full: 'No free seats left on this ride',
+  chat: 'Message',
+  completedAndRated: 'Ride completed and rated. Thank you!',
 } as const;

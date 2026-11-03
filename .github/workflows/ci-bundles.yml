@@ -1,0 +1,119 @@
+name: CI — bundles
+
+# Heavy frontend lane, `bundles` in ci.yml: the builds a PR into dev leaves to
+# the merge queue (D-195 addendum: PR = fast feedback, merge queue = full
+# gate). scripts/ci-changes.mjs plans it whenever the frontend lane is needed,
+# except on PRs into dev; merge groups, pushes and dispatches always run it.
+# web and native run in parallel:
+#   • web    — production web export, bundle budget, headless smoke load.
+#   • native — Metro bundles for iOS + Android, so a module that cannot
+#     resolve or compile for native fails here instead of in TestFlight/Play.
+# No job here may skip on its own: ci.yml's gate sees one lane result.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  TURBO_TELEMETRY_DISABLED: '1'
+
+jobs:
+  web:
+    name: web export · budget · smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: app
+    env:
+      # Production-shaped public env (same wiring as the Dockerfile builder);
+      # the anon key is a placeholder — the bundle is built, never served.
+      EXPO_PUBLIC_ENVIRONMENT: production
+      EXPO_PUBLIC_SUPABASE_URL: https://enbqriuxvvuontiwslun.supabase.co
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-web-build-placeholder-not-for-runtime
+      # Pinned so the smoke step is deterministic; browser binaries are cached
+      # under this key. Bump deliberately (cache key rolls with it).
+      PLAYWRIGHT_VERSION: 1.60.0
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-pnpm-turbo
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build web bundle (same env wiring as Dockerfile)
+        run: pnpm build:web
+
+      - name: Verify dist output
+        run: test -f apps/mobile/dist/index.html && test -f apps/mobile/dist/_headers
+
+      # Reads the export above; fails if the bundle is missing or over budget.
+      - name: Web bundle gzip budget (#901)
+        run: |
+          KC_MOBILE_WEB_BUNDLE_BUDGET_KB=$(node -p "require('./perf-budgets.json').mobileWebMainBundleGzipKb") \
+            node scripts/check-mobile-bundle-budget.mjs
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ env.PLAYWRIGHT_VERSION }}
+
+      - name: Install Playwright (Chromium only)
+        working-directory: ${{ github.workspace }}
+        env:
+          CACHE_HIT: ${{ steps.playwright-cache.outputs.cache-hit }}
+        run: |
+          npm init -y --silent
+          npm install --no-save --silent "playwright@${PLAYWRIGHT_VERSION}"
+          if [ "$CACHE_HIT" = "true" ]; then
+            # Browser binaries restored from cache — only OS deps needed.
+            npx playwright install-deps chromium
+          else
+            npx playwright install --with-deps chromium
+          fi
+
+      - name: Smoke-load web bundle (headless Chromium)
+        working-directory: ${{ github.workspace }}
+        run: node scripts/smoke-web-bundle.mjs --dist app/apps/mobile/dist
+
+  native:
+    name: native bundle (iOS + Android)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: app
+    env:
+      # Same production-shaped public env as the web job.
+      EXPO_PUBLIC_ENVIRONMENT: production
+      EXPO_PUBLIC_SUPABASE_URL: https://enbqriuxvvuontiwslun.supabase.co
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-web-build-placeholder-not-for-runtime
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-pnpm-turbo
+
+      - run: pnpm install --frozen-lockfile
+
+      # Metro + Hermes bytecode for both native platforms, exactly what EAS
+      # embeds in a store build; no native compile, so it runs on Linux.
+      - name: Bundle iOS and Android JS (expo export)
+        run: pnpm --filter @kc/mobile exec expo export --platform ios --platform android --output-dir dist-native
+
+      - name: Verify both platform bundles exist
+        working-directory: app/apps/mobile/dist-native
+        run: |
+          for platform in ios android; do
+            if ! find "_expo/static/js/$platform" -name '*.hbc' -o -name '*.js' | grep -q .; then
+              echo "::error::no $platform bundle under dist-native/_expo/static/js/$platform"
+              exit 1
+            fi
+          done

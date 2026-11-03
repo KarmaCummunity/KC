@@ -3,7 +3,7 @@
 // Buttons are wholly driven by PERMISSION_MATRIX in @kc/domain. Adding a new
 // action in a future iteration is: matrix entry + action id + i18n label.
 import { useState } from 'react';
-import { Alert, Pressable, View, Platform } from 'react-native';
+import { Alert, View, Platform } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   type AdminPermission,
@@ -12,7 +12,8 @@ import {
   type AdminReportTargetType,
   hasPermission,
 } from '@kc/domain';
-import { makeUseStyles, Text } from '@kc/ui';
+import { makeUseStyles, spacing } from '@kc/ui';
+import { DangerButton, SecondaryButton } from '../../ui/Buttons';
 import { container } from '../../../lib/container';
 import { useAdminRoles } from '../../../hooks/useAdminRoles';
 import { useAuthStore } from '../../../store/authStore';
@@ -111,73 +112,49 @@ export function CaseActions({ detail, onActed }: CaseActionsProps) {
   return (
     <View style={styles.row}>
       {show('reports.confirm_or_dismiss') && (
-        <ActionButton
+        <SecondaryButton
           label={L.admin.caseDetail.actionLabels.confirm}
+          size="sm"
           disabled={busy}
           onPress={() => { void run('confirm'); }}
         />
       )}
       {show('reports.confirm_or_dismiss') && (
-        <ActionButton
+        <SecondaryButton
           label={L.admin.caseDetail.actionLabels.dismiss}
+          size="sm"
           disabled={busy}
           onPress={() => { void run('dismiss'); }}
         />
       )}
       {show('reports.restore_target') && (
-        <ActionButton
+        <SecondaryButton
           label={L.admin.caseDetail.actionLabels.restore}
+          size="sm"
           disabled={busy}
           onPress={() => { void run('restore'); }}
         />
       )}
       {show('reports.manual_remove_post') && (detail.targetType === 'post' || detail.targetType === 'listing') && (
-        <ActionButton
+        <SecondaryButton
           label={L.admin.caseDetail.actionLabels.manualRemove}
+          size="sm"
           disabled={busy}
           onPress={() => { void run('manualRemove'); }}
         />
       )}
       {show('reports.permanent_ban') && detail.targetType === 'user' && (
-        <ActionButton
+        <DangerButton
           label={L.admin.caseDetail.actionLabels.permanentBan}
+          size="sm"
           disabled={busy}
           onPress={() => { void run('permanentBan'); }}
-          variant="danger"
         />
       )}
     </View>
   );
 }
 
-interface ActionButtonProps {
-  readonly label: string;
-  readonly disabled?: boolean;
-  readonly onPress: () => void;
-  readonly variant?: 'danger';
-}
-
-function ActionButton({ label, disabled, onPress, variant }: ActionButtonProps) {
-  const styles = useStyles();
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      style={[styles.btn, variant === 'danger' && styles.btnDanger, disabled && styles.btnDisabled]}
-      accessibilityRole="button"
-    >
-      <Text style={[styles.btnText, variant === 'danger' && styles.btnTextDanger]}>{label}</Text>
-    </Pressable>
-  );
-}
-
-const useStyles = makeUseStyles(({ colors }) => ({
-  row:           { flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 12 },
-  btn:           { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, backgroundColor: colors.secondaryLight },
-  btnDanger:     { backgroundColor: colors.errorLight },
-  btnDisabled:   { opacity: 0.5 },
-  btnText:       { fontSize: 13, fontWeight: '600' },
-  // TD-130: no semantic "on-errorLight strong text" token in light palette; keep
-  // the hex until tokens add an `errorStrong`/`onErrorLight` entry.
-  btnTextDanger: { color: '#7f1d1d' },
+const useStyles = makeUseStyles(() => ({
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, padding: spacing.md },
 }));

@@ -23,7 +23,7 @@ vi.mock('@expo/vector-icons', () => ({
 }));
 vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => false }));
 
-import { DangerButton, GhostButton, PrimaryButton, SecondaryButton } from '../Buttons';
+import { AlertButton, DangerButton, GhostButton, PrimaryButton, SecondaryButton } from '../Buttons';
 import { MIN_TAP_TARGET, tapTargetHitSlop } from '../kitMetrics';
 
 afterEach(cleanup);
@@ -130,6 +130,37 @@ describe('DangerButton (D94)', () => {
     const onPress = vi.fn();
     const { getByRole } = withTheme(<DangerButton label="Remove" size="md" loading onPress={onPress} />);
     const button = getByRole('button', { name: 'Remove' });
+    expect(button.getAttribute('aria-busy')).toBe('true');
+    expect(getByRole('progressbar')).toBeTruthy();
+    fireEvent.click(button);
+    expect(onPress).not.toHaveBeenCalled();
+  });
+});
+
+describe('AlertButton (spec 17 §8.1 call 7)', () => {
+  it('outlines the surface in the error token and inks the label and glyph in it, in both palettes', () => {
+    for (const [scheme, palette] of [['light', lightColors], ['dark', darkColors]] as const) {
+      const onPress = vi.fn();
+      const { getByRole, getByText, getByTestId, unmount } = withTheme(
+        <AlertButton label="Call for help" icon="alert-circle-outline" size="md" onPress={onPress} />,
+        scheme,
+      );
+      const button = getByRole('button', { name: 'Call for help' });
+      const style = getComputedStyle(button);
+      expect(style.backgroundColor).toBe(rgb(palette.surface));
+      expect(style.borderTopColor).toBe(rgb(palette.error));
+      expect(getComputedStyle(getByText('Call for help')).color).toBe(rgb(palette.error));
+      expect(getByTestId('icon-alert-circle-outline')).toBeTruthy();
+      fireEvent.click(button);
+      expect(onPress).toHaveBeenCalledTimes(1);
+      unmount();
+    }
+  });
+
+  it('shows a spinner, announces busy and blocks presses while loading', () => {
+    const onPress = vi.fn();
+    const { getByRole } = withTheme(<AlertButton label="Send now" size="md" loading onPress={onPress} />);
+    const button = getByRole('button', { name: 'Send now' });
     expect(button.getAttribute('aria-busy')).toBe('true');
     expect(getByRole('progressbar')).toBeTruthy();
     fireEvent.click(button);

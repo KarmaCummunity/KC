@@ -6,6 +6,9 @@ import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@kc/ui';
 import { nativeStackHeaderLeftIconOnly } from '../../../src/navigation/nativeHeaderIconOnly';
+import { nestedStackGestureOptions } from '../../../src/navigation/nestedStackGestureOptions';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
 export default function ProfileTabLayout() {
   const { colors } = useTheme();
@@ -19,7 +22,7 @@ export default function ProfileTabLayout() {
   } as const;
   const { t } = useTranslation();
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
+    <Stack screenOptions={{ ...nestedStackGestureOptions, headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="closed" />
       <Stack.Screen

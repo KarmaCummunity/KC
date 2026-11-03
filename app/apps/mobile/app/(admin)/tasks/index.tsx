@@ -2,9 +2,9 @@
 // FR-ADMIN-018 — admin tasks list screen with chip filters.
 import { useMemo, useState } from 'react';
 import { router } from 'expo-router';
-import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
-import { adminChipScroll } from '../../../src/components/admin/adminChipScroll';
-import { AdminFilterChip } from '../../../src/components/admin/AdminFilterChip';
+import { RefreshControl, View } from 'react-native';
+import { FilterChipRow } from '../../../src/components/filterKit/FilterChipRow';
+import { Chip } from '../../../src/components/ui/Chip';
 import {
   ADMIN_TASK_CATEGORIES,
   ADMIN_TASK_STATUSES, type AdminPermission, type AdminRole,
@@ -13,6 +13,7 @@ import {
 } from '@kc/domain';
 import type { AdminTaskListFilters } from '@kc/application';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { PrimaryButton } from '../../../src/components/ui/Buttons';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { useAdminTasksList } from '../../../src/hooks/useAdminTasks';
 import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
@@ -28,6 +29,8 @@ import {
 } from '../../../src/components/admin/tasks/TaskDueRangeFilter';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
+
+export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
 function parseDueFrom(value: string): Date | undefined {
   if (!isValidIsoDate(value) || value.length === 0) return undefined;
@@ -86,47 +89,47 @@ export default function TasksScreen() {
     <View style={styles.filterCard}>
       <Text style={styles.filterTitle}>{L.admin.tasks.filtersTitle}</Text>
 
-      <ScrollView horizontal style={adminChipScroll.scroll} showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.chips, adminChipScroll.content]}>
-        <AdminFilterChip
-          label={L.admin.tasks.filters.all}
-          active={statusFilter === null && !overdueOnly}
-          onPress={() => { setStatusFilter(null); setOverdueOnly(false); }}
-        />
-        {ADMIN_TASK_STATUSES.map((s) => (
-          <AdminFilterChip
-            key={s}
-            label={L.admin.tasks.status[s]}
-            active={statusFilter === s}
-            onPress={() => { setStatusFilter(statusFilter === s ? null : s); }}
-          />
-        ))}
-        <AdminFilterChip
+      <FilterChipRow<AdminTaskStatus>
+        scrollable
+        showAllChip
+        allLabel={L.admin.tasks.filters.all}
+        options={ADMIN_TASK_STATUSES.map((s) => ({
+          value: s,
+          label: L.admin.tasks.status[s],
+        }))}
+        value={overdueOnly ? null : statusFilter}
+        onChange={(s) => {
+          setStatusFilter(s);
+          if (s !== null) setOverdueOnly(false);
+        }}
+        contentContainerStyle={styles.chips}
+      >
+        <Chip
+          size="sm"
           label={L.admin.tasks.filters.overdue}
-          active={overdueOnly}
+          selected={overdueOnly}
           onPress={() => setOverdueOnly((v) => !v)}
         />
-        <AdminFilterChip
+        <Chip
+          size="sm"
           label={L.admin.tasks.filters.onlyMine}
-          active={onlyMine}
+          selected={onlyMine}
           onPress={() => setOnlyMine((v) => !v)}
         />
-      </ScrollView>
+      </FilterChipRow>
 
-      <ScrollView horizontal style={adminChipScroll.scroll} showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.chips, adminChipScroll.content]}>
-        <AdminFilterChip
-          label={L.admin.tasks.categoryFilters.all}
-          active={categoryFilter === null}
-          onPress={() => setCategoryFilter(null)}
-        />
-        {ADMIN_TASK_CATEGORIES.map((c) => (
-          <AdminFilterChip
-            key={c}
-            label={L.admin.tasks.category[c]}
-            active={categoryFilter === c}
-            onPress={() => setCategoryFilter(categoryFilter === c ? null : c)}
-          />
-        ))}
-      </ScrollView>
+      <FilterChipRow<AdminTaskCategory>
+        scrollable
+        showAllChip
+        allLabel={L.admin.tasks.categoryFilters.all}
+        options={ADMIN_TASK_CATEGORIES.map((c) => ({
+          value: c,
+          label: L.admin.tasks.category[c],
+        }))}
+        value={categoryFilter}
+        onChange={(c) => setCategoryFilter(c)}
+        contentContainerStyle={styles.chips}
+      />
 
       {can('admins.view') && (
         <TaskAssigneeFilter value={assigneeFilter} onChange={setAssigneeFilter} />
@@ -147,13 +150,7 @@ export default function TasksScreen() {
         title={L.admin.tasks.title}
         subtitle={!q.isLoading ? L.admin.tasks.countLabel(q.tasks.length) : undefined}
         right={can('tasks.create') ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/(admin)/tasks/new')}
-            style={styles.newBtn}
-          >
-            <Text style={styles.newBtnText}>{L.admin.tasks.newBtn}</Text>
-          </Pressable>
+          <PrimaryButton testID="admin-tasks-new" label={L.admin.tasks.newBtn} size="sm" onPress={() => router.push('/(admin)/tasks/new')} />
         ) : undefined}
       />
 
@@ -185,8 +182,6 @@ const useStyles = makeUseStyles(({ colors }) => ({
   root:            { flex: 1, backgroundColor: colors.background },
   center:          { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   deniedTitle:     { ...typography.h3, ...typography.bold, color: colors.textPrimary },
-  newBtn:          { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md, backgroundColor: colors.primary },
-  newBtnText:      { ...typography.bodySmall, ...typography.bold, color: colors.textInverse },
 
   listContent: {
     // 96pt of room under the last row, off the spacing scale's 64 + 32.

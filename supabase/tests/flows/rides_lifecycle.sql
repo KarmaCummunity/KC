@@ -106,7 +106,37 @@ begin
     'ride_not_started', 'a trip cannot be completed hours before departure');
 end $$;
 
--- 5) Completion: karma for both sides, the ride closes only once every seat is handed
+-- 5) Approval rechecks occupied seats under the listing lock. A booking that no longer
+--    fits cannot be confirmed, while a booking within capacity can.
+do $$
+declare
+  p personas;
+  v_ride uuid;
+  v_over_capacity uuid;
+  v_within_capacity uuid;
+begin
+  select * into p from personas;
+  v_ride := kc_test.create_ride_offer(p.driver, p_seats => 2);
+  v_over_capacity := kc_test.book_ride(p.passenger1, v_ride);
+  perform kc_test.book_ride(p.passenger2, v_ride);
+
+  -- Simulate capacity being reduced after the bookings were made.
+  update public.listings
+     set details = jsonb_set(details, '{seats_available}', '1'::jsonb)
+   where listing_id = v_ride;
+  perform kc_test.act_as(p.driver);
+  perform kc_test.assert_raises(format('select public.confirm_ride_booking(%L)', v_over_capacity),
+    'ride_seats_exhausted', 'approval fails when occupied bookings exceed the current capacity');
+
+  v_ride := kc_test.create_ride_offer(p.driver, p_seats => 2);
+  v_within_capacity := kc_test.book_ride(p.passenger1, v_ride);
+  perform kc_test.act_as(p.driver);
+  perform public.confirm_ride_booking(v_within_capacity);
+  perform kc_test.assert_eq(kc_test.handoff_status(v_within_capacity), 'confirmed',
+    'approval succeeds while seats remain within capacity');
+end $$;
+
+-- 6) Completion: karma for both sides, the ride closes only once every seat is handed
 --    over, completing twice fails, and each side rates exactly once.
 do $$
 declare
@@ -145,6 +175,33 @@ begin
   perform public.rate_giving_handoff(v_first, 5::smallint, 'Great ride');
   perform kc_test.assert_true(public.get_listing_handoff(v_ride) is null,
     'a rated trip is no longer offered for rating');
+end $$;
+
+-- 7) The driver can finish the whole ride with unused capacity: approved trips settle,
+--    waiting requests are cancelled, the listing closes, and passengers can still rate.
+do $$
+declare
+  p personas;
+  v_ride uuid;
+  v_confirmed uuid;
+  v_waiting uuid;
+begin
+  select * into p from personas;
+  v_ride := kc_test.create_ride_offer(p.driver, p_seats => 3);
+  v_confirmed := kc_test.book_ride(p.passenger1, v_ride);
+  v_waiting := kc_test.book_ride(p.passenger2, v_ride);
+  perform kc_test.act_as(p.driver);
+  perform public.confirm_ride_booking(v_confirmed);
+  perform public.complete_ride_listing(v_ride);
+  perform kc_test.assert_eq(kc_test.listing_status(v_ride), 'closed', 'driver completion closes unused capacity');
+  perform kc_test.assert_eq(kc_test.handoff_status(v_confirmed), 'handed_over', 'confirmed passenger is completed');
+  perform kc_test.assert_eq(kc_test.handoff_status(v_waiting), 'cancelled', 'waiting booking is cancelled');
+  perform kc_test.assert_row_count(
+    format('select 1 from public.karma_ledger where ref_id = %L and event_type in (''giving_handoff_giver'', ''giving_handoff_receiver'')', v_confirmed),
+    2, 'confirmed passenger and driver receive configured ride karma');
+  perform kc_test.act_as(p.passenger1);
+  perform public.rate_giving_handoff(v_confirmed, 5::smallint, null);
+  perform kc_test.assert_true(true, 'passenger can optionally rate after owner completion');
 end $$;
 
 rollback;

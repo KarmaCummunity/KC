@@ -12,6 +12,7 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { AdminReportTargetType } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { PrimaryButton } from '../../ui/Buttons';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
 export interface CaseTargetCardProps {
@@ -60,13 +61,9 @@ export function CaseTargetCard({ targetType, targetId, target }: CaseTargetCardP
           )}
           {created && <Text style={styles.metaText}>{t.createdAt(created)}</Text>}
         </View>
-        <Pressable
-          accessibilityRole="button"
-          style={styles.primaryBtn}
-          onPress={() => router.push(`/post/${targetId}`)}
-        >
-          <Text style={styles.primaryBtnText}>{t.openPost}</Text>
-        </Pressable>
+        <View style={styles.primaryBtn}>
+          <PrimaryButton testID="case-target-open-post" label={t.openPost} size="sm" onPress={() => router.push(`/post/${targetId}`)} />
+        </View>
       </View>
     );
   }
@@ -105,13 +102,9 @@ export function CaseTargetCard({ targetType, targetId, target }: CaseTargetCardP
             <Text style={styles.link}>{t.openOwner}</Text>
           </Pressable>
         ) : null}
-        <Pressable
-          accessibilityRole="button"
-          style={styles.primaryBtn}
-          onPress={() => router.push(`/(tabs)/donations/marketplace/${targetId}`)}
-        >
-          <Text style={styles.primaryBtnText}>{t.openListing}</Text>
-        </Pressable>
+        <View style={styles.primaryBtn}>
+          <PrimaryButton testID="case-target-open-listing" label={t.openListing} size="sm" onPress={() => router.push(`/listing/${targetId}`)} />
+        </View>
       </View>
     );
   }
@@ -128,13 +121,9 @@ export function CaseTargetCard({ targetType, targetId, target }: CaseTargetCardP
         </View>
         <Text style={styles.preview}>{displayName ?? t.unnamedUser}</Text>
         {created && <Text style={styles.metaText}>{t.signedUpAt(created)}</Text>}
-        <Pressable
-          accessibilityRole="button"
-          style={styles.primaryBtn}
-          onPress={() => router.push(`/user/${targetId}`)}
-        >
-          <Text style={styles.primaryBtnText}>{t.openProfile}</Text>
-        </Pressable>
+        <View style={styles.primaryBtn}>
+          <PrimaryButton testID="case-target-open-profile" label={t.openProfile} size="sm" onPress={() => router.push(`/user/${targetId}`)} />
+        </View>
       </View>
     );
   }
@@ -176,6 +165,6 @@ const useStyles = makeUseStyles(({ colors }) => ({
   metaRow:      { flexDirection: 'row', gap: spacing.md, alignItems: 'center', flexWrap: 'wrap' },
   metaText:     { fontSize: typography.bodySmall.fontSize, opacity: 0.65 },
   link:         { fontSize: typography.bodySmall.fontSize, color: colors.primary, textDecorationLine: 'underline' },
-  primaryBtn:   { alignSelf: 'flex-start', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.primary },
-  primaryBtnText: { color: colors.textInverse, fontSize: typography.bodySmall.fontSize, ...typography.bold },
+  // Compact admin size (spec 17 §4.3), kept at its own width.
+  primaryBtn:   { alignSelf: 'flex-start' },
 }));

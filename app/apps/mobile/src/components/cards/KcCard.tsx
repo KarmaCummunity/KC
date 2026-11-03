@@ -4,7 +4,8 @@
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme, Text } from '@kc/ui';
+import { useTheme, iconSize, Text } from '@kc/ui';
+import { MirroredIcon } from '../ui/MirroredIcon';
 import { AvatarInitials } from '../AvatarInitials';
 import { KCImage } from '../ui/KCImage';
 import { usePostCardGridStyles } from '../PostCardGrid.styles';
@@ -68,7 +69,7 @@ function KcCardInner(p: Readonly<KcCardProps>) {
           <KCImage uri={p.imageUri} fallbackUri={p.fallbackUri ?? undefined} style={styles.image} contentFit="cover" onLoad={p.onImageLoad} />
         ) : (
           <View style={styles.placeholderTint}>
-            <Ionicons name={p.placeholderIcon} size={p.dense ? 28 : 40} color={isGive ? colors.giveTag : colors.secondary} />
+            <Ionicons name={p.placeholderIcon} size={p.dense ? 28 : 40} color={isGive ? colors.giveTag : colors.secondary} />{/* brand-guard-allow: illustration glyph remains larger than the row icon scale */}
           </View>
         )}
         <View style={[styles.typePill, p.dense && styles.typePillDense]}>
@@ -130,7 +131,7 @@ function KcCardInner(p: Readonly<KcCardProps>) {
         {p.route ? (
           <View style={extra.routeRow}>
             <Text style={extra.routeText} numberOfLines={1}>{p.route.from}</Text>
-            <Ionicons name="arrow-back" size={12} color={colors.primary} />
+            <MirroredIcon name="arrow-forward" size={iconSize.xs} color={colors.primary} />
             <Text style={extra.routeText} numberOfLines={1}>{p.route.to}</Text>
           </View>
         ) : null}
@@ -139,7 +140,7 @@ function KcCardInner(p: Readonly<KcCardProps>) {
           <View style={extra.detailsRow}>
             {p.details.map((d) => (
               <View key={d.text} style={extra.detail}>
-                <Ionicons name={d.icon} size={11} color={colors.textSecondary} />
+                <Ionicons name={d.icon} size={iconSize.xs} color={colors.textSecondary} />
                 <Text style={extra.detailText} numberOfLines={1}>{d.text}</Text>
               </View>
             ))}
@@ -149,7 +150,7 @@ function KcCardInner(p: Readonly<KcCardProps>) {
         {p.location || p.timeAgo ? (
           <View style={styles.metaFooter}>
             <View style={styles.locationRow}>
-              {p.location ? <Ionicons name="location-outline" size={11} color={colors.textSecondary} /> : null}
+              {p.location ? <Ionicons name="location-outline" size={iconSize.xs} color={colors.textSecondary} /> : null}
               <Text style={styles.locationText} numberOfLines={1}>{p.location ?? ''}</Text>
             </View>
             {p.timeAgo ? <Text style={styles.timeAgo} numberOfLines={1}>{p.timeAgo}</Text> : null}

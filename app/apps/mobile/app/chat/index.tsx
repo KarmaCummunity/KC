@@ -5,11 +5,13 @@ import { Stack, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import type { ListRenderItem } from 'react-native';
 import { ChatError, type ChatWithPreview } from '@kc/application';
-import { makeUseStyles, typography, spacing, radius, useTheme, TextInput } from '@kc/ui';
+import { makeUseStyles, spacing } from '@kc/ui';
+import { FilterSearchBar } from '../../src/components/filterKit/FilterSearchBar';
 import { useAuthStore } from '../../src/store/authStore';
 import { container } from '../../src/lib/container';
 import { markNeedFreshThreadWith } from '../../src/lib/chatNavigationPrefs';
 import { EmptyState, EmptyStateActions } from '../../src/components/EmptyState';
+import { PrimaryButton } from '../../src/components/ui/Buttons';
 import { KcRefreshControl } from '../../src/components/lists/KcRefreshControl';
 import { HideChatConfirmModal } from '../../src/components/HideChatConfirmModal';
 import { InboxChatRow, InboxChatRowSeparator } from '../../src/components/chat/InboxChatRow';
@@ -21,6 +23,7 @@ import { useChatStore } from '../../src/store/chatStore';
 import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
 import { queryClient } from '../../src/lib/queryPersist';
 import { chatInboxQueryKey } from '../../src/lib/chatInboxQuery';
+import { NativeStackHeaderTitle } from '../../src/navigation/NativeStackHeaderTitle';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -30,7 +33,6 @@ export default function ChatListScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const styles = useChatListStyles();
-  const { colors } = useTheme();
   const detailOptions = useDetailStackScreenOptions();
   const userId = useAuthStore((s) => s.session?.userId);
   const inboxQuery = useChatInboxQuery(userId);
@@ -80,21 +82,17 @@ export default function ChatListScreen() {
       <Stack.Screen
         options={{
           ...detailOptions,
-          headerTitle: t('chat.title'),
+          headerTitle: () => <NativeStackHeaderTitle title={t('chat.title')} />,
           headerLargeTitle: false,
         }}
       />
 
-      <View style={styles.searchWrap}>
-        <TextInput // brand-guard-allow: inbox search bar, not a form field (spec 17 §4.1)
-          style={styles.search}
-          value={q}
-          onChangeText={setQ}
-          placeholder={t('chat.searchPlaceholder')}
-          placeholderTextColor={colors.textDisabled}
-          textAlign="right"
-        />
-      </View>
+      <FilterSearchBar
+        style={styles.searchWrap}
+        value={q}
+        onChangeText={setQ}
+        placeholder={t('chat.searchPlaceholder')}
+      />
 
       {showSkeleton ? (
         <InboxListSkeleton />
@@ -112,7 +110,21 @@ export default function ChatListScreen() {
           renderItem={renderItem}
           ItemSeparatorComponent={InboxChatRowSeparator}
           ListEmptyComponent={
-            q.trim() ? (
+            inboxQuery.isError && !inbox ? (
+              <EmptyState
+                icon="cloud-offline-outline"
+                title={t('general.errorTitle')}
+                subtitle={t('errorBoundary.body')}
+                action={
+                  <PrimaryButton
+                    testID="chat-inbox-retry"
+                    label={t('general.retry')}
+                    size="md"
+                    onPress={() => void inboxQuery.refetch()}
+                  />
+                }
+              />
+            ) : q.trim() ? (
               <EmptyState icon="search-outline" title={t('chat.noChats')} subtitle={t('chat.noChatsDesc')} />
             ) : (
               <EmptyState
@@ -166,15 +178,5 @@ export default function ChatListScreen() {
 
 const useChatListStyles = makeUseStyles(({ colors }) => ({
   container: { flex: 1, backgroundColor: colors.surface },
-  searchWrap: { padding: spacing.sm, backgroundColor: colors.surface },
-  search: {
-    backgroundColor: colors.background,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    ...typography.body,
-    color: colors.textPrimary,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
+  searchWrap: { padding: spacing.sm, backgroundColor: colors.surface, marginBottom: 0 },
 }));
