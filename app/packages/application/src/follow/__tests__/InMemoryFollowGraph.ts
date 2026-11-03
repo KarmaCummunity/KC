@@ -67,6 +67,7 @@ export class InMemoryFollowStore {
       profileStreet: null,
       profileStreetNumber: null,
       contactPhone: null,
+      dateOfBirth: null,
       biography: null,
       avatarUrl: null,
       privacyMode: member?.privacyMode ?? 'Public',
