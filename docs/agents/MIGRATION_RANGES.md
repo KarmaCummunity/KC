@@ -93,7 +93,7 @@ Last applied on kc-dev when this was written: `0239`.
 | 0535 | #1468 knowledge world subcategories | in progress |
 | 0536 | FK and hot-path indexes | in progress |
 | 0537 | RPC input bounds | in progress |
-| 0539 | food expiry: offers only, no food TTL (G38, D21 / D28) | in progress |
+| 0539 | food expiry: offers only, no food TTL (G38, D21 / D28) | merged (#1554) |
 | 0540 | listing detail schemas enforced for native listings | in progress |
 | 0541+ | — | free |
 

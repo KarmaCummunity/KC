@@ -86,6 +86,24 @@ jobs:
       - name: Install guard-script dependencies
         run: npm ci --prefix scripts --ignore-scripts --no-audit --no-fund
 
+      # Every lockfile and Edge Function npm import against the npm advisory
+      # database (#1373); a high/critical finding without a reviewed exception
+      # fails. It audits only when the diff touches a dependency file, so a
+      # newly published advisory cannot turn unrelated PRs red (TD-254): the
+      # scheduled dependency-audit.yml covers that. Without a base commit
+      # (dispatch, new branch) it always audits.
+      - name: Dependency audit (every lockfile, on dependency changes)
+        if: ${{ !cancelled() }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
+        run: |
+          args=()
+          if [ -n "$BASE_SHA" ]; then
+            git fetch --no-tags --depth=1 origin "$BASE_SHA" || echo "Base $BASE_SHA not fetchable; auditing everything."
+            args=(--changed-since "$BASE_SHA")
+          fi
+          node scripts/check-dependency-audit.mjs "${args[@]}"
+
       - name: Script self-tests (scripts/*.test.mjs, scripts/ops/*.test.mjs, app/scripts/*.test.mjs)
         if: ${{ !cancelled() }}
         run: node --test scripts/*.test.mjs scripts/ops/*.test.mjs app/scripts/*.test.mjs

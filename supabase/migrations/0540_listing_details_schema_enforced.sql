@@ -1,6 +1,6 @@
 -- 0540_listing_details_schema_enforced | The server checks a native listing's details
 -- against its kind's `listing_kinds.detail_schema`, as the app already does
--- (`@kc/domain` validateListingDetails). Closes the TECH_DEBT row logged with 0539.
+-- (`@kc/domain` validateListingDetails). Closes TD-261.
 --
 -- `listings_validate_details_schema` (0242) called `json_matches_schema(json, jsonb)`, a
 -- signature pg_jsonschema does not have; its `undefined_function` handler swallowed the

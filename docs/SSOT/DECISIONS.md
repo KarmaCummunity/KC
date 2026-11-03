@@ -1671,10 +1671,21 @@ Owner rules that go with it:
 
 **Affected.** `supabase/migrations/0520_function_execute_explicit_grants.sql`, `supabase/tests/0520_function_execute_explicit_grants.sql` (+ explicit `pg_temp` helper grants in seven older tests), `scripts/check-rpc-grants.mjs`, `.github/workflows/ci-backend.yml`, `docs/architecture/adr/ADR-002-data-layer.md` §2, BACKLOG `SEC-1063`.
 
+## D-209 — One dependency audit over every lockfile, with expiring exceptions (2026-11-03)
+
+**Decision.** `scripts/check-dependency-audit.mjs` is the only check for known npm advisories. It reads every committed lockfile and the exact-version npm imports of the Edge Functions, asks the npm registry's bulk advisory endpoint which advisories affect those versions, and fails on any `high` or `critical` one that no active exception covers. Exceptions live in the code-owned `scripts/check-dependency-audit.allowlist.json`; each names one advisory in one package with a reason, a review date and an expiry at most 90 days later. The PR gate (static lane) audits only when a diff touches a dependency file; `dependency-audit.yml` audits `dev` and `main` daily and keeps one tracking issue open while that fails. A registry outage fails the audit.
+
+**Why.** `pnpm audit` covered `app/` only, called a retired endpoint that CI then skipped with a warning, and its ignore list had grown to 25 GHSA IDs with no reason or end date in an unowned file. Reading lockfiles directly gives one result for every package manager in the repository; expiries and code ownership stop the exception list from growing silently; auditing on dependency changes plus a schedule keeps a newly published advisory from turning unrelated PRs red (`TD-254`) without letting it go unnoticed.
+
+**Rejected.** One `pnpm audit` / `npm audit` call per lockfile (three output formats, the retired endpoint for pnpm 9); OSV-Scanner (a new binary to pin and verify in the gate, while the npm advisory database already serves the GitHub-reviewed advisories Dependabot reports); making Snyk the blocking scanner (needs a token on every run, including forks — decided separately under #1373).
+
+**Affected.** `scripts/check-dependency-audit*.mjs` (+ tests), `scripts/check-dependency-audit.allowlist.json`, `scripts/package.json` (`semver`), `.github/workflows/{ci-static-guards,ci-frontend,dependency-audit}.yml`, `app/package.json` (ignore list removed, scoped postcss override), `SECURITY.md` § Dependency audit, `TECH_DEBT.md` (`TD-140` closed, `TD-254` part 1 done).
+
 ## Change Log
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
+| 4.37 | 2026-11-03 | Added `D-209` (one dependency audit over every lockfile; reviewed exceptions expire within 90 days; gate audits on dependency changes, daily schedule otherwise; #1373). |
 | 4.36 | 2026-11-02 | `D-195` addendum: an owner's approval is required for gate-weakening changes only into `main`; on `dev` the judges pass with warnings and the release PR surfaces the changes to the owner. |
 | 4.35 | 2026-11-01 | Added `D-207` (five create categories with remembered choice, items on the post engine, curated listing fields, marketplace browse removed, no inline native pickers). |
 | 4.34 | 2026-10-31 | `D-195` bot-identity amendment: the `agent-merge` environment allows `main` only, because `pull_request_target` runs on the default branch (`TD-240`). |
