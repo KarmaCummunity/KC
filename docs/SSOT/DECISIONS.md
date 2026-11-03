@@ -1694,7 +1694,7 @@ Owner rules that go with it:
 
 **Affected.** Store listings (#920), KC Pro paywall (#1088), support copy (#1036).
 
-## {{ENG:detail-hero-frame}} — Post and listing detail pages share one hero + content-card frame (2026-11-03)
+## D-212 — Post and listing detail pages share one hero + content-card frame (2026-11-03)
 
 **Decision.** The listing page (items, food, rides, knowledge) uses the same hero frame (`DetailHeroCard`, with the photo gallery or a placeholder icon) and the same content card as the post page. Each type keeps its own fields and actions (route card, handoff, booking, messaging).
 
