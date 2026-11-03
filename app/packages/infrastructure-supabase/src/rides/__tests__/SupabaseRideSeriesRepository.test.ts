@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { CreateRideSeriesInput } from '@kc/domain';
-import { SupabaseRideSeriesRepository } from '../SupabaseRideSeriesRepository';
+import { SupabaseRideSeriesRepository, mapRideSeriesRow } from '../SupabaseRideSeriesRepository';
 
 type AnyClient = ConstructorParameters<typeof SupabaseRideSeriesRepository>[0];
 
@@ -43,6 +43,16 @@ describe('SupabaseRideSeriesRepository', () => {
     });
   });
 
+  it('throws when create_ride_series returns no row', async () => {
+    const { repo } = clientWith({ error: null }, { data: [], error: null });
+    await expect(repo.create(INPUT)).rejects.toThrow('create_ride_series returned no row');
+  });
+
+  it('throws when create_ride_series returns an error', async () => {
+    const { repo } = clientWith({ error: null }, { data: null, error: { message: 'limit reached' } });
+    await expect(repo.create(INPUT)).rejects.toThrow('limit reached');
+  });
+
   it('changes the status and the schedule through their RPCs', async () => {
     const { rpc, repo } = clientWith({ error: null }, { error: null });
     await repo.setStatus('s1', 'paused');
@@ -51,6 +61,13 @@ describe('SupabaseRideSeriesRepository', () => {
     expect(rpc).toHaveBeenCalledWith('update_ride_series', {
       p_series_id: 's1', p_depart_time: '18:00', p_weekdays: 0b100, p_duration_minutes: undefined, p_ends_on: undefined,
     });
+  });
+
+  it('throws when updateSchedule returns an error', async () => {
+    const { repo } = clientWith({ error: null }, { data: null, error: { message: 'update failed' } });
+    await expect(
+      repo.updateSchedule('s1', { weekdays: [2], time: '18:00', endsOn: null }, 60),
+    ).rejects.toThrow('update failed');
   });
 
   it('lists the upcoming dates of a series', async () => {
@@ -63,9 +80,32 @@ describe('SupabaseRideSeriesRepository', () => {
     expect(rpc).toHaveBeenCalledWith('list_ride_series_occurrences', { p_series_id: 's1' });
   });
 
+  it('throws when listOccurrences returns an error', async () => {
+    const { repo } = clientWith({ error: null }, { data: null, error: { message: 'not found' } });
+    await expect(repo.listOccurrences('s1')).rejects.toThrow('not found');
+  });
+
   it('surfaces server errors', async () => {
     const { repo } = clientWith({ data: null, error: { message: 'boom' } }, { data: null, error: { message: 'nope' } });
     await expect(repo.listMine()).rejects.toThrow('boom');
     await expect(repo.setStatus('s1', 'active')).rejects.toThrow('nope');
+  });
+
+  describe('mapRideSeriesRow edge cases', () => {
+    it('maps request direction with null details', () => {
+      const mapped = mapRideSeriesRow({
+        ...ROW,
+        direction: 'request',
+        details: null,
+      } as unknown as Parameters<typeof mapRideSeriesRow>[0]);
+
+      expect(mapped).not.toBeNull();
+      expect(mapped?.direction).toBe('request');
+      expect(mapped?.details).toEqual({});
+    });
+
+    it('returns null for unknown direction', () => {
+      expect(mapRideSeriesRow({ ...ROW, direction: 'other' } as unknown as Parameters<typeof mapRideSeriesRow>[0])).toBeNull();
+    });
   });
 });
