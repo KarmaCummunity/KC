@@ -1,4 +1,4 @@
--- 0548_account_deletion_grace | ACCOUNT-RESTORE — FR-SETTINGS-012 / FR-AUTH-016
+-- 0549_account_deletion_grace | ACCOUNT-RESTORE — FR-SETTINGS-012 / FR-AUTH-016
 --
 -- Deleting an account no longer hard-deletes it. The account is deactivated
 -- (`account_status = 'pending_deletion'`) for 30 days and can be restored by signing in;

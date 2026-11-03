@@ -1,4 +1,4 @@
--- 0548 | ACCOUNT-RESTORE (FR-SETTINGS-012, FR-AUTH-016)
+-- 0549 | ACCOUNT-RESTORE (FR-SETTINGS-012, FR-AUTH-016)
 -- Deleting an account deactivates it for 30 days, hides its content, and can be undone;
 -- the purge removes it for good.
 begin;
@@ -155,4 +155,4 @@ end $$;
 
 rollback;
 
-\echo '✓ 0548_account_deletion_grace.sql passed'
+\echo '✓ 0549_account_deletion_grace.sql passed'

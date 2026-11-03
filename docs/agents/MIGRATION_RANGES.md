@@ -102,11 +102,13 @@ Last applied on kc-dev when this was written: `0239`.
 | 0545 | Blocked Users list (FR-MOD-004) | in progress |
 | 0546 | donation link approval (D9) | in progress |
 | 0547 | my givings by world (FR-STATS-008) | in progress |
-| 0548+ | — | free |
+| 0548 | donation link world categories | in progress |
+| 0549 | account deletion grace period + purge (FR-SETTINGS-012) | in progress |
+| 0550+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0548+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0550+`.
 
 ## How to claim
 
