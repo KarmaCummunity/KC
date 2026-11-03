@@ -190,6 +190,7 @@ Extracted from `BACKLOG.md` on 2026-07-22 during docs SSOT cleanup.
 | ID | Task | Owner | Status | Spec |
 |----|------|-------|--------|------|
 | DONATE-G8a | **Support KC directly + Money hub ownership pass.** One-time (Bit / PayBox / Grow card page) and monthly standing order (Grow hosted page) with a donor legal notice and in-app written cancellation request; channel URLs in `kc_support_channels` (migration `0447`, super-admin write, HTTPS CHECK); jgive CTA + community links restored; sandbox org flow behind `money_in_app_org_payments`. | agent-fullstack | ✅ Done | `spec/13_donations.md` FR-DONATE-003, FR-DONATE-011 |
+| DONATE-G8c | **Interim payee phone + personal-account notice.** Bit / PayBox show the payee phone to signed-in donors with a copy action (`list_kc_support_channels()` masks it for guests, migration `0550`); donor notice names the founder's personal account. | agent-fullstack | ✅ Done | `spec/13_donations.md` FR-DONATE-011 AC5, AC9 |
 
 ## NOTIF — Notification preferences (2026-10-30)
 
