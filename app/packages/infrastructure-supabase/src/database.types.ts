@@ -10557,6 +10557,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_private_profile: { Args: { p_user_id: string }; Returns: boolean }
       is_pro: { Args: { p_user_id: string }; Returns: boolean }
       karma_apply: {
         Args: {
