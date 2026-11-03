@@ -213,7 +213,7 @@ Triggers `FR-AUTH-017`.
 ## FR-SETTINGS-012 — Delete account
 
 **Description.**
-The user permanently deletes their own account.
+The user deletes their own account: it is deactivated for 30 days, restorable, then purged.
 
 **Source.**
 - PRD: `03_Core_Features.md` §3.5.
@@ -221,18 +221,14 @@ The user permanently deletes their own account.
 - Decisions: `D-12`, `D-14`.
 
 **Acceptance Criteria.**
-- AC1. The action requires a two-step confirmation: a warning modal listing consequences, followed by typing the user's display name to confirm.
-- AC2. On confirm:
-   - All `Post`s owned by the user are hard-deleted (with image assets), regardless of status.
-   - Every Storage object under the user's folder (`<user_id>/…`) is removed: the avatar and its thumb, post images and their thumbs (attached to a post or not), listing images and chat images (chat images: open question Q-8, `docs/spec/95_reconciliation.md`). Enforced by `supabase/functions/delete-account` (`purgeUserFolders`, #1065).
-   - All `Chat`s and `Message`s authored by the user are kept on the counterpart side as per `D-14` ("Deleted user" placeholder).
-   - The `User` row is moved to a soft-deleted state (`account_status = deleted`, anonymized fields).
-   - A `DeletedIdentifier` cooldown row is created (`FR-AUTH-016`).
-   - All `FollowEdge` and `FollowRequest` rows involving the user are hard-deleted.
-   - All push tokens are unregistered.
-- AC3. After 30 days, a hard-delete job purges the soft-deleted `User` row.
-- AC4. An email confirmation (`FR-NOTIF-012`) is sent on initial deletion if an email is on file.
-- AC5. Audit event recorded.
+- AC1. The action requires a two-step confirmation: a warning modal listing consequences (including that the account is kept for 30 days and can be restored by signing in), followed by typing the user's display name to confirm.
+- AC2. On confirm the account is **deactivated**, not deleted (`D108`): `account_status` becomes `pending_deletion` and a purge date 30 days ahead is stored. Immediately:
+   - The profile, posts, listings and chats of the user disappear for everyone else (feeds, search, map, profile, chat lists); counterparts see the "Deleted user" placeholder per `D-14`.
+   - All push tokens are unregistered and the user is signed out on every device.
+   - Nothing is deleted yet: posts, media, follows, blocks and chats stay as they were so a restore is complete.
+- AC3. **Restore:** signing in within the 30 days shows the restore screen (`FR-AUTH-016` AC2); restoring returns the account to `active` with everything visible again.
+- AC4. **Purge:** a daily job finds accounts whose purge date has passed and deletes them for good: all `Post`s with their image assets, every Storage object under `<user_id>/…` (`purgeUserFolders`, #1065), follow edges, requests, blocks, reports, and finally the auth identity. Chats and messages are kept on the counterpart side per `D-14`. A failing bucket is reported and the others still run.
+- AC5. Audit events are recorded for the deactivation, a restore and the purge.
 
 **Related.** Domain: `User`, `Post`, `Chat`, `FollowEdge`, `DeletedIdentifier`.
 

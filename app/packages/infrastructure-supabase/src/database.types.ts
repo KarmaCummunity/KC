@@ -7840,6 +7840,8 @@ export type Database = {
           closure_explainer_dismissed: boolean
           contact_phone: string | null
           created_at: string
+          deletion_purge_at: string | null
+          deletion_requested_at: string | null
           display_name: string | null
           false_report_sanction_count: number
           false_reports_count: number
@@ -7862,6 +7864,7 @@ export type Database = {
           search_vector: unknown
           share_handle: string
           show_active_status: boolean
+          status_before_deletion: string | null
           updated_at: string
           user_id: string
           verification_method: string | null
@@ -7883,6 +7886,8 @@ export type Database = {
           closure_explainer_dismissed?: boolean
           contact_phone?: string | null
           created_at?: string
+          deletion_purge_at?: string | null
+          deletion_requested_at?: string | null
           display_name?: string | null
           false_report_sanction_count?: number
           false_reports_count?: number
@@ -7905,6 +7910,7 @@ export type Database = {
           search_vector?: unknown
           share_handle: string
           show_active_status?: boolean
+          status_before_deletion?: string | null
           updated_at?: string
           user_id: string
           verification_method?: string | null
@@ -7926,6 +7932,8 @@ export type Database = {
           closure_explainer_dismissed?: boolean
           contact_phone?: string | null
           created_at?: string
+          deletion_purge_at?: string | null
+          deletion_requested_at?: string | null
           display_name?: string | null
           false_report_sanction_count?: number
           false_reports_count?: number
@@ -7948,6 +7956,7 @@ export type Database = {
           search_vector?: unknown
           share_handle?: string
           show_active_status?: boolean
+          status_before_deletion?: string | null
           updated_at?: string
           user_id?: string
           verification_method?: string | null
@@ -9095,6 +9104,12 @@ export type Database = {
           p_version: number
         }
         Returns: Json
+      }
+      accounts_due_for_purge: {
+        Args: { p_limit?: number }
+        Returns: {
+          user_id: string
+        }[]
       }
       active_posts_count_for_viewer: {
         Args: { p_owner: string; p_viewer: string }
@@ -10440,6 +10455,7 @@ export type Database = {
         }
       }
       delete_account_data: { Args: never; Returns: Json }
+      delete_account_data_for: { Args: { p_user_id: string }; Returns: Json }
       delete_my_listing: { Args: { p_listing_id: string }; Returns: undefined }
       drop_feed_impressions_partitions_older_than: {
         Args: { p_retention?: string }
@@ -10715,6 +10731,10 @@ export type Database = {
       inject_system_message: {
         Args: { p_body?: string; p_chat_id: string; p_payload: Json }
         Returns: string
+      }
+      is_account_pending_deletion: {
+        Args: { p_user_id: string }
+        Returns: boolean
       }
       is_active_member: { Args: { uid: string }; Returns: boolean }
       is_admin: { Args: { uid: string }; Returns: boolean }
@@ -12194,6 +12214,8 @@ export type Database = {
       }
       rpc_record_active_day: { Args: never; Returns: undefined }
       rpc_republish_post: { Args: { p_post_id: string }; Returns: string }
+      rpc_request_account_deletion: { Args: never; Returns: string }
+      rpc_restore_account: { Args: never; Returns: undefined }
       rpc_ride_arrive: {
         Args: { p_reason?: string; p_ride_id: string }
         Returns: {
