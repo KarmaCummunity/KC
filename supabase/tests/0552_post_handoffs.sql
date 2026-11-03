@@ -132,7 +132,13 @@ declare
 begin
   select * into p from personas;
   v_listing := kc_test.create_listing(p.owner, 'knowledge', 'course', 'give', 'intro to sql',
-    '{"level":"beginner"}'::jsonb, null);
+    jsonb_build_object(
+      'topic', 'SQL', 'level', 'beginner', 'modality', 'video', 'slots_available', 5,
+      'slot_starts_at', kc_test.iso_in(interval '1 day'),
+      'slot_ends_at', kc_test.iso_in(interval '1 day 2 hours')),
+    null);
+  -- Knowledge listings start in pending_review (0266); simulate the moderator's approval.
+  update public.listings set moderation_status = 'published' where listing_id = v_listing;
   perform kc_test.assert_row_count(
     format('select 1 from public.posts where listing_id = %L', v_listing), 0,
     'a knowledge listing has no mirror post');
