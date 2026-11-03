@@ -9,6 +9,7 @@ KC (Karma Community) is built largely by AI agents. This is the short entry poin
 | [`docs/agents/MIGRATION_RANGES.md`](docs/agents/MIGRATION_RANGES.md) | **Claim a migration number range before writing SQL** |
 | [`docs/agents/STACK_MAP.md`](docs/agents/STACK_MAP.md) | Open stacked PRs and merge order |
 | [`docs/agents/ARCHITECTURE.md`](docs/agents/ARCHITECTURE.md) | Apps / packages / supabase / workflows map |
+| [`docs/architecture/current.md`](docs/architecture/current.md) | **Current architecture**: C4 diagrams, package boundaries, services, crons |
 | [`docs/agents/DEPLOY.md`](docs/agents/DEPLOY.md) | **Deploy runbooks**: DB, web, seeding, types drift, E2E, all workflows |
 | [`docs/agents/RELEASE.md`](docs/agents/RELEASE.md) | Versioning, TestFlight / Play internal, rollback |
 | [`docs/architecture/adr/`](docs/architecture/adr/) | **ADRs**: client state (ADR-001), data layer + new-RPC checklist (ADR-002), realtime (ADR-003) |
