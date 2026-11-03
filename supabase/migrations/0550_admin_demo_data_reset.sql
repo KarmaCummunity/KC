@@ -1,4 +1,4 @@
--- 0549_admin_demo_data_reset | FR-ADMIN-031: super admin can remove the kc-dev demo data from the portal.
+-- 0550_admin_demo_data_reset | FR-ADMIN-031: super admin can remove the kc-dev demo data from the portal.
 --
 -- The kc-dev fake seed (supabase/seed/kc-dev/seed.sql) creates ~200 users `userN@seed.kc.test`
 -- (auth app_metadata.seed = true) plus everything hanging off them, and three "[DEMO]" nonprofits
@@ -7,7 +7,7 @@
 --   kc_dev_wipe_demo_data()    internal delete of the demo data (shared by wipe.sql / seed / portal)
 --   admin_demo_data_status()   what exists right now, and whether a seed is possible here
 --   admin_wipe_demo_data()     super-admin wipe, audit-logged
--- Restoring is admin_seed_demo_data() in 0550.
+-- Restoring is admin_seed_demo_data() in 0551.
 --
 -- Safety: both functions only ever match auth users flagged app_metadata.seed = true AND with the
 -- reserved `.test` seed domain. Real users can never carry that flag (only the seed script sets it),

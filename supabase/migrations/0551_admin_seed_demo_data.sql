@@ -1,4 +1,4 @@
--- 0550_admin_seed_demo_data | FR-ADMIN-031: super admin can restore the kc-dev demo data from the portal.
+-- 0551_admin_seed_demo_data | FR-ADMIN-031: super admin can restore the kc-dev demo data from the portal.
 --
 -- The fake-data seed used to live only in supabase/seed/kc-dev/seed.sql (run by the "Seed KC dev"
 -- workflow). It now lives here as kc_dev_seed_demo_data(), the single source of truth: seed.sql
@@ -7,7 +7,7 @@
 -- saved posts, 150 chats with 900 messages, and the three [DEMO] nonprofits.
 --
 -- Safety: the seed refuses to run unless this database carries the dev marker row in
--- kc_dev_demo_config (0549), which exists only on kc-dev. Prod and CI stacks never have it.
+-- kc_dev_demo_config (0550), which exists only on kc-dev. Prod and CI stacks never have it.
 -- The seed creates temp tables that drop on commit, so call it once per transaction.
 
 begin;

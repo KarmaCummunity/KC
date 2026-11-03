@@ -582,7 +582,7 @@ The team sees how well matching v2 works per world, to tune `matching_settings` 
 
 ## FR-ADMIN-031 — Demo data removal
 
-> **Status (2026-11-03):** ✅ Implemented — migrations `0549` + `0550`, screen `(admin)/demo-data`, permission `demo_data.manage`.
+> **Status (2026-11-03):** ✅ Implemented — migrations `0550` + `0551`, screen `(admin)/demo-data`, permission `demo_data.manage`.
 
 **Description.**
 The kc-dev environment carries fake demo data (the `seed/kc-dev` seed). A super admin can delete it, and bring it back, from the portal, to test on real data only or on demo data when needed.
@@ -594,11 +594,11 @@ The kc-dev environment carries fake demo data (the `seed/kc-dev` seed). A super 
 - AC4. A demo nonprofit that has payment history (non-cascading FKs) is kept and reported instead of failing the wipe.
 - AC5. A seed-flagged super admin cannot wipe itself (`cannot_wipe_self`).
 - AC6. Only super admin can open the screen or call either RPC (`42501` otherwise; anon has no execute). Each wipe writes an `admin_wipe_demo_data` audit event.
-- AC7. When no demo data exists, the screen offers "Restore demo data" (`admin_seed_demo_data`): it wipes any leftovers and recreates the demo users, content and nonprofits immediately, with no external workflow. The seed logic lives in the database (`kc_dev_seed_demo_data`, `0550`); `seed/kc-dev/seed.sql` is a thin wrapper over the same function.
+- AC7. When no demo data exists, the screen offers "Restore demo data" (`admin_seed_demo_data`): it wipes any leftovers and recreates the demo users, content and nonprofits immediately, with no external workflow. The seed logic lives in the database (`kc_dev_seed_demo_data`, `0551`); `seed/kc-dev/seed.sql` is a thin wrapper over the same function.
 - AC8. Restoring works only on a database carrying the dev marker row in `kc_dev_demo_config` (kc-dev). Anywhere else it fails with `not_dev_environment` and the screen explains that restoring is unavailable.
 - AC9. The demo users' login password is typed once (min 8 characters), stored only as a bcrypt hash, and reused on later restores. Each restore is audit-logged (`admin_seed_demo_data`).
 
-**Related.** `supabase/tests/0549_admin_demo_data_reset.sql` · `supabase/tests/0550_admin_seed_demo_data.sql` · `SupabaseDemoDataRepository` · `supabase/seed/kc-dev/`.
+**Related.** `supabase/tests/0550_admin_demo_data_reset.sql` · `supabase/tests/0551_admin_seed_demo_data.sql` · `SupabaseDemoDataRepository` · `supabase/seed/kc-dev/`.
 
 ---
 
@@ -620,4 +620,4 @@ The kc-dev environment carries fake demo data (the `seed/kc-dev` seed). A super 
 | 0.14 | 2026-10-30 | Added §18 Admin Portal — End-to-end team management (P3.A-Team). FR-ADMIN-030: the person screen manages anyone end to end — roles with org, grant in a chosen place, change role in place (`admin_change_role`, keeps manager and reports), revoke, role-derived permissions list, direct manager; org admins and managers run their own org's team (D86) with a scoped roster (`admin_list_admins`); permissions stay role-derived (D85). Migration `0465`; decision `D-197`. |
 | 0.15 | 2026-10-30 | FR-ADMIN-021 AC7–AC8 (KC#1058): single-choice stats and the Sean Ellis PMF score card (`admin_pmf_survey_report`, `0458`). |
 | 0.16 | 2026-10-30 | Added §18 / FR-ADMIN-029 — match quality dashboard (KC#1122): `admin_match_quality` (`0454`), `(admin)/matching`, `matching.view_quality`. |
-| 0.17 | 2026-11-03 | Added FR-ADMIN-031 — demo data removal and restore: `admin_demo_data_status` / `admin_wipe_demo_data` (`0549`), `admin_seed_demo_data` (`0550`), `(admin)/demo-data`, `demo_data.manage` (super admin only). |
+| 0.17 | 2026-11-03 | Added FR-ADMIN-031 — demo data removal and restore: `admin_demo_data_status` / `admin_wipe_demo_data` (`0550`), `admin_seed_demo_data` (`0551`), `(admin)/demo-data`, `demo_data.manage` (super admin only). |

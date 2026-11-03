@@ -217,3 +217,9 @@ Extracted from `BACKLOG.md` on 2026-07-22 during docs SSOT cleanup.
 | ID | Task | Owner | Status | Spec |
 |----|------|-------|--------|------|
 | OPS-G41 | **Edge Function error reporting** through one shared wrapper. `supabase/functions/_shared/observability/` (dependency-free Sentry envelope client + `withObservability` + `reportError`) wraps all 19 functions: unhandled throws → Sentry exception + generic 500, 5xx responses → Sentry message with the error code only, handled fatal paths and the WhatsApp agent background job → `reportError`. Secrets by name only (`SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_RELEASE`), synced by the Edge Functions deploy stage (`deploy-functions.yml`) from `EDGE_SENTRY_DSN`. Operator: create the Sentry project and set the secret (`OPERATOR_RUNBOOK.md` § Edge Functions). | agent-be | ✅ Done 2026-10-31 | `docs/architecture/target.md` §5.2 · G41 · `D-202` |
+
+## FINANCE — Org finance & transparency (2026-11-03)
+
+| ID | Task | Owner | Status | Spec |
+|----|------|-------|--------|------|
+| FIN-P0 | **Lean first slice of org finance.** Migration `0470`: `finance_accounts` (balances, deactivate, seeded cash / Bit / Paybox), `org_id` / `account_id` / `is_public` on ledger entries, default category keys, admin donors overview, and live public transparency controlled by the organization (5 toggles, all off by default; aggregates only; `rpc_org_transparency`). Admin: `/admin/money` gets a nav entry plus accounts, donors and public-display screens; public: `OrgTransparencySection` on About and Statistics. | agent-fullstack | ✅ Done | `spec/19_org_finance.md` FR-FIN-022, FR-FIN-023, FR-FIN-003 (lean) · `spec/10_statistics.md` FR-STATS-010 |

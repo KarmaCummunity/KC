@@ -1,4 +1,4 @@
--- supabase/tests/0549_admin_demo_data_reset.sql | 0549 (FR-ADMIN-031): demo data status + wipe.
+-- supabase/tests/0550_admin_demo_data_reset.sql | 0550 (FR-ADMIN-031): demo data status + wipe.
 -- Access control (super admin only), the exact scope of the wipe (flagged seed users and demo
 -- nonprofits go; real users and look-alike accounts stay), cascades to user content, the audit
 -- row, self-wipe protection, and idempotence. Everything is rolled back at the end.
@@ -39,7 +39,7 @@ insert into public.follow_edges (follower_id, followed_id)
 select seed_a, seed_b from personas;
 
 insert into public.organizations (org_id, name, slug, is_platform, is_verified_nonprofit, verified_at, verification_method)
-values ('00000000-0000-0000-0000-00000000d0a1', '[DEMO] test org', 'demo-test-org-0549', false, true, now(), 'demo_seed');
+values ('00000000-0000-0000-0000-00000000d0a1', '[DEMO] test org', 'demo-test-org-0550', false, true, now(), 'demo_seed');
 
 -- ── access control ──────────────────────────────────────────────────────────
 do $$
@@ -105,7 +105,7 @@ begin
 
   perform kc_test.assert_true(not exists (select 1 from auth.users where id in (p.seed_a, p.seed_b)), 'seed users are gone');
   perform kc_test.assert_true(not exists (select 1 from public.follow_edges where follower_id = p.seed_a), 'their content cascaded');
-  perform kc_test.assert_true(not exists (select 1 from public.organizations where slug = 'demo-test-org-0549'), 'demo nonprofit is gone');
+  perform kc_test.assert_true(not exists (select 1 from public.organizations where slug = 'demo-test-org-0550'), 'demo nonprofit is gone');
   perform kc_test.assert_true(exists (select 1 from auth.users where id = p.real_user), 'a real user is untouched');
   perform kc_test.assert_true(exists (select 1 from auth.users where id = p.lookalike), 'the unflagged look-alike is untouched');
 
@@ -121,4 +121,4 @@ end $$;
 
 rollback;
 
-\echo '✓ 0549_admin_demo_data_reset.sql passed'
+\echo '✓ 0550_admin_demo_data_reset.sql passed'

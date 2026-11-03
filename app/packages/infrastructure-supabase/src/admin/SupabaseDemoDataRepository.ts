@@ -1,4 +1,4 @@
-// FR-ADMIN-031 — super-admin RPCs that inspect and wipe the kc-dev demo data (migration 0549).
+// FR-ADMIN-031 — super-admin RPCs that inspect and wipe the kc-dev demo data (migration 0550).
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../database.types';
 

@@ -1,5 +1,5 @@
 -- KC dev fake data (Hebrew). DEV ONLY. All accounts use @seed.kc.test.
--- The seed itself lives in the database as public.kc_dev_seed_demo_data (migration 0550) so the
+-- The seed itself lives in the database as public.kc_dev_seed_demo_data (migration 0551) so the
 -- Admin Portal "Demo data" screen and this script run exactly the same code. Wipe with wipe.sql.
 -- Idempotent: the function wipes the previous seed first.
 -- Test login: any seed user email; the password is the E2E_SEED_PASSWORD secret,
