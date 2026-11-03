@@ -7,7 +7,7 @@ import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, iconSize, spacing, typography, useTheme, Text } from '@kc/ui';
 import { AvatarInitials } from '../AvatarInitials';
 import { isOpaqueSystemShareHandle } from '../../lib/shareHandleDisplay';
 import { rowDirectionStart } from '../../lib/rtlLayout';
@@ -40,7 +40,7 @@ export function ProfileHeader({
           <TouchableOpacity onPress={onLockPress} accessibilityLabel={t('profile.privateProfileA11y')}>
             <Ionicons
               name="lock-closed"
-              size={18}
+              size={iconSize.md}
               color={colors.textSecondary}
               style={styles.lock}
             />
@@ -65,7 +65,7 @@ const useProfileHeaderStyles = makeUseStyles(({ colors }) => ({
     marginTop: spacing.sm,
   },
   displayName: { ...typography.h2, color: colors.textPrimary, textAlign: 'center' as const },
-  lock: { marginTop: 2 },
+  lock: { marginTop: spacing.xs },
   handle: { ...typography.body, color: colors.textSecondary },
   location: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' as const },
   bio: {

@@ -1,4 +1,6 @@
 import '../src/lib/polyfills';
+import { startMark, finishMark } from '../src/lib/observability/perfMarks';
+startMark('app.cold_start');
 import { initSentry } from '../src/lib/observability/sentry';
 import { initPosthog } from '../src/lib/observability/posthog';
 import { installGlobalErrorHandlers } from '../src/lib/observability/globalErrorHandlers';
@@ -8,9 +10,6 @@ void initSentry().then(() =>
   installGlobalErrorHandlers((error) => useUncaughtErrorStore.getState().show(error)),
 );
 void initPosthog();
-import { startMark, finishMark } from '../src/lib/observability/perfMarks';
-startMark('app.cold_start');
-import '../src/i18n';
 import i18n from '../src/i18n';
 import React, { useEffect } from 'react';
 import { RevenueCatSync } from '../src/services/purchases/RevenueCatSync';

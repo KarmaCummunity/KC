@@ -3,7 +3,7 @@ import { Platform, Pressable, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
 import { container } from '../../src/lib/container';
 import { AvatarInitials } from '../../src/components/AvatarInitials';
@@ -89,7 +89,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   nudge: {
     margin: spacing.base,
     padding: spacing.base,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: colors.primaryLight,
     gap: spacing.xs,
   },
@@ -101,7 +101,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
     alignItems: 'center',
     gap: spacing.md,
     padding: spacing.sm,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
