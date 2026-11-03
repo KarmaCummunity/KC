@@ -7,8 +7,7 @@
 4. **Reconciliation questions Q-1…Q-8 (2026-10-30)** — launch flags vs D3, moderation thresholds (D33), legacy worlds in code, chat reports, listing-handoff karma, TestFlight database (D8), canonical Supabase project refs, account deletion vs. shared chat images. Details and evidence: [95 §4](./95_reconciliation.md#4-questions-for-the-pm-copied-to-92).
 
 5. **Private profile scope (PM 2026-11-03):** should a private profile hide the whole profile (bio, posts, counters) from people who are not approved followers, or only the optional fields of D110? Today a private profile looks like a public one (FR-PROFILE-003, D-21); hiding all of it reverses that. → [07.12](./07_cross_cutting_systems.md)
-6. **Housing & spaces (`D112`)** — details: [`SSOT/spec/21_housing.md`](../SSOT/spec/21_housing.md). Q-H1, Q-H2, Q-H3, Q-H5 and Q-H7 were decided on 2026-11-03 (decision log).
-   - **Q-H4** Stays longer than 30 nights (lone soldiers, students, new immigrants, families between homes). A long free stay starts to look like a tenancy (harder to end, occupancy rights), needs a written stay agreement with an end date, longer safety follow-up and a renewal flow. Options: (a) keep 30 nights in v1 and serve longer needs through organizations; (b) allow one renewal up to 60 nights with a signed stay agreement; (c) a separate long-stay sub-type after counsel review.
+6. **Housing & spaces (`D112`)** — details: [`SSOT/spec/21_housing.md`](../SSOT/spec/21_housing.md). Q-H1, Q-H2, Q-H3, Q-H4, Q-H5 and Q-H7 were decided on 2026-11-03 (decision log).
    - **Q-H6** In a declared emergency (mass evacuation), may an organization (municipality evacuation centre, NGO) confirm an evacuee **guest** who left home without documents, in place of ID verification? Hosts always verify.
 
 Also pending: card/detail design depth (D6*); D8 TestFlight DB check (G7); size of extra org vote weight (D49).
