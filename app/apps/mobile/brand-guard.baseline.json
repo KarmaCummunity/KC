@@ -188,14 +188,6 @@
       "spacingLiteral": 1,
       "adHocChip": 1
     },
-    "src/components/chat/InboxChatRow.tsx": {
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 1,
-      "spacingLiteral": 1,
-      "physicalSide": 1,
-      "iconSizeLiteral": 1
-    },
     "src/components/chat/chatConversationHeader.styles.ts": {
       "zIndexLiteral": 1,
       "shadowLiteral": 1
@@ -276,14 +268,6 @@
     "src/components/post-detail/PublisherCard.tsx": {
       "unmirroredDirectionalIcon": 1
     },
-    "src/components/post-detail/RecipientCallout.tsx": {
-      "colorLiteral": 1,
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 1,
-      "spacingLiteral": 1,
-      "iconSizeLiteral": 2,
-      "unmirroredDirectionalIcon": 1
-    },
     "src/components/post-detail/RecipientUnmarkBar.tsx": {
       "fontWeightLiteral": 1
     },
@@ -357,12 +341,6 @@
       "radiusLiteral": 2,
       "spacingLiteral": 8
     },
-    "src/components/settings/appearanceParts.tsx": {
-      "fontWeightLiteral": 2,
-      "radiusLiteral": 3,
-      "spacingLiteral": 2,
-      "iconSizeLiteral": 1
-    },
     "src/components/skeletons/InboxListSkeleton.tsx": {
       "spacingLiteral": 1,
       "physicalSide": 1
@@ -387,16 +365,6 @@
     },
     "src/components/ui/SectionHeading.tsx": {
       "fontSizeLiteral": 1
-    },
-    "src/components/warmPromptCardStyles.ts": {
-      "radiusLiteral": 1,
-      "shadowLiteral": 8
-    },
-    "src/features/about-landing/AboutAudienceSection.tsx": {
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 2,
-      "shadowLiteral": 8,
-      "iconSizeLiteral": 2
     },
     "src/features/about-landing/AboutContactLinks.tsx": {
       "unmirroredDirectionalIcon": 1
@@ -430,16 +398,6 @@
       "rawModal": 1,
       "iconSizeLiteral": 3,
       "unmirroredDirectionalIcon": 1
-    },
-    "src/features/about-landing/AboutRoadmapTimeline.tsx": {
-      "fontSizeLiteral": 2,
-      "fontWeightLiteral": 5,
-      "spacingLiteral": 1,
-      "iconSizeLiteral": 1
-    },
-    "src/features/about-landing/AboutScopeToggle.tsx": {
-      "fontWeightLiteral": 1,
-      "shadowLiteral": 8
     },
     "src/features/about-landing/AboutScopedSection.tsx": {
       "fontWeightLiteral": 2
