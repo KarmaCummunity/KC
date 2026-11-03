@@ -2,13 +2,11 @@ import { useEffect } from 'react';
 import { usePathname } from 'expo-router';
 import { useAuthStore } from '../store/authStore';
 import { container } from '../lib/container';
-import {
-  useActiveScreenStore,
-  installForegroundHandler,
-  installBadgeAutoClear,
-  useNotificationTapRouting,
-  registerCurrentDeviceIfPermitted,
-} from '../lib/notifications';
+import { useActiveScreenStore } from '../lib/notifications/useActiveScreenStore';
+import { installForegroundHandler } from '../lib/notifications/foregroundHandler';
+import { installBadgeAutoClear } from '../lib/notifications/badge';
+import { useNotificationTapRouting } from '../lib/notifications/tapHandler';
+import { registerCurrentDeviceIfPermitted } from '../lib/notifications/register';
 import { ensureAndroidNotificationChannel } from '../lib/pushSetup';
 
 export function NotificationsBridge(): null {

@@ -54,6 +54,17 @@ describe('useChatMessageReactions', () => {
     expect(result.current.mine.m2).toBeNull();
   });
 
+  it('handles a failed reaction read without leaving an unhandled rejection', async () => {
+    listMock.mockRejectedValue(new Error('offline'));
+
+    const { result } = renderHook(() => useChatMessageReactions('chat-1', ['m1']));
+
+    await waitFor(() => expect(listMock).toHaveBeenCalledWith(['m1']));
+    await act(async () => { await Promise.resolve(); });
+    expect(result.current.byMessage).toEqual({});
+    expect(result.current.mine).toEqual({});
+  });
+
   it('does not re-fetch when passed a new array reference with identical IDs', async () => {
     listMock.mockResolvedValue([]);
     const { rerender } = renderHook(

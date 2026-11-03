@@ -20,14 +20,14 @@ export const useChatConversationStyles = makeUseStyles(({ colors }) => ({
   attachBtn: {
     width: 40,
     height: 40,
-    borderRadius: radius.full,
+    borderRadius: radius.xl,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  sendBtn: { width: 40, height: 40, borderRadius: radius.full, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
+  sendBtn: { width: 40, height: 40, borderRadius: radius.xl, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
   sendBtnDisabled: { opacity: 0.5 },
   typingHint: {
     ...typography.caption,

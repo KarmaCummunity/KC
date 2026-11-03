@@ -9,9 +9,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Ionicons } from '@expo/vector-icons';
+import { MirroredIcon, useDirectionalBackIcon } from '../src/components/ui/MirroredIcon';
 import { useQuery } from '@tanstack/react-query';
-import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, iconSize, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import type { PersonalActivityItem } from '@kc/domain';
 import { useAuthStore } from '../src/store/authStore';
 import { getUserRepo } from '../src/services/userComposition';
@@ -33,6 +33,7 @@ import { rtlTextAlignStart } from '../src/lib/rtlTextAlignStart';
 export default function StatsScreen() {
   const styles = useStyles();
   const { colors } = useTheme();
+  const backIcon = useDirectionalBackIcon();
   const router = useRouter();
   const { t } = useTranslation();
   const userId = useAuthStore((s) => s.session?.userId);
@@ -82,7 +83,7 @@ export default function StatsScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} accessibilityRole="button">
-          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+          <MirroredIcon name={backIcon} size={iconSize['2xl']} color={colors.textPrimary} />
         </TouchableOpacity>
         <View style={styles.headerTitles}>
           <Text style={styles.title}>{t('stats.title')}</Text>
@@ -163,7 +164,7 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
   headerTitles: { flex: 1, alignItems: 'center', marginHorizontal: spacing.sm },
   headerSpacer: { width: 24 },
   title: { ...typography.h3, color: colors.textPrimary, textAlign: rtlTextAlignStart },
-  subtitle: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart, marginTop: 2 },
+  subtitle: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart, marginTop: spacing.xs },
   scroll: {
     padding: spacing.base,
     paddingBottom: spacing['3xl'],
