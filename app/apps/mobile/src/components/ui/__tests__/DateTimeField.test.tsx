@@ -20,7 +20,7 @@ vi.mock('@react-native-community/datetimepicker', () => ({
   DateTimePickerAndroid: { open: vi.fn() },
 }));
 
-import { DateTimeField, fromWebLocalValue, toWebLocalValue } from '../DateTimeField';
+import { DateTimeField, fromWebInputValue, fromWebLocalValue, toWebInputValue, toWebLocalValue } from '../DateTimeField';
 
 function renderField(value: Date | null, onChange = vi.fn(), theme: ThemeMode = 'light') {
   render(
@@ -82,6 +82,30 @@ describe('DateTimeField', () => {
     expect(toWebLocalValue(d)).toBe('2031-01-02T03:04');
     expect(fromWebLocalValue('2031-01-02T03:04')).toEqual(d);
     expect(fromWebLocalValue('')).toBeNull();
+  });
+
+  // FR-RIDE-046 — recurring rides pick a day and a time apart.
+  it('a date-only field confirms a day at midnight', () => {
+    const onChange = vi.fn();
+    render(
+      <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
+        <DateTimeField testID="day" mode="date" value={null} onChange={onChange} label="יום" />
+      </ThemeProvider>,
+    );
+    fireEvent.click(screen.getByLabelText('יום'));
+    const input = document.querySelector('input[type="date"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '2031-05-04' } });
+    fireEvent.click(screen.getByTestId('day-done'));
+    expect(onChange).toHaveBeenCalledWith(new Date(2031, 4, 4));
+  });
+
+  it('formats and reads the day and time inputs', () => {
+    const base = new Date(2031, 0, 2, 3, 4);
+    expect(toWebInputValue(base, 'date')).toBe('2031-01-02');
+    expect(toWebInputValue(base, 'time')).toBe('03:04');
+    expect(fromWebInputValue('2031-05-04', 'date', base)).toEqual(new Date(2031, 4, 4));
+    expect(fromWebInputValue('09:15', 'time', base)).toEqual(new Date(2031, 0, 2, 9, 15));
+    expect(fromWebInputValue('', 'time', base)).toBeNull();
   });
 
   // #1398 — the spinner followed the phone's appearance while the sheet followed the app's, so a

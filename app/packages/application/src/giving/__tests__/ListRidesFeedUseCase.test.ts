@@ -6,7 +6,7 @@ import { ListRidesFeedUseCase } from '../ListRidesFeedUseCase';
 const now = new Date(2026, 10, 1, 8, 0);
 const RIDE: RideFeedItem = {
   listingId: 'l1', direction: 'request', title: 'Need a ride', departsAt: new Date(2026, 10, 1, 9, 0).toISOString(),
-  originLabel: 'A', destLabel: 'B', meetingPoints: 0, seatsLeft: null, passengers: 1,
+  originLabel: 'A', destLabel: 'B', meetingPoints: 0, seatsLeft: null, passengers: 1, recurrence: null, seriesMore: 0,
 };
 
 describe('ListRidesFeedUseCase', () => {

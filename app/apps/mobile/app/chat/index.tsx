@@ -5,12 +5,13 @@ import { Stack, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import type { ListRenderItem } from 'react-native';
 import { ChatError, type ChatWithPreview } from '@kc/application';
-import { makeUseStyles, typography, spacing, radius, useTheme } from '@kc/ui';
+import { makeUseStyles, spacing } from '@kc/ui';
 import { FilterSearchBar } from '../../src/components/filterKit/FilterSearchBar';
 import { useAuthStore } from '../../src/store/authStore';
 import { container } from '../../src/lib/container';
 import { markNeedFreshThreadWith } from '../../src/lib/chatNavigationPrefs';
 import { EmptyState, EmptyStateActions } from '../../src/components/EmptyState';
+import { PrimaryButton } from '../../src/components/ui/Buttons';
 import { KcRefreshControl } from '../../src/components/lists/KcRefreshControl';
 import { HideChatConfirmModal } from '../../src/components/HideChatConfirmModal';
 import { InboxChatRow, InboxChatRowSeparator } from '../../src/components/chat/InboxChatRow';
@@ -32,7 +33,6 @@ export default function ChatListScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const styles = useChatListStyles();
-  const { colors } = useTheme();
   const detailOptions = useDetailStackScreenOptions();
   const userId = useAuthStore((s) => s.session?.userId);
   const inboxQuery = useChatInboxQuery(userId);
@@ -110,7 +110,21 @@ export default function ChatListScreen() {
           renderItem={renderItem}
           ItemSeparatorComponent={InboxChatRowSeparator}
           ListEmptyComponent={
-            q.trim() ? (
+            inboxQuery.isError && !inbox ? (
+              <EmptyState
+                icon="cloud-offline-outline"
+                title={t('general.errorTitle')}
+                subtitle={t('errorBoundary.body')}
+                action={
+                  <PrimaryButton
+                    testID="chat-inbox-retry"
+                    label={t('general.retry')}
+                    size="md"
+                    onPress={() => void inboxQuery.refetch()}
+                  />
+                }
+              />
+            ) : q.trim() ? (
               <EmptyState icon="search-outline" title={t('chat.noChats')} subtitle={t('chat.noChatsDesc')} />
             ) : (
               <EmptyState

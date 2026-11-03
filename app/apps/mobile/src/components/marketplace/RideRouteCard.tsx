@@ -5,13 +5,14 @@ import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { iconSize, makeUseStyles, radius, shadow, spacing, typography, useTheme, Text } from '@kc/ui';
-import { readRideRoute } from '@kc/domain';
+import { readRideRoute, readRideSeriesMarker } from '@kc/domain';
 import { rowDirectionStart } from '../../lib/rtlLayout';
 import { formatRideTime } from '../cards/ListingCard';
 import { RideRouteMap } from './RideRouteMap';
 import { RideRouteStops } from './RideRouteStops';
 import { Chip } from '../ui/Chip';
 import { rideSeatCountKey } from '../../lib/rideSeatCountKey';
+import { rideSeriesLabel } from '../../lib/rides/rideSeriesLabel';
 
 interface Props {
   details: Record<string, unknown>;
@@ -32,9 +33,12 @@ export function RideRouteCard({ details, direction }: Readonly<Props>) {
   const seats = num(details['seats_available']) ?? num(details['passengers']);
   const cost = num(details['cost_share_ils']);
   const isFree = details['reward_model'] === 'free' || (direction === 'give' && cost == null);
+  const series = readRideSeriesMarker(details);
 
   const chips: InfoChip[] = [];
   if (when) chips.push({ icon: 'time-outline', text: when });
+  // An occurrence of a recurring ride says when it repeats (FR-RIDE-046).
+  if (series) chips.push({ icon: 'repeat-outline', text: rideSeriesLabel(series, t) });
   if (seats != null) chips.push({ icon: 'people-outline', text: t(rideSeatCountKey(direction === 'request' ? 'passengers' : 'seats', seats), { count: seats }) });
   if (direction === 'give') chips.push({ icon: 'wallet-outline', text: cost != null && cost > 0 ? t('cards.costShare', { amount: cost }) : t('cards.free') });
   if (isFree && direction !== 'give') chips.push({ icon: 'wallet-outline', text: t('cards.free') });
