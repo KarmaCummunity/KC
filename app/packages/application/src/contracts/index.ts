@@ -38,3 +38,11 @@ export {
   type FollowGraph,
   type FollowGraphContractContext,
 } from './followGraph.contract';
+export {
+  PROFILE_FIELD_LIMITS,
+  profileEditingContract,
+  type ProfileActor,
+  type ProfileCity,
+  type ProfileEditing,
+  type ProfileEditingContractContext,
+} from './profileEditing.contract';
