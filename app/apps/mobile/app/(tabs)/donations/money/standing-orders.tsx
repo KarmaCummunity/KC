@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import { KcFlashList } from '../../../../src/components/lists/KcFlashList';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../../../../src/components/ui/Screen';
 import { paymentsUseCases } from '../../../../src/services/paymentsComposition';
 
@@ -12,8 +12,8 @@ const useStyles = makeUseStyles(({ colors }) => ({
   title: { ...typography.bodyLarge, color: colors.textPrimary },
   meta: { ...typography.caption, color: colors.textSecondary },
   actions: { flexDirection: 'row' as const, gap: spacing.sm, flexWrap: 'wrap' as const },
-  btn: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: 8, backgroundColor: colors.surfaceRaised },
-  btnText: { ...typography.caption, fontWeight: '600' as const, color: colors.textPrimary },
+  btn: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.sm, backgroundColor: colors.surfaceRaised },
+  btnText: { ...typography.caption, ...typography.semiBold, color: colors.textPrimary },
 }));
 
 export default function MyStandingOrdersScreen() {

@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import type { PostWithOwner } from '@kc/application';
-import { makeUseStyles, useTheme } from '@kc/ui';
+import { makeUseStyles, spacing, iconSize, useTheme } from '@kc/ui';
 import { hasPermission, type AdminRole } from '@kc/domain';
 import { useAuthStore } from '../../store/authStore';
 import { useAdminRoles } from '../../hooks/useAdminRoles';
@@ -64,10 +64,10 @@ export function PostMenuButton({
           name="ellipsis-vertical"
           size={
             placement === 'header'
-              ? 22
+              ? iconSize.xl
               : overlaySize === 'compact'
-                ? 14
-                : 20
+                ? iconSize.xs
+                : iconSize.lg
           }
           color={iconColor ?? colors.textPrimary}
         />
@@ -107,8 +107,8 @@ const usePostMenuButtonStyles = makeUseStyles(() => ({
   },
   btnHeader: {
     paddingStart: 0,
-    paddingEnd: 4,
-    paddingVertical: 4,
+    paddingEnd: spacing.xs,
+    paddingVertical: spacing.xs,
     justifyContent: 'center',
     alignItems: 'center',
   },

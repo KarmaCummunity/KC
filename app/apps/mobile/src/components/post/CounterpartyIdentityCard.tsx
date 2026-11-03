@@ -42,7 +42,7 @@ const useCounterpartyIdentityCardStyles = makeUseStyles(({ colors }) => ({
   },
   title: {
     ...typography.caption,
-    fontWeight: '600',
+    ...typography.semiBold,
     color: colors.textSecondary,
     textAlign: textAlignStart(),
     ...layoutWritingDirectionStyle(),
@@ -61,7 +61,7 @@ const useCounterpartyIdentityCardStyles = makeUseStyles(({ colors }) => ({
   },
   hint: {
     ...typography.caption,
-    fontSize: 11,
+    ...typography.caption,
     color: colors.textSecondary,
     textAlign: textAlignStart(),
     lineHeight: 16,

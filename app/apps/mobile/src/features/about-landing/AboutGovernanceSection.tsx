@@ -78,7 +78,7 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
   h: { ...typography.h4, color: colors.textPrimary, ...aboutRtlText, marginBottom: spacing.xs },
   lead: {
     ...typography.body,
-    fontWeight: '700',
+    ...typography.bold,
     color: colors.primary,
     ...aboutRtlText,
     marginBottom: spacing.md,
@@ -104,7 +104,7 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
   },
   stagePhase: {
     ...typography.label,
-    fontWeight: '800',
+    ...typography.extraBold,
     ...aboutRtlText,
   },
   stagePhaseCurrent: { color: colors.primary },
@@ -112,7 +112,7 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
   stagePhaseFuture: { color: colors.textSecondary },
   stageTitle: {
     ...typography.body,
-    fontWeight: '700',
+    ...typography.bold,
     color: colors.textPrimary,
     ...aboutRtlText,
   },
