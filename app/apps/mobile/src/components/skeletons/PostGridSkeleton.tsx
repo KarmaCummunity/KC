@@ -102,6 +102,6 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
 }));

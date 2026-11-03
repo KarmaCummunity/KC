@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, typography, spacing, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, useTheme, Text } from '@kc/ui';
 import { MOTION } from '../../lib/animations/motion';
 import { EASINGS } from '../../lib/animations/motion-easings';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
@@ -149,6 +149,6 @@ const useTourSlidePagerStyles = makeUseStyles(({ colors }) => ({
   },
   dot: {
     height: 8,
-    borderRadius: 4,
+    borderRadius: radius.xs,
   },
 }));

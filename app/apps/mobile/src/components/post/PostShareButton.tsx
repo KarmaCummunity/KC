@@ -3,7 +3,7 @@ import { Platform, Pressable, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import type { PostWithOwner } from '@kc/application';
-import { makeUseStyles, useTheme } from '@kc/ui';
+import { makeUseStyles, spacing, iconSize, useTheme } from '@kc/ui';
 import { usePostShare } from '../../hooks/usePostShare';
 
 interface Props {
@@ -35,7 +35,7 @@ export function PostShareButton({ post, placement = 'default' }: Props) {
       ) : (
         <Ionicons
           name={Platform.OS === 'ios' ? 'share-outline' : 'share-social-outline'}
-          size={22}
+          size={iconSize.xl}
           color={colors.textPrimary}
         />
       )}
@@ -44,6 +44,6 @@ export function PostShareButton({ post, placement = 'default' }: Props) {
 }
 
 const usePostShareButtonStyles = makeUseStyles(() => ({
-  btn: { padding: 4, marginEnd: 4 },
-  btnHeader: { paddingVertical: 4, paddingHorizontal: 4 },
+  btn: { padding: spacing.xs, marginEnd: spacing.xs },
+  btnHeader: { paddingVertical: spacing.xs, paddingHorizontal: spacing.xs },
 }));

@@ -35,6 +35,7 @@ import { useChatMessageReactions } from '../../src/hooks/useChatMessageReactions
 import { pickChatImage, uploadChatImageAndSend } from '../../src/services/chatMediaUpload';
 import type { MessageReactionType } from '@kc/infrastructure-supabase';
 import { webEnterToSend } from '../../src/components/chat/webEnterToSend';
+import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 

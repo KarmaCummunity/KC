@@ -106,7 +106,37 @@ begin
     'ride_not_started', 'a trip cannot be completed hours before departure');
 end $$;
 
--- 5) Completion: karma for both sides, the ride closes only once every seat is handed
+-- 5) Approval rechecks occupied seats under the listing lock. A booking that no longer
+--    fits cannot be confirmed, while a booking within capacity can.
+do $$
+declare
+  p personas;
+  v_ride uuid;
+  v_over_capacity uuid;
+  v_within_capacity uuid;
+begin
+  select * into p from personas;
+  v_ride := kc_test.create_ride_offer(p.driver, p_seats => 2);
+  v_over_capacity := kc_test.book_ride(p.passenger1, v_ride);
+  perform kc_test.book_ride(p.passenger2, v_ride);
+
+  -- Simulate capacity being reduced after the bookings were made.
+  update public.listings
+     set details = jsonb_set(details, '{seats_available}', '1'::jsonb)
+   where listing_id = v_ride;
+  perform kc_test.act_as(p.driver);
+  perform kc_test.assert_raises(format('select public.confirm_ride_booking(%L)', v_over_capacity),
+    'ride_seats_exhausted', 'approval fails when occupied bookings exceed the current capacity');
+
+  v_ride := kc_test.create_ride_offer(p.driver, p_seats => 2);
+  v_within_capacity := kc_test.book_ride(p.passenger1, v_ride);
+  perform kc_test.act_as(p.driver);
+  perform public.confirm_ride_booking(v_within_capacity);
+  perform kc_test.assert_eq(kc_test.handoff_status(v_within_capacity), 'confirmed',
+    'approval succeeds while seats remain within capacity');
+end $$;
+
+-- 6) Completion: karma for both sides, the ride closes only once every seat is handed
 --    over, completing twice fails, and each side rates exactly once.
 do $$
 declare
@@ -147,7 +177,7 @@ begin
     'a rated trip is no longer offered for rating');
 end $$;
 
--- 6) The driver can finish the whole ride with unused capacity: approved trips settle,
+-- 7) The driver can finish the whole ride with unused capacity: approved trips settle,
 --    waiting requests are cancelled, the listing closes, and passengers can still rate.
 do $$
 declare

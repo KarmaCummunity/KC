@@ -107,7 +107,7 @@ const useInboxChatRowStyles = makeUseStyles(({ colors }) => ({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  badgeText: { ...typography.caption, ...typography.semiBold, color: colors.textInverse },
+  badgeText: { ...typography.caption, color: colors.textInverse, ...typography.semiBold },
 }));
 
 export function InboxChatRowSeparator() {

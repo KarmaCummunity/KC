@@ -74,6 +74,21 @@ describe('ListChatsUseCase', () => {
     expect(out.map((c) => c.chatId)).toEqual(['c_recent', 'c_empty']);
   });
 
+  it('orders chats correctly when one has a date and the other has null, or both null', async () => {
+    const repo = new StubChatRepo();
+    repo.toReturn = [
+      makeChat('c_recent', '2026-05-10T10:00:00.000Z'),
+      makeChat('c_null_1', null),
+      makeChat('c_null_2', null),
+    ];
+    const uc = new ListChatsUseCase(repo as unknown as IChatRepository);
+
+    const out = await uc.execute({ userId: 'u_me' });
+    expect(out[0]?.chatId).toBe('c_recent');
+    expect(out.map((c) => c.chatId)).toContain('c_null_1');
+    expect(out.map((c) => c.chatId)).toContain('c_null_2');
+  });
+
   it('returns an empty list when the repo returns nothing', async () => {
     const repo = new StubChatRepo();
     repo.toReturn = [];

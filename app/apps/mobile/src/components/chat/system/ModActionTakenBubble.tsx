@@ -3,12 +3,12 @@
 // template-with-blanks if the body is empty.
 import React from 'react';
 import { View } from 'react-native';
-import { makeUseStyles, typography, Text } from '@kc/ui';
+import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { useTranslation } from 'react-i18next';
 import type { SystemMessageBubbleProps } from './SystemMessageBubble';
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  bubble: { padding: 6, alignSelf: 'center', opacity: 0.6 },
+  bubble: { padding: spacing.xs, alignSelf: 'center', opacity: 0.6 },
   body: { ...typography.caption, color: colors.textSecondary },
 }));
 

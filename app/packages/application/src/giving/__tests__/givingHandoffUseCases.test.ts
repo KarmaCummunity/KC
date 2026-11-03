@@ -70,6 +70,34 @@ describe('giving handoff use cases', () => {
     });
   });
 
+  describe('GetListingHandoffUseCase validation', () => {
+    it('returns null if listingId is empty or whitespace', async () => {
+      const repo = makeRepo();
+      const uc = new GetListingHandoffUseCase(repo as unknown as IMarketplaceRepository);
+      expect(await uc.execute('')).toBeNull();
+      expect(await uc.execute('   ')).toBeNull();
+      expect(repo.getListingHandoff).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('ClaimFoodGivingUseCase validation', () => {
+    it('throws listing_not_available if listingId is empty or whitespace', async () => {
+      const repo = makeRepo();
+      const uc = new ClaimFoodGivingUseCase(repo as unknown as IMarketplaceRepository);
+      await expect(uc.execute('')).rejects.toMatchObject({ code: 'listing_not_available' });
+      await expect(uc.execute('   ')).rejects.toMatchObject({ code: 'listing_not_available' });
+    });
+  });
+
+  describe('CancelGivingHandoffUseCase validation', () => {
+    it('throws handoff_not_found if handoffId is empty or whitespace', async () => {
+      const repo = makeRepo();
+      const uc = new CancelGivingHandoffUseCase(repo as unknown as IMarketplaceRepository);
+      await expect(uc.execute('')).rejects.toMatchObject({ code: 'handoff_not_found' });
+      await expect(uc.execute('   ')).rejects.toMatchObject({ code: 'handoff_not_found' });
+    });
+  });
+
   describe('MarkGivingHandedOverUseCase (complete) validation', () => {
     it('throws handoff_not_found if handoffId is empty', async () => {
       const repo = makeRepo();
