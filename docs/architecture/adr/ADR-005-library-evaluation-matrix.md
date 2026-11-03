@@ -1,6 +1,6 @@
 # ADR-005 — Library evaluation matrix
 
-- **Status:** Accepted (2026-11-03) · records library evaluation matrix, core mobile dependency selections, and dependabot grouping policy
+- **Status:** Proposed (2026-11-03) · records library evaluation matrix, core mobile dependency selections, and dependabot grouping policy
 - **Issue:** KC#1024
 - **Related:** [ADR-001 client state](./ADR-001-client-state.md), [ADR-002 data layer](./ADR-002-data-layer.md), [ADR-003 realtime](./ADR-003-realtime.md), KC#896 (virtualized list wrapper), KC#1211 (FlatList migration fixing Android release build), KC#1276 (Expo SDK bump line)
 
