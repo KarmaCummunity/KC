@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { LegalDocumentContent, LegalPendingItem } from '@kc/domain';
-import { typography, spacing, useTheme, Text, radius } from '@kc/ui';
+import { typography, spacing, radius, useTheme, Text } from '@kc/ui';
 import { getLoadLegalDocumentUseCase } from '../../services/legalComposition';
 import { rowDirectionStart } from '../../lib/rtlLayout';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
@@ -13,6 +13,11 @@ interface LegalConsentCardProps {
   readonly onToggle: (v: boolean) => void;
   readonly onOpenReader: () => void;
 }
+
+const DOC_CHECKBOX_TEST_IDS = {
+  terms: { testID: 'legal-consent-terms-checkbox' },
+  privacy: { testID: 'legal-consent-privacy-checkbox' },
+} as const;
 
 export function LegalConsentCard({ item, checked, onToggle, onOpenReader }: LegalConsentCardProps) {
   const { t } = useTranslation();
@@ -100,6 +105,7 @@ export function LegalConsentCard({ item, checked, onToggle, onOpenReader }: Lega
       </Pressable>
 
       <Pressable
+        testID={DOC_CHECKBOX_TEST_IDS[item.docType as keyof typeof DOC_CHECKBOX_TEST_IDS]?.testID}
         accessibilityRole="checkbox"
         accessibilityState={{ checked }}
         onPress={() => onToggle(!checked)}

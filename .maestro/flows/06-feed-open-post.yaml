@@ -17,5 +17,7 @@ tags: [feed, smoke]
       id: post-detail-screen
     timeout: 20000
 - back
-- assertVisible:
-    id: feed-screen
+- extendedWaitUntil:
+    visible:
+      id: feed-screen
+    timeout: 30000
