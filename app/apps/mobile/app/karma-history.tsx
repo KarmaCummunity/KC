@@ -9,12 +9,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { he as dateFnsHe } from 'date-fns/locale';
-import { makeUseStyles, radius, shadow, spacing, typography, useTheme, Text } from '@kc/ui';
+import { iconSize, makeUseStyles, radius, shadow, spacing, typography, useTheme, Text } from '@kc/ui';
 import { useAuthStore } from '../src/store/authStore';
 import { getUserRepo } from '../src/services/userComposition';
 import { karmaReasonKey, useKarmaHistory, type KarmaHistoryRow } from '../src/hooks/useKarmaHistory';
 import { karmaEventIcon } from '../src/components/profile/karmaHistoryIcon';
 import { rowDirectionStart } from '../src/lib/rtlLayout';
+import { MirroredIcon, useDirectionalBackIcon } from '../src/components/ui/MirroredIcon';
 import { rtlTextAlignStart } from '../src/lib/rtlTextAlignStart';
 import { useShellTabBarScrollInset } from '../src/navigation/useShellTabBarVisibility';
 
@@ -23,6 +24,7 @@ type IconName = React.ComponentProps<typeof Ionicons>['name'];
 export default function KarmaHistoryScreen() {
   const styles = useStyles();
   const { colors } = useTheme();
+  const backIcon = useDirectionalBackIcon();
   const router = useRouter();
   const { t } = useTranslation();
   const userId = useAuthStore((s) => s.session?.userId);
@@ -42,7 +44,7 @@ export default function KarmaHistoryScreen() {
     return (
       <View style={styles.row}>
         <View style={[styles.iconWrap, { backgroundColor: `${tone}1A` }]}>
-          <Ionicons name={karmaEventIcon(item.eventType) as IconName} size={20} color={tone} />
+          <Ionicons name={karmaEventIcon(item.eventType) as IconName} size={iconSize.lg} color={tone} />
         </View>
         <View style={styles.rowBody}>
           <Text style={styles.reason} numberOfLines={2}>{t(`karma.reason.${karmaReasonKey(item.eventType)}`)}</Text>
@@ -57,7 +59,7 @@ export default function KarmaHistoryScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={t('karma.close')}>
-          <Ionicons name="chevron-forward" size={24} color={colors.textPrimary} />
+          <MirroredIcon name={backIcon} size={iconSize['2xl']} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.title}>{t('karma.historyTitle')}</Text>
         <View style={styles.headerSpacer} />
@@ -70,7 +72,11 @@ export default function KarmaHistoryScreen() {
         contentContainerStyle={{ ...styles.list, paddingBottom: bottomPad }}
         ListHeaderComponent={
           <View style={styles.hero}>
-            <Ionicons name="sparkles" size={28} color={colors.primary} />
+            <Ionicons
+              name="sparkles"
+              size={28 /* brand-guard-allow: hero illustration glyph */}
+              color={colors.primary}
+            />
             <Text style={styles.total}>{userQuery.data?.karmaPoints ?? 0}</Text>
             <Text style={styles.totalLabel}>{t('karma.badgeLabel')}</Text>
             <Text style={styles.heroHint}>{t('karma.howToEarnIntro')}</Text>
@@ -101,7 +107,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   list: { padding: spacing.base, paddingBottom: spacing['3xl'] },
   hero: {
     alignItems: 'center' as const,
-    gap: 4,
+    gap: spacing.xs,
     padding: spacing.lg,
     marginBottom: spacing.md,
     borderRadius: radius.lg,
@@ -110,8 +116,8 @@ const useStyles = makeUseStyles(({ colors }) => ({
     borderColor: colors.primaryLight,
   },
   total: { ...typography.h1, color: colors.primary },
-  totalLabel: { ...typography.body, color: colors.textPrimary, fontWeight: '600' as const },
-  heroHint: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' as const, marginTop: 4 },
+  totalLabel: { ...typography.body, color: colors.textPrimary, ...typography.semiBold },
+  heroHint: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' as const, marginTop: spacing.xs },
   row: {
     flexDirection: rowDirectionStart,
     alignItems: 'center' as const,
@@ -125,10 +131,10 @@ const useStyles = makeUseStyles(({ colors }) => ({
     ...shadow.card,
   },
   iconWrap: { width: 40, height: 40, borderRadius: radius.full, alignItems: 'center' as const, justifyContent: 'center' as const },
-  rowBody: { flex: 1, minWidth: 0, gap: 2 },
-  reason: { ...typography.body, fontWeight: '600' as const, color: colors.textPrimary, textAlign: rtlTextAlignStart },
+  rowBody: { flex: 1, minWidth: 0, gap: spacing.xs },
+  reason: { ...typography.body, ...typography.semiBold, color: colors.textPrimary, textAlign: rtlTextAlignStart },
   date: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
-  delta: { ...typography.h4, fontWeight: '700' as const, minWidth: 44, textAlign: 'center' as const },
+  delta: { ...typography.h4, ...typography.bold, minWidth: 44, textAlign: 'center' as const },
   loader: { marginTop: spacing.xl },
   empty: { ...typography.body, color: colors.textSecondary, textAlign: 'center' as const, marginTop: spacing.xl },
 }));
