@@ -4,7 +4,7 @@ Spec is clear; code does not match yet. These are **tasks, not contradictions**.
 
 | # | Gap | Section |
 |---|---|---|
-| G1 | 🟡 2026-11-03 — Unify listings → posts, ride_post_details, post_handoffs (D19). Plan: [ADR-006](../architecture/adr/ADR-006-one-post-model.md), six steps tracked as BACKLOG `G1-S1`…`G1-S6`; step 1 (additive schema + backfill + sync) in progress | 07.1 |
+| G1 | 🟡 2026-11-03 — Unify listings → posts, ride_post_details, post_handoffs (D19). Plan: [ADR-006](../architecture/adr/ADR-006-one-post-model.md), six steps tracked as BACKLOG `G1-S1`…`G1-S6`; step 1 ✅ 2026-11-03 — `posts` carries `world_slug` / `direction` / `post_type` / `expires_at` / `source` / `details` / sub-category / geo and the `paused` status; `ride_post_details` and `post_handoffs` exist, backfilled and trigger-synced from `listings` / `giving_handoffs`, verified by `post_unification_report()` (`0550`–`0552`, tests `supabase/tests/055x_*`). Next: step 2 (posts as the source of truth for every create category) | 07.1 |
 | G2 | 🟡 2026-10-30 — One world list in code: `GIVING_WORLD_SLUGS` (8) + `DOMAIN_SLUGS` (11) in `@kc/domain` (`worlds/givingWorlds.ts`). Remaining: `MARKETPLACE_WORLD_SLUGS` and the DB `world_slug` values still hold legacy slugs (G35) (D1) | 04 |
 | G3 | ✅ 2026-10-30 — Anonymity changes both ways: the `listings` tighten-only trigger is dropped (migration `0451`, test `supabase/tests/0451_*`) (D16) | 07.13 |
 | G4 | ✅ 2026-10-30 — Ratings readable only by their rater and super admins (migration `0446`, probe in `supabase/tests/`) (D24) | 07.7 |

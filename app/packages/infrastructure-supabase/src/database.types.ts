@@ -5332,6 +5332,136 @@ export type Database = {
           },
         ]
       }
+      post_handoffs: {
+        Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          post_id: string
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        Insert: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          confirm_by?: string | null
+          confirmed_at?: string | null
+          handed_over_at?: string | null
+          handoff_id?: string
+          no_show_at?: string | null
+          owner_id: string
+          pickup_mode?: string
+          pickup_window_end?: string | null
+          pickup_window_start?: string | null
+          post_id: string
+          recipient_id: string
+          reserved_at?: string
+          seats?: number
+          slot_ends_at?: string | null
+          slot_starts_at?: string | null
+          status?: string
+          world_slug: string
+        }
+        Update: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          confirm_by?: string | null
+          confirmed_at?: string | null
+          handed_over_at?: string | null
+          handoff_id?: string
+          no_show_at?: string | null
+          owner_id?: string
+          pickup_mode?: string
+          pickup_window_end?: string | null
+          pickup_window_start?: string | null
+          post_id?: string
+          recipient_id?: string
+          reserved_at?: string
+          seats?: number
+          slot_ends_at?: string | null
+          slot_starts_at?: string | null
+          status?: string
+          world_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_handoffs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_world_slug_fkey"
+            columns: ["world_slug"]
+            isOneToOne: false
+            referencedRelation: "worlds"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       post_reactions: {
         Row: {
           created_at: string
@@ -5513,93 +5643,150 @@ export type Database = {
       }
       posts: {
         Row: {
+          beneficiary_org_id: string | null
           category: string
+          category_id: string | null
           city: string
           created_at: string
           delete_after: string | null
           description: string | null
+          details: Json
+          direction: string
           estimated_value: number | null
+          expires_at: string | null
+          external_body_id: string | null
+          geo: unknown
           item_condition: string | null
           listing_id: string | null
           listing_world_slug: string | null
           location_display_level: string
           owner_id: string
           post_id: string
+          post_type: string
           reopen_count: number
           search_vector: unknown
+          source: string
           source_language: string | null
           source_language_confidence: number | null
           status: string
           status_before_admin_removal: string | null
           street: string
           street_number: string
+          time_window: unknown
           title: string
           type: string
           updated_at: string
           urgency: string | null
+          urgency_level: number | null
           visibility: string
+          world_slug: string
         }
         Insert: {
+          beneficiary_org_id?: string | null
           category?: string
+          category_id?: string | null
           city: string
           created_at?: string
           delete_after?: string | null
           description?: string | null
+          details?: Json
+          direction?: string
           estimated_value?: number | null
+          expires_at?: string | null
+          external_body_id?: string | null
+          geo?: unknown
           item_condition?: string | null
           listing_id?: string | null
           listing_world_slug?: string | null
           location_display_level?: string
           owner_id: string
           post_id?: string
+          post_type?: string
           reopen_count?: number
           search_vector?: unknown
+          source?: string
           source_language?: string | null
           source_language_confidence?: number | null
           status?: string
           status_before_admin_removal?: string | null
           street: string
           street_number: string
+          time_window?: unknown
           title: string
           type: string
           updated_at?: string
           urgency?: string | null
+          urgency_level?: number | null
           visibility?: string
+          world_slug?: string
         }
         Update: {
+          beneficiary_org_id?: string | null
           category?: string
+          category_id?: string | null
           city?: string
           created_at?: string
           delete_after?: string | null
           description?: string | null
+          details?: Json
+          direction?: string
           estimated_value?: number | null
+          expires_at?: string | null
+          external_body_id?: string | null
+          geo?: unknown
           item_condition?: string | null
           listing_id?: string | null
           listing_world_slug?: string | null
           location_display_level?: string
           owner_id?: string
           post_id?: string
+          post_type?: string
           reopen_count?: number
           search_vector?: unknown
+          source?: string
           source_language?: string | null
           source_language_confidence?: number | null
           status?: string
           status_before_admin_removal?: string | null
           street?: string
           street_number?: string
+          time_window?: unknown
           title?: string
           type?: string
           updated_at?: string
           urgency?: string | null
+          urgency_level?: number | null
           visibility?: string
+          world_slug?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "posts_beneficiary_org_id_fkey"
+            columns: ["beneficiary_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["org_id"]
+          },
+          {
+            foreignKeyName: "posts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["category_id"]
+          },
           {
             foreignKeyName: "posts_city_fkey"
             columns: ["city"]
             isOneToOne: false
             referencedRelation: "cities"
             referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "posts_external_body_id_fkey"
+            columns: ["external_body_id"]
+            isOneToOne: false
+            referencedRelation: "external_bodies"
+            referencedColumns: ["body_id"]
           },
           {
             foreignKeyName: "posts_listing_id_fkey"
@@ -5642,6 +5829,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users_public"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "posts_world_slug_fkey"
+            columns: ["world_slug"]
+            isOneToOne: false
+            referencedRelation: "worlds"
+            referencedColumns: ["slug"]
           },
         ]
       }
@@ -6466,6 +6660,138 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users_public"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      ride_post_details: {
+        Row: {
+          arrives_at: string | null
+          cargo_food: boolean | null
+          cargo_items: boolean | null
+          constraints: string | null
+          cost_share_ils: number | null
+          created_at: string
+          departs_at: string
+          dest_city_id: string | null
+          dest_label: string | null
+          dest_lat: number | null
+          dest_lng: number | null
+          dest_place_id: string | null
+          dest_place_kind: string | null
+          linked_listing_id: string | null
+          luggage: boolean | null
+          meeting_points: Json
+          origin_city_id: string | null
+          origin_label: string | null
+          origin_lat: number | null
+          origin_lng: number | null
+          origin_place_id: string | null
+          origin_place_kind: string | null
+          passengers: number | null
+          post_id: string
+          reward_model: string | null
+          seats_available: number | null
+          series_id: string | null
+          series_on: string | null
+          updated_at: string
+        }
+        Insert: {
+          arrives_at?: string | null
+          cargo_food?: boolean | null
+          cargo_items?: boolean | null
+          constraints?: string | null
+          cost_share_ils?: number | null
+          created_at?: string
+          departs_at: string
+          dest_city_id?: string | null
+          dest_label?: string | null
+          dest_lat?: number | null
+          dest_lng?: number | null
+          dest_place_id?: string | null
+          dest_place_kind?: string | null
+          linked_listing_id?: string | null
+          luggage?: boolean | null
+          meeting_points?: Json
+          origin_city_id?: string | null
+          origin_label?: string | null
+          origin_lat?: number | null
+          origin_lng?: number | null
+          origin_place_id?: string | null
+          origin_place_kind?: string | null
+          passengers?: number | null
+          post_id: string
+          reward_model?: string | null
+          seats_available?: number | null
+          series_id?: string | null
+          series_on?: string | null
+          updated_at?: string
+        }
+        Update: {
+          arrives_at?: string | null
+          cargo_food?: boolean | null
+          cargo_items?: boolean | null
+          constraints?: string | null
+          cost_share_ils?: number | null
+          created_at?: string
+          departs_at?: string
+          dest_city_id?: string | null
+          dest_label?: string | null
+          dest_lat?: number | null
+          dest_lng?: number | null
+          dest_place_id?: string | null
+          dest_place_kind?: string | null
+          linked_listing_id?: string | null
+          luggage?: boolean | null
+          meeting_points?: Json
+          origin_city_id?: string | null
+          origin_label?: string | null
+          origin_lat?: number | null
+          origin_lng?: number | null
+          origin_place_id?: string | null
+          origin_place_kind?: string | null
+          passengers?: number | null
+          post_id?: string
+          reward_model?: string | null
+          seats_available?: number | null
+          series_id?: string | null
+          series_on?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_post_details_dest_city_id_fkey"
+            columns: ["dest_city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "ride_post_details_origin_city_id_fkey"
+            columns: ["origin_city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "ride_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "ride_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "ride_post_details_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "ride_series"
+            referencedColumns: ["series_id"]
           },
         ]
       }
@@ -11377,6 +11703,15 @@ export type Database = {
         Args: { p_idempotency_key: string; p_lines: Json; p_txn_id: string }
         Returns: undefined
       }
+      post_handoffs_sync_listing: {
+        Args: { p_listing_id: string }
+        Returns: undefined
+      }
+      post_handoffs_upsert_from_giving: {
+        Args: { p_h: Database["public"]["Tables"]["giving_handoffs"]["Row"] }
+        Returns: undefined
+      }
+      post_id_of_listing: { Args: { p_listing_id: string }; Returns: string }
       post_relevance_reminder_due: {
         Args: { p_age_days: number }
         Returns: boolean
@@ -11390,6 +11725,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      post_unification_report: { Args: never; Returns: Json }
       profile_closed_posts: {
         Args: {
           p_cursor?: string
@@ -11815,6 +12151,10 @@ export type Database = {
           p_lng2: number
         }
         Returns: boolean
+      }
+      ride_post_details_upsert: {
+        Args: { p_details: Json; p_post_id: string }
+        Returns: undefined
       }
       ride_quiet_window_end: {
         Args: { p_at?: string; p_user: string }
