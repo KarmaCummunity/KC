@@ -73,6 +73,7 @@ export function useWorldFeed(worldSlug: string) {
     rows,
     refined,
     isLoading: active.isLoading,
+    isError: active.isError,
     isRefreshing: active.isRefetching && !active.isFetchingNextPage,
     refresh: () => void active.refetch(),
     loadMore,
