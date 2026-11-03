@@ -62,13 +62,6 @@
     "src/components/DeleteAccountSuccessOverlay.tsx": {
       "rawModal": 1
     },
-    "src/components/DevBanner.tsx": {
-      "colorLiteral": 2,
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 1,
-      "spacingLiteral": 2,
-      "zIndexLiteral": 1
-    },
     "src/components/EditProfileAvatar.tsx": {
       "colorLiteral": 1,
       "radiusLiteral": 1
@@ -123,16 +116,6 @@
       "fontWeightLiteral": 2,
       "radiusLiteral": 3,
       "shadowLiteral": 8
-    },
-    "src/components/cards/KcCard.styles.ts": {
-      "fontSizeLiteral": 3,
-      "fontWeightLiteral": 1,
-      "spacingLiteral": 3
-    },
-    "src/components/cards/KcRowCard.styles.ts": {
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 3,
-      "spacingLiteral": 3
     },
     "src/components/cards/KcRowCard.tsx": {
       "iconSizeLiteral": 2,
