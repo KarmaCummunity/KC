@@ -144,6 +144,17 @@ Order is binding; each row is one PR into `dev`, backward-compatible, with its m
 | IDV-PROVIDER | **Choose the identity-verification provider (PM action).** Evaluate against FR-VERIFY-011, sign contract + DPA, put sandbox / production keys in the environment secrets (96 A12). Blocks IDV-1 in production. | owner | ⏳ Planned | `spec/22_identity_verification.md` FR-VERIFY-011 |
 | IDV-1 | **Identity verification (ID document + live selfie).** Consent, session + webhook Edge Functions behind a provider seam, `identity_verifications` + identity hash, level function + badge, attempt limits, manual-review queue, validity + reminders; tests per FR-VERIFY-010 AC4. Can start on the provider sandbox. | agent-fullstack | ⏳ Planned | `spec/22_identity_verification.md` FR-VERIFY-001…010 |
 
+## KNOWLEDGE — Knowledge world: give & take, free library, courses, agent retrieval (`docs/spec/18_knowledge_world.md`, `spec/23_knowledge.md`)
+
+| ID | Task | Owner | Status | Spec |
+|----|------|-------|--------|------|
+| KNOW-K1-A | **Topic graph + shelves.** `knowledge_topics` / aliases / follows, depth and cycle guards, `resolve_knowledge_topics`, merge with alias, the two missing D100 shelves seeded, PRD subject rows moved to topics; shelf + topics required on knowledge posts. | agent-be | ⏳ Planned | FR-KNOW-001/002 · {{G:knowledge-topic-graph}} |
+| KNOW-K1-B | **Six exchange post types on the one create form.** Kinds + detail schemas, slots as rows with recurring materialization, booking confirm / expiry, session karma to 7.6 values, question with accepted answer, consulting-hour ID gate, knowledge lifecycle flow on the DB harness. | agent-be + agent-fe | ⏳ Planned | FR-KNOW-003/004/005/012 · {{G:knowledge-exchange-form}} · G14, G38 |
+| KNOW-K1-C | **Library of external resources.** `knowledge_resources` + kinds, canonical URL dedup, versions, saves, helpful, reports; `knowledge-link-enrich` + `knowledge-ai-enrich`; `submit_` / `review_knowledge_resource`; admin review queue; library tab, card, detail, "people who teach this", follow a topic; link health cron. | agent-be + agent-fe | ⏳ Planned | FR-KNOW-006/007/008/011 · {{G:knowledge-library}} |
+| KNOW-K1-D | **Knowledge search + agent contract.** `knowledge_chunks`, real embedding provider in `embed-worker`, `knowledge_search` (FTS + trigram + vector + topic, RRF, citations), suggestions, similar, `api_knowledge_*` + MCP tool descriptions for the WhatsApp bot. | agent-be | ⏳ Planned | FR-KNOW-009/010 · {{G:knowledge-search-agent-api}} · {{TD:embedding-stub}} |
+| KNOW-K2 | **Native articles and courses.** Bodies, sanitizer, chunker; modules / lessons / quizzes + builder (web); enrollment, progress, grading, completion record; continue learning; community answers to the library; events, stats, notifications, web export pages. | agent-fullstack | ⏳ Planned | FR-KNOW-013..020 · {{G:knowledge-courses}} |
+| KNOW-K3 | **Curators, profile, cohorts, open catalog.** Curator role + trusted contributors, completions on the profile with verify page, cohorts on a lesson series, nightly catalog export (`catalog.json`, `llms.txt`, sitemap), "new in the library" feed cards, author analytics. | agent-fullstack | ⏳ Planned | FR-KNOW-021..024 · {{G:knowledge-review-queue}} |
+
 ## Deferred (post-MVP, still tracked)
 
 | ID | Task | Status | Spec |

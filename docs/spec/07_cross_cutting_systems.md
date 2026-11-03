@@ -31,6 +31,10 @@ One form creates a Post: giving world first, then the world's sub-category where
 | Item request | no | city | none | item subcategory, urgency |
 | Ride | no (D28) | origin, destination, ≤ 3 meeting points — official places only (D71) | offer: +30 min | departure, est. end, seats |
 | Time / elderly / consulting | no | city or "remote" | none | estimated duration (D32) |
+| Knowledge lesson / mentoring offer | no | city or "remote" | one-off: last slot + 30 min; recurring: none | topic(s), level, modality, slots or recurrence, capacity, language ([18 §18.4](./18_knowledge_world.md)) |
+| Knowledge consulting hour | no | city or "remote" | last slot + 30 min | profession, topic(s), slots; ID-verified giver, disclaimer ({{S:knowledge-consulting-hour-verification}}) |
+| Knowledge learning / mentoring request | no | city | none | topic, level or goal, modality, cadence |
+| Knowledge question | no | none | 30 days after an accepted answer | topic, question ≤ 500, context link; answers are comments, one accepted |
 | Event (org) | no | address | date | capacity, registration policy (D31) |
 | Housing stay | no | city + neighborhood; exact after approval | stay dates | place type, capacity, nights, house rules (D30) |
 | Event & gathering space | no | city + neighborhood; exact after approval | event date | capacity, hours, quiet hour, event types (`S55`) |
@@ -83,6 +87,10 @@ All engagement earns; closed giving earns most (D12). Visible only to the owner;
 | Vote in community poll (D40) | 1 | – |
 | Donation to KC / standing order | 1 per ₪10 / 10 per month | 100 per donation |
 | Rating given | 2 | – |
+| Knowledge session completed ({{S:knowledge-karma-values}}): giver / learner | 10 per hour (D32) / 5 | 80/day |
+| Knowledge resource approved / marked helpful by another member | 5 / 1 per voter | 5/day / 20/day |
+| Course published / course completed: learner / author per completion | 20 / 10 / 2 | – / – / 20/day |
+| Question asked / accepted answer | 2 / 5 | 5/day / – |
 | Post removed by admin (existing) | −5 | – |
 
 Tech: D12,D29,D32,D43,D52 · `14_karma`, migration 0099, FR-KARMA-007/008 · `karma_ledger`, hard-coded values · G16 · "Rating given" 2 for handoff and ride ratings, once per rating (`0510`, KC#1306)
@@ -105,7 +113,7 @@ Tech: · R-Time-1 superseded · none · G19
 
 ## 7.11 Notifications
 Rich model like Instagram/Facebook/WhatsApp (D26): notification center grouped by time and unread (D7), smart grouping ("X and 3 others liked"), badge, per-type and per-channel preferences, mute chat/post, groups `important` and `social` (S10: push for important, in-app only for social; group per post per hour), quiet hours (default 22:00–08:00), max 3/day for matches & recommendations. A third group `emergency` bypasses quiet hours only in the declared region and only if not disabled (D42, S28). Rides are time-critical: booking changes are `important` (D73), and saved-route alerts follow their own urgency rule and daily cap (D74, D95).
-Types: match & saved filter (D10), ride booking & saved route (D73, D74), expiry & relevance (D21), like & comment (D25), event (D31), hours (D32), report & suspension (D33), emergency (D42), challenge (D43), community poll (D40), imported post awaiting claim (S21).
+Types: match & saved filter (D10), ride booking & saved route (D73, D74), expiry & relevance (D21), like & comment (D25), event (D31), hours (D32), report & suspension (D33), emergency (D42), challenge (D43), community poll (D40), imported post awaiting claim (S21), knowledge: resource reviewed, slot booking & reminder, enrollment & completion, answer accepted, new on a followed topic, broken link ([18 §18.10](./18_knowledge_world.md)).
 Tech: · `09_notifications`, MATCHING_V2, PRD_V2 merged · `inbox.tsx` · per-type opt-out `kinds` (FR-NOTIF-017, `0460`; first type: match suggestions) · G17
 
 ## 7.12 Profile

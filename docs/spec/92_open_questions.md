@@ -10,4 +10,11 @@
 6. **Housing & spaces (`D112`)** — details: [`SSOT/spec/21_housing.md`](../SSOT/spec/21_housing.md). Q-H1, Q-H2, Q-H3, Q-H4, Q-H5 and Q-H7 were decided on 2026-11-03 (decision log).
    - **Q-H6** In a declared emergency (mass evacuation), may an organization (municipality evacuation centre, NGO) confirm an evacuee **guest** who left home without documents, in place of ID verification? Hosts always verify.
 
+6. **Knowledge world ([18](./18_knowledge_world.md), PM 2026-11-03):**
+   - Default hub tab: the give & take feed (D107) or the library once usage shows which one people open? ({{S:knowledge-hub-tabs}})
+   - Who reviews library resources in K1: KC admins only, or also a community "knowledge curator" role from the start? ({{S:knowledge-review-before-publish}})
+   - File uploads (PDF, slides) in the library: none in K1 as proposed ({{S:knowledge-no-file-uploads-k1}}), or allowed from the start with a copyright attestation?
+   - Consulting hour: require ID verification as proposed ({{S:knowledge-consulting-hour-verification}}), or phone verification with a declared profession only?
+   - Wording and look of the completion record ({{S:knowledge-completion-record}}): "KC completion record" vs "certificate of participation".
+
 Also pending: card/detail design depth (D6*); D8 TestFlight DB check (G7); size of extra org vote weight (D49).
