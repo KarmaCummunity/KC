@@ -26,6 +26,8 @@ function resolveDeepLink(data: Record<string, unknown>): { pathname: string; par
   return { pathname: route, params };
 }
 
+const notificationKeyExtractor = (entry: { key: string }) => entry.key;
+
 export default function NotificationInboxScreen() {
   const { t } = useTranslation();
   const styles = useStyles();
@@ -68,6 +70,35 @@ export default function NotificationInboxScreen() {
     [refreshAll, router],
   );
 
+  const renderItem = useCallback(
+    ({ item: entry }: { item: (typeof items)[number] }) => {
+      if (entry.type === 'header') {
+        return (
+          <Text style={styles.sectionTitle}>
+            {t(entry.section === 'today' ? 'notifications.inboxToday' : 'notifications.inboxEarlier')}
+          </Text>
+        );
+      }
+      const item = entry.item;
+      const args = item.bodyArgs as Record<string, string>;
+      return (
+        <NotificationInboxRow
+          inboxId={item.inboxId}
+          data={item.data}
+          readAt={item.readAt}
+          kind={item.kind}
+          title={t(item.titleKey, args)}
+          body={t(item.bodyKey, args)}
+          time={formatRelativeChatTime(item.createdAt)}
+          groupHint={item.groupCount > 1 ? t('notifications.inboxGrouped', { count: item.groupCount }) : undefined}
+          unread={!item.readAt}
+          onOpen={onOpen}
+        />
+      );
+    },
+    [onOpen, styles.sectionTitle, t],
+  );
+
   return (
     <View style={styles.container} testID="notification-inbox-screen">
       <Stack.Screen
@@ -98,30 +129,10 @@ export default function NotificationInboxScreen() {
           ) : null
         }
         data={items}
-        keyExtractor={(entry) => entry.key}
+        keyExtractor={notificationKeyExtractor}
+        estimatedItemSize={72}
         contentContainerStyle={styles.list}
-        renderItem={({ item: entry }) => {
-          if (entry.type === 'header') {
-            return (
-              <Text style={styles.sectionTitle}>
-                {t(entry.section === 'today' ? 'notifications.inboxToday' : 'notifications.inboxEarlier')}
-              </Text>
-            );
-          }
-          const item = entry.item;
-          const args = item.bodyArgs as Record<string, string>;
-          return (
-            <NotificationInboxRow
-              kind={item.kind}
-              title={t(item.titleKey, args)}
-              body={t(item.bodyKey, args)}
-              time={formatRelativeChatTime(item.createdAt)}
-              groupHint={item.groupCount > 1 ? t('notifications.inboxGrouped', { count: item.groupCount }) : undefined}
-              unread={!item.readAt}
-              onPress={() => void onOpen(item.inboxId, item.data, item.readAt)}
-            />
-          );
-        }}
+        renderItem={renderItem}
         ListEmptyComponent={
           query.isLoading && !query.data ? (
             <SimpleRowListSkeleton rows={8} rowHeight={72} />

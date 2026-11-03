@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, Pressable, View } from 'react-native';
 import { KcFlashList } from '../../../../src/components/lists/KcFlashList';
 import { useRouter } from 'expo-router';
@@ -32,6 +32,8 @@ const useStyles = makeUseStyles(({ colors }) => ({
 
 const ROW = { marginHorizontal: spacing.md };
 
+const myListingKeyExtractor = (item: MyListingRow) => item.listingId;
+
 function confirmAsync(title: string, message: string): Promise<boolean> {
   if (Platform.OS === 'web') {
     return Promise.resolve(typeof window !== 'undefined' && window.confirm(`${title}\n${message}`));
@@ -44,6 +46,96 @@ function confirmAsync(title: string, message: string): Promise<boolean> {
   });
 }
 
+interface MyListingRowItemProps {
+  readonly item: MyListingRow;
+  readonly busy: boolean;
+  readonly onOpen: (listingId: string) => void;
+  readonly onEdit: (listingId: string) => void;
+  readonly onPause: (listingId: string) => void;
+  readonly onFulfill: (listingId: string) => void;
+  readonly onResume: (listingId: string) => void;
+  readonly onDelete: (listingId: string) => void;
+  readonly styles: ReturnType<typeof useStyles>;
+}
+
+const MyListingRowItem = React.memo(function MyListingRowItem({
+  item,
+  busy,
+  onOpen,
+  onEdit,
+  onPause,
+  onFulfill,
+  onResume,
+  onDelete,
+  styles,
+}: MyListingRowItemProps) {
+  const { t } = useTranslation();
+
+  const handleOpen = useCallback(() => onOpen(item.listingId), [item.listingId, onOpen]);
+  const handleEdit = useCallback(() => onEdit(item.listingId), [item.listingId, onEdit]);
+  const handlePause = useCallback(() => onPause(item.listingId), [item.listingId, onPause]);
+  const handleFulfill = useCallback(() => onFulfill(item.listingId), [item.listingId, onFulfill]);
+  const handleResume = useCallback(() => onResume(item.listingId), [item.listingId, onResume]);
+  const handleDelete = useCallback(() => onDelete(item.listingId), [item.listingId, onDelete]);
+
+  const meta = useMemo(
+    () => [
+      `${t(`marketplace.world.${item.worldSlug}`, { defaultValue: item.worldSlug })} · ${t('marketplace.myListingsUpdated', {
+        date: new Date(item.updatedAt).toLocaleDateString(),
+      })}`,
+      item.status === 'hidden_pending_review' ? t('marketplace.myListingsHiddenHint') : null,
+    ],
+    [item.status, item.updatedAt, item.worldSlug, t],
+  );
+
+  const footer = (
+    <View style={styles.actions}>
+      {item.status === 'open' || item.status === 'cancelled' ? (
+        <Pressable style={styles.btn} disabled={busy} onPress={handleEdit}>
+          <Text style={styles.btnText}>{t('marketplace.myListingsEdit')}</Text>
+        </Pressable>
+      ) : null}
+      {item.status === 'open' ? (
+        <>
+          <Pressable style={styles.btn} disabled={busy} onPress={handlePause}>
+            <Text style={styles.btnText}>{t('marketplace.myListingsPause')}</Text>
+          </Pressable>
+          <Pressable style={styles.btn} disabled={busy} onPress={handleFulfill}>
+            <Text style={styles.btnText}>{t('marketplace.myListingsFulfill')}</Text>
+          </Pressable>
+        </>
+      ) : null}
+      {item.status === 'cancelled' ? (
+        <Pressable style={styles.btn} disabled={busy} onPress={handleResume}>
+          <Text style={styles.btnText}>{t('marketplace.myListingsResume')}</Text>
+        </Pressable>
+      ) : null}
+      {['open', 'cancelled', 'closed'].includes(item.status) ? (
+        <Pressable style={[styles.btn, styles.btnDanger]} disabled={busy} onPress={handleDelete}>
+          <Text style={styles.btnText}>{t('marketplace.myListingsDelete')}</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+
+  return (
+    <KcRowCard
+      testID={`my-listing-row-${item.listingId}`}
+      containerStyle={ROW}
+      tone={item.direction === 'request' ? 'request' : 'give'}
+      badgeLabel={t(item.direction === 'request' ? 'feed.requestTypeShort' : 'feed.giveTypeShort')}
+      placeholderIcon={listingWorldIcon(item.worldSlug)}
+      title={cleanDisplayTitle(item.title)}
+      meta={meta}
+      statusLabel={t(`marketplace.listingStatus.${item.status}`, { defaultValue: item.status })}
+      closed={item.status === 'closed'}
+      closedLabel={t('cards.closed')}
+      onPress={handleOpen}
+      footer={footer}
+    />
+  );
+});
+
 export default function MyListingsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -55,86 +147,89 @@ export default function MyListingsScreen() {
   const invalidate = useInvalidateMyListings();
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  async function act(listingId: string, fn: () => Promise<void>) {
-    setBusyId(listingId);
-    try {
-      await fn();
-      await invalidate();
-      await refetch();
-    } finally {
-      setBusyId(null);
-    }
-  }
+  const act = useCallback(
+    async (listingId: string, fn: () => Promise<void>) => {
+      setBusyId(listingId);
+      try {
+        await fn();
+        await invalidate();
+        await refetch();
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [invalidate, refetch],
+  );
 
-  const renderActions = (item: MyListingRow) => {
-    const busy = busyId === item.listingId;
-    const repo = marketplaceRepository();
-    return (
-      <View style={styles.actions}>
-        {item.status === 'open' || item.status === 'cancelled' ? (
-          <Pressable
-            style={styles.btn}
-            disabled={busy}
-            onPress={() => router.push(`/(tabs)/donations/marketplace/my-listings/edit/${item.listingId}`)}
-          >
-            <Text style={styles.btnText}>{t('marketplace.myListingsEdit')}</Text>
-          </Pressable>
-        ) : null}
-        {item.status === 'open' ? (
-          <>
-            <Pressable
-              style={styles.btn}
-              disabled={busy}
-              onPress={() => {
-                void act(item.listingId, () => repo.pauseMyListing(item.listingId));
-              }}
-            >
-              <Text style={styles.btnText}>{t('marketplace.myListingsPause')}</Text>
-            </Pressable>
-            <Pressable
-              style={styles.btn}
-              disabled={busy}
-              onPress={async () => {
-                const ok = await confirmAsync(
-                  t('marketplace.myListingsFulfillTitle'),
-                  t('marketplace.myListingsFulfillHint'),
-                );
-                if (ok) await act(item.listingId, () => repo.fulfillMyListing(item.listingId));
-              }}
-            >
-              <Text style={styles.btnText}>{t('marketplace.myListingsFulfill')}</Text>
-            </Pressable>
-          </>
-        ) : null}
-        {item.status === 'cancelled' ? (
-          <Pressable
-            style={styles.btn}
-            disabled={busy}
-            onPress={() => {
-              void act(item.listingId, () => repo.resumeMyListing(item.listingId));
-            }}
-          >
-            <Text style={styles.btnText}>{t('marketplace.myListingsResume')}</Text>
-          </Pressable>
-        ) : null}
-        {['open', 'cancelled', 'closed'].includes(item.status) ? (
-          <Pressable
-            style={[styles.btn, styles.btnDanger]}
-            disabled={busy}
-            onPress={async () => {
-              const ok = await confirmAsync(
-                t('marketplace.myListingsDeleteTitle'),
-                t('marketplace.myListingsDeleteHint'),
-              );
-              if (ok) await act(item.listingId, () => repo.deleteMyListing(item.listingId));
-            }}
-          >
-            <Text style={styles.btnText}>{t('marketplace.myListingsDelete')}</Text>
-          </Pressable>
-        ) : null}
-      </View>
-    );
-  };
+  const handleOpen = useCallback(
+    (listingId: string) => router.push(`/(tabs)/donations/marketplace/${listingId}`),
+    [router],
+  );
+
+  const handleEdit = useCallback(
+    (listingId: string) =>
+      router.push(`/(tabs)/donations/marketplace/my-listings/edit/${listingId}`),
+    [router],
+  );
+
+  const handlePause = useCallback(
+    (listingId: string) => {
+      void act(listingId, () => marketplaceRepository().pauseMyListing(listingId));
+    },
+    [act],
+  );
+
+  const handleFulfill = useCallback(
+    async (listingId: string) => {
+      const ok = await confirmAsync(
+        t('marketplace.myListingsFulfillTitle'),
+        t('marketplace.myListingsFulfillHint'),
+      );
+      if (ok) await act(listingId, () => marketplaceRepository().fulfillMyListing(listingId));
+    },
+    [act, t],
+  );
+
+  const handleResume = useCallback(
+    (listingId: string) => {
+      void act(listingId, () => marketplaceRepository().resumeMyListing(listingId));
+    },
+    [act],
+  );
+
+  const handleDelete = useCallback(
+    async (listingId: string) => {
+      const ok = await confirmAsync(
+        t('marketplace.myListingsDeleteTitle'),
+        t('marketplace.myListingsDeleteHint'),
+      );
+      if (ok) await act(listingId, () => marketplaceRepository().deleteMyListing(listingId));
+    },
+    [act, t],
+  );
+
+  const contentContainerStyle = useMemo(() => ({ paddingBottom: inset }), [inset]);
+
+  const handleEndReached = useCallback(() => {
+    if (myQuery.hasNextPage && !myQuery.isFetchingNextPage) void myQuery.fetchNextPage();
+  }, [myQuery]);
+
+  const renderItem = useCallback(
+    ({ item }: { item: MyListingRow }) => (
+      <MyListingRowItem
+        item={item}
+        busy={busyId === item.listingId}
+        onOpen={handleOpen}
+        onEdit={handleEdit}
+        onPause={handlePause}
+        onFulfill={handleFulfill}
+        onResume={handleResume}
+        onDelete={handleDelete}
+        styles={styles}
+      />
+    ),
+    [busyId, handleDelete, handleEdit, handleFulfill, handleOpen, handlePause, handleResume, styles],
+  );
 
   return (
     <Screen>
@@ -144,39 +239,17 @@ export default function MyListingsScreen() {
       </View>
       <KcFlashList
         data={rows}
-        keyExtractor={(item) => item.listingId}
-        contentContainerStyle={{ paddingBottom: inset }}
-        onEndReached={() => {
-          if (myQuery.hasNextPage && !myQuery.isFetchingNextPage) void myQuery.fetchNextPage();
-        }}
+        keyExtractor={myListingKeyExtractor}
+        estimatedItemSize={140}
+        contentContainerStyle={contentContainerStyle}
+        onEndReached={handleEndReached}
         onEndReachedThreshold={LIST_END_THRESHOLD}
         ListEmptyComponent={
           <Text style={styles.empty}>
             {isLoading ? t('marketplace.loading') : t('marketplace.myListingsEmpty')}
           </Text>
         }
-        renderItem={({ item }) => (
-          <KcRowCard
-            testID={`my-listing-row-${item.listingId}`}
-            containerStyle={ROW}
-            tone={item.direction === 'request' ? 'request' : 'give'}
-            badgeLabel={t(item.direction === 'request' ? 'feed.requestTypeShort' : 'feed.giveTypeShort')}
-            placeholderIcon={listingWorldIcon(item.worldSlug)}
-            title={cleanDisplayTitle(item.title)}
-            meta={[
-              `${t(`marketplace.world.${item.worldSlug}`, { defaultValue: item.worldSlug })} · ${t('marketplace.myListingsUpdated', {
-                date: new Date(item.updatedAt).toLocaleDateString(),
-              })}`,
-              // KC#1298: tell the owner why a reported listing no longer shows to others.
-              item.status === 'hidden_pending_review' ? t('marketplace.myListingsHiddenHint') : null,
-            ]}
-            statusLabel={t(`marketplace.listingStatus.${item.status}`, { defaultValue: item.status })}
-            closed={item.status === 'closed'}
-            closedLabel={t('cards.closed')}
-            onPress={() => router.push(`/(tabs)/donations/marketplace/${item.listingId}`)}
-            footer={renderActions(item)}
-          />
-        )}
+        renderItem={renderItem}
       />
     </Screen>
   );

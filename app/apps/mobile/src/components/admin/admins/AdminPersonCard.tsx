@@ -2,6 +2,7 @@
 // FR-ADMIN-022 — one card per user carrying all their roles. Tapping it opens
 // the admin-detail screen. Replaces the per-grant row in the list (the per-role
 // rows + revoke action now live on the detail screen).
+import { memo } from 'react';
 import { Pressable, View } from 'react-native';
 import type { AdminPerson } from '@kc/domain';
 import { MirroredIcon } from '../../ui/MirroredIcon';
@@ -26,7 +27,7 @@ export interface AdminPersonCardProps {
   readonly onPress: (userId: string) => void;
 }
 
-export function AdminPersonCard({ person, onPress }: AdminPersonCardProps) {
+function AdminPersonCardInner({ person, onPress }: AdminPersonCardProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   const L = useLocaleBundle();
@@ -73,3 +74,5 @@ const useStyles = makeUseStyles(({ colors }) => ({
   noRole:  { fontSize: typography.caption.fontSize, color: colors.textSecondary },
   meta:    { fontSize: typography.caption.fontSize, color: colors.textSecondary, textAlign: textAlignStart() },
 }));
+
+export const AdminPersonCard = memo(AdminPersonCardInner);

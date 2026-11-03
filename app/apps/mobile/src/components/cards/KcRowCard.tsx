@@ -6,8 +6,9 @@
 import React from 'react';
 import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme, Text } from '@kc/ui';
+import { useTheme, iconSize, Text } from '@kc/ui';
 import { KCImage } from '../ui/KCImage';
+import { MirroredIcon } from '../ui/MirroredIcon';
 import { useKcRowCardStyles } from './KcRowCard.styles';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -35,7 +36,7 @@ export interface KcRowCardProps {
 
 const THUMB = 52;
 
-export function KcRowCard(p: KcRowCardProps) {
+function KcRowCardInner(p: KcRowCardProps) {
   const { colors } = useTheme();
   const s = useKcRowCardStyles();
   const isGive = p.tone === 'give';
@@ -54,7 +55,7 @@ export function KcRowCard(p: KcRowCardProps) {
           {p.imageUri ? (
             <KCImage uri={p.imageUri} fallbackUri={p.fallbackUri ?? undefined} style={s.image} contentFit="cover" />
           ) : (
-            <Ionicons name={p.placeholderIcon} size={22} color={isGive ? colors.giveTag : colors.secondary} />
+            <Ionicons name={p.placeholderIcon} size={iconSize.xl} color={isGive ? colors.giveTag : colors.secondary} />
           )}
         </View>
         <View style={s.body}>
@@ -82,7 +83,7 @@ export function KcRowCard(p: KcRowCardProps) {
           {p.openLinkLabel ? (
             <View style={s.openLink} testID="kc-row-open-link" accessibilityRole="link">
               <Text style={s.openLinkText}>{p.openLinkLabel}</Text>
-              <Ionicons name="chevron-back" size={12} color={colors.primary} />
+              <MirroredIcon name="chevron-back" size={iconSize.xs} color={colors.primary} />
             </View>
           ) : null}
         </View>
@@ -92,3 +93,5 @@ export function KcRowCard(p: KcRowCardProps) {
     </Pressable>
   );
 }
+
+export const KcRowCard = React.memo(KcRowCardInner);

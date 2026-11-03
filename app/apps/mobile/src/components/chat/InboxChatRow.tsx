@@ -4,7 +4,7 @@ import { View, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import type { ChatWithPreview } from '@kc/application';
-import { makeUseStyles, typography, spacing, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, typography, spacing, useTheme, Text, iconSize, radius } from '@kc/ui';
 import { AvatarInitials } from '../AvatarInitials';
 import { OnlineDot } from './OnlineDot';
 import { formatRelativeChatTime } from '../../lib/formatRelativeChatTime';
@@ -15,6 +15,8 @@ interface Props {
   readonly onOpen: (chatId: string) => void;
   readonly onRequestHide: (chatId: string, otherUserId: string | null) => void;
 }
+
+const ELLIPSIS_HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 } as const;
 
 // Memoized: the inbox KcFlashList re-renders on every search keystroke and
 // refresh, but each row only depends on its own `item` and stable parent
@@ -61,13 +63,13 @@ function InboxChatRowInner({ item, onOpen, onRequestHide }: Props) {
       )}
       <Pressable
         onPress={() => onRequestHide(item.chatId, other?.userId ?? null)}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        hitSlop={ELLIPSIS_HIT_SLOP}
         accessibilityRole="button"
         accessibilityLabel={t('chat.hideChatA11y')}
         android_ripple={null}
         style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
       >
-        <Ionicons name="ellipsis-horizontal" size={22} color={colors.textSecondary} />
+        <Ionicons name="ellipsis-horizontal" size={iconSize.xl} color={colors.textSecondary} />
       </Pressable>
     </View>
   );
@@ -89,11 +91,11 @@ const useInboxChatRowStyles = makeUseStyles(({ colors }) => ({
     alignItems: 'center',
     gap: spacing.md,
   },
-  chatInfo: { flex: 1, gap: 4 },
+  chatInfo: { flex: 1, gap: spacing.xs },
   chatHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   chatName: {
     ...typography.body,
-    fontWeight: '600' as const,
+    ...typography.semiBold,
     color: colors.textPrimary,
     textAlign: rtlTextAlignStart,
   },
@@ -102,12 +104,12 @@ const useInboxChatRowStyles = makeUseStyles(({ colors }) => ({
   badge: {
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: radius.full,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  badgeText: { ...typography.caption, color: colors.textInverse, fontSize: 11, fontWeight: '600' as const },
+  badgeText: { ...typography.caption, ...typography.semiBold, color: colors.textInverse },
 }));
 
 export function InboxChatRowSeparator() {
@@ -116,5 +118,5 @@ export function InboxChatRowSeparator() {
 }
 
 const useInboxChatRowSeparatorStyles = makeUseStyles(({ colors }) => ({
-  line: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginRight: spacing.base },
+  line: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginEnd: spacing.base },
 }));

@@ -23,7 +23,7 @@ function labelForDay(anchorIso: string, t: (key: string) => string): string {
   });
 }
 
-export function ChatDaySeparator({ anchorIso }: { readonly anchorIso: string }) {
+function ChatDaySeparatorInner({ anchorIso }: { readonly anchorIso: string }) {
   const { t } = useTranslation();
   const styles = useChatDaySeparatorStyles();
   const label = useMemo(() => labelForDay(anchorIso, t), [anchorIso, t]);
@@ -35,6 +35,8 @@ export function ChatDaySeparator({ anchorIso }: { readonly anchorIso: string }) 
     </View>
   );
 }
+
+export const ChatDaySeparator = React.memo(ChatDaySeparatorInner);
 
 const useChatDaySeparatorStyles = makeUseStyles(({ colors }) => ({
   wrap: { alignItems: 'center', paddingVertical: spacing.xs },

@@ -75,4 +75,23 @@ describe('KcRowCard', () => {
     expect(queryByTestId('kc-row-open-link')).toBeNull();
     expect(getByTestId('kc-row-card')).toBeTruthy();
   });
+
+  it('re-renders correctly when props update (memoization preserves updates)', () => {
+    const { getByText, queryByText, rerender } = render(
+      <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
+        <KcRowCard title="Original Title" tone="give" placeholderIcon="gift-outline" statusLabel="active" />
+      </ThemeProvider>,
+    );
+    expect(getByText('Original Title')).toBeTruthy();
+    expect(getByText('active')).toBeTruthy();
+
+    rerender(
+      <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
+        <KcRowCard title="Updated Title" tone="give" placeholderIcon="gift-outline" statusLabel="paused" />
+      </ThemeProvider>,
+    );
+    expect(queryByText('Original Title')).toBeNull();
+    expect(getByText('Updated Title')).toBeTruthy();
+    expect(getByText('paused')).toBeTruthy();
+  });
 });

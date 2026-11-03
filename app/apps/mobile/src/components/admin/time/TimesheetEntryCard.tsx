@@ -1,4 +1,5 @@
 // V2-ADMIN-TIME-10 — single timesheet entry row.
+import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { TimesheetEntry } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
@@ -18,7 +19,7 @@ export interface TimesheetEntryCardProps {
 
 function fmtIso(s: string): string { return s.slice(0, 10); }
 
-export function TimesheetEntryCard(props: TimesheetEntryCardProps) {
+function TimesheetEntryCardInner(props: TimesheetEntryCardProps) {
   const { entry, isMine, canApprove } = props;
   const styles = useStyles();
   const L = useLocaleBundle();
@@ -107,3 +108,5 @@ const useStyles = makeUseStyles(({ colors }) => ({
   description: { fontSize: typography.bodySmall.fontSize, marginTop: spacing.xs, opacity: 0.85 },
   actions:     { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm, justifyContent: 'flex-end' },
 }));
+
+export const TimesheetEntryCard = memo(TimesheetEntryCardInner);

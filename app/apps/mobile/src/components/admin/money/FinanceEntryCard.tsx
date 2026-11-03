@@ -1,4 +1,5 @@
 // V2-ADMIN-MONEY-9 — single ledger entry card.
+import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { FinanceEntry } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
@@ -25,7 +26,7 @@ function fmtAmount(cents: number, currency: string): string {
   }
 }
 
-export function FinanceEntryCard({ entry, onEdit, onDelete }: FinanceEntryCardProps) {
+function FinanceEntryCardInner({ entry, onEdit, onDelete }: FinanceEntryCardProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   const t = L.admin.money;
@@ -84,3 +85,5 @@ const useStyles = makeUseStyles(({ colors }) => ({
   metaText:    { ...typography.bodySmall, color: colors.textSecondary },
   description: { ...typography.bodySmall, color: colors.textPrimary, marginTop: spacing.xs },
 }));
+
+export const FinanceEntryCard = memo(FinanceEntryCardInner);

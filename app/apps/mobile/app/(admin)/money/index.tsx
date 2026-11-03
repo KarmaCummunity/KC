@@ -1,6 +1,6 @@
 // app/apps/mobile/app/(admin)/money/index.tsx
 // V2-ADMIN-MONEY-9 — V2 §13.3 Admin Money — minimal donations / expenses ledger.
-import { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { adminChipScroll } from '../../../src/components/admin/adminChipScroll';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -40,6 +40,23 @@ function fmtAmount(cents: number, currency: string): string {
   catch { return `${major.toFixed(2)} ${currency}`; }
 }
 
+const financeKeyExtractor = (e: FinanceEntry) => e.entryId;
+
+const FinanceRowItem = React.memo(function FinanceRowItem({
+  entry,
+  onEdit,
+  onDelete,
+}: {
+  entry: FinanceEntry;
+  onEdit: (entry: FinanceEntry) => void;
+  onDelete: (entryId: string) => void;
+}) {
+  const handleEdit = useCallback(() => onEdit(entry), [entry, onEdit]);
+  const handleDelete = useCallback(() => onDelete(entry.entryId), [entry.entryId, onDelete]);
+
+  return <FinanceEntryCard entry={entry} onEdit={handleEdit} onDelete={handleDelete} />;
+});
+
 export default function MoneyScreen() {
   const styles = useStyles();
   const L = useLocaleBundle();
@@ -77,6 +94,33 @@ export default function MoneyScreen() {
       void queryClient.invalidateQueries({ queryKey: ['admin.money.summary'] });
     },
   });
+
+  const handleEdit = useCallback((entry: FinanceEntry) => setEditing(entry), []);
+  const handleDelete = useCallback(
+    async (entryId: string) => {
+      const ok = await confirmDelete(t.confirm.delete, L);
+      if (!ok) return;
+      try {
+        await remove.mutateAsync(entryId);
+      } catch (err) {
+        const code = isFinanceLedgerError(err) ? err.code : 'unknown';
+        const msg = t.errors[code as keyof typeof t.errors] ?? t.errors.unknown;
+        if (Platform.OS === 'web') {
+          if (typeof window !== 'undefined') window.alert(msg);
+        } else {
+          Alert.alert(msg);
+        }
+      }
+    },
+    [L, remove, t],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: FinanceEntry }) => (
+      <FinanceRowItem entry={item} onEdit={handleEdit} onDelete={handleDelete} />
+    ),
+    [handleDelete, handleEdit],
+  );
 
   if (rolesLoading) {
     return <View style={styles.center}><Text>{t.loading}</Text></View>;
@@ -126,25 +170,10 @@ export default function MoneyScreen() {
       <Text style={styles.totalLabel}>{t.totalCount(list.data?.totalCount ?? 0)}</Text>
 
       <KcFlashList
-        data={[...(list.data?.rows ?? [])]}
-        keyExtractor={(e) => e.entryId}
-        renderItem={({ item }) => (
-          <FinanceEntryCard
-            entry={item}
-            onEdit={() => setEditing(item)}
-            onDelete={async () => {
-              const ok = await confirmDelete(t.confirm.delete, L);
-              if (!ok) return;
-              try { await remove.mutateAsync(item.entryId); }
-              catch (err) {
-                const code = isFinanceLedgerError(err) ? err.code : 'unknown';
-                const msg = t.errors[code as keyof typeof t.errors] ?? t.errors.unknown;
-                if (Platform.OS === 'web') { if (typeof window !== 'undefined') window.alert(msg); }
-                else Alert.alert(msg);
-              }
-            }}
-          />
-        )}
+        data={list.data?.rows ?? []}
+        keyExtractor={financeKeyExtractor}
+        estimatedItemSize={120}
+        renderItem={renderItem}
         refreshControl={
           <RefreshControl refreshing={list.isRefetching} onRefresh={() => { void list.refetch(); void summary.refetch(); }} />
         }
