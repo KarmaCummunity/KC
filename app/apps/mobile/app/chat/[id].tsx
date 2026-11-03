@@ -36,7 +36,6 @@ import { pickChatImage, uploadChatImageAndSend } from '../../src/services/chatMe
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import type { MessageReactionType } from '@kc/infrastructure-supabase';
 import { webEnterToSend } from '../../src/components/chat/webEnterToSend';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
