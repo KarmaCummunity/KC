@@ -63,6 +63,7 @@ describe('validateMarketplaceWorldRules — routed worlds', () => {
 
 describe('mapMarketplaceServerError', () => {
   it('maps PostgREST error messages to codes', () => {
+    expect(mapMarketplaceServerError({ code: '23514', message: 'item_already_reserved' })).toBe('item_already_reserved');
     expect(mapMarketplaceServerError({ code: '23514', message: 'food_expiry_required' })).toBe('food_expiry_required');
     expect(mapMarketplaceServerError({ code: '23514', message: 'items_image_required' })).toBeNull();
     expect(mapMarketplaceServerError({ message: 'x', details: 'food_posting_banned' })).toBe('food_posting_banned');
