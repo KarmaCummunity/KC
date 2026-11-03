@@ -325,4 +325,35 @@ create trigger listings_feed_mirror_sync
     geo, external_body_id, beneficiary_org_id on public.listings
   for each row execute function public.listings_feed_mirror_sync();
 
+-- ── 8. The signed-in feed view exposes every posts column ───────────────────────────
+-- `p.*` is expanded when the view is created (0417, 0522), so the view is re-created
+-- whenever posts gains a column; the new columns land at the end, which
+-- `create or replace view` allows. Same filter as 0522.
+create or replace view public.feed_visible_posts
+with (security_invoker = true) as
+select p.*
+  from public.posts p
+ where not exists (
+         select 1
+           from public.feed_post_hides h
+          where h.user_id = (select auth.uid())
+            and h.post_id = p.post_id
+       )
+   and not exists (
+         select 1
+           from public.feed_mute_filters mf
+          where mf.user_id = (select auth.uid())
+            and (
+              (mf.filter_kind = 'user' and mf.filter_value = p.owner_id::text)
+              or (mf.filter_kind in ('category', 'world') and mf.filter_value = p.category)
+              or (mf.filter_kind = 'keyword' and (
+                p.title ilike '%' || public.escape_ilike(mf.filter_value) || '%' escape '\'
+                or coalesce(p.description, '') ilike '%' || public.escape_ilike(mf.filter_value) || '%' escape '\'
+              ))
+            )
+       );
+
+revoke all on public.feed_visible_posts from public, anon;
+grant select on public.feed_visible_posts to authenticated;
+
 commit;

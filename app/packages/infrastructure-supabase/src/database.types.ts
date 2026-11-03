@@ -9003,85 +9003,121 @@ export type Database = {
       }
       feed_visible_posts: {
         Row: {
+          beneficiary_org_id: string | null
           category: string | null
+          category_id: string | null
           city: string | null
           created_at: string | null
           delete_after: string | null
           description: string | null
+          details: Json | null
+          direction: string | null
           estimated_value: number | null
+          expires_at: string | null
+          external_body_id: string | null
+          geo: unknown
           item_condition: string | null
           listing_id: string | null
           listing_world_slug: string | null
           location_display_level: string | null
           owner_id: string | null
           post_id: string | null
+          post_type: string | null
           reopen_count: number | null
           search_vector: unknown
+          source: string | null
           source_language: string | null
           source_language_confidence: number | null
           status: string | null
           status_before_admin_removal: string | null
           street: string | null
           street_number: string | null
+          time_window: unknown
           title: string | null
           type: string | null
           updated_at: string | null
           urgency: string | null
+          urgency_level: number | null
           visibility: string | null
+          world_slug: string | null
         }
         Insert: {
+          beneficiary_org_id?: string | null
           category?: string | null
+          category_id?: string | null
           city?: string | null
           created_at?: string | null
           delete_after?: string | null
           description?: string | null
+          details?: Json | null
+          direction?: string | null
           estimated_value?: number | null
+          expires_at?: string | null
+          external_body_id?: string | null
+          geo?: unknown
           item_condition?: string | null
           listing_id?: string | null
           listing_world_slug?: string | null
           location_display_level?: string | null
           owner_id?: string | null
           post_id?: string | null
+          post_type?: string | null
           reopen_count?: number | null
           search_vector?: unknown
+          source?: string | null
           source_language?: string | null
           source_language_confidence?: number | null
           status?: string | null
           status_before_admin_removal?: string | null
           street?: string | null
           street_number?: string | null
+          time_window?: unknown
           title?: string | null
           type?: string | null
           updated_at?: string | null
           urgency?: string | null
+          urgency_level?: number | null
           visibility?: string | null
+          world_slug?: string | null
         }
         Update: {
+          beneficiary_org_id?: string | null
           category?: string | null
+          category_id?: string | null
           city?: string | null
           created_at?: string | null
           delete_after?: string | null
           description?: string | null
+          details?: Json | null
+          direction?: string | null
           estimated_value?: number | null
+          expires_at?: string | null
+          external_body_id?: string | null
+          geo?: unknown
           item_condition?: string | null
           listing_id?: string | null
           listing_world_slug?: string | null
           location_display_level?: string | null
           owner_id?: string | null
           post_id?: string | null
+          post_type?: string | null
           reopen_count?: number | null
           search_vector?: unknown
+          source?: string | null
           source_language?: string | null
           source_language_confidence?: number | null
           status?: string | null
           status_before_admin_removal?: string | null
           street?: string | null
           street_number?: string | null
+          time_window?: unknown
           title?: string | null
           type?: string | null
           updated_at?: string | null
           urgency?: string | null
+          urgency_level?: number | null
           visibility?: string | null
+          world_slug?: string | null
         }
         Relationships: [
           {
