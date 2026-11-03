@@ -33,6 +33,7 @@ export function OnboardingStepHeader({
     <View style={styles.wrap}>
       <View style={styles.row}>
         <TouchableOpacity
+          testID="onboarding-skip"
           onPress={onSkip}
           disabled={skipDisabled}
           accessibilityRole="button"

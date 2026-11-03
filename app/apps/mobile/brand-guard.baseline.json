@@ -141,9 +141,6 @@
       "radiusLiteral": 1,
       "spacingLiteral": 1
     },
-    "src/components/legal/LegalConsentCard.tsx": {
-      "radiusLiteral": 2
-    },
     "src/components/legal/LegalConsentGate.tsx": {
       "radiusLiteral": 5,
       "physicalSide": 2,
