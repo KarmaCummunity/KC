@@ -406,6 +406,8 @@ i18n keys live in the mobile `notifications` locale module and the `dispatch-not
 | Freeze / lift a housing freeze | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
 | Grant housing coordination to an org | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 
+An **organization account** (acting through a member with an org role) has the rights of a verified member in every row above — publish, book, propose, approve, join the shelter pool — through the organization's own verification (FR-HOUSING-004 AC8, `{{D:orgs-offer-request-every-world}}`); it never submits a shelter request, and it coordinates placements only with housing coordination granted (FR-HOUSING-032 AC1).
+
 ## Server error codes (mirrored in `MARKETPLACE_SERVER_ERROR_CODES`)
 
 `world_permission_denied`, `housing_conduct_required`, `housing_min_age`, `housing_dates_invalid`, `housing_dates_unavailable`, `housing_nights_out_of_range`, `housing_capacity_exceeded`, `housing_policy_mismatch`, `housing_minor_unaccompanied`, `housing_pending_cap`, `housing_booking_overlap`, `housing_event_rules_violation`, `housing_storage_banned_goods_ack_required`, `housing_storage_for_profit_forbidden`, `housing_inventory_required`, `housing_active_booking_conflict`, `housing_not_in_window`, `housing_emergency_throttled`, `housing_coordinator_required`, `housing_pool_out_of_scope`, `housing_frozen`, plus the shared `own_listing`, `listing_not_available`, `invalid_status`, `details_schema_mismatch`.
