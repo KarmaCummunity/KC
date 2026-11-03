@@ -45,9 +45,21 @@ export function EnablePushModal({
               onPress={() => void Linking.openSettings()}
             />
           ) : (
-            <PrimaryButton label={t('notifications.enablePushAccept')} size="md" fullWidth onPress={onAccept} />
+            <PrimaryButton
+              testID="push-gate-accept"
+              label={t('notifications.enablePushAccept')}
+              size="md"
+              fullWidth
+              onPress={onAccept}
+            />
           )}
-          <GhostButton label={t('notifications.enablePushDecline')} size="md" fullWidth onPress={onDecline} />
+          <GhostButton
+            testID="push-gate-decline"
+            label={t('notifications.enablePushDecline')}
+            size="md"
+            fullWidth
+            onPress={onDecline}
+          />
         </>
       }
     >

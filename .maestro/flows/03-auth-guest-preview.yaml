@@ -15,7 +15,8 @@ tags: [auth, smoke]
     timeout: 30000
 - tapOn:
     id: auth-guest-preview
+- runFlow: ../subflows/dismiss-gates.yaml
 - extendedWaitUntil:
     visible:
       id: guest-feed-screen
-    timeout: 20000
+    timeout: 60000
