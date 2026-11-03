@@ -1,4 +1,4 @@
--- 0570 | FR-AUTH-010 AC2.d — the date of birth is private, 18+, and written through one RPC.
+-- 0590 | FR-AUTH-010 AC2.d — the date of birth is private, 18+, and written through one RPC.
 begin;
 
 create temp table personas as
@@ -69,4 +69,4 @@ end $$;
 
 rollback;
 
-\echo '✓ 0570_users_date_of_birth.sql passed'
+\echo '✓ 0590_users_date_of_birth.sql passed'

@@ -1,4 +1,4 @@
--- 0570_users_date_of_birth | FR-AUTH-010 AC2.d, FR-PROFILE-007 AC7 (D109)
+-- 0590_users_date_of_birth | FR-AUTH-010 AC2.d, FR-PROFILE-007 AC7 (D109)
 --
 -- A private date of birth, required at sign-up and at least 18 years old (the consent screen
 -- already makes every new member confirm 18+, FR-AUTH-005 AC5.a; this stores and enforces it).
@@ -44,7 +44,7 @@ as $$
 $$;
 
 comment on function public.users_get_self_private_fields() is
-  'Returns PII/privilege/karma columns for auth.uid() only. Complements column grants on public.users (TD-163). 0191 adds karma_points; 0570 adds date_of_birth.';
+  'Returns PII/privilege/karma columns for auth.uid() only. Complements column grants on public.users (TD-163). 0191 adds karma_points; 0590 adds date_of_birth.';
 
 -- Sets the caller's date of birth. Errors: unauthenticated (42501), invalid_date_of_birth and
 -- underage (22023).
