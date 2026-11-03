@@ -31,19 +31,23 @@ const OWN_ROUTE: Readonly<Partial<Record<GivingWorldSlug, string>>> = {
   knowledge: '/(tabs)/donations/knowledge',
 };
 
-const ICON: Readonly<Record<GivingWorldSlug, keyof typeof Ionicons.glyphMap>> = {
-  items: 'gift-outline',
-  food: 'restaurant-outline',
-  rides: 'car-outline',
-  time: 'time-outline',
-  money: 'cash-outline',
-  housing: 'home-outline',
-  knowledge: 'school-outline',
-  medical: 'medical-outline',
-  animals: 'paw-outline',
-  democracy: 'megaphone-outline',
-  employment: 'briefcase-outline',
-  challenges: 'trophy-outline',
+/**
+ * Icon and test id of each world's tile. The test ids are literals (not built from the slug) so
+ * the Maestro flow check can find every id a flow taps (`scripts/maestro-flows.test.mjs`).
+ */
+const TILE_META: Readonly<Record<GivingWorldSlug, { icon: keyof typeof Ionicons.glyphMap; testID: string }>> = {
+  items: { icon: 'gift-outline', testID: 'donation-tile-items' },
+  food: { icon: 'restaurant-outline', testID: 'donation-tile-food' },
+  rides: { icon: 'car-outline', testID: 'donation-tile-rides' },
+  time: { icon: 'time-outline', testID: 'donation-tile-time' },
+  money: { icon: 'cash-outline', testID: 'donation-tile-money' },
+  housing: { icon: 'home-outline', testID: 'donation-tile-housing' },
+  knowledge: { icon: 'school-outline', testID: 'donation-tile-knowledge' },
+  medical: { icon: 'medical-outline', testID: 'donation-tile-medical' },
+  animals: { icon: 'paw-outline', testID: 'donation-tile-animals' },
+  democracy: { icon: 'megaphone-outline', testID: 'donation-tile-democracy' },
+  employment: { icon: 'briefcase-outline', testID: 'donation-tile-employment' },
+  challenges: { icon: 'trophy-outline', testID: 'donation-tile-challenges' },
 };
 
 /** i18n key prefix of a world's title / subtitle (a few worlds predate the `categories` group). */
@@ -63,11 +67,11 @@ function tileFor(world: GivingWorldSlug): DonationHubTile {
   ];
   return {
     key,
-    icon: ICON[world],
+    icon: TILE_META[world].icon,
     titleKey,
     subtitleKey,
     href: (OWN_ROUTE[world] ?? `/(tabs)/donations/category/${world}`) as DonationHubTile['href'],
-    testID: `donation-tile-${world === 'rides' ? 'rides' : world}`,
+    testID: TILE_META[world].testID,
   };
 }
 
