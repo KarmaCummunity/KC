@@ -6,7 +6,8 @@
 import React, { useCallback } from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography, useTheme, Text, TextInput } from '@kc/ui';
+import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { TextField } from './ui/TextField';
 import { CityPicker } from './CityPicker';
 import { StreetPicker } from './StreetPicker';
 import { applyAddressResetOnCityChange } from '../lib/addressResetOnCityChange';
@@ -32,7 +33,6 @@ export function EditProfileAddressBlock({
   disabled,
 }: EditProfileAddressBlockProps) {
   const styles = useStyles();
-  const { colors } = useTheme();
   const { t } = useTranslation();
 
   const handleCityChange = useCallback(
@@ -72,13 +72,12 @@ export function EditProfileAddressBlock({
               disabled={disabled}
             />
           </View>
-          <TextInput
-            style={[styles.input, styles.streetInputHouse, !city ? styles.inputDisabled : null]}
+          <TextField
+            containerStyle={styles.streetInputHouse}
+            label={t('profile.streetNumberShort')}
             value={streetNumber}
             onChangeText={onStreetNumberChange}
             placeholder={t('profile.streetNumberShort')}
-            placeholderTextColor={colors.textDisabled}
-            textAlign={rtlTextAlignStart}
             editable={!disabled && !!city}
             maxLength={10}
           />
@@ -95,16 +94,4 @@ const useStyles = makeUseStyles(({ colors }) => ({
   streetRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start', width: '100%' },
   streetCol: { flex: 2, minWidth: 0 },
   streetInputHouse: { flex: 1, minWidth: 0, maxWidth: 120 },
-  input: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.md,
-    ...typography.body,
-    color: colors.textPrimary,
-    minHeight: 50,
-  },
-  inputDisabled: { opacity: 0.5 },
 }));
