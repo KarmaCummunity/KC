@@ -10,8 +10,15 @@ Statuses: `open`, `closed_delivered`, `deleted_no_recipient`, `expired`, `remove
 - **Permissions (S2):** edit/delete — owner and super-admin; hide — KC admin; a suspended user cannot create, edit or comment.
 - **Expiry by type (D21):** food offer — at expiry date (alert 24h before and at expiry; close at midnight of expiry date, S4); ride offer — 30 min after estimated end; event & ticket — at their date; items and all requests — no expiry; the owner gets relevance reminders instead (D59).
 - **Relevance reminder (S3):** 14 days after publish, then every 30 days: "Still relevant?" → bump / close. Bump updates sort time, not `created_at`.
+- **Owner management ({{D:listing-owner-lifecycle}}, PM 2026-11-03):** what the owner may do with their own post, by status, enforced on the server:
+  - **open** — edit, pause, mark delivered, delete, add photos.
+  - **paused** — hidden from everyone but the owner: feeds, world screens, search, map, profile and a shared link. The owner may edit, resume (not after the post's own expiry), delete and add photos.
+  - **closed (delivered)** — the hard fields are locked (title, description, details, city, radius, urgency, direction, world). The owner may only **add** photos, up to 10 in all (for example a handoff or thank-you photo); existing photos are never replaced or removed. Video ("reels") joins when post media supports video ({{G:post-video-media}}).
+  - **An active reservation or booking** (reserved or confirmed handoff) blocks pause, mark delivered and delete: the handoff is finished or cancelled first, so a taker is never left stranded and karma is never granted twice.
+  - **A delivered post with a completed handoff cannot be deleted**: it is the other side's record too (their rating and karma), as FR-POST-010 already rules for posts with a recipient.
+  - A refusal tells the owner why (wrong status, active handoff, handoff history, expired, photo limit).
 
-Tech: D2,D16,D19,D21,D30,D31,D33,D41 · FR-POST-012/013, R-Items-5 superseded by D21 · `posts` + `listings` with triggers; `ride_listings`; `giving_handoffs` · G1, G11
+Tech: D2,D16,D19,D21,D30,D31,D33,D41 · FR-POST-012/013, R-Items-5 superseded by D21 · `posts` + `listings` with triggers; `ride_listings`; `giving_handoffs`; owner management on listings: `pause / resume / fulfill / delete / add_my_listing_media` RPCs (`0543`, test `supabase/tests/0543_listing_owner_lifecycle.sql`) · G1, G11
 
 ## 7.2 Form and procedure per post type
 One form creates a Post: giving world first, then the world's sub-category where it has one, then optional additional worlds (D101); no "general", there is "other"; offer/request toggle worded per world, then a type-specific form defined in world config (D6*, D28, D36). Anonymity chosen in the form (D16); affiliated volunteer posts on the org's behalf (D22); emergency templates appear during emergencies (D42). No form in money (D4). Common rules: title ≤ 80 chars, description ≤ 500, ≤ 5 images with EXIF stripped, local draft. Location: offer = address at chosen display level, request = city; max 20 open posts per private user, none for orgs (S34).
