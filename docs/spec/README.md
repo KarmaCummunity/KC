@@ -20,9 +20,9 @@
 | 01 | [01_vision_mission_values.md](./01_vision_mission_values.md) | Vision, mission, values, north star |
 | 02 | [02_problem_and_market.md](./02_problem_and_market.md) | Problem, market, opportunity |
 | 03 | [03_users_personas_roles.md](./03_users_personas_roles.md) | Personas, roles and permissions |
-| 04 | [04_product_structure.md](./04_product_structure.md) | Two-layer model: giving worlds × domains (D45), hub template (D36) |
-| 05 | [05_giving_worlds.md](./05_giving_worlds.md) | The 8 giving worlds and their user journeys |
-| 06 | [06_domain_hubs.md](./06_domain_hubs.md) | The 11 domains and domain hubs |
+| 04 | [04_product_structure.md](./04_product_structure.md) | One list of giving worlds with sub-categories, multi-world posts (D100), hub template (D36) |
+| 05 | [05_giving_worlds.md](./05_giving_worlds.md) | The 12 giving worlds and their user journeys |
+| 06 | [06_domain_hubs.md](./06_domain_hubs.md) | Former domains and where each one went (superseded) |
 | 07 | [07_cross_cutting_systems.md](./07_cross_cutting_systems.md) | Post, form, feed, card, closing, karma, ratings, chat, engagement, notifications, profile, privacy, trust, moderation |
 | 08 | [08_organizations.md](./08_organizations.md) | Orgs, org verification levels, events, volunteering, jobs, money, org finance & transparency (D76–D82), organization profile & accounts (D88–D92) |
 | 09 | [09_emergency_mode.md](./09_emergency_mode.md) | Emergency mode (D42, D51, D56) |

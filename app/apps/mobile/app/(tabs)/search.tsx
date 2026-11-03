@@ -2,14 +2,13 @@
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useShallow } from 'zustand/react/shallow';
-import { useTheme, Text, iconSize } from '@kc/ui';
+import { useTheme, Text } from '@kc/ui';
 import type { SearchResultType, SearchSortBy } from '@kc/domain';
 import { useTranslation } from 'react-i18next';
 
@@ -30,6 +29,7 @@ import { FilterSearchBar } from '../../src/components/filterKit/FilterSearchBar'
 import { FilterButton } from '../../src/components/filterKit/FilterButton';
 import { FilterChipRow } from '../../src/components/filterKit/FilterChipRow';
 import { Chip } from '../../src/components/ui/Chip';
+import { PrimaryButton } from '../../src/components/ui/Buttons';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -50,27 +50,23 @@ export default function SearchScreen() {
     useDebouncedSearchInput(DEBOUNCE_MS);
 
   // ── Store (filters, recent searches) ────────
-  const store = useSearchStore(
-    useShallow((s) => ({
-      recentSearches: s.recentSearches,
-      addRecentSearch: s.addRecentSearch,
-      clearRecentSearches: s.clearRecentSearches,
-      setResultType: s.setResultType,
-      setSortBy: s.setSortBy,
-    })),
-  );
-  const filters = useSearchStore(
-    useShallow((s) => ({
-      resultType: s.resultType,
-      postType: s.postType,
-      category: s.category,
-      donationCategory: s.donationCategory,
-      city: s.city,
-      radiusKm: s.radiusKm,
-      sortBy: s.sortBy,
-      minFollowers: s.minFollowers,
-    })),
-  );
+  const store = useSearchStore(useShallow((s) => ({
+    recentSearches: s.recentSearches,
+    addRecentSearch: s.addRecentSearch,
+    clearRecentSearches: s.clearRecentSearches,
+    setResultType: s.setResultType,
+    setSortBy: s.setSortBy,
+  })));
+  const filters = useSearchStore(useShallow((s) => ({
+    resultType: s.resultType,
+    postType: s.postType,
+    category: s.category,
+    donationCategory: s.donationCategory,
+    city: s.city,
+    radiusKm: s.radiusKm,
+    sortBy: s.sortBy,
+    minFollowers: s.minFollowers,
+  })));
   const filterCount = useSearchStore((s) => s.activeFilterCount());
 
   // ── Expanded section state ──────────────────
@@ -93,11 +89,7 @@ export default function SearchScreen() {
         query: debouncedQuery,
         filters,
         viewerId,
-        limits: {
-          posts: expandedSection === 'post' ? FULL_LIMIT : PREVIEW_LIMIT,
-          users: expandedSection === 'user' ? FULL_LIMIT : PREVIEW_LIMIT,
-          links: expandedSection === 'link' ? FULL_LIMIT : PREVIEW_LIMIT,
-        },
+        limits: { posts: expandedSection === 'post' ? FULL_LIMIT : PREVIEW_LIMIT, users: expandedSection === 'user' ? FULL_LIMIT : PREVIEW_LIMIT, links: expandedSection === 'link' ? FULL_LIMIT : PREVIEW_LIMIT },
       }),
     // Always enabled — empty query triggers explore mode
     enabled: !isSingleCharTyped,
@@ -105,13 +97,9 @@ export default function SearchScreen() {
   });
 
   const results = query.data;
-  const hasResults =
-    results
-    && (results.posts.length > 0
-      || results.users.length > 0
-      || results.links.length > 0
-      || results.orgs.length > 0
-      || results.hashtags.length > 0);
+  const hasResults = Boolean(
+    results && (results.posts.length || results.users.length || results.links.length || results.orgs.length || results.hashtags.length),
+  );
 
   // ── Handlers ────────────────────────────────
 
@@ -196,22 +184,15 @@ export default function SearchScreen() {
         {isSearchMode && (
           <>
             <View style={styles.chipDivider} />
-            {(['relevance', 'newest', 'followers'] as SearchSortBy[]).map((s) => {
-              const sortLabels: Record<string, string> = {
-                relevance: t('search.sortRelevance'),
-                newest: t('search.sortNewest'),
-                followers: t('search.sortFollowers'),
-              };
-              return (
-                <Chip
-                  key={s}
-                  size="sm"
-                  label={sortLabels[s]}
-                  selected={filters.sortBy === s}
-                  onPress={() => store.setSortBy(s)}
-                />
-              );
-            })}
+            {(['relevance', 'newest', 'followers'] as SearchSortBy[]).map((s) => (
+              <Chip
+                key={s}
+                size="sm"
+                label={s === 'relevance' ? t('search.sortRelevance') : s === 'newest' ? t('search.sortNewest') : t('search.sortFollowers')}
+                selected={filters.sortBy === s}
+                onPress={() => store.setSortBy(s)}
+              />
+            ))}
           </>
         )}
       </FilterChipRow>
@@ -239,6 +220,25 @@ export default function SearchScreen() {
           <View style={styles.loadingWrap}>
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loadingText}>{t('search.loading')}</Text>
+          </View>
+        )}
+
+        {/* Error state */}
+        {!isSingleCharTyped && query.isError && (
+          <View style={styles.emptyState}>
+            <Ionicons
+              name="alert-circle-outline"
+              size={48} // brand-guard-allow: empty-state hero glyph
+              color={colors.textDisabled}
+            />
+            <Text style={styles.emptyTitle}>{t('general.errorTitle')}</Text>
+            <Text style={styles.emptySubtitle}>{t('errorBoundary.body')}</Text>
+            <PrimaryButton
+              testID="search-load-error-retry"
+              label={t('general.retry')}
+              size="md"
+              onPress={() => void query.refetch()}
+            />
           </View>
         )}
 

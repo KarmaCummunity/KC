@@ -52,7 +52,11 @@ export type RideErrorCode =
   | 'seats_exhausted'
   | 'invalid_status'
   | 'ride_departed'
-  | 'ride_not_started';
+  | 'ride_not_started'
+  // FR-RIDE-046 — recurring rides: the schedule a series needs.
+  | 'series_weekdays_required'
+  | 'series_time_invalid'
+  | 'series_ends_in_past';
 
 export class RideError extends DomainError {
   readonly code: RideErrorCode;

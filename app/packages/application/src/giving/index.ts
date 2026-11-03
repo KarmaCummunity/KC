@@ -24,6 +24,14 @@ export { ListRidesFeedUseCase } from './ListRidesFeedUseCase';
 export type { IRidesFeedRepository } from '../ports/IRidesFeedRepository';
 export { ListMyRideRoutesUseCase, SaveRideRouteUseCase, RemoveRideRouteUseCase } from './rideSavedRouteUseCases';
 export type { IRideSavedRoutesRepository } from '../ports/IRideSavedRoutesRepository';
+export {
+  CreateRideSeriesUseCase,
+  ListMyRideSeriesUseCase,
+  SetRideSeriesStatusUseCase,
+  UpdateRideSeriesScheduleUseCase,
+  ListRideSeriesOccurrencesUseCase,
+} from './rideSeriesUseCases';
+export type { IRideSeriesRepository } from '../ports/IRideSeriesRepository';
 export { RaiseRideEmergencyUseCase } from './RaiseRideEmergencyUseCase';
 export type { IRideSafetyRepository } from '../ports/IRideSafetyRepository';
 export { FindListingForLegacyRideUseCase } from './FindListingForLegacyRideUseCase';

@@ -8,7 +8,7 @@ Giving in Israel is rich but scattered. The Registrar of Nonprofits lists ~40,16
 | Trust | No verification, no-shows | Visible verification levels, internal trust engine (D23, D24) |
 | No closure | Messages get buried | Closing flows, karma, ratings (D17, D12) |
 | Shame to ask | Requests exposed by full name | Full anonymity (D16) |
-| Orgs disconnected | Givers don't know where to turn | Org directory in every world/domain (D36, D37) |
+| Orgs disconnected | Givers don't know where to turn | Org directory in every world (D36, D37) |
 | Critical mass | Dedicated ride apps closed (Waze Carpool 2022, Trempy) | Don't start from zero — migrate existing communities (D38, D47) |
 
 **Opportunity.** The largest person-to-person giving markets — rides and item giveaways — already exist and are active, just in a tool not built for them. Whoever gives them a better home wins critical mass.

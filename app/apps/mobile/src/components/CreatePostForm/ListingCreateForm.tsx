@@ -104,6 +104,8 @@ export function ListingCreateForm({
             setDetails={form.setDetails}
             onOriginCity={form.setCity}
             isOffer={direction === 'give'}
+            recurrence={form.recurrence}
+            onRecurrenceChange={form.setRecurrence}
             disabled={form.busy}
           />
         ) : null}

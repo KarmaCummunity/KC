@@ -13,6 +13,7 @@ export default function RidesLayout() {
       <Stack.Screen name="index" options={{ ...detailHeader, headerTitle: t('donations.categories.transport.title') }} />
       <Stack.Screen name="[id]" options={{ ...detailHeader, headerTitle: t('donations.rides.detailTitle') }} />
       <Stack.Screen name="handoffs" options={{ ...detailHeader, headerTitle: t('givingHandoff.myHandoffs') }} />
+      <Stack.Screen name="series" options={{ ...detailHeader, headerTitle: t('rideSeries.mine') }} />
     </Stack>
   );
 }
