@@ -178,6 +178,9 @@ The user can change avatar, display name, city, optional street and building num
 - AC4. Save is atomic: avatar upload completes before the textual fields are persisted; on partial failure, the previous state is preserved.
 - AC5. The `display_name` change emits a `profile_updated` analytics event but **no** push notification to followers (privacy / spam control).
 - AC6. **Auth metadata sync (`D-38`)**: when `display_name` and/or `avatar_url` change, the client also updates the signed-in user's Supabase Auth `user_metadata` (`full_name`/`name`, `avatar_url`/`picture`) via `IAuthService.syncProfileMetadata` so cold-start `AuthSession` matches `public.users`. On session restore, `ReconcileAuthProfileMetadataUseCase` backfills drift once per sign-in. My Profile does not render stale JWT fallbacks while the profile query loads.
+- AC7. **Date of birth (`D109`):** shown to its owner only and editable under the same 18+ rule as `FR-AUTH-010` AC2.d; it is never returned to another user (not in `users_public`, search or follower lists).
+- AC8. **Optional profile fields (`D109`):** `interests` (multi-select from the giving worlds and their sub-categories), `affiliated_org_id` (one of the verified organizations; self-declared, grants no role), and `help_tags` (what the user can help with, giving-world tags). All are optional.
+- AC9. **Per-field visibility (`D110`):** every optional field carries its own visibility `everyone | followers | only_me`. Default `everyone` on a public profile and `followers` on a private one. The server decides who reads a field (owner, approved follower on a private profile, blocked pair sees nothing); the client only renders what it receives.
 
 **Related.** Screens: 3.2 · Domain: `User`.
 

@@ -1,4 +1,4 @@
-// delete-account/storageCleanup.test.ts — run: deno test supabase/functions/delete-account
+// _shared/storageCleanup.test.ts — run: deno test supabase/functions/_shared
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
 import {
   chunkPaths,
