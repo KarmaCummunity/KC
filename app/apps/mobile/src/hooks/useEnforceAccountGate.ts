@@ -1,5 +1,6 @@
 // FR-MOD-010 AC4 — sign-in + periodic mid-session enforcement + fetch-level ban detection.
 // D61: suspended users stay signed in (SuspensionBanner + support chat); banned users are signed out.
+// FR-AUTH-016: a user who deleted the account stays signed in and is sent once to the restore screen.
 import { useEffect, useRef } from 'react';
 import { useRouter, type Href } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -17,10 +18,13 @@ export function useEnforceAccountGate(userId: string | null) {
   const queryClient = useQueryClient();
   const signOutLocal = useAuthStore((s) => s.signOut);
   const enforcingRef = useRef(false);
+  // True while the user is parked on the restore screen, so the periodic check does not re-route them.
+  const restoreRoutedRef = useRef(false);
 
   useEffect(() => {
     if (!userId) {
       enforcingRef.current = false;
+      restoreRoutedRef.current = false;
       useSuspensionStore.getState().setSuspension(null);
       setOnForbiddenCallback(null);
       return;
@@ -33,6 +37,17 @@ export function useEnforceAccountGate(userId: string | null) {
       try {
         const decision = accountGateDecision(await container.checkAccountGate.execute({ userId }));
         if (cancelled) return;
+        if (decision.action === 'restore') {
+          useSuspensionStore.getState().setSuspension(null);
+          if (restoreRoutedRef.current) return;
+          restoreRoutedRef.current = true;
+          router.replace({
+            pathname: '/restore-account',
+            params: { until: decision.purgeAt ?? '' },
+          } as unknown as Href);
+          return;
+        }
+        restoreRoutedRef.current = false;
         if (decision.action === 'allow' || decision.action === 'suspended') {
           useSuspensionStore.getState().setSuspension(
             decision.action === 'suspended' ? { reason: decision.reason, until: decision.until } : null,

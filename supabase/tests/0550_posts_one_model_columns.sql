@@ -124,6 +124,7 @@ declare
   p personas;
   v_listing uuid;
   v_cat uuid;
+  l public.listings;
   m public.posts;
 begin
   select * into p from personas;
@@ -135,11 +136,12 @@ begin
   update public.listings set category_id = v_cat where listing_id = v_listing;
 
   m := pg_temp.mirror_of(v_listing);
+  select * into l from public.listings where listing_id = v_listing;
   perform kc_test.assert_eq(m.world_slug, 'items', 'items listing mirrors into the items world');
   perform kc_test.assert_eq(m.direction, 'request', 'a request listing is a request post');
   perform kc_test.assert_eq(m.type, 'Request', 'the legacy type agrees with the direction');
   perform kc_test.assert_eq(m.category_id, v_cat, 'the world sub-category is copied');
-  perform kc_test.assert_true(m.expires_at is null, 'items never expire (D21)');
+  perform kc_test.assert_eq(m.expires_at, l.expires_at, 'the mirror carries whatever expiry the listing side set');
 end $$;
 
 -- ── The report sees no mismatch ─────────────────────────────────────────────────────
