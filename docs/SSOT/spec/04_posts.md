@@ -1,6 +1,6 @@
 # 2.4 Posts: Create, Edit, Discover
 
-> **Status:** ✅ Core Complete — Create/edit/delete, images, visibility shipped. FR-POST-007 (local draft autosave) ✅ done under P2.22 (TD-108 resolved). **FR-POST-013** ✅ full FSM transition + Republish CTA shipped under P2.17 (migrations `0146`/`0147`/`0148`; TD-70 closed). **FR-POST-021 AC1** SELECT policy requires `auth.uid() IS NOT NULL` — guest projection defaults to `Public` exposure (no current leak surface; TD-81).
+> **Status:** ✅ Core Complete — Create/edit/delete, images, visibility shipped. **2026-11-04 (G1 step 4a):** the post detail (FR-POST-014..018) is also the detail screen of every listing-world post — the listing's type sections and actions in place, with likes and comments. FR-POST-007 (local draft autosave) ✅ done under P2.22 (TD-108 resolved). **FR-POST-013** ✅ full FSM transition + Republish CTA shipped under P2.17 (migrations `0146`/`0147`/`0148`; TD-70 closed). **FR-POST-021 AC1** SELECT policy requires `auth.uid() IS NOT NULL` — guest projection defaults to `Public` exposure (no current leak surface; TD-81).
 
 
 

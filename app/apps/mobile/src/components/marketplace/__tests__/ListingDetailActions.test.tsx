@@ -50,6 +50,7 @@ const DETAIL = {
   cityId: null,
   title: 'Bookshelf',
   feedPostId: null,
+  feedHidden: false,
 } as unknown as MarketplaceListingDetail;
 
 function renderActions(viewerId: string | null, onReport = vi.fn(), detail: MarketplaceListingDetail = DETAIL) {
@@ -77,6 +78,13 @@ describe('ListingDetailActions', () => {
     expect(queryByTestId('listing-action-share-feed')).not.toBeNull();
     expect(queryByTestId('listing-action-start-chat')).toBeNull();
     expect(queryByTestId('listing-action-report')).toBeNull();
+  });
+
+  it('keeps share to feed for the owner while the listing\'s post is hidden from the feed (0557)', () => {
+    const hidden = { ...DETAIL, feedPostId: 'p_hidden', feedHidden: true } as MarketplaceListingDetail;
+    const { queryByTestId } = renderActions('u_owner', vi.fn(), hidden);
+
+    expect(queryByTestId('listing-action-share-feed')).not.toBeNull();
   });
 
   it('hides share to feed from the owner once the listing has a feed mirror (D-206)', () => {

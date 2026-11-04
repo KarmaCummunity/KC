@@ -27,7 +27,7 @@ import {
   useShellTabBarScrollInset,
   shellTabBarHeightPx,
 } from '../../navigation/useShellTabBarVisibility';
-import { useListingMirrorRedirect } from '../../hooks/useListingMirrorRedirect';
+import { ListingPostDetail } from './ListingPostDetail';
 import { nativeStackHeaderRightIconOnly } from '../../navigation/nativeHeaderIconOnly';
 
 function normalizeRoutePostId(raw: string | string[] | undefined): string | undefined {
@@ -101,8 +101,6 @@ export function PostDetailScreen() {
   // bottom padding does not lift it. Its offset must include the safe-area
   // inset the docked bar extends under, or the bar covers the button.
   const ctaBottom = useShellTabBarScrollInset(spacing.base);
-  // D-206: a feed mirror of a listing opens the listing detail instead.
-  const redirectingToListing = useListingMirrorRedirect(query.data?.post);
 
   const exitAfterOwnerMutation = (messageKey: 'closure.detailCloseSuccessToast' | 'closure.detailReopenSuccessToast') => {
     useFeedSessionStore.getState().showEphemeralToast(t(messageKey), 'success', 2200);
@@ -110,7 +108,7 @@ export function PostDetailScreen() {
     else router.replace('/(tabs)');
   };
 
-  if (query.isLoading || redirectingToListing) {
+  if (query.isLoading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -137,6 +135,13 @@ export function PostDetailScreen() {
           subtitle={t('post.detail.notFoundSubtitle')}
         />
       </SafeAreaView>
+    );
+  }
+
+  // G1 step 4a: a post of a listing world shows its listing's sections and actions in place.
+  if (post.listingId) {
+    return (
+      <ListingPostDetail post={post} listingId={post.listingId} viewerId={viewerId} bottomInset={tabBarPad} />
     );
   }
 

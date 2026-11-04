@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, type ReactNode } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -37,6 +37,8 @@ const useStyles = makeUseStyles(({ colors }) => ({
 interface Props {
   detail: MarketplaceListingDetail;
   bottomInset: number;
+  /** Rendered under the actions, before the similar listings (the post's likes and comments). */
+  footer?: ReactNode;
 }
 
 /** Placeholder icon for listings without photos; rides get a car like their cards. */
@@ -45,7 +47,7 @@ function fallbackIconFor(detail: MarketplaceListingDetail) {
   return detail.direction === 'give' ? ('gift-outline' as const) : ('search-outline' as const);
 }
 
-export function MarketplaceListingDetailView({ detail, bottomInset }: Props) {
+export function MarketplaceListingDetailView({ detail, bottomInset, footer }: Props) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const styles = useStyles();
@@ -94,6 +96,7 @@ export function MarketplaceListingDetailView({ detail, bottomInset }: Props) {
           <HousingStayActions detail={detail} />
           <ListingDetailActions detail={detail} viewerId={viewerId} onReport={() => setReportOpen(true)} />
         </View>
+        {footer}
         {similar.length > 0 ? (
           <>
             <Text style={styles.section}>{t('marketplace.similarTitle')}</Text>
