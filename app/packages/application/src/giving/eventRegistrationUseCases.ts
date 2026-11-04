@@ -1,6 +1,7 @@
-// Organization events (G1 step 5, D31, supabase/migrations/0563_event_posts.sql): register,
-// approve / decline, cancel, the organizer's roster, the viewer's own registration and the
-// organizations an organizer may publish an event for. Registrations are post handoffs, so an
+// Organization events (G1 step 5, D31, S13; supabase/migrations/0563_event_posts.sql and
+// 0564_event_attendance_waitlist.sql): register, approve / decline, cancel, mark attendance, the
+// organizer's roster, the viewer's own registration and the organizations an organizer may
+// publish an event for. Registrations are post handoffs, so an
 // empty id fails with the same domain error as the other handoff use cases.
 import type { IMarketplaceRepository } from '../ports/IMarketplaceRepository';
 import {
@@ -45,6 +46,15 @@ export class CancelEventRegistrationUseCase {
   async execute(handoffId: string): Promise<void> {
     requireHandoff(handoffId);
     await this.repo.cancelEventRegistration(handoffId);
+  }
+}
+
+export class MarkEventAttendanceUseCase {
+  constructor(private readonly repo: IMarketplaceRepository) {}
+  /** `attended` true marks attendance (the attendee earns karma once); false marks an absence. */
+  async execute(handoffId: string, attended: boolean): Promise<void> {
+    requireHandoff(handoffId);
+    await this.repo.markEventAttendance(handoffId, attended);
   }
 }
 

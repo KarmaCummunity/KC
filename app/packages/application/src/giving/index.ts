@@ -12,6 +12,7 @@ export {
   RegisterForEventUseCase,
   DecideEventRegistrationUseCase,
   CancelEventRegistrationUseCase,
+  MarkEventAttendanceUseCase,
   ListEventRegistrationsUseCase,
   GetMyEventRegistrationUseCase,
   ListMyOrganizationsUseCase,

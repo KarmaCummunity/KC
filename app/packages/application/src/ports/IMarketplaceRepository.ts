@@ -165,7 +165,12 @@ export interface IMarketplaceRepository {
   cancelEventRegistration(handoffId: string): Promise<void>;
   /** The organizer's roster of an event, newest first. */
   listEventRegistrations(target: string): Promise<EventRegistration[]>;
-  /** The caller's own active (reserved or confirmed) registration to the event post; null when none. */
+  /**
+   * The organizer marks a confirmed registrant as attended (earns karma, S13) or absent, after the
+   * event starts; an absence can be corrected to attended (0564).
+   */
+  markEventAttendance(handoffId: string, attended: boolean): Promise<void>;
+  /** The caller's own active (reserved, confirmed or waitlisted) registration to the event post; null when none. */
   getMyEventRegistration(postId: string): Promise<MyEventRegistration | null>;
   /** Organizations the caller is a member of (any role), distinct, sorted by name. */
   listMyOrganizations(): Promise<OrganizationMembershipOption[]>;
