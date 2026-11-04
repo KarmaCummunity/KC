@@ -345,10 +345,13 @@ do $$
 declare
   p personas;
   v_post uuid;
+  v_listing uuid;
   v_reg public.post_handoffs;
 begin
   select * into p from personas;
-  v_post := public.post_id_of_listing(pg_temp.publish_event(p.organizer, p.org_id));
+  -- Two statements: STABLE post_id_of_listing would not see a post made in its own statement.
+  v_listing := pg_temp.publish_event(p.organizer, p.org_id);
+  v_post := public.post_id_of_listing(v_listing);
   perform kc_test.assert_true(v_post is not null, 'time: the event has its post');
 
   perform kc_test.act_as(p.attendee);
