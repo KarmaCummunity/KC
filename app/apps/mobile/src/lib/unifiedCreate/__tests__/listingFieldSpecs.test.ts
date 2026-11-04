@@ -1,7 +1,7 @@
 // FR-POST-001 AC6 — each listing kind renders a curated, schema-safe field set: no internal
 // keys, every key accepted by the server schema, defaults, required checks and submit cleanup.
 import { describe, expect, it } from 'vitest';
-import { validateListingDetails } from '@kc/domain';
+import { ORG_EVENT_KIND_SLUG, validateListingDetails } from '@kc/domain';
 import {
   detailsForSubmit,
   fieldsForKind,
@@ -9,6 +9,7 @@ import {
   clampWholeNumber,
   initialDetailsFor,
   isFieldVisible,
+  kindChoices,
   kindForDirection,
 } from '../listingFieldSpecs';
 import { KINDS_BY_WORLD } from './listingKindFixtures';
@@ -61,6 +62,10 @@ describe('listing field specs — per kind', () => {
       'topic', 'level', 'modality', 'slot_starts_at', 'slot_ends_at', 'slots_available', 'availability_note',
     ]);
     expect(keysOf('mentorship_request')).toEqual(['topic', 'level', 'preferred_modality']);
+    expect(keysOf('adoption_offer')).toEqual(['species', 'age_group', 'sex', 'size', 'vaccinated', 'neutered', 'good_with']);
+    expect(keysOf('adoption_request')).toEqual(['species', 'age_group', 'size']);
+    expect(keysOf('foster_offer')).toEqual(['species', 'care_mode', 'location_mode', 'duration_days']);
+    expect(keysOf('foster_request')).toEqual(['species', 'care_mode', 'location_mode', 'starts_on', 'ends_on']);
     expect(keysOf('volunteer_shift')).toEqual(['duration_minutes']);
     expect(keysOf('support_request')).toEqual(['support_type', 'duration_minutes']);
     expect(keysOf('org_event')).toEqual(['starts_at', 'ends_at', 'registration_policy', 'capacity', 'address']);
@@ -247,5 +252,47 @@ describe('listing field specs — knowledge (#1630)', () => {
   it('defaults to a single available slot', () => {
     const slots = fieldsForKind(kinds[0]!).find((s) => s.key === 'slots_available');
     expect(slots).toMatchObject({ type: 'count', min: 1, defaultValue: 1 });
+  });
+});
+
+describe('listing field specs — animals (#1625)', () => {
+  const kinds = KINDS_BY_WORLD.animals!;
+
+  it('fills every key the server schema requires, by asking or by a default', () => {
+    for (const k of kinds) {
+      const schema = k.detailSchema as { required: string[] };
+      const specs = fieldsForKind(k);
+      for (const key of schema.required) {
+        const spec = specs.find((s) => s.key === key)!;
+        expect(spec.required === true || ('defaultValue' in spec && spec.defaultValue !== undefined)).toBe(true);
+      }
+    }
+  });
+
+  it('lets a member pick between handing an animal over and boarding, in either direction', () => {
+    expect(kindChoices(kinds, 'give').map((k) => k.slug)).toEqual(['adoption_offer', 'foster_offer']);
+    expect(kindChoices(kinds, 'request').map((k) => k.slug)).toEqual(['adoption_request', 'foster_request']);
+  });
+
+  it('offers full boarding, part-time boarding and pet-sitting', () => {
+    const careMode = fieldsForKind(kinds.find((k) => k.slug === 'foster_offer')!).find((s) => s.key === 'care_mode');
+    expect(careMode).toMatchObject({ type: 'choice', options: ['full_boarding', 'part_time', 'pet_sitting'] });
+  });
+
+  it('a boarding offer starts from sensible defaults and submits them', () => {
+    const specs = fieldsForKind(kinds.find((k) => k.slug === 'foster_offer')!);
+    expect(detailsForSubmit(specs, initialDetailsFor(specs))).toEqual({
+      species: 'dog', care_mode: 'part_time', location_mode: 'either',
+    });
+  });
+
+  it('a knowledge course and a private lesson are both offered to give', () => {
+    expect(kindChoices(KINDS_BY_WORLD.knowledge!, 'give').map((k) => k.slug)).toEqual(['course', 'private_lesson']);
+    expect(kindChoices(KINDS_BY_WORLD.knowledge!, 'request').map((k) => k.slug)).toEqual(['mentorship_request']);
+  });
+
+  it('keeps an organization event out of the choices', () => {
+    const event = { kindId: 'k-event', slug: ORG_EVENT_KIND_SLUG, labelHe: 'e', labelEn: 'e', direction: 'give' as const, detailSchema: {} };
+    expect(kindChoices([...KINDS_BY_WORLD.time!, event], 'give').map((k) => k.slug)).not.toContain(ORG_EVENT_KIND_SLUG);
   });
 });

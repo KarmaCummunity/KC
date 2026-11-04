@@ -13,7 +13,7 @@ export type GivingWorldSlug = (typeof GIVING_WORLD_SLUGS)[number];
  * Worlds that publish into the marketplace (a feed of offers and requests and an in-app create
  * form). Every other world is a portal: links and knowledge only, until its flow ships.
  */
-export const FEED_WORLD_SLUGS = ['items', 'food', 'rides', 'time', 'housing'] as const;
+export const FEED_WORLD_SLUGS = ['items', 'food', 'rides', 'time', 'housing', 'animals'] as const;
 export type FeedWorldSlug = (typeof FEED_WORLD_SLUGS)[number];
 
 export function isGivingWorldSlug(value: string): value is GivingWorldSlug {
