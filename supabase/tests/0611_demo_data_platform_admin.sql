@@ -19,7 +19,7 @@ insert into public.organizations (org_id, name, slug, is_platform)
 values ('00000000-0000-0000-0000-00000000d0b1', 'Other org 0611', 'other-org-0611', false);
 
 insert into public.admin_role_grants (user_id, role, scope_org_id)
-select super_admin, 'super_admin', null from personas
+select super_admin, 'super_admin', null::uuid from personas
 union all
 select moderator, 'moderator', null from personas
 union all
