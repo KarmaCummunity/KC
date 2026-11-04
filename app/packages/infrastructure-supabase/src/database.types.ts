@@ -11631,6 +11631,7 @@ export type Database = {
         Args: { p_h: Database["public"]["Tables"]["post_handoffs"]["Row"] }
         Returns: undefined
       }
+      handoff_target_listing_id: { Args: { p_id: string }; Returns: string }
       handoff_target_post_id: { Args: { p_id: string }; Returns: string }
       has_accepted_housing_conduct: {
         Args: { p_user: string }
@@ -12485,10 +12486,6 @@ export type Database = {
       payment_ledger_post_balanced: {
         Args: { p_idempotency_key: string; p_lines: Json; p_txn_id: string }
         Returns: undefined
-      }
-      post_handoff_seats_taken: {
-        Args: { p_exclude?: string; p_post_id: string }
-        Returns: number
       }
       post_handoffs_sync_listing: {
         Args: { p_listing_id: string }
