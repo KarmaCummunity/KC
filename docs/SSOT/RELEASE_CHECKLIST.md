@@ -3,6 +3,8 @@
 > **Scope:** KC web on Cloudflare Pages (project `karma-community`, production branch `main`, `https://karma-community-kc.com`) + Supabase prod (`kdqtbdbzwvlugkhonexg`) + Edge Functions.
 > **Branch topology:** [`ENVIRONMENTS.md`](./ENVIRONMENTS.md) · **DB/Functions runbook:** [`OPERATOR_RUNBOOK.md`](./OPERATOR_RUNBOOK.md) · **Policy:** `D-195` (gated prod release).
 
+**Trim the squash commit message before you confirm the merge.** The repository's default squash message is the list of every commit in the PR, and the version-bump commits on `dev` carry `[skip ci]`. A release message that contains it makes GitHub skip every push-triggered workflow on `main`: no CI runs, the deploy (which needs a successful push-event CI run on that exact commit) cannot start, and the Sync workflow below never fires. In the merge box, delete everything below the title so the message is the title only (`TD-275`). The first release (#1490) hit this with 117 occurrences.
+
 A release is a PR from `dev` into `main`. CI judges it (`CI gate`, including the release lane); after the squash merge, `.github/workflows/deploy.yml` deploys `main` and waits for **one owner approval click** before touching production. Agents prepare the release; only the owner approves it. Under the `dev`/`main` ruleset (`.github/rulesets/dev-main.json`), a release PR that carries changes to code-owned gate files also needs the owner's code-owner review before it can merge.
 
 ---
@@ -50,7 +52,7 @@ The `main` push runs **CI**; when it succeeds, **Deploy** (`deploy.yml`) starts 
 7. **smoke** — `/version.json` reports the SHA, page + JS bundle load, Supabase Auth health, and each function with a side-effect-free probe answers one `OPTIONS` with exactly the status its handler's first check returns (`scripts/edge-functions.mjs`).
 8. **tag release** — annotated `vX.Y.Z` on the commit + a GitHub Release with generated notes.
 
-**Sync main → dev** runs after the merge and opens a zero-diff PR into `dev` labelled `no-auto-merge` (the merge queue would squash it and drop the ancestry; a hand-made sync PR needs the label before it is marked ready). The owner merges it as a **merge commit** with the admin bypass (the `dev` merge queue only squashes, `TD-182`); otherwise the next release PR conflicts.
+**Sync main → dev** runs after the merge (it triggers on the push to `main`; if the push was skipped, dispatch it by hand from the Actions tab) and opens a zero-diff PR into `dev` labelled `no-auto-merge` (the merge queue would squash it and drop the ancestry; a hand-made sync PR needs the label before it is marked ready). The owner merges it as a **merge commit** with the admin bypass (the `dev` merge queue only squashes, `TD-182`); otherwise the next release PR conflicts.
 
 ### Spot-check after a green deploy (~5 min, optional)
 
