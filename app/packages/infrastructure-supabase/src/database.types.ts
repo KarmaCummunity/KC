@@ -12106,6 +12106,36 @@ export type Database = {
       get_volunteer_shift_ics: { Args: { p_shift_id: string }; Returns: string }
       giving_handoff_copy_key: { Args: { p_kind: string }; Returns: string }
       giving_handoff_no_show_sweep: { Args: never; Returns: number }
+      giving_handoff_row_of: {
+        Args: { p_handoff_id: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          listing_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "giving_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       giving_handoff_upsert_from_post_handoff: {
         Args: { p_h: Database["public"]["Tables"]["post_handoffs"]["Row"] }
         Returns: undefined
