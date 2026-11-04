@@ -4,6 +4,9 @@
 # else sees exactly the volunteer-shift form.
 # Spec: docs/spec/08_organizations.md "Events"; docs/SSOT/spec/04_posts.md FR-POST-001 AC6.
 #
+# Categories, directions and field labels are tapped by their Hebrew text (as in flow 13): their
+# testIDs are built from the slug at runtime, which the flow-id preflight cannot resolve.
+#
 # Limitation: kc-dev has no seeded organization membership for the seed user and no seeded event
 # post, so this flow cannot publish an event or reach a post page's event section (`event-section`,
 # `event-register`, `event-cancel`, `event-roster`). It checks the create form for whichever case
@@ -21,10 +24,8 @@ tags: [posts, organizations, time]
     visible:
       id: unified-create-header
     timeout: 15000
-- tapOn:
-    id: create-category-time
-- tapOn:
-    id: create-direction-give
+- tapOn: "זמן"
+- tapOn: "להציע"
 - extendedWaitUntil:
     visible:
       id: listing-create-form
@@ -32,7 +33,7 @@ tags: [posts, organizations, time]
 # The default offer is a volunteer shift, for members and non-members alike.
 - extendedWaitUntil:
     visible:
-      id: listing-field-duration_minutes
+      text: "משך.*"
     timeout: 10000
 # A member of an organization: the event choice opens the event fields and the organization picker.
 - runFlow:
@@ -46,20 +47,18 @@ tags: [posts, organizations, time]
           visible:
             id: org-picker
           timeout: 10000
-      - assertVisible:
-          id: listing-field-starts_at
-      - assertVisible:
-          id: listing-field-ends_at
+      - assertVisible: "מתחיל.*"
+      - assertVisible: "מסתיים.*"
       - assertNotVisible:
-          id: listing-field-duration_minutes
+          text: "משך.*"
       - scrollUntilVisible:
           element:
-            id: listing-field-registration_policy
+            text: "הרשמה.*"
           direction: DOWN
           timeout: 10000
       - scrollUntilVisible:
           element:
-            id: listing-integer-capacity
+            text: "קיבולת.*"
           direction: DOWN
           timeout: 10000
       # Publishing without a window is refused in the form, before any server call.
@@ -82,15 +81,14 @@ tags: [posts, organizations, time]
           id: time-offer-kind-shift
       - extendedWaitUntil:
           visible:
-            id: listing-field-duration_minutes
+            text: "משך.*"
           timeout: 10000
 # The request side never offers the event choice.
 - scrollUntilVisible:
     element:
-      id: create-direction-request
+      text: "לבקש"
     direction: UP
     timeout: 10000
-- tapOn:
-    id: create-direction-request
+- tapOn: "לבקש"
 - assertNotVisible:
     id: time-offer-kind
