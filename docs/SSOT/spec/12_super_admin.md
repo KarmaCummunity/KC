@@ -220,6 +220,7 @@ A new Expo Router group `(admin)` accessible only to users with an active admin 
 - AC3. Settings exposes an "Admin Portal" row, visible only when the session has ≥1 active role.
 - AC4. `/admin` renders a stub dashboard (welcome + role badge + nav).
 - AC5. i18n namespace `admin` added to `apps/mobile/src/i18n/locales/he/modules/`.
+- AC6. The Home Feed top bar shows an Admin Portal shortcut icon right next to the chat icon, opening `/(admin)`. It is rendered only when the session has ≥1 active admin role (same gate as AC3) and nowhere else in the TopBar.
 
 **Related.** Domain: `AdminRole`, `AdminPermission`. Application: `IAdminRoleRepository`, `GetMyAdminRolesUseCase`. Mobile: `useAdminRoles`, `AdminGate`, `AdminNav`, `ComingSoon`, `(admin)/_layout`, `(admin)/index`.
 
