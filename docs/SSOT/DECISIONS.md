@@ -1934,7 +1934,7 @@ Owner rules that go with it:
 
 **Affected.** `supabase/migrations/0612_animals_world_direct.sql`, tests `0612_animals_world_direct.sql`, `0353`, `0522`; `@kc/domain` `ROUTED_WORLDS`, `FEED_WORLD_SLUGS`, `TESTER_ACTIVE_WORLD_FLAGS`; `app/apps/mobile` animals world screens, `animalsFieldSpecs.ts`, `ListingKindChooser`, `createCategories.ts`. Remove the tester override when `world_animals_enabled` is flipped on production.
 
-## {{ENG:knowledge-listings-in-the-main-feed}} — Knowledge mirrors into the main feed (2026-11-04)
+## D-224 — Knowledge mirrors into the main feed (2026-11-04)
 
 **Decision.** Migration `0613` turns `worlds.feed_mirror` on for knowledge. A published knowledge listing's post is listed in the main feed from the moment moderation publishes it (new listings still start in `pending_review`, R-Knowledge-1); already published open listings were exposed by the migration. This supersedes the knowledge part of D-218: knowledge listings are no longer kept out of the feed until the owner shares them. Later occurrences of a recurring ride stay hidden until they are the soonest (FR-RIDE-046), unchanged.
 
