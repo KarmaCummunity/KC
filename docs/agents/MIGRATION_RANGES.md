@@ -111,14 +111,16 @@ Last applied on kc-dev when this was written: `0239`.
 | 0590 | users.date_of_birth + rpc_set_date_of_birth (FR-AUTH-010 AC2.d) | in progress |
 | 0591 | admin demo-data status + wipe (FR-ADMIN-031) | in progress |
 | 0592 | admin restore demo data: seed moved into the DB (FR-ADMIN-031) | in progress |
-| 0593–0599 | — | free |
+| 0593 | RLS auth initplan (#1546) | in progress |
+| 0594 | challenges world: cycles, reports, streaks, karma (FR-CHALLENGE-001, #1608; first file named 0550 before it collided with #1587) | in progress |
+| 0595–0599 | — | free |
 | 0600–0609 | Housing H1 stays (`spec/21_housing.md`): `0600` catalog, schemas, conduct; `0601` private details; `0602` bookings; `0603` booking lifecycle | in progress |
 | 0610–0614 | G1 one Post model (ADR-006) steps that redefine functions of the housing range (`0602` / `0603`): `0610` step 3b‴ housing writers on `post_handoffs` (merged); `0611–0614` step 3c (karma / closing). A later change to `request / decide / cancel / complete_housing_booking`, `mark_housing_no_show`, `housing_bookings_sweep`, `cancel_giving_handoff` or `karma_award_handoff` must use a number above the last file that defines it. | in progress |
 | 0615+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0593–0599`, `0610+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0610+`.
 
 ## How to claim
 

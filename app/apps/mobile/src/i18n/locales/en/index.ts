@@ -10,6 +10,7 @@
 import { medicalBodies } from './donations.medicalBodies';
 import { donations, marketplace, moneyPayments, search, timeVolunteer } from './donations';
 import { supportKc } from './donations.supportKc';
+import { challenges } from './challenges';
 import { givingHandoff } from './givingHandoff';
 import { rideBooking } from './rideBooking';
 import { housingStay } from './housingStay';
@@ -132,6 +133,8 @@ const en = {
   // Direct support for KC (FR-DONATE-011) — see donations.supportKc.ts
   supportKc,
   timeVolunteer,
+  // Challenges world (docs/spec/10_challenges.md) — see challenges.ts
+  challenges,
   medicalBodies,
   givingHandoff,
   // Ride seat bookings (D73) — see rideBooking.ts

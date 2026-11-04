@@ -843,6 +843,215 @@ export type Database = {
           },
         ]
       }
+      challenge_participations: {
+        Row: {
+          best_streak: number
+          challenge_id: string
+          completed_at: string | null
+          current_streak: number
+          joined_at: string
+          last_success_cycle: string | null
+          participation_id: string
+          successful_cycles: number
+          user_id: string
+        }
+        Insert: {
+          best_streak?: number
+          challenge_id: string
+          completed_at?: string | null
+          current_streak?: number
+          joined_at?: string
+          last_success_cycle?: string | null
+          participation_id?: string
+          successful_cycles?: number
+          user_id: string
+        }
+        Update: {
+          best_streak?: number
+          challenge_id?: string
+          completed_at?: string | null
+          current_streak?: number
+          joined_at?: string
+          last_success_cycle?: string | null
+          participation_id?: string
+          successful_cycles?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_participations_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["challenge_id"]
+          },
+          {
+            foreignKeyName: "challenge_participations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "challenge_participations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "challenge_participations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      challenge_progress_entries: {
+        Row: {
+          challenge_id: string
+          cycle_start: string
+          entry_id: string
+          goal_met: boolean
+          note: string | null
+          reported_at: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          challenge_id: string
+          cycle_start: string
+          entry_id?: string
+          goal_met: boolean
+          note?: string | null
+          reported_at?: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          challenge_id?: string
+          cycle_start?: string
+          entry_id?: string
+          goal_met?: boolean
+          note?: string | null
+          reported_at?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_progress_entries_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["challenge_id"]
+          },
+          {
+            foreignKeyName: "challenge_progress_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "challenge_progress_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "challenge_progress_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      challenges: {
+        Row: {
+          cadence: string
+          challenge_id: string
+          created_at: string
+          creator_id: string
+          description: string | null
+          difficulty: string | null
+          ends_at: string | null
+          goal_direction: string | null
+          goal_value: number | null
+          measurement: string
+          participants_count: number
+          scope: string
+          status: string
+          target_cycles: number | null
+          title: string
+          topic_label: string | null
+          updated_at: string
+        }
+        Insert: {
+          cadence: string
+          challenge_id?: string
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          difficulty?: string | null
+          ends_at?: string | null
+          goal_direction?: string | null
+          goal_value?: number | null
+          measurement: string
+          participants_count?: number
+          scope: string
+          status?: string
+          target_cycles?: number | null
+          title: string
+          topic_label?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cadence?: string
+          challenge_id?: string
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          difficulty?: string | null
+          ends_at?: string | null
+          goal_direction?: string | null
+          goal_value?: number | null
+          measurement?: string
+          participants_count?: number
+          scope?: string
+          status?: string
+          target_cycles?: number | null
+          title?: string
+          topic_label?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenges_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "challenges_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "challenges_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       chats: {
         Row: {
           anchor_listing_id: string | null
@@ -10990,6 +11199,76 @@ export type Database = {
         Args: { p_signup_id: string }
         Returns: undefined
       }
+      challenge_compute_streaks: {
+        Args: { p_challenge_id: string; p_user_id: string }
+        Returns: {
+          best_streak: number
+          current_streak: number
+          last_success_cycle: string
+          successful_cycles: number
+        }[]
+      }
+      challenge_cycle_start: {
+        Args: { p_cadence: string; p_date: string }
+        Returns: string
+      }
+      challenge_cycle_step: { Args: { p_cadence: string }; Returns: number }
+      challenge_goal_met: {
+        Args: {
+          p_goal_direction: string
+          p_goal_value: number
+          p_measurement: string
+          p_value: number
+        }
+        Returns: boolean
+      }
+      challenge_grant_karma_once: {
+        Args: {
+          p_event: string
+          p_points: number
+          p_ref_id: string
+          p_ref_type: string
+          p_user: string
+        }
+        Returns: number
+      }
+      challenge_karma_points: {
+        Args: { p_event: string; p_participants: number; p_scope: string }
+        Returns: number
+      }
+      challenge_live_streak: {
+        Args: { p_cadence: string; p_last_success: string; p_streak: number }
+        Returns: number
+      }
+      challenge_summary_rows: {
+        Args: { p_viewer: string }
+        Returns: {
+          cadence: string
+          challenge_id: string
+          created_at: string
+          creator_display_name: string
+          creator_id: string
+          description: string
+          difficulty: string
+          ends_at: string
+          goal_direction: string
+          goal_value: number
+          joined: boolean
+          joined_at: string
+          measurement: string
+          my_best_streak: number
+          my_completed: boolean
+          my_current_streak: number
+          my_successful_cycles: number
+          participants_count: number
+          scope: string
+          status: string
+          target_cycles: number
+          title: string
+          topic_label: string
+        }[]
+      }
+      challenge_today: { Args: never; Returns: string }
       chat_media_path_chat_ids: { Args: { p_name: string }; Returns: string[] }
       check_in_volunteer_shift: { Args: { p_signup_id: string }; Returns: Json }
       check_survey_prompt_eligibility: {
@@ -11239,6 +11518,22 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      create_challenge: {
+        Args: {
+          p_cadence: string
+          p_description?: string
+          p_difficulty?: string
+          p_ends_at?: string
+          p_goal_direction?: string
+          p_goal_value?: number
+          p_measurement: string
+          p_scope: string
+          p_target_cycles?: number
+          p_title: string
+          p_topic_label?: string
+        }
+        Returns: string
       }
       create_donation_intent: {
         Args: {
@@ -11497,6 +11792,7 @@ export type Database = {
           radius_km: number
         }[]
       }
+      end_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
       enforce_rate_limit: {
         Args: { p_key: string; p_max: number; p_window_seconds: number }
         Returns: undefined
@@ -11733,6 +12029,33 @@ export type Database = {
         Returns: number
       }
       fulfill_my_listing: { Args: { p_listing_id: string }; Returns: undefined }
+      get_challenge: {
+        Args: { p_challenge_id: string }
+        Returns: {
+          cadence: string
+          challenge_id: string
+          created_at: string
+          creator_display_name: string
+          creator_id: string
+          description: string
+          difficulty: string
+          ends_at: string
+          goal_direction: string
+          goal_value: number
+          joined: boolean
+          measurement: string
+          my_best_streak: number
+          my_completed: boolean
+          my_current_streak: number
+          my_successful_cycles: number
+          participants_count: number
+          scope: string
+          status: string
+          target_cycles: number
+          title: string
+          topic_label: string
+        }[]
+      }
       get_chat_counterparty_contact: {
         Args: { p_chat_id: string }
         Returns: string
@@ -11930,6 +12253,7 @@ export type Database = {
       }
       is_private_profile: { Args: { p_user_id: string }; Returns: boolean }
       is_pro: { Args: { p_user_id: string }; Returns: boolean }
+      join_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
       karma_apply: {
         Args: {
           p_delta: number
@@ -11992,7 +12316,47 @@ export type Database = {
         Args: { p_topic_id: string }
         Returns: number
       }
+      leave_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
       list_active_surveys: { Args: never; Returns: Json }
+      list_challenge_leaderboard: {
+        Args: { p_challenge_id: string; p_limit?: number }
+        Returns: {
+          best_streak: number
+          completed: boolean
+          current_streak: number
+          display_name: string
+          is_me: boolean
+          successful_cycles: number
+          user_id: string
+        }[]
+      }
+      list_challenges: {
+        Args: { p_limit?: number; p_offset?: number; p_view?: string }
+        Returns: {
+          cadence: string
+          challenge_id: string
+          created_at: string
+          creator_display_name: string
+          creator_id: string
+          description: string
+          difficulty: string
+          ends_at: string
+          goal_direction: string
+          goal_value: number
+          joined: boolean
+          measurement: string
+          my_best_streak: number
+          my_completed: boolean
+          my_current_streak: number
+          my_successful_cycles: number
+          participants_count: number
+          scope: string
+          status: string
+          target_cycles: number
+          title: string
+          topic_label: string
+        }[]
+      }
       list_event_registrations: {
         Args: { p_target: string }
         Returns: {
@@ -12043,6 +12407,16 @@ export type Database = {
           blocked_at: string
           display_name: string
           user_id: string
+        }[]
+      }
+      list_my_challenge_entries: {
+        Args: { p_challenge_id: string; p_limit?: number }
+        Returns: {
+          cycle_start: string
+          goal_met: boolean
+          note: string
+          reported_at: string
+          value: number
         }[]
       }
       list_my_donation_history: {
@@ -12941,6 +13315,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      report_challenge_progress: {
+        Args: {
+          p_challenge_id: string
+          p_note?: string
+          p_report_date?: string
+          p_value: number
+        }
+        Returns: Json
       }
       report_donation_link: { Args: { p_link_id: string }; Returns: undefined }
       reports_case_detail: {

@@ -29,7 +29,7 @@ Spec is clear; code does not match yet. These are **tasks, not contradictions**.
 | G23 | World hub infra + WorldHubConfig (D36) | 04 |
 | G24 | 🟡 2026-10-30 — 8 world slugs incl. `experiences` and the 11 domains exist in code; the Donations tab has a tile and a screen for every world and every domain (D62). Remaining: `domain_slug` on posts, challenges not a world (D45) | 04 |
 | G25 | Emergency mode (D42) | 09 |
-| G26 | Challenges layer (D43) | 10 |
+| G26 | 🟡 2026-11-03 — Challenges layer (D43): first slice shipped, active by default (`world_challenges_enabled`) — personal and community challenges, join/leave/end, per-cycle reports, live streaks, participants-only leaderboard, karma (migration `0550`, test `supabase/tests/0550_challenges.sql`, screens under `donations/challenges`). Open: giving challenge counted from closings, group scope and group chat lock (S29), challenge notifications, karma reversal on leave/removal, moderation of challenges, challenge images | 10 |
 | G27 | WhatsApp import & bridge (D38) | 13 |
 | G28 | Job board (D41) | 06 |
 | G29 | Polls & votes (D40) | 11 |

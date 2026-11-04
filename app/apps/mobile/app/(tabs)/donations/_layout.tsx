@@ -43,6 +43,7 @@ export default function DonationsLayout() {
       <Stack.Screen name="rides" options={{ headerShown: false }} />
       <Stack.Screen name="knowledge" options={{ headerShown: false }} />
       <Stack.Screen name="marketplace" options={{ headerShown: false }} />
+      <Stack.Screen name="challenges" options={{ headerShown: false }} />
     </Stack>
   );
 }
