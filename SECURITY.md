@@ -95,4 +95,4 @@ registry's bulk advisory endpoint (the one `npm audit` uses) which advisories af
   specific package are discussed with the owner privately, never in public issues.
 - **Not covered:** dependencies that the Edge Functions' esm.sh imports pull in (no Deno
   lockfile) and imports pinned to a range (reported as not auditable) — tracked in
-  `TECH_DEBT.md`.
+  the `tech-debt` issues.

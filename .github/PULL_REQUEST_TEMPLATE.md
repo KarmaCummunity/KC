@@ -32,14 +32,13 @@ Opened by: agent:cursor | agent:kc-bot | agent:antigravity | agent:codex | agent
 - [ ] Manual smoke (describe) or N/A
 
 ## Refactor logged
-<!-- Yes / No / NA. If Yes, link to the TECH_DEBT.md row. -->
+<!-- Yes / No / NA. If Yes, link to the `tech-debt` issue. -->
 - NA
 
 ## SSOT updated
 <!-- Required when an FR-* is touched. Tick when each is in sync in this PR. -->
-- [ ] `docs/SSOT/BACKLOG.md` status flipped
+- [ ] Issue linked (`Closes #N`) and board status correct
 - [ ] `docs/SSOT/spec/{domain}.md` status updated (if all ACs done)
-- [ ] `docs/SSOT/TECH_DEBT.md` — closed resolved TDs / added new ones
 
 ## Risk / rollout notes
 <!-- DB migrations, RLS changes, feature flag, breaking change? Otherwise "Low risk." -->

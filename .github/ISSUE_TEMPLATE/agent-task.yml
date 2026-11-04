@@ -5,7 +5,7 @@ labels: []
 body:
   - type: markdown
     attributes:
-      value: "See [CLAUDE.md](../blob/dev/CLAUDE.md) and [docs/process/PROJECT_BOARD.md](../blob/dev/docs/process/PROJECT_BOARD.md). One task = one PR to `dev`. Never describe security vulnerabilities here; say 'details shared privately'."
+      value: "See [AGENTS.md](../blob/dev/AGENTS.md) and [docs/process/PROJECT_BOARD.md](../blob/dev/docs/process/PROJECT_BOARD.md). One task = one PR to `dev`. Never describe security vulnerabilities here; say 'details shared privately'."
   - type: dropdown
     id: area
     attributes:
