@@ -128,7 +128,7 @@ For each category, this document records what the repository uses today, verifie
   - `leaflet`: ~40 KB JS gzipped + ~5 KB CSS (loaded only on web export).
   - `Mapbox`: Adds ~15–25 MB uncompressed native binary per architecture for the C++ vector rendering engine, plus ~80–120 KB JS.
 - **Recommendation:**
-  - **Keep `react-native-maps` (native) + `leaflet` (web).** This architecture leverages native platform capabilities with zero licensing costs, requires no external Mapbox API tokens (avoiding secret exposure risks per CLAUDE.md §7), adds zero native binary bloat on iOS, and delivers full feature parity (marketplace clusters and ride routes).
+  - **Keep `react-native-maps` (native) + `leaflet` (web).** This architecture leverages native platform capabilities with zero licensing costs, requires no external Mapbox API tokens (avoiding secret exposure risks per AGENTS.md §7), adds zero native binary bloat on iOS, and delivers full feature parity (marketplace clusters and ride routes).
 
 ---
 

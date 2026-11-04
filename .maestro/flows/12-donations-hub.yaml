@@ -1,5 +1,5 @@
 # The donations hub shows the giving worlds (the marketplace card was removed, FR-DONATE-001 AC6).
-# Spec: docs/SSOT/spec/13_donations.md FR-DONATE-001; docs/spec/05_giving_worlds.md.
+# Spec: docs/spec/requirements/13_donations.md FR-DONATE-001; docs/spec/05_giving_worlds.md.
 appId: org.karmacommunity.app
 name: Donations — hub opens
 tags: [donations]

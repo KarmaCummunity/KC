@@ -55,7 +55,7 @@ The legacy columns `posts.type` ('Give' | 'Request') and `posts.category` stay u
 - Every migration is additive and idempotent until step 6; the app of the previous step keeps working against the schema of the next.
 - Each step ships code + spec section + automated test (SQL tests on the harness, contract tests for changed ports, Maestro for UI flows); a bug fix carries a regression test.
 - Verification is a query, not a belief: counts and key fields of both sides must match before any write path moves and again before anything is dropped.
-- New registry IDs are merge-time placeholders of the `G`, `TD` and `ENG` registries (`CLAUDE.md` §4), never numbers picked in a PR.
+- New registry IDs are merge-time placeholders of the `G`, `TD` and `ENG` registries (`AGENTS.md` §4), never numbers picked in a PR.
 
 ## Rationale
 

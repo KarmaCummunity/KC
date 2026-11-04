@@ -1,6 +1,6 @@
 # 95 — Reconciliation: project book × legacy spec × code (2026-10-30)
 
-Purpose: record what was **verified in the code** for the project book's claims, which legacy `docs/SSOT/spec/*` FRs are **superseded** by book decisions, the **new implementation gaps** found (`G32+`), and the **questions that need a PM decision** (also listed in [92](./92_open_questions.md)).
+Purpose: record what was **verified in the code** for the project book's claims, which legacy `docs/spec/requirements/*` FRs are **superseded** by book decisions, the **new implementation gaps** found (`G32+`), and the **questions that need a PM decision** (also listed in [92](./92_open_questions.md)).
 
 Method: static reading of `dev` @ `fdc861d3` plus the book branch. No live database was queried. Evidence is cited as `file:line`.
 

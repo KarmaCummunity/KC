@@ -4,7 +4,7 @@
 // consumed only when the user submits a valid new password; afterwards every
 // session is revoked and the user signs in again on every device (AC2, AC3).
 // Reachable while signed out (AuthGate). Sibling of auth/verify.tsx.
-// docs/SSOT/spec/01_auth_and_onboarding.md
+// docs/spec/requirements/01_auth_and_onboarding.md
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';

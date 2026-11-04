@@ -98,6 +98,6 @@ Post cache reads for the feed use `get_post_translations` (migration `0210`). Ot
 
 5. **Read path** — Either extend an existing SECURITY INVOKER RPC with RLS-safe joins, or invoke batch translate from the client after visibility is already established.
 
-6. **SSOT** — Update `docs/SSOT/spec/18_translation.md` acceptance criteria and this file’s entity table.
+6. **SSOT** — Update `docs/spec/requirements/18_translation.md` acceptance criteria and this file’s entity table.
 
 Run from `app/`: `pnpm typecheck && pnpm test && pnpm lint`. Run Deno tests: `deno test supabase/functions/_shared/translation/`.

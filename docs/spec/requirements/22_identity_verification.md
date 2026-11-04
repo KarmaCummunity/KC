@@ -4,7 +4,7 @@
 
 Prefix: `FR-VERIFY-*`
 
-> **Source of truth.** Product book [`docs/spec/07_cross_cutting_systems.md` §7.14](../../spec/07_cross_cutting_systems.md) wins where it disagrees (D35). Decisions: D23 (levels phone → ID → blue check, shown on post, card and profile; not blocking in general), D30 (housing: both sides; medical: bodies only), D31 (an event may require verified users), D48 (elderly home visit: ID-verified volunteer), D109 (private date of birth, minimum age 18), `D117` (what "ID verified" means). Fills pending approval: `S60`, `S61`, `S62`.
+> **Source of truth.** Product book [`docs/spec/07_cross_cutting_systems.md` §7.14](../07_cross_cutting_systems.md) wins where it disagrees (D35). Decisions: D23 (levels phone → ID → blue check, shown on post, card and profile; not blocking in general), D30 (housing: both sides; medical: bodies only), D31 (an event may require verified users), D48 (elderly home visit: ID-verified volunteer), D109 (private date of birth, minimum age 18), `D117` (what "ID verified" means). Fills pending approval: `S60`, `S61`, `S62`.
 
 > **Scope.** A professional identity check that proves a real, adult person stands behind an account: a government identity document **and** a live face that matches it, run by a certified verification provider. KC keeps the result, never the images.
 

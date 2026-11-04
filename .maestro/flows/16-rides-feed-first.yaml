@@ -1,6 +1,6 @@
 # The rides world opens on its feed (#1626): the route search is a collapsed filter on top, the
 # offers / requests chips sit with it, and the feed (or its "publish a ride" empty state) follows.
-# Spec: docs/SSOT/spec/15_rides.md FR-RIDE-002; docs/spec/05_giving_worlds.md §5.3 "Feed" (D75).
+# Spec: docs/spec/requirements/15_rides.md FR-RIDE-002; docs/spec/05_giving_worlds.md §5.3 "Feed" (D75).
 appId: org.karmacommunity.app
 name: Rides — feed first, route search as a filter
 tags: [donations, rides, feed]
