@@ -54,7 +54,7 @@ export const marketplaceErrors = {
   ride_series_not_found: 'הטרמפ הקבוע הזה כבר לא קיים.',
   ride_series_cancelled: 'הטרמפ הקבוע בוטל ואי אפשר לשנות אותו. אפשר לפרסם טרמפ קבוע חדש.',
   ride_series_status_invalid: 'הפעולה אינה אפשרית. רעננו את המסך ונסו שוב.',
-  // Housing stays (0591–0594).
+  // Housing stays (0600–0603).
   housing_conduct_required: 'לפני אירוח ראשון יש לאשר את קוד ההתנהגות של עולם הדיור.',
   housing_conduct_version_stale: 'קוד ההתנהגות עודכן. קראו את הגרסה החדשה ואשרו שוב.',
   housing_nights_out_of_range: 'מספר הלילות מחוץ לטווח שהמארח/ת קבע/ה.',

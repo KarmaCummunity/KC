@@ -70,7 +70,7 @@ export const notificationsHe = {
   // D74 — a new ride on a route the user follows (0516).
   rideRouteMatchTitle: 'נסיעה חדשה במסלול שלך',
   rideRouteMatchBody: '{{origin}} ← {{dest}} · {{when}}',
-  // FR-HOUSING-017 (0593–0594) — housing booking changes; mirrored in dispatch-notification/i18n.json.
+  // FR-HOUSING-017 (0602–0603) — housing booking changes; mirrored in dispatch-notification/i18n.json.
   housingBookingRequestedTitle: 'בקשת אירוח חדשה',
   housingBookingRequestedBody: '{{name}} מבקש/ת להתארח ב"{{listingTitle}}" מ-{{checkIn}} ({{guests}} אורחים). אשרו או דחו.',
   housingBookingConfirmedTitle: 'האירוח שלך אושר',

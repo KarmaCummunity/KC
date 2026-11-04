@@ -60,7 +60,7 @@ export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[
     }, ['departs_at'])),
   ],
   housing: [
-    // Binding stay schemas of migration 0591 (FR-HOUSING-005 / 006), trimmed to the keys and enums the form uses.
+    // Binding stay schemas of migration 0600 (FR-HOUSING-005 / 006), trimmed to the keys and enums the form uses.
     kind('host_offer', 'give', obj({
       place_type: { enum: ['private_room', 'shared_room', 'couch', 'whole_unit', 'secondary_unit', 'tent_pitch'] },
       capacity: { type: 'integer' },

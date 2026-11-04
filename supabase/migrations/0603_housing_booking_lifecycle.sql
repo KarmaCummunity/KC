@@ -1,4 +1,4 @@
--- 0594_housing_booking_lifecycle | Housing H1, part 4: what happens to a stay booking after
+-- 0603_housing_booking_lifecycle | Housing H1, part 4: what happens to a stay booking after
 -- it is made (spec docs/SSOT/spec/21_housing.md FR-HOUSING-017…023).
 --
 --   1. `cancel_housing_booking`: either side, until check-in. A guest cancelling a confirmed
@@ -14,7 +14,7 @@
 --   4. `list_housing_bookings` (host, per offer) and `list_my_housing_stays` (guest).
 --   5. `housing_bookings_sweep` every 10 min: unanswered requests expire at `confirm_by`;
 --      confirmed stays nobody completed close 7 days after check-out without karma.
---   6. The status-change trigger: one push to the other side of every booking change (0593 helper).
+--   6. The status-change trigger: one push to the other side of every booking change (0602 helper).
 
 begin;
 
@@ -330,10 +330,10 @@ end;
 $$;
 
 comment on function public.housing_bookings_sweep() is
-  'Every 10 min: unanswered housing requests expire at confirm_by; confirmed stays not completed 7 days after check-out close without karma (FR-HOUSING-017, 019). 0594.';
+  'Every 10 min: unanswered housing requests expire at confirm_by; confirmed stays not completed 7 days after check-out close without karma (FR-HOUSING-017, 019). 0603.';
 
 -- ── 6. Notifications ─────────────────────────────────────────────────────────
--- Status changes only: the request's own push is sent by request_housing_booking (0593).
+-- Status changes only: the request's own push is sent by request_housing_booking (0602).
 create or replace function public.housing_booking_notify()
 returns trigger
 language plpgsql

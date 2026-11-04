@@ -1,4 +1,4 @@
--- 0592_housing_private_details | Housing H1, part 2: the exact place of a stay offer is
+-- 0601_housing_private_details | Housing H1, part 2: the exact place of a stay offer is
 -- private (D30, R-Housing-3; spec docs/SSOT/spec/21_housing.md FR-HOUSING-012, fill S-
 -- housing-location-reveal in docs/spec/91).
 --
@@ -33,7 +33,7 @@ create table if not exists public.housing_private_details (
 );
 
 comment on table public.housing_private_details is
-  'Exact place of a housing offer; readable only per can_view_housing_private_details (FR-HOUSING-012). 0592.';
+  'Exact place of a housing offer; readable only per can_view_housing_private_details (FR-HOUSING-012). 0601.';
 
 alter table public.housing_private_details enable row level security;
 

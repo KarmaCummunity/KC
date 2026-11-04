@@ -72,7 +72,7 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'ride_series_not_found',
   'ride_series_cancelled',
   'ride_series_status_invalid',
-  // Housing stays (0591–0594, spec 21_housing.md): conduct, dates, capacity, privacy, lifecycle.
+  // Housing stays (0600–0603, spec 21_housing.md): conduct, dates, capacity, privacy, lifecycle.
   'housing_conduct_required',
   'housing_conduct_version_stale',
   'housing_nights_out_of_range',

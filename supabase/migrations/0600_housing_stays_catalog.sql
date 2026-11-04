@@ -1,4 +1,4 @@
--- 0591_housing_stays_catalog | Housing H1, part 1: sub-categories, binding stay schemas,
+-- 0600_housing_stays_catalog | Housing H1, part 1: sub-categories, binding stay schemas,
 -- stay rules and the code of conduct (spec docs/SSOT/spec/21_housing.md; product book
 -- docs/spec/05 §5.6).
 --
@@ -150,7 +150,7 @@ create table if not exists public.housing_conduct_acceptances (
 );
 
 comment on table public.housing_conduct_acceptances is
-  'One row per member and accepted version of the housing code of conduct (FR-HOUSING-003 AC3). 0591.';
+  'One row per member and accepted version of the housing code of conduct (FR-HOUSING-003 AC3). 0600.';
 
 alter table public.housing_conduct_acceptances enable row level security;
 
@@ -354,7 +354,7 @@ end;
 $$;
 
 comment on function public.listings_housing_rules() is
-  'Trigger: housing sub-category from the kind, conduct gate on publish, stay cross-field rules and expiry (FR-HOUSING-003/005/006/011). 0591.';
+  'Trigger: housing sub-category from the kind, conduct gate on publish, stay cross-field rules and expiry (FR-HOUSING-003/005/006/011). 0600.';
 
 -- BEFORE triggers fire in name order: this one runs after listings_before_write_trg (so the
 -- housing expiry is the final word), listings_require_world_permission (an unverified member

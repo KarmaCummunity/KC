@@ -134,7 +134,7 @@ describe('listing field specs — values', () => {
 describe('listing field specs — housing stays (FR-HOUSING-005, 006)', () => {
   const hostOffer = fieldsForKind(KINDS_BY_WORLD.housing![0]!);
   const stayRequest = fieldsForKind(KINDS_BY_WORLD.housing![1]!);
-  // `required` of the host_offer schema in migration 0591.
+  // `required` of the host_offer schema in migration 0600.
   const OFFER_REQUIRED = [
     'place_type', 'capacity', 'exclusive', 'min_nights', 'max_nights', 'check_in_from', 'check_in_until',
     'check_out_by', 'guest_policy', 'children_ok', 'pets_ok', 'smoking', 'availability',

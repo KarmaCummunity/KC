@@ -10,7 +10,7 @@ select kc_test.create_user('every_world_giver')  as giver,
        kc_test.create_user('every_world_viewer') as viewer;
 
 -- Housing publishes only for a verified identity (worlds.requires_verification) who accepted
--- the housing code of conduct (0591).
+-- the housing code of conduct (0600).
 update public.users set verified_at = now() where user_id = (select giver from personas);
 insert into public.housing_conduct_acceptances (user_id, version)
 select giver, public.housing_conduct_version() from personas;
@@ -101,7 +101,7 @@ begin
 
   for r in
     select * from (values
-      -- Housing stay kinds carry binding schemas since 0591.
+      -- Housing stay kinds carry binding schemas since 0600.
       ('housing', 'host_offer',      'give',    'Guest room for a night', 'Give', kc_test.housing_offer_details()),
       ('housing', 'stay_request',    'request', 'Bed for two hikers',     'Request', jsonb_build_object(
         'stay_purpose', 'trail_walk', 'adults', 2, 'minors', 0,
@@ -123,7 +123,7 @@ end $$;
 
 -- 3b) Time defaults to followers-only (worlds.default_anonymity_level = 2): the mirror keeps
 --     that privacy, so a follower sees it in the feed and a stranger does not. Housing is
---     public by default since 0591 (FR-HOUSING-004 AC4).
+--     public by default since 0600 (FR-HOUSING-004 AC4).
 do $$
 declare
   p personas;

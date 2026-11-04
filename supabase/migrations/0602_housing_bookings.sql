@@ -1,4 +1,4 @@
--- 0593_housing_bookings | Housing H1, part 3: stay bookings on the generic handoff stage
+-- 0602_housing_bookings | Housing H1, part 3: stay bookings on the generic handoff stage
 -- (spec docs/SSOT/spec/21_housing.md FR-HOUSING-015, 016; fills S-housing-booking-lifecycle
 -- and S-housing-limits in docs/spec/91).
 --
@@ -11,8 +11,8 @@
 --      the offer, re-checks eligibility, nights and capacity, and withdraws the guest's other
 --      waiting requests for overlapping nights (first confirmation wins).
 --   5. `housing_booking_enqueue`: the one push per booking change (the request's own push is
---      sent by the RPC, after the details exist; status changes by the 0594 trigger).
--- Cancellation, completion, lists, sweeps and the status-change trigger follow in 0594.
+--      sent by the RPC, after the details exist; status changes by the 0603 trigger).
+-- Cancellation, completion, lists, sweeps and the status-change trigger follow in 0603.
 
 begin;
 
@@ -71,7 +71,7 @@ create table if not exists public.housing_booking_details (
 );
 
 comment on table public.housing_booking_details is
-  'Housing side of a giving_handoffs booking: dates, party, message, late-cancel mark (FR-HOUSING-015/018). 0593.';
+  'Housing side of a giving_handoffs booking: dates, party, message, late-cancel mark (FR-HOUSING-015/018). 0602.';
 
 alter table public.housing_booking_details enable row level security;
 
@@ -418,7 +418,7 @@ begin
   returning * into v_row;
 
   -- First confirmation wins: the guest's other waiting requests for overlapping nights end
-  -- (FR-HOUSING-015 AC3); their hosts are told the guest found another place (0594).
+  -- (FR-HOUSING-015 AC3); their hosts are told the guest found another place (0603).
   update public.giving_handoffs h
      set status = 'cancelled', cancelled_at = now(), cancel_reason = 'superseded'
     from public.housing_booking_details d

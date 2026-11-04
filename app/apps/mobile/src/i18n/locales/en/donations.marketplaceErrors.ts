@@ -54,7 +54,7 @@ export const marketplaceErrors = {
   ride_series_not_found: 'This recurring ride no longer exists.',
   ride_series_cancelled: 'This recurring ride was cancelled and cannot change. You can publish a new one.',
   ride_series_status_invalid: 'That is not possible right now. Refresh and try again.',
-  // Housing stays (0591–0594).
+  // Housing stays (0600–0603).
   housing_conduct_required: 'Accept the housing code of conduct before your first stay or listing.',
   housing_conduct_version_stale: 'The code of conduct was updated. Read the new version and accept it again.',
   housing_nights_out_of_range: 'The number of nights is outside what the host allows.',

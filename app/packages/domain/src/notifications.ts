@@ -54,7 +54,7 @@ export type NotificationKind =
   | 'giving_handoff_declined'
   | 'giving_handoff_cancelled'
   | 'giving_handoff_completed'
-  // FR-HOUSING-017 (0593–0594) — housing stay bookings: every change reaches the other side.
+  // FR-HOUSING-017 (0602–0603) — housing stay bookings: every change reaches the other side.
   | 'housing_booking_requested'
   | 'housing_booking_confirmed'
   | 'housing_booking_declined'

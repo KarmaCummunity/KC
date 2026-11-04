@@ -108,12 +108,15 @@ Last applied on kc-dev when this was written: `0239`.
 | 0551–0569 | G1 one Post model (ADR-006): `0551–0553` step 1 additive schema (in review), `0554–0557` step 2, `0558–0562` step 3, `0563` step 5, `0564+` step 6 | in progress |
 | 0570–0589 | knowledge world K1–K2 (`spec/23_knowledge.md` FR-KNOW-001..020) | claimed (spec only, no files yet) |
 | 0590 | users.date_of_birth + rpc_set_date_of_birth (FR-AUTH-010 AC2.d) | in progress |
-| 0591–0599 | Housing H1 stays (`spec/21_housing.md`): `0591` catalog, schemas, conduct; `0592` private details; `0593` bookings; `0594` booking lifecycle | in progress |
-| 0600+ | — | free |
+| 0591 | admin demo-data status + wipe (FR-ADMIN-031) | in progress |
+| 0592 | admin restore demo data: seed moved into the DB (FR-ADMIN-031) | in progress |
+| 0593–0599 | — | free |
+| 0600–0609 | Housing H1 stays (`spec/21_housing.md`): `0600` catalog, schemas, conduct; `0601` private details; `0602` bookings; `0603` booking lifecycle | in progress |
+| 0610+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0600+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0593–0599`, `0610+`.
 
 ## How to claim
 
