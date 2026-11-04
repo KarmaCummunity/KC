@@ -2,6 +2,8 @@
 // catalogs — a city (with an optional street) or a junction / interchange (spec 05 §5.3, D71).
 export const ridePlaces = {
   fieldOrigin: 'מוצא',
+  fromCurrentLocation: 'מהמיקום הנוכחי',
+  locationUnavailable: 'לא הצלחנו לקבל את המיקום. אפשר לבחור מוצא ידנית.',
   fieldDest: 'יעד',
   pickerTitle: 'בחירת מקום',
   pickerSearch: 'חיפוש עיר, צומת או מחלף',

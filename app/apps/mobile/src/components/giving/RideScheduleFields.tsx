@@ -13,9 +13,11 @@ import {
   RIDE_MIN_SEATS,
   readRideRoute,
   rideDepartureFromShortcut,
+  rideLeaveNowDeparture,
   suggestRideArrival,
 } from '@kc/domain';
 import { DateTimeField } from '../ui/DateTimeField';
+import { RideOptionSwitch } from './RideOptionSwitch';
 
 /** Detail keys owned by this block, hidden from the generic schema fields. */
 export const RIDE_SCHEDULE_DETAIL_KEYS = ['departs_at', 'arrives_at', 'seats_available'] as const;
@@ -26,6 +28,9 @@ interface Props {
   readonly onChange: Dispatch<SetStateAction<Record<string, unknown>>>;
   /** Offers have seats; requests count passengers in their own field. */
   readonly withSeats: boolean;
+  /** "Leave now" is on: the ride departs a few minutes after publishing (#1411). */
+  readonly leaveNow: boolean;
+  readonly onLeaveNowChange: (on: boolean) => void;
   readonly disabled?: boolean;
 }
 
@@ -35,7 +40,7 @@ const asDate = (v: unknown): Date | null => {
   return Number.isNaN(d.getTime()) ? null : d;
 };
 
-export function RideScheduleFields({ details, onChange, withSeats, disabled }: Props) {
+export function RideScheduleFields({ details, onChange, withSeats, leaveNow, onLeaveNowChange, disabled }: Props) {
   const { t } = useTranslation();
   const styles = useStyles();
   const departs = asDate(details.departs_at);
@@ -66,15 +71,34 @@ export function RideScheduleFields({ details, onChange, withSeats, disabled }: P
     if (next >= RIDE_MIN_SEATS && next <= RIDE_MAX_SEATS) onChange((prev) => ({ ...prev, seats_available: next }));
   };
 
+  // The member picks the time by hand: "leave now" no longer stands for it.
+  const setDeparture = (d: Date) => {
+    onLeaveNowChange(false);
+    onChange((prev) => ({ ...prev, departs_at: d.toISOString() }));
+  };
+
+  const setLeaveNow = (on: boolean) => {
+    onLeaveNowChange(on);
+    if (on) onChange((prev) => ({ ...prev, departs_at: rideLeaveNowDeparture(new Date()).toISOString() }));
+  };
+
   return (
     <View style={styles.block}>
+      <RideOptionSwitch
+        testID="ride-leave-now"
+        label={t('rideSchedule.leaveNow')}
+        hint={leaveNow ? t('rideSchedule.leaveNowHint') : null}
+        value={leaveNow}
+        onValueChange={setLeaveNow}
+        disabled={disabled}
+      />
       <DateTimeField
         testID="ride-departs-at"
         label={t('rideSchedule.departure')}
         value={departs}
         minimumDate={new Date()}
         disabled={disabled}
-        onChange={(d) => onChange((prev) => ({ ...prev, departs_at: d.toISOString() }))}
+        onChange={setDeparture}
         shortcuts={RIDE_DEPARTURE_SHORTCUTS.map((key) => ({
           key,
           label: t(`rideSchedule.shortcut.${key}`),

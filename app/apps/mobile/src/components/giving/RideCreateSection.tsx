@@ -23,6 +23,9 @@ interface Props {
   /** The recurring-ride draft; null publishes a single ride. */
   readonly recurrence: RideRecurrenceDraft | null;
   readonly onRecurrenceChange: (next: RideRecurrenceDraft | null) => void;
+  /** "Leave now": depart a few minutes after publishing (#1411). */
+  readonly leaveNow: boolean;
+  readonly onLeaveNowChange: (on: boolean) => void;
   readonly disabled?: boolean;
 }
 
@@ -34,7 +37,17 @@ function departureOf(details: Record<string, unknown>): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-export function RideCreateSection({ details, setDetails, onOriginCity, isOffer, recurrence, onRecurrenceChange, disabled }: Props) {
+export function RideCreateSection({
+  details,
+  setDetails,
+  onOriginCity,
+  isOffer,
+  recurrence,
+  onRecurrenceChange,
+  leaveNow,
+  onLeaveNowChange,
+  disabled,
+}: Props) {
   const { t } = useTranslation();
   const styles = useStyles();
   // Start from the queued "publish again" ride or the remembered route, once per form.
@@ -52,7 +65,14 @@ export function RideCreateSection({ details, setDetails, onOriginCity, isOffer, 
   return (
     <>
       <RideRouteFields details={details} onChange={setDetails} onOriginCity={onOriginCity} disabled={disabled} />
-      <RideScheduleFields details={details} onChange={setDetails} withSeats={isOffer} disabled={disabled} />
+      <RideScheduleFields
+        details={details}
+        onChange={setDetails}
+        withSeats={isOffer}
+        leaveNow={leaveNow}
+        onLeaveNowChange={onLeaveNowChange}
+        disabled={disabled}
+      />
       <RideRecurrenceFields value={recurrence} onChange={onRecurrenceChange} departsAt={departureOf(details)} disabled={disabled} />
       {/* No profit (spec 05 §5.3 Rules): the cap follows the route — urban or intercity. */}
       {isOffer ? <Text style={styles.hint}>{t('rideSafety.costCapHint', { cap: rideCostShareCap(details) })}</Text> : null}
