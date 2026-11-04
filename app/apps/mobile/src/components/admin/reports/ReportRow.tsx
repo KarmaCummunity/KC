@@ -4,8 +4,8 @@ import { memo } from 'react';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { ReportInboxRow } from '@kc/domain';
-import { thresholdProgress } from '@kc/domain';
-import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
+import { reportSlaState, thresholdProgress } from '@kc/domain';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { useLocaleBundle, type LocaleBundle } from '../../../i18n/useLocaleBundle';
 
 export interface ReportRowProps {
@@ -34,6 +34,7 @@ function ReportRowInner({ row }: ReportRowProps) {
   const caseId = encodeURIComponent(`${row.targetType}:${row.targetId}`);
   const styles = useStyles();
   const L = useLocaleBundle();
+  const sla = reportSlaState(row.oldestAt);
   return (
     <Pressable
       style={styles.root}
@@ -50,6 +51,16 @@ function ReportRowInner({ row }: ReportRowProps) {
           {L.admin.reports.row.thresholdLabel(progress.count, progress.threshold)}
         </Text>
         <Text style={styles.metaText}>{ageLabel(L, row.oldestAt)}</Text>
+        {sla !== 'on_track' ? (
+          <View
+            testID={`report-sla-badge-${sla}`}
+            style={sla === 'overdue' ? styles.badgeOverdue : styles.badgeWarning}
+          >
+            <Text style={sla === 'overdue' ? styles.badgeOverdueText : styles.badgeWarningText}>
+              {sla === 'overdue' ? L.admin.reports.row.slaOverdue : L.admin.reports.row.slaWarning}
+            </Text>
+          </View>
+        ) : null}
       </View>
     </Pressable>
   );
@@ -62,4 +73,8 @@ const useStyles = makeUseStyles(({ colors }) => ({
   preview:   { fontSize: typography.body.fontSize, ...typography.medium },
   meta:      { flexDirection: 'row', gap: spacing.md },
   metaText:  { fontSize: typography.bodySmall.fontSize, opacity: 0.6 },
+  badgeWarning:     { paddingHorizontal: spacing.sm, borderRadius: radius.full, backgroundColor: colors.warningLight },
+  badgeWarningText: { fontSize: typography.bodySmall.fontSize, ...typography.medium, color: colors.textPrimary },
+  badgeOverdue:     { paddingHorizontal: spacing.sm, borderRadius: radius.full, backgroundColor: colors.errorLight },
+  badgeOverdueText: { fontSize: typography.bodySmall.fontSize, ...typography.medium, color: colors.error },
 }));

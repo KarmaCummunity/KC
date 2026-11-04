@@ -92,6 +92,8 @@ export const adminHe = {
       ageDays:        (d: number) => `לפני ${d} ימים`,
       ageHours:       (h: number) => `לפני ${h} שעות`,
       ageMinutes:     (m: number) => `לפני ${m} דקות`,
+      slaWarning:     'ממתין מעל 12 שעות',
+      slaOverdue:     'באיחור (24 שעות)',
     },
   },
   caseDetail: {
