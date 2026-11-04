@@ -1,36 +1,38 @@
 // app/apps/mobile/src/components/admin/admins/OrgTreeRow.tsx
-// FR-ADMIN-025 — a single, indented node row in the org hierarchy tree.
+// FR-ADMIN-025 — one person card in the org hierarchy tree: avatar, name, every
+// role they hold in the org, and how many people sit below them.
 import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import type { OrgTreeNode } from '@kc/domain';
+import type { OrgPersonNode } from '@kc/domain';
 import { iconSize, makeUseStyles, radius, spacing, Text, typography, useTheme } from '@kc/ui';
 import { AvatarInitials } from '../../AvatarInitials';
 import { RoleBadge } from './RoleBadge';
-import { LevelBadge } from './LevelBadge';
 import { rowDirectionStart, textAlignStart } from '../../../lib/rtlLayout';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
 export interface OrgTreeRowProps {
-  readonly node: OrgTreeNode;
-  readonly hasChildren: boolean;
+  readonly node: OrgPersonNode;
   readonly collapsed: boolean;
-  readonly onToggle: (grantId: string) => void;
+  readonly onToggle: (key: string) => void;
   readonly onSelect?: (userId: string) => void;
 }
 
-export function OrgTreeRow({ node, hasChildren, collapsed, onToggle, onSelect }: OrgTreeRowProps) {
+export function OrgTreeRow({ node, collapsed, onToggle, onSelect }: OrgTreeRowProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   const L = useLocaleBundle();
-  const { member, level } = node;
-  const name = member.displayName ?? L.admin.admins.row.unnamed;
+  const { person, level, children, reportCount } = node;
+  const hasChildren = children.length > 0;
+  const name = person.displayName ?? L.admin.admins.row.unnamed;
 
   return (
-    <View style={[styles.row, { marginStart: level * 16 }]}>
+    <View style={styles.row}>
       <Pressable
         accessibilityRole="button"
+        accessibilityLabel={collapsed ? L.admin.orgTree.expand : L.admin.orgTree.collapse}
+        disabled={!hasChildren}
         hitSlop={6}
-        onPress={() => (hasChildren ? onToggle(member.grantId) : undefined)}
+        onPress={() => onToggle(person.key)}
         style={styles.chevron}
       >
         {hasChildren && (
@@ -44,18 +46,21 @@ export function OrgTreeRow({ node, hasChildren, collapsed, onToggle, onSelect }:
 
       <Pressable
         accessibilityRole="button"
-        onPress={() => onSelect?.(member.userId)}
-        style={styles.body}
+        onPress={() => onSelect?.(person.userId)}
+        style={[styles.card, level === 0 && styles.cardRoot]}
       >
-        <AvatarInitials name={name} avatarUrl={member.avatarUrl} size={32} />
-        <View style={styles.texts}>
-          <View style={styles.titleRow}>
-            <Text style={styles.name} numberOfLines={1}>{name}</Text>
-            <LevelBadge level={level} />
-          </View>
-          <View style={styles.badges}>
-            <RoleBadge role={member.role} />
-          </View>
+        <View style={styles.head}>
+          <AvatarInitials name={name} avatarUrl={person.avatarUrl} size={40} />
+          <Text style={styles.name} numberOfLines={1}>{name}</Text>
+          {reportCount > 0 && (
+            <View style={styles.count} accessibilityLabel={L.admin.orgTree.reports(reportCount)}>
+              <Ionicons name="people-outline" size={iconSize.xs} color={colors.primary} />
+              <Text style={styles.countText}>{reportCount}</Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.badges}>
+          {person.roles.map((role) => <RoleBadge key={role} role={role} />)}
         </View>
       </Pressable>
     </View>
@@ -63,17 +68,21 @@ export function OrgTreeRow({ node, hasChildren, collapsed, onToggle, onSelect }:
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  row: {
-    flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.xs,
-    paddingVertical: spacing.xs, paddingHorizontal: spacing.sm,
+  row: { flexDirection: rowDirectionStart, alignItems: 'flex-start', gap: spacing.xs, paddingVertical: spacing.xs },
+  chevron: { width: spacing.xl, height: 40, alignItems: 'center', justifyContent: 'center' },
+  card: {
+    flex: 1, gap: spacing.sm, padding: spacing.md,
+    backgroundColor: colors.surface, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.border,
   },
-  chevron: { width: 20, alignItems: 'center', justifyContent: 'center' },
-  body: {
-    flex: 1, flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.sm,
-    backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.sm,
-  },
-  texts: { flex: 1, gap: spacing.xs },
-  titleRow: { flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.sm },
+  cardRoot: { borderColor: colors.borderStrong },
+  head: { flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.sm },
   name: { flex: 1, fontSize: typography.body.fontSize, ...typography.bold, color: colors.textPrimary, textAlign: textAlignStart() },
+  count: {
+    flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.xs,
+    paddingHorizontal: spacing.sm, paddingVertical: spacing.xs,
+    borderRadius: radius.full, backgroundColor: colors.primaryLight,
+  },
+  countText: { fontSize: typography.caption.fontSize, ...typography.extraBold, color: colors.primary },
   badges: { flexDirection: rowDirectionStart, flexWrap: 'wrap', gap: spacing.xs },
 }));

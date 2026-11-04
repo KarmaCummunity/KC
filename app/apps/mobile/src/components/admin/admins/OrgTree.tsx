@@ -1,60 +1,60 @@
 // app/apps/mobile/src/components/admin/admins/OrgTree.tsx
-// FR-ADMIN-025 — collapsible org hierarchy tree. Flattens the forest into the
-// currently-visible rows (respecting per-node collapse state) and renders them
-// indented by level. Trees are small (a single org's management chain), so a
-// plain mapped list is sufficient — no nested virtualisation.
-import { useMemo, useState } from 'react';
+// FR-ADMIN-025 — collapsible org hierarchy tree. One section per org, one card per
+// person (never one per role), reports nested under their manager behind a
+// connector line. Trees are small (a single org's management chain), so plain
+// recursion is enough — no virtualisation.
+import { useState } from 'react';
 import { View } from 'react-native';
-import type { OrgTreeNode } from '@kc/domain';
+import type { OrgPersonNode, OrgSection } from '@kc/domain';
 import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { OrgTreeRow } from './OrgTreeRow';
+import { rowDirectionStart, textAlignStart } from '../../../lib/rtlLayout';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
 export interface OrgTreeProps {
-  readonly forest: readonly OrgTreeNode[];
+  readonly sections: readonly OrgSection[];
   readonly onSelect?: (userId: string) => void;
 }
 
-interface FlatRow {
-  readonly node: OrgTreeNode;
-  readonly hasChildren: boolean;
-  readonly collapsed: boolean;
+interface BranchProps {
+  readonly node: OrgPersonNode;
+  readonly collapsed: ReadonlySet<string>;
+  readonly onToggle: (key: string) => void;
+  readonly onSelect?: (userId: string) => void;
 }
 
-function flatten(
-  forest: readonly OrgTreeNode[],
-  collapsed: ReadonlySet<string>,
-  out: FlatRow[],
-): void {
-  for (const node of forest) {
-    const hasChildren = node.children.length > 0;
-    const isCollapsed = collapsed.has(node.member.grantId);
-    out.push({ node, hasChildren, collapsed: isCollapsed });
-    if (hasChildren && !isCollapsed) flatten(node.children, collapsed, out);
-  }
+function Branch({ node, collapsed, onToggle, onSelect }: BranchProps) {
+  const styles = useStyles();
+  const isCollapsed = collapsed.has(node.person.key);
+  return (
+    <View>
+      <OrgTreeRow node={node} collapsed={isCollapsed} onToggle={onToggle} onSelect={onSelect} />
+      {node.children.length > 0 && !isCollapsed && (
+        <View style={styles.children}>
+          {node.children.map((child) => (
+            <Branch key={child.person.key} node={child} collapsed={collapsed} onToggle={onToggle} onSelect={onSelect} />
+          ))}
+        </View>
+      )}
+    </View>
+  );
 }
 
-export function OrgTree({ forest, onSelect }: OrgTreeProps) {
+export function OrgTree({ sections, onSelect }: OrgTreeProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
 
-  const rows = useMemo(() => {
-    const out: FlatRow[] = [];
-    flatten(forest, collapsed, out);
-    return out;
-  }, [forest, collapsed]);
-
-  function toggle(grantId: string): void {
+  function toggle(key: string): void {
     setCollapsed((prev) => {
       const next = new Set(prev);
-      if (next.has(grantId)) next.delete(grantId);
-      else next.add(grantId);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   }
 
-  if (forest.length === 0) {
+  if (sections.length === 0) {
     return (
       <View style={styles.empty}>
         <Text style={styles.emptyText}>{L.admin.admins.tree.empty}</Text>
@@ -64,22 +64,32 @@ export function OrgTree({ forest, onSelect }: OrgTreeProps) {
 
   return (
     <View style={styles.root}>
-      {rows.map((r) => (
-        <OrgTreeRow
-          key={r.node.member.grantId}
-          node={r.node}
-          hasChildren={r.hasChildren}
-          collapsed={r.collapsed}
-          onToggle={toggle}
-          onSelect={onSelect}
-        />
+      {sections.map((section) => (
+        <View key={section.orgId ?? 'none'} style={styles.section}>
+          <View style={styles.sectionHead}>
+            <Text style={styles.sectionName} numberOfLines={1}>{section.orgName ?? L.admin.admins.tree.orgLabel}</Text>
+            <Text style={styles.sectionCount}>{L.admin.orgTree.members(section.memberCount)}</Text>
+          </View>
+          {section.roots.map((root) => (
+            <Branch key={root.person.key} node={root} collapsed={collapsed} onToggle={toggle} onSelect={onSelect} />
+          ))}
+        </View>
       ))}
     </View>
   );
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  root:      { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+  root:      { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, gap: spacing.lg },
+  section:   { gap: spacing.xs },
+  sectionHead: {
+    flexDirection: rowDirectionStart, alignItems: 'baseline', justifyContent: 'space-between',
+    gap: spacing.sm, paddingBottom: spacing.xs, borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  sectionName:  { flex: 1, fontSize: typography.h3.fontSize, ...typography.extraBold, color: colors.textPrimary, textAlign: textAlignStart() },
+  sectionCount: { fontSize: typography.caption.fontSize, color: colors.textSecondary },
+  // The line sits under the parent's chevron (spacing.xl wide, centred) and links its reports.
+  children:  { marginStart: spacing.md, paddingStart: spacing.md, borderStartWidth: 2, borderStartColor: colors.border },
   empty:     { padding: spacing.xl, alignItems: 'center' },
   emptyText: { fontSize: typography.bodySmall.fontSize, color: colors.textSecondary, textAlign: 'center' },
 }));

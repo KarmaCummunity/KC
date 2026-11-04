@@ -5,6 +5,7 @@ export * from './GrantAuthority';
 export * from './AdminPerson';
 export * from './AdminRoleError';
 export * from './OrgTree';
+export * from './OrgPeopleTree';
 export * from './OrgHierarchyError';
 export * from './HierarchyPyramid';
 export * from './AdminTask';
