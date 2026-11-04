@@ -93,7 +93,7 @@ Every schema change must be a committed file in `supabase/migrations/NNNN_snake.
 2. **Read order.**
    1. [`docs/spec/README.md`](./docs/spec/README.md) — product project book (source of truth) and the section for your area
    2. The [GitHub project board](https://github.com/orgs/KarmaCummunity/projects/2) — the **only** task queue ([`docs/process/PROJECT_BOARD.md`](./docs/process/PROJECT_BOARD.md)); `docs/SSOT/BACKLOG.md` is just an old-ID → issue map
-   3. Relevant legacy [`docs/spec/requirements/{domain}.md`](./docs/spec/requirements) for FR-IDs / ACs
+   3. Relevant [`docs/spec/requirements/{domain}.md`](./docs/spec/requirements) for FR-IDs / ACs
    4. Scan the open `tech-debt` issues for the area you touch (`gh issue list -R KarmaCummunity/KC -l tech-debt`)
    5. Check [`docs/SSOT/DECISIONS.md`](./docs/SSOT/DECISIONS.md) before structural changes
 3. **Do not implement from.** `docs/SSOT/archive/**`, `PRD_V2_NOT_FOR_MVP/**` (vision treasure — never archive it), and design/plan trees under `docs/SSOT/archive/superpowers/**` — unless an **open** backlog row or active spec links there.
@@ -105,7 +105,7 @@ Doc map for humans: [`docs/README.md`](./docs/README.md).
 ## 1. Required reading (before doing anything)
 
 0. **`docs/spec/`** — product project book (vision → worlds/domains → cross-cutting systems → governance/GTM/roadmap), D1–D66. Wins over legacy FR files.
-1. **`docs/spec/requirements/{domain}.md`** — legacy per-domain FR spec (FR-IDs, ACs). Each file is the full spec (FR-IDs, ACs, business rules) plus a status header (✅/🟡/⏳). Read only the file relevant to your task.
+1. **`docs/spec/requirements/{domain}.md`** — per-domain requirements (FR-IDs, ACs). Each file is the full spec (FR-IDs, ACs, business rules) plus a status header (✅/🟡/⏳). Read only the file relevant to your task.
 2. **The GitHub project board** (<https://github.com/orgs/KarmaCummunity/projects/2>) — the only task queue (what's next, who owns it). Workflow: `docs/process/PROJECT_BOARD.md`.
 3. **GitHub issues labeled `tech-debt`** — active technical debt (old `TD-n` IDs stay in the issue title). Scan items in the area you're touching before opening a PR; close adjacent debt opportunistically when scope is small.
 4. **`docs/SSOT/DECISIONS.md`** — architecture & product decisions (D-* and EXEC-*). Check before proposing structural changes.
@@ -443,7 +443,7 @@ If you don't see a home for something below, **ask the PM** before inventing a n
 | Project board workflow    | `docs/process/PROJECT_BOARD.md`        |
 | **Product project book**  | **`docs/spec/`** (English; Hebrew page is the human source of truth) |
 | Architecture (current/target) | `docs/architecture/`               |
-| Feature specs (FR-*, legacy) | `docs/spec/requirements/{domain}.md`        |
+| Feature specs (FR-*)         | `docs/spec/requirements/{domain}.md`        |
 | Long-horizon vision       | `PRD_V2_NOT_FOR_MVP/` (never archive)  |
 | Tech debt                 | GitHub issues labeled `tech-debt`      |
 | Architectural decisions   | `docs/SSOT/DECISIONS.md`               |
