@@ -233,8 +233,13 @@ begin
   perform kc_test.act_as(p.reporter);
   insert into public.reports (reporter_id, target_type, target_id, reason)
   values (p.reporter, 'listing', v_mirror_listing, 'Spam'),
-         (p.reporter, 'listing', v_item_listing, 'Spam'),
-         (p.reporter, 'listing', v_orphan, 'Spam');
+         (p.reporter, 'listing', v_item_listing, 'Spam');
+  -- A listing still in review cannot be reported now (target_already_moderated); its report
+  -- stands for one filed before review, so the insert guard is paused for that row only.
+  alter table public.reports disable trigger reports_before_insert;
+  insert into public.reports (reporter_id, target_type, target_id, reason)
+  values (p.reporter, 'listing', v_orphan, 'Spam');
+  alter table public.reports enable trigger reports_before_insert;
 
   perform kc_test.act_as(p.moderator);
   v_rows := public.reports_open_inbox(p_target_type_filter => 'listing', p_limit => 100) -> 'rows';
