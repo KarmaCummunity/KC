@@ -2780,10 +2780,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "giving_handoff_ratings_handoff_id_fkey"
+            foreignKeyName: "giving_handoff_ratings_post_handoff_fkey"
             columns: ["handoff_id"]
             isOneToOne: false
-            referencedRelation: "giving_handoffs"
+            referencedRelation: "post_handoffs"
             referencedColumns: ["handoff_id"]
           },
           {
@@ -2995,10 +2995,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "housing_booking_details_handoff_id_fkey"
+            foreignKeyName: "housing_booking_details_post_handoff_fkey"
             columns: ["handoff_id"]
             isOneToOne: true
-            referencedRelation: "giving_handoffs"
+            referencedRelation: "post_handoffs"
             referencedColumns: ["handoff_id"]
           },
         ]
@@ -12153,7 +12153,7 @@ export type Database = {
           p_actor: string
           p_category?: string
           p_kind: string
-          p_row: Database["public"]["Tables"]["giving_handoffs"]["Row"]
+          p_row: Database["public"]["Tables"]["post_handoffs"]["Row"]
           p_to: string
         }
         Returns: undefined
