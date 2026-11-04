@@ -178,7 +178,7 @@ A chat cannot be opened "out of the blue" from arbitrary surfaces.
 
 **Acceptance Criteria.**
 - AC1. The only valid entry points to a new chat are: (a) Post Detail (`FR-CHAT-005`), (b) Other Profile (`FR-CHAT-006`), (c) Settings → Report an Issue (`FR-CHAT-007`), **(d) Donations · Time → Volunteer Message Composer (`FR-DONATE-004`)** — this entry-point routes to the same Super Admin support thread as (c) (`is_support_thread = true`); it does not create a duplicate thread. **MVP-core deferral:** until P0.5 chat ships, the Donations · Time composer stores intent locally (see `FR-DONATE-004` AC3 / TD-114) and shows a success alert; it does not navigate to chat.
-- AC2. ~~There is no "Compose new chat" button anywhere in the app.~~ **Superseded** by `FR-CHAT-017` ({{D:chat-new-conversation-from-inbox}}): the Inbox has one "+" that opens a recipient picker. No other surface offers a free-form "compose" action.
+- AC2. ~~There is no "Compose new chat" button anywhere in the app.~~ **Superseded** by `FR-CHAT-017` (D126): the Inbox has one "+" that opens a recipient picker. No other surface offers a free-form "compose" action.
 - AC3. Resuming an existing chat is allowed from the Inbox (`FR-CHAT-001`).
 
 ---
@@ -352,7 +352,7 @@ The user can remove a conversation from **their own** inbox without deleting it 
 ## FR-CHAT-017 — Start a conversation from the Inbox
 
 **Description.**
-A "+" action on the Inbox opens a recipient picker so a member can message someone without first finding one of their posts or their profile. Product decision {{D:chat-new-conversation-from-inbox}} (KC#1728).
+A "+" action on the Inbox opens a recipient picker so a member can message someone without first finding one of their posts or their profile. Product decision D126 (KC#1728).
 
 **Source.**
 - Request: PM, 2026-11-04 (KC#1728). Refines `FR-CHAT-008` AC2.
@@ -379,4 +379,4 @@ A "+" action on the Inbox opens a recipient picker so a member can message someo
 | 0.2 | 2026-05-09 | Extended `FR-CHAT-008 AC1` with 4th entry-point (Donations · Time) per `D-16` / `FR-DONATE-004`. |
 | 0.3 | 2026-05-11 | Added `FR-CHAT-016` personal inbox hide + inbox dedupe / `preferNewThread` semantics. |
 | 0.4 | 2026-05-17 | `FR-CHAT-014` AC1 + AC7: anchored-post card surfaces the counterpart's optional `users.contact_phone` (FR-AUTH-010 AC2.c) as a `tel:` link. Hidden for the Super Admin support thread and when the counterpart is null. |
-| 0.5 | 2026-11-04 | `FR-CHAT-017` start a conversation from the Inbox; `FR-CHAT-008` AC2 superseded ({{D:chat-new-conversation-from-inbox}}, KC#1728). |
+| 0.5 | 2026-11-04 | `FR-CHAT-017` start a conversation from the Inbox; `FR-CHAT-008` AC2 superseded (D126, KC#1728). |
