@@ -170,7 +170,7 @@ The GloWe frontend, its Playwright projects (`glowe*`, `prod-health`) and their 
 ## Flake protocol (agents)
 
 1. First red without app change → re-run the workflow once.
-2. Second red → add `TECH_DEBT.md` row with reproducer; only then `test.fixme` with TD id if release is blocked.
+2. Second red → open a `tech-debt` issue with a reproducer; only then `test.fixme` with TD id if release is blocked.
 3. Never merge `dev` → `main` with a quarantined P0 spec.
 4. If E2E fails but manual dev works → fix the test or selectors; do not weaken product assertions.
 
