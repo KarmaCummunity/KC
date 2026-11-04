@@ -53,7 +53,15 @@ export type NotificationKind =
   | 'giving_handoff_confirmed'
   | 'giving_handoff_declined'
   | 'giving_handoff_cancelled'
-  | 'giving_handoff_completed';
+  | 'giving_handoff_completed'
+  // FR-HOUSING-017 (0602–0603) — housing stay bookings: every change reaches the other side.
+  | 'housing_booking_requested'
+  | 'housing_booking_confirmed'
+  | 'housing_booking_declined'
+  | 'housing_booking_expired'
+  | 'housing_booking_superseded'
+  | 'housing_booking_cancelled'
+  | 'housing_booking_completed';
 
 /** Payload attached to every Expo push under `data`. The client reads this on tap. */
 export interface PushData {
