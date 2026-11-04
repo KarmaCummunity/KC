@@ -13326,6 +13326,7 @@ export type Database = {
         Returns: Json
       }
       report_donation_link: { Args: { p_link_id: string }; Returns: undefined }
+      report_sla_alert_sweep: { Args: never; Returns: number }
       reports_case_detail: {
         Args: { p_target_id: string; p_target_type: string }
         Returns: Json
