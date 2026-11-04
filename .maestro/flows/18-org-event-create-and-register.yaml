@@ -1,0 +1,94 @@
+# An organization's event (G1 step 5b, D31): a time offer in the one create form. A member of an
+# organization chooses between a volunteer shift and the organization's event; the event form
+# adds the organization, the date window, the registration policy, capacity and address. Everyone
+# else sees exactly the volunteer-shift form.
+# Spec: docs/spec/08_organizations.md "Events"; docs/spec/requirements/04_posts.md FR-POST-001 AC6.
+#
+# Categories, directions and field labels are tapped by their Hebrew text (as in flow 13): their
+# testIDs are built from the slug at runtime, which the flow-id preflight cannot resolve.
+#
+# Limitation: kc-dev has no seeded organization membership for the seed user and no seeded event
+# post, so this flow cannot publish an event or reach a post page's event section (`event-section`,
+# `event-register`, `event-cancel`, `event-roster`). It checks the create form for whichever case
+# the seed user is in: the event choice and fields when they belong to an organization, the
+# unchanged volunteer-shift form otherwise. Registration and the roster are covered by the
+# component tests (EventRegistrationActions.test.tsx) until an event can be seeded.
+appId: org.karmacommunity.app
+name: Organization event — time offer form for members and non-members
+tags: [posts, organizations, time]
+---
+- runFlow: ../subflows/sign-in.yaml
+- tapOn:
+    id: tab-create
+- extendedWaitUntil:
+    visible:
+      id: unified-create-header
+    timeout: 15000
+- tapOn: "זמן"
+- tapOn: "להציע"
+- extendedWaitUntil:
+    visible:
+      id: listing-create-form
+    timeout: 10000
+# The default offer is a volunteer shift, for members and non-members alike.
+- extendedWaitUntil:
+    visible:
+      text: "משך.*"
+    timeout: 10000
+# A member of an organization: the event choice opens the event fields and the organization picker.
+- runFlow:
+    when:
+      visible:
+        id: time-offer-kind
+    commands:
+      - tapOn:
+          id: time-offer-kind-event
+      - extendedWaitUntil:
+          visible:
+            id: org-picker
+          timeout: 10000
+      - assertVisible: "מתחיל.*"
+      - assertVisible: "מסתיים.*"
+      - assertNotVisible:
+          text: "משך.*"
+      - scrollUntilVisible:
+          element:
+            text: "הרשמה.*"
+          direction: DOWN
+          timeout: 10000
+      - scrollUntilVisible:
+          element:
+            text: "קיבולת.*"
+          direction: DOWN
+          timeout: 10000
+      # Publishing without a window is refused in the form, before any server call.
+      - scrollUntilVisible:
+          element:
+            id: listing-publish
+          direction: DOWN
+          timeout: 10000
+      - tapOn:
+          id: listing-publish
+      - assertVisible:
+          id: listing-error
+      # Back to a volunteer shift: today's field returns.
+      - scrollUntilVisible:
+          element:
+            id: time-offer-kind-shift
+          direction: UP
+          timeout: 10000
+      - tapOn:
+          id: time-offer-kind-shift
+      - extendedWaitUntil:
+          visible:
+            text: "משך.*"
+          timeout: 10000
+# The request side never offers the event choice.
+- scrollUntilVisible:
+    element:
+      text: "לבקש"
+    direction: UP
+    timeout: 10000
+- tapOn: "לבקש"
+- assertNotVisible:
+    id: time-offer-kind

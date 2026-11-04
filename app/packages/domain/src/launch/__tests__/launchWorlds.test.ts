@@ -50,3 +50,10 @@ describe('launchWorldMode (D60)', () => {
     expect(PORTAL_CATEGORY_BY_FLAG.world_items_enabled).toBeUndefined();
   });
 });
+
+describe('challenges world launch default (PM 2026-11-04)', () => {
+  it('is active without a remote flag and can still be switched off remotely', () => {
+    expect(resolveLaunchWorldEnabled('world_challenges_enabled', undefined)).toBe(true);
+    expect(resolveLaunchWorldEnabled('world_challenges_enabled', { world_challenges_enabled: false })).toBe(false);
+  });
+});

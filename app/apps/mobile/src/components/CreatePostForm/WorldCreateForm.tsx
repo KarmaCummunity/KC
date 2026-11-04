@@ -5,6 +5,8 @@ import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
 import type { CreateCategoryConfig, CreateDirection } from '../../lib/unifiedCreate/createCategories';
 import { hubHrefForWorld } from '../../navigation/donationsHubTiles';
+import { useLaunchWorldEnabled } from '../../hooks/useLaunchWorldFlags';
+import { ChallengeWorldCreateForm } from './ChallengeWorldCreateForm';
 import { LinkCreateForm } from './LinkCreateForm';
 import { ListingCreateForm } from './ListingCreateForm';
 
@@ -22,6 +24,11 @@ interface Props {
 
 export function WorldCreateForm({ category, header, direction, title, onTitleChange, summary, onSummaryChange, onPublishActionChange }: Props) {
   const router = useRouter();
+  // D60 — the challenges world only opens real challenges once launched; until then it takes links.
+  const challengesLaunched = useLaunchWorldEnabled('world_challenges_enabled');
+  if (category.id === 'challenges' && challengesLaunched) {
+    return <ChallengeWorldCreateForm header={header} onPublishActionChange={onPublishActionChange} />;
+  }
   if (category.engine === 'link' && category.linkCategory) {
     return (
       <LinkCreateForm

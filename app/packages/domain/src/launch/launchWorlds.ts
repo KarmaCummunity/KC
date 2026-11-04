@@ -38,7 +38,7 @@ export const LAUNCH_WORLD_FLAG_DEFAULTS: Record<LaunchWorldFlagKey, boolean> = {
   world_animals_enabled: false,
   world_democracy_enabled: false,
   world_employment_enabled: false,
-  world_challenges_enabled: false,
+  world_challenges_enabled: true,
   world_environment_enabled: false,
   world_creative_enabled: false,
   world_app_design_enabled: false,

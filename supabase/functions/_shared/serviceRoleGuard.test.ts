@@ -44,7 +44,8 @@ async function handlerSource(name: string): Promise<{ file: string; source: stri
 for (const name of SERVICE_ROLE_ONLY_FUNCTIONS) {
   Deno.test(`${name} rejects callers without the service-role key before doing any work`, async () => {
     const { file, source } = await handlerSource(name);
-    const start = Math.max(source.indexOf('serve('), 0);
+    // The handler's own start: `async (req …` also fits a handler declared apart from `serve(`.
+    const start = Math.max(source.search(/async \(req\b/), 0);
     const guard = source.indexOf('isServiceRoleRequest(req', start);
     assert(guard > 0, `${name}/${file} must call isServiceRoleRequest(req, …) in its handler`);
     for (const work of ['req.json(', 'createClient(']) {

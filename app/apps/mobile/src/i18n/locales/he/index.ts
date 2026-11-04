@@ -8,9 +8,11 @@
 import { medicalBodies } from './donations.medicalBodies';
 import { donations, marketplace, moneyPayments, search, timeVolunteer } from './donations';
 import { supportKc } from './donations.supportKc';
+import { challenges } from './challenges';
 import { givingHandoff } from './givingHandoff';
 import { rideBooking } from './rideBooking';
 import { housingStay } from './housingStay';
+import { eventPost } from './eventPost';
 import { ridePlaces } from './ridePlaces';
 import { dateTimeField, rideFeed, rideRoutes, rideSafety, rideSchedule, rideSeries } from './rideSchedule';
 import { authHe } from './modules/auth';
@@ -130,12 +132,16 @@ const he = {
   // Direct support for KC (FR-DONATE-011) — see donations.supportKc.ts
   supportKc,
   timeVolunteer,
+  // Challenges world (docs/spec/10_challenges.md) — see challenges.ts
+  challenges,
   medicalBodies,
   givingHandoff,
   // Ride seat bookings (D73) — see rideBooking.ts
   rideBooking,
   // Housing stays (FR-HOUSING-003, 012, 015–021) — see housingStay.ts
   housingStay,
+  // Organization events (G1 step 5) — see eventPost.ts
+  eventPost,
   // Ride places (D71) — see ridePlaces.ts
   ridePlaces,
   // Ride quick publish (D75) and the shared date-time field — see rideSchedule.ts

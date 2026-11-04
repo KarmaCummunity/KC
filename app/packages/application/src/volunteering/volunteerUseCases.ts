@@ -57,38 +57,6 @@ export class GetVolunteerShiftIcsUseCase {
   }
 }
 
-export class CreateVolunteerOpportunityUseCase {
-  constructor(private readonly repo: IVolunteerRepository) {}
-  execute(input: {
-    title: string;
-    summary?: string | null;
-    locationLabel?: string | null;
-    cityId?: string | null;
-    orgId?: string | null;
-  }): Promise<string> {
-    return this.repo.createOpportunity(input);
-  }
-}
-
-export class AddVolunteerShiftUseCase {
-  constructor(private readonly repo: IVolunteerRepository) {}
-  execute(
-    opportunityId: string,
-    startsAt: string,
-    endsAt: string,
-    capacity?: number,
-  ): Promise<string> {
-    return this.repo.addShift(opportunityId, startsAt, endsAt, capacity);
-  }
-}
-
-export class PublishVolunteerOpportunityUseCase {
-  constructor(private readonly repo: IVolunteerRepository) {}
-  async execute(opportunityId: string): Promise<void> {
-    await this.repo.publishOpportunity(opportunityId);
-  }
-}
-
 export class CloseVolunteerOpportunityUseCase {
   constructor(private readonly repo: IVolunteerRepository) {}
   async execute(opportunityId: string): Promise<void> {
