@@ -68,6 +68,18 @@ describe('RideRouteFields', () => {
     expect(detailsOf(view)).not.toHaveProperty('meeting_points');
   });
 
+  // Regression for #1741: these texts sat on the physical left in Hebrew while the labels above
+  // them sat on the right; they must follow the reading-start edge in both languages.
+  it('aligns the section title, add link and remove link to the reading-start edge', async () => {
+    const { rtlTextAlignStart } = await import('../../../lib/rtlTextAlignStart');
+    const view = render(<Harness onOriginCity={vi.fn()} />);
+    fireEvent.click(view.getByTestId('ride-meeting-point-add'));
+    fireEvent.click(view.getByTestId('pick:ridePlaces.meetingPointLabel'));
+    for (const key of ['ridePlaces.meetingPointsTitle', 'ridePlaces.addMeetingPoint', 'ridePlaces.removeMeetingPoint']) {
+      expect(getComputedStyle(view.getByText(key)).textAlign).toBe(rtlTextAlignStart);
+    }
+  });
+
   it('hides "add" once three meeting points are set', () => {
     const three = { meeting_points: [TLV, RAMAT_GAN, GLILOT].map((p) => ({ kind: p.kind, id: p.id, label: p.label, lat: p.lat, lng: p.lng, city_id: p.cityId })) };
     const view = render(

@@ -5,6 +5,7 @@ import React, { useEffect, useRef, type Dispatch, type SetStateAction } from 're
 import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
+import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import {
   RIDE_DEFAULT_SEATS,
   RIDE_DEPARTURE_SHORTCUTS,
@@ -125,8 +126,8 @@ function StepButton({ label, a11y, disabled, onPress }: Readonly<{ label: string
 
 const useStyles = makeUseStyles(({ colors }) => ({
   block: { gap: spacing.sm },
-  hint: { ...typography.caption, color: colors.textSecondary },
-  label: { ...typography.caption, color: colors.textSecondary },
+  hint: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
+  label: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
   seatsRow: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const },
   stepper: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.md },
   stepBtn: {
