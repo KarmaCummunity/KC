@@ -272,6 +272,7 @@ export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
   registerForEvent = (target: string) => events.registerForEvent(this.client, target);
   decideEventRegistration = (id: string, approve: boolean) => events.decideEventRegistration(this.client, id, approve);
   cancelEventRegistration = (id: string) => events.cancelEventRegistration(this.client, id);
+  markEventAttendance = (id: string, attended: boolean) => events.markEventAttendance(this.client, id, attended);
   listEventRegistrations = (target: string) => events.listEventRegistrations(this.client, target);
   getMyEventRegistration = (postId: string) => events.getMyEventRegistration(this.client, postId);
   listMyOrganizations = () => events.listMyOrganizations(this.client);

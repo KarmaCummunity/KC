@@ -101,6 +101,8 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'verification_required',
   'not_owner',
   'invalid_transition',
+  // G1 step 5c (0564) — attendance is marked only once the event has started.
+  'event_not_started',
 ] as const;
 
 export type MarketplaceServerErrorCode = (typeof MARKETPLACE_SERVER_ERROR_CODES)[number];

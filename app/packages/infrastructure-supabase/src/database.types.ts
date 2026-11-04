@@ -11816,6 +11816,10 @@ export type Database = {
         Returns: string
       }
       escape_ilike: { Args: { p: string }; Returns: string }
+      event_promote_waitlist: {
+        Args: { p_post_id: string }
+        Returns: undefined
+      }
       event_registration_for_update: {
         Args: { p_handoff_id: string }
         Returns: {
@@ -12777,6 +12781,36 @@ export type Database = {
           title: string
           world_slug: string
         }[]
+      }
+      mark_event_attendance: {
+        Args: { p_attended: boolean; p_handoff_id: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          post_id: string
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "post_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       mark_giving_handed_over: {
         Args: { p_handoff_id: string }
