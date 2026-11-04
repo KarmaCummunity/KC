@@ -105,7 +105,7 @@ Last applied on kc-dev when this was written: `0239`.
 | 0548 | D-211 donation link world categories | merged |
 | 0549 | account deletion grace period + purge (FR-SETTINGS-012) | merged |
 | 0550 | kc_support payee phone for bit / paybox (#1587; taken while the G1 range was claimed, G1 step 1 moved to `0551–0553`) | merged |
-| 0551–0569 | G1 one Post model (ADR-006): `0551–0553` step 1 additive schema (merged), `0554` step 2 posts own the listing worlds (in review), `0555–0562` step 3, `0563` step 5, `0564+` step 6 | in progress |
+| 0551–0569 | G1 one Post model (ADR-006): `0551–0553` step 1 additive schema (merged), `0554` step 2 posts own the listing worlds (merged), `0555` step 3a post_handoffs is the handoff record (in review), `0556–0562` steps 3b–3d, `0563` step 5, `0564+` step 6 | in progress |
 | 0570–0589 | knowledge world K1–K2 (`spec/23_knowledge.md` FR-KNOW-001..020) | claimed (spec only, no files yet) |
 | 0590 | users.date_of_birth + rpc_set_date_of_birth (FR-AUTH-010 AC2.d) | in progress |
 | 0591 | admin demo-data status + wipe (FR-ADMIN-031) | in progress |

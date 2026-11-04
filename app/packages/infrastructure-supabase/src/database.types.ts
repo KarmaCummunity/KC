@@ -11145,6 +11145,11 @@ export type Database = {
             Args: { role_name: string; scope: string; uid: string }
             Returns: boolean
           }
+      giving_handoff_upsert_from_post_handoff: {
+        Args: { p_h: Database["public"]["Tables"]["post_handoffs"]["Row"] }
+        Returns: undefined
+      }
+      handoff_target_post_id: { Args: { p_id: string }; Returns: string }
       has_blocked: {
         Args: { blocked: string; blocker: string }
         Returns: boolean
@@ -11499,6 +11504,7 @@ export type Database = {
         Args: { p_listing_id: string }
         Returns: boolean
       }
+      listing_id_of_post: { Args: { p_post_id: string }; Returns: string }
       listing_kind_for_post: {
         Args: { p_direction: string; p_world_slug: string }
         Returns: string
