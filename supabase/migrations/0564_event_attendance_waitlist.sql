@@ -109,11 +109,13 @@ begin
     else 'confirmed'
   end;
 
+  -- 0564: reserved_at is the moment of registration (clock_timestamp, not the transaction's
+  -- now()), so the waitlist promotes in registration order even within one transaction.
   insert into public.post_handoffs (
-    post_id, owner_id, recipient_id, world_slug, status, seats,
+    post_id, owner_id, recipient_id, world_slug, status, seats, reserved_at,
     slot_starts_at, slot_ends_at, confirm_by, confirmed_at
   ) values (
-    v_post_id, v_listing.owner_id, v_uid, 'time', v_status, 1,
+    v_post_id, v_listing.owner_id, v_uid, 'time', v_status, 1, clock_timestamp(),
     v_event.starts_at, v_event.ends_at,
     case when v_status = 'reserved' then v_event.starts_at end,
     case when v_status = 'confirmed' then now() end
