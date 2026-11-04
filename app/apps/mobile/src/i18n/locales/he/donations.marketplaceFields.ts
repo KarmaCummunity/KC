@@ -55,6 +55,11 @@ export const marketplaceFieldLabels = {
   departs_at: 'מועד יציאה',
   reward_model: 'עלות הנסיעה',
   cost_share_ils: 'השתתפות בהוצאות (₪)',
+  // An organization's event (G1 step 5); `capacity` shares the housing label.
+  starts_at: 'מתחיל',
+  ends_at: 'מסתיים',
+  registration_policy: 'הרשמה',
+  address: 'כתובת',
 } as const;
 
 export const marketplaceOptionLabels = {
@@ -106,6 +111,9 @@ export const marketplaceOptionLabels = {
   soy: 'סויה',
   fish: 'דגים',
   sesame: 'שומשום',
+  automatic: 'אוטומטית',
+  manual: 'באישור המארגנים',
+  verified_only: 'מאומתים בלבד',
 } as const;
 
 export const marketplaceAvailabilityLabels = {

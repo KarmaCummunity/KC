@@ -55,6 +55,11 @@ export const marketplaceFieldLabels = {
   departs_at: 'Departure',
   reward_model: 'Ride cost',
   cost_share_ils: 'Cost sharing (₪)',
+  // An organization's event (G1 step 5); `capacity` shares the housing label.
+  starts_at: 'Starts',
+  ends_at: 'Ends',
+  registration_policy: 'Registration',
+  address: 'Address',
 } as const;
 
 export const marketplaceOptionLabels = {
@@ -106,6 +111,9 @@ export const marketplaceOptionLabels = {
   soy: 'Soy',
   fish: 'Fish',
   sesame: 'Sesame',
+  automatic: 'Automatic',
+  manual: 'Organizer approves',
+  verified_only: 'Verified members only',
 } as const;
 
 export const marketplaceAvailabilityLabels = {

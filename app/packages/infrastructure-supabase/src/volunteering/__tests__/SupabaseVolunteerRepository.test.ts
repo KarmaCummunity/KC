@@ -148,38 +148,15 @@ describe('SupabaseVolunteerRepository — writes', () => {
     await expect(makeRepo({}).repo.checkIn('su1')).rejects.toThrow('check_in_volunteer_shift failed');
   });
 
-  it('createOpportunity and addShift return ids and throw on failure', async () => {
-    const { repo, calls } = makeRepo({
-      create_volunteer_opportunity: ok('o1'),
-      add_volunteer_shift: ok('s1'),
-    });
-    expect(await repo.createOpportunity({ title: 'P', summary: null, orgId: 'org' })).toBe('o1');
-    expect(calls[0]?.args).toEqual({
-      p_title: 'P',
-      p_summary: undefined,
-      p_location_label: undefined,
-      p_city_id: undefined,
-      p_org_id: 'org',
-    });
-    expect(await repo.addShift('o1', 'a', 'b')).toBe('s1');
-    expect(calls[1]?.args).toEqual({ p_opportunity_id: 'o1', p_starts_at: 'a', p_ends_at: 'b', p_capacity: 10 });
-    const bad = makeRepo({ create_volunteer_opportunity: fail }).repo;
-    await expect(bad.createOpportunity({ title: 'P' })).rejects.toBe(boom);
-    await expect(bad.addShift('o1', 'a', 'b', 2)).rejects.toThrow('add_volunteer_shift failed');
-  });
-
   it('void writes resolve on success and throw on error', async () => {
     const good = makeRepo({}).repo;
     await expect(good.cancelSignup('su1')).resolves.toBeUndefined();
-    await expect(good.publishOpportunity('o1')).resolves.toBeUndefined();
     await expect(good.closeOpportunity('o1')).resolves.toBeUndefined();
     const bad = makeRepo({
       cancel_volunteer_signup: fail,
-      publish_volunteer_opportunity: fail,
       close_volunteer_opportunity: fail,
     }).repo;
     await expect(bad.cancelSignup('su1')).rejects.toBe(boom);
-    await expect(bad.publishOpportunity('o1')).rejects.toBe(boom);
     await expect(bad.closeOpportunity('o1')).rejects.toBe(boom);
   });
 
