@@ -92,6 +92,32 @@ export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[
       gear: { type: 'array', items: { type: 'string' } },
     })),
   ],
+  knowledge: [
+    // Binding schemas of migration 0395, trimmed to the keys and enums the form uses.
+    kind('course', 'give', obj({
+      topic: { type: 'string', minLength: 2, maxLength: 80 },
+      level: { enum: ['beginner', 'intermediate', 'advanced'] },
+      modality: { enum: ['in_person', 'video', 'phone'] },
+      slot_starts_at: { type: 'string', format: 'date-time' },
+      slot_ends_at: { type: 'string', format: 'date-time' },
+      slots_available: { type: 'integer', minimum: 1, maximum: 50 },
+      requires_org_approval: { type: 'boolean' },
+    }, ['topic', 'modality', 'slot_starts_at', 'slot_ends_at', 'slots_available'])),
+    kind('private_lesson', 'give', obj({
+      topic: { type: 'string', minLength: 2, maxLength: 80 },
+      level: { enum: ['beginner', 'intermediate', 'advanced'] },
+      modality: { enum: ['in_person', 'video', 'phone'] },
+      slot_starts_at: { type: 'string', format: 'date-time' },
+      slot_ends_at: { type: 'string', format: 'date-time' },
+      slots_available: { type: 'integer', minimum: 1, maximum: 20 },
+      availability_note: { type: 'string', maxLength: 280 },
+    }, ['topic', 'modality', 'slot_starts_at', 'slot_ends_at', 'slots_available'])),
+    kind('mentorship_request', 'request', obj({
+      topic: { type: 'string', minLength: 2, maxLength: 80 },
+      level: { type: 'string' },
+      preferred_modality: { enum: ['in_person', 'video', 'phone'] },
+    }, ['topic'])),
+  ],
   time: [
     kind('volunteer_shift', 'give', obj({
       duration_minutes: { type: 'integer' },

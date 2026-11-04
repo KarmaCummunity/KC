@@ -56,6 +56,11 @@ describe('listing field specs — per kind', () => {
     expect(keysOf('stay_request')).toEqual([
       'stay_purpose', 'check_in_date', 'check_out_date', 'flexible_days', 'adults', 'minors', 'near_trail', 'gear', 'needs',
     ]);
+    expect(keysOf('course')).toEqual(['topic', 'level', 'modality', 'slot_starts_at', 'slot_ends_at', 'slots_available']);
+    expect(keysOf('private_lesson')).toEqual([
+      'topic', 'level', 'modality', 'slot_starts_at', 'slot_ends_at', 'slots_available', 'availability_note',
+    ]);
+    expect(keysOf('mentorship_request')).toEqual(['topic', 'level', 'preferred_modality']);
     expect(keysOf('volunteer_shift')).toEqual(['duration_minutes']);
     expect(keysOf('support_request')).toEqual(['support_type', 'duration_minutes']);
     expect(keysOf('org_event')).toEqual(['starts_at', 'ends_at', 'registration_policy', 'capacity', 'address']);
@@ -218,5 +223,29 @@ describe('clampWholeNumber', () => {
   it('clears the field when nothing numeric is typed', () => {
     expect(clampWholeNumber('', 1, 5000)).toBeUndefined();
     expect(clampWholeNumber('abc', 1, 5000)).toBeUndefined();
+  });
+});
+
+describe('listing field specs — knowledge (#1630)', () => {
+  const kinds = KINDS_BY_WORLD.knowledge!;
+  it('covers every key the server schema requires: asked for, or filled by a default', () => {
+    for (const k of kinds) {
+      const schema = k.detailSchema as { required: string[] };
+      const specs = fieldsForKind(k);
+      for (const key of schema.required) {
+        const spec = specs.find((s) => s.key === key)!;
+        expect(spec.required === true || ('defaultValue' in spec && spec.defaultValue !== undefined)).toBe(true);
+      }
+    }
+  });
+
+  it('offers a course to give and a mentorship request to ask for', () => {
+    expect(kindForDirection(kinds, 'give')?.slug).toBe('course');
+    expect(kindForDirection(kinds, 'request')?.slug).toBe('mentorship_request');
+  });
+
+  it('defaults to a single available slot', () => {
+    const slots = fieldsForKind(kinds[0]!).find((s) => s.key === 'slots_available');
+    expect(slots).toMatchObject({ type: 'count', min: 1, defaultValue: 1 });
   });
 });
