@@ -54,7 +54,7 @@ Each post in a channel uses a distinct `?src=` value. Soft cap: 100 responses pe
 
 ## Karma Phrasebook (the actual deliverable)
 
-The phrasebook is a Google Sheet (linked from `docs/SSOT/spec/16_public_research.md` once created). It has three columns:
+The phrasebook is a Google Sheet (linked from `docs/spec/requirements/16_public_research.md` once created). It has three columns:
 
 | Pain language (Survey B quote) | Relief language (Survey A quote) | Where it ships |
 |---|---|---|

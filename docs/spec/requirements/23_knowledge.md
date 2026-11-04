@@ -2,7 +2,7 @@
 
 > **Status:** 🟡 In progress — spec v0.1 (2026-11-03, PM scope decision `D119`; details are KC fills pending approval). FR-KNOW-001 shipped 2026-11-04 (`0570`). Code today: knowledge `listing_kinds` (`course`, `private_lesson`, `mentorship_request`, migrations `0241`, `0395`), slot booking and session completion on `giving_handoffs` (`0396`), four seeded sub-categories (`0535`), hybrid `search_listings` (`0262`) with a placeholder vector lane and a stub `embed-worker` (`TD-269`). **K1** `FR-KNOW-001..012`, **K2** `FR-KNOW-013..020`, **K3** `FR-KNOW-021..024`.
 
-Prefix: `FR-KNOW-*` · Migration range claimed: `0570–0589` (`docs/agents/MIGRATION_RANGES.md`) · Product spec (binding): [`docs/spec/18_knowledge_world.md`](../../spec/18_knowledge_world.md) · Decisions: `D40`, `D100`, `D101`, `D107`, `D119` · Fills: `S63`, `S64`, `S65`, `S66`, `S67`, `S68`, `S69`, `S70`, `S71`, `S72` · Engineering decision: `D-215` (`docs/SSOT/DECISIONS.md`).
+Prefix: `FR-KNOW-*` · Migration range claimed: `0570–0589` (`docs/agents/MIGRATION_RANGES.md`) · Product spec (binding): [`docs/spec/18_knowledge_world.md`](../18_knowledge_world.md) · Decisions: `D40`, `D100`, `D101`, `D107`, `D119` · Fills: `S63`, `S64`, `S65`, `S66`, `S67`, `S68`, `S69`, `S70`, `S71`, `S72` · Engineering decision: `D-215` (`docs/SSOT/DECISIONS.md`).
 
 ---
 

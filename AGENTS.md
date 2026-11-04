@@ -16,7 +16,7 @@ KC (Karma Community) is built largely by AI agents. **Part A** is the quick entr
 | [`docs/architecture/current.md`](docs/architecture/current.md) | **Current architecture**: C4 diagrams, package boundaries, services, crons |
 | [`docs/agents/DEPLOY.md`](docs/agents/DEPLOY.md) | **Deploy runbooks**: DB, web, seeding, types drift, E2E, all workflows |
 | [`docs/agents/RELEASE.md`](docs/agents/RELEASE.md) | Versioning, TestFlight / Play internal, rollback |
-| [`docs/architecture/adr/`](docs/architecture/adr/) | **ADRs**: client state (ADR-001), data layer + new-RPC checklist (ADR-002), realtime (ADR-003) |
+| [`docs/architecture/adr/`](docs/architecture/adr) | **ADRs**: client state (ADR-001), data layer + new-RPC checklist (ADR-002), realtime (ADR-003) |
 
 ## Product focus
 
@@ -69,7 +69,7 @@ Every schema change must be a committed file in `supabase/migrations/NNNN_snake.
 ## ⭐ Current status & product source of truth (read before anything else)
 
 - **Status (2026-10-30):** store release is **paused**. Focus: precise spec, architecture, and go-to-market. Development continues in Claude Code against this repo.
-- **Product source of truth:** the PM's Hebrew project book ("KC – ספר הפרויקט (מקור אמת)", product decision D35). Its English, agent-oriented derivation is [`docs/spec/`](./docs/spec/README.md) — start at its README. Where `docs/spec/` and a legacy `docs/SSOT/spec/*` FR conflict, **`docs/spec/` wins**; reconcile the legacy file in the same PR.
+- **Product source of truth:** the PM's Hebrew project book ("KC – ספר הפרויקט (מקור אמת)", product decision D35). Its English, agent-oriented derivation is [`docs/spec/`](./docs/spec/README.md) — start at its README. Where `docs/spec/` and a legacy `docs/spec/requirements/*` FR conflict, **`docs/spec/` wins**; reconcile the legacy file in the same PR.
 - **Architecture:** [`docs/architecture/`](./docs/architecture/README.md) — current (from code) and target.
 - **ID namespaces:** product decisions are `D#` (in `docs/spec/90_decisions_log.md`); engineering decisions are `D-*` / `EXEC-*` (in `docs/SSOT/DECISIONS.md`). KC fills pending approval are `S#`; implementation gaps are `G#`. **New entries never pick a number** — they take a merge-time placeholder (§4 "New registry IDs").
 
@@ -93,7 +93,7 @@ Every schema change must be a committed file in `supabase/migrations/NNNN_snake.
 2. **Read order.**
    1. [`docs/spec/README.md`](./docs/spec/README.md) — product project book (source of truth) and the section for your area
    2. The [GitHub project board](https://github.com/orgs/KarmaCummunity/projects/2) — the **only** task queue ([`docs/process/PROJECT_BOARD.md`](./docs/process/PROJECT_BOARD.md)); `docs/SSOT/BACKLOG.md` is just an old-ID → issue map
-   3. Relevant legacy [`docs/SSOT/spec/{domain}.md`](./docs/SSOT/spec/) for FR-IDs / ACs
+   3. Relevant legacy [`docs/spec/requirements/{domain}.md`](./docs/spec/requirements) for FR-IDs / ACs
    4. Scan the open `tech-debt` issues for the area you touch (`gh issue list -R KarmaCummunity/KC -l tech-debt`)
    5. Check [`docs/SSOT/DECISIONS.md`](./docs/SSOT/DECISIONS.md) before structural changes
 3. **Do not implement from.** `docs/SSOT/archive/**`, `PRD_V2_NOT_FOR_MVP/**` (vision treasure — never archive it), and design/plan trees under `docs/SSOT/archive/superpowers/**` — unless an **open** backlog row or active spec links there.
@@ -105,7 +105,7 @@ Doc map for humans: [`docs/README.md`](./docs/README.md).
 ## 1. Required reading (before doing anything)
 
 0. **`docs/spec/`** — product project book (vision → worlds/domains → cross-cutting systems → governance/GTM/roadmap), D1–D66. Wins over legacy FR files.
-1. **`docs/SSOT/spec/{domain}.md`** — legacy per-domain FR spec (FR-IDs, ACs). Each file is the full spec (FR-IDs, ACs, business rules) plus a status header (✅/🟡/⏳). Read only the file relevant to your task.
+1. **`docs/spec/requirements/{domain}.md`** — legacy per-domain FR spec (FR-IDs, ACs). Each file is the full spec (FR-IDs, ACs, business rules) plus a status header (✅/🟡/⏳). Read only the file relevant to your task.
 2. **The GitHub project board** (<https://github.com/orgs/KarmaCummunity/projects/2>) — the only task queue (what's next, who owns it). Workflow: `docs/process/PROJECT_BOARD.md`.
 3. **GitHub issues labeled `tech-debt`** — active technical debt (old `TD-n` IDs stay in the issue title). Scan items in the area you're touching before opening a PR; close adjacent debt opportunistically when scope is small.
 4. **`docs/SSOT/DECISIONS.md`** — architecture & product decisions (D-* and EXEC-*). Check before proposing structural changes.
@@ -113,7 +113,7 @@ Doc map for humans: [`docs/README.md`](./docs/README.md).
 ### Spec files (domain-per-file)
 
 ```
-docs/SSOT/spec/
+docs/spec/requirements/
 ├── 01_auth_and_onboarding.md     FR-AUTH-*
 ├── 02_profile_and_privacy.md     FR-PROFILE-*
 ├── 03_following.md               FR-FOLLOW-*
@@ -145,7 +145,7 @@ Note: `17_responsive_desktop.md` was formerly `14_responsive_desktop.md` (rename
 
 Before implementing ANY user request:
 
-1. **Read** `docs/SSOT/spec/{relevant_domain}.md`.
+1. **Read** `docs/spec/requirements/{relevant_domain}.md`.
 2. **Compare** the request against existing ACs.
 3. **If contradiction found** → STOP and report:
    > ⚠️ הבקשה שלך סותרת את האפיון:
@@ -172,7 +172,7 @@ Use `NA` for pure tooling / docs / infra-only changes.
 ### Before you start any feature work
 
 1. Open the board (`docs/process/PROJECT_BOARD.md`) — confirm the feature isn't already done, and pick the top **Ready** item nobody owns if none was assigned. Never work on an item that is claimed (`in-progress` label) or **In progress**.
-2. Read the matching `docs/SSOT/spec/{domain}.md`.
+2. Read the matching `docs/spec/requirements/{domain}.md`.
 3. Claim the issue per [`docs/agents/ISSUE_CLAIMS.md`](./docs/agents/ISSUE_CLAIMS.md) (`in-progress` + `agent:<you>` labels) and move it to **In progress** on the board before any code edit; this is the lock that stops parallel work on the same task.
 
 ### While working
@@ -363,7 +363,7 @@ git branch -D feat/FR-AUTH-001-otp-login
 <2-4 sentences: what + why>
 
 ## Mapped to spec
-- FR-XXX-NNN — <title>  (link to `docs/SSOT/spec/<file>.md`)
+- FR-XXX-NNN — <title>  (link to `docs/spec/requirements/<file>.md`)
 - N/A for tooling/docs-only changes.
 
 ## Changes
@@ -402,7 +402,7 @@ git branch -D feat/FR-AUTH-001-otp-login
 
 ## 8. Documentation language
 
-- Product / requirements docs (`docs/**/*.md`, including `docs/SSOT/spec/*.md`, `BACKLOG.md`, `DECISIONS.md`): **English only**; FR-IDs and code paths stay English.
+- Product / requirements docs (`docs/**/*.md`, including `docs/spec/requirements/*.md`, `BACKLOG.md`, `DECISIONS.md`): **English only**; FR-IDs and code paths stay English.
 - Code, code comments, commit messages, PR titles/bodies: **English**. User-visible strings belong in locale files (for example `apps/mobile/src/i18n/locales/he/` — Hebrew only for MVP, `R-MVP-Core-4`), not inline in general source.
 - Agent ↔ PM conversation: Hebrew (per project preference).
 
@@ -443,7 +443,7 @@ If you don't see a home for something below, **ask the PM** before inventing a n
 | Project board workflow    | `docs/process/PROJECT_BOARD.md`        |
 | **Product project book**  | **`docs/spec/`** (English; Hebrew page is the human source of truth) |
 | Architecture (current/target) | `docs/architecture/`               |
-| Feature specs (FR-*, legacy) | `docs/SSOT/spec/{domain}.md`        |
+| Feature specs (FR-*, legacy) | `docs/spec/requirements/{domain}.md`        |
 | Long-horizon vision       | `PRD_V2_NOT_FOR_MVP/` (never archive)  |
 | Tech debt                 | GitHub issues labeled `tech-debt`      |
 | Architectural decisions   | `docs/SSOT/DECISIONS.md`               |

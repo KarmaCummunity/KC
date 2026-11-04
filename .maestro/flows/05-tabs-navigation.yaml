@@ -1,5 +1,5 @@
 # Every bottom tab opens its screen and the tab bar stays docked.
-# Spec: docs/SSOT/spec/14_responsive_desktop.md FR-RESP-001 (5 tabs, D-16); docs/spec/04_product_structure.md.
+# Spec: docs/spec/requirements/14_responsive_desktop.md FR-RESP-001 (5 tabs, D-16); docs/spec/04_product_structure.md.
 appId: org.karmacommunity.app
 name: Shell — all five tabs open
 tags: [shell, smoke]

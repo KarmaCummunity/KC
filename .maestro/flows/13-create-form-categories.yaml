@@ -3,7 +3,7 @@
 # (TestFlight, 1.6.x) fails here instead of in the store build.
 # Category tiles and the request / offer toggle are tapped by their Hebrew labels (the
 # product's own words, FR-POST-001 AC6); their testIDs are built per category.
-# Spec: docs/SSOT/spec/04_posts.md FR-POST-001 AC6; docs/spec/07_cross_cutting_systems.md §7.2.
+# Spec: docs/spec/requirements/04_posts.md FR-POST-001 AC6; docs/spec/07_cross_cutting_systems.md §7.2.
 appId: org.karmacommunity.app
 name: Posts — create form categories open on device
 tags: [posts]

@@ -1,4 +1,4 @@
--- Housing stays lifecycle (H1, migrations 0600–0603; spec docs/SSOT/spec/21_housing.md):
+-- Housing stays lifecycle (H1, migrations 0600–0603; spec docs/spec/requirements/21_housing.md):
 -- eligibility and conduct, offer and request rules, booking requests and their guards,
 -- capacity and approval, "first confirmation wins", private details, cancellation with late
 -- marks, completion with karma, no-show, sweep and the host / guest lists.
