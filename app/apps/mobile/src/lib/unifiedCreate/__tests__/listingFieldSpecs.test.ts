@@ -6,6 +6,7 @@ import {
   detailsForSubmit,
   fieldsForKind,
   firstMissingRequiredField,
+  clampWholeNumber,
   initialDetailsFor,
   isFieldVisible,
   kindForDirection,
@@ -35,7 +36,8 @@ describe('listing field specs — per kind', () => {
 
   it('never shows internal or legacy keys', () => {
     const shown = ALL_KINDS.flatMap((k) => fieldsForKind(k).map((s) => s.key));
-    for (const internal of ['linked_listing_id', 'org_host_slug', 'fulfillment_mode', 'origin_lat', 'guest_scenario']) {
+    // `org_id` has its own organization picker (G1 step 5).
+    for (const internal of ['linked_listing_id', 'org_host_slug', 'fulfillment_mode', 'origin_lat', 'guest_scenario', 'org_id']) {
       expect(shown).not.toContain(internal);
     }
   });
@@ -56,6 +58,7 @@ describe('listing field specs — per kind', () => {
     ]);
     expect(keysOf('volunteer_shift')).toEqual(['duration_minutes']);
     expect(keysOf('support_request')).toEqual(['support_type', 'duration_minutes']);
+    expect(keysOf('org_event')).toEqual(['starts_at', 'ends_at', 'registration_policy', 'capacity', 'address']);
   });
 
   it('offers no emotional-support option: it is routed to a hotline (docs/spec/05 §5.4)', () => {
@@ -169,5 +172,51 @@ describe('kindForDirection', () => {
     const either = { ...KINDS_BY_WORLD.time![0]!, slug: 'any', direction: 'either' as const };
     expect(kindForDirection([either], 'request')?.slug).toBe('any');
     expect(kindForDirection([], 'give')).toBeNull();
+  });
+
+  // G1 step 5: an organization's event is chosen explicitly, never the default offer.
+  it('never defaults to the organization event kind', () => {
+    expect(kindForDirection(KINDS_BY_WORLD.time!, 'give')?.slug).toBe('volunteer_shift');
+    const eventOnly = KINDS_BY_WORLD.time!.filter((k) => k.slug === 'org_event');
+    expect(kindForDirection(eventOnly, 'give')).toBeNull();
+  });
+});
+
+describe('organization event fields (G1 step 5)', () => {
+  const eventKind = KINDS_BY_WORLD.time!.find((k) => k.slug === 'org_event')!;
+  const eventFields = fieldsForKind(eventKind);
+
+  it('starts with automatic registration and needs both ends of the window', () => {
+    const start = initialDetailsFor(eventFields);
+    expect(start).toEqual({ registration_policy: 'automatic' });
+    expect(firstMissingRequiredField(eventFields, start)?.key).toBe('starts_at');
+    expect(firstMissingRequiredField(eventFields, { ...start, starts_at: '2030-01-01T10:00:00.000Z' })?.key).toBe('ends_at');
+  });
+
+  it('a filled event with its organization validates against the server schema', () => {
+    const details = {
+      ...detailsForSubmit(eventFields, {
+        ...initialDetailsFor(eventFields),
+        starts_at: '2030-01-01T10:00:00.000Z',
+        ends_at: '2030-01-01T12:00:00.000Z',
+        capacity: 30,
+        address: '',
+      }),
+      org_id: '00000000-0000-0000-0000-000000000001',
+    };
+    expect(details).not.toHaveProperty('address');
+    expect(validateListingDetails(eventKind.detailSchema, details)).toBeNull();
+  });
+});
+
+describe('clampWholeNumber', () => {
+  it('keeps typed digits within the range', () => {
+    expect(clampWholeNumber('40', 1, 5000)).toBe(40);
+    expect(clampWholeNumber('0', 1, 5000)).toBe(1);
+    expect(clampWholeNumber('99999', 1, 5000)).toBe(5000);
+  });
+  it('clears the field when nothing numeric is typed', () => {
+    expect(clampWholeNumber('', 1, 5000)).toBeUndefined();
+    expect(clampWholeNumber('abc', 1, 5000)).toBeUndefined();
   });
 });

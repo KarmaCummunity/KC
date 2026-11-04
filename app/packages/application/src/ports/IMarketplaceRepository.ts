@@ -1,4 +1,5 @@
 import type {
+  EventRegistration,
   ExternalBodyOption,
   GivingHandoffSnapshot,
   ListingKindOption,
@@ -9,8 +10,10 @@ import type {
   MarketplaceMapPin,
   MapBounds,
   MarketplaceSimilarListing,
+  MyEventRegistration,
   MyGivingHandoffRow,
   MyListingRow,
+  OrganizationMembershipOption,
   ProfileListingRow,
 } from '@kc/domain';
 
@@ -153,4 +156,17 @@ export interface IMarketplaceRepository {
   cancelGivingHandoff(handoffId: string): Promise<void>;
   markGivingHandedOver(handoffId: string): Promise<GivingHandoffSnapshot>;
   rateGivingHandoff(handoffId: string, rating: number, comment?: string | null): Promise<void>;
+  // Organization events (G1 step 5, 0563). `target` is the event's post id or listing id.
+  /** Registers the caller; confirmed at once, or reserved until the organizer decides (manual). */
+  registerForEvent(target: string): Promise<MyEventRegistration>;
+  /** The organizer approves or declines a registration waiting for approval. */
+  decideEventRegistration(handoffId: string, approve: boolean): Promise<void>;
+  /** The registrant withdraws, or the organizer removes a registration. */
+  cancelEventRegistration(handoffId: string): Promise<void>;
+  /** The organizer's roster of an event, newest first. */
+  listEventRegistrations(target: string): Promise<EventRegistration[]>;
+  /** The caller's own active (reserved or confirmed) registration to the event post; null when none. */
+  getMyEventRegistration(postId: string): Promise<MyEventRegistration | null>;
+  /** Organizations the caller is a member of (any role), distinct, sorted by name. */
+  listMyOrganizations(): Promise<OrganizationMembershipOption[]>;
 }
