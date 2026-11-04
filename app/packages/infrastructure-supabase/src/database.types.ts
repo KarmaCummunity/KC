@@ -11631,6 +11631,7 @@ export type Database = {
         Args: { p_h: Database["public"]["Tables"]["post_handoffs"]["Row"] }
         Returns: undefined
       }
+      handoff_target_listing_id: { Args: { p_id: string }; Returns: string }
       handoff_target_post_id: { Args: { p_id: string }; Returns: string }
       has_accepted_housing_conduct: {
         Args: { p_user: string }

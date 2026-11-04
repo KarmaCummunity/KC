@@ -1722,7 +1722,9 @@ Owner rules that go with it:
 
 **Rejected.** Moving every handoff writer in one PR (rides carry capacity, approval and series rules that deserve their own tests). A `source` column deciding the sync direction per row (unnecessary: with identical columns and a compare-before-write guard on both sides, whichever side is written wins and the echo is a no-op). Closing the post from the handoff in this step (the one closing system changes karma for items and is G34's own decision, step 3c).
 
-**Affected.** `supabase/migrations/0555_post_handoffs_own_record.sql` (`listing_id_of_post`, `handoff_target_post_id`, `giving_handoff_upsert_from_post_handoff`, `post_handoffs_giving_sync`, the five RPCs and two sweeps), `docs/spec/07` §7.1 and §7.5, `docs/spec/93` G1, `docs/architecture/current.md`.
+**Step 3b (2026-11-04, `0556`) — finding and scope.** Moving the ride and knowledge writers to the record failed in CI on a premise this decision took for granted: that every listing of a handoff world has a post. Two kinds do not: a later occurrence of a recurring ride (0531 mirrors only the soonest occurrence into the feed) and a knowledge offer its owner has not shared (`worlds.feed_mirror` is off for knowledge). Both are open and bookable, so a record keyed by `post_id` would refuse them. `worlds.feed_mirror` conflates two things — whether a post exists and whether it shows in the main feed — and the one Post model needs them apart. Step 3b therefore ships only the id contract step 4 needs (`book_ride_seat`, `complete_ride_listing`, `list_ride_bookings`, `book_knowledge_slot`, `get_listing_handoff` accept a post id or a listing id through `handoff_target_listing_id`); the ride, knowledge and housing bookings keep `giving_handoffs` as their record and reach `post_handoffs` through the 0553 sync. Sub-step 3b-pre gives every listing of a handoff world a post while a separate feed-exposure flag keeps the 0531 noise control and the knowledge share-to-feed semantics; the writers move after it.
+
+**Affected.** `supabase/migrations/0555_post_handoffs_own_record.sql`, `supabase/migrations/0556_ride_knowledge_bookings_on_posts.sql` (`listing_id_of_post`, `handoff_target_post_id`, `giving_handoff_upsert_from_post_handoff`, `post_handoffs_giving_sync`, the five RPCs and two sweeps), `docs/spec/07` §7.1 and §7.5, `docs/spec/93` G1, `docs/architecture/current.md`.
 
 ## D-212 — Post and listing detail pages share one hero + content-card frame (2026-11-03)
 
@@ -1744,6 +1746,7 @@ Owner rules that go with it:
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
+| 4.43 | 2026-11-04 | `D-217` step 3b: the ride / knowledge booking RPCs and readers accept a post id; finding that recurring-ride occurrences and unshared knowledge offers have no post, so their record stays `giving_handoffs` until 3b-pre (`0556`). |
 | 4.42 | 2026-11-04 | Added `D-217` (G1 step 3a: the items / food handoff RPCs and sweeps write `post_handoffs`; `giving_handoffs` derived both ways; `0555`). |
 | 4.41 | 2026-11-03 | Added `D-216` (G1 step 2: the listing worlds' RPCs write posts and derive a native listing that syncs back; items unchanged; `0554`). |
 | 4.40 | 2026-11-03 | Added `D-214` (G1 plan: reverse the listing mirror, move flows one PR at a time, drop `listings` last; ADR-006). |
