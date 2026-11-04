@@ -1,6 +1,6 @@
 # 14 — Responsive Desktop (FR-RESP-*)
 
-> **KC mobile UI — paused.** Backend/shared contracts may still apply to GLOWE. Active GLOWE spec: [`17_glowe_frontend.md`](./17_glowe_frontend.md). Paused backlog: [`../archive/BACKLOG-kc-mobile-paused.md`](../archive/BACKLOG-kc-mobile-paused.md).
+> **KC mobile UI — paused.** Backend/shared contracts may still apply to GLOWE. Active GLOWE spec: [`17_glowe_frontend.md`](../../SSOT/spec/17_glowe_frontend.md). Paused backlog: [`../archive/BACKLOG-kc-mobile-paused.md`](../../SSOT/archive/BACKLOG-kc-mobile-paused.md).
 
 **Status:** 🟡 In progress
 **Owner:** Autonomous loop

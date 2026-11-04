@@ -1,7 +1,7 @@
 # One detail screen (G1 step 4a, ADR-006): a ride opened from the rides feed goes through the
 # listing route, which forwards to the ride's post; the post detail shows the ride's own sections
 # (route card) in place, with the post's likes and comments under them.
-# Spec: docs/spec/07_cross_cutting_systems.md §7.4; docs/SSOT/spec/04_posts.md FR-POST-014..018.
+# Spec: docs/spec/07_cross_cutting_systems.md §7.4; docs/spec/requirements/04_posts.md FR-POST-014..018.
 # The rides feed may be empty on a fresh environment, so the detail checks run only when a ride
 # is listed; the feed itself must always render.
 appId: org.karmacommunity.app

@@ -2,7 +2,7 @@
 
 > **Status: DRAFT for counsel review — not live, not binding.** Prepared by KC per `D118` (PM 2026-11-03). Every text below must be reviewed by a lawyer before the housing launch. Live legal texts are server-driven (`legal_document_versions`, migration `0108`); each text here becomes a versioned document or a locale string only after approval.
 >
-> Specs: [`SSOT/spec/21_housing.md`](../../SSOT/spec/21_housing.md) (FR-HOUSING-*), [`SSOT/spec/22_identity_verification.md`](../../SSOT/spec/22_identity_verification.md) (FR-VERIFY-*). `{…}` = a value filled in by the app. The user-facing body is Hebrew (R-MVP-Core-4); the questions for counsel at the end are in English.
+> Specs: [`spec/requirements/21_housing.md`](../../spec/requirements/21_housing.md) (FR-HOUSING-*), [`spec/requirements/22_identity_verification.md`](../../spec/requirements/22_identity_verification.md) (FR-VERIFY-*). `{…}` = a value filled in by the app. The user-facing body is Hebrew (R-MVP-Core-4); the questions for counsel at the end are in English.
 
 <div dir="rtl" lang="he">
 

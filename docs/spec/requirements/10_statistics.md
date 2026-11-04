@@ -18,7 +18,7 @@ Two surfaces:
 Out of scope:
 
 - Charts, heatmaps, category breakdowns, period comparisons, exports — explicitly excluded by `PRD_MVP/08_Out_of_Scope_and_Future.md` §8.2.5.
-- Aggregated cohort dashboards for product analytics — those live in the analytics pipeline (see [`06_cross_cutting/01_analytics_and_events.md`](../archive/SRS/06_cross_cutting/01_analytics_and_events.md)) and are not user-facing.
+- Aggregated cohort dashboards for product analytics — those live in the analytics pipeline (see [`06_cross_cutting/01_analytics_and_events.md`](../../SSOT/archive/SRS/06_cross_cutting/01_analytics_and_events.md)) and are not user-facing.
 
 ---
 

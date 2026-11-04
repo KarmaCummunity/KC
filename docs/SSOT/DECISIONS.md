@@ -450,7 +450,7 @@ Web Push parity is deferred — only the adapter changes, the pipeline is shared
 - The Database Webhook is configured via the Supabase dashboard, not SQL — operator step documented in migration 0058's header.
 - Web Push is deferred to a follow-up TD (TD-65).
 
-**Affected docs.** `docs/SSOT/spec/09_notifications.md`, `docs/SSOT/spec/11_settings.md`, `docs/SSOT/archive/superpowers/specs/2026-05-13-push-notifications-design.md`, `docs/SSOT/archive/superpowers/plans/2026-05-13-push-notifications.md`, migrations 0056–0058, 0060, 0062–0066, Edge Function `dispatch-notification`.
+**Affected docs.** `docs/spec/requirements/09_notifications.md`, `docs/spec/requirements/11_settings.md`, `docs/SSOT/archive/superpowers/specs/2026-05-13-push-notifications-design.md`, `docs/SSOT/archive/superpowers/plans/2026-05-13-push-notifications.md`, migrations 0056–0058, 0060, 0062–0066, Edge Function `dispatch-notification`.
 
 ---
 
@@ -577,7 +577,7 @@ Spec: `docs/SSOT/archive/superpowers/specs/2026-05-16-hebrew-to-i18n-design.md` 
 
 **Rationale.** The prior phrasing created cognitive tension with the “open community / transparency” story. Separating *platform transparency* from *personal anonymity choices* keeps trust messaging coherent while still honoring legitimate privacy needs.
 
-**Affected docs.** `docs/SSOT/spec/11_settings.md` (About scope ACs), Hebrew `aboutContent` bundles + FAQ alignment.
+**Affected docs.** `docs/spec/requirements/11_settings.md` (About scope ACs), Hebrew `aboutContent` bundles + FAQ alignment.
 
 ---
 
@@ -669,7 +669,7 @@ Spec: `docs/SSOT/archive/superpowers/specs/2026-05-16-hebrew-to-i18n-design.md` 
 - Same-tab redirect wrapped in a bottom-sheet UI — adds an extra tap with no compensating benefit (the picker is not inside the sheet anyway).
 - Custom Google account-picker UI proxied through our backend — breaks Google's Terms of Service.
 
-**Affected.** `apps/mobile/src/services/authComposition.ts` (`redirectToGoogleSignInWeb`), `apps/mobile/app/(auth)/index.tsx` (`handleGoogle` web branch), `docs/SSOT/spec/01_auth_and_onboarding.md`. Reverts of the previous attempt: PR #311.
+**Affected.** `apps/mobile/src/services/authComposition.ts` (`redirectToGoogleSignInWeb`), `apps/mobile/app/(auth)/index.tsx` (`handleGoogle` web branch), `docs/spec/requirements/01_auth_and_onboarding.md`. Reverts of the previous attempt: PR #311.
 
 ---
 
@@ -968,13 +968,13 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Date.** 2026-05-26
 
-**Decision.** Survey B (anonymous public market research for the "Karma Phrasebook") lives in its own spec file `docs/SSOT/spec/16_public_research.md` (FR-RESEARCH-001..003) rather than in `11_settings.md`, and its Postgres schema ships in a dedicated migration `0131_public_research_responses.sql` separate from Survey A's `0130`. Contact emails collected at the thank-you page opt-in are stored in a separate table `public_research_contact_requests` (FK to `public_research_responses(id) ON DELETE CASCADE`) rather than in the same row as survey answers; RLS on the contact table denies all access to `anon` and `authenticated` roles — only `service_role` (via a super-admin RPC) can read it. The two tables are therefore independently deletable (a GDPR-required property: erasing a contact request must not cascade to the research data, and vice versa).
+**Decision.** Survey B (anonymous public market research for the "Karma Phrasebook") lives in its own spec file `docs/spec/requirements/16_public_research.md` (FR-RESEARCH-001..003) rather than in `11_settings.md`, and its Postgres schema ships in a dedicated migration `0131_public_research_responses.sql` separate from Survey A's `0130`. Contact emails collected at the thank-you page opt-in are stored in a separate table `public_research_contact_requests` (FK to `public_research_responses(id) ON DELETE CASCADE`) rather than in the same row as survey answers; RLS on the contact table denies all access to `anon` and `authenticated` roles — only `service_role` (via a super-admin RPC) can read it. The two tables are therefore independently deletable (a GDPR-required property: erasing a contact request must not cascade to the research data, and vice versa).
 
 **Rationale.** Survey B is not a Settings feature: it is served at a public web URL with no auth shell, targets anonymous users on external platforms (Facebook, WhatsApp, Agora), and has entirely different abuse-mitigation requirements (honeypot, `Origin` allowlist, IP-hash rate limit, global circuit breaker) from any in-app survey. Grouping it under `11_settings.md` would pollute that file's scope and make it harder for future agents to locate the right spec. A dedicated spec file also lets FR-RESEARCH-* IDs track implementation progress independently of FR-SETTINGS-*. The two-table PII isolation pattern mirrors the design already established for legal-documents acceptances (D-42) and is the simplest way to satisfy the independent-deletion requirement without adding nullable columns. A separate migration enforces the security-review separation principle followed throughout this codebase (cf. D-40, D-47). See design spec `docs/SSOT/archive/superpowers/specs/2026-05-25-surveys-and-feedback-design.md` §2, §4, §7.
 
 **Alternatives rejected.** Adding Survey B FRs to `11_settings.md` — conflates two unrelated user surfaces. Storing contact email in the same `public_research_responses` row — makes it impossible to delete PII without deleting the research data. Single migration for both surveys — blurs security review scope.
 
-**Affected docs.** `docs/SSOT/spec/16_public_research.md` (new); `docs/SSOT/BACKLOG.md` P1.7; `CLAUDE.md` §1 spec-files table; design `docs/SSOT/archive/superpowers/specs/2026-05-25-surveys-and-feedback-design.md`; migration `0131_public_research_responses.sql`.
+**Affected docs.** `docs/spec/requirements/16_public_research.md` (new); `docs/SSOT/BACKLOG.md` P1.7; `CLAUDE.md` §1 spec-files table; design `docs/SSOT/archive/superpowers/specs/2026-05-25-surveys-and-feedback-design.md`; migration `0131_public_research_responses.sql`.
 
 ---
 
@@ -988,7 +988,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Revert all rides commits (loses backend that will be reused). Ship V2.0 UI as-is (operator said no). Feature-flag the screen body (extra plumbing for what's effectively a single screen render swap).
 
-**Affected docs.** `apps/mobile/src/features/rides/screens/RidesHubScreen.tsx`; `docs/SSOT/spec/15_rides.md` header (status flipped 🟡 with hide reference); ongoing rides hardening PRs (#414, #416, #417, #419, #420, #421+).
+**Affected docs.** `apps/mobile/src/features/rides/screens/RidesHubScreen.tsx`; `docs/spec/requirements/15_rides.md` header (status flipped 🟡 with hide reference); ongoing rides hardening PRs (#414, #416, #417, #419, #420, #421+).
 
 ## D-52 — Rides participant model uses RPC-only writes with seat enforcement at approve time (2026-05-28)
 
@@ -1000,7 +1000,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** RLS + client retry on conflict — exposes the race to clients and adds latency. Trigger-side validation — same FOR UPDATE locking needed; less testable. SERIALIZABLE isolation per call — heavier than needed; the two locks are sufficient.
 
-**Affected docs.** `docs/SSOT/spec/15_rides.md` FR-RIDE-011 AC2/AC3/AC5; migration `0139_ride_participants.sql`.
+**Affected docs.** `docs/spec/requirements/15_rides.md` FR-RIDE-011 AC2/AC3/AC5; migration `0139_ride_participants.sql`.
 
 ## D-53 — Automated `main` production gates without human deploy approvers (2026-05-28)
 
@@ -1038,7 +1038,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Keep hidden + ship V3.0 entirely backend-only (defeats the purpose; users still see only NGO links). Ship UI without spec expansion (un-scoped scope creep; FR-IDs and ACs must lead implementation). Split V3.0 into 12 separate PRs (overhead vs reviewability tradeoff lands on one focused PR per logical chunk; spec lands first as the contract).
 
-**Affected docs.** `docs/SSOT/spec/15_rides.md` (status flipped 🟡 V3.0 + new FRs); `apps/mobile/src/features/rides/screens/RidesHubScreen.tsx` (un-hide); `docs/SSOT/BACKLOG.md` V2.X line + new V3.X umbrella; migrations `0174`..`0182` (new); PRD `PRD_V2_NOT_FOR_MVP/donation_worlds/06_Rides.md` (existing — drives ACs).
+**Affected docs.** `docs/spec/requirements/15_rides.md` (status flipped 🟡 V3.0 + new FRs); `apps/mobile/src/features/rides/screens/RidesHubScreen.tsx` (un-hide); `docs/SSOT/BACKLOG.md` V2.X line + new V3.X umbrella; migrations `0174`..`0182` (new); PRD `PRD_V2_NOT_FOR_MVP/donation_worlds/06_Rides.md` (existing — drives ACs).
 
 ---
 
@@ -1080,7 +1080,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Operational dependency.** Going live requires the Apple provider configured in Supabase Auth (Service ID + key) and a native rebuild — the capability + config plugin are native, so an OTA update cannot add them. The `TD-24` Apple portion is closed in code; Phone OTP remains deferred.
 
-**Affected docs.** `app/packages/application/src/auth/SignInWithApple.ts`, `app/packages/application/src/ports/IAuthService.ts`, `app/packages/infrastructure-supabase/src/auth/SupabaseAuthService.ts`, `app/apps/mobile/src/services/authComposition.ts`, `app/apps/mobile/app/(auth)/index.tsx`, `app/apps/mobile/app.json`, `docs/SSOT/spec/01_auth_and_onboarding.md` (FR-AUTH-004), `docs/SSOT/TECH_DEBT.md` (TD-24).
+**Affected docs.** `app/packages/application/src/auth/SignInWithApple.ts`, `app/packages/application/src/ports/IAuthService.ts`, `app/packages/infrastructure-supabase/src/auth/SupabaseAuthService.ts`, `app/apps/mobile/src/services/authComposition.ts`, `app/apps/mobile/app/(auth)/index.tsx`, `app/apps/mobile/app.json`, `docs/spec/requirements/01_auth_and_onboarding.md` (FR-AUTH-004), `docs/SSOT/TECH_DEBT.md` (TD-24).
 
 ---
 
@@ -1094,7 +1094,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Repointing `ABOUT_EMAIL_ORG` to the gmail — produces two identical email rows. Registering/operating the `karma.community` domain mailbox — out of scope for MVP and a PM/ops action, not a code change.
 
-**Affected docs.** `app/apps/mobile/src/features/about-landing/aboutExternalLinks.ts`, `AboutContactLinks.tsx`, `app/apps/mobile/src/i18n/locales/he/modules/aboutContentUxRefreshPartB.ts`, `docs/SSOT/spec/11_settings.md` (FR-SETTINGS-009 AC1), `docs/SSOT/TECH_DEBT.md` (TD-99).
+**Affected docs.** `app/apps/mobile/src/features/about-landing/aboutExternalLinks.ts`, `AboutContactLinks.tsx`, `app/apps/mobile/src/i18n/locales/he/modules/aboutContentUxRefreshPartB.ts`, `docs/spec/requirements/11_settings.md` (FR-SETTINGS-009 AC1), `docs/SSOT/TECH_DEBT.md` (TD-99).
 
 ---
 
@@ -1108,7 +1108,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Per-user `manager_user_id` — simpler but cannot model multi-org membership and conflicts with org-scoped authority. Inferring hierarchy from role rank alone — ambiguous (many peers at a level) and cannot represent an explicit reporting line.
 
-**Affected docs.** `docs/SSOT/spec/12_super_admin.md` (FR-ADMIN-024/025), migration `0203_admin_org_hierarchy.sql`, `docs/SSOT/BACKLOG.md` (P3.A-Tree.2).
+**Affected docs.** `docs/spec/requirements/12_super_admin.md` (FR-ADMIN-024/025), migration `0203_admin_org_hierarchy.sql`, `docs/SSOT/BACKLOG.md` (P3.A-Tree.2).
 
 ---
 
@@ -1126,7 +1126,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 - **Auth is Google-only.** Email/password sign-up and sign-in are hidden from the GloWe UI — both modals show a single "Continue with Google" CTA. The static email/password markup in GloWe's original page templates is overwritten at runtime (`upgradeLoginModal()` / `renderRegistrationWizard()` in `js/app.js`) so every page is consistently Google-only. The legacy email/password handlers and multi-step profile wizard remain in code but unrendered; profile completion moves to a post-sign-in step (Phase B).
 - **Hosting: `/glowe` sub-path of the main domain** (not a separate domain). `app/scripts/web-postbuild.mjs` copies `app/apps/glowe-web/**` into `dist/glowe/` during `pnpm build:web`, so the Cloudflare Pages deploy serves GloWe at `<main-domain>/glowe` alongside the KC web app. GloWe uses relative paths, so it works unchanged; Cloudflare serves the real `/glowe/*` static files before the KC SPA catch-all. Same-domain hosting means OAuth `redirectTo` reuses KC's already-allowlisted origins. A dedicated GloWe domain remains possible later.
 
-**Affected docs.** `docs/SSOT/spec/17_glowe_frontend.md` (FR-GLOWE-001), migration `0204_glowe_schema.sql`, `docs/SSOT/BACKLOG.md` (GLOWE.A/B/C), `app/apps/glowe-web/**`, `app/scripts/web-postbuild.mjs`.
+**Affected docs.** `docs/spec/requirements/17_glowe_frontend.md` (FR-GLOWE-001), migration `0204_glowe_schema.sql`, `docs/SSOT/BACKLOG.md` (GLOWE.A/B/C), `app/apps/glowe-web/**`, `app/scripts/web-postbuild.mjs`.
 
 ---
 
@@ -1140,7 +1140,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Global `signOut()` — the current default; revokes the shared Supabase session and silently kills KC. Separate Supabase project for GloWe — overkill for Phase A; sharing identity is intentional (D-61).
 
-**Affected docs.** `app/apps/glowe-web/js/backend.js`, `app/apps/glowe-web/js/auth.js`, `docs/SSOT/spec/17_glowe_frontend.md`.
+**Affected docs.** `app/apps/glowe-web/js/backend.js`, `app/apps/glowe-web/js/auth.js`, `docs/spec/requirements/17_glowe_frontend.md`.
 
 ---
 
@@ -1154,7 +1154,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Eager translate-all (cost + storage blowup); classic NMT API (lower quality on idiomatic short UGC, higher per-char cost); on-device translation (inconsistent quality, large model download, no shared cache).
 
-**Affected docs.** `docs/SSOT/archive/superpowers/specs/2026-06-29-ugc-translation-design.md`, `docs/SSOT/spec/18_translation.md`, `docs/SSOT/BACKLOG.md` (TRANSLATE epic).
+**Affected docs.** `docs/SSOT/archive/superpowers/specs/2026-06-29-ugc-translation-design.md`, `docs/spec/requirements/18_translation.md`, `docs/SSOT/BACKLOG.md` (TRANSLATE epic).
 
 ---
 
@@ -1168,7 +1168,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Auto-translate chat for everyone (privacy breach + unbounded cost); gate on reader consent (sends the sender's words without their consent); no chat translation at all (fails the full-accessibility goal).
 
-**Affected docs.** `docs/SSOT/archive/superpowers/specs/2026-06-29-ugc-translation-design.md`, `docs/SSOT/spec/18_translation.md`.
+**Affected docs.** `docs/SSOT/archive/superpowers/specs/2026-06-29-ugc-translation-design.md`, `docs/spec/requirements/18_translation.md`.
 
 ---
 
@@ -1182,7 +1182,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Client-side `TranslateAndCache` (impossible — can't hold the service role or the API key); LibreTranslate self-hosted from day one (privacy-clean but lower quality and ops overhead before it's even wired in); committing to the paid DPA tier immediately (needless cost while the feature is inert).
 
-**Affected docs.** `docs/SSOT/archive/superpowers/specs/2026-06-29-ugc-translation-design.md`, `docs/SSOT/spec/18_translation.md`, `docs/SSOT/TECH_DEBT.md`.
+**Affected docs.** `docs/SSOT/archive/superpowers/specs/2026-06-29-ugc-translation-design.md`, `docs/spec/requirements/18_translation.md`, `docs/SSOT/TECH_DEBT.md`.
 
 ---
 
@@ -1196,7 +1196,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Separate `glowe_events` + `glowe_event_registrations` tables (duplicates the opportunity/application read, RLS, translation, and moderation paths; fights the convergence goal); keeping events a pure client-side validation profile with no schema (cannot express gated approval, capacity, link-reveal timing, or organizer decisions safely).
 
-**Affected docs.** `docs/SSOT/archive/superpowers/specs/2026-06-29-glowe-event-rsvp-org-portal-design.md`, `docs/SSOT/archive/superpowers/specs/2026-06-29-glowe-member-experience-and-create-system-design.md`, `docs/SSOT/spec/17_glowe_frontend.md` (FR-GLOWE-007 AC9, FR-GLOWE-012 AC7).
+**Affected docs.** `docs/SSOT/archive/superpowers/specs/2026-06-29-glowe-event-rsvp-org-portal-design.md`, `docs/SSOT/archive/superpowers/specs/2026-06-29-glowe-member-experience-and-create-system-design.md`, `docs/spec/requirements/17_glowe_frontend.md` (FR-GLOWE-007 AC9, FR-GLOWE-012 AC7).
 
 ---
 
@@ -1210,7 +1210,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Public karma from day 1 — requires anti-collusion first (see D-156). Global unique key on `karma_ledger` — aborts the parent transaction on race; partial unique index + on-conflict-do-nothing is safe. Anchoring closure to recipients-row — wrong causal signal; the row can precede or outlive the status change.
 
-**Affected docs.** `supabase/migrations/0097–0100`, `packages/domain/src/karma.ts`, `apps/mobile/src/components/profile/KarmaBadge.tsx`, `docs/SSOT/spec/14_karma.md`.
+**Affected docs.** `supabase/migrations/0097–0100`, `packages/domain/src/karma.ts`, `apps/mobile/src/components/profile/KarmaBadge.tsx`, `docs/spec/requirements/14_karma.md`.
 
 ---
 
@@ -1224,7 +1224,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Launch public karma without caps — creates an immediately exploitable attack surface once any user discovers the ₪1000 fake-give loop (+35 giver, +15 receiver, repeat). Trust-only model — MVP community is small and trust is feasible today, but does not scale to hundreds of users.
 
-**Affected docs.** `docs/SSOT/spec/14_karma.md` FR-KARMA-008; `docs/SSOT/TECH_DEBT.md` (TD-166 anti-collusion watch item).
+**Affected docs.** `docs/spec/requirements/14_karma.md` FR-KARMA-008; `docs/SSOT/TECH_DEBT.md` (TD-166 anti-collusion watch item).
 
 ---
 
@@ -1238,7 +1238,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Reverting the redirect entirely (undoing D-61-era GLOWE-only work) — throws away the dev-mode gate the team is still using. A separate script/flag disconnected from `EXPO_PUBLIC_ENVIRONMENT` — the env var already differs per Cloudflare Pages environment (`cloudflare-dev` vs `cloudflare-prod`), so reusing it needs zero new deploy config, consistent with `areGloweLinksEnabled()` (D-168) the same day.
 
-**Affected docs.** `app/scripts/web-postbuild.mjs`; `docs/SSOT/spec/17_glowe_frontend.md`.
+**Affected docs.** `app/scripts/web-postbuild.mjs`; `docs/spec/requirements/17_glowe_frontend.md`.
 
 ---
 
@@ -1252,7 +1252,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Human-quality translation first — not compatible with "urgent". Partial (settings-only) English — mixed-language UX. Live language switch without reload — requires converting ~250 module-load direction constants into reactive hooks across 120+ files; out of scope for the deadline. DB-backed preference — needs a migration and excludes signed-out web visitors; can be added later without breaking the local default.
 
-**Affected docs.** `docs/SSOT/spec/11_settings.md` FR-SETTINGS-018; `docs/SSOT/TECH_DEBT.md` (TD-176/177/178); `apps/mobile/src/i18n/**`, `apps/mobile/app/settings/language.tsx`, `apps/mobile/src/lib/{rtlLayout,rtlTextAlignStart,webRtlStyle}.ts`.
+**Affected docs.** `docs/spec/requirements/11_settings.md` FR-SETTINGS-018; `docs/SSOT/TECH_DEBT.md` (TD-176/177/178); `apps/mobile/src/i18n/**`, `apps/mobile/app/settings/language.tsx`, `apps/mobile/src/lib/{rtlLayout,rtlTextAlignStart,webRtlStyle}.ts`.
 
 ---
 
@@ -1266,7 +1266,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** A dedicated required env var configured in both GitHub environments — more moving parts, and a missing value would fail open (show GLOWE on prod). Hardcoding removal on `main` — diverges the branches and breaks the single-codebase promotion flow.
 
-**Affected docs.** `apps/mobile/src/config/environment.ts`; `apps/mobile/app/settings.tsx`; `apps/mobile/app/(tabs)/donations/index.tsx`; `docs/SSOT/spec/17_glowe_frontend.md`.
+**Affected docs.** `apps/mobile/src/config/environment.ts`; `apps/mobile/app/settings.tsx`; `apps/mobile/app/(tabs)/donations/index.tsx`; `docs/spec/requirements/17_glowe_frontend.md`.
 
 ---
 
@@ -1282,7 +1282,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Replace social buttons with copy-link only — drops a working feature some users prefer and is a scope regression. Copy-link only via the native Web Share API (`navigator.share`) — unavailable on desktop browsers where GloWe is primarily used; clipboard copy works everywhere with a graceful `showSuccessModal` fallback when the Clipboard API is blocked.
 
-**Affected docs.** `docs/SSOT/spec/17_glowe_frontend.md` (FR-GLOWE-008 AC5); `app/apps/glowe-web/js/glowe-posts.js`, `app/apps/glowe-web/js/app.js`.
+**Affected docs.** `docs/spec/requirements/17_glowe_frontend.md` (FR-GLOWE-008 AC5); `app/apps/glowe-web/js/glowe-posts.js`, `app/apps/glowe-web/js/app.js`.
 
 ---
 
@@ -1296,7 +1296,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Ship Mode B directly — more surface area and per-action input-preservation complexity for an unproven conversion delta. A blocking login wall on entry — rejected earlier in the brainstorm: kills deep-link/SEO discovery for a global NGO-discovery product (web has no entry gate; guest is the default).
 
-**Affected docs.** `docs/SSOT/spec/17_glowe_frontend.md` (FR-GLOWE-023); `docs/SSOT/archive/superpowers/specs/2026-07-04-glowe-guest-mode-contextual-join-design.md`; `app/apps/glowe-web/js/glowe-guest.js`.
+**Affected docs.** `docs/spec/requirements/17_glowe_frontend.md` (FR-GLOWE-023); `docs/SSOT/archive/superpowers/specs/2026-07-04-glowe-guest-mode-contextual-join-design.md`; `app/apps/glowe-web/js/glowe-guest.js`.
 
 ---
 
@@ -1328,7 +1328,7 @@ Shipped in the same change-set: a GloWe design-fixes pass addressing nine review
 
 **Alternatives rejected.** Keep D-67's dual paths — the PM explicitly rejected the network buttons and copy-link. A desktop popover menu of copy/options — more surface for no real gain over a quiet copy+toast (the PM chose the silent fallback).
 
-**Affected docs.** `docs/SSOT/spec/17_glowe_frontend.md` (FR-GLOWE-008 AC5); `app/apps/glowe-web/js/app.js`, `js/glowe-translate.js`, `css/styles.css`, `pages/wishing-well.html`.
+**Affected docs.** `docs/spec/requirements/17_glowe_frontend.md` (FR-GLOWE-008 AC5); `app/apps/glowe-web/js/app.js`, `js/glowe-translate.js`, `css/styles.css`, `pages/wishing-well.html`.
 
 ---
 
@@ -1483,7 +1483,7 @@ Feature PRs target `staging`; release PRs are `staging` → `dev`. `CI — GloWe
 
 **Alternatives rejected.** Reintroduce `glowe_content_translations` alongside KC cache (duplicate pipelines); client-supplied source text for batch (cache-poisoning risk).
 
-**Affected.** `supabase/functions/translate/**`, `supabase/functions/_shared/translation/kcSource.ts`, migration `0239`, `EdgeFnTranslationService`, `MaterializePostTranslationsUseCase`, `docs/SSOT/UGC_TRANSLATION.md`, `docs/SSOT/spec/18_translation.md`.
+**Affected.** `supabase/functions/translate/**`, `supabase/functions/_shared/translation/kcSource.ts`, migration `0239`, `EdgeFnTranslationService`, `MaterializePostTranslationsUseCase`, `docs/SSOT/UGC_TRANSLATION.md`, `docs/spec/requirements/18_translation.md`.
 
 ---
 
@@ -1748,7 +1748,7 @@ Owner rules that go with it:
 
 **Rejected.** Adding the value bonus to `karma_award_handoff` and blocking the post closure after a hand-over (two karma paths to keep in sync, and no reopen reversal for handoff karma). Closing the post with handoff karma kept (double pay on the next closure trigger).
 
-**Affected.** `supabase/migrations/0559_items_close_through_the_post.sql` (`post_close_from_handoff`, `mark_giving_handed_over`, `posts_settle_handoffs_on_close`, the `tg_recipients_enqueue_notifications` `WHEN`), `docs/spec/07` §7.5 / §7.6, `docs/spec/93` G34 and G1, `docs/SSOT/spec/05_closure_and_reopen.md`.
+**Affected.** `supabase/migrations/0559_items_close_through_the_post.sql` (`post_close_from_handoff`, `mark_giving_handed_over`, `posts_settle_handoffs_on_close`, the `tg_recipients_enqueue_notifications` `WHEN`), `docs/spec/07` §7.5 / §7.6, `docs/spec/93` G34 and G1, `docs/spec/requirements/05_closure_and_reopen.md`.
 
 ## D-221 — An organization's event is a time-world post; its registrations are post handoffs (2026-11-04)
 
@@ -1776,7 +1776,7 @@ Owner rules that go with it:
 
 **Step 4c (2026-11-04, `0562`).** A notification about a listing opens the listing's post. One BEFORE INSERT trigger on `notifications_outbox` resolves the post of `params.listingId` and adds `params.postId` plus the `/post/[id]` route (`params.id`), so the push tap allowlist (which prefers `postId`) and the in-app notification center (which follows the stored route) both land on the post; the writers of each kind are untouched, and step 6 writes post ids at the source. `params.listingId` stays, so an older app build opens the listing route, which forwards to the post; rows written before `0562` keep their listing route for the same reason. The listing share link is the post's `/post/<id>` link when the listing has a post (`buildListingShareUrl`). Rejected: rewriting the eight notification writers (several are redefined in the housing range, and all of them go to `post_handoffs` / posts in step 6) and backfilling stored notifications (their listing route already forwards).
 
-**Affected.** `app/apps/mobile/src/screens/post/PostDetailScreen.tsx`, `ListingPostDetail.tsx`, `src/screens/marketplace/MarketplaceListingRoute.tsx`, `MarketplaceListingDetailScreen.tsx`, `MarketplaceListingDetailView.tsx`, `src/hooks/useListingPostRedirect.ts` (replaces `useListingMirrorRedirect`), `ListingDetailActions.tsx`, `src/lib/buildListingShareUrl.ts`, `src/lib/notifications/pushRouteAllowlist.ts`, `@kc/domain` `MarketplaceListingDetail.feedHidden`, `supabase/migrations/0560_listing_detail_feed_hidden.sql`, `0561_listing_detail_by_post.sql`, `0562_listing_notifications_open_the_post.sql`, `docs/spec/07` §7.4, `docs/SSOT/spec/04_posts.md`.
+**Affected.** `app/apps/mobile/src/screens/post/PostDetailScreen.tsx`, `ListingPostDetail.tsx`, `src/screens/marketplace/MarketplaceListingRoute.tsx`, `MarketplaceListingDetailScreen.tsx`, `MarketplaceListingDetailView.tsx`, `src/hooks/useListingPostRedirect.ts` (replaces `useListingMirrorRedirect`), `ListingDetailActions.tsx`, `src/lib/buildListingShareUrl.ts`, `src/lib/notifications/pushRouteAllowlist.ts`, `@kc/domain` `MarketplaceListingDetail.feedHidden`, `supabase/migrations/0560_listing_detail_feed_hidden.sql`, `0561_listing_detail_by_post.sql`, `0562_listing_notifications_open_the_post.sql`, `docs/spec/07` §7.4, `docs/spec/requirements/04_posts.md`.
 
 ## D-212 — Post and listing detail pages share one hero + content-card frame (2026-11-03)
 
@@ -1906,7 +1906,7 @@ Owner rules that go with it:
 
 ## D-215 — Knowledge library resources are a catalog entity, not posts (2026-11-03)
 
-**Decision.** A knowledge library resource (course, article, link, book, video, document, podcast, tool, dataset) is its own entity, `knowledge_resources`, with its own review state machine, versions, chunks and embeddings. Exchange posts of the knowledge world (lesson offer, mentoring, consulting hour, learning request, mentoring request, question) stay on `listings` / `giving_handoffs` like every other world. Both carry the same three axes (shelf = `public.categories`, subject = `knowledge_topics`, format = kind) and are served by one retrieval call, `knowledge_search`, and by the `api_knowledge_*` service contract. Spec: `docs/spec/18_knowledge_world.md` §18.2, §18.7; `docs/SSOT/spec/23_knowledge.md`.
+**Decision.** A knowledge library resource (course, article, link, book, video, document, podcast, tool, dataset) is its own entity, `knowledge_resources`, with its own review state machine, versions, chunks and embeddings. Exchange posts of the knowledge world (lesson offer, mentoring, consulting hour, learning request, mentoring request, question) stay on `listings` / `giving_handoffs` like every other world. Both carry the same three axes (shelf = `public.categories`, subject = `knowledge_topics`, format = kind) and are served by one retrieval call, `knowledge_search`, and by the `api_knowledge_*` service contract. Spec: `docs/spec/18_knowledge_world.md` §18.2, §18.7; `docs/spec/requirements/23_knowledge.md`.
 
 **Why.** A resource has no offer / request direction, no counterpart, no closing and no expiry; it must stay findable for years, and it carries structure (modules, lessons, quizzes, chunk citations) that the one Post model (D2, D19) was never meant to hold. Forcing it onto `listings` would spread knowledge-only columns and states across the shared post triggers, matching and feeds. Community links (`donation_links`, D107) and the organization catalog already set the precedent of non-post catalog entities beside the feed.
 

@@ -48,7 +48,7 @@ The first modal asks whether the item was actually delivered.
 **Acceptance Criteria.**
 - AC1. The copy emphasizes that closure should happen **after** the physical handoff, not after a coordination message.
 - AC2. Two buttons: "Yes, delivered" (primary) → advances to Step 2 (`FR-CLOSURE-003`); "Cancel" (secondary) → dismiss.
-- AC3. Telemetry event `closure_step1_completed` fires upon confirmation (see [`06_cross_cutting/01_analytics_and_events.md`](../archive/SRS/06_cross_cutting/01_analytics_and_events.md)).
+- AC3. Telemetry event `closure_step1_completed` fires upon confirmation (see [`06_cross_cutting/01_analytics_and_events.md`](../../SSOT/archive/SRS/06_cross_cutting/01_analytics_and_events.md)).
 
 **Related.** Screens: 6.4.1.
 
@@ -178,7 +178,7 @@ A scheduled job hard-deletes posts that ended in `deleted_no_recipient` after th
 - PRD: `03_Core_Features.md` §3.3.6 (sub-section א, Step 3).
 
 **Acceptance Criteria.**
-- AC1. `bg-job-soft-delete-cleanup` (see [`06_cross_cutting/05_background_jobs.md`](../archive/SRS/06_cross_cutting/05_background_jobs.md)) runs daily.
+- AC1. `bg-job-soft-delete-cleanup` (see [`06_cross_cutting/05_background_jobs.md`](../../SSOT/archive/SRS/06_cross_cutting/05_background_jobs.md)) runs daily.
 - AC2. Posts whose `delete_after` has passed are hard-deleted along with their image assets.
 - AC3. Reopen of a `deleted_no_recipient` post cancels the scheduled deletion (already in `FR-CLOSURE-005`).
 - AC4. The job emits a metric `closure_cleanup_deleted_total` for observability.

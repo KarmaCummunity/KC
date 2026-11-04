@@ -1,6 +1,6 @@
 # KC agent operating model
 
-How AI agents (and humans) ship work on KC. Rules in [`CLAUDE.md`](../../CLAUDE.md) still apply; this file says **who does what** and **how work flows**.
+How AI agents (and humans) ship work on KC. Rules in [`AGENTS.md`](../../AGENTS.md) still apply; this file says **who does what** and **how work flows**.
 
 ## Roles
 
