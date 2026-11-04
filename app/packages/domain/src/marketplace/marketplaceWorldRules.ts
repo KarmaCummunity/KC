@@ -1,7 +1,8 @@
 // Client-side mirror of the server world rules (0266 listings_enforce_world_rules) and a
 // mapper from server error codes to stable codes the UI can translate.
 // Items photos are optional (product decision; 0357 dropped the 0351 items image check).
-// Keep in sync with supabase/migrations/0266, 0357, 0539 (food expiry binds offers only).
+// Keep in sync with supabase/migrations/0266, 0357, 0539 (food expiry binds offers only) and
+// 0563 (an organization's event ends after it starts).
 
 export const ROUTED_WORLDS = ['medical', 'animals', 'environment'] as const;
 
@@ -10,7 +11,8 @@ export type MarketplaceRuleErrorCode =
   | 'routed_world_requires_external_body'
   | 'ride_route_required'
   | 'ride_departure_past'
-  | 'knowledge_slot_invalid';
+  | 'knowledge_slot_invalid'
+  | 'event_window_invalid';
 
 /** Server-raised listing error codes the UI has friendly copy for. */
 export const MARKETPLACE_SERVER_ERROR_CODES = [
@@ -19,6 +21,7 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'ride_route_required',
   'ride_departure_past',
   'knowledge_slot_invalid',
+  'event_window_invalid',
   'seats_exhausted',
   'ride_seats_exhausted',
   'slots_exhausted',
@@ -93,6 +96,11 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'housing_not_in_window',
   'housing_note_too_long',
   'housing_use_booking_cancel',
+  // G1 step 5 (0563) — organization events: membership, verified-only registration, organizer actions.
+  'event_org_required',
+  'verification_required',
+  'not_owner',
+  'invalid_transition',
 ] as const;
 
 export type MarketplaceServerErrorCode = (typeof MARKETPLACE_SERVER_ERROR_CODES)[number];
@@ -130,6 +138,12 @@ export function validateMarketplaceWorldRules(input: WorldRulesInput): Marketpla
 
   if (worldSlug === 'knowledge') {
     const code = validateKnowledgeSlot(details, input.now);
+    if (code) return code;
+  }
+
+  // Only an organization's event carries a window in the time world (0563).
+  if (worldSlug === 'time') {
+    const code = validateEventWindow(details);
     if (code) return code;
   }
 
@@ -171,6 +185,15 @@ export function validateKnowledgeSlot(
   if (Number.isNaN(start) || Number.isNaN(end) || start <= now.getTime() || end <= start) {
     return 'knowledge_slot_invalid';
   }
+  return null;
+}
+
+/** An event with a window needs both ends, and its end after its start (0563 listings_event_guard). */
+export function validateEventWindow(details: Record<string, unknown>): MarketplaceRuleErrorCode | null {
+  if (details.starts_at === undefined && details.ends_at === undefined) return null;
+  const start = parseTime(details.starts_at);
+  const end = parseTime(details.ends_at);
+  if (Number.isNaN(start) || Number.isNaN(end) || end <= start) return 'event_window_invalid';
   return null;
 }
 

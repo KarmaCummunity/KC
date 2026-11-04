@@ -1,5 +1,5 @@
 // Listing kinds of the four listing create worlds, with the detail schemas the dev database
-// holds (migrations 0241, 0321, 0381, 0391). Shared by the field-spec and form tests.
+// holds (migrations 0241, 0321, 0381, 0391, 0563). Shared by the field-spec and form tests.
 import type { ListingKindOption } from '@kc/domain';
 
 const obj = (properties: Record<string, unknown>, required: string[] = []) => ({
@@ -102,5 +102,14 @@ export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[
       support_type: { enum: ['emotional', 'companionship', 'practical', 'escort'] },
       duration_minutes: { type: 'integer' },
     })),
+    // An organization's event (0563), offered only to members of an organization.
+    kind('org_event', 'give', obj({
+      org_id: { type: 'string', minLength: 36, maxLength: 36 },
+      starts_at: { type: 'string', format: 'date-time' },
+      ends_at: { type: 'string', format: 'date-time' },
+      capacity: { type: 'integer', minimum: 1, maximum: 5000 },
+      registration_policy: { enum: ['automatic', 'manual', 'verified_only'] },
+      address: { type: 'string', minLength: 2, maxLength: 160 },
+    }, ['org_id', 'starts_at', 'ends_at', 'registration_policy'])),
   ],
 };

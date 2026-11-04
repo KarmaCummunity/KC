@@ -9,7 +9,7 @@ import { Text } from '@kc/ui';
 import { TextField } from '../ui/TextField';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { DateTimeField } from '../ui/DateTimeField';
-import { isFieldVisible, type ListingFieldSpec } from '../../lib/unifiedCreate/listingFieldSpecs';
+import { clampWholeNumber, isFieldVisible, type ListingFieldSpec } from '../../lib/unifiedCreate/listingFieldSpecs';
 import { CountStepper } from './CountStepper';
 import { Chip } from '../ui/Chip';
 
@@ -23,7 +23,7 @@ interface Props {
 }
 
 /** Field types whose control (the kit TextField) renders its own label. */
-const SELF_LABELLED: ReadonlySet<ListingFieldSpec['type']> = new Set(['text', 'amount']);
+const SELF_LABELLED: ReadonlySet<ListingFieldSpec['type']> = new Set(['text', 'amount', 'integer']);
 
 export function ListingDetailFields({ specs, details, onChange, disabled = false }: Props) {
   const styles = useCreatePostStyles();
@@ -162,6 +162,18 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
             set(Number.isFinite(n) ? Math.min(Math.max(n, 0), spec.max) : undefined);
           }}
           placeholder={t('post.unifiedCreate.amountPlaceholder', { max: spec.max })}
+          editable={!disabled}
+        />
+      );
+    case 'integer':
+      return (
+        <TextField
+          testID={`listing-integer-${spec.key}`}
+          label={label}
+          keyboardType="number-pad"
+          value={typeof value === 'number' ? String(value) : ''}
+          onChangeText={(text) => set(clampWholeNumber(text, spec.min, spec.max))}
+          placeholder={t('post.unifiedCreate.integerPlaceholder', { min: spec.min, max: spec.max })}
           editable={!disabled}
         />
       );

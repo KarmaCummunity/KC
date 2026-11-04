@@ -23,6 +23,7 @@ export const postUnifiedCreateHe = {
     cityLabel: 'עיר',
     pickDate: 'בחירת תאריך ושעה',
     amountPlaceholder: 'עד {{max}} ₪',
+    integerPlaceholder: '{{min}}–{{max}}',
     inMinutes: { 30: 'בעוד חצי שעה', 60: 'בעוד שעה' },
     duration: { 30: 'חצי שעה', 60: 'שעה', 120: 'שעתיים', 180: '3 שעות', 240: '4 שעות' },
     titlePlaceholder: {

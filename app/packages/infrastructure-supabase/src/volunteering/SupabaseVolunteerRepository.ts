@@ -160,42 +160,6 @@ export class SupabaseVolunteerRepository implements IVolunteerRepository {
     return data ?? null;
   }
 
-  async createOpportunity(input: {
-    title: string;
-    summary?: string | null;
-    locationLabel?: string | null;
-    cityId?: string | null;
-    orgId?: string | null;
-  }) {
-    const { data, error } = await this.client.rpc('create_volunteer_opportunity', {
-      p_title: input.title,
-      p_summary: input.summary ?? undefined,
-      p_location_label: input.locationLabel ?? undefined,
-      p_city_id: input.cityId ?? undefined,
-      p_org_id: input.orgId ?? undefined,
-    });
-    if (error || !data) throw error ?? new Error('create_volunteer_opportunity failed');
-    return String(data);
-  }
-
-  async addShift(opportunityId: string, startsAt: string, endsAt: string, capacity = 10) {
-    const { data, error } = await this.client.rpc('add_volunteer_shift', {
-      p_opportunity_id: opportunityId,
-      p_starts_at: startsAt,
-      p_ends_at: endsAt,
-      p_capacity: capacity,
-    });
-    if (error || !data) throw error ?? new Error('add_volunteer_shift failed');
-    return String(data);
-  }
-
-  async publishOpportunity(opportunityId: string) {
-    const { error } = await this.client.rpc('publish_volunteer_opportunity', {
-      p_opportunity_id: opportunityId,
-    });
-    if (error) throw error;
-  }
-
   async closeOpportunity(opportunityId: string) {
     const { error } = await this.client.rpc('close_volunteer_opportunity', {
       p_opportunity_id: opportunityId,

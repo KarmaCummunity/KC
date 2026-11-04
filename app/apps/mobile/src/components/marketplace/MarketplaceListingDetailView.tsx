@@ -3,12 +3,14 @@ import { ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
-import type { MarketplaceListingDetail } from '@kc/domain';
+import { ORG_EVENT_KIND_SLUG, type MarketplaceListingDetail } from '@kc/domain';
 import { useSimilarListings } from '../../hooks/useMarketplaceListingDetail';
 import { ReportListingModal } from './ReportListingModal';
 import { GivingHandoffActions } from './GivingHandoffActions';
 import { RideBookingActions } from './rides/RideBookingActions';
 import { HousingStayActions } from './housing/HousingStayActions';
+import { EventDetailsCard } from './events/EventDetailsCard';
+import { EventRegistrationActions } from './events/EventRegistrationActions';
 import { RideRouteCard } from './RideRouteCard';
 import { RidePublishAgainButton } from './RidePublishAgainButton';
 import { RideSeriesManageLink } from './RideSeriesManageLink';
@@ -79,6 +81,8 @@ export function MarketplaceListingDetailView({ detail, bottomInset, footer }: Pr
           {detail.worldSlug === 'rides' ? <RideSeriesOccurrences listingId={detail.listingId} details={detail.details} /> : null}
           {detail.worldSlug === 'rides' && viewerId === detail.ownerId ? <RidePublishAgainButton details={detail.details} /> : null}
           {detail.worldSlug === 'rides' && viewerId === detail.ownerId ? <RideSeriesManageLink details={detail.details} /> : null}
+          {/* An organization's event: its window, address, capacity and registration policy (G1 step 5). */}
+          {detail.kindSlug === ORG_EVENT_KIND_SLUG ? <EventDetailsCard details={detail.details} /> : null}
           {detail.summary ? <Text style={detailStyles.description}>{detail.summary}</Text> : null}
           <Text style={styles.summary}>{kindLabel}</Text>
           {detail.owner ? (
@@ -94,6 +98,7 @@ export function MarketplaceListingDetailView({ detail, bottomInset, footer }: Pr
           <GivingHandoffActions detail={detail} />
           <RideBookingActions detail={detail} />
           <HousingStayActions detail={detail} />
+          <EventRegistrationActions detail={detail} />
           <ListingDetailActions detail={detail} viewerId={viewerId} onReport={() => setReportOpen(true)} />
         </View>
         {footer}

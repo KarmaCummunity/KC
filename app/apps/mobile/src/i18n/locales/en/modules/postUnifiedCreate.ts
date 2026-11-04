@@ -23,6 +23,7 @@ export const postUnifiedCreateEn = {
     cityLabel: 'City',
     pickDate: 'Pick a date and time',
     amountPlaceholder: 'Up to ₪{{max}}',
+    integerPlaceholder: '{{min}}–{{max}}',
     inMinutes: { 30: 'In 30 min', 60: 'In 1 hour' },
     duration: { 30: '30 min', 60: '1 hour', 120: '2 hours', 180: '3 hours', 240: '4 hours' },
     titlePlaceholder: {

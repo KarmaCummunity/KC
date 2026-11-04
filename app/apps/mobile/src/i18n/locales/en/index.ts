@@ -14,6 +14,7 @@ import { challenges } from './challenges';
 import { givingHandoff } from './givingHandoff';
 import { rideBooking } from './rideBooking';
 import { housingStay } from './housingStay';
+import { eventPost } from './eventPost';
 import { ridePlaces } from './ridePlaces';
 import { dateTimeField, rideFeed, rideRoutes, rideSafety, rideSchedule, rideSeries } from './rideSchedule';
 import { authEn } from './modules/auth';
@@ -141,6 +142,8 @@ const en = {
   rideBooking,
   // Housing stays (FR-HOUSING-003, 012, 015–021) — see housingStay.ts
   housingStay,
+  // Organization events (G1 step 5) — see eventPost.ts
+  eventPost,
   // Ride places (D71) — see ridePlaces.ts
   ridePlaces,
   // Ride quick publish (D75) and the shared date-time field — see rideSchedule.ts
