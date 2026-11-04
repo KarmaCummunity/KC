@@ -9390,7 +9390,7 @@ export type Database = {
           estimated_value: number | null
           expires_at: string | null
           external_body_id: string | null
-          feed_hidden: boolean
+          feed_hidden: boolean | null
           geo: unknown
           item_condition: string | null
           listing_id: string | null
@@ -9430,7 +9430,7 @@ export type Database = {
           estimated_value?: number | null
           expires_at?: string | null
           external_body_id?: string | null
-          feed_hidden?: boolean
+          feed_hidden?: boolean | null
           geo?: unknown
           item_condition?: string | null
           listing_id?: string | null
@@ -9470,7 +9470,7 @@ export type Database = {
           estimated_value?: number | null
           expires_at?: string | null
           external_body_id?: string | null
-          feed_hidden?: boolean
+          feed_hidden?: boolean | null
           geo?: unknown
           item_condition?: string | null
           listing_id?: string | null
@@ -10960,6 +10960,7 @@ export type Database = {
           estimated_value: number | null
           expires_at: string | null
           external_body_id: string | null
+          feed_hidden: boolean
           geo: unknown
           item_condition: string | null
           listing_id: string | null
@@ -12663,6 +12664,7 @@ export type Database = {
           estimated_value: number | null
           expires_at: string | null
           external_body_id: string | null
+          feed_hidden: boolean
           geo: unknown
           item_condition: string | null
           listing_id: string | null
@@ -12711,6 +12713,7 @@ export type Database = {
           estimated_value: number | null
           expires_at: string | null
           external_body_id: string | null
+          feed_hidden: boolean
           geo: unknown
           item_condition: string | null
           listing_id: string | null
