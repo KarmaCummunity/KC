@@ -3,6 +3,7 @@ import React from 'react';
 import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { DateTimeField } from '../ui/DateTimeField';
 
 interface Props {
@@ -37,5 +38,5 @@ export function RideEndDateField({ value, onChange, disabled }: Props) {
 
 const useStyles = makeUseStyles(({ colors }) => ({
   block: { gap: spacing.xs },
-  link: { ...typography.caption, color: colors.primary, paddingVertical: spacing.xs },
+  link: { ...typography.caption, color: colors.primary, paddingVertical: spacing.xs, textAlign: rtlTextAlignStart },
 }));

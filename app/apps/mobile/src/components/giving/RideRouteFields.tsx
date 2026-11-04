@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import {
   RIDE_MAX_MEETING_POINTS,
   nearestCityPlace,
@@ -18,9 +19,9 @@ import { hapticLightTap } from '../../lib/haptics';
 import { RidePlaceField } from './RidePlaceField';
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  section: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.sm },
-  link: { ...typography.button, color: colors.primary, paddingVertical: spacing.xs },
-  remove: { ...typography.caption, color: colors.error, paddingVertical: spacing.xs },
+  section: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.sm, textAlign: rtlTextAlignStart },
+  link: { ...typography.button, color: colors.primary, paddingVertical: spacing.xs, textAlign: rtlTextAlignStart },
+  remove: { ...typography.caption, color: colors.error, paddingVertical: spacing.xs, textAlign: rtlTextAlignStart },
   point: { gap: spacing.xs },
 }));
 
