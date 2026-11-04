@@ -38,7 +38,7 @@ Each superseded legacy FR now carries a banner in its legacy file pointing here.
 | FR-FEED-001 "no algorithm" | D27 — default sort is the recommendation engine | 7.3 |
 | FR-RIDE-038 (rating visibility) | D24 — users never see ratings | 7.7 |
 | `06_feed` "likes & comments not in MVP" | D25 — likes and comments on every post type | 7.9 |
-| FR-DONATE-008 (link reachability rules) | D9 — org link goes live only after admin approval | 08 |
+| FR-DONATE-008 (link reachability rules) | D9 — org link goes live only after admin approval (implemented `0546`, 2026-11-03) | 08 |
 | FR-MOD-005 thresholds (3 reports → auto-removal) | D33 — 3 on a post → hidden for review; 5 on a user → suspended from actions | 7.15 |
 | FR-KARMA visibility | D29 — owner + main admin (legacy said owner only; compatible) | 7.6 |
 | FR-RIDE-002–004, 023–025, 033–034 (legacy `ride_listings` hub, publish sheet, detail, driver dashboard, my requests, active-ride screens) | D70 — one rides flow on posts + handoffs; D71–D75 define places, map, bookings, saved routes, quick publish and feed | 5.3 |

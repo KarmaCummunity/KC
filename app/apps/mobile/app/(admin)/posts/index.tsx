@@ -1,9 +1,9 @@
 // app/apps/mobile/app/(admin)/posts/index.tsx
 // FR-ADMIN-019 — admin posts search screen.
 // Rebuilt on top of the shared filterKit (issue #1457).
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
-import { type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
+import { type AdminPermission, type AdminPostSearchResult, type AdminRole, hasPermission } from '@kc/domain';
 import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { useAdminPostSearch } from '../../../src/hooks/useAdminContentSearch';
@@ -24,6 +24,8 @@ const STATUS_OPTIONS = [
   { value: 'expired',                  key: 'expired' as const },
 ];
 
+const postSearchKeyExtractor = (p: AdminPostSearchResult) => p.postId;
+
 export default function PostsScreen() {
   const styles = useStyles();
   const L = useLocaleBundle();
@@ -38,6 +40,11 @@ export default function PostsScreen() {
 
   const result = useAdminPostSearch(filters);
   const can = (perm: AdminPermission) => hasPermission(roles as readonly AdminRole[], perm);
+
+  const renderItem = useCallback(
+    ({ item }: { item: AdminPostSearchResult }) => <PostSearchRow row={item} />,
+    [],
+  );
 
   if (rolesLoading) {
     return <View style={styles.center}><Text>{L.admin.content.loading}</Text></View>;
@@ -68,9 +75,10 @@ export default function PostsScreen() {
       />
       <Text style={styles.totalLabel}>{L.admin.content.totalCount(result.page.totalCount)}</Text>
       <KcFlashList
-        data={[...result.page.rows]}
-        keyExtractor={(p) => p.postId}
-        renderItem={({ item }) => <PostSearchRow row={item} />}
+        data={result.page.rows}
+        keyExtractor={postSearchKeyExtractor}
+        estimatedItemSize={76}
+        renderItem={renderItem}
         refreshControl={<RefreshControl refreshing={result.isRefetching} onRefresh={result.refetch} />}
         ListEmptyComponent={
           !result.isLoading ? (

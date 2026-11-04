@@ -27,12 +27,13 @@ describe('validateRideDetails', () => {
     expect(validateRideDetails({ ...route, departs_at: '2026-10-17T12:00:00Z' }, now)).toBeNull();
   });
   it('is applied by validateMarketplaceWorldRules for rides', () => {
-    expect(validateMarketplaceWorldRules({ worldSlug: 'rides', details: {}, photoCount: 0, now })).toBe(
+    expect(validateMarketplaceWorldRules({ worldSlug: 'rides', direction: 'give', details: {}, photoCount: 0, now })).toBe(
       'ride_route_required',
     );
     expect(
       validateMarketplaceWorldRules({
-        worldSlug: 'rides', details: { ...route, departs_at: '2026-10-17T12:00:00Z' }, photoCount: 0, now,
+        worldSlug: 'rides',
+        direction: 'give', details: { ...route, departs_at: '2026-10-17T12:00:00Z' }, photoCount: 0, now,
       }),
     ).toBeNull();
   });
@@ -55,6 +56,7 @@ describe('validateKnowledgeSlot', () => {
     expect(
       validateMarketplaceWorldRules({
         worldSlug: 'knowledge',
+        direction: 'give',
         details: { slot_starts_at: '2026-10-17T12:00:00Z', slot_ends_at: '2026-10-17T13:00:00Z' },
         photoCount: 0,
         now,

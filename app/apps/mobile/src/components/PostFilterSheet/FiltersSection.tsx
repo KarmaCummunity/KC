@@ -8,7 +8,7 @@ import type {
   PostType,
   WorldSubcategory,
 } from '@kc/domain';
-import { GIVING_WORLD_SLUGS } from '@kc/domain';
+import { FEED_WORLD_SLUGS } from '@kc/domain';
 import { marketplaceRepository } from '../../services/marketplaceComposition';
 import { worldChipKey } from '../../lib/feedCardCategory';
 import { FilterSection } from '../filterKit/FilterSection';
@@ -32,8 +32,8 @@ export interface FiltersSectionProps {
   readonly onFollowersOnlyChange: (v: boolean) => void;
 }
 
-/** The canonical giving worlds (D45); domains such as medical or democracy are tags, not worlds. */
-export const FEED_FILTER_WORLD_SLUGS = GIVING_WORLD_SLUGS;
+/** The worlds that have a feed (D100); portal worlds publish no posts, so they are not filters. */
+export const FEED_FILTER_WORLD_SLUGS = FEED_WORLD_SLUGS;
 
 const ITEM_CONDITION_KEYS: Record<ItemCondition, string> = {
   New: 'filters.conditionNew',

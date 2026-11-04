@@ -28,9 +28,11 @@ import { useDonationLinksListState } from './useDonationLinksListState';
 
 interface Props {
   readonly categorySlug: DonationCategorySlug;
+  /** False when a parent already titles the list (a collapsible section, #1626). */
+  readonly showTitle?: boolean;
 }
 
-export function DonationLinksList({ categorySlug }: Readonly<Props>) {
+export function DonationLinksList({ categorySlug, showTitle = true }: Readonly<Props>) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useDonationLinksListStyles();
@@ -64,8 +66,8 @@ export function DonationLinksList({ categorySlug }: Readonly<Props>) {
 
   const Header = useMemo(
     () => (
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t('donations.links.sectionTitle')}</Text>
+      <View style={[styles.header, !showTitle && styles.headerUntitled]}>
+        {showTitle ? <Text style={styles.headerTitle}>{t('donations.links.sectionTitle')}</Text> : null}
         <Pressable
           onPress={openAddModal}
           accessibilityRole="button"
@@ -77,7 +79,7 @@ export function DonationLinksList({ categorySlug }: Readonly<Props>) {
         </Pressable>
       </View>
     ),
-    [t, openAddModal, styles, colors.textInverse],
+    [t, showTitle, openAddModal, styles, colors.textInverse],
   );
 
   const renderRow = useCallback(

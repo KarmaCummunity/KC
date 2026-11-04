@@ -15,6 +15,9 @@ export const LAUNCH_WORLD_FLAG_KEYS = [
   'world_housing_enabled',
   'world_medical_enabled',
   'world_animals_enabled',
+  'world_democracy_enabled',
+  'world_employment_enabled',
+  'world_challenges_enabled',
   'world_environment_enabled',
   'world_creative_enabled',
   'world_app_design_enabled',
@@ -33,6 +36,9 @@ export const LAUNCH_WORLD_FLAG_DEFAULTS: Record<LaunchWorldFlagKey, boolean> = {
   world_housing_enabled: false,
   world_medical_enabled: false,
   world_animals_enabled: false,
+  world_democracy_enabled: false,
+  world_employment_enabled: false,
+  world_challenges_enabled: false,
   world_environment_enabled: false,
   world_creative_enabled: false,
   world_app_design_enabled: false,
@@ -70,6 +76,9 @@ export const PORTAL_CATEGORY_BY_FLAG: Partial<Record<LaunchWorldFlagKey, Donatio
   world_housing_enabled: 'housing',
   world_medical_enabled: 'medical',
   world_animals_enabled: 'animals',
+  world_democracy_enabled: 'democracy',
+  world_employment_enabled: 'employment',
+  world_challenges_enabled: 'challenges',
 };
 
 export function isMarketplaceWorldLaunchEnabled(
@@ -89,13 +98,14 @@ export const HUB_TILE_LAUNCH_FLAG: Record<string, LaunchWorldFlagKey> = {
   housing: 'world_housing_enabled',
   transport: 'world_rides_enabled',
   knowledge: 'world_knowledge_enabled',
+  medical: 'world_medical_enabled',
+  animals: 'world_animals_enabled',
+  democracy: 'world_democracy_enabled',
+  employment: 'world_employment_enabled',
+  challenges: 'world_challenges_enabled',
 };
 
-/** Worlds with no in-app flow yet (phase 2) — always portals, whatever the flags say. */
-export const PORTAL_ONLY_WORLD_TILES: readonly string[] = ['experiences'];
-
 export function hubTileLaunchMode(tileKey: string, remote: RemoteAppFlags | undefined): WorldLaunchMode {
-  if (PORTAL_ONLY_WORLD_TILES.includes(tileKey)) return 'portal';
   const flag = HUB_TILE_LAUNCH_FLAG[tileKey];
   return flag ? launchWorldMode(flag, remote) : 'active';
 }

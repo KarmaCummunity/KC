@@ -1,55 +1,63 @@
 name: Auto-merge PRs
 
-# Enables squash auto-merge on every non-draft PR into `dev` (no label needed).
-# Draft PRs are the opt-out: convert to ready to enter the merge flow.
-# GitHub then merges by itself once the dev ruleset is satisfied (`CI verdict`
-# and `CI gate` green, plus the owner's code-owner approval when the PR touches
-# a gate-critical path). Never touches `main`. Docs: docs/agents/OPERATING_MODEL.md.
-# Safe as pull_request_target: no checkout, and no PR code runs.
-# Same-repo heads only: only collaborators with write access can push to them.
+# Enables squash auto-merge on every non-draft, same-repo PR whose base is not
+# `main` (no label needed). Opt-outs: a draft PR, or a PR labelled
+# `no-auto-merge`, for a PR that the merge queue must not squash (the main →
+# dev sync lands as a merge commit; a squash would drop the ancestry it adds). GitHub then merges by
+# itself once the dev ruleset is satisfied (`CI gate` green, via the merge queue).
+# Never touches `main`. Docs: docs/agents/OPERATING_MODEL.md.
 #
-# Identity (INFRA-CI-6, TD-197): auto-merge is enabled with a token of the
-# agent GitHub App (AGENT_APP_ID + AGENT_APP_PRIVATE_KEY), or else
-# AGENT_MERGE_TOKEN. The merge GitHub performs later is attributed to that
-# identity, so its push to `dev` triggers the push workflows (CI → Deploy,
-# close-issues-on-dev-merge). GITHUB_TOKEN is never
-# used: its pushes start no workflows, so a merge made with it would skip push
-# CI and every deploy without any error. With no credential the job fails.
-#
-# Default branch only (see the pull_request_target row in TECH_DEBT.md): since 2025-12-08 GitHub runs pull_request_target
-# from the DEFAULT branch (`main`): this file's `main` copy is the one that runs
-# (the `dev` copy is ignored), GITHUB_REF is refs/heads/main, and environment
-# branch policies are checked against `main`. Changes here take effect only once
-# they reach `main`.
-#
-# The credentials are secrets of the `agent-merge` environment, whose
-# deployment-branch policy must allow only `main` (like `ci-verdict`). Only
-# code on `main` reaches them, and every change to `main` needs the owner's
-# approval. A workflow an agent pushes on any other branch, `dev` included,
-# cannot read them (TD-223). A policy that allows only `dev` fails this job
-# with an environment protection error.
+# Works from `dev` only (no change to `main` needed):
+# 1. `request` runs on `pull_request` (the PR's own workflow copy, which is
+#    based on dev). It holds NO secrets: it only dispatches this workflow on
+#    `--ref dev` with the PR number (GITHUB_TOKEN may trigger workflow_dispatch).
+# 2. `enable` runs on `workflow_dispatch` from `dev`'s copy, so the
+#    `agent-merge` environment (deployment branch: dev only) releases the agent
+#    GitHub App credentials. A PR branch can never read them: its own run has
+#    no environment, and the dispatched run always executes dev's file.
+# It re-checks the PR (open, not draft, same repo, base != main) before
+# enabling auto-merge. GITHUB_TOKEN is never used for the merge: a merge made
+# with it triggers no push CI and no deploy (TD-197). No PR code is checked out.
 
 on:
-  pull_request_target:
-    branches: [dev]
-    # `edited` covers a retarget: a stacked PR whose base branch was just merged and
-    # deleted is moved onto `dev` by GitHub, and must then get auto-merge armed.
-    types: [labeled, opened, reopened, synchronize, ready_for_review, edited]
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: PR number to arm auto-merge on
+        required: true
+        type: string
 
-# GITHUB_TOKEN gets no scopes: every API call uses the minted or stored token.
 permissions: {}
 
-concurrency:
-  group: auto-merge-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
-
 jobs:
+  request:
+    name: request auto-merge
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.base.ref != 'main' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.draft == false &&
+      !contains(github.event.pull_request.labels.*.name, 'no-auto-merge')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Dispatch the enable job on dev
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: gh workflow run auto-merge-agent-ready.yml --repo "$REPO" --ref dev -f pr="$PR"
+
   enable-auto-merge:
     name: enable auto-merge (squash)
-    if: >-
-      github.event.pull_request.base.ref == 'dev' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.draft == false
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev'
+    concurrency:
+      group: auto-merge-${{ inputs.pr }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment: agent-merge
@@ -86,14 +94,19 @@ jobs:
       - name: Enable auto-merge
         env:
           GH_TOKEN: ${{ steps.app.outputs.token || secrets.AGENT_MERGE_TOKEN }}
-          PR: ${{ github.event.pull_request.number }}
+          PR: ${{ inputs.pr }}
           REPO: ${{ github.repository }}
         # No --delete-branch: GitHub rejects it while the `dev` merge queue is enabled
         # ("Cannot use -d or --delete-branch when merge queue enabled"); the queue's
         # merge removes the head branch per the repository's delete-on-merge setting.
         run: |
           if [ -z "$GH_TOKEN" ]; then
-            echo "::error::No agent merge identity: set AGENT_APP_ID + AGENT_APP_PRIVATE_KEY (GitHub App, preferred) or AGENT_MERGE_TOKEN in the agent-merge environment (deployment branch main). GITHUB_TOKEN is not used because a merge made with it triggers no push CI and no deploy (TD-197). See docs/SSOT/OPERATOR_RUNBOOK.md § Owner setup for D-195 CI/CD."
+            echo "::error::No agent merge identity: set AGENT_APP_ID + AGENT_APP_PRIVATE_KEY (GitHub App, preferred) or AGENT_MERGE_TOKEN in the agent-merge environment (deployment branch dev). GITHUB_TOKEN is not used because a merge made with it triggers no push CI and no deploy (TD-197). See docs/SSOT/OPERATOR_RUNBOOK.md § Owner setup for D-195 CI/CD."
             exit 1
           fi
+          case "$PR" in ''|*[!0-9]*) echo "::error::bad PR number"; exit 1;; esac
+          # Re-checked here, not only in `request`: the label may be added after the dispatch.
+          ok=$(gh pr view "$PR" --repo "$REPO" --json state,isDraft,baseRefName,isCrossRepository,labels \
+            --jq '.state=="OPEN" and (.isDraft|not) and .baseRefName!="main" and (.isCrossRepository|not) and ([.labels[].name] | index("no-auto-merge") | not)')
+          if [ "$ok" != "true" ]; then echo "PR #$PR is not eligible; skipping."; exit 0; fi
           gh pr merge "$PR" --repo "$REPO" --auto --squash

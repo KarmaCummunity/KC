@@ -16,6 +16,8 @@ interface Props {
   readonly onRequestHide: (chatId: string, otherUserId: string | null) => void;
 }
 
+const ELLIPSIS_HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 } as const;
+
 // Memoized: the inbox KcFlashList re-renders on every search keystroke and
 // refresh, but each row only depends on its own `item` and stable parent
 // callbacks — without memo every row re-rendered on each keystroke.
@@ -61,7 +63,7 @@ function InboxChatRowInner({ item, onOpen, onRequestHide }: Props) {
       )}
       <Pressable
         onPress={() => onRequestHide(item.chatId, other?.userId ?? null)}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        hitSlop={ELLIPSIS_HIT_SLOP}
         accessibilityRole="button"
         accessibilityLabel={t('chat.hideChatA11y')}
         android_ripple={null}

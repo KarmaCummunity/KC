@@ -1,9 +1,9 @@
 // app/apps/mobile/app/(admin)/users/index.tsx
 // FR-ADMIN-019 — admin users search screen.
 // Rebuilt on top of the shared filterKit (issue #1457).
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
-import { type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
+import { type AdminPermission, type AdminRole, type AdminUserSearchResult, hasPermission } from '@kc/domain';
 import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { useAdminUserSearch } from '../../../src/hooks/useAdminContentSearch';
@@ -24,6 +24,8 @@ const STATUS_OPTIONS = [
   { value: 'deleted',                       key: 'deleted' as const },
 ];
 
+const userSearchKeyExtractor = (u: AdminUserSearchResult) => u.userId;
+
 export default function UsersScreen() {
   const styles = useStyles();
   const L = useLocaleBundle();
@@ -38,6 +40,11 @@ export default function UsersScreen() {
 
   const result = useAdminUserSearch(filters);
   const can = (perm: AdminPermission) => hasPermission(roles as readonly AdminRole[], perm);
+
+  const renderItem = useCallback(
+    ({ item }: { item: AdminUserSearchResult }) => <UserSearchRow row={item} />,
+    [],
+  );
 
   if (rolesLoading) {
     return <View style={styles.center}><Text>{L.admin.content.loading}</Text></View>;
@@ -70,9 +77,10 @@ export default function UsersScreen() {
         {L.admin.content.totalCount(result.page.totalCount)}
       </Text>
       <KcFlashList
-        data={[...result.page.rows]}
-        keyExtractor={(u) => u.userId}
-        renderItem={({ item }) => <UserSearchRow row={item} />}
+        data={result.page.rows}
+        keyExtractor={userSearchKeyExtractor}
+        estimatedItemSize={72}
+        renderItem={renderItem}
         refreshControl={<RefreshControl refreshing={result.isRefetching} onRefresh={result.refetch} />}
         ListEmptyComponent={
           !result.isLoading ? (

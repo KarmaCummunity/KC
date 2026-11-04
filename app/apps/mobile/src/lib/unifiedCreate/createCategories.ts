@@ -1,10 +1,18 @@
 // Mapped to spec: FR-POST-001 (one create form; category first, then request/offer, then
-// category-specific fields).
+// category-specific fields), D100 (one list of giving worlds).
 // Category config for the unified create form: which categories the picker offers, in which
-// order, and which write path each one uses on submit (legacy post vs marketplace listing).
+// order, and which write path each one uses on submit — the legacy post (items), a marketplace
+// listing (worlds with a feed), or a community link (portal worlds, which have no feed yet).
 import type { Href } from 'expo-router';
+import {
+  GIVING_WORLD_SLUGS,
+  isFeedWorldSlug,
+  linkCategoryForWorld,
+  type DonationCategorySlug,
+  type GivingWorldSlug,
+} from '@kc/domain';
 
-export type CreateEngine = 'post' | 'listing';
+export type CreateEngine = 'post' | 'listing' | 'link';
 export type CreateDirection = 'give' | 'request';
 
 /** Ionicons glyphs used by the category picker (kept as a closed union for type safety). */
@@ -13,7 +21,14 @@ export type CreateCategoryIcon =
   | 'car-outline'
   | 'restaurant-outline'
   | 'home-outline'
-  | 'time-outline';
+  | 'time-outline'
+  | 'cash-outline'
+  | 'school-outline'
+  | 'medical-outline'
+  | 'paw-outline'
+  | 'megaphone-outline'
+  | 'briefcase-outline'
+  | 'trophy-outline';
 
 export interface CreateCategoryConfig {
   /** Stable id; equals the giving-world slug (also used by the `?category=` deep link). */
@@ -27,11 +42,13 @@ export interface CreateCategoryConfig {
    * the items world through the posts → listings sync (migration 0243), so they need none.
    */
   readonly worldSlug: string | null;
+  /** Community-links category the `link` engine writes to; null for the other engines. */
+  readonly linkCategory: DonationCategorySlug | null;
 }
 
 /** Categories with a create form, in picker order (FR-POST-001 AC6). */
-export const CREATE_CATEGORY_IDS = ['items', 'rides', 'food', 'housing', 'time'] as const;
-export type CreateCategoryId = (typeof CREATE_CATEGORY_IDS)[number];
+export const CREATE_CATEGORY_IDS = GIVING_WORLD_SLUGS;
+export type CreateCategoryId = GivingWorldSlug;
 
 /** Category the form opens on when there is no deep link and no remembered choice. */
 export const DEFAULT_CREATE_CATEGORY: CreateCategoryId = 'items';
@@ -45,17 +62,30 @@ const ICON_BY_ID: Readonly<Record<CreateCategoryId, CreateCategoryIcon>> = {
   food: 'restaurant-outline',
   housing: 'home-outline',
   time: 'time-outline',
+  money: 'cash-outline',
+  knowledge: 'school-outline',
+  medical: 'medical-outline',
+  animals: 'paw-outline',
+  democracy: 'megaphone-outline',
+  employment: 'briefcase-outline',
+  challenges: 'trophy-outline',
 };
 
+/** Items keep the mature post form (drafts, address display level, visibility, karma value). */
+function engineFor(id: CreateCategoryId): CreateEngine {
+  if (id === 'items') return 'post';
+  return isFeedWorldSlug(id) ? 'listing' : 'link';
+}
+
 function toConfig(id: CreateCategoryId): CreateCategoryConfig {
-  // Items keep the mature post form (drafts, address display level, visibility, karma value).
-  const isPost = id === 'items';
+  const engine = engineFor(id);
   return {
     id,
-    engine: isPost ? 'post' : 'listing',
+    engine,
     labelKey: `post.unifiedCreate.categories.${id}`,
     icon: ICON_BY_ID[id],
-    worldSlug: isPost ? null : id,
+    worldSlug: engine === 'listing' ? id : null,
+    linkCategory: engine === 'link' ? linkCategoryForWorld(id) : null,
   };
 }
 
@@ -89,4 +119,14 @@ export function createRouteFor(categoryId?: string | null, direction?: CreateDir
   return isCreateDirection(direction)
     ? `/(tabs)/create?category=${category}&direction=${direction}`
     : `/(tabs)/create?category=${category}`;
+}
+
+/**
+ * The create category a screen path belongs to, so the "+" button opens the form on the world
+ * the user is looking at: `/donations/food` → food, `/donations/category/medical` → medical.
+ * Null when the path is not inside a giving world (home feed, a single listing, profile…).
+ */
+export function createCategoryForPath(pathname: string | null | undefined): CreateCategoryId | null {
+  const match = /^\/donations\/(?:category\/)?([a-z]+)/.exec(pathname ?? '');
+  return match && isCreateCategoryId(match[1]) ? match[1] : null;
 }

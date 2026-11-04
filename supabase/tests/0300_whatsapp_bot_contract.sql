@@ -151,4 +151,6 @@ begin
   end if;
 end $$;
 
-commit;
+rollback;
+
+\echo '✓ 0300_whatsapp_bot_contract.sql passed'

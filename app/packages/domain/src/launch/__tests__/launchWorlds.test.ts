@@ -38,7 +38,9 @@ describe('launchWorldMode (D60)', () => {
     expect(launchWorldMode('world_rides_enabled', { world_rides_enabled: true })).toBe('active');
     expect(hubTileLaunchMode('transport', { world_rides_enabled: false })).toBe('portal');
     expect(hubTileLaunchMode('unknown-tile', undefined)).toBe('active');
-    expect(hubTileLaunchMode('experiences', { world_items_enabled: true })).toBe('portal');
+    // Phase 2/3 worlds are portals until their flag is turned on (D100).
+    expect(hubTileLaunchMode('democracy', { world_items_enabled: true })).toBe('portal');
+    expect(hubTileLaunchMode('democracy', { world_democracy_enabled: true })).toBe('active');
   });
 
   it('gives every portal world with a links list its category', async () => {

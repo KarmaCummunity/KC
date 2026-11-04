@@ -1,10 +1,10 @@
 // SectionHeading — large hero-style title + optional subtitle/eyebrow.
-// Mirrors the welcome-screen title typography (32px, letter-spacing -0.5,
+// Mirrors the welcome-screen title typography (letter-spacing -0.5,
 // near-black slate) so any redesigned main screen can lead with the same
 // presence.
 import React from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
-import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 interface SectionHeadingProps {
@@ -21,7 +21,6 @@ export function SectionHeading({
   style,
 }: SectionHeadingProps) {
   const styles = useStyles();
-  const { colors } = useTheme();
   return (
     <View style={[align === 'center' ? styles.center : styles.right, style]}>
       <Text style={[styles.title, align === 'center' && styles.titleCentered]}>{title}</Text>
@@ -34,12 +33,11 @@ export function SectionHeading({
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   right: { alignItems: 'flex-end' },
   center: { alignItems: 'center' },
   title: {
     ...typography.h1,
-    fontSize: 32,
     color: colors.textPrimary,
     letterSpacing: -0.5,
     textAlign: rtlTextAlignStart,

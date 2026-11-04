@@ -1,10 +1,11 @@
 // app/apps/mobile/app/(admin)/reports/index.tsx
 // FR-ADMIN-012 — admin reports inbox screen. Cursor-paginated KcFlashList of
 // open reports with chip filters and reporter-id search.
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
 import { spacing, Text, typography } from '@kc/ui';
 import type { ListOpenReportsFilters } from '@kc/application';
+import type { ReportInboxRow } from '@kc/domain';
 import { useReportsInbox } from '../../../src/hooks/useReportsInbox';
 import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
 import { ReportFilters } from '../../../src/components/admin/reports/ReportFilters';
@@ -14,11 +15,22 @@ import { KcFlashList } from '../../../src/components/lists/KcFlashList';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
+const reportKeyExtractor = (r: ReportInboxRow) => `${r.targetType}:${r.targetId}`;
+
 export default function ReportsInbox() {
   const L = useLocaleBundle();
   const [filters, setFilters] = useState<ListOpenReportsFilters>({});
   const q = useReportsInbox(filters);
-  const rows = q.data?.pages.flatMap((p) => p.rows) ?? [];
+  const rows = useMemo(() => q.data?.pages.flatMap((p) => p.rows) ?? [], [q.data?.pages]);
+
+  const renderItem = useCallback(
+    ({ item }: { item: ReportInboxRow }) => <ReportRow row={item} />,
+    [],
+  );
+
+  const handleEndReached = useCallback(() => {
+    if (q.hasNextPage) void q.fetchNextPage();
+  }, [q]);
 
   return (
     <View style={styles.root}>
@@ -26,11 +38,10 @@ export default function ReportsInbox() {
       <ReportFilters value={filters} onChange={setFilters} />
       <KcFlashList
         data={rows}
-        keyExtractor={(r) => `${r.targetType}:${r.targetId}`}
-        renderItem={({ item }) => <ReportRow row={item} />}
-        onEndReached={() => {
-          if (q.hasNextPage) void q.fetchNextPage();
-        }}
+        keyExtractor={reportKeyExtractor}
+        estimatedItemSize={84}
+        renderItem={renderItem}
+        onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
         refreshControl={
           <RefreshControl

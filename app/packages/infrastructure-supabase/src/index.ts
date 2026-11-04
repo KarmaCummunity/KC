@@ -1,5 +1,11 @@
 export { getSupabaseClient, resetSupabaseClient, setOnForbiddenCallback } from './client';
-export type { SupabaseAuthStorage } from './client';
+export type { SupabaseAuthStorage, SupabaseClientOptions } from './client';
+export {
+  createTimeoutFetch,
+  DEFAULT_SUPABASE_TIMEOUT_MS,
+  FetchTimeoutError,
+  isTimeoutError,
+} from './timeoutFetch';
 export type { Database } from './database.types';
 
 export { SupabaseAuthService } from './auth/SupabaseAuthService';
@@ -36,6 +42,8 @@ export type {
   MatchSuggestion, MatchRole, MatchStatus, MatchResponse, MatchRespondResult, MatchQualityByWorld,
 } from './matching/SupabaseMatchRepository';
 export type { OnlineListener } from './realtime/SupabaseOnlinePresence';
+export { SupabaseDemoDataRepository, mapDemoDataStatus, mapDemoDataWipeResult, mapDemoDataSeedResult } from './admin/SupabaseDemoDataRepository';
+export type { DemoDataStatus, DemoDataWipeResult, DemoDataSeedResult } from './admin/SupabaseDemoDataRepository';
 export { SupabaseStatsRepository } from './stats/SupabaseStatsRepository';
 export { SupabaseAboutRepository } from './about/SupabaseAboutRepository';
 export { SupabaseReportRepository } from './reports/SupabaseReportRepository';
@@ -52,6 +60,9 @@ export * from './admin/SupabaseAdminTaskRepository';
 export * from './admin/SupabaseAdminContentRepository';
 export * from './admin/SupabaseTimesheetsRepository';
 export * from './admin/SupabaseFinanceLedgerRepository';
+export * from './admin/SupabaseFinanceAccountsRepository';
+export * from './admin/SupabaseFinanceDonorsRepository';
+export * from './admin/SupabaseOrgTransparencyRepository';
 export * from './admin/SupabaseCrmContactsRepository';
 export * from './admin/SupabaseOrgApplicationsRepository';
 export * from './admin/SupabaseOrgHierarchyRepository';
@@ -65,6 +76,7 @@ export { SupabaseRideRatingRepository } from './rides/SupabaseRideRatingReposito
 export { SupabaseDriverDeclarationRepository } from './rides/SupabaseDriverDeclarationRepository';
 export { SupabaseRidesRealtime } from './rides/SupabaseRidesRealtime';
 export { SupabaseRideBookingRepository } from './rides/SupabaseRideBookingRepository';
+export { SupabaseHousingRepository } from './housing/SupabaseHousingRepository';
 export { SupabaseRidePlaceRepository } from './rides/SupabaseRidePlaceRepository';
 export { SupabaseRidesFeedRepository } from './rides/SupabaseRidesFeedRepository';
 export { SupabaseRideSavedRoutesRepository } from './rides/SupabaseRideSavedRoutesRepository';
@@ -84,3 +96,5 @@ export { SandboxPaymentProvider } from './payments/SandboxPaymentProvider';
 export { SupabaseKcSupportChannelsRepository } from './payments/SupabaseKcSupportChannelsRepository';
 export { SupabaseVolunteerRepository } from './volunteering/SupabaseVolunteerRepository';
 export * from './admin/SupabaseWhatsAppAdminRepository';
+export { SupabaseKnowledgeTopicRepository } from './knowledge/SupabaseKnowledgeTopicRepository';
+export { mapKnowledgeTopic, mapKnowledgeTopicMatch } from './knowledge/mapKnowledgeTopic';

@@ -39,7 +39,7 @@ begin
   return v_id;
 end $$;
 
--- Seed an owner + a visible transport link, then impersonate a DIFFERENT non-admin viewer.
+-- Seed an owner + a visible (approved) transport link, then impersonate a DIFFERENT non-admin viewer.
 do $$
 declare
   v_owner  uuid := pg_temp.mk_user('t193o_' || substr(gen_random_uuid()::text, 1, 8));
@@ -47,6 +47,9 @@ declare
 begin
   insert into public.donation_links (id, category_slug, url, display_name, submitted_by, validated_at)
   values (gen_random_uuid(), 'transport', 'https://example.com/donate-193', 'Charity 193', v_owner, now());
+  -- D9 (0546): a new link waits for review; approve it (as the table owner) so it is visible.
+  update public.donation_links set review_status = 'approved'
+   where url = 'https://example.com/donate-193';
 
   perform set_config(
     'request.jwt.claims',

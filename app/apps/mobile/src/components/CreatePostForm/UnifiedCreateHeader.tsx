@@ -1,6 +1,7 @@
 // Mapped to spec: FR-POST-001 AC1 / AC6.
-// Top of the unified create form: the category picker (one equal-width tile per category,
-// no horizontal scrolling) and, under it, the request / offer toggle.
+// Top of the unified create form: the category picker (one tile per giving world, wrapped into
+// rows of four, no horizontal scrolling) and, under it, the request / offer toggle — which is
+// hidden for worlds whose form is "add a link" (they have no give / take direction).
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -15,9 +16,11 @@ import type {
 
 const useHeaderStyles = makeUseStyles(({ colors }) => ({
   wrap: { gap: spacing.md },
-  tiles: { flexDirection: 'row' as const, gap: spacing.xs },
+  tiles: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: spacing.xs },
+  // Four per row: grow to share the row, but never narrower than a quarter minus the gaps.
   tile: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: '22%' as const,
     alignItems: 'center' as const,
     gap: spacing.xs,
     paddingVertical: spacing.sm,
@@ -35,6 +38,8 @@ interface Props {
   readonly categories: readonly CreateCategoryConfig[];
   readonly categoryId: CreateCategoryId;
   readonly onCategoryChange: (id: CreateCategoryId) => void;
+  /** False for worlds without a give / take direction (the link form). */
+  readonly showDirection: boolean;
   readonly direction: CreateDirection;
   readonly onDirectionChange: (d: CreateDirection) => void;
 }
@@ -43,6 +48,7 @@ export function UnifiedCreateHeader({
   categories,
   categoryId,
   onCategoryChange,
+  showDirection,
   direction,
   onDirectionChange,
 }: Props) {
@@ -92,10 +98,12 @@ export function UnifiedCreateHeader({
           );
         })}
       </View>
-      <View style={styles.typeToggle}>
-        {toggle('request', 'search-outline', t('post.unifiedCreate.request'))}
-        {toggle('give', 'gift-outline', t('post.unifiedCreate.offer'))}
-      </View>
+      {showDirection ? (
+        <View style={styles.typeToggle}>
+          {toggle('request', 'search-outline', t('post.unifiedCreate.request'))}
+          {toggle('give', 'gift-outline', t('post.unifiedCreate.offer'))}
+        </View>
+      ) : null}
     </View>
   );
 }

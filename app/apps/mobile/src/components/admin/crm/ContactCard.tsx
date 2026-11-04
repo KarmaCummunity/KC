@@ -1,4 +1,5 @@
 // V2-ADMIN-CRM-8 — single CRM contact card.
+import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { CrmContact } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
@@ -18,7 +19,7 @@ function fmt(d: Date): string {
   });
 }
 
-export function ContactCard({ contact, onEdit, onMarkContacted, onDelete }: ContactCardProps) {
+function ContactCardInner({ contact, onEdit, onMarkContacted, onDelete }: ContactCardProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   const t = L.admin.crm;
@@ -53,6 +54,8 @@ export function ContactCard({ contact, onEdit, onMarkContacted, onDelete }: Cont
     </View>
   );
 }
+
+export const ContactCard = memo(ContactCardInner);
 
 const useStyles = makeUseStyles(({ colors }) => ({
   card: {

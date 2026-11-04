@@ -13,6 +13,12 @@ export const stats = {
   communityDelivered: 'Completed handovers',
   communityHint: 'The numbers update automatically every minute.',
   recentActivity: 'What’s happening with me',
+  // FR-STATS-008 — the member's own givings per world.
+  byWorldTitle: 'My givings by world',
+  byWorldGiven: 'Given',
+  byWorldReceived: 'Received',
+  byWorldClosed: 'Closed',
+  byWorldEmpty: 'Once a giving is handed over, it shows here under its world.',
   activityEmpty: 'No activity to show yet. Posting or closing a post will appear here.',
   activitySomeone: 'User',
   activityKind: {

@@ -29,6 +29,7 @@ describe('mapListingDetail', () => {
     expect(out?.lat).toBe(32.08);
     expect(out?.media).toHaveLength(1);
     expect(out?.feedPostId).toBeNull();
+    expect(out?.feedHidden).toBe(false);
   });
 
   it('maps the feed mirror post id when the listing has one (D-206)', () => {
@@ -43,5 +44,22 @@ describe('mapListingDetail', () => {
       feed_post_id: 'p_mirror',
     });
     expect(out?.feedPostId).toBe('p_mirror');
+    expect(out?.feedHidden).toBe(false);
+  });
+
+  it('maps a post the main feed does not list yet (0557)', () => {
+    const out = mapListingDetail({
+      listing_id: 'l1',
+      owner_id: 'u1',
+      world_slug: 'knowledge',
+      kind_slug: 'course',
+      direction: 'give',
+      title: 'Intro to SQL',
+      details: {},
+      feed_post_id: 'p_hidden',
+      feed_hidden: true,
+    });
+    expect(out?.feedPostId).toBe('p_hidden');
+    expect(out?.feedHidden).toBe(true);
   });
 });

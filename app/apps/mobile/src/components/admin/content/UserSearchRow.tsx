@@ -5,7 +5,7 @@
 // profile screen first.
 // FR-ADMIN-030 — inline "Roles" opens the admin person screen, where any user
 // can be given a role, moved or re-roled.
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import {
@@ -38,7 +38,7 @@ function canShowBanButton(status: string): boolean {
   return status !== 'banned' && status !== 'deleted';
 }
 
-export function UserSearchRow({ row }: UserSearchRowProps) {
+function UserSearchRowInner({ row }: UserSearchRowProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   const tone = statusTone(row.accountStatus);
@@ -133,3 +133,5 @@ const useStyles = makeUseStyles(({ colors }) => ({
   },
   actionText:  { ...typography.caption, ...typography.bold, color: colors.error },
 }));
+
+export const UserSearchRow = memo(UserSearchRowInner);

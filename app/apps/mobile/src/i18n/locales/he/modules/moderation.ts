@@ -83,6 +83,12 @@ export const moderationHe = {
     confirmUnblockBody: 'תוכלו לראות שוב זה את זה. מעקב שהוסר בגלל החסימה לא יחזור.',
     blockedToast: 'המשתמש נחסם.',
     unblockedToast: 'החסימה בוטלה.',
+    // FR-MOD-004 AC1 — the Blocked Users screen (Settings).
+    listTitle: 'משתמשים חסומים',
+    listHint: 'מי שחסמתם לא רואה אתכם ואתם לא רואים אותו. ביטול חסימה מחזיר את הנראות, אבל לא את המעקב.',
+    listEmpty: 'לא חסמתם אף אחד.',
+    listError: 'לא הצלחנו לטעון את הרשימה. נסו שוב.',
+    unnamedUser: 'משתמש',
     failed: 'משהו השתבש. נסו שוב.',
   },
   actions: {

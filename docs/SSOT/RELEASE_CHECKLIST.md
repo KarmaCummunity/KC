@@ -50,7 +50,7 @@ The `main` push runs **CI**; when it succeeds, **Deploy** (`deploy.yml`) starts 
 7. **smoke** — `/version.json` reports the SHA, page + JS bundle load, Supabase Auth health, and each function with a side-effect-free probe answers one `OPTIONS` with exactly the status its handler's first check returns (`scripts/edge-functions.mjs`).
 8. **tag release** — annotated `vX.Y.Z` on the commit + a GitHub Release with generated notes.
 
-**Sync main → dev** runs after the merge and opens a zero-diff PR into `dev`. The owner merges it as a **merge commit** with the admin bypass (the `dev` merge queue only squashes, `TD-182`); otherwise the next release PR conflicts.
+**Sync main → dev** runs after the merge and opens a zero-diff PR into `dev` labelled `no-auto-merge` (the merge queue would squash it and drop the ancestry; a hand-made sync PR needs the label before it is marked ready). The owner merges it as a **merge commit** with the admin bypass (the `dev` merge queue only squashes, `TD-182`); otherwise the next release PR conflicts.
 
 ### Spot-check after a green deploy (~5 min, optional)
 

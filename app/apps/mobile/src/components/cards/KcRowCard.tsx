@@ -36,7 +36,7 @@ export interface KcRowCardProps {
 
 const THUMB = 52;
 
-export function KcRowCard(p: KcRowCardProps) {
+function KcRowCardInner(p: KcRowCardProps) {
   const { colors } = useTheme();
   const s = useKcRowCardStyles();
   const isGive = p.tone === 'give';
@@ -93,3 +93,5 @@ export function KcRowCard(p: KcRowCardProps) {
     </Pressable>
   );
 }
+
+export const KcRowCard = React.memo(KcRowCardInner);

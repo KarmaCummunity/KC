@@ -39,7 +39,8 @@ function MessageBubbleInner({
   handledByLaterAction?: boolean;
   reactionSummary?: ReactionSummary;
   myReaction?: MessageReactionType | null;
-  onReactionPick?: (reaction: MessageReactionType) => void;
+  /** Called with the persisted message id; reactions are off for unsent messages. */
+  onReactionPick?: (messageId: string, reaction: MessageReactionType) => void;
 }) {
   const [showTime, setShowTime] = useState(false);
   const { t } = useTranslation();
@@ -48,6 +49,14 @@ function MessageBubbleInner({
   const styles = useMessageBubbleStyles();
   const { colors } = useTheme();
   const mineMetaColor = { color: colors.textInverse, opacity: 0.7 };
+
+  const handlePickReaction = React.useMemo(
+    () =>
+      onReactionPick && m.messageId
+        ? (reaction: MessageReactionType) => onReactionPick(m.messageId!, reaction)
+        : undefined,
+    [m.messageId, onReactionPick],
+  );
 
   // System messages (FR-CHAT-007 / FR-MOD-002) — moderation kinds delegate to
   // SystemMessageBubble; unknown/legacy kinds keep the existing neutral pill.
@@ -61,11 +70,11 @@ function MessageBubbleInner({
             {m.body}
           </Text>
         ) : null}
-        {m.messageId && onReactionPick ? (
+        {handlePickReaction ? (
           <ChatReactionChips
             summary={reactionSummary ?? {}}
             mine={myReaction ?? null}
-            onPick={onReactionPick}
+            onPick={handlePickReaction}
           />
         ) : null}
       </View>
@@ -118,11 +127,11 @@ function MessageBubbleInner({
     >
       <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleOther]}>
         <Text style={[styles.bubbleText, mine ? styles.bubbleTextMine : styles.bubbleTextOther]}>{m.body}</Text>
-        {m.messageId && onReactionPick ? (
+        {handlePickReaction ? (
           <ChatReactionChips
             summary={reactionSummary ?? {}}
             mine={myReaction ?? null}
-            onPick={onReactionPick}
+            onPick={handlePickReaction}
           />
         ) : null}
         <View style={styles.bubbleMeta}>
