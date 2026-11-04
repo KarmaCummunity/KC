@@ -6,6 +6,11 @@
 
 ---
 
+## LAUNCH — top priority (`priority:launch`)
+
+Above P0. Work open issues labeled [`priority:launch`](https://github.com/KarmaCummunity/KC/issues?q=is%3Aopen+label%3Apriority%3Alaunch) first: **Rides (טרמפים)** and **Items (חפצים)** end-to-end flows first, then other launch blockers (auth, crashes, store readiness).
+
+
 ## TRANSLATE — Shared infra
 
 | ID | Task | Owner | Status | Spec |

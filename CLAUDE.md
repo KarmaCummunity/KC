@@ -367,6 +367,7 @@ When two agents are running concurrently:
 
 Release is paused (see top), so priorities are:
 1. **Assigned task** from the PM — always first.
+1a. **`priority:launch` issues** — everything required for the upcoming launch, above P0. Order inside: **Rides** and **Items** end-to-end flows first, then other launch blockers (auth, crashes, store readiness).
 2. **Spec work** — closing open questions / `S#` approvals in `docs/spec/92_open_questions.md` and `91_kc_fills_pending.md` only with the PM.
 3. **Implementation gaps** in `docs/spec/93_implementation_gaps.md` (`G#`) the PM has prioritized — each as a task with code + spec section + automated test.
 4. Otherwise: the highest-priority `⏳ Planned` item in `docs/SSOT/BACKLOG.md` (active open items only — not `archive/`) that does not contradict `docs/spec/`. Move it to `🟡 In progress` before you start coding.
@@ -425,7 +426,7 @@ When this section is active, the agent operates as a continuous self-driven task
 ### Iteration cycle
 
 1. **Pick next work** in this priority order:
-   1. Highest-priority `⏳ Planned` item in `docs/SSOT/BACKLOG.md` (active open items only — not `archive/`; P0 > P1 > P2 > P3 > INFRA).
+   1. Highest-priority `⏳ Planned` item in `docs/SSOT/BACKLOG.md` (active open items only — not `archive/`; **`priority:launch`** (Rides + Items first) > P0 > P1 > P2 > P3 > INFRA). Open GitHub issues labeled `priority:launch` outrank every BACKLOG row.
    2. If no `⏳` remain: highest-impact item from `docs/SSOT/TECH_DEBT.md` Active section.
    3. If both empty: SSOT documentation polish, adjacent dead-code removal, or test-coverage gaps surfaced by `pnpm test` in `app/`.
 2. **Flip status to 🟡 In progress** before any code edit.
