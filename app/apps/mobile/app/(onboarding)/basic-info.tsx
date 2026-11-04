@@ -14,6 +14,7 @@ import { staggerDelay } from '../../src/lib/animations/motion';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { TextField } from '../../src/components/ui/TextField';
 import { PrimaryButton } from '../../src/components/ui/Buttons';
+import { DateOfBirthField } from '../../src/components/DateOfBirthField';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -26,7 +27,7 @@ export default function OnboardingBasicInfoScreen() {
   const { t } = useTranslation();
   const {
     displayName, setDisplayName, city, setCity, street, setStreet, streetNumber, setStreetNumber,
-    contactPhone, setContactPhone,
+    contactPhone, setContactPhone, dateOfBirth, setDateOfBirth,
     loading, hasRequiredFields, handleBack, handleContinue, handleSkip,
   } = useOnboardingBasicInfoFlow();
 
@@ -116,6 +117,10 @@ export default function OnboardingBasicInfoScreen() {
             ) : null}
 
             <AnimatedEntry delay={staggerDelay(5)}>
+              <DateOfBirthField value={dateOfBirth} onChange={setDateOfBirth} disabled={loading} />
+            </AnimatedEntry>
+
+            <AnimatedEntry delay={staggerDelay(6)}>
               <TextField
                 containerStyle={styles.field}
                 label={t('onboarding.contactPhoneLabel')}
@@ -129,7 +134,7 @@ export default function OnboardingBasicInfoScreen() {
             </AnimatedEntry>
           </ScrollView>
 
-          <AnimatedEntry delay={staggerDelay(6)} style={styles.ctaWrap}>
+          <AnimatedEntry delay={staggerDelay(7)} style={styles.ctaWrap}>
             <PrimaryButton
               label={t('onboarding.continue')}
               accessibilityLabel={t('onboarding.continueA11y')}

@@ -14,7 +14,7 @@
 //   → 500 { error: 'salt_missing' | 'internal' }
 //   → 503 { error: 'circuit_open' }
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { corsHeaders, isAllowedOrigin } from '../_shared/cors.ts';
 import { reportError, withObservability } from '../_shared/observability/mod.ts';
 

@@ -1,6 +1,6 @@
 // app/apps/mobile/app/(admin)/money/index.tsx
 // V2-ADMIN-MONEY-9 — V2 §13.3 Admin Money — minimal donations / expenses ledger.
-import { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { adminChipScroll } from '../../../src/components/admin/adminChipScroll';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -16,6 +16,7 @@ import { container } from '../../../src/lib/container';
 import { FinanceEntryCard } from '../../../src/components/admin/money/FinanceEntryCard';
 import { FinanceEntryFormModal } from '../../../src/components/admin/money/FinanceEntryFormModal';
 import { AdminFilterChip } from '../../../src/components/admin/AdminFilterChip';
+import { MoneySubNav } from '../../../src/components/admin/money/MoneySubNav';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
 import { confirmAction as platformConfirm } from '../../../src/services/platformConfirm';
 import { useLocaleBundle, type LocaleBundle } from '../../../src/i18n/useLocaleBundle';
@@ -40,6 +41,25 @@ function fmtAmount(cents: number, currency: string): string {
   catch { return `${major.toFixed(2)} ${currency}`; }
 }
 
+const financeKeyExtractor = (e: FinanceEntry) => e.entryId;
+
+const FinanceRowItem = React.memo(function FinanceRowItem({
+  entry,
+  accountName,
+  onEdit,
+  onDelete,
+}: {
+  entry: FinanceEntry;
+  accountName: string | null;
+  onEdit: (entry: FinanceEntry) => void;
+  onDelete: (entryId: string) => void;
+}) {
+  const handleEdit = useCallback(() => onEdit(entry), [entry, onEdit]);
+  const handleDelete = useCallback(() => onDelete(entry.entryId), [entry.entryId, onDelete]);
+
+  return <FinanceEntryCard entry={entry} accountName={accountName} onEdit={handleEdit} onDelete={handleDelete} />;
+});
+
 export default function MoneyScreen() {
   const styles = useStyles();
   const L = useLocaleBundle();
@@ -63,6 +83,19 @@ export default function MoneyScreen() {
     enabled:  can('money.manage'),
     staleTime: 15_000,
   });
+  const accounts = useQuery({
+    queryKey: ['admin.money.accounts'],
+    queryFn:  () => container.listFinanceAccounts.execute(),
+    enabled:  can('money.manage'),
+    staleTime: 60_000,
+  });
+  const accountNames = useMemo(
+    () => new Map((accounts.data ?? []).map((a) => [a.accountId, a.name])),
+    [accounts.data],
+  );
+  // Newest entries come first, so the first one with an account is the most recently used one.
+  const lastUsedAccountId = list.data?.rows.find((r) => r.accountId !== null)?.accountId ?? null;
+
   const summary = useQuery({
     queryKey: ['admin.money.summary'],
     queryFn:  () => container.getFinanceSummary.execute({}),
@@ -75,8 +108,42 @@ export default function MoneyScreen() {
     onSuccess:  () => {
       void queryClient.invalidateQueries({ queryKey: ['admin.money.list'] });
       void queryClient.invalidateQueries({ queryKey: ['admin.money.summary'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin.money.accounts'] });
+      void queryClient.invalidateQueries({ queryKey: ['org-transparency'] });
     },
   });
+
+  const handleEdit = useCallback((entry: FinanceEntry) => setEditing(entry), []);
+  const handleDelete = useCallback(
+    async (entryId: string) => {
+      const ok = await confirmDelete(t.confirm.delete, L);
+      if (!ok) return;
+      try {
+        await remove.mutateAsync(entryId);
+      } catch (err) {
+        const code = isFinanceLedgerError(err) ? err.code : 'unknown';
+        const msg = t.errors[code as keyof typeof t.errors] ?? t.errors.unknown;
+        if (Platform.OS === 'web') {
+          if (typeof window !== 'undefined') window.alert(msg);
+        } else {
+          Alert.alert(msg);
+        }
+      }
+    },
+    [L, remove, t],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: FinanceEntry }) => (
+      <FinanceRowItem
+        entry={item}
+        accountName={item.accountId ? (accountNames.get(item.accountId) ?? null) : null}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
+    ),
+    [accountNames, handleDelete, handleEdit],
+  );
 
   if (rolesLoading) {
     return <View style={styles.center}><Text>{t.loading}</Text></View>;
@@ -91,6 +158,8 @@ export default function MoneyScreen() {
         <Text style={styles.title}>{t.title}</Text>
         <PrimaryButton testID="admin-money-new" label={t.newBtn} size="sm" onPress={() => setCreating(true)} />
       </View>
+
+      <MoneySubNav active="ledger" />
 
       <View style={styles.summaryBox}>
         <Text style={styles.summaryHeading}>{t.summary.period}</Text>
@@ -126,25 +195,10 @@ export default function MoneyScreen() {
       <Text style={styles.totalLabel}>{t.totalCount(list.data?.totalCount ?? 0)}</Text>
 
       <KcFlashList
-        data={[...(list.data?.rows ?? [])]}
-        keyExtractor={(e) => e.entryId}
-        renderItem={({ item }) => (
-          <FinanceEntryCard
-            entry={item}
-            onEdit={() => setEditing(item)}
-            onDelete={async () => {
-              const ok = await confirmDelete(t.confirm.delete, L);
-              if (!ok) return;
-              try { await remove.mutateAsync(item.entryId); }
-              catch (err) {
-                const code = isFinanceLedgerError(err) ? err.code : 'unknown';
-                const msg = t.errors[code as keyof typeof t.errors] ?? t.errors.unknown;
-                if (Platform.OS === 'web') { if (typeof window !== 'undefined') window.alert(msg); }
-                else Alert.alert(msg);
-              }
-            }}
-          />
-        )}
+        data={list.data?.rows ?? []}
+        keyExtractor={financeKeyExtractor}
+        estimatedItemSize={120}
+        renderItem={renderItem}
         refreshControl={
           <RefreshControl refreshing={list.isRefetching} onRefresh={() => { void list.refetch(); void summary.refetch(); }} />
         }
@@ -156,12 +210,16 @@ export default function MoneyScreen() {
       {(creating || editing) && (
         <FinanceEntryFormModal
           initial={editing}
+          accounts={accounts.data ?? []}
+          defaultAccountId={lastUsedAccountId}
           onClose={() => { setCreating(false); setEditing(null); }}
           onSaved={() => {
             setCreating(false);
             setEditing(null);
             void queryClient.invalidateQueries({ queryKey: ['admin.money.list'] });
             void queryClient.invalidateQueries({ queryKey: ['admin.money.summary'] });
+            void queryClient.invalidateQueries({ queryKey: ['admin.money.accounts'] });
+            void queryClient.invalidateQueries({ queryKey: ['org-transparency'] });
           }}
         />
       )}

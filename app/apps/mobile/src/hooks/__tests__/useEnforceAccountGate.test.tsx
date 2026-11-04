@@ -38,6 +38,17 @@ describe('useEnforceAccountGate', () => {
     await waitFor(() => expect(m.replace).toHaveBeenCalledWith({ pathname: '/account-blocked', params: { reason: 'banned', until: '2030-01-01' } }));
     expect(m.fullSignOut).toHaveBeenCalledTimes(1);
   });
+  it('routes a deleted account to the restore screen once, without signing out (FR-AUTH-016)', async () => {
+    vi.useFakeTimers();
+    m.gate.mockResolvedValue({ allowed: false, reason: 'pending_deletion', until: '2026-12-03T00:00:00Z' });
+    renderHook(() => useEnforceAccountGate('u3'));
+    await vi.waitFor(() => expect(m.replace).toHaveBeenCalledWith({ pathname: '/restore-account', params: { until: '2026-12-03T00:00:00Z' } }));
+    expect(m.fullSignOut).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(m.gate).toHaveBeenCalledTimes(2);
+    expect(m.replace).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
   it('retries after gate failures and removes callback on unmount', async () => {
     vi.useFakeTimers(); m.gate.mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ allowed: true });
     const { unmount } = renderHook(() => useEnforceAccountGate('u1'));

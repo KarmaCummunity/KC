@@ -40,7 +40,9 @@ export type PostStatus =
   | 'expired'
   | 'removed_admin'
   // D33/D61 — 3 reports hide a post until an admin restores or removes it.
-  | 'hidden_pending_review';
+  | 'hidden_pending_review'
+  // D104 — the owner paused the post: hidden from everyone but the owner (G1, migration 0551).
+  | 'paused';
 
 export type PostVisibility = 'Public' | 'FollowersOnly' | 'OnlyMe';
 
@@ -164,10 +166,14 @@ export type DonationCategorySlug =
   | 'transport'
   | 'knowledge'
   | 'animals'
-  | 'medical';
+  | 'medical'
+  | 'democracy'
+  | 'employment'
+  | 'challenges';
 
 export const DONATION_CATEGORY_SLUGS: readonly DonationCategorySlug[] = [
   'time', 'money', 'food', 'housing', 'transport', 'knowledge', 'animals', 'medical',
+  'democracy', 'employment', 'challenges',
 ] as const;
 
 // Mirrors the CHECK constraints in 0014_donation_categories_and_links.sql.

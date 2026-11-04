@@ -23,15 +23,23 @@ const PRIVATE_SLICE: UsersSelfPrivateSlice = {
   is_super_admin: false,
   active_posts_count_internal: 0,
   karma_points: 0,
+  date_of_birth: null,
 };
 
 function makeFakeClient(opts: {
   data?: unknown;
   error?: { message: string } | null;
   privateSlice?: UsersSelfPrivateSlice | null;
-}): { client: SupabaseClient<any>; calls: SelectCall[] } {
+  /** The signed-in user; the private slice belongs to them. Defaults to the profile owner. */
+  sessionUserId?: string;
+}): { client: SupabaseClient<any>; calls: SelectCall[]; rpcCalls: string[] } {
   const calls: SelectCall[] = [];
+  const rpcCalls: string[] = [];
+  const sessionUserId = opts.sessionUserId ?? 'u_me';
   const client = {
+    auth: {
+      getSession: async () => ({ data: { session: { user: { id: sessionUserId } } }, error: null }),
+    },
     from: (table: string) => ({
       select: (cols: string) => ({
         eq: (col: string, val: unknown) => ({
@@ -43,13 +51,14 @@ function makeFakeClient(opts: {
       }),
     }),
     rpc: async (fn: string) => {
+      rpcCalls.push(fn);
       if (fn === 'users_get_self_private_fields') {
         return { data: opts.privateSlice ?? PRIVATE_SLICE, error: null };
       }
       return { data: null, error: null };
     },
   } as unknown as SupabaseClient<any>;
-  return { client, calls };
+  return { client, calls, rpcCalls };
 }
 
 const PUBLIC_ROW = {
@@ -114,6 +123,17 @@ describe('supabaseGetEditableProfile', () => {
     expect(out.contactPhone).toBeNull();
     expect(out.biography).toBeNull();
     expect(out.avatarUrl).toBeNull();
+  });
+
+  it("returns null private fields for another member's profile, without reading the caller's slice", async () => {
+    // Regression: the RPC returns the caller's phone and address, which used to be
+    // merged into whichever profile was requested.
+    const { client, rpcCalls } = makeFakeClient({ data: PUBLIC_ROW, sessionUserId: 'u_viewer' });
+
+    const out = await supabaseGetEditableProfile(client, 'u_me');
+
+    expect(rpcCalls).toEqual([]);
+    expect(out).toMatchObject({ displayName: 'Alice', contactPhone: null, profileStreet: null, profileStreetNumber: null });
   });
 
   it('throws "no row" when data is null (user missing or RLS-hidden)', async () => {

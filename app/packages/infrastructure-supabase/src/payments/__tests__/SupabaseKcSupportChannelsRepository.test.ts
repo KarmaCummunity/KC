@@ -5,57 +5,51 @@ import { SupabaseKcSupportChannelsRepository } from '../SupabaseKcSupportChannel
 
 type Result = { data: unknown; error: unknown };
 
-/** Minimal fake of `from(table).select(cols).eq(col, value)` that records the query. */
+/** Minimal fake of `rpc(fn)` that records which function was called. */
 function makeRepo(result: Result) {
-  const query: { table?: string; columns?: string; filter?: [string, unknown] } = {};
+  const calls: string[] = [];
   const client = {
-    from: (table: string) => {
-      query.table = table;
-      return {
-        select: (columns: string) => {
-          query.columns = columns;
-          return {
-            eq: async (column: string, value: unknown) => {
-              query.filter = [column, value];
-              return result;
-            },
-          };
-        },
-      };
+    rpc: async (fn: string) => {
+      calls.push(fn);
+      return result;
     },
   } as unknown as SupabaseClient;
-  return { repo: new SupabaseKcSupportChannelsRepository(client as never), query };
+  return { repo: new SupabaseKcSupportChannelsRepository(client as never), calls };
 }
 
 describe('SupabaseKcSupportChannelsRepository', () => {
-  it('reads active rows and maps them to domain channels', async () => {
-    const { repo, query } = makeRepo({
+  it('reads channels through list_kc_support_channels and maps them to domain channels', async () => {
+    const { repo, calls } = makeRepo({
       data: [
-        { channel: 'bit', url: 'https://bit.example/pay', provider_label: 'Bit' },
-        { channel: 'card_standing_order', url: 'https://pay.grow.link/m', provider_label: 'Grow' },
+        { channel: 'bit', url: 'https://bit.example/pay', provider_label: 'Bit', payee_phone: '0500000000' },
+        { channel: 'card_standing_order', url: 'https://pay.grow.link/m', provider_label: 'Grow', payee_phone: null },
       ],
       error: null,
     });
     expect(await repo.listActiveChannels()).toEqual([
-      { kind: 'bit', url: 'https://bit.example/pay', providerLabel: 'Bit' },
-      { kind: 'card_standing_order', url: 'https://pay.grow.link/m', providerLabel: 'Grow' },
+      { kind: 'bit', url: 'https://bit.example/pay', providerLabel: 'Bit', payeePhone: '0500000000' },
+      { kind: 'card_standing_order', url: 'https://pay.grow.link/m', providerLabel: 'Grow', payeePhone: null },
     ]);
-    expect(query).toEqual({
-      table: 'kc_support_channels',
-      columns: 'channel, url, provider_label',
-      filter: ['is_active', true],
+    expect(calls).toEqual(['list_kc_support_channels']);
+  });
+
+  it('treats a missing payee phone (guest masking) as null', async () => {
+    const { repo } = makeRepo({
+      data: [{ channel: 'paybox', url: 'https://links.payboxapp.com/x', provider_label: 'PayBox' }],
+      error: null,
     });
+    expect((await repo.listActiveChannels())[0]?.payeePhone).toBeNull();
   });
 
   it('drops rows with an unknown channel kind', async () => {
     const { repo } = makeRepo({
-      data: [{ channel: 'bank_transfer', url: 'https://bank.example', provider_label: 'Bank' }],
+      data: [{ channel: 'bank_transfer', url: 'https://bank.example', provider_label: 'Bank', payee_phone: null }],
       error: null,
     });
     expect(await repo.listActiveChannels()).toEqual([]);
   });
 
-  it('throws KcSupportChannelsError on a query error', async () => {
+  it('throws KcSupportChannelsError on an RPC error', async () => {
     const { repo } = makeRepo({ data: null, error: { message: 'boom' } });
     await expect(repo.listActiveChannels()).rejects.toBeInstanceOf(KcSupportChannelsError);
   });

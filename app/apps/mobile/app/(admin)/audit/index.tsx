@@ -2,9 +2,9 @@
 // FR-ADMIN-020 — admin audit log viewer with role-tiered visibility.
 // V2-ADMIN-AUDIT-5 — date-range filter + CSV export (web).
 // Rebuilt on top of the shared filterKit (issue #1457).
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
-import { type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
+import { type AdminAuditRow, type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
 import type { AdminAuditSearchFilters } from '@kc/application';
 import { makeUseStyles, radius, spacing, Text, TextInput, typography } from '@kc/ui';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
@@ -35,6 +35,8 @@ const COMMON_ACTIONS = [
   'delete_message',
   'delete_account',
 ] as const;
+
+const auditKeyExtractor = (e: AdminAuditRow) => e.eventId;
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 function parseFromDate(value: string): Date | undefined {
@@ -69,6 +71,11 @@ export default function AuditScreen() {
 
   const result = useAdminAuditSearch(filters);
   const can = (perm: AdminPermission) => hasPermission(roles as readonly AdminRole[], perm);
+
+  const renderItem = useCallback(
+    ({ item }: { item: AdminAuditRow }) => <AuditLogRow row={item} />,
+    [],
+  );
 
   async function doExport() {
     setExportError(null);
@@ -172,9 +179,10 @@ export default function AuditScreen() {
       />
       <Text style={styles.totalLabel}>{L.admin.content.totalCount(result.page.totalCount)}</Text>
       <KcFlashList
-        data={[...result.page.rows]}
-        keyExtractor={(e) => e.eventId}
-        renderItem={({ item }) => <AuditLogRow row={item} />}
+        data={result.page.rows}
+        keyExtractor={auditKeyExtractor}
+        estimatedItemSize={64}
+        renderItem={renderItem}
         refreshControl={<RefreshControl refreshing={result.isRefetching} onRefresh={result.refetch} />}
         ListEmptyComponent={
           !result.isLoading ? (

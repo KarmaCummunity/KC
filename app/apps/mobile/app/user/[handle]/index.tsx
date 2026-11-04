@@ -14,7 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useProfileClosedPosts } from '../../../src/hooks/useProfileClosedPosts';
 import { useProfileTabCounts } from '../../../src/hooks/useProfileTabCounts';
-import { iconSize, useTheme, Text } from '@kc/ui';
+import { iconSize, spacing, useTheme, Text } from '@kc/ui';
 import { ProfileHeader } from '../../../src/components/profile/ProfileHeader';
 import { ProfileStatsRow } from '../../../src/components/profile/ProfileStatsRow';
 import { ProfileTabs, type ProfilePostsTab } from '../../../src/components/profile/ProfileTabs';
@@ -22,7 +22,6 @@ import { ProfilePostsGrid } from '../../../src/components/profile/ProfilePostsGr
 import { ProfileClosedPostsGrid } from '../../../src/components/profile/ProfileClosedPostsGrid';
 import { FollowButton } from '../../../src/components/profile/FollowButton';
 import { useAuthStore } from '../../../src/store/authStore';
-import type { User } from '@kc/domain';
 import { getUserRepo } from '../../../src/services/userComposition';
 import { getMyPostsUseCase } from '../../../src/services/postsComposition';
 import { getGetFollowStateUseCase } from '../../../src/services/followComposition';
@@ -31,7 +30,7 @@ import {
   type FollowActionError,
 } from '../../../src/hooks/useOptimisticFollowAction';
 import { useOtherProfileActions } from '../../../src/hooks/useOtherProfileActions';
-import { hasPermission, type AdminRole } from '@kc/domain';
+import { hasPermission, type AdminRole, type User } from '@kc/domain';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { useAdminPerson } from '../../../src/hooks/useAdminPerson';
 import { NotifyModal } from '../../../src/components/NotifyModal';
@@ -100,7 +99,7 @@ export default function OtherProfileScreen() {
   // When `u` is null (still loading), we pass a safe fallback so the hook is always called.
   const dispatchFollowAction = useOptimisticFollowAction({
     viewerId: me,
-    target: u ?? { userId: '', shareHandle: '', privacyMode: 'Public' } as User,
+    target: u ?? ({ userId: '', shareHandle: '', privacyMode: 'Public' } as User),
     handle: handle ?? '',
     onError: setError,
   });
@@ -143,7 +142,7 @@ export default function OtherProfileScreen() {
   });
 
   if (!handle || userQuery.isLoading)
-    return <SafeAreaView style={styles.container} edges={['bottom']}><ActivityIndicator style={{ marginTop: 80 }} color={colors.primary} /></SafeAreaView>; // brand-guard-allow: loading spinner offset above spacing scale
+    return <SafeAreaView style={styles.container} edges={['bottom']}><ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} /></SafeAreaView>;
 
   if (!u) return (
     <SafeAreaView style={styles.container} edges={['bottom']}>

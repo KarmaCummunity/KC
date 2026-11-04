@@ -20,3 +20,29 @@ export {
   type SavedPostsActor,
   type SavedPostsContractContext,
 } from './savedPostsRepository.contract';
+export {
+  CHAT_MESSAGE_MAX_LENGTH,
+  chatRepositoryContract,
+  type ChatActor,
+  type ChatContractContext,
+} from './chatRepository.contract';
+export {
+  reportRepositoryContract,
+  type ReportActor,
+  type ReportContractContext,
+} from './reportRepository.contract';
+export {
+  FOLLOW_REQUEST_COOLDOWN_DAYS,
+  followGraphContract,
+  type FollowActor,
+  type FollowGraph,
+  type FollowGraphContractContext,
+} from './followGraph.contract';
+export {
+  PROFILE_FIELD_LIMITS,
+  profileEditingContract,
+  type ProfileActor,
+  type ProfileCity,
+  type ProfileEditing,
+  type ProfileEditingContractContext,
+} from './profileEditing.contract';

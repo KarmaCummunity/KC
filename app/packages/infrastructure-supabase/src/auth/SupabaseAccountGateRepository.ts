@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AccountGateResult, IAccountGateRepository } from '@kc/application';
-import { InfrastructureError } from '@kc/application';
+import { InfrastructureError, RestoreAccountError } from '@kc/application';
+import type { RestoreAccountErrorCode } from '@kc/application';
 import type { Database } from '../database.types';
 
 /**
@@ -34,4 +35,18 @@ export class SupabaseAccountGateRepository implements IAccountGateRepository {
       until: row.until_at ?? undefined,
     };
   }
+
+  /** FR-AUTH-016 — `rpc_restore_account`; its error text carries the reason. */
+  async restoreAccount(): Promise<void> {
+    const { error } = await this.client.rpc('rpc_restore_account');
+    if (!error) return;
+    throw new RestoreAccountError(mapRestoreError(error.message ?? ''), error);
+  }
+}
+
+function mapRestoreError(message: string): RestoreAccountErrorCode {
+  if (message.includes('grace_expired')) return 'grace_expired';
+  if (message.includes('not_pending_deletion')) return 'not_pending_deletion';
+  if (message.includes('unauthenticated')) return 'unauthenticated';
+  return 'network';
 }

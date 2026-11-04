@@ -7,6 +7,7 @@ import { iconSize, useTheme, Text } from '@kc/ui';
 import type { PostWithOwner } from '@kc/application';
 import { AvatarInitials } from '../../components/AvatarInitials';
 import { PostImageCarousel } from '../../components/PostImageCarousel';
+import { DetailHeroCard } from '../../components/post-detail/DetailHeroCard';
 import { PostDetailStatusBadge } from '../../components/post-detail/PostDetailStatusBadge';
 import { PostDetailNotices } from '../../components/post-detail/PostDetailNotices';
 import { RecipientCallout } from '../../components/post-detail/RecipientCallout';
@@ -17,6 +18,7 @@ import { useReaderLanguage } from '../../hooks/useReaderLanguage';
 import { useTranslatedPosts } from '../../hooks/useTranslatedPosts';
 import { usePostDetailStyles } from './postDetailScreen.styles';
 import { PostEngagementSection } from '../../components/post-detail/PostEngagementSection';
+import { PostItemReservation } from '../../components/post-detail/PostItemReservation';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
 import { MirroredIcon } from '../../components/ui/MirroredIcon';
 
@@ -69,21 +71,17 @@ export function PostDetailScrollContent({
       contentContainerStyle={scrollBottomInset > 0 ? { paddingBottom: scrollBottomInset } : undefined}
     >
       <MotionEntry variant="hero" delay={ENTRY_DELAY.hero}>
-        <View style={[styles.imageWrap, isClosed ? styles.imageWrapClosed : null]}>
+        <DetailHeroCard
+          closed={isClosed}
+          isGive={isGive}
+          typeLabel={isGive ? t('post.detail.typeGiveLabel') : t('post.detail.typeRequestLabel')}
+          badge={<PostDetailStatusBadge status={post.status} />}
+        >
           <PostImageCarousel
             mediaAssets={post.mediaAssets}
             fallbackIcon={isGive ? 'gift-outline' : 'search-outline'}
           />
-          {isClosed ? <View style={styles.closedImageTint} pointerEvents="none" /> : null}
-          <View style={styles.statusBadgePos}>
-            <PostDetailStatusBadge status={post.status} />
-          </View>
-          <View style={styles.typeTagOverlay}>
-            <Text style={isGive ? styles.giveTagText : styles.requestTagText}>
-              {isGive ? t('post.detail.typeGiveLabel') : t('post.detail.typeRequestLabel')}
-            </Text>
-          </View>
-        </View>
+        </DetailHeroCard>
       </MotionEntry>
 
       <MotionEntry variant="bottom" delay={ENTRY_DELAY.section}>
@@ -161,6 +159,8 @@ export function PostDetailScrollContent({
               ownerHandle={post.ownerHandle}
             />
           </View>
+
+          <PostItemReservation post={post} />
 
           {isOpen ? <PostEngagementSection postId={post.postId} viewerId={viewerId} /> : null}
         </View>

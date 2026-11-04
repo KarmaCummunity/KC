@@ -14,7 +14,7 @@
 //   → 405 { error: 'method_not_allowed' }
 //   → 500 { error: 'internal' }
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { reportError, withObservability } from '../_shared/observability/mod.ts';
 
 // ---------------------------------------------------------------------------

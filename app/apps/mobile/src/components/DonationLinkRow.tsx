@@ -15,6 +15,18 @@ interface Props {
   onMenuPress: (link: DonationLink) => void;
 }
 
+/**
+ * D9 — the status line of a link that is not approved yet. Only its submitter (and reviewers)
+ * receive such a link; an approved link has none.
+ */
+function reviewLabelFor(link: DonationLink, t: (key: string, args?: Record<string, string>) => string): string | null {
+  if (link.reviewStatus === 'pending') return t('donations.links.reviewPending');
+  if (link.reviewStatus !== 'rejected') return null;
+  return link.reviewNote
+    ? t('donations.links.reviewRejectedNote', { note: link.reviewNote })
+    : t('donations.links.reviewRejected');
+}
+
 function getHost(url: string): string {
   try {
     return new URL(url).host.replace(/^www\./, '');
@@ -64,6 +76,7 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
   title: { ...typography.h3, color: colors.textPrimary, textAlign: rtlTextAlignStart },
   description: { ...typography.body, color: colors.textSecondary, textAlign: rtlTextAlignStart },
   host: { ...typography.caption, color: colors.textDisabled, textAlign: rtlTextAlignStart },
+  reviewBadge: { ...typography.caption, ...typography.semiBold, color: colors.warning, textAlign: rtlTextAlignStart },
   menuBtn: {
     width: 32,
     height: 32,
@@ -82,6 +95,7 @@ export function DonationLinkRow({ link, canRemove, onMenuPress }: Props) {
   const faviconUrl = `https://www.google.com/s2/favicons?domain=${host}&sz=64`;
 
   const open = () => { openExternalUrl(link.url); };
+  const reviewLabel = reviewLabelFor(link, t);
 
   return (
     <View style={styles.row}>
@@ -109,6 +123,11 @@ export function DonationLinkRow({ link, canRemove, onMenuPress }: Props) {
             <Text style={styles.description} numberOfLines={2}>{link.description}</Text>
           ) : null}
           <Text style={styles.host} numberOfLines={1}>{host}</Text>
+          {reviewLabel ? (
+            <Text style={styles.reviewBadge} numberOfLines={2} testID={`donation-link-review-${link.id}`}>
+              {reviewLabel}
+            </Text>
+          ) : null}
         </View>
       </Pressable>
 

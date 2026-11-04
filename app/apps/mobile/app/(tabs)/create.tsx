@@ -32,7 +32,7 @@ import { useCreatePostStyles } from '../../src/screens/tabs/create.styles';
 import { useCreatePostPublish } from '../../src/hooks/useCreatePostPublish';
 import { CreatePostFormScrollContent } from '../../src/components/CreatePostForm/CreatePostFormScrollContent';
 import { useUnifiedCreateCategory } from '../../src/hooks/useUnifiedCreateCategory';
-import { ListingCreateForm } from '../../src/components/CreatePostForm/ListingCreateForm';
+import { WorldCreateForm } from '../../src/components/CreatePostForm/WorldCreateForm';
 import { CreateFormHeaderPublishAction } from '../../src/components/CreatePostForm/CreateFormHeaderPublishAction';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
@@ -188,23 +188,21 @@ export default function CreatePostScreen() {
         <CreateFormHeaderPublishAction
           onPress={activeCategory.engine === 'post' ? tryPublish : () => listingPublishAction?.()}
           loading={activeCategory.engine === 'post' ? isPublishing : listingPublishLoading}
-          disabled={activeCategory.engine === 'listing' && listingPublishAction === null}
+          disabled={activeCategory.engine !== 'post' && listingPublishAction === null}
         />
       </View>
 
       {!ready ? (
         <ActivityIndicator style={styles.scroll} testID="create-preferences-loading" />
-      ) : activeCategory.engine === 'listing' && activeCategory.worldSlug ? (
-        <ListingCreateForm
-          key={activeCategory.worldSlug}
-          worldSlug={activeCategory.worldSlug}
+      ) : activeCategory.engine !== 'post' ? (
+        <WorldCreateForm
+          category={activeCategory}
           header={header}
           direction={direction}
           title={form.title}
           onTitleChange={form.setTitle}
           summary={form.description}
           onSummaryChange={form.setDescription}
-          onPublished={(id) => router.replace(`/(tabs)/donations/marketplace/${id}`)}
           onPublishActionChange={setListingPublishState}
         />
       ) : (

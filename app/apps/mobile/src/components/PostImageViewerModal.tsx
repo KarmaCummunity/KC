@@ -106,7 +106,7 @@ export function PostImageViewerModal({
   );
 }
 
-const useStyles = makeUseStyles(({ colors }) => ({
+const useStyles = makeUseStyles(({ colors, isDark }) => ({
   root: {
     flex: 1,
     backgroundColor: '#000',

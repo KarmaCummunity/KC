@@ -2,7 +2,7 @@
 // FR-ADMIN-019 — single row for the admin posts search.
 // V2-ADMIN-POSTS-6 — inline "Remove" / "Restore" affordance so admins can act
 // straight from the search results instead of opening every post detail.
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -38,7 +38,7 @@ function confirmAction(message: string, L: LocaleBundle): Promise<boolean> {
   });
 }
 
-export function PostSearchRow({ row }: PostSearchRowProps) {
+function PostSearchRowInner({ row }: PostSearchRowProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   const tone = statusTone(row.status);
@@ -142,3 +142,5 @@ const useStyles = makeUseStyles(({ colors }) => ({
   actionTextRestore: { ...typography.caption, ...typography.bold, color: colors.success },
   actionBtnDisabled: { opacity: 0.5 },
 }));
+
+export const PostSearchRow = memo(PostSearchRowInner);

@@ -1,7 +1,7 @@
 // FR-POST-008, FR-POST-009, FR-POST-015 AC1, FR-ADMIN-006. Edit form for open posts (owner or super-admin).
 // FR-POST-005 — images: same picker + upload pipeline as create.
 // Closes TD-130.
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -67,6 +67,8 @@ export default function EditPostScreen() {
   const {
     city, street, streetNumber, setCity, setStreet, setStreetNumber,
   } = useAddressStateWithCityReset({});
+  const addressSetters = useRef({ setCity, setStreet, setStreetNumber });
+  addressSetters.current = { setCity, setStreet, setStreetNumber };
   const [locationDisplayLevel, setLocationDisplayLevel] =
     useState<LocationDisplayLevel>('CityAndStreet');
   const [visibility, setVisibility] = useState<PostVisibility>('Public');
@@ -103,9 +105,9 @@ export default function EditPostScreen() {
     setCategory(post.category);
     setCondition(post.itemCondition ?? 'Good');
     setUrgency(post.urgency ?? '');
-    setCity({ id: post.address.city, name: post.address.cityName });
-    setStreet(post.address.street);
-    setStreetNumber(post.address.streetNumber);
+    addressSetters.current.setCity({ id: post.address.city, name: post.address.cityName });
+    addressSetters.current.setStreet(post.address.street);
+    addressSetters.current.setStreetNumber(post.address.streetNumber);
     setLocationDisplayLevel(post.locationDisplayLevel);
     setVisibility(post.visibility);
     setUploads(

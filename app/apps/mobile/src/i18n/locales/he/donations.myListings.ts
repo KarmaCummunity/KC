@@ -18,4 +18,18 @@ export const marketplaceMyListings = {
   myListingsSave: 'שמירת שינויים',
   myListingsUpdated: 'עודכן {{date}}',
   myListingsHiddenHint: 'מוסתרת מאחרים עד שהצוות יבדוק את הדיווחים',
+  // Owner lifecycle (spec 07 §7.1 "Owner management"): status hints and refusals.
+  myListingsAddPhotos: 'הוספת תמונות',
+  myListingsPhotosAdded: 'התמונות נוספו למודעה',
+  myListingsPausedHint: 'מושהית: מוסתרת מכולם חוץ ממך',
+  myListingsClosedHint: 'סגורה: אפשר רק להוסיף תמונות',
+  myListingsErrorTitle: 'הפעולה לא בוצעה',
+  myListingsErrorWrongStatus: 'הפעולה לא זמינה במצב הנוכחי של המודעה.',
+  myListingsErrorActiveHandoff: 'יש למודעה שמירה או הזמנה פעילה. צריך לסיים או לבטל אותה קודם.',
+  myListingsErrorHandoffHistory: 'אי אפשר למחוק מודעה שנמסרה, כי היא חלק מההיסטוריה של הצד השני.',
+  myListingsErrorExpired: 'תוקף המודעה פג, ולכן אי אפשר לחדש אותה.',
+  myListingsErrorMediaFull: 'אפשר לצרף עד 10 תמונות למודעה.',
+  myListingsErrorNotEditable: 'אי אפשר לערוך מודעה סגורה. אפשר רק להוסיף תמונות.',
+  myListingsErrorNotFound: 'המודעה לא נמצאה.',
+  myListingsErrorGeneric: 'משהו השתבש. כדאי לנסות שוב.',
 } as const;

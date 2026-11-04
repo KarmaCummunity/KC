@@ -5,9 +5,9 @@ import { useAuthStore } from '../store/authStore';
 import { parseTruthyQueryParam } from '../lib/query/parseTruthyQueryParam';
 import { isAboutMarketingPath } from './aboutMarketingPaths';
 
-// Visual height of the floating pill (see TabBar.tsx TAB_BAR_HEIGHT = 60).
+// Visual height of the floating pill (see TabBar.tsx TAB_BAR_HEIGHT = 48, slimmed in #1631).
 // Scroll padding adds this plus safe-area insets separately.
-const TAB_BAR_HEIGHT = 60;
+const TAB_BAR_HEIGHT = 48;
 
 /** Whether the global shell should render the bottom tab bar + reserve padding. */
 export function useShellTabBarVisibility(): boolean {

@@ -196,4 +196,21 @@ describe('bannedFetch — forbidden callback wiring (TD-149)', () => {
       globalThis.fetch = realFetch;
     }
   });
+
+  it('aborts when the request hangs beyond options.timeoutMs', async () => {
+    process.env['EXPO_PUBLIC_SUPABASE_URL'] = 'http://env-url';
+    process.env['EXPO_PUBLIC_SUPABASE_ANON_KEY'] = 'env-key';
+    const hangingFetch = vi.fn().mockImplementation((_input, init?: RequestInit) => {
+      return new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => {
+          reject(init.signal?.reason ?? new Error('Aborted'));
+        });
+      });
+    });
+
+    getSupabaseClient({ timeoutMs: 50, fetch: hangingFetch as unknown as typeof fetch });
+    const wrappedFetch = createClientCalls[0]?.options.global.fetch as typeof fetch;
+
+    await expect(wrappedFetch('http://env-url/rest/v1/slow')).rejects.toThrow(/timed out after 50ms/);
+  });
 });

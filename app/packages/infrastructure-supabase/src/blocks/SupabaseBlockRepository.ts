@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { IBlockRepository } from '@kc/application';
+import type { BlockedUser, IBlockRepository } from '@kc/application';
 import type { Database } from '../database.types';
 
 /** `public.blocks` — RLS lets a user read/insert/delete only rows where they are the blocker. */
@@ -30,5 +30,18 @@ export class SupabaseBlockRepository implements IBlockRepository {
       .eq('blocker_id', blockerId)
       .eq('blocked_id', blockedId);
     if (error) throw new Error(error.message);
+  }
+
+  /** FR-MOD-004 AC1 — via list_my_blocked_users (0545): the blocked member's row is hidden from
+   *  the blocker by users RLS, so the RPC returns just the fields the list shows. */
+  async listMyBlockedUsers(): Promise<BlockedUser[]> {
+    const { data, error } = await this.client.rpc('list_my_blocked_users');
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((row) => ({
+      userId: row.user_id,
+      displayName: row.display_name,
+      avatarUrl: row.avatar_url,
+      blockedAt: row.blocked_at,
+    }));
   }
 }

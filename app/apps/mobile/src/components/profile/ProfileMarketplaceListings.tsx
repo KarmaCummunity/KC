@@ -15,12 +15,35 @@ const useStyles = makeUseStyles(({ colors }) => ({
   empty: { ...typography.body, color: colors.textSecondary },
 }));
 
-export function ProfileMarketplaceListings({ ownerId }: { readonly ownerId: string }) {
+const ProfileListingItem = React.memo(function ProfileListingItem({
+  item,
+  width,
+  onPress,
+}: {
+  item: ProfileListingRow;
+  width: number;
+  onPress: (listingId: string) => void;
+}) {
+  const handlePress = React.useCallback(() => {
+    onPress(item.listingId);
+  }, [item.listingId, onPress]);
+
+  return <SimilarListingCard item={item} width={width} onPress={handlePress} />;
+});
+
+function ProfileMarketplaceListingsInner({ ownerId }: { readonly ownerId: string }) {
   const { t } = useTranslation();
   const router = useRouter();
   const styles = useStyles();
   const cardWidth = usePostGridCardWidth(2);
   const { data: listings = [], isLoading } = useProfileMarketplaceListings(ownerId);
+
+  const handlePressListing = React.useCallback(
+    (listingId: string) => {
+      router.push(`/listing/${listingId}`);
+    },
+    [router],
+  );
 
   return (
     <View style={styles.section}>
@@ -32,11 +55,11 @@ export function ProfileMarketplaceListings({ ownerId }: { readonly ownerId: stri
       ) : (
         <View style={styles.grid}>
           {listings.map((item: ProfileListingRow) => (
-            <SimilarListingCard
+            <ProfileListingItem
               key={item.listingId}
               item={item}
               width={cardWidth}
-              onPress={() => router.push(`/listing/${item.listingId}`)}
+              onPress={handlePressListing}
             />
           ))}
         </View>
@@ -44,3 +67,5 @@ export function ProfileMarketplaceListings({ ownerId }: { readonly ownerId: stri
     </View>
   );
 }
+
+export const ProfileMarketplaceListings = React.memo(ProfileMarketplaceListingsInner);

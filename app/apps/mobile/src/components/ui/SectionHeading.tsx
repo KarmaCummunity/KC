@@ -1,5 +1,5 @@
 // SectionHeading — large hero-style title + optional subtitle/eyebrow.
-// Mirrors the welcome-screen title typography (32px, letter-spacing -0.5,
+// Mirrors the welcome-screen title typography (letter-spacing -0.5,
 // near-black slate) so any redesigned main screen can lead with the same
 // presence.
 import React from 'react';
@@ -33,12 +33,11 @@ export function SectionHeading({
   );
 }
 
-const useStyles = makeUseStyles(({ colors, isDark: _isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   right: { alignItems: 'flex-end' },
   center: { alignItems: 'center' },
   title: {
     ...typography.h1,
-    fontSize: 32, // brand-guard-allow: section display heading above h1 scale
     color: colors.textPrimary,
     letterSpacing: -0.5,
     textAlign: rtlTextAlignStart,

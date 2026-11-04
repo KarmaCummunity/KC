@@ -1,35 +1,33 @@
 // V2-ADMIN-MONEY-9 — bottom-sheet modal for create/edit a ledger entry.
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, Switch, View } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
 import {
-  FINANCE_ENTRY_KINDS, FINANCE_ENTRY_STATUSES, isFinanceLedgerError,
-  type FinanceEntry, type FinanceEntryKind, type FinanceEntryStatus,
+  FINANCE_ENTRY_KINDS, FINANCE_ENTRY_STATUSES, categoriesForDirection, directionOfKind,
+  isFinanceCategoryKey, isFinanceLedgerError,
+  type FinanceAccount, type FinanceEntry, type FinanceEntryKind, type FinanceEntryStatus,
 } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { Chip } from '../../ui/Chip';
 import { container } from '../../../lib/container';
 import { AdminFormField } from '../AdminFormField';
 import { AdminFormActions } from '../AdminFormActions';
+import { AccountPicker, CategoryPicker } from './FinanceEntryFormPickers';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
+import { parseIsoDate, toIsoDate } from '../../../lib/isoDate';
 
 export interface FinanceEntryFormModalProps {
   readonly initial: FinanceEntry | null;
+  readonly accounts: readonly FinanceAccount[];
+  /** Pre-selected account for a new entry (the most recently used one). */
+  readonly defaultAccountId: string | null;
   readonly onClose: () => void;
   readonly onSaved: () => void;
 }
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-function parseDate(value: string): Date | undefined {
-  if (!DATE_RE.test(value)) return undefined;
-  const d = new Date(`${value}T12:00:00.000Z`);
-  return Number.isNaN(d.getTime()) ? undefined : d;
-}
-function fmtIsoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
-export function FinanceEntryFormModal({ initial, onClose, onSaved }: FinanceEntryFormModalProps) {
+export function FinanceEntryFormModal({
+  initial, accounts, defaultAccountId, onClose, onSaved,
+}: FinanceEntryFormModalProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   const t = L.admin.money;
@@ -37,9 +35,15 @@ export function FinanceEntryFormModal({ initial, onClose, onSaved }: FinanceEntr
   const [kind, setKind]           = useState<FinanceEntryKind>(initial?.kind ?? 'donation_in');
   const [amountText, setAmount]   = useState(initial ? (initial.amountCents / 100).toString() : '');
   const [currency, setCurrency]   = useState(initial?.currency ?? 'ILS');
-  const [occurredText, setOccurred] = useState(initial ? fmtIsoDate(initial.occurredAt) : fmtIsoDate(new Date()));
+  const [occurredText, setOccurred] = useState(initial ? toIsoDate(initial.occurredAt) : toIsoDate(new Date()));
   const [counterparty, setCounter] = useState(initial?.counterparty ?? '');
   const [category, setCategory]   = useState(initial?.category ?? '');
+  // Free-text category: an existing non-key value, or the user picked "other".
+  const [customCategory, setCustomCategory] = useState(
+    Boolean(initial?.category) && !isFinanceCategoryKey(initial?.category),
+  );
+  const [accountId, setAccountId] = useState<string | null>(initial?.accountId ?? defaultAccountId);
+  const [isPublic, setIsPublic]   = useState(initial?.isPublic ?? true);
   const [description, setDesc]    = useState(initial?.description ?? '');
   const [referenceUrl, setRefUrl] = useState(initial?.referenceUrl ?? '');
   const [status, setStatus]       = useState<FinanceEntryStatus>(initial?.status ?? 'cleared');
@@ -51,7 +55,7 @@ export function FinanceEntryFormModal({ initial, onClose, onSaved }: FinanceEntr
       if (!Number.isFinite(cents) || cents < 0) {
         throw new Error('invalid_amount');
       }
-      const occurredAt = parseDate(occurredText);
+      const occurredAt = parseIsoDate(occurredText);
       return container.upsertFinanceEntry.execute({
         entryId:      initial?.entryId ?? null,
         kind,
@@ -60,6 +64,8 @@ export function FinanceEntryFormModal({ initial, onClose, onSaved }: FinanceEntr
         occurredAt,
         counterparty: counterparty.trim() || null,
         category:     category.trim()     || null,
+        accountId:    accountId ?? undefined,
+        isPublic,
         description:  description.trim()  || null,
         referenceUrl: referenceUrl.trim() || null,
         status,
@@ -84,7 +90,13 @@ export function FinanceEntryFormModal({ initial, onClose, onSaved }: FinanceEntr
               key={k}
               label={t.kind[k]}
               selected={kind === k}
-              onPress={() => setKind(k)}
+              onPress={() => {
+                setKind(k);
+                // A default category belongs to one direction; drop it if the new kind flips it.
+                if (isFinanceCategoryKey(category) && !categoriesForDirection(directionOfKind(k) ?? 'out').includes(category)) {
+                  setCategory('');
+                }
+              }}
               size="sm"
             />
           ))}
@@ -94,7 +106,18 @@ export function FinanceEntryFormModal({ initial, onClose, onSaved }: FinanceEntr
         <AdminFormField label={t.form.currencyLabel}      value={currency}    onChange={setCurrency} />
         <AdminFormField label={t.form.occurredAtLabel}    value={occurredText} onChange={setOccurred} />
         <AdminFormField label={t.form.counterpartyLabel}  value={counterparty} onChange={setCounter} />
-        <AdminFormField label={t.form.categoryLabel}      value={category}     onChange={setCategory} />
+        <Text style={styles.label}>{t.form.accountLabel}</Text>
+        <AccountPicker accounts={accounts} value={accountId} onChange={setAccountId} />
+
+        <Text style={styles.label}>{t.form.categoryLabel}</Text>
+        <CategoryPicker
+          direction={directionOfKind(kind) ?? 'out'}
+          value={category}
+          customMode={customCategory}
+          onPick={(key) => { setCustomCategory(false); setCategory(key); }}
+          onCustom={() => { setCustomCategory(true); if (isFinanceCategoryKey(category)) setCategory(''); }}
+        />
+        {customCategory && <AdminFormField label={t.form.categoryCustom} value={category} onChange={setCategory} />}
         <AdminFormField label={t.form.descriptionLabel}   value={description}  onChange={setDesc} multiline />
         <AdminFormField label={t.form.referenceUrlLabel}  value={referenceUrl} onChange={setRefUrl} />
 
@@ -109,6 +132,14 @@ export function FinanceEntryFormModal({ initial, onClose, onSaved }: FinanceEntr
               size="sm"
             />
           ))}
+        </View>
+
+        <View style={styles.switchRow}>
+          <View style={styles.switchText}>
+            <Text style={styles.switchLabel}>{t.form.publicLabel}</Text>
+            <Text style={styles.label}>{t.form.publicHint}</Text>
+          </View>
+          <Switch value={isPublic} onValueChange={setIsPublic} accessibilityLabel={t.form.publicLabel} />
         </View>
 
         <AdminFormActions
@@ -136,4 +167,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   title:   { ...typography.h3, ...typography.bold, color: colors.textPrimary },
   label:   { ...typography.label, color: colors.textSecondary },
   optionsRow: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
+  switchRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  switchText: { flex: 1, gap: spacing.xs },
+  switchLabel: { ...typography.body, ...typography.semiBold, color: colors.textPrimary },
 }));

@@ -124,14 +124,14 @@ function config(state: FollowState, cooldownUntil: string | undefined, t: TFunct
   }
 }
 
-const useStyles = makeUseStyles(({ colors, isDark: _isDark }) => ({
+const useStyles = makeUseStyles(({ colors }) => ({
   btn: {
     backgroundColor: colors.primary, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg,
     borderRadius: radius.md, alignItems: 'center', alignSelf: 'stretch',
   },
   btnSecondary: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border },
   btnDisabled: { opacity: 0.5 },
-  text: { ...typography.button, color: colors.textInverse, ...typography.bold },
+  text: { ...typography.button, ...typography.bold, color: colors.textInverse },
   textSecondary: { color: colors.textPrimary },
   subtitle: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
 }));

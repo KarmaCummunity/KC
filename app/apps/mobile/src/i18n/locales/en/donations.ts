@@ -7,8 +7,8 @@ import { marketplaceErrors } from './donations.marketplaceErrors';
 import { marketplaceBrowseRefine, marketplaceWorldLabels } from './donations.marketplaceExtras';
 import { marketplaceAvailabilityLabels, marketplaceFieldLabels, marketplaceListingStatusLabels, marketplaceOptionLabels } from './donations.marketplaceFields';
 import { worldLaunch } from './donations.worldLaunch';
+import { linkWorldCategories } from './donations.linkWorlds';
 import { marketplaceMyListings } from './donations.myListings';
-import { worldsHub } from './donations.worldsHub';
 import { worldFeed } from './donations.worldFeed';
 export { moneyPayments } from './donations.moneyPayments';
 export { timeVolunteer } from './donations.timeVolunteer';
@@ -18,17 +18,15 @@ export const donations = {
   hubTitle: 'Donations by:',
   hubHeroTitle: 'Give. Receive. Donate what you have.',
   hubHeroSubtitle: 'Pick a cause that speaks to you and turn it into action.',
-  hubItemsFeaturedTitle: 'Items',
-  hubItemsFeaturedSubtitle: 'Donate and request items — the core action in the app',
-  hubCategoriesSectionTitle: 'More donation categories',
+  hubCategoriesSectionTitle: 'Giving worlds',
   worldLaunch,
-  worldsHub,
   worldFeed,
   items: { title: 'Items', subtitle: 'Donate and request items' },
   time: { title: 'Time', subtitle: 'Volunteering and free time' },
   money: { title: 'Money', subtitle: 'Monetary donation' },
   // FR-DONATE-006 — six new categories.
   categories: {
+    ...linkWorldCategories,
     food: {
       title: 'Food',
       subtitle: 'Food distribution nonprofits',
@@ -97,6 +95,10 @@ export const donations = {
     },
     loading: 'Loading...',
     loadError: 'We couldn’t load the links. Try again.',
+    // D9 — the submitter's own link while it waits, or after a rejection.
+    reviewPending: 'Waiting for KC team approval',
+    reviewRejected: 'Not approved',
+    reviewRejectedNote: 'Not approved: {{note}}',
     retry: 'Try again',
     rowMenu: {
       open: 'Open',
@@ -134,8 +136,8 @@ export const donations = {
     submit: 'Add',
     save: 'Save',
     submitting: 'Verifying link...',
-    helperText: 'The link will be checked for validity before it’s added.',
-    editHelperText: 'Your changes will be verified against the server before saving.',
+    helperText: 'The link is checked, and shown to everyone once the KC team approves it.',
+    editHelperText: 'After a change, the link goes back to the KC team for approval before everyone sees it.',
     errors: {
       invalid_url: 'The link is invalid. Make sure it starts with http or https.',
       invalid_input: 'Please make sure all fields are filled in correctly.',
@@ -234,6 +236,9 @@ export const search = {
     knowledge: 'Knowledge',
     animals: 'Animals',
     medical: 'Medical',
+    democracy: 'Democracy',
+    employment: 'Employment',
+    challenges: 'Challenges',
   },
 } as const;
 

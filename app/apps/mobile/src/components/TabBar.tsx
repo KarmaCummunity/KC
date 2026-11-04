@@ -6,10 +6,12 @@
 import React from 'react';
 import { Platform, Pressable, View, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useSegments } from 'expo-router';
+import { usePathname, useRouter, useSegments } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, shadow, spacing, useTheme } from '@kc/ui';
 import { TABS, resolveActiveTabKey, type IoniconName } from './shell/tabs.config';
+import { handleActiveTabRepress } from './shell/tabPress';
+import { createCategoryForPath, createRouteFor } from '../lib/unifiedCreate/createCategories';
 
 // Glassmorphism on web — RN-Web forwards unknown style keys to CSS. RN's
 // ViewStyle type doesn't include backdrop-filter, so cast through unknown.
@@ -21,7 +23,8 @@ const webGlass: ViewStyle =
       } as unknown as ViewStyle)
     : ({} as ViewStyle);
 
-export const TAB_BAR_HEIGHT = 60;
+// Slim bar (#1631): icon row only, no extra space above or below the icons.
+export const TAB_BAR_HEIGHT = 48;
 
 interface IconBtnProps {
   active: boolean;
@@ -49,7 +52,7 @@ function IconBtn({ active, onPress, label, testID, iconActive, iconInactive }: I
         <Ionicons
           key={active ? iconActive : iconInactive}
           name={active ? iconActive : iconInactive}
-          size={active ? 28 : 24} // brand-guard-allow: active tab glyph grows past the icon scale
+          size={active ? 24 : 22} // brand-guard-allow: active tab glyph grows past the icon scale
           color={active ? colors.tabActive : colors.tabInactive}
         />
       </View>
@@ -78,7 +81,7 @@ function PlusBtn({ active, onPress, label, testID }: PlusBtnProps) {
       <View style={[styles.plusCircle, active && styles.plusCircleActive]}>
         <Ionicons
           name="add"
-          size={26} // brand-guard-allow: centre action glyph sized to its 48pt button
+          size={22} // brand-guard-allow: centre action glyph sized to its 40pt button
           color={colors.textInverse}
         />
       </View>
@@ -90,6 +93,7 @@ export function TabBar({ bottomInset = 0 }: Readonly<{ bottomInset?: number }> =
   const router = useRouter();
   const { t } = useTranslation();
   const segments = useSegments() as string[];
+  const pathname = usePathname();
   const active = resolveActiveTabKey(segments);
   const styles = useTabBarStyles();
 
@@ -106,11 +110,15 @@ export function TabBar({ bottomInset = 0 }: Readonly<{ bottomInset?: number }> =
         const isActive = active === tab.key;
         const label = t(tab.labelI18nKey);
         const onPress = () => {
+          // Re-tapping the active tab keeps its screen mounted (or unwinds to the tab root),
+          // instead of pushing a duplicate that re-mounts and replays its entry animation (#1633).
+          if (handleActiveTabRepress(router, tab, segments)) return;
           // The bar is also shown over root-level screens (post/[id], chat, ...).
           // Pushing a tab route from there leaves that screen underneath, so the
           // iOS swipe-back later jumps to it. Pop back to the tabs first.
           if (segments[0] !== '(tabs)' && router.canDismiss()) router.dismissAll();
-          router.push(tab.route);
+          // "+" opens the form on the giving world on screen (its remembered offer / request).
+          router.push(tab.isComposer ? createRouteFor(createCategoryForPath(pathname)) : tab.route);
         };
         if (tab.isComposer) {
           return (
@@ -166,8 +174,8 @@ const useTabBarStyles = makeUseStyles(({ colors, isDark }) => ({
   },
   tabBtnPressed: { opacity: 0.6 },
   iconSlot: {
-    width: 40,
-    height: 40,
+    width: 34,
+    height: 34,
     borderRadius: radius.full,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
@@ -176,8 +184,8 @@ const useTabBarStyles = makeUseStyles(({ colors, isDark }) => ({
     backgroundColor: colors.primarySurface,
   },
   plusCircle: {
-    width: 48,
-    height: 48,
+    width: 40,
+    height: 40,
     borderRadius: radius.full,
     backgroundColor: colors.primary,
     alignItems: 'center' as const,

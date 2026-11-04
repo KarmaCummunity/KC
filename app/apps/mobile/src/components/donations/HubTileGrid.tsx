@@ -1,5 +1,5 @@
-// Donations hub — a section heading plus a 2-column grid of tiles. Used for the
-// giving worlds and for the domains (D62).
+// Donations hub — a section heading plus a 2-column grid of giving-world tiles (D100).
+// A world with no active flow yet carries a small "portal" tag (D60).
 import React from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -8,9 +8,13 @@ import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { PressableScale } from '../animations/PressableScale';
 import { Card } from '../ui/Card';
 import { IconTile } from '../ui/IconTile';
+import { Chip } from '../ui/Chip';
 import { MotionEntry, ENTRY_DELAY } from '../ui/MotionEntry';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import type { DonationHubTile } from '../../navigation/donationsHubTiles';
+
+/** A hub tile plus whether its world is still a portal (no feed / in-app flow yet). */
+export type HubGridTile = DonationHubTile & { readonly portal?: boolean };
 
 function pairs<T>(items: readonly T[]): T[][] {
   const rows: T[][] = [];
@@ -22,7 +26,7 @@ export function HubTileGrid({
   heading,
   tiles,
   delay,
-}: Readonly<{ heading: string; tiles: readonly DonationHubTile[]; delay: number }>) {
+}: Readonly<{ heading: string; tiles: readonly HubGridTile[]; delay: number }>) {
   const styles = useStyles();
   const router = useRouter();
   const { t } = useTranslation();
@@ -49,6 +53,11 @@ export function HubTileGrid({
                   style={styles.gridPressable}
                 >
                   <Card padding="md" style={styles.gridCard} testID={cat.testID}>
+                    {cat.portal ? (
+                      <View style={styles.portalTag}>
+                        <Chip variant="tag" size="sm" label={t('donations.worldLaunch.portalBadge')} testID={`${cat.testID}-portal`} />
+                      </View>
+                    ) : null}
                     <IconTile icon={cat.icon} size="lg" />
                     <Text style={styles.gridTitle} numberOfLines={1}>
                       {t(cat.titleKey)}
@@ -118,4 +127,6 @@ const useStyles = makeUseStyles(({ colors }) => ({
     lineHeight: 16,
   },
   spacer: { flex: 1 },
+  // Pinned to the card's top end corner so it never shifts the centred icon and title.
+  portalTag: { position: 'absolute' as const, top: spacing.xs, end: spacing.xs },
 }));

@@ -29,7 +29,7 @@ begin
     anonymity_level, moderation_status, published_at, details
   )
   select v_owner, 'money', kind_id, 'request', 'Private aid request', 'native',
-         1, 'published', now(), '{"image_url":"https://example.test/a.jpg"}'::jsonb
+         1, 'published', now(), '{}'::jsonb
     from public.listing_kinds
    where world_slug = 'money' and slug = 'financial_aid_request'
   returning listing_id into v_listing;

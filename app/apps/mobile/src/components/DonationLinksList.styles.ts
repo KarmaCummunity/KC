@@ -12,6 +12,8 @@ export const useDonationLinksListStyles = makeUseStyles(({ colors }) => ({
     marginBottom: spacing.sm,
     width: '100%',
   },
+  // No title (a parent section titles the list): the add button keeps the row's end.
+  headerUntitled: { justifyContent: 'flex-end' as const },
   headerTitle: {
     ...typography.h2,
     color: colors.textPrimary,

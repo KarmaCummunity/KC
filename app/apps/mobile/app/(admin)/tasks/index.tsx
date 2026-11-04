@@ -1,6 +1,6 @@
 // app/apps/mobile/app/(admin)/tasks/index.tsx
 // FR-ADMIN-018 — admin tasks list screen with chip filters.
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { router } from 'expo-router';
 import { RefreshControl, View } from 'react-native';
 import { FilterChipRow } from '../../../src/components/filterKit/FilterChipRow';
@@ -8,6 +8,7 @@ import { Chip } from '../../../src/components/ui/Chip';
 import {
   ADMIN_TASK_CATEGORIES,
   ADMIN_TASK_STATUSES, type AdminPermission, type AdminRole,
+  type AdminTask,
   type AdminTaskCategory, type AdminTaskStatus,
   hasPermission,
 } from '@kc/domain';
@@ -31,6 +32,8 @@ import { KcFlashList } from '../../../src/components/lists/KcFlashList';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+
+const taskKeyExtractor = (t: AdminTask) => t.taskId;
 
 function parseDueFrom(value: string): Date | undefined {
   if (!isValidIsoDate(value) || value.length === 0) return undefined;
@@ -73,6 +76,15 @@ export default function TasksScreen() {
 
   const q = useAdminTasksList(filters);
   const can = (perm: AdminPermission) => hasPermission(roles as readonly AdminRole[], perm);
+
+  const renderItem = useCallback(
+    ({ item }: { item: AdminTask }) => (
+      <View style={styles.rowWrap}>
+        <TaskRow task={item} />
+      </View>
+    ),
+    [styles.rowWrap],
+  );
 
   if (rolesLoading) {
     return <View style={styles.center}><Text>{L.admin.tasks.loading}</Text></View>;
@@ -155,11 +167,10 @@ export default function TasksScreen() {
       />
 
       <KcFlashList
-        data={[...q.tasks]}
-        keyExtractor={(t) => t.taskId}
-        renderItem={({ item }) => (
-          <View style={styles.rowWrap}><TaskRow task={item} /></View>
-        )}
+        data={q.tasks}
+        keyExtractor={taskKeyExtractor}
+        estimatedItemSize={80}
+        renderItem={renderItem}
         ListHeaderComponent={filtersBar}
         contentContainerStyle={styles.listContent}
         refreshControl={

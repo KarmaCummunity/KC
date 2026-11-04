@@ -7,8 +7,8 @@ import { marketplaceErrors } from './donations.marketplaceErrors';
 import { marketplaceBrowseRefine, marketplaceWorldLabels } from './donations.marketplaceExtras';
 import { marketplaceAvailabilityLabels, marketplaceFieldLabels, marketplaceListingStatusLabels, marketplaceOptionLabels } from './donations.marketplaceFields';
 import { worldLaunch } from './donations.worldLaunch';
+import { linkWorldCategories } from './donations.linkWorlds';
 import { marketplaceMyListings } from './donations.myListings';
-import { worldsHub } from './donations.worldsHub';
 import { worldFeed } from './donations.worldFeed';
 export { moneyPayments } from './donations.moneyPayments';
 export { timeVolunteer } from './donations.timeVolunteer';
@@ -18,17 +18,15 @@ export const donations = {
   hubTitle: 'תרומות של:',
   hubHeroTitle: 'לתת. לקבל. לתרום מה שיש לך.',
   hubHeroSubtitle: 'לבחור תחום שמדבר אלינו ולהפוך אותו לפעולה.',
-  hubItemsFeaturedTitle: 'חפצים',
-  hubItemsFeaturedSubtitle: 'תרומה ובקשת חפצים — הפעולה המרכזית באפליקציה',
-  hubCategoriesSectionTitle: 'תחומי תרומה נוספים',
+  hubCategoriesSectionTitle: 'עולמות התרומה',
   worldLaunch,
-  worldsHub,
   worldFeed,
   items: { title: 'חפצים', subtitle: 'תרומה ובקשת חפצים' },
   time: { title: 'זמן', subtitle: 'התנדבות וזמן פנוי' },
   money: { title: 'כסף', subtitle: 'תרומה כספית' },
   // FR-DONATE-006 — six new categories.
   categories: {
+    ...linkWorldCategories,
     food: {
       title: 'אוכל',
       subtitle: 'עמותות חלוקת מזון',
@@ -97,6 +95,10 @@ export const donations = {
     },
     loading: 'טוען...',
     loadError: 'לא הצלחנו לטעון את הקישורים. נסו שוב.',
+    // D9 — the submitter's own link while it waits, or after a rejection.
+    reviewPending: 'ממתין לאישור צוות KC',
+    reviewRejected: 'לא אושר',
+    reviewRejectedNote: 'לא אושר: {{note}}',
     retry: 'לנסות שוב',
     rowMenu: {
       open: 'לפתוח',
@@ -134,8 +136,8 @@ export const donations = {
     submit: 'להוסיף',
     save: 'לשמור',
     submitting: 'מאמת קישור...',
-    helperText: 'הקישור יבדק שיהיה תקין לפני ההוספה.',
-    editHelperText: 'השינויים יבדקו מול השרת לפני השמירה.',
+    helperText: 'הקישור ייבדק, ויופיע לכולם אחרי אישור של צוות KC.',
+    editHelperText: 'אחרי שינוי, הקישור חוזר לאישור של צוות KC לפני שיופיע לכולם.',
     errors: {
       invalid_url: 'הקישור לא תקין. ודאו שהוא מתחיל ב-http או https.',
       invalid_input: 'נא לוודא שכל השדות מולאו כראוי.',
@@ -234,6 +236,9 @@ export const search = {
     knowledge: 'ידע',
     animals: 'חיות',
     medical: 'רפואה',
+    democracy: 'דמוקרטיה',
+    employment: 'תעסוקה',
+    challenges: 'אתגרים',
   },
 } as const;
 

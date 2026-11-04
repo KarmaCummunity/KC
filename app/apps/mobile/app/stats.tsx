@@ -24,6 +24,8 @@ import { KarmaBadge } from '../src/components/profile/KarmaBadge';
 import { useMeRealtime } from '../src/hooks/useMeRealtime';
 import { CommunityStatsPanel } from '../src/components/stats/CommunityStatsPanel';
 import { ActivityTimelineList } from '../src/components/stats/ActivityTimelineList';
+import { MyWorldGivingsPanel } from '../src/components/stats/MyWorldGivingsPanel';
+import { OrgTransparencySection } from '../src/components/finance/OrgTransparencySection';
 import { rowDirectionStart } from '../src/lib/rtlLayout';
 import { rtlTextAlignStart } from '../src/lib/rtlTextAlignStart';
 
@@ -113,6 +115,8 @@ export default function StatsScreen() {
           onRetry={() => void communityQuery.refetch()}
         />
 
+        <OrgTransparencySection />
+
         {u ? (
           <View style={styles.karmaCard}>
             <KarmaBadge points={u.karmaPoints} />
@@ -128,6 +132,7 @@ export default function StatsScreen() {
             labels={counterLabels}
           />
         </View>
+        <MyWorldGivingsPanel userId={userId} />
         
 
 <Text style={styles.sectionTitle}>{t('stats.recentActivity')}</Text>

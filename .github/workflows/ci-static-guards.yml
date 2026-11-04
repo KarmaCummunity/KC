@@ -76,19 +76,52 @@ jobs:
 
       # Pinned release binary; agents edit workflows unsupervised, so they get
       # their own linter (actionlint also runs shellcheck on every `run:`).
+      # The release asset is fetched directly and checked against its SHA-256
+      # (from the release's actionlint_<version>_checksums.txt), so a moved tag
+      # or a swapped asset fails here instead of running unverified (TD-254).
       - name: Workflow lint (actionlint 1.7.7)
+        env:
+          ACTIONLINT_VERSION: 1.7.7
+          ACTIONLINT_SHA256: 023070a287cd8cccd71515fedc843f1985bf96c436b7effaecce67290e7e0757
         run: |
-          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7
-          ./actionlint -color
+          set -euo pipefail
+          asset="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL --retry 3 --retry-all-errors -o "$RUNNER_TEMP/$asset" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${asset}"
+          echo "${ACTIONLINT_SHA256}  $RUNNER_TEMP/$asset" | sha256sum --check --strict -
+          tar -xzf "$RUNNER_TEMP/$asset" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -color
 
       # The guard scripts' only dependency (a YAML parser), pinned by
       # scripts/package-lock.json; no install scripts run.
       - name: Install guard-script dependencies
         run: npm ci --prefix scripts --ignore-scripts --no-audit --no-fund
 
+      # Every lockfile and Edge Function npm import against the npm advisory
+      # database (#1373); a high/critical finding without a reviewed exception
+      # fails. It audits only when the diff touches a dependency file, so a
+      # newly published advisory cannot turn unrelated PRs red (TD-254): the
+      # scheduled dependency-audit.yml covers that. Without a base commit
+      # (dispatch, new branch) it always audits.
+      - name: Dependency audit (every lockfile, on dependency changes)
+        if: ${{ !cancelled() }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
+        run: |
+          args=()
+          if [ -n "$BASE_SHA" ]; then
+            git fetch --no-tags --depth=1 origin "$BASE_SHA" || echo "Base $BASE_SHA not fetchable; auditing everything."
+            args=(--changed-since "$BASE_SHA")
+          fi
+          node scripts/check-dependency-audit.mjs "${args[@]}"
+
       - name: Script self-tests (scripts/*.test.mjs, scripts/ops/*.test.mjs, app/scripts/*.test.mjs)
         if: ${{ !cancelled() }}
         run: node --test scripts/*.test.mjs scripts/ops/*.test.mjs app/scripts/*.test.mjs
+
+      - name: No unresolved merge-conflict markers
+        if: ${{ !cancelled() }}
+        run: node scripts/check-conflict-markers.mjs
 
       - name: Architecture (file size, layers, typed domain errors)
         if: ${{ !cancelled() }}
