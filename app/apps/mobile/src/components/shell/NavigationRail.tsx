@@ -4,6 +4,7 @@ import { useRouter, useSegments } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, useBreakpoint, useTheme, spacing, shellDimensions, radius, typography, iconSize, Text } from '@kc/ui';
 import { TABS, isTabActive, type TabDefinition } from './tabs.config';
+import { handleActiveTabRepress } from './tabPress';
 
 type NavigationRailProps = {
   /** When true, render icon + label rows. When false, icon-only column. */
@@ -45,7 +46,11 @@ function NavigationRailItem({ tab, expanded }: { tab: TabDefinition; expanded: b
 
   return (
     <Pressable
-      onPress={() => router.push(tab.route)}
+      onPress={() => {
+        // Same re-tap rule as the bottom TabBar: never push a duplicate of the active tab (#1633).
+        if (handleActiveTabRepress(router, tab, segments as string[])) return;
+        router.push(tab.route);
+      }}
       style={[
         styles.item,
         expanded ? styles.itemExpanded : styles.itemCollapsed,
