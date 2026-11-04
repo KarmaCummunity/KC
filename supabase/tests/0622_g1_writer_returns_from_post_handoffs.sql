@@ -30,6 +30,9 @@ select kc_test.create_user('wr_giver')            as giver,
        kc_test.create_user('wr_attendee')         as attendee,
        gen_random_uuid()                          as org_id;
 
+-- Knowledge publishes only for a verified identity (worlds.requires_verification), as in 0556 / 0558.
+update public.users set verified_at = now() where user_id = (select mentor from personas);
+
 -- ── helpers ───────────────────────────────────────────────────────────────────────────────────
 
 /**
