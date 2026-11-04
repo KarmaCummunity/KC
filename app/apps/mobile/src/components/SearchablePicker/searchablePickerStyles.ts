@@ -1,6 +1,9 @@
 import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlLayout';
 
+/** Smallest body height of the picker sheet, in points (search field + a few rows). */
+const SHEET_CONTENT_MIN_HEIGHT = 240;
+
 export const useSearchablePickerStyles = makeUseStyles(({ colors, isDark }) => ({
   field: {
     height: 50,
@@ -20,7 +23,11 @@ export const useSearchablePickerStyles = makeUseStyles(({ colors, isDark }) => (
   },
   value: { ...typography.body, color: colors.textPrimary, textAlign: rtlTextAlignStart },
   valuePlaceholder: { color: colors.textDisabled },
-  sheetContent: { flex: 1 },
+  // The kit BottomSheet is content-sized (capped by `maxHeight`), so `flex: 1` here resolves
+  // against an indefinite height and collapses the list to ~0 (only the first row showed).
+  // `flexShrink` lets the list fill up to the cap; `minHeight` keeps the sheet from jumping
+  // in size while a search narrows the results to a few rows.
+  sheetContent: { flexShrink: 1, minHeight: SHEET_CONTENT_MIN_HEIGHT },
   search: { marginBottom: spacing.sm },
   statusRow: { paddingVertical: spacing.lg, alignItems: 'center' as const },
   errorBlock: { alignItems: 'center' as const, paddingVertical: spacing.md },

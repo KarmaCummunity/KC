@@ -4,8 +4,8 @@ import { GetKcSupportOptionsUseCase } from '../GetKcSupportOptionsUseCase';
 import { KcSupportChannelsError } from '../KcSupportChannelsError';
 import type { IKcSupportChannelsRepository } from '../../ports/IKcSupportChannelsRepository';
 
-const bit: KcSupportChannel = { kind: 'bit', url: 'https://bit.example/pay', providerLabel: 'Bit' };
-const once: KcSupportChannel = { kind: 'card_one_time', url: 'https://pay.grow.link/once', providerLabel: 'Grow' };
+const bit: KcSupportChannel = { kind: 'bit', url: 'https://bit.example/pay', providerLabel: 'Bit', payeePhone: null };
+const once: KcSupportChannel = { kind: 'card_one_time', url: 'https://pay.grow.link/once', providerLabel: 'Grow', payeePhone: null };
 
 function repoReturning(result: KcSupportChannel[] | Error): IKcSupportChannelsRepository {
   return {

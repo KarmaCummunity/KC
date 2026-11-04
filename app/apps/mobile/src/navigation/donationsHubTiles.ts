@@ -1,6 +1,15 @@
+// D100 (docs/spec/04_product_structure.md): the Donations hub is ONE list of giving worlds, in
+// the order of `GIVING_WORLD_SLUGS`. Each tile opens its world's screen; a world with no active
+// flow yet (launch flag off, D60) is still listed and is marked as a portal.
 import type { Ionicons } from '@expo/vector-icons';
 import type { Href } from 'expo-router';
-import { DOMAIN_SLUGS, hubTileLaunchMode, type DomainSlug, type RemoteAppFlags, type WorldLaunchMode } from '@kc/domain';
+import {
+  GIVING_WORLD_SLUGS,
+  hubTileLaunchMode,
+  type GivingWorldSlug,
+  type RemoteAppFlags,
+  type WorldLaunchMode,
+} from '@kc/domain';
 
 export interface DonationHubTile {
   key: string;
@@ -11,58 +20,69 @@ export interface DonationHubTile {
   testID: string;
 }
 
-export const DONATIONS_HUB_FEATURED: DonationHubTile = {
-  key: 'items',
-  icon: 'gift',
-  titleKey: 'donations.hubItemsFeaturedTitle',
-  subtitleKey: 'donations.hubItemsFeaturedSubtitle',
-  href: '/(tabs)',
-  testID: 'donation-tile-items',
+/** World screens that exist as their own route; every other world uses the generic category screen. */
+const OWN_ROUTE: Readonly<Partial<Record<GivingWorldSlug, string>>> = {
+  items: '/(tabs)/donations/items',
+  food: '/(tabs)/donations/food',
+  rides: '/(tabs)/donations/rides',
+  time: '/(tabs)/donations/time',
+  money: '/(tabs)/donations/money',
+  housing: '/(tabs)/donations/housing',
+  knowledge: '/(tabs)/donations/knowledge',
 };
 
-export const DONATIONS_HUB_TILES: DonationHubTile[] = [
-  { key: 'time', icon: 'time-outline', titleKey: 'donations.time.title', subtitleKey: 'donations.time.subtitle', href: '/(tabs)/donations/time', testID: 'donation-tile-time' },
-  { key: 'money', icon: 'cash-outline', titleKey: 'donations.money.title', subtitleKey: 'donations.money.subtitle', href: '/(tabs)/donations/money', testID: 'donation-tile-money' },
-  { key: 'food', icon: 'restaurant-outline', titleKey: 'donations.categories.food.title', subtitleKey: 'donations.categories.food.subtitle', href: '/(tabs)/donations/food', testID: 'donation-tile-food' },
-  { key: 'housing', icon: 'home-outline', titleKey: 'donations.categories.housing.title', subtitleKey: 'donations.categories.housing.subtitle', href: '/(tabs)/donations/housing', testID: 'donation-tile-housing' },
-  { key: 'transport', icon: 'car-outline', titleKey: 'donations.rides.hubTitle', subtitleKey: 'donations.rides.hubSubtitle', href: '/(tabs)/donations/rides', testID: 'donation-tile-rides' },
-  { key: 'knowledge', icon: 'school-outline', titleKey: 'donations.categories.knowledge.title', subtitleKey: 'donations.categories.knowledge.subtitle', href: '/(tabs)/donations/knowledge', testID: 'donation-tile-knowledge' },
-  { key: 'experiences', icon: 'ticket-outline', titleKey: 'donations.worldsHub.experiences.title', subtitleKey: 'donations.worldsHub.experiences.subtitle', href: '/(tabs)/donations/experiences', testID: 'donation-tile-experiences' },
-];
+/**
+ * Icon and test id of each world's tile. The test ids are literals (not built from the slug) so
+ * the Maestro flow check can find every id a flow taps (`scripts/maestro-flows.test.mjs`).
+ */
+const TILE_META: Readonly<Record<GivingWorldSlug, { icon: keyof typeof Ionicons.glyphMap; testID: string }>> = {
+  items: { icon: 'gift-outline', testID: 'donation-tile-items' },
+  food: { icon: 'restaurant-outline', testID: 'donation-tile-food' },
+  rides: { icon: 'car-outline', testID: 'donation-tile-rides' },
+  time: { icon: 'time-outline', testID: 'donation-tile-time' },
+  money: { icon: 'cash-outline', testID: 'donation-tile-money' },
+  housing: { icon: 'home-outline', testID: 'donation-tile-housing' },
+  knowledge: { icon: 'school-outline', testID: 'donation-tile-knowledge' },
+  medical: { icon: 'medical-outline', testID: 'donation-tile-medical' },
+  animals: { icon: 'paw-outline', testID: 'donation-tile-animals' },
+  democracy: { icon: 'megaphone-outline', testID: 'donation-tile-democracy' },
+  employment: { icon: 'briefcase-outline', testID: 'donation-tile-employment' },
+  challenges: { icon: 'trophy-outline', testID: 'donation-tile-challenges' },
+};
 
-/** D60 — the Donations hub always shows every world; flags only set active vs portal. */
+/** i18n key prefix of a world's title / subtitle (a few worlds predate the `categories` group). */
+const TEXT_PREFIX: Readonly<Partial<Record<GivingWorldSlug, readonly [string, string]>>> = {
+  items: ['donations.items.title', 'donations.items.subtitle'],
+  rides: ['donations.rides.hubTitle', 'donations.rides.hubSubtitle'],
+  time: ['donations.time.title', 'donations.time.subtitle'],
+  money: ['donations.money.title', 'donations.money.subtitle'],
+};
+
+function tileFor(world: GivingWorldSlug): DonationHubTile {
+  // The rides world keeps its legacy `transport` hub key (launch flag + test ids).
+  const key = world === 'rides' ? 'transport' : world;
+  const [titleKey, subtitleKey] = TEXT_PREFIX[world] ?? [
+    `donations.categories.${world}.title`,
+    `donations.categories.${world}.subtitle`,
+  ];
+  return {
+    key,
+    icon: TILE_META[world].icon,
+    titleKey,
+    subtitleKey,
+    href: (OWN_ROUTE[world] ?? `/(tabs)/donations/category/${world}`) as DonationHubTile['href'],
+    testID: TILE_META[world].testID,
+  };
+}
+
+export const DONATIONS_HUB_TILES: readonly DonationHubTile[] = GIVING_WORLD_SLUGS.map(tileFor);
+
+/** D60 — the hub always shows every world; flags only set active vs portal. */
 export function donationsHubTiles(remote: RemoteAppFlags | undefined): Array<{ tile: DonationHubTile; mode: WorldLaunchMode }> {
   return DONATIONS_HUB_TILES.map((tile) => ({ tile, mode: hubTileLaunchMode(tile.key, remote) }));
 }
 
-/** Hub tile key → giving world slug (D62); the rides tile keeps its legacy key. */
-const TILE_WORLD: Record<string, string> = { transport: 'rides' };
-
-/** Giving worlds the hub offers: the featured items card plus the world tiles. */
-export function hubWorldSlugs(): string[] {
-  return [DONATIONS_HUB_FEATURED.key, ...DONATIONS_HUB_TILES.map((t) => TILE_WORLD[t.key] ?? t.key)];
+/** The screen of a giving world, e.g. where to land after adding a link to it. */
+export function hubHrefForWorld(world: GivingWorldSlug): DonationHubTile['href'] {
+  return tileFor(world).href;
 }
-
-const DOMAIN_ICONS: Record<DomainSlug, keyof typeof Ionicons.glyphMap> = {
-  medical: 'medical-outline',
-  animals: 'paw-outline',
-  environment: 'leaf-outline',
-  elderly: 'people-outline',
-  democracy: 'megaphone-outline',
-  employment: 'briefcase-outline',
-  sport: 'football-outline',
-  tech: 'hardware-chip-outline',
-  heritage: 'library-outline',
-  culture: 'color-palette-outline',
-  spirituality: 'flower-outline',
-};
-
-/** D62 — one tile per domain (spec 06), each opening its own domain screen. */
-export const DONATIONS_HUB_DOMAIN_TILES: DonationHubTile[] = DOMAIN_SLUGS.map((slug) => ({
-  key: slug,
-  icon: DOMAIN_ICONS[slug],
-  titleKey: `donations.worldsHub.domains.${slug}.title`,
-  subtitleKey: `donations.worldsHub.domains.${slug}.subtitle`,
-  href: `/(tabs)/donations/domain/${slug}`,
-  testID: `donation-domain-tile-${slug}`,
-}));

@@ -83,6 +83,12 @@ export const moderationEn = {
     confirmUnblockBody: 'You will be able to see each other again. Follows removed by the block are not restored.',
     blockedToast: 'User blocked.',
     unblockedToast: 'User unblocked.',
+    // FR-MOD-004 AC1 — the Blocked Users screen (Settings).
+    listTitle: 'Blocked users',
+    listHint: "People you blocked don't see you and you don't see them. Unblocking restores visibility, not follows.",
+    listEmpty: "You haven't blocked anyone.",
+    listError: "We couldn't load the list. Please try again.",
+    unnamedUser: 'User',
     failed: 'Something went wrong. Please try again.',
   },
   actions: {

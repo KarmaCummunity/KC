@@ -61,3 +61,16 @@ describe('useListingCreateForm', () => {
     expect(repo.createListing).not.toHaveBeenCalled();
   });
 });
+
+describe('rideAutoTitle (#1411)', () => {
+  const fmt = (o: string, d: string) => `${o} → ${d}`;
+  it('builds the title from the route labels', async () => {
+    const { rideAutoTitle } = await import('../useListingCreateForm');
+    expect(rideAutoTitle({ origin_label: ' Lod ', dest_label: 'Tel Aviv' }, fmt)).toBe('Lod → Tel Aviv');
+  });
+  it('is empty until both ends are chosen', async () => {
+    const { rideAutoTitle } = await import('../useListingCreateForm');
+    expect(rideAutoTitle({ origin_label: 'Lod' }, fmt)).toBe('');
+    expect(rideAutoTitle({}, fmt)).toBe('');
+  });
+});

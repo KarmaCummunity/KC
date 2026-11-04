@@ -13,6 +13,12 @@ export const stats = {
   communityDelivered: 'מסירות שהושלמו',
   communityHint: 'המספרים מתעדכנים אוטומטית כל דקה.',
   recentActivity: 'מה קורה אצלי',
+  // FR-STATS-008 — the member's own givings per world.
+  byWorldTitle: 'הנתינות שלי לפי עולם',
+  byWorldGiven: 'נתתי',
+  byWorldReceived: 'קיבלתי',
+  byWorldClosed: 'נסגרו',
+  byWorldEmpty: 'כשנתינה תימסר, היא תופיע כאן לפי העולם שלה.',
   activityEmpty: 'עדיין אין פעילות להצגה. פרסום או סגירה של פוסט יופיעו כאן.',
   activitySomeone: 'משתמש/ת',
   activityKind: {

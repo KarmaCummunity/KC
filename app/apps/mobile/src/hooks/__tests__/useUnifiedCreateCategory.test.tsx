@@ -45,7 +45,7 @@ const state = () => screen.getByTestId('state').textContent;
 
 beforeEach(() => {
   mocks.params = {};
-  mocks.load.mockResolvedValue({ categoryId: 'rides', direction: 'request' });
+  mocks.load.mockResolvedValue({ categoryId: 'rides', directions: { rides: 'request', food: 'request' } });
   mocks.save.mockResolvedValue(undefined);
 });
 
@@ -61,18 +61,22 @@ describe('useUnifiedCreateCategory', () => {
     expect(state()).toBe('rides/request');
   });
 
-  it('a deep link wins and skips the stored choice', async () => {
+  it('a deep link wins over the remembered category but opens in that category\'s own direction', async () => {
     mocks.params = { category: 'food' };
     await renderHarness();
-    expect(mocks.load).not.toHaveBeenCalled();
-    expect(state()).toBe('food/give');
+    expect(state()).toBe('food/request');
+  });
+
+  it('a deep link to a category never used opens as an offer', async () => {
+    mocks.params = { category: 'housing' };
+    await renderHarness();
+    expect(state()).toBe('housing/give');
   });
 
   it('a deep link with a direction presets request / offer (FR-FEED-020 AC2)', async () => {
-    mocks.params = { category: 'food', direction: 'request' };
+    mocks.params = { category: 'food', direction: 'give' };
     await renderHarness();
-    expect(mocks.load).not.toHaveBeenCalled();
-    expect(state()).toBe('food/request');
+    expect(state()).toBe('food/give');
   });
 
   it('ignores a bad direction in a deep link and keeps the form direction', async () => {
@@ -82,40 +86,54 @@ describe('useUnifiedCreateCategory', () => {
   });
 
   it('ignores a direction without a known category', async () => {
-    mocks.params = { category: 'knowledge', direction: 'give' };
+    mocks.params = { category: 'bogus', direction: 'give' };
     await renderHarness();
     expect(state()).toBe('rides/request');
   });
 
   it('an unknown deep link falls back to the remembered choice', async () => {
-    mocks.params = { category: ['knowledge'] };
+    mocks.params = { category: ['bogus'] };
     await renderHarness();
     expect(state()).toBe('rides/request');
   });
 
-  it('remembers a category change together with the current direction', async () => {
+  it('switching category reopens it in the direction last used there', async () => {
     await renderHarness();
+    fireEvent.click(screen.getByTestId('create-category-food'));
+    expect(state()).toBe('food/request');
     fireEvent.click(screen.getByTestId('create-category-housing'));
-    expect(state()).toBe('housing/request');
-    expect(mocks.save).toHaveBeenLastCalledWith('u1', { categoryId: 'housing', direction: 'request' });
+    expect(state()).toBe('housing/give');
+    expect(mocks.save).toHaveBeenLastCalledWith('u1', {
+      categoryId: 'housing',
+      directions: { rides: 'request', food: 'request' },
+    });
   });
 
-  it('remembers a direction change together with the current category', async () => {
+  it('remembers a direction change for that category only', async () => {
     await renderHarness();
     fireEvent.click(screen.getByTestId('create-direction-give'));
     expect(state()).toBe('rides/give');
-    expect(mocks.save).toHaveBeenLastCalledWith('u1', { categoryId: 'rides', direction: 'give' });
+    expect(mocks.save).toHaveBeenLastCalledWith('u1', {
+      categoryId: 'rides',
+      directions: { rides: 'give', food: 'request' },
+    });
   });
 
-  it('renders the five category tiles in order, the active one selected', async () => {
+  it('hides the request / offer toggle for a link-only world', async () => {
+    await renderHarness();
+    expect(screen.queryByTestId('create-direction-give')).not.toBeNull();
+    fireEvent.click(screen.getByTestId('create-category-medical'));
+    expect(state()).toBe('medical/give');
+    expect(screen.queryByTestId('create-direction-give')).toBeNull();
+  });
+
+  it('renders one tile per giving world in order, the active one selected', async () => {
     await renderHarness();
     const tiles = screen.getAllByRole('radio');
     expect(tiles.map((t) => t.getAttribute('data-testid'))).toEqual([
-      'create-category-items',
-      'create-category-rides',
-      'create-category-food',
-      'create-category-housing',
-      'create-category-time',
+      ...['items', 'food', 'rides', 'time', 'money', 'housing', 'knowledge', 'medical', 'animals', 'democracy', 'employment', 'challenges'].map(
+        (id) => `create-category-${id}`,
+      ),
     ]);
     expect(screen.getByTestId('create-category-rides').getAttribute('aria-checked')).toBe('true');
   });

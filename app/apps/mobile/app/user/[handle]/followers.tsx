@@ -3,17 +3,15 @@
 // `privacy_mode` no longer hides this list; it only governs follow approval.
 // FR-PROFILE-009 / FR-PROFILE-010. Each row carries dynamic Follow + ⋮ "Remove follower" if self.
 
-import React from 'react';
-import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { iconSize, spacing, useTheme, Text } from '@kc/ui';
+import { spacing, useTheme, Text } from '@kc/ui';
 import { FilterSearchBar } from '../../../src/components/filterKit/FilterSearchBar';
 import type { User } from '@kc/domain';
-import { AvatarInitials } from '../../../src/components/AvatarInitials';
 import { ConfirmActionModal } from '../../../src/components/post/ConfirmActionModal';
 import { useAuthStore } from '../../../src/store/authStore';
 import { getUserRepo } from '../../../src/services/userComposition';
@@ -22,6 +20,10 @@ import {
   getRemoveFollowerUseCase,
 } from '../../../src/services/followComposition';
 import { useFollowListStyles } from '../../../src/screens/followList.styles';
+import { KcFlashList } from '../../../src/components/lists/KcFlashList';
+import { FollowUserRow } from '../../../src/components/profile/FollowUserRow';
+
+const userKeyExtractor = (u: User) => u.userId;
 
 export default function FollowersListScreen() {
   const styles = useFollowListStyles();
@@ -51,13 +53,43 @@ export default function FollowersListScreen() {
     staleTime: 60_000, // PERF-3: profile (others) — remove-follower action invalidates explicitly
   });
 
+  const filtered = useMemo(() => {
+    const list = followersQuery.data?.users ?? [];
+    if (!search) return list;
+    const needle = search.toLowerCase();
+    return list.filter((u) => (u.displayName ?? '').toLowerCase().startsWith(needle));
+  }, [followersQuery.data?.users, search]);
+
+  const handleOpenUser = useCallback(
+    (targetHandle: string) => {
+      router.push({ pathname: '/user/[handle]', params: { handle: targetHandle } });
+    },
+    [router],
+  );
+
+  const handleRemoveUser = useCallback((u: User) => {
+    setPendingRemove(u);
+  }, []);
+
+  const renderItem = useCallback(
+    ({ item }: { item: User }) => (
+      <FollowUserRow
+        user={item}
+        fallbackName={t('profile.fallbackName')}
+        cityNotSet={t('profile.cityNotSet')}
+        isMe={isMe}
+        onOpen={handleOpenUser}
+        onRemove={isMe ? handleRemoveUser : undefined}
+        styles={styles}
+        textColorSecondary={colors.textSecondary}
+      />
+    ),
+    [colors.textSecondary, handleOpenUser, handleRemoveUser, isMe, styles, t],
+  );
+
   if (!owner) {
     return <SafeAreaView style={styles.container} edges={['bottom']}><ActivityIndicator color={colors.primary} /></SafeAreaView>;
   }
-
-  const filtered = (followersQuery.data?.users ?? []).filter((u) =>
-    !search || (u.displayName ?? '').toLowerCase().startsWith(search.toLowerCase()),
-  );
 
   const confirmRemove = async () => {
     if (!me || !isMe || !pendingRemove) return;
@@ -87,27 +119,14 @@ export default function FollowersListScreen() {
       />
       {followersQuery.isLoading ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />
-      ) : filtered.length === 0 ? (
-        <Text style={styles.empty}>{t('profile.followersScreen.empty')}</Text>
       ) : (
-        filtered.map((u) => (
-          <TouchableOpacity
-            key={u.userId}
-            style={styles.row}
-            onPress={() => router.push({ pathname: '/user/[handle]', params: { handle: u.shareHandle } })}
-          >
-            <AvatarInitials name={u.displayName ?? t('profile.fallbackName')} avatarUrl={u.avatarUrl} size={44} />
-            <View style={styles.rowText}>
-              <Text style={styles.name}>{u.displayName ?? t('profile.fallbackName')}</Text>
-              <Text style={styles.city}>{u.cityName ?? t('profile.cityNotSet')}</Text>
-            </View>
-            {isMe ? (
-              <TouchableOpacity onPress={() => setPendingRemove(u)} style={styles.menuBtn}>
-                <Ionicons name="ellipsis-horizontal" size={iconSize.md} color={colors.textSecondary} />
-              </TouchableOpacity>
-            ) : null}
-          </TouchableOpacity>
-        ))
+        <KcFlashList
+          data={filtered}
+          keyExtractor={userKeyExtractor}
+          estimatedItemSize={60}
+          renderItem={renderItem}
+          ListEmptyComponent={<Text style={styles.empty}>{t('profile.followersScreen.empty')}</Text>}
+        />
       )}
       <ConfirmActionModal
         visible={pendingRemove !== null}

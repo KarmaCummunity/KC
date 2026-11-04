@@ -1,7 +1,9 @@
 name: Auto-merge PRs
 
 # Enables squash auto-merge on every non-draft, same-repo PR whose base is not
-# `main` (no label needed). Draft PRs are the opt-out. GitHub then merges by
+# `main` (no label needed). Opt-outs: a draft PR, or a PR labelled
+# `no-auto-merge`, for a PR that the merge queue must not squash (the main →
+# dev sync lands as a merge commit; a squash would drop the ancestry it adds). GitHub then merges by
 # itself once the dev ruleset is satisfied (`CI gate` green, via the merge queue).
 # Never touches `main`. Docs: docs/agents/OPERATING_MODEL.md.
 #
@@ -36,7 +38,8 @@ jobs:
       github.event_name == 'pull_request' &&
       github.event.pull_request.base.ref != 'main' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.draft == false
+      github.event.pull_request.draft == false &&
+      !contains(github.event.pull_request.labels.*.name, 'no-auto-merge')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -102,7 +105,8 @@ jobs:
             exit 1
           fi
           case "$PR" in ''|*[!0-9]*) echo "::error::bad PR number"; exit 1;; esac
-          ok=$(gh pr view "$PR" --repo "$REPO" --json state,isDraft,baseRefName,isCrossRepository \
-            --jq '.state=="OPEN" and (.isDraft|not) and .baseRefName!="main" and (.isCrossRepository|not)')
+          # Re-checked here, not only in `request`: the label may be added after the dispatch.
+          ok=$(gh pr view "$PR" --repo "$REPO" --json state,isDraft,baseRefName,isCrossRepository,labels \
+            --jq '.state=="OPEN" and (.isDraft|not) and .baseRefName!="main" and (.isCrossRepository|not) and ([.labels[].name] | index("no-auto-merge") | not)')
           if [ "$ok" != "true" ]; then echo "PR #$PR is not eligible; skipping."; exit 0; fi
           gh pr merge "$PR" --repo "$REPO" --auto --squash

@@ -73,7 +73,7 @@ describe('ListingCard', () => {
   });
 
   it('keeps the marketplace world name for a world that is not a create category', () => {
-    const { getByText } = renderCard({ ...RIDE_OFFER, worldSlug: 'knowledge', ride: null });
-    expect(getByText('marketplace.world.knowledge')).toBeTruthy();
+    const { getByText } = renderCard({ ...RIDE_OFFER, worldSlug: 'environment', ride: null });
+    expect(getByText('marketplace.world.environment')).toBeTruthy();
   });
 });

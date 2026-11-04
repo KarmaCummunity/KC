@@ -1,7 +1,7 @@
 // app/apps/mobile/src/components/admin/admins/AdminsListView.tsx
 // FR-ADMIN-022 — the "list" tab of the admins screen: one card per user with an
 // include-revoked toggle. Split out of the screen to keep each unit small.
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, Switch, View } from 'react-native';
 import { type AdminPerson, groupGrantsByUser } from '@kc/domain';
 import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
@@ -29,6 +29,9 @@ function renderItem(item: AdminListItem, onSelect: (userId: string) => void, sty
   return <AdminPersonCard person={item.person} onPress={onSelect} />;
 }
 
+const adminListKeyExtractor = (it: AdminListItem) =>
+  it.kind === 'header' ? `h:${it.title}` : `p:${it.person.userId}`;
+
 export function AdminsListView({ isWide, onSelect }: AdminsListViewProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
@@ -36,6 +39,16 @@ export function AdminsListView({ isWide, onSelect }: AdminsListViewProps) {
   const list = useAdminsList(includeRevoked);
   const people = useMemo<readonly AdminPerson[]>(() => groupGrantsByUser(list.grants), [list.grants]);
   const items = useMemo(() => buildAdminListItems(people, includeRevoked), [people, includeRevoked]);
+
+  const contentContainerStyle = useMemo(
+    () => [styles.listContent, isWide && styles.listContentWide],
+    [isWide, styles.listContent, styles.listContentWide],
+  );
+
+  const handleRenderItem = useCallback(
+    ({ item }: { item: AdminListItem }) => renderItem(item, onSelect, styles),
+    [onSelect, styles],
+  );
 
   return (
     <View style={styles.fill}>
@@ -45,9 +58,10 @@ export function AdminsListView({ isWide, onSelect }: AdminsListViewProps) {
       </View>
       <KcFlashList
         data={items}
-        keyExtractor={(it, i) => (it.kind === 'header' ? `h:${it.title}` : `p:${it.person.userId}:${i}`)}
-        contentContainerStyle={[styles.listContent, isWide && styles.listContentWide]}
-        renderItem={({ item }) => renderItem(item, onSelect, styles)}
+        keyExtractor={adminListKeyExtractor}
+        estimatedItemSize={72}
+        contentContainerStyle={contentContainerStyle}
+        renderItem={handleRenderItem}
         ListEmptyComponent={list.isLoading ? null : <EmptyState />}
         refreshControl={<RefreshControl refreshing={list.isRefetching} onRefresh={list.refetch} />}
       />

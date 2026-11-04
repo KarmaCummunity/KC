@@ -9,7 +9,6 @@ export const marketplaceWorldLabels = {
   rides: 'נסיעות',
   housing: 'דיור',
   knowledge: 'ידע',
-  experiences: 'חוויות',
   medical: 'דם ורפואה',
   animals: 'חיות',
   environment: 'סביבה',
