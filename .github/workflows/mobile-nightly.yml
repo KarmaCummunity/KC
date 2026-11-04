@@ -85,6 +85,8 @@ jobs:
     with:
       p0_only: true
       ref: ${{ needs.resolve.outputs.sha }}
+    # The called workflow reads E2E_SEED_PASSWORD; without this it receives an empty secret.
+    secrets: inherit
 
   ios:
     name: ios
