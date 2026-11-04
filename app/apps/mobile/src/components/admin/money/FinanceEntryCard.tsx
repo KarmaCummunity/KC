@@ -1,6 +1,7 @@
 // V2-ADMIN-MONEY-9 — single ledger entry card.
+import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import type { FinanceEntry } from '@kc/domain';
+import { isFinanceCategoryKey, type FinanceEntry } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { Chip } from '../../ui/Chip';
 import { AdminCardActions } from '../AdminCardActions';
@@ -8,6 +9,8 @@ import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
 export interface FinanceEntryCardProps {
   readonly entry: FinanceEntry;
+  /** Resolved name of `entry.accountId`, when known. */
+  readonly accountName?: string | null;
   readonly onEdit: () => void;
   readonly onDelete: () => void;
 }
@@ -25,7 +28,7 @@ function fmtAmount(cents: number, currency: string): string {
   }
 }
 
-export function FinanceEntryCard({ entry, onEdit, onDelete }: FinanceEntryCardProps) {
+function FinanceEntryCardInner({ entry, accountName, onEdit, onDelete }: FinanceEntryCardProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   const t = L.admin.money;
@@ -47,13 +50,20 @@ export function FinanceEntryCard({ entry, onEdit, onDelete }: FinanceEntryCardPr
             label={t.status[entry.status]}
             size="sm"
           />
+          {!entry.isPublic && <Chip variant="tag" tone="muted" label={t.row.notPublicChip} size="sm" />}
         </View>
       </View>
       {entry.counterparty && (
         <Text style={styles.metaText}>{t.row.counterpartyPrefix} {entry.counterparty}</Text>
       )}
+      {accountName && (
+        <Text style={styles.metaText}>{t.row.accountPrefix} {accountName}</Text>
+      )}
       {entry.category && (
-        <Text style={styles.metaText}>{t.row.categoryPrefix} {entry.category}</Text>
+        <Text style={styles.metaText}>
+          {t.row.categoryPrefix}{' '}
+          {isFinanceCategoryKey(entry.category) ? L.transparency.category[entry.category] : entry.category}
+        </Text>
       )}
       {entry.description && (
         <Text style={styles.description} numberOfLines={3}>{entry.description}</Text>
@@ -84,3 +94,5 @@ const useStyles = makeUseStyles(({ colors }) => ({
   metaText:    { ...typography.bodySmall, color: colors.textSecondary },
   description: { ...typography.bodySmall, color: colors.textPrimary, marginTop: spacing.xs },
 }));
+
+export const FinanceEntryCard = memo(FinanceEntryCardInner);

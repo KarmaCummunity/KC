@@ -29,6 +29,9 @@ export const ADMIN_PERMISSIONS = [
   'org.review_applications',
   'whatsapp.manage',
   'matching.view_quality',
+  'donation_links.review',
+  'stats.view_platform',
+  'demo_data.manage',
 ] as const;
 
 export type AdminPermission = (typeof ADMIN_PERMISSIONS)[number];
@@ -78,6 +81,12 @@ export const PERMISSION_MATRIX: Readonly<Record<AdminPermission, readonly AdminR
   'whatsapp.manage':            ['super_admin', 'moderator'],
   // KC#1122 / FR-ADMIN-029 — mirrors admin_match_quality's admin_assert_role (0454).
   'matching.view_quality':      ['super_admin', 'moderator'],
+  // D9 — approve or reject suggested donation links (server: is_donation_link_reviewer, 0546).
+  'donation_links.review':      ['super_admin', 'moderator'],
+  // FR-STATS-007 — platform statistics (flow funnel); the server checks the same roles (0542).
+  'stats.view_platform':        ['super_admin', 'moderator'],
+  // FR-ADMIN-031 — wipe kc-dev demo data; the server (0549) re-checks super_admin only.
+  'demo_data.manage':           ['super_admin'],
 };
 
 export function hasPermission(

@@ -130,6 +130,12 @@ export interface IMarketplaceRepository {
   resumeMyListing(listingId: string): Promise<void>;
   fulfillMyListing(listingId: string): Promise<void>;
   deleteMyListing(listingId: string): Promise<void>;
+  /**
+   * Appends already-uploaded photos (storage paths under the owner's folder) to the owner's
+   * listing, open, paused or closed; existing photos are never replaced (ten at most).
+   * Resolves with the number added. Spec 07 §7.1 "Owner management".
+   */
+  addMyListingMedia(listingId: string, mediaPaths: readonly string[]): Promise<number>;
   getListingHandoff(listingId: string): Promise<GivingHandoffSnapshot | null>;
   listMyGivingHandoffs(limit?: number): Promise<MyGivingHandoffRow[]>;
   reserveItemGiving(

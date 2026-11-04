@@ -1,5 +1,6 @@
 // app/apps/mobile/src/components/admin/tasks/TaskRow.tsx
 // FR-ADMIN-018 — single task row for /admin/tasks list.
+import { memo } from 'react';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { type AdminTask, isOverdue } from '@kc/domain';
@@ -17,7 +18,7 @@ function fmtDue(d: Date): string {
   return d.toLocaleDateString('he-IL', { year: 'numeric', month: '2-digit', day: '2-digit' });
 }
 
-export function TaskRow({ task }: TaskRowProps) {
+function TaskRowInner({ task }: TaskRowProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   const overdue = isOverdue(task);
@@ -71,3 +72,5 @@ const useStyles = makeUseStyles(({ colors }) => ({
   overdueChip:  { paddingHorizontal: spacing.xs, paddingVertical: spacing.xs, borderRadius: radius.xs, backgroundColor: colors.errorLight },
   overdueText:  { fontSize: typography.caption.fontSize, ...typography.bold, color: colors.error },
 }));
+
+export const TaskRow = memo(TaskRowInner);

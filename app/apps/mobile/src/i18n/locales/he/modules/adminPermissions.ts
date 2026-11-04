@@ -33,4 +33,7 @@ export const adminPermissionsHe: Readonly<Record<AdminPermission, string>> = {
   'org.review_applications':    'אישור בקשות ארגונים',
   'whatsapp.manage':            'ניהול וואטסאפ',
   'matching.view_quality':      'צפייה באיכות התאמות',
+  'donation_links.review':      'אישור קישורי תרומה',
+  'stats.view_platform':        'צפייה בסטטיסטיקות הפלטפורמה',
+  'demo_data.manage':           'ניהול נתוני דמה',
 };

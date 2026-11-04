@@ -5,6 +5,7 @@
 // (linked ids, org slugs) and every field gets a purpose-built control.
 import { RIDE_COST_CAP_INTERCITY_ILS, type ListingKindOption } from '@kc/domain';
 import type { CreateDirection } from './createCategories';
+import { HOUSING_FIELD_SPECS } from './housingFieldSpecs';
 
 /** Shows a field only while another detail holds a given value. */
 interface VisibleWhen {
@@ -25,9 +26,15 @@ export type ListingFieldSpec =
   | (BaseSpec & { readonly type: 'count'; readonly min: number; readonly max: number; readonly defaultValue: number })
   | (BaseSpec & { readonly type: 'duration'; readonly options: readonly number[]; readonly defaultValue: number })
   | (BaseSpec & { readonly type: 'dateTime' })
+  // A local calendar day, stored as `yyyy-MM-dd` (housing check-in / check-out).
+  | (BaseSpec & { readonly type: 'date' })
+  // A local time of day, stored as `HH:mm` (housing check-in window, check-out time).
+  | (BaseSpec & { readonly type: 'time'; readonly defaultValue: string })
   | (BaseSpec & { readonly type: 'amount'; readonly max: number })
   | (BaseSpec & { readonly type: 'text'; readonly multiline?: boolean; readonly maxLength: number })
-  | (BaseSpec & { readonly type: 'toggle' });
+  | (BaseSpec & { readonly type: 'toggle'; readonly defaultValue?: boolean })
+  // A detail the form sets without a control (no editor for it yet); seeded from `defaultValue`.
+  | (BaseSpec & { readonly type: 'fixed'; readonly defaultValue: unknown });
 
 const DURATIONS_MIN: readonly number[] = [30, 60, 120, 180, 240];
 
@@ -55,12 +62,7 @@ const SPECS_BY_KIND: Readonly<Record<string, readonly ListingFieldSpec[]>> = {
     { key: 'passengers', type: 'count', min: 1, max: 8, defaultValue: 1 },
     { key: 'luggage', type: 'toggle' },
   ],
-  host_offer: [
-    { key: 'place_type', type: 'choice', options: ['room', 'couch', 'apartment'] },
-    { key: 'capacity', type: 'count', min: 1, max: 10, defaultValue: 1 },
-    { key: 'house_rules', type: 'text', multiline: true, maxLength: 300 },
-  ],
-  stay_request: [{ key: 'party_size', type: 'count', min: 1, max: 10, defaultValue: 1 }],
+  ...HOUSING_FIELD_SPECS,
   volunteer_shift: [{ key: 'duration_minutes', type: 'duration', options: DURATIONS_MIN, defaultValue: 60 }],
   // Emotional support is routed to a hotline, never a member post (docs/spec/05 §5.4).
   support_request: [

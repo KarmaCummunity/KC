@@ -9,28 +9,29 @@ const now = new Date('2026-10-17T00:00:00Z');
 
 describe('validateMarketplaceWorldRules — items', () => {
   it('does not require a photo (photos are optional)', () => {
-    expect(validateMarketplaceWorldRules({ worldSlug: 'items', details: {}, photoCount: 0 })).toBeNull();
-    expect(validateMarketplaceWorldRules({ worldSlug: 'items', details: { image_url: '  ' }, photoCount: 0 })).toBeNull();
+    expect(validateMarketplaceWorldRules({ worldSlug: 'items', direction: 'give', details: {}, photoCount: 0 })).toBeNull();
+    expect(validateMarketplaceWorldRules({ worldSlug: 'items', direction: 'give', details: { image_url: '  ' }, photoCount: 0 })).toBeNull();
   });
   it('passes with an attached photo or a details image', () => {
-    expect(validateMarketplaceWorldRules({ worldSlug: 'items', details: {}, photoCount: 1 })).toBeNull();
+    expect(validateMarketplaceWorldRules({ worldSlug: 'items', direction: 'give', details: {}, photoCount: 1 })).toBeNull();
     expect(
-      validateMarketplaceWorldRules({ worldSlug: 'items', details: { image_url: 'https://x/y.jpg' }, photoCount: 0 }),
+      validateMarketplaceWorldRules({ worldSlug: 'items', direction: 'give', details: { image_url: 'https://x/y.jpg' }, photoCount: 0 }),
     ).toBeNull();
   });
 });
 
 describe('validateMarketplaceWorldRules — food', () => {
   it('requires a future expires_at', () => {
-    expect(validateMarketplaceWorldRules({ worldSlug: 'food', details: {}, photoCount: 0, now })).toBe(
+    expect(validateMarketplaceWorldRules({ worldSlug: 'food', direction: 'give', details: {}, photoCount: 0, now })).toBe(
       'food_expiry_required',
     );
     expect(
-      validateMarketplaceWorldRules({ worldSlug: 'food', details: { expires_at: 'nope' }, photoCount: 0, now }),
+      validateMarketplaceWorldRules({ worldSlug: 'food', direction: 'give', details: { expires_at: 'nope' }, photoCount: 0, now }),
     ).toBe('food_expiry_required');
     expect(
       validateMarketplaceWorldRules({
         worldSlug: 'food',
+        direction: 'give',
         details: { expires_at: '2026-10-16T00:00:00Z' },
         photoCount: 0,
         now,
@@ -41,7 +42,23 @@ describe('validateMarketplaceWorldRules — food', () => {
     expect(
       validateMarketplaceWorldRules({
         worldSlug: 'food',
+        direction: 'give',
         details: { expires_at: '2026-10-18T12:00:00Z' },
+        photoCount: 0,
+        now,
+      }),
+    ).toBeNull();
+  });
+  // Regression: the request form has no expiry field, so requiring one blocked every food request.
+  it('needs no expiry on a food request (D21)', () => {
+    expect(
+      validateMarketplaceWorldRules({ worldSlug: 'food', direction: 'request', details: {}, photoCount: 0, now }),
+    ).toBeNull();
+    expect(
+      validateMarketplaceWorldRules({
+        worldSlug: 'food',
+        direction: 'request',
+        details: { household_size: 3 },
         photoCount: 0,
         now,
       }),
@@ -51,13 +68,13 @@ describe('validateMarketplaceWorldRules — food', () => {
 
 describe('validateMarketplaceWorldRules — routed worlds', () => {
   it.each(['medical', 'animals', 'environment'])('%s requires an external body', (worldSlug) => {
-    expect(validateMarketplaceWorldRules({ worldSlug, details: {}, photoCount: 3 })).toBe(
+    expect(validateMarketplaceWorldRules({ worldSlug, direction: 'give', details: {}, photoCount: 3 })).toBe(
       'routed_world_requires_external_body',
     );
-    expect(validateMarketplaceWorldRules({ worldSlug, details: {}, photoCount: 0, externalBodyId: 'org-1' })).toBeNull();
+    expect(validateMarketplaceWorldRules({ worldSlug, direction: 'give', details: {}, photoCount: 0, externalBodyId: 'org-1' })).toBeNull();
   });
   it('other worlds have no client rule', () => {
-    expect(validateMarketplaceWorldRules({ worldSlug: 'knowledge', details: {}, photoCount: 0 })).toBeNull();
+    expect(validateMarketplaceWorldRules({ worldSlug: 'knowledge', direction: 'give', details: {}, photoCount: 0 })).toBeNull();
   });
 });
 
@@ -70,6 +87,20 @@ describe('mapMarketplaceServerError', () => {
     expect(mapMarketplaceServerError('ERROR: money_active_campaign_cap (SQLSTATE 23514)')).toBe(
       'money_active_campaign_cap',
     );
+  });
+  it('maps the one-live-handoff index of either handoff table to listing_not_available', () => {
+    expect(
+      mapMarketplaceServerError({
+        code: '23505',
+        message: 'duplicate key value violates unique constraint "giving_handoffs_active_listing_uidx"',
+      }),
+    ).toBe('listing_not_available');
+    expect(
+      mapMarketplaceServerError({
+        code: '23505',
+        message: 'duplicate key value violates unique constraint "post_handoffs_active_post_uidx"',
+      }),
+    ).toBe('listing_not_available');
   });
   it('prefers the longest matching code', () => {
     expect(mapMarketplaceServerError({ message: 'listing_details_schema_mismatch' })).toBe(

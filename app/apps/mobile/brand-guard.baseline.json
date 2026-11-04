@@ -1,9 +1,6 @@
 {
   "$comment": "Frozen brand-guard findings per file (spec 17 §6, TD-199). Counts may only go down.",
   "files": {
-    "app/edit-post/[id].tsx": {
-      "iconSizeLiteral": 1
-    },
     "app/research/[slug].web.tsx": {
       "fontWeightLiteral": 1,
       "radiusLiteral": 1
@@ -21,19 +18,11 @@
       "iconSizeLiteral": 4,
       "unmirroredDirectionalIcon": 2
     },
-    "app/user/[handle]/index.tsx": {
-      "spacingLiteral": 1,
-      "iconSizeLiteral": 2
-    },
     "src/components/CreatePostForm/CreatePostFormScrollContent.tsx": {
       "physicalSide": 1
     },
     "src/components/DeleteAccountSuccessOverlay.tsx": {
       "rawModal": 1
-    },
-    "src/components/EditProfileAvatar.tsx": {
-      "colorLiteral": 1,
-      "radiusLiteral": 1
     },
     "src/components/FeedEmptyState.tsx": {
       "fontWeightLiteral": 1,
@@ -85,10 +74,6 @@
       "physicalSide": 2,
       "rawModal": 2
     },
-    "src/components/legal/legalMarkdownRules.tsx": {
-      "radiusLiteral": 1,
-      "physicalSide": 2
-    },
     "src/components/map/MapExplorer.styles.ts": {
       "colorLiteral": 3,
       "fontWeightLiteral": 4,
@@ -100,18 +85,6 @@
     },
     "src/components/marketplace/listingChipStyles.ts": {
       "adHocChip": 1
-    },
-    "src/components/post-detail/RecipientUnmarkBar.tsx": {
-      "fontWeightLiteral": 1
-    },
-    "src/components/profile/FollowButton.tsx": {
-      "fontWeightLiteral": 1,
-      "spacingLiteral": 1
-    },
-    "src/components/profile/ProfileClosedPostsGrid.tsx": {
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 1
     },
     "src/components/research/ResearchEndShareCard.tsx": {
       "fontWeightLiteral": 2,
@@ -147,13 +120,6 @@
       "radiusLiteral": 2,
       "spacingLiteral": 8
     },
-    "src/components/stats/ActivityTimelineList.tsx": {
-      "radiusLiteral": 1,
-      "iconSizeLiteral": 1
-    },
-    "src/components/ui/SectionHeading.tsx": {
-      "fontSizeLiteral": 1
-    },
     "src/features/about-landing/AboutHero.tsx": {
       "colorLiteral": 5,
       "fontWeightLiteral": 1,
@@ -168,15 +134,6 @@
       "physicalSide": 2,
       "rawModal": 1,
       "iconSizeLiteral": 3,
-      "unmirroredDirectionalIcon": 1
-    },
-    "src/features/about-landing/AboutSectionBlocksTop.tsx": {
-      "fontWeightLiteral": 1,
-      "shadowLiteral": 4
-    },
-    "src/features/about-landing/AboutSocialLinks.tsx": {
-      "fontWeightLiteral": 1,
-      "iconSizeLiteral": 2,
       "unmirroredDirectionalIcon": 1
     },
     "src/features/about-landing/AboutValuesGrid.tsx": {

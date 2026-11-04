@@ -1,11 +1,12 @@
-// FR-POST-001 AC6 — the create form offers exactly five categories, in a fixed order, each
-// with an engine, an icon and a Hebrew label; one route serves every create button.
+// FR-POST-001 AC6 / D100 — the create form offers one category per giving world, in a fixed
+// order, each with an engine, an icon and a Hebrew label; one route serves every create button.
 import { describe, expect, it } from 'vitest';
 import {
   CREATE_CATEGORIES,
   CREATE_CATEGORY_IDS,
   DEFAULT_CREATE_CATEGORY,
   WORLDS_WITH_SUBCATEGORY_PICKER,
+  createCategoryForPath,
   createRouteFor,
   findCreateCategory,
   isCreateCategoryId,
@@ -19,15 +20,18 @@ function resolveKey(bundle: unknown, key: string): unknown {
 }
 
 describe('unified create — category config', () => {
-  it('offers items, rides, food, housing, time — in that order, without duplicates', () => {
+  it('offers one category per giving world, in the hub order, without duplicates', () => {
     const ids = CREATE_CATEGORIES.map((c) => c.id);
-    expect(ids).toEqual(['items', 'rides', 'food', 'housing', 'time']);
+    expect(ids).toEqual([
+      'items', 'food', 'rides', 'time', 'money', 'housing', 'knowledge',
+      'medical', 'animals', 'democracy', 'employment', 'challenges',
+    ]);
     expect(ids).toEqual([...CREATE_CATEGORY_IDS]);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('has no "general" or marketplace-only category any more', () => {
-    for (const removed of ['general', 'money', 'knowledge', 'medical', 'animals', 'environment']) {
+  it('has no "general", domain or experiences category any more', () => {
+    for (const removed of ['general', 'environment', 'elderly', 'sport', 'experiences']) {
       expect(isCreateCategoryId(removed)).toBe(false);
     }
   });
@@ -44,16 +48,28 @@ describe('unified create — category config', () => {
     expect(label('food')).toBe('אוכל');
     expect(label('housing')).toBe('דיור');
     expect(label('time')).toBe('זמן');
+    expect(label('medical')).toBe('רפואה');
+    expect(label('democracy')).toBe('דמוקרטיה');
   });
 
-  it('items keep the post engine; every other category writes a listing of its own world', () => {
+  it('items keep the post engine; worlds with a feed write a listing; the rest add a link', () => {
     const items = findCreateCategory('items');
     expect(items.engine).toBe('post');
     expect(items.worldSlug).toBeNull();
-    for (const c of CREATE_CATEGORIES.filter((x) => x.id !== 'items')) {
+    expect(items.linkCategory).toBeNull();
+    for (const id of ['rides', 'food', 'housing', 'time']) {
+      const c = findCreateCategory(id);
       expect(c.engine).toBe('listing');
-      expect(c.worldSlug).toBe(c.id);
+      expect(c.worldSlug).toBe(id);
+      expect(c.linkCategory).toBeNull();
     }
+    const links = Object.fromEntries(
+      CREATE_CATEGORIES.filter((c) => c.engine === 'link').map((c) => [c.id, c.linkCategory]),
+    );
+    expect(links).toEqual({
+      money: 'money', knowledge: 'knowledge', medical: 'medical', animals: 'animals',
+      democracy: 'democracy', employment: 'employment', challenges: 'challenges',
+    });
   });
 
   it('food is the only listing category with a world subcategory picker (KC#1296)', () => {
@@ -79,7 +95,7 @@ describe('unified create — category config', () => {
   it('every entry point uses one route, preselecting a known category only', () => {
     expect(createRouteFor()).toBe('/(tabs)/create');
     expect(createRouteFor(null)).toBe('/(tabs)/create');
-    expect(createRouteFor('knowledge')).toBe('/(tabs)/create');
+    expect(createRouteFor('experiences')).toBe('/(tabs)/create');
     expect(createRouteFor('rides')).toBe('/(tabs)/create?category=rides');
     expect(createRouteFor('items')).toBe('/(tabs)/create?category=items');
   });
@@ -88,7 +104,7 @@ describe('unified create — category config', () => {
     expect(createRouteFor('food', 'request')).toBe('/(tabs)/create?category=food&direction=request');
     expect(createRouteFor('housing', 'give')).toBe('/(tabs)/create?category=housing&direction=give');
     expect(createRouteFor('rides', null)).toBe('/(tabs)/create?category=rides');
-    expect(createRouteFor('knowledge', 'give')).toBe('/(tabs)/create');
+    expect(createRouteFor('experiences', 'give')).toBe('/(tabs)/create');
     expect(createRouteFor(null, 'request')).toBe('/(tabs)/create');
   });
 
@@ -96,5 +112,19 @@ describe('unified create — category config', () => {
     expect(isCreateDirection('give')).toBe(true);
     expect(isCreateDirection('request')).toBe(true);
     for (const bad of ['Give', 'offer', '', null, undefined, 1]) expect(isCreateDirection(bad)).toBe(false);
+  });
+
+  it('maps a donations screen path to its create category, for the "+" button', () => {
+    expect(createCategoryForPath('/donations/food')).toBe('food');
+    expect(createCategoryForPath('/donations/rides/series')).toBe('rides');
+    expect(createCategoryForPath('/donations/items')).toBe('items');
+    expect(createCategoryForPath('/donations/category/medical')).toBe('medical');
+    expect(createCategoryForPath('/donations/money')).toBe('money');
+  });
+
+  it('gives no category outside a giving world', () => {
+    for (const path of ['/', '/search', '/profile', '/donations', '/donations/marketplace/abc', '/donations/category/bogus', null, undefined]) {
+      expect(createCategoryForPath(path)).toBeNull();
+    }
   });
 });

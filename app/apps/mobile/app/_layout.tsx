@@ -26,7 +26,7 @@ import '../src/lib/webDocumentBootstrap';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import { queryClient, persistOptions } from '../src/lib/queryPersist';
+import { queryClient, persistOptions, setupQueryLifecycleSync } from '../src/lib/queryPersist';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { BrandFontProvider, useTheme } from '@kc/ui';
@@ -155,6 +155,10 @@ function ThemedRootShell() {
 }
 
 function RootLayoutContent() {
+  useEffect(() => {
+    return setupQueryLifecycleSync();
+  }, []);
+
   useEffect(() => {
     // FR-SETTINGS-018: keep layout direction aligned with the active UI language.
     // Web resolved its direction at module load from localStorage; here we align

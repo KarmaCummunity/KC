@@ -9,7 +9,6 @@ export const marketplaceWorldLabels = {
   rides: 'Rides',
   housing: 'Housing',
   knowledge: 'Knowledge',
-  experiences: 'Experiences',
   medical: 'Blood & medical',
   animals: 'Animals',
   environment: 'Environment',

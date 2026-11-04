@@ -8,22 +8,47 @@ import { rowDirectionStart } from '../../lib/rtlLayout';
 import { notificationIcon } from '../../lib/notificationInboxView';
 
 interface Props {
-  kind: string;
-  title: string;
-  body: string;
-  time: string;
-  groupHint?: string;
-  unread: boolean;
-  onPress: () => void;
+  readonly inboxId?: string;
+  readonly kind: string;
+  readonly title: string;
+  readonly body: string;
+  readonly time: string;
+  readonly groupHint?: string;
+  readonly unread: boolean;
+  readonly data?: Record<string, unknown>;
+  readonly readAt?: string | null;
+  readonly onPress?: () => void;
+  readonly onOpen?: (inboxId: string, data: Record<string, unknown>, readAt: string | null) => void;
 }
 
-export function NotificationInboxRow({ kind, title, body, time, groupHint, unread, onPress }: Props) {
+function NotificationInboxRowInner({
+  inboxId,
+  kind,
+  title,
+  body,
+  time,
+  groupHint,
+  unread,
+  data,
+  readAt,
+  onPress,
+  onOpen,
+}: Props) {
   const styles = useStyles();
   const { colors } = useTheme();
+
+  const handlePress = React.useCallback(() => {
+    if (onOpen && inboxId) {
+      onOpen(inboxId, data ?? {}, readAt ?? null);
+    } else if (onPress) {
+      onPress();
+    }
+  }, [inboxId, data, readAt, onOpen, onPress]);
+
   return (
     <Pressable
       style={({ pressed }) => [styles.row, pressed ? styles.pressed : null]}
-      onPress={onPress}
+      onPress={handlePress}
       accessibilityRole="button"
       accessibilityState={{ selected: unread }}
     >
@@ -46,6 +71,8 @@ export function NotificationInboxRow({ kind, title, body, time, groupHint, unrea
     </Pressable>
   );
 }
+
+export const NotificationInboxRow = React.memo(NotificationInboxRowInner);
 
 const useStyles = makeUseStyles(({ colors }) => ({
   row: {

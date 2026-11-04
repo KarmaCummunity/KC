@@ -30,7 +30,13 @@ export async function supabaseGetEditableProfile(
     biography: string | null;
     avatar_url: string | null;
   };
-  const slice = await fetchUsersSelfPrivateFields(client);
+  // users_get_self_private_fields() returns the *caller's* phone and address, not
+  // those of `userId`, so they are merged only when the caller owns the row (the
+  // owner check fetchUserBy makes). For another member the private fields stay null.
+  // `auth.getSession()` reads the cached JWT — no network round-trip.
+  const { data: sessionData } = await client.auth.getSession();
+  const isOwner = sessionData.session?.user.id === userId;
+  const slice = isOwner ? await fetchUsersSelfPrivateFields(client) : null;
   return {
     displayName: row.display_name,
     city: row.city,

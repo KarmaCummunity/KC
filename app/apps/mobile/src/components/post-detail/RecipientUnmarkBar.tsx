@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Pressable } from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { ConfirmActionModal } from '../post/ConfirmActionModal';
 import { NotifyModal } from '../NotifyModal';
 import { getUnmarkRecipientSelfUseCase } from '../../services/postsComposition';
@@ -18,7 +18,6 @@ interface Props {
 
 export function RecipientUnmarkBar({ postId, userId }: Props) {
   const styles = useStyles();
-  const { colors } = useTheme();
   const { t } = useTranslation();
   const qc = useQueryClient();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -84,5 +83,5 @@ const useStyles = makeUseStyles(({ colors }) => ({
     backgroundColor: colors.errorLight,
     alignItems: 'center',
   },
-  btnText: { ...typography.bodySmall, color: colors.error, fontWeight: '600' },
+  btnText: { ...typography.bodySmall, ...typography.semiBold, color: colors.error },
 }));

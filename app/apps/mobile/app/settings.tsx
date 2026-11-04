@@ -173,6 +173,12 @@ export default function SettingsScreen() {
               onPress={() => router.push('/settings/follow-requests')}
             />
           ) : null}
+          {/* FR-MOD-004 AC1 — the only way back to a blocked member (their profile is hidden). */}
+          <SettingsScreenRow
+            label={t('moderation.block.listTitle')}
+            icon="ban-outline"
+            onPress={() => router.push('/settings/blocked-users')}
+          />
         </View>
 
         <Text style={styles.sectionTitle}>{t('settings.statsSection')}</Text>

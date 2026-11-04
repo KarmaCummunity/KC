@@ -1,5 +1,6 @@
 // app/apps/mobile/src/components/admin/content/AuditLogRow.tsx
 // FR-ADMIN-020 — single row in the admin audit log viewer.
+import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { AdminAuditRow } from '@kc/domain';
 import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
@@ -15,7 +16,7 @@ function fmtTs(d: Date): string {
   });
 }
 
-export function AuditLogRow({ row }: AuditLogRowProps) {
+function AuditLogRowInner({ row }: AuditLogRowProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   return (
@@ -39,6 +40,8 @@ export function AuditLogRow({ row }: AuditLogRowProps) {
     </View>
   );
 }
+
+export const AuditLogRow = memo(AuditLogRowInner);
 
 const useStyles = makeUseStyles(({ colors }) => ({
   root: {

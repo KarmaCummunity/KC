@@ -84,6 +84,12 @@ describe('buildFeedQuery — base shape', () => {
     expect(findOp(ops, 'select')?.cols).toContain('owner:users');
   });
 
+  it('never lists a post hidden from the feed (posts.feed_hidden, 0557)', () => {
+    const { client, ops } = makeFakeClient();
+    buildFeedQuery(client, {}, undefined, 10);
+    expect(ops.find((o) => o.kind === 'eq' && o.col === 'feed_hidden')).toEqual({ kind: 'eq', col: 'feed_hidden', val: false });
+  });
+
   it('limits to pageLimit + 1 (next-page sentinel)', () => {
     const { client, ops } = makeFakeClient();
     buildFeedQuery(client, {}, undefined, 20);

@@ -70,6 +70,21 @@ export const notificationsHe = {
   // D74 — a new ride on a route the user follows (0516).
   rideRouteMatchTitle: 'נסיעה חדשה במסלול שלך',
   rideRouteMatchBody: '{{origin}} ← {{dest}} · {{when}}',
+  // FR-HOUSING-017 (0602–0603) — housing booking changes; mirrored in dispatch-notification/i18n.json.
+  housingBookingRequestedTitle: 'בקשת אירוח חדשה',
+  housingBookingRequestedBody: '{{name}} מבקש/ת להתארח ב"{{listingTitle}}" מ-{{checkIn}} ({{guests}} אורחים). אשרו או דחו.',
+  housingBookingConfirmedTitle: 'האירוח שלך אושר',
+  housingBookingConfirmedBody: '{{name}} אישר/ה את השהייה ב"{{listingTitle}}". הכתובת מחכה לך בכרטיס ההזמנה.',
+  housingBookingDeclinedTitle: 'בקשת האירוח לא אושרה',
+  housingBookingDeclinedBody: '{{name}} לא יכול/ה לארח אותך ב"{{listingTitle}}". אפשר לחפש מקום אחר.',
+  housingBookingExpiredTitle: 'בקשת האירוח פגה',
+  housingBookingExpiredBody: 'המארח/ת לא ענה/תה בזמן על הבקשה ל"{{listingTitle}}". אפשר לחפש מקום אחר.',
+  housingBookingSupersededTitle: 'האורח/ת מצא/ה מקום אחר',
+  housingBookingSupersededBody: '{{name}} כבר לא צריך/ה את "{{listingTitle}}" בתאריכים האלה. תודה על הנכונות!',
+  housingBookingCancelledTitle: 'אירוח בוטל',
+  housingBookingCancelledBody: '{{name}} ביטל/ה את ההזמנה ב"{{listingTitle}}".',
+  housingBookingCompletedTitle: 'השהייה הסתיימה',
+  housingBookingCompletedBody: 'תודה שהתארחת ב"{{listingTitle}}". אפשר לדרג את האירוח.',
   // FR-NOTIF-018 (0528) — item and food handoffs; mirrored in dispatch-notification/i18n.json.
   givingHandoffRequestedTitle: 'בקשה חדשה ל"{{listingTitle}}"',
   givingHandoffRequestedBody: '{{name}} רוצה לקבל את זה. אשרו או דחו.',

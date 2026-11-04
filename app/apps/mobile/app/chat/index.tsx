@@ -28,6 +28,7 @@ import { NativeStackHeaderTitle } from '../../src/navigation/NativeStackHeaderTi
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 const PAGE = 30;
+const chatInboxKeyExtractor = (c: ChatWithPreview) => c.chatId;
 
 export default function ChatListScreen() {
   const router = useRouter();
@@ -99,7 +100,7 @@ export default function ChatListScreen() {
       ) : (
         <KcFlashList
           data={filtered}
-          keyExtractor={(c) => c.chatId}
+          keyExtractor={chatInboxKeyExtractor}
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.6}
           estimatedItemSize={76}

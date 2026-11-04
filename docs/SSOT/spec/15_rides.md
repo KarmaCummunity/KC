@@ -21,6 +21,7 @@ Prefix: `FR-RIDE-*`
 - AC3. Free-text search: 300ms debounce, ≥2 chars on title/description/city names.
 - AC4. Filter sheet: origin city, dest city, optional date range, mode (all/offer/request).
 - AC5. Footer section renders `<DonationLinksList categorySlug="transport" />`.
+- AC6 (#1626, binding text `docs/spec/05_giving_worlds.md` §5.3 "Hub screen"). The hub opens on the feed (`list_rides_feed`, D75) on the shared `ListingCard`, grouped today / tomorrow / later. AC3 free-text search and the AC4 filter sheet are replaced by the offers / requests chips plus the route search as a collapsed filter (official places, D71). AC5's links footer starts collapsed. Code: `RidesHubScreen`, `useRidesHubFeed`, `RidesFeedList`, `RideRouteFilter`.
 
 ## FR-RIDE-003 — Publish ride (FAB + sheet)
 - AC1. Single FAB `+` opens bottom sheet: choose **מציע נסיעה** | **מחפש נסיעה**.

@@ -29,7 +29,8 @@ begin
   insert into public.listings (owner_id, world_slug, kind_id, direction, title, origin, moderation_status,
                                details, expires_at)
   select p_owner, 'food', kind_id, 'give', p_title, 'native', 'published',
-         '{"image_url":"https://example.test/f.jpg"}'::jsonb, p_expires_at
+         jsonb_build_object('food_type', 'cooked', 'expires_at', to_char(p_expires_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')),
+         p_expires_at
     from public.listing_kinds where world_slug = 'food' and slug = 'give_food'
   returning listing_id into v_id;
   return v_id;
@@ -50,7 +51,8 @@ declare
   v_stale   uuid := pg_temp.mk_food(v_giver, 'Salad', now() + interval '1 hour');
   v_handoff uuid;
 begin
-  -- T1: 24 hours or less left → one notice that opens the listing; a later run adds none.
+  -- T1: 24 hours or less left → one notice that opens the listing's post (G1 step 4c, 0562);
+  -- a later run adds none.
   perform public.notifications_food_expiry_check();
   perform public.notifications_food_expiry_check();
   perform pg_temp.assert(pg_temp.notices(v_giver, 'listing_expiring', v_soon) = 1,
@@ -59,7 +61,10 @@ begin
     'food with 3 days left must not be announced yet');
   perform pg_temp.assert((select data ->> 'route' from public.notifications_outbox
                            where kind = 'listing_expiring' and data -> 'params' ->> 'listingId' = v_soon::text)
-                         = '/(tabs)/donations/marketplace/[listingId]', 'the notice does not open the listing');
+                         = '/post/[id]', 'the notice does not open the listing''s post');
+  perform pg_temp.assert((select data #>> '{params,postId}' from public.notifications_outbox
+                           where kind = 'listing_expiring' and data -> 'params' ->> 'listingId' = v_soon::text)
+                         = public.post_id_of_listing(v_soon)::text, 'the notice does not name the listing''s post');
 
   -- T2: an unclaimed offer past its expiry becomes `expired` (not `closed`), its open handoff is
   -- cancelled and the giver is told once. The expiry block trigger is paused so the row can

@@ -2,7 +2,10 @@
 // Composed into `marketplace.field` / `marketplace.option`. Unknown keys fall back to a
 // humanized key in ListingSchemaFields.
 
+import { housingFieldLabels, housingOptionLabels } from './donations.housingFields';
+
 export const marketplaceFieldLabels = {
+  ...housingFieldLabels,
   item_condition: 'Condition',
   min_condition: 'Minimum condition',
   pickup_mode: 'Pickup or delivery',
@@ -24,7 +27,6 @@ export const marketplaceFieldLabels = {
   seats_available: 'Seats available',
   passengers: 'Passengers',
   luggage: 'Luggage',
-  capacity: 'Capacity',
   amount_ils: 'Amount (₪)',
   amount_requested_ils: 'Amount requested (₪)',
   receipt_requested: 'Receipt requested',
@@ -53,11 +55,10 @@ export const marketplaceFieldLabels = {
   departs_at: 'Departure',
   reward_model: 'Ride cost',
   cost_share_ils: 'Cost sharing (₪)',
-  place_type: 'Place type',
-  house_rules: 'House rules',
 } as const;
 
 export const marketplaceOptionLabels = {
+  ...housingOptionLabels,
   New: 'New',
   LikeNew: 'Like new',
   Good: 'Good',

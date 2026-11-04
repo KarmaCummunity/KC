@@ -32,6 +32,13 @@ vi.mock('../EditProfileAddressBlock', () => ({
   ),
 }));
 
+// The date of birth field is its own component; a button stands in for typing a valid adult date.
+vi.mock('../DateOfBirthField', () => ({
+  DateOfBirthField: ({ onChange }: { onChange: (iso: string | null) => void }) => (
+    <button type="button" onClick={() => onChange('1990-05-15')}>pick date of birth</button>
+  ),
+}));
+
 import { renderInTheme } from '../ui/__tests__/kitDialogTestKit';
 import { OnboardingSoftGateModal } from '../OnboardingSoftGateModal';
 
@@ -48,7 +55,7 @@ function renderGate() {
 }
 
 describe('OnboardingSoftGateModal', () => {
-  it('saves the basic info once the name and city are filled', async () => {
+  it('saves the basic info once the name, city and date of birth are filled', async () => {
     const { onSaved } = renderGate();
     expect(screen.getByRole('dialog', { name: 'onboarding.softGateTitle' })).toBeTruthy();
     const save = screen.getByRole('button', { name: 'onboarding.saveAndContinue' });
@@ -56,10 +63,15 @@ describe('OnboardingSoftGateModal', () => {
 
     fireEvent.change(screen.getByLabelText('onboarding.displayName'), { target: { value: 'Dana' } });
     fireEvent.click(screen.getByRole('button', { name: 'pick city' }));
+    // Name and city alone are not enough: the date of birth is required (FR-AUTH-010 AC2.d).
+    expect(screen.getByRole('button', { name: 'onboarding.saveAndContinue' }).getAttribute('aria-disabled')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'pick date of birth' }));
     fireEvent.click(screen.getByRole('button', { name: 'onboarding.saveAndContinue' }));
 
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
-    expect(execute).toHaveBeenCalledWith(expect.objectContaining({ displayName: 'Dana', cityId: 'c-1', cityName: 'Haifa' }));
+    expect(execute).toHaveBeenCalledWith(
+      expect.objectContaining({ displayName: 'Dana', cityId: 'c-1', cityName: 'Haifa', dateOfBirth: '1990-05-15' }),
+    );
     expect(setOnboardingState).toHaveBeenCalledWith('pending_avatar');
   });
 

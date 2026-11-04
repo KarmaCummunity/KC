@@ -53,3 +53,21 @@ export async function resolvesOnlyToPublic(
     return false;
   }
 }
+
+/**
+ * The IPv4 address embedded in an IPv4-mapped IPv6 address (`::ffff:a.b.c.d`), or null.
+ * `new URL()` rewrites the dotted form to hex (`[::ffff:127.0.0.1]` becomes
+ * `[::ffff:7f00:1]`) and a resolver may answer in either form, so both are decoded.
+ * Accepts the address with or without brackets.
+ */
+export function ipv4FromMappedIPv6(address: string): string | null {
+  const h = address.replace(/^\[|\]$/g, '').split('%')[0].toLowerCase();
+  const m = h.match(/^(?:::|0:0:0:0:0:)ffff:(.+)$/);
+  if (!m) return null;
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(m[1])) return m[1];
+  const hex = m[1].match(/^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  if (!hex) return null;
+  const hi = parseInt(hex[1], 16);
+  const lo = parseInt(hex[2], 16);
+  return `${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`;
+}

@@ -2,7 +2,8 @@
 // Unified create: the active category + direction, the header that edits them, and their
 // persistence. A `?category=` deep link wins over the remembered choice, and its optional
 // `&direction=` presets request / offer (a world screen's buttons, FR-FEED-020 AC2);
-// otherwise the form reopens on the category and direction the user last used.
+// otherwise the form reopens on the category the user last used. The direction (offer / request)
+// is remembered per category: every category reopens in the way it was last used.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import type { PostType } from '@kc/domain';
@@ -17,8 +18,11 @@ import {
 } from '../lib/unifiedCreate/createCategories';
 import {
   DEFAULT_CREATE_PREFERENCES,
+  directionFor,
   directionToPostType,
   postTypeToDirection,
+  withCategory,
+  type CreatePreferences,
 } from '../lib/unifiedCreate/unifiedCreateState';
 import {
   loadCreatePreferences,
@@ -43,19 +47,35 @@ export function useUnifiedCreateCategory(
     isCreateCategoryId(deepLink) ? deepLink : DEFAULT_CREATE_PREFERENCES.categoryId,
   );
   // False until the remembered choice is read, so the form never flashes the default first.
-  const [ready, setReady] = useState(isCreateCategoryId(deepLink));
-  // Latest setType without making the load effect depend on its identity.
+  const [ready, setReady] = useState(false);
+  // What was last remembered; mutated in place so every handler sees the latest choice.
+  const prefsRef = useRef<CreatePreferences>(DEFAULT_CREATE_PREFERENCES);
+  // Latest setType without making the effects depend on its identity.
   const setTypeRef = useRef(setType);
   setTypeRef.current = setType;
+  const userIdRef = useRef(userId);
+  userIdRef.current = userId;
 
-  // Restore the last used category + direction once per user (skipped for a deep link).
+  /** Opens `id` in `direction`, or in the direction last used there, and remembers it. */
+  const open = useCallback((id: CreateCategoryId, direction?: CreateDirection) => {
+    const prefs = withCategory(prefsRef.current, id, direction);
+    prefsRef.current = prefs;
+    setCategoryId(id);
+    setTypeRef.current(directionToPostType(directionFor(prefs, id)));
+    void saveCreatePreferences(userIdRef.current, prefs);
+  }, []);
+
+  // Restore the remembered choice once per user. A `?category=` deep link wins over the remembered
+  // category but still opens in that category's remembered direction.
   useEffect(() => {
-    if (isCreateCategoryId(deepLink)) return;
     let active = true;
     void loadCreatePreferences(userId).then((prefs) => {
       if (!active) return;
-      setCategoryId(prefs.categoryId);
-      setTypeRef.current(directionToPostType(prefs.direction));
+      prefsRef.current = prefs;
+      const id = isCreateCategoryId(deepLink) ? deepLink : prefs.categoryId;
+      setCategoryId(id);
+      const direction = isCreateDirection(deepLinkDirection) ? deepLinkDirection : directionFor(prefs, id);
+      setTypeRef.current(directionToPostType(direction));
       setReady(true);
     });
     return () => {
@@ -66,31 +86,20 @@ export function useUnifiedCreateCategory(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  // A deep link (on mount, or while the tab is already mounted) switches the category and,
-  // when it names one, the direction.
+  // A deep link while the tab is already mounted (the "+" button from another world) switches
+  // the category and, when it names one, the direction.
   useEffect(() => {
-    if (!isCreateCategoryId(deepLink)) return;
-    setCategoryId(deepLink);
-    if (isCreateDirection(deepLinkDirection)) setTypeRef.current(directionToPostType(deepLinkDirection));
-    setReady(true);
+    if (!ready || !isCreateCategoryId(deepLink)) return;
+    open(deepLink, isCreateDirection(deepLinkDirection) ? deepLinkDirection : undefined);
+    // `ready` only gates the first load; later changes of it must not re-open the category.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deepLink, deepLinkDirection]);
 
   const direction = postTypeToDirection(type);
 
-  const changeCategory = useCallback(
-    (next: CreateCategoryId) => {
-      setCategoryId(next);
-      void saveCreatePreferences(userId, { categoryId: next, direction });
-    },
-    [userId, direction],
-  );
-
   const changeDirection = useCallback(
-    (next: CreateDirection) => {
-      setType(directionToPostType(next));
-      void saveCreatePreferences(userId, { categoryId, direction: next });
-    },
-    [userId, categoryId, setType],
+    (next: CreateDirection) => open(categoryId, next),
+    [open, categoryId],
   );
 
   const activeCategory = findCreateCategory(categoryId);
@@ -98,10 +107,11 @@ export function useUnifiedCreateCategory(
     <UnifiedCreateHeader
       categories={CREATE_CATEGORIES}
       categoryId={activeCategory.id}
-      onCategoryChange={changeCategory}
+      onCategoryChange={open}
+      showDirection={activeCategory.engine !== 'link'}
       direction={direction}
       onDirectionChange={changeDirection}
     />
   );
-  return { activeCategory, direction, header, ready, selectCategory: changeCategory };
+  return { activeCategory, direction, header, ready, selectCategory: open };
 }

@@ -1,5 +1,6 @@
 // Mapped to spec: FR-POST-001 AC6 — the create form of the listing categories (rides, food,
-// housing, time). Same layout and controls as the items post form: header → photos → title
+// housing, time). Rides drop the title (built from the route) and put the optional car photo
+// last (#1411). Same layout and controls as the items post form: header → photos → title
 // → category-specific fields → description → location → publish.
 import React, { useEffect, useRef, type ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-native';
@@ -63,6 +64,17 @@ export function ListingCreateForm({
     if (next.length > 0) form.setPhotos((prev) => [...prev, ...next].slice(0, MAX_MEDIA_ASSETS));
   };
 
+  const photoPicker = (
+    <PhotoPicker
+      uploads={form.photos.map((p) => ({ path: p.uri, previewUri: p.uri }))}
+      isUploading={false}
+      uploadingCount={0}
+      required={false}
+      onAdd={() => void addPhotos()}
+      onRemove={(uri) => form.setPhotos((prev) => prev.filter((p) => p.uri !== uri))}
+    />
+  );
+
   return (
     <ScrollView
       style={styles.scroll}
@@ -76,27 +88,23 @@ export function ListingCreateForm({
         missing={!form.kind}
         onRetry={() => void form.kindsQuery.refetch()}
       >
-        <PhotoPicker
-          uploads={form.photos.map((p) => ({ path: p.uri, previewUri: p.uri }))}
-          isUploading={false}
-          uploadingCount={0}
-          required={false}
-          onAdd={() => void addPhotos()}
-          onRemove={(uri) => form.setPhotos((prev) => prev.filter((p) => p.uri !== uri))}
-        />
+        {form.isRides ? null : photoPicker}
 
-        <View style={styles.section}>
-          <TextField
-            testID="listing-title"
-            label={`${t('post.title')} *`}
-            value={title}
-            onChangeText={onTitleChange}
-            placeholder={t(`post.unifiedCreate.titlePlaceholder.${worldSlug}`)}
-            maxLength={TITLE_MAX}
-            editable={!form.busy}
-          />
-          <Text style={styles.charCount}>{title.length}/{TITLE_MAX}</Text>
-        </View>
+        {/* Rides have no title (#1411): it is built from the route. */}
+        {form.isRides ? null : (
+          <View style={styles.section}>
+            <TextField
+              testID="listing-title"
+              label={`${t('post.title')} *`}
+              value={title}
+              onChangeText={onTitleChange}
+              placeholder={t(`post.unifiedCreate.titlePlaceholder.${worldSlug}`)}
+              maxLength={TITLE_MAX}
+              editable={!form.busy}
+            />
+            <Text style={styles.charCount}>{title.length}/{TITLE_MAX}</Text>
+          </View>
+        )}
 
         {form.isRides ? (
           <RideCreateSection
@@ -134,6 +142,9 @@ export function ListingCreateForm({
           />
           <Text style={styles.charCount}>{summary.length}/{SUMMARY_MAX}</Text>
         </View>
+
+        {/* Rides keep it simple (#1411): the optional car photo sits at the bottom. */}
+        {form.isRides ? photoPicker : null}
 
         {form.isRides ? null : (
           <View style={styles.section}>

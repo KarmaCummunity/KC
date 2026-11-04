@@ -1,5 +1,6 @@
 // app/apps/mobile/src/components/admin/reports/ReportRow.tsx
 // FR-ADMIN-012 — single inbox row showing target preview + threshold + age.
+import { memo } from 'react';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { ReportInboxRow } from '@kc/domain';
@@ -28,7 +29,7 @@ function preview(row: ReportInboxRow): string {
   return `${row.targetType}:${row.targetId.slice(0, 8)}`;
 }
 
-export function ReportRow({ row }: ReportRowProps) {
+function ReportRowInner({ row }: ReportRowProps) {
   const progress = thresholdProgress(row.reporterCount);
   const caseId = encodeURIComponent(`${row.targetType}:${row.targetId}`);
   const styles = useStyles();
@@ -53,6 +54,8 @@ export function ReportRow({ row }: ReportRowProps) {
     </Pressable>
   );
 }
+
+export const ReportRow = memo(ReportRowInner);
 
 const useStyles = makeUseStyles(({ colors }) => ({
   root:      { padding: spacing.base, gap: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },

@@ -16,7 +16,7 @@ export type { IReportRepository } from './ports/IReportRepository';
 export type { IFeedRealtime, FeedRealtimeCallbacks, NewPublicPostSignal } from './ports/IFeedRealtime';
 export type { IUserRealtime } from './ports/IUserRealtime';
 export type { IRidesRealtime, RidesRealtimeCallbacks } from './ports/IRidesRealtime';
-export type { CommunityStatsSnapshot, IStatsRepository } from './ports/IStatsRepository';
+export type { CommunityStatsSnapshot, IStatsRepository, MyWorldGivings, WorldFlowFunnelRow } from './ports/IStatsRepository';
 export type { IAboutRepository } from './ports/IAboutRepository';
 export * from './auth';
 export * from './feed/selectGuestPreviewPosts';
@@ -24,6 +24,7 @@ export * from './feed/GetFeedUseCase';
 export * from './feed/GetActivePostsCountUseCase';
 export * from './feed/DismissFirstPostNudgeUseCase';
 export * from './stats/GetCommunityStatsSnapshotUseCase';
+export * from './stats/StatsByAudienceUseCases';
 export * from './stats/ListMyActivityTimelineUseCase';
 export * from './about/ListAboutTeamMembersUseCase';
 export * from './posts/errors';
@@ -80,7 +81,9 @@ export type {
   IDonationLinksRepository,
   AddDonationLinkInput,
   UpdateDonationLinkInput,
+  DonationLinkReviewItem,
 } from './ports/IDonationLinksRepository';
+export * from './donations/ReviewDonationLinksUseCases'; // D9 review queue + decision
 export { ListDonationLinksUseCase } from './donations/ListDonationLinksUseCase';
 export { AddDonationLinkUseCase } from './donations/AddDonationLinkUseCase';
 export { UpdateDonationLinkUseCase } from './donations/UpdateDonationLinkUseCase';
@@ -129,6 +132,7 @@ export type { ReportUserInput } from './moderation/ReportUserUseCase';
 export { AdminRemoveListingUseCase, type AdminRemoveListingInput } from './moderation/AdminRemoveListingUseCase';
 export { CheckAccountGateUseCase } from './moderation/CheckAccountGateUseCase';
 export type { CheckAccountGateInput } from './moderation/CheckAccountGateUseCase';
+export { RestoreAccountUseCase } from './moderation/RestoreAccountUseCase';
 export type { IDeviceRepository } from './notifications/IDeviceRepository';
 export { RegisterDeviceUseCase } from './notifications/RegisterDeviceUseCase';
 export { DeactivateDeviceUseCase } from './notifications/DeactivateDeviceUseCase';
@@ -159,11 +163,7 @@ export * from './admin/AdminSearchPostsUseCase';
 export * from './admin/AdminSearchAuditUseCase';
 export * from './admin/ITimesheetsRepository';
 export * from './admin/TimesheetUseCases';
-export * from './admin/IFinanceLedgerRepository';
-export * from './admin/ListFinanceLedgerUseCase';
-export * from './admin/GetFinanceSummaryUseCase';
-export * from './admin/UpsertFinanceEntryUseCase';
-export * from './admin/DeleteFinanceEntryUseCase';
+export * from './admin/finance';
 export * from './admin/ICrmContactsRepository';
 export * from './admin/ListCrmContactsUseCase';
 export * from './admin/UpsertCrmContactUseCase';
@@ -291,4 +291,6 @@ export { SubmitPublicResearchResponseUseCase } from './research/SubmitPublicRese
 export * from './payments';
 export * from './volunteering';
 export * from './giving';
+export * from './housing';
 export * from './admin/whatsapp';
+export * from './knowledge';

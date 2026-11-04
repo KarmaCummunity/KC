@@ -161,3 +161,34 @@ describe('SupabaseFinanceLedgerRepository — summary / upsert / delete', () => 
     );
   });
 });
+
+describe('SupabaseFinanceLedgerRepository — account_id / is_public (0470)', () => {
+  it('maps the new columns', async () => {
+    const repo = new SupabaseFinanceLedgerRepository(mockClient(() => ({
+      data: [{ ...validRow, account_id: 'acc-1', is_public: false }], error: null,
+    })));
+    const row = (await repo.list({})).rows[0];
+    expect(row?.accountId).toBe('acc-1');
+    expect(row?.isPublic).toBe(false);
+  });
+
+  it('falls back to legacy-safe defaults when an older server omits them', async () => {
+    const repo = new SupabaseFinanceLedgerRepository(mockClient(() => ({ data: [validRow], error: null })));
+    const row = (await repo.list({})).rows[0];
+    expect(row?.accountId).toBeNull();
+    expect(row?.isPublic).toBe(true);
+  });
+
+  it('upsert forwards accountId and isPublic (null = keep)', async () => {
+    const spy = vi.fn(() => ({ data: 'id', error: null }));
+    const repo = new SupabaseFinanceLedgerRepository(mockClient(spy as never));
+    await repo.upsert({ kind: 'expense', amountCents: 1, accountId: 'acc-1', isPublic: false } as never);
+    expect(spy).toHaveBeenLastCalledWith('finance_ledger_upsert', expect.objectContaining({
+      p_account_id: 'acc-1', p_is_public: false,
+    }));
+    await repo.upsert({ entryId: 'e1' } as never);
+    expect(spy).toHaveBeenLastCalledWith('finance_ledger_upsert', expect.objectContaining({
+      p_account_id: null, p_is_public: null,
+    }));
+  });
+});
