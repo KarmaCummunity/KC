@@ -1,5 +1,6 @@
 // A member's registration to an organization's event: register (or ask to join a manual event),
-// then follow it — waiting for the organizer or confirmed — and cancel it (G1 step 5, D31).
+// then follow it — waiting for the organizer, confirmed, or on the waitlist of a full event — and
+// cancel it or leave the waitlist (G1 step 5, D31, 0564).
 import React from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -37,10 +38,13 @@ export function EventRegistrantPanel({ postId, event }: Props) {
       {registration?.status === 'confirmed' ? (
         <Text style={styles.caption} testID="event-status-confirmed">{t('eventPost.registration.statusConfirmed')}</Text>
       ) : null}
+      {registration?.status === 'waitlisted' ? (
+        <Text style={styles.caption} testID="event-status-waitlisted">{t('eventPost.registration.statusWaitlisted')}</Text>
+      ) : null}
       {registration ? (
         <HandoffActionButton
           testID="event-cancel"
-          label={t('eventPost.registration.cancel')}
+          label={t(registration.status === 'waitlisted' ? 'eventPost.registration.leaveWaitlist' : 'eventPost.registration.cancel')}
           busy={busy}
           secondary
           onPress={() => void run('event_cancel', () => eventRegistrationUseCases.cancel().execute(registration.handoffId))}

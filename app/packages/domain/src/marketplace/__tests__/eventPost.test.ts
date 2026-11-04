@@ -3,7 +3,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   EVENT_REGISTRATION_POLICIES,
+  EVENT_REGISTRATION_STATUSES,
   isActiveEventRegistrationStatus,
+  isEventRegistrationStatus,
   isEventRegistrationPolicy,
   parseEventPostDetails,
 } from '../eventPost';
@@ -49,10 +51,19 @@ describe('event guards', () => {
     expect(isEventRegistrationPolicy(undefined)).toBe(false);
   });
 
-  it('treats reserved and confirmed registrations as active', () => {
+  it('treats reserved, confirmed and waitlisted registrations as active (0564)', () => {
     expect(isActiveEventRegistrationStatus('reserved')).toBe(true);
     expect(isActiveEventRegistrationStatus('confirmed')).toBe(true);
+    expect(isActiveEventRegistrationStatus('waitlisted')).toBe(true);
+    expect(isActiveEventRegistrationStatus('handed_over')).toBe(false);
+    expect(isActiveEventRegistrationStatus('no_show')).toBe(false);
     expect(isActiveEventRegistrationStatus('cancelled')).toBe(false);
     expect(isActiveEventRegistrationStatus(null)).toBe(false);
+  });
+
+  it('knows every registration state, attendance and the waitlist included', () => {
+    for (const status of EVENT_REGISTRATION_STATUSES) expect(isEventRegistrationStatus(status)).toBe(true);
+    expect(isEventRegistrationStatus('waitlisted')).toBe(true);
+    expect(isEventRegistrationStatus('expired')).toBe(false);
   });
 });

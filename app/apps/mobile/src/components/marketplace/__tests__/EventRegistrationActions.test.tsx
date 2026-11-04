@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-// G1 step 5 (docs/spec/08_organizations.md Events, D31) — an organization event's post page: a
-// member registers (or asks to join a manual event), follows and cancels their registration; the
-// organizer approves, declines or removes registrations; a guest gets no registration section.
+// G1 step 5 (docs/spec/08_organizations.md Events, D31, S13) — an organization event's post page:
+// a member registers (or asks to join a manual event), follows and cancels their registration or
+// leaves the waitlist; the organizer approves, declines or removes registrations, sees the
+// waitlist in promotion order and, from the start, marks attendance; a guest gets no section.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
@@ -14,6 +15,7 @@ const uc = vi.hoisted(() => ({
   register: vi.fn(),
   decide: vi.fn(),
   cancel: vi.fn(),
+  markAttendance: vi.fn(),
   listForEvent: vi.fn(),
   getMine: vi.fn(),
 }));
@@ -45,6 +47,12 @@ afterEach(() => {
 });
 
 const FUTURE = { starts_at: '2099-01-01T10:00:00Z', ends_at: '2099-01-01T12:00:00Z' };
+const PAST = { starts_at: '2000-01-01T10:00:00Z', ends_at: '2000-01-01T12:00:00Z' };
+
+/** A roster row of `status`, registered at `reservedAt`. */
+function registration(handoffId: string, status: string, reservedAt = '2026-11-01T10:00:00Z') {
+  return { handoffId, recipientId: `u_${handoffId}`, displayName: handoffId, status, reservedAt, confirmedAt: null };
+}
 
 function event(policy: string, overrides: Partial<MarketplaceListingDetail> = {}): MarketplaceListingDetail {
   return {
@@ -140,5 +148,78 @@ describe('EventRegistrationActions — organizer and guests', () => {
     cleanup();
     expect(renderActions(event('automatic', { kindSlug: 'volunteer_shift' })).container.innerHTML).toBe('');
     expect(uc.getMine).not.toHaveBeenCalled();
+  });
+});
+
+describe('EventRegistrationActions — waitlist (0564)', () => {
+  it('a waitlisted member sees the waitlist status and can leave it', async () => {
+    uc.getMine.mockResolvedValue({ handoffId: 'h_w', status: 'waitlisted', reservedAt: 'a', confirmedAt: null });
+    const { findByTestId, queryByTestId } = renderActions(event('automatic'));
+    expect(await findByTestId('event-status-waitlisted')).toBeTruthy();
+    expect(queryByTestId('event-register')).toBeNull();
+    const leave = await findByTestId('event-cancel');
+    expect(leave.textContent).toBe('eventPost.registration.leaveWaitlist');
+    fireEvent.click(leave);
+    await waitFor(() => expect(uc.cancel).toHaveBeenCalledWith('h_w'));
+  });
+
+  it('lists the waitlist earliest first with its places, and the organizer can remove from it', async () => {
+    sessionUserId = 'u_org';
+    uc.listForEvent.mockResolvedValue([
+      registration('h_late', 'waitlisted', '2026-11-02T10:00:00Z'),
+      registration('h_in', 'confirmed'),
+      registration('h_early', 'waitlisted', '2026-11-01T09:00:00Z'),
+    ]);
+    const { findByTestId, getByTestId, queryByTestId } = renderActions(event('automatic'));
+    const waitlist = await findByTestId('event-roster-waitlist');
+    const order = Array.from(waitlist.querySelectorAll('[data-testid^="event-roster-row-"]')).map((n) => n.getAttribute('data-testid'));
+    expect(order).toEqual(['event-roster-row-h_early', 'event-roster-row-h_late']);
+    expect(getByTestId('event-roster-status-h_early').textContent).toBe('eventPost.roster.waitlistPosition');
+    // Before the start: no attendance marks.
+    expect(queryByTestId('event-roster-attended-h_in')).toBeNull();
+    fireEvent.click(getByTestId('event-roster-remove-h_late'));
+    await waitFor(() => expect(uc.cancel).toHaveBeenCalledWith('h_late'));
+  });
+});
+
+describe('EventRegistrationActions — attendance after the start (S13)', () => {
+  const started = event('automatic', { details: { ...PAST, registration_policy: 'automatic' } });
+
+  it('marks a confirmed registrant attended or absent, and corrects an absence', async () => {
+    sessionUserId = 'u_org';
+    uc.listForEvent.mockResolvedValue([
+      registration('h_in', 'confirmed'),
+      registration('h_away', 'no_show'),
+      registration('h_came', 'handed_over'),
+    ]);
+    const { findByTestId, getByTestId, queryByTestId } = renderActions(started);
+    // Every roster action is blocked while one runs, so each press waits for the previous one.
+    const pressWhenEnabled = async (testId: string) => {
+      const button = await findByTestId(testId);
+      await waitFor(() => expect(button.getAttribute('aria-disabled')).not.toBe('true'));
+      fireEvent.click(button);
+    };
+    await pressWhenEnabled('event-roster-attended-h_in');
+    await waitFor(() => expect(uc.markAttendance).toHaveBeenCalledWith('h_in', true));
+    await pressWhenEnabled('event-roster-noshow-h_in');
+    await waitFor(() => expect(uc.markAttendance).toHaveBeenCalledWith('h_in', false));
+    expect(queryByTestId('event-roster-remove-h_in')).toBeNull();
+    // An absence can be corrected to attended, never marked absent again.
+    expect(queryByTestId('event-roster-noshow-h_away')).toBeNull();
+    await pressWhenEnabled('event-roster-attended-h_away');
+    await waitFor(() => expect(uc.markAttendance).toHaveBeenCalledWith('h_away', true));
+    // Marked attendance is final: its label, no actions.
+    expect(getByTestId('event-roster-status-h_came').textContent).toBe('eventPost.roster.statusLabel.handed_over');
+    expect(queryByTestId('event-roster-attended-h_came')).toBeNull();
+  });
+
+  it('shows the server\'s copy when attendance is refused', async () => {
+    const alert = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    sessionUserId = 'u_org';
+    uc.listForEvent.mockResolvedValue([registration('h_in', 'confirmed')]);
+    uc.markAttendance.mockRejectedValue({ message: 'event_not_started' });
+    const { findByTestId } = renderActions(started);
+    fireEvent.click(await findByTestId('event-roster-attended-h_in'));
+    await waitFor(() => expect(alert).toHaveBeenCalledWith('marketplace.errors.event_not_started'));
   });
 });

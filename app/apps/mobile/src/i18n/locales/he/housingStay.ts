@@ -1,5 +1,5 @@
 // Hebrew — housing stays on the stay offer screen: the guest's request and booking, the host's
-// bookings, the exact address and the code of conduct (docs/spec/requirements/21_housing.md
+// bookings, the exact address and the code of conduct (docs/SSOT/spec/21_housing.md
 // FR-HOUSING-003, 012, 015–021). Conduct text: docs/legal/drafts/housing_and_verification_he.md §1.
 export const housingStay = {
   guestTitle: 'השהייה שלי כאן',

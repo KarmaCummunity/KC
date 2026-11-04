@@ -1,4 +1,4 @@
-// Hebrew — housing stay field and option labels (spec docs/spec/requirements/21_housing.md FR-HOUSING-005/006).
+// Hebrew — housing stay field and option labels (spec docs/SSOT/spec/21_housing.md FR-HOUSING-005/006).
 // Spread into `marketplace.field` / `marketplace.option` by donations.marketplaceFields.ts.
 
 export const housingFieldLabels = {

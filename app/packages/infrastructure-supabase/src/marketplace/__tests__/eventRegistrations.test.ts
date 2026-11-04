@@ -69,6 +69,27 @@ describe('SupabaseMarketplaceRepository — organization events', () => {
     await expect(bad.cancelEventRegistration('h1')).rejects.toBe(boom);
   });
 
+  it('markEventAttendance passes the handoff and the mark, and rethrows event_not_started', async () => {
+    const { repo, calls } = makeRepo({});
+    await repo.markEventAttendance('h1', false);
+    expect(calls).toEqual([{ fn: 'mark_event_attendance', args: { p_handoff_id: 'h1', p_attended: false } }]);
+    const early = { message: 'event_not_started' };
+    const bad = makeRepo({ mark_event_attendance: { data: null, error: early } }).repo;
+    await expect(bad.markEventAttendance('h1', true)).rejects.toBe(early);
+  });
+
+  it('listEventRegistrations keeps waitlist and attendance rows and skips unknown states', async () => {
+    const base = { recipient_id: 'u2', display_name: 'Dana', reserved_at: 'a', confirmed_at: null };
+    const { repo } = makeRepo({
+      list_event_registrations: ok([
+        { ...base, handoff_id: 'h_w', status: 'waitlisted' },
+        { ...base, handoff_id: 'h_a', status: 'handed_over' },
+        { ...base, handoff_id: 'h_x', status: 'mystery' },
+      ]),
+    });
+    expect((await repo.listEventRegistrations('p1')).map((r) => r.status)).toEqual(['waitlisted', 'handed_over']);
+  });
+
   it('listEventRegistrations maps the roster and rethrows not_owner', async () => {
     const row = { handoff_id: 'h1', recipient_id: 'u2', display_name: 'Dana', status: 'confirmed', reserved_at: 'a', confirmed_at: 'b' };
     const { repo } = makeRepo({ list_event_registrations: ok([row]) });
@@ -85,7 +106,7 @@ describe('SupabaseMarketplaceRepository — organization events', () => {
     expect(filters).toEqual(expect.arrayContaining([
       ['eq', ['post_id', 'p1']],
       ['eq', ['recipient_id', 'u_me']],
-      ['in', ['status', ['reserved', 'confirmed']]],
+      ['in', ['status', ['reserved', 'confirmed', 'waitlisted']]],
     ]));
   });
 
@@ -112,8 +133,10 @@ describe('SupabaseMarketplaceRepository — organization events', () => {
 });
 
 describe('event row mappers', () => {
-  it('drops a registration that no longer holds a seat', () => {
+  it('drops a registration that is no longer active, and keeps a waitlisted one', () => {
     expect(mapMyEventRegistration({ ...handoffRow, status: 'cancelled' })).toBeNull();
+    expect(mapMyEventRegistration({ ...handoffRow, status: 'handed_over' })).toBeNull();
+    expect(mapMyEventRegistration({ ...handoffRow, status: 'waitlisted' })?.status).toBe('waitlisted');
   });
 
   it('skips a membership whose organization is not readable', () => {

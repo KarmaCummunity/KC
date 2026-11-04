@@ -1,5 +1,5 @@
 // Survey UX-demo strings — internal preview, not loaded from the server.
-// Mapped to: docs/spec/requirements/11_settings.md "survey demo" entry.
+// Mapped to: docs/SSOT/spec/11_settings.md "survey demo" entry.
 export const surveyDemoEn = {
   entryTitle: 'Surveys (demo)',
   entryLabel: 'User-experience survey — sample preview',

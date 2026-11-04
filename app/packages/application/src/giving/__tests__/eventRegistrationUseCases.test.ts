@@ -9,6 +9,7 @@ import {
   GetMyEventRegistrationUseCase,
   ListEventRegistrationsUseCase,
   ListMyOrganizationsUseCase,
+  MarkEventAttendanceUseCase,
   RegisterForEventUseCase,
 } from '../eventRegistrationUseCases';
 
@@ -20,6 +21,7 @@ function makeRepo() {
     registerForEvent: vi.fn(async () => mine),
     decideEventRegistration: vi.fn(async () => undefined),
     cancelEventRegistration: vi.fn(async () => undefined),
+    markEventAttendance: vi.fn(async () => undefined),
     listEventRegistrations: vi.fn(async () => []),
     getMyEventRegistration: vi.fn(async () => mine),
     listMyOrganizations: vi.fn(async () => orgs),
@@ -36,6 +38,8 @@ describe('event registration use cases', () => {
     expect(repo.decideEventRegistration).toHaveBeenCalledWith('h1', false);
     await new CancelEventRegistrationUseCase(port).execute('h1');
     expect(repo.cancelEventRegistration).toHaveBeenCalledWith('h1');
+    await new MarkEventAttendanceUseCase(port).execute('h1', true);
+    expect(repo.markEventAttendance).toHaveBeenCalledWith('h1', true);
     expect(await new ListEventRegistrationsUseCase(port).execute('p1')).toEqual([]);
     expect(repo.listEventRegistrations).toHaveBeenCalledWith('p1');
     expect(await new GetMyEventRegistrationUseCase(port).execute('p1')).toBe(mine);
@@ -51,6 +55,8 @@ describe('event registration use cases', () => {
     expect(repo.registerForEvent).not.toHaveBeenCalled();
     expect(repo.decideEventRegistration).not.toHaveBeenCalled();
     expect(repo.cancelEventRegistration).not.toHaveBeenCalled();
+    await expect(new MarkEventAttendanceUseCase(port).execute('', false)).rejects.toMatchObject({ code: 'handoff_not_found' });
+    expect(repo.markEventAttendance).not.toHaveBeenCalled();
   });
 
   it('reads no registration for an event without a post yet', async () => {
