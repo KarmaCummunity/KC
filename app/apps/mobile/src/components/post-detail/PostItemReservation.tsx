@@ -7,14 +7,9 @@ import React from 'react';
 import type { PostWithOwner } from '@kc/application';
 import { useMarketplaceListingDetail } from '../../hooks/useMarketplaceListingDetail';
 import { GivingHandoffActions } from '../marketplace/GivingHandoffActions';
+import { postHasItemReservation } from '../../lib/postHasItemReservation';
 
 type Props = { readonly post: PostWithOwner };
-
-/** True for a giving post that owns its listing (made through the post form), while it can still be acted on. */
-export function postHasItemReservation(post: Pick<PostWithOwner, 'type' | 'listingId' | 'status'>): boolean {
-  // Open: reserve / confirm / hand over. Delivered: the two sides still rate the hand-over.
-  return post.type === 'Give' && post.listingId === null && (post.status === 'open' || post.status === 'closed_delivered');
-}
 
 export function PostItemReservation({ post }: Props) {
   const enabled = postHasItemReservation(post);

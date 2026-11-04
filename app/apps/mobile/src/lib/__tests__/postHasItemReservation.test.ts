@@ -1,6 +1,6 @@
 // G1 step 4b (ADR-006) — which posts carry the item reservation on their own page.
 import { describe, expect, it } from 'vitest';
-import { postHasItemReservation } from '../PostItemReservation';
+import { postHasItemReservation } from '../postHasItemReservation';
 
 describe('postHasItemReservation', () => {
   it('is on for a giving post made through the post form, open or delivered', () => {
