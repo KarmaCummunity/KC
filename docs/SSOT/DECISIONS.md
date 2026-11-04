@@ -1908,3 +1908,15 @@ Owner rules that go with it:
 **Rejected.** A `resource` listing kind on `listings` (pollutes the post state machine and matching; expiry and direction would be meaningless). Storing resources only as community links (`donation_links` has no topics, kinds, versions, chunks or review beyond approval). A separate search index service (one Postgres hybrid search with RRF already exists; adding lanes keeps one source of truth and RLS).
 
 **Affected.** New `knowledge_*` tables and RPCs (migration range `0570–0589`), `supabase/functions/knowledge-*`, `embed-worker` provider, `packages/{domain,application,infrastructure-supabase}/src/knowledge/`, `apps/mobile` knowledge hub tabs and admin knowledge screens.
+
+---
+
+## {{ENG:demo-data-platform-org-admin}} — The platform org admin manages demo data, scoped by one SQL predicate (2026-11-04)
+
+**Decision.** `admin_demo_data_status`, `admin_wipe_demo_data` and `admin_seed_demo_data` accept the super admin and the `org_admin` whose grant is scoped to the platform organization, through the single predicate `can_manage_demo_data(uid)` (migration `0611`). `demo_data.manage` in the client permission matrix lists `super_admin` and `org_admin`; the server decides the scope.
+
+**Why.** The PM runs the Karma Community org day to day as its org admin while the super admin seat belongs to the project account, and both need the demo-data screen. Only one active super admin may exist (`FR-ADMIN-017`), so a second super admin was not an option.
+
+**Rejected.** Letting every `org_admin` manage demo data (the org admins of the demo organizations could wipe the seed users they belong to). A second super admin (breaks the single-super-admin index, TD-95).
+
+**Affected.** `supabase/migrations/0611_demo_data_platform_admin.sql`, `supabase/tests/0611_demo_data_platform_admin.sql`, `packages/domain/src/admin/AdminPermission.ts`, `(admin)/demo-data`, `FR-ADMIN-031 AC6`. Same pattern as `admins.grant_role`: the client gate is coarse, the RPC re-checks the scope.

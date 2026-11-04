@@ -33,8 +33,11 @@ describe('AdminPermission matrix', () => {
     expect(hasPermission([], perm)).toBe(false);
   });
 
-  it('demo data management is super_admin only (FR-ADMIN-031)', () => {
+  it('demo data management is super_admin and org_admin only (FR-ADMIN-031 AC6)', () => {
     expect(hasPermission(['super_admin'], 'demo_data.manage')).toBe(true);
+    expect(hasPermission(['org_admin'], 'demo_data.manage')).toBe(true);
+    expect(hasPermission(['org_manager'], 'demo_data.manage')).toBe(false);
+    expect(hasPermission(['org_volunteer'], 'demo_data.manage')).toBe(false);
     expect(hasPermission(['moderator'], 'demo_data.manage')).toBe(false);
     expect(hasPermission(['support'], 'demo_data.manage')).toBe(false);
   });

@@ -85,8 +85,9 @@ export const PERMISSION_MATRIX: Readonly<Record<AdminPermission, readonly AdminR
   'donation_links.review':      ['super_admin', 'moderator'],
   // FR-STATS-007 — platform statistics (flow funnel); the server checks the same roles (0542).
   'stats.view_platform':        ['super_admin', 'moderator'],
-  // FR-ADMIN-031 — wipe kc-dev demo data; the server (0549) re-checks super_admin only.
-  'demo_data.manage':           ['super_admin'],
+  // FR-ADMIN-031 — wipe kc-dev demo data. Coarse client gate; the server (0611,
+  // can_manage_demo_data) accepts only the super admin and the platform org's org_admin.
+  'demo_data.manage':           ['super_admin', 'org_admin'],
 };
 
 export function hasPermission(

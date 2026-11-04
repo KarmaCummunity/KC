@@ -54,7 +54,9 @@ export default function DemoDataScreen() {
   if (rolesLoading) {
     return <View style={styles.center}><Text>{t.loading}</Text></View>;
   }
-  if (!enabled) {
+  // The client gate is coarse (every org_admin passes); the server refuses org admins outside the platform org.
+  const refused = status.isError && /forbidden/.test(status.error.message);
+  if (!enabled || refused) {
     return <View style={styles.center}><Text style={styles.forbidden}>{t.forbiddenTitle}</Text></View>;
   }
 
