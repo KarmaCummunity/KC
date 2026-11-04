@@ -1,6 +1,6 @@
 // New conversation picker — FR-CHAT-017. People I follow first, name search across members below.
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import type { ListRenderItem } from 'react-native';
@@ -10,6 +10,7 @@ import { FilterSearchBar } from '../../src/components/filterKit/FilterSearchBar'
 import { EmptyState } from '../../src/components/EmptyState';
 import { PrimaryButton } from '../../src/components/ui/Buttons';
 import { NotifyModal } from '../../src/components/NotifyModal';
+import { KcFlashList } from '../../src/components/lists/KcFlashList';
 import { ChatRecipientRow } from '../../src/components/chat/ChatRecipientRow';
 import { NativeStackHeaderTitle } from '../../src/navigation/NativeStackHeaderTitle';
 import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
@@ -98,7 +99,8 @@ export default function NewChatScreen() {
       {query.isLoading ? (
         <ActivityIndicator style={styles.loader} color={colors.primary} />
       ) : (
-        <FlatList
+        <KcFlashList
+          estimatedItemSize={64}
           data={rows}
           keyExtractor={keyOf}
           renderItem={renderItem}
