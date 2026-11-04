@@ -7,8 +7,9 @@
 --   1. the `org_event` kind (date window, optional capacity, registration policy, address, and
 --      the organization it is published for);
 --   2. a guard on listings: only a member of that organization (any role — an employee or an
---      affiliated volunteer posting on its behalf, D31) may publish or edit its event, and the
---      window must end after it starts;
+--      affiliated volunteer posting on its behalf, D31) may publish or edit its event, the
+--      window must end after it starts, and the event is public (the time world otherwise keeps
+--      its listings to followers only);
 --   3. `event_post_details`, the post's 1:1 extension, kept from the listing's details, and
 --      `posts.post_type = 'event'` on the event's post;
 --   4. registration on `post_handoffs` (world `time`, one seat each): register, approve or
@@ -76,6 +77,10 @@ begin
   if not public.is_event_kind(new.kind_id) then
     return new;
   end if;
+  -- An organization's event is public (D90): the time world caps its listings at followers only
+  -- (listings_before_write_trg, which runs before this trigger by name), an event is not.
+  new.anonymity_level := 3;
+  new.visibility := public.anonymity_level_to_visibility(3);
   -- A status or moderation change of an existing event keeps its checked details.
   if tg_op = 'UPDATE' and new.details is not distinct from old.details and new.owner_id = old.owner_id then
     return new;

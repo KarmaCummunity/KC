@@ -55,6 +55,8 @@ begin
   perform kc_test.assert_true(v_post is not null, 'the published event has a post');
   perform kc_test.assert_eq((select post_type from public.posts where post_id = v_post), 'event',
     'the post is of type event');
+  perform kc_test.assert_eq((select anonymity_level from public.listings where listing_id = v_listing), 3::smallint,
+    'an event is public, unlike the time world''s followers-only default');
   perform kc_test.assert_eq((select org_id from public.event_post_details where post_id = v_post), p.org_id,
     'the extension names the organization');
   perform kc_test.assert_eq((select capacity from public.event_post_details where post_id = v_post), 2,
