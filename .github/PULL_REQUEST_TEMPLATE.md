@@ -16,7 +16,7 @@ Opened by: agent:cursor | agent:kc-bot | agent:antigravity | agent:codex | agent
 
 ## Mapped to spec
 <!-- Required. List FR-* IDs touched, or write "N/A — tooling/docs only".
-     Link to docs/SSOT/spec/<file>.md when applicable. -->
+     Link to docs/spec/requirements/<file>.md when applicable. -->
 - FR-XXX-NNN — <title>
 
 ## Changes
@@ -38,7 +38,7 @@ Opened by: agent:cursor | agent:kc-bot | agent:antigravity | agent:codex | agent
 ## SSOT updated
 <!-- Required when an FR-* is touched. Tick when each is in sync in this PR. -->
 - [ ] Issue linked (`Closes #N`) and board status correct
-- [ ] `docs/SSOT/spec/{domain}.md` status updated (if all ACs done)
+- [ ] `docs/spec/requirements/{domain}.md` status updated (if all ACs done)
 
 ## Risk / rollout notes
 <!-- DB migrations, RLS changes, feature flag, breaking change? Otherwise "Low risk." -->

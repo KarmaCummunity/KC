@@ -3,7 +3,7 @@
 // Lives in the mobile app (composition root); not in /domain or /application.
 // Mapped to SRS: FR-AUTH-003 (Google sign-up), FR-AUTH-006 (email sign-up),
 // FR-AUTH-007 (sign-in, all paths), FR-AUTH-013 (cold-start restore), FR-AUTH-017 (sign-out).
-// docs/SSOT/spec/01_auth_and_onboarding.md
+// docs/spec/requirements/01_auth_and_onboarding.md
 // ─────────────────────────────────────────────
 
 import { Platform } from 'react-native';
