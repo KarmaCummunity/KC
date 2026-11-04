@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { nestedStackGestureOptions } from '../../../../src/navigation/nestedStackGestureOptions';
+import { topBarStackHeaderOptions } from '../../../../src/navigation/TopBarStackHeader';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
 
@@ -9,7 +10,7 @@ export default function MoneyLayout() {
   return (
     <Stack
       screenOptions={{ ...nestedStackGestureOptions,
-        headerShown: true,
+        ...topBarStackHeaderOptions,
         headerBackTitle: t('general.back'),
       }}
     >
