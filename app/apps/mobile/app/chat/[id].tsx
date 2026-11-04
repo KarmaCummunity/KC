@@ -33,7 +33,6 @@ import { ChatConversationHeader } from '../../src/components/chat/ChatConversati
 import { useChatTypingIndicator } from '../../src/hooks/useChatTypingIndicator';
 import { useChatMessageReactions } from '../../src/hooks/useChatMessageReactions';
 import { pickChatImage, uploadChatImageAndSend } from '../../src/services/chatMediaUpload';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import type { MessageReactionType } from '@kc/infrastructure-supabase';
 import { webEnterToSend } from '../../src/components/chat/webEnterToSend';
 
