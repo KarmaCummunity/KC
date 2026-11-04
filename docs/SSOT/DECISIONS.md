@@ -1910,3 +1910,13 @@ Owner rules that go with it:
 **Rejected.** A `resource` listing kind on `listings` (pollutes the post state machine and matching; expiry and direction would be meaningless). Storing resources only as community links (`donation_links` has no topics, kinds, versions, chunks or review beyond approval). A separate search index service (one Postgres hybrid search with RRF already exists; adding lanes keeps one source of truth and RLS).
 
 **Affected.** New `knowledge_*` tables and RPCs (migration range `0570–0589`), `supabase/functions/knowledge-*`, `embed-worker` provider, `packages/{domain,application,infrastructure-supabase}/src/knowledge/`, `apps/mobile` knowledge hub tabs and admin knowledge screens.
+
+## D-222 — Tester builds show the housing and knowledge feeds ahead of the remote flag (2026-11-04)
+
+**Decision.** `withTesterActiveWorlds` (`@kc/domain`) forces `world_housing_enabled` and `world_knowledge_enabled` on in the flags the mobile app reads (`useRemoteAppFlags`) when `EXPO_PUBLIC_ENVIRONMENT=development`. Every consumer (hub tiles, world screens, create form) sees the same flags. A production build, or one with the variable unset, is unchanged and follows `app_flags`.
+
+**Why.** The PM tests TestFlight builds (`development` environment) and wants every world that can be an in-app marketplace feed to be one now (#1624, #1630), but must approve the production flip himself. A migration would flip prod at the next release, and a manual SQL update on the shared dev database needs the PM's confirmation each time and is invisible in review.
+
+**Rejected.** A migration setting both flags true (reaches prod on release). A manual `update public.app_flags` on dev (unreviewed, easy to forget, lost on a database reset).
+
+**Affected.** `app/packages/domain/src/launch/launchWorlds.ts`, `app/apps/mobile/src/hooks/useLaunchWorldFlags.ts`, `docs/SSOT/spec/21_housing.md` (FR-HOUSING-001 AC1), `docs/SSOT/spec/23_knowledge.md`. Remove the override for a world when its production flag flips (housing: with HOUSING-H1 and `TD-245`).
