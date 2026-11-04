@@ -1942,4 +1942,4 @@ Owner rules that go with it:
 
 **Rejected.** Leaving it to the owner's "share to feed" button (members did not know to use it, and the PM asked for the listings to arrive). A per-kind switch (a private lesson is as feed-worthy as a course).
 
-**Affected.** `supabase/migrations/0613_knowledge_world_in_feed.sql`; tests `0557`, `0560` (a later ride occurrence is now the hidden example), `0522`; `docs/SSOT/spec/23_knowledge.md`.
+**Affected.** `supabase/migrations/0613_knowledge_world_in_feed.sql`; tests `0557`, `0560` (a later ride occurrence is now the hidden example), `0522`; `docs/spec/requirements/23_knowledge.md`.
