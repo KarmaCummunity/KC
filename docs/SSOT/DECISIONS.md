@@ -1722,7 +1722,9 @@ Owner rules that go with it:
 
 **Rejected.** Moving every handoff writer in one PR (rides carry capacity, approval and series rules that deserve their own tests). A `source` column deciding the sync direction per row (unnecessary: with identical columns and a compare-before-write guard on both sides, whichever side is written wins and the echo is a no-op). Closing the post from the handoff in this step (the one closing system changes karma for items and is G34's own decision, step 3c).
 
-**Affected.** `supabase/migrations/0555_post_handoffs_own_record.sql` (`listing_id_of_post`, `handoff_target_post_id`, `giving_handoff_upsert_from_post_handoff`, `post_handoffs_giving_sync`, the five RPCs and two sweeps), `docs/spec/07` §7.1 and §7.5, `docs/spec/93` G1, `docs/architecture/current.md`.
+**Step 3b (2026-11-04, `0556`).** The ride and knowledge bookings (`book_ride_seat`, `confirm / decline / cancel_ride_booking`, `complete_ride_trip`, `complete_ride_listing`, `ride_bookings_expire_sweep`, `book_knowledge_slot`, `complete_knowledge_session`), the generic cancel and the four handoff readers follow the same pattern; seat and slot capacity is counted on the record (`post_handoff_seats_taken`). The housing bookings (`0602` / `0603`, another lane's work of the same day) keep writing `giving_handoffs` and reach the record through the 0553 sync; they move in their own sub-step so in-flight housing work is not rewritten under it.
+
+**Affected.** `supabase/migrations/0555_post_handoffs_own_record.sql`, `supabase/migrations/0556_ride_knowledge_bookings_on_posts.sql` (`listing_id_of_post`, `handoff_target_post_id`, `giving_handoff_upsert_from_post_handoff`, `post_handoffs_giving_sync`, the five RPCs and two sweeps), `docs/spec/07` §7.1 and §7.5, `docs/spec/93` G1, `docs/architecture/current.md`.
 
 ## D-212 — Post and listing detail pages share one hero + content-card frame (2026-11-03)
 
@@ -1744,6 +1746,7 @@ Owner rules that go with it:
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
+| 4.43 | 2026-11-04 | `D-217` step 3b: ride and knowledge bookings and the handoff readers on `post_handoffs`; housing bookings deferred to their own sub-step (`0556`). |
 | 4.42 | 2026-11-04 | Added `D-217` (G1 step 3a: the items / food handoff RPCs and sweeps write `post_handoffs`; `giving_handoffs` derived both ways; `0555`). |
 | 4.41 | 2026-11-03 | Added `D-216` (G1 step 2: the listing worlds' RPCs write posts and derive a native listing that syncs back; items unchanged; `0554`). |
 | 4.40 | 2026-11-03 | Added `D-214` (G1 plan: reverse the listing mirror, move flows one PR at a time, drop `listings` last; ADR-006). |
