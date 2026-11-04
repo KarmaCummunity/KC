@@ -42,6 +42,21 @@ $$;
 -- 0520: pg_temp helpers are called after act_as, so they need an explicit grant.
 grant execute on function pg_temp.publish_event(uuid, uuid, text, int) to public;
 
+-- The post of a just-published event, read in its own statement (so after the publication).
+create function pg_temp.event_post(p_listing uuid)
+returns uuid
+language plpgsql
+as $$
+declare
+  v_post uuid;
+begin
+  v_post := public.post_id_of_listing(p_listing);
+  perform kc_test.assert_true(v_post is not null, 'the published event has a post');
+  return v_post;
+end;
+$$;
+grant execute on function pg_temp.event_post(uuid) to public;
+
 -- ── T1 a member publishes; the post is an event with its extension ─────────────────────────
 do $$
 declare
@@ -121,7 +136,8 @@ declare
   v_b public.post_handoffs;
 begin
   select * into p from personas;
-  v_post := public.post_id_of_listing(pg_temp.publish_event(p.organizer, p.org_id, 'manual', null));
+  -- event_post reads in a statement of its own: STABLE post_id_of_listing would miss a post made in this one.
+  v_post := pg_temp.event_post(pg_temp.publish_event(p.organizer, p.org_id, 'manual', null));
 
   perform kc_test.act_as(p.guest_a);
   v_a := public.register_for_event(v_post);
@@ -149,7 +165,8 @@ declare
   v_post uuid;
 begin
   select * into p from personas;
-  v_post := public.post_id_of_listing(pg_temp.publish_event(p.organizer, p.org_id, 'verified_only', null));
+  -- event_post reads in a statement of its own: STABLE post_id_of_listing would miss a post made in this one.
+  v_post := pg_temp.event_post(pg_temp.publish_event(p.organizer, p.org_id, 'verified_only', null));
 
   perform kc_test.act_as(p.guest_a);
   perform kc_test.assert_raises(format('select public.register_for_event(%L)', v_post),
@@ -168,7 +185,8 @@ declare
   v_reg public.post_handoffs;
 begin
   select * into p from personas;
-  v_post := public.post_id_of_listing(pg_temp.publish_event(p.organizer, p.org_id, 'automatic', 1));
+  -- event_post reads in a statement of its own: STABLE post_id_of_listing would miss a post made in this one.
+  v_post := pg_temp.event_post(pg_temp.publish_event(p.organizer, p.org_id, 'automatic', 1));
 
   perform kc_test.act_as(p.guest_a);
   v_reg := public.register_for_event(v_post);
