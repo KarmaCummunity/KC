@@ -67,11 +67,14 @@ describe('validateMarketplaceWorldRules — food', () => {
 });
 
 describe('validateMarketplaceWorldRules — routed worlds', () => {
-  it.each(['medical', 'animals', 'environment'])('%s requires an external body', (worldSlug) => {
+  it.each(['medical', 'environment'])('%s requires an external body', (worldSlug) => {
     expect(validateMarketplaceWorldRules({ worldSlug, direction: 'give', details: {}, photoCount: 3 })).toBe(
       'routed_world_requires_external_body',
     );
     expect(validateMarketplaceWorldRules({ worldSlug, direction: 'give', details: {}, photoCount: 0, externalBodyId: 'org-1' })).toBeNull();
+  });
+  it('animals are direct give and take: no external body needed (0612)', () => {
+    expect(validateMarketplaceWorldRules({ worldSlug: 'animals', direction: 'give', details: {}, photoCount: 0 })).toBeNull();
   });
   it('other worlds have no client rule', () => {
     expect(validateMarketplaceWorldRules({ worldSlug: 'knowledge', direction: 'give', details: {}, photoCount: 0 })).toBeNull();

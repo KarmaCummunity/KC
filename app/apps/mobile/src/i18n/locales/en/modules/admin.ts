@@ -92,6 +92,8 @@ export const adminEn = {
       ageDays:        (d: number) => `${d} days ago`,
       ageHours:       (h: number) => `${h} hours ago`,
       ageMinutes:     (m: number) => `${m} minutes ago`,
+      slaWarning:     'Waiting over 12 h',
+      slaOverdue:     'Overdue (24 h)',
     },
   },
   caseDetail: {

@@ -564,6 +564,16 @@ The hourly **Ops health monitor** (`.github/workflows/ops-health.yml`, G42) read
 
 **Adding a check** (any giving world): a migration with a `stable` function `ops.check_<key>()` returning `ops.health_result` (count + data-free detail) and a row in `ops.health_checks`; extend `supabase/tests/0463_ops_health_registry.sql` or the world's own test.
 
+## Report handling clock {#report-handling-clock}
+
+Apple and Google expect a reported item to be acted on within **24 h** (FR-ADMIN-012 AC5/AC6, #1039). Owners: the two platform admin accounts (super-admin and KC manager); each is the other's backup. Email addresses are not recorded in the repo.
+
+1. **Where.** Admin portal → Reports (`/(admin)/reports`), oldest case first. A yellow badge means the case has waited 12 h, a red one 24 h.
+2. **Alert.** At 12 h each active super-admin / moderator gets a push, "Report waiting over 12 hours", that opens the case. It is sent once per case by `report_sla_alert_sweep()` (pg_cron job `report_sla_alert_hourly`, minute 17 of every hour).
+3. **Act.** Open the case and choose *Confirm removal*, *Dismiss*, *Manual remove*, *Permanent ban* or *Open support thread*. Removing or dismissing takes the case out of the inbox and the clock stops.
+4. **If nobody is reachable.** The backup admin acts. If both are away, hide the target (*Manual remove*) first and review later: a hidden item can be restored, a missed deadline cannot.
+5. **If no alert arrives.** `select jobname, status, start_time from cron.job_run_details where command like '%report_sla_alert_sweep%' order by start_time desc limit 5;` then check `notifications_outbox` for `kind = 'report_sla_warning'` and the `dispatch-notification` logs.
+
 ## Publishing legal documents (FR-SETTINGS-010)
 
 Editable from Supabase Studio without a frontend deploy. Each publish is an immutable `legal_document_versions` row plus an update to the current-pointer row in `legal_documents`. The trigger computes `content_hash` (SHA-256) automatically.

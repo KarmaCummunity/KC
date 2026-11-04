@@ -92,6 +92,36 @@ export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[
       gear: { type: 'array', items: { type: 'string' } },
     })),
   ],
+  animals: [
+    // Binding schemas of migration 0612 (adoption and boarding / pet-sitting, offers and requests).
+    kind('adoption_offer', 'give', obj({
+      species: { enum: ['dog', 'cat', 'rabbit', 'bird', 'rodent', 'reptile', 'other'] },
+      age_group: { enum: ['young', 'adult', 'senior'] },
+      sex: { enum: ['male', 'female'] },
+      size: { enum: ['small', 'medium', 'large'] },
+      vaccinated: { type: 'boolean' },
+      neutered: { type: 'boolean' },
+      good_with: { type: 'array', items: { enum: ['children', 'dogs', 'cats'] } },
+    }, ['species'])),
+    kind('adoption_request', 'request', obj({
+      species: { enum: ['dog', 'cat', 'rabbit', 'bird', 'rodent', 'reptile', 'other'] },
+      age_group: { enum: ['young', 'adult', 'senior'] },
+      size: { enum: ['small', 'medium', 'large'] },
+    }, ['species'])),
+    kind('foster_offer', 'give', obj({
+      species: { enum: ['dog', 'cat', 'rabbit', 'bird', 'rodent', 'reptile', 'other'] },
+      care_mode: { enum: ['full_boarding', 'part_time', 'pet_sitting'] },
+      location_mode: { enum: ['my_home', 'owner_home', 'either'] },
+      duration_days: { type: 'integer', minimum: 1, maximum: 90 },
+    }, ['species', 'care_mode'])),
+    kind('foster_request', 'request', obj({
+      species: { enum: ['dog', 'cat', 'rabbit', 'bird', 'rodent', 'reptile', 'other'] },
+      care_mode: { enum: ['full_boarding', 'part_time', 'pet_sitting'] },
+      location_mode: { enum: ['my_home', 'owner_home', 'either'] },
+      starts_on: { type: 'string', format: 'date' },
+      ends_on: { type: 'string', format: 'date' },
+    }, ['species', 'care_mode'])),
+  ],
   knowledge: [
     // Binding schemas of migration 0395, trimmed to the keys and enums the form uses.
     kind('course', 'give', obj({

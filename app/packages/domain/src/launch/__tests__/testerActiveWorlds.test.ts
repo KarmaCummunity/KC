@@ -6,9 +6,11 @@ import {
   withTesterActiveWorlds,
 } from '../launchWorlds';
 
-describe('tester builds run housing and knowledge as in-app feeds (#1630)', () => {
-  it('lists exactly housing and knowledge', () => {
-    expect([...TESTER_ACTIVE_WORLD_FLAGS].sort()).toEqual(['world_housing_enabled', 'world_knowledge_enabled']);
+describe('tester builds run housing, knowledge and animals as in-app feeds (#1630, #1625)', () => {
+  it('lists exactly housing, knowledge and animals', () => {
+    expect([...TESTER_ACTIVE_WORLD_FLAGS].sort()).toEqual([
+      'world_animals_enabled', 'world_housing_enabled', 'world_knowledge_enabled',
+    ]);
   });
 
   it('turns both worlds on even when the remote flags are off or missing', () => {

@@ -238,8 +238,10 @@ A new Expo Router group `(admin)` accessible only to users with an active admin 
 - AC2. Each row shows: target preview, # reports, oldest report age, latest reporter, threshold progress (n/3).
 - AC3. Search bar accepts target ID or reporter display name; powered by `audit_search` + `reports` query.
 - AC4. Default sort: oldest unresolved first.
+- AC5. *(#1039, PM 2026-11-04.)* A row whose oldest open report is **12 h old** shows a *warning* badge and **24 h old** an *overdue* badge; younger rows show none. Thresholds: `REPORT_SLA_WARNING_HOURS` / `REPORT_SLA_DEADLINE_HOURS` in `@kc/domain` (`reportSlaState`).
+- AC6. *(#1039.)* `report_sla_alert_sweep()` (migration `0611`, hourly via pg_cron) sends every active `super_admin` / `moderator` one `report_sla_warning` push per open case that has waited 12 h, deep-linking to the case; the dedupe key carries the case's oldest report, so a case is alerted once and a case reopened later alerts again. Resolved cases never alert.
 
-**Related.** Database: `reports_open_inbox(...)` RPC (migration 0120). Domain: `ReportInboxPage`, `ReportInboxCursor`, `ReportInboxRow`. Application: `IReportsRepository.listOpenReports`, `ListOpenReportsUseCase`. Infrastructure: `SupabaseReportsRepository`. Mobile: `useReportsInbox` (infinite query), `ReportRow`, `ReportFilters`, `(admin)/reports/index.tsx`.
+**Related.** Database: `reports_open_inbox(...)` RPC (migration 0120). Database: `report_sla_alert_sweep()` (migration 0611). Domain: `ReportInboxPage`, `ReportInboxCursor`, `ReportInboxRow`, `reportSlaState`. Application: `IReportsRepository.listOpenReports`, `ListOpenReportsUseCase`. Infrastructure: `SupabaseReportsRepository`. Mobile: `useReportsInbox` (infinite query), `ReportRow`, `ReportFilters`, `(admin)/reports/index.tsx`.
 
 ---
 

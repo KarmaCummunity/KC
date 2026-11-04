@@ -1,10 +1,11 @@
 // Client-side mirror of the server world rules (0266 listings_enforce_world_rules) and a
 // mapper from server error codes to stable codes the UI can translate.
 // Items photos are optional (product decision; 0357 dropped the 0351 items image check).
-// Keep in sync with supabase/migrations/0266, 0357, 0539 (food expiry binds offers only) and
-// 0563 (an organization's event ends after it starts).
+// Keep in sync with supabase/migrations/0266, 0357, 0539 (food expiry binds offers only),
+// 0563 (an organization's event ends after it starts) and 0612 (animals are no longer routed).
 
-export const ROUTED_WORLDS = ['medical', 'animals', 'environment'] as const;
+// Animals left this list in 0612: members give and take directly there (PM 2026-11-04).
+export const ROUTED_WORLDS = ['medical', 'environment'] as const;
 
 export type MarketplaceRuleErrorCode =
   | 'food_expiry_required'
