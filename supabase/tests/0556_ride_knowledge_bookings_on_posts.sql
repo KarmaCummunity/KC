@@ -74,7 +74,7 @@ begin
     'and the post followed (0554)');
 end $$;
 
--- ── T2 knowledge: a listing without a post books by listing id; its post id works once shared ─
+-- ── T2 knowledge: a published offer books by post id; its booking is found by either id ─────
 do $$
 declare
   p personas;
@@ -90,27 +90,22 @@ begin
       'slot_ends_at', kc_test.iso_in(interval '2 hours')));
   -- Knowledge listings start in pending_review (0266); simulate the moderator's approval.
   update public.listings set moderation_status = 'published' where listing_id = v_listing;
-  perform kc_test.assert_true(public.post_id_of_listing(v_listing) is null,
-    'a knowledge offer has no post until its owner shares it (worlds.feed_mirror)');
-
-  perform kc_test.act_as(p.learner);
-  h := public.book_knowledge_slot(v_listing);
-  perform kc_test.assert_eq(h.status, 'reserved', 'a listing without a post still books by listing id');
-  perform kc_test.assert_row_count(format('select 1 from public.post_handoffs where handoff_id = %L', h.handoff_id), 0,
-    'no post yet, no record copy yet');
-
-  perform kc_test.act_as(p.mentor);
-  perform public.share_listing_to_feed(v_listing);
   v_post := public.post_id_of_listing(v_listing);
-  perform kc_test.assert_true(v_post is not null, 'sharing gives the offer its post');
-  perform kc_test.assert_eq((select post_id from public.post_handoffs where handoff_id = h.handoff_id), v_post,
-    'and the booking''s copy appears under it (0553)');
+  perform kc_test.assert_true(v_post is not null, 'a published knowledge offer has its post (0557)');
 
   perform kc_test.act_as(p.learner);
+  h := public.book_knowledge_slot(v_post);
+  perform kc_test.assert_eq(h.listing_id, v_listing, 'a slot booked by post id lands on the offer''s listing');
+  perform kc_test.assert_eq(h.status, 'reserved', 'and waits like any booking');
+  perform kc_test.assert_eq((select post_id from public.post_handoffs where handoff_id = h.handoff_id), v_post,
+    'the booking''s copy sits under the post (0553)');
+
   perform kc_test.assert_eq(public.get_listing_handoff(v_post) ->> 'handoff_id', h.handoff_id::text,
-    'the learner''s booking is now found by post id');
-  perform kc_test.assert_raises(format('select public.book_knowledge_slot(%L)', v_post),
-    'already_booked', 'booking again by post id is the same slot');
+    'the learner''s booking is found by post id');
+  perform kc_test.assert_eq(public.get_listing_handoff(v_listing) ->> 'handoff_id', h.handoff_id::text,
+    'and by listing id');
+  perform kc_test.assert_raises(format('select public.book_knowledge_slot(%L)', v_listing),
+    'already_booked', 'booking again by listing id is the same slot');
 
   h := public.complete_knowledge_session(h.handoff_id);
   perform kc_test.assert_eq(h.status, 'handed_over', 'the session completes as before');

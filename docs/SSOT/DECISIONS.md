@@ -1726,6 +1726,16 @@ Owner rules that go with it:
 
 **Affected.** `supabase/migrations/0555_post_handoffs_own_record.sql`, `supabase/migrations/0556_ride_knowledge_bookings_on_posts.sql` (`listing_id_of_post`, `handoff_target_post_id`, `giving_handoff_upsert_from_post_handoff`, `post_handoffs_giving_sync`, the five RPCs and two sweeps), `docs/spec/07` §7.1 and §7.5, `docs/spec/93` G1, `docs/architecture/current.md`.
 
+## {{ENG:feed-exposure-flag}} — Every published listing has a post; `posts.feed_hidden` says whether the main feed lists it (2026-11-04)
+
+**Decision.** G1 step 3b-pre (BACKLOG `G1-S3`, migration `0557`). A listing's post exists from the moment the listing is published and open, in every world; whether the main feed lists that post is a separate flag, `posts.feed_hidden`. The flag is set when the post is created for a world that does not mirror into the feed (knowledge today) or for a later occurrence of a recurring ride (FR-RIDE-046: only the soonest is listed, 0531), and cleared when the owner shares the listing to the feed or the ride sweep reaches that occurrence; a sync never hides a post that is already exposed. The signed-in feed view, the ranked feed RPC, the new-post realtime broadcast, the personal activity log and the app's simple feed query skip hidden posts; a post exposed later is broadcast as new then. Detail by id, handoffs, chat anchors and the report see every post. Open listings that had no post were backfilled with hidden ones.
+
+**Why.** Step 3b showed the one Post model cannot hang a handoff record on a listing that has no post, and `worlds.feed_mirror` conflated "exists as a post" with "shows in the feed": a later ride occurrence and an unshared knowledge offer are open and bookable without a post. Separating existence from exposure keeps the feed's noise rules (0531) and the knowledge share-to-feed semantics intact while giving every bookable listing the post the record needs.
+
+**Rejected.** Mirroring knowledge and every occurrence into the feed (breaks FR-RIDE-046 and the share-to-feed choice). A nullable `post_handoffs.post_id` with a `listing_id` fallback (two records again). Hiding through `visibility = 'OnlyMe'` (the booker could not open the post).
+
+**Affected.** `supabase/migrations/0557_post_for_every_listing.sql` (`posts.feed_hidden`, `feed_visible_posts`, `listing_feed_mirror_upsert(listings, boolean)`, `listing_feed_hidden`, `listings_feed_mirror_sync`, `ride_series_sweep`, the broadcast / activity triggers, `feed_ranked_ids`), `app/packages/infrastructure-supabase/src/posts/feedQuery.ts`, `docs/spec/07` §7.1 / §7.3, `docs/spec/93` G1.
+
 ## D-212 — Post and listing detail pages share one hero + content-card frame (2026-11-03)
 
 **Decision.** The listing page (items, food, rides, knowledge) uses the same hero frame (`DetailHeroCard`, with the photo gallery or a placeholder icon) and the same content card as the post page. Each type keeps its own fields and actions (route card, handoff, booking, messaging).
@@ -1746,6 +1756,7 @@ Owner rules that go with it:
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
+| 4.44 | 2026-11-04 | Added `{{ENG:feed-exposure-flag}}` (G1 step 3b-pre: every published listing has a post; `posts.feed_hidden` separates existence from feed exposure; `0557`). |
 | 4.43 | 2026-11-04 | `D-217` step 3b: the ride / knowledge booking RPCs and readers accept a post id; finding that recurring-ride occurrences and unshared knowledge offers have no post, so their record stays `giving_handoffs` until 3b-pre (`0556`). |
 | 4.42 | 2026-11-04 | Added `D-217` (G1 step 3a: the items / food handoff RPCs and sweeps write `post_handoffs`; `giving_handoffs` derived both ways; `0555`). |
 | 4.41 | 2026-11-03 | Added `D-216` (G1 step 2: the listing worlds' RPCs write posts and derive a native listing that syncs back; items unchanged; `0554`). |

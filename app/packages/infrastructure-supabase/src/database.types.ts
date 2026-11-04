@@ -6024,6 +6024,7 @@ export type Database = {
           estimated_value: number | null
           expires_at: string | null
           external_body_id: string | null
+          feed_hidden: boolean
           geo: unknown
           item_condition: string | null
           listing_id: string | null
@@ -6063,6 +6064,7 @@ export type Database = {
           estimated_value?: number | null
           expires_at?: string | null
           external_body_id?: string | null
+          feed_hidden?: boolean
           geo?: unknown
           item_condition?: string | null
           listing_id?: string | null
@@ -6102,6 +6104,7 @@ export type Database = {
           estimated_value?: number | null
           expires_at?: string | null
           external_body_id?: string | null
+          feed_hidden?: boolean
           geo?: unknown
           item_condition?: string | null
           listing_id?: string | null
@@ -9387,6 +9390,7 @@ export type Database = {
           estimated_value: number | null
           expires_at: string | null
           external_body_id: string | null
+          feed_hidden: boolean | null
           geo: unknown
           item_condition: string | null
           listing_id: string | null
@@ -9426,6 +9430,7 @@ export type Database = {
           estimated_value?: number | null
           expires_at?: string | null
           external_body_id?: string | null
+          feed_hidden?: boolean | null
           geo?: unknown
           item_condition?: string | null
           listing_id?: string | null
@@ -9465,6 +9470,7 @@ export type Database = {
           estimated_value?: number | null
           expires_at?: string | null
           external_body_id?: string | null
+          feed_hidden?: boolean | null
           geo?: unknown
           item_condition?: string | null
           listing_id?: string | null
@@ -10954,6 +10960,7 @@ export type Database = {
           estimated_value: number | null
           expires_at: string | null
           external_body_id: string | null
+          feed_hidden: boolean
           geo: unknown
           item_condition: string | null
           listing_id: string | null
@@ -12105,6 +12112,10 @@ export type Database = {
         }[]
       }
       listing_details_expires_at: { Args: { p_details: Json }; Returns: string }
+      listing_feed_hidden: {
+        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
+        Returns: boolean
+      }
       listing_feed_mirror_status: {
         Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
         Returns: string
@@ -12114,7 +12125,10 @@ export type Database = {
         Returns: undefined
       }
       listing_feed_mirror_upsert: {
-        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
+        Args: {
+          p_feed_hidden?: boolean
+          p_listing: Database["public"]["Tables"]["listings"]["Row"]
+        }
         Returns: string
       }
       listing_geo_from_city: { Args: { p_city_id: string }; Returns: unknown }
@@ -12650,6 +12664,7 @@ export type Database = {
           estimated_value: number | null
           expires_at: string | null
           external_body_id: string | null
+          feed_hidden: boolean
           geo: unknown
           item_condition: string | null
           listing_id: string | null
@@ -12698,6 +12713,7 @@ export type Database = {
           estimated_value: number | null
           expires_at: string | null
           external_body_id: string | null
+          feed_hidden: boolean
           geo: unknown
           item_condition: string | null
           listing_id: string | null
