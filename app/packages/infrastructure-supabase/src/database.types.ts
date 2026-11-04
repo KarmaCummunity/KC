@@ -3086,6 +3086,196 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_topic_aliases: {
+        Row: {
+          alias: string
+          alias_id: string
+          alias_norm: string | null
+          created_at: string
+          lang: string
+          topic_id: string
+        }
+        Insert: {
+          alias: string
+          alias_id?: string
+          alias_norm?: string | null
+          created_at?: string
+          lang?: string
+          topic_id: string
+        }
+        Update: {
+          alias?: string
+          alias_id?: string
+          alias_norm?: string | null
+          created_at?: string
+          lang?: string
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_topic_aliases_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_topics"
+            referencedColumns: ["topic_id"]
+          },
+        ]
+      }
+      knowledge_topic_follows: {
+        Row: {
+          created_at: string
+          topic_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          topic_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          topic_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_topic_follows_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_topics"
+            referencedColumns: ["topic_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topic_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topic_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topic_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      knowledge_topics: {
+        Row: {
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          description_he: string | null
+          label_en: string
+          label_he: string
+          legacy_category_slug: string | null
+          merged_into_id: string | null
+          parent_id: string | null
+          slug: string
+          sort_order: number
+          status: string
+          topic_id: string
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          description_he?: string | null
+          label_en: string
+          label_he: string
+          legacy_category_slug?: string | null
+          merged_into_id?: string | null
+          parent_id?: string | null
+          slug: string
+          sort_order?: number
+          status?: string
+          topic_id?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          description_he?: string | null
+          label_en?: string
+          label_he?: string
+          legacy_category_slug?: string | null
+          merged_into_id?: string | null
+          parent_id?: string | null
+          slug?: string
+          sort_order?: number
+          status?: string
+          topic_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_topics_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topics_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topics_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topics_merged_into_id_fkey"
+            columns: ["merged_into_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_topics"
+            referencedColumns: ["topic_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topics_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_topics"
+            referencedColumns: ["topic_id"]
+          },
+        ]
+      }
       legal_document_versions: {
         Row: {
           body_md: string
@@ -9705,6 +9895,23 @@ export type Database = {
         Args: { p_actor: string; p_scope: string }
         Returns: number
       }
+      add_knowledge_topic_alias: {
+        Args: { p_alias: string; p_lang?: string; p_topic_id: string }
+        Returns: {
+          alias: string
+          alias_id: string
+          alias_norm: string | null
+          created_at: string
+          lang: string
+          topic_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "knowledge_topic_aliases"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       add_my_listing_media: {
         Args: { p_listing_id: string; p_storage_paths: string[] }
         Returns: number
@@ -11617,6 +11824,15 @@ export type Database = {
         Returns: Json
       }
       kc_dev_wipe_demo_data: { Args: never; Returns: Json }
+      knowledge_normalize_text: { Args: { p: string }; Returns: string }
+      knowledge_topic_merge: {
+        Args: { p_into: string; p_topic_id: string }
+        Returns: undefined
+      }
+      knowledge_topic_subtree_height: {
+        Args: { p_topic_id: string }
+        Returns: number
+      }
       list_active_surveys: { Args: never; Returns: Json }
       list_housing_bookings: {
         Args: { p_listing_id: string }
@@ -12317,6 +12533,37 @@ export type Database = {
         }
         Returns: number
       }
+      propose_knowledge_topic: {
+        Args: {
+          p_description_he?: string
+          p_label_en: string
+          p_label_he: string
+          p_parent_slug?: string
+          p_slug: string
+        }
+        Returns: {
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          description_he: string | null
+          label_en: string
+          label_he: string
+          legacy_category_slug: string | null
+          merged_into_id: string | null
+          parent_id: string | null
+          slug: string
+          sort_order: number
+          status: string
+          topic_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "knowledge_topics"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       provider_webhook_apply: {
         Args: { p_event_id: string; p_payload: Json; p_provider_slug: string }
         Returns: string
@@ -12566,6 +12813,15 @@ export type Database = {
         }
       }
       resolve_comment_mentions: { Args: { p_body: string }; Returns: string[] }
+      resolve_knowledge_topics: {
+        Args: { p_text: string }
+        Returns: {
+          matched_slug: string
+          slug: string
+          topic_id: string
+          via: string
+        }[]
+      }
       resolve_match_weights: {
         Args: { p_user: string; p_world: string }
         Returns: {
@@ -12595,6 +12851,37 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "standing_orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      review_knowledge_topic: {
+        Args: {
+          p_action: string
+          p_label_en?: string
+          p_label_he?: string
+          p_merge_into_id?: string
+          p_topic_id: string
+        }
+        Returns: {
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          description_he: string | null
+          label_en: string
+          label_he: string
+          legacy_category_slug: string | null
+          merged_into_id: string | null
+          parent_id: string | null
+          slug: string
+          sort_order: number
+          status: string
+          topic_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "knowledge_topics"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -13819,6 +14106,36 @@ export type Database = {
           p_urgency_level?: number
         }
         Returns: undefined
+      }
+      update_my_proposed_knowledge_topic: {
+        Args: {
+          p_description_he?: string
+          p_label_en: string
+          p_label_he: string
+          p_topic_id: string
+        }
+        Returns: {
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          description_he: string | null
+          label_en: string
+          label_he: string
+          legacy_category_slug: string | null
+          merged_into_id: string | null
+          parent_id: string | null
+          slug: string
+          sort_order: number
+          status: string
+          topic_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "knowledge_topics"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       update_ride_series: {
         Args: {

@@ -95,3 +95,5 @@ export { SandboxPaymentProvider } from './payments/SandboxPaymentProvider';
 export { SupabaseKcSupportChannelsRepository } from './payments/SupabaseKcSupportChannelsRepository';
 export { SupabaseVolunteerRepository } from './volunteering/SupabaseVolunteerRepository';
 export * from './admin/SupabaseWhatsAppAdminRepository';
+export { SupabaseKnowledgeTopicRepository } from './knowledge/SupabaseKnowledgeTopicRepository';
+export { mapKnowledgeTopic, mapKnowledgeTopicMatch } from './knowledge/mapKnowledgeTopic';

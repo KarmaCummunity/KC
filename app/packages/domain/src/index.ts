@@ -59,3 +59,4 @@ export * from './worlds/givingWorlds';
 export * from './payments/PaymentTypes';
 export * from './payments/KcSupportChannel';
 export * from './volunteering';
+export * from './knowledge/knowledgeTopics';
