@@ -231,14 +231,14 @@ begin
 
   -- A report is filed by its reporter (reports_validate_before_insert: reporter_must_be_self).
   perform kc_test.act_as(p.reporter);
-  insert into public.reports (reporter_id, target_type, target_id, reason)
-  values (p.reporter, 'listing', v_mirror_listing, 'Spam'),
-         (p.reporter, 'listing', v_item_listing, 'Spam');
-  -- A listing still in review cannot be reported now (target_already_moderated); its report
-  -- stands for one filed before review, so the insert guard is paused for that row only.
+  -- The fixtures were handed over in section 1 and the third listing is still in review, so none
+  -- can be reported now (target_already_moderated). These reports stand for ones filed while the
+  -- listings were open, so the insert guard is paused for them only.
   alter table public.reports disable trigger reports_before_insert;
   insert into public.reports (reporter_id, target_type, target_id, reason)
-  values (p.reporter, 'listing', v_orphan, 'Spam');
+  values (p.reporter, 'listing', v_mirror_listing, 'Spam'),
+         (p.reporter, 'listing', v_item_listing, 'Spam'),
+         (p.reporter, 'listing', v_orphan, 'Spam');
   alter table public.reports enable trigger reports_before_insert;
 
   perform kc_test.act_as(p.moderator);
