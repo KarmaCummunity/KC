@@ -1911,7 +1911,7 @@ Owner rules that go with it:
 
 **Affected.** New `knowledge_*` tables and RPCs (migration range `0570–0589`), `supabase/functions/knowledge-*`, `embed-worker` provider, `packages/{domain,application,infrastructure-supabase}/src/knowledge/`, `apps/mobile` knowledge hub tabs and admin knowledge screens.
 
-## {{ENG:tester-builds-open-housing-knowledge-feeds}} — Tester builds show the housing and knowledge feeds ahead of the remote flag (2026-11-04)
+## D-222 — Tester builds show the housing and knowledge feeds ahead of the remote flag (2026-11-04)
 
 **Decision.** `withTesterActiveWorlds` (`@kc/domain`) forces `world_housing_enabled` and `world_knowledge_enabled` on in the flags the mobile app reads (`useRemoteAppFlags`) when `EXPO_PUBLIC_ENVIRONMENT=development`. Every consumer (hub tiles, world screens, create form) sees the same flags. A production build, or one with the variable unset, is unchanged and follows `app_flags`.
 
