@@ -34,6 +34,7 @@ One rides flow (D70): ride offers and requests are posts with a ride extension; 
 7. "Ride completed" — the driver can finish the ride once from the offer; confirmed bookings complete together, earn the existing driver/passenger karma values, the offer closes immediately, and each passenger may optionally rate the driver. Pending unapproved bookings are cancelled. If the driver does not finish it, an uncompleted offer still expires 30 minutes after estimated end (or departure when no end was set) (D21). The app emits the existing `handover_completed` core-loop event (`0530`).
 
 Feed (D75): offers and requests together, sorted by departure, grouped today / tomorrow / later; departed rides are hidden.
+Hub screen (#1626): the rides world opens on that feed, on the shared listing card in the 2-column grid every world feed uses. On top of it: the offers / requests chips (rides have no subcategories) and the route search as a collapsed filter. With both ends picked, the feed shows the ride offers along that route (`find_ride_listing_matches`, 15 km) and the collapsed row names the route, with "clear". The community links ("nonprofits and links") sit collapsed under the feed. An empty feed invites publishing a ride; a filtered empty feed offers to clear the filters.
 Rules: no profit — cost-sharing caps (₪70 intercity / ₪20 urban). Secondary use: moving items/food.
 Gaps: G44–G46, G48, G49 (G47 ✅), G52 ✅.
 
