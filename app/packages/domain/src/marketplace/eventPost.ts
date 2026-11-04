@@ -1,6 +1,7 @@
-// An organization's event (G1 step 5, D31): a time-world listing of kind `org_event` whose post
-// carries a date window, an optional capacity and a registration policy. Registrations are post
-// handoffs, one seat each (supabase/migrations/0563_event_posts.sql).
+// An organization's event (G1 step 5, D31, S13): a time-world listing of kind `org_event` whose
+// post carries a date window, an optional capacity and a registration policy. Registrations are
+// post handoffs, one seat each; a full event waitlists, and attendance is marked by the organizer
+// (supabase/migrations/0563_event_posts.sql, 0564_event_attendance_waitlist.sql).
 
 /** The time world's listing kind slug of an organization's event (`listing_kinds.slug`). */
 export const ORG_EVENT_KIND_SLUG = 'org_event';
@@ -12,8 +13,24 @@ export const ORG_EVENT_KIND_SLUG = 'org_event';
 export const EVENT_REGISTRATION_POLICIES = ['automatic', 'manual', 'verified_only'] as const;
 export type EventRegistrationPolicy = (typeof EVENT_REGISTRATION_POLICIES)[number];
 
-/** Registration states that still hold a seat: waiting for the organizer, or confirmed. */
-export const ACTIVE_EVENT_REGISTRATION_STATUSES = ['reserved', 'confirmed'] as const;
+/**
+ * Every state of an event registration: `reserved` waits for the organizer (manual policy),
+ * `confirmed` holds a place, `waitlisted` waits for a place in a full event, `handed_over` is
+ * attendance the organizer marked (it earns karma, S13), `no_show` an absence the organizer
+ * marked, and `cancelled` a registration withdrawn, declined or removed.
+ */
+export const EVENT_REGISTRATION_STATUSES = [
+  'reserved',
+  'confirmed',
+  'waitlisted',
+  'handed_over',
+  'no_show',
+  'cancelled',
+] as const;
+export type EventRegistrationStatus = (typeof EVENT_REGISTRATION_STATUSES)[number];
+
+/** States in which the member is still registered: waiting for the organizer, confirmed, or waitlisted. */
+export const ACTIVE_EVENT_REGISTRATION_STATUSES = ['reserved', 'confirmed', 'waitlisted'] as const;
 export type ActiveEventRegistrationStatus = (typeof ACTIVE_EVENT_REGISTRATION_STATUSES)[number];
 
 /** The capacity range the event schema accepts (`details.capacity`). */
@@ -25,8 +42,7 @@ export interface EventRegistration {
   readonly handoffId: string;
   readonly recipientId: string;
   readonly displayName: string | null;
-  /** A post handoff status: reserved, confirmed, cancelled, handed_over or no_show. */
-  readonly status: string;
+  readonly status: EventRegistrationStatus;
   readonly reservedAt: string;
   readonly confirmedAt: string | null;
 }
@@ -60,7 +76,12 @@ export function isEventRegistrationPolicy(value: unknown): value is EventRegistr
   return typeof value === 'string' && (EVENT_REGISTRATION_POLICIES as readonly string[]).includes(value);
 }
 
-/** Type guard: does `status` still hold a seat (reserved or confirmed)? */
+/** Type guard: is `status` one of the event registration states? */
+export function isEventRegistrationStatus(status: unknown): status is EventRegistrationStatus {
+  return typeof status === 'string' && (EVENT_REGISTRATION_STATUSES as readonly string[]).includes(status);
+}
+
+/** Type guard: is the member still registered (reserved, confirmed or waitlisted)? */
 export function isActiveEventRegistrationStatus(status: unknown): status is ActiveEventRegistrationStatus {
   return typeof status === 'string' && (ACTIVE_EVENT_REGISTRATION_STATUSES as readonly string[]).includes(status);
 }

@@ -137,6 +137,8 @@ describe('mapMarketplaceServerError', () => {
     expect(mapMarketplaceServerError({ code: '42501', message: 'verification_required' })).toBe('verification_required');
     expect(mapMarketplaceServerError({ code: '42501', message: 'not_owner' })).toBe('not_owner');
     expect(mapMarketplaceServerError({ code: '23514', message: 'invalid_transition' })).toBe('invalid_transition');
+    // 0564: the organizer marks attendance only after the event starts.
+    expect(mapMarketplaceServerError({ code: '23514', message: 'event_not_started' })).toBe('event_not_started');
   });
   it('every code is unique', () => {
     expect(new Set(MARKETPLACE_SERVER_ERROR_CODES).size).toBe(MARKETPLACE_SERVER_ERROR_CODES.length);
