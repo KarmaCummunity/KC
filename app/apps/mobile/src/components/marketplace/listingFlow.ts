@@ -1,13 +1,13 @@
 // Which listings carry a flow of their own on the detail screen — the generic handoff (items,
-// food, knowledge) or ride bookings — and so which viewer gets a flow action there. The flow
+// food, knowledge), ride bookings or housing stays (FR-HOUSING-015) — and so which viewer gets a flow action there. The flow
 // action is the screen's one primary call to action (spec 17 §8.1 call 6).
 import type { MarketplaceListingDetail } from '@kc/domain';
 
 /** Worlds whose "give" listings run the generic handoff (reserve, claim, book a slot). */
 export const HANDOFF_WORLDS: readonly string[] = ['items', 'food', 'knowledge'];
 
-/** Worlds whose "give" listings carry a flow on the detail screen: the handoff worlds plus rides. */
-const FLOW_WORLDS: readonly string[] = [...HANDOFF_WORLDS, 'rides'];
+/** Worlds whose "give" listings carry a flow on the detail screen: the handoff worlds, rides and housing stays. */
+const FLOW_WORLDS: readonly string[] = [...HANDOFF_WORLDS, 'rides', 'housing'];
 
 type FlowListing = Pick<MarketplaceListingDetail, 'direction' | 'worldSlug' | 'ownerId'>;
 
