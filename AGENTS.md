@@ -91,6 +91,7 @@ Every schema change must be a committed file in `supabase/migrations/NNNN_snake.
 
 1. **Product focus.** KC mobile + web export (`app/apps/mobile/**`) and shared Supabase backend — see [`AGENTS.md`](./AGENTS.md).
 2. **Read order.**
+   0. `node scripts/spec.mjs --changed` — what moved in the spec on `dev` since your branch was cut (§2)
    1. [`docs/spec/README.md`](./docs/spec/README.md) — product project book (source of truth) and the section for your area
    2. The [GitHub project board](https://github.com/orgs/KarmaCummunity/projects/2) — the **only** task queue ([`docs/process/PROJECT_BOARD.md`](./docs/process/PROJECT_BOARD.md)); `docs/SSOT/BACKLOG.md` is just an old-ID → issue map
    3. Relevant [`docs/spec/requirements/{domain}.md`](./docs/spec/requirements) for FR-IDs / ACs
@@ -143,9 +144,19 @@ Note: `17_responsive_desktop.md` was formerly `14_responsive_desktop.md` (rename
 
 ## 2. Spec Validation Gate
 
+**Always read the spec from `dev`, never from your working tree.** A checkout or worktree can be days behind, and another agent may have changed the spec since. Use the reader, which fetches `dev` first:
+
+```bash
+node scripts/spec.mjs --changed        # spec files that moved on dev since your branch was cut
+node scripts/spec.mjs 04_posts         # one file, as merged on dev (also: a path, a number, an FR-ID like FR-POST-004)
+node scripts/spec.mjs --list           # every spec file on dev
+```
+
+If `--changed` lists a file you are about to rely on, merge `origin/dev` into your branch before you touch it. The issue you work on carries its own acceptance criteria; they win over a stale local copy.
+
 Before implementing ANY user request:
 
-1. **Read** `docs/spec/requirements/{relevant_domain}.md`.
+1. **Read** the relevant requirements file with `node scripts/spec.mjs <domain>` (for example `node scripts/spec.mjs 04_posts`).
 2. **Compare** the request against existing ACs.
 3. **If contradiction found** → STOP and report:
    > ⚠️ הבקשה שלך סותרת את האפיון:
@@ -172,7 +183,7 @@ Use `NA` for pure tooling / docs / infra-only changes.
 ### Before you start any feature work
 
 1. Open the board (`docs/process/PROJECT_BOARD.md`) — confirm the feature isn't already done, and pick the top **Ready** item nobody owns if none was assigned. Never work on an item that is claimed (`in-progress` label) or **In progress**.
-2. Read the matching `docs/spec/requirements/{domain}.md`.
+2. Read the matching requirements file from `dev`: `node scripts/spec.mjs <domain>` (§2).
 3. Claim the issue per [`docs/agents/ISSUE_CLAIMS.md`](./docs/agents/ISSUE_CLAIMS.md) (`in-progress` + `agent:<you>` labels) and move it to **In progress** on the board before any code edit; this is the lock that stops parallel work on the same task.
 
 ### While working
