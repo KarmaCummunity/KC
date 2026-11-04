@@ -11816,7 +11816,10 @@ export type Database = {
         Returns: string
       }
       escape_ilike: { Args: { p: string }; Returns: string }
-      event_promote_waitlist: { Args: { p_post_id: string }; Returns: undefined }
+      event_promote_waitlist: {
+        Args: { p_post_id: string }
+        Returns: undefined
+      }
       event_registration_for_update: {
         Args: { p_handoff_id: string }
         Returns: {
