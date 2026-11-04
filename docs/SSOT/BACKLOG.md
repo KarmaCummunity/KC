@@ -67,3 +67,5 @@ Old backlog IDs still appear in specs, ADRs and code comments. Each open one res
 | KNOW-K2 | [#1690](https://github.com/KarmaCummunity/KC/issues/1690) |
 | KNOW-K3 | [#1691](https://github.com/KarmaCummunity/KC/issues/1691) |
 | P3.MATCH-XW | [#1033](https://github.com/KarmaCummunity/KC/issues/1033) |
+| FR-CHALLENGE-001 | [#1883](https://github.com/KarmaCummunity/KC/issues/1883) |
+| DONATE-SEED-LINKS | [#1884](https://github.com/KarmaCummunity/KC/issues/1884) |
