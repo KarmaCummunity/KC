@@ -182,7 +182,11 @@ export function mapMarketplaceServerError(err: unknown): MarketplaceServerErrorC
   const e = err as { message?: unknown; details?: unknown; hint?: unknown };
   for (const field of [e.message, e.details, e.hint]) {
     if (typeof field === 'string') {
-      if (field.includes('giving_handoffs_active_listing_uidx')) {
+      // One live handoff per item / food offer: the legacy index and the post record's (0555).
+      if (
+        field.includes('giving_handoffs_active_listing_uidx') ||
+        field.includes('post_handoffs_active_post_uidx')
+      ) {
         return 'listing_not_available';
       }
       const code = matchCode(field);

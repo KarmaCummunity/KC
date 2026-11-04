@@ -11627,6 +11627,11 @@ export type Database = {
       get_volunteer_shift_ics: { Args: { p_shift_id: string }; Returns: string }
       giving_handoff_copy_key: { Args: { p_kind: string }; Returns: string }
       giving_handoff_no_show_sweep: { Args: never; Returns: number }
+      giving_handoff_upsert_from_post_handoff: {
+        Args: { p_h: Database["public"]["Tables"]["post_handoffs"]["Row"] }
+        Returns: undefined
+      }
+      handoff_target_post_id: { Args: { p_id: string }; Returns: string }
       has_accepted_housing_conduct: {
         Args: { p_user: string }
         Returns: boolean
@@ -12116,6 +12121,7 @@ export type Database = {
         Args: { p_listing_id: string }
         Returns: boolean
       }
+      listing_id_of_post: { Args: { p_post_id: string }; Returns: string }
       listing_kind_for_post: {
         Args: { p_direction: string; p_world_slug: string }
         Returns: string

@@ -1714,6 +1714,16 @@ Owner rules that go with it:
 
 **Affected.** `supabase/migrations/0554_posts_own_listing_worlds.sql`, `listing_upsert_from_post`, `listings_feed_mirror_sync`, `post_sync_from_listing`, `posts_enforce_active_cap` and the six post-side karma / counter / closure triggers, the owner RPCs; `docs/spec/07` §7.1, `docs/spec/93` G1.
 
+## {{ENG:post-handoffs-own-record}} — `post_handoffs` is the handoff record; `giving_handoffs` is derived both ways until step 6 (2026-11-04)
+
+**Decision.** G1 step 3a (BACKLOG `G1-S3`, migration `0555`). The items and food handoff RPCs (`reserve_item_giving`, `claim_food_giving`, `confirm_item_handoff`, `mark_giving_handed_over`, `cancel_giving_handoff`) and the no-show and food-expiry sweeps write `post_handoffs`, keyed by the post the handoff closes. A guarded sync (`giving_handoff_upsert_from_post_handoff`) derives the `giving_handoffs` row under the same `handoff_id`, and the step 1 sync (`0553`) keeps copying the other way for the flows that have not moved yet (rides, knowledge, direct inserts); each direction compares before writing, so a write on either side converges in one hop. The RPCs still return the `giving_handoffs` row, so the app's contract is unchanged, and they accept a post id or a listing id in `p_listing_id`, so the one detail screen (step 4) can pass post ids while the marketplace screens keep passing listing ids. Errors raised on the derived row (the hourly write cap, a constraint) propagate and roll the handoff back, as they did when the RPCs wrote `giving_handoffs` directly.
+
+**Why.** The listing-side triggers on `giving_handoffs` carry behaviour the member sees — the write cap (`0534`), the cancel-reason default (`0511`), the push notifications (`0528`) — and the readers (`get_listing_handoff`, `list_my_giving_handoffs`, ratings) still read it. Deriving the row keeps all of that in place while the record moves, and lets the ride and knowledge bookings move in their own PR. Making `giving_handoffs` a view now would have required moving every writer at once and is destructive, so it waits for step 6 with the other drops.
+
+**Rejected.** Moving every handoff writer in one PR (rides carry capacity, approval and series rules that deserve their own tests). A `source` column deciding the sync direction per row (unnecessary: with identical columns and a compare-before-write guard on both sides, whichever side is written wins and the echo is a no-op). Closing the post from the handoff in this step (the one closing system changes karma for items and is G34's own decision, step 3c).
+
+**Affected.** `supabase/migrations/0555_post_handoffs_own_record.sql` (`listing_id_of_post`, `handoff_target_post_id`, `giving_handoff_upsert_from_post_handoff`, `post_handoffs_giving_sync`, the five RPCs and two sweeps), `docs/spec/07` §7.1 and §7.5, `docs/spec/93` G1, `docs/architecture/current.md`.
+
 ## D-212 — Post and listing detail pages share one hero + content-card frame (2026-11-03)
 
 **Decision.** The listing page (items, food, rides, knowledge) uses the same hero frame (`DetailHeroCard`, with the photo gallery or a placeholder icon) and the same content card as the post page. Each type keeps its own fields and actions (route card, handoff, booking, messaging).
@@ -1734,6 +1744,7 @@ Owner rules that go with it:
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
+| 4.42 | 2026-11-04 | Added `{{ENG:post-handoffs-own-record}}` (G1 step 3a: the items / food handoff RPCs and sweeps write `post_handoffs`; `giving_handoffs` derived both ways; `0555`). |
 | 4.41 | 2026-11-03 | Added `D-216` (G1 step 2: the listing worlds' RPCs write posts and derive a native listing that syncs back; items unchanged; `0554`). |
 | 4.40 | 2026-11-03 | Added `D-214` (G1 plan: reverse the listing mirror, move flows one PR at a time, drop `listings` last; ADR-006). |
 | 4.39 | 2026-11-03 | Added `D-213` (live public finance numbers behind organization-controlled toggles, default off; refines `D-196` for the public view; `FIN-P0`). |
