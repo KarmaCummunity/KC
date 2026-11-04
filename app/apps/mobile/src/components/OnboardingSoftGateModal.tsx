@@ -1,8 +1,10 @@
-// FR-AUTH-015 dialog — display_name + city + optional address, "Save and continue".
+// FR-AUTH-015 dialog — display_name + city + date of birth + optional address, "Save and continue".
 // Built on the kit `Modal` (spec 17 §4.1).
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
+import { dateOfBirthIssue } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { DateOfBirthField } from './DateOfBirthField';
 import { EditProfileAddressBlock } from './EditProfileAddressBlock';
 import { NotifyModal } from './NotifyModal';
 import { PrimaryButton } from './ui/Buttons';
@@ -32,11 +34,13 @@ export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
   const [street, setStreet] = useState('');
   const [streetNumber, setStreetNumber] = useState('');
   const [contactPhone, setContactPhone] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveErrorMsg, setSaveErrorMsg] = useState<string | null>(null);
 
   const addressIssue = getProfileAddressPairIssue(street, streetNumber);
-  const hasRequiredFields = displayName.trim().length > 0 && city !== null;
+  const hasRequiredFields =
+    displayName.trim().length > 0 && city !== null && dateOfBirth !== null && dateOfBirthIssue(dateOfBirth, new Date()) === null;
   const canSubmit = hasRequiredFields && addressIssue === null;
 
   const showAddressToast = () => {
@@ -49,7 +53,7 @@ export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
   };
 
   const handleSave = async () => {
-    if (!session || !hasRequiredFields || !city) return;
+    if (!session || !hasRequiredFields || !city || !dateOfBirth) return;
     if (!canSubmit) {
       showAddressToast();
       return;
@@ -62,6 +66,7 @@ export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
         displayName,
         cityId: city.id,
         cityName: city.name,
+        dateOfBirth,
         profileStreet: street,
         profileStreetNumber: streetNumber,
         contactPhone,
@@ -117,6 +122,8 @@ export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
             maxLength={50}
             editable={!saving}
           />
+
+          <DateOfBirthField value={dateOfBirth} onChange={setDateOfBirth} disabled={saving} />
 
           <EditProfileAddressBlock
             city={city}

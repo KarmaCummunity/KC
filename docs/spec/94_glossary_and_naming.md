@@ -38,6 +38,21 @@
 | חשבון ארגוני | Organization account | The organization's own sign-in identity, bound 1:1 to the organization; members with roles act in its name from their own accounts (D88) |
 | פועל בשם | Acting as | The active profile context of a session: the person or one of their organizations, chosen in the profile switcher (D88) |
 | ארגון לא נתבע | Unclaimed organization | Catalog profile imported from open data with no account yet; claimable by the real organization (FR-ORG-017) |
+| מארח / אורח | Host / guest | The side that lends a space / the side that uses it, in every housing sub-category (`D112`) |
+| תת-קטגוריית דיור | Housing sub-category | Stays & hosting, emergency shelter, event & gathering space, storage space |
+| הזמנה | Booking | One guest's reservation of a housing offer for a date range or time slot; a handoff with `world_slug='housing'` |
+| פרטים חסויים | Private details | Exact address, entrance and access instructions; shown only to the confirmed guest in the booking window |
+| מאגר אירוח מוגן | Shelter pool | Hosts who agreed to host people placed by a verified organization; never public |
+| רכז/ת אירוח | Housing coordinator | Member of a verified organization with housing coordination who takes shelter requests and places people |
+| שיבוץ | Placement | A booking created by a coordinator on behalf of a person in need, possibly off-platform |
+| אימות זהות | Identity verification | Level 2 of D23: an ID document + a live selfie matched by a certified provider (`D117`); code `VerificationLevel`, `identity_verifications` |
+| משאב ידע | Knowledge resource | A free library entry (course, article, link, book, video, document, podcast, tool, dataset) with provenance and review; a catalog entity, not a post (S63) |
+| מדף | Shelf | The knowledge world sub-category of D100 (six values); the first of the three knowledge axes (S64) |
+| נושא / גרף נושאים | Topic / topic graph | Curated subject tree with aliases (Hebrew, English, transliteration); every knowledge post and resource has one primary topic (S64) |
+| קטע ידע | Knowledge chunk | A retrievable passage of a native resource, lesson or community answer, with heading path and embedding, cited by agents (FR-KNOW-009) |
+| שעת ייעוץ | Consulting hour | Pro-bono professional session post (S36) by an ID-verified giver with a declared profession (S70) |
+| תשובה מקובלת | Accepted answer | The comment the asker marked on a question post; indexed as a community answer (FR-KNOW-005) |
+| רשומת סיום | Completion record | KC community record of finishing a course; not an accredited certificate (S69) |
 
 ## Naming rules
 1. Always the precise name: "giving world", "item subcategory", "post type" — **never a bare "categories"**.
@@ -54,10 +69,14 @@
 | Additional worlds | `Post.additionalWorlds`, `listing_worlds` (D101) | `Post.domain_slug`, `DomainHubConfig`, `POST_DOMAIN_SLUGS` |
 | Hub | `WorldHubScreen`, `WorldHubConfig`, `WorldHubBlock` | `WorldMarketplaceHub` |
 | Orgs / knowledge / resource | `WorldOrgDirectory`, `WorldKnowledgeArticle`, `WorldResource` | `donation_links` |
+| Knowledge axes | `KnowledgeShelf` (`public.categories` under `knowledge`), `KnowledgeTopic` / `knowledge_topics` + `knowledge_topic_aliases`, `KnowledgePostKind` / `listing_kinds`, `KnowledgeResourceKind` / `knowledge_resource_kinds` | `categories` subject rows (`tech`, `languages`, …) |
+| Knowledge resource | `KnowledgeResource` / `knowledge_resources` (+ `_versions`, `_bodies`, `_topics`), `KnowledgeChunk` / `knowledge_chunks`, `knowledge_search`, `api_knowledge_*` | none |
+| Courses | `KnowledgeCourse` (`knowledge_course_modules`, `knowledge_course_lessons`, `knowledge_quizzes`, `knowledge_quiz_questions`), `KnowledgeEnrollment`, `KnowledgeCompletion` | `listing_kinds.course` (retired) |
+| Knowledge exchange | `KnowledgeSlot` / `knowledge_slots`, `book_knowledge_slot`, `complete_knowledge_session`, `accept_knowledge_answer` | `0396` RPCs on one slot per listing |
 | Post type / direction | `PostType`; `PostDirection: offer \| request` | `listing_kinds`; give/request |
 | Form per type | `PostTypeFormSchema` | `createCategories.ts` |
 | Subcategories | `ItemSubcategory` / `WorldSubcategory` | `Category` / `public.categories` |
-| Extensions | `PostHandoff`, `RidePostDetails`, `EventPostDetails`, `HousingPostDetails`, `NonprofitJobPostDetails` | `giving_handoffs`, `ride_listings` |
+| Extensions | `PostHandoff`, `RidePostDetails`, `EventPostDetails`, `HousingPostDetails` (+ `HousingBookingDetails`, `HousingPrivateDetails`), `NonprofitJobPostDetails` | `giving_handoffs`, `ride_listings` |
 | Rating / match | `PostRating`, `PostMatch` | `ride_ratings`, `match_candidates` |
 | Expiry | `Post.expires_at`, `PostRelevanceReminder` | none |
 | Feed | `FeedRecommendationEngine`, `FeedSortMode`, `FeedAudience` | `PostFilterSheet` |

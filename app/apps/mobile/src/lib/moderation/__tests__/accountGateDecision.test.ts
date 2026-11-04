@@ -22,4 +22,12 @@ describe('accountGateDecision', () => {
     expect(accountGateDecision({ allowed: false, reason: 'pending_verification' as never }).action).toBe('reverify');
     expect(accountGateDecision({ allowed: false }).action).toBe('blocked');
   });
+
+  it('offers a restore, with the purge date, to an account its owner deleted (FR-AUTH-016)', () => {
+    expect(accountGateDecision({ allowed: false, reason: 'pending_deletion', until: '2026-12-03T00:00:00Z' })).toEqual({
+      action: 'restore',
+      purgeAt: '2026-12-03T00:00:00Z',
+    });
+    expect(accountGateDecision({ allowed: false, reason: 'pending_deletion' })).toEqual({ action: 'restore', purgeAt: null });
+  });
 });

@@ -1,22 +1,39 @@
 // @vitest-environment jsdom
-// G49 / D75 — the rides feed: day groups in order, offers and requests together, free seats or
-// passengers on each row, and a tap opens the ride.
+// #1626 / G49 / D75 — the rides feed on the shared listing card: day groups in order, offers and
+// requests together, header before and links after the rides, a tap opens the ride, and the
+// empty states (publish a ride, clear the filters, retry a failed load).
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { cleanup, fireEvent, render } from '@testing-library/react';
 import { ThemeProvider } from '@kc/ui';
-import type { RideFeedItem, RideFeedSection } from '@kc/domain';
+import type { MarketplaceBrowseRow, RideFeedItem, RideFeedSection } from '@kc/domain';
+import type { RidesHubFeedState } from '../../../hooks/useRidesHubFeed';
 
-const { push, loadRidesFeed } = vi.hoisted(() => ({ push: vi.fn(), loadRidesFeed: vi.fn() }));
+const { push } = vi.hoisted(() => ({ push: vi.fn() }));
 
 vi.mock('expo-router', () => ({ useRouter: () => ({ push }) }));
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
-vi.mock('../../../services/ridesFeedComposition', () => ({ loadRidesFeed, RIDES_FEED_QUERY_KEY: ['rides-feed'] }));
+vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, options?: { count?: number }) => (options?.count === undefined ? key : `${key}:${options.count}`),
+    i18n: { language: 'he' },
+  }),
+}));
 vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarScrollInset: () => 0 }));
-vi.mock('../../cards/KcRowCard', () => ({
-  KcRowCard: (p: { testID: string; title: string; meta: (string | null)[]; onPress: () => void }) => (
-    <button data-testid={p.testID} onClick={p.onPress}>{[p.title, ...p.meta.filter(Boolean)].join(' | ')}</button>
+vi.mock('../../../lib/haptics', () => ({ hapticLightTap: () => undefined }));
+// Kit buttons animate through Reanimated, which does not run under Vitest; a plain button suffices.
+vi.mock('../../ui/Buttons', () => {
+  const Button = (p: { label: string; testID?: string; onPress: () => void }) => (
+    <button data-testid={p.testID} onClick={p.onPress}>{p.label}</button>
+  );
+  return { PrimaryButton: Button, SecondaryButton: Button };
+});
+// The shared card is under test elsewhere; here it only shows what it was given.
+vi.mock('../../cards/ListingCard', () => ({
+  ListingCard: (p: { item: MarketplaceBrowseRow; extraDetails?: { text: string }[]; onPress: () => void }) => (
+    <button data-testid={`card-${p.item.listingId}`} onClick={p.onPress}>
+      {[p.item.worldSlug, p.item.direction, ...(p.extraDetails ?? []).map((d) => d.text)].join(' | ')}
+    </button>
   ),
 }));
 
@@ -28,73 +45,97 @@ afterEach(() => {
 });
 
 const ride = (id: string, direction: 'give' | 'request', extra: Partial<RideFeedItem> = {}): RideFeedItem => ({
-  listingId: id, direction, title: id, departsAt: '2026-11-02T06:00:00Z', originLabel: 'Tel Aviv', destLabel: 'Haifa',
-  meetingPoints: 0, seatsLeft: direction === 'give' ? 2 : null, passengers: direction === 'request' ? 1 : null, recurrence: null, seriesMore: 0, ...extra,
+  listingId: id, direction, title: id, departsAt: '2099-01-01T06:00:00Z', originLabel: 'Tel Aviv', destLabel: 'Haifa',
+  meetingPoints: 0, seatsLeft: direction === 'give' ? 2 : null, passengers: direction === 'request' ? 1 : null,
+  recurrence: null, seriesMore: 0, ...extra,
 });
 
-function renderFeed(sections: RideFeedSection[], footer?: React.ReactElement) {
-  loadRidesFeed.mockResolvedValue(sections);
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function feedState(sections: RideFeedSection[], extra: Partial<RidesHubFeedState> = {}): RidesHubFeedState {
+  return {
+    sections,
+    direction: 'all',
+    setDirection: vi.fn(),
+    origin: null,
+    setOrigin: vi.fn(),
+    dest: null,
+    setDest: vi.fn(),
+    routeActive: false,
+    clearRoute: vi.fn(),
+    refined: false,
+    clear: vi.fn(),
+    isLoading: false,
+    isError: false,
+    isRefreshing: false,
+    refresh: vi.fn(),
+    ...extra,
+  };
+}
+
+function renderFeed(feed: RidesHubFeedState) {
   return render(
-    <QueryClientProvider client={client}>
-      <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
-        <RidesFeedList header={<div data-testid="hub-header" />} footer={footer} />
-      </ThemeProvider>
-    </QueryClientProvider>,
+    <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
+      <RidesFeedList feed={feed} header={<div data-testid="hub-header" />} footer={<div data-testid="hub-footer" />} />
+    </ThemeProvider>,
   );
 }
 
+const follows = (view: ReturnType<typeof renderFeed>, a: string, b: string) =>
+  Boolean(view.getByTestId(a).compareDocumentPosition(view.getByTestId(b)) & Node.DOCUMENT_POSITION_FOLLOWING);
+
 describe('RidesFeedList', () => {
-  it('puts the footer (the NGO links) after the rides, never before them', async () => {
+  it('opens on the rides: header, then the rides, then the links', () => {
+    const view = renderFeed(feedState([{ group: 'today', items: [ride('o1', 'give')] }]));
+    expect(follows(view, 'hub-header', 'rides-feed-item-o1')).toBe(true);
+    expect(follows(view, 'rides-feed-item-o1', 'hub-footer')).toBe(true);
+  });
+
+  it('renders every ride on the shared card, under its day heading, offers and requests together', () => {
     const view = renderFeed(
-      [{ group: 'today', items: [ride('o1', 'give')] }],
-      <div data-testid="hub-footer" />,
+      feedState([
+        { group: 'today', items: [ride('o1', 'give', { meetingPoints: 2 }), ride('r1', 'request')] },
+        { group: 'later', items: [ride('o2', 'give', { seatsLeft: 0 })] },
+      ]),
     );
-    await waitFor(() => expect(view.queryByTestId('rides-feed-item-o1')).not.toBeNull());
-    const order = (a: string, b: string) =>
-      view.getByTestId(a).compareDocumentPosition(view.getByTestId(b)) & Node.DOCUMENT_POSITION_FOLLOWING;
-    expect(order('hub-header', 'rides-feed-item-o1')).toBeTruthy();
-    expect(order('rides-feed-item-o1', 'hub-footer')).toBeTruthy();
-  });
-
-  it('shows each day group with its rides, offers and requests together', async () => {
-    const view = renderFeed([
-      { group: 'today', items: [ride('o1', 'give', { meetingPoints: 2 })] },
-      { group: 'later', items: [ride('r1', 'request', { passengers: 3 })] },
-    ]);
-    await waitFor(() => expect(view.queryByTestId('rides-feed-today')).not.toBeNull());
+    expect(view.queryByTestId('rides-feed-today')).not.toBeNull();
     expect(view.queryByTestId('rides-feed-tomorrow')).toBeNull();
-    expect(view.getByTestId('rides-feed-item-o1').textContent).toContain('Tel Aviv → Haifa');
-    expect(view.getByTestId('rides-feed-item-o1').textContent).toContain('rideFeed.seatsLeft');
-    expect(view.getByTestId('rides-feed-item-o1').textContent).toContain('rideFeed.meetingPoints');
-    expect(view.getByTestId('rides-feed-item-r1').textContent).toContain('rideFeed.passengers');
+    expect(follows(view, 'rides-feed-today', 'rides-feed-later')).toBe(true);
+    expect(view.getByTestId('card-o1').textContent).toBe('rides | give | rideFeed.meetingPoints:2');
+    expect(view.getByTestId('card-r1').textContent).toBe('rides | request');
+    expect(view.getByTestId('card-o2').textContent).toContain('rideFeed.full');
   });
 
-  it('names the recurrence of a recurring ride occurrence (FR-RIDE-046)', async () => {
-    const recurrence = { id: 's1', on: '2026-11-02', weekdays: [0, 1, 2, 3, 4] as const, time: '06:00' };
-    const view = renderFeed([
-      { group: 'today', items: [ride('o9', 'give', { recurrence })] },
-      { group: 'later', items: [ride('o10', 'give', { recurrence, seriesMore: 27 })] },
-    ]);
-    await waitFor(() => expect(view.getByTestId('rides-feed-item-o9').textContent).toContain('rideSeries.every'));
-    expect(view.getByTestId('rides-feed-item-o9').textContent).not.toContain('rideSeries.moreDates');
-    expect(view.getByTestId('rides-feed-item-o10').textContent).toContain('rideSeries.moreDates');
-  });
-
-  it('marks a full offer', async () => {
-    const view = renderFeed([{ group: 'tomorrow', items: [ride('o2', 'give', { seatsLeft: 0 })] }]);
-    await waitFor(() => expect(view.getByTestId('rides-feed-item-o2').textContent).toContain('rideFeed.full'));
-  });
-
-  it('opens the ride on tap', async () => {
-    const view = renderFeed([{ group: 'today', items: [ride('o3', 'give')] }]);
-    await waitFor(() => expect(view.queryByTestId('rides-feed-item-o3')).not.toBeNull());
-    fireEvent.click(view.getByTestId('rides-feed-item-o3'));
+  it('opens the ride on tap', () => {
+    const view = renderFeed(feedState([{ group: 'today', items: [ride('o3', 'give')] }]));
+    fireEvent.click(view.getByTestId('card-o3'));
     expect(push).toHaveBeenCalledWith({ pathname: '/(tabs)/donations/marketplace/[listingId]', params: { listingId: 'o3' } });
   });
 
-  it('shows the empty state when no ride is upcoming', async () => {
-    const view = renderFeed([]);
-    await waitFor(() => expect(view.container.textContent).toContain('rideFeed.empty'));
+  it('invites a first ride when nothing is upcoming', () => {
+    const view = renderFeed(feedState([]));
+    expect(view.container.textContent).toContain('rideFeed.empty');
+    fireEvent.click(view.getByTestId('rides-feed-empty-create'));
+    expect(push).toHaveBeenCalledWith('/(tabs)/create?category=rides');
+    expect(view.queryByTestId('rides-feed-empty-clear')).toBeNull();
+  });
+
+  it('offers to clear the filters when they hide every ride', () => {
+    const feed = feedState([], { refined: true });
+    const view = renderFeed(feed);
+    expect(view.container.textContent).toContain('donations.rides.empty');
+    fireEvent.click(view.getByTestId('rides-feed-empty-clear'));
+    expect(feed.clear).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers a retry when the feed failed to load', () => {
+    const feed = feedState([], { isError: true });
+    const view = renderFeed(feed);
+    fireEvent.click(view.getByTestId('rides-feed-retry'));
+    expect(feed.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows no empty state while the feed is loading', () => {
+    const view = renderFeed(feedState([], { isLoading: true }));
+    expect(view.queryByTestId('rides-feed-empty-create')).toBeNull();
+    expect(view.container.textContent).not.toContain('rideFeed.empty');
   });
 });

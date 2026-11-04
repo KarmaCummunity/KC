@@ -525,6 +525,12 @@ on conflict (channel) do update
   set url = excluded.url, provider_label = excluded.provider_label, is_active = true;
 ```
 
+**Payee phone (interim, D121).** Set the number donors transfer to in Bit / PayBox — digits only, never in the repo. Signed-in users see it under the Bit / PayBox buttons; guests never receive it:
+
+```sql
+update public.kc_support_channels set payee_phone = '05XXXXXXXX' where channel in ('bit', 'paybox');
+```
+
 As soon as an active `card_one_time` row exists, the app hides Bit / PayBox on its own (D64) — on the Money hub and on the About / Settings card. Once clearing is confirmed working on prod, remove the interim rows for good: `delete from public.kc_support_channels where channel in ('bit', 'paybox');`
 
 The app has **no compiled payment links**: if this table cannot be read, donors see "unavailable" rather than a stale link.

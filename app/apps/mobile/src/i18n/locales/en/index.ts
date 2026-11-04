@@ -12,15 +12,18 @@ import { donations, marketplace, moneyPayments, search, timeVolunteer } from './
 import { supportKc } from './donations.supportKc';
 import { givingHandoff } from './givingHandoff';
 import { rideBooking } from './rideBooking';
+import { housingStay } from './housingStay';
 import { ridePlaces } from './ridePlaces';
 import { dateTimeField, rideFeed, rideRoutes, rideSafety, rideSchedule, rideSeries } from './rideSchedule';
 import { authEn } from './modules/auth';
 import { onboardingEn } from './modules/onboarding';
+import { dateOfBirthEn } from './modules/dateOfBirth';
 import { errorsEn } from './modules/errors';
 import { chatEn } from './modules/chat';
 import { notificationsEn } from './modules/notifications';
 import { emptyStatesEn, feedSettingsEn } from './modules/feedSettings';
 import { moderationEn, auditEn, accountBlockedEn } from './modules/moderation';
+import { restoreAccountEn } from './modules/restoreAccount';
 import { postEn } from './modules/post';
 import { settingsEn } from './modules/settings';
 import { stats } from './stats';
@@ -56,6 +59,7 @@ const en = {
 
   // Onboarding (FR-AUTH-010..012, FR-AUTH-018) — see modules/onboarding.ts
   onboarding: onboardingEn,
+  dateOfBirth: dateOfBirthEn,
 
   // Feed — see modules/feed.ts
   feed: feedEn,
@@ -88,6 +92,7 @@ const en = {
   moderation: moderationEn,
   audit: auditEn,
   accountBlocked: accountBlockedEn,
+  restoreAccount: restoreAccountEn,
 
   // Admin portal (FR-ADMIN-010/011) — see modules/admin.ts
   admin: adminEn,
@@ -131,6 +136,8 @@ const en = {
   givingHandoff,
   // Ride seat bookings (D73) — see rideBooking.ts
   rideBooking,
+  // Housing stays (FR-HOUSING-003, 012, 015–021) — see housingStay.ts
+  housingStay,
   // Ride places (D71) — see ridePlaces.ts
   ridePlaces,
   // Ride quick publish (D75) and the shared date-time field — see rideSchedule.ts

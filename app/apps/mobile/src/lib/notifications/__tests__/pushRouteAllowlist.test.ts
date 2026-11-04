@@ -50,6 +50,23 @@ describe('resolvePushRoute', () => {
     ).toBeNull();
   });
 
+  it.each([
+    'listing_expired',
+    'ride_booking_requested',
+    'ride_route_match',
+    'giving_handoff_claimed',
+    'housing_booking_requested',
+  ] as const)('opens the post of a listing notification (G1 step 4c, 0562): %s', (kind) => {
+    const POST = '22222222-2222-4222-8222-222222222222';
+    expect(
+      resolvePushRoute({ category: 'critical', kind, notification_id: 'n11', params: { listingId: UUID, postId: POST } }),
+    ).toEqual({ pathname: '/post/[id]', params: { id: POST } });
+    // A malformed post id is ignored; the listing route still forwards to the post.
+    expect(
+      resolvePushRoute({ category: 'critical', kind, notification_id: 'n12', params: { listingId: UUID, postId: 'nope' } }),
+    ).toEqual({ pathname: '/listing/[listingId]', params: { listingId: UUID } });
+  });
+
   it('routes a post_relevance_check reminder (D59) to the post, and drops a bad id', () => {
     expect(
       resolvePushRoute({ category: 'critical', kind: 'post_relevance_check', notification_id: 'n9', params: { id: UUID } }),
