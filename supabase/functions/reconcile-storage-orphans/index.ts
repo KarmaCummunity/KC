@@ -12,6 +12,7 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { reportError, withObservability } from '../_shared/observability/mod.ts';
+import { isServiceRoleRequest, serviceRoleRequiredResponse } from '../_shared/serviceRoleGuard.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -58,10 +59,7 @@ async function listAllObjects(
 serve(withObservability('reconcile-storage-orphans', async (req: Request) => {
   if (req.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405);
 
-  const auth = req.headers.get('Authorization') ?? '';
-  if (!auth.startsWith('Bearer ') || auth.slice(7) !== SUPABASE_SERVICE_ROLE_KEY) {
-    return json({ ok: false, error: 'unauthenticated' }, 401);
-  }
+  if (!isServiceRoleRequest(req, SUPABASE_SERVICE_ROLE_KEY)) return serviceRoleRequiredResponse();
 
   try {
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
