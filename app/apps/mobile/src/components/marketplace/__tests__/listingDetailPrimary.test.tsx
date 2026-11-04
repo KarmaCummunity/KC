@@ -42,6 +42,8 @@ vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn() }));
 vi.mock('../../../lib/haptics', () => ({ hapticSuccess: vi.fn() }));
 vi.mock('../ReportListingModal', () => ({ ReportListingModal: () => null }));
 vi.mock('../RideRouteCard', () => ({ RideRouteCard: () => null }));
+// The housing stay section has its own tests (housing/__tests__); not the subject here.
+vi.mock('../housing/HousingStayActions', () => ({ HousingStayActions: () => null }));
 // The publisher card and the city lookup pull in Expo modules; neither holds a button.
 vi.mock('../../post-detail/PublisherCard', () => ({ PublisherCard: () => null }));
 vi.mock('../../../hooks/useCityName', () => ({ useCityName: () => null }));
@@ -91,6 +93,7 @@ const BASE = {
   media: [],
   owner: null,
   feedPostId: null,
+  feedHidden: false,
 } satisfies MarketplaceListingDetail;
 
 function renderDetail(overrides: Partial<MarketplaceListingDetail>) {
@@ -123,7 +126,7 @@ describe('listing detail — one primary per screen', () => {
   });
 
   it.each([
-    ['a world without a flow', { worldSlug: 'housing' }, 'u_viewer'],
+    ['a world without a flow', { worldSlug: 'time' }, 'u_viewer'],
     ['a request listing', { direction: 'request' as const }, 'u_viewer'],
     ['a guest', {}, null],
   ])('makes the message button the only primary for %s', async (_case, overrides, viewerId) => {

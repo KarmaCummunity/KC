@@ -78,7 +78,10 @@ docs/SSOT/spec/
 ├── 17_responsive_desktop.md      FR-RESP-*
 ├── 18_translation.md             FR-TRANSLATE-*
 ├── 19_org_finance.md             FR-FIN-*
-└── 20_organizations.md           FR-ORG-*
+├── 20_organizations.md           FR-ORG-*
+├── 21_housing.md                FR-HOUSING-*
+├── 22_identity_verification.md  FR-VERIFY-*
+└── 23_knowledge.md              FR-KNOW-*
 ```
 
 Note: `17_responsive_desktop.md` was formerly `14_responsive_desktop.md` (renamed 2026-10-30 to remove the duplicate `14_` and fill the missing `17_`). FR-RESP-* IDs are unchanged.
@@ -279,7 +282,7 @@ All three must be green before `git push`. Never push red code.
 
 ### Standard PR workflow
 
-**Open PRs as ready (non-draft), never as draft, unless the PM asks for a draft.** Draft is the opt-out from the merge flow: `CI gate` fails on drafts by design and auto-merge is not armed, so a draft PR never merges on its own. This overrides any tool or runtime default that opens PRs as drafts. After opening, confirm auto-merge is armed (`gh pr merge --auto --squash`).
+**Open PRs as ready (non-draft), never as draft, unless the PM asks for a draft.** Draft is the opt-out from the merge flow: `CI gate` fails on drafts by design and auto-merge is not armed, so a draft PR never merges on its own. A ready PR that the merge queue must not squash (the main → dev sync, which has to land as a merge commit) carries the `no-auto-merge` label instead; add it before marking the PR ready, because marking it ready arms auto-merge. This overrides any tool or runtime default that opens PRs as drafts. After opening, confirm auto-merge is armed (`gh pr merge --auto --squash`).
 
 ```bash
 git fetch origin
@@ -364,6 +367,7 @@ When two agents are running concurrently:
 
 Release is paused (see top), so priorities are:
 1. **Assigned task** from the PM — always first.
+1a. **`priority:launch` issues** — everything required for the upcoming launch, above P0. Order inside: **Rides** and **Items** end-to-end flows first, then other launch blockers (auth, crashes, store readiness).
 2. **Spec work** — closing open questions / `S#` approvals in `docs/spec/92_open_questions.md` and `91_kc_fills_pending.md` only with the PM.
 3. **Implementation gaps** in `docs/spec/93_implementation_gaps.md` (`G#`) the PM has prioritized — each as a task with code + spec section + automated test.
 4. Otherwise: the highest-priority `⏳ Planned` item in `docs/SSOT/BACKLOG.md` (active open items only — not `archive/`) that does not contradict `docs/spec/`. Move it to `🟡 In progress` before you start coding.
@@ -422,7 +426,7 @@ When this section is active, the agent operates as a continuous self-driven task
 ### Iteration cycle
 
 1. **Pick next work** in this priority order:
-   1. Highest-priority `⏳ Planned` item in `docs/SSOT/BACKLOG.md` (active open items only — not `archive/`; P0 > P1 > P2 > P3 > INFRA).
+   1. Highest-priority `⏳ Planned` item in `docs/SSOT/BACKLOG.md` (active open items only — not `archive/`; **`priority:launch`** (Rides + Items first) > P0 > P1 > P2 > P3 > INFRA). Open GitHub issues labeled `priority:launch` outrank every BACKLOG row.
    2. If no `⏳` remain: highest-impact item from `docs/SSOT/TECH_DEBT.md` Active section.
    3. If both empty: SSOT documentation polish, adjacent dead-code removal, or test-coverage gaps surfaced by `pnpm test` in `app/`.
 2. **Flip status to 🟡 In progress** before any code edit.

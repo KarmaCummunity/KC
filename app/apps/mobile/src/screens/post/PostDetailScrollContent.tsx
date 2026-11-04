@@ -18,6 +18,7 @@ import { useReaderLanguage } from '../../hooks/useReaderLanguage';
 import { useTranslatedPosts } from '../../hooks/useTranslatedPosts';
 import { usePostDetailStyles } from './postDetailScreen.styles';
 import { PostEngagementSection } from '../../components/post-detail/PostEngagementSection';
+import { PostItemReservation } from '../../components/post-detail/PostItemReservation';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
 import { MirroredIcon } from '../../components/ui/MirroredIcon';
 
@@ -158,6 +159,8 @@ export function PostDetailScrollContent({
               ownerHandle={post.ownerHandle}
             />
           </View>
+
+          <PostItemReservation post={post} />
 
           {isOpen ? <PostEngagementSection postId={post.postId} viewerId={viewerId} /> : null}
         </View>

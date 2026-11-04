@@ -72,6 +72,27 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'ride_series_not_found',
   'ride_series_cancelled',
   'ride_series_status_invalid',
+  // Housing stays (0600–0603, spec 21_housing.md): conduct, dates, capacity, privacy, lifecycle.
+  'housing_conduct_required',
+  'housing_conduct_version_stale',
+  'housing_nights_out_of_range',
+  'housing_dates_invalid',
+  'housing_dates_unavailable',
+  'housing_details_invalid',
+  'housing_tent_facilities_required',
+  'housing_capacity_exceeded',
+  'housing_policy_mismatch',
+  'housing_minor_unaccompanied',
+  'housing_message_required',
+  'housing_pending_cap',
+  'housing_booking_overlap',
+  'housing_private_details_hidden',
+  'housing_city_required',
+  'housing_booking_started',
+  'housing_cancel_reason_required',
+  'housing_not_in_window',
+  'housing_note_too_long',
+  'housing_use_booking_cancel',
 ] as const;
 
 export type MarketplaceServerErrorCode = (typeof MARKETPLACE_SERVER_ERROR_CODES)[number];
@@ -161,7 +182,11 @@ export function mapMarketplaceServerError(err: unknown): MarketplaceServerErrorC
   const e = err as { message?: unknown; details?: unknown; hint?: unknown };
   for (const field of [e.message, e.details, e.hint]) {
     if (typeof field === 'string') {
-      if (field.includes('giving_handoffs_active_listing_uidx')) {
+      // One live handoff per item / food offer: the legacy index and the post record's (0555).
+      if (
+        field.includes('giving_handoffs_active_listing_uidx') ||
+        field.includes('post_handoffs_active_post_uidx')
+      ) {
         return 'listing_not_available';
       }
       const code = matchCode(field);

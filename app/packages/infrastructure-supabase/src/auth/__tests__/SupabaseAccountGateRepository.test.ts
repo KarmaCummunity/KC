@@ -99,4 +99,26 @@ describe('SupabaseAccountGateRepository', () => {
       /auth_check_account_gate failed: network down/,
     );
   });
+
+  describe('restoreAccount (FR-AUTH-016)', () => {
+    it('calls rpc_restore_account without arguments', async () => {
+      const { client, calls } = makeFakeClient({});
+      await new SupabaseAccountGateRepository(client).restoreAccount();
+      expect(calls).toHaveLength(1);
+      expect(calls[0]?.fn).toBe('rpc_restore_account');
+    });
+
+    it.each([
+      ['grace_expired', 'grace_expired'],
+      ['not_pending_deletion', 'not_pending_deletion'],
+      ['unauthenticated', 'unauthenticated'],
+      ['connection reset', 'network'],
+    ])('maps the RPC error "%s" to the code %s', async (message, code) => {
+      const { client } = makeFakeClient({ error: { message } });
+      await expect(new SupabaseAccountGateRepository(client).restoreAccount()).rejects.toMatchObject({
+        name: 'RestoreAccountError',
+        code,
+      });
+    });
+  });
 });

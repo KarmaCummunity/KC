@@ -190,6 +190,7 @@ Extracted from `BACKLOG.md` on 2026-07-22 during docs SSOT cleanup.
 | ID | Task | Owner | Status | Spec |
 |----|------|-------|--------|------|
 | DONATE-G8a | **Support KC directly + Money hub ownership pass.** One-time (Bit / PayBox / Grow card page) and monthly standing order (Grow hosted page) with a donor legal notice and in-app written cancellation request; channel URLs in `kc_support_channels` (migration `0447`, super-admin write, HTTPS CHECK); jgive CTA + community links restored; sandbox org flow behind `money_in_app_org_payments`. | agent-fullstack | ✅ Done | `spec/13_donations.md` FR-DONATE-003, FR-DONATE-011 |
+| DONATE-G8c | **Interim payee phone + personal-account notice.** Bit / PayBox show the payee phone to signed-in donors with a copy action (`list_kc_support_channels()` masks it for guests, migration `0550`); donor notice names the founder's personal account. | agent-fullstack | ✅ Done | `spec/13_donations.md` FR-DONATE-011 AC5, AC9 |
 
 ## NOTIF — Notification preferences (2026-10-30)
 
@@ -217,3 +218,15 @@ Extracted from `BACKLOG.md` on 2026-07-22 during docs SSOT cleanup.
 | ID | Task | Owner | Status | Spec |
 |----|------|-------|--------|------|
 | OPS-G41 | **Edge Function error reporting** through one shared wrapper. `supabase/functions/_shared/observability/` (dependency-free Sentry envelope client + `withObservability` + `reportError`) wraps all 19 functions: unhandled throws → Sentry exception + generic 500, 5xx responses → Sentry message with the error code only, handled fatal paths and the WhatsApp agent background job → `reportError`. Secrets by name only (`SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_RELEASE`), synced by the Edge Functions deploy stage (`deploy-functions.yml`) from `EDGE_SENTRY_DSN`. Operator: create the Sentry project and set the secret (`OPERATOR_RUNBOOK.md` § Edge Functions). | agent-be | ✅ Done 2026-10-31 | `docs/architecture/target.md` §5.2 · G41 · `D-202` |
+
+## FINANCE — Org finance & transparency (2026-11-03)
+
+| ID | Task | Owner | Status | Spec |
+|----|------|-------|--------|------|
+| FIN-P0 | **Lean first slice of org finance.** Migration `0470`: `finance_accounts` (balances, deactivate, seeded cash / Bit / Paybox), `org_id` / `account_id` / `is_public` on ledger entries, default category keys, admin donors overview, and live public transparency controlled by the organization (5 toggles, all off by default; aggregates only; `rpc_org_transparency`). Admin: `/admin/money` gets a nav entry plus accounts, donors and public-display screens; public: `OrgTransparencySection` on About and Statistics. | agent-fullstack | ✅ Done | `spec/19_org_finance.md` FR-FIN-022, FR-FIN-023, FR-FIN-003 (lean) · `spec/10_statistics.md` FR-STATS-010 |
+
+## PROFILE & SHELL — Needless re-mounts (2026-11-04)
+
+| ID | Task | Owner | Status | Spec |
+|----|------|-------|--------|------|
+| PROFILE-TABS-NO-REMOUNT | **No full re-render on tab switches (#1633, P0).** My Profile open / closed tabs are one screen with lane state (was two routes swapped with `router.replace`, which re-mounted the whole screen and replayed its animations); both lanes prefetched and cached; legacy `/profile/closed` redirects to `?tab=closed`. Re-tapping the active bottom-bar / rail tab keeps its root screen (no duplicate push) and unwinds a nested screen to the tab root. Tests: vitest (`tabPress`, `TabBar.repress`, `MyProfileChrome.tabs`, `MyProfileScreen`) + Maestro `15-tab-retap-and-profile-tabs.yaml`. | agent-fe | ✅ Done | `spec/02_profile_and_privacy.md` FR-PROFILE-001 AC4 · `spec/17_responsive_desktop.md` FR-RESP-006 AC23 |

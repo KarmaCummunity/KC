@@ -31,6 +31,16 @@ const TITLE_MIN = 2;
 
 type City = { id: string; name: string };
 
+/** Rides have no title field (#1411): the title is built from the route, e.g. "Lod → Tel Aviv". */
+export function rideAutoTitle(
+  details: Readonly<Record<string, unknown>>,
+  format: (origin: string, dest: string) => string,
+): string {
+  const origin = typeof details.origin_label === 'string' ? details.origin_label.trim() : '';
+  const dest = typeof details.dest_label === 'string' ? details.dest_label.trim() : '';
+  return origin && dest ? format(origin, dest) : '';
+}
+
 /** The ride route + schedule of `details` (empty for every other world). */
 function pickRideDetails(details: Readonly<Record<string, unknown>>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
@@ -77,10 +87,15 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
   const setDetail = (key: string, value: unknown) => setDetails((prev) => ({ ...prev, [key]: value }));
   const isRides = worldSlug === 'rides';
   const showSubcategory = WORLDS_WITH_SUBCATEGORY_PICKER.includes(worldSlug);
+  const effectiveTitle = isRides
+    ? rideAutoTitle(details, (origin, dest) => t('post.unifiedCreate.rideAutoTitle', { origin, dest })) ||
+      t('post.unifiedCreate.categories.rides')
+    : title.trim();
 
   /** First problem the member can fix in the form, as user-facing copy; null when valid. */
   const validate = (submitted: Record<string, unknown>): string | null => {
-    if (title.trim().length < TITLE_MIN) return t('post.unifiedCreate.errors.titleRequired');
+    // Rides have no title field: it is derived from the route (#1411).
+    if (!isRides && effectiveTitle.length < TITLE_MIN) return t('post.unifiedCreate.errors.titleRequired');
     const missing = firstMissingRequiredField(specs, details);
     if (missing) return t('post.unifiedCreate.errors.fieldRequired', { field: t(`marketplace.field.${missing.key}`) });
     if (!isRides && !city) return t('post.unifiedCreate.errors.cityRequired');
@@ -99,7 +114,7 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
     const created = await rideSeriesUseCases.create().execute({
       kindId: kind.kindId,
       direction,
-      title: title.trim(),
+      title: effectiveTitle,
       summary: summary.trim() || null,
       details: template,
       schedule: {
@@ -134,7 +149,7 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
           kindId: kind.kindId,
           kindDirection: kind.direction,
           direction,
-          title,
+          title: effectiveTitle,
           summary,
           details: submitted,
           cityId: city?.id ?? null,

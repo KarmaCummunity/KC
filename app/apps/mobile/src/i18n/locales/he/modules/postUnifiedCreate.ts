@@ -31,6 +31,7 @@ export const postUnifiedCreateHe = {
       housing: 'למשל: חדר פנוי לסוף השבוע',
       time: 'למשל: עזרה בקניות',
     },
+    rideAutoTitle: '{{origin}} ← {{dest}}',
     errors: {
       titleRequired: 'נא לכתוב כותרת (לפחות 2 תווים)',
       fieldRequired: 'נא למלא: {{field}}',

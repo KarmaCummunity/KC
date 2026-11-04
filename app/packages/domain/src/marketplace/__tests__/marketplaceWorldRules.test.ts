@@ -88,6 +88,20 @@ describe('mapMarketplaceServerError', () => {
       'money_active_campaign_cap',
     );
   });
+  it('maps the one-live-handoff index of either handoff table to listing_not_available', () => {
+    expect(
+      mapMarketplaceServerError({
+        code: '23505',
+        message: 'duplicate key value violates unique constraint "giving_handoffs_active_listing_uidx"',
+      }),
+    ).toBe('listing_not_available');
+    expect(
+      mapMarketplaceServerError({
+        code: '23505',
+        message: 'duplicate key value violates unique constraint "post_handoffs_active_post_uidx"',
+      }),
+    ).toBe('listing_not_available');
+  });
   it('prefers the longest matching code', () => {
     expect(mapMarketplaceServerError({ message: 'listing_details_schema_mismatch' })).toBe(
       'listing_details_schema_mismatch',

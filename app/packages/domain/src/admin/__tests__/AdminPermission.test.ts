@@ -33,6 +33,12 @@ describe('AdminPermission matrix', () => {
     expect(hasPermission([], perm)).toBe(false);
   });
 
+  it('demo data management is super_admin only (FR-ADMIN-031)', () => {
+    expect(hasPermission(['super_admin'], 'demo_data.manage')).toBe(true);
+    expect(hasPermission(['moderator'], 'demo_data.manage')).toBe(false);
+    expect(hasPermission(['support'], 'demo_data.manage')).toBe(false);
+  });
+
   it('match quality is visible to super_admin and moderator only (FR-ADMIN-029)', () => {
     expect(hasPermission(['super_admin'], 'matching.view_quality')).toBe(true);
     expect(hasPermission(['moderator'], 'matching.view_quality')).toBe(true);

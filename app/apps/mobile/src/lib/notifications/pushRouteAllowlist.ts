@@ -115,31 +115,45 @@ const KIND_ROUTES: Record<NotificationKind, KindHandler> = {
   match_suggested: () => ({ pathname: '/matches', params: {} }),
   match_interest: () => ({ pathname: '/matches', params: {} }),
   match_accepted: () => ({ pathname: '/matches', params: {} }),
-  // KC#1316 — food expiry notices open the listing.
-  listing_expiring: (d) => listingRoute(d.params?.listingId),
-  listing_expired: (d) => listingRoute(d.params?.listingId),
+  // KC#1316 — food expiry notices open the listing (its post, G1 step 4c).
+  listing_expiring: (d) => listingRoute(d.params),
+  listing_expired: (d) => listingRoute(d.params),
   // D73 — ride booking changes open the ride, where the driver manages bookings.
-  ride_booking_requested: (d) => listingRoute(d.params?.listingId),
-  ride_booking_confirmed: (d) => listingRoute(d.params?.listingId),
-  ride_booking_declined: (d) => listingRoute(d.params?.listingId),
-  ride_booking_expired: (d) => listingRoute(d.params?.listingId),
-  ride_booking_cancelled: (d) => listingRoute(d.params?.listingId),
+  ride_booking_requested: (d) => listingRoute(d.params),
+  ride_booking_confirmed: (d) => listingRoute(d.params),
+  ride_booking_declined: (d) => listingRoute(d.params),
+  ride_booking_expired: (d) => listingRoute(d.params),
+  ride_booking_cancelled: (d) => listingRoute(d.params),
   // D74 — a new ride on a followed route opens the ride.
-  ride_route_match: (d) => listingRoute(d.params?.listingId),
+  ride_route_match: (d) => listingRoute(d.params),
   // D70 — an emergency on a ride opens that ride.
-  ride_listing_emergency: (d) => listingRoute(d.params?.listingId),
-  // FR-NOTIF-018 (0528) — item and food handoff changes open the listing.
-  giving_handoff_requested: (d) => listingRoute(d.params?.listingId),
-  giving_handoff_claimed: (d) => listingRoute(d.params?.listingId),
-  giving_handoff_confirmed: (d) => listingRoute(d.params?.listingId),
-  giving_handoff_declined: (d) => listingRoute(d.params?.listingId),
-  giving_handoff_cancelled: (d) => listingRoute(d.params?.listingId),
-  giving_handoff_completed: (d) => listingRoute(d.params?.listingId),
+  ride_listing_emergency: (d) => listingRoute(d.params),
+  // FR-NOTIF-018 (0528) — item and food handoff changes open the listing (its post, G1 step 4c).
+  giving_handoff_requested: (d) => listingRoute(d.params),
+  giving_handoff_claimed: (d) => listingRoute(d.params),
+  giving_handoff_confirmed: (d) => listingRoute(d.params),
+  giving_handoff_declined: (d) => listingRoute(d.params),
+  giving_handoff_cancelled: (d) => listingRoute(d.params),
+  giving_handoff_completed: (d) => listingRoute(d.params),
+  // FR-HOUSING-017 — housing booking changes open the stay offer, where both sides act on it.
+  housing_booking_requested: (d) => listingRoute(d.params),
+  housing_booking_confirmed: (d) => listingRoute(d.params),
+  housing_booking_declined: (d) => listingRoute(d.params),
+  housing_booking_expired: (d) => listingRoute(d.params),
+  housing_booking_superseded: (d) => listingRoute(d.params),
+  housing_booking_cancelled: (d) => listingRoute(d.params),
+  housing_booking_completed: (d) => listingRoute(d.params),
 };
 
-/** Marketplace listing detail, only for a well-formed listing id. */
-function listingRoute(raw: string | undefined): ResolvedRoute | null {
-  const listingId = requireUuid(raw);
+/**
+ * A notification about a listing opens the listing's post — the one detail screen (G1 step 4c,
+ * 0562 adds `params.postId`). A payload written before that carries only the listing id and opens
+ * the listing route, which forwards to the post. Only well-formed ids are followed.
+ */
+function listingRoute(params: PushData['params']): ResolvedRoute | null {
+  const postId = requireUuid(params?.postId);
+  if (postId) return { pathname: '/post/[id]', params: { id: postId } };
+  const listingId = requireUuid(params?.listingId);
   return listingId ? { pathname: '/listing/[listingId]', params: { listingId } } : null;
 }
 
