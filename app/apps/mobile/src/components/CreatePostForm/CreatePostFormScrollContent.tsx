@@ -16,6 +16,7 @@ import { EstimatedValueSlider } from './EstimatedValueSlider';
 import { PhotoPicker } from './PhotoPicker';
 import { Chip } from '../ui/Chip';
 import { TextField } from '../ui/TextField';
+import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import type { UploadedAsset } from '../../services/imageUpload';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
@@ -153,7 +154,7 @@ export function CreatePostFormScrollContent({
             onChangeText={onStreetNumberChange}
             placeholder={t('post.streetNumberShort')}
             placeholderTextColor={colors.textDisabled}
-            textAlign="right"
+            textAlign={rtlTextAlignStart}
             editable={!isPublishing && !!city}
           />
         </View>
