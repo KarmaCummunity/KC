@@ -11520,7 +11520,6 @@ export type Database = {
         Returns: string
       }
       escape_ilike: { Args: { p: string }; Returns: string }
-      feed_cache_enqueue: { Args: { p_user_id: string }; Returns: number }
       event_registration_for_update: {
         Args: { p_handoff_id: string }
         Returns: {
@@ -11551,6 +11550,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      feed_cache_enqueue: { Args: { p_user_id: string }; Returns: number }
       feed_cache_enqueue_active_users: {
         Args: { p_limit?: number }
         Returns: number
