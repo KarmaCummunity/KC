@@ -93,6 +93,7 @@ const BASE = {
   media: [],
   owner: null,
   feedPostId: null,
+  feedHidden: false,
 } satisfies MarketplaceListingDetail;
 
 function renderDetail(overrides: Partial<MarketplaceListingDetail>) {

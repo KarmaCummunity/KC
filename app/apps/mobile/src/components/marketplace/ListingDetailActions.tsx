@@ -39,9 +39,9 @@ export function ListingDetailActions({ detail, viewerId, onReport }: Props) {
       if (changed && router.canGoBack()) router.back();
     });
   };
-  // Items and food listings are mirrored into the feed on publish; the manual share is for
-  // listings that are not in the feed yet.
-  const canShareToFeed = isOwner && detail.feedPostId === null;
+  // Most worlds are listed in the feed on publish; the manual share is for a listing the feed does
+  // not list yet — no post, or a post kept out of the feed (0557: knowledge until shared).
+  const canShareToFeed = isOwner && (detail.feedPostId === null || detail.feedHidden);
   // The flow action (reserve, claim, book) is the screen's primary when the viewer has one.
   const MessageButton = listingFlowHasViewerAction(detail, viewerId) ? SecondaryButton : PrimaryButton;
 

@@ -52,6 +52,7 @@ const LISTING: MarketplaceListingDetail = {
   media: [],
   owner: null,
   feedPostId: null,
+  feedHidden: false,
 };
 
 function renderCard() {
