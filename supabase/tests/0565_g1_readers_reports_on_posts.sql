@@ -229,6 +229,8 @@ begin
   returning listing_id into v_orphan;
   perform kc_test.assert_true(public.post_id_of_listing(v_orphan) is null, 'the unpublished listing has no post');
 
+  -- A report is filed by its reporter (reports_validate_before_insert: reporter_must_be_self).
+  perform kc_test.act_as(p.reporter);
   insert into public.reports (reporter_id, target_type, target_id, reason)
   values (p.reporter, 'listing', v_mirror_listing, 'Spam'),
          (p.reporter, 'listing', v_item_listing, 'Spam'),
