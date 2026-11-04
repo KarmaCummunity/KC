@@ -1770,6 +1770,61 @@ export type Database = {
           },
         ]
       }
+      event_post_details: {
+        Row: {
+          address: string | null
+          capacity: number | null
+          ends_at: string
+          org_id: string
+          post_id: string
+          registration_policy: string
+          starts_at: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          capacity?: number | null
+          ends_at: string
+          org_id: string
+          post_id: string
+          registration_policy: string
+          starts_at: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          capacity?: number | null
+          ends_at?: string
+          org_id?: string
+          post_id?: string
+          registration_policy?: string
+          starts_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_post_details_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["org_id"]
+          },
+          {
+            foreignKeyName: "event_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "event_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+        ]
+      }
       external_bodies: {
         Row: {
           body_id: string
@@ -10814,6 +10869,36 @@ export type Database = {
         Args: { p_listing_id: string; p_viewer: string }
         Returns: boolean
       }
+      cancel_event_registration: {
+        Args: { p_handoff_id: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          post_id: string
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "post_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cancel_giving_handoff: {
         Args: { p_handoff_id: string }
         Returns: undefined
@@ -11303,6 +11388,36 @@ export type Database = {
       }
       cron_feed_cache_worker: { Args: never; Returns: number }
       cron_refresh_feed_open_posts_mv_if_dirty: { Args: never; Returns: number }
+      decide_event_registration: {
+        Args: { p_approve: boolean; p_handoff_id: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          post_id: string
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "post_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       decide_housing_booking: {
         Args: { p_approve: boolean; p_handoff_id: string; p_note?: string }
         Returns: {
@@ -11406,6 +11521,36 @@ export type Database = {
       }
       escape_ilike: { Args: { p: string }; Returns: string }
       feed_cache_enqueue: { Args: { p_user_id: string }; Returns: number }
+      event_registration_for_update: {
+        Args: { p_handoff_id: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          post_id: string
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "post_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       feed_cache_enqueue_active_users: {
         Args: { p_limit?: number }
         Returns: number
@@ -11759,6 +11904,7 @@ export type Database = {
       }
       is_demo_seed_user: { Args: { p_user_id: string }; Returns: boolean }
       is_donation_link_reviewer: { Args: { p_uid: string }; Returns: boolean }
+      is_event_kind: { Args: { p_kind_id: string }; Returns: boolean }
       is_following: {
         Args: { followed: string; follower: string }
         Returns: boolean
@@ -11847,6 +11993,17 @@ export type Database = {
         Returns: number
       }
       list_active_surveys: { Args: never; Returns: Json }
+      list_event_registrations: {
+        Args: { p_target: string }
+        Returns: {
+          confirmed_at: string
+          display_name: string
+          handoff_id: string
+          recipient_id: string
+          reserved_at: string
+          status: string
+        }[]
+      }
       list_housing_bookings: {
         Args: { p_listing_id: string }
         Returns: {
@@ -12656,6 +12813,36 @@ export type Database = {
       refresh_feed_open_posts_mv: {
         Args: { p_concurrent?: boolean }
         Returns: number
+      }
+      register_for_event: {
+        Args: { p_target: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          post_id: string
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "post_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       reopen_post_deleted_no_recipient: {
         Args: { p_post_id: string }

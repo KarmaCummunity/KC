@@ -1750,6 +1750,16 @@ Owner rules that go with it:
 
 **Affected.** `supabase/migrations/0559_items_close_through_the_post.sql` (`post_close_from_handoff`, `mark_giving_handed_over`, `posts_settle_handoffs_on_close`, the `tg_recipients_enqueue_notifications` `WHEN`), `docs/spec/07` §7.5 / §7.6, `docs/spec/93` G34 and G1, `docs/SSOT/spec/05_closure_and_reopen.md`.
 
+## {{ENG:event-posts-on-the-time-world}} — An organization's event is a time-world post; its registrations are post handoffs (2026-11-04)
+
+**Decision.** G1 step 5a (BACKLOG `G1-S5`, migration `0563`, D31, G18). An event is created like every listing-world post: the time world's new `org_event` kind (date window, optional capacity, registration policy `automatic` / `manual` / `verified_only`, address, and the organization it is for) through `create_marketplace_listing`; its post gets `post_type = 'event'` and the 1:1 `event_post_details`, kept from the listing's details until step 6. Only a member of that organization, in any role, may publish or edit its event (D31: an org, or an affiliated volunteer on its behalf). A registration is a `post_handoffs` row of the time world with one seat: `automatic` and a verified member under `verified_only` are confirmed at once, `manual` waits for the organizer's approve / decline, and either side can cancel; a full event refuses further registrations. Event registrations are not mirrored into `giving_handoffs` — nothing legacy reads them, so `post_handoffs` is their only record from the start.
+
+**Why.** It is the one-model target (ADR-006): an event is a post with an extension and a closing stage like every other type, shown on `/post/[id]`, listed in the time world and the feed, and created from the same form. Reusing the listing path keeps the moderation, visibility, media and edit rules the other worlds already have.
+
+**Rejected.** Moving the existing volunteering tables (`volunteer_opportunities` / shifts / signups, `0370`) under posts in this step: their multi-shift model and self check-in karma differ from D31 / S13, and their organizer screens stay until step 6. A waitlist and an organizer acting for colleagues' events: not needed for a first event; follow-ups. Attendance and its karma wait for S13.
+
+**Affected.** `supabase/migrations/0563_event_posts.sql`, `supabase/tests/0563_event_posts.sql`, `database.types.ts`, `docs/spec/08` Events, `docs/spec/93` G1 and G18, `docs/architecture/current.md`.
+
 ## D-220 — `/post/[id]` is the detail screen of every post; listing routes forward to it (2026-11-04)
 
 **Decision.** G1 step 4a (BACKLOG `G1-S4`, migration `0560`). Supersedes the redirect half of `D-206`. The post detail no longer sends a listing-world post to the listing screen: it renders the listing's hero, type sections and type actions in place (`ListingPostDetail`, which embeds `MarketplaceListingDetailScreen`) with the post's likes and comments under them while the post is open and the post share link in the header; the listing view keeps its own report action, so the header carries only the share. The two listing routes (`/listing/[listingId]`, the marketplace tab route) forward to `/post/[id]` when the listing has a post (`useListingPostRedirect` inside `MarketplaceListingRoute`); only the routes forward, the embedded screen never does, so the two cannot bounce. A listing without a post — not yet published, or a post-form item (`posts.listing_id` null, its `feed_post_id` is null) — stays on the listing screen; post-form items get their reservation actions on the post screen in 4b, and notifications and share links carry the post id in 4c. The listing detail RPC now returns `feed_hidden`, so "share to feed" stays offered while the post is kept out of the feed (`D-218`), which 3b-pre had hidden for unshared knowledge offers.
@@ -1786,6 +1796,7 @@ Owner rules that go with it:
 | ------- | ---- | ------- |
 | 4.49 | 2026-11-04 | `D-220` step 4b: item reservations on the post page; the listing detail opens by post id (`0561`). |
 | 4.50 | 2026-11-04 | `D-220` step 4c: listing notifications and the listing share link open the post (`0562`). |
+| 4.51 | 2026-11-04 | `{{ENG:event-posts-on-the-time-world}}`: an organization's event is a time-world post with `event_post_details`; registrations on `post_handoffs` (`0563`). |
 | 4.48 | 2026-11-04 | Added `D-220` (G1 step 4a: `/post/[id]` is the detail screen of every post, listing routes forward to it; supersedes the redirect half of `D-206`; `0560`). |
 | 4.47 | 2026-11-04 | Added `D-219` (G1 step 3c / G34: an item closes through its post; the hand-over no longer pays its own karma; `0559`). |
 | 4.46 | 2026-11-04 | `D-217` step 3b‴: the housing writers and the generic cancel write `post_handoffs`; numbered after the housing range (`0610`). |
