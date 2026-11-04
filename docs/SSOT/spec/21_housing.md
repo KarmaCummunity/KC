@@ -1,6 +1,6 @@
 # 2.21 Housing & Spaces (`housing`) — free space sharing
 
-> **Status:** ⏳ Spec v1 (2026-11-03) — **drafted, PM review pending**. Nothing below is implemented yet beyond the existing skeleton (world row, kinds `host_offer` / `stay_request`, curated create fields, feed mirror, launch flag `world_housing_enabled` = off). Behaviour that rests on a pending fill (`S#`) is marked with its placeholder and must be flagged in the PR that implements it.
+> **Status:** 🟡 Spec v1 (2026-11-03); every PM question decided, nine fills pending approval. **Implementation:** H1.1 server (migrations `0600`–`0603`, flow test `supabase/tests/flows/housing_lifecycle.sql`) — sub-categories, binding stay schemas and rules, conduct gate, private details with the reveal window and the fuzzed public point, booking request / decision with capacity and first-confirmation-wins, cancellation with late marks, completion with karma, no-show, sweep, host and guest lists, booking pushes. H1.2–H1.3 (part) client — domain rules and use cases, the Supabase adapter, and the stay section of an offer for the guest (request with the conduct gate, status, cancel, address, rating) and the host (every booking with its actions). Not yet: the host's exact-place and availability editors, "my stays" / "my hosting" screens, verification pre-check (`TD-245`), chat system messages, emergency button, safety freeze, search filters, matching. The world stays a portal (`world_housing_enabled` = off).
 
 Prefix: `FR-HOUSING-*`
 
@@ -46,7 +46,7 @@ The world has four **housing sub-categories** (the "item subcategory" pattern, D
 
 ## FR-HOUSING-001 — World entry and launch gate
 - AC1. The Donations tab tile **דיור** routes to the housing world screen. While `app_flags.world_housing_enabled=false` the world is a **portal** (D60, D107): knowledge blocks, the curated housing organizations list and the hotline block only — no feed, no form.
-- AC2. The flag is turned on only when H1 (§ Phasing) is complete **and** an ID-verification path exists (FR-HOUSING-003 AC5).
+- AC2. The flag is turned on only when H1 (§ Phasing) is complete, an ID-verification path exists (FR-HOUSING-003 AC5) **and** counsel has reviewed the legal drafts (D118, launch plan 96 L6). Counsel review gates the launch only; no phase waits for it.
 - AC3. The create form lists housing in its category picker only while the flag is on; the sub-category picker then shows the three community sub-categories plus a fourth entry **"I need an emergency roof"** that opens FR-HOUSING-031 (never the regular form).
 
 ## FR-HOUSING-002 — World screen (hub, D36)
@@ -78,7 +78,7 @@ The world has four **housing sub-categories** (the "item subcategory" pattern, D
 | Place type | `place_type` | `private_room` · `shared_room` · `couch` · `whole_unit` · `secondary_unit` (cabin, caravan, granny flat) · `tent_pitch` (yard / plot) | ✅ |
 | Beds / guests capacity per night | `capacity` | integer 1–20 | ✅ |
 | Exclusive use | `exclusive` | boolean — true for `whole_unit` / `secondary_unit` by default: one booking per night | ✅ |
-| Min / max nights per booking | `min_nights`, `max_nights` | 1 ≤ min ≤ max ≤ 30 (`S54`) | ✅ (defaults 1 / 3) |
+| Min / max nights per booking | `min_nights`, `max_nights` | 1 ≤ min ≤ max ≤ 30 (`D120`) | ✅ (defaults 1 / 3) |
 | Check-in window | `check_in_from`, `check_in_until` | `HH:MM` local, from < until (until may be after midnight ≤ 02:00) | ✅ (defaults 16:00 / 22:00) |
 | Check-out by | `check_out_by` | `HH:MM` local | ✅ (default 10:00) |
 | Who the host accepts | `guest_policy` | `any` · `women_only` · `men_only` · `families_only` · `couples_and_families` | ✅ (default `any`) |
@@ -327,7 +327,7 @@ The assisted track gives a roof to people in crisis **only through professional 
 ## FR-HOUSING-033 — Emergency mode: hosting evacuees (D42)
 - AC1. While an emergency is active for a region with the housing world in scope, the housing hub shows the emergency block on top with the template **"host evacuees"**: a stay offer pre-filled with `evacuee_hosting=true`, `max_nights` up to 30, and the region.
 - AC2. Evacuee stay requests (`stay_purpose='evacuation'`, offered in the form only while the mode is on for the poster's region) rank first in the hub and in matching for that region; notifications use the `emergency` group within the declared region (S28).
-- AC3. Verification stays required (D30). Whether an organization's confirmation may stand in for an evacuee guest who left home without documents is open question Q-H6.
+- AC3. Hosts always verify their identity (D30). An evacuee **guest** who left home without documents may instead be confirmed by a recognised organization (a municipality evacuation centre or an NGO with housing coordination) for evacuee stays in the declared region while the emergency lasts (`D122`); the confirmation is recorded as `verification_method='org_vouch'` with the confirming organization, and it lapses with the emergency.
 - AC4. Karma +50% on hosting in the declared region (S28).
 
 ---
@@ -443,7 +443,7 @@ Every new function follows the privilege rule of `SEC-1063` (private by default,
 | Event exceeds attendees or hours | Host reports via FR-HOUSING-020 AC3; trust signal. |
 | Placement host becomes unreachable | Coordinator check-in reminders → org manager → KC support (FR-HOUSING-032 AC5). |
 | Blocked pair | FR-HOUSING-023 AC3. |
-| Request to stay longer than 30 nights | Not possible in the community track; the form points to the assisted track or to housing organizations (Q-H4). |
+| Request to stay longer than 30 nights | Not possible in the community track (`D120`); the form explains why and points to the assisted track and the housing organizations directory. |
 
 ## Success metrics
 
@@ -461,13 +461,13 @@ Every new function follows the privilege rule of `SEC-1063` (private by default,
 
 | Phase | Content | Depends on |
 |---|---|---|
-| **H0** | Identity verification (FR-VERIFY-001…011), pre-check (`TD-245`), code of conduct; legal drafts reviewed by counsel | Provider contract (FR-VERIFY-011), G13 |
+| **H0** | Identity verification (FR-VERIFY-001…011), pre-check (`TD-245`), code of conduct | Provider contract (FR-VERIFY-011), G13 |
 | **H1** | Stays community track end to end: kinds + schema, availability, private details, booking lifecycle, capacity, cancellations, completion, ratings, karma, emergency button, safety freeze, my hosting / my stays, search + map, matching → turn `world_housing_enabled` on | H0 |
 | **H2** | Event space and storage sub-categories (FR-HOUSING-007…010, 028, 029) | H1 |
 | **H3** | Assisted track (FR-HOUSING-030…032) | H1, ORG-P1 (organization entity + roles) |
 | **H4** | Emergency-mode evacuee hosting (FR-HOUSING-033) | H1, G25 (emergency mode) |
 
-Open questions for the PM: [`docs/spec/92_open_questions.md`](../../spec/92_open_questions.md) item 6 (Q-H4, Q-H6). Q-H1, Q-H2, Q-H3, Q-H5 and Q-H7 were decided by the PM on 2026-11-03 (decision rows above).
+Open questions for the PM: none — Q-H1…Q-H7 were all decided by the PM on 2026-11-03 (decision rows above).
 
 ---
 
@@ -477,3 +477,6 @@ Open questions for the PM: [`docs/spec/92_open_questions.md`](../../spec/92_open
 |---|---|---|
 | 0.1 | 2026-11-03 | New domain file. Housing becomes free space sharing with four sub-categories (stays, emergency shelter via organizations, event & gathering space, storage) — `D112`; FR-HOUSING-001…039; nine housing fills pending PM approval (`docs/spec/91`). |
 | 0.2 | 2026-11-03 | PM answers: shelter only via organizations; storage for personal and nonprofit goods, never for-profit; organizations offer, request and search in every world; verification in every sub-category; verification = ID document + live selfie (`22_identity_verification.md`) replacing the interim manual path; legal texts drafted for counsel (`docs/legal/drafts/`). Minors rule aligned with D109. |
+| 0.3 | 2026-11-03 | PM: community stays capped at 30 nights, longer needs through organizations (`D120`, closes Q-H4); counsel reviews the legal drafts once before launch and no phase waits for it (D118 refined). |
+| 0.4 | 2026-11-03 | PM: an organization may confirm an evacuee guest without documents in a declared emergency (`D122`, closes Q-H6). H1.1 implemented (status header). |
+| 0.5 | 2026-11-04 | H1.2–H1.3 (part) implemented: domain, use cases, adapter and the stay section of an offer (status header). |

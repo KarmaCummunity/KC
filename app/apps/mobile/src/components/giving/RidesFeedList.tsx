@@ -1,77 +1,115 @@
-// The rides hub feed (docs/spec/05_giving_worlds.md §5.3 "Feed", D75; gap G49): offers and
-// requests together, soonest first, under "today / tomorrow / later"; departed rides are hidden.
+// The rides hub feed (#1626; docs/spec/05_giving_worlds.md §5.3 "Feed", D75; G49): every
+// upcoming offer and request, soonest first, under "today / tomorrow / later"; departed rides
+// are hidden. Rendered like every other world feed: the shared `ListingCard` in a 2-column
+// grid. Each section row holds one grid row, so the day headings span the full width.
 import React from 'react';
-import { RefreshControl, SectionList } from 'react-native';
+import { SectionList, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { he as dateFnsHe } from 'date-fns/locale';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
-import type { RideFeedGroup, RideFeedItem } from '@kc/domain';
-import { loadRidesFeed, RIDES_FEED_QUERY_KEY } from '../../services/ridesFeedComposition';
+import type { RideFeedItem } from '@kc/domain';
+import { ListingCard } from '../cards/ListingCard';
+import { kcGridCell } from '../cards/KcCard.styles';
+import { KcRefreshControl } from '../lists/KcRefreshControl';
+import { EmptyState, EmptyStateActions } from '../EmptyState';
+import { PrimaryButton } from '../ui/Buttons';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
-import { cleanDisplayTitle } from '../../lib/displayTitle';
-import { rideSeriesLabel } from '../../lib/rides/rideSeriesLabel';
-import { KcRowCard } from '../cards/KcRowCard';
+import { createRouteFor } from '../../lib/unifiedCreate/createCategories';
+import { rideFeedCardExtras, rideFeedCardRow, rideFeedGridSections } from '../../lib/rides/ridesHubFeed';
+import type { RidesHubFeedState } from '../../hooks/useRidesHubFeed';
 
-/** The feed refreshes every minute so departed rides drop off while the hub stays open. */
-const REFRESH_MS = 60_000;
+interface Props {
+  readonly feed: RidesHubFeedState;
+  readonly header: React.ReactElement;
+  readonly footer?: React.ReactElement;
+}
 
-/** Today and tomorrow need only the time; later rides need the day too. */
-const TIME_FORMAT: Record<RideFeedGroup, string> = { today: 'HH:mm', tomorrow: 'HH:mm', later: 'EEEE d/M · HH:mm' };
-
-export function RidesFeedList({ header, footer }: Readonly<{ header: React.ReactElement; footer?: React.ReactElement }>) {
+export function RidesFeedList({ feed, header, footer }: Props) {
   const { t } = useTranslation();
-  const router = useRouter();
   const styles = useStyles();
   const inset = useShellTabBarScrollInset();
-  const feed = useQuery({ queryKey: RIDES_FEED_QUERY_KEY, queryFn: loadRidesFeed, refetchInterval: REFRESH_MS });
-
-  const sections = (feed.data ?? []).map((s) => ({ group: s.group, data: [...s.items] }));
-
-  const meta = (item: RideFeedItem, group: RideFeedGroup) => [
-    format(new Date(item.departsAt), TIME_FORMAT[group], { locale: dateFnsHe }),
-    item.direction === 'give'
-      ? item.seatsLeft ? t('rideFeed.seatsLeft', { count: item.seatsLeft }) : t('rideFeed.full')
-      : t('rideFeed.passengers', { count: item.passengers ?? 1 }),
-    item.meetingPoints > 0 ? t('rideFeed.meetingPoints', { count: item.meetingPoints }) : null,
-    // A recurring ride's occurrence says when the ride repeats; under "later" a series is one
-    // row that counts the dates folded into it (FR-RIDE-046).
-    item.recurrence ? rideSeriesLabel(item.recurrence, t) : null,
-    item.seriesMore > 0 ? t('rideSeries.moreDates', { count: item.seriesMore }) : null,
-  ];
+  const sections = rideFeedGridSections(feed.sections);
 
   return (
     <SectionList
       testID="rides-feed"
       sections={sections}
-      keyExtractor={(item) => item.listingId}
+      keyExtractor={(row) => row.map((item) => item.listingId).join('|')}
       ListHeaderComponent={header}
       ListFooterComponent={footer}
       contentContainerStyle={{ paddingBottom: inset }}
       stickySectionHeadersEnabled={false}
-      refreshControl={<RefreshControl refreshing={feed.isRefetching} onRefresh={() => void feed.refetch()} />}
+      refreshControl={<KcRefreshControl refreshing={feed.isRefreshing} onRefresh={feed.refresh} />}
       renderSectionHeader={({ section }) => (
         <Text style={styles.section} testID={`rides-feed-${section.group}`}>{t(`rideFeed.group.${section.group}`)}</Text>
       )}
-      renderItem={({ item, section }) => (
-        <KcRowCard
-          testID={`rides-feed-item-${item.listingId}`}
-          tone={item.direction === 'give' ? 'give' : 'request'}
-          badgeLabel={t(item.direction === 'give' ? 'cards.rideOffer' : 'cards.rideRequest')}
-          placeholderIcon="car-outline"
-          title={item.originLabel && item.destLabel ? `${item.originLabel} → ${item.destLabel}` : cleanDisplayTitle(item.title)}
-          meta={meta(item, section.group)}
-          onPress={() => router.push({ pathname: '/(tabs)/donations/marketplace/[listingId]', params: { listingId: item.listingId } })}
-        />
+      renderItem={({ item: row }) => (
+        <View style={styles.gridRow}>
+          {row.map((item) => <RideFeedCell key={item.listingId} item={item} />)}
+        </View>
       )}
-      ListEmptyComponent={feed.isLoading ? null : <Text style={styles.empty}>{t(feed.isError ? 'rideFeed.error' : 'rideFeed.empty')}</Text>}
+      ListEmptyComponent={feed.isLoading ? null : <RidesFeedEmpty feed={feed} />}
+    />
+  );
+}
+
+/** One ride as the shared listing card; a tap opens the ride. */
+function RideFeedCell({ item }: Readonly<{ item: RideFeedItem }>) {
+  const { t } = useTranslation();
+  const router = useRouter();
+  return (
+    <View style={kcGridCell} testID={`rides-feed-item-${item.listingId}`}>
+      <ListingCard
+        item={rideFeedCardRow(item)}
+        extraDetails={rideFeedCardExtras(item, t)}
+        onPress={() =>
+          router.push({ pathname: '/(tabs)/donations/marketplace/[listingId]', params: { listingId: item.listingId } })
+        }
+      />
+    </View>
+  );
+}
+
+/** Empty feed: a load error with retry, a narrowed feed with "clear", or an invite to publish. */
+function RidesFeedEmpty({ feed }: Readonly<{ feed: RidesHubFeedState }>) {
+  const { t } = useTranslation();
+  const router = useRouter();
+  if (feed.isError) {
+    return (
+      <EmptyState
+        icon="cloud-offline-outline"
+        title={t('general.errorTitle')}
+        subtitle={t('rideFeed.error')}
+        action={<PrimaryButton testID="rides-feed-retry" label={t('general.retry')} size="md" onPress={feed.refresh} />}
+      />
+    );
+  }
+  const publish = {
+    label: t('rideFeed.publishCta'),
+    onPress: () => router.push(createRouteFor('rides')),
+    testID: 'rides-feed-empty-create',
+  };
+  return (
+    <EmptyState
+      icon="car-outline"
+      title={t(feed.refined ? 'donations.rides.empty' : 'rideFeed.empty')}
+      subtitle={feed.refined ? t('donations.rides.emptyFiltered') : undefined}
+      action={
+        <EmptyStateActions
+          primary={publish}
+          secondary={
+            feed.refined
+              ? { label: t('rideFeed.clearFilters'), onPress: feed.clear, testID: 'rides-feed-empty-clear' }
+              : undefined
+          }
+        />
+      }
     />
   );
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
   section: { ...typography.h3, color: colors.textPrimary, paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm },
-  empty: { ...typography.body, color: colors.textSecondary, padding: spacing.lg, textAlign: 'center' as const },
+  // Default `row` follows the layout direction, so the first card sits at the reading start.
+  gridRow: { flexDirection: 'row' as const },
 }));

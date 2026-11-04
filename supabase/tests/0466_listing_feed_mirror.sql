@@ -108,7 +108,7 @@ begin
 
   perform public.pause_my_listing(v_listing);
   v_mirror := pg_temp.mirror_of(v_listing);
-  perform kc_test.assert_eq(v_mirror.status, 'deleted_no_recipient', 'a paused listing leaves the feed');
+  perform kc_test.assert_eq(v_mirror.status, 'paused', 'a paused listing is a paused post (0551), out of the feed');
   perform kc_test.assert_true(not pg_temp.in_feed(p.viewer, v_mirror.post_id), 'the paused mirror is not in the feed');
 
   perform public.resume_my_listing(v_listing);
@@ -230,12 +230,14 @@ begin
   -- rolled-back test to keep covering a world without it.
   update public.worlds set feed_mirror = false where slug = 'time';
   v_listing := kc_test.create_listing(p.giver, 'time', 'volunteer_shift', 'give', 'Tutoring hour', '{"duration_minutes": 60}'::jsonb);
-  perform kc_test.assert_true(pg_temp.mirror_of(v_listing) is null, 'a listing of a world without feed_mirror is not mirrored automatically');
+  -- Since 0557 the listing has its post at once, kept out of the main feed until shared.
+  perform kc_test.assert_true((pg_temp.mirror_of(v_listing)).feed_hidden, 'a listing of a world without feed_mirror gets a post hidden from the feed');
 
   perform kc_test.act_as(p.giver);
   v_shared := public.share_listing_to_feed(v_listing);
   v_mirror := pg_temp.mirror_of(v_listing);
-  perform kc_test.assert_eq(v_mirror.post_id, v_shared, 'a manual share creates a real mirror for any world');
+  perform kc_test.assert_eq(v_mirror.post_id, v_shared, 'a manual share exposes that same post for any world');
+  perform kc_test.assert_true(not v_mirror.feed_hidden, 'and the shared post is listed in the feed');
   perform kc_test.assert_eq(v_mirror.category, 'Other', 'a world without the items tree maps to Other');
 
   -- 25 more items listings: all mirrored, none blocked by the posts cap.

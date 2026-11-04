@@ -20,7 +20,7 @@ export const CHALLENGE_ERROR_CODES = [
   'yes_no_value_invalid',
   'note_too_long',
   'report_date_invalid',
-  // Server-side outcomes surfaced by the RPCs (see migration 0550).
+  // Server-side outcomes surfaced by the RPCs (see migration 0594).
   'auth_required',
   'challenge_not_found',
   'challenge_not_active',

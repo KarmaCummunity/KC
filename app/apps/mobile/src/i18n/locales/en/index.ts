@@ -13,10 +13,12 @@ import { supportKc } from './donations.supportKc';
 import { challenges } from './challenges';
 import { givingHandoff } from './givingHandoff';
 import { rideBooking } from './rideBooking';
+import { housingStay } from './housingStay';
 import { ridePlaces } from './ridePlaces';
 import { dateTimeField, rideFeed, rideRoutes, rideSafety, rideSchedule, rideSeries } from './rideSchedule';
 import { authEn } from './modules/auth';
 import { onboardingEn } from './modules/onboarding';
+import { dateOfBirthEn } from './modules/dateOfBirth';
 import { errorsEn } from './modules/errors';
 import { chatEn } from './modules/chat';
 import { notificationsEn } from './modules/notifications';
@@ -58,6 +60,7 @@ const en = {
 
   // Onboarding (FR-AUTH-010..012, FR-AUTH-018) — see modules/onboarding.ts
   onboarding: onboardingEn,
+  dateOfBirth: dateOfBirthEn,
 
   // Feed — see modules/feed.ts
   feed: feedEn,
@@ -136,6 +139,8 @@ const en = {
   givingHandoff,
   // Ride seat bookings (D73) — see rideBooking.ts
   rideBooking,
+  // Housing stays (FR-HOUSING-003, 012, 015–021) — see housingStay.ts
+  housingStay,
   // Ride places (D71) — see ridePlaces.ts
   ridePlaces,
   // Ride quick publish (D75) and the shared date-time field — see rideSchedule.ts

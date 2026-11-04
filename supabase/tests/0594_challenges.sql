@@ -67,7 +67,7 @@ begin
 
   perform kc_test.assert_eq((select participants_count from public.challenges where challenge_id = v_id), 1,
     'the creator is the first participant');
-  perform kc_test.assert_eq((select karma_points from public.users where user_id = p.creator), 3,
+  perform kc_test.assert_eq((select coalesce(sum(points_delta), 0)::int from public.karma_ledger where user_id = p.creator and event_type like 'challenge\_%'), 3,
     'opening a community challenge earns 3 karma');
 
   perform kc_test.assert_raises(
@@ -86,7 +86,7 @@ begin
     'auth_required', 'anonymous callers cannot open challenges');
 end $$;
 
--- Karma for opening is capped at two a day.
+-- Karma for opening is capped at two a day. (Counts challenge events only: signup karma is not ours.)
 do $$
 declare
   p personas;
@@ -96,7 +96,7 @@ begin
   perform public.create_challenge('First', 'personal', 'yes_no', 'daily');
   perform public.create_challenge('Second', 'personal', 'yes_no', 'daily');
   perform public.create_challenge('Third', 'personal', 'yes_no', 'daily');
-  perform kc_test.assert_eq((select karma_points from public.users where user_id = p.outsider), 4,
+  perform kc_test.assert_eq((select coalesce(sum(points_delta), 0)::int from public.karma_ledger where user_id = p.outsider and event_type like 'challenge\_%'), 4,
     'only the first two challenges opened in a day earn karma (2 + 2)');
 end $$;
 
@@ -156,7 +156,7 @@ begin
   perform kc_test.assert_eq((v_result->>'current_streak')::int, 2, 'yesterday + today are a streak of 2');
   perform kc_test.assert_eq((v_result->>'completed')::boolean, true, 'two successful cycles reach the target of 2');
   -- Opening was 0 for the member; reports 2 + 2, completion 15 for a community challenge.
-  perform kc_test.assert_eq((select karma_points from public.users where user_id = p.member), 19,
+  perform kc_test.assert_eq((select coalesce(sum(points_delta), 0)::int from public.karma_ledger where user_id = p.member and event_type like 'challenge\_%'), 19,
     'two report cycles (2 + 2) and the completion bonus (15)');
 
   perform kc_test.assert_raises(

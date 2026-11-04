@@ -15,7 +15,7 @@ type SummaryRow = Database['public']['Functions']['list_challenges']['Returns'][
 type EntryRow = Database['public']['Functions']['list_my_challenge_entries']['Returns'][number];
 type LeaderboardRow = Database['public']['Functions']['list_challenge_leaderboard']['Returns'][number];
 
-/** Error messages the challenge RPCs raise on purpose (migration 0550); each is a stable code. */
+/** Error messages the challenge RPCs raise on purpose (migration 0594); each is a stable code. */
 const SERVER_ERROR_CODES: ReadonlySet<string> = new Set<ChallengeErrorCode>([
   'auth_required',
   'challenge_not_found',

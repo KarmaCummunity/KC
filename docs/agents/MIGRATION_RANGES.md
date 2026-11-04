@@ -104,12 +104,23 @@ Last applied on kc-dev when this was written: `0239`.
 | 0547 | my givings by world (FR-STATS-008) | in progress |
 | 0548 | D-211 donation link world categories | merged |
 | 0549 | account deletion grace period + purge (FR-SETTINGS-012) | merged |
-| 0550–0569 | G1 one Post model (ADR-006): `0550–0552` step 1 additive schema, `0553–0556` step 2, `0557–0562` step 3, `0563` step 5, `0564+` step 6 | in progress |
-| 0570+ | — | free |
+| 0550 | kc_support payee phone for bit / paybox (#1587; taken while the G1 range was claimed, G1 step 1 moved to `0551–0553`) | merged |
+| 0551–0569 | G1 one Post model (ADR-006): `0551–0553` step 1 additive schema (merged), `0554` step 2 posts own the listing worlds (merged), `0555` step 3a post_handoffs is the handoff record (merged), `0556` step 3b ride / knowledge booking RPCs and readers accept a post id (merged), `0557` step 3b-pre a post for every listing + `posts.feed_hidden` (merged), `0558` step 3b″ ride / knowledge writers on `post_handoffs` (merged), `0559` step 3c one closing system for items, G34 (merged), `0560` step 4a listing detail `feed_hidden` (merged), `0561` step 4b listing detail by post id (merged), `0562` step 4c listing notifications open the post (merged), `0563` step 5a event posts (in review), `0564+` step 6 | in progress |
+| 0570 | knowledge topic graph: `knowledge_topics`, aliases, follows, resolve / propose / review RPCs, six shelves (FR-KNOW-001) | in progress |
+| 0571–0589 | knowledge world K1–K2 (`spec/23_knowledge.md` FR-KNOW-002..020) | claimed (spec only, no files yet) |
+| 0590 | users.date_of_birth + rpc_set_date_of_birth (FR-AUTH-010 AC2.d) | in progress |
+| 0591 | admin demo-data status + wipe (FR-ADMIN-031) | in progress |
+| 0592 | admin restore demo data: seed moved into the DB (FR-ADMIN-031) | in progress |
+| 0593 | RLS auth initplan (#1546) | in progress |
+| 0594 | challenges world: cycles, reports, streaks, karma (FR-CHALLENGE-001, #1608; first file named 0550 before it collided with #1587) | in progress |
+| 0595–0599 | — | free |
+| 0600–0609 | Housing H1 stays (`spec/21_housing.md`): `0600` catalog, schemas, conduct; `0601` private details; `0602` bookings; `0603` booking lifecycle | in progress |
+| 0610–0614 | G1 one Post model (ADR-006) steps that redefine functions of the housing range (`0602` / `0603`): `0610` step 3b‴ housing writers on `post_handoffs` (merged); `0611–0614` step 3c (karma / closing). A later change to `request / decide / cancel / complete_housing_booking`, `mark_housing_no_show`, `housing_bookings_sweep`, `cancel_giving_handoff` or `karma_award_handoff` must use a number above the last file that defines it. | in progress |
+| 0615+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0570+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0610+`.
 
 ## How to claim
 

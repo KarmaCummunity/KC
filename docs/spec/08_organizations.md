@@ -23,7 +23,7 @@ Tech: · – · `donation_links` · G31
 
 ## Events
 An event is a post type of an org, or of an affiliated volunteer on its behalf (D22, D31). Users register; the org chooses approval policy: manual, automatic, or rules such as "verified only". Org chooses the world; capacity and waitlist optional; org marks attendance — only attendance earns karma (S13). Closes at its date (D21). May kick off a group challenge (D43).
-Tech: · not previously defined · none · G18
+Tech: · not previously defined · time-world kind `org_event`: the post (`post_type = 'event'`) + `event_post_details` (organization, window, capacity, registration policy, address); only a member of the organization (any role) publishes it; an event is public, unlike the time world's followers-only default; registration is a `post_handoffs` row — `register_for_event`, `decide_event_registration`, `cancel_event_registration`, `list_event_registrations` (`0563`, G1 step 5a). No waitlist yet; attendance and its karma pending (S13) · G18
 
 ## Jobs
 See the employment world in [05 §5.11](./05_giving_worlds.md#511-employment-employment--phase-2): only verified organizations that may legally employ post jobs (D100). Any registered org may post (D53, D57); free; paid jobs and long-term volunteering; no karma on paid jobs (S27).
@@ -33,5 +33,5 @@ Every org — KC included, as the platform org — keeps its own books in a **fi
 Tech: D76–D82, S48, S49 · `SSOT/spec/19_org_finance.md` FR-FIN-001..021 (three phases) · extends `finance_ledger_entries` (0170), reads `payments` / `standing_orders` / `donation_receipts` (0267–0270), `organizations.sec46_*`, migrations 0470–0489 · not built yet
 
 ## Money and donations
-Phase 1: donation to KC, one-time or standing order, via Grow hosted page — provider swappable without code (D20). Bit / PayBox links are interim and withdrawn once one-time clearing exists (D64). Phase 2: JGive-style platform for every approved org; section-46 receipts after KC's nonprofit registration. **No money between users** (D4). Everything free for orgs now (D55).
-Tech: D4,D20,D29,D37,D64 · FR-DONATE-003/010/011 · `kc_support_channels` (0447) — Bit/PayBox + Grow hosted pages, swappable without code · sandbox org flow behind `money_in_app_org_payments` · G8
+Phase 1: donation to KC, one-time or standing order, via Grow hosted page — provider swappable without code (D20). Bit / PayBox links are interim and withdrawn once one-time clearing exists (D64). Phase 2: JGive-style platform for every approved org; section-46 receipts after KC's nonprofit registration. **No money between users** (D4). Everything free for orgs now (D55). Interim: personal account of the founder, payee phone shown to signed-in donors (D121).
+Tech: D4,D20,D29,D37,D64,D121 · FR-DONATE-003/010/011 · `kc_support_channels` (0447) — Bit/PayBox + Grow hosted pages, swappable without code · sandbox org flow behind `money_in_app_org_payments` · G8

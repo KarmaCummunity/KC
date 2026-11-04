@@ -24,4 +24,4 @@ Model: `Challenge`, `ChallengeScope: personal | group | community`, `ChallengePa
 - **Opening:** "give" is the `challenges` category of the one create form (FR-POST-001 AC6); there is no separate create screen. Until the launch flag is on, that category still takes links.
 - **Launch:** the world is gated by the launch flag `world_challenges_enabled` (D60); it defaults to on (PM 2026-11-04), and while it is off the world is a portal (links only).
 
-Tech: · D18 (challenges as a world) superseded · migration `0550`, test `supabase/tests/0550_challenges.sql`, screens under `app/(tabs)/donations/challenges` · G26 (remaining: giving challenge counted from closings, group scope and group chat lock (S29), challenge notifications, karma reversal on leave/removal, moderation of challenges, challenge images)
+Tech: · D18 (challenges as a world) superseded · migration `0594`, test `supabase/tests/0594_challenges.sql`, screens under `app/(tabs)/donations/challenges` · G26 (remaining: giving challenge counted from closings, group scope and group chat lock (S29), challenge notifications, karma reversal on leave/removal, moderation of challenges, challenge images)

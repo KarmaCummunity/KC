@@ -21,7 +21,7 @@ export function isValidIsoDate(isoDate: string): boolean {
 /**
  * First day of the cycle a report date belongs to. Daily and flexible challenges count every day
  * as its own cycle; weekly ones count Sunday-to-Saturday weeks (the Israeli week). Mirrors the
- * `challenge_cycle_start` SQL function of migration 0550, which is the authority.
+ * `challenge_cycle_start` SQL function of migration 0594, which is the authority.
  */
 export function challengeCycleStart(isoDate: string, cadence: ChallengeCadence): string {
   const date = parseIsoDate(isoDate);
@@ -40,7 +40,7 @@ export interface ChallengeGoal {
 /**
  * Whether one reported value is a success for its cycle: a yes/no report must be "yes", a
  * numeric one must satisfy the goal when there is one (any report counts when there is none).
- * Mirrors `challenge_goal_met` in migration 0550.
+ * Mirrors `challenge_goal_met` in migration 0594.
  */
 export function isChallengeGoalMet(goal: ChallengeGoal, value: number): boolean {
   if (goal.measurement === 'yes_no') return value >= 1;
