@@ -1750,7 +1750,7 @@ Owner rules that go with it:
 
 **Affected.** `supabase/migrations/0559_items_close_through_the_post.sql` (`post_close_from_handoff`, `mark_giving_handed_over`, `posts_settle_handoffs_on_close`, the `tg_recipients_enqueue_notifications` `WHEN`), `docs/spec/07` §7.5 / §7.6, `docs/spec/93` G34 and G1, `docs/SSOT/spec/05_closure_and_reopen.md`.
 
-## {{ENG:event-posts-on-the-time-world}} — An organization's event is a time-world post; its registrations are post handoffs (2026-11-04)
+## D-221 — An organization's event is a time-world post; its registrations are post handoffs (2026-11-04)
 
 **Decision.** G1 step 5a (BACKLOG `G1-S5`, migration `0563`, D31, G18). An event is created like every listing-world post: the time world's new `org_event` kind (date window, optional capacity, registration policy `automatic` / `manual` / `verified_only`, address, and the organization it is for) through `create_marketplace_listing`; its post gets `post_type = 'event'` and the 1:1 `event_post_details`, kept from the listing's details until step 6. Only a member of that organization, in any role, may publish or edit its event (D31: an org, or an affiliated volunteer on its behalf). An event is public: the time world keeps its listings to followers only by default (`worlds.default_anonymity_level = 2`), which would hide an organization's event from everyone it is for (D90: an organization's profile is always public). A registration is a `post_handoffs` row of the time world with one seat: `automatic` and a verified member under `verified_only` are confirmed at once, `manual` waits for the organizer's approve / decline, and either side can cancel; a full event refuses further registrations. Event registrations are not mirrored into `giving_handoffs` — nothing legacy reads them, so `post_handoffs` is their only record from the start.
 
@@ -1796,7 +1796,7 @@ Owner rules that go with it:
 | ------- | ---- | ------- |
 | 4.49 | 2026-11-04 | `D-220` step 4b: item reservations on the post page; the listing detail opens by post id (`0561`). |
 | 4.50 | 2026-11-04 | `D-220` step 4c: listing notifications and the listing share link open the post (`0562`). |
-| 4.51 | 2026-11-04 | `{{ENG:event-posts-on-the-time-world}}`: an organization's event is a time-world post with `event_post_details`; registrations on `post_handoffs` (`0563`). |
+| 4.51 | 2026-11-04 | `D-221`: an organization's event is a time-world post with `event_post_details`; registrations on `post_handoffs` (`0563`). |
 | 4.48 | 2026-11-04 | Added `D-220` (G1 step 4a: `/post/[id]` is the detail screen of every post, listing routes forward to it; supersedes the redirect half of `D-206`; `0560`). |
 | 4.47 | 2026-11-04 | Added `D-219` (G1 step 3c / G34: an item closes through its post; the hand-over no longer pays its own karma; `0559`). |
 | 4.46 | 2026-11-04 | `D-217` step 3b‴: the housing writers and the generic cancel write `post_handoffs`; numbered after the housing range (`0610`). |
