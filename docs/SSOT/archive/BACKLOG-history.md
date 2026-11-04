@@ -224,3 +224,9 @@ Extracted from `BACKLOG.md` on 2026-07-22 during docs SSOT cleanup.
 | ID | Task | Owner | Status | Spec |
 |----|------|-------|--------|------|
 | FIN-P0 | **Lean first slice of org finance.** Migration `0470`: `finance_accounts` (balances, deactivate, seeded cash / Bit / Paybox), `org_id` / `account_id` / `is_public` on ledger entries, default category keys, admin donors overview, and live public transparency controlled by the organization (5 toggles, all off by default; aggregates only; `rpc_org_transparency`). Admin: `/admin/money` gets a nav entry plus accounts, donors and public-display screens; public: `OrgTransparencySection` on About and Statistics. | agent-fullstack | ✅ Done | `spec/19_org_finance.md` FR-FIN-022, FR-FIN-023, FR-FIN-003 (lean) · `spec/10_statistics.md` FR-STATS-010 |
+
+## PROFILE & SHELL — Needless re-mounts (2026-11-04)
+
+| ID | Task | Owner | Status | Spec |
+|----|------|-------|--------|------|
+| PROFILE-TABS-NO-REMOUNT | **No full re-render on tab switches (#1633, P0).** My Profile open / closed tabs are one screen with lane state (was two routes swapped with `router.replace`, which re-mounted the whole screen and replayed its animations); both lanes prefetched and cached; legacy `/profile/closed` redirects to `?tab=closed`. Re-tapping the active bottom-bar / rail tab keeps its root screen (no duplicate push) and unwinds a nested screen to the tab root. Tests: vitest (`tabPress`, `TabBar.repress`, `MyProfileChrome.tabs`, `MyProfileScreen`) + Maestro `15-tab-retap-and-profile-tabs.yaml`. | agent-fe | ✅ Done | `spec/02_profile_and_privacy.md` FR-PROFILE-001 AC4 · `spec/17_responsive_desktop.md` FR-RESP-006 AC23 |

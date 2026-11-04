@@ -10,6 +10,7 @@ import { usePathname, useRouter, useSegments } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, shadow, spacing, useTheme } from '@kc/ui';
 import { TABS, resolveActiveTabKey, type IoniconName } from './shell/tabs.config';
+import { handleActiveTabRepress } from './shell/tabPress';
 import { createCategoryForPath, createRouteFor } from '../lib/unifiedCreate/createCategories';
 
 // Glassmorphism on web — RN-Web forwards unknown style keys to CSS. RN's
@@ -109,6 +110,9 @@ export function TabBar({ bottomInset = 0 }: Readonly<{ bottomInset?: number }> =
         const isActive = active === tab.key;
         const label = t(tab.labelI18nKey);
         const onPress = () => {
+          // Re-tapping the active tab keeps its screen mounted (or unwinds to the tab root),
+          // instead of pushing a duplicate that re-mounts and replays its entry animation (#1633).
+          if (handleActiveTabRepress(router, tab, segments)) return;
           // The bar is also shown over root-level screens (post/[id], chat, ...).
           // Pushing a tab route from there leaves that screen underneath, so the
           // iOS swipe-back later jumps to it. Pop back to the tabs first.
