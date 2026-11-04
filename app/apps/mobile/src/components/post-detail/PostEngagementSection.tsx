@@ -74,7 +74,8 @@ export function PostEngagementSection({ postId, viewerId }: Props) {
   if (!viewerId) return null;
 
   return (
-    <View style={styles.wrap}>
+    // testID: E2E anchor for the post's likes and comments (Maestro flow 17, G1 step 4a).
+    <View style={styles.wrap} testID="post-engagement-section">
       <Text style={styles.heading}>{t('post.engagement.title')}</Text>
       <View style={styles.reactionRow}>
         {REACTIONS.map((r) => {
