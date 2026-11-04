@@ -205,7 +205,8 @@ $$;
 
 -- ── 4. Lists ─────────────────────────────────────────────────────────────────
 -- Every live booking on one offer, for its host, with the guest's trust block (S16, D24 —
--- verification, completed stays and seniority; never ratings).
+-- verification, completed stays and seniority; never ratings) and the check-in / check-out
+-- instants the app needs to offer "completed" and "no-show" at the right time.
 create or replace function public.list_housing_bookings(p_listing_id uuid)
 returns table (
   handoff_id            uuid,
@@ -217,6 +218,8 @@ returns table (
   guest_member_since    timestamptz,
   check_in_date         date,
   check_out_date        date,
+  slot_starts_at        timestamptz,
+  slot_ends_at          timestamptz,
   adults                smallint,
   minors                smallint,
   message               text,
@@ -245,7 +248,8 @@ begin
              where g.recipient_id = h.recipient_id and g.world_slug = 'housing'
                and g.status = 'handed_over'),
            u.created_at,
-           d.check_in_date, d.check_out_date, d.adults, d.minors, d.message,
+           d.check_in_date, d.check_out_date, h.slot_starts_at, h.slot_ends_at,
+           d.adults, d.minors, d.message,
            h.status, h.reserved_at, h.confirm_by,
            exists (select 1 from public.giving_handoff_ratings r
                     where r.handoff_id = h.handoff_id and r.rater_id = auth.uid())
@@ -269,6 +273,8 @@ returns table (
   host_name       text,
   check_in_date   date,
   check_out_date  date,
+  slot_starts_at  timestamptz,
+  slot_ends_at    timestamptz,
   adults          smallint,
   minors          smallint,
   status          text,
@@ -287,7 +293,7 @@ begin
   if auth.uid() is null then raise exception 'auth_required' using errcode = '42501'; end if;
   return query
     select h.handoff_id, h.listing_id, l.title, l.city_id, h.owner_id, u.display_name,
-           d.check_in_date, d.check_out_date, d.adults, d.minors,
+           d.check_in_date, d.check_out_date, h.slot_starts_at, h.slot_ends_at, d.adults, d.minors,
            h.status, h.cancel_reason, h.reserved_at, h.confirm_by,
            public.can_view_housing_private_details(h.listing_id, auth.uid()),
            exists (select 1 from public.giving_handoff_ratings r

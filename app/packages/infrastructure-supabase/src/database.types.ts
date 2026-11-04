@@ -11636,6 +11636,8 @@ export type Database = {
           rated_by_me: boolean
           recipient_id: string
           reserved_at: string
+          slot_ends_at: string
+          slot_starts_at: string
           status: string
         }[]
       }
@@ -11701,6 +11703,8 @@ export type Database = {
           minors: number
           rated_by_me: boolean
           reserved_at: string
+          slot_ends_at: string
+          slot_starts_at: string
           status: string
         }[]
       }
