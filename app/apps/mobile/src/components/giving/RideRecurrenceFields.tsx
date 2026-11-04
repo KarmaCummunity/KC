@@ -5,6 +5,7 @@ import React from 'react';
 import { Switch, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { localTimeHHmm, type RideWeekday } from '@kc/domain';
 import { RideWeekdayPicker } from './RideWeekdayPicker';
 import { RideEndDateField } from './RideEndDateField';
@@ -63,6 +64,6 @@ export function RideRecurrenceFields({ value, onChange, departsAt, disabled }: P
 const useStyles = makeUseStyles(({ colors }) => ({
   block: { gap: spacing.sm },
   switchRow: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const, gap: spacing.md },
-  label: { ...typography.body, color: colors.textPrimary, flex: 1 },
-  hint: { ...typography.caption, color: colors.textSecondary },
+  label: { ...typography.body, color: colors.textPrimary, flex: 1, textAlign: rtlTextAlignStart },
+  hint: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
 }));

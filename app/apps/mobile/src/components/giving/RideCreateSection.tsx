@@ -5,6 +5,7 @@ import React, { useEffect, type Dispatch, type SetStateAction } from 'react';
 import { RIDE_ROUTE_DETAIL_KEYS, rideCostShareCap } from '@kc/domain';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, typography, Text } from '@kc/ui';
+import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { takeRideStartDetails } from '../../lib/rides/rideStartDetails';
 import { RideRouteFields } from './RideRouteFields';
 import { RIDE_SCHEDULE_DETAIL_KEYS, RideScheduleFields } from './RideScheduleFields';
@@ -60,5 +61,5 @@ export function RideCreateSection({ details, setDetails, onOriginCity, isOffer, 
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  hint: { ...typography.caption, color: colors.textSecondary },
+  hint: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
 }));
