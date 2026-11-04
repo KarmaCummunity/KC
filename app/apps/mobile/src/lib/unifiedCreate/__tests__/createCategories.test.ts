@@ -151,3 +151,26 @@ describe('resolveCreateCategory — knowledge opens as a listing form once launc
     }
   });
 });
+
+describe('resolveCreateCategory — animals opens as a listing form once launched (#1625)', () => {
+  const animals = findCreateCategory('animals');
+
+  it('keeps the community-link form while the animals world is a portal', () => {
+    for (const remote of [undefined, {}, { world_animals_enabled: false }]) {
+      expect(resolveCreateCategory(animals, remote)).toBe(animals);
+    }
+    expect(animals.engine).toBe('link');
+  });
+
+  it('writes a marketplace listing to the animals world once it is active', () => {
+    expect(resolveCreateCategory(animals, { world_animals_enabled: true })).toMatchObject({
+      id: 'animals', engine: 'listing', worldSlug: 'animals', linkCategory: null,
+    });
+  });
+
+  it('is not switched on by the knowledge flag, and medical stays a portal', () => {
+    expect(resolveCreateCategory(animals, { world_knowledge_enabled: true })).toBe(animals);
+    const medical = findCreateCategory('medical');
+    expect(resolveCreateCategory(medical, { world_medical_enabled: true, world_animals_enabled: true })).toBe(medical);
+  });
+});

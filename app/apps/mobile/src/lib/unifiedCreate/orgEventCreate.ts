@@ -3,7 +3,7 @@
 // volunteer shift) and an organization's event; everyone else sees exactly the default form.
 import { ORG_EVENT_KIND_SLUG, type ListingKindOption, type OrganizationMembershipOption } from '@kc/domain';
 import type { CreateDirection } from './createCategories';
-import { kindForDirection } from './listingFieldSpecs';
+import { kindChoices, kindForDirection } from './listingFieldSpecs';
 
 /** The world's organization-event kind, when the server offers one. */
 export function orgEventKind(kinds: readonly ListingKindOption[]): ListingKindOption | null {
@@ -19,13 +19,19 @@ export function canChooseOrgEvent(
   return direction === 'give' && organizations.length > 0 && orgEventKind(kinds) !== null;
 }
 
-/** The kind the form publishes: the event when the member chose it, otherwise the direction's default. */
+/**
+ * The kind the form publishes: the event when the member chose it, else the kind the member
+ * picked for this direction (`chosenSlug`), otherwise the direction's default.
+ */
 export function kindForCreate(
   kinds: readonly ListingKindOption[],
   direction: CreateDirection,
   wantsOrgEvent: boolean,
+  chosenSlug: string | null = null,
 ): ListingKindOption | null {
-  return wantsOrgEvent ? orgEventKind(kinds) : kindForDirection(kinds, direction);
+  if (wantsOrgEvent) return orgEventKind(kinds);
+  const chosen = chosenSlug ? kindChoices(kinds, direction).find((k) => k.slug === chosenSlug) : undefined;
+  return chosen ?? kindForDirection(kinds, direction);
 }
 
 /** The organization picked before the member chooses: the only one, when there is exactly one. */

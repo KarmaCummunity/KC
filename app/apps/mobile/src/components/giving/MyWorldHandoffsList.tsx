@@ -16,7 +16,7 @@ const ROW = { marginHorizontal: spacing.lg };
 export function MyWorldHandoffsList({
   worldSlug,
 }: {
-  readonly worldSlug: 'items' | 'food' | 'rides' | 'knowledge' | 'housing' | 'time';
+  readonly worldSlug: 'items' | 'food' | 'rides' | 'knowledge' | 'housing' | 'time' | 'animals';
 }) {
   const router = useRouter();
   const { t } = useTranslation();

@@ -73,9 +73,17 @@ const ICON_BY_ID: Readonly<Record<CreateCategoryId, CreateCategoryIcon>> = {
   challenges: 'trophy-outline',
 };
 
+/**
+ * Worlds whose listing form opens only once the world is launched (D60). Until then they are
+ * portals and take community links, like the challenges world; production keeps that while the
+ * remote flag is off, tester builds launch them (#1630, #1625).
+ */
+const LAUNCH_GATED_LISTING_WORLDS: readonly string[] = ['knowledge', 'animals'];
+
 /** Items keep the mature post form (drafts, address display level, visibility, karma value). */
 function engineFor(id: CreateCategoryId): CreateEngine {
   if (id === 'items') return 'post';
+  if (LAUNCH_GATED_LISTING_WORLDS.includes(id)) return 'link';
   return isFeedWorldSlug(id) ? 'listing' : 'link';
 }
 
@@ -94,16 +102,18 @@ function toConfig(id: CreateCategoryId): CreateCategoryConfig {
 export const CREATE_CATEGORIES: readonly CreateCategoryConfig[] = CREATE_CATEGORY_IDS.map(toConfig);
 
 /**
- * The category as the form should use it right now. Knowledge keeps its community-link form
- * (a portal) until the world is launched; once it is, members publish lessons and mentoring
- * requests as marketplace listings (#1630), like the challenges world (D60).
+ * The category as the form should use it right now. A launch-gated world (knowledge, animals)
+ * keeps its community-link form (a portal) until it is launched; once it is, members publish
+ * marketplace listings (#1630, #1625), like the challenges world (D60).
  */
 export function resolveCreateCategory(
   category: CreateCategoryConfig,
   remote: RemoteAppFlags | undefined,
 ): CreateCategoryConfig {
-  if (category.id !== 'knowledge' || !isMarketplaceWorldLaunchEnabled('knowledge', remote)) return category;
-  return { ...category, engine: 'listing', worldSlug: 'knowledge', linkCategory: null };
+  if (!LAUNCH_GATED_LISTING_WORLDS.includes(category.id) || !isMarketplaceWorldLaunchEnabled(category.id, remote)) {
+    return category;
+  }
+  return { ...category, engine: 'listing', worldSlug: category.id, linkCategory: null };
 }
 
 /** Type guard: is `id` a category the create form offers? */
