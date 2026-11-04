@@ -16,15 +16,14 @@ import {
 } from './spec-ids.mjs';
 
 const script = resolve(dirname(fileURLToPath(import.meta.url)), 'spec-ids.mjs');
-const [DECISIONS, TECH_DEBT, , , ENGINEERING] = REGISTRIES;
-const TECH_DEBT_HISTORY = TECH_DEBT.historyFiles[0];
+const [DECISIONS, , GAPS, ENGINEERING] = REGISTRIES;
 
 const registries = (entries) => new Map(Object.entries(entries));
 
 describe('spec-ids parsing', () => {
   it('reads numbered rows, including "needs depth" rows marked with *', () => {
     assert.deepEqual(rowNumbers('| D1 | a |\n| D6* | b |\n| text D9 |\n', DECISIONS), [1, 6]);
-    assert.deepEqual(rowNumbers('| TD-12 | a |\n| TD-3 | b |\n', TECH_DEBT), [12, 3]);
+    assert.deepEqual(rowNumbers('| G12 | a |\n| G3 | b |\n', GAPS), [12, 3]);
   });
 
   it('reads engineering decisions from ## / ### headings', () => {
@@ -33,22 +32,22 @@ describe('spec-ids parsing', () => {
   });
 
   it('finds well-formed placeholders and flags malformed ones', () => {
-    const text = 'see {{TD:ci-window}} and {{D:Bad Slug}} and {{G:half}';
-    assert.deepEqual(findPlaceholders(text), [{ token: '{{TD:ci-window}}', key: 'TD', slug: 'ci-window' }]);
+    const text = 'see {{G:ci-window}} and {{D:Bad Slug}} and {{G:half}';
+    assert.deepEqual(findPlaceholders(text), [{ token: '{{G:ci-window}}', key: 'G', slug: 'ci-window' }]);
     assert.deepEqual(findMalformed(text), ['{{D:Bad', '{{G:half}']);
   });
 });
 
 describe('spec-ids validate', () => {
   it('accepts placeholders defined by exactly one registry row', () => {
-    const texts = registries({ [TECH_DEBT.file]: '| TD-1 | a |\n| {{TD:new-item}} | b |\n' });
-    const citing = new Map([['docs/x.md', 'Tracked as {{TD:new-item}}.']]);
+    const texts = registries({ [GAPS.file]: '| G1 | a |\n| {{G:new-item}} | b |\n' });
+    const citing = new Map([['docs/x.md', 'Tracked as {{G:new-item}}.']]);
     assert.deepEqual(validate(texts, citing), []);
   });
 
   it('rejects a new duplicate number but tolerates the known legacy ones', () => {
-    const texts = registries({ [TECH_DEBT.file]: '| TD-200 | a |\n| TD-200 | b |\n| TD-7 | c |\n| TD-7 | d |\n' });
-    assert.deepEqual(validate(texts, new Map()), [`${TECH_DEBT.file}: TD-7 is used by more than one entry`]);
+    const texts = registries({ [ENGINEERING.file]: '## D-38 — a\n## D-38 — b\n## D-7 — c\n## D-7 — d\n' });
+    assert.deepEqual(validate(texts, new Map()), [`${ENGINEERING.file}: D-7 is used by more than one entry`]);
   });
 
   it('rejects a placeholder with no row, one defined twice, and a malformed one', () => {
@@ -56,19 +55,19 @@ describe('spec-ids validate', () => {
     const texts = registries({ [DECISIONS.file]: registryText });
     const citing = new Map([
       [DECISIONS.file, registryText],
-      ['docs/y.md', 'per {{D:missing}} and {{TD:Nope}}'],
+      ['docs/y.md', 'per {{D:missing}} and {{G:Nope}}'],
     ]);
     assert.deepEqual(validate(texts, citing), [
       `${DECISIONS.file}: {{D:twice}} is defined by more than one entry`,
-      'docs/y.md: malformed placeholder {{TD:Nope}} (expected {{D/TD/S/G/ENG:lowercase-slug}})',
+      'docs/y.md: malformed placeholder {{G:Nope}} (expected {{D/S/G/ENG:lowercase-slug}})',
       `docs/y.md: {{D:missing}} has no entry in ${DECISIONS.file}`,
     ]);
   });
 
   it('does not accept a row in the wrong registry as a definition', () => {
-    const texts = registries({ [DECISIONS.file]: '| {{TD:misplaced}} | a |\n' });
-    const citing = new Map([['docs/z.md', '{{TD:misplaced}}']]);
-    assert.deepEqual(validate(texts, citing), [`docs/z.md: {{TD:misplaced}} has no entry in ${TECH_DEBT.file}`]);
+    const texts = registries({ [DECISIONS.file]: '| {{G:misplaced}} | a |\n' });
+    const citing = new Map([['docs/z.md', '{{G:misplaced}}']]);
+    assert.deepEqual(validate(texts, citing), [`docs/z.md: {{G:misplaced}} has no entry in ${GAPS.file}`]);
   });
 });
 
@@ -76,16 +75,15 @@ describe('spec-ids assignment', () => {
   it('numbers placeholders in row order above the highest number ever used', () => {
     const plan = planAssignments(
       registries({
-        [TECH_DEBT.file]: '| TD-10 | a |\n| {{TD:first}} | b |\n| {{TD:second}} | c |\n',
-        [TECH_DEBT_HISTORY]: '| TD-42 | closed |\n',
+        [GAPS.file]: '| G10 | a |\n| {{G:first}} | b |\n| {{G:second}} | c |\n',
         [DECISIONS.file]: '| D3 | a |\n| {{D:only}} | b |\n',
         [ENGINEERING.file]: '## D-199 — a\n## {{ENG:merge-time-ids}} — b\n',
       }),
     );
     assert.deepEqual([...plan], [
       ['{{D:only}}', 'D4'],
-      ['{{TD:first}}', 'TD-43'],
-      ['{{TD:second}}', 'TD-44'],
+      ['{{G:first}}', 'G11'],
+      ['{{G:second}}', 'G12'],
       ['{{ENG:merge-time-ids}}', 'D-200'],
     ]);
   });
