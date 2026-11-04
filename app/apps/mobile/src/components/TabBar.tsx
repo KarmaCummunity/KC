@@ -22,7 +22,8 @@ const webGlass: ViewStyle =
       } as unknown as ViewStyle)
     : ({} as ViewStyle);
 
-export const TAB_BAR_HEIGHT = 60;
+// Slim bar (#1631): icon row only, no extra space above or below the icons.
+export const TAB_BAR_HEIGHT = 48;
 
 interface IconBtnProps {
   active: boolean;
@@ -50,7 +51,7 @@ function IconBtn({ active, onPress, label, testID, iconActive, iconInactive }: I
         <Ionicons
           key={active ? iconActive : iconInactive}
           name={active ? iconActive : iconInactive}
-          size={active ? 28 : 24} // brand-guard-allow: active tab glyph grows past the icon scale
+          size={active ? 24 : 22} // brand-guard-allow: active tab glyph grows past the icon scale
           color={active ? colors.tabActive : colors.tabInactive}
         />
       </View>
@@ -79,7 +80,7 @@ function PlusBtn({ active, onPress, label, testID }: PlusBtnProps) {
       <View style={[styles.plusCircle, active && styles.plusCircleActive]}>
         <Ionicons
           name="add"
-          size={26} // brand-guard-allow: centre action glyph sized to its 48pt button
+          size={22} // brand-guard-allow: centre action glyph sized to its 40pt button
           color={colors.textInverse}
         />
       </View>
@@ -169,8 +170,8 @@ const useTabBarStyles = makeUseStyles(({ colors, isDark }) => ({
   },
   tabBtnPressed: { opacity: 0.6 },
   iconSlot: {
-    width: 40,
-    height: 40,
+    width: 34,
+    height: 34,
     borderRadius: radius.full,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
@@ -179,8 +180,8 @@ const useTabBarStyles = makeUseStyles(({ colors, isDark }) => ({
     backgroundColor: colors.primarySurface,
   },
   plusCircle: {
-    width: 48,
-    height: 48,
+    width: 40,
+    height: 40,
     borderRadius: radius.full,
     backgroundColor: colors.primary,
     alignItems: 'center' as const,
