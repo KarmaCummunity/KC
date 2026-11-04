@@ -1750,7 +1750,7 @@ Owner rules that go with it:
 
 **Affected.** `supabase/migrations/0559_items_close_through_the_post.sql` (`post_close_from_handoff`, `mark_giving_handed_over`, `posts_settle_handoffs_on_close`, the `tg_recipients_enqueue_notifications` `WHEN`), `docs/spec/07` §7.5 / §7.6, `docs/spec/93` G34 and G1, `docs/SSOT/spec/05_closure_and_reopen.md`.
 
-## {{ENG:one-detail-screen}} — `/post/[id]` is the detail screen of every post; listing routes forward to it (2026-11-04)
+## D-220 — `/post/[id]` is the detail screen of every post; listing routes forward to it (2026-11-04)
 
 **Decision.** G1 step 4a (BACKLOG `G1-S4`, migration `0560`). Supersedes the redirect half of `D-206`. The post detail no longer sends a listing-world post to the listing screen: it renders the listing's hero, type sections and type actions in place (`ListingPostDetail`, which embeds `MarketplaceListingDetailScreen`) with the post's likes and comments under them while the post is open and the post share link in the header; the listing view keeps its own report action, so the header carries only the share. The two listing routes (`/listing/[listingId]`, the marketplace tab route) forward to `/post/[id]` when the listing has a post (`useListingPostRedirect` inside `MarketplaceListingRoute`); only the routes forward, the embedded screen never does, so the two cannot bounce. A listing without a post — not yet published, or a post-form item (`posts.listing_id` null, its `feed_post_id` is null) — stays on the listing screen; post-form items get their reservation actions on the post screen in 4b, and notifications and share links carry the post id in 4c. The listing detail RPC now returns `feed_hidden`, so "share to feed" stays offered while the post is kept out of the feed (`D-218`), which 3b-pre had hidden for unshared knowledge offers.
 
@@ -1780,7 +1780,7 @@ Owner rules that go with it:
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
-| 4.48 | 2026-11-04 | Added `{{ENG:one-detail-screen}}` (G1 step 4a: `/post/[id]` is the detail screen of every post, listing routes forward to it; supersedes the redirect half of `D-206`; `0560`). |
+| 4.48 | 2026-11-04 | Added `D-220` (G1 step 4a: `/post/[id]` is the detail screen of every post, listing routes forward to it; supersedes the redirect half of `D-206`; `0560`). |
 | 4.47 | 2026-11-04 | Added `D-219` (G1 step 3c / G34: an item closes through its post; the hand-over no longer pays its own karma; `0559`). |
 | 4.46 | 2026-11-04 | `D-217` step 3b‴: the housing writers and the generic cancel write `post_handoffs`; numbered after the housing range (`0610`). |
 | 4.45 | 2026-11-04 | `D-217` step 3b″: the ride and knowledge booking writers write `post_handoffs`; backfill of hidden posts for live handoffs without one (`0558`). |
