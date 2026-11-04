@@ -127,9 +127,11 @@ describe('useUnifiedCreateCategory', () => {
     expect(screen.queryByTestId('create-direction-give')).toBeNull();
   });
 
-  it('renders one tile per giving world in order, the active one selected', async () => {
+  it('renders one chip per giving world in order, the active one selected', async () => {
     await renderHarness();
-    const tiles = screen.getAllByRole('radio');
+    const tiles = screen
+      .getAllByRole('checkbox')
+      .filter((t) => (t.getAttribute('data-testid') ?? '').startsWith('create-category-'));
     expect(tiles.map((t) => t.getAttribute('data-testid'))).toEqual([
       ...['items', 'food', 'rides', 'time', 'money', 'housing', 'knowledge', 'medical', 'animals', 'democracy', 'employment', 'challenges'].map(
         (id) => `create-category-${id}`,
