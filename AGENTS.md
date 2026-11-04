@@ -478,7 +478,7 @@ When this section is active, the agent operates as a continuous self-driven task
 ### Iteration cycle
 
 1. **Pick next work** in this priority order:
-   1. Top **Ready**, Agent-ready item on the GitHub board that nobody owns (P0 > P1 > P2 > P3).
+   1. Top **Ready**, Agent-ready item on the GitHub board that nobody owns (`priority:launch` > P0 > P1 > P2 > P3). `priority:launch` is everything required for the upcoming launch, above P0: **Rides** and **Items** end-to-end flows first, then other launch blockers (auth, crashes, store readiness).
    2. If none remain: highest-priority open `tech-debt` issue nobody has claimed.
    3. If both empty: SSOT documentation polish, adjacent dead-code removal, or test-coverage gaps surfaced by `pnpm test` in `app/`.
 2. **Claim the issue (`docs/agents/ISSUE_CLAIMS.md`) and set it to In progress** before any code edit.
