@@ -31,6 +31,7 @@ export const postUnifiedCreateEn = {
       housing: 'e.g. Spare room for the weekend',
       time: 'e.g. Help with groceries',
     },
+    rideAutoTitle: '{{origin}} → {{dest}}',
     errors: {
       titleRequired: 'Please write a title (at least 2 characters)',
       fieldRequired: 'Please fill in: {{field}}',
