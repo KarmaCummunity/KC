@@ -80,6 +80,7 @@ export const marketplaceErrors = {
   event_org_required: 'Only a member of the organization can publish its event. Pick one of your organizations.',
   verification_required: 'This event is open to verified members only. Verify your account and try again.',
   not_owner: 'Only the event organizer can do that.',
+  event_not_started: 'Attendance can be marked once the event has started.',
   invalid_transition: 'This registration was already updated. Refresh and try again.',
   generic: 'Publishing failed. Please try again.',
 } as const;

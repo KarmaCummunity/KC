@@ -18,7 +18,7 @@ export function EventRegistrationActions({ detail }: Props) {
   if (!event || !userId || !detail.feedPostId) return null;
 
   return userId === detail.ownerId ? (
-    <EventRosterPanel postId={detail.feedPostId} />
+    <EventRosterPanel postId={detail.feedPostId} startsAt={event.startsAt} />
   ) : (
     <EventRegistrantPanel postId={detail.feedPostId} event={event} />
   );
