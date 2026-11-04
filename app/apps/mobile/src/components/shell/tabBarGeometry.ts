@@ -9,9 +9,14 @@ export function tabBarBottomOffset(): number {
   return 0;
 }
 
+// The home indicator is a thin strip at the very bottom of the safe-area
+// inset; the icons only need to clear it, not the whole inset (#1631).
+const HOME_INDICATOR_SLACK = 12;
+
 /** Inner bottom padding that lifts the icons above the home indicator. */
 export function tabBarBottomPadding(insetBottom: number): number {
-  return Number.isFinite(insetBottom) && insetBottom > 0 ? insetBottom : 0;
+  if (!Number.isFinite(insetBottom) || insetBottom <= 0) return 0;
+  return Math.max(insetBottom - HOME_INDICATOR_SLACK, 0);
 }
 
 /** Total rendered bar height: icon row + safe-area padding. */
