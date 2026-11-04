@@ -1924,7 +1924,7 @@ Owner rules that go with it:
 
 **Affected.** `app/packages/domain/src/launch/launchWorlds.ts`, `app/apps/mobile/src/hooks/useLaunchWorldFlags.ts`, `docs/SSOT/spec/21_housing.md` (FR-HOUSING-001 AC1), `docs/SSOT/spec/23_knowledge.md`. Remove the override for a world when its production flag flips (housing: with HOUSING-H1 and `TD-245`).
 
-## {{ENG:animals-world-direct-listings}} — Animals publish directly; the listing form picks a kind (2026-11-04)
+## D-223 — Animals publish directly; the listing form picks a kind (2026-11-04)
 
 **Decision.** Migration `0612` removes animals from the routed worlds of `listings_enforce_world_rules` (medical and environment stay routed), replaces the animals kinds with four binding ones (`adoption_offer`, `adoption_request`, `foster_offer`, `foster_request`; boarding vs pet-sitting is `care_mode`) and turns `worlds.feed_mirror` on for animals. On the client animals is a feed world, but its create form opens as a listing only once the world is launched (`resolveCreateCategory`, shared with knowledge); tester builds launch it (`TESTER_ACTIVE_WORLD_FLAGS`). When a direction has several kinds the listing form shows a kind chooser (`kindChoices`, `ListingKindChooser`), which also gives knowledge its private-lesson kind.
 
