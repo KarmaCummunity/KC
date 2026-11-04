@@ -1740,6 +1740,16 @@ Owner rules that go with it:
 
 **Affected.** `supabase/migrations/0557_post_for_every_listing.sql` (`posts.feed_hidden`, `feed_visible_posts`, `listing_feed_mirror_upsert(listings, boolean)`, `listing_feed_hidden`, `listings_feed_mirror_sync`, `ride_series_sweep`, the broadcast / activity triggers, `feed_ranked_ids`), `app/packages/infrastructure-supabase/src/posts/feedQuery.ts`, `docs/spec/07` §7.1 / §7.3, `docs/spec/93` G1.
 
+## {{ENG:items-close-through-post}} — An item closes through its post; the hand-over no longer pays its own karma (2026-11-04)
+
+**Decision.** G1 step 3c / gap G34 (migration `0559`). For an item made through the post form (the post owns its listing, `posts.listing_id` null), the post's closure is the one closing truth. `mark_giving_handed_over` closes such a post through the post closure — a `recipients` row for the taker, then `closed_delivered` — so `karma_on_post_change` pays giver 20 + the value bonus and receiver 15 once, and a reopen reverses it (S20); the hand-over no longer calls `karma_award_handoff` for these items. Closing such a post by hand (`close_post_with_recipient`) settles its live handoffs: the one to the marked recipient is handed over, any other is cancelled by the system. The 0063 "marked as recipient" notice is skipped on the hand-over path (a transaction-local `kc.closing_from_handoff` flag read in the trigger's `WHEN`), because the hand-over notice (0528) already reaches both sides. Item posts left open by earlier hand-overs were closed once, with the karma, chat-message and notification triggers off for the repair, since the handoff had already paid. An item listing with a mirror post (marketplace RPC, direct inserts) keeps the handoff path: its post follows its listing and only the handoff pays. Food, rides, knowledge and housing keep per-handoff karma (D63).
+
+**Why.** A handed-over item kept an `open` post that the feed still listed as available, and closing that post later paid the item karma a second time — two closing systems for one item (G34). The post closure already carries the §7.6 item values, the value bonus (D12) and the reopen reversal (S20), so routing the hand-over through it fixes both without a new karma rule.
+
+**Rejected.** Adding the value bonus to `karma_award_handoff` and blocking the post closure after a hand-over (two karma paths to keep in sync, and no reopen reversal for handoff karma). Closing the post with handoff karma kept (double pay on the next closure trigger).
+
+**Affected.** `supabase/migrations/0559_items_close_through_the_post.sql` (`post_close_from_handoff`, `mark_giving_handed_over`, `posts_settle_handoffs_on_close`, the `tg_recipients_enqueue_notifications` `WHEN`), `docs/spec/07` §7.5 / §7.6, `docs/spec/93` G34 and G1, `docs/SSOT/spec/05_closure_and_reopen.md`.
+
 ## D-212 — Post and listing detail pages share one hero + content-card frame (2026-11-03)
 
 **Decision.** The listing page (items, food, rides, knowledge) uses the same hero frame (`DetailHeroCard`, with the photo gallery or a placeholder icon) and the same content card as the post page. Each type keeps its own fields and actions (route card, handoff, booking, messaging).
@@ -1760,6 +1770,7 @@ Owner rules that go with it:
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
+| 4.47 | 2026-11-04 | Added `{{ENG:items-close-through-post}}` (G1 step 3c / G34: an item closes through its post; the hand-over no longer pays its own karma; `0559`). |
 | 4.46 | 2026-11-04 | `D-217` step 3b‴: the housing writers and the generic cancel write `post_handoffs`; numbered after the housing range (`0610`). |
 | 4.45 | 2026-11-04 | `D-217` step 3b″: the ride and knowledge booking writers write `post_handoffs`; backfill of hidden posts for live handoffs without one (`0558`). |
 | 4.44 | 2026-11-04 | Added `D-218` (G1 step 3b-pre: every published listing has a post; `posts.feed_hidden` separates existence from feed exposure; `0557`). |

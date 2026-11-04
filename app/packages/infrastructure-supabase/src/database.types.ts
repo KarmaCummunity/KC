@@ -12501,6 +12501,10 @@ export type Database = {
         Args: { p_idempotency_key: string; p_lines: Json; p_txn_id: string }
         Returns: undefined
       }
+      post_close_from_handoff: {
+        Args: { p_h: Database["public"]["Tables"]["post_handoffs"]["Row"] }
+        Returns: undefined
+      }
       post_handoff_seats_taken: {
         Args: { p_exclude?: string; p_post_id: string }
         Returns: number
