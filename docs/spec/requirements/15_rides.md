@@ -29,6 +29,8 @@ Prefix: `FR-RIDE-*`
 - AC3. Required: origin city, dest city (≠ origin), departs_at. Offer: seats 1–8. Description optional ≤500.
 - AC4. Title auto-generated; user does not edit title.
 - AC5. On success: sheet dismisses, feed refetches, `rides.lastMode` saved.
+- AC6. *(#1411, 2026-11-04)* **"From my current location"** switch above the origin: on, the origin becomes the official city nearest the device (never raw coordinates; the listing city follows, as for any origin). If the location is denied or unavailable the switch turns itself off and says so; picking the origin by hand also turns it off.
+- AC7. *(#1411, 2026-11-04)* **"Leave now"** switch above the departure: on, the ride departs 5 minutes after publishing (`RIDE_LEAVE_NOW_LEAD_MINUTES`; the server rejects a departure at or before its clock). The departure is re-timed at the moment of publishing, so a form left open does not publish a past departure; the estimated end keeps its distance from it. Picking a time by hand (field or shortcut) turns the switch off.
 
 ## FR-RIDE-004 — Ride detail + contact
 - AC1. `/(tabs)/donations/rides/[id]` shows full listing + owner.

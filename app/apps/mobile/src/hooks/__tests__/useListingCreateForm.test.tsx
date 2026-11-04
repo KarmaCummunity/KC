@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ListingKindOption } from '@kc/domain';
 import type { PropsWithChildren } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const { repo, auth, upload, track, activation, remember } = vi.hoisted(() => ({
   repo: { listKindsForWorld: vi.fn(), createListing: vi.fn() },
   auth: { current: 'u1' as string | null }, upload: vi.fn(), track: vi.fn(), activation: vi.fn(), remember: vi.fn(),
@@ -72,5 +72,50 @@ describe('rideAutoTitle (#1411)', () => {
     const { rideAutoTitle } = await import('../useListingCreateForm');
     expect(rideAutoTitle({ origin_label: 'Lod' }, fmt)).toBe('');
     expect(rideAutoTitle({}, fmt)).toBe('');
+  });
+});
+
+describe('leave now for rides (#1411)', () => {
+  const rideKind = { kindId: 'k-ride', slug: 'give_ride', direction: 'give', detailSchema: { properties: {} } } as unknown as ListingKindOption;
+  const route = { origin_lat: 32.08, origin_lng: 34.78, dest_lat: 31.77, dest_lng: 35.21, origin_label: 'Tel Aviv', dest_label: 'Jerusalem' };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    auth.current = 'u1';
+    repo.listKindsForWorld.mockResolvedValue([rideKind]);
+    repo.createListing.mockResolvedValue('ride-1');
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('publishes the departure at the moment of publishing plus the lead, not the time the switch was turned on', async () => {
+    const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'rides', direction: 'give', title: '', summary: '', onPublished: vi.fn() }), { wrapper });
+    await waitFor(() => expect(result.current.kind?.kindId).toBe('k-ride'));
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-04T20:00:00Z'));
+    // The switch was turned on at 20:00 (departure 20:05); the member publishes ten minutes later.
+    act(() => {
+      result.current.setDetails({ ...route, departs_at: '2026-11-04T20:05:00.000Z', arrives_at: '2026-11-04T21:15:00.000Z', seats_available: 3 });
+      result.current.setLeaveNow(true);
+    });
+    vi.setSystemTime(new Date('2026-11-04T20:10:00Z'));
+
+    await act(() => result.current.publish());
+
+    expect(result.current.error).toBeNull();
+    const sent = repo.createListing.mock.calls[0]![0].details;
+    expect(sent.departs_at).toBe('2026-11-04T20:15:00.000Z');
+    expect(sent.arrives_at).toBe('2026-11-04T21:25:00.000Z');
+  });
+
+  it('keeps the departure the member picked when leave now is off', async () => {
+    const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'rides', direction: 'give', title: '', summary: '', onPublished: vi.fn() }), { wrapper });
+    await waitFor(() => expect(result.current.kind?.kindId).toBe('k-ride'));
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-04T20:00:00Z'));
+    act(() => result.current.setDetails({ ...route, departs_at: '2026-11-05T07:00:00.000Z', seats_available: 3 }));
+
+    await act(() => result.current.publish());
+
+    expect(repo.createListing.mock.calls[0]![0].details.departs_at).toBe('2026-11-05T07:00:00.000Z');
   });
 });

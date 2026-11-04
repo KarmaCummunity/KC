@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { localIsoDate, localTimeHHmm, rideDurationMinutes, validateListingDetails } from '@kc/domain';
+import { localIsoDate, localTimeHHmm, rideDurationMinutes, validateListingDetails, withLeaveNowDeparture } from '@kc/domain';
 import type { CreateDirection } from '../lib/unifiedCreate/createCategories';
 import { WORLDS_WITH_SUBCATEGORY_PICKER } from '../lib/unifiedCreate/createCategories';
 import { buildListingCreatePayload } from '../lib/unifiedCreate/unifiedCreatePayload';
@@ -89,6 +89,8 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
   const [subcategoryId, setSubcategoryId] = useState<string | null>(null);
   // Rides only: a recurring ride publishes a series instead of one listing (FR-RIDE-046).
   const [recurrence, setRecurrence] = useState<RideRecurrenceDraft | null>(null);
+  // Rides only: "leave now" departs a few minutes after publishing, whenever that is (#1411).
+  const [leaveNow, setLeaveNow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const publishLock = useRef(false);
@@ -146,7 +148,8 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
 
   const publish = async () => {
     if (!userId || !kind || busy || publishLock.current) return;
-    const submitted = withEventOrg(detailsForSubmit(specs, details), eventChoice);
+    const timed = isRides && leaveNow ? withLeaveNowDeparture(details, new Date()) : details;
+    const submitted = withEventOrg(detailsForSubmit(specs, timed), eventChoice);
     const problem = validate(submitted);
     setError(problem);
     if (problem) return;
@@ -212,6 +215,8 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
     setSubcategoryId,
     recurrence,
     setRecurrence,
+    leaveNow,
+    setLeaveNow,
     eventChoice,
     showSubcategory,
     isRides,

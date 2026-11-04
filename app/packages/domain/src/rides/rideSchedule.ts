@@ -33,6 +33,28 @@ export function rideDepartureFromShortcut(shortcut: RideDepartureShortcut, now: 
   }
 }
 
+/** "Leave now" departs this far ahead of publishing: a departure at or before the server clock is rejected. */
+export const RIDE_LEAVE_NOW_LEAD_MINUTES = 5;
+
+/** The departure "leave now" stands for when the ride is saved at `now`. */
+export function rideLeaveNowDeparture(now: Date): Date {
+  return new Date(now.getTime() + RIDE_LEAVE_NOW_LEAD_MINUTES * MINUTE_MS);
+}
+
+/**
+ * Re-times ride details for "leave now" at publish: the departure moves to `now` plus the lead and
+ * the estimated end keeps its distance from it, so a form left open for minutes never publishes a
+ * departure that already passed.
+ */
+export function withLeaveNowDeparture(details: Record<string, unknown>, now: Date): Record<string, unknown> {
+  const departs = rideLeaveNowDeparture(now);
+  const next: Record<string, unknown> = { ...details, departs_at: departs.toISOString() };
+  const oldDeparts = Date.parse(String(details.departs_at));
+  const oldArrives = Date.parse(String(details.arrives_at));
+  if (oldArrives > oldDeparts) next.arrives_at = new Date(departs.getTime() + (oldArrives - oldDeparts)).toISOString();
+  return next;
+}
+
 /** Rounds a time up to the next whole quarter of an hour (an exact quarter stays). */
 export function roundUpToQuarterHour(at: Date): Date {
   const step = ROUND_TO_MINUTES * MINUTE_MS;

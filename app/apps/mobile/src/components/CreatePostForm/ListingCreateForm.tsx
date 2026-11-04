@@ -129,6 +129,8 @@ export function ListingCreateForm({
             isOffer={direction === 'give'}
             recurrence={form.recurrence}
             onRecurrenceChange={form.setRecurrence}
+            leaveNow={form.leaveNow}
+            onLeaveNowChange={form.setLeaveNow}
             disabled={form.busy}
           />
         ) : null}
