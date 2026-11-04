@@ -100,8 +100,8 @@ After each handoff both sides rate 1–5 with a note — one generic rating for 
 Tech: · FR-RIDE-037 kept; FR-RIDE-038 superseded · `ride_ratings`, `giving_handoff_ratings` currently readable via RLS · G4 · items/food/rides/knowledge handoffs: rating step = pick 1–5 stars, optional note (≤300 chars), submit (`HandoffRatingForm`, KC#1106/#1114); "Rating given" karma (7.6) tracked in KC#1306
 
 ## 7.8 Chat
-One conversation per pair; contacting from a post pins it (D13). Closing from chat (D17). Group chat only around a project/challenge/event, locked at the end. Suspended users can still talk to support (D33).
-Tech: · FR-CHAT-004–016 · implemented · –
+One conversation per pair; contacting from a post pins it (D13). Closing from chat (D17). Group chat only around a project/challenge/event, locked at the end. Suspended users can still talk to support (D33). The inbox has a "+" that starts a one-to-one conversation with a person you follow or with anyone you find by name; it reuses the existing thread of the pair ({{D:chat-new-conversation-from-inbox}}).
+Tech: · FR-CHAT-004–017 · implemented · –
 
 ## 7.9 Likes and comments
 On every post type: like & comment, and like & reply on comments (D25), one thread level (S8). Comment on an anonymous post shows the commenter's name; anonymous poster replies as "the poster" (S8). Delete: author, post owner, admin; 3 reports hide a comment (S9). Earn karma, create notifications, reportable.

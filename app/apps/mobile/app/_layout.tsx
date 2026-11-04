@@ -144,6 +144,8 @@ function ThemedRootShell() {
               <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
               {/* chat/index renders its own header inside the screen — disable the Stack one to avoid doubling. */}
               <Stack.Screen name="chat/index" options={{ headerShown: true }} />
+              {/* FR-CHAT-017 — recipient picker; the screen sets its own header options. */}
+              <Stack.Screen name="chat/new" options={{ headerShown: true }} />
             </Stack>
               </ShellWithResponsiveChrome>
             </SoftGateProvider>

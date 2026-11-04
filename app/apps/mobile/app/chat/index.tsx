@@ -1,4 +1,4 @@
-// Chat list (Inbox) — FR-CHAT-001, FR-CHAT-016.
+// Chat list (Inbox) — FR-CHAT-001, FR-CHAT-016, FR-CHAT-017 ("+" starts a conversation).
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Platform } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
@@ -24,6 +24,8 @@ import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScr
 import { queryClient } from '../../src/lib/queryPersist';
 import { chatInboxQueryKey } from '../../src/lib/chatInboxQuery';
 import { NativeStackHeaderTitle } from '../../src/navigation/NativeStackHeaderTitle';
+import { nativeStackHeaderRightIconOnly } from '../../src/navigation/nativeHeaderIconOnly';
+import { NewChatHeaderButton } from '../../src/components/chat/NewChatHeaderButton';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -85,6 +87,8 @@ export default function ChatListScreen() {
           ...detailOptions,
           headerTitle: () => <NativeStackHeaderTitle title={t('chat.title')} />,
           headerLargeTitle: false,
+          // FR-CHAT-017 AC1 — start a conversation from the inbox.
+          ...nativeStackHeaderRightIconOnly(() => <NewChatHeaderButton />),
         }}
       />
 
