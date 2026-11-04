@@ -1760,7 +1760,9 @@ Owner rules that go with it:
 
 **Step 4b (2026-11-04, `0561`).** An item made through the post form keeps its own post page and shows its reservation actions there (`PostItemReservation` renders `GivingHandoffActions` while the post is open, and while delivered so both sides can rate). `get_marketplace_listing_detail` resolves a post id or a listing id and returns the listing's post through `post_id_of_listing`, which for such an item is the post it was made as; so every listing route now forwards to a post. After a reservation step the app refreshes every listing detail query and the post, since a hand-over closes the item's post (G34).
 
-**Affected.** `app/apps/mobile/src/screens/post/PostDetailScreen.tsx`, `ListingPostDetail.tsx`, `src/screens/marketplace/MarketplaceListingRoute.tsx`, `MarketplaceListingDetailScreen.tsx`, `MarketplaceListingDetailView.tsx`, `src/hooks/useListingPostRedirect.ts` (replaces `useListingMirrorRedirect`), `ListingDetailActions.tsx`, `@kc/domain` `MarketplaceListingDetail.feedHidden`, `supabase/migrations/0560_listing_detail_feed_hidden.sql`, `docs/spec/07` §7.4, `docs/SSOT/spec/04_posts.md`.
+**Step 4c (2026-11-04, `0562`).** A notification about a listing opens the listing's post. One BEFORE INSERT trigger on `notifications_outbox` resolves the post of `params.listingId` and adds `params.postId` plus the `/post/[id]` route (`params.id`), so the push tap allowlist (which prefers `postId`) and the in-app notification center (which follows the stored route) both land on the post; the writers of each kind are untouched, and step 6 writes post ids at the source. `params.listingId` stays, so an older app build opens the listing route, which forwards to the post; rows written before `0562` keep their listing route for the same reason. The listing share link is the post's `/post/<id>` link when the listing has a post (`buildListingShareUrl`). Rejected: rewriting the eight notification writers (several are redefined in the housing range, and all of them go to `post_handoffs` / posts in step 6) and backfilling stored notifications (their listing route already forwards).
+
+**Affected.** `app/apps/mobile/src/screens/post/PostDetailScreen.tsx`, `ListingPostDetail.tsx`, `src/screens/marketplace/MarketplaceListingRoute.tsx`, `MarketplaceListingDetailScreen.tsx`, `MarketplaceListingDetailView.tsx`, `src/hooks/useListingPostRedirect.ts` (replaces `useListingMirrorRedirect`), `ListingDetailActions.tsx`, `src/lib/buildListingShareUrl.ts`, `src/lib/notifications/pushRouteAllowlist.ts`, `@kc/domain` `MarketplaceListingDetail.feedHidden`, `supabase/migrations/0560_listing_detail_feed_hidden.sql`, `0561_listing_detail_by_post.sql`, `0562_listing_notifications_open_the_post.sql`, `docs/spec/07` §7.4, `docs/SSOT/spec/04_posts.md`.
 
 ## D-212 — Post and listing detail pages share one hero + content-card frame (2026-11-03)
 
@@ -1783,6 +1785,7 @@ Owner rules that go with it:
 | Version | Date | Summary |
 | ------- | ---- | ------- |
 | 4.49 | 2026-11-04 | `D-220` step 4b: item reservations on the post page; the listing detail opens by post id (`0561`). |
+| 4.50 | 2026-11-04 | `D-220` step 4c: listing notifications and the listing share link open the post (`0562`). |
 | 4.48 | 2026-11-04 | Added `D-220` (G1 step 4a: `/post/[id]` is the detail screen of every post, listing routes forward to it; supersedes the redirect half of `D-206`; `0560`). |
 | 4.47 | 2026-11-04 | Added `D-219` (G1 step 3c / G34: an item closes through its post; the hand-over no longer pays its own karma; `0559`). |
 | 4.46 | 2026-11-04 | `D-217` step 3b‴: the housing writers and the generic cancel write `post_handoffs`; numbered after the housing range (`0610`). |
