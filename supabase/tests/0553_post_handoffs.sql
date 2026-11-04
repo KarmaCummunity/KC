@@ -122,7 +122,7 @@ begin
   perform kc_test.assert_true(c.cancelled_at is not null, 'the cancellation time is copied');
 end $$;
 
--- ── A world with no feed: copied as soon as the listing gets its post ───────────────
+-- ── A listing without a post yet: its handoff is copied as soon as the post appears ───────
 do $$
 declare
   p personas;
@@ -137,11 +137,10 @@ begin
       'slot_starts_at', kc_test.iso_in(interval '1 day'),
       'slot_ends_at', kc_test.iso_in(interval '1 day 2 hours')),
     null);
-  -- Knowledge listings start in pending_review (0266); simulate the moderator's approval.
-  update public.listings set moderation_status = 'published' where listing_id = v_listing;
+  -- Knowledge listings start in pending_review (0266): no post until a moderator publishes.
   perform kc_test.assert_row_count(
     format('select 1 from public.posts where listing_id = %L', v_listing), 0,
-    'a knowledge listing has no mirror post');
+    'a listing pending review has no post');
 
   v_h := pg_temp.reserve(v_listing, p.taker);
   perform kc_test.assert_row_count(
@@ -150,8 +149,8 @@ begin
   r := public.post_unification_report();
   perform kc_test.assert_true((r ->> 'handoffs_without_post')::int >= 1, 'the report counts the handoff without a post');
 
-  perform kc_test.act_as(p.owner);
-  perform public.share_listing_to_feed(v_listing);
+  -- Publishing gives the listing its post (0557, hidden from the feed for knowledge).
+  update public.listings set moderation_status = 'published' where listing_id = v_listing;
   perform kc_test.assert_eq((pg_temp.copy_of(v_h)).post_id,
     (select post_id from public.posts where listing_id = v_listing),
     'the copy appears under the new post');

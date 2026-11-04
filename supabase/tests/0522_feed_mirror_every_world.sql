@@ -184,12 +184,14 @@ begin
 
   update public.worlds set feed_mirror = false where slug = 'time';
   v_shift := kc_test.create_listing(p.giver, 'time', 'volunteer_shift', 'give', 'Kitchen shift', '{}'::jsonb);
-  perform kc_test.assert_true(pg_temp.mirror_of(v_shift) is null, 'a world without feed_mirror is not mirrored automatically');
+  -- Since 0557 the listing has its post at once, kept out of the main feed until shared.
+  perform kc_test.assert_true((pg_temp.mirror_of(v_shift)).feed_hidden, 'a world without feed_mirror gets a post hidden from the feed');
 
   perform kc_test.act_as(p.giver);
   perform public.share_listing_to_feed(v_shift);
   perform kc_test.assert_eq(
     (pg_temp.mirror_of(v_shift)).listing_world_slug, 'time', 'a manual share records the listing world');
+  perform kc_test.assert_true(not (pg_temp.mirror_of(v_shift)).feed_hidden, 'and exposes the post in the feed');
   update public.worlds set feed_mirror = true where slug = 'time';
 end $$;
 
