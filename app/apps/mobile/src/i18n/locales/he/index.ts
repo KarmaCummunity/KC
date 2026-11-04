@@ -20,6 +20,7 @@ import { onboardingHe } from './modules/onboarding';
 import { dateOfBirthHe } from './modules/dateOfBirth';
 import { errorsHe } from './modules/errors';
 import { chatHe } from './modules/chat';
+import { chatNewHe } from './modules/chatNew';
 import { notificationsHe } from './modules/notifications';
 import { emptyStatesHe, feedSettingsHe } from './modules/feedSettings';
 import { moderationHe, auditHe, accountBlockedHe } from './modules/moderation';
@@ -81,7 +82,7 @@ const he = {
   filters: filtersHe,
 
   // Chat — see modules/chat.ts (FR-CHAT-016)
-  chat: chatHe,
+  chat: { ...chatHe, new: chatNewHe },
 
   // Notifications (FR-NOTIF-001..015) — see modules/notifications.ts
   notifications: notificationsHe,

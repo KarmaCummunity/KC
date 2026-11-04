@@ -11,3 +11,10 @@ tags: [chat, smoke]
     visible:
       id: chat-inbox-screen
     timeout: 20000
+# FR-CHAT-017 — the "+" opens the new-conversation picker.
+- tapOn:
+    id: chat-inbox-new
+- extendedWaitUntil:
+    visible:
+      id: chat-new-screen
+    timeout: 20000
