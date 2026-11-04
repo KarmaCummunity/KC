@@ -2689,6 +2689,164 @@ export type Database = {
           },
         ]
       }
+      housing_booking_details: {
+        Row: {
+          adults: number
+          cancel_note: string | null
+          check_in_date: string
+          check_out_date: string
+          created_at: string
+          decision_note: string | null
+          handoff_id: string
+          late_cancel: boolean
+          message: string
+          minors: number
+          minors_guardian_ack: boolean
+        }
+        Insert: {
+          adults: number
+          cancel_note?: string | null
+          check_in_date: string
+          check_out_date: string
+          created_at?: string
+          decision_note?: string | null
+          handoff_id: string
+          late_cancel?: boolean
+          message: string
+          minors?: number
+          minors_guardian_ack?: boolean
+        }
+        Update: {
+          adults?: number
+          cancel_note?: string | null
+          check_in_date?: string
+          check_out_date?: string
+          created_at?: string
+          decision_note?: string | null
+          handoff_id?: string
+          late_cancel?: boolean
+          message?: string
+          minors?: number
+          minors_guardian_ack?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "housing_booking_details_handoff_id_fkey"
+            columns: ["handoff_id"]
+            isOneToOne: true
+            referencedRelation: "giving_handoffs"
+            referencedColumns: ["handoff_id"]
+          },
+        ]
+      }
+      housing_conduct_acceptances: {
+        Row: {
+          accepted_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          accepted_at?: string
+          user_id: string
+          version: number
+        }
+        Update: {
+          accepted_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "housing_conduct_acceptances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "housing_conduct_acceptances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "housing_conduct_acceptances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      housing_private_details: {
+        Row: {
+          access_instructions: string | null
+          apartment: string | null
+          city_id: string
+          entrance_notes: string | null
+          floor: string | null
+          house_number: string
+          listing_id: string
+          street_id: number
+          true_geo: unknown
+          updated_at: string
+        }
+        Insert: {
+          access_instructions?: string | null
+          apartment?: string | null
+          city_id: string
+          entrance_notes?: string | null
+          floor?: string | null
+          house_number: string
+          listing_id: string
+          street_id: number
+          true_geo?: unknown
+          updated_at?: string
+        }
+        Update: {
+          access_instructions?: string | null
+          apartment?: string | null
+          city_id?: string
+          entrance_notes?: string | null
+          floor?: string | null
+          house_number?: string
+          listing_id?: string
+          street_id?: number
+          true_geo?: unknown
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "housing_private_details_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "housing_private_details_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "housing_private_details_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "housing_private_details_street_fk"
+            columns: ["city_id", "street_id"]
+            isOneToOne: false
+            referencedRelation: "streets"
+            referencedColumns: ["city_id", "street_id"]
+          },
+        ]
+      }
       ingestion_runs: {
         Row: {
           finished_at: string | null
@@ -9510,6 +9668,20 @@ export type Database = {
         Args: { p_shift_id: string }
         Returns: undefined
       }
+      accept_housing_conduct: {
+        Args: { p_version: number }
+        Returns: {
+          accepted_at: string
+          user_id: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "housing_conduct_acceptances"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       accept_legal_document: {
         Args: {
           p_doc_type: Database["public"]["Enums"]["legal_doc_type"]
@@ -10425,9 +10597,43 @@ export type Database = {
         Args: { p_actor: string; p_grant_id: string }
         Returns: boolean
       }
+      can_view_housing_private_details: {
+        Args: { p_listing_id: string; p_viewer: string }
+        Returns: boolean
+      }
       cancel_giving_handoff: {
         Args: { p_handoff_id: string }
         Returns: undefined
+      }
+      cancel_housing_booking: {
+        Args: { p_handoff_id: string; p_note?: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          listing_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "giving_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       cancel_ride_booking: {
         Args: { p_handoff_id: string }
@@ -10580,6 +10786,36 @@ export type Database = {
       }
       closure_cleanup_expired: { Args: never; Returns: number }
       closure_cleanup_expired_with_metric: { Args: never; Returns: number }
+      complete_housing_booking: {
+        Args: { p_handoff_id: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          listing_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "giving_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       complete_knowledge_session: {
         Args: { p_handoff_id: string }
         Returns: {
@@ -10853,6 +11089,36 @@ export type Database = {
       }
       cron_feed_cache_worker: { Args: never; Returns: number }
       cron_refresh_feed_open_posts_mv_if_dirty: { Args: never; Returns: number }
+      decide_housing_booking: {
+        Args: { p_approve: boolean; p_handoff_id: string; p_note?: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          listing_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "giving_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       decline_ride_booking: {
         Args: { p_handoff_id: string }
         Returns: {
@@ -11113,6 +11379,21 @@ export type Database = {
         Returns: string
       }
       get_donation_receipt: { Args: { p_payment_id: string }; Returns: Json }
+      get_housing_private_details: {
+        Args: { p_listing_id: string }
+        Returns: {
+          access_instructions: string
+          apartment: string
+          city_id: string
+          entrance_notes: string
+          floor: string
+          house_number: string
+          lat: number
+          listing_id: string
+          lng: number
+          street_name: string
+        }[]
+      }
       get_listing_handoff: { Args: { p_listing_id: string }; Returns: Json }
       get_marketplace_listing_detail: {
         Args: { p_listing_id: string }
@@ -11139,6 +11420,10 @@ export type Database = {
       get_volunteer_shift_ics: { Args: { p_shift_id: string }; Returns: string }
       giving_handoff_copy_key: { Args: { p_kind: string }; Returns: string }
       giving_handoff_no_show_sweep: { Args: never; Returns: number }
+      has_accepted_housing_conduct: {
+        Args: { p_user: string }
+        Returns: boolean
+      }
       has_admin_role:
         | { Args: { role_name: string; uid: string }; Returns: boolean }
         | {
@@ -11162,6 +11447,75 @@ export type Database = {
         Args: { lat1: number; lat2: number; lon1: number; lon2: number }
         Returns: number
       }
+      housing_assert_eligible: {
+        Args: { p_action: string; p_user: string }
+        Returns: undefined
+      }
+      housing_assert_nights_bookable: {
+        Args: {
+          p_exclude: string
+          p_in: string
+          p_listing: Database["public"]["Tables"]["listings"]["Row"]
+          p_out: string
+          p_party: number
+        }
+        Returns: undefined
+      }
+      housing_booking_enqueue: {
+        Args: {
+          p_actor: string
+          p_category?: string
+          p_kind: string
+          p_row: Database["public"]["Tables"]["giving_handoffs"]["Row"]
+          p_to: string
+        }
+        Returns: undefined
+      }
+      housing_bookings_sweep: { Args: never; Returns: Json }
+      housing_check_in_at: {
+        Args: { p_day: string; p_details: Json }
+        Returns: string
+      }
+      housing_check_in_deadline: {
+        Args: { p_day: string; p_details: Json }
+        Returns: string
+      }
+      housing_check_offer_details: {
+        Args: { p_details: Json; p_is_insert: boolean }
+        Returns: string
+      }
+      housing_check_out_at: {
+        Args: { p_day: string; p_details: Json }
+        Returns: string
+      }
+      housing_check_request_details: {
+        Args: { p_details: Json; p_is_insert: boolean }
+        Returns: string
+      }
+      housing_conduct_version: { Args: never; Returns: number }
+      housing_fuzzed_point: {
+        Args: { p_listing_id: string; p_true: unknown }
+        Returns: unknown
+      }
+      housing_guest_has_overlap: {
+        Args: {
+          p_exclude: string
+          p_guest: string
+          p_in: string
+          p_out: string
+        }
+        Returns: boolean
+      }
+      housing_guests_on_night: {
+        Args: { p_exclude: string; p_listing_id: string; p_night: string }
+        Returns: number
+      }
+      housing_local_midnight: { Args: { p_day: string }; Returns: string }
+      housing_night_open: {
+        Args: { p_details: Json; p_night: string }
+        Returns: boolean
+      }
+      housing_today: { Args: never; Returns: string }
       inject_system_message: {
         Args: { p_body?: string; p_chat_id: string; p_payload: Json }
         Returns: string
@@ -11228,6 +11582,7 @@ export type Database = {
       karma_award_handoff: {
         Args: {
           p_giver: string
+          p_giver_units?: number
           p_handoff_id: string
           p_receiver: string
           p_world: string
@@ -11268,6 +11623,29 @@ export type Database = {
       }
       kc_dev_wipe_demo_data: { Args: never; Returns: Json }
       list_active_surveys: { Args: never; Returns: Json }
+      list_housing_bookings: {
+        Args: { p_listing_id: string }
+        Returns: {
+          adults: number
+          avatar_url: string
+          check_in_date: string
+          check_out_date: string
+          confirm_by: string
+          guest_completed_stays: number
+          guest_member_since: string
+          guest_name: string
+          guest_verified: boolean
+          handoff_id: string
+          message: string
+          minors: number
+          rated_by_me: boolean
+          recipient_id: string
+          reserved_at: string
+          slot_ends_at: string
+          slot_starts_at: string
+          status: string
+        }[]
+      }
       list_kc_support_channels: {
         Args: never
         Returns: {
@@ -11310,6 +11688,29 @@ export type Database = {
           status: string
           title: string
           world_slug: string
+        }[]
+      }
+      list_my_housing_stays: {
+        Args: { p_limit?: number }
+        Returns: {
+          adults: number
+          can_view_address: boolean
+          cancel_reason: string
+          check_in_date: string
+          check_out_date: string
+          city_id: string
+          confirm_by: string
+          handoff_id: string
+          host_id: string
+          host_name: string
+          listing_id: string
+          listing_title: string
+          minors: number
+          rated_by_me: boolean
+          reserved_at: string
+          slot_ends_at: string
+          slot_starts_at: string
+          status: string
         }[]
       }
       list_my_listings: {
@@ -11616,6 +12017,36 @@ export type Database = {
         }[]
       }
       mark_giving_handed_over: {
+        Args: { p_handoff_id: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          listing_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "giving_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      mark_housing_no_show: {
         Args: { p_handoff_id: string }
         Returns: {
           cancel_reason: string | null
@@ -12066,6 +12497,44 @@ export type Database = {
           p_target_type_filter?: string
         }
         Returns: Json
+      }
+      request_housing_booking: {
+        Args: {
+          p_adults: number
+          p_check_in: string
+          p_check_out: string
+          p_listing_id: string
+          p_message?: string
+          p_minors?: number
+          p_minors_guardian_ack?: boolean
+        }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          listing_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "giving_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       reserve_item_giving: {
         Args: {
@@ -13186,6 +13655,37 @@ export type Database = {
       seed_feed_performance_posts: {
         Args: { p_city_id: string; p_count?: number; p_owner_id: string }
         Returns: number
+      }
+      set_housing_private_details: {
+        Args: {
+          p_access_instructions?: string
+          p_apartment?: string
+          p_entrance_notes?: string
+          p_floor?: string
+          p_house_number: string
+          p_lat?: number
+          p_listing_id: string
+          p_lng?: number
+          p_street_id: number
+        }
+        Returns: {
+          access_instructions: string | null
+          apartment: string | null
+          city_id: string
+          entrance_notes: string | null
+          floor: string | null
+          house_number: string
+          listing_id: string
+          street_id: number
+          true_geo: unknown
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "housing_private_details"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       set_ride_series_status: {
         Args: { p_series_id: string; p_status: string }

@@ -110,11 +110,13 @@ Last applied on kc-dev when this was written: `0239`.
 | 0590 | users.date_of_birth + rpc_set_date_of_birth (FR-AUTH-010 AC2.d) | in progress |
 | 0591 | admin demo-data status + wipe (FR-ADMIN-031) | in progress |
 | 0592 | admin restore demo data: seed moved into the DB (FR-ADMIN-031) | in progress |
-| 0593+ | — | free |
+| 0593–0599 | — | free |
+| 0600–0609 | Housing H1 stays (`spec/21_housing.md`): `0600` catalog, schemas, conduct; `0601` private details; `0602` bookings; `0603` booking lifecycle | in progress |
+| 0610+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0593+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0593–0599`, `0610+`.
 
 ## How to claim
 

@@ -72,6 +72,27 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'ride_series_not_found',
   'ride_series_cancelled',
   'ride_series_status_invalid',
+  // Housing stays (0600–0603, spec 21_housing.md): conduct, dates, capacity, privacy, lifecycle.
+  'housing_conduct_required',
+  'housing_conduct_version_stale',
+  'housing_nights_out_of_range',
+  'housing_dates_invalid',
+  'housing_dates_unavailable',
+  'housing_details_invalid',
+  'housing_tent_facilities_required',
+  'housing_capacity_exceeded',
+  'housing_policy_mismatch',
+  'housing_minor_unaccompanied',
+  'housing_message_required',
+  'housing_pending_cap',
+  'housing_booking_overlap',
+  'housing_private_details_hidden',
+  'housing_city_required',
+  'housing_booking_started',
+  'housing_cancel_reason_required',
+  'housing_not_in_window',
+  'housing_note_too_long',
+  'housing_use_booking_cancel',
 ] as const;
 
 export type MarketplaceServerErrorCode = (typeof MARKETPLACE_SERVER_ERROR_CODES)[number];

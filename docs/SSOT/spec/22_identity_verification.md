@@ -25,6 +25,7 @@ Prefix: `FR-VERIFY-*`
 
 ## FR-VERIFY-002 — Where verification is required
 - AC1. **Required** (server-enforced, `world_permission_denied` / `verification_required`): every housing action of FR-HOUSING-003 AC1 (D30, `D116`); an elderly home-visit volunteer (D48); joining an event whose organizer requires it (D31).
+- AC1a. **Emergency exception** (`D122`): in a declared emergency an evacuee housing **guest** without documents may be confirmed by a recognised organization instead (`verification_method='org_vouch'`), for evacuee stays in that region only, lapsing with the emergency (FR-HOUSING-033 AC3). Never for hosts.
 - AC2. **Voluntary** everywhere else: any member may verify to earn the badge and the trust weight (D23 "not blocking").
 - AC3. **Pre-check before effort.** A gated action reads the level first and shows the verification card instead of a form the member cannot submit (TD-245 pattern).
 

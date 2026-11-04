@@ -135,6 +135,14 @@ const KIND_ROUTES: Record<NotificationKind, KindHandler> = {
   giving_handoff_declined: (d) => listingRoute(d.params?.listingId),
   giving_handoff_cancelled: (d) => listingRoute(d.params?.listingId),
   giving_handoff_completed: (d) => listingRoute(d.params?.listingId),
+  // FR-HOUSING-017 — housing booking changes open the stay offer, where both sides act on it.
+  housing_booking_requested: (d) => listingRoute(d.params?.listingId),
+  housing_booking_confirmed: (d) => listingRoute(d.params?.listingId),
+  housing_booking_declined: (d) => listingRoute(d.params?.listingId),
+  housing_booking_expired: (d) => listingRoute(d.params?.listingId),
+  housing_booking_superseded: (d) => listingRoute(d.params?.listingId),
+  housing_booking_cancelled: (d) => listingRoute(d.params?.listingId),
+  housing_booking_completed: (d) => listingRoute(d.params?.listingId),
 };
 
 /** Marketplace listing detail, only for a well-formed listing id. */

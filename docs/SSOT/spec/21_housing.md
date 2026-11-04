@@ -1,6 +1,6 @@
 # 2.21 Housing & Spaces (`housing`) — free space sharing
 
-> **Status:** ⏳ Spec v1 (2026-11-03) — **drafted, PM review pending**. Nothing below is implemented yet beyond the existing skeleton (world row, kinds `host_offer` / `stay_request`, curated create fields, feed mirror, launch flag `world_housing_enabled` = off). Behaviour that rests on a pending fill (`S#`) is marked with its placeholder and must be flagged in the PR that implements it.
+> **Status:** 🟡 Spec v1 (2026-11-03); every PM question decided, nine fills pending approval. **Implementation:** H1.1 shipped server-side stays (migrations `0600`–`0603`, flow test `supabase/tests/flows/housing_lifecycle.sql`): sub-categories, binding stay schemas and rules, code of conduct gate, private details with the reveal window and the fuzzed public point, booking request / decision with capacity and first-confirmation-wins, cancellation with late marks, completion with karma, no-show, sweep, host and guest lists, booking pushes; the create form sends the new stay fields with an "ongoing" availability. Not yet: the client booking screens, availability editor, verification pre-check (`TD-245`), chat system messages, emergency button, safety freeze, search filters, matching (H1.2–H1.4). The world stays a portal (`world_housing_enabled` = off). Behaviour that rests on a pending fill (`S#`) is marked with its placeholder and must be flagged in the PR that implements it.
 
 Prefix: `FR-HOUSING-*`
 
@@ -327,7 +327,7 @@ The assisted track gives a roof to people in crisis **only through professional 
 ## FR-HOUSING-033 — Emergency mode: hosting evacuees (D42)
 - AC1. While an emergency is active for a region with the housing world in scope, the housing hub shows the emergency block on top with the template **"host evacuees"**: a stay offer pre-filled with `evacuee_hosting=true`, `max_nights` up to 30, and the region.
 - AC2. Evacuee stay requests (`stay_purpose='evacuation'`, offered in the form only while the mode is on for the poster's region) rank first in the hub and in matching for that region; notifications use the `emergency` group within the declared region (S28).
-- AC3. Verification stays required (D30). Whether an organization's confirmation may stand in for an evacuee guest who left home without documents is open question Q-H6.
+- AC3. Hosts always verify their identity (D30). An evacuee **guest** who left home without documents may instead be confirmed by a recognised organization (a municipality evacuation centre or an NGO with housing coordination) for evacuee stays in the declared region while the emergency lasts (`D122`); the confirmation is recorded as `verification_method='org_vouch'` with the confirming organization, and it lapses with the emergency.
 - AC4. Karma +50% on hosting in the declared region (S28).
 
 ---
@@ -467,7 +467,7 @@ Every new function follows the privilege rule of `SEC-1063` (private by default,
 | **H3** | Assisted track (FR-HOUSING-030…032) | H1, ORG-P1 (organization entity + roles) |
 | **H4** | Emergency-mode evacuee hosting (FR-HOUSING-033) | H1, G25 (emergency mode) |
 
-Open questions for the PM: [`docs/spec/92_open_questions.md`](../../spec/92_open_questions.md) item 6 (Q-H6). Q-H1…Q-H5 and Q-H7 were decided by the PM on 2026-11-03 (decision rows above).
+Open questions for the PM: none — Q-H1…Q-H7 were all decided by the PM on 2026-11-03 (decision rows above).
 
 ---
 
@@ -478,3 +478,4 @@ Open questions for the PM: [`docs/spec/92_open_questions.md`](../../spec/92_open
 | 0.1 | 2026-11-03 | New domain file. Housing becomes free space sharing with four sub-categories (stays, emergency shelter via organizations, event & gathering space, storage) — `D112`; FR-HOUSING-001…039; nine housing fills pending PM approval (`docs/spec/91`). |
 | 0.2 | 2026-11-03 | PM answers: shelter only via organizations; storage for personal and nonprofit goods, never for-profit; organizations offer, request and search in every world; verification in every sub-category; verification = ID document + live selfie (`22_identity_verification.md`) replacing the interim manual path; legal texts drafted for counsel (`docs/legal/drafts/`). Minors rule aligned with D109. |
 | 0.3 | 2026-11-03 | PM: community stays capped at 30 nights, longer needs through organizations (`D120`, closes Q-H4); counsel reviews the legal drafts once before launch and no phase waits for it (D118 refined). |
+| 0.4 | 2026-11-03 | PM: an organization may confirm an evacuee guest without documents in a declared emergency (`D122`, closes Q-H6). H1.1 implemented (status header). |
