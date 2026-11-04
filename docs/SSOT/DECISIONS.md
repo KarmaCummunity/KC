@@ -1724,6 +1724,8 @@ Owner rules that go with it:
 
 **Step 3b (2026-11-04, `0556`) — finding and scope.** Moving the ride and knowledge writers to the record failed in CI on a premise this decision took for granted: that every listing of a handoff world has a post. Two kinds do not: a later occurrence of a recurring ride (0531 mirrors only the soonest occurrence into the feed) and a knowledge offer its owner has not shared (`worlds.feed_mirror` is off for knowledge). Both are open and bookable, so a record keyed by `post_id` would refuse them. `worlds.feed_mirror` conflates two things — whether a post exists and whether it shows in the main feed — and the one Post model needs them apart. Step 3b therefore ships only the id contract step 4 needs (`book_ride_seat`, `complete_ride_listing`, `list_ride_bookings`, `book_knowledge_slot`, `get_listing_handoff` accept a post id or a listing id through `handoff_target_listing_id`); the ride, knowledge and housing bookings keep `giving_handoffs` as their record and reach `post_handoffs` through the 0553 sync. Sub-step 3b-pre gives every listing of a handoff world a post while a separate feed-exposure flag keeps the 0531 noise control and the knowledge share-to-feed semantics; the writers move after it.
 
+**Step 3b″ (2026-11-04, `0558`).** With every published listing owning a post (`D-218`), the ride and knowledge booking writers move to the record as first planned; capacity is counted on it (`post_handoff_seats_taken`). A one-off backfill gives a hidden post to any listing that still has a live handoff but no post (an unshared knowledge offer that has since closed), so no live handoff is left without a record. `cancel_giving_handoff` and `karma_award_handoff` are not redefined here: 0603 redefines both and, being numbered later, would replace them on a fresh database. The housing writers move in 3b‴.
+
 **Affected.** `supabase/migrations/0555_post_handoffs_own_record.sql`, `supabase/migrations/0556_ride_knowledge_bookings_on_posts.sql` (`listing_id_of_post`, `handoff_target_post_id`, `giving_handoff_upsert_from_post_handoff`, `post_handoffs_giving_sync`, the five RPCs and two sweeps), `docs/spec/07` §7.1 and §7.5, `docs/spec/93` G1, `docs/architecture/current.md`.
 
 ## D-218 — Every published listing has a post; `posts.feed_hidden` says whether the main feed lists it (2026-11-04)
@@ -1756,6 +1758,7 @@ Owner rules that go with it:
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
+| 4.45 | 2026-11-04 | `D-217` step 3b″: the ride and knowledge booking writers write `post_handoffs`; backfill of hidden posts for live handoffs without one (`0558`). |
 | 4.44 | 2026-11-04 | Added `D-218` (G1 step 3b-pre: every published listing has a post; `posts.feed_hidden` separates existence from feed exposure; `0557`). |
 | 4.43 | 2026-11-04 | `D-217` step 3b: the ride / knowledge booking RPCs and readers accept a post id; finding that recurring-ride occurrences and unshared knowledge offers have no post, so their record stays `giving_handoffs` until 3b-pre (`0556`). |
 | 4.42 | 2026-11-04 | Added `D-217` (G1 step 3a: the items / food handoff RPCs and sweeps write `post_handoffs`; `giving_handoffs` derived both ways; `0555`). |
