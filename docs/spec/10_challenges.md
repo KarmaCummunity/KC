@@ -22,6 +22,6 @@ Model: `Challenge`, `ChallengeScope: personal | group | community`, `ChallengePa
 - **Karma** (values in [07 §7.6](./07_cross_cutting_systems.md#76-karma)): opening 2 private / 3 community, at most 2 a day; report 1 / 2 / 3 once per cycle; completion 10 / 15 / 20; "large" means 50+ participants. Only the database awards karma; the client never computes it.
 - **Identity:** every action runs as `auth.uid()`. The legacy engine trusted a client-sent user id; that hole is closed.
 - **Opening:** "give" is the `challenges` category of the one create form (FR-POST-001 AC6); there is no separate create screen. Until the launch flag is on, that category still takes links.
-- **Launch:** the world is gated by the launch flag `world_challenges_enabled` (D60); while it is off the world is a portal (links only).
+- **Launch:** the world is gated by the launch flag `world_challenges_enabled` (D60); it defaults to on (PM 2026-11-04), and while it is off the world is a portal (links only).
 
 Tech: · D18 (challenges as a world) superseded · migration `0550`, test `supabase/tests/0550_challenges.sql`, screens under `app/(tabs)/donations/challenges` · G26 (remaining: giving challenge counted from closings, group scope and group chat lock (S29), challenge notifications, karma reversal on leave/removal, moderation of challenges, challenge images)
