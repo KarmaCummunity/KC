@@ -188,6 +188,12 @@ begin
   perform kc_test.assert_eq(h.listing_id, v_listing, 'the claim resolves the post id to the food offer');
   perform pg_temp.assert_both_sides(h.handoff_id, 'confirmed', 'a food claim is confirmed at once (0383)');
 
+  perform kc_test.act_as(p.second);
+  perform kc_test.assert_raises(
+    format('select public.claim_food_giving(%L, null, null)', v_listing),
+    'listing_not_available', 'a second claim on a live claim is refused with the code the app shows');
+  perform kc_test.act_as(p.eater);
+
   -- The eater never came: the window closed more than two hours ago.
   update public.post_handoffs set pickup_window_end = now() - interval '3 hours' where handoff_id = h.handoff_id;
   perform kc_test.act_as_anon();

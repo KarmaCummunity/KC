@@ -422,14 +422,20 @@ begin
     coalesce(v_l.expires_at, now() + interval '4 hours')
   );
 
-  insert into public.post_handoffs (
-    post_id, owner_id, recipient_id, world_slug, status,
-    pickup_mode, pickup_window_start, pickup_window_end, confirmed_at
-  ) values (
-    v_post_id, v_l.owner_id, v_uid, 'food', 'confirmed',
-    'pickup', v_start, v_end, now()
-  )
-  returning handoff_id into v_handoff_id;
+  -- One live claim per offer (post_handoffs_active_post_uidx). The app mapped the old index name
+  -- to listing_not_available (@kc/domain mapMarketplaceServerError); the RPC now says so itself.
+  begin
+    insert into public.post_handoffs (
+      post_id, owner_id, recipient_id, world_slug, status,
+      pickup_mode, pickup_window_start, pickup_window_end, confirmed_at
+    ) values (
+      v_post_id, v_l.owner_id, v_uid, 'food', 'confirmed',
+      'pickup', v_start, v_end, now()
+    )
+    returning handoff_id into v_handoff_id;
+  exception when unique_violation then
+    raise exception 'listing_not_available' using errcode = 'P0002';
+  end;
 
   update public.listings
      set availability_status = 'scheduled', urgency_level = public.food_listing_urgency_level(v_l.expires_at),
