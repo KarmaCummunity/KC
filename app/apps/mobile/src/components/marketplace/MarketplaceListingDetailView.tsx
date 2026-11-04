@@ -8,6 +8,7 @@ import { useSimilarListings } from '../../hooks/useMarketplaceListingDetail';
 import { ReportListingModal } from './ReportListingModal';
 import { GivingHandoffActions } from './GivingHandoffActions';
 import { RideBookingActions } from './rides/RideBookingActions';
+import { HousingStayActions } from './housing/HousingStayActions';
 import { RideRouteCard } from './RideRouteCard';
 import { RidePublishAgainButton } from './RidePublishAgainButton';
 import { RideSeriesManageLink } from './RideSeriesManageLink';
@@ -90,6 +91,7 @@ export function MarketplaceListingDetailView({ detail, bottomInset }: Props) {
         <View style={styles.actions}>
           <GivingHandoffActions detail={detail} />
           <RideBookingActions detail={detail} />
+          <HousingStayActions detail={detail} />
           <ListingDetailActions detail={detail} viewerId={viewerId} onReport={() => setReportOpen(true)} />
         </View>
         {similar.length > 0 ? (

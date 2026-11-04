@@ -22,6 +22,10 @@ export * from './aboutTeam';
 export * from './legal';
 export * from './admin';
 export * from './reports';
+// Housing stays (FR-HOUSING-015…022, 0600–0603).
+export * from './housing/HousingStay';
+export * from './housing/HousingError';
+export * from './housing/housingStayRules';
 export * from './rides/RideMode';
 export * from './rides/RideStatus';
 export * from './rides/RideListing';

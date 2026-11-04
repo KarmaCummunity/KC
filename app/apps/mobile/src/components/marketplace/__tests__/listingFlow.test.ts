@@ -7,7 +7,7 @@ const give = (worldSlug: string) => ({ direction: 'give' as const, worldSlug, ow
 
 describe('listingFlowHasViewerAction', () => {
   it('offers a flow action to a signed-in non-owner on a give listing in a handoff or rides world', () => {
-    for (const world of [...HANDOFF_WORLDS, 'rides']) {
+    for (const world of [...HANDOFF_WORLDS, 'rides', 'housing']) {
       expect(listingFlowHasViewerAction(give(world), 'u_viewer')).toBe(true);
     }
   });
@@ -16,6 +16,6 @@ describe('listingFlowHasViewerAction', () => {
     expect(listingFlowHasViewerAction(give('items'), null)).toBe(false);
     expect(listingFlowHasViewerAction(give('items'), 'u_owner')).toBe(false);
     expect(listingFlowHasViewerAction({ ...give('items'), direction: 'request' }, 'u_viewer')).toBe(false);
-    expect(listingFlowHasViewerAction(give('housing'), 'u_viewer')).toBe(false);
+    expect(listingFlowHasViewerAction(give('time'), 'u_viewer')).toBe(false);
   });
 });
