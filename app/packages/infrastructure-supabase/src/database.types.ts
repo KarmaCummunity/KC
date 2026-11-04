@@ -12501,6 +12501,10 @@ export type Database = {
         Args: { p_idempotency_key: string; p_lines: Json; p_txn_id: string }
         Returns: undefined
       }
+      post_handoff_seats_taken: {
+        Args: { p_exclude?: string; p_post_id: string }
+        Returns: number
+      }
       post_handoffs_sync_listing: {
         Args: { p_listing_id: string }
         Returns: undefined
