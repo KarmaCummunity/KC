@@ -80,6 +80,7 @@ export const marketplaceErrors = {
   event_org_required: 'רק חברי הארגון יכולים לפרסם את האירוע שלו. בחרו אחד מהארגונים שלכם.',
   verification_required: 'האירוע פתוח לחברים מאומתים בלבד. אמתו את החשבון ונסו שוב.',
   not_owner: 'רק מארגני האירוע יכולים לעשות את זה.',
+  event_not_started: 'אפשר לסמן נוכחות רק אחרי שהאירוע התחיל.',
   invalid_transition: 'ההרשמה כבר עודכנה. רעננו ונסו שוב.',
   generic: 'הפרסום נכשל. נסו שוב.',
 } as const;
