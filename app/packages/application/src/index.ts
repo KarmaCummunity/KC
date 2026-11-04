@@ -292,3 +292,4 @@ export * from './payments';
 export * from './volunteering';
 export * from './giving';
 export * from './admin/whatsapp';
+export * from './knowledge';
