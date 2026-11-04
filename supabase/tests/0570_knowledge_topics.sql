@@ -97,9 +97,9 @@ begin
            'english', v_l2),
     'knowledge_topic_depth_exceeded', 'moving a branch where its deepest leaf would be level 5 is refused');
   perform kc_test.assert_raises(
-    'insert into public.knowledge_topic_aliases (topic_id, alias) select topic_id, ''Python'' from public.knowledge_topics where slug = ''english''',
+    'insert into public.knowledge_topic_aliases (topic_id, alias) select topic_id, ''Machine  Learning'' from public.knowledge_topics where slug = ''english''',
     'duplicate key value violates unique constraint "knowledge_topic_aliases_norm_uidx"',
-    'an alias equal (normalized) to an existing one is refused');
+    'an alias equal (normalized: case, spacing) to an existing one is refused');
 end $$;
 
 -- ── Proposals ──────────────────────────────────────────────────────────────────────────
@@ -180,7 +180,7 @@ begin
   v_alias := public.add_knowledge_topic_alias(v_rust, 'ראסט לנג', 'he');
   perform kc_test.assert_eq(v_alias.topic_id, v_rust, 'an operator adds an alias');
   perform kc_test.assert_raises(
-    format('select public.add_knowledge_topic_alias(%L, ''Python'', ''en'')', v_rust),
+    format('select public.add_knowledge_topic_alias(%L, ''machine learning'', ''en'')', v_rust),
     'knowledge_topic_alias_taken', 'an alias already in use is refused');
 
   perform kc_test.assert_raises(
