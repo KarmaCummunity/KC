@@ -8,6 +8,7 @@ import { adminDonationLinksHe } from './adminDonationLinks';
 import { adminWhatsAppHe } from './adminWhatsApp';
 import { adminMatchingHe } from './adminMatching';
 import { adminDemoDataHe } from './adminDemoData';
+import { adminOrgTreeHe } from './adminOrgTree';
 import { adminStatsHe } from './adminStats';
 import { adminSurveysHe } from './adminSurveys';
 import { adminTasksHe } from './adminTasks';
@@ -149,6 +150,7 @@ export const adminHe = {
   whatsapp: adminWhatsAppHe,
   matching: adminMatchingHe,
   demoData: adminDemoDataHe,
+  orgTree: adminOrgTreeHe,
   stats: adminStatsHe,
   crm: adminCrmHe,
   orgApprovals: adminOrgApprovalsHe,

@@ -486,10 +486,10 @@ Adds a per-grant direct-manager edge and a collapsible org-hierarchy tree. A gra
 - AC1. `admin_role_grants.manager_grant_id` (self-FK, `on delete set null`) holds the direct-manager edge; a CHECK forbids self-management; `is_ancestor(p_ancestor, p_node)` resolves the chain.
 - AC2. `admin_set_manager(p_grant_id, p_manager_grant_id)` is `SECURITY DEFINER`, gated by `can_grant_role` authority over the grant's role/scope, enforces same-org (or platform manager), rejects cycles (`manager_cycle`), and audit-logs `admin_set_manager`. Passing `null` clears the manager.
 - AC3. `admin_org_tree(p_org_id default null)` returns an RBAC-filtered adjacency list (caller's own org subtree; `super_admin` all, or a single org). Levels are computed client-side (`buildOrgForest`, `super_admin` root = 0).
-- AC4. `(admin)/admins` offers a list/tree view toggle; tree mode renders collapsible nodes with role + level badges. `super_admin` can switch orgs; scoped admins are pinned to their org.
+- AC4. `(admin)/admins` offers a list/tree view toggle; tree mode renders collapsible nodes grouped by org. A person appears once per org, as one card carrying every role they hold there and the number of people below them (`buildOrgPeopleForest`, `groupPeopleByOrg`); a person reports to the owner of the manager grant of their most senior grant that has one, inside the same org. Reports are nested under their manager behind a connector line. `super_admin` can switch orgs; scoped admins are pinned to their org.
 - AC5. The admin-detail screen shows live direct-manager + subordinates per grant and an assign/change/clear-manager picker gated by the `admins.set_manager` permission (server re-checks scoped authority); the tree updates without a full reload.
 
-**Related.** Migration `0203_admin_org_hierarchy.sql`. Domain: `OrgTree` (`buildOrgForest`, `OrgTreeNode`, `OrgTreeMember`), `OrgHierarchyError`, `admins.set_manager` permission. Application: `IOrgHierarchyRepository`, `GetOrgTreeUseCase`, `SetManagerUseCase`. Infrastructure: `SupabaseOrgHierarchyRepository`. Mobile: `useOrgTree`, `useSetManager`, `OrgTree` / `OrgTreeRow` / `LevelBadge` / `OrgSwitcher` / `ManagerPickerModal` / `GrantManagerSection`.
+**Related.** Migration `0203_admin_org_hierarchy.sql`. Domain: `OrgTree` (`buildOrgForest`, `OrgTreeNode`, `OrgTreeMember`), `OrgPeopleTree` (`buildOrgPeopleForest`, `groupPeopleByOrg`), `OrgHierarchyError`, `admins.set_manager` permission. Application: `IOrgHierarchyRepository`, `GetOrgTreeUseCase`, `SetManagerUseCase`. Infrastructure: `SupabaseOrgHierarchyRepository`. Mobile: `useOrgTree`, `useSetManager`, `OrgTree` / `OrgTreeRow` / `OrgSwitcher` / `ManagerPickerModal` / `GrantManagerSection`.
 
 ---
 
@@ -622,3 +622,4 @@ The kc-dev environment carries fake demo data (the `seed/kc-dev` seed). A super 
 | 0.15 | 2026-10-30 | FR-ADMIN-021 AC7–AC8 (KC#1058): single-choice stats and the Sean Ellis PMF score card (`admin_pmf_survey_report`, `0458`). |
 | 0.16 | 2026-10-30 | Added §18 / FR-ADMIN-029 — match quality dashboard (KC#1122): `admin_match_quality` (`0454`), `(admin)/matching`, `matching.view_quality`. |
 | 0.17 | 2026-11-03 | Added FR-ADMIN-031 — demo data removal and restore: `admin_demo_data_status` / `admin_wipe_demo_data` (`0591`), `admin_seed_demo_data` (`0592`), `(admin)/demo-data`, `demo_data.manage` (super admin only). |
+| 0.18 | 2026-11-04 | `FR-ADMIN-025 AC4` — the tree shows one card per person per org (all roles on the card, report count instead of the level badge), grouped by org, with nested connector lines. |
