@@ -206,11 +206,12 @@ create policy knowledge_topic_follows_own_delete on public.knowledge_topic_follo
 -- "english conversation" matches the alias "english conversation" and the topic "english".
 -- A merged topic's own slug and labels resolve to the topic it was merged into; its aliases
 -- were moved at merge time. Descendants of a match are included (`via = 'descendant'`).
+-- SECURITY INVOKER on purpose: the tree and its aliases are readable by every role through
+-- RLS, and the 0520 guard keeps the anon-callable SECURITY DEFINER surface to a reviewed list.
 create or replace function public.resolve_knowledge_topics(p_text text)
 returns table (topic_id uuid, slug text, matched_slug text, via text)
 language sql
 stable
-security definer
 set search_path = ''
 as $$
   with recursive
