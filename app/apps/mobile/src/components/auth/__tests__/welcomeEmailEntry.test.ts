@@ -1,6 +1,6 @@
 // app/apps/mobile/src/components/auth/__tests__/welcomeEmailEntry.test.ts
 //
-// KC#1269 — FR-AUTH-001 AC2 + the FR-AUTH-002 MVP note (`docs/SSOT/spec/01_auth_and_onboarding.md`):
+// KC#1269 — FR-AUTH-001 AC2 + the FR-AUTH-002 MVP note (`docs/spec/requirements/01_auth_and_onboarding.md`):
 // the welcome screen keeps a text link to email/password sign-in on every platform. Without it
 // a native build has no route to `/(auth)/sign-in`, so store reviewers and seed / E2E users
 // cannot log in.

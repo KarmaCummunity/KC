@@ -46,13 +46,13 @@ begin
   return v_row;
 end $$;
 
--- 1) Every create category mirrors into the feed; the other worlds do not (yet).
+-- 1) Every create category mirrors into the feed (animals since 0612, knowledge since 0613); the other worlds do not (yet).
 do $$
 begin
   perform kc_test.assert_eq(
     (select array_agg(slug order by slug) from public.worlds where feed_mirror),
-    array['food', 'housing', 'items', 'rides', 'time']::text[],
-    'exactly the five create categories mirror into the main feed');
+    array['animals', 'food', 'housing', 'items', 'knowledge', 'rides', 'time']::text[],
+    'exactly the seven mirrored worlds reach the main feed');
 end $$;
 
 -- 2) A ride offer and a ride request reach the main feed with their world, direction and

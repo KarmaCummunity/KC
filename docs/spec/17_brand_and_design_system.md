@@ -199,7 +199,7 @@ The ratchet baseline (`apps/mobile/brand-guard.baseline.json`) only goes down. A
 
 ## 7. Voice and tone (D93)
 
-Ported from the Founder-approved master narrative (`docs/SSOT/archive/superpowers/specs/2026-05-26-karma-community-master-narrative.md` §7.4, §15, §16) and FR-RESP-006 AC19/AC20 ([legacy spec](../SSOT/spec/17_responsive_desktop.md)). Nothing here is new brand content; where the narrative and a later decision differ, the decision wins (noted inline).
+Ported from the Founder-approved master narrative (`docs/SSOT/archive/superpowers/specs/2026-05-26-karma-community-master-narrative.md` §7.4, §15, §16) and FR-RESP-006 AC19/AC20 ([legacy spec](requirements/17_responsive_desktop.md)). Nothing here is new brand content; where the narrative and a later decision differ, the decision wins (noted inline).
 
 ### 7.1 Principles
 

@@ -100,8 +100,8 @@ After each handoff both sides rate 1–5 with a note — one generic rating for 
 Tech: · FR-RIDE-037 kept; FR-RIDE-038 superseded · `ride_ratings`, `giving_handoff_ratings` currently readable via RLS · G4 · items/food/rides/knowledge handoffs: rating step = pick 1–5 stars, optional note (≤300 chars), submit (`HandoffRatingForm`, KC#1106/#1114); "Rating given" karma (7.6) tracked in KC#1306
 
 ## 7.8 Chat
-One conversation per pair; contacting from a post pins it (D13). Closing from chat (D17). Group chat only around a project/challenge/event, locked at the end. Suspended users can still talk to support (D33).
-Tech: · FR-CHAT-004–016 · implemented · –
+One conversation per pair; contacting from a post pins it (D13). Closing from chat (D17). Group chat only around a project/challenge/event, locked at the end. Suspended users can still talk to support (D33). The inbox has a "+" that starts a one-to-one conversation with a person you follow or with anyone you find by name; it reuses the existing thread of the pair (D126).
+Tech: · FR-CHAT-004–017 · implemented · –
 
 ## 7.9 Likes and comments
 On every post type: like & comment, and like & reply on comments (D25), one thread level (S8). Comment on an anonymous post shows the commenter's name; anonymous poster replies as "the poster" (S8). Delete: author, post owner, admin; 3 reports hide a comment (S9). Earn karma, create notifications, reportable.
@@ -130,12 +130,13 @@ Tech: · PRD_V2 rule 7 superseded · both ways on `posts` (0094) and `listings` 
 
 ## 7.14 Verification and trust engine
 Levels phone → ID → blue check, plus reliability data (completed handoffs, seniority), shown on post, card and profile (D23). **Not blocking**, including drivers. Exceptions: housing — both sides verified; medical — only medical bodies (D30); elderly home visit — ID-verified volunteer (D48); an event may require verified users (D31). The trust engine weighs ratings and reports in ranking/matching and reports anomalies to admins (D24). ID provider chosen at implementation.
-- **ID level (`D117`, PM 2026-11-03):** a government ID document (Israeli identity card or a passport) **and** a live selfie with liveness, matched to the document photo by a certified provider. KC keeps the result, document type, country, expiry and date of birth, never the images or the document number (a keyed hash stops one person from verifying two accounts). Detailed FRs: [`SSOT/spec/22_identity_verification.md`](../SSOT/spec/22_identity_verification.md) (`FR-VERIFY-*`).
+- **ID level (`D117`, PM 2026-11-03):** a government ID document (Israeli identity card or a passport) **and** a live selfie with liveness, matched to the document photo by a certified provider. KC keeps the result, document type, country, expiry and date of birth, never the images or the document number (a keyed hash stops one person from verifying two accounts). Detailed FRs: [`spec/requirements/22_identity_verification.md`](requirements/22_identity_verification.md) (`FR-VERIFY-*`).
 
 Tech: · PRD_V2 rule 13 superseded · phone only; ID level specified (FR-VERIFY), provider not chosen · G10, G13
 
 ## 7.15 Reports and moderation
 Anyone can report a post, comment or user. **3 reports on a post → hidden until human review, and admins are notified; 5 on a user → suspended from actions, still sees everything and can chat with support** (D33, D61). "5" = 5 distinct reporters within 30 days; suspended user's open posts are hidden (S11). Review within 48h; malicious reports count against the reporter (S12). False emergency reports are handled with priority (D42).
 - **Blocking (D105, PM 2026-11-03):** a member can block another from a profile, a post or a chat, and unblock from a Blocked Users list. Once either has blocked the other, the two never see or reach each other, in both directions: posts, listings, profiles, search, follower lists, chats and messages, comments and likes, claims and bookings, the closure recipient, notifications. The blocked member is never told. Part of the first store release (Apple App Review requires it).
+- **Handling clock (PM 2026-11-04, #1039):** Apple and Google expect a reported item to be acted on within **24 h**. The admin reports inbox flags a case that has waited **12 h** (warning) and **24 h** (overdue), and every active super-admin / moderator gets a push when a case reaches 12 h. The two platform admin accounts own the queue and back each other up; the runbook says what to do (`OPERATOR_RUNBOOK.md` → Report handling clock).
 
 Tech: · `spec/08`, R-Food superseded · `reports`, suspects queue · G20 · posts `0452`, items/food listings `0468` (KC#1298) · blocking: bilateral `is_blocked` at the data layer (`0544`), legacy FR-MOD-003/004/009

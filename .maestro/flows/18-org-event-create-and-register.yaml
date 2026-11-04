@@ -2,7 +2,7 @@
 # organization chooses between a volunteer shift and the organization's event; the event form
 # adds the organization, the date window, the registration policy, capacity and address. Everyone
 # else sees exactly the volunteer-shift form.
-# Spec: docs/spec/08_organizations.md "Events"; docs/SSOT/spec/04_posts.md FR-POST-001 AC6.
+# Spec: docs/spec/08_organizations.md "Events"; docs/spec/requirements/04_posts.md FR-POST-001 AC6.
 #
 # Categories, directions and field labels are tapped by their Hebrew text (as in flow 13): their
 # testIDs are built from the slug at runtime, which the flow-id preflight cannot resolve.

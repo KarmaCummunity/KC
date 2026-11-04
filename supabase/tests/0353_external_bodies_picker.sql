@@ -109,16 +109,21 @@ begin
   select body_id into v_unverified from public.external_bodies where slug = 'municipal_ewaste';
 
   v_id := public.create_marketplace_listing(
-    p_kind_id => v_kind, p_title => 'Foster a cat', p_details => '{"species":"cat"}'::jsonb,
+    p_kind_id => v_kind, p_title => 'Foster a cat', p_details => '{"species":"cat","care_mode":"full_boarding"}'::jsonb,
     p_external_body_id => v_body);
   select external_body_id into v_saved from public.listings where listing_id = v_id;
   if v_saved is distinct from v_body then
     raise exception 'ASSERT FAILED: external_body_id not stored';
   end if;
 
+  -- Animals are direct give and take since 0612: no body needed. Environment is still routed.
+  perform public.create_marketplace_listing(p_kind_id => v_kind, p_title => 'No org',
+    p_details => '{"species":"cat","care_mode":"pet_sitting"}'::jsonb, p_external_body_id => null::uuid);
+
   begin
-    perform public.create_marketplace_listing(p_kind_id => v_kind, p_title => 'No org',
-      p_details => '{}'::jsonb, p_external_body_id => null::uuid);
+    perform public.create_marketplace_listing(
+      p_kind_id => (select kind_id from public.listing_kinds where world_slug = 'environment' and slug = 'recycling_give'),
+      p_title => 'No org', p_details => '{}'::jsonb, p_external_body_id => null::uuid);
     raise exception 'ASSERT FAILED: routed world without body should fail';
   exception when check_violation then
     if sqlerrm <> 'routed_world_requires_external_body' then raise; end if;
@@ -126,7 +131,7 @@ begin
 
   begin
     perform public.create_marketplace_listing(p_kind_id => v_kind, p_title => 'Wrong world org',
-      p_details => '{}'::jsonb, p_external_body_id => v_other);
+      p_details => '{"species":"cat","care_mode":"full_boarding"}'::jsonb, p_external_body_id => v_other);
     raise exception 'ASSERT FAILED: body from another world should fail';
   exception when check_violation then
     if sqlerrm <> 'external_body_invalid' then raise; end if;

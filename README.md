@@ -44,7 +44,7 @@ docs/SSOT/             # specs, backlog, decisions
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) and [CLAUDE.md](CLAUDE.md) for workflow rules.
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md) for workflow rules.
 Open PRs against **`dev`**, not `main`.
 
 ## License

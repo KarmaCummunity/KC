@@ -18,7 +18,10 @@ describe('resolveTabPressAction', () => {
     expect(resolveTabPressAction(tabOf('donations'), ['(tabs)', 'donations', 'index'])).toBe('stay');
     expect(resolveTabPressAction(tabOf('profile'), ['(tabs)', 'profile'])).toBe('stay');
     expect(resolveTabPressAction(tabOf('search'), ['(tabs)', 'search'])).toBe('stay');
-    expect(resolveTabPressAction(tabOf('create'), ['(tabs)', 'create'])).toBe('stay');
+  });
+
+  it('closes the create form when the composer "+" is re-tapped while it is open', () => {
+    expect(resolveTabPressAction(tabOf('create'), ['(tabs)', 'create'])).toBe('close');
   });
 
   it('stays on flat web segment trails without the (tabs) group', () => {
@@ -48,19 +51,33 @@ describe('resolveTabPressAction', () => {
 
 describe('handleActiveTabRepress', () => {
   it('keeps the active tab root mounted: handled, no navigation', () => {
-    const router = { dismissTo: vi.fn() };
+    const router = { dismissTo: vi.fn(), back: vi.fn(), canGoBack: vi.fn(() => true) };
     expect(handleActiveTabRepress(router, tabOf('donations'), ['(tabs)', 'donations'])).toBe(true);
     expect(router.dismissTo).not.toHaveBeenCalled();
   });
 
   it('dismisses back to the tab root from a nested screen', () => {
-    const router = { dismissTo: vi.fn() };
+    const router = { dismissTo: vi.fn(), back: vi.fn(), canGoBack: vi.fn(() => true) };
     expect(handleActiveTabRepress(router, tabOf('donations'), ['(tabs)', 'donations', 'food'])).toBe(true);
     expect(router.dismissTo).toHaveBeenCalledWith('/(tabs)/donations');
   });
 
+  it('closes the open create form by going back', () => {
+    const router = { dismissTo: vi.fn(), back: vi.fn(), canGoBack: vi.fn(() => true) };
+    expect(handleActiveTabRepress(router, tabOf('create'), ['(tabs)', 'create'])).toBe(true);
+    expect(router.back).toHaveBeenCalledTimes(1);
+    expect(router.dismissTo).not.toHaveBeenCalled();
+  });
+
+  it('falls back to home when the create form has nothing to go back to', () => {
+    const router = { dismissTo: vi.fn(), back: vi.fn(), canGoBack: vi.fn(() => false) };
+    expect(handleActiveTabRepress(router, tabOf('create'), ['(tabs)', 'create'])).toBe(true);
+    expect(router.back).not.toHaveBeenCalled();
+    expect(router.dismissTo).toHaveBeenCalledWith('/(tabs)');
+  });
+
   it('leaves switching to another tab to the caller', () => {
-    const router = { dismissTo: vi.fn() };
+    const router = { dismissTo: vi.fn(), back: vi.fn(), canGoBack: vi.fn(() => true) };
     expect(handleActiveTabRepress(router, tabOf('profile'), ['(tabs)', 'donations'])).toBe(false);
     expect(router.dismissTo).not.toHaveBeenCalled();
   });

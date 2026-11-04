@@ -12,6 +12,7 @@ import {
   type ListingKindOption,
 } from '@kc/domain';
 import type { CreateDirection } from './createCategories';
+import { ANIMALS_FIELD_SPECS } from './animalsFieldSpecs';
 import { HOUSING_FIELD_SPECS } from './housingFieldSpecs';
 import { KNOWLEDGE_FIELD_SPECS } from './knowledgeFieldSpecs';
 
@@ -74,6 +75,7 @@ const SPECS_BY_KIND: Readonly<Record<string, readonly ListingFieldSpec[]>> = {
   ],
   ...HOUSING_FIELD_SPECS,
   ...KNOWLEDGE_FIELD_SPECS,
+  ...ANIMALS_FIELD_SPECS,
   volunteer_shift: [{ key: 'duration_minutes', type: 'duration', options: DURATIONS_MIN, defaultValue: 60 }],
   // An organization's event (G1 step 5, 0563). The organization (`org_id`) has its own picker
   // (OrganizationPicker), so it is not a field here; the window rule is checked on publish.
@@ -102,6 +104,17 @@ export function kindForDirection(
 ): ListingKindOption | null {
   const regular = kinds.filter((k) => k.slug !== ORG_EVENT_KIND_SLUG);
   return regular.find((k) => k.direction === direction) ?? regular.find((k) => k.direction === 'either') ?? null;
+}
+
+/**
+ * The kinds a member can pick between for `direction` (a world with several kinds per direction,
+ * e.g. animals: hand an animal over or offer boarding). Never includes an organization's event.
+ */
+export function kindChoices(
+  kinds: readonly ListingKindOption[],
+  direction: CreateDirection,
+): readonly ListingKindOption[] {
+  return kinds.filter((k) => k.slug !== ORG_EVENT_KIND_SLUG && (k.direction === direction || k.direction === 'either'));
 }
 
 type SchemaProperty = { enum?: readonly unknown[] };

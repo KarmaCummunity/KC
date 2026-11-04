@@ -1,5 +1,5 @@
 // Housing stays — the domain shapes of a stay booking as the host and the guest see it.
-// Spec: docs/SSOT/spec/21_housing.md FR-HOUSING-012 (private details), 015–021 (booking
+// Spec: docs/spec/requirements/21_housing.md FR-HOUSING-012 (private details), 015–021 (booking
 // lifecycle), 036 (my hosting) and 037 (my stays). Server: migrations 0600–0603.
 
 /** Every state a housing booking can reach on the generic handoff stage. */

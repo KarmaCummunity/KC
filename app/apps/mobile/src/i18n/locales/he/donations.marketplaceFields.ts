@@ -2,10 +2,12 @@
 // Composed into `marketplace.field` / `marketplace.option`. Unknown keys fall back to a
 // humanized key in ListingSchemaFields.
 
+import { animalFieldLabels, animalOptionLabels } from './donations.animalFields';
 import { housingFieldLabels, housingOptionLabels } from './donations.housingFields';
 
 export const marketplaceFieldLabels = {
   ...housingFieldLabels,
+  ...animalFieldLabels,
   item_condition: 'מצב החפץ',
   min_condition: 'מצב מינימלי',
   pickup_mode: 'איסוף או משלוח',
@@ -69,6 +71,7 @@ export const marketplaceFieldLabels = {
 
 export const marketplaceOptionLabels = {
   ...housingOptionLabels,
+  ...animalOptionLabels,
   New: 'חדש',
   LikeNew: 'כמו חדש',
   Good: 'טוב',

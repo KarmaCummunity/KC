@@ -59,7 +59,7 @@ const ROW_SHAPES = {
 };
 
 /** Files that document the placeholder syntax itself and must never be rewritten. */
-export const IGNORED_FILES = new Set(['CLAUDE.md', 'scripts/spec-ids.mjs', 'scripts/spec-ids.test.mjs']);
+export const IGNORED_FILES = new Set(['AGENTS.md', 'CLAUDE.md', 'scripts/spec-ids.mjs', 'scripts/spec-ids.test.mjs']);
 
 const PLACEHOLDER_KEYS = REGISTRIES.map((registry) => registry.key).join('|');
 const SLUG = '[a-z0-9]+(?:-[a-z0-9]+)*';

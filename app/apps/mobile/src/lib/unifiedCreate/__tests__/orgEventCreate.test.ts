@@ -40,3 +40,22 @@ describe('preselectedOrgId', () => {
     expect(preselectedOrgId([])).toBeNull();
   });
 });
+
+describe('kindForCreate — the kind a member picked among several', () => {
+  const animals = KINDS_BY_WORLD.animals!;
+
+  it('defaults to the first kind of the direction', () => {
+    expect(kindForCreate(animals, 'give', false)?.slug).toBe('adoption_offer');
+    expect(kindForCreate(animals, 'request', false, null)?.slug).toBe('adoption_request');
+  });
+
+  it('uses the chosen kind when it belongs to the direction', () => {
+    expect(kindForCreate(animals, 'give', false, 'foster_offer')?.slug).toBe('foster_offer');
+    expect(kindForCreate(animals, 'request', false, 'foster_request')?.slug).toBe('foster_request');
+  });
+
+  it('ignores a chosen kind of the other direction or an unknown one', () => {
+    expect(kindForCreate(animals, 'request', false, 'foster_offer')?.slug).toBe('adoption_request');
+    expect(kindForCreate(animals, 'give', false, 'nope')?.slug).toBe('adoption_offer');
+  });
+});

@@ -14,6 +14,7 @@ import {
   fieldsForKind,
   firstMissingRequiredField,
   initialDetailsFor,
+  kindChoices,
 } from '../lib/unifiedCreate/listingFieldSpecs';
 import { kindForCreate } from '../lib/unifiedCreate/orgEventCreate';
 import { marketplaceRuleFieldError, marketplaceServerErrorKey } from '../lib/marketplaceCreateErrors';
@@ -72,9 +73,13 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
     staleTime: 10 * 60_000, // kinds change only with a migration
   });
   const eventChoice = useOrgEventChoice(worldSlug, direction, kindsQuery.data ?? []);
+  // The kind the member picked among several of this direction (animals, knowledge); a direction
+  // switch or a kind that no longer applies falls back to the direction's default.
+  const [chosenKindSlug, setChosenKindSlug] = useState<string | null>(null);
+  const choices = useMemo(() => kindChoices(kindsQuery.data ?? [], direction), [kindsQuery.data, direction]);
   const kind = useMemo(
-    () => kindForCreate(kindsQuery.data ?? [], direction, eventChoice.isOrgEvent),
-    [kindsQuery.data, direction, eventChoice.isOrgEvent],
+    () => kindForCreate(kindsQuery.data ?? [], direction, eventChoice.isOrgEvent, chosenKindSlug),
+    [kindsQuery.data, direction, eventChoice.isOrgEvent, chosenKindSlug],
   );
   const specs = useMemo(() => (kind ? fieldsForKind(kind) : []), [kind]);
 
@@ -193,6 +198,8 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
   return {
     kindsQuery,
     kind,
+    kindChoices: choices,
+    chooseKind: setChosenKindSlug,
     specs,
     details,
     setDetails,

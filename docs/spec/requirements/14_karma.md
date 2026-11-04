@@ -1,7 +1,7 @@
 # Karma Points — FR-KARMA
 
 > **Status:** ✅ Complete (migrations `0097–0100` applied on dev; Phase 0–3 shipped; SSOT updated 2026-06-08)
-> **Domain file:** `docs/SSOT/spec/14_karma.md`
+> **Domain file:** `docs/spec/requirements/14_karma.md`
 > **Design doc:** `docs/SSOT/archive/superpowers/specs/2026-05-29-karma-points-design.md`
 > **Implementation plan:** `docs/SSOT/archive/superpowers/plans/2026-05-29-karma-points.md`
 

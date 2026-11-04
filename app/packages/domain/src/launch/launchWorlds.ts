@@ -48,12 +48,13 @@ export type RemoteAppFlags = Partial<Record<string, boolean>>;
 
 /**
  * Worlds whose in-app marketplace feed tester (non-production) builds always show, ahead of the
- * remote flag (#1630). A production build still follows `app_flags`, so flipping prod stays a
+ * remote flag (#1630, #1625). A production build still follows `app_flags`, so flipping prod stays a
  * separate, owner-approved step.
  */
 export const TESTER_ACTIVE_WORLD_FLAGS: readonly LaunchWorldFlagKey[] = [
   'world_housing_enabled',
   'world_knowledge_enabled',
+  'world_animals_enabled',
 ];
 
 export function withTesterActiveWorlds(remote: RemoteAppFlags | undefined): RemoteAppFlags {

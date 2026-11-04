@@ -2,7 +2,7 @@
 // Sends a reset link and always shows the same confirmation, whether or not
 // the address is registered (AC1, anti-enumeration). The link lands on
 // `/auth/reset-password`.
-// docs/SSOT/spec/01_auth_and_onboarding.md
+// docs/spec/requirements/01_auth_and_onboarding.md
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';

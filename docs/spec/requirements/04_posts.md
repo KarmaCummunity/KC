@@ -283,7 +283,7 @@ A post moves through a finite state machine.
    - `open → expired` (300 days inactivity) — automated, `FR-POST-013`
    - `* → removed_admin` (admin or 3-report auto-removal) — `FR-MOD-006`
 - AC3. State machine is enforced as a pure function in `domain` (`PostStatus.transition()` invariant).
-- AC4. The full state machine is diagrammed in [`03_domain_model.md`](../archive/SRS/03_domain_model.md) §3.4.
+- AC4. The full state machine is diagrammed in [`03_domain_model.md`](../../SSOT/archive/SRS/03_domain_model.md) §3.4.
 
 **Related.** Domain: `Post.status`, `PostStatus`.
 
@@ -301,7 +301,7 @@ A post that has remained `open` for 300 days transitions to `expired` automatica
 - Constraints: `R-MVP-Items-5`.
 
 **Acceptance Criteria.**
-- AC1. A scheduled job (`bg-job-post-expiry`, see [`06_cross_cutting/05_background_jobs.md`](../archive/SRS/06_cross_cutting/05_background_jobs.md)) runs daily and transitions matching posts.
+- AC1. A scheduled job (`bg-job-post-expiry`, see [`06_cross_cutting/05_background_jobs.md`](../../SSOT/archive/SRS/06_cross_cutting/05_background_jobs.md)) runs daily and transitions matching posts.
 - AC2. Seven days before expiry, the owner receives a notification (`FR-NOTIF-010`) — Critical category.
 - AC3. Expired posts disappear from the feed; they remain visible to the owner in the closed-tab area marked `expired`, with a "Republish" CTA that creates a new post pre-filled with the prior content (new ID).
 - AC4. Expiry preserves the original `Post` row for audit; image assets may be garbage-collected after 30 additional days.

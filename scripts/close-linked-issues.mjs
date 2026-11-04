@@ -3,7 +3,7 @@
 //
 // Why this exists: GitHub only honors closing keywords ("Closes #N") when a PR
 // merges into the DEFAULT branch. KC's default branch is `main`, but every PR
-// targets `dev` (see CLAUDE.md §6), so fixed issues stayed open and the project
+// targets `dev` (see AGENTS.md §6), so fixed issues stayed open and the project
 // board kept showing done work as "Ready" — agents then picked it up again.
 // This script applies the same keywords on merges into `dev`.
 //

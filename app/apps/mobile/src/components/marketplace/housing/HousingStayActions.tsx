@@ -1,4 +1,4 @@
-// Stay section of a housing offer screen (docs/SSOT/spec/21_housing.md FR-HOUSING-015, 016,
+// Stay section of a housing offer screen (docs/spec/requirements/21_housing.md FR-HOUSING-015, 016,
 // 036, 037): the host manages every booking, a signed-in guest requests and follows their own.
 // Stay requests have no bookings; a guest sees nothing until signing in.
 import React from 'react';
