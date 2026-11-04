@@ -13,6 +13,7 @@ import {
 } from '@kc/domain';
 import type { CreateDirection } from './createCategories';
 import { HOUSING_FIELD_SPECS } from './housingFieldSpecs';
+import { KNOWLEDGE_FIELD_SPECS } from './knowledgeFieldSpecs';
 
 /** Shows a field only while another detail holds a given value. */
 interface VisibleWhen {
@@ -72,6 +73,7 @@ const SPECS_BY_KIND: Readonly<Record<string, readonly ListingFieldSpec[]>> = {
     { key: 'luggage', type: 'toggle' },
   ],
   ...HOUSING_FIELD_SPECS,
+  ...KNOWLEDGE_FIELD_SPECS,
   volunteer_shift: [{ key: 'duration_minutes', type: 'duration', options: DURATIONS_MIN, defaultValue: 60 }],
   // An organization's event (G1 step 5, 0563). The organization (`org_id`) has its own picker
   // (OrganizationPicker), so it is not a field here; the window rule is checked on publish.

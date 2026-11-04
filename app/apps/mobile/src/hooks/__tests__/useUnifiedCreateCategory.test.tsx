@@ -11,7 +11,9 @@ const mocks = vi.hoisted(() => ({
   params: {} as { category?: string | string[]; direction?: string | string[] },
   load: vi.fn(),
   save: vi.fn(),
+  flags: undefined as Record<string, boolean> | undefined,
 }));
+vi.mock('../useLaunchWorldFlags', () => ({ useRemoteAppFlags: () => mocks.flags }));
 
 vi.mock('expo-router', () => ({ useLocalSearchParams: () => mocks.params }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
@@ -45,6 +47,7 @@ const state = () => screen.getByTestId('state').textContent;
 
 beforeEach(() => {
   mocks.params = {};
+  mocks.flags = undefined;
   mocks.load.mockResolvedValue({ categoryId: 'rides', directions: { rides: 'request', food: 'request' } });
   mocks.save.mockResolvedValue(undefined);
 });
@@ -125,6 +128,17 @@ describe('useUnifiedCreateCategory', () => {
     fireEvent.click(screen.getByTestId('create-category-medical'));
     expect(state()).toBe('medical/give');
     expect(screen.queryByTestId('create-direction-give')).toBeNull();
+  });
+
+  it('keeps knowledge a link-only world until it is launched, then offers request / offer (#1630)', async () => {
+    mocks.params = { category: 'knowledge' };
+    await renderHarness();
+    expect(screen.queryByTestId('create-direction-give')).toBeNull();
+    cleanup();
+    mocks.flags = { world_knowledge_enabled: true };
+    await renderHarness();
+    expect(state()).toBe('knowledge/give');
+    expect(screen.queryByTestId('create-direction-give')).not.toBeNull();
   });
 
   it('renders one chip per giving world in order, the active one selected', async () => {

@@ -7,9 +7,11 @@ import type { Href } from 'expo-router';
 import {
   GIVING_WORLD_SLUGS,
   isFeedWorldSlug,
+  isMarketplaceWorldLaunchEnabled,
   linkCategoryForWorld,
   type DonationCategorySlug,
   type GivingWorldSlug,
+  type RemoteAppFlags,
 } from '@kc/domain';
 
 export type CreateEngine = 'post' | 'listing' | 'link';
@@ -90,6 +92,19 @@ function toConfig(id: CreateCategoryId): CreateCategoryConfig {
 }
 
 export const CREATE_CATEGORIES: readonly CreateCategoryConfig[] = CREATE_CATEGORY_IDS.map(toConfig);
+
+/**
+ * The category as the form should use it right now. Knowledge keeps its community-link form
+ * (a portal) until the world is launched; once it is, members publish lessons and mentoring
+ * requests as marketplace listings (#1630), like the challenges world (D60).
+ */
+export function resolveCreateCategory(
+  category: CreateCategoryConfig,
+  remote: RemoteAppFlags | undefined,
+): CreateCategoryConfig {
+  if (category.id !== 'knowledge' || !isMarketplaceWorldLaunchEnabled('knowledge', remote)) return category;
+  return { ...category, engine: 'listing', worldSlug: 'knowledge', linkCategory: null };
+}
 
 /** Type guard: is `id` a category the create form offers? */
 export function isCreateCategoryId(id: unknown): id is CreateCategoryId {
