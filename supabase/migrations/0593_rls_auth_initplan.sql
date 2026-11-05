@@ -13,7 +13,7 @@ as $$
   select exists (select 1 from public.recipients where post_id = p_post_id);
 $$;
 
-grant execute on function public.post_has_recipients(uuid) to authenticated, anon;
+grant execute on function public.post_has_recipients(uuid) to authenticated;
 
 alter policy posts_select_visible on public.posts
   using (is_post_visible_to(posts.*, (select auth.uid())));
