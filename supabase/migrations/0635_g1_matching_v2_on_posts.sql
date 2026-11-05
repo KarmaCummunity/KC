@@ -1,18 +1,21 @@
 -- 0635_g1_matching_v2_on_posts | G1 step 6a-6c (ADR-006, D-214, issue #1671): matching v2 reads the
 -- post of a post-owned listing.
 --
---   1. listing_record_of (new, internal)  a listing row as its record says: for a post-owned listing
---      (origin 'native' with legacy_post_id: food, rides, housing, time since 0554) the post's world,
+--   1. listing_record_of (new, internal, inlinable SQL)  a listing row as its record says: for a
+--      post-owned listing (origin 'native' with legacy_post_id: food, rides, housing, time since
+--      0554) the post's world,
 --      kind, direction (`offer` → `give`), category, details, geo, time window, urgency, expiry,
 --      availability, moderation, publication and radius, and its status in the listing's words
 --      (listing_status_for_post) — the listing's own status during a moderation hold, whose post
 --      status is folded (0628), as 0629 does. Title, summary, city, owner, anonymity level and the
 --      timestamps stay the listing's (see 0630 on posts made post-owned by the 0554 backfill). Every
 --      other shape comes back unchanged.
---   2. match_compute_for_listing (0425)  the source and every scored candidate are read through 1;
---      the candidate scan stays on the listing's columns and indexes. The pairs it re-scores are
---      read through 1 as well.
---   3. match_run_sweep (0423)  expires and selects listings on their record.
+--   2. match_compute_for_listing (0425)  the source and every scored candidate are read through 1
+--      (a lateral join the planner inlines); the candidate scan stays on the listing's columns and
+--      indexes. The pairs it re-scores are read through 1 as well, and only looked up when the
+--      listing has such pairs.
+--   3. match_run_sweep (0423)  expires and selects listings on their record — the same rule as 1,
+--      written as joins on posts so both statements stay set-based.
 --   4. rpc_match_refresh_mine (0422)  selects the caller's open listings on their record.
 -- match_score_pair (0425) is unchanged: it receives the rows of 1. While post and listing are in
 -- step (both syncs write the overlaid fields on every change) the pairs, scores, ranks and states
@@ -23,47 +26,60 @@
 begin;
 
 -- ── 1. A listing as its record says ─────────────────────────────────────────────────────────────
-create or replace function public.listing_record_of(p_listing public.listings)
-returns public.listings
-language plpgsql
+-- An inlinable SQL function (no SECURITY DEFINER, no SET; set-returning, used in FROM as
+-- `cross join lateral public.listing_record_of(l) r`), so the planner turns the post lookup into
+-- a join instead of a call per row. Its select list is the listings row in column order: a column
+-- added to listings must be added here too.
+drop function if exists public.listing_record_of(public.listings);
+create function public.listing_record_of(p_listing public.listings)
+returns setof public.listings
+language sql
 stable
-security definer
-set search_path = public
 as $$
-declare
-  v public.listings := p_listing;
-  po public.posts;
-begin
-  if p_listing.origin is distinct from 'native' or p_listing.legacy_post_id is null then
-    return p_listing;
-  end if;
-  select * into po from public.posts where post_id = p_listing.legacy_post_id;
-  if not found then
-    return p_listing;
-  end if;
-  v.world_slug             := po.world_slug;
-  v.kind_id                := coalesce(po.kind_id, p_listing.kind_id);
-  v.direction              := case when po.direction = 'request' then 'request' else 'give' end;
-  v.category_id            := po.category_id;
-  v.details                := po.details;
-  v.geo                    := po.geo;
-  v.time_window            := po.time_window;
-  v.urgency_level          := coalesce(po.urgency_level, p_listing.urgency_level);
-  v.expires_at             := po.expires_at;
-  v.availability_status    := po.availability_status;
-  v.moderation_status      := po.moderation_status;
-  v.published_at           := po.published_at;
-  v.max_radius_km_override := po.max_radius_km_override;
-  -- During a moderation hold the post's status is folded (0628); the listing keeps its own.
-  if po.moderation_status = 'published' then
-    v.status := public.listing_status_for_post(po.status);
-  end if;
-  return v;
-end;
+  select
+         p_listing.listing_id as listing_id,
+         p_listing.owner_id as owner_id,
+         case when po.post_id is null then p_listing.world_slug else po.world_slug end as world_slug,
+         case when po.post_id is null then p_listing.kind_id else coalesce(po.kind_id, p_listing.kind_id) end as kind_id,
+         case when po.post_id is null then p_listing.category_id else po.category_id end as category_id,
+         case when po.post_id is null then p_listing.direction else case when po.direction = 'request' then 'request' else 'give' end end as direction,
+         case when po.post_id is not null and po.moderation_status = 'published'
+              then public.listing_status_for_post(po.status) else p_listing.status end as status,
+         p_listing.visibility as visibility,
+         p_listing.anonymity_level as anonymity_level,
+         p_listing.title as title,
+         p_listing.summary as summary,
+         case when po.post_id is null then p_listing.geo else po.geo end as geo,
+         p_listing.city_id as city_id,
+         case when po.post_id is null then p_listing.time_window else po.time_window end as time_window,
+         case when po.post_id is null then p_listing.expires_at else po.expires_at end as expires_at,
+         case when po.post_id is null then p_listing.details else po.details end as details,
+         p_listing.external_body_id as external_body_id,
+         p_listing.origin as origin,
+         p_listing.canonical_id as canonical_id,
+         p_listing.legacy_post_id as legacy_post_id,
+         p_listing.legacy_ride_id as legacy_ride_id,
+         case when po.post_id is null then p_listing.moderation_status else po.moderation_status end as moderation_status,
+         case when po.post_id is null then p_listing.published_at else po.published_at end as published_at,
+         p_listing.created_at as created_at,
+         p_listing.updated_at as updated_at,
+         p_listing.embedding as embedding,
+         p_listing.embedding_model as embedding_model,
+         p_listing.geo_mode_override as geo_mode_override,
+         case when po.post_id is null then p_listing.max_radius_km_override else po.max_radius_km_override end as max_radius_km_override,
+         p_listing.geo_weight_override as geo_weight_override,
+         p_listing.search_vector as search_vector,
+         case when po.post_id is null then p_listing.urgency_level else coalesce(po.urgency_level, p_listing.urgency_level) end as urgency_level,
+         case when po.post_id is null then p_listing.availability_status else po.availability_status end as availability_status,
+         p_listing.beneficiary_org_id as beneficiary_org_id
+    from (values (1)) as one (x)
+    left join public.posts po
+      on po.post_id = p_listing.legacy_post_id
+     and p_listing.origin = 'native';
 $$;
 
 comment on function public.listing_record_of(public.listings) is
-  'G1 (0635): a listing row as its record says — the post''s world, kind, direction, category, details, geo, time window, urgency, expiry, availability, moderation, publication, radius and status (listing words; the listing''s own during a hold) for a post-owned listing; any other listing unchanged.';
+  'G1 (0635): a listing row as its record says — the post''s world, kind, direction, category, details, geo, time window, urgency, expiry, availability, moderation, publication, radius and status (listing words; the listing''s own during a hold) for a post-owned listing; any other listing unchanged. Inlinable SQL; one row.';
 
 revoke all on function public.listing_record_of(public.listings) from public, anon, authenticated;
 grant execute on function public.listing_record_of(public.listings) to service_role;
@@ -94,7 +110,9 @@ begin
   if not found then
     return 0;
   end if;
-  v_src := public.listing_record_of(v_src); -- 0635: a post-owned listing is read from its post
+  if v_src.origin = 'native' and v_src.legacy_post_id is not null then                -- 0635
+    select * into v_src from public.listing_record_of(v_src); -- 0635: a post-owned listing is read from its post
+  end if;                                                                               -- 0635
 
   if v_src.status <> 'open' or v_src.moderation_status <> 'published'
      or not (v_src.world_slug = any (v_set.worlds)) or v_src.anonymity_level = 1 then
@@ -136,7 +154,7 @@ begin
   -- 0635: the scan above stays on the listing's columns (its indexes); each candidate is then read
   -- 0635: from its post when it is post-owned.
   cand_rec as (                                         -- 0635
-    select public.listing_record_of(x.c) as c from cand x -- 0635
+    select r as c from cand x cross join lateral public.listing_record_of(x.c) r -- 0635
   ),
   -- Cheap pre-score (category / title trigram / distance) so only the best few pay for the
   -- full scorer (visibility, mutes, trust, feedback lookups).
@@ -202,27 +220,34 @@ begin
   )
   select count(*) into v_n from up;
 
-  -- Unanswered pairs of this listing that were not refreshed: re-score them (a pair may sit
-  -- outside this listing's top N but inside the other's); withdraw the ones that no longer
-  -- qualify and refresh the score of the rest.
-  update public.match_candidates m
-     set status = case when x.eligible and x.score >= v_set.min_score then m.status else 'withdrawn' end,
-         score = case when x.eligible then x.score else m.score end,
-         components = case when x.eligible then x.components else m.components end,
-         distance_km = case when x.eligible then x.distance_km else m.distance_km end,
-         computed_at = clock_timestamp()
-    from (
-      select m2.candidate_id, s.eligible, s.score, s.components, s.distance_km
-        from public.match_candidates m2
-        join public.listings o on o.listing_id = m2.offer_listing_id
-        join public.listings r on r.listing_id = m2.request_listing_id
-        cross join lateral public.match_score_pair(public.listing_record_of(o), public.listing_record_of(r)) s -- 0635
-       where m2.status = 'suggested'
-         and m2.computed_at < v_started
-         and m2.offer_response is null and m2.request_response is null
-         and (m2.offer_listing_id = p_listing_id or m2.request_listing_id = p_listing_id)
-    ) x
-   where m.candidate_id = x.candidate_id;
+  -- 0635: only when such pairs exist, so a listing without any does not plan the re-score.
+  if exists (select 1 from public.match_candidates m2                                  -- 0635
+              where m2.status = 'suggested' and m2.computed_at < v_started             -- 0635
+                and (m2.offer_listing_id = p_listing_id or m2.request_listing_id = p_listing_id)) then -- 0635
+    -- Unanswered pairs of this listing that were not refreshed: re-score them (a pair may sit
+    -- outside this listing's top N but inside the other's); withdraw the ones that no longer
+    -- qualify and refresh the score of the rest.
+    update public.match_candidates m
+       set status = case when x.eligible and x.score >= v_set.min_score then m.status else 'withdrawn' end,
+           score = case when x.eligible then x.score else m.score end,
+           components = case when x.eligible then x.components else m.components end,
+           distance_km = case when x.eligible then x.distance_km else m.distance_km end,
+           computed_at = clock_timestamp()
+      from (
+        select m2.candidate_id, s.eligible, s.score, s.components, s.distance_km
+          from public.match_candidates m2
+          join public.listings o on o.listing_id = m2.offer_listing_id
+          join public.listings r on r.listing_id = m2.request_listing_id
+          cross join lateral public.listing_record_of(o) ro                     -- 0635: the records
+          cross join lateral public.listing_record_of(r) rr                     -- 0635
+          cross join lateral public.match_score_pair(ro, rr) s                  -- 0635
+         where m2.status = 'suggested'
+           and m2.computed_at < v_started
+           and m2.offer_response is null and m2.request_response is null
+           and (m2.offer_listing_id = p_listing_id or m2.request_listing_id = p_listing_id)
+      ) x
+     where m.candidate_id = x.candidate_id;
+  end if; -- 0635
 
   insert into public.match_listing_state (listing_id, computed_at, candidates)
   values (p_listing_id, now(), v_n)
@@ -259,27 +284,35 @@ begin
 
   update public.match_candidates m
      set status = 'expired'
-    from public.listings ol, public.listings ql,                                         -- 0635
-         lateral public.listing_record_of(ol) o,                                         -- 0635: the record
-         lateral public.listing_record_of(ql) q                                          -- 0635
+    from public.listings o
+    -- 0635: each side's record, as listing_record_of reads it, written as joins so the sweep
+    -- 0635: stays set-based (status in the listing's words, the listing's own during a hold).
+    left join public.posts op on op.post_id = o.legacy_post_id and o.origin = 'native',  -- 0635
+         public.listings q
+    left join public.posts qp on qp.post_id = q.legacy_post_id and q.origin = 'native'   -- 0635
    where m.status = 'suggested'
-     and ol.listing_id = m.offer_listing_id                                             -- 0635
-     and ql.listing_id = m.request_listing_id                                           -- 0635
-     and (o.status <> 'open' or q.status <> 'open'
-          or coalesce(o.expires_at, 'infinity') <= now()
-          or coalesce(q.expires_at, 'infinity') <= now());
+     and o.listing_id = m.offer_listing_id
+     and q.listing_id = m.request_listing_id
+     and ((case when op.post_id is not null and op.moderation_status = 'published'          -- 0635
+                then public.listing_status_for_post(op.status) else o.status end) <> 'open'  -- 0635
+          or (case when qp.post_id is not null and qp.moderation_status = 'published'       -- 0635
+                   then public.listing_status_for_post(qp.status) else q.status end) <> 'open' -- 0635
+          or coalesce(case when op.post_id is null then o.expires_at else op.expires_at end, 'infinity') <= now() -- 0635
+          or coalesce(case when qp.post_id is null then q.expires_at else qp.expires_at end, 'infinity') <= now()); -- 0635
   get diagnostics v_expired = row_count;
 
   for r in
     select l.listing_id
-      from public.listings ll                                                            -- 0635
-      cross join lateral public.listing_record_of(ll) l                                  -- 0635: the record
+      from public.listings l
+      -- 0635: the record (listing_record_of's rule as a join, so the selection stays set-based)
+      left join public.posts p on p.post_id = l.legacy_post_id and l.origin = 'native'    -- 0635
       left join public.match_listing_state st on st.listing_id = l.listing_id
-     where l.status = 'open'
-       and l.moderation_status = 'published'
+     where (case when p.post_id is not null and p.moderation_status = 'published'           -- 0635
+                 then public.listing_status_for_post(p.status) else l.status end) = 'open'   -- 0635
+       and (case when p.post_id is null then l.moderation_status else p.moderation_status end) = 'published' -- 0635
        and l.anonymity_level > 1
-       and l.world_slug = any (v_set.worlds)
-       and (l.expires_at is null or l.expires_at > now())
+       and (case when p.post_id is null then l.world_slug else p.world_slug end) = any (v_set.worlds) -- 0635
+       and coalesce(case when p.post_id is null then l.expires_at else p.expires_at end, 'infinity') > now() -- 0635
        and (st.listing_id is null
             or st.computed_at < l.updated_at
             or st.computed_at < now() - make_interval(hours => v_set.recompute_after_hours))

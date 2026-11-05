@@ -23,6 +23,15 @@ select kc_test.create_user('m6_driver_a') as driver_a,
        kc_test.create_user('m6_giver')    as giver,
        kc_test.create_user('m6_seeker')   as seeker;
 
+-- Listings committed by earlier test files share one transaction's now(), and the sweep orders by
+-- created_at with no tiebreaker under a batch limit: break the ties (a microsecond apart, keeping
+-- the order of distinct times) so the old and the new sweep pick the same batch.
+update public.listings l
+   set created_at = l.created_at - r.n * interval '1 microsecond'
+  from (select listing_id, row_number() over (partition by created_at order by listing_id) - 1 as n
+          from public.listings) r
+ where l.listing_id = r.listing_id and r.n > 0;
+
 create temp table fx (name text primary key, listing_id uuid);
 grant all on fx to public;
 
@@ -454,18 +463,19 @@ declare
   r public.listings;
 begin
   select * into l from public.listings where listing_id = (select listing_id from fx where name = 'items_post');
-  perform kc_test.assert_eq(public.listing_record_of(l)::text, l::text, 'an items listing comes back unchanged');
+  perform kc_test.assert_eq((select rec::text from public.listing_record_of(l) rec), l::text, 'an items listing comes back unchanged');
   select * into l from public.listings where listing_id = (select listing_id from fx where name = 'direct_request');
-  perform kc_test.assert_eq(public.listing_record_of(l)::text, l::text, 'a listing-sourced listing comes back unchanged');
+  perform kc_test.assert_eq((select rec::text from public.listing_record_of(l) rec), l::text, 'a listing-sourced listing comes back unchanged');
   select * into l from public.listings where listing_id = (select listing_id from fx where name = 'owned_offer');
-  r := public.listing_record_of(l);
+  select * into r from public.listing_record_of(l);
   perform kc_test.assert_eq(r.status, 'closed', 'a fulfilled post reads as a closed listing');
   perform kc_test.assert_eq(r.title, l.title, 'the title stays the listing''s');
   update public.listings set moderation_status = 'pending_review' where listing_id = l.listing_id;
   select * into l from public.listings where listing_id = l.listing_id;
-  perform kc_test.assert_eq((public.listing_record_of(l)).status, l.status, 'during a hold the listing keeps its status');
+  perform kc_test.assert_eq((select r2.status from public.listing_record_of(l) r2), l.status, 'during a hold the listing keeps its status');
   perform kc_test.assert_true(not has_function_privilege('authenticated', 'public.listing_record_of(public.listings)', 'execute'),
     'the helper is internal');
+  perform kc_test.assert_row_count('select 1 from public.listing_record_of(null::public.listings)', 1, 'it returns exactly one row');
 end $$;
 
 rollback;

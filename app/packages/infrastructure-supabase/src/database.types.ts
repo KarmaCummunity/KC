@@ -12903,12 +12903,12 @@ export type Database = {
           urgency_level: number
           visibility: string
           world_slug: string
-        }
+        }[]
         SetofOptions: {
           from: "*"
           to: "listings"
-          isOneToOne: true
-          isSetofReturn: false
+          isOneToOne: false
+          isSetofReturn: true
         }
       }
       listing_set_post_status: {
