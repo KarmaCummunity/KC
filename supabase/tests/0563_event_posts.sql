@@ -3,7 +3,7 @@
 --   1. a member of an organization publishes an event: the post is of type `event` and carries
 --      the extension; a non-member, or a window that ends before it starts, is refused;
 --   2. automatic registration confirms at once, once per member, never the organizer's own, and
---      a full event refuses more;
+--      a full event waitlists the next member (0564);
 --   3. manual registration waits for the organizer, who approves or declines; nobody else may;
 --   4. verified-only registration refuses an unverified member;
 --   5. cancelling frees the place; event registrations are not mirrored into giving_handoffs.
@@ -112,15 +112,16 @@ begin
     'already_booked', 'a member registers once');
 
   perform kc_test.act_as(p.guest_b);
-  perform kc_test.assert_raises(format('select public.register_for_event(%L)', v_listing),
-    'slots_exhausted', 'a full event refuses more (by listing id too)');
+  -- 0564: a full event waitlists instead of refusing (by listing id too).
+  perform kc_test.assert_eq((public.register_for_event(v_listing)).status, 'waitlisted',
+    'a full event puts the next member on its waitlist');
 
   perform kc_test.act_as(p.organizer);
   perform kc_test.assert_raises(format('select public.register_for_event(%L)', v_post),
     'own_listing', 'the organizer does not register for their own event');
   perform kc_test.assert_eq(
-    (select count(*) from public.list_event_registrations(v_post)), 1::bigint,
-    'the organizer sees the registration on the roster');
+    (select count(*) from public.list_event_registrations(v_post)), 2::bigint,
+    'the organizer sees the registration and the waitlisted member on the roster');
 
   perform kc_test.act_as(p.guest_b);
   perform kc_test.assert_raises(format('select * from public.list_event_registrations(%L)', v_post),

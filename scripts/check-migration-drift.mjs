@@ -18,7 +18,7 @@
 //
 // Companion: `scripts/reconcile-migration-drift.mjs` runs the CLI itself and
 // emits the same repair commands. Convention it enforces lives in
-// docs/SSOT/OPERATOR_RUNBOOK.md ("Migration application rules") + CLAUDE.md §9.
+// docs/SSOT/OPERATOR_RUNBOOK.md ("Migration application rules") + AGENTS.md §9.
 
 import { appendFileSync, readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -162,7 +162,7 @@ function main() {
     '\nRoot cause: a schema change was applied to dev via the Supabase MCP ' +
       '`apply_migration`\ntool (records a timestamp version) instead of `supabase db push` from a\n' +
       'committed sequential file. This breaks the next `DB deploy` run.\n' +
-      'See docs/SSOT/OPERATOR_RUNBOOK.md → "Migration application rules" and CLAUDE.md §9.\n' +
+      'See docs/SSOT/OPERATOR_RUNBOOK.md → "Migration application rules" and AGENTS.md §9.\n' +
       '\nReconcile the ledger (does not touch schema — only the history table):',
   );
   for (const cmd of repairCommands(drift)) console.error(`  ${cmd}`);

@@ -1,5 +1,5 @@
 // Listing kinds of the four listing create worlds, with the detail schemas the dev database
-// holds (migrations 0241, 0321, 0381, 0391). Shared by the field-spec and form tests.
+// holds (migrations 0241, 0321, 0381, 0391, 0563). Shared by the field-spec and form tests.
 import type { ListingKindOption } from '@kc/domain';
 
 const obj = (properties: Record<string, unknown>, required: string[] = []) => ({
@@ -92,6 +92,62 @@ export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[
       gear: { type: 'array', items: { type: 'string' } },
     })),
   ],
+  animals: [
+    // Binding schemas of migration 0612 (adoption and boarding / pet-sitting, offers and requests).
+    kind('adoption_offer', 'give', obj({
+      species: { enum: ['dog', 'cat', 'rabbit', 'bird', 'rodent', 'reptile', 'other'] },
+      age_group: { enum: ['young', 'adult', 'senior'] },
+      sex: { enum: ['male', 'female'] },
+      size: { enum: ['small', 'medium', 'large'] },
+      vaccinated: { type: 'boolean' },
+      neutered: { type: 'boolean' },
+      good_with: { type: 'array', items: { enum: ['children', 'dogs', 'cats'] } },
+    }, ['species'])),
+    kind('adoption_request', 'request', obj({
+      species: { enum: ['dog', 'cat', 'rabbit', 'bird', 'rodent', 'reptile', 'other'] },
+      age_group: { enum: ['young', 'adult', 'senior'] },
+      size: { enum: ['small', 'medium', 'large'] },
+    }, ['species'])),
+    kind('foster_offer', 'give', obj({
+      species: { enum: ['dog', 'cat', 'rabbit', 'bird', 'rodent', 'reptile', 'other'] },
+      care_mode: { enum: ['full_boarding', 'part_time', 'pet_sitting'] },
+      location_mode: { enum: ['my_home', 'owner_home', 'either'] },
+      duration_days: { type: 'integer', minimum: 1, maximum: 90 },
+    }, ['species', 'care_mode'])),
+    kind('foster_request', 'request', obj({
+      species: { enum: ['dog', 'cat', 'rabbit', 'bird', 'rodent', 'reptile', 'other'] },
+      care_mode: { enum: ['full_boarding', 'part_time', 'pet_sitting'] },
+      location_mode: { enum: ['my_home', 'owner_home', 'either'] },
+      starts_on: { type: 'string', format: 'date' },
+      ends_on: { type: 'string', format: 'date' },
+    }, ['species', 'care_mode'])),
+  ],
+  knowledge: [
+    // Binding schemas of migration 0395, trimmed to the keys and enums the form uses.
+    kind('course', 'give', obj({
+      topic: { type: 'string', minLength: 2, maxLength: 80 },
+      level: { enum: ['beginner', 'intermediate', 'advanced'] },
+      modality: { enum: ['in_person', 'video', 'phone'] },
+      slot_starts_at: { type: 'string', format: 'date-time' },
+      slot_ends_at: { type: 'string', format: 'date-time' },
+      slots_available: { type: 'integer', minimum: 1, maximum: 50 },
+      requires_org_approval: { type: 'boolean' },
+    }, ['topic', 'modality', 'slot_starts_at', 'slot_ends_at', 'slots_available'])),
+    kind('private_lesson', 'give', obj({
+      topic: { type: 'string', minLength: 2, maxLength: 80 },
+      level: { enum: ['beginner', 'intermediate', 'advanced'] },
+      modality: { enum: ['in_person', 'video', 'phone'] },
+      slot_starts_at: { type: 'string', format: 'date-time' },
+      slot_ends_at: { type: 'string', format: 'date-time' },
+      slots_available: { type: 'integer', minimum: 1, maximum: 20 },
+      availability_note: { type: 'string', maxLength: 280 },
+    }, ['topic', 'modality', 'slot_starts_at', 'slot_ends_at', 'slots_available'])),
+    kind('mentorship_request', 'request', obj({
+      topic: { type: 'string', minLength: 2, maxLength: 80 },
+      level: { type: 'string' },
+      preferred_modality: { enum: ['in_person', 'video', 'phone'] },
+    }, ['topic'])),
+  ],
   time: [
     kind('volunteer_shift', 'give', obj({
       duration_minutes: { type: 'integer' },
@@ -102,5 +158,14 @@ export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[
       support_type: { enum: ['emotional', 'companionship', 'practical', 'escort'] },
       duration_minutes: { type: 'integer' },
     })),
+    // An organization's event (0563), offered only to members of an organization.
+    kind('org_event', 'give', obj({
+      org_id: { type: 'string', minLength: 36, maxLength: 36 },
+      starts_at: { type: 'string', format: 'date-time' },
+      ends_at: { type: 'string', format: 'date-time' },
+      capacity: { type: 'integer', minimum: 1, maximum: 5000 },
+      registration_policy: { enum: ['automatic', 'manual', 'verified_only'] },
+      address: { type: 'string', minLength: 2, maxLength: 160 },
+    }, ['org_id', 'starts_at', 'ends_at', 'registration_policy'])),
   ],
 };

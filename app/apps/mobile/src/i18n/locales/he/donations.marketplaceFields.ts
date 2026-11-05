@@ -2,10 +2,12 @@
 // Composed into `marketplace.field` / `marketplace.option`. Unknown keys fall back to a
 // humanized key in ListingSchemaFields.
 
+import { animalFieldLabels, animalOptionLabels } from './donations.animalFields';
 import { housingFieldLabels, housingOptionLabels } from './donations.housingFields';
 
 export const marketplaceFieldLabels = {
   ...housingFieldLabels,
+  ...animalFieldLabels,
   item_condition: 'מצב החפץ',
   min_condition: 'מצב מינימלי',
   pickup_mode: 'איסוף או משלוח',
@@ -33,6 +35,11 @@ export const marketplaceFieldLabels = {
   recurrence: 'תדירות',
   duration_minutes: 'משך (דקות)',
   duration_days: 'משך (ימים)',
+  topic: 'נושא',
+  slot_starts_at: 'תחילת המפגש',
+  slot_ends_at: 'סוף המפגש',
+  slots_available: 'מספר מקומות',
+  preferred_modality: 'אופן המפגש המועדף',
   level: 'רמה',
   difficulty: 'רמת קושי',
   modality: 'אופן המפגש',
@@ -55,10 +62,16 @@ export const marketplaceFieldLabels = {
   departs_at: 'מועד יציאה',
   reward_model: 'עלות הנסיעה',
   cost_share_ils: 'השתתפות בהוצאות (₪)',
+  // An organization's event (G1 step 5); `capacity` shares the housing label.
+  starts_at: 'מתחיל',
+  ends_at: 'מסתיים',
+  registration_policy: 'הרשמה',
+  address: 'כתובת',
 } as const;
 
 export const marketplaceOptionLabels = {
   ...housingOptionLabels,
+  ...animalOptionLabels,
   New: 'חדש',
   LikeNew: 'כמו חדש',
   Good: 'טוב',
@@ -106,6 +119,9 @@ export const marketplaceOptionLabels = {
   soy: 'סויה',
   fish: 'דגים',
   sesame: 'שומשום',
+  automatic: 'אוטומטית',
+  manual: 'באישור המארגנים',
+  verified_only: 'מאומתים בלבד',
 } as const;
 
 export const marketplaceAvailabilityLabels = {

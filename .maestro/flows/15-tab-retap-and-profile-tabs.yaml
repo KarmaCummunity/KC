@@ -1,6 +1,6 @@
 # Re-tapping the active bottom-bar tab keeps its screen, and the My Profile open / closed
 # tabs swap only the posts list while the profile card stays on screen (#1633).
-# Spec: docs/SSOT/spec/02_profile_and_privacy.md FR-PROFILE-001 AC4; SRS §6.1 (5 tabs, D-16).
+# Spec: docs/spec/requirements/02_profile_and_privacy.md FR-PROFILE-001 AC4; SRS §6.1 (5 tabs, D-16).
 appId: org.karmacommunity.app
 name: Shell — tab re-tap and profile tabs keep the screen
 tags: [shell, profile]

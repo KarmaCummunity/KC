@@ -61,6 +61,7 @@ export { ListChatsUseCase } from './chat/ListChatsUseCase';
 export { MarkChatReadUseCase } from './chat/MarkChatReadUseCase';
 export { GetUnreadTotalUseCase } from './chat/GetUnreadTotalUseCase';
 export { GetSupportThreadUseCase } from './chat/GetSupportThreadUseCase';
+export * from './chat/ListChatStartCandidatesUseCase';
 export { SubmitSupportIssueUseCase } from './chat/SubmitSupportIssueUseCase';
 export type { SubmitSupportIssueInput } from './chat/SubmitSupportIssueUseCase';
 export { ChatError } from './chat/errors';

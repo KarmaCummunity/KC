@@ -12,6 +12,7 @@ export const worldFeed = {
   directionRequest: 'Requests',
   emptyTitle: 'No open listings here yet',
   emptyBody: 'Post the first request or offer.',
+  animalsIntro: 'Animals in the community: give away or adopt an animal, and offer or ask for boarding, part-time boarding and pet-sitting.',
   housingIntro: 'Hosting and stays in the community: offer a place to sleep, or ask to be hosted for a night or longer.',
   timeOpportunitiesTitle: 'Volunteering with organisations',
   timeOpportunitiesShowAll: 'All volunteering ({{count}})',

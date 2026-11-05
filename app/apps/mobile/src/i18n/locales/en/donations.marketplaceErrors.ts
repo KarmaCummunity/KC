@@ -8,6 +8,7 @@ export const marketplaceErrors = {
   ride_route_required: 'Choose where the ride starts and where it ends.',
   ride_departure_past: 'Choose a departure time in the future.',
   knowledge_slot_invalid: 'Choose a future start time and an end time after it.',
+  event_window_invalid: 'The event must end after it starts.',
   seats_exhausted: 'No seats left on this ride.',
   ride_seats_exhausted: 'There are not enough seats left to approve this booking.',
   slots_exhausted: 'No slots left for this session.',
@@ -75,5 +76,11 @@ export const marketplaceErrors = {
   housing_not_in_window: 'This action isn\'t possible at this point of the stay.',
   housing_note_too_long: 'The note is too long. Up to 300 characters.',
   housing_use_booking_cancel: 'Cancel a stay from its booking card.',
+  // Organization events (0563).
+  event_org_required: 'Only a member of the organization can publish its event. Pick one of your organizations.',
+  verification_required: 'This event is open to verified members only. Verify your account and try again.',
+  not_owner: 'Only the event organizer can do that.',
+  event_not_started: 'Attendance can be marked once the event has started.',
+  invalid_transition: 'This registration was already updated. Refresh and try again.',
   generic: 'Publishing failed. Please try again.',
 } as const;

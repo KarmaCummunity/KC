@@ -9,6 +9,15 @@ export {
   RateGivingHandoffUseCase,
 } from './givingHandoffUseCases';
 export {
+  RegisterForEventUseCase,
+  DecideEventRegistrationUseCase,
+  CancelEventRegistrationUseCase,
+  MarkEventAttendanceUseCase,
+  ListEventRegistrationsUseCase,
+  GetMyEventRegistrationUseCase,
+  ListMyOrganizationsUseCase,
+} from './eventRegistrationUseCases';
+export {
   BookRideSeatUseCase,
   ListRideBookingsUseCase,
   ApproveRideBookingUseCase,

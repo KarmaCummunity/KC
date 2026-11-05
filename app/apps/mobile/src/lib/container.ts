@@ -41,6 +41,7 @@ import {
   RestoreAccountUseCase,
   ListChatsUseCase,
   OpenOrCreateChatUseCase,
+  ListChatStartCandidatesUseCase,
   HideChatFromInboxUseCase,
   SendMessageUseCase,
   MarkChatReadUseCase,
@@ -221,6 +222,7 @@ export const container = {
   // Chat use cases
   listChats: new ListChatsUseCase(chatRepo),
   openOrCreateChat: new OpenOrCreateChatUseCase(chatRepo),
+  listChatStartCandidates: new ListChatStartCandidatesUseCase(userRepo, blockRepo),
   hideChatFromInbox,
   sendMessage: new SendMessageUseCase(chatRepo),
   markChatRead: new MarkChatReadUseCase(chatRepo),

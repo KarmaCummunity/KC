@@ -16,8 +16,9 @@ function walk(dir: string): string[] {
   });
 }
 
-// Organizer tooling for volunteer shifts (not a request/offer post) — reviewed exception.
-const ALLOWED_CREATE_ROUTES = ['(tabs)/create.tsx', '(tabs)/donations/time/organizer/create.tsx'];
+// The organizer's volunteer-opportunity screen was retired in G1 step 5: an organization's event
+// and a volunteer shift are both published from the one create form.
+const ALLOWED_CREATE_ROUTES = ['(tabs)/create.tsx'];
 
 describe('unified create — route inventory', () => {
   const routes = walk(APP).map((p) => relative(APP, p).split('\\').join('/'));

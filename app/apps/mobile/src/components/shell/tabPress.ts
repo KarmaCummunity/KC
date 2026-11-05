@@ -10,9 +10,10 @@ import { resolveActiveTabKey, type TabDefinition } from './tabs.config';
  * - `stay`      — the tab is active and its root screen is on top: keep it mounted as is.
  * - `popToRoot` — the tab is active but a nested screen is on top: unwind to the tab root
  *                 (the root stays mounted underneath, so nothing re-mounts).
+ * - `close`     — the composer ("+") is active, i.e. its create form is open: the press closes it.
  * - `open`      — another tab, or a root-level screen over the tabs: navigate to the tab.
  */
-export type TabPressAction = 'stay' | 'popToRoot' | 'open';
+export type TabPressAction = 'stay' | 'popToRoot' | 'close' | 'open';
 
 /** Route segments that carry no screen depth: the tabs group and a trailing `index`. */
 const DEPTHLESS_SEGMENTS: ReadonlySet<string> = new Set(['(tabs)', 'index']);
@@ -30,13 +31,20 @@ export function resolveTabPressAction(
   if (resolveActiveTabKey(segments) !== tab.key) return 'open';
   // A tab's root depth is its own route depth: 0 for home (`/(tabs)`), 1 for named tabs.
   const rootDepth = screenDepth(tab.route.split('/').filter(Boolean));
-  return screenDepth(segments) <= rootDepth ? 'stay' : 'popToRoot';
+  if (screenDepth(segments) > rootDepth) return 'popToRoot';
+  // The composer's root screen is the create form: "+" toggles it closed (FR-POST-001).
+  return tab.isComposer ? 'close' : 'stay';
 }
 
 /** The router surface the re-tap handler needs (a subset of expo-router's `Router`). */
 export interface TabRepressRouter {
   dismissTo: (href: Href) => void;
+  back: () => void;
+  canGoBack: () => boolean;
 }
+
+/** Where closing the create form lands when there is no screen to go back to (deep link / reload). */
+const FORM_CLOSE_FALLBACK: Href = '/(tabs)';
 
 /**
  * Handles a press on the already-active tab. Returns `true` when the press was
@@ -49,6 +57,11 @@ export function handleActiveTabRepress(
 ): boolean {
   const action = resolveTabPressAction(tab, segments);
   if (action === 'stay') return true;
+  if (action === 'close') {
+    if (router.canGoBack()) router.back();
+    else router.dismissTo(FORM_CLOSE_FALLBACK);
+    return true;
+  }
   if (action === 'popToRoot') {
     router.dismissTo(tab.route);
     return true;

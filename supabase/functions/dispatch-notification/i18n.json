@@ -78,6 +78,8 @@
   "notifications.volunteerSignupBody": "{{title}} — משמרת ב-{{starts_at}}",
   "notifications.volunteerReminderTitle": "תזכורת: משמרת התנדבות מחר",
   "notifications.volunteerReminderBody": "{{title}} — {{starts_at}}",
+  "notifications.reportSlaTitle": "דיווח ממתין מעל 12 שעות",
+  "notifications.reportSlaBody": "דיווח על {{target_type}} ממתין לטיפול כבר {{hours}} שעות. יש לטפל בו תוך 24 שעות מהדיווח.",
   "notifications.volunteerOrganizerTitle": "עדכון מהמארגן/ת",
   "notifications.volunteerOrganizerBody": "{{title}}: {{message}}",
   "notifications.matchSuggestedTitle": "נמצאה התאמה בשבילך",

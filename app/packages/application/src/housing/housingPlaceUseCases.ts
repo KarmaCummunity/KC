@@ -1,4 +1,4 @@
-// Housing code of conduct and private place use cases (docs/SSOT/spec/21_housing.md
+// Housing code of conduct and private place use cases (docs/spec/requirements/21_housing.md
 // FR-HOUSING-003 AC3, FR-HOUSING-012). Server: migrations 0600 (conduct), 0601 (place).
 import type { HousingPrivateDetails } from '@kc/domain';
 import type { HousingPrivateDetailsInput, IHousingRepository } from '../ports/IHousingRepository';

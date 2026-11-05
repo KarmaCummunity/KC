@@ -32,10 +32,26 @@ describe('marketplaceRuleFieldError', () => {
   });
 });
 
+// G1 step 5 (0563): an organization's event must end after it starts, checked before publishing.
+describe('marketplaceRuleFieldError — organization events', () => {
+  it('an event that ends before it starts → localized inline details error', () => {
+    const details = { starts_at: '2030-01-01T12:00:00Z', ends_at: '2030-01-01T10:00:00Z' };
+    expect(marketplaceRuleFieldError({ worldSlug: 'time', direction: 'give', details, photoCount: 0 })).toEqual({
+      code: 'event_window_invalid',
+      field: 'details',
+      key: 'marketplace.errors.event_window_invalid',
+    });
+  });
+  it('a volunteer shift has no window to check', () => {
+    expect(marketplaceRuleFieldError({ worldSlug: 'time', direction: 'give', details: { duration_minutes: 60 }, photoCount: 0 })).toBeNull();
+  });
+});
+
 describe('handoffErrorKey', () => {
   it('maps booking RPC errors to marketplace.errors keys', () => {
     expect(handoffErrorKey({ message: 'seats_exhausted' })).toBe('marketplace.errors.seats_exhausted');
     expect(handoffErrorKey({ message: 'own_listing' })).toBe('marketplace.errors.own_listing');
+    expect(handoffErrorKey({ message: 'verification_required' })).toBe('marketplace.errors.verification_required');
   });
   it('returns null for unknown errors so callers use the generic copy', () => {
     expect(handoffErrorKey(new Error('network'))).toBeNull();

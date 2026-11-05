@@ -29,6 +29,7 @@ const OWN_ROUTE: Readonly<Partial<Record<GivingWorldSlug, string>>> = {
   money: '/(tabs)/donations/money',
   housing: '/(tabs)/donations/housing',
   knowledge: '/(tabs)/donations/knowledge',
+  animals: '/(tabs)/donations/animals',
   challenges: '/(tabs)/donations/challenges',
 };
 

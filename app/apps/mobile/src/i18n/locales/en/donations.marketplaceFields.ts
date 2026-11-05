@@ -2,10 +2,12 @@
 // Composed into `marketplace.field` / `marketplace.option`. Unknown keys fall back to a
 // humanized key in ListingSchemaFields.
 
+import { animalFieldLabels, animalOptionLabels } from './donations.animalFields';
 import { housingFieldLabels, housingOptionLabels } from './donations.housingFields';
 
 export const marketplaceFieldLabels = {
   ...housingFieldLabels,
+  ...animalFieldLabels,
   item_condition: 'Condition',
   min_condition: 'Minimum condition',
   pickup_mode: 'Pickup or delivery',
@@ -33,6 +35,11 @@ export const marketplaceFieldLabels = {
   recurrence: 'Recurrence',
   duration_minutes: 'Duration (minutes)',
   duration_days: 'Duration (days)',
+  topic: 'Topic',
+  slot_starts_at: 'Session starts',
+  slot_ends_at: 'Session ends',
+  slots_available: 'Places available',
+  preferred_modality: 'Preferred format',
   level: 'Level',
   difficulty: 'Difficulty',
   modality: 'Format',
@@ -55,10 +62,16 @@ export const marketplaceFieldLabels = {
   departs_at: 'Departure',
   reward_model: 'Ride cost',
   cost_share_ils: 'Cost sharing (₪)',
+  // An organization's event (G1 step 5); `capacity` shares the housing label.
+  starts_at: 'Starts',
+  ends_at: 'Ends',
+  registration_policy: 'Registration',
+  address: 'Address',
 } as const;
 
 export const marketplaceOptionLabels = {
   ...housingOptionLabels,
+  ...animalOptionLabels,
   New: 'New',
   LikeNew: 'Like new',
   Good: 'Good',
@@ -106,6 +119,9 @@ export const marketplaceOptionLabels = {
   soy: 'Soy',
   fish: 'Fish',
   sesame: 'Sesame',
+  automatic: 'Automatic',
+  manual: 'Organizer approves',
+  verified_only: 'Verified members only',
 } as const;
 
 export const marketplaceAvailabilityLabels = {

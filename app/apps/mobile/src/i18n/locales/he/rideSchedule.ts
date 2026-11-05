@@ -1,6 +1,8 @@
 // Hebrew — ride quick publish: departure, estimated end and seats (spec 05 §5.3 step 1, D75, S46).
 export const rideSchedule = {
   departure: 'שעת יציאה',
+  leaveNow: 'יציאה עכשיו',
+  leaveNowHint: 'הנסיעה יוצאת כמה דקות אחרי הפרסום.',
   arrival: 'סיום משוער',
   arrivalPlaceholder: 'יוצע לפי המסלול',
   arrivalHint: 'הצעה לפי המרחק — אפשר לשנות.',

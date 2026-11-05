@@ -18,6 +18,8 @@ import { RideCreateSection } from '../giving/RideCreateSection';
 import { WorldSubcategoryPicker } from '../marketplace/WorldSubcategoryPicker';
 import { ListingDetailFields } from './ListingDetailFields';
 import { PhotoPicker } from './PhotoPicker';
+import { ListingKindChooser } from './ListingKindChooser';
+import { TimeOfferKindChooser } from './TimeOfferKindChooser';
 
 const TITLE_MAX = 80;
 const SUMMARY_MAX = 500;
@@ -88,6 +90,19 @@ export function ListingCreateForm({
         missing={!form.kind}
         onRetry={() => void form.kindsQuery.refetch()}
       >
+        {/* Several kinds in this direction (animals, knowledge): the member says which one. */}
+        {form.eventChoice.isOrgEvent ? null : (
+          <ListingKindChooser
+            choices={form.kindChoices}
+            selectedKindId={form.kind?.kindId ?? null}
+            onChoose={form.chooseKind}
+            disabled={form.busy}
+          />
+        )}
+
+        {/* A member of an organization picks a volunteer shift or the organization's event (G1 step 5). */}
+        {form.eventChoice.available ? <TimeOfferKindChooser choice={form.eventChoice} disabled={form.busy} /> : null}
+
         {form.isRides ? null : photoPicker}
 
         {/* Rides have no title (#1411): it is built from the route. */}
@@ -114,6 +129,8 @@ export function ListingCreateForm({
             isOffer={direction === 'give'}
             recurrence={form.recurrence}
             onRecurrenceChange={form.setRecurrence}
+            leaveNow={form.leaveNow}
+            onLeaveNowChange={form.setLeaveNow}
             disabled={form.busy}
           />
         ) : null}

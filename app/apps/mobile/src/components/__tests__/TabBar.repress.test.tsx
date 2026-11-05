@@ -10,6 +10,8 @@ const router = {
   dismissTo: vi.fn(),
   dismissAll: vi.fn(),
   canDismiss: vi.fn(() => false),
+  back: vi.fn(),
+  canGoBack: vi.fn(() => true),
 };
 let segments: string[] = [];
 let pathname = '/';
@@ -88,6 +90,22 @@ describe('TabBar "+" button', () => {
     onRoute(['(tabs)', 'create'], '/create');
     const { getByTestId } = render(<TabBar />);
     expect(turned(getByTestId('tab-create'))).not.toBeNull();
+  });
+
+  it('closes the create form when "+" is tapped again', () => {
+    onRoute(['(tabs)', 'create'], '/create');
+    const { getByTestId } = render(<TabBar />);
+    fireEvent.click(getByTestId('tab-create'));
+    expect(router.back).toHaveBeenCalledTimes(1);
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('opens the create form when "+" is tapped on another screen', () => {
+    onRoute(['(tabs)', 'donations'], '/donations');
+    const { getByTestId } = render(<TabBar />);
+    fireEvent.click(getByTestId('tab-create'));
+    expect(router.push).toHaveBeenCalledTimes(1);
+    expect(router.back).not.toHaveBeenCalled();
   });
 
   it('stays an upright "+" on every other screen', () => {
