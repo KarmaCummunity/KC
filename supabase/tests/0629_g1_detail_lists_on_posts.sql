@@ -9,7 +9,9 @@
 --     fulfilled;
 --   * a listing-sourced ride (direct insert) with a title over 80 characters and no city;
 --   * an items post (its listing keeps origin 'post') and a directly inserted items listing;
---   * a knowledge listing awaiting moderation (no post yet), then published.
+--   * a knowledge listing awaiting moderation (no post yet), then published;
+--   * a listing made post-owned by the 0554 backfill, whose post still differs from it on title,
+--     description and city (the readers keep those three from the listing).
 -- Runs in a rolled-back transaction.
 
 begin;
@@ -193,6 +195,7 @@ declare
   v_direct uuid;
   v_item_post uuid;
   v_knowledge uuid;
+  v_backfilled uuid;
 begin
   select * into p from personas;
 
@@ -229,6 +232,19 @@ begin
       'slot_ends_at', kc_test.iso_in(interval '2 hours')));
   perform kc_test.assert_eq(public.post_id_of_listing(v_knowledge), null::uuid, 'the pending knowledge listing has no post');
 
+  -- A listing made post-owned by the 0554 backfill: its post kept the mirror's values — the
+  -- title cut to 80 characters, the trimmed description and the owner's city where the listing has
+  -- none — until a later write converges the two. Built here as a post-owned ride whose listing
+  -- holds the pre-0554 values and whose post holds the mirror's, written with the posts → listings
+  -- sync off so the listing keeps its own.
+  perform kc_test.act_as(p.owner);
+  v_backfilled := public.create_marketplace_listing(
+    p_kind_id => kc_test.listing_kind_id('rides', 'ride_offer'),
+    p_title   => 'Haifa to Tel Aviv',
+    p_details => kc_test.ride_route_tlv_jlm()
+                 || jsonb_build_object('departs_at', kc_test.iso_in(interval '6 hours'), 'seats_available', 2),
+    p_city_id => 'tel-aviv');
+
   -- Every row here is written in one transaction, so now() ties them all; give each published
   -- listing its own publication time so the profile order (published_at desc) is fully defined.
   -- The change flows to the post of a post-owned listing (0626).
@@ -237,6 +253,22 @@ begin
     from (select listing_id, row_number() over (order by listing_id) as n
             from public.listings where owner_id in (p.owner, p.mentor)) r
    where l.listing_id = r.listing_id and l.published_at is not null;
+
+  -- The backfilled shape diverges last: a listing write after this would converge it again.
+  update public.listings
+     set title = 'a ride listed before the post model ' || repeat('z', 70), summary = '  padded summary  ', city_id = null
+   where listing_id = v_backfilled;
+  alter table public.posts disable trigger posts_sync_listing;
+  update public.posts po
+     set title = left(l.title, 80), description = nullif(trim(l.summary), ''), city = 'haifa'
+    from public.listings l
+   where l.listing_id = v_backfilled and po.post_id = l.legacy_post_id;
+  alter table public.posts enable trigger posts_sync_listing;
+  perform kc_test.assert_true(
+    (select po.title <> l.title and po.city is distinct from l.city_id and po.description is distinct from l.summary
+       from public.listings l join public.posts po on po.post_id = l.legacy_post_id
+      where l.listing_id = v_backfilled),
+    'the backfilled shape: its post and its listing differ on title, description and city');
 
   perform pg_temp.assert_same('created');
 
