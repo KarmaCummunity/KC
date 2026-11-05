@@ -11070,6 +11070,7 @@ export type Database = {
         Args: { granter_uid: string; target_role: string; target_scope: string }
         Returns: boolean
       }
+      can_manage_demo_data: { Args: { p_uid: string }; Returns: boolean }
       can_manage_grant: {
         Args: { p_actor: string; p_grant_id: string }
         Returns: boolean
