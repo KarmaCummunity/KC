@@ -12866,6 +12866,51 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      listing_record_of: {
+        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
+        Returns: {
+          anonymity_level: number
+          availability_status: string
+          beneficiary_org_id: string | null
+          canonical_id: string | null
+          category_id: string | null
+          city_id: string | null
+          created_at: string
+          details: Json
+          direction: string
+          embedding: string | null
+          embedding_model: string | null
+          expires_at: string | null
+          external_body_id: string | null
+          geo: unknown
+          geo_mode_override: string | null
+          geo_weight_override: number | null
+          kind_id: string
+          legacy_post_id: string | null
+          legacy_ride_id: string | null
+          listing_id: string
+          max_radius_km_override: number | null
+          moderation_status: string
+          origin: string
+          owner_id: string
+          published_at: string | null
+          search_vector: unknown
+          status: string
+          summary: string | null
+          time_window: unknown
+          title: string
+          updated_at: string
+          urgency_level: number
+          visibility: string
+          world_slug: string
+        }[]
+        SetofOptions: {
+          from: "listings"
+          to: "listings"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       listing_set_post_status: {
         Args: {
           p_listing: Database["public"]["Tables"]["listings"]["Row"]
