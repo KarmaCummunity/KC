@@ -25,6 +25,7 @@ import * as events from './eventRegistrations';
 import * as owner from './listingOwnerActions';
 import * as paging from './marketplacePaging';
 import { mapPinRow } from './mapPinRow';
+import { CARD_POST_EMBED, firstOf, listingDirectionOf, recordPostOf, type CardShapeColumns } from './listingCardSource';
 
 export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
@@ -147,26 +148,43 @@ export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
     const { data, error } = await this.client
       .from('listings')
       .select(
-        'listing_id, world_slug, direction, title, summary, urgency_level, availability_status, city_id, kind_id',
+        `listing_id, world_slug, direction, title, summary, urgency_level, availability_status, city_id, kind_id, origin, legacy_post_id, ${CARD_POST_EMBED}`,
       )
       .eq('listing_id', listingId)
       .maybeSingle();
     if (error || !data) return null;
+    const row = data as unknown as typeof data & CardShapeColumns;
+    // A post-owned listing reads its post, the record; title, summary and city stay the listing's.
+    const post = recordPostOf(row);
+    if (post) {
+      return {
+        listingId: row.listing_id,
+        worldSlug: post.world_slug,
+        kindSlug: firstOf(post.kind)?.slug ?? '',
+        direction: listingDirectionOf(post.direction),
+        title: row.title,
+        summary: row.summary,
+        urgencyLevel: post.urgency_level ?? row.urgency_level,
+        availabilityStatus: post.availability_status,
+        cityId: row.city_id,
+        distanceKm: null,
+      };
+    }
     const { data: kindRow } = await this.client
       .from('listing_kinds')
       .select('slug')
-      .eq('kind_id', data.kind_id)
+      .eq('kind_id', row.kind_id)
       .maybeSingle();
     return {
-      listingId: data.listing_id,
-      worldSlug: data.world_slug,
+      listingId: row.listing_id,
+      worldSlug: row.world_slug,
       kindSlug: kindRow?.slug ?? '',
-      direction: data.direction as 'give' | 'request',
-      title: data.title,
-      summary: data.summary,
-      urgencyLevel: data.urgency_level,
-      availabilityStatus: data.availability_status,
-      cityId: data.city_id,
+      direction: row.direction as 'give' | 'request',
+      title: row.title,
+      summary: row.summary,
+      urgencyLevel: row.urgency_level,
+      availabilityStatus: row.availability_status,
+      cityId: row.city_id,
       distanceKm: null,
     };
   }
