@@ -12,6 +12,9 @@
 -- to the details and the owner's city (0557), an items post keeps its fields in legacy columns
 -- (details {}), and a listing awaiting moderation or a v1 ride has no post at all. Those readers
 -- move once 6b gives posts content parity.
+-- Title, summary and city stay the listing's for every shape: a listing that 0554's backfill made
+-- post-owned keeps the mirror-era title (cut to 80) and fallback city on its post until the post is
+-- next written, so the post is not yet their source (6b).
 --   1. get_marketplace_listing_detail (0561)  same keys and values; the post-owned card is built
 --      from the post, the world and the kind
 --   2. list_my_listings (0413)  drives from the owner's listings as before — the keyset stays the
@@ -59,8 +62,8 @@ begin
     select v_listing.listing_id, p.owner_id, p.world_slug, w.label_he, w.label_en,               -- 0629
            lk.kind_id, lk.slug, lk.label_he, lk.label_en, p.category_id,                         -- 0629
            case when p.direction = 'request' then 'request' else 'give' end, v_listing.status,   -- 0629
-           p.visibility, public.visibility_to_anonymity_level(p.visibility), p.title,            -- 0629
-           p.description, p.geo, p.city, p.time_window, p.expires_at, p.details,                 -- 0629
+           p.visibility, public.visibility_to_anonymity_level(p.visibility), v_listing.title,    -- 0629
+           v_listing.summary, p.geo, v_listing.city_id, p.time_window, p.expires_at, p.details, -- 0629
            v_listing.origin, p.post_id, null::uuid, p.urgency_level, p.availability_status,      -- 0629
            p.published_at, v_listing.created_at, v_listing.updated_at                            -- 0629
       into v_row                                                                                 -- 0629
@@ -138,8 +141,8 @@ as $$
     case when p.post_id is null then l.direction                                        -- 0629
          when p.direction = 'request' then 'request' else 'give' end,                    -- 0629
     s.status,                                                                            -- 0629
-    case when p.post_id is null then l.title else p.title end,                          -- 0629
-    case when p.post_id is null then l.summary else p.description end,                  -- 0629
+    l.title,
+    l.summary,
     case when p.post_id is null then l.urgency_level else p.urgency_level end,          -- 0629
     case when p.post_id is null then l.availability_status else p.availability_status end, -- 0629
     l.updated_at
@@ -190,8 +193,8 @@ as $$
     case when p.post_id is null then l.direction                                        -- 0629
          when p.direction = 'request' then 'request' else 'give' end,                    -- 0629
     s.status,                                                                            -- 0629
-    case when p.post_id is null then l.title else p.title end,                          -- 0629
-    case when p.post_id is null then l.summary else p.description end                   -- 0629
+    l.title,
+    l.summary
   from public.listings l
   -- 0629: the post of a post-owned listing (the record); every other listing reads itself.
   left join public.posts p on p.post_id = l.legacy_post_id and l.origin = 'native'        -- 0629
