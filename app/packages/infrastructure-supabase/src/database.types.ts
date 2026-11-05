@@ -13169,6 +13169,13 @@ export type Database = {
         Returns: undefined
       }
       post_id_of_listing: { Args: { p_listing_id: string }; Returns: string }
+      post_listing_visible_to: {
+        Args: {
+          p_post: Database["public"]["Tables"]["posts"]["Row"]
+          p_viewer: string
+        }
+        Returns: boolean
+      }
       post_owns_listing: {
         Args: { p_post: Database["public"]["Tables"]["posts"]["Row"] }
         Returns: boolean
