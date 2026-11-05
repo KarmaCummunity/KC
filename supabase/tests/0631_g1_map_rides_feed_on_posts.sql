@@ -5,6 +5,8 @@
 -- The oracles are the pre-0631 bodies (map_listing_pins 0438, list_rides_feed 0623), copied
 -- verbatim as pg_temp functions. Shapes, stages and viewers as in the 0630 test; the RPC's rows
 -- equal the oracle's as ordered JSON text.
+-- map_listing_clusters (#1911) had no working body, so it is tested on its behaviour: cells,
+-- counts, a representative listing of each cell, the world filter, and a blocked member.
 -- Runs in a rolled-back transaction.
 
 begin;
@@ -290,6 +292,62 @@ begin
   end loop;
 end $$;
 grant execute on function pg_temp.assert_same(text) to public;
+
+-- ── #1911 the clusters plan and count what a viewer sees ────────────────────────────────────
+-- The pre-0631 body never planned (min(uuid)), so the clusters are tested on their behaviour, in a
+-- window far from the fixture: two visible items listings and a paused one in one 0.01° cell, a
+-- post-owned food request (positioned on its post) and a listing-sourced items listing in another.
+do $$
+declare
+  p personas;
+  v_a uuid;
+  v_b uuid;
+  v_paused uuid;
+  v_owned uuid;
+  v_c uuid;
+  v_item jsonb := '{"item_condition":"Good","image_url":"https://example.test/i.jpg"}';
+  r record;
+  v_n int := 0;
+begin
+  select * into p from personas;
+  v_a := kc_test.create_listing(p.owner, 'items', 'give_item', 'give', 'cell one a', v_item);
+  v_b := kc_test.create_listing(p.owner, 'items', 'give_item', 'give', 'cell one b', v_item);
+  v_paused := kc_test.create_listing(p.owner, 'items', 'give_item', 'give', 'cell one paused', v_item);
+  v_c := kc_test.create_listing(p.owner, 'items', 'give_item', 'give', 'cell two direct', v_item);
+  update public.listings set geo = pg_temp.point(29.551, 34.951) where listing_id = v_a;
+  update public.listings set geo = pg_temp.point(29.552, 34.952) where listing_id = v_b;
+  update public.listings set geo = pg_temp.point(29.553, 34.953), status = 'cancelled' where listing_id = v_paused;
+  update public.listings set geo = pg_temp.point(29.601, 34.981) where listing_id = v_c;
+  perform kc_test.act_as(p.owner);
+  v_owned := public.create_marketplace_listing(
+    p_kind_id => kc_test.listing_kind_id('food', 'request_food'), p_title => 'cell two owned',
+    p_lat => 29.602, p_lng => 34.982);
+
+  perform kc_test.act_as(p.viewer);
+  for r in select * from public.map_listing_clusters(29.5, 34.9, 29.7, 35.0, null, p.viewer) loop
+    v_n := v_n + 1;
+    if r.cluster_key = '29.55,34.95' then
+      perform kc_test.assert_eq(r.listing_count, 2, 'the paused listing is not counted in its cell');
+      perform kc_test.assert_true(r.sample_listing_id in (v_a, v_b), 'the cell''s representative is one of its listings');
+      perform kc_test.assert_true(abs(r.center_lat - 29.5515) < 1e-6, 'the cell is centred on its listings');
+    elsif r.cluster_key = '29.60,34.98' then
+      perform kc_test.assert_eq(r.listing_count, 2, 'a post-owned and a listing-sourced listing share a cell');
+      perform kc_test.assert_true(r.sample_listing_id in (v_owned, v_c), 'the cell''s representative is one of its listings');
+    else
+      perform kc_test.fail(format('unexpected cell %s', r.cluster_key));
+    end if;
+  end loop;
+  perform kc_test.assert_eq(v_n, 2, 'two cells in the window');
+
+  perform kc_test.assert_row_count(
+    'select 1 from public.map_listing_clusters(29.5, 34.9, 29.7, 35.0, ''food'', null)', 1,
+    'the world filter keeps one cell; a guest sees it');
+  delete from public.blocks where blocker_id = p.owner;
+  insert into public.blocks (blocker_id, blocked_id) values (p.owner, p.blocked);
+  perform kc_test.assert_row_count(
+    format('select 1 from public.map_listing_clusters(29.5, 34.9, 29.7, 35.0, null, %L)', p.blocked), 0,
+    'a blocked member sees no cell');
+end $$;
 
 -- ── Every stage of the listings' life, compared for every viewer ─────────────────────────────
 do $$

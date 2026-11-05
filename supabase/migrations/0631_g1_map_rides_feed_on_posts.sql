@@ -10,11 +10,15 @@
 --   2. list_rides_feed (0623)  every ride in it has a post, so visibility is post_listing_visible_to
 --      on that post (the rule is_listing_visible_to applies to both shapes since 0628), and the
 --      direction is the post's in the listing's words
+--   3. map_listing_clusters (0332), #1911  it never planned: min() has no uuid variant, so every
+--      call failed. The cluster's representative listing is now the smallest id as text, cast back
+--      (a real listing of the cluster, as min(uuid) meant). With that fixed it follows the same rule
+--      as the pins: filters on the listing, visibility and position from the post of a post-owned
+--      listing.
 -- Title, summary and created_at stay the listing's (see 0630 on posts made post-owned by the 0554
--- backfill). map_listing_clusters (0332) is left as it is: it does not plan here (min(uuid)), so
--- it has no current output to preserve. Output is byte-identical to the pre-0631 bodies, which
--- the test uses as oracles. Names, arguments, return shapes and grants are unchanged; changed
--- lines carry `-- 0631`.
+-- backfill). The pins and the rides feed are byte-identical to the pre-0631 bodies, which the test
+-- uses as oracles; the clusters, which had no working body, are tested on their behaviour. Names,
+-- arguments, return shapes and grants are unchanged; changed lines carry `-- 0631`.
 
 begin;
 
@@ -178,5 +182,80 @@ $$;
 
 revoke all on function public.list_rides_feed(int) from public;
 grant execute on function public.list_rides_feed(int) to anon, authenticated;
+
+-- ── 3. map_listing_clusters (0332), #1911 ───────────────────────────────────────────────────────
+create or replace function public.map_listing_clusters(
+  p_sw_lat double precision,
+  p_sw_lng double precision,
+  p_ne_lat double precision,
+  p_ne_lng double precision,
+  p_world_slug text default null,
+  p_viewer uuid default auth.uid()
+)
+returns table (
+  cluster_key text,
+  center_lat double precision,
+  center_lng double precision,
+  listing_count int,
+  sample_listing_id uuid
+)
+language plpgsql
+stable
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_sw geography;
+  v_ne geography;
+begin
+  v_sw := extensions.st_setsrid(extensions.st_makepoint(p_sw_lng, p_sw_lat), 4326)::geography;
+  v_ne := extensions.st_setsrid(extensions.st_makepoint(p_ne_lng, p_ne_lat), 4326)::geography;
+
+  return query
+  with visible as (
+    select l.listing_id,
+           case when p.post_id is null then l.geo else p.geo end as geo,                 -- 0631: the post's
+           l.world_slug
+      from public.listings l
+      -- 0631: the post of a post-owned listing (food, rides, housing, time; 0554), the record.
+      left join public.posts p on p.post_id = l.legacy_post_id and l.origin = 'native'    -- 0631
+     where l.status = 'open'
+       and l.moderation_status = 'published'
+       and l.geo is not null
+       and l.world_slug <> 'romantic_matchmaking'
+       and (case when p.post_id is null then public.is_listing_visible_to(l, p_viewer)    -- 0631
+                 else public.post_listing_visible_to(p, p_viewer) end)                   -- 0631
+       and (p_world_slug is null or l.world_slug = p_world_slug)
+       and extensions.st_within(
+         l.geo::geometry,
+         extensions.st_makeenvelope(p_sw_lng, p_sw_lat, p_ne_lng, p_ne_lat, 4326)
+       )
+  ),
+  gridded as (
+    select
+      listing_id,
+      geo,
+      round(extensions.st_y(geo::geometry)::numeric, 2) as lat_bucket,
+      round(extensions.st_x(geo::geometry)::numeric, 2) as lng_bucket
+    from visible
+  )
+  select
+    (g.lat_bucket || ',' || g.lng_bucket) as cluster_key,
+    avg(extensions.st_y(g.geo::geometry))::double precision,
+    avg(extensions.st_x(g.geo::geometry))::double precision,
+    count(*)::int,
+    min(g.listing_id::text)::uuid -- 0631: min() has no uuid variant (#1911); a real listing of the cluster
+  from gridded g
+  group by g.lat_bucket, g.lng_bucket
+  order by listing_count desc;
+end;
+$$;
+
+revoke all on function public.map_listing_clusters(
+  double precision, double precision, double precision, double precision, text, uuid
+) from public;
+grant execute on function public.map_listing_clusters(
+  double precision, double precision, double precision, double precision, text, uuid
+) to anon, authenticated, service_role;
 
 commit;
