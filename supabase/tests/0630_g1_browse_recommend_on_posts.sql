@@ -34,6 +34,15 @@ immutable
 as $$ select extensions.st_setsrid(extensions.st_makepoint(p_lng, p_lat), 4326)::extensions.geography $$;
 grant execute on function pg_temp.point(double precision, double precision) to public;
 
+-- Listings committed by earlier test files share one transaction's now(); give each its own
+-- creation and publication time so the recommendations' order (score, created_at), which has no
+-- tiebreaker, is fully defined here too.
+update public.listings l
+   set created_at = l.created_at - r.n * interval '1 second',
+       published_at = l.published_at - r.n * interval '1 second'
+  from (select listing_id, row_number() over (order by listing_id) as n from public.listings) r
+ where l.listing_id = r.listing_id;
+
 /** The listings of every shape, by name. */
 create temp table shapes (name text primary key, listing_id uuid);
 grant all on shapes to public;
