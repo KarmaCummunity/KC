@@ -1942,7 +1942,7 @@ Owner rules that go with it:
 
 **Rejected.** Letting every `org_admin` manage demo data (the org admins of the demo organizations could wipe the seed users they belong to). A second super admin (breaks the single-super-admin index, TD-95).
 
-**Affected.** `supabase/migrations/0611_demo_data_platform_admin.sql`, `supabase/tests/0611_demo_data_platform_admin.sql`, `packages/domain/src/admin/AdminPermission.ts`, `(admin)/demo-data`, `FR-ADMIN-031 AC6`. Same pattern as `admins.grant_role`: the client gate is coarse, the RPC re-checks the scope.
+**Affected.** `supabase/migrations/0614_demo_data_platform_admin.sql`, `supabase/tests/0614_demo_data_platform_admin.sql`, `packages/domain/src/admin/AdminPermission.ts`, `(admin)/demo-data`, `FR-ADMIN-031 AC6`. Same pattern as `admins.grant_role`: the client gate is coarse, the RPC re-checks the scope.
 
 ## D-222 — Tester builds show the housing and knowledge feeds ahead of the remote flag (2026-11-04)
 

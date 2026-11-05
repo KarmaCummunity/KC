@@ -68,4 +68,4 @@ end $$;
 
 rollback;
 
-\echo '✓ 0611_demo_data_platform_admin.sql passed'
+\echo '✓ 0614_demo_data_platform_admin.sql passed'

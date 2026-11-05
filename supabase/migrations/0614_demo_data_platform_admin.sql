@@ -1,4 +1,4 @@
--- 0611_demo_data_platform_admin | FR-ADMIN-031 AC6: the platform org's admin may manage demo data too.
+-- 0614_demo_data_platform_admin | FR-ADMIN-031 AC6: the platform org's admin may manage demo data too.
 --
 -- Until now the three demo-data RPCs (0591, 0592) accepted super_admin only. The person who runs the
 -- Karma Community org day to day (org_admin scoped to the platform org) needs the same screen, while
