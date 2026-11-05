@@ -13176,9 +13176,71 @@ export type Database = {
         }
         Returns: boolean
       }
+      post_lock_own_listing: {
+        Args: { p_target: string }
+        Returns: {
+          availability_status: string
+          beneficiary_org_id: string | null
+          category: string
+          category_id: string | null
+          city: string
+          created_at: string
+          delete_after: string | null
+          description: string | null
+          details: Json
+          direction: string
+          estimated_value: number | null
+          expires_at: string | null
+          external_body_id: string | null
+          feed_hidden: boolean
+          geo: unknown
+          item_condition: string | null
+          kind_id: string | null
+          legacy_listing_id: string | null
+          listing_id: string | null
+          listing_world_slug: string | null
+          location_display_level: string
+          max_radius_km_override: number | null
+          moderation_status: string
+          owner_id: string
+          post_id: string
+          post_type: string
+          published_at: string | null
+          reopen_count: number
+          search_vector: unknown
+          source: string
+          source_language: string | null
+          source_language_confidence: number | null
+          status: string
+          status_before_admin_removal: string | null
+          street: string
+          street_number: string
+          time_window: unknown
+          title: string
+          type: string
+          updated_at: string
+          urgency: string | null
+          urgency_level: number | null
+          visibility: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "posts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       post_owns_listing: {
         Args: { p_post: Database["public"]["Tables"]["posts"]["Row"] }
         Returns: boolean
+      }
+      post_record_set_status: {
+        Args: {
+          p_post: Database["public"]["Tables"]["posts"]["Row"]
+          p_status: string
+        }
+        Returns: undefined
       }
       post_relevance_reminder_due: {
         Args: { p_age_days: number }
