@@ -13740,6 +13740,13 @@ export type Database = {
         Args: { p_details: Json; p_post_id: string }
         Returns: undefined
       }
+      ride_post_set_status: {
+        Args: {
+          p_post: Database["public"]["Tables"]["posts"]["Row"]
+          p_status: string
+        }
+        Returns: undefined
+      }
       ride_quiet_window_end: {
         Args: { p_at?: string; p_user: string }
         Returns: string
