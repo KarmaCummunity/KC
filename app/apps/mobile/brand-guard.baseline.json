@@ -125,11 +125,6 @@
       "fontWeightLiteral": 1,
       "radiusLiteral": 2
     },
-    "src/features/about-landing/AboutMissionTeamSection.tsx": {
-      "fontWeightLiteral": 4,
-      "spacingLiteral": 1,
-      "iconSizeLiteral": 2
-    },
     "src/features/about-landing/AboutNavDrawer.tsx": {
       "physicalSide": 2,
       "rawModal": 1,
