@@ -19,7 +19,7 @@ export interface HousingPrivateDetailsInput {
 }
 
 /**
- * Housing stays on the server (docs/SSOT/spec/21_housing.md FR-HOUSING-003, 012, 015–022;
+ * Housing stays on the server (docs/spec/requirements/21_housing.md FR-HOUSING-003, 012, 015–022;
  * migrations 0600–0603). Every write resolves once the server accepted it; server errors keep
  * their code as the message (e.g. `housing_capacity_exceeded`) so the UI maps them to copy, and
  * the server pushes every booking change to the other side.

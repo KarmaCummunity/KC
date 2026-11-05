@@ -8,6 +8,7 @@ import { adminDonationLinksHe } from './adminDonationLinks';
 import { adminWhatsAppHe } from './adminWhatsApp';
 import { adminMatchingHe } from './adminMatching';
 import { adminDemoDataHe } from './adminDemoData';
+import { adminOrgTreeHe } from './adminOrgTree';
 import { adminStatsHe } from './adminStats';
 import { adminSurveysHe } from './adminSurveys';
 import { adminTasksHe } from './adminTasks';
@@ -91,6 +92,8 @@ export const adminHe = {
       ageDays:        (d: number) => `לפני ${d} ימים`,
       ageHours:       (h: number) => `לפני ${h} שעות`,
       ageMinutes:     (m: number) => `לפני ${m} דקות`,
+      slaWarning:     'ממתין מעל 12 שעות',
+      slaOverdue:     'באיחור (24 שעות)',
     },
   },
   caseDetail: {
@@ -149,6 +152,7 @@ export const adminHe = {
   whatsapp: adminWhatsAppHe,
   matching: adminMatchingHe,
   demoData: adminDemoDataHe,
+  orgTree: adminOrgTreeHe,
   stats: adminStatsHe,
   crm: adminCrmHe,
   orgApprovals: adminOrgApprovalsHe,

@@ -3,6 +3,7 @@ import { coalesceChat, coalesceFollowStarted } from './coalesce.ts';
 import { sendExpoPush, type ExpoMessage, type ExpoTicket } from './expoPushClient.ts';
 import i18n from './i18n.json' with { type: 'json' };
 import { type Handler, reportError, withObservability } from '../_shared/observability/mod.ts';
+import { isServiceRoleRequest } from '../_shared/serviceRoleGuard.ts';
 
 interface OutboxRow {
   notification_id: string;
@@ -51,8 +52,7 @@ function bumpAttempt(notificationId: string, error: string) {
 
 const handler: Handler = async (req) => {
   // Auth: dashboard webhook passes the service-role bearer.
-  const auth = req.headers.get('Authorization') ?? '';
-  if (auth !== `Bearer ${SERVICE_ROLE_KEY}`) {
+  if (!isServiceRoleRequest(req, SERVICE_ROLE_KEY)) {
     return new Response('Unauthorized', { status: 401 });
   }
 

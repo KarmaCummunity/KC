@@ -29,9 +29,11 @@ function badgeCornerEnd(): Pick<ViewStyle, 'left' | 'right' | 'end'> {
 interface TopBarProps {
   /** Optional icon rendered between the logo and the settings icon. */
   extraIcon?: React.ReactNode;
+  /** Optional icon rendered right next to the chat icon (the home feed's admin shortcut). */
+  leadingIcon?: React.ReactNode;
 }
 
-export function TopBar({ extraIcon }: TopBarProps = {}) {
+export function TopBar({ extraIcon, leadingIcon }: TopBarProps = {}) {
   const router = useRouter();
   const { t } = useTranslation();
   const styles = useTopBarStyles();
@@ -44,21 +46,24 @@ export function TopBar({ extraIcon }: TopBarProps = {}) {
 
   return (
     <View style={styles.topBar}>
-      <TouchableOpacity
-        testID="topbar-chat"
-        style={styles.iconBtn}
-        onPress={() => router.push('/chat/')}
-        accessibilityLabel={t('chat.title')}
-      >
-        <Ionicons name="chatbubbles-outline" size={iconSize['2xl']} color={colors.textPrimary} />
-        {chatUnread > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{chatDisplay}</Text>
-          </View>
-        )}
-      </TouchableOpacity>
+      <View style={styles.sideGroup}>
+        <TouchableOpacity
+          testID="topbar-chat"
+          style={styles.iconBtn}
+          onPress={() => router.push('/chat/')}
+          accessibilityLabel={t('chat.title')}
+        >
+          <Ionicons name="chatbubbles-outline" size={iconSize['2xl']} color={colors.textPrimary} />
+          {chatUnread > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{chatDisplay}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        {leadingIcon}
+      </View>
       <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
-      <View style={styles.rightGroup}>
+      <View style={styles.sideGroup}>
         {extraIcon}
         <TouchableOpacity
           testID="topbar-notifications"
@@ -98,7 +103,7 @@ const useTopBarStyles = makeUseStyles(({ colors }) => ({
     backgroundColor: colors.surfaceCream,
   },
   iconBtn: { padding: spacing.xs, position: 'relative' as const },
-  rightGroup: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.xs },
+  sideGroup: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.xs },
   logo: { height: 32, width: 80 },
   badge: {
     position: 'absolute' as const,

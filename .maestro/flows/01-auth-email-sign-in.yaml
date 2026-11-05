@@ -1,5 +1,5 @@
 # Sign in with email from a fresh install and land on the home feed.
-# Spec: docs/SSOT/spec/01_auth_and_onboarding.md FR-AUTH-001 AC2, FR-AUTH-002.
+# Spec: docs/spec/requirements/01_auth_and_onboarding.md FR-AUTH-001 AC2, FR-AUTH-002.
 appId: org.karmacommunity.app
 name: Auth — email sign-in reaches the feed
 tags: [auth, smoke]

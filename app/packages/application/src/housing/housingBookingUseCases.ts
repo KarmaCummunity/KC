@@ -1,4 +1,4 @@
-// Housing stay booking use cases (docs/SSOT/spec/21_housing.md FR-HOUSING-015…022).
+// Housing stay booking use cases (docs/spec/requirements/21_housing.md FR-HOUSING-015…022).
 // The server RPCs (0602–0603) own authorization and state; these reject what the domain rules
 // already know is invalid, so the member gets the answer without a round trip, then delegate.
 import {

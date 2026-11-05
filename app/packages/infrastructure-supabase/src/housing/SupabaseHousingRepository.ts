@@ -14,7 +14,7 @@ const opt = (value: string | null | undefined): string | undefined => value ?? u
 const optNum = (value: number | null | undefined): number | undefined => value ?? undefined;
 
 /**
- * Housing stays over the 0600–0603 RPCs (docs/SSOT/spec/21_housing.md FR-HOUSING-003, 012,
+ * Housing stays over the 0600–0603 RPCs (docs/spec/requirements/21_housing.md FR-HOUSING-003, 012,
  * 015–022). Server errors keep their message (an error code such as `housing_pending_cap`) so
  * the UI can map it to copy; the server pushes every booking change to the other side.
  */

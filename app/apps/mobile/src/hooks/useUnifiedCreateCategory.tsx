@@ -7,12 +7,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import type { PostType } from '@kc/domain';
+import { useRemoteAppFlags } from './useLaunchWorldFlags';
 import { UnifiedCreateHeader } from '../components/CreatePostForm/UnifiedCreateHeader';
 import {
   CREATE_CATEGORIES,
   findCreateCategory,
   isCreateCategoryId,
   isCreateDirection,
+  resolveCreateCategory,
   type CreateCategoryId,
   type CreateDirection,
 } from '../lib/unifiedCreate/createCategories';
@@ -102,7 +104,8 @@ export function useUnifiedCreateCategory(
     [open, categoryId],
   );
 
-  const activeCategory = findCreateCategory(categoryId);
+  const remoteFlags = useRemoteAppFlags();
+  const activeCategory = resolveCreateCategory(findCreateCategory(categoryId), remoteFlags);
   const header = (
     <UnifiedCreateHeader
       categories={CREATE_CATEGORIES}

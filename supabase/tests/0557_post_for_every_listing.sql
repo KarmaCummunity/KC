@@ -1,8 +1,9 @@
 -- supabase/tests/0557_post_for_every_listing.sql | 0557 (G1 step 3b-pre, ADR-006, D19, D-217):
 -- every published open listing has a post; a listing of a world that does not mirror into the feed
--- (knowledge) or a later occurrence of a recurring ride gets a hidden post that the feed surfaces
--- skip but handoffs can hang on; sharing or the ride sweep exposes it; an exposed post is never
--- hidden again by a later sync; the backfill left no open listing without a post.
+-- or a later occurrence of a recurring ride gets a hidden post that the feed surfaces skip but
+-- handoffs can hang on; sharing or the ride sweep exposes it; an exposed post is never hidden
+-- again by a later sync; the backfill left no open listing without a post. Knowledge mirrors into
+-- the feed since 0613, so its offers are listed from publication.
 
 begin;
 
@@ -67,7 +68,7 @@ begin
     0, 'every published open listing has a post after 0557');
 end $$;
 
--- ── T1 a knowledge offer: a hidden post from publication; shared → listed ───────────────────
+-- ── T1 a knowledge offer: its post is listed from publication (0613) ────────────────────────
 do $$
 declare
   p personas;
@@ -85,36 +86,24 @@ begin
   update public.listings set moderation_status = 'published' where listing_id = v_listing;
 
   po := pg_temp.post_of(v_listing);
-  perform kc_test.assert_true(po.feed_hidden, 'a knowledge offer gets its post at once, kept out of the feed');
+  perform kc_test.assert_true(not po.feed_hidden, 'a knowledge offer gets its post at once, listed in the feed');
   perform kc_test.assert_eq(po.status, 'open', 'the post is open like its listing');
   perform kc_test.assert_eq(po.world_slug, 'knowledge', 'in the knowledge world');
-  perform kc_test.assert_true(not pg_temp.in_feed(p.learner, po.post_id), 'a hidden post is not listed for a member');
-  perform kc_test.assert_true(not pg_temp.in_ranked_feed(p.learner, po.post_id), 'nor by the ranked feed');
+  perform kc_test.assert_true(pg_temp.in_feed(p.learner, po.post_id), 'a member sees it in the feed');
 
-  -- A handoff can hang on it: booking by post id works before the owner shares the offer.
+  -- A handoff hangs on the post: booking by post id works.
   perform kc_test.act_as(p.learner);
   h := public.book_knowledge_slot(po.post_id);
-  perform kc_test.assert_eq(h.listing_id, v_listing, 'a slot is booked by post id before the share');
+  perform kc_test.assert_eq(h.listing_id, v_listing, 'a slot is booked by post id');
   perform kc_test.assert_eq((select post_id from public.post_handoffs where handoff_id = h.handoff_id), po.post_id,
     'and the booking has its record under the post (0553)');
 
-  -- An edit on the listing syncs to the post without exposing it.
+  -- An edit on the listing syncs to the post and keeps it listed.
   perform kc_test.act_as(p.mentor);
   update public.listings set title = 'intro to sql, two seats' where listing_id = v_listing;
   po := pg_temp.post_of(v_listing);
   perform kc_test.assert_eq(po.title, 'intro to sql, two seats', 'the edit reached the post');
-  perform kc_test.assert_true(po.feed_hidden, 'and left it hidden');
-
-  -- Sharing exposes it.
-  perform public.share_listing_to_feed(v_listing);
-  po := pg_temp.post_of(v_listing);
-  perform kc_test.assert_true(not po.feed_hidden, 'sharing to the feed exposes the post');
-  perform kc_test.assert_true(pg_temp.in_feed(p.learner, po.post_id), 'and a member now sees it in the feed');
-
-  -- A later sync never hides it again.
-  perform kc_test.act_as(p.mentor);
-  update public.listings set title = 'intro to sql, last seat' where listing_id = v_listing;
-  perform kc_test.assert_true(not (pg_temp.post_of(v_listing)).feed_hidden, 'an exposed post stays exposed');
+  perform kc_test.assert_true(not po.feed_hidden, 'and left it listed');
 end $$;
 
 -- ── T2 a recurring ride: only the soonest occurrence is listed; the others have hidden posts ─

@@ -1,5 +1,5 @@
 -- kc_test housing | Housing-world builders (G38). Compose the generic fixtures with the stay
--- shapes of migrations 0600–0603 (spec docs/SSOT/spec/21_housing.md).
+-- shapes of migrations 0600–0603 (spec docs/spec/requirements/21_housing.md).
 
 -- An active member who may act in housing: ID-verified (D30) and conduct accepted (R-Housing-2).
 create function kc_test.create_housing_member(p_handle text)

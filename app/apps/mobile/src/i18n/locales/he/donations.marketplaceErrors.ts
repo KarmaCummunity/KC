@@ -8,6 +8,7 @@ export const marketplaceErrors = {
   ride_route_required: 'בחרו מאיפה הנסיעה יוצאת ולאן היא מגיעה.',
   ride_departure_past: 'בחרו שעת יציאה עתידית.',
   knowledge_slot_invalid: 'בחרו שעת התחלה עתידית ושעת סיום אחריה.',
+  event_window_invalid: 'האירוע צריך להסתיים אחרי שהוא מתחיל.',
   seats_exhausted: 'לא נשארו מקומות בנסיעה הזו.',
   ride_seats_exhausted: 'לא נשארו מספיק מקומות לאישור ההזמנה הזו.',
   slots_exhausted: 'לא נשארו משבצות למפגש הזה.',
@@ -75,5 +76,11 @@ export const marketplaceErrors = {
   housing_not_in_window: 'הפעולה הזו אינה אפשרית בזמן הזה של האירוח.',
   housing_note_too_long: 'ההודעה ארוכה מדי. עד 300 תווים.',
   housing_use_booking_cancel: 'ביטול אירוח נעשה מכרטיס ההזמנה.',
+  // Organization events (0563).
+  event_org_required: 'רק חברי הארגון יכולים לפרסם את האירוע שלו. בחרו אחד מהארגונים שלכם.',
+  verification_required: 'האירוע פתוח לחברים מאומתים בלבד. אמתו את החשבון ונסו שוב.',
+  not_owner: 'רק מארגני האירוע יכולים לעשות את זה.',
+  event_not_started: 'אפשר לסמן נוכחות רק אחרי שהאירוע התחיל.',
+  invalid_transition: 'ההרשמה כבר עודכנה. רעננו ונסו שוב.',
   generic: 'הפרסום נכשל. נסו שוב.',
 } as const;

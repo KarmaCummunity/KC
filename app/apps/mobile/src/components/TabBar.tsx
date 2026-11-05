@@ -4,7 +4,7 @@
 // implementation across iOS / Android / Web.
 // Mapped to: SRS §6.1 — 5 tabs (RTL: Profile | Search | Plus | Donations | Home), per D-16.
 import React from 'react';
-import { Platform, Pressable, View, type ViewStyle } from 'react-native';
+import { Animated, Easing, Platform, Pressable, View, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePathname, useRouter, useSegments } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +12,9 @@ import { makeUseStyles, radius, shadow, spacing, useTheme } from '@kc/ui';
 import { TABS, resolveActiveTabKey, type IoniconName } from './shell/tabs.config';
 import { handleActiveTabRepress } from './shell/tabPress';
 import { createCategoryForPath, createRouteFor } from '../lib/unifiedCreate/createCategories';
+import { useReducedMotion } from '../hooks/useReducedMotion';
+
+const PLUS_TURN_MS = 220;
 
 // Glassmorphism on web — RN-Web forwards unknown style keys to CSS. RN's
 // ViewStyle type doesn't include backdrop-filter, so cast through unknown.
@@ -70,6 +73,21 @@ interface PlusBtnProps {
 function PlusBtn({ active, onPress, label, testID }: PlusBtnProps) {
   const styles = useTabBarStyles();
   const { colors } = useTheme();
+  const reducedMotion = useReducedMotion();
+  // `active` means the create form is open: turn the "+" an eighth turn (45°) so it reads as "×".
+  const turn = React.useRef(new Animated.Value(active ? 1 : 0)).current;
+  React.useEffect(() => {
+    const animation = Animated.timing(turn, {
+      toValue: active ? 1 : 0,
+      duration: reducedMotion ? 0 : PLUS_TURN_MS,
+      easing: Easing.out(Easing.cubic),
+      // RN-Web has no native animation driver.
+      useNativeDriver: Platform.OS !== 'web',
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [active, reducedMotion, turn]);
+  const rotate = turn.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '45deg'] });
   return (
     <Pressable
       testID={testID}
@@ -79,11 +97,14 @@ function PlusBtn({ active, onPress, label, testID }: PlusBtnProps) {
       style={({ pressed }) => [styles.tabBtn, pressed && styles.tabBtnPressed]}
     >
       <View style={[styles.plusCircle, active && styles.plusCircleActive]}>
-        <Ionicons
-          name="add"
-          size={22} // brand-guard-allow: centre action glyph sized to its 40pt button
-          color={colors.textInverse}
-        />
+        <Animated.View style={{ transform: [{ rotate }] }}>
+          <Ionicons
+            name="add"
+            size={22} // brand-guard-allow: centre action glyph sized to its 40pt button
+            color={colors.textInverse}
+          />
+        </Animated.View>
+
       </View>
     </Pressable>
   );

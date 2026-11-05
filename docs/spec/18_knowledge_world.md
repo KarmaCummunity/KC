@@ -2,7 +2,7 @@
 
 > **Scope decision (D119, PM 2026-11-03):** the knowledge world holds **both** the give & take of knowledge between people (lesson offers, mentoring, consulting hours, questions) **and** a **free knowledge library**: courses with progress tracking and quizzes, links to other sites, books, articles, videos, documents — "everything, all knowledge, free". The world is specified functionally, visually, and as a storage model that AI agents can search so they can help members find things.
 >
-> Everything in this file that is not a `D#` is a KC fill (`S#`, pending PM approval) or an implementation gap (`G#`). Engineering contract with acceptance criteria: [`../SSOT/spec/23_knowledge.md`](../SSOT/spec/23_knowledge.md) (`FR-KNOW-*`). Product structure: [04](./04_product_structure.md); world summary: [05 §5.7](./05_giving_worlds.md#57-knowledge-rights--legal-aid-knowledge--phase-2).
+> Everything in this file that is not a `D#` is a KC fill (`S#`, pending PM approval) or an implementation gap (`G#`). Engineering contract with acceptance criteria: [`requirements/23_knowledge.md`](requirements/23_knowledge.md) (`FR-KNOW-*`). Product structure: [04](./04_product_structure.md); world summary: [05 §5.7](./05_giving_worlds.md#57-knowledge-rights--legal-aid-knowledge--phase-2).
 
 ## 18.1 Why and what
 
@@ -112,7 +112,7 @@ Principles:
 9. **Open catalog for the outside world (K3).** A daily, public, read-only export of the published library — JSON catalog, an `llms.txt`-style index and a web sitemap — free content and provenance only, no member data, so external assistants and search engines can send people to free knowledge on KC.
 10. **Events for learning and recommendations.** `knowledge_events` (view, open external, save, helped, enroll, lesson done, quiz passed, completed) feed "most helpful", "continue learning", the recommendation engine (D27) and research aggregates; pseudonymous, retention per the research rules (16).
 
-Pipeline: contribute → link enrichment (metadata, kind guess, duplicate check) → AI enrichment (shelf, topics, summary, questions) → review → publish → chunk + embed → index → search / recommend / export; weekly link health; nightly catalog export. Each step is an Edge Function or a cron on the existing infrastructure (embed worker, Gemini translation/rerank already in use), named in [`23_knowledge.md`](../SSOT/spec/23_knowledge.md).
+Pipeline: contribute → link enrichment (metadata, kind guess, duplicate check) → AI enrichment (shelf, topics, summary, questions) → review → publish → chunk + embed → index → search / recommend / export; weekly link health; nightly catalog export. Each step is an Edge Function or a cron on the existing infrastructure (embed worker, Gemini translation/rerank already in use), named in [`23_knowledge.md`](requirements/23_knowledge.md).
 
 ## 18.8 Trust, roles and moderation
 

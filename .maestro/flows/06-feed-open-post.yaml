@@ -1,5 +1,5 @@
 # The feed lists posts and a post opens its detail screen.
-# Spec: docs/SSOT/spec/06_feed_and_search.md FR-FEED-001; docs/SSOT/spec/04_posts.md (post detail).
+# Spec: docs/spec/requirements/06_feed_and_search.md FR-FEED-001; docs/spec/requirements/04_posts.md (post detail).
 appId: org.karmacommunity.app
 name: Feed — open a post from the feed
 tags: [feed, smoke]

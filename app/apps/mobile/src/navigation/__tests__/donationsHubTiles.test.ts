@@ -17,7 +17,11 @@ describe('donationsHubTiles', () => {
     const href = (key: string) => DONATIONS_HUB_TILES.find((t) => t.key === key)?.href;
     expect(href('items')).toBe('/(tabs)/donations/items');
     expect(href('medical')).toBe('/(tabs)/donations/category/medical');
-    expect(href('challenges')).toBe('/(tabs)/donations/category/challenges');
+    expect(href('democracy')).toBe('/(tabs)/donations/category/democracy');
+  });
+
+  it('opens the challenges world on its own screen', () => {
+    expect(DONATIONS_HUB_TILES.find((t) => t.key === 'challenges')?.href).toBe('/(tabs)/donations/challenges');
   });
 
   it('shows every world tile with the default launch flags', () => {

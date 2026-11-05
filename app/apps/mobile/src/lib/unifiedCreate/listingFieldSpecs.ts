@@ -3,9 +3,18 @@
 // Curated, typed field set per listing kind. The create form renders exactly these fields
 // instead of every key of the kind's JSON schema, so members never see internal keys
 // (linked ids, org slugs) and every field gets a purpose-built control.
-import { RIDE_COST_CAP_INTERCITY_ILS, type ListingKindOption } from '@kc/domain';
+import {
+  EVENT_CAPACITY_MAX,
+  EVENT_CAPACITY_MIN,
+  EVENT_REGISTRATION_POLICIES,
+  ORG_EVENT_KIND_SLUG,
+  RIDE_COST_CAP_INTERCITY_ILS,
+  type ListingKindOption,
+} from '@kc/domain';
 import type { CreateDirection } from './createCategories';
+import { ANIMALS_FIELD_SPECS } from './animalsFieldSpecs';
 import { HOUSING_FIELD_SPECS } from './housingFieldSpecs';
+import { KNOWLEDGE_FIELD_SPECS } from './knowledgeFieldSpecs';
 
 /** Shows a field only while another detail holds a given value. */
 interface VisibleWhen {
@@ -31,6 +40,8 @@ export type ListingFieldSpec =
   // A local time of day, stored as `HH:mm` (housing check-in window, check-out time).
   | (BaseSpec & { readonly type: 'time'; readonly defaultValue: string })
   | (BaseSpec & { readonly type: 'amount'; readonly max: number })
+  // An optional whole number typed in, clamped to [min, max] (an event's capacity).
+  | (BaseSpec & { readonly type: 'integer'; readonly min: number; readonly max: number })
   | (BaseSpec & { readonly type: 'text'; readonly multiline?: boolean; readonly maxLength: number })
   | (BaseSpec & { readonly type: 'toggle'; readonly defaultValue?: boolean })
   // A detail the form sets without a control (no editor for it yet); seeded from `defaultValue`.
@@ -63,7 +74,18 @@ const SPECS_BY_KIND: Readonly<Record<string, readonly ListingFieldSpec[]>> = {
     { key: 'luggage', type: 'toggle' },
   ],
   ...HOUSING_FIELD_SPECS,
+  ...KNOWLEDGE_FIELD_SPECS,
+  ...ANIMALS_FIELD_SPECS,
   volunteer_shift: [{ key: 'duration_minutes', type: 'duration', options: DURATIONS_MIN, defaultValue: 60 }],
+  // An organization's event (G1 step 5, 0563). The organization (`org_id`) has its own picker
+  // (OrganizationPicker), so it is not a field here; the window rule is checked on publish.
+  [ORG_EVENT_KIND_SLUG]: [
+    { key: 'starts_at', type: 'dateTime', required: true },
+    { key: 'ends_at', type: 'dateTime', required: true },
+    { key: 'registration_policy', type: 'choice', required: true, options: EVENT_REGISTRATION_POLICIES, defaultValue: 'automatic' },
+    { key: 'capacity', type: 'integer', min: EVENT_CAPACITY_MIN, max: EVENT_CAPACITY_MAX },
+    { key: 'address', type: 'text', maxLength: 160 },
+  ],
   // Emotional support is routed to a hotline, never a member post (docs/spec/05 §5.4).
   support_request: [
     { key: 'support_type', type: 'choice', required: true, options: ['companionship', 'practical', 'escort'] },
@@ -71,12 +93,28 @@ const SPECS_BY_KIND: Readonly<Record<string, readonly ListingFieldSpec[]>> = {
   ],
 };
 
-/** The kind for `direction`: an exact match first, then a kind open to both directions. */
+/**
+ * The default kind for `direction`: an exact match first, then a kind open to both directions.
+ * An organization's event is never the default: only a member of an organization picks it
+ * (lib/unifiedCreate/orgEventCreate).
+ */
 export function kindForDirection(
   kinds: readonly ListingKindOption[],
   direction: CreateDirection,
 ): ListingKindOption | null {
-  return kinds.find((k) => k.direction === direction) ?? kinds.find((k) => k.direction === 'either') ?? null;
+  const regular = kinds.filter((k) => k.slug !== ORG_EVENT_KIND_SLUG);
+  return regular.find((k) => k.direction === direction) ?? regular.find((k) => k.direction === 'either') ?? null;
+}
+
+/**
+ * The kinds a member can pick between for `direction` (a world with several kinds per direction,
+ * e.g. animals: hand an animal over or offer boarding). Never includes an organization's event.
+ */
+export function kindChoices(
+  kinds: readonly ListingKindOption[],
+  direction: CreateDirection,
+): readonly ListingKindOption[] {
+  return kinds.filter((k) => k.slug !== ORG_EVENT_KIND_SLUG && (k.direction === direction || k.direction === 'either'));
 }
 
 type SchemaProperty = { enum?: readonly unknown[] };
@@ -117,6 +155,12 @@ export function initialDetailsFor(specs: readonly ListingFieldSpec[]): Record<st
     if ('defaultValue' in spec && spec.defaultValue !== undefined) out[spec.key] = spec.defaultValue;
   }
   return out;
+}
+
+/** Typed digits as a whole number within [min, max]; undefined (field cleared) when there are none. */
+export function clampWholeNumber(text: string, min: number, max: number): number | undefined {
+  const n = Number.parseInt(text.replace(/\D/g, ''), 10);
+  return Number.isFinite(n) ? Math.min(Math.max(n, min), max) : undefined;
 }
 
 function isEmptyValue(v: unknown): boolean {

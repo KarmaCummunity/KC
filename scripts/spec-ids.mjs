@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * Merge-time allocation of registry IDs (D#, TD-#, S#, G#, engineering D-#).
+ * Merge-time allocation of registry IDs (D#, S#, G#, engineering D-#).
  *
  * Parallel branches that each take "the next free number" collide on merge. So a
  * PR never picks a number: it adds the registry row with a placeholder such as
- * `{{TD:short-slug}}` and cites that same placeholder anywhere else. After the
+ * `{{G:short-slug}}` and cites that same placeholder anywhere else. After the
  * merge into `dev`, `assign` swaps every placeholder for the next free number of
  * its registry and rewrites all references in one commit
  * (.github/workflows/bump-version-on-merge.yml).
@@ -24,19 +24,12 @@ const repoRoot = resolve(process.env.SPEC_IDS_ROOT || resolve(here, '..'));
 
 /**
  * One entry per ID namespace.
- * - `key`: the placeholder name (`{{TD:slug}}`); `idPrefix`: what the final ID starts with.
+ * - `key`: the placeholder name (`{{G:slug}}`); `idPrefix`: what the final ID starts with.
  * - `row`: how an entry starts — a table row (`| D12 | … |`) or a heading (`## D-12 — …`).
  * - `historyFiles`: closed entries whose numbers must never be handed out again.
  */
 export const REGISTRIES = [
   { key: 'D', idPrefix: 'D', row: 'table', file: 'docs/spec/90_decisions_log.md', historyFiles: [] },
-  {
-    key: 'TD',
-    idPrefix: 'TD-',
-    row: 'table',
-    file: 'docs/SSOT/TECH_DEBT.md',
-    historyFiles: ['docs/SSOT/archive/TECH_DEBT-history.md'],
-  },
   { key: 'S', idPrefix: 'S', row: 'table', file: 'docs/spec/91_kc_fills_pending.md', historyFiles: [] },
   { key: 'G', idPrefix: 'G', row: 'table', file: 'docs/spec/93_implementation_gaps.md', historyFiles: [] },
   // Engineering decisions; `D-` would read as a product decision, hence `ENG`.
@@ -47,7 +40,7 @@ export const REGISTRIES = [
  * Duplicates that predate merge-time allocation. Renumbering them would silently
  * change what existing citations point at, so they are tolerated, and only them.
  */
-export const KNOWN_DUPLICATES = { TD: [200, 201, 204, 233], ENG: [38, 40, 41] };
+export const KNOWN_DUPLICATES = { ENG: [38, 40, 41] };
 
 /**
  * Regex fragments around an entry's ID. A table cell may carry a trailing `*`
@@ -59,11 +52,11 @@ const ROW_SHAPES = {
 };
 
 /** Files that document the placeholder syntax itself and must never be rewritten. */
-export const IGNORED_FILES = new Set(['CLAUDE.md', 'scripts/spec-ids.mjs', 'scripts/spec-ids.test.mjs']);
+export const IGNORED_FILES = new Set(['AGENTS.md', 'CLAUDE.md', 'scripts/spec-ids.mjs', 'scripts/spec-ids.test.mjs']);
 
 const PLACEHOLDER_KEYS = REGISTRIES.map((registry) => registry.key).join('|');
 const SLUG = '[a-z0-9]+(?:-[a-z0-9]+)*';
-// A well-formed placeholder, e.g. `{{TD:ci-gate-window}}`.
+// A well-formed placeholder, e.g. `{{G:ci-gate-window}}`.
 const PLACEHOLDER = new RegExp(`\\{\\{(${PLACEHOLDER_KEYS}):(${SLUG})\\}\\}`, 'g');
 // Anything that starts like a placeholder; each match must also be well-formed.
 const PLACEHOLDER_CANDIDATE = new RegExp(`\\{\\{(?:${PLACEHOLDER_KEYS}):[^\\s}]*\\}{0,2}`, 'g');
@@ -72,7 +65,7 @@ const PLACEHOLDER_GREP = `\\{\\{(${PLACEHOLDER_KEYS}):`;
 
 const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-/** Formats a number as an ID of the registry, e.g. 231 -> `TD-231`. */
+/** Formats a number as an ID of the registry, e.g. 231 -> `G231`. */
 export function formatId(registry, number) {
   return `${registry.idPrefix}${number}`;
 }
@@ -213,7 +206,7 @@ function main() {
   const errors = validate(registryTexts, placeholderTexts);
   if (errors.length > 0) {
     process.stderr.write(`Spec ID check failed:\n${errors.map((error) => `  - ${error}`).join('\n')}\n`);
-    process.stderr.write('New registry entries take a placeholder such as {{TD:short-slug}}; numbers are assigned on merge (CLAUDE.md §4).\n');
+    process.stderr.write('New registry entries take a placeholder such as {{G:short-slug}}; numbers are assigned on merge (AGENTS.md §4).\n');
     process.exit(1);
   }
 

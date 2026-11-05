@@ -1,7 +1,7 @@
 // Splash + Welcome / Auth-method picker.
 // Mapped to SRS: FR-AUTH-001 (splash), FR-AUTH-002 (auth entry, all methods),
 // FR-AUTH-014 (guest preview entry point).
-// docs/SSOT/spec/01_auth_and_onboarding.md
+// docs/spec/requirements/01_auth_and_onboarding.md
 import React, { useEffect, useState } from 'react';
 import { View, TouchableOpacity, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';

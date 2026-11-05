@@ -12,6 +12,7 @@ export const worldFeed = {
   directionRequest: 'בקשות',
   emptyTitle: 'עדיין אין כאן מודעות פתוחות',
   emptyBody: 'אפשר לפרסם בקשה או הצעה ראשונה.',
+  animalsIntro: 'חיות בקהילה: למסור או לאמץ בעל חיים, ולהציע או לבקש פנסיון, פנסיון חלקי ובייביסיטר לחיות.',
   housingIntro: 'אירוח ולינה בקהילה: להציע מקום לישון, או לבקש אירוח ללילה או לתקופה.',
   timeOpportunitiesTitle: 'התנדבויות בארגונים',
   timeOpportunitiesShowAll: 'כל ההתנדבויות ({{count}})',

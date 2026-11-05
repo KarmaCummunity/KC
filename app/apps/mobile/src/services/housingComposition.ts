@@ -1,4 +1,4 @@
-// Composition root for housing stays (docs/SSOT/spec/21_housing.md FR-HOUSING-003, 012, 015–022).
+// Composition root for housing stays (docs/spec/requirements/21_housing.md FR-HOUSING-003, 012, 015–022).
 import {
   AcceptHousingConductUseCase,
   CancelHousingBookingUseCase,

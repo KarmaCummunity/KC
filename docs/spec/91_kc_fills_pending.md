@@ -16,7 +16,7 @@ Gaps filled by context. **Status of every row: pending approval.** Use as the wo
 | S10 | Default: push for 'important', in-app only for 'social'; group per post per hour. | 07.11 |
 | S11 | ✅ Approved (D61) — Suspended: open posts hidden; '5' = 5 distinct reporters in 30 days. | 07.15 |
 | S12 | Report review within 48h; malicious reports count against the reporter. | 07.15 |
-| S13 | Event: org picks world; optional capacity & waitlist; karma only for marked attendance. | 08 |
+| S13 | ✅ Approved (D124) — Event: org picks world; optional capacity & waitlist; karma only for marked attendance. | 08 |
 | S14 | Unaffiliated volunteering: karma at closing by declared duration, ≤8h per post. | 07.10 |
 | S15 | Org account = separate entity with roles (org manager, volunteer manager, volunteer); no 20-post limit. | 08 |
 | S16 | Housing: before hosting both see verification level, completed stays, seniority; at-risk youth & minors only via an org; at-risk track offered only by orgs and hosts they approved. | 05.6 |

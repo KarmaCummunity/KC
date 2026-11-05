@@ -12,16 +12,16 @@ import type {
 } from '@kc/application';
 import type { ListingCardPublisher, MarketplaceBrowseRow, MyListingRow, RideCardSummary } from '@kc/domain';
 import type { Database } from '../database.types';
+import {
+  CARD_POST_EMBED,
+  LISTING_PUBLISHER_EMBED,
+  listingDirectionOf,
+  recordPostOf,
+  type CardShapeColumns,
+  type PublisherEmbed,
+} from './listingCardSource';
 
 type Client = SupabaseClient<Database>;
-
-/**
- * PostgREST embed of a listing's owner. RLS on `users` (users_select_active) returns null for an
- * owner the viewer may not read, and the card then shows no author row.
- */
-const PUBLISHER_EMBED = 'publisher:users!listings_owner_id_fkey(display_name, avatar_url)';
-
-type PublisherEmbed = { display_name: string | null; avatar_url: string | null };
 type BrowseRow = Database['public']['Functions']['browse_listings']['Returns'][number];
 type MyRow = Database['public']['Functions']['list_my_listings']['Returns'][number];
 
@@ -115,6 +115,43 @@ export async function fetchSearchPage(
   return { rows: data.map((r) => r.listing_id), nextCursor };
 }
 
+type CardRow = CardShapeColumns & {
+  listing_id: string;
+  world_slug: string;
+  direction: string;
+  title: string;
+  summary: string | null;
+  urgency_level: number;
+  availability_status: string;
+  city_id: string | null;
+  details?: unknown;
+  kind: { slug: string } | Array<{ slug: string }> | null;
+  publisher?: PublisherEmbed | PublisherEmbed[] | null;
+};
+
+/** A card from a listing row: the post's fields when it is the record (listingCardSource). */
+function mapCardRow(r: CardRow): MarketplaceBrowseRow {
+  const post = recordPostOf(r);
+  const kind = Array.isArray(r.kind) ? r.kind[0] : r.kind;
+  const postKind = post ? (Array.isArray(post.kind) ? post.kind[0] : post.kind) : null;
+  const worldSlug = post ? post.world_slug : r.world_slug;
+  const details = post ? post.details : r.details;
+  return {
+    listingId: r.listing_id,
+    worldSlug,
+    kindSlug: (post ? postKind?.slug : kind?.slug) ?? '',
+    direction: post ? listingDirectionOf(post.direction) : (r.direction as 'give' | 'request'),
+    title: r.title,
+    summary: r.summary,
+    urgencyLevel: post?.urgency_level ?? r.urgency_level,
+    availabilityStatus: post ? post.availability_status : r.availability_status,
+    cityId: r.city_id,
+    distanceKm: null,
+    ride: worldSlug === 'rides' ? rideSummaryFromDetails(details as RideDetails | null) : null,
+    publisher: mapCardPublisher(post ? post.publisher : r.publisher),
+  };
+}
+
 /** One query for N cards (was 2 queries per card), returned in `ids` order. */
 export async function fetchListingCards(
   client: Client,
@@ -124,41 +161,12 @@ export async function fetchListingCards(
   const { data, error } = await client
     .from('listings')
     .select(
-      `listing_id, world_slug, direction, title, summary, urgency_level, availability_status, city_id, details, kind:listing_kinds(slug), ${PUBLISHER_EMBED}`,
+      `listing_id, world_slug, direction, title, summary, urgency_level, availability_status, city_id, details, origin, legacy_post_id, kind:listing_kinds(slug), ${LISTING_PUBLISHER_EMBED}, ${CARD_POST_EMBED}`,
     )
     .in('listing_id', [...ids]);
   if (error || !data) return [];
-  type CardRow = {
-    listing_id: string;
-    world_slug: string;
-    direction: string;
-    title: string;
-    summary: string | null;
-    urgency_level: number;
-    availability_status: string;
-    city_id: string | null;
-    details?: unknown;
-    kind: { slug: string } | Array<{ slug: string }> | null;
-    publisher?: PublisherEmbed | PublisherEmbed[] | null;
-  };
   const byId = new Map<string, MarketplaceBrowseRow>();
-  for (const r of data as unknown as CardRow[]) {
-    const kind = Array.isArray(r.kind) ? r.kind[0] : r.kind;
-    byId.set(r.listing_id, {
-      listingId: r.listing_id,
-      worldSlug: r.world_slug,
-      kindSlug: kind?.slug ?? '',
-      direction: r.direction as 'give' | 'request',
-      title: r.title,
-      summary: r.summary,
-      urgencyLevel: r.urgency_level,
-      availabilityStatus: r.availability_status,
-      cityId: r.city_id,
-      distanceKm: null,
-      ride: r.world_slug === 'rides' ? rideSummaryFromDetails(r.details as RideDetails | null) : null,
-      publisher: mapCardPublisher(r.publisher),
-    });
-  }
+  for (const r of data as unknown as CardRow[]) byId.set(r.listing_id, mapCardRow(r));
   return ids.map((id) => byId.get(id)).filter((r): r is MarketplaceBrowseRow => r !== undefined);
 }
 
@@ -225,7 +233,7 @@ export async function attachCardExtras(
   try {
     const res = await client
       .from('listings')
-      .select(`listing_id, details, ${PUBLISHER_EMBED}`)
+      .select(`listing_id, details, origin, legacy_post_id, ${LISTING_PUBLISHER_EMBED}, ${CARD_POST_EMBED}`)
       .in('listing_id', rows.map((r) => r.listingId));
     if (res.error) return rows;
     data = res.data;
@@ -233,13 +241,20 @@ export async function attachCardExtras(
     return rows;
   }
   if (!data) return rows;
-  type ExtrasRow = { listing_id: string; details: unknown; publisher?: PublisherEmbed | PublisherEmbed[] | null };
+  type ExtrasRow = CardShapeColumns & {
+    listing_id: string;
+    details: unknown;
+    publisher?: PublisherEmbed | PublisherEmbed[] | null;
+  };
   const byId = new Map<string, ExtrasRow>();
   for (const r of data as ExtrasRow[]) byId.set(r.listing_id, r);
   return rows.map((r) => {
     const extras = byId.get(r.listingId);
     if (!extras) return r;
-    const ride = r.worldSlug === 'rides' ? { ride: rideSummaryFromDetails((extras.details ?? null) as RideDetails | null) } : {};
-    return { ...r, ...ride, publisher: mapCardPublisher(extras.publisher) };
+    // The post's details and owner when it is the listing's record (listingCardSource).
+    const post = recordPostOf(extras);
+    const details = post ? post.details : extras.details;
+    const ride = r.worldSlug === 'rides' ? { ride: rideSummaryFromDetails((details ?? null) as RideDetails | null) } : {};
+    return { ...r, ...ride, publisher: mapCardPublisher(post ? post.publisher : extras.publisher) };
   });
 }
