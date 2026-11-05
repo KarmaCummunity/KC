@@ -4,6 +4,17 @@
 -- never reverts later changes to these policies.
 begin;
 
+create or replace function public.post_has_recipients(p_post_id uuid)
+returns boolean
+language sql
+stable security definer
+set search_path = public
+as $$
+  select exists (select 1 from public.recipients where post_id = p_post_id);
+$$;
+
+grant execute on function public.post_has_recipients(uuid) to authenticated, anon;
+
 alter policy posts_select_visible on public.posts
   using (is_post_visible_to(posts.*, (select auth.uid())));
 
@@ -15,6 +26,18 @@ alter policy posts_insert_self on public.posts
 alter policy posts_update_self on public.posts
   using (((select auth.uid()) = owner_id))
   with check (((select auth.uid()) = owner_id));
+
+alter policy posts_delete_self_unlinked on public.posts
+  using (
+    (((select auth.uid()) = owner_id)
+    and (
+      status = 'open'
+      or (
+        not public.post_has_recipients(posts.post_id)
+        and status in ('deleted_no_recipient', 'closed_delivered')
+      )
+    ))
+  );
 
 alter policy chats_select_visible on public.chats
   using (is_chat_visible_to(chats.*, (select auth.uid())));

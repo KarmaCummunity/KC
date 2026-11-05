@@ -11,6 +11,7 @@ begin
       ('posts', 'posts_select_visible'),
       ('posts', 'posts_insert_self'),
       ('posts', 'posts_update_self'),
+      ('posts', 'posts_delete_self_unlinked'),
       ('chats', 'chats_select_visible'),
       ('chats', 'chats_insert_self'),
       ('messages', 'messages_insert_user'),
