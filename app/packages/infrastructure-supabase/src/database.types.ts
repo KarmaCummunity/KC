@@ -11884,6 +11884,25 @@ export type Database = {
           radius_km: number
         }[]
       }
+      embedding_job_fail: {
+        Args: { p_error: string; p_job_id: string }
+        Returns: undefined
+      }
+      embedding_job_store: {
+        Args: { p_embedding: string; p_job_id: string; p_model: string }
+        Returns: boolean
+      }
+      embedding_jobs_claim: {
+        Args: { p_limit?: number }
+        Returns: {
+          details: Json
+          job_id: string
+          listing_id: string
+          model: string
+          summary: string
+          title: string
+        }[]
+      }
       end_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
       enforce_rate_limit: {
         Args: { p_key: string; p_max: number; p_window_seconds: number }
