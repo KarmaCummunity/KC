@@ -5965,6 +5965,42 @@ export type Database = {
           },
         ]
       }
+      post_embeddings: {
+        Row: {
+          embedding: string
+          embedding_model: string
+          post_id: string
+          updated_at: string
+        }
+        Insert: {
+          embedding: string
+          embedding_model: string
+          post_id: string
+          updated_at?: string
+        }
+        Update: {
+          embedding?: string
+          embedding_model?: string
+          post_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_embeddings_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "post_embeddings_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+        ]
+      }
       post_handoffs: {
         Row: {
           cancel_reason: string | null
@@ -12733,6 +12769,10 @@ export type Database = {
         }[]
       }
       listing_details_expires_at: { Args: { p_details: Json }; Returns: string }
+      listing_embedding_of: {
+        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
+        Returns: string
+      }
       listing_feed_hidden: {
         Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
         Returns: boolean
