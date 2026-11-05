@@ -12905,7 +12905,7 @@ export type Database = {
           world_slug: string
         }[]
         SetofOptions: {
-          from: "*"
+          from: "listings"
           to: "listings"
           isOneToOne: false
           isSetofReturn: true
