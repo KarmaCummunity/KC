@@ -186,34 +186,55 @@ end $$;
 -- ── T6 the lock helper takes the post's row lock ────────────────────────────────────────────
 -- The owner RPCs call post_lock_own_listing before listing_lock_own, so the post is locked first,
 -- as the booking writers do (0624). Here: after the helper, this transaction holds a FOR UPDATE
--- lock on the post row. Checked with pgrowlocks where the stack offers it; skipped (with a
--- notice) where the extension cannot be installed.
+-- lock on the post row, and it did not before.
+--
+-- The check reads the row's xmax. When this transaction is the row's only locker, xmax is the
+-- current transaction id. A post created by the create RPC is not in that case: the triggers
+-- that derive its listing run foreign-key checks inside exception blocks (sub-transactions),
+-- which leave key-share locks on the row, so its xmax is a MultiXact. Its members, read with the
+-- core function pg_get_multixact_members, then name this transaction and each lock mode.
+
+/** The lock modes this transaction holds on post p_post: 'xmax' when it is the row's only locker. */
+create function pg_temp.post_locks_of_this_xact(p_post uuid)
+returns text[]
+language sql
+as $$
+  select case
+    when p.xmax::text = pg_current_xact_id()::text then array['xmax']
+    when p.xmax::text = '0' then '{}'::text[]
+    else coalesce((select array_agg(m.mode)
+                     from pg_get_multixact_members(p.xmax) m
+                    where m.xid::text = pg_current_xact_id()::text), '{}'::text[])
+  end
+  from public.posts p
+  where p.post_id = p_post
+$$;
+grant execute on function pg_temp.post_locks_of_this_xact(uuid) to public;
+
+-- No exception block in this DO block: the helper runs in the top-level transaction.
 do $$
 declare
   p personas;
   v uuid;
+  v_post uuid;
   po public.posts;
-  v_modes text[];
-  v_checked boolean := false;
+  v_before text[];
+  v_after text[];
 begin
   select * into p from personas;
   v := pg_temp.create_ride(p.driver, 'Ashdod to Rehovot');
+  v_post := public.post_id_of_listing(v);
+  v_before := pg_temp.post_locks_of_this_xact(v_post);
+  perform kc_test.assert_true(not ('forupd' = any(v_before) or 'xmax' = any(v_before)),
+    format('before the helper this transaction holds no FOR UPDATE lock on the post (%s)', v_before));
+
   perform kc_test.act_as(p.driver);
   po := public.post_lock_own_listing(v);
-  perform kc_test.assert_eq(po.post_id, public.post_id_of_listing(v), 'the helper resolves the listing to its post');
+  perform kc_test.assert_eq(po.post_id, v_post, 'the helper resolves the listing to its post');
 
-  begin
-    create extension if not exists pgrowlocks with schema extensions;
-    execute 'select coalesce(array_agg(m), ''{}'') from extensions.pgrowlocks(''public.posts'') r, unnest(r.modes) m
-              where r.locked_row = (select ctid from public.posts where post_id = $1)'
-      into v_modes using po.post_id;
-    v_checked := true;
-  exception when others then
-    raise notice '0627 T6: row-lock check skipped (%)', sqlerrm;
-  end;
-  if v_checked then
-    perform kc_test.assert_true('For Update' = any(v_modes), 'the post row is locked FOR UPDATE by the helper');
-  end if;
+  v_after := pg_temp.post_locks_of_this_xact(v_post);
+  perform kc_test.assert_true('forupd' = any(v_after) or 'xmax' = any(v_after),
+    format('after the helper this transaction holds the post row FOR UPDATE (%s)', v_after));
 end $$;
 
 rollback;
