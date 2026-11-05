@@ -13,7 +13,7 @@ name: CI — migration drift
 # tables): it needs live dev secrets and does not run on `pull_request`, so it
 # never gates or hangs a PR. It fails loudly (red) on the schedule / on push to
 # dev / on manual dispatch. Convention it enforces: docs/SSOT/OPERATOR_RUNBOOK.md
-# → "Migration application rules" + CLAUDE.md §9.
+# → "Migration application rules" + AGENTS.md §9.
 #
 # Scheduling note: GitHub runs `schedule` events only from the default branch
 # (main). This workflow reaches main via the normal dev → main promotion; until

@@ -21,6 +21,7 @@ describe('listing card publisher (local stack)', () => {
   const admin = createIntegrationClient(url, requireEnv('SUPABASE_SERVICE_ROLE_KEY'));
   let ownerId: string | null = null;
   let listingId = '';
+  let ownedListingId = '';
 
   beforeAll(async () => {
     const { data: created, error: userError } = await admin.auth.admin.createUser({
@@ -49,6 +50,24 @@ describe('listing card publisher (local stack)', () => {
       .single();
     if (listingError || !listing) throw new Error(`listing insert failed (${listingError?.message})`);
     listingId = listing.listing_id;
+
+    // A post-owned listing (G1, 0554): the post is written, its listing is derived from it.
+    const { data: post, error: postError } = await admin
+      .from('posts')
+      .insert({
+        owner_id: ownerId, type: 'Request', title: 'Card publisher soup', category: 'Other', city: 'tel-aviv',
+        street: 'Marketplace', street_number: '1', location_display_level: 'CityOnly', world_slug: 'food', direction: 'request',
+      })
+      .select('post_id')
+      .single();
+    if (postError || !post) throw new Error(`post insert failed (${postError?.message})`);
+    const { data: derived, error: derivedError } = await admin
+      .from('listings')
+      .select('listing_id')
+      .eq('legacy_post_id', post.post_id)
+      .single();
+    if (derivedError || !derived) throw new Error(`no derived listing (${derivedError?.message})`);
+    ownedListingId = derived.listing_id;
   }, CASE_TIMEOUT_MS);
 
   afterAll(async () => {
@@ -61,5 +80,21 @@ describe('listing card publisher (local stack)', () => {
     const [card] = await new SupabaseMarketplaceRepository(guest).getListingCards([listingId]);
     expect(card?.listingId).toBe(listingId);
     expect(card?.publisher).toEqual({ displayName: DISPLAY_NAME, avatarUrl: null });
+  }, CASE_TIMEOUT_MS);
+
+  // G1 step 6a-5h (D-214): the card of a post-owned listing reads its post through the
+  // listings.legacy_post_id embed, under the posts RLS policy, and shows what the listing shows.
+  it('gives a guest the card of a post-owned listing from its post', async () => {
+    const guest = createIntegrationClient(url, requireEnv('SUPABASE_ANON_KEY'));
+    const repo = new SupabaseMarketplaceRepository(guest);
+    const [card] = await repo.getListingCards([ownedListingId]);
+    expect(card).toMatchObject({
+      listingId: ownedListingId, worldSlug: 'food', kindSlug: 'request_food', direction: 'request',
+      title: 'Card publisher soup', cityId: 'tel-aviv', publisher: { displayName: DISPLAY_NAME, avatarUrl: null },
+    });
+    const single = await repo.getListingCard(ownedListingId);
+    // The single card has no ride or publisher line; every other field matches the batched card.
+    expect({ ...single, ride: undefined, publisher: undefined }).toEqual({ ...card, ride: undefined, publisher: undefined });
+    expect(single).toMatchObject({ worldSlug: 'food', kindSlug: 'request_food', direction: 'request' });
   }, CASE_TIMEOUT_MS);
 });

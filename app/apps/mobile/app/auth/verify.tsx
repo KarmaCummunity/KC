@@ -2,7 +2,7 @@
 // Receives `?token_hash=...&type=signup` from Supabase's confirmation URL,
 // exchanges the token for a session, and lets AuthGate route to onboarding/tabs.
 // Sibling of auth/callback.tsx (OAuth code exchange).
-// docs/SSOT/spec/01_auth_and_onboarding.md
+// docs/spec/requirements/01_auth_and_onboarding.md
 import React, { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';

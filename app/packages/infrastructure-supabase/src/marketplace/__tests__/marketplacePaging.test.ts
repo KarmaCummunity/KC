@@ -191,3 +191,53 @@ describe('marketplacePaging — my listings', () => {
     expect(rpcCalls[0]?.args).toMatchObject({ p_offset: 10 });
   });
 });
+
+// G1 step 6a-5h (D-214): a post-owned listing's card reads its post; every other shape reads the
+// listing. Both syncs keep the fields equal, so the card is the same for every shape.
+describe('marketplacePaging — cards by shape', () => {
+  const dana = { display_name: 'Dana', avatar_url: null };
+  const listingRow = (id: string, over: Record<string, unknown> = {}) => ({
+    listing_id: id, world_slug: 'rides', direction: 'give', title: `title ${id}`, summary: 'from the station',
+    urgency_level: 2, availability_status: 'scheduled', city_id: 'tel-aviv',
+    details: { origin_label: 'A', dest_label: 'B', seats_available: 3 }, kind: { slug: 'ride_offer' },
+    publisher: dana, origin: 'native', legacy_post_id: null, post: null, ...over,
+  });
+  // The post as both syncs leave it: the listing's values in the post's words.
+  const syncedPost = { world_slug: 'rides', direction: 'offer', urgency_level: 2, availability_status: 'scheduled',
+    details: { origin_label: 'A', dest_label: 'B', seats_available: 3 }, kind: [{ slug: 'ride_offer' }], publisher: [dana] };
+  const cardsOf = async (rows: unknown[], ids: string[]) => fetchListingCards(client({}, { data: rows, error: null }).c, ids);
+  /** The card the listing alone gives (the pre-6a-5h read). */
+  const listingOnly = async (row: Record<string, unknown>) =>
+    (await cardsOf([{ ...row, origin: 'native', legacy_post_id: null, post: null }], [row.listing_id as string]))[0];
+
+  it('gives a post-owned listing the same card from its post as from the listing', async () => {
+    const owned = listingRow('owned', { legacy_post_id: 'p1', post: syncedPost });
+    const [card] = await cardsOf([owned], ['owned']);
+    expect(card).toEqual(await listingOnly(owned));
+    expect(card?.direction).toBe('give'); // the post's `offer`
+  });
+
+  it('keeps title, summary and city from the listing (a 0554-backfilled post may differ there)', async () => {
+    const owned = listingRow('backfilled', { title: 'x'.repeat(100), city_id: null, legacy_post_id: 'p2', post: syncedPost });
+    const [card] = await cardsOf([owned], ['backfilled']);
+    expect(card).toEqual(await listingOnly(owned));
+    expect(card?.title).toBe('x'.repeat(100));
+  });
+
+  it('reads the post for the fields it owns', async () => {
+    const post = { ...syncedPost, world_slug: 'food', direction: 'request', urgency_level: 3,
+      availability_status: 'immediate', kind: { slug: 'request_food' }, publisher: { display_name: 'Post owner', avatar_url: 'u' } };
+    const [card] = await cardsOf([listingRow('o', { legacy_post_id: 'p3', post })], ['o']);
+    expect(card).toMatchObject({ worldSlug: 'food', kindSlug: 'request_food', direction: 'request', urgencyLevel: 3,
+      availabilityStatus: 'immediate', ride: null, publisher: { displayName: 'Post owner', avatarUrl: 'u' } });
+  });
+
+  it('reads the listing for a mirror, an items post, and a post hidden by RLS', async () => {
+    const other = { ...syncedPost, world_slug: 'food', kind: { slug: 'other' }, publisher: { display_name: 'Other', avatar_url: null } };
+    const mirror = listingRow('mirror', { post: other });
+    const items = listingRow('items', { world_slug: 'items', origin: 'post', legacy_post_id: 'p4', post: other });
+    const hidden = listingRow('hidden', { legacy_post_id: 'p5', post: null });
+    const cards = await cardsOf([mirror, items, hidden], ['mirror', 'items', 'hidden']);
+    expect(cards).toEqual([await listingOnly(mirror), await listingOnly(items), await listingOnly(hidden)]);
+  });
+});

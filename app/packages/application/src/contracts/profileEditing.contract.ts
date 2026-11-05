@@ -1,7 +1,7 @@
 // Profile-editing contract (G39) — the Edit Profile and onboarding slice of
 // IUserRepository, the behaviour every implementation must honour. Mapped to
-// docs/SSOT/spec/02_profile_and_privacy.md FR-PROFILE-007 (AC1 field rules, AC4
-// atomic save) and docs/SSOT/spec/01_auth_and_onboarding.md FR-AUTH-007 AC2
+// docs/spec/requirements/02_profile_and_privacy.md FR-PROFILE-007 (AC1 field rules, AC4
+// atomic save) and docs/spec/requirements/01_auth_and_onboarding.md FR-AUTH-007 AC2
 // (cold-start bootstrap), FR-AUTH-010 (basic info and skip) and FR-AUTH-011
 // (avatar).
 //

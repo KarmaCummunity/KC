@@ -4,12 +4,13 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, typography, Text } from '@kc/ui';
+import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { streetPlaceId, type RidePlace } from '@kc/domain';
 import { SearchablePicker } from '../SearchablePicker/SearchablePicker';
 import { StreetPicker } from '../StreetPicker';
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  label: { ...typography.caption, color: colors.textSecondary },
+  label: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
 }));
 
 interface Props {

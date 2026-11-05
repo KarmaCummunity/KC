@@ -17,6 +17,7 @@ import { useShallow } from 'zustand/react/shallow';
 import type { PostWithOwner } from '@kc/application';
 import { PostFeedList } from '../../src/components/PostFeedList';
 import { TopBar } from '../../src/components/TopBar';
+import { AdminPortalIcon } from '../../src/components/AdminPortalIcon';
 import { FeedFilterIcon } from '../../src/components/FeedFilterIcon';
 import { NewPostsBanner } from '../../src/components/NewPostsBanner';
 import { FirstPostNudge } from '../../src/components/FirstPostNudge';
@@ -231,6 +232,7 @@ export default function HomeFeedScreen() {
   return (
     <Screen blobs="content" testID="feed-screen">
       <TopBar
+        leadingIcon={<AdminPortalIcon />}
         extraIcon={
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TouchableOpacity

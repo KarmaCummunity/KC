@@ -6,6 +6,7 @@ import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { WorldSubcategory } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { marketplaceRepository } from '../../services/marketplaceComposition';
 import { useListingChipStyles } from './listingChipStyles';
 
@@ -65,6 +66,6 @@ export function WorldSubcategoryPicker({ worldSlug, value, onChange, disabled = 
 
 const useStyles = makeUseStyles(({ colors }) => ({
   root: { gap: spacing.xs },
-  label: { ...typography.caption, color: colors.textSecondary },
-  hint: { ...typography.caption, color: colors.textSecondary },
+  label: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
+  hint: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
 }));

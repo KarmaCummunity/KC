@@ -38,13 +38,29 @@ export const LAUNCH_WORLD_FLAG_DEFAULTS: Record<LaunchWorldFlagKey, boolean> = {
   world_animals_enabled: false,
   world_democracy_enabled: false,
   world_employment_enabled: false,
-  world_challenges_enabled: false,
+  world_challenges_enabled: true,
   world_environment_enabled: false,
   world_creative_enabled: false,
   world_app_design_enabled: false,
 };
 
 export type RemoteAppFlags = Partial<Record<string, boolean>>;
+
+/**
+ * Worlds whose in-app marketplace feed tester (non-production) builds always show, ahead of the
+ * remote flag (#1630, #1625). A production build still follows `app_flags`, so flipping prod stays a
+ * separate, owner-approved step.
+ */
+export const TESTER_ACTIVE_WORLD_FLAGS: readonly LaunchWorldFlagKey[] = [
+  'world_housing_enabled',
+  'world_knowledge_enabled',
+  'world_animals_enabled',
+];
+
+export function withTesterActiveWorlds(remote: RemoteAppFlags | undefined): RemoteAppFlags {
+  const forced = Object.fromEntries(TESTER_ACTIVE_WORLD_FLAGS.map((key) => [key, true]));
+  return { ...remote, ...forced };
+}
 
 export function launchWorldFlagKeyForSlug(worldSlug: string): LaunchWorldFlagKey | null {
   const key = `world_${worldSlug}_enabled` as LaunchWorldFlagKey;

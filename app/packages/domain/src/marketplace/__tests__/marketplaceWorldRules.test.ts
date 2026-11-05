@@ -67,14 +67,34 @@ describe('validateMarketplaceWorldRules — food', () => {
 });
 
 describe('validateMarketplaceWorldRules — routed worlds', () => {
-  it.each(['medical', 'animals', 'environment'])('%s requires an external body', (worldSlug) => {
+  it.each(['medical', 'environment'])('%s requires an external body', (worldSlug) => {
     expect(validateMarketplaceWorldRules({ worldSlug, direction: 'give', details: {}, photoCount: 3 })).toBe(
       'routed_world_requires_external_body',
     );
     expect(validateMarketplaceWorldRules({ worldSlug, direction: 'give', details: {}, photoCount: 0, externalBodyId: 'org-1' })).toBeNull();
   });
+  it('animals are direct give and take: no external body needed (0612)', () => {
+    expect(validateMarketplaceWorldRules({ worldSlug: 'animals', direction: 'give', details: {}, photoCount: 0 })).toBeNull();
+  });
   it('other worlds have no client rule', () => {
     expect(validateMarketplaceWorldRules({ worldSlug: 'knowledge', direction: 'give', details: {}, photoCount: 0 })).toBeNull();
+  });
+});
+
+describe('validateMarketplaceWorldRules — time (organization events, 0563)', () => {
+  const rules = (details: Record<string, unknown>) =>
+    validateMarketplaceWorldRules({ worldSlug: 'time', direction: 'give', details, photoCount: 0, now });
+  it('needs no window on a volunteer shift', () => {
+    expect(rules({ duration_minutes: 60 })).toBeNull();
+  });
+  it('accepts an event that ends after it starts', () => {
+    expect(rules({ starts_at: '2026-11-01T10:00:00Z', ends_at: '2026-11-01T12:00:00Z' })).toBeNull();
+  });
+  it('rejects an event that ends at or before its start, or misses an end', () => {
+    expect(rules({ starts_at: '2026-11-01T10:00:00Z', ends_at: '2026-11-01T10:00:00Z' })).toBe('event_window_invalid');
+    expect(rules({ starts_at: '2026-11-01T10:00:00Z', ends_at: '2026-11-01T09:00:00Z' })).toBe('event_window_invalid');
+    expect(rules({ starts_at: '2026-11-01T10:00:00Z' })).toBe('event_window_invalid');
+    expect(rules({ starts_at: 'nope', ends_at: '2026-11-01T12:00:00Z' })).toBe('event_window_invalid');
   });
 });
 
@@ -112,6 +132,16 @@ describe('mapMarketplaceServerError', () => {
     expect(mapMarketplaceServerError(null)).toBeNull();
     expect(mapMarketplaceServerError(new Error('network down'))).toBeNull();
     expect(mapMarketplaceServerError({ message: 'not_food_expiry_required_x' })).toBeNull();
+  });
+  // G1 step 5 (0563): the event guard and the registration RPCs raise these codes.
+  it('maps the organization event codes', () => {
+    expect(mapMarketplaceServerError({ code: '42501', message: 'event_org_required' })).toBe('event_org_required');
+    expect(mapMarketplaceServerError({ code: '23514', message: 'event_window_invalid' })).toBe('event_window_invalid');
+    expect(mapMarketplaceServerError({ code: '42501', message: 'verification_required' })).toBe('verification_required');
+    expect(mapMarketplaceServerError({ code: '42501', message: 'not_owner' })).toBe('not_owner');
+    expect(mapMarketplaceServerError({ code: '23514', message: 'invalid_transition' })).toBe('invalid_transition');
+    // 0564: the organizer marks attendance only after the event starts.
+    expect(mapMarketplaceServerError({ code: '23514', message: 'event_not_started' })).toBe('event_not_started');
   });
   it('every code is unique', () => {
     expect(new Set(MARKETPLACE_SERVER_ERROR_CODES).size).toBe(MARKETPLACE_SERVER_ERROR_CODES.length);

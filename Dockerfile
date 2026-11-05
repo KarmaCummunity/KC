@@ -1,4 +1,4 @@
-# Two-stage build: Expo web bundle → Node 20 Hono server.
+# Two-stage build: Expo web bundle → Node 22 Hono server.
 # Designed for Railway, builds anywhere Docker runs.
 #
 # (Comment-only touch 2026-07-06: retrigger Railway's KC-MVP-2/dev deploy —
@@ -13,7 +13,7 @@
 # built-in frontend, so the external pull is unnecessary.
 
 # ─── Stage 1: install + build the web bundle ──────────────────────────
-FROM node:20-bookworm-slim AS builder
+FROM node:22-bookworm-slim AS builder
 WORKDIR /repo
 
 RUN corepack enable
@@ -40,7 +40,7 @@ RUN pnpm build:web
 RUN pnpm --filter @kc/web-server deploy --prod /repo/web-server-deploy
 
 # ─── Stage 2: Hono server with OG meta + static SPA + SPA fallback ────
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /srv
 
 COPY --from=builder /repo/web-server-deploy/package.json ./package.json

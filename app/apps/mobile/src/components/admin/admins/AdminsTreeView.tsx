@@ -37,7 +37,7 @@ export function AdminsTreeView({ isWide, isSuper, onSelect }: AdminsTreeViewProp
       refreshControl={<RefreshControl refreshing={tree.isRefetching} onRefresh={tree.refetch} />}
     >
       {showSwitcher && <OrgSwitcher orgs={orgs} selected={orgId} onSelect={setOrgId} />}
-      <OrgTree forest={tree.forest} onSelect={onSelect} />
+      <OrgTree sections={tree.sections} onSelect={onSelect} />
     </ScrollView>
   );
 }

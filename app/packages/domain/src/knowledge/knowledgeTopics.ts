@@ -1,4 +1,4 @@
-// FR-KNOW-001 (docs/SSOT/spec/23_knowledge.md) — the subject axis of the knowledge world
+// FR-KNOW-001 (docs/spec/requirements/23_knowledge.md) — the subject axis of the knowledge world
 // (docs/spec/18_knowledge_world.md §18.3, D119, S64). Three orthogonal axes place every
 // knowledge object: the SHELF (a D100 sub-category of `public.categories`), the TOPIC (a node
 // of the curated topic graph below) and the KIND (post or resource format). This module holds

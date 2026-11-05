@@ -1,5 +1,5 @@
 // Mapped to spec: FR-HOUSING-005 (stay offer fields), FR-HOUSING-006 (stay request fields),
-// FR-HOUSING-011 (availability) — docs/SSOT/spec/21_housing.md; binding schemas in migration 0600.
+// FR-HOUSING-011 (availability) — docs/spec/requirements/21_housing.md; binding schemas in migration 0600.
 // Curated create-form field sets of the two housing stay kinds. Defaults match the spec so a
 // host who only picks the place type and capacity still publishes a valid offer.
 import type { ListingFieldSpec } from './listingFieldSpecs';

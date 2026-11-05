@@ -1,5 +1,5 @@
 # Settings → Notifications shows the preference toggles.
-# Spec: docs/SSOT/spec/09_notifications.md FR-NOTIF-014; docs/SSOT/spec/11_settings.md FR-SETTINGS-005.
+# Spec: docs/spec/requirements/09_notifications.md FR-NOTIF-014; docs/spec/requirements/11_settings.md FR-SETTINGS-005.
 appId: org.karmacommunity.app
 name: Settings — notification preferences open
 tags: [settings]

@@ -1,175 +1,71 @@
-# Karma Community MVP — Backlog
+# Karma Community MVP — Task queue
 
-> **Purpose:** Priority-ordered **open** task queue (`⏳` / `🟡` only).
-> Agents pick the highest-priority `⏳` item. Update status when starting (⏳→🟡) or completing (🟡→✅).
-> Completed work: [`archive/BACKLOG-history.md`](./archive/BACKLOG-history.md).
+> **GitHub is the only task queue.** Board: <https://github.com/orgs/KarmaCummunity/projects/2>. This file holds no tasks any more, so two agents never pick the same work from two lists.
+> Workflow, fields and the claim rule: [`../process/PROJECT_BOARD.md`](../process/PROJECT_BOARD.md). Completed work from the old file: [`archive/BACKLOG-history.md`](./archive/BACKLOG-history.md).
 
----
+## ID → issue
 
-## TRANSLATE — Shared infra
+Old backlog IDs still appear in specs, ADRs and code comments. Each open one resolves to its issue (migrated 2026-11-04; the issue body keeps the full original text).
 
-| ID | Task | Owner | Status | Spec |
-|----|------|-------|--------|------|
-| TRANSLATE-P3 | **Phase 3 — Chat translation (opt-in, last).** Sender-consent gate; per-conversation translation; LRU cache eviction for chat. | agent-fullstack | ⏳ Planned | `spec/18_translation.md` FR-TRANSLATE-004 (to be detailed) |
-
-## Shared — Research / Infra / Perf
-
-| ID | Task | Owner | Status | Spec |
-|----|------|-------|--------|------|
-| P1.7 | FR-RESEARCH-001..003 — Public market research form | agent-be + agent-fe | 🟡 In progress (post-merge QA) | `spec/16_public_research.md` |
-| P1.8 | FR-RESEARCH-004 — Share affordance for public research survey | agent-fe | 🟡 Code complete, post-merge QA pending | `spec/16_public_research.md` |
-| INFRA-QA-W1 | Playwright P0 E2E gate on dev + release (release lane `ci-release.yml`, `tests/e2e/`) | infra | 🟡 In progress | Wave 1 |
-| INFRA-QA-W2 | E2E domain expansion (posts, chat send, donations, research) | infra | ⏳ Planned | Wave 2 |
-| INFRA-QA-W3 | RLS persona integration suite | infra | ⏳ Planned | Wave 3 |
-| INFRA-QA-W4 | Performance budgets (Lighthouse + k6) | infra | ⏳ Planned | Wave 4 |
-| INFRA-QA-W5 | Accessibility axe gate | infra | ⏳ Planned | Wave 5 |
-| INFRA-QA-W7 | Expanded prod synthetic monitoring | infra | 🟡 In progress | Wave 7 — KC deploy smoke (`deploy-smoke.yml`) |
-| INFRA-OSS-4 | **Snyk PR scan** | infra | 🟡 In progress | `SECURITY.md` |
-| INFRA-OSS-6 | **GitGuardian** | infra | 🟡 In progress | `SECURITY.md` |
-| PERF-4 | **Image delivery — upload-time thumbs + backfill** | agent-fullstack | 🟡 In progress | TD-11 |
-| PERF-5 | **DB consolidation — per-chat unread count RPC** | agent-fullstack | 🟡 In progress | Migration `0133` |
-| SEC-1063 | **DB function privileges (#1063).** `EXECUTE` is an explicit decision of each migration: new functions private by default, SECURITY DEFINER triggers and internal helpers service-role only, anon limited to the reviewed public-read list (`0520`); guarded by `supabase/tests/0520_*` and `scripts/check-rpc-grants.mjs` (CI backend lane). Remaining: verify on kc-dev after the Deploy run. | agent-be | 🟡 Code complete — kc-dev verification pending | [ADR-002 §2](../architecture/adr/ADR-002-data-layer.md) |
-| SEC-1373 | **Dependency audit over every lockfile (#1373).** `scripts/check-dependency-audit.mjs` audits every lockfile and the Edge Function npm imports in the `static` lane on dependency changes and daily on `dev` / `main`; reviewed exceptions with a reason and an expiry ≤ 90 days replace the pnpm ignore list (tasks 2–3). Remaining: package-level triage of the Dependabot alerts with the owner (task 1), whether Snyk / GitGuardian become `CI gate` lanes (task 4). | infra | 🟡 In progress — audit live; triage and scanner decision open | `SECURITY.md` § Dependency audit |
-| SEC-1065 | **Account deletion removes all of the user's media (#1065, FR-SETTINGS-012 AC2).** `delete-account` purges the user's folder in every user-owned bucket (`avatars`, `post-images`, `chat-media`, `listing-images`); a failing bucket is reported and the others still run. Remaining: verify on kc-dev after the Deploy run. | agent-be | 🟡 Code complete — kc-dev verification pending | [`spec/11_settings.md`](./spec/11_settings.md) FR-SETTINGS-012 |
-| SEC-1067 | **Worker endpoints accept only the service-role key (#1067).** `receipts-issuer`, `subscriptions-charger`, `whatsapp-intake-worker` and `whatsapp-sender` check their caller with `_shared/serviceRoleGuard.ts` right after their method guard; a regression test enforces it, and the deploy smoke now probes every function (TD-219 closed). Remaining: verify on kc-dev after the Deploy run. | agent-be | 🟡 Code complete — kc-dev verification pending | [ADR-002 §2](../architecture/adr/ADR-002-data-layer.md) |
-| SEC-1064 | **Chat images are private (#1064).** The `chat-media` bucket is no longer public; an image is readable by whoever can see its chat (`is_chat_visible_to`, the messages' predicate, `0521`), and the app shows it through a short-lived signed URL from `media_payload.path` (`chatMediaUrl.ts`, `ChatMediaImage`). Remaining: verify on kc-dev after the Deploy run; installed store builds older than this change show no chat images until they update. | agent-fullstack | 🟡 Code complete — kc-dev verification pending | [ADR-002 §3](../architecture/adr/ADR-002-data-layer.md) |
-| SEC-WRITE-RATE-LIMITS | **Write rate limits (#880).** Reuse `enforce_rate_limit()` for listings, giving handoff requests and follows; limits are configurable in `marketplace_rule_params`. | agent-be | 🟡 Code complete — SQL verification pending | NFR-SEC-009 / abuse resistance |
-
-## INFRA — CI/CD hardening (`D-195`)
-
-Stages 1, 2, 3 and 6 (`INFRA-CI-1` unified PR gate, `INFRA-CI-2` gate integrity, `INFRA-CI-3` gated prod release, `INFRA-CI-6` agent bot identity) are done in code — see [`archive/BACKLOG-history.md`](./archive/BACKLOG-history.md); stages 4 and 5 (`INFRA-CI-4` nightly mobile, `INFRA-CI-5` docs drift) are done too (rows below); their repository settings are `INFRA-CI-OWNER`. Rows that change CI files need owner approval (`D-195`).
-
-| ID | Task | Owner | Status | Spec |
-|----|------|-------|--------|------|
-| INFRA-CI-OWNER | **Owner settings for the D-195 pipeline (owner action).** **Done (live 2026-11-01):** `main` requires only `CI gate` (classic protection, admins included); `dev` ruleset `dev protection (merge queue)` (`CI gate`, merge queue, no force-push or deletion; bypass: repository admin + `kc-version-bump`); environments, variables and the tag ruleset; GitHub Apps `kc-agent-bot`, `kc-ci-verdict`, `kc-version-bump`. **Remaining, in order:** (1) **First release `dev` → `main`:** `main` (last release 2026-10-27) has none of the D-195 files, so the release PR's `CI gate` cannot load its judges from the base. Merge it once as admin: turn off "Do not allow bypassing" on `main`, merge, turn it back on (`OPERATOR_RUNBOOK.md` step 5). The deploy pipeline, `CI verdict`, the App-token auto-merge and the nightly run only from `main`, so none of them is live before this; (2) `BACKUP_AGE_RECIPIENT` before that release deploys (#1339); (3) Write-role **machine user** for agents (step 2.4–2.5). Agents still act through the owner's account, so the owner cannot approve their PRs and they can use the admin bypass; (4) then turn on **code-owner review** (live `dev` ruleset and `main`; until then CI-file changes need no approval, `TD-221`); (5) require `CI verdict` from `kc-ci-verdict` (#1338); delete `AGENT_MERGE_TOKEN` after #1349 and one App-driven auto-merge (#1337); (6) `mobile-store` + EAS `preview` + iOS signing for the nightly, the Sonar summary comment, and cleanup (#1339); move the remaining repository secrets into environments (`TD-223`). | owner | 🟡 In progress | [`OPERATOR_RUNBOOK.md` § Owner setup for D-195 CI/CD](./OPERATOR_RUNBOOK.md#owner-setup-ci) |
-| INFRA-CI-4 | **Nightly mobile pipeline.** Scheduled TestFlight + Play internal builds from the last `dev` SHA whose `CI gate` passed (`mobile-nightly.yml`; kc-dev backend via the eas.json `nightly` profile, verified in the built bundle). Owner setup: `ENVIRONMENTS.md` § Production release. | infra | ✅ Done | `D-195`, `D-192` |
-| INFRA-CI-5 | **CI docs drift cleanup.** Bring `docs/dev/**`, `TESTING.md`, `SECURITY.md`, `OPERATOR_RUNBOOK.md` and agent docs in line with the single-gate layout; drop references to removed workflows. Done 2026-10-31: Railway → Cloudflare Pages, removed workflows, required-check lists → `CI gate`, live ruleset state, bundle id `org.karmacommunity.app`; Sonar coverage exclusions aligned with vitest (tests added for the upload services, error maps, `authStore`, `openExternalUrl`); `edited`-event re-runs logged as `TD-233`. | infra | ✅ Done | `D-195` |
-
-## DONATE — Money hub
-
-| ID | Task | Owner | Status | Spec |
-|----|------|-------|--------|------|
-| DONATE-G8b | **Donation-to-KC confirmation + karma.** Grow webhook Edge Function (verify with Grow API, idempotent via `provider_webhook_events`), record the donation, award karma (1 per ₪10, 10/month standing order, cap 100 — §7.6). [blocked: Grow merchant account + API credentials — launch plan A11] | agent-be | ⏳ Planned | `spec/13_donations.md` FR-DONATE-011 AC8 · `docs/spec/93` G8 |
-
-## OPS — Testing & observability infrastructure (D68, D69)
-
-| ID | Task | Owner | Status | Spec |
-|----|------|-------|--------|------|
-| OPS-G38 | **Shared DB test harness + per-world lifecycle flows.** Harness + runner shipped with rides, items, time and food flows (`flows/food_lifecycle.sql`: publish with the giver's expiry, quick claim, hand over, karma, rating, expiry sweep); port the knowledge flow onto it. | agent-be | 🟡 In progress | `docs/architecture/target.md` §5.1 · G38 |
-| OPS-G42 | **Health registry + monitor + alert router.** Shipped: `ops.health_checks` + 7 checks (`0463`), hourly dev + prod run, GitHub-issue alerts (→ email) with auto-close. Open: WhatsApp channel once live, synthetic web check. | agent-fullstack | 🟡 In progress | §5.2 · G42 |
-| OPS-G39 | **Port contract tests** (fake + Supabase adapter, same suite). Shipped: framework-agnostic contract kit (`@kc/application` `contracts/`), `IPostRepository` contract (9 owner-lifecycle cases) run against a behavioural `InMemoryPostRepository` in `pnpm test` and against `SupabasePostRepository` on the local stack in `ci-backend`; `ISavedPostsRepository` contract (8 bookmark cases: idempotent save, per-user rows, readability gate on save, bookmark kept while the post is unreadable, cascade on post delete) run against `InMemorySavedPostsRepository` and `SupabaseSavedPostsRepository` the same way. `IChatRepository` contract (11 participant-side cases: one thread per pair, newest-first paging, the 2000-character limit, unread until `markRead`, one inbox row per counterpart, participants only, personal inbox hide and the new thread after it, FR-CHAT-001/002/003/004/012/016) run against `InMemoryChatRepository` and `SupabaseChatRepository` the same way. `IReportRepository` contract (8 cases over user and chat targets: stored with or without a note, one report per reporter and target per 24 h, general reports repeat, no self-reports, the target must exist, chats only by participants, the 500-character note, no reporting in someone else's name; FR-MOD-001 AC2/AC3/AC7) run against `InMemoryReportRepository` and `SupabaseReportRepository`. Follow-graph contract (the follow / follow-request slice of `IUserRepository`, typed as `FollowGraph`; 10 cases: Public follow at once, no duplicate edge, no self-follow, unfollow, no direct follow of a Private profile, request → approve, one pending request per pair, cancel and ask again, rejection's 14-day cooldown, the raw follow state; FR-FOLLOW-001..008, 011, 012 AC2) run against `InMemoryFollowGraph` and `SupabaseUserRepository`. Profile-editing contract (the Edit Profile / onboarding slice of `IUserRepository`, typed as `ProfileEditing`; 11 cases: a full edit round-trips, omitted fields kept and null clears, an edit with one invalid field changes nothing, the name / biography / phone limits, the street pair and number pattern, the city list, the single-field setters, no writes to another member's profile, another member's phone and address never returned, an unknown profile throws, the onboarding bootstrap; FR-PROFILE-007 AC1/AC3/AC4, FR-AUTH-007 AC2, FR-AUTH-010, FR-AUTH-011) run against `InMemoryProfileEditing` and `SupabaseUserRepository`; it fixed `getEditableProfile` returning the caller's own phone and address on another member's profile. That completes the planned queue except rides: `IRideListingRepository` + `IRideParticipantRepository` moved last, since G44 the rides flow runs on listings and only the chat's anchored-ride card and the driver declaration still read those ports. | agent-fullstack | 🟡 In progress | §5.1 · G39 · `D-204` |
-| OPS-G40 | **Two-user E2E journey per active world.** Shipped: one journey shape (`tests/e2e/lib/worldJourney.ts`: A publishes through the create RPC → B claims on the listing page → A confirms (when the world needs it) → A hands over, listing closes, karma written → B rates) with one fixture per live world: `journeys/items.spec.ts`, `journeys/food.spec.ts` (quick claim is confirmed at once). Top-level journeys run in the nightly, the mobile-nightly P0 gate and the release lane. Next: `time` once its launch flag is on, `rides` with the post-based flow (G44), knowledge in phase 2. | agent-fe | 🟡 In progress | §5.1 · G40 · `D-205` |
-| OPS-G43 | **Per-world flow funnel** from handoff timestamps. Shipped: `admin_world_flow_funnel(p_days)` (`0542`), a cohort over the listings published in the last 1–365 days, one row per world and direction. Stages are counted per listing, so they nest: published, booked, confirmed, completed, cancelled (every handoff cancelled or no-show), plus closed and the median hours to the first booking and the first handover. Handoff columns are null outside the handoff worlds (items, food, rides, knowledge). Super admin / moderator only. Test: `supabase/tests/0542_admin_world_flow_funnel.sql`. Open: an admin screen to read it. | agent-be | ✅ Done | §5.2 · G43 |
-| DONATE-D9 | **Donation links go live only after approval** (D9, PM 2026-11-03). Shipped: `0546` (`review_status` + guard trigger + approved-only visibility + reviewer RPCs, existing links kept approved), permission `donation_links.review` (super admin, moderator), screen `/admin/donation-links`, the submitter's pending / rejected status on their row and approval-aware helper copy. Tests: `supabase/tests/0546_donation_link_approval.sql`, `ReviewDonationLinksUseCases.test.ts`, `useDonationLinkReview.test.tsx`, `DonationLinkRow.review.test.tsx`. Open: notify the submitter on a decision. | agent-fullstack | ✅ Done | `spec/08` D9 · G5 |
-| STATS-AUDIENCE | **Statistics by audience** (D106). Shipped: admin portal "Statistics" (`/admin/stats`, permission `stats.view_platform`) with the per-world flow funnel and the north-star total (FR-STATS-007); "my givings by world" on the personal statistics screen (`my_world_givings` `0547`, FR-STATS-008). Tests: `supabase/tests/0547_my_world_givings.sql`, `StatsByAudienceUseCases.test.ts`, `MyWorldGivingsPanel.test.tsx`. Open: organization impact (FR-STATS-009, G54, after ORG-P1). | agent-fullstack | 🟡 In progress | `spec/10_statistics.md` FR-STATS-007..009 · spec 16 |
-| LISTING-OWNER-1 | **Owner management by status** (D104). Shipped: `0543` guards pause / mark fulfilled / delete against an active handoff, refuses deleting a handed-over listing and resuming an expired one, and adds `add_my_listing_media` (append-only, ≤ 10; `attach_listing_media` no longer client-callable). "My listings" shows status hints, an "add photos" action and a message for every refusal (`useMyListingActions`, `listingOwnerError`). Tests: `supabase/tests/0543_listing_owner_lifecycle.sql`, `useMyListingActions.test.tsx`, `listingOwnerError.test.ts`. Open: video on posts (G53). | agent-fullstack | ✅ Done | 07 §7.1 |
-## G1 — One Post model: `listings` → `posts` (D2, D19, D104; [ADR-006](../architecture/adr/ADR-006-one-post-model.md))
-
-Order is binding; each row is one PR into `dev`, backward-compatible, with its migrations, SQL tests and spec update. Destructive SQL only in `G1-S6`.
-
-| ID | Task | Owner | Status | Spec |
-|----|------|-------|--------|------|
-| G1-S0 | **Plan.** ADR-006 with the target schema and the six steps; `target.md` §1 points at it; migration range `0551–0569` claimed (`0550` was taken by #1587 meanwhile). | agent-fullstack | ✅ Done | `docs/spec/07` §7.1 · G1 |
-| G1-S1 | **Additive schema + backfill + sync.** `posts` gains `world_slug`, `direction`, `post_type`, `expires_at`, `source`, `details`, `category_id`, `geo`, `time_window`, `urgency_level`, `external_body_id`, `beneficiary_org_id` and the `paused` status; defaults derived from the legacy `type` / `category` by trigger; backfilled from `listings` for mirror rows. New `ride_post_details` (from the ride listings' `details`) and `post_handoffs` (from `giving_handoffs`) with RLS at least as strict as today, kept in sync by triggers. Report function with row counts + mismatches; SQL tests assert zero. `@kc/domain` `PostStatus` learns `paused`. Shipped: `0551_posts_one_model_columns`, `0552_ride_post_details`, `0553_post_handoffs` (+ `post_unification_report()`), tests `supabase/tests/055{1,2,3}_*.sql`. | agent-be | ✅ Done (2026-11-03) | `docs/spec/07` §7.1, §7.5 · G1 |
-| G1-S2 | **Posts are the source of truth for every create category.** The create form writes `posts` (+ `ride_post_details`) for rides, food, housing and time; a posts → listings sync for every world replaces the `0466` mirror direction; edit, pause / resume / mark delivered / delete / add media (D104) are post RPCs for every type, the listing RPCs delegate. Shipped: `0554_posts_own_listing_worlds` — the create / edit / pause / resume / fulfill / delete RPCs write the post for food, rides, housing and time; the listing is derived (`origin = native`, `legacy_post_id`), every listing-side rule still runs on it, and what the listing side computes or changes flows back (`post_sync_from_listing`); items stay on the post engine with the legacy listing shape; backfill links every native listing of the four worlds to a post. Test `supabase/tests/0554_*.sql`. | agent-fullstack | ✅ Done (2026-11-03) | `docs/spec/07` §7.1, §7.2 · FR-POST-001 · G1 |
-| G1-S3 | **Type-specific flows on posts.** Reserve / claim / book, `post_handoffs` writes, ratings, matching inputs, ride series, notifications, karma (one closing system + item bonus, G34), admin funnel and reports, deep links and share URLs. `giving_handoffs` stays a derived table until step 6 drops it. Migrations `0555–0562`, shipped as sub-steps: **3a** ✅ `0555` — `post_handoffs` is the handoff record for items and food (reserve / claim / confirm / hand over / cancel / sweeps write it; `giving_handoffs` derived both ways; the RPCs take a post id or a listing id); **3b** `0556` — the ride and knowledge booking RPCs and the handoff readers accept a post id (`handoff_target_listing_id`); their record stays `giving_handoffs` because a later occurrence of a recurring ride (0531) and an unshared knowledge offer (`worlds.feed_mirror` off) are bookable without a post; **3b-pre** `0557` — every published open listing has a post; `posts.feed_hidden` keeps a knowledge offer's post and a recurring ride's later occurrences out of the main feed (view, ranked RPC, broadcast, activity log, app query) until shared or their turn comes; **3b″** `0558` — the ride (book / confirm / decline / cancel / complete trip / complete ride / expiry sweep) and knowledge (book / complete) writers write `post_handoffs`, seats and slots counted on the record, live handoffs without a post backfilled with a hidden one; **3b‴** `0610` — the housing writers (request, decide incl. "first confirmation wins", cancel, complete, no-show, sweep) and the generic cancel write `post_handoffs`; numbered after the housing range so 0602 / 0603 do not replace them on a fresh database; **3c** `0559` — one closing system for items (G34): a hand-over closes a post-form item's post through the post closure (karma 20 + value bonus / 15 once, reversed on reopen), closing the post settles its live handoffs, stale open item posts repaired; ratings and the admin funnel keep reading the derived handoff row until step 6; 3d deep links and share URLs. | agent-fullstack | ✅ Done (2026-11-04) — every handoff writer writes `post_handoffs` and items close through the post (G34). Moved on purpose: deep links and share URLs go with the one detail screen (G1-S4c, a post screen without the type actions would strand a tapped notice); ratings, matching, ride series and the admin funnel keep reading the derived `giving_handoffs` / listing rows, which are identical, and move in G1-S6 before those tables are dropped | `docs/spec/07` §7.5, §7.6, §7.7 · G34 · G1 |
-| G1-S4 | **One detail screen.** `/post/[id]` renders every type (shared hero + content frame, type sections, type actions) with likes and comments for all; `/listing/*` redirects; `useListingMirrorRedirect` removed. Maestro flow per type. | agent-fe | ✅ Done (2026-11-04) — **4a** ✅ `0560`: `/post/[id]` shows a listing-world post in place — the listing's hero, type sections and actions plus the post's likes and comments and the post share link; `/listing/*` forwards to the post when the listing has one; `useListingMirrorRedirect` removed; the listing detail says whether its post is hidden so "share to feed" stays for an unshared knowledge offer. **4b** ✅ `0561`: an item made through the post form shows its reservation actions (reserve, confirm, hand over, cancel, rate) on its post page; the listing detail opens by post id and names the item's own post, so the listing routes forward it to the post too. **4c** ✅ `0562`: a notification about a listing names the listing's post (`params.postId`, route `/post/[id]`, added once on the outbox), so a push tap and the notification center open the post; the listing share link is the post's link. | `docs/spec/07` §7.4, §7.9 · FR-POST-014..018 · G1, G12 |
-| G1-S5 | **Events as a post extension.** `event_post_details` (capacity, registration policy, D31) in the same create form; the organizer create screen is retired; organizer management screens stay until they read posts. Migration `0563`. | agent-fullstack | ⏳ Planned | `docs/spec/08` · G18 · G1 |
-| G1-S6 | **Cleanup.** Single S1 state machine in DB + domain, drop the sync triggers, retire the marketplace browse leftovers and `LegacyRideRedirect`, then drop `listings`, `ride_listings`, `giving_handoffs` after the report shows identical data and no code reads them (`migration-safety: allow` + PR justification). Migrations `0564+`. | agent-fullstack | ⏳ Planned | `docs/spec/07` §7.1 · G1, G11 |
-
-## POSTS & FEED — One create form, every category everywhere (PM, 2026-11-01)
-
-| ID | Task | Owner | Status | Spec |
-|----|------|-------|--------|------|
-| CREATE-5CAT | **Create form cleanup + TestFlight crash.** Category picker (items, rides, food, housing, time) with the last used category + direction remembered, request / offer under it, curated fields per category and direction; no inline native date picker or slider; "donations marketplace" card and browse screen removed (`/donations/marketplace` → hub, "my listings" in the profile menu). Tests: field-spec units, a jsdom render matrix of every category × direction with full ride / time publishes, Maestro flow `13-create-form-categories`. | agent-fe | ✅ Done | `spec/04_posts.md` FR-POST-001 AC6 · `spec/13_donations.md` FR-DONATE-001 AC6 · `D-207` |
-| CREATE-PUBLISH-HEADER | **Header Publish action for every create-form category.** Shared compact kit action uses the category submit handler with the same validation, loading and double-submit guard as the footer; jsdom category × direction matrix and Maestro header tap. | agent-fe | ✅ Done | `spec/04_posts.md` FR-POST-001 AC7 · #1472 |
-| FEED-WORLDS | **Main feed of every category + a feed per world.** (1) Turn on `worlds.feed_mirror` for rides, housing and time so their listings reach the main feed like items and food (`0466`); check feed cards for ride / stay / shift details. (2) Give each active world screen search and the world's feed (no request / offer buttons since 2026-11-03: the "+" tab opens the form on the world on screen, `FR-FEED-020` AC4) of open offers and requests, with `BrowseRefineChips` where the world has subcategories; housing and time get a world screen (today: links-only category screen / org opportunities). (3) Rides, time and housing launch flags are seeded off (`0441`) — the create form offers them regardless; flip the flags when their world screens ship. Old KC repo for reference screens. **(1) done** — `0522` (FR-FEED-020 AC1): rides, housing and time mirror into the main feed, cards show the world chip + icon. Feed mirror back navigation uses a root-stack listing detail so Back returns to the feed in one step (`06-feed-open-post`). **(2) done** for every create category — items, food, rides (#1381), housing and time (world header with request / offer + sub-screens, world feed with search, direction and refine chips). **(3)** time flag on (`0523`); housing flag flips with TD-245 (verification pre-check). **(4) done 2026-11-03** — one flat list of 12 worlds in the hub with a portal tag, per-category give / request memory, link create form for the worlds with no feed, links under the feed (`D-211`). | agent-fullstack | 🟡 In progress | `spec/06_feed_and_search.md` FR-FEED-020 · `docs/spec/07` §7.3 · `TD-246`, `TD-245` |
-
-## RIDES — Replace a WhatsApp ride group (D70–D75)
-
-| ID | Task | Owner | Status | Spec |
-|----|------|-------|--------|------|
-| RIDES-1413 | **Recurring ride (#1413).** Weekdays + departure time + optional end date on the create form; the server publishes one ride per upcoming day (30 days), one card per series in the main feed, folded series rows in the rides feed with "other dates" on each occurrence, one route alert per follower; "my recurring rides" with pause / reschedule / cancel. Shipped: `0531`, `RideRecurrenceFields`, `MyRideSeriesList`. | agent-fullstack | ✅ Done | §5.3 · FR-RIDE-046 · D103 |
-| RIDES-G47 | **Driver bookings + push.** Driver sees and approves/declines every booking on a ride; push on booked / approved / declined / cancelled / expired; unapproved bookings expire (D96). Shipped: `0511` + `RideBookingActions`; rides world flag on. Approval seat capacity is enforced atomically at the server (`0533`). | agent-fullstack | ✅ Done | `docs/spec/05_giving_worlds.md` §5.3 · G47 |
-| RIDES-G45 | **Official places catalog + picker.** Import MoT junctions & interchanges (D98); one picker over cities, streets and junctions for origin, destination and ≤ 3 meeting points. Shipped: `0512`/`0513`, `RidePlaceField`, server-side place guard. | agent-fullstack | ✅ Done | §5.3 · G45 |
-| RIDES-G46 | **Map + navigate.** Ride route on the map; "navigate" to Waze / Google Maps / Apple Maps for every ride place. | agent-fe | ✅ Done | §5.3 · G46 |
-| RIDES-G49 | **Quick publish + rides feed.** Cross-platform date-time field, time shortcuts, remembered route, "publish again" (D97); feed of offers + requests by departure, departed hidden. | agent-fullstack | ✅ Done | §5.3 · G49 |
-| RIDES-G48 | **Saved routes.** Follow a route; alerts with the rides urgency rule and cap (D95). | agent-fullstack | ✅ Done | §5.3, §7.11 · G48 |
-| RIDES-G44 | **One rides flow.** Retire legacy `ride_listings` screens; move emergency button + cost caps onto the one flow. | agent-fullstack | ✅ Done | §5.3 · G44 |
-| RIDES-1626 | **Rides hub opens on the feed (#1626, P0).** The feed of every upcoming offer and request on the shared `ListingCard` grid (today / tomorrow / later kept); offers / requests chips; the route search becomes a collapsed filter on top (a chosen route shows its corridor offers); links collapsed at the bottom; empty states for publish / clear / retry. Shipped on the app side. Left: dev demo rides are seeded into the retired `ride_listings`, so the feed is empty on dev (`TD-272`). | agent-fe | 🟡 In progress | §5.3 "Hub screen" · FR-RIDE-002 AC6 |
-
-## FINANCE — Org finance & transparency (`spec/19_org_finance.md`)
-
-| ID | Task | Owner | Status | Spec |
-|----|------|-------|--------|------|
-| FIN-P1 | **Phase 1 — Books + Section 46(a) + exports** (remaining after FIN-P0: `org_id` already added and accounts / default category keys / account picker already shipped by `0470`). Org-scoped ledger RPCs (`p_org_id`), roles `org_treasurer` / `org_accountant` + `finance.*` permissions + `finance_assert`, financial accounts, category tree + counterparty rules, entry lifecycle (void, locks), attachments bucket, 46(a) status card + certificate, receipt tracking + queue, automatic payment mirroring trigger + backfill, CSV/XLSX/PDF export Edge Function, `(admin)/finance/*` sub-tree replacing `/admin/money`. Migrations `0470–0479`. | agent-fullstack | ⏳ Planned | `spec/19_org_finance.md` FR-FIN-001..011 |
-| FIN-P2 | **Phase 2 — Imports, reconciliation, reports, alerts.** CSV import wizard (bank / Bit / Paybox / generic, fingerprint dedupe), reconciliation screen + locks, five reports + export, budget vs actual, computed alerts + 30-day mute + daily digest notification, full overview dashboard. Remove `money.manage` alias and `/admin/money` redirect (`TD-208`). Migrations `0480–0485`. | agent-fullstack | ⏳ Planned | `spec/19_org_finance.md` FR-FIN-012..017 |
-| FIN-P3 | **Phase 3 — Documents vault, transparency, donor receipts.** `org_documents` + private bucket + signed public URLs, transparency snapshots (build / review / publish / supersede) + toggles, `rpc_org_transparency` + `OrgTransparencySection` on the public nonprofit page, donor-side receipt state + download + `donation_receipt_ready` notification. Requires PM legal sign-off on public 46(a) wording (spec O3). Migrations `0486–0489`. | agent-fullstack | ⏳ Planned | `spec/19_org_finance.md` FR-FIN-018..021 |
-
-| FIN-DONOR-PRIVACY | **Donor-level control of public visibility.** A donor chooses, per donation (and per recurring order), whether it counts in the organization's public numbers or stays out of them; the choice flows into the mirrored ledger entry's `is_public` (needs `FR-FIN-009` payment mirroring). PM request 2026-11-03: "per user, per post and action". | agent-fullstack | ⏳ Planned | `spec/19_org_finance.md` FR-FIN-022 AC6 |
-
-## ORGANIZATIONS — Profile & accounts (`spec/20_organizations.md`)
-
-| ID | Task | Owner | Status | Spec |
-|----|------|-------|--------|------|
-| ORG-P1 | **Phase 1 — One entity, registration, public profile, act-as.** Extend `organizations` + `users.account_type/org_id`; fold `org_applications` → `org_registrations` and `external_bodies` → unclaimed organizations (compat view, TD-229); registration wizard + admin approval creating the organization account; `/org/[slug]` profile + edit + slug redirects; follows for/by organizations; profile switcher + `can_act_as_org`; `listings.author_org_id`; money nonprofit page folded into the Donate tab. Migrations `0490–0499`. | agent-fullstack | ⏳ Planned | `spec/20_organizations.md` FR-ORG-001..010 |
-| ORG-P2 | **Phase 2 — Team, activity, discovery, inbox.** Team tab (opt-in), activity tabs, impact metrics RPC, Search "ארגונים" parent filter + sub-filters replacing hub directories and `list_verified_nonprofits`, organization inbox (`chats.org_id`), org notifications. Remove `get_nonprofit_public_page` (TD-230). Migrations `0500–0505`. | agent-fullstack | ⏳ Planned | `spec/20_organizations.md` FR-ORG-011..016 |
-| ORG-P3 | **Phase 3 — Claiming, enrichment, badges, transparency.** `org_claims` + admin tab, Registrar open-data mirror + lookup (S35), verification-level badges + admin RPC, transparency tab mounting FR-FIN-020. Needs the organization terms addendum text from the PM (spec O3). Migrations `0506–0509`. | agent-fullstack | ⏳ Planned | `spec/20_organizations.md` FR-ORG-017..020 |
-
-## UI — Shared kit (`docs/spec/17_brand_and_design_system.md` §4.1, epic #1061)
-
-| ID | Task | Owner | Status | Spec |
-|----|------|-------|--------|------|
-| UI-KIT-1 | **Phase 1 — `Modal`, `BottomSheet`, `Chip`, sized buttons.** Kit components on tokens with tests; brand guard `rawModal` made import-aware and `adHocChip` added; migration inventory in spec 17 §4.1.1. Adds `DangerButton` for destructive actions (D94). PM approved the look 2026-11-01. | agent-fe | ✅ Done | §4.1 · #1284 #1285 #1286 |
-| UI-KIT-2 | **Phase 2 — migrate screens onto the kit**, one area per PR (sheets, dialogs, chips, CTAs), lowering the brand-guard baseline each time. Sheets: all 9 sheet components on `BottomSheet` (`SearchablePicker` migrated in UI-KIT-2 / #1286). Dialogs: 13 of 14 centred dialogs on `Modal` (`LegalConsentScreen` exit confirm waits for `LegalConsentGate`). Chips: 7 of 8 exported and all 3 local chip components on `Chip` (`ChatReactionChips` kept: a reaction counter, not a kit chip). CTAs: onboarding, auth and closure (CTAs 1), tabs, marketplace and About (CTAs 2) the root components (CTAs 3) and the token-clean admin files (CTAs 4) on kit buttons; the baseline-dirty admin files follow UI-ADMIN-1. See `TD-243`. | agent-fe | 🟡 In progress | §4.1.1 · `TD-243` |
-| UI-ADMIN-1 | **Admin surfaces on brand tokens (#1287, D67).** One admin area per PR to zero brand-guard findings, values snapped to the nearest token (the smaller on a tie: admin is the denser layout). ✅ `components/admin/admins` (13 files); ✅ shared admin components, `reports`, `tasks` rows (16 files); ✅ admin home, `money`, `whatsapp`, `time`, `crm`, survey cards (8 files). Left: 23 admin files in the baseline (spec 17 §4.3 progress line). | agent-fe | 🟡 In progress | [`spec/17`](../spec/17_brand_and_design_system.md) §4.3 |
-
-## PROFILE & ACCOUNT — Extra profile fields, account restore (PM, 2026-11-03)
-
-| ID | Task | Owner | Status | Spec |
-|----|------|-------|--------|------|
-| ACCOUNT-RESTORE | **Restore a deleted account within 30 days.** Deleting hides the account and keeps its data for 30 days; signing in during that window offers a full restore; after 30 days a purge job deletes everything (replaces the immediate hard delete, TD-118; changes FR-SETTINGS-012 AC2 and FR-AUTH-016). Backend (`0549`, `delete-account`, `purge-deleted-accounts`) merged (#1585); client (restore screen, gate decision, delete-modal copy) merged. | agent-fullstack | 🟡 In progress | `spec/11_settings.md` FR-SETTINGS-012 |
-| PROFILE-FIELDS | **New profile fields.** **Slice 1 — date of birth** (migration `0590`, `rpc_set_date_of_birth`, basic-info step, soft gate incl. members without one) in review; slice 2 — editing it on Edit Profile and the interests / organization / "what I can help with" fields — next. Date of birth (required at sign-up, minimum age 18, private, closes TD-102), interests, organization affiliation (self-declared, from approved organizations; separate from `org_memberships`), "what I can help with". The last three are public and hidden from non-approved viewers of a private profile. | agent-fullstack | 🟡 In progress | `spec/02_profile_and_privacy.md` FR-PROFILE-007 |
-| PROFILE-FIELD-VISIBILITY | **Per-field visibility (follow-up to PROFILE-FIELDS).** Every optional profile field gets its own hide control, independent of the profile's privacy mode: the owner chooses, per field, who sees it (everyone / approved followers / only me). Covers interests, organization affiliation, "what I can help with" and the existing optional fields (street, contact phone, biography). Date of birth stays private. AC: one visibility value per field stored server-side and enforced in the RLS / view that serves other-user profiles, not only in the client; edit-profile control per field; SQL test per visibility value. | agent-fullstack | ⏳ Planned | `spec/02_profile_and_privacy.md` |
-
-## HOUSING — Free space sharing (`spec/21_housing.md`, `D112`)
-
-| ID | Task | Owner | Status | Spec |
-|----|------|-------|--------|------|
-| HOUSING-SPEC | **Housing & spaces spec v1.** Four sub-categories (stays, emergency shelter via organizations, event & gathering space, storage) on one booking engine; FR-HOUSING-001…039. Every PM question (Q-H1…Q-H7) decided on 2026-11-03. Remaining: PM approval of the nine housing fills in `docs/spec/91`. | agent-fullstack | 🟡 Drafted — fills pending approval | `spec/21_housing.md` |
-| HOUSING-H0 | **Verification before housing.** Identity verification shipped (IDV-1), form pre-check (`TD-245`, FR-HOUSING-003 AC2), code of conduct with versioned acceptances (AC3). Counsel review is a launch gate only (96 L6, D118), not a blocker for this row. | agent-fullstack | ⏳ Planned | FR-HOUSING-003 |
-| HOUSING-H1 | **Stays end to end, then turn `world_housing_enabled` on.** **Shipped:** H1.1 server (`0600`–`0603`, #1609); H1.2 `@kc/domain` housing stay types + rules (`validateStayRequest`, `hostBookingActions`, `guestStayActions`, `housingToday`), `IHousingRepository` + use cases in `@kc/application`, `SupabaseHousingRepository`; H1.3 (part) the stay section of a housing offer — the guest's request form with the code-of-conduct gate, the booking status, cancel, the exact address in its window and the rating; the host's bookings with approve / decline / complete / no-show / cancel with a reason / chat / rating. **Remaining:** host editor for the exact place (`set_housing_private_details`) and the availability editor (window / weekly / blackout); "my stays" and "my hosting" screens (FR-HOUSING-036, 037); verification pre-check in the create form (`TD-245`); chat system messages (FR-HOUSING-023); H1.4 emergency button, safety freeze, search filters, matching v2. | agent-fullstack | 🟡 In progress | FR-HOUSING-001…006, 011–027, 034–037, 039 |
-| HOUSING-H2 | **Event space + storage sub-categories.** Kinds, forms, event rules, storage inventory + agreement summary + end-of-term sweep, built on the legal drafts as written (counsel reviews before launch, D118). | agent-fullstack | ⏳ Planned | FR-HOUSING-007…010, 028, 029 |
-| HOUSING-H3 | **Assisted track.** Shelter pool, confidential shelter request with SLA sweep, coordinator placement and check-ins, organization housing scopes. Depends on ORG-P1. | agent-fullstack | ⏳ Planned | FR-HOUSING-030…032 |
-| HOUSING-H4 | **Emergency-mode evacuee hosting.** "Host evacuees" template, evacuee ranking and emergency-group notifications. Depends on G25. | agent-fullstack | ⏳ Planned | FR-HOUSING-033 |
-| IDV-PROVIDER | **Choose the identity-verification provider (PM action).** Evaluate against FR-VERIFY-011, sign contract + DPA, put sandbox / production keys in the environment secrets (96 A12). Blocks IDV-1 in production. | owner | ⏳ Planned | `spec/22_identity_verification.md` FR-VERIFY-011 |
-| IDV-1 | **Identity verification (ID document + live selfie).** Consent, session + webhook Edge Functions behind a provider seam, `identity_verifications` + identity hash, level function + badge, attempt limits, manual-review queue, validity + reminders; tests per FR-VERIFY-010 AC4. Can start on the provider sandbox. | agent-fullstack | ⏳ Planned | `spec/22_identity_verification.md` FR-VERIFY-001…010 |
-
-## KNOWLEDGE — Knowledge world: give & take, free library, courses, agent retrieval (`docs/spec/18_knowledge_world.md`, `spec/23_knowledge.md`)
-
-| ID | Task | Owner | Status | Spec |
-|----|------|-------|--------|------|
-| KNOW-K1-A | **Topic graph + shelves.** Shipped (`0570`, test `supabase/tests/0570_knowledge_topics.sql`): `knowledge_topics` / aliases / follows, depth and cycle guards, `knowledge_normalize_text`, `resolve_knowledge_topics`, propose / review (approve, reject, rename, merge with alias and re-pointing), the two missing D100 shelves seeded, PRD subject rows moved to topics and deactivated as shelves; `@kc/domain` `knowledge/knowledgeTopics`, `@kc/application` `knowledge/*` use cases, `SupabaseKnowledgeTopicRepository`. Open: shelf + topics required on knowledge posts (`knowledge_post_topics` on `posts`, FR-KNOW-002) with the create flow of KNOW-K1-B. | agent-be | 🟡 In progress | FR-KNOW-001/002 · G55 |
-| KNOW-K1-B | **Six exchange post types on the one create form.** Kinds + detail schemas, slots as rows with recurring materialization, booking confirm / expiry, session karma to 7.6 values, question with accepted answer, consulting-hour ID gate, knowledge lifecycle flow on the DB harness. | agent-be + agent-fe | ⏳ Planned | FR-KNOW-003/004/005/012 · G56 · G14, G38 |
-| KNOW-K1-C | **Library of external resources.** `knowledge_resources` + kinds, canonical URL dedup, versions, saves, helpful, reports; `knowledge-link-enrich` + `knowledge-ai-enrich`; `submit_` / `review_knowledge_resource`; admin review queue; library tab, card, detail, "people who teach this", follow a topic; link health cron. | agent-be + agent-fe | ⏳ Planned | FR-KNOW-006/007/008/011 · G57 |
-| KNOW-K1-D | **Knowledge search + agent contract.** `knowledge_chunks`, real embedding provider in `embed-worker`, `knowledge_search` (FTS + trigram + vector + topic, RRF, citations), suggestions, similar, `api_knowledge_*` + MCP tool descriptions for the WhatsApp bot. | agent-be | ⏳ Planned | FR-KNOW-009/010 · G58 · TD-269 |
-| KNOW-K2 | **Native articles and courses.** Bodies, sanitizer, chunker; modules / lessons / quizzes + builder (web); enrollment, progress, grading, completion record; continue learning; community answers to the library; events, stats, notifications, web export pages. | agent-fullstack | ⏳ Planned | FR-KNOW-013..020 · G59 |
-| KNOW-K3 | **Curators, profile, cohorts, open catalog.** Curator role + trusted contributors, completions on the profile with verify page, cohorts on a lesson series, nightly catalog export (`catalog.json`, `llms.txt`, sitemap), "new in the library" feed cards, author analytics. | agent-fullstack | ⏳ Planned | FR-KNOW-021..024 · G60 |
-
-## Deferred (post-MVP, still tracked)
-
-| ID | Task | Status | Spec |
-|----|------|--------|------|
-| P3.1 | Block / unblock + visibility restoration, **in the launch scope** (D105). Shipped: bilateral filtering on every surface (`0544`); Settings → "Blocked users" with unblock (`0545` `list_my_blocked_users`, `ListMyBlockedUsersUseCase`, `useBlockedUsers`); block from the profile, the conversation menu and the listing detail. Follow-ups: TD-263, TD-264. | agent-fullstack | ✅ Done | `spec/08_moderation.md` FR-MOD-003/004/009 |
-| P3.MATCH-XW | **Cross-world matching** (improvement, P3). Goal: pair listings across worlds when one enables the other (item give ↔ ride offer for pickup/delivery; food give ↔ volunteer time for distribution). AC: opt-in per world pair in `matching_settings`; reuses `match_candidates` with a `link_kind`; geo/time windows of both legs respected; never notifies above the per-user cap; SQL test + seed sample; off by default. | ⏳ Deferred (PM 2026-10-18) | `docs/SSOT/MATCHING_V2.md` |
-
----
-
-## Sprint Protocol
-
-1. Pick the highest `⏳` item in **this file** (not `archive/`)
-2. Read its linked `spec/` file
-3. Move status to 🟡
-4. Implement
-5. Move status to ✅ **and** append/move the row to `archive/BACKLOG-history.md`
-6. Update spec file status if all ACs complete
+| ID | Issue |
+|----|-------|
+| TRANSLATE-P3 | [#877](https://github.com/KarmaCummunity/KC/issues/877) |
+| P1.7 | [#1646](https://github.com/KarmaCummunity/KC/issues/1646) |
+| P1.8 | [#1647](https://github.com/KarmaCummunity/KC/issues/1647) |
+| INFRA-QA-W1 | [#1648](https://github.com/KarmaCummunity/KC/issues/1648) |
+| INFRA-QA-W2 | [#1649](https://github.com/KarmaCummunity/KC/issues/1649) |
+| INFRA-QA-W3 | [#1650](https://github.com/KarmaCummunity/KC/issues/1650) |
+| INFRA-QA-W4 | [#1651](https://github.com/KarmaCummunity/KC/issues/1651) |
+| INFRA-QA-W5 | [#1652](https://github.com/KarmaCummunity/KC/issues/1652) |
+| INFRA-QA-W7 | [#1653](https://github.com/KarmaCummunity/KC/issues/1653) |
+| INFRA-OSS-4 | [#1654](https://github.com/KarmaCummunity/KC/issues/1654) |
+| INFRA-OSS-6 | [#1655](https://github.com/KarmaCummunity/KC/issues/1655) |
+| PERF-4 | [#1656](https://github.com/KarmaCummunity/KC/issues/1656) |
+| PERF-5 | [#1657](https://github.com/KarmaCummunity/KC/issues/1657) |
+| SEC-1063 | [#1658](https://github.com/KarmaCummunity/KC/issues/1658) |
+| SEC-1373 | [#1373](https://github.com/KarmaCummunity/KC/issues/1373) |
+| SEC-1065 | [#1659](https://github.com/KarmaCummunity/KC/issues/1659) |
+| SEC-1067 | [#1660](https://github.com/KarmaCummunity/KC/issues/1660) |
+| SEC-1064 | [#1661](https://github.com/KarmaCummunity/KC/issues/1661) |
+| SEC-WRITE-RATE-LIMITS | [#1662](https://github.com/KarmaCummunity/KC/issues/1662) |
+| INFRA-CI-OWNER | [#1337](https://github.com/KarmaCummunity/KC/issues/1337), [#1338](https://github.com/KarmaCummunity/KC/issues/1338), [#1339](https://github.com/KarmaCummunity/KC/issues/1339) |
+| DONATE-G8b | [#1663](https://github.com/KarmaCummunity/KC/issues/1663) |
+| OPS-G38 | [#1664](https://github.com/KarmaCummunity/KC/issues/1664) |
+| OPS-G42 | [#1665](https://github.com/KarmaCummunity/KC/issues/1665) |
+| OPS-G39 | [#1666](https://github.com/KarmaCummunity/KC/issues/1666) |
+| OPS-G40 | [#1667](https://github.com/KarmaCummunity/KC/issues/1667) |
+| STATS-AUDIENCE | [#1668](https://github.com/KarmaCummunity/KC/issues/1668) |
+| G1-S4 | [#1669](https://github.com/KarmaCummunity/KC/issues/1669) |
+| G1-S5 | [#1670](https://github.com/KarmaCummunity/KC/issues/1670) |
+| G1-S6 | [#1671](https://github.com/KarmaCummunity/KC/issues/1671) |
+| FEED-WORLDS | [#1672](https://github.com/KarmaCummunity/KC/issues/1672) |
+| RIDES-1626 | [#1626](https://github.com/KarmaCummunity/KC/issues/1626) |
+| FIN-P1 | [#1481](https://github.com/KarmaCummunity/KC/issues/1481) |
+| FIN-P2 | [#1673](https://github.com/KarmaCummunity/KC/issues/1673) |
+| FIN-P3 | [#1674](https://github.com/KarmaCummunity/KC/issues/1674) |
+| FIN-DONOR-PRIVACY | [#1675](https://github.com/KarmaCummunity/KC/issues/1675) |
+| ORG-P1 | [#1480](https://github.com/KarmaCummunity/KC/issues/1480) |
+| ORG-P2 | [#1676](https://github.com/KarmaCummunity/KC/issues/1676) |
+| ORG-P3 | [#1677](https://github.com/KarmaCummunity/KC/issues/1677) |
+| UI-KIT-2 | [#1286](https://github.com/KarmaCummunity/KC/issues/1286) |
+| UI-ADMIN-1 | [#1287](https://github.com/KarmaCummunity/KC/issues/1287) |
+| ACCOUNT-RESTORE | [#1618](https://github.com/KarmaCummunity/KC/issues/1618) |
+| PROFILE-FIELDS | [#1615](https://github.com/KarmaCummunity/KC/issues/1615) |
+| PROFILE-FIELD-VISIBILITY | [#1616](https://github.com/KarmaCummunity/KC/issues/1616) |
+| HOUSING-SPEC | [#1678](https://github.com/KarmaCummunity/KC/issues/1678) |
+| HOUSING-H0 | [#1679](https://github.com/KarmaCummunity/KC/issues/1679) |
+| HOUSING-H1 | [#1680](https://github.com/KarmaCummunity/KC/issues/1680) |
+| HOUSING-H2 | [#1681](https://github.com/KarmaCummunity/KC/issues/1681) |
+| HOUSING-H3 | [#1682](https://github.com/KarmaCummunity/KC/issues/1682) |
+| HOUSING-H4 | [#1683](https://github.com/KarmaCummunity/KC/issues/1683) |
+| IDV-PROVIDER | [#1684](https://github.com/KarmaCummunity/KC/issues/1684) |
+| IDV-1 | [#1685](https://github.com/KarmaCummunity/KC/issues/1685) |
+| KNOW-K1-A | [#1686](https://github.com/KarmaCummunity/KC/issues/1686) |
+| KNOW-K1-B | [#1687](https://github.com/KarmaCummunity/KC/issues/1687) |
+| KNOW-K1-C | [#1688](https://github.com/KarmaCummunity/KC/issues/1688) |
+| KNOW-K1-D | [#1689](https://github.com/KarmaCummunity/KC/issues/1689) |
+| KNOW-K2 | [#1690](https://github.com/KarmaCummunity/KC/issues/1690) |
+| KNOW-K3 | [#1691](https://github.com/KarmaCummunity/KC/issues/1691) |
+| P3.MATCH-XW | [#1033](https://github.com/KarmaCummunity/KC/issues/1033) |
+| FR-CHALLENGE-001 | [#1883](https://github.com/KarmaCummunity/KC/issues/1883) |
+| DONATE-SEED-LINKS | [#1884](https://github.com/KarmaCummunity/KC/issues/1884) |

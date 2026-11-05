@@ -2,7 +2,7 @@
 // exchange the code for a session, store it, and continue to the app shell.
 // Mapped to SRS: FR-AUTH-003 / FR-AUTH-007 (Google path completion).
 // AuthGate in `app/_layout.tsx` whitelists this route so unauth users can reach it.
-// docs/SSOT/spec/01_auth_and_onboarding.md
+// docs/spec/requirements/01_auth_and_onboarding.md
 import React, { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';

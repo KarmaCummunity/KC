@@ -1,7 +1,7 @@
 // Housing stay rules the app checks before calling the server, and which actions each side
 // may take on a booking at a given moment. They mirror the server exactly (migrations
 // 0602–0603); the server stays the source of truth.
-// Spec: docs/SSOT/spec/21_housing.md FR-HOUSING-015 (request), 018 (cancel), 019 (complete),
+// Spec: docs/spec/requirements/21_housing.md FR-HOUSING-015 (request), 018 (cancel), 019 (complete),
 // 020 (no-show), 012 AC2 (address window); limits S54.
 import type { HousingErrorCode } from './HousingError';
 import type {

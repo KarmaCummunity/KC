@@ -6,6 +6,7 @@ import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
+import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { RIDE_TIME_WINDOWS, type RidePlace, type RideRouteWants, type RideTimeWindow } from '@kc/domain';
 import { MY_RIDE_ROUTES_QUERY_KEY, rideSavedRoutesUseCases } from '../../services/rideSavedRoutesComposition';
 import { handoffErrorKey } from '../../lib/marketplaceCreateErrors';
@@ -84,9 +85,9 @@ export function RideRouteFollow({ origin, dest }: Props) {
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  link: { ...typography.button, color: colors.primary, paddingVertical: spacing.xs },
+  link: { ...typography.button, color: colors.primary, paddingVertical: spacing.xs, textAlign: rtlTextAlignStart },
   box: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceRaised },
-  label: { ...typography.caption, color: colors.textSecondary },
+  label: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
   chips: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: spacing.sm },
   btn: { padding: spacing.md, borderRadius: radius.sm, backgroundColor: colors.primary, alignItems: 'center' as const },
   btnText: { ...typography.button, color: colors.textInverse },

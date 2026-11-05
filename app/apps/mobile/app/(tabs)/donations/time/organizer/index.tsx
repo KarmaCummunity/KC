@@ -10,6 +10,7 @@ import { Screen } from '../../../../../src/components/ui/Screen';
 import { PrimaryButton } from '../../../../../src/components/ui/Buttons';
 import { volunteerUseCases } from '../../../../../src/services/volunteerComposition';
 import { useShellTabBarScrollInset } from '../../../../../src/navigation/useShellTabBarVisibility';
+import { createRouteFor } from '../../../../../src/lib/unifiedCreate/createCategories';
 
 const useStyles = makeUseStyles(() => ({
   create: { margin: spacing.lg },
@@ -39,7 +40,9 @@ export default function OrganizerVolunteerListScreen() {
             <PrimaryButton
               label={t('timeVolunteer.createOpportunity')}
               size="md"
-              onPress={() => router.push('/(tabs)/donations/time/organizer/create')}
+              // A new offer opens the one create form on the time world's offer side, where a member
+              // of an organization also chooses between a volunteer shift and an event (G1 step 5).
+              onPress={() => router.push(createRouteFor('time', 'give'))}
             />
           </View>
         }

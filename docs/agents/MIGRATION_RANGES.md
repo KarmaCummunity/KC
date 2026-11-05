@@ -70,11 +70,11 @@ Last applied on kc-dev when this was written: `0239`.
 ## Next free ranges
 
 `0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0466+`.
-| 0470–0489 | Org finance & transparency — `SSOT/spec/19_org_finance.md` FR-FIN-001..021 (P1 `0470–0479`, P2 `0480–0485`, P3 `0486–0489`). `0470` = FIN-P0 lean slice (accounts, public display, donors) | `0470` in review; rest claimed (spec only) |
+| 0470–0489 | Org finance & transparency — `spec/requirements/19_org_finance.md` FR-FIN-001..021 (P1 `0470–0479`, P2 `0480–0485`, P3 `0486–0489`). `0470` = FIN-P0 lean slice (accounts, public display, donors) | `0470` in review; rest claimed (spec only) |
 | 0463 | G42 / D68 / D69 ops health registry + first platform and rides checks (#1321) | in review |
 | 0464 | #1297 chat from a listing opens and anchors the listing; one context per chat | in review |
 | 0465 | FR-ADMIN-030 team management: org-scoped `admin_list_admins` + atomic `admin_change_role` (D-197) | in progress |
-| 0490–0509 | Organization profile & accounts — `SSOT/spec/20_organizations.md` FR-ORG-001..020 (P1 `0490–0499`, P2 `0500–0505`, P3 `0506–0509`) | claimed (spec only, no files yet) |
+| 0490–0509 | Organization profile & accounts — `spec/requirements/20_organizations.md` FR-ORG-001..020 (P1 `0490–0499`, P2 `0500–0505`, P3 `0506–0509`) | claimed (spec only, no files yet) |
 | 0468 | #1298 listing reports recorded (reporter hide, audit), reported listings hidden for review, admin restore, moderation-only review states | in review |
 | 0466 | KC#1101 / KC#1109 AC4 — native items and food listings mirror into the main feed (`posts.listing_id`, `worlds.feed_mirror`, D-206) | in review |
 | 0510 | KC#1306 "Rating given" karma (2 per handoff or ride rating) | in review |
@@ -105,21 +105,25 @@ Last applied on kc-dev when this was written: `0239`.
 | 0548 | D-211 donation link world categories | merged |
 | 0549 | account deletion grace period + purge (FR-SETTINGS-012) | merged |
 | 0550 | kc_support payee phone for bit / paybox (#1587; taken while the G1 range was claimed, G1 step 1 moved to `0551–0553`) | merged |
-| 0551–0569 | G1 one Post model (ADR-006): `0551–0553` step 1 additive schema (merged), `0554` step 2 posts own the listing worlds (merged), `0555` step 3a post_handoffs is the handoff record (merged), `0556` step 3b ride / knowledge booking RPCs and readers accept a post id (merged), `0557` step 3b-pre a post for every listing + `posts.feed_hidden` (merged), `0558` step 3b″ ride / knowledge writers on `post_handoffs` (merged), `0559` step 3c one closing system for items, G34 (merged), `0560` step 4a listing detail `feed_hidden` (merged), `0561` step 4b listing detail by post id (merged), `0562` step 4c listing notifications open the post (in review), `0563` step 5, `0564+` step 6 | in progress |
+| 0551–0569 | G1 one Post model (ADR-006): `0551–0553` step 1 additive schema (merged), `0554` step 2 posts own the listing worlds (merged), `0555` step 3a post_handoffs is the handoff record (merged), `0556` step 3b ride / knowledge booking RPCs and readers accept a post id (merged), `0557` step 3b-pre a post for every listing + `posts.feed_hidden` (merged), `0558` step 3b″ ride / knowledge writers on `post_handoffs` (merged), `0559` step 3c one closing system for items, G34 (merged), `0560` step 4a listing detail `feed_hidden` (merged), `0561` step 4b listing detail by post id (merged), `0562` step 4c listing notifications open the post (merged), `0563` step 5 event posts (merged), `0564` step 5c event waitlist and attendance (merged), `0565` step 6a-1 leaf readers on posts (merged #1892), `0566–0569` step 6 (later step 6 files take `0620–0639`) | in progress |
 | 0570 | knowledge topic graph: `knowledge_topics`, aliases, follows, resolve / propose / review RPCs, six shelves (FR-KNOW-001) | in progress |
 | 0571–0589 | knowledge world K1–K2 (`spec/23_knowledge.md` FR-KNOW-002..020) | claimed (spec only, no files yet) |
 | 0590 | users.date_of_birth + rpc_set_date_of_birth (FR-AUTH-010 AC2.d) | in progress |
 | 0591 | admin demo-data status + wipe (FR-ADMIN-031) | in progress |
 | 0592 | admin restore demo data: seed moved into the DB (FR-ADMIN-031) | in progress |
-| 0593 | RLS auth initplan: `auth.uid()` evaluated once per query in hot policies (generated from the live policies, #1546) | in progress |
-| 0594–0599 | — | free |
+| 0593 | RLS auth initplan (#1546) | in progress |
+| 0594 | challenges world: cycles, reports, streaks, karma (FR-CHALLENGE-001, #1608; first file named 0550 before it collided with #1587) | in progress |
+| 0595–0599 | — | free |
 | 0600–0609 | Housing H1 stays (`spec/21_housing.md`): `0600` catalog, schemas, conduct; `0601` private details; `0602` bookings; `0603` booking lifecycle | in progress |
-| 0610–0614 | G1 one Post model (ADR-006) steps that redefine functions of the housing range (`0602` / `0603`): `0610` step 3b‴ housing writers on `post_handoffs` (merged); `0611–0614` step 3c (karma / closing). A later change to `request / decide / cancel / complete_housing_booking`, `mark_housing_no_show`, `housing_bookings_sweep`, `cancel_giving_handoff` or `karma_award_handoff` must use a number above the last file that defines it. | in progress |
-| 0615+ | — | free |
+| 0610–0614 | G1 one Post model (ADR-006) steps that redefine functions of the housing range (`0602` / `0603`): `0610` step 3b‴ housing writers on `post_handoffs` (merged). `0611–0613` were used by other work: `0611_report_sla_alert.sql`, `0612_animals_world_direct.sql`, `0613_knowledge_world_in_feed.sql`; `0614` free. A later change to `request / decide / cancel / complete_housing_booking`, `mark_housing_no_show`, `housing_bookings_sweep`, `cancel_giving_handoff` or `karma_award_handoff` must use a number above the last file that defines it. | `0610` merged |
+| 0615–0619 | — | free |
+| 0620–0639 | G1 one Post model step 6 (ADR-006): `0620` step 6a-2 handoff readers on `post_handoffs` (merged #1897), `0621` step 6a-3a handoff triggers, rating foreign keys, `rate_giving_handoff` and the food sweep on `post_handoffs` (merged #1898), `0622` step 6a-3b writer RPCs return rows built from `post_handoffs` (merged #1901), `0623` step 6a-4a ride readers on `posts` / `ride_post_details` / `post_handoffs` (merged #1903), `0624` step 6a-4b ride writers on `posts` / `ride_post_details` (merged #1904), `0625` step 6a-5a the listing write cap on `posts` (merged #1905), `0626` step 6a-5b the listing columns on `posts` (merged #1906), `0627` step 6a-5c the owner RPCs lock the post first (merged #1908), `0628` step 6a-5d listing visibility on `posts` and the #1907 moderation-hold fix (merged #1909), `0629` step 6a-5e the listing detail and owner / profile lists on `posts` (merged #1912), `0630` step 6a-5f browse and recommendations on `posts` (merged #1913), `0631` step 6a-5f map pins, clusters (#1911) and rides feed on `posts` (merged #1913), `0632` step 6a-5g search and similar listings on `posts` (merged #1914), `0633` step 6a-6a `post_embeddings` and the search vector signal on it (merged #1916), `0634` step 6a-6b the embed worker's queue RPCs (merged #1917), `0635` step 6a-6c matching v2 on the record (merged #1918), `0636` step 6a-6d the match readers on the record (in review); `0633–0638` reserved for 6a-6 (a–f: embeddings, embed worker, matching, WhatsApp bot); `0639` free — numbered above the housing range so they may redefine its functions | in progress |
+| 0640–0659 | G1 one Post model steps 6b–6d (ADR-006, D-214): `6b` one S1 state machine, `6c` drop the sync triggers, `6d` drop `listings` / `giving_handoffs` (6d needs a production verification run and PM approval) | claimed |
+| 0660+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0594–0599`, `0610+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0660+`.
 
 ## How to claim
 

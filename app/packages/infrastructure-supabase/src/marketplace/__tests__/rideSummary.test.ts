@@ -60,6 +60,30 @@ describe('attachCardExtras', () => {
     expect(out[2]).toEqual(row('gone', 'items'));
   });
 
+  // G1 step 6a-5h: a post-owned listing's ride and publisher come from its post (equal by sync).
+  it('takes a post-owned listing\'s ride and publisher from its post, the same as from the listing', async () => {
+    const details = { origin_label: 'A', dest_label: 'B', seats_available: 2 };
+    const dana = { display_name: 'Dana', avatar_url: null };
+    const post = { world_slug: 'rides', direction: 'offer', urgency_level: 0, availability_status: 'open', details, publisher: [dana] };
+    const viaPost = client({ data: [{ listing_id: 'r', details, publisher: dana, origin: 'native', legacy_post_id: 'p', post }], error: null });
+    const viaListing = client({ data: [{ listing_id: 'r', details, publisher: dana, origin: 'native', legacy_post_id: null, post: null }], error: null });
+    const fromPost = await attachCardExtras(viaPost.c, [row('r', 'rides')]);
+    expect(fromPost).toEqual(await attachCardExtras(viaListing.c, [row('r', 'rides')]));
+
+    const other = { ...post, details: { seats_available: 5 }, publisher: { display_name: 'Post', avatar_url: 'u' } };
+    const [read] = await attachCardExtras(
+      client({ data: [{ listing_id: 'r', details, publisher: dana, origin: 'native', legacy_post_id: 'p', post: other }], error: null }).c,
+      [row('r', 'rides')],
+    );
+    expect(read?.ride?.seats).toBe(5);
+    expect(read?.publisher).toEqual({ displayName: 'Post', avatarUrl: 'u' });
+    const [items] = await attachCardExtras(
+      client({ data: [{ listing_id: 'r', details, publisher: dana, origin: 'post', legacy_post_id: 'p', post: other }], error: null }).c,
+      [row('r', 'rides')],
+    );
+    expect(items?.ride?.seats).toBe(2); // not post-owned (origin 'post'): the listing's
+  });
+
   it('returns rows unchanged on error or throw', async () => {
     const rows = [row('r', 'rides')];
     expect(await attachCardExtras(client({ data: null, error: { message: 'x' } }).c, rows)).toBe(rows);

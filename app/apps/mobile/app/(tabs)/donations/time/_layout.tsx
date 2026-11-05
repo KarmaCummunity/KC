@@ -23,7 +23,6 @@ export default function TimeVolunteerLayout() {
         options={{ headerTitle: t('timeVolunteer.hubTitle') }}
       />
       <Stack.Screen name="organizer/index" options={{ headerTitle: t('timeVolunteer.organizerTitle') }} />
-      <Stack.Screen name="organizer/create" options={{ headerTitle: t('timeVolunteer.createTitle') }} />
       <Stack.Screen
         name="organizer/[opportunityId]"
         options={{ headerTitle: t('timeVolunteer.organizerTitle') }}
