@@ -1685,7 +1685,7 @@ Owner rules that go with it:
 
 **Decision.** Owner decisions for the first store submission (#920, #1088, #1036):
 1. **Store-review URLs use the Cloudflare Pages domain** `karma-community.pages.dev` until a permanent domain is bought (privacy policy: `https://karma-community.pages.dev/privacy`). When the domain is bought, the store listings switch to it.
-2. **KC Pro pricing:** free for the first year after launch. After that, $30/month for a private person (mainly for the WhatsApp bot) and $100/month for an organization (includes the full admin portal).
+2. **KC Pro pricing:** free for the first year after launch. After that, ~~$30/month~~ **$20/month** for a private person (mainly for the WhatsApp bot) and $100/month for an organization (includes the full admin portal). *Updated 2026-11-04 by the owner: the private-person price is $20/month, not $30; the free first year and the organization price stand.*
 3. **Support email:** the single operated KC mailbox of `D-59`, `karmacommunity2.0@gmail.com`, which the app, web pages and store copy already use.
 
 **Why.** Store review needs live, stable policy URLs now; the custom domain is not available yet. Pricing and support contact are owner decisions recorded here so the store listing, paywall and support copy share one source.
