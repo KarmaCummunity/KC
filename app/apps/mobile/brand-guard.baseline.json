@@ -122,13 +122,6 @@
       "fontWeightLiteral": 1,
       "radiusLiteral": 2
     },
-    "src/features/about-landing/AboutInstagramEmbed.tsx": {
-      "iconSizeLiteral": 1
-    },
-    "src/features/about-landing/AboutInstagramEmbed.web.tsx": {
-      "physicalSide": 3,
-      "iconSizeLiteral": 1
-    },
     "src/features/about-landing/AboutNavDrawer.tsx": {
       "physicalSide": 2,
       "rawModal": 1,
