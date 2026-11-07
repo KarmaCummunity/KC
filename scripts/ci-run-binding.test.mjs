@@ -128,9 +128,14 @@ test('parseReferencedWorkflow rejects SHA/path/ref mismatches', () => {
     'path sha ≠ sha field',
   );
   assert.equal(
-    parseReferencedWorkflow({ ...refByMergeSha('ci-pr.yml'), ref: 'refs/pull/8/merge' }, REPO),
+    mergeRefOf(
+      prRun({
+        referenced_workflows: [refByMergeSha('a.yml', 7), refByMergeSha('b.yml', 8)],
+      }),
+      REPO,
+    ),
     null,
-    'ref pr ≠ merge ref',
+    'two PR numbers in sha-path form',
   );
   assert.equal(
     parseReferencedWorkflow({ path: `${REPO}/.github/workflows/ci-pr.yml@${MERGE}`, sha: MERGE, ref: 'refs/heads/dev' }, REPO),
