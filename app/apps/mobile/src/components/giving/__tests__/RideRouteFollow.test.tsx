@@ -11,7 +11,7 @@ import type { RidePlace, RideSavedRoute } from '@kc/domain';
 const { save, listMine, remove } = vi.hoisted(() => ({ save: vi.fn(), listMine: vi.fn(), remove: vi.fn() }));
 
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
-vi.mock('../../../lib/haptics', () => ({ hapticSuccess: vi.fn() }));
+vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticSuccess: vi.fn() }));
 vi.mock('../../../store/authStore', () => ({
   useAuthStore: (select: (s: unknown) => unknown) => select({ session: { userId: 'u1' } }),
 }));

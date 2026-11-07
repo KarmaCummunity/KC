@@ -34,7 +34,7 @@ vi.mock('../../../services/eventRegistrationComposition', () => ({
   eventRosterQueryKey: (id: string) => ['event-registration', 'roster', id],
   eventRegistrationUseCases: Object.fromEntries(Object.entries(uc).map(([name, fn]) => [name, () => ({ execute: fn })])),
 }));
-vi.mock('../../../lib/haptics', () => ({ hapticSuccess: vi.fn() }));
+vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticSuccess: vi.fn() }));
 vi.mock('../../../lib/observability/sentry', () => ({ getSentryIfInit: () => null }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 

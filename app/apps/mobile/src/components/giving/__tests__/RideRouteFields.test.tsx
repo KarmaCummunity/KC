@@ -12,7 +12,7 @@ const RAMAT_GAN: RidePlace = { kind: 'city', id: '8600', label: 'רמת גן', l
 const GLILOT: RidePlace = { kind: 'junction', id: '106', label: 'מחלף גלילות מערב', lat: 32.14, lng: 34.8, cityId: null };
 
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
-vi.mock('../../../lib/haptics', () => ({ hapticLightTap: vi.fn() }));
+vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticLightTap: vi.fn() }));
 // The native switch does not fire `onValueChange` from a DOM click; a button stands in for it.
 vi.mock('react-native', async () => {
   const actual = await vi.importActual<typeof import('react-native')>('react-native');

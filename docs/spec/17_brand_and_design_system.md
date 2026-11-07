@@ -169,6 +169,34 @@ Admin and team-only screens use the **same** colours, type, radius, components a
 
 Light, dark and system appearance (FR-SETTINGS-014). The native app passes the OS colour scheme through (`app.json` `userInterfaceStyle: "automatic"`, `expo-system-ui` on Android) so "system" can resolve to dark; signed-out surfaces stay light.
 
+#### 4.4.1 Platform conventions (#858)
+
+KC follows each platform where the user expects it to, and keeps one KC look everywhere else. Values are KC policy, not a full HIG / Material copy. Design: [`docs/superpowers/specs/2026-11-07-mobile-native-feel-design.md`](../superpowers/specs/2026-11-07-mobile-native-feel-design.md).
+
+| Concern | iOS | Android | Web (export) | Hook |
+|---|---|---|---|---|
+| Stack push / pop | Native stack slide | `slide_from_right` on the root stack; nested stacks slide natively | Cross-fade | `rootStackAnimation.ts`, `nestedStackGestureOptions.ts` |
+| Back | Edge swipe on every nested stack + mirrored back chevron | System back pops the stack; predictive back stays **off** (`app.json`) | Browser history | stack options, `MirroredIcon` |
+| Header | Shared `TopBar` on tab roots and worlds; no large titles (only screens that already opt in keep them) | Same | Same | `TopBarStackHeader`, `detailStackScreenOptions` |
+| Sheet / dialog dismiss | Backdrop, ✕, swipe down | + hardware back | Escape | kit `BottomSheet` / `Modal`, `useModalHardwareBack` |
+| Action menus | Kit `ActionMenuSheet` | Same | Same | `ActionMenuSheet.tsx` |
+| Tab re-tap | Tab root: no-op; nested: back to the tab root (FR-RESP-006 AC23) | Same | Same | `tabPress.ts` |
+| Keyboard | `KeyboardAvoidingView` `padding` + measured offset | Window resize; offset 0 | Offset 0 | `useKeyboardVerticalOffset()` |
+| Date / time | Spinner in a sheet, app palette | System dialogs (date, then time) | `<input>` | `DateTimeField.tsx` |
+| Pull-to-refresh | Native `RefreshControl` + light tap | Same | Same | `KcRefreshControl.tsx` |
+| Haptics | See below | See below | None | `src/lib/haptics.ts` |
+| Reduce motion | Sheets and kit controls skip their animation; stack transitions stay OS default | Same | Same | `useReducedMotion` |
+
+**Haptics policy.** `src/lib/haptics.ts` is the only module that imports `expo-haptics` (ESLint, §6); every helper is a no-op on web, best-effort on devices without a haptic engine, and the OS setting can turn them off. Reduce motion does not turn haptics off.
+
+| Helper | When | iOS | Android |
+|---|---|---|---|
+| `hapticSuccess` | A confirmed outcome, **after** the server succeeds: publish, handoff / booking / registration confirmed, marked delivered, comment sent, a **new** post or chat reaction, a new comment like | Success notification | Same |
+| `hapticLightImpact` | Kit press feedback (`PrimaryButton` and friends, `PressableScale`); turn it off with `haptic={false}` where the action already plays an outcome haptic | Light impact | Same |
+| `hapticLightTap` | Light affirmation on non-outcome controls: filters, toggles, pull-to-refresh | Light impact | Context click |
+
+No haptic on errors, validation, a duplicate press, removing a reaction or like, or a failed request.
+
 ## 5. Accessibility floor
 
 KC targets **WCAG 2.x AA** (Israeli standard IS 5568): normal text ≥ 4.5:1, large text and UI glyphs ≥ 3:1, in **both** palettes. The required pairs are encoded in `packages/ui/src/__tests__/brandContrast.test.ts`. Known failures are listed there with a TD reference and must be removed when fixed.
@@ -188,6 +216,7 @@ All run inside `pnpm test` (pre-push gate and CI):
 | Contrast floor | `packages/ui/src/__tests__/brandContrast.test.ts` | a required pair drops below AA, or a listed exception starts passing (stale) |
 | Brand font | `packages/ui/src/__tests__/brandFont.test.tsx` + ESLint `no-restricted-imports` | a weight stops mapping to its face, or app code imports `Text` / `TextInput` from `react-native` |
 | Icon set | ESLint `no-restricted-imports` (`app/eslint.config.mjs`) | app code imports an icon family other than `Ionicons`, or another icon library (D87) |
+| Haptics gate | ESLint `no-restricted-imports` (`app/eslint.config.mjs`) | app code other than `src/lib/haptics.ts` imports `expo-haptics` (§4.4.1) |
 | Hard-coded style ratchet | `apps/mobile/src/__tests__/brandGuard.test.ts` (rules in `brandGuardRules.ts`, pinned by `brandGuardRules.test.ts`) | a file gains a finding beyond its frozen baseline, or a new file has any. Rules: `colorLiteral`, `fontSizeLiteral`, `fontWeightLiteral`, `fontFamilyLiteral`, `radiusLiteral`, `spacingLiteral`, `physicalSide`; since D87 also `iconSizeLiteral` (numeric Ionicons `size`), `zIndexLiteral`, `shadowLiteral`, `rawTextInput` (use `TextField`) and `rawModal` (use `Modal` / `BottomSheet`; counts only React Native's `Modal`, by its import); since #1285 also `adHocChip` (a style key named exactly `chip` — use `Chip`) |
 | Touched-file rule | `apps/mobile/src/__tests__/brandGuard.test.ts` | a file changed since the PR base still has any finding (D67) |
 | Config colours | `apps/mobile/src/__tests__/brandGuard.test.ts` | `app.json` / `+html.tsx` brand colours drift from `primaryVivid`, or the native colour scheme is forced to light |

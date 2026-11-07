@@ -20,7 +20,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarScrollInset: () => 0 }));
-vi.mock('../../../lib/haptics', () => ({ hapticLightTap: () => undefined }));
+vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticLightTap: () => undefined }));
 // Kit buttons animate through Reanimated, which does not run under Vitest; a plain button suffices.
 vi.mock('../../ui/Buttons', () => {
   const Button = (p: { label: string; testID?: string; onPress: () => void }) => (

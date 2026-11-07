@@ -12,7 +12,7 @@ vi.mock('expo-router', () => ({ useRouter: () => ({ back, canGoBack: () => true,
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string, values?: { message?: string }) => values ? `${key}:${values.message}` : key }) }));
 vi.mock('../../i18n', () => ({ default: { t: (key: string) => key } }));
 vi.mock('../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: track, trackActivationIfFirst: activation }));
-vi.mock('../../lib/haptics', () => ({ hapticSuccess: haptic }));
+vi.mock('../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticSuccess: haptic }));
 vi.mock('../../lib/invalidateMyProfilePostQueries', () => ({ invalidateMyProfilePostQueries: invalidateProfile }));
 vi.mock('../../lib/invalidatePersonalStatsCaches', () => ({ invalidatePersonalStatsCaches: invalidatePersonal }));
 vi.mock('../../store/authStore', () => ({ useAuthStore: { getState: () => ({ session: null }) } }));

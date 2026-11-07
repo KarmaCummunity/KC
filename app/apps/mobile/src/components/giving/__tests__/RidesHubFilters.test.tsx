@@ -20,7 +20,7 @@ vi.mock('../../ui/Buttons', () => ({
     <button data-testid={p.testID} onClick={p.onPress}>{p.label}</button>
   ),
 }));
-vi.mock('../../../lib/haptics', () => ({ hapticLightTap: () => undefined }));
+vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticLightTap: () => undefined }));
 vi.mock('../../../hooks/useRidePlaces', () => ({
   useRidePlaces: () => ({ data: [], isLoading: false, error: null, refetch: vi.fn() }),
 }));
