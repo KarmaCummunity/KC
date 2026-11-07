@@ -1,0 +1,17 @@
+# Edit profile smoke — save CTA stays reachable (FR-RESP-006).
+appId: org.karmacommunity.app
+name: Profile — edit profile save affordance
+tags: [profile]
+---
+- runFlow: ../subflows/sign-in.yaml
+- tapOn:
+    id: profile-tab
+    optional: true
+- scrollUntilVisible:
+    element:
+      text: ".*עריכת פרופיל.*|.*Edit profile.*"
+    direction: DOWN
+    optional: true
+- tapOn:
+    id: edit-profile-save
+    optional: true

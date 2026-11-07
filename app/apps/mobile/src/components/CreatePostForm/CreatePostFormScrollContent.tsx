@@ -1,4 +1,4 @@
-import React, { type ReactNode } from 'react';
+import React, { useMemo, type ReactNode } from 'react';
 import {
   ScrollView,
   TouchableOpacity,
@@ -20,6 +20,8 @@ import type { UploadedAsset } from '../../services/imageUpload';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
 import type { CreatePostCitySelection } from '../../hooks/useCreatePostPublish';
+import { useFormFieldFocus } from '../../hooks/useFormFieldFocus';
+import { KeyboardFormAccessory } from '../ui/KeyboardFormAccessory';
 
 export interface CreatePostFormScrollContentProps {
   /** Unified create header (category picker + give/request toggle). */
@@ -102,8 +104,25 @@ export function CreatePostFormScrollContent({
   const { colors } = useTheme();
   const styles = useCreatePostStyles();
   const tabBarPad = useShellTabBarScrollInset();
+  const textFieldCount = isGive ? 3 : 4;
+  const fieldFocus = useFormFieldFocus(textFieldCount);
+  const titleField = fieldFocus.bindField(0);
+  const streetNumberField = fieldFocus.bindField(1);
+  const descriptionField = fieldFocus.bindField(2);
+  const urgencyField = useMemo(
+    () => (isGive ? null : fieldFocus.bindField(3)),
+    [fieldFocus, isGive],
+  );
 
   return (
+    <>
+      <KeyboardFormAccessory
+        canGoPrev={fieldFocus.canGoPrev}
+        canGoNext={fieldFocus.canGoNext}
+        onPrev={fieldFocus.focusPrev}
+        onNext={fieldFocus.focusNext}
+        onDone={fieldFocus.dismiss}
+      />
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarPad }]}
@@ -121,12 +140,18 @@ export function CreatePostFormScrollContent({
 
       <View style={styles.section}>
         <TextField
+          ref={titleField.ref}
           testID="create-post-title"
           label={`${t('post.title')} *`}
           value={title}
           onChangeText={onTitleChange}
           placeholder={t('post.titlePlaceholder')}
           maxLength={80}
+          onFocus={titleField.onFocus}
+          inputAccessoryViewID={titleField.inputAccessoryViewID}
+          returnKeyType={titleField.returnKeyType}
+          blurOnSubmit={titleField.blurOnSubmit}
+          onSubmitEditing={titleField.onSubmitEditing}
         />
         <Text style={styles.charCount}>{title.length}/80</Text>
       </View>
@@ -146,6 +171,7 @@ export function CreatePostFormScrollContent({
             />
           </View>
           <TextInput // brand-guard-allow: compact house-number box inline beside the street picker; TextField stacks a label
+            ref={streetNumberField.ref}
             style={[styles.input, styles.streetInputHouse, !city ? { opacity: 0.5 } : null]}
             value={streetNumber}
             onChangeText={onStreetNumberChange}
@@ -153,6 +179,11 @@ export function CreatePostFormScrollContent({
             placeholderTextColor={colors.textDisabled}
             textAlign={rtlTextAlignStart}
             editable={!isPublishing && !!city}
+            onFocus={streetNumberField.onFocus}
+            inputAccessoryViewID={streetNumberField.inputAccessoryViewID}
+            returnKeyType={streetNumberField.returnKeyType}
+            blurOnSubmit={streetNumberField.blurOnSubmit}
+            onSubmitEditing={streetNumberField.onSubmitEditing}
           />
         </View>
         {addressInlineError ? (
@@ -199,12 +230,18 @@ export function CreatePostFormScrollContent({
 
       <View style={styles.section}>
         <TextField
+          ref={descriptionField.ref}
           label={t('post.description')}
           value={description}
           onChangeText={onDescriptionChange}
           placeholder={t('post.descPlaceholder')}
           multiline
           maxLength={500}
+          onFocus={descriptionField.onFocus}
+          inputAccessoryViewID={descriptionField.inputAccessoryViewID}
+          returnKeyType={descriptionField.returnKeyType}
+          blurOnSubmit={descriptionField.blurOnSubmit}
+          onSubmitEditing={descriptionField.onSubmitEditing}
         />
         <Text style={styles.charCount}>{description.length}/500</Text>
       </View>
@@ -212,11 +249,17 @@ export function CreatePostFormScrollContent({
       {!isGive && (
         <View style={styles.section}>
           <TextField
+            ref={urgencyField?.ref}
             label={t('post.urgency')}
             value={urgency}
             onChangeText={onUrgencyChange}
             placeholder={t('post.urgencyPlaceholder')}
             maxLength={100}
+            onFocus={urgencyField?.onFocus}
+            inputAccessoryViewID={urgencyField?.inputAccessoryViewID}
+            returnKeyType={urgencyField?.returnKeyType}
+            blurOnSubmit={urgencyField?.blurOnSubmit}
+            onSubmitEditing={urgencyField?.onSubmitEditing}
           />
         </View>
       )}
@@ -235,5 +278,6 @@ export function CreatePostFormScrollContent({
       />
 
     </ScrollView>
+    </>
   );
 }

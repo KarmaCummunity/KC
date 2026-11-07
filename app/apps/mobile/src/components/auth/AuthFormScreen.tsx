@@ -23,6 +23,7 @@ import { PrimaryButton } from '../ui/Buttons';
 import { MirroredIcon, useDirectionalBackIcon } from '../ui/MirroredIcon';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import type { AuthEmailForm } from './useAuthEmailForm';
+import { useKeyboardVerticalOffset } from '../../lib/platform/useKeyboardVerticalOffset';
 
 /** Side of the logo in the header, in points (a layout size). */
 const LOGO_SIZE = 48;
@@ -77,12 +78,17 @@ export function AuthFormScreen({
   const router = useRouter();
   const motion = useEntryMotion();
   const backIcon = useDirectionalBackIcon();
+  const keyboardOffset = useKeyboardVerticalOffset({ headerless: true });
 
   return (
     <SafeAreaView style={styles.container}>
       <AmbientBlobs density="auth" />
       <Animated.View style={[styles.fill, motion.screen]}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.fill}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.fill}
+          keyboardVerticalOffset={keyboardOffset}
+        >
           <View style={styles.content}>
             <Animated.View style={[styles.header, motion.header]}>
               <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>

@@ -205,6 +205,7 @@ export default function EditProfileScreen() {
         }}
         footer={
           <PrimaryButton
+            testID="edit-profile-save"
             label={t('profile.editScreen.save')}
             fullWidth
             loading={saving}
