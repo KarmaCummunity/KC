@@ -20,6 +20,7 @@ describe('S1 Post Status State Machine (Spec 07 §7.1, D104)', () => {
       'hidden_pending_review',
       'paused',
     ]);
+    expect(Object.keys(POST_STATUS_TRANSITIONS)).toHaveLength(7);
   });
 
   describe('valid transitions', () => {
