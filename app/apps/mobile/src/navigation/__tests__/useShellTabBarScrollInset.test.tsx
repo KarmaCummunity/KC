@@ -54,6 +54,13 @@ describe('useShellTabBarScrollInset', () => {
     expect(readInset(16)).toBe(16 + 34);
   });
 
+  it('reserves tab-bar height inside the admin portal (shell chrome stays on)', () => {
+    mocks.segments = ['(admin)', 'reports'];
+    mocks.pathname = '/admin/reports';
+    mocks.insetBottom = 34;
+    expect(readInset(0)).toBe(48 + 34);
+  });
+
   it('collapses to the bar height alone on a device without a bottom inset', () => {
     mocks.segments = ['post', '[id]'];
     mocks.insetBottom = 0;

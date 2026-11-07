@@ -46,6 +46,7 @@ export function MyProfileScreen() {
         status: ['open'],
         limit: 30,
         excludeVisibility: 'OnlyMe',
+        profileOpenLinks: { viewerUserId: userId!, listMode: 'standard' },
       }),
     enabled: Boolean(userId),
     staleTime: 5 * 60_000, // PERF-3: profile (self) — edit-profile invalidates explicitly
@@ -59,7 +60,7 @@ export function MyProfileScreen() {
   }, []);
 
   return (
-    <Screen blobs="content" testID="my-profile-screen">
+    <Screen blobs="off" testID="my-profile-screen">
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={{ paddingBottom: tabBarPad }}

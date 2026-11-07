@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { DONATION_LINK_DESCRIPTION_MAX, DONATION_LINK_DISPLAY_NAME_MAX } from '@kc/domain';
 import { makeUseStyles, typography, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
+import { formUrlInputProps } from '../lib/platform/formTextInputHints';
 import { TextField } from './ui/TextField';
 import type { useAddOrEditDonationLinkModal } from './useAddOrEditDonationLinkModal';
 
@@ -25,10 +26,8 @@ export function DonationLinkFields({ url, setUrl, name, setName, desc, setDesc, 
         value={url}
         onChangeText={setUrl}
         placeholder={t('donations.addLinkModal.urlPlaceholder')}
-        autoCapitalize="none"
-        autoCorrect={false}
-        keyboardType="url"
         editable={!submitting}
+        {...formUrlInputProps}
       />
       <TextField
         label={t('donations.addLinkModal.nameLabel')}

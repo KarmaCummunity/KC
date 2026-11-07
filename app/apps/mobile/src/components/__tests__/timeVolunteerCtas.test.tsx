@@ -29,6 +29,7 @@ vi.mock('../ui/Screen', () => ({ Screen: ({ children }: { children: React.ReactN
 vi.mock('../lists/KcFlashList', () => ({ KcFlashList: ({ ListHeaderComponent }: { ListHeaderComponent: React.ReactNode }) => ListHeaderComponent }));
 vi.mock('../cards/KcRowCard', () => ({ KcRowCard: () => null }));
 vi.mock('../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarScrollInset: () => 0 }));
+vi.mock('../giving/TimeWorldSubScreenChrome', () => ({ TimeWorldSubScreenChrome: () => null }));
 vi.mock('../../store/authStore', () => ({
   useAuthStore: (select: (s: unknown) => unknown) => select({ session: { userId: 'u_me' } }),
 }));
@@ -105,7 +106,7 @@ describe('organizer screens', () => {
     execute.listOrganizer.mockResolvedValue([]);
     const { getByRole } = renderScreen(<OrganizerListScreen />);
     fireEvent.click(getByRole('button', { name: 'timeVolunteer.createOpportunity' }));
-    expect(router.push).toHaveBeenCalledWith('/(tabs)/create?category=time&direction=give');
+    expect(router.push).toHaveBeenCalledWith('/create?category=time&direction=give');
   });
 });
 

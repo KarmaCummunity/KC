@@ -1,41 +1,41 @@
-// Shared stack header for world screens (#1632): the app TopBar (chat, KC logo,
+// Shared stack header for world screens (#1632): the app TopBar (chat, admin portal,
 // notifications, settings) stays on every world screen and the screens inside it.
-// The back button and the screen title sit in a slim row that is part of the
-// same header, so back navigation keeps working. Layout uses logical
+// The screen title replaces the logo and the back button sits at the reading start, all in
+// the one TopBar row, so the header takes no extra height. Layout uses logical
 // start/end flow only, so it mirrors correctly in Hebrew (RTL) and English (LTR).
 import React from 'react';
-import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, useTheme } from '@kc/ui';
 import { TopBar } from '../components/TopBar';
 import { BackButton } from '../components/BackButton';
 
 export interface TopBarStackHeaderProps {
-  title?: string;
+  /** A plain title, or a node (e.g. a world's screens-menu button). */
+  title?: React.ReactNode;
   showBack: boolean;
   right?: React.ReactNode;
 }
 
+/** One row: the screen title sits in the TopBar in place of the logo, so it takes no extra height. */
 export function TopBarStackHeader({ title, showBack, right }: Readonly<TopBarStackHeaderProps>) {
   const styles = useStyles();
   const { colors } = useTheme();
   return (
     <SafeAreaView edges={['top']} style={styles.root} testID="topbar-stack-header">
-      <TopBar />
-      {showBack || title || right ? (
-        <View style={styles.row}>
-          <View style={styles.side}>{showBack ? <BackButton tintColor={colors.primary} /> : null}</View>
-          <Text style={styles.title} numberOfLines={1}>
-            {title ?? ''}
-          </Text>
-          <View style={[styles.side, styles.sideEnd]}>{right}</View>
-        </View>
-      ) : null}
+      <TopBar
+        title={title}
+        startIcon={showBack ? <BackButton tintColor={colors.primary} /> : null}
+        extraIcon={right}
+      />
     </SafeAreaView>
   );
 }
 
-type HeaderTitleOption = string | ((props: { children: string; tintColor?: string }) => React.ReactNode) | undefined;
+type HeaderTitleOption =
+  | string
+  | React.ReactElement
+  | ((props: { children: string; tintColor?: string }) => React.ReactNode)
+  | undefined;
 
 interface StackHeaderArgs {
   navigation: { canGoBack: () => boolean };
@@ -53,12 +53,25 @@ export function resolveStackHeaderTitle(options: StackHeaderArgs['options']): st
   return options.title;
 }
 
+/** Center slot for TopBar — string, element, or native-stack function title. */
+export function resolveTopBarCenterTitle(options: StackHeaderArgs['options']): React.ReactNode {
+  const { headerTitle } = options;
+  if (typeof headerTitle === 'function') {
+    return headerTitle({ children: resolveStackHeaderTitle(options) ?? '' });
+  }
+  if (typeof headerTitle === 'string') return headerTitle;
+  if (headerTitle !== undefined && headerTitle !== null) return headerTitle;
+  return resolveStackHeaderTitle(options);
+}
+
+export { stackOptionsForShellTopBarTitle } from './shellTopBarTitleOptions';
+
 /** `header` screen option: renders the shared TopBar header for a stack screen. */
 export function topBarStackHeader({ navigation, options }: StackHeaderArgs) {
   const canGoBack = navigation.canGoBack();
   return (
     <TopBarStackHeader
-      title={resolveStackHeaderTitle(options)}
+      title={resolveTopBarCenterTitle(options)}
       showBack={canGoBack}
       right={options.headerRight?.({ canGoBack })}
     />
@@ -73,19 +86,4 @@ export const topBarStackHeaderOptions = {
 
 const useStyles = makeUseStyles(({ colors }) => ({
   root: { backgroundColor: colors.surfaceCream },
-  row: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    paddingHorizontal: spacing.sm,
-    paddingBottom: spacing.xs,
-    minHeight: 40,
-  },
-  side: { minWidth: 44, flexDirection: 'row' as const, alignItems: 'center' as const },
-  sideEnd: { justifyContent: 'flex-end' as const },
-  title: {
-    ...typography.h4,
-    flex: 1,
-    textAlign: 'center' as const,
-    color: colors.textPrimary,
-  },
 }));

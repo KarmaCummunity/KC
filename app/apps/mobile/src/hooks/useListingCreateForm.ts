@@ -5,7 +5,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { localIsoDate, localTimeHHmm, rideDurationMinutes, validateListingDetails, withLeaveNowDeparture } from '@kc/domain';
+import {
+  hasInvalidRideHouseNumber,
+  localIsoDate,
+  localTimeHHmm,
+  rideDurationMinutes,
+  validateListingDetails,
+  withLeaveNowDeparture,
+  type RideHouseNumbers,
+} from '@kc/domain';
 import type { CreateDirection } from '../lib/unifiedCreate/createCategories';
 import { WORLDS_WITH_SUBCATEGORY_PICKER } from '../lib/unifiedCreate/createCategories';
 import { buildListingCreatePayload } from '../lib/unifiedCreate/unifiedCreatePayload';
@@ -18,15 +26,24 @@ import {
 } from '../lib/unifiedCreate/listingFieldSpecs';
 import { kindForCreate } from '../lib/unifiedCreate/orgEventCreate';
 import { marketplaceRuleFieldError, marketplaceServerErrorKey } from '../lib/marketplaceCreateErrors';
+import {
+  detailField,
+  fieldForHouseNumbers,
+  fieldForRule,
+  type ListingFormProblem,
+} from '../lib/unifiedCreate/listingFormProblem';
 import { marketplaceRepository } from '../services/marketplaceComposition';
 import { uploadListingImages, type PickedImage } from '../services/listingImageUpload';
 import { useAuthStore } from '../store/authStore';
 import { trackActivationIfFirst, trackCoreLoop } from '../lib/analyticsCoreLoop';
 import { rememberRideRoute } from '../lib/rides/rideStartDetails';
+import { afterRidePublished } from '../lib/rides/afterRidePublished';
 import { rideSeriesUseCases } from '../services/rideSeriesComposition';
-import { RIDE_CREATE_DETAIL_KEYS } from '../components/giving/RideCreateSection';
 import type { RideRecurrenceDraft } from '../components/giving/RideRecurrenceFields';
-import { useOrgEventChoice, type OrgEventChoice } from './useOrgEventChoice';
+import { useOrgEventChoice } from './useOrgEventChoice';
+import { pickRideDetails, rideAutoTitle, withEventOrg } from '../lib/unifiedCreate/listingCreateDetails';
+
+export { rideAutoTitle };
 
 /** Matching radius sent with every listing; the world rules refine reach server-side. */
 const DEFAULT_RADIUS_KM = 25;
@@ -34,37 +51,26 @@ const TITLE_MIN = 2;
 
 type City = { id: string; name: string };
 
-/** Rides have no title field (#1411): the title is built from the route, e.g. "Lod → Tel Aviv". */
-export function rideAutoTitle(
-  details: Readonly<Record<string, unknown>>,
-  format: (origin: string, dest: string) => string,
-): string {
-  const origin = typeof details.origin_label === 'string' ? details.origin_label.trim() : '';
-  const dest = typeof details.dest_label === 'string' ? details.dest_label.trim() : '';
-  return origin && dest ? format(origin, dest) : '';
-}
-
-/** An organization's event carries the organization it is published for (`details.org_id`). */
-function withEventOrg(details: Record<string, unknown>, choice: OrgEventChoice): Record<string, unknown> {
-  return choice.isOrgEvent && choice.orgId ? { ...details, org_id: choice.orgId } : details;
-}
-
-/** The ride route + schedule of `details` (empty for every other world). */
-function pickRideDetails(details: Readonly<Record<string, unknown>>): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const key of RIDE_CREATE_DETAIL_KEYS) if (key in details) out[key] = details[key];
-  return out;
-}
-
 interface Args {
   readonly worldSlug: string;
   readonly direction: CreateDirection;
   readonly title: string;
   readonly summary: string;
   readonly onPublished: (listingId: string) => void;
+  /** When set, the form loads this listing and saves via `updateMyListing` (G1 owner edit). */
+  readonly editListingId?: string | null;
+  readonly onSaved?: () => void;
 }
 
-export function useListingCreateForm({ worldSlug, direction, title, summary, onPublished }: Args) {
+export function useListingCreateForm({
+  worldSlug,
+  direction,
+  title,
+  summary,
+  onPublished,
+  editListingId = null,
+  onSaved,
+}: Args) {
   const { t } = useTranslation();
   const userId = useAuthStore((s) => s.session?.userId ?? null);
   const kindsQuery = useQuery({
@@ -72,6 +78,13 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
     queryFn: () => marketplaceRepository().listKindsForWorld(worldSlug),
     staleTime: 10 * 60_000, // kinds change only with a migration
   });
+  const editDetailQuery = useQuery({
+    queryKey: ['marketplace', 'detail', editListingId],
+    queryFn: () => marketplaceRepository().getListingDetail(editListingId!),
+    enabled: Boolean(editListingId),
+    staleTime: 60_000,
+  });
+  const editHydratedId = useRef<string | null>(null);
   const eventChoice = useOrgEventChoice(worldSlug, direction, kindsQuery.data ?? []);
   // The kind the member picked among several of this direction (animals, knowledge); a direction
   // switch or a kind that no longer applies falls back to the direction's default.
@@ -93,16 +106,35 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
   const [recurrence, setRecurrence] = useState<RideRecurrenceDraft | null>(null);
   // Rides only: "leave now" departs a few minutes after publishing, whenever that is (#1411).
   const [leaveNow, setLeaveNow] = useState(false);
+  const [originFromHere, setOriginFromHere] = useState(false);
+  // Rides only: private house numbers of street ends, never part of the public details (AC9).
+  const [houseNumbers, setHouseNumbers] = useState<RideHouseNumbers>({});
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ListingFormProblem | null>(null);
   const publishLock = useRef(false);
+
+  // The red outline goes away as soon as the member edits the form again.
+  useEffect(() => {
+    setError(null);
+  }, [title, details, city, recurrence, houseNumbers, eventChoice.orgId]);
 
   // A new kind (direction switch) starts from its own defaults. The ride route and schedule are
   // shared by both ride kinds, so they survive the switch (RideCreateSection keeps showing them).
   useEffect(() => {
+    if (editListingId) return;
     setDetails((prev) => ({ ...pickRideDetails(prev), ...initialDetailsFor(specs) }));
     setError(null);
-  }, [specs]);
+  }, [specs, editListingId]);
+
+  useEffect(() => {
+    const detail = editDetailQuery.data;
+    if (!editListingId || !detail || editHydratedId.current === detail.listingId) return;
+    editHydratedId.current = detail.listingId;
+    setDetails({ ...detail.details });
+    if (detail.cityId) setCity({ id: detail.cityId, name: '' });
+    setChosenKindSlug(detail.kindSlug);
+    setError(null);
+  }, [editListingId, editDetailQuery.data]);
 
   const setDetail = (key: string, value: unknown) => setDetails((prev) => ({ ...prev, [key]: value }));
   const isRides = worldSlug === 'rides';
@@ -112,19 +144,29 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
       t('post.unifiedCreate.categories.rides')
     : title.trim();
 
-  /** First problem the member can fix in the form, as user-facing copy; null when valid. */
-  const validate = (submitted: Record<string, unknown>): string | null => {
+  /** First problem the member can fix in the form, with the section it belongs to; null when valid. */
+  const validate = (submitted: Record<string, unknown>): ListingFormProblem | null => {
     // Rides have no title field: it is derived from the route (#1411).
-    if (!isRides && effectiveTitle.length < TITLE_MIN) return t('post.unifiedCreate.errors.titleRequired');
+    if (!isRides && effectiveTitle.length < TITLE_MIN) {
+      return { message: t('post.unifiedCreate.errors.titleRequired'), field: 'title' };
+    }
     const missing = firstMissingRequiredField(specs, details);
-    if (missing) return t('post.unifiedCreate.errors.fieldRequired', { field: t(`marketplace.field.${missing.key}`) });
-    if (eventChoice.isOrgEvent && !eventChoice.orgId) return t('eventPost.create.orgRequired');
-    if (!isRides && !city) return t('post.unifiedCreate.errors.cityRequired');
+    if (missing) {
+      const message = t('post.unifiedCreate.errors.fieldRequired', { field: t(`marketplace.field.${missing.key}`) });
+      return { message, field: detailField(missing.key) };
+    }
+    if (eventChoice.isOrgEvent && !eventChoice.orgId) return { message: t('eventPost.create.orgRequired'), field: 'org' };
+    if (!isRides && !city) return { message: t('post.unifiedCreate.errors.cityRequired'), field: 'city' };
     const rule = marketplaceRuleFieldError({ worldSlug, direction, details: submitted, photoCount: photos.length });
-    if (rule) return t(rule.key);
-    if (isRides && recurrence && recurrence.weekdays.length === 0) return t('rideSeries.errors.weekdaysRequired');
+    if (rule) return { message: t(rule.key), field: fieldForRule(rule.code, submitted) };
+    if (isRides && recurrence && recurrence.weekdays.length === 0) {
+      return { message: t('rideSeries.errors.weekdaysRequired'), field: 'ride:recurrence' };
+    }
+    if (isRides && !recurrence && hasInvalidRideHouseNumber(houseNumbers)) {
+      return { message: t('ridePlaces.houseNumberInvalid'), field: fieldForHouseNumbers(houseNumbers) };
+    }
     const schemaErr = kind ? validateListingDetails(kind.detailSchema, submitted) : null;
-    return schemaErr ? t('marketplace.validationFailed', { code: schemaErr }) : null;
+    return schemaErr ? { message: t('marketplace.validationFailed', { code: schemaErr }), field: null } : null;
   };
 
   /** A recurring ride: the series the server materializes, from the form's ride details. */
@@ -150,7 +192,8 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
 
   const publish = async () => {
     if (!userId || !kind || busy || publishLock.current) return;
-    const timed = isRides && leaveNow ? withLeaveNowDeparture(details, new Date()) : details;
+    if (editListingId && editDetailQuery.isLoading) return;
+    const timed = isRides && !editListingId && leaveNow ? withLeaveNowDeparture(details, new Date()) : details;
     const submitted = withEventOrg(detailsForSubmit(specs, timed), eventChoice);
     const problem = validate(submitted);
     setError(problem);
@@ -158,6 +201,16 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
     publishLock.current = true;
     setBusy(true);
     try {
+      if (editListingId) {
+        await marketplaceRepository().updateMyListing(editListingId, {
+          title: effectiveTitle,
+          summary: summary.trim() || null,
+          details: submitted,
+          cityId: isRides ? null : city?.id ?? null,
+        });
+        onSaved?.();
+        return;
+      }
       if (isRides && recurrence) {
         const firstId = await publishSeries(submitted, recurrence);
         trackCoreLoop('listing_created', { world: worldSlug, cityId: null });
@@ -190,11 +243,13 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
         cityId: city?.id ?? null,
         accountCreatedAt: useAuthStore.getState().session?.accountCreatedAt,
       });
-      // The next ride from this device starts from this route (D75).
-      if (isRides) void rememberRideRoute(submitted);
+      if (isRides) {
+        const flags = { isOffer: direction === 'give', originFromHere, leaveNow, recurring: false };
+        await afterRidePublished(id, submitted, houseNumbers, flags);
+      }
       onPublished(id);
     } catch (err) {
-      setError(t(marketplaceServerErrorKey(err)));
+      setError({ message: t(marketplaceServerErrorKey(err)), field: null });
     } finally {
       publishLock.current = false;
       setBusy(false);
@@ -227,12 +282,17 @@ export function useListingCreateForm({ worldSlug, direction, title, summary, onP
     setRecurrence,
     leaveNow,
     setLeaveNow,
+    setOriginFromHere,
+    houseNumbers,
+    setHouseNumbers,
     eventChoice,
     showSubcategory,
     isRides,
     busy,
     error,
     publish,
-    canPublish: Boolean(userId && kind) && !busy,
+    canPublish: Boolean(userId && kind) && !busy && !(editListingId && editDetailQuery.isLoading),
+    isEdit: Boolean(editListingId),
+    editLoading: Boolean(editListingId && editDetailQuery.isLoading),
   };
 }

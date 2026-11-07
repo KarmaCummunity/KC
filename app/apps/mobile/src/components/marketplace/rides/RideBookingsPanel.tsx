@@ -5,8 +5,9 @@ import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { Text, typography } from '@kc/ui';
-import { canApproveRideBooking, summarizeRideSeats } from '@kc/domain';
+import { Ionicons } from '@expo/vector-icons';
+import { iconSize, Text, useTheme } from '@kc/ui';
+import { canApproveRideBooking, canReinstateRideBooking, summarizeRideSeats } from '@kc/domain';
 import { useAuthStore } from '../../../store/authStore';
 import { givingHandoffUseCases } from '../../../services/givingHandoffComposition';
 import {
@@ -18,7 +19,9 @@ import { RideBookingRow, type RideBookingRowActions } from './RideBookingRow';
 import { HandoffActionButton } from '../HandoffActionButton';
 import { confirmAction } from '../../../services/platformConfirm';
 import { useRideBookingAction } from './useRideBookingAction';
-import { useRideBookingStyles } from './rideBookingStyles';
+import { useRideBookingsPanelStyles } from './rideBookingsPanelStyles';
+import { RideSeatsMeter } from './RideSeatsMeter';
+import { OwnerAssignUserButton } from '../../closure/OwnerAssignUserButton';
 
 interface Props {
   readonly listingId: string;
@@ -27,12 +30,22 @@ interface Props {
   readonly capacity: number;
   readonly listingStatus: string;
   readonly departsAt: string | null;
+  /** Post detail docks assign in the bottom chrome instead of this panel. */
+  readonly hideOwnerAssign?: boolean;
 }
 
-export function RideBookingsPanel({ listingId, cityId, capacity, listingStatus, departsAt }: Props) {
+export function RideBookingsPanel({
+  listingId,
+  cityId,
+  capacity,
+  listingStatus,
+  departsAt,
+  hideOwnerAssign = false,
+}: Props) {
   const { t } = useTranslation();
   const router = useRouter();
-  const styles = useRideBookingStyles();
+  const { colors } = useTheme();
+  const styles = useRideBookingsPanelStyles();
   const viewerId = useAuthStore((s) => s.session?.userId ?? null);
   const { busy, run } = useRideBookingAction(listingId, cityId);
   const bookings = useQuery({
@@ -42,6 +55,7 @@ export function RideBookingsPanel({ listingId, cityId, capacity, listingStatus, 
 
   const list = bookings.data ?? [];
   const seats = summarizeRideSeats(capacity, list);
+  const hasReinstatable = list.some((b) => canReinstateRideBooking(b));
   const canFinishRide = listingStatus === 'open'
     && departsAt !== null
     && Number.isFinite(Date.parse(departsAt))
@@ -76,16 +90,32 @@ export function RideBookingsPanel({ listingId, cityId, capacity, listingStatus, 
         alert(t('givingHandoff.ratingThanks'));
       }),
     chat: (recipientId) => void onChat(recipientId),
+    reinstate: (id) =>
+      void run(
+        () => rideBookingUseCases.reinstate().execute(id, { bookings: list }),
+        'match_made',
+      ),
   };
 
   return (
-    <View style={styles.box} testID="ride-bookings-panel">
-      <Text style={typography.h3}>{t('rideBooking.driverTitle')}</Text>
-      <Text style={styles.caption} testID="ride-bookings-seats">
-        {t('rideBooking.seatSummary', { free: seats.free, capacity: seats.capacity })}
-      </Text>
+    <View style={styles.card} testID="ride-bookings-panel">
+      <View style={styles.header}>
+        <View style={styles.headerIcon}>
+          <Ionicons name="people" size={iconSize.md} color={colors.primary} />
+        </View>
+        <View style={styles.headerText}>
+          <Text style={styles.title}>{t('rideBooking.driverTitle')}</Text>
+          <Text style={styles.caption} testID="ride-bookings-seats">
+            {t('rideBooking.seatSummary', { free: seats.free, capacity: seats.capacity })}
+          </Text>
+        </View>
+      </View>
+      <RideSeatsMeter seats={seats} />
       {seats.waiting > 0 ? (
-        <Text style={styles.caption}>{t('rideBooking.waitingSummary', { count: seats.waiting })}</Text>
+        <View style={styles.notice}>
+          <Ionicons name="time-outline" size={iconSize.sm} color={colors.textPrimary} />
+          <Text style={styles.noticeText}>{t('rideBooking.waitingSummary', { count: seats.waiting })}</Text>
+        </View>
       ) : null}
       {canFinishRide ? <HandoffActionButton
         testID="ride-complete-listing"
@@ -99,19 +129,33 @@ export function RideBookingsPanel({ listingId, cityId, capacity, listingStatus, 
           <Text style={styles.caption}>{t('rideBooking.loadError')}</Text>
         </Pressable>
       ) : null}
+      {hasReinstatable ? (
+        <Text style={styles.caption} testID="ride-bookings-reinstate-hint">{t('rideBooking.reinstateHint')}</Text>
+      ) : null}
       {bookings.isSuccess && list.length === 0 ? (
-        <Text style={styles.caption} testID="ride-bookings-empty">{t('rideBooking.empty')}</Text>
+        <View style={styles.empty} testID="ride-bookings-empty">
+          <Ionicons name="person-add-outline" size={iconSize.lg} color={colors.textDisabled} />
+          <Text style={styles.emptyText}>{t('rideBooking.empty')}</Text>
+        </View>
+      ) : null}
+      {listingStatus === 'open' && !hideOwnerAssign ? (
+        <OwnerAssignUserButton targetId={listingId} worldSlug="rides" />
       ) : null}
 
-      {list.map((booking) => (
-        <RideBookingRow
-          key={booking.handoffId}
-          booking={booking}
-          busy={busy}
-          actions={actions}
-          canApprove={canApproveRideBooking(capacity, list, booking)}
-        />
-      ))}
+      {list.length > 0 ? (
+        <View style={styles.list}>
+          {list.map((booking) => (
+            <RideBookingRow
+              key={booking.handoffId}
+              booking={booking}
+              busy={busy}
+              actions={actions}
+              canApprove={canApproveRideBooking(capacity, list, booking)}
+              canReinstate={canReinstateRideBooking(booking)}
+            />
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }

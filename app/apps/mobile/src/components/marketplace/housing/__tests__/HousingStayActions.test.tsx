@@ -3,6 +3,8 @@
 // with their actions, a guest sees the request form; the request waits for valid input and for
 // the code of conduct before it reaches the server.
 import { afterEach, describe, expect, it, vi } from 'vitest';
+vi.mock('../../../StreetPicker', () => ({ StreetPicker: () => null }));
+vi.mock('../../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarVisibility: () => false, shellTabBarHeightPx: () => 0, useShellTabBarScrollInset: () => 0 }));
 import React from 'react';
 import { act, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -20,6 +22,7 @@ vi.mock('../../../../services/platformConfirm', () => ({ confirmAction: vi.fn(as
 vi.mock('../../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 vi.mock('../../../../lib/haptics', () => ({ hapticSuccess: () => undefined }));
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('../../../closure/OwnerAssignUserButton', () => ({ OwnerAssignUserButton: () => null }));
 
 const state = vi.hoisted(() => ({ userId: 'u_guest' as string | null }));
 vi.mock('../../../../store/authStore', () => ({

@@ -23,7 +23,7 @@ begin
   if to_regprocedure('public.find_ride_listing_matches(double precision,double precision,double precision,double precision,timestamptz,timestamptz,double precision,int)') is null then
     raise exception 'find_ride_listing_matches missing';
   end if;
-  if to_regprocedure('public.book_ride_seat(uuid,int)') is null then
+  if to_regprocedure('public.book_ride_seat(uuid,int,jsonb)') is null then
     raise exception 'book_ride_seat missing';
   end if;
   if to_regprocedure('public.complete_ride_trip(uuid)') is null then

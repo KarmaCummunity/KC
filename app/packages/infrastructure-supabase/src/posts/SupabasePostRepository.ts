@@ -33,9 +33,12 @@ import {
   republishPost as republishPostHelper,
   getClosureCandidates as getClosureCandidatesHelper,
 } from './closureMethods';
+import { ownerCompleteOffer as ownerCompleteOfferRpc } from './ownerCompleteOfferRpc';
 import { executePostUpdate } from './executePostUpdate';
 import { getProfileClosedPostsHelper } from './getProfileClosedPostsHelper';
 import { applyPostActorIdentityProjectionBatch } from './applyPostActorIdentityProjection';
+import { dropOrphanDeletedOwnerPosts } from './dropOrphanDeletedOwnerPosts';
+import { hydrateFeedPostOwners } from './hydrateFeedPostOwners';
 import {
   listPostActorIdentitiesForPost,
   upsertPostActorIdentityRow,
@@ -81,7 +84,14 @@ export class SupabasePostRepository implements IPostRepository {
     const hasMore = rows.length > safeLimit;
     const page = hasMore ? rows.slice(0, safeLimit) : rows;
     const posts = page.map(mapPostWithOwnerRow);
-    const projected = await applyPostActorIdentityProjectionBatch(this.client, posts, viewerId);
+    const projected = dropOrphanDeletedOwnerPosts(
+      await applyPostActorIdentityProjectionBatch(
+        this.client,
+        await hydrateFeedPostOwners(this.client, posts),
+        viewerId,
+      ),
+      viewerId,
+    );
     const last = projected[projected.length - 1];
     const nextCursor = hasMore && last ? encodeCursor({ createdAt: last.createdAt, postId: last.postId }) : null;
     return { posts: projected, nextCursor };
@@ -208,6 +218,13 @@ export class SupabasePostRepository implements IPostRepository {
   close(postId: string, recipientUserId: string | null): Promise<Post> {
     return closePostHelper(this.client, postId, recipientUserId);
   }
+  ownerCompleteOffer(
+    targetId: string,
+    recipientUserId: string | null,
+    mode: 'assign' | 'close_without',
+  ): Promise<{ closed: boolean }> {
+    return ownerCompleteOfferRpc(this.client, targetId, recipientUserId, mode);
+  }
   reopen(postId: string): Promise<Post> {
     return reopenPostHelper(this.client, postId);
   }
@@ -230,16 +247,9 @@ export class SupabasePostRepository implements IPostRepository {
     cursor?: string,
     visibility?: PostVisibility,
     excludeVisibility?: PostVisibility,
+    profileOpenLinks?: Parameters<typeof getMyPostsPage>[7],
   ): Promise<{ posts: Post[]; nextCursor: string | null }> {
-    return getMyPostsPage(
-      this.client,
-      userId,
-      status,
-      limit,
-      cursor,
-      visibility,
-      excludeVisibility,
-    );
+    return getMyPostsPage(this.client, userId, status, limit, cursor, visibility, excludeVisibility, profileOpenLinks);
   }
 
   // ── Profile closed posts (publisher ∪ respondent) ────────────────────────
@@ -250,14 +260,7 @@ export class SupabasePostRepository implements IPostRepository {
     cursor?: string,
     listMode?: ProfileClosedPostsListMode,
   ): Promise<ProfileClosedPostsItem[]> {
-    return getProfileClosedPostsHelper(
-      this.client,
-      profileUserId,
-      viewerUserId,
-      limit,
-      cursor,
-      listMode ?? 'standard',
-    );
+    return getProfileClosedPostsHelper(this.client, profileUserId, viewerUserId, limit, cursor, listMode ?? 'standard');
   }
 
   async listPostActorIdentities(postId: string): Promise<PostActorIdentityRow[]> {

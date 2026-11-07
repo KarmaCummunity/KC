@@ -983,6 +983,7 @@ export type Database = {
           goal_value: number | null
           measurement: string
           participants_count: number
+          post_id: string | null
           scope: string
           status: string
           target_cycles: number | null
@@ -1002,6 +1003,7 @@ export type Database = {
           goal_value?: number | null
           measurement: string
           participants_count?: number
+          post_id?: string | null
           scope: string
           status?: string
           target_cycles?: number | null
@@ -1021,6 +1023,7 @@ export type Database = {
           goal_value?: number | null
           measurement?: string
           participants_count?: number
+          post_id?: string | null
           scope?: string
           status?: string
           target_cycles?: number | null
@@ -1049,6 +1052,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users_public"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "challenges_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "challenges_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
           },
         ]
       }
@@ -3320,6 +3337,36 @@ export type Database = {
           created_at?: string
           password_hash?: string | null
           singleton?: boolean
+        }
+        Relationships: []
+      }
+      kc_dev_demo_operation_state: {
+        Row: {
+          actor_id: string | null
+          aux: Json
+          operation: string
+          phase: string
+          singleton: boolean
+          started_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          actor_id?: string | null
+          aux?: Json
+          operation?: string
+          phase?: string
+          singleton?: boolean
+          started_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actor_id?: string | null
+          aux?: Json
+          operation?: string
+          phase?: string
+          singleton?: boolean
+          started_at?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -5923,6 +5970,53 @@ export type Database = {
           },
         ]
       }
+      post_comment_reactions: {
+        Row: {
+          comment_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comment_reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "post_comments"
+            referencedColumns: ["comment_id"]
+          },
+          {
+            foreignKeyName: "post_comment_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_comment_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_comment_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       post_comments: {
         Row: {
           author_id: string
@@ -6056,6 +6150,7 @@ export type Database = {
           pickup_window_start: string | null
           post_id: string
           recipient_id: string
+          requested_meeting_point: Json | null
           reserved_at: string
           seats: number
           slot_ends_at: string | null
@@ -6077,6 +6172,7 @@ export type Database = {
           pickup_window_start?: string | null
           post_id: string
           recipient_id: string
+          requested_meeting_point?: Json | null
           reserved_at?: string
           seats?: number
           slot_ends_at?: string | null
@@ -6098,6 +6194,7 @@ export type Database = {
           pickup_window_start?: string | null
           post_id?: string
           recipient_id?: string
+          requested_meeting_point?: Json | null
           reserved_at?: string
           seats?: number
           slot_ends_at?: string | null
@@ -7137,6 +7234,42 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users_public"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      ride_listing_house_numbers: {
+        Row: {
+          house_number: string
+          listing_id: string
+          place_end: string
+          updated_at: string
+        }
+        Insert: {
+          house_number: string
+          listing_id: string
+          place_end: string
+          updated_at?: string
+        }
+        Update: {
+          house_number?: string
+          listing_id?: string
+          place_end?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_listing_house_numbers_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "ride_listing_house_numbers_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
           },
         ]
       }
@@ -8931,6 +9064,7 @@ export type Database = {
           status_before_deletion: string | null
           updated_at: string
           user_id: string
+          verification_level: number
           verification_method: string | null
           verified_at: string | null
           volunteer_hours_total: number
@@ -8978,6 +9112,7 @@ export type Database = {
           status_before_deletion?: string | null
           updated_at?: string
           user_id: string
+          verification_level?: number
           verification_method?: string | null
           verified_at?: string | null
           volunteer_hours_total?: number
@@ -9025,6 +9160,7 @@ export type Database = {
           status_before_deletion?: string | null
           updated_at?: string
           user_id?: string
+          verification_level?: number
           verification_method?: string | null
           verified_at?: string | null
           volunteer_hours_total?: number
@@ -10181,6 +10317,7 @@ export type Database = {
           share_handle: string | null
           updated_at: string | null
           user_id: string | null
+          verification_level: number | null
         }
         Insert: {
           account_status?: string | null
@@ -10204,6 +10341,7 @@ export type Database = {
           share_handle?: string | null
           updated_at?: string | null
           user_id?: string | null
+          verification_level?: number | null
         }
         Update: {
           account_status?: string | null
@@ -10227,6 +10365,7 @@ export type Database = {
           share_handle?: string | null
           updated_at?: string | null
           user_id?: string | null
+          verification_level?: number | null
         }
         Relationships: [
           {
@@ -10597,6 +10736,10 @@ export type Database = {
         }[]
       }
       admin_seed_demo_data: { Args: { p_password?: string }; Returns: Json }
+      admin_seed_demo_data_step: {
+        Args: { p_password?: string }
+        Returns: Json
+      }
       admin_set_external_body_status: {
         Args: {
           p_body_id: string
@@ -10720,6 +10863,7 @@ export type Database = {
         Returns: Json
       }
       admin_wipe_demo_data: { Args: never; Returns: Json }
+      admin_wipe_demo_data_step: { Args: never; Returns: Json }
       admin_world_flow_funnel: {
         Args: { p_days?: number }
         Returns: {
@@ -11128,7 +11272,11 @@ export type Database = {
         }
       }
       book_ride_seat: {
-        Args: { p_listing_id: string; p_seats?: number }
+        Args: {
+          p_listing_id: string
+          p_requested_meeting_point?: Json
+          p_seats?: number
+        }
         Returns: {
           cancel_reason: string | null
           cancelled_at: string | null
@@ -11221,6 +11369,7 @@ export type Database = {
           pickup_window_start: string | null
           post_id: string
           recipient_id: string
+          requested_meeting_point: Json | null
           reserved_at: string
           seats: number
           slot_ends_at: string | null
@@ -11833,6 +11982,7 @@ export type Database = {
           pickup_window_start: string | null
           post_id: string
           recipient_id: string
+          requested_meeting_point: Json | null
           reserved_at: string
           seats: number
           slot_ends_at: string | null
@@ -11910,6 +12060,8 @@ export type Database = {
       delete_account_data: { Args: never; Returns: Json }
       delete_account_data_for: { Args: { p_user_id: string }; Returns: Json }
       delete_my_listing: { Args: { p_listing_id: string }; Returns: undefined }
+      dev_grant_mock_identity_verification: { Args: never; Returns: undefined }
+      dev_mock_identity_verification_allowed: { Args: never; Returns: boolean }
       drop_feed_impressions_partitions_older_than: {
         Args: { p_retention?: string }
         Returns: number
@@ -11989,6 +12141,7 @@ export type Database = {
           pickup_window_start: string | null
           post_id: string
           recipient_id: string
+          requested_meeting_point: Json | null
           reserved_at: string
           seats: number
           slot_ends_at: string | null
@@ -12255,6 +12408,13 @@ export type Database = {
         }[]
       }
       get_public_research_questions: { Args: { p_slug: string }; Returns: Json }
+      get_ride_house_numbers: {
+        Args: { p_listing_id: string }
+        Returns: {
+          house_number: string
+          place_end: string
+        }[]
+      }
       get_survey_bundle: { Args: { p_slug: string }; Returns: Json }
       get_volunteer_opportunity_detail: {
         Args: { p_opportunity_id: string }
@@ -12444,7 +12604,10 @@ export type Database = {
       }
       is_private_profile: { Args: { p_user_id: string }; Returns: boolean }
       is_pro: { Args: { p_user_id: string }; Returns: boolean }
-      join_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
+      join_challenge: {
+        Args: { p_challenge_id: string; p_show_on_profile?: boolean }
+        Returns: undefined
+      }
       karma_apply: {
         Args: {
           p_delta: number
@@ -12487,17 +12650,58 @@ export type Database = {
         }[]
       }
       karma_value_bonus: { Args: { p_value: number }; Returns: number }
+      kc_dev_attach_demo_matches_for_active_users: {
+        Args: { p_per_user?: number }
+        Returns: number
+      }
       kc_dev_cleanup_e2e_listings: {
         Args: { p_min_age?: string }
         Returns: Json
       }
       kc_dev_is_e2e_title: { Args: { p_title: string }; Returns: boolean }
       kc_dev_is_seeded: { Args: never; Returns: boolean }
+      kc_dev_seed_advance_phase: {
+        Args: { p_password_hash?: string }
+        Returns: Json
+      }
+      kc_dev_seed_build_result: { Args: { p_aux: Json }; Returns: Json }
       kc_dev_seed_demo_data: {
         Args: { p_password_hash: string }
         Returns: Json
       }
+      kc_dev_seed_demo_match_candidates: { Args: never; Returns: number }
+      kc_dev_seed_demo_world_content: { Args: never; Returns: Json }
+      kc_dev_seed_phase_items: { Args: never; Returns: undefined }
+      kc_dev_seed_phase_orgs: { Args: never; Returns: undefined }
+      kc_dev_seed_phase_social: { Args: never; Returns: undefined }
+      kc_dev_seed_phase_users: {
+        Args: { p_password_hash: string }
+        Returns: undefined
+      }
+      kc_dev_seed_with_caps_off: {
+        Args: { p_hash: string; p_phase: string }
+        Returns: Json
+      }
+      kc_dev_wipe_advance_phase: { Args: never; Returns: Json }
+      kc_dev_wipe_content_slice: {
+        Args: { p_ids: string[]; p_step: string }
+        Returns: Json
+      }
+      kc_dev_wipe_delete_limited: {
+        Args: { p_ids: string[]; p_limit: number; p_step: string }
+        Returns: Json
+      }
       kc_dev_wipe_demo_data: { Args: never; Returns: Json }
+      kc_dev_wipe_demo_data_accounts: {
+        Args: { p_seed_ids: string[] }
+        Returns: Json
+      }
+      kc_dev_wipe_demo_data_content: {
+        Args: { p_seed_ids: string[] }
+        Returns: undefined
+      }
+      kc_dev_wipe_demo_seed_ids: { Args: never; Returns: string[] }
+      kc_dev_wipe_next_step: { Args: { p_step: string }; Returns: string }
       knowledge_normalize_text: { Args: { p: string }; Returns: string }
       knowledge_topic_merge: {
         Args: { p_into: string; p_topic_id: string }
@@ -12669,6 +12873,7 @@ export type Database = {
         Returns: {
           availability_status: string
           direction: string
+          feed_post_id: string
           kind_slug: string
           listing_id: string
           status: string
@@ -12752,11 +12957,13 @@ export type Database = {
         Args: { p_listing_id: string }
         Returns: {
           avatar_url: string
+          cancel_reason: string
           confirm_by: string
           handoff_id: string
           passenger_name: string
           rated_by_me: boolean
           recipient_id: string
+          requested_stop_label: string
           reserved_at: string
           seats: number
           status: string
@@ -13034,6 +13241,7 @@ export type Database = {
           pickup_window_start: string | null
           post_id: string
           recipient_id: string
+          requested_meeting_point: Json | null
           reserved_at: string
           seats: number
           slot_ends_at: string | null
@@ -13266,6 +13474,18 @@ export type Database = {
         Args: { p_message: string; p_shift_id: string }
         Returns: number
       }
+      owner_complete_offer_with_user: {
+        Args: { p_mode?: string; p_recipient_id?: string; p_target: string }
+        Returns: Json
+      }
+      owner_offer_set_status: {
+        Args: {
+          p_listing: Database["public"]["Tables"]["listings"]["Row"]
+          p_post: Database["public"]["Tables"]["posts"]["Row"]
+          p_status: string
+        }
+        Returns: undefined
+      }
       participant_closed_surface_visible: {
         Args: {
           p_actor: string
@@ -13381,6 +13601,13 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      post_muted_by_feed_filters: {
+        Args: {
+          p_post: Database["public"]["Tables"]["posts"]["Row"]
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       post_owns_listing: {
         Args: { p_post: Database["public"]["Tables"]["posts"]["Row"] }
         Returns: boolean
@@ -13431,6 +13658,14 @@ export type Database = {
           p_viewer_user_id: string
         }
         Returns: number
+      }
+      profile_open_challenge_post_ids: {
+        Args: {
+          p_list_mode?: string
+          p_profile_user_id: string
+          p_viewer_user_id: string
+        }
+        Returns: string[]
       }
       propose_knowledge_topic: {
         Args: {
@@ -13543,6 +13778,7 @@ export type Database = {
           pickup_window_start: string | null
           post_id: string
           recipient_id: string
+          requested_meeting_point: Json | null
           reserved_at: string
           seats: number
           slot_ends_at: string | null
@@ -13553,6 +13789,36 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "post_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      reinstate_ride_booking: {
+        Args: { p_handoff_id: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          listing_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "giving_handoffs"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -14023,6 +14289,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      ride_post_append_meeting_point: {
+        Args: { p_place: Json; p_post_id: string }
+        Returns: undefined
+      }
       ride_post_details_upsert: {
         Args: { p_details: Json; p_post_id: string }
         Returns: undefined
@@ -14257,6 +14527,7 @@ export type Database = {
           score: number
           share_handle: string
           user_id: string
+          verification_level: number
         }[]
       }
       rpc_get_or_create_support_thread: {
@@ -14730,6 +15001,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      rpc_set_post_comment_like: {
+        Args: { p_comment_id: string; p_liked: boolean }
+        Returns: boolean
+      }
       rpc_set_post_reaction: {
         Args: { p_post_id: string; p_reaction_type: string }
         Returns: {
@@ -14932,6 +15207,10 @@ export type Database = {
         Args: { p_listing_id: string; p_world_slugs: string[] }
         Returns: undefined
       }
+      set_ride_house_numbers: {
+        Args: { p_dest?: string; p_listing_id: string; p_origin?: string }
+        Returns: undefined
+      }
       set_ride_series_status: {
         Args: { p_series_id: string; p_status: string }
         Returns: undefined
@@ -15127,6 +15406,7 @@ export type Database = {
         Args: { p_day: string; p_user_id: string }
         Returns: number
       }
+      user_verification_level: { Args: { uid: string }; Returns: number }
       users_get_self_private_fields: { Args: never; Returns: Json }
       users_merge_notification_preferences: {
         Args: { p_merge: Json; p_user_id: string }
@@ -15135,6 +15415,10 @@ export type Database = {
       validate_listing_details: {
         Args: { p_details: Json; p_kind_id: string }
         Returns: boolean
+      }
+      verification_level_of: {
+        Args: { u: Database["public"]["Tables"]["users"]["Row"] }
+        Returns: number
       }
       visibility_to_anonymity_level: {
         Args: { p_visibility: string }

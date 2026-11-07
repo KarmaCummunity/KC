@@ -14,6 +14,9 @@ import { handoffErrorKey } from '../../lib/marketplaceCreateErrors';
 import { HandoffRatingForm } from './HandoffRatingForm';
 import { HandoffActionButton } from './HandoffActionButton';
 import { HANDOFF_WORLDS } from './listingFlow';
+import { OwnerAssignUserButton } from '../closure/OwnerAssignUserButton';
+
+const OWNER_ASSIGN_WORLDS = ['items', 'food', 'animals'];
 
 const useStyles = makeUseStyles(({ colors }) => ({
   box: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceRaised },
@@ -41,7 +44,9 @@ export function GivingHandoffActions({ detail }: Props) {
   // Rides manage many bookings per offer — see rides/RideBookingActions (D73).
   if (!HANDOFF_WORLDS.includes(detail.worldSlug)) return null;
   if (!userId) return null;
-  if (detail.ownerId === userId && !handoff.data) return null;
+  if (detail.ownerId === userId && !handoff.data && !OWNER_ASSIGN_WORLDS.includes(detail.worldSlug)) return null;
+  // The post detail screen docks the same assign action in the bottom chrome.
+  if (detail.ownerId === userId && !handoff.data && detail.feedPostId) return null;
 
   const invalidate = async () => {
     await qc.invalidateQueries({ queryKey: ['giving-handoff', detail.listingId] });
@@ -102,7 +107,11 @@ export function GivingHandoffActions({ detail }: Props) {
         </Text>
       ) : null}
 
-      {!h && isAvailableForRequest && detail.worldSlug === 'items' && !isOwner ? (
+      {isOwner && !h && !detail.feedPostId ? (
+        <OwnerAssignUserButton targetId={detail.feedPostId ?? detail.listingId} worldSlug={detail.worldSlug} />
+      ) : null}
+
+      {!h && isAvailableForRequest && (detail.worldSlug === 'items' || detail.worldSlug === 'animals') && !isOwner ? (
         <>
           <HandoffActionButton
             testID="giving-handoff-reserve"
@@ -110,13 +119,15 @@ export function GivingHandoffActions({ detail }: Props) {
             busy={busy}
             onPress={() => run(async () => { await givingHandoffUseCases.reserveItem().execute(detail.listingId, 'pickup'); }, 'match_made')}
           />
-          <HandoffActionButton
-            testID="giving-handoff-reserve-delivery"
-            label={t('givingHandoff.reserveDelivery')}
-            busy={busy}
-            secondary
-            onPress={() => run(async () => { await givingHandoffUseCases.reserveItem().execute(detail.listingId, 'delivery'); }, 'match_made')}
-          />
+          {detail.worldSlug === 'items' ? (
+            <HandoffActionButton
+              testID="giving-handoff-reserve-delivery"
+              label={t('givingHandoff.reserveDelivery')}
+              busy={busy}
+              secondary
+              onPress={() => run(async () => { await givingHandoffUseCases.reserveItem().execute(detail.listingId, 'delivery'); }, 'match_made')}
+            />
+          ) : null}
         </>
       ) : null}
 

@@ -50,6 +50,13 @@ describe('feedCardCategory', () => {
     expect(feedCardCategory({ category: 'Other', type: 'Request', listingWorldSlug: null }).icon).toBe('hand-left-outline');
   });
 
+  it('shows the challenges world on a challenge post', () => {
+    expect(feedCardCategory({ category: 'Other', type: 'Give', listingWorldSlug: 'challenges' })).toEqual({
+      chipKey: 'post.unifiedCreate.categories.challenges',
+      icon: 'trophy-outline',
+    });
+  });
+
   it('treats a manual share from a world outside the create form like an ordinary post', () => {
     expect(feedCardCategory({ category: 'Other', type: 'Give', listingWorldSlug: 'money' })).toEqual({
       chipKey: 'post.category.Other',

@@ -1,6 +1,7 @@
 // #1632: every world stack keeps the shared TopBar (KC logo) in its header.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../components/TopBar', () => ({ TopBar: () => null }));
@@ -14,7 +15,12 @@ vi.mock('@kc/ui', () => ({
   Text: () => null,
 }));
 
-import { resolveStackHeaderTitle, topBarStackHeaderOptions } from '../TopBarStackHeader';
+import {
+  resolveStackHeaderTitle,
+  resolveTopBarCenterTitle,
+  stackOptionsForShellTopBarTitle,
+  topBarStackHeaderOptions,
+} from '../TopBarStackHeader';
 
 const donationsDir = join(__dirname, '../../../app/(tabs)/donations');
 const read = (rel: string) => readFileSync(join(donationsDir, rel), 'utf8');
@@ -24,6 +30,30 @@ describe('TopBar stack header (#1632)', () => {
     expect(resolveStackHeaderTitle({ headerTitle: 'Rides' })).toBe('Rides');
     expect(resolveStackHeaderTitle({ headerTitle: () => null, title: 'T' })).toBe('T');
     expect(resolveStackHeaderTitle({})).toBeUndefined();
+  });
+
+  it('resolveTopBarCenterTitle prefers function and element slots over plain title', () => {
+    expect(resolveTopBarCenterTitle({ headerTitle: 'Food' })).toBe('Food');
+    expect(
+      resolveTopBarCenterTitle({
+        headerTitle: ({ children }) => `fn:${children}`,
+        title: 'ignored',
+      }),
+    ).toBe('fn:ignored');
+    const node = { type: 'span', props: {} } as unknown as React.ReactElement;
+    expect(resolveTopBarCenterTitle({ headerTitle: node, title: 'x' })).toBe(node);
+  });
+
+  it('stackOptionsForShellTopBarTitle maps strings vs custom nodes', () => {
+    expect(stackOptionsForShellTopBarTitle('הגדרות')).toEqual({
+      title: 'הגדרות',
+      headerTitle: 'הגדרות',
+    });
+    const menu = { type: 'button' } as unknown as React.ReactElement;
+    const opts = stackOptionsForShellTopBarTitle(menu);
+    expect(opts.title).toBe('');
+    expect(typeof opts.headerTitle).toBe('function');
+    expect((opts.headerTitle as () => unknown)()).toBe(menu);
   });
 
   it('options turn the header on with the shared renderer', () => {

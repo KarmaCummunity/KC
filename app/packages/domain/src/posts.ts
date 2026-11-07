@@ -52,6 +52,10 @@ export interface Post {
   readonly listingId: string | null;
   /** Giving world of that listing (`rides`, `housing`…), set exactly when `listingId` is (FR-FEED-020). */
   readonly listingWorldSlug: string | null;
+  /** Set when this post is a challenge (docs/spec/10). Opens the challenge, not the generic post. */
+  readonly challengeId?: string | null;
+  /** Approximate map position (~100 m): the post's own point, else its city's centre; null = unknown. */
+  readonly mapPoint?: { readonly lat: number; readonly lng: number } | null;
   readonly createdAt: string;
   updatedAt: string;
   /** FR-TRANSLATE — detected BCP-47 source language of title/description; null = not yet detected. */

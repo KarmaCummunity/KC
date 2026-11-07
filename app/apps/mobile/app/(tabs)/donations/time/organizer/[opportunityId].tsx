@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../../../../../src/components/ui/Screen';
+import { TimeWorldSubScreenChrome } from '../../../../../src/components/giving/TimeWorldSubScreenChrome';
 import { TextField } from '../../../../../src/components/ui/TextField';
 import { DangerButton, GhostButton, PrimaryButton } from '../../../../../src/components/ui/Buttons';
 import { volunteerUseCases } from '../../../../../src/services/volunteerComposition';
@@ -70,7 +71,9 @@ export default function OrganizerOpportunityManageScreen() {
   }
 
   return (
-    <Screen blobs="content">
+    <>
+      <TimeWorldSubScreenChrome activeScreenTestId="time-organizer" />
+      <Screen blobs="off" hasNativeHeader>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.title}>{d.title}</Text>
         {d.shifts.map((shift) => {
@@ -113,6 +116,7 @@ export default function OrganizerOpportunityManageScreen() {
         ) : null}
         <DangerButton label={t('timeVolunteer.closeOpportunity')} size="md" onPress={() => void closeOpp()} />
       </ScrollView>
-    </Screen>
+      </Screen>
+    </>
   );
 }

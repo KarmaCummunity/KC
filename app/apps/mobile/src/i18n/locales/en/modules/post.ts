@@ -205,10 +205,19 @@ export const postEn = {
   autoTranslated: 'Auto-translated',
 
   engagement: {
-    title: 'Engagement',
+    title: 'Comments',
+    titleWithCount: 'Comments ({{count}})',
+    reactionsCount: '{{count}} reactions',
     meta: '{{reactions}} reactions · {{comments}} comments',
-    commentPlaceholder: 'Write a comment…',
-    commentSend: 'Post comment',
+    emptyComments: 'No comments yet. Be the first to comment.',
+    loadError: 'Could not load comments. Try again.',
+    commentPlaceholder: 'Add a comment…',
+    replyPlaceholder: 'Write a reply…',
+    commentSend: 'Post',
+    reply: 'Reply',
+    replyingTo: 'Replying to {{name}}',
+    cancelReply: 'Cancel reply',
+    commentLike: 'Like comment',
     reaction: {
       like: 'Like',
       support: 'Support',

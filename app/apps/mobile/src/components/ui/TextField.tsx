@@ -26,7 +26,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text, TextInput, type ColorPalette } from '@kc/ui';
-import { layoutWritingDirectionStyle } from '../../lib/rtlLayout';
+import { emptyInputDirectionStyle } from '../../lib/rtlLayout';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 /** Ionicons glyph size inside the field and next to the error message. */
@@ -62,6 +62,8 @@ function useHasText({ value, defaultValue, onChangeText }: TextInputProps) {
 export interface TextFieldProps extends TextInputProps {
   /** Visible label above the field; also the screen-reader name of the input. */
   readonly label: string;
+  /** Hide the visible label (the placeholder carries it); it stays the screen-reader name. */
+  readonly hideLabel?: boolean;
   /** Guidance below the field; read as the accessibility hint. */
   readonly helperText?: string;
   /** Validation message. When set the field shows its error state and hides the helper. */
@@ -79,6 +81,7 @@ export interface TextFieldProps extends TextInputProps {
 export const TextField = forwardRef<TextInput, TextFieldProps>(function TextField(
   {
     label,
+    hideLabel,
     helperText,
     errorText,
     leadingIcon,
@@ -119,9 +122,11 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   return (
     <View style={[styles.container, containerStyle]}>
       {/* Hidden from screen readers: the input below announces the label itself. */}
-      <Text style={styles.label} aria-hidden>
-        {label}
-      </Text>
+      {hideLabel ? null : (
+        <Text style={styles.label} aria-hidden>
+          {label}
+        </Text>
+      )}
       {/* The whole box is the tap target, so a tap on the icon still focuses the input. */}
       <Pressable
         accessible={false}
@@ -157,10 +162,8 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
           accessibilityHint={helperText}
           style={[
             styles.input,
-            // Web resolves an empty `dir="auto"` input as LTR, which would push a
-            // Hebrew placeholder to the left; pin it to the layout direction until
-            // the user types (native already follows the layout when empty).
-            !hasText && layoutWritingDirectionStyle(),
+            // The placeholder follows the layout direction until the user types.
+            !hasText && emptyInputDirectionStyle(),
             multiline && styles.inputMultiline,
             disabled && styles.inputDisabled,
             style,

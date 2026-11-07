@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore';
 import { DateOfBirthGateModal } from './DateOfBirthGateModal';
 import { OnboardingSoftGateModal } from './OnboardingSoftGateModal';
 import { useDateOfBirthRequirement } from '../hooks/useDateOfBirthRequirement';
+import { getReconcileDeferredBasicInfoUseCase } from '../services/userComposition';
 
 type DeferredAction = () => void | Promise<void>;
 
@@ -33,13 +34,27 @@ export function SoftGateProvider({ children }: Readonly<{ children: React.ReactN
   const { isDateOfBirthMissing, forgetDateOfBirthAnswer } = useDateOfBirthRequirement();
 
   const requestSoftGate = useCallback((action: DeferredAction) => {
-    const state = useAuthStore.getState().onboardingState;
-    if (state === 'pending_basic_info') {
-      setDialog('basicInfo');
-      setPending(() => action);
-      return;
-    }
     void (async () => {
+      const auth = useAuthStore.getState();
+      let state = auth.onboardingState;
+      if (state === 'pending_basic_info' && auth.session?.userId) {
+        try {
+          const next = await getReconcileDeferredBasicInfoUseCase().execute({
+            userId: auth.session.userId,
+          });
+          if (next) {
+            auth.setOnboardingState(next);
+            state = next;
+          }
+        } catch {
+          // Reconcile is best-effort; fall through to the modal if it fails.
+        }
+      }
+      if (state === 'pending_basic_info') {
+        setDialog('basicInfo');
+        setPending(() => action);
+        return;
+      }
       if (await isDateOfBirthMissing()) {
         setDialog('dateOfBirth');
         setPending(() => action);

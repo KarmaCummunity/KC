@@ -3,14 +3,22 @@
 // claim / book / stay, owner management, report) shown in place at /post/[id], with the post's
 // likes and comments under them, and the same share link as every other post.
 import React from 'react';
-import { View } from 'react-native';
+import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { Stack } from 'expo-router';
 import type { PostWithOwner } from '@kc/application';
 import { MarketplaceListingDetailScreen } from '../marketplace/MarketplaceListingDetailScreen';
-import { PostEngagementSection } from '../../components/post-detail/PostEngagementSection';
+import { PostEngagementThread } from '../../components/post-detail/PostEngagementThread';
+import { PostEngagementComposer } from '../../components/post-detail/PostEngagementComposer';
+import { PostEngagementProvider } from '../../components/post-detail/PostEngagementContext';
+import { PostMenuButton } from '../../components/post/PostMenuButton';
 import { PostShareButton } from '../../components/post/PostShareButton';
 import { nativeStackHeaderRightIconOnly } from '../../navigation/nativeHeaderIconOnly';
 import { usePostDetailStyles } from './postDetailScreen.styles';
+import { postShowsEngagementSection } from '../../lib/postEngagementVisible';
+import { postDetailScrollBottomInset } from '../../components/post-detail/postDetailBottomMetrics';
+import { useKeyboardVerticalOffset } from '../../lib/platform/useKeyboardVerticalOffset';
+import { ListingOwnerClosureBar } from '../../components/closure/ListingOwnerClosureBar';
+import { PostDetailBottomChrome } from '../../components/post-detail/PostDetailBottomChrome';
 
 type Props = {
   readonly post: PostWithOwner;
@@ -21,23 +29,60 @@ type Props = {
 
 export function ListingPostDetail({ post, listingId, viewerId, bottomInset }: Props) {
   const styles = usePostDetailStyles();
-  // Likes and comments follow the post page's rule: only while the post is open (FR-POST-014).
-  const engagement =
-    post.status === 'open' ? <PostEngagementSection postId={post.postId} viewerId={viewerId} /> : null;
+  const keyboardOffset = useKeyboardVerticalOffset();
+  const showEngagement = Boolean(viewerId) && postShowsEngagementSection(post.status);
+  const ownerCloseId = viewerId !== null
+    && post.ownerId === viewerId
+    && post.status === 'open'
+    && post.type === 'Give'
+    ? viewerId
+    : null;
+  const showBottomChrome = Boolean(ownerCloseId) || showEngagement;
+  const scrollInset = postDetailScrollBottomInset({
+    tabBarOverlayInset: bottomInset,
+    hasOwnerBar: Boolean(ownerCloseId),
+    hasComposer: showEngagement,
+  });
+
+  const footer = showEngagement ? <PostEngagementThread /> : null;
 
   return (
     <>
       <Stack.Screen
         options={{
-          // The listing view carries its own report action, so the header holds only the share.
           ...nativeStackHeaderRightIconOnly(() => (
             <View style={styles.headerActions}>
               <PostShareButton post={post} placement="header" />
+              <PostMenuButton post={post} placement="header" showShareInMenu={false} />
             </View>
           )),
         }}
       />
-      <MarketplaceListingDetailScreen listingId={listingId} bottomInset={bottomInset} footer={engagement} />
+      <PostEngagementProvider postId={post.postId} viewerId={viewerId}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={keyboardOffset}
+        >
+          <MarketplaceListingDetailScreen
+            listingId={listingId}
+            bottomInset={scrollInset}
+            footer={footer}
+            moderationInHeader
+          />
+          {showBottomChrome ? (
+            <PostDetailBottomChrome
+              tabBarOverlayInset={bottomInset}
+              ownerSlot={
+                ownerCloseId ? (
+                  <ListingOwnerClosureBar post={post} ownerId={ownerCloseId} embedded />
+                ) : undefined
+              }
+              composerSlot={showEngagement ? <PostEngagementComposer embedded /> : undefined}
+            />
+          ) : null}
+        </KeyboardAvoidingView>
+      </PostEngagementProvider>
     </>
   );
 }

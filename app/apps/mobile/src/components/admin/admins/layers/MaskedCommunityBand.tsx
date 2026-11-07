@@ -5,8 +5,8 @@
 // band renders an abstract field of anonymous dots whose density follows the
 // community size, a lock glyph, the masked count and — when present — the
 // self-declared volunteer affiliates of the focused orgs.
-import { useMemo } from 'react';
-import { View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { CommunityBase } from '@kc/domain';
 import { iconSize, makeUseStyles, radius, spacing, Text, typography, useTheme } from '@kc/ui';
@@ -41,6 +41,8 @@ export function MaskedCommunityBand({ base }: MaskedCommunityBandProps) {
   const { colors } = useTheme();
   const L = useLocaleBundle();
   const copy = L.admin.admins.layers.community;
+  const layersCopy = L.admin.admins.layers;
+  const [collapsed, setCollapsed] = useState(false);
   const opacities = useMemo(
     () => Array.from({ length: dotCount(base.maskedCount) }, (_, i) => dotOpacity(i)),
     [base.maskedCount],
@@ -48,13 +50,24 @@ export function MaskedCommunityBand({ base }: MaskedCommunityBandProps) {
 
   return (
     <View style={styles.band}>
-      <View style={styles.field} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-        {opacities.map((opacity, i) => (
-          <View key={i} style={[styles.dot, { opacity }]} />
-        ))}
-      </View>
+      {!collapsed && (
+        <View style={styles.field} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+          {opacities.map((opacity, i) => (
+            <View key={i} style={[styles.dot, { opacity }]} />
+          ))}
+        </View>
+      )}
 
-      <View style={styles.header}>
+      <Pressable
+        testID="hierarchy-community-toggle"
+        accessibilityRole="button"
+        accessibilityState={{ expanded: !collapsed }}
+        accessibilityLabel={
+          collapsed ? layersCopy.expandCommunityA11y : layersCopy.collapseCommunityA11y
+        }
+        onPress={() => setCollapsed((v) => !v)}
+        style={styles.header}
+      >
         <View style={styles.lockBubble}>
           <Ionicons name="lock-closed" size={iconSize.sm} color={colors.textSecondary} />
         </View>
@@ -65,8 +78,13 @@ export function MaskedCommunityBand({ base }: MaskedCommunityBandProps) {
             <Text style={styles.affiliated}>{copy.affiliated(base.affiliatedCount)}</Text>
           )}
         </View>
-      </View>
-      <Text style={styles.hint}>{copy.hint}</Text>
+        <Ionicons
+          name={collapsed ? 'chevron-forward' : 'chevron-down'}
+          size={iconSize.sm}
+          color={colors.textSecondary}
+        />
+      </Pressable>
+      {!collapsed && <Text style={styles.hint}>{copy.hint}</Text>}
     </View>
   );
 }

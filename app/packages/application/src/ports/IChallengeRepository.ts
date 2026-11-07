@@ -16,7 +16,7 @@ export interface IChallengeRepository {
   createChallenge(draft: ChallengeDraft): Promise<string>;
   listChallenges(view: ChallengeListView, limit?: number, offset?: number): Promise<ChallengeSummary[]>;
   getChallenge(challengeId: string): Promise<ChallengeSummary | null>;
-  joinChallenge(challengeId: string): Promise<void>;
+  joinChallenge(challengeId: string, showOnProfile?: boolean): Promise<void>;
   /** Leaves a challenge; the creator cannot leave and ends it instead. */
   leaveChallenge(challengeId: string): Promise<void>;
   /** Creator only: stops further reports; participants keep their history. */

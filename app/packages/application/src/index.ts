@@ -41,6 +41,7 @@ export * from './posts/IsPostSavedUseCase';
 export * from './posts/ListSavedPostsUseCase';
 export * from './posts/DeletePostUseCase';
 export * from './posts/MarkAsDeliveredUseCase';
+export * from './posts/OwnerCompleteOfferUseCase';
 export * from './posts/ReopenPostUseCase';
 export * from './posts/RepublishPostUseCase';
 export * from './posts/UnmarkRecipientSelfUseCase';

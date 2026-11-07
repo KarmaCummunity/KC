@@ -111,7 +111,11 @@ export function DonationLinksList({ categorySlug, showTitle = true }: Readonly<P
     if (links.length === 0) {
       return (
         <View style={styles.empty}>
-          <Ionicons name="link-outline" size={36} color={colors.textDisabled} /> {/* brand-guard-allow: empty-state glyph above the copy (spec 17 §4.2) */}
+          <Ionicons
+            name="link-outline"
+            size={36} // brand-guard-allow: empty-state glyph above the copy (spec 17 §4.2)
+            color={colors.textDisabled}
+          />
           <Text style={styles.emptyTitle}>{t('donations.links.empty.title')}</Text>
           <Text style={styles.emptyBody}>{t('donations.links.empty.body')}</Text>
           <View style={styles.emptyCta}>

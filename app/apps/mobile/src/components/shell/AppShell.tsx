@@ -65,7 +65,7 @@ function useDetectedVariant(): ShellVariant {
   // Each entry below is a segment that appears literally in expo-router's
   // useSegments() output for that route. Update this list as screens declare
   // unstable_settings.shellVariant in PRs 2-5.
-  const narrowSegments = ['settings', 'edit-profile', 'edit-post', 'create', '(auth)', '(onboarding)'];
+  const narrowSegments = ['settings', 'edit-profile', 'edit-post', 'edit-listing', 'create', '(auth)', '(onboarding)'];
   if (narrowSegments.some((s) => segments.includes(s))) return 'narrow';
   // auth/verify and auth/callback live under the bare 'auth' segment (not (auth) group).
   if (segments.includes('auth') && (segments.includes('verify') || segments.includes('callback'))) {

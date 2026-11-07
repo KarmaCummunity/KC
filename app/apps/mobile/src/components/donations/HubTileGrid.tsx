@@ -26,7 +26,8 @@ export function HubTileGrid({
   heading,
   tiles,
   delay,
-}: Readonly<{ heading: string; tiles: readonly HubGridTile[]; delay: number }>) {
+  onTilePress,
+}: Readonly<{ heading: string; tiles: readonly HubGridTile[]; delay: number; onTilePress?: (key: string) => void }>) {
   const styles = useStyles();
   const router = useRouter();
   const { t } = useTranslation();
@@ -36,18 +37,21 @@ export function HubTileGrid({
         <Text style={styles.gridHeading}>{heading}</Text>
       </MotionEntry>
       <View style={styles.grid}>
-        {pairs(tiles).map((pair, rowIdx) => (
+        {pairs(tiles).map((pair) => (
           <MotionEntry
             key={pair.map((c) => c.key).join('-')}
             variant="bottom"
-            delay={ENTRY_DELAY.buttons + rowIdx * 80}
+            delay={ENTRY_DELAY.buttons}
             style={[styles.gridRowMotion, styles.blockStretch]}
           >
             <View style={styles.row}>
               {pair.map((cat) => (
                 <PressableScale
                   key={cat.key}
-                  onPress={() => router.push(cat.href)}
+                  onPress={() => {
+                    onTilePress?.(cat.key);
+                    router.push(cat.href);
+                  }}
                   accessibilityRole="button"
                   accessibilityLabel={`${t(cat.titleKey)} — ${t(cat.subtitleKey)}`}
                   style={styles.gridPressable}

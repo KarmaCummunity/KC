@@ -37,11 +37,17 @@ import { RideRouteFields } from '../RideRouteFields';
 
 afterEach(cleanup);
 
-function Harness({ onOriginCity }: { onOriginCity: (c: { id: string; name: string }) => void }) {
+function Harness({
+  onOriginCity,
+  onFromHereChange,
+}: {
+  onOriginCity: (c: { id: string; name: string }) => void;
+  onFromHereChange?: (on: boolean) => void;
+}) {
   const [details, setDetails] = useState<Record<string, unknown>>({});
   return (
     <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
-      <RideRouteFields details={details} onChange={setDetails} onOriginCity={onOriginCity} />
+      <RideRouteFields details={details} onChange={setDetails} onOriginCity={onOriginCity} onFromHereChange={onFromHereChange} />
       <output data-testid="details">{JSON.stringify(details)}</output>
     </ThemeProvider>
   );
@@ -127,16 +133,59 @@ describe('RideRouteFields', () => {
       expect(switchOn(view)).toBe('false');
     });
 
-    it('turns off once the member picks the origin by hand', async () => {
+    it('hides the origin picker while on and names the place found instead', async () => {
       locate.mockResolvedValueOnce({ lat: 32.081, lng: 34.781 });
       const view = render(<Harness onOriginCity={vi.fn()} />);
+
       fireEvent.click(view.getByTestId('ride-origin-from-here'));
-      await waitFor(() => expect(switchOn(view)).toBe('true'));
+
+      expect(view.queryByTestId('pick:ridePlaces.fieldOrigin')).toBeNull();
+      expect(view.getByText('ridePlaces.locating')).toBeTruthy();
+      await waitFor(() => expect(view.getByText('ridePlaces.originFromHere')).toBeTruthy());
+      expect(view.queryByTestId('pick:ridePlaces.fieldOrigin')).toBeNull();
+    });
+
+    it('shows the picker again when turned off, keeping the found origin editable, and reports both changes', async () => {
+      locate.mockResolvedValueOnce({ lat: 32.081, lng: 34.781 });
+      const onFromHereChange = vi.fn();
+      const view = render(<Harness onOriginCity={vi.fn()} onFromHereChange={onFromHereChange} />);
+      fireEvent.click(view.getByTestId('ride-origin-from-here'));
+      await waitFor(() => expect(readRideRoute(detailsOf(view)).origin).toEqual(TLV));
+      expect(onFromHereChange).toHaveBeenLastCalledWith(true);
+
+      fireEvent.click(view.getByTestId('ride-origin-from-here'));
+      expect(switchOn(view)).toBe('false');
+      expect(onFromHereChange).toHaveBeenLastCalledWith(false);
 
       fireEvent.click(view.getByTestId('pick:ridePlaces.fieldOrigin'));
-
-      expect(switchOn(view)).toBe('false');
       expect(readRideRoute(detailsOf(view)).origin).toEqual(GLILOT);
+    });
+
+    it('drops a location read that finishes after the switch was turned off', async () => {
+      let resolve: (v: { lat: number; lng: number }) => void = () => {};
+      locate.mockReturnValueOnce(new Promise((r) => (resolve = r)));
+      const view = render(<Harness onOriginCity={vi.fn()} />);
+      fireEvent.click(view.getByTestId('ride-origin-from-here'));
+      fireEvent.click(view.getByTestId('ride-origin-from-here'));
+
+      resolve({ lat: 32.081, lng: 34.781 });
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(detailsOf(view)).not.toHaveProperty('origin_label');
+      expect(switchOn(view)).toBe('false');
+    });
+
+    // Regression: a device far from Israel (the simulator's default California location) used to
+    // get the "nearest" Israeli city hundreds of km away instead of "location unavailable".
+    it('turns itself off when no official city is near the device', async () => {
+      locate.mockResolvedValueOnce({ lat: 37.33, lng: -122.03 });
+      const view = render(<Harness onOriginCity={vi.fn()} />);
+
+      fireEvent.click(view.getByTestId('ride-origin-from-here'));
+
+      await waitFor(() => expect(view.getByText('ridePlaces.locationUnavailable')).toBeTruthy());
+      expect(detailsOf(view)).not.toHaveProperty('origin_label');
+      expect(switchOn(view)).toBe('false');
     });
   });
 });

@@ -12,16 +12,33 @@ Prefix: `FR-VERIFY-*`
 
 ---
 
-## FR-VERIFY-001 — Verification levels (D23)
-| Level | Name (HE) | How it is reached | Code |
-|---|---|---|---|
-| 0 | — | Signed up | `verified_at IS NULL`, no verified phone |
-| 1 | טלפון מאומת | Verified phone (FR-PROFILE-017) | `auth.users.phone_confirmed_at` |
-| 2 | זהות מאומתת | ID document + live selfie match (this spec) | `users.verified_at IS NOT NULL` and `verification_method='provider'` (or `'manual'` via FR-VERIFY-008) |
-| 3 | וי כחול | Defined later (D23, G13) | — |
+## FR-VERIFY-001 — Verification levels (D23, `D`)
+| Level | Name (HE) | Badge | How it is reached | Code |
+|---|---|---|---|---|
+| 0 | — | none | Signed up | none of the below |
+| 1 | פרופיל מלא | green check | Complete profile (FR-VERIFY-012); no SMS, no cost (`D`) | all FR-VERIFY-012 AC1 fields non-empty |
+| 2 | זהות מאומתת | blue check | ID document + live selfie match (this spec) | `users.verified_at IS NOT NULL` and `verification_method IN ('provider','manual')` (`'manual'` via FR-VERIFY-008) |
+| 3 | ארגון מוכר | gold check | A recognised organization account (FR-ORG-019, D53) | the organization account type of `20_organizations.md`; renders nothing until that type ships |
 
-- AC1. One server function `user_verification_level(uid) → smallint` is the only source for the level; cards, profiles, gates and RLS call it, never re-derive it.
-- AC2. The level is shown as a badge on profile, card and detail (D23). The badge never shows the document type, number, nationality or date of birth.
+- AC1. One server function `user_verification_level(uid) → smallint` is the only source for the level; cards, profiles, gates and RLS call it, never re-derive it. It returns the **highest** level whose condition holds.
+- AC2. The level is shown as a badge next to the member's name (D23) on: profile (own and others'), post card, post detail, chat (inbox row and conversation header), search results and follow suggestions. One badge only — the highest level. The badge never shows which fields were filled, nor the document type, number, nationality or date of birth.
+- AC3. The three badges share one check-mark shape and differ by color (green / blue / gold) from the design-system palette (`17_brand_and_design_system.md`); each has an accessibility label with the level name.
+- AC4. Read paths that return another member (profile, post owner, chat peer, search, suggestions) carry the level as a number only; the private fields behind level 1 (street, contact phone, date of birth) are never exposed to compute it.
+- AC5. The old "verified phone" level is withdrawn (`D`): phone OTP (FR-PROFILE-017) stays a sign-in method and does not change the level.
+
+## FR-VERIFY-012 — Complete profile (level 1)
+- AC1. A profile is complete when all of these are non-empty: `display_name`, `city`, `date_of_birth`, avatar (`avatar_url`), `profile_street` + `profile_street_number`, `contact_phone`. Biography is not required.
+- AC2. The level updates on save: once the member fills the last field in Edit profile (FR-PROFILE-007), the badge appears without a restart; clearing a field drops the member back to level 0.
+- AC3. Unit-tested completeness rule in the domain layer mirrors the SQL rule; an SQL test covers each missing field.
+
+## FR-VERIFY-013 — Complete-profile nudges
+Shown only to the signed-in member about their **own** profile, only while their level is 0.
+- AC1. **Avatar dot.** A small accent dot on the member's own avatar (own profile header). Tapping the avatar area opens Edit profile.
+- AC2. **Main feed banner.** At the top of the main feed (feed header slot, above other banners), a card: title "השלימו את הפרטים בפרופיל", body "פרופיל מלא מגדיל את הסיכוי למצוא התאמות", primary action "להשלמת הפרופיל" → Edit profile, and a close (×).
+- AC2a. **Profile button.** On the member's own profile, the "Edit profile" button becomes a primary-filled "השלמת הפרופיל" button (same destination, Edit profile) while the level is 0; it is never snoozed.
+- AC3. **Snooze.** Closing the banner hides it for 7 days (stored on the device per user); after that it returns until the profile is complete. The avatar dot is never snoozed.
+- AC4. Both disappear as soon as the level reaches ≥ 1 (FR-VERIFY-012 AC2). Guests never see them.
+- AC5. Copy lives in i18n (he + en); no Hebrew literals in code or SQL (D-24).
 
 ## FR-VERIFY-002 — Where verification is required
 - AC1. **Required** (server-enforced, `world_permission_denied` / `verification_required`): every housing action of FR-HOUSING-003 AC1 (D30, `D116`); an elderly home-visit volunteer (D48); joining an event whose organizer requires it (D31).
@@ -101,3 +118,4 @@ Prefix: `FR-VERIFY-*`
 | Version | Date | Change |
 |---|---|---|
 | 0.1 | 2026-11-03 | New domain file: ID document + live selfie via a certified provider (`D117`); FR-VERIFY-001…011. |
+| 0.2 | 2026-11-07 | Levels reshaped (`D`): 1 = complete profile (FR-VERIFY-012, replaces verified phone), 2 = ID, 3 = recognised organization; color-tier badges and display surfaces (FR-VERIFY-001 AC2–AC5); complete-profile nudges (FR-VERIFY-013). |

@@ -13,7 +13,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Stack } from 'expo-router';
 import { makeUseStyles, spacing, typography, useBreakpoint, useTheme, Text } from '@kc/ui';
 import { TextField } from '../../src/components/ui';
-import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
+import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import {
   shellTabBarHeightPx,
   useShellTabBarVisibility,
@@ -40,6 +40,7 @@ import {
 } from '../../src/components/survey/hebrewSurveyFieldStyle';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
+import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVerticalOffset';
 
 type DemoAnswer = { rating: number | null; text: string };
 
@@ -52,7 +53,7 @@ function emptyAnswers(): Record<string, DemoAnswer> {
 export default function SurveyDemoScreen() {
   // All hooks must run unconditionally (Rules of Hooks). The __DEV__ gate is
   // applied after all hooks have been called.
-  const detailStackScreenOptions = useDetailStackScreenOptions();
+  const shellStackScreenOptions = useShellStackScreenOptions();
   const { colors } = useTheme();
   const bp = useBreakpoint();
   const styles = useScreenStyles();
@@ -61,6 +62,7 @@ export default function SurveyDemoScreen() {
   const { t } = useTranslation();
   const questions = useSurveyDemoQuestions();
   const useSideRail = bp === 'tablet' || bp === 'desktop' || bp === 'wide';
+  const keyboardOffset = useKeyboardVerticalOffset();
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, DemoAnswer>>(emptyAnswers);
@@ -99,7 +101,7 @@ export default function SurveyDemoScreen() {
     <SafeAreaView style={styles.safe} edges={['left', 'right']}>
       <Stack.Screen
         options={{
-          ...detailStackScreenOptions,
+          ...shellStackScreenOptions,
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.primary,
           headerTitle: t('surveyDemo.screenTitle'),
@@ -108,7 +110,7 @@ export default function SurveyDemoScreen() {
       <KeyboardAvoidingView
         style={[styles.flex, styles.stage]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+        keyboardVerticalOffset={keyboardOffset}
       >
         <View style={styles.progressBar}>
           <Text style={styles.progressText}>

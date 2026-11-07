@@ -3,9 +3,11 @@ import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { useTheme, Text } from '@kc/ui';
+import { iconSize, useTheme, Text } from '@kc/ui';
 import type { UserSearchResult } from '@kc/domain';
 import { AvatarInitials } from '../AvatarInitials';
+import { NameWithBadge } from '../NameWithBadge';
+import { MirroredIcon } from '../ui/MirroredIcon';
 import { isOpaqueSystemShareHandle } from '../../lib/shareHandleDisplay';
 import { useSearchResultCardStyles } from './searchResultCard.styles';
 
@@ -29,21 +31,23 @@ export function UserResultCard({ user }: { user: UserSearchResult }) {
         <AvatarInitials name={displayName} avatarUrl={user.avatarUrl} size={48} />
       </View>
       <View style={styles.cardContent}>
-        <Text style={styles.cardTitle} numberOfLines={1}>{displayName}</Text>
+        <NameWithBadge level={user.verificationLevel}>
+          <Text style={styles.cardTitle} numberOfLines={1}>{displayName}</Text>
+        </NameWithBadge>
         {showHandle ? <Text style={styles.cardHandle} numberOfLines={1}>@{user.shareHandle}</Text> : null}
         {user.biography ? <Text style={styles.cardSubtitle} numberOfLines={2}>{user.biography}</Text> : null}
         <View style={styles.metaRow}>
           <View style={styles.metaChip}>
-            <Ionicons name="people-outline" size={12} color={colors.textSecondary} />
+            <Ionicons name="people-outline" size={iconSize.xs} color={colors.textSecondary} />
             <Text style={styles.metaText}>{t('search.followers', { count: user.followersCount })}</Text>
           </View>
           <View style={styles.metaChip}>
-            <Ionicons name="location-outline" size={12} color={colors.textSecondary} />
+            <Ionicons name="location-outline" size={iconSize.xs} color={colors.textSecondary} />
             <Text style={styles.metaText}>{user.cityName ?? t('profile.cityNotSet')}</Text>
           </View>
         </View>
       </View>
-      <Ionicons name="chevron-back" size={20} color={colors.textDisabled} />
+      <MirroredIcon name="chevron-forward" size={iconSize.lg} color={colors.textDisabled} />
     </Pressable>
   );
 }

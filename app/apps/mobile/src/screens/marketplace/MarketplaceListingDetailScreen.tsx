@@ -13,9 +13,10 @@ type Props = {
   readonly bottomInset?: number;
   /** Rendered under the listing's actions; the post detail passes the post's likes and comments. */
   readonly footer?: ReactNode;
+  readonly moderationInHeader?: boolean;
 };
 
-export function MarketplaceListingDetailScreen({ listingId, bottomInset = 0, footer }: Props) {
+export function MarketplaceListingDetailScreen({ listingId, bottomInset = 0, footer, moderationInHeader }: Props) {
   const { t } = useTranslation();
   const { data: detail, isLoading, isError, refetch } = useMarketplaceListingDetail(listingId);
 
@@ -57,7 +58,12 @@ export function MarketplaceListingDetailScreen({ listingId, bottomInset = 0, foo
 
   return (
     <Screen testID="post-detail-screen">
-      <MarketplaceListingDetailView detail={detail} bottomInset={bottomInset} footer={footer} />
+      <MarketplaceListingDetailView
+        detail={detail}
+        bottomInset={bottomInset}
+        footer={footer}
+        moderationInHeader={moderationInHeader}
+      />
     </Screen>
   );
 }

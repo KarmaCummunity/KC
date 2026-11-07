@@ -25,6 +25,7 @@ export {
   CancelRideBookingUseCase,
   CompleteRideTripUseCase,
   CompleteRideListingUseCase,
+  ReinstateRideBookingUseCase,
 } from './rideBookingUseCases';
 export type { IRideBookingRepository } from '../ports/IRideBookingRepository';
 export { ListRidePlacesUseCase } from './ListRidePlacesUseCase';
@@ -41,6 +42,8 @@ export {
   ListRideSeriesOccurrencesUseCase,
 } from './rideSeriesUseCases';
 export type { IRideSeriesRepository } from '../ports/IRideSeriesRepository';
+export { SaveRideHouseNumbersUseCase, GetRideHouseNumbersUseCase } from './rideHouseNumberUseCases';
+export type { IRideHouseNumberRepository } from '../ports/IRideHouseNumberRepository';
 export { RaiseRideEmergencyUseCase } from './RaiseRideEmergencyUseCase';
 export type { IRideSafetyRepository } from '../ports/IRideSafetyRepository';
 export { FindListingForLegacyRideUseCase } from './FindListingForLegacyRideUseCase';

@@ -15,13 +15,17 @@ beforeEach(() => {
 describe('create preferences storage', () => {
   it('reads and writes one key per user', async () => {
     storage.getItem.mockResolvedValue('{"categoryId":"time","directions":{"time":"request"}}');
-    await expect(loadCreatePreferences('u1')).resolves.toEqual({ categoryId: 'time', directions: { time: 'request' } });
+    await expect(loadCreatePreferences('u1')).resolves.toEqual({
+      categoryId: 'time',
+      directions: { time: 'request' },
+      usageCounts: {},
+    });
     expect(storage.getItem).toHaveBeenCalledWith('kc-create-preferences-u1');
 
-    await saveCreatePreferences('u1', { categoryId: 'food', directions: { food: 'give' } });
+    await saveCreatePreferences('u1', { categoryId: 'food', directions: { food: 'give' }, usageCounts: {} });
     expect(storage.setItem).toHaveBeenCalledWith(
       'kc-create-preferences-u1',
-      '{"categoryId":"food","directions":{"food":"give"}}',
+      '{"categoryId":"food","directions":{"food":"give"},"usageCounts":{}}',
     );
   });
 
@@ -34,7 +38,9 @@ describe('create preferences storage', () => {
   it('a failing read returns the defaults and a failing write is swallowed', async () => {
     storage.getItem.mockRejectedValue(new Error('quota'));
     storage.setItem.mockRejectedValue(new Error('quota'));
-    await expect(loadCreatePreferences('u1')).resolves.toEqual({ categoryId: 'items', directions: {} });
-    await expect(saveCreatePreferences('u1', { categoryId: 'rides', directions: {} })).resolves.toBeUndefined();
+    await expect(loadCreatePreferences('u1')).resolves.toEqual({ categoryId: 'items', directions: {}, usageCounts: {} });
+    await expect(
+      saveCreatePreferences('u1', { categoryId: 'rides', directions: {}, usageCounts: {} }),
+    ).resolves.toBeUndefined();
   });
 });

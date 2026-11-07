@@ -14,7 +14,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, useBreakpoint, useTheme, Text } from '@kc/ui';
 import { hasSurveyAnswerValue, type SurveyBundle, type SurveyQuestion } from '@kc/domain';
-import { useDetailStackScreenOptions } from '../../../src/navigation/detailStackScreenOptions';
+import { useShellStackScreenOptions } from '../../../src/navigation/shellStackScreenOptions';
+import { useShellTopBarChrome } from '../../../src/navigation/useShellTopBarChrome';
 import { SurveyQuestionMap } from '../../../src/components/survey/SurveyQuestionMap';
 import {
   SURVEY_FLOAT_NAV_CLEARANCE,
@@ -26,6 +27,7 @@ import {
   shellTabBarHeightPx,
   useShellTabBarVisibility,
 } from '../../../src/navigation/useShellTabBarVisibility';
+import { useKeyboardVerticalOffset } from '../../../src/lib/platform/useKeyboardVerticalOffset';
 import { webTextRtl, webViewRtl } from '../../../src/lib/webRtlStyle';
 import { container } from '../../../src/lib/container';
 import {
@@ -64,6 +66,7 @@ function RunnerContent({
 }: RunnerContentProps) {
   const { t } = useTranslation();
   const styles = useRunnerStyles();
+  const keyboardOffset = useKeyboardVerticalOffset();
 
   const questions = bundle.questions as SurveyQuestion[];
   const total = questions.length;
@@ -78,7 +81,7 @@ function RunnerContent({
     <KeyboardAvoidingView
       style={[styles.flex, styles.stage]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+      keyboardVerticalOffset={keyboardOffset}
     >
       <View style={styles.progressBar}>
         <Text style={styles.progressText}>
@@ -125,7 +128,7 @@ function RunnerContent({
 // ─── screen ──────────────────────────────────────────────────────────────────
 
 export default function SurveyRunnerScreen() {
-  const detailStackScreenOptions = useDetailStackScreenOptions();
+  const shellStackScreenOptions = useShellStackScreenOptions();
   const { t } = useTranslation();
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { colors } = useTheme();
@@ -142,6 +145,8 @@ export default function SurveyRunnerScreen() {
   });
 
   const bundle = bundleQuery.data;
+
+  useShellTopBarChrome({ title: bundle?.titleHe ?? '' });
 
   const {
     activeIndex,
@@ -202,9 +207,7 @@ export default function SurveyRunnerScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['left', 'right']}>
-      <Stack.Screen
-        options={{ ...detailStackScreenOptions, headerTitle: bundle?.titleHe ?? '' }}
-      />
+      <Stack.Screen options={{ ...shellStackScreenOptions }} />
       {renderBody()}
       <NotifyModal
         visible={saveErrorOpen}

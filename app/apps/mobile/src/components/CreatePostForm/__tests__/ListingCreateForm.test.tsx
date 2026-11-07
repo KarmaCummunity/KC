@@ -4,7 +4,7 @@
 // direction switch; the form never mounts an inline native date picker or slider; required
 // fields block publish with a message; a valid form publishes the expected listing.
 import React from 'react';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@kc/ui';
@@ -45,29 +45,33 @@ vi.mock('../../../services/rideSeriesComposition', () => ({
 // Ride section stand-in (route + schedule are tested in RideRouteFields / RideScheduleFields):
 // one tap fills a full route and departure through the form's state setter; another makes the
 // ride recur on Sundays and Thursdays (FR-RIDE-046).
-vi.mock('../../giving/RideCreateSection', () => ({
-  RIDE_CREATE_DETAIL_KEYS: ['origin_lat', 'origin_lng', 'dest_lat', 'dest_lng', 'origin_city_id', 'dest_city_id', 'departs_at', 'arrives_at', 'seats_available'],
-  RideCreateSection: (p: {
-    setDetails: (u: (prev: Record<string, unknown>) => Record<string, unknown>) => void;
-    onOriginCity: (c: { id: string; name: string }) => void;
-    onRecurrenceChange: (next: { weekdays: number[]; endsOn: Date | null } | null) => void;
-  }) => (
-    <>
-      <button
-        type="button"
-        data-testid="ride-section-fill"
-        onClick={() => {
-          p.setDetails((prev) => ({ ...prev, ...RIDE_FILL }));
-          p.onOriginCity({ id: '7000', name: 'לוד' });
-        }}
-      >
-        <span data-testid="ride-section" />
-      </button>
-      <button type="button" data-testid="ride-section-recur" onClick={() => p.onRecurrenceChange({ weekdays: [0, 4], endsOn: null })} />
-      <button type="button" data-testid="ride-section-recur-nodays" onClick={() => p.onRecurrenceChange({ weekdays: [], endsOn: null })} />
-    </>
-  ),
-}));
+// The origin and recurrence controls sit in the real field frames, as in RideCreateSection.
+vi.mock('../../giving/RideCreateSection', async () => {
+  const { ListingFieldFrame } = await vi.importActual<typeof import('../ListingFieldFrame')>('../ListingFieldFrame');
+  return {
+    RIDE_CREATE_DETAIL_KEYS: ['origin_lat', 'origin_lng', 'dest_lat', 'dest_lng', 'origin_city_id', 'dest_city_id', 'departs_at', 'arrives_at', 'seats_available'],
+    RideCreateSection: (p: {
+      setDetails: (u: (prev: Record<string, unknown>) => Record<string, unknown>) => void;
+      onOriginCity: (c: { id: string; name: string }) => void;
+      onRecurrenceChange: (next: { weekdays: number[]; endsOn: Date | null } | null) => void;
+    }) => (
+      <>
+        <ListingFieldFrame field="ride:origin" testID="ride-origin-frame">
+          <button type="button" data-testid="ride-section-fill" onClick={() => {
+            p.setDetails((prev) => ({ ...prev, ...RIDE_FILL }));
+            p.onOriginCity({ id: '7000', name: 'לוד' });
+          }}>
+            <span data-testid="ride-section" />
+          </button>
+        </ListingFieldFrame>
+        <ListingFieldFrame field="ride:recurrence" testID="ride-recurrence-frame">
+          <button type="button" data-testid="ride-section-recur" onClick={() => p.onRecurrenceChange({ weekdays: [0, 4], endsOn: null })} />
+          <button type="button" data-testid="ride-section-recur-nodays" onClick={() => p.onRecurrenceChange({ weekdays: [], endsOn: null })} />
+        </ListingFieldFrame>
+      </>
+    ),
+  };
+});
 vi.mock('../../../services/listingImageUpload', () => ({ pickListingImages: vi.fn(async () => []), uploadListingImages: vi.fn() }));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn(), trackActivationIfFirst: vi.fn() }));
 vi.mock('../../../lib/haptics', () => ({ hapticLightTap: () => {} }));
@@ -106,21 +110,21 @@ function renderForm(worldSlug: string, direction: 'give' | 'request', title = '�
     <QueryClientProvider client={client}>
       <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
         <ListingCreateForm
-          worldSlug={worldSlug}
-          header={null}
-          direction={dir}
-          title={title}
-          onTitleChange={() => {}}
-          summary=""
-          onSummaryChange={() => {}}
-          onPublished={onPublished}
-          onPublishActionChange={() => {}}
+          worldSlug={worldSlug} header={null} direction={dir} title={title} onTitleChange={() => {}}
+          summary="" onSummaryChange={() => {}} onPublished={onPublished} onPublishActionChange={() => {}}
         />
       </ThemeProvider>
     </QueryClientProvider>
   );
   const view = render(ui(direction));
   return { onPublished, rerender: (dir: 'give' | 'request') => view.rerender(ui(dir)) };
+}
+
+/** Taps Publish once the form has settled (the kind's default fields applied), as a member would. */
+async function tapPublishWhenReady() {
+  const button = await screen.findByTestId('listing-publish');
+  await act(async () => {});
+  fireEvent.click(button);
 }
 
 beforeEach(() => {
@@ -149,6 +153,12 @@ describe('ListingCreateForm — renders every category', () => {
     });
   }
 
+  it('describes the world in the description placeholder, not an item', async () => {
+    renderForm('rides', 'give');
+    const summary = await screen.findByTestId('listing-summary');
+    expect(summary.getAttribute('placeholder')).toBe('post.unifiedCreate.descPlaceholder.rides');
+  });
+
   it('shows the category-specific fields of the chosen direction', async () => {
     const { rerender } = renderForm('food', 'give');
     expect(await screen.findByTestId('listing-field-food_type')).toBeTruthy();
@@ -167,25 +177,30 @@ describe('ListingCreateForm — renders every category', () => {
 });
 
 describe('ListingCreateForm — publish', () => {
-  it('blocks publish with the first missing required field', async () => {
+  it('blocks publish with the first missing required field, shown inside that field', async () => {
     renderForm('food', 'give');
-    fireEvent.click(await screen.findByTestId('listing-publish'));
-    expect((await screen.findByTestId('listing-error')).textContent).toBe(
+    await tapPublishWhenReady();
+    const field = screen.getByTestId('listing-field-food_type');
+    expect((await within(field).findByTestId('listing-error')).textContent).toBe(
       'post.unifiedCreate.errors.fieldRequired:marketplace.field.food_type',
     );
     expect(mocks.createListing).not.toHaveBeenCalled();
   });
 
-  it('asks for a title before anything else', async () => {
+  it('asks for a title before anything else, on the title field itself', async () => {
     renderForm('time', 'give', ' ');
-    fireEvent.click(await screen.findByTestId('listing-publish'));
-    expect((await screen.findByTestId('listing-error')).textContent).toBe('post.unifiedCreate.errors.titleRequired');
+    await tapPublishWhenReady();
+    expect(await screen.findByText('post.unifiedCreate.errors.titleRequired')).toBeTruthy();
+    // The title field draws its own error state; nothing is left above Publish.
+    expect(screen.queryByTestId('listing-error')).toBeNull();
   });
 
-  it('asks for a city', async () => {
+  it('asks for a city next to the city picker', async () => {
     renderForm('time', 'give');
-    fireEvent.click(await screen.findByTestId('listing-publish'));
-    expect((await screen.findByTestId('listing-error')).textContent).toBe('post.unifiedCreate.errors.cityRequired');
+    await tapPublishWhenReady();
+    const error = await screen.findByTestId('listing-error');
+    expect(error.textContent).toBe('post.unifiedCreate.errors.cityRequired');
+    expect(error.parentElement?.contains(screen.getByTestId('city-picker'))).toBe(true);
   });
 
   it('publishes a time offer with its default duration and city (the server places it)', async () => {
@@ -214,8 +229,11 @@ describe('ListingCreateForm — publish', () => {
     // The ride section owns the route and the departure; there is no separate city picker.
     expect(screen.getByTestId('ride-section')).toBeTruthy();
     expect(screen.queryByTestId('city-picker')).toBeNull();
-    fireEvent.click(screen.getByTestId('listing-publish'));
-    expect((await screen.findByTestId('listing-error')).textContent).toBe('marketplace.errors.ride_route_required');
+    await tapPublishWhenReady();
+    // Only the missing origin is outlined, not the whole ride section.
+    const origin = screen.getByTestId('ride-origin-frame');
+    expect((await within(origin).findByTestId('listing-error')).textContent).toBe('marketplace.errors.ride_route_required');
+    expect(screen.getAllByTestId('listing-error')).toHaveLength(1);
     expect(mocks.createListing).not.toHaveBeenCalled();
   });
 
@@ -261,7 +279,8 @@ describe('ListingCreateForm — publish', () => {
     fireEvent.click(await screen.findByTestId('ride-section-fill'));
     fireEvent.click(screen.getByTestId('ride-section-recur-nodays'));
     fireEvent.click(screen.getByTestId('listing-publish'));
-    expect((await screen.findByTestId('listing-error')).textContent).toBe('rideSeries.errors.weekdaysRequired');
+    const recurrence = screen.getByTestId('ride-recurrence-frame');
+    expect((await within(recurrence).findByTestId('listing-error')).textContent).toBe('rideSeries.errors.weekdaysRequired');
     expect(mocks.createRideSeries).not.toHaveBeenCalled();
   });
 

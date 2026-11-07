@@ -2,6 +2,7 @@
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { nestedStackGestureOptions } from '../../../../src/navigation/nestedStackGestureOptions';
+import { topBarStackHeaderOptions } from '../../../../src/navigation/TopBarStackHeader';
 import { WorldLaunchGateByFlag } from '../../../../src/components/worlds/WorldLaunchGate';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
@@ -12,7 +13,7 @@ export default function ChallengesLayout() {
   return (
     <WorldLaunchGateByFlag flagKey="world_challenges_enabled">
       <Stack
-        screenOptions={{ ...nestedStackGestureOptions, headerShown: true, headerBackTitle: t('general.back') }}
+        screenOptions={{ ...nestedStackGestureOptions, ...topBarStackHeaderOptions, headerBackTitle: t('general.back') }}
       >
         <Stack.Screen name="index" options={{ headerTitle: t('challenges.title') }} />
         <Stack.Screen name="[challengeId]" options={{ headerTitle: t('challenges.title') }} />

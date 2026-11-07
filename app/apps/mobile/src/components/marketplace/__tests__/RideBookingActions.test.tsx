@@ -2,6 +2,9 @@
 // G47 / D73 — the ride screen: the driver sees every booking and approves or declines each;
 // a passenger books a chosen number of seats and follows their own booking.
 import { afterEach, describe, expect, it, vi } from 'vitest';
+vi.mock('../../giving/RidePlaceField', () => ({ RidePlaceField: () => null }));
+vi.mock('../../../hooks/useRidePlaces', () => ({ useRidePlaces: () => ({ data: [], isLoading: false }) }));
+vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarVisibility: () => false, shellTabBarHeightPx: () => 0, useShellTabBarScrollInset: () => 0 }));
 import React from 'react';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -13,6 +16,7 @@ const approve = vi.fn();
 const decline = vi.fn();
 const book = vi.fn();
 const completeRide = vi.fn();
+const reinstate = vi.fn();
 const confirmAction = vi.fn();
 const getForListing = vi.fn();
 const rate = vi.fn();
@@ -23,6 +27,7 @@ const openRidePassengerChat = vi.fn();
 let sessionUserId: string | null = 'u_driver';
 
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: routerPush }) }));
+vi.mock('../../closure/OwnerAssignUserButton', () => ({ OwnerAssignUserButton: () => null }));
 // The kit buttons pull in reanimated and haptics; their press feedback is not under test here.
 vi.mock('react-native-reanimated', async () => (await import('../../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
 vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogTestKit')).hapticsDouble);
@@ -48,6 +53,7 @@ vi.mock('../../../services/rideBookingComposition', () => ({
     cancel: () => ({ execute: cancel }),
     complete: () => ({ execute: complete }),
     completeRide: () => ({ execute: completeRide }),
+    reinstate: () => ({ execute: reinstate }),
   },
 }));
 vi.mock('../../../services/givingHandoffComposition', () => ({
@@ -61,6 +67,7 @@ vi.mock('../../../lib/haptics', () => ({ hapticSuccess: vi.fn() }));
 // The card module pulls in native image/icon modules; only its time formatter is used here.
 vi.mock('../../cards/ListingCard', () => ({ formatRideTime: (iso: string | null) => iso }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+vi.mock('../../AvatarInitials', () => ({ AvatarInitials: () => null }));
 
 import { RideBookingActions, rideCapacity } from '../rides/RideBookingActions';
 
@@ -93,6 +100,7 @@ function booking(handoffId: string, status: RideBooking['status'], seats = 1): R
     reservedAt: '2026-11-01T08:00:00Z',
     confirmBy: '2026-11-01T10:00:00Z',
     ratedByMe: false,
+    requestedStopLabel: null,
   };
 }
 
@@ -136,6 +144,18 @@ describe('RideBookingActions — driver', () => {
     listForRide.mockResolvedValue([]);
     const view = renderActions();
     await waitFor(() => expect(view.queryByTestId('ride-bookings-empty')).not.toBeNull());
+  });
+
+  it('lets the driver reinstate a recently cancelled passenger', async () => {
+    listForRide.mockResolvedValue([
+      { ...booking('h1', 'confirmed'), status: 'confirmed' },
+      { ...booking('h2', 'cancelled'), status: 'cancelled', cancelReason: 'driver_cancelled' },
+    ]);
+    reinstate.mockResolvedValue(undefined);
+    const view = renderActions();
+    await waitFor(() => expect(view.queryByTestId('ride-booking-reinstate-h2')).not.toBeNull());
+    fireEvent.click(view.getByTestId('ride-booking-reinstate-h2'));
+    await waitFor(() => expect(reinstate).toHaveBeenCalledWith('h2', expect.anything()));
   });
 
   it('lets the driver finish the ride listing', async () => {

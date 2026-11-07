@@ -12,7 +12,6 @@ import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { container } from '../../../src/lib/container';
 import { AdminScreenGuard } from '../../../src/components/admin/AdminScreenGuard';
-import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
 import { MoneySubNav } from '../../../src/components/admin/money/MoneySubNav';
 import { alertError } from '../../../src/components/admin/money/alertError';
 import { OrgTransparencySection } from '../../../src/components/finance/OrgTransparencySection';
@@ -53,7 +52,6 @@ export default function MoneyVisibilityScreen() {
   return (
     <AdminScreenGuard isLoading={rolesLoading} allowed={allowed} loadingLabel={t.loading} forbiddenLabel={t.forbiddenTitle}>
       <View style={styles.root}>
-        <AdminScreenHeader title={v.title} />
         <MoneySubNav active="visibility" />
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.hint}>{v.intro}</Text>

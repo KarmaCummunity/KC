@@ -5,7 +5,7 @@
 import { ORG_EVENT_KIND_SLUG, type MarketplaceListingDetail } from '@kc/domain';
 
 /** Worlds whose "give" listings run the generic handoff (reserve, claim, book a slot). */
-export const HANDOFF_WORLDS: readonly string[] = ['items', 'food', 'knowledge'];
+export const HANDOFF_WORLDS: readonly string[] = ['items', 'food', 'knowledge', 'animals'];
 
 /** Worlds whose "give" listings carry a flow on the detail screen: the handoff worlds, rides and housing stays. */
 const FLOW_WORLDS: readonly string[] = [...HANDOFF_WORLDS, 'rides', 'housing'];

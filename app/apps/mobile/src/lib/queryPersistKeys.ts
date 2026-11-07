@@ -3,6 +3,9 @@ import type { QueryKey } from '@tanstack/react-query';
 /** Query roots worth persisting for instant feed / profile / inbox cold start. */
 export const PERSISTABLE_ROOTS = new Set([
   'feed',
+  // A post that already opened survives a dropped connection and the next launch.
+  'post',
+  'profile-closed-posts',
   'user-profile',
   'profile-other',
   'profile-posts',
@@ -12,6 +15,8 @@ export const PERSISTABLE_ROOTS = new Set([
   'following',
   'followers',
   'notification-inbox',
+  // FR-FEED-017+ — explore + last search sessions survive cold start (PERF-6).
+  'universalSearch',
 ]);
 
 export function isPersistableQueryKey(queryKey: QueryKey): boolean {

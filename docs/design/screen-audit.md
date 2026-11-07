@@ -216,7 +216,7 @@ Each screen of the application is mapped from the Expo Router file structure (`a
 
 #### 1.4 Create Post (Post Creation Flow)
 
-- **Route Path:** `app/(tabs)/create.tsx`
+- **Route Path:** `app/create.tsx` (root stack, opens over the current screen)
 - **Store Screenshot Reference:** *No dedicated store capture (internal / secondary surface)*
 
 ##### Design System Kit Adoption Status

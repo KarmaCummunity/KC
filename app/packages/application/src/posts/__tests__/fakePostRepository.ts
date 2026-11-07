@@ -123,9 +123,24 @@ export class FakePostRepository implements IPostRepository {
   republishError: PostError | Error | null = null;
   closureCandidatesResult: ClosureCandidate[] = [];
   lastCloseArgs: { postId: string; recipientUserId: string | null } | null = null;
+  lastOwnerComplete: {
+    targetId: string;
+    recipientUserId: string | null;
+    mode: 'assign' | 'close_without';
+  } | null = null;
+  ownerCompleteResult: { closed: boolean } = { closed: true };
   lastReopenArgs: { postId: string } | null = null;
   lastRepublishArgs: { postId: string } | null = null;
   lastGetClosureCandidatesPostId: string | null = null;
+
+  ownerCompleteOffer = async (
+    targetId: string,
+    recipientUserId: string | null,
+    mode: 'assign' | 'close_without',
+  ): Promise<{ closed: boolean }> => {
+    this.lastOwnerComplete = { targetId, recipientUserId, mode };
+    return this.ownerCompleteResult;
+  };
 
   close = async (postId: string, recipientUserId: string | null): Promise<Post> => {
     this.lastCloseArgs = { postId, recipientUserId };
@@ -163,6 +178,7 @@ export class FakePostRepository implements IPostRepository {
     cursor?: string,
     visibility?: PostVisibility,
     excludeVisibility?: PostVisibility,
+    _profileOpenLinks?: { readonly viewerUserId: string | null; readonly listMode: 'standard' | 'owner_only_me' },
   ): Promise<{ posts: Post[]; nextCursor: string | null }> => {
     this.lastGetMyPostsArgs = { userId, status, limit, cursor, visibility, excludeVisibility };
     return { posts: this.myPostsResult, nextCursor: this.myPostsNextCursor };

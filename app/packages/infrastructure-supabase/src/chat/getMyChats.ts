@@ -5,7 +5,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ChatWithPreview } from '@kc/application';
-import type { Message } from '@kc/domain';
+import { toVerificationLevel, type Message, type VerificationLevel } from '@kc/domain';
 import type { Database } from '../database.types';
 import { rowToChat, rowToMessage } from './rowMappers';
 import { mapChatError } from './mapChatError';
@@ -101,18 +101,24 @@ export async function getMyChats(
     .filter((id): id is string => id != null);
   const usersRes = await client
     .from('users')
-    .select('user_id, display_name, avatar_url, share_handle')
+    .select('user_id, display_name, avatar_url, share_handle, verification_level')
     .in('user_id', otherIds);
   if (usersRes.error) throw mapChatError(usersRes.error);
   const userMap = new Map<
     string,
-    { displayName: string | null; avatarUrl: string | null; shareHandle: string | null }
+    {
+      displayName: string | null;
+      avatarUrl: string | null;
+      shareHandle: string | null;
+      verificationLevel: VerificationLevel;
+    }
   >();
   for (const u of usersRes.data ?? []) {
     userMap.set(u.user_id, {
       displayName: u.display_name,
       avatarUrl: u.avatar_url,
       shareHandle: u.share_handle,
+      verificationLevel: toVerificationLevel(u.verification_level),
     });
   }
 
@@ -130,6 +136,7 @@ export async function getMyChats(
               avatarUrl: found.avatarUrl,
               shareHandle: found.shareHandle,
               isDeleted: false,
+              verificationLevel: found.verificationLevel,
             }
           : {
               userId: null,

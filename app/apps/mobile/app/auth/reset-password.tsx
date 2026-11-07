@@ -1,15 +1,7 @@
 // Password reset landing route — FR-AUTH-008.
-// Receives `?token_hash=...&type=recovery` from the reset email (or `?code=`
-// from the default PKCE template, same browser only). The single-use token is
-// consumed only when the user submits a valid new password; afterwards every
-// session is revoked and the user signs in again on every device (AC2, AC3).
-// Reachable while signed out (AuthGate). Sibling of auth/verify.tsx.
-// docs/spec/requirements/01_auth_and_onboarding.md
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@kc/ui';
 import { isAuthError } from '@kc/application';
 import { getResetPasswordUseCase } from '../../src/services/authComposition';
@@ -17,13 +9,13 @@ import { mapAuthErrorToHebrew } from '../../src/services/authMessages';
 import { AnimatedAuthInput } from '../../src/components/auth/AnimatedAuthInput';
 import { usePasswordResetStyles } from '../../src/components/auth/passwordResetScreen.styles';
 import { AuthStatusScreen } from '../../src/components/auth/AuthStatusScreen';
-import { PrimaryButton } from '../../src/components/ui/Buttons';
+import { FormScreen, PrimaryButton } from '../../src/components/ui';
+import { useFormFieldFocus } from '../../src/hooks/useFormFieldFocus';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 type Phase = 'form' | 'done' | 'invalid';
 
-/** Errors meaning the link itself is unusable (expired, used, or malformed). */
 const INVALID_LINK_CODES = new Set(['session_expired', 'authentication_failed', 'invalid_credentials']);
 
 export default function ResetPasswordScreen() {
@@ -39,6 +31,9 @@ export default function ResetPasswordScreen() {
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fieldFocus = useFormFieldFocus(2);
+  const passwordField = fieldFocus.bindField(0);
+  const confirmField = fieldFocus.bindField(1);
 
   const onSubmit = async () => {
     if (password !== confirm) {
@@ -72,42 +67,62 @@ export default function ResetPasswordScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Text style={styles.title}>{t('auth.resetPasswordTitle')}</Text>
-          <AnimatedAuthInput
-            testID="reset-password-new"
-            label={t('auth.passwordRuleLabel')}
-            value={password}
-            onChangeText={setPassword}
-            placeholder={t('auth.passwordPlaceholderNew')}
-            secureTextEntry
-            autoComplete="new-password"
-            editable={!loading}
-          />
-          <AnimatedAuthInput
-            testID="reset-password-confirm"
-            label={t('auth.resetPasswordConfirmLabel')}
-            value={confirm}
-            onChangeText={setConfirm}
-            placeholder={t('auth.passwordPlaceholderNew')}
-            secureTextEntry
-            autoComplete="new-password"
-            editable={!loading}
-            onSubmitEditing={onSubmit}
-          />
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          <PrimaryButton
-            testID="reset-password-submit"
-            label={t('auth.resetPasswordSubmitCta')}
-            size="md"
-            fullWidth
-            loading={loading}
-            onPress={onSubmit}
-          />
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+    <FormScreen
+      headerless
+      edges={['top', 'bottom']}
+      contentContainerStyle={styles.content}
+      keyboardAccessory={{
+        canGoPrev: fieldFocus.canGoPrev,
+        canGoNext: fieldFocus.canGoNext,
+        onPrev: fieldFocus.focusPrev,
+        onNext: fieldFocus.focusNext,
+        onDone: fieldFocus.dismiss,
+      }}
+      footer={
+        <PrimaryButton
+          testID="reset-password-submit"
+          label={t('auth.resetPasswordSubmitCta')}
+          size="md"
+          fullWidth
+          loading={loading}
+          onPress={onSubmit}
+        />
+      }
+    >
+      <Text style={styles.title}>{t('auth.resetPasswordTitle')}</Text>
+      <AnimatedAuthInput
+        ref={passwordField.ref}
+        testID="reset-password-new"
+        label={t('auth.passwordRuleLabel')}
+        value={password}
+        onChangeText={setPassword}
+        placeholder={t('auth.passwordPlaceholderNew')}
+        secureTextEntry
+        autoComplete="new-password"
+        editable={!loading}
+        onFocus={passwordField.onFocus}
+        inputAccessoryViewID={passwordField.inputAccessoryViewID}
+        returnKeyType={passwordField.returnKeyType}
+        blurOnSubmit={passwordField.blurOnSubmit}
+        onSubmitEditing={passwordField.onSubmitEditing}
+      />
+      <AnimatedAuthInput
+        ref={confirmField.ref}
+        testID="reset-password-confirm"
+        label={t('auth.resetPasswordConfirmLabel')}
+        value={confirm}
+        onChangeText={setConfirm}
+        placeholder={t('auth.passwordPlaceholderNew')}
+        secureTextEntry
+        autoComplete="new-password"
+        editable={!loading}
+        onFocus={confirmField.onFocus}
+        inputAccessoryViewID={confirmField.inputAccessoryViewID}
+        returnKeyType={confirmField.returnKeyType}
+        blurOnSubmit={confirmField.blurOnSubmit}
+        onSubmitEditing={confirmField.onSubmitEditing}
+      />
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+    </FormScreen>
   );
 }

@@ -64,8 +64,10 @@ const SPECS_BY_KIND: Readonly<Record<string, readonly ListingFieldSpec[]>> = {
   ],
   // Route, departure, estimated end and seats belong to RideCreateSection (D71, D75); these are
   // the remaining ride fields.
+  // Rides are free for now (spec 05 §5.3): the cost model is fixed, so the amount never shows and a
+  // carried-over amount is dropped on submit.
   ride_offer: [
-    { key: 'reward_model', type: 'choice', options: ['free', 'expense_share'], defaultValue: 'free' },
+    { key: 'reward_model', type: 'fixed', defaultValue: 'free' },
     // Clamped to the intercity cap; the urban cap is enforced server-side (`ride_cost_share_cap_exceeded`).
     { key: 'cost_share_ils', type: 'amount', max: RIDE_COST_CAP_INTERCITY_ILS, visibleWhen: { key: 'reward_model', equals: 'expense_share' } },
   ],
@@ -146,6 +148,14 @@ export function fieldsForKind(kind: ListingKindOption): readonly ListingFieldSpe
 /** Whether `spec` is shown for the current details (conditional fields). */
 export function isFieldVisible(spec: ListingFieldSpec, details: Readonly<Record<string, unknown>>): boolean {
   return !spec.visibleWhen || details[spec.visibleWhen.key] === spec.visibleWhen.equals;
+}
+
+/** The fields the form shows a control for (a `fixed` detail is set by the form itself). */
+export function visibleDetailSpecs(
+  specs: readonly ListingFieldSpec[],
+  details: Readonly<Record<string, unknown>>,
+): ListingFieldSpec[] {
+  return specs.filter((spec) => spec.type !== 'fixed' && isFieldVisible(spec, details));
 }
 
 /** Initial details for a freshly selected kind: every field that has a default. */

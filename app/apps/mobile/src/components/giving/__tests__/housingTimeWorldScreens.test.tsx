@@ -48,7 +48,12 @@ describe('housing and time world screens', () => {
     render(<HousingWorldScreen />);
     expect(screen.getByTestId('world-feed-housing')).toBeTruthy();
     expect(mocks.hubProps.at(-1)).toMatchObject({ worldSlug: 'housing', icon: 'home-outline', linksCategory: 'housing' });
-    expect(subScreenPaths()).toEqual(['/(tabs)/donations/housing/handoffs', '/(tabs)/donations/marketplace/my-listings']);
+    expect(subScreenPaths()).toEqual([
+      '/(tabs)/donations/housing/handoffs',
+      '/(tabs)/donations/marketplace/my-listings',
+      '/(tabs)/donations/housing/hosting',
+      '/(tabs)/donations/housing/stays',
+    ]);
   });
 
   it('time: an active world shows its feed, the organisations section and its own screens', () => {

@@ -1,20 +1,17 @@
 // Styles extracted from app/post/[id].tsx to keep the screen under the
 // 300-LOC cap (TD-29).
 import { Platform, type ViewStyle } from 'react-native';
-import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
+import { darkColors, lightColors, makeUseStyles, radius, shadow, spacing, typography, zIndex } from '@kc/ui';
 import { heroCornerEnd, heroCornerStart } from '../../components/post-detail/postDetailCorner';
 import { rowDirectionStart, selfAlignStart, textAlignStart } from '../../lib/rtlLayout';
 
-const IMAGE_OVERLAY_BG = 'rgba(0, 0, 0, 0.68)';
-const IMAGE_OVERLAY_BORDER = 'rgba(255, 255, 255, 0.22)';
+// Over a photo the scrim, hairline and label stay the same in both themes.
+const IMAGE_OVERLAY_BG = darkColors.overlay;
+const IMAGE_OVERLAY_BORDER = `${lightColors.textInverse}38`;
+const IMAGE_OVERLAY_TEXT = lightColors.textInverse;
+const LOCATION_ICON_SIZE = 28;
 
-const overlayShadow = {
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.28,
-  shadowRadius: 4,
-  elevation: 3,
-};
+const overlayShadow = { ...shadow.card, shadowOpacity: shadow.glow.shadowOpacity };
 
 export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
   container: { flex: 1, backgroundColor: colors.background },
@@ -44,17 +41,16 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
   imageWrap: {
     position: 'relative',
     marginHorizontal: spacing.base,
-    marginTop: spacing.base,
-    borderRadius: radius.xl,
+    marginTop: spacing.sm,
+    borderRadius: radius.lg,
     overflow: 'hidden',
     backgroundColor: colors.surface,
     borderWidth: isDark ? 1 : 0,
     borderColor: isDark ? colors.border : 'transparent',
+    ...shadow.card,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: isDark ? 0 : 0.06,
-    shadowRadius: 8,
-    elevation: isDark ? 0 : 2,
+    shadowOpacity: isDark ? 0 : shadow.card.shadowOpacity,
+    elevation: isDark ? 0 : shadow.card.elevation,
   },
   imageWrapClosed: {
     borderColor: isDark ? colors.success : `${colors.success}55`,
@@ -66,18 +62,18 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
     right: 0,
     bottom: 0,
     height: '38%',
-    backgroundColor: isDark ? 'rgba(74, 222, 128, 0.12)' : 'rgba(34, 197, 94, 0.14)',
+    backgroundColor: `${colors.success}${isDark ? '1F' : '24'}`,
   },
   statusBadgePos: {
     position: 'absolute',
     top: spacing.base,
-    zIndex: 2,
+    zIndex: zIndex.overlay,
     ...(heroCornerStart(spacing.base) as ViewStyle),
   },
   typeTagOverlay: {
     position: 'absolute',
     bottom: spacing.base,
-    zIndex: 2,
+    zIndex: zIndex.overlay,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
@@ -89,42 +85,41 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
     ...overlayShadow,
     ...(heroCornerEnd(spacing.base) as ViewStyle),
   },
-  giveTagText: { ...typography.label, color: colors.giveTag, fontWeight: '700' },
-  requestTagText: { ...typography.label, color: '#FFFFFF', fontWeight: '700' },
+  giveTagText: { ...typography.label, ...typography.bold, color: colors.giveTag },
+  requestTagText: { ...typography.label, ...typography.bold, color: IMAGE_OVERLAY_TEXT },
 
   content: {
     marginHorizontal: spacing.base,
-    marginTop: spacing.base,
-    padding: spacing.lg,
-    gap: spacing.md,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
+    gap: spacing.sm + 2,
     backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: isDark ? 1 : 0,
-    borderColor: isDark ? colors.border : 'transparent',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: isDark ? colors.border : `${colors.border}88`,
+    ...shadow.card,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: isDark ? 0 : 0.05,
-    shadowRadius: 6,
-    elevation: isDark ? 0 : 1,
+    elevation: isDark ? 0 : shadow.card.elevation,
+  },
+  contentInset: {
+    padding: spacing.md,
+    gap: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: isDark ? colors.surfaceRaised : colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   contentClosed: {
     borderColor: isDark ? `${colors.success}44` : `${colors.success}33`,
     borderWidth: 1,
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  titleBlock: { flex: 1, gap: spacing.xs, minWidth: 0 },
   title: {
     ...typography.h2,
-    fontSize: 26,
     color: colors.textPrimary,
     textAlign: textAlignStart(),
-    letterSpacing: -0.3,
-    lineHeight: 32,
+    letterSpacing: -0.2,
+    lineHeight: 28,
   },
   translationBar: {
     flexDirection: rowDirectionStart,
@@ -141,24 +136,9 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
   },
   showOriginalLink: {
     ...typography.caption,
+    ...typography.semiBold,
     color: colors.primary,
-    fontWeight: '600',
     textAlign: textAlignStart(),
-  },
-  categoryChip: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radius.full,
-    backgroundColor: isDark ? `${colors.primary}22` : colors.primarySurface,
-    borderWidth: 1,
-    borderColor: isDark ? `${colors.primary}44` : colors.primaryLight,
-  },
-  categoryChipText: {
-    ...typography.label,
-    fontSize: 11,
-    color: isDark ? colors.giveTag : colors.primaryDark,
-    fontWeight: '700',
   },
   metaChipsRow: {
     flexDirection: 'row',
@@ -169,9 +149,9 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
   metaChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
+    paddingVertical: spacing.xs,
     borderRadius: radius.full,
     backgroundColor: isDark ? colors.surfaceRaised : colors.background,
     borderWidth: 1,
@@ -179,14 +159,19 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
   },
   metaChipText: {
     ...typography.caption,
+    ...typography.semiBold,
     color: colors.textPrimary,
-    fontWeight: '600',
   },
   description: {
     ...typography.body,
+    fontSize: typography.button.fontSize,
     color: colors.textPrimary,
-    lineHeight: 24,
     textAlign: textAlignStart(),
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: spacing.xs,
   },
   metaSection: {
     gap: spacing.xs,
@@ -198,15 +183,15 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
     gap: spacing.sm,
   },
   locationIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.md,
+    width: LOCATION_ICON_SIZE,
+    height: LOCATION_ICON_SIZE,
+    borderRadius: radius.sm,
     backgroundColor: colors.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   locationText: {
-    ...typography.body,
+    ...typography.bodySmall,
     color: colors.textSecondary,
     flex: 1,
     textAlign: textAlignStart(),
@@ -215,25 +200,23 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
     ...typography.caption,
     color: colors.textDisabled,
     textAlign: textAlignStart(),
-    paddingStart: 32 + spacing.sm,
+    paddingStart: LOCATION_ICON_SIZE + spacing.sm,
   },
   authorCard: {
-    marginTop: spacing.xs,
-    padding: spacing.md,
-    borderRadius: radius.lg,
-    backgroundColor: isDark ? colors.surfaceRaised : colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
+    marginTop: spacing.sm,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   authorRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
-  authorInfo: { flex: 1, gap: 2 },
+  authorInfo: { flex: 1, gap: spacing.xs / 2 },
   authorName: {
     ...typography.body,
-    fontWeight: '600',
+    ...typography.semiBold,
     color: colors.textPrimary,
     textAlign: textAlignStart(),
   },
@@ -247,7 +230,7 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
     color: colors.textDisabled,
     textAlign: textAlignStart(),
     marginBottom: spacing.xs,
-    fontWeight: '600',
+    ...typography.semiBold,
   },
 
   // Floating, self-centered pill CTA — sits above content, no full-width bar.
@@ -262,19 +245,16 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
     }),
   },
   messageBtn: {
-    height: 48,
+    height: 44,
     flexDirection: 'row',
     gap: spacing.xs,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md + spacing.xs,
     backgroundColor: colors.primary,
     borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
+    ...shadow.glow,
     shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: isDark ? 0.25 : 0.35,
-    shadowRadius: 12,
-    elevation: 6,
   },
-  messageBtnText: { ...typography.button, fontSize: 15, color: colors.textInverse },
+  messageBtnText: { ...typography.button, color: colors.textInverse },
 }));

@@ -474,7 +474,7 @@ begin
   perform kc_test.assert_true(
     not has_function_privilege('authenticated', 'public.ride_post_set_status(public.posts, text)', 'execute')
     and not has_function_privilege('anon', 'public.ride_post_set_status(public.posts, text)', 'execute')
-    and has_function_privilege('authenticated', 'public.book_ride_seat(uuid, int)', 'execute')
+    and has_function_privilege('authenticated', 'public.book_ride_seat(uuid, int, jsonb)', 'execute')
     and has_function_privilege('authenticated', 'public.create_ride_series(uuid, text, jsonb, text, time, int, text, int, date)', 'execute')
     and not has_function_privilege('authenticated', 'public.rides_expired_listings_sweep()', 'execute'),
     'grants: the helper and the sweeps are internal; the RPCs keep their grants');

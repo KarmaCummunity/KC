@@ -5,6 +5,7 @@ import { View, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { useClosureStore } from '../../store/closureStore';
+import { closureCopyKeys } from '../../lib/closureCopy';
 import { useAuthStore } from '../../store/authStore';
 import { getUserRepo } from '../../services/userComposition';
 import { rowDirectionStart } from '../../lib/rtlLayout';
@@ -18,6 +19,7 @@ export function ClosureExplainerSheet() {
   const { t } = useTranslation();
   const step = useClosureStore((s) => s.step);
   const postType = useClosureStore((s) => s.postType);
+  const worldSlug = useClosureStore((s) => s.worldSlug);
   const dismiss = useClosureStore((s) => s.dismissExplainer);
   const completeWithoutExplainer = useClosureStore((s) => s.completeWithoutExplainer);
   const userId = useAuthStore((s) => s.session?.userId);
@@ -67,8 +69,9 @@ export function ClosureExplainerSheet() {
   // OwnerActionsBar to fire onClosed (step='done', not 'idle').
   // Direction flips by post.type. The "give" copy is what was originally
   // shipped; the "request" copy mirrors it for the recipient-side flow.
+  const copy = closureCopyKeys(postType, worldSlug);
   const give = postType !== 'Request';
-  const titleText = give ? t('closure.explainerGiveTitle') : t('closure.explainerRequestTitle');
+  const titleText = t(copy.explainerTitle);
   const markedBullet = give
     ? t('closure.explainerGiveMarkedBullet')
     : t('closure.explainerRequestMarkedBullet');
@@ -86,10 +89,16 @@ export function ClosureExplainerSheet() {
       }
     >
       <View style={styles.list}>
-        <Text style={styles.body}>{t('closure.explainerLead')}</Text>
-        <Text style={styles.bullet}>{markedBullet}</Text>
-        <Text style={styles.bullet}>{t('closure.explainerMiddleBullet')}</Text>
-        <Text style={styles.bullet}>{counterBullet}</Text>
+        {copy.explainerBody ? (
+          <Text style={styles.body}>{t(copy.explainerBody)}</Text>
+        ) : (
+          <>
+            <Text style={styles.body}>{t('closure.explainerLead')}</Text>
+            <Text style={styles.bullet}>{markedBullet}</Text>
+            <Text style={styles.bullet}>{t('closure.explainerMiddleBullet')}</Text>
+            <Text style={styles.bullet}>{counterBullet}</Text>
+          </>
+        )}
       </View>
 
       <Pressable

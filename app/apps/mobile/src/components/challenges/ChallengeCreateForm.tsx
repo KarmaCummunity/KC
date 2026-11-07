@@ -10,6 +10,7 @@ import {
   type ChallengeDraft,
 } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { formDecimalInputProps, formIntegerInputProps } from '../../lib/platform/formTextInputHints';
 import { TextField } from '../ui/TextField';
 import { PrimaryButton } from '../ui/Buttons';
 import { OptionChips } from './OptionChips';
@@ -60,6 +61,7 @@ export function ChallengeCreateForm({ busy, errorMessage, onSubmit, onPublishAct
         onChangeText={(text) => set('title', text)}
         testID="challenge-form-title"
       />
+      {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
       <TextField
         label={t('challenges.form.description')}
         value={form.description}
@@ -93,7 +95,7 @@ export function ChallengeCreateForm({ busy, errorMessage, onSubmit, onPublishAct
             label={t('challenges.form.goalValue')}
             value={form.goalValue}
             onChangeText={(text) => set('goalValue', text)}
-            keyboardType="decimal-pad"
+            {...formDecimalInputProps}
           />
           <OptionChips
             label={t('challenges.form.goalDirection')}
@@ -120,7 +122,7 @@ export function ChallengeCreateForm({ busy, errorMessage, onSubmit, onPublishAct
         helperText={t('challenges.form.targetCyclesHint')}
         value={form.targetCycles}
         onChangeText={(text) => set('targetCycles', text)}
-        keyboardType="number-pad"
+        {...formIntegerInputProps}
       />
       {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
       <PrimaryButton

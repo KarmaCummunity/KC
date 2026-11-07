@@ -12,6 +12,7 @@ const GLILOT: RidePlace = { kind: 'junction', id: '106', label: 'מחלף גלי
 const streetProps = vi.fn();
 
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
+vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 // Each picker is one button selecting a fixed row, so the test drives the field's own logic.
 vi.mock('../../SearchablePicker/SearchablePicker', () => ({
   SearchablePicker: ({ onSelect }: { onSelect: (s: { id: string; name: string }) => void }) => (
@@ -66,5 +67,34 @@ describe('RidePlaceField', () => {
   it('has no street step for a junction', () => {
     const { view } = renderField(GLILOT);
     expect(view.queryByTestId('pick-street')).toBeNull();
+  });
+
+  describe('private house number (FR-RIDE-003 AC9)', () => {
+    const STREET: RidePlace = { kind: 'street', id: '5000:404', label: 'דיזנגוף, תל אביב - יפו', lat: 32.08, lng: 34.78, cityId: '5000' };
+    const renderWithNumber = (value: RidePlace, onHouseNumberChange = vi.fn()) =>
+      render(
+        <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
+          <RidePlaceField
+            label="To" value={value} places={[TLV, GLILOT]} isLoading={false} error={null} onChange={vi.fn()}
+            houseNumber="5" onHouseNumberChange={onHouseNumberChange} houseNumberTestID="dest-number"
+          />
+        </ThemeProvider>,
+      );
+
+    it('offers a number box once a street is picked, with a privacy hint', () => {
+      const onHouseNumberChange = vi.fn();
+      const view = renderWithNumber(STREET, onHouseNumberChange);
+      const box = view.getByTestId('dest-number') as HTMLInputElement;
+      expect(box.value).toBe('5');
+      expect(view.getByText('ridePlaces.houseNumberPrivateHint')).toBeTruthy();
+      fireEvent.change(box, { target: { value: '12' } });
+      expect(onHouseNumberChange).toHaveBeenCalledWith('12');
+    });
+
+    it('has no number box for a city or without a handler', () => {
+      expect(renderWithNumber(TLV).queryByTestId('dest-number')).toBeNull();
+      cleanup();
+      expect(renderField(STREET).view.queryByTestId('dest-number')).toBeNull();
+    });
   });
 });

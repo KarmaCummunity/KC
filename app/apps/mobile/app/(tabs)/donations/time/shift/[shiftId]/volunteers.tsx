@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../../../../../../src/components/ui/Screen';
+import { TimeWorldSubScreenChrome } from '../../../../../../src/components/giving/TimeWorldSubScreenChrome';
 import { volunteerUseCases } from '../../../../../../src/services/volunteerComposition';
 
 const useStyles = makeUseStyles(({ colors }) => ({
@@ -31,7 +32,12 @@ export default function ShiftVolunteersRosterScreen() {
   });
 
   return (
-    <Screen blobs="content">
+    <>
+      <TimeWorldSubScreenChrome
+        activeScreenTestId="time-organizer"
+        screenTitleKey="timeVolunteer.manageVolunteers"
+      />
+      <Screen blobs="off" hasNativeHeader>
       <KcFlashList
         data={roster.data ?? []}
         keyExtractor={(item) => item.signupId}
@@ -52,6 +58,7 @@ export default function ShiftVolunteersRosterScreen() {
           </View>
         )}
       />
-    </Screen>
+      </Screen>
+    </>
   );
 }

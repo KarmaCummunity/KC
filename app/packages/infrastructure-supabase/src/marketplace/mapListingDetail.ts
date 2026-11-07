@@ -1,4 +1,5 @@
 import type { MarketplaceListingDetail } from '@kc/domain';
+import { toVerificationLevel } from '@kc/domain';
 
 export function mapListingDetail(raw: unknown): MarketplaceListingDetail | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -40,6 +41,7 @@ export function mapListingDetail(raw: unknown): MarketplaceListingDetail | null 
           avatarUrl: ownerRaw.avatar_url != null ? String(ownerRaw.avatar_url) : null,
           shareHandle: ownerRaw.share_handle != null ? String(ownerRaw.share_handle) : null,
           cityId: ownerRaw.city_id != null ? String(ownerRaw.city_id) : null,
+          verificationLevel: toVerificationLevel(ownerRaw.verification_level),
         }
       : null,
     feedPostId: o.feed_post_id != null ? String(o.feed_post_id) : null,

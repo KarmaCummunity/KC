@@ -51,6 +51,7 @@ export const challenges = {
     submit: 'פתיחת האתגר',
   },
   detail: {
+    heroType: 'אתגר',
     by: 'נפתח על ידי {{name}}',
     myProgress: 'ההתקדמות שלי',
     currentStreak: 'רצף נוכחי',
@@ -60,6 +61,11 @@ export const challenges = {
     completed: 'השלמתם את האתגר',
     noStreak: 'באתגר גמיש אין רצף, רק ספירת מחזורים.',
     join: 'הצטרפות לאתגר',
+    joinProfileTitle: 'להציג את האתגר בפרופיל שלכם?',
+    joinProfileBody:
+      'הפוסט של האתגר יקושר אליכם. אפשר להציג אותו בטאב הפוסטים הפתוחים בפרופיל, או לשמור אותו רק אצלכם ב«מוסתרים».',
+    joinProfileShow: 'כן, להציג בפרופיל',
+    joinProfileHidden: 'לא, רק מוסתר אצלי',
     leave: 'עזיבת האתגר',
     leaveTitle: 'לעזוב את האתגר?',
     leaveBody: 'הדיווחים שלכם באתגר יימחקו.',

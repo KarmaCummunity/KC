@@ -48,7 +48,11 @@ const state = () => screen.getByTestId('state').textContent;
 beforeEach(() => {
   mocks.params = {};
   mocks.flags = undefined;
-  mocks.load.mockResolvedValue({ categoryId: 'rides', directions: { rides: 'request', food: 'request' } });
+  mocks.load.mockResolvedValue({
+    categoryId: 'rides',
+    directions: { rides: 'request', food: 'request' },
+    usageCounts: {},
+  });
   mocks.save.mockResolvedValue(undefined);
 });
 
@@ -109,6 +113,7 @@ describe('useUnifiedCreateCategory', () => {
     expect(mocks.save).toHaveBeenLastCalledWith('u1', {
       categoryId: 'housing',
       directions: { rides: 'request', food: 'request' },
+      usageCounts: { food: 1, housing: 1 },
     });
   });
 
@@ -119,6 +124,7 @@ describe('useUnifiedCreateCategory', () => {
     expect(mocks.save).toHaveBeenLastCalledWith('u1', {
       categoryId: 'rides',
       directions: { rides: 'give', food: 'request' },
+      usageCounts: {},
     });
   });
 
@@ -141,16 +147,22 @@ describe('useUnifiedCreateCategory', () => {
     expect(screen.queryByTestId('create-direction-give')).not.toBeNull();
   });
 
-  it('renders one chip per giving world in order, the active one selected', async () => {
+  it('renders one chip per giving world, most-used first, the active one selected', async () => {
+    mocks.load.mockResolvedValue({
+      categoryId: 'rides',
+      directions: { rides: 'request' },
+      usageCounts: { rides: 5, food: 2 },
+    });
     await renderHarness();
     const tiles = screen
       .getAllByRole('checkbox')
       .filter((t) => (t.getAttribute('data-testid') ?? '').startsWith('create-category-'));
-    expect(tiles.map((t) => t.getAttribute('data-testid'))).toEqual([
-      ...['items', 'food', 'rides', 'time', 'money', 'housing', 'knowledge', 'medical', 'animals', 'democracy', 'employment', 'challenges'].map(
-        (id) => `create-category-${id}`,
-      ),
+    expect(tiles.map((t) => t.getAttribute('data-testid'))?.slice(0, 3)).toEqual([
+      'create-category-rides',
+      'create-category-food',
+      'create-category-items',
     ]);
+    expect(tiles).toHaveLength(12);
     expect(screen.getByTestId('create-category-rides').getAttribute('aria-checked')).toBe('true');
   });
 });

@@ -27,6 +27,9 @@ vi.mock('../../store/authStore', () => ({
   useAuthStore: (select: (s: { session: { userId: string } }) => unknown) => select({ session: { userId: 'u1' } }),
 }));
 vi.mock('../useMyMarketplaceListings', () => ({ useInvalidateMyListings: () => m.invalidate }));
+vi.mock('../../store/closureStore', () => ({
+  useClosureStore: { getState: () => ({ start: vi.fn() }) },
+}));
 
 import { useMyListingActions } from '../useMyListingActions';
 

@@ -28,6 +28,7 @@ vi.mock('../../../hooks/useModalHardwareBack', () => ({ useModalHardwareBack: ()
 vi.mock('../../../services/postsComposition', () => ({
   getGetClosureCandidatesUseCase: () => ({ execute: () => Promise.resolve([]) }),
   getMarkAsDeliveredUseCase: () => ({ execute: () => Promise.resolve() }),
+  getOwnerCompleteOfferUseCase: () => ({ execute: () => Promise.resolve({ closed: true }) }),
 }));
 vi.mock('../../../services/userComposition', () => ({
   getDismissClosureExplainerUseCase: () => ({ execute: () => Promise.resolve() }),
@@ -80,6 +81,12 @@ describe('ClosureSheet', () => {
     expect(getByText('closure.step1GiveBody')).toBeTruthy();
     fireEvent.click(getByRole('button', { name: 'closure.step1GiveCta' }));
     expect(confirmStep1).toHaveBeenCalledTimes(1);
+  });
+
+  it('titles a ride assign by the passenger, not by an item', () => {
+    const { getByRole } = renderAt('pick', { worldSlug: 'rides' });
+    expect(getByRole('heading').textContent).toBe('closure.step2RidesTitle');
+    expect(getByRole('button', { name: 'closure.step2RidesPrimary' })).toBeTruthy();
   });
 
   it('titles step 2 and keeps marking disabled until a recipient is picked', () => {

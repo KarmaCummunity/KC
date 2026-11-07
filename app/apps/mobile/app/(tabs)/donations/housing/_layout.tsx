@@ -12,6 +12,8 @@ export default function HousingWorldLayout() {
     <Stack screenOptions={{ ...nestedStackGestureOptions, ...topBarStackHeaderOptions, headerBackTitle: t('general.back'), }}>
       <Stack.Screen name="index" options={{ headerTitle: t('donations.categories.housing.title') }} />
       <Stack.Screen name="handoffs" options={{ headerTitle: t('givingHandoff.myHandoffs') }} />
+      <Stack.Screen name="hosting" options={{ headerTitle: t('housingStay.myHosting.nav') }} />
+      <Stack.Screen name="stays" options={{ headerTitle: t('housingStay.myStays.nav') }} />
     </Stack>
   );
 }

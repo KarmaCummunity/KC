@@ -94,19 +94,19 @@ describe('unified create — category config', () => {
   });
 
   it('every entry point uses one route, preselecting a known category only', () => {
-    expect(createRouteFor()).toBe('/(tabs)/create');
-    expect(createRouteFor(null)).toBe('/(tabs)/create');
-    expect(createRouteFor('experiences')).toBe('/(tabs)/create');
-    expect(createRouteFor('rides')).toBe('/(tabs)/create?category=rides');
-    expect(createRouteFor('items')).toBe('/(tabs)/create?category=items');
+    expect(createRouteFor()).toBe('/create');
+    expect(createRouteFor(null)).toBe('/create');
+    expect(createRouteFor('experiences')).toBe('/create');
+    expect(createRouteFor('rides')).toBe('/create?category=rides');
+    expect(createRouteFor('items')).toBe('/create?category=items');
   });
 
   it('presets the direction with a category (FR-FEED-020 AC2), never without one', () => {
-    expect(createRouteFor('food', 'request')).toBe('/(tabs)/create?category=food&direction=request');
-    expect(createRouteFor('housing', 'give')).toBe('/(tabs)/create?category=housing&direction=give');
-    expect(createRouteFor('rides', null)).toBe('/(tabs)/create?category=rides');
-    expect(createRouteFor('experiences', 'give')).toBe('/(tabs)/create');
-    expect(createRouteFor(null, 'request')).toBe('/(tabs)/create');
+    expect(createRouteFor('food', 'request')).toBe('/create?category=food&direction=request');
+    expect(createRouteFor('housing', 'give')).toBe('/create?category=housing&direction=give');
+    expect(createRouteFor('rides', null)).toBe('/create?category=rides');
+    expect(createRouteFor('experiences', 'give')).toBe('/create');
+    expect(createRouteFor(null, 'request')).toBe('/create');
   });
 
   it('recognises exactly the two create directions', () => {

@@ -3,6 +3,7 @@ import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@kc/ui';
 import { TextField } from '../ui/TextField';
+import { CompactStreetNumberField } from '../address/CompactStreetNumberField';
 import { ALL_CATEGORIES, ITEM_CONDITIONS } from '@kc/domain';
 import type { Category, ItemCondition, LocationDisplayLevel, PostVisibility } from '@kc/domain';
 import { CityPicker } from '../CityPicker';
@@ -122,9 +123,8 @@ export function EditPostFormScrollContent({
               disabled={isSaving}
             />
           </View>
-          <TextField
+          <CompactStreetNumberField
             containerStyle={styles.streetInputHouse}
-            label={t('profile.streetNumberShort')}
             value={streetNumber}
             onChangeText={onStreetNumberChange}
             placeholder={t('post.editPost.streetNumberPlaceholder')}

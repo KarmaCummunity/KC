@@ -1,8 +1,8 @@
 // app/apps/mobile/app/(admin)/money/index.tsx
 // V2-ADMIN-MONEY-9 — V2 §13.3 Admin Money — minimal donations / expenses ledger.
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { adminChipScroll } from '../../../src/components/admin/adminChipScroll';
+import { useTranslation } from 'react-i18next';
+import { Alert, Platform, RefreshControl, StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   hasPermission, isFinanceLedgerError,
@@ -15,7 +15,8 @@ import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { container } from '../../../src/lib/container';
 import { FinanceEntryCard } from '../../../src/components/admin/money/FinanceEntryCard';
 import { FinanceEntryFormModal } from '../../../src/components/admin/money/FinanceEntryFormModal';
-import { AdminFilterChip } from '../../../src/components/admin/AdminFilterChip';
+import { AdminFilterTopBarButton } from '../../../src/components/admin/AdminSearchFilterToolbar';
+import { FilterSection } from '../../../src/components/filterKit/FilterSection';
 import { MoneySubNav } from '../../../src/components/admin/money/MoneySubNav';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
 import { confirmAction as platformConfirm } from '../../../src/services/platformConfirm';
@@ -64,11 +65,14 @@ export default function MoneyScreen() {
   const styles = useStyles();
   const L = useLocaleBundle();
   const t = L.admin.money;
+  const { t: tFilters } = useTranslation();
   const { roles, isLoading: rolesLoading } = useAdminRoles();
   const can = (perm: AdminPermission) => hasPermission(roles as readonly AdminRole[], perm);
   const queryClient = useQueryClient();
 
   const [dirFilter, setDirFilter] = useState<DirFilter>('all');
+  const [sheetOpen, setSheetOpen] = useState(false);
+
   const [editing, setEditing] = useState<FinanceEntry | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -182,16 +186,25 @@ export default function MoneyScreen() {
         ))}
       </View>
 
-      <ScrollView horizontal style={adminChipScroll.scroll} showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.chips, adminChipScroll.content]}>
-        {(['all', 'in', 'out'] as readonly DirFilter[]).map((d) => (
-          <AdminFilterChip
-            key={d}
-            label={d === 'all' ? t.filters.all : d === 'in' ? t.filters.income : t.filters.expense}
-            active={dirFilter === d}
-            onPress={() => setDirFilter(d)}
+      <AdminFilterTopBarButton
+        activeFilterCount={dirFilter === 'all' ? 0 : 1}
+        filterVisible={sheetOpen}
+        onOpenFilters={() => setSheetOpen(true)}
+        onCloseFilters={() => setSheetOpen(false)}
+        onClearFilters={() => setDirFilter('all')}
+        sheetTitle={tFilters('filters.header')}
+        filterButtonTestID="admin-money-filter-button"
+        filterSheetContent={(
+          <FilterSection<DirFilter>
+            options={(['all', 'in', 'out'] as const).map((d) => ({
+              value: d,
+              label: d === 'all' ? t.filters.all : d === 'in' ? t.filters.income : t.filters.expense,
+            }))}
+            value={dirFilter}
+            onChange={(d) => setDirFilter(d ?? 'all')}
           />
-        ))}
-      </ScrollView>
+        )}
+      />
       <Text style={styles.totalLabel}>{t.totalCount(list.data?.totalCount ?? 0)}</Text>
 
       <KcFlashList

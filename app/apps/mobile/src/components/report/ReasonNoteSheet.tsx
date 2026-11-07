@@ -12,6 +12,8 @@ import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { BottomSheet } from '../ui/BottomSheet';
 import { DangerButton, GhostButton, PrimaryButton } from '../ui/Buttons';
 import { TextField } from '../ui/TextField';
+import { useFormFieldFocus } from '../../hooks/useFormFieldFocus';
+import { KeyboardFormAccessory } from '../ui/KeyboardFormAccessory';
 
 /** One choosable reason: its stored value and its translated label. */
 export interface ReasonOption<T extends string> {
@@ -51,9 +53,21 @@ export interface ReasonNoteSheetProps<T extends string> {
 export function ReasonNoteSheet<T extends string>(props: ReasonNoteSheetProps<T>) {
   const { visible, onClose, title, reasonLabel, submitting, destructive } = props;
   const styles = useReasonNoteSheetStyles();
+  const fieldFocus = useFormFieldFocus(1);
+  const noteField = fieldFocus.bindField(0);
   const SubmitButton = destructive ? DangerButton : PrimaryButton;
   const submitText = submitting && props.submittingLabel ? props.submittingLabel : props.submitLabel;
   return (
+    <>
+      {visible ? (
+        <KeyboardFormAccessory
+          canGoPrev={fieldFocus.canGoPrev}
+          canGoNext={fieldFocus.canGoNext}
+          onPrev={fieldFocus.focusPrev}
+          onNext={fieldFocus.focusNext}
+          onDone={fieldFocus.dismiss}
+        />
+      ) : null}
     <BottomSheet
       visible={visible}
       onDismiss={onClose}
@@ -85,13 +99,20 @@ export function ReasonNoteSheet<T extends string>(props: ReasonNoteSheetProps<T>
         ))}
       </View>
       <TextField
+        ref={noteField.ref}
         label={props.noteLabel}
         value={props.note}
         onChangeText={props.onNoteChange}
         multiline
         maxLength={props.noteMaxLength}
+        onFocus={noteField.onFocus}
+        inputAccessoryViewID={noteField.inputAccessoryViewID}
+        returnKeyType={noteField.returnKeyType}
+        blurOnSubmit={noteField.blurOnSubmit}
+        onSubmitEditing={noteField.onSubmitEditing}
       />
     </BottomSheet>
+    </>
   );
 }
 

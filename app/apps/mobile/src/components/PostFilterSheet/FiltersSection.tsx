@@ -30,6 +30,8 @@ export interface FiltersSectionProps {
   readonly onItemConditionsChange: (i: ItemCondition[]) => void;
   readonly onStatusFilterChange: (s: FeedStatusFilter) => void;
   readonly onFollowersOnlyChange: (v: boolean) => void;
+  /** A world screen's sheet: the world is fixed, so its picker is hidden (subcategories stay). */
+  readonly hideWorldPicker?: boolean;
 }
 
 /** The worlds that have a feed (D100); portal worlds publish no posts, so they are not filters. */
@@ -138,13 +140,15 @@ export function FiltersSection(props: FiltersSectionProps) {
         testID="filters-type"
       />
 
-      <FilterSection
-        title={t('filters.sectionWorld', { defaultValue: t('filters.sectionCategory') })}
-        options={worldOptions}
-        value={selectedWorld}
-        onChange={handleWorldChange}
-        testID="filters-worlds"
-      />
+      {props.hideWorldPicker ? null : (
+        <FilterSection
+          title={t('filters.sectionWorld', { defaultValue: t('filters.sectionCategory') })}
+          options={worldOptions}
+          value={selectedWorld}
+          onChange={handleWorldChange}
+          testID="filters-worlds"
+        />
+      )}
 
       {selectedWorld && subcategoriesList.length > 0 ? (
         <FilterSection<string>

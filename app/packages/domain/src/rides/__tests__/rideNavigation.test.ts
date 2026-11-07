@@ -18,6 +18,12 @@ describe('rideNavigationUrl', () => {
     expect(rideNavigationUrl('google', STREET)).toBe(`https://www.google.com/maps/dir/?api=1&destination=${address}`);
     expect(rideNavigationUrl('apple', STREET)).toBe(`https://maps.apple.com/?daddr=${address}`);
   });
+
+  it('adds a known house number to a street address (FR-RIDE-003 AC9)', () => {
+    const address = encodeURIComponent('Dizengoff 50, Tel Aviv');
+    expect(rideNavigationUrl('waze', STREET, '50')).toBe(`https://waze.com/ul?q=${address}&navigate=yes`);
+    expect(rideNavigationUrl('waze', JUNCTION, '50')).toBe('https://waze.com/ul?ll=32.1408,34.8013&navigate=yes');
+  });
 });
 
 describe('rideNavigationAppsFor', () => {

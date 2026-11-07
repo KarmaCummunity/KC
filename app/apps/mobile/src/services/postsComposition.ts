@@ -25,6 +25,7 @@ import {
   ListMyActivityTimelineUseCase,
   ListPostActorIdentityUseCase,
   MarkAsDeliveredUseCase,
+  OwnerCompleteOfferUseCase,
   MaterializePostTranslationsUseCase,
   ReopenPostUseCase,
   RepublishPostUseCase,
@@ -48,6 +49,7 @@ let _getById: GetPostByIdUseCase | null = null;
 let _myPosts: GetMyPostsUseCase | null = null;
 let _profileClosedPosts: GetProfileClosedPostsUseCase | null = null;
 let _markDelivered: MarkAsDeliveredUseCase | null = null;
+let _ownerCompleteOffer: OwnerCompleteOfferUseCase | null = null;
 let _reopen: ReopenPostUseCase | null = null;
 let _republish: RepublishPostUseCase | null = null;
 let _unmrkRecipientSelf: UnmarkRecipientSelfUseCase | null = null;
@@ -106,6 +108,11 @@ export function getPostRepo(): IPostRepository {
 export function getMarkAsDeliveredUseCase(): MarkAsDeliveredUseCase {
   _markDelivered ??= new MarkAsDeliveredUseCase(getRepo());
   return _markDelivered;
+}
+
+export function getOwnerCompleteOfferUseCase(): OwnerCompleteOfferUseCase {
+  _ownerCompleteOffer ??= new OwnerCompleteOfferUseCase(getRepo());
+  return _ownerCompleteOffer;
 }
 
 export function getReopenPostUseCase(): ReopenPostUseCase {

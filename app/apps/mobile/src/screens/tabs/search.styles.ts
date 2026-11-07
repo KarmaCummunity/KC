@@ -42,6 +42,10 @@ export const useSearchScreenStyles = makeUseStyles(({ colors }) => ({
     backgroundColor: colors.border,
     marginHorizontal: spacing.xs,
   },
+  chipRefresh: {
+    justifyContent: 'center' as const,
+    paddingHorizontal: spacing.xs,
+  },
 
   // ── Content + sections ────────────────────────────────────────────────
   content: { flex: 1 },

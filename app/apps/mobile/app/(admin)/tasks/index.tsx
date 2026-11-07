@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { router } from 'expo-router';
 import { RefreshControl, View } from 'react-native';
+import { AdminFilterTopBarButton } from '../../../src/components/admin/AdminSearchFilterToolbar';
 import { FilterChipRow } from '../../../src/components/filterKit/FilterChipRow';
 import { Chip } from '../../../src/components/ui/Chip';
 import {
@@ -13,11 +14,10 @@ import {
   hasPermission,
 } from '@kc/domain';
 import type { AdminTaskListFilters } from '@kc/application';
-import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { PrimaryButton } from '../../../src/components/ui/Buttons';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { useAdminTasksList } from '../../../src/hooks/useAdminTasks';
-import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
 import { TaskRow } from '../../../src/components/admin/tasks/TaskRow';
 import {
   TaskAssigneeFilter,
@@ -57,6 +57,7 @@ export default function TasksScreen() {
   const [dueToText, setDueToText] = useState('');
   const [onlyMine, setOnlyMine] = useState(false);
   const [overdueOnly, setOverdueOnly] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const filters = useMemo<AdminTaskListFilters>(() => {
     const baseAssignee = assigneeFilter && assigneeFilter !== UNASSIGNED_TOKEN
@@ -97,10 +98,27 @@ export default function TasksScreen() {
     );
   }
 
-  const filtersBar = (
-    <View style={styles.filterCard}>
-      <Text style={styles.filterTitle}>{L.admin.tasks.filtersTitle}</Text>
+  const activeFilterCount =
+    (statusFilter ? 1 : 0)
+    + (categoryFilter ? 1 : 0)
+    + (assigneeFilter ? 1 : 0)
+    + (dueFromText.trim() ? 1 : 0)
+    + (dueToText.trim() ? 1 : 0)
+    + (onlyMine ? 1 : 0)
+    + (overdueOnly ? 1 : 0);
 
+  const clearFilters = () => {
+    setStatusFilter(null);
+    setCategoryFilter(null);
+    setAssigneeFilter(null);
+    setDueFromText('');
+    setDueToText('');
+    setOnlyMine(false);
+    setOverdueOnly(false);
+  };
+
+  const filtersBar = (
+    <View style={styles.filterSheetBody}>
       <FilterChipRow<AdminTaskStatus>
         scrollable
         showAllChip
@@ -156,14 +174,27 @@ export default function TasksScreen() {
     </View>
   );
 
+  const newTaskBtn = can('tasks.create') ? (
+    <PrimaryButton
+      testID="admin-tasks-new"
+      label={L.admin.tasks.newBtn}
+      size="sm"
+      onPress={() => router.push('/(admin)/tasks/new')}
+    />
+  ) : null;
+
   return (
     <View style={styles.root}>
-      <AdminScreenHeader
-        title={L.admin.tasks.title}
-        subtitle={!q.isLoading ? L.admin.tasks.countLabel(q.tasks.length) : undefined}
-        right={can('tasks.create') ? (
-          <PrimaryButton testID="admin-tasks-new" label={L.admin.tasks.newBtn} size="sm" onPress={() => router.push('/(admin)/tasks/new')} />
-        ) : undefined}
+      <AdminFilterTopBarButton
+        headerRightExtra={newTaskBtn}
+        activeFilterCount={activeFilterCount}
+        filterVisible={sheetOpen}
+        onOpenFilters={() => setSheetOpen(true)}
+        onCloseFilters={() => setSheetOpen(false)}
+        onClearFilters={clearFilters}
+        sheetTitle={L.admin.tasks.filtersTitle}
+        filterButtonTestID="admin-tasks-filter-button"
+        filterSheetContent={filtersBar}
       />
 
       <KcFlashList
@@ -171,7 +202,6 @@ export default function TasksScreen() {
         keyExtractor={taskKeyExtractor}
         estimatedItemSize={80}
         renderItem={renderItem}
-        ListHeaderComponent={filtersBar}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl refreshing={q.isRefetching} onRefresh={q.refetch} />
@@ -204,24 +234,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
   },
   rowWrap: { paddingHorizontal: spacing.base },
 
-  filterCard: {
-    marginHorizontal: spacing.base,
-    marginTop: spacing.md,
-    marginBottom: spacing.xs,
-    padding: spacing.md,
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filterTitle: {
-    ...typography.label,
-    ...typography.extraBold,
-    color: colors.textSecondary,
-    letterSpacing: 0.3,
-    writingDirection: 'rtl',
-  },
+  filterSheetBody: { gap: spacing.sm },
   chips:           { gap: spacing.sm },
   empty:           { padding: spacing['2xl'], alignItems: 'center', gap: spacing.sm },
   emptyTitle:      { ...typography.h4, color: colors.textPrimary },

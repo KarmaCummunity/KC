@@ -2,6 +2,7 @@ export const timeVolunteer = {
   hubTitle: 'Volunteer your time',
   hubIntro: 'Browse shifts, sign up or join a waitlist, check in on the day, and earn karma for logged hours.',
   myShiftsLink: 'My shifts',
+  opportunityDetail: 'Volunteer opportunity',
   organizerLink: 'Organize opportunities',
   contactKcLink: 'Message Karma Community',
   loading: 'Loading…',

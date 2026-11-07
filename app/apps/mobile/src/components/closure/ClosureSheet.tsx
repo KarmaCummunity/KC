@@ -9,8 +9,8 @@
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
-import type { PostType } from '@kc/domain';
 import { useClosureStore, type ClosureStep } from '../../store/closureStore';
+import { closureCopyKeys } from '../../lib/closureCopy';
 import { useAuthStore } from '../../store/authStore';
 import { BottomSheet } from '../ui/BottomSheet';
 import { GhostButton, PrimaryButton } from '../ui/Buttons';
@@ -20,11 +20,16 @@ import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 type Translate = (key: string) => string;
 
-/** Sheet heading for the visible step; Give vs Request flips the wording. */
-function closureSheetTitle(step: ClosureStep, postType: PostType | null, t: Translate): string | undefined {
-  const give = postType === 'Give';
-  if (step === 'confirm') return give ? t('closure.step1GiveTitle') : t('closure.step1RequestTitle');
-  if (step === 'pick') return give ? t('closure.step2GiveTitle') : t('closure.step2RequestTitle');
+/** Sheet heading for the visible step. The world (or a request) picks the words. */
+function closureSheetTitle(
+  step: ClosureStep,
+  postType: Parameters<typeof closureCopyKeys>[0],
+  worldSlug: string | null,
+  t: Translate,
+): string | undefined {
+  const copy = closureCopyKeys(postType, worldSlug);
+  if (step === 'confirm') return t(copy.step1Title);
+  if (step === 'pick') return t(copy.step2Title);
   if (step === 'error') return t('closure.errorTitle');
   return undefined;
 }
@@ -33,6 +38,7 @@ export function ClosureSheet() {
   const { t } = useTranslation();
   const step = useClosureStore((s) => s.step);
   const postType = useClosureStore((s) => s.postType);
+  const worldSlug = useClosureStore((s) => s.worldSlug);
   const isBusy = useClosureStore((s) => s.isBusy);
   const errorMessage = useClosureStore((s) => s.errorMessage);
   const selectedId = useClosureStore((s) => s.selectedRecipientId);
@@ -49,11 +55,11 @@ export function ClosureSheet() {
     <BottomSheet
       visible={visible}
       onDismiss={reset}
-      title={closureSheetTitle(step, postType, t)}
+      title={closureSheetTitle(step, postType, worldSlug, t)}
       scrollable={false}
     >
       {step === 'confirm' && postType ? (
-        <Step1 onConfirm={confirmStep1} onCancel={reset} isBusy={isBusy} postType={postType} />
+        <Step1 onConfirm={confirmStep1} onCancel={reset} isBusy={isBusy} postType={postType} worldSlug={worldSlug} />
       ) : null}
       {step === 'pick' && ownerId && postType ? (
         <ClosureStep2
@@ -77,20 +83,19 @@ function Step1({
   onCancel,
   isBusy,
   postType,
+  worldSlug,
 }: Readonly<{
   onConfirm: () => void;
   onCancel: () => void;
   isBusy: boolean;
-  postType: PostType;
+  postType: Parameters<typeof closureCopyKeys>[0];
+  worldSlug: string | null;
 }>) {
-  // Direction flips by post.type. The "physical handoff" wording matters either
-  // way — both sides need to be reminded that closure is for AFTER pickup, not
-  // after scheduling it.
   const styles = useStyles();
   const { t } = useTranslation();
-  const give = postType === 'Give';
-  const body = give ? t('closure.step1GiveBody') : t('closure.step1RequestBody');
-  const cta = give ? t('closure.step1GiveCta') : t('closure.step1RequestCta');
+  const copy = closureCopyKeys(postType, worldSlug);
+  const body = t(copy.step1Body);
+  const cta = t(copy.step1Cta);
   return (
     <View style={styles.pane}>
       <Text style={styles.body}>{body}</Text>

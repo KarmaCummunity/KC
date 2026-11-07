@@ -35,13 +35,14 @@ The Donations tab opens to a Hub screen with ONE list of tiles, one per giving w
 - Decisions: `D-16`, `D100`, `D107`; product book `docs/spec/04_product_structure.md`.
 
 **Acceptance Criteria.**
-- AC1. *(D100)* Tiles appear in the order of `GIVING_WORLD_SLUGS`: חפצים, אוכל, תחבורה, זמן, כסף, דיור, ידע, רפואה, בעלי חיים, דמוקרטיה, תעסוקה, אתגרים — in one 2-column grid under one heading, all tiles looking alike (no featured tile). The retired domains and the experiences world have no tile and no screen, and no redirect.
+- AC1. *(D100; order refined by AC8)* With no visit history, tiles appear in the order of `GIVING_WORLD_SLUGS` (active worlds before portal worlds, AC8): חפצים, אוכל, תחבורה, זמן, כסף, דיור, ידע, רפואה, בעלי חיים, דמוקרטיה, תעסוקה, אתגרים — in one 2-column grid under one heading, all tiles looking alike (no featured tile). The retired domains and the experiences world have no tile and no screen, and no redirect.
 - AC2. Each tile shows an icon, a title, and a one-line subtitle. Tap target ≥ 44×44.
 - AC3. Each tile is `accessibilityRole="button"` with `accessibilityLabel` = title + subtitle.
 - AC4. The Hub screen is reachable from the bottom-tab `💝 תרומות` icon and from any screen that has a global TabBar.
 - AC5. Hub layout is responsive: the container max-width stays centered on Tablet/Desktop.
 - AC6. *(2026-11-01, `D-207`)* The hub has **no "donations marketplace" (שוק התרומות) entry** and the marketplace browse screen is gone: listings are found in the main feed and in each giving world's screen (`06_feed_and_search.md`). The old URL `/donations/marketplace` redirects to the hub; single-listing pages (`/donations/marketplace/<id>`), the listings map and "my listings" (profile menu → *המודעות שלי*) stay.
 - AC7. *(2026-11-03)* A world whose launch flag is off (D60) is **never hidden**: its tile carries a small **"פורטל"** tag and the subtitle "קישורים וידע"; an active world has no tag. Opening a portal world shows its links and knowledge, with no feed. Worlds without a screen of their own (medical, animals, democracy, employment, challenges) open `/(tabs)/donations/category/<slug>`.
+- AC8. *(2026-11-07)* **Personal order.** Active worlds always come before portal worlds (AC7). Inside each group, tiles are ordered by the member's time-decayed visit score: every tap on a hub tile adds 1, and older visits fade with a 14-day half-life (`WORLD_AFFINITY_HALF_LIFE_DAYS`), so recent habits outrank old ones. Equal scores keep the `GIVING_WORLD_SLUGS` order, so a new member sees the canonical order. Scores live on the device only (AsyncStorage `kc-world-affinity-<userId|guest>`), are never sent to the server and are malformed-safe (`parseWorldAffinity`). The order is taken when the hub gains focus, never while the member is on it, so tiles do not move under the finger. Code: `worldAffinity.ts` (domain), `useHubWorldOrder` (mobile).
 
 **Related.** Screens: 2.6 · `FR-DONATE-002`, `FR-DONATE-003`, `FR-DONATE-004`, `FR-POST-001` AC6, `FR-FEED-020`.
 

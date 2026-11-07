@@ -9,6 +9,7 @@ import { KcRowCard } from '../cards/KcRowCard';
 import { listingWorldIcon } from '../cards/ListingCard';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
 import { givingHandoffUseCases } from '../../services/givingHandoffComposition';
+import { WorldSubScreenChrome } from './useWorldHeader';
 
 const ROW = { marginHorizontal: spacing.lg };
 
@@ -29,7 +30,9 @@ export function MyWorldHandoffsList({
   });
 
   return (
-    <Screen blobs="content">
+    <>
+      <WorldSubScreenChrome worldSlug={worldSlug} activeScreenTestId="world-hub-my-handoffs" />
+      <Screen blobs="off" hasNativeHeader>
       <KcFlashList
         data={rows.data ?? []}
         keyExtractor={(item) => item.handoffId}
@@ -49,6 +52,7 @@ export function MyWorldHandoffsList({
           />
         )}
       />
-    </Screen>
+      </Screen>
+    </>
   );
 }

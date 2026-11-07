@@ -24,7 +24,11 @@ vi.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ slug: 'kc', orgId: 'org_1', listingId: 'l_1' }),
 }));
 vi.mock('../ui/Screen', () => ({ Screen: ({ children }: { children: React.ReactNode }) => children }));
-vi.mock('../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarScrollInset: () => 0 }));
+vi.mock('../../navigation/useShellTabBarVisibility', () => ({
+  useShellTabBarScrollInset: () => 0,
+  useShellTabBarVisibility: () => false,
+  shellTabBarHeightPx: () => 0,
+}));
 vi.mock('../money/CampaignProgressBar', () => ({ CampaignProgressBar: () => null }));
 vi.mock('../../hooks/useExternalDonations', () => ({ useExternalDonations: () => external }));
 vi.mock('../../lib/analytics', () => ({ track: vi.fn() }));

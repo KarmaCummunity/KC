@@ -1,6 +1,6 @@
 // D100 (docs/spec/04_product_structure.md): the one list of giving worlds. There is no
 // separate "domain" layer — a former domain is either a world of its own or a sub-category
-// of a world. Order is the order the Donations tab shows them in.
+// of a world. Order is the Donations tab's default order (re-ranked per member: worldAffinity.ts).
 import type { DonationCategorySlug } from '../value-objects';
 
 export const GIVING_WORLD_SLUGS = [

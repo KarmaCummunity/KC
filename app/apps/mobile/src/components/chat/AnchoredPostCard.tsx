@@ -22,6 +22,7 @@ import { KcRowCard } from '../cards/KcRowCard';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
 import { getSupabaseImageThumbUrl, getSupabasePublicImageUrl } from '../../lib/imageUrl';
 import { rowDirectionStart } from '../../lib/rtlLayout';
+import { listingOwnerMarkCtaKey } from '../../lib/listingOwnerClosure';
 
 interface Props {
   chatId: string;
@@ -118,7 +119,9 @@ export function AnchoredPostCard({ chatId, anchorPostId, viewerId, counterpartId
 
   const typeLabel = post ? t(TYPE_LABEL_KEYS[post.type]) : '';
   const isGive = post?.type === 'Give';
-  const ctaText = post?.type === 'Give' ? t('closure.markGiveCta') : t('closure.markRequestCta');
+  const ctaText = !post
+    ? ''
+    : t(post.type === 'Request' ? 'closure.markRequestCta' : listingOwnerMarkCtaKey(post.listingWorldSlug));
 
   const path0 = post?.mediaAssets[0]?.path;
   const thumbUri = path0 ? getSupabaseImageThumbUrl({ bucket: 'post-images', path: path0 }) : null;
@@ -142,6 +145,7 @@ export function AnchoredPostCard({ chatId, anchorPostId, viewerId, counterpartId
       // Skip preselection when counterpart was deleted — closure picker stays empty.
       ...(counterpartId != null ? { preselectedRecipientId: counterpartId } : {}),
       initiator: 'chat',
+      worldSlug: post.listingWorldSlug,
     });
   };
 

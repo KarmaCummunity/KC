@@ -23,3 +23,17 @@ export function tabBarBottomPadding(insetBottom: number): number {
 export function tabBarTotalHeight(rowHeight: number, insetBottom: number): number {
   return rowHeight + tabBarBottomPadding(insetBottom);
 }
+
+// The centre "+" is taller than the icon row and shifted up (TabBar plusCircle).
+export const TAB_PLUS_DIAMETER_PX = 60;
+export const TAB_PLUS_LIFT_PX = 14;
+
+/** How far the "+" rises above the icon row, so a docked CTA can clear it. */
+export function tabPlusOverhangPx(rowHeight: number): number {
+  return (TAB_PLUS_DIAMETER_PX - rowHeight) / 2 + TAB_PLUS_LIFT_PX;
+}
+
+/** Bottom space a full-width action must leave so it sits above the raised "+". */
+export function ownerBarTabClearance(rowHeight: number, insetBottom: number): number {
+  return tabBarTotalHeight(rowHeight, insetBottom) + tabPlusOverhangPx(rowHeight);
+}

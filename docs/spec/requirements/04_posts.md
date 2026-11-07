@@ -45,13 +45,14 @@ Tapping the "+" tab opens one form whose top control toggles between `🎁 Give`
   - *Food* — offer: food type + expiry (both required), allergens, kosher, pickup / delivery, optional food subcategory; request: household size, dietary needs.
   - *Housing* — offer: place type, guests, house rules; request: party size. Publishing needs a verified identity (D30, `world_permission_denied`).
   - *Time* — offer: duration; request: support type (companionship, practical help, escort — emotional support goes to a hotline, §5.4) + duration.
-  - *Money, knowledge, medical, animals, democracy, employment, challenges* (worlds with no feed yet) — the form is **add a link**: URL, display name, optional description, written to that world's community links (`FR-DONATE-008`); a new link is reviewed before it goes live (`D9`) and its submitter sees it as pending meanwhile. After a successful add the form opens the world's screen.
+  - *Money, knowledge, medical, animals, democracy, employment, challenges* (worlds with no feed yet) — the form is **add a link**: URL, display name, optional description, written to that world's community links (`FR-DONATE-008`); a new link is reviewed before it goes live (`D9`) and its submitter sees it as pending meanwhile. After a successful add the form closes and returns to the screen it was opened from (AC9).
   - Every listing category also has photos (optional), title, description and city. The kind is derived from the direction (one kind per direction per world), so members never pick a "listing type"; internal schema keys (linked ids, org slugs) are never shown.
-  - The form reopens on the category the member last used (per user, on the device), in the direction (offer / request) last used **in that category** — items may reopen as an offer while rides reopen as a request; a `?category=` deep link wins over the remembered category but keeps that category's remembered direction. The "+" tab opens the form on the giving world on screen (`FR-FEED-020` AC4). A missing required field blocks publish with a message naming it. Date fields open in a sheet (iOS) or the system dialogs (Android) — never an inline native picker (TestFlight 1.6.x crash).
+  - The form reopens on the category the member last used (per user, on the device), in the direction (offer / request) last used **in that category** — items may reopen as an offer while rides reopen as a request; a `?category=` deep link wins over the remembered category but keeps that category's remembered direction. The "+" tab opens the form on the giving world on screen (`FR-FEED-020` AC4). A missing required field blocks publish with a message naming it: the form scrolls to the first field with a problem, outlines it in red and shows the message right under it (the title field shows its own error state); the outline clears as soon as the member edits the form. Only a problem no field owns (a server error) is shown above the bottom Publish button. Date fields open in a sheet (iOS) or the system dialogs (Android) — never an inline native picker (TestFlight 1.6.x crash).
 - AC7. *(KC#1472)* Every category and direction shows the same compact kit Publish action in the screen header and a Publish action at the bottom. Both actions use the category's single submit path, validation, disabled and loading states; repeated taps while a publish is in progress start at most one submission. The header action works in RTL and web.
 - AC8. *(KC#1741)* In every create sub-form (items, food, rides, time, housing, knowledge, link) labels, helper text, section headings and inline links align to the reading-start edge in both languages (right in Hebrew, left in English), as in `FR-SETTINGS-018`; a label never sits on the opposite edge from its field's other labels.
+- AC9. *(2026-11-07)* The create form **opens on top of the screen it was launched from** (the "+" button, a world's request / offer buttons, "publish again", the feed's share prompt) and never replaces it: a feed, a world screen or a post detail stays underneath, unchanged. Closing the form (its × or tapping "+" again) or publishing successfully from any category (item post, listing, link, challenge) returns to that same screen. When nothing is underneath (deep link, reload), it returns to the Home Feed.
 
-**Related.** Screens: 2.4 · Domain: `Post.type`, `Post.status`, `WorldSubcategory` · Code: `app/(tabs)/create.tsx`, `src/lib/unifiedCreate/`, `src/components/CreatePostForm/`.
+**Related.** Screens: 2.4 · Domain: `Post.type`, `Post.status`, `WorldSubcategory` · Code: `app/create.tsx`, `src/navigation/closeCreateForm.ts`, `src/lib/unifiedCreate/`, `src/components/CreatePostForm/`.
 
 ---
 
@@ -147,7 +148,7 @@ Publishing a post confirms or warns based on chosen visibility.
 - AC1. Visibility `Public`: no extra confirmation; success toast "✅ Your post is live!".
 - AC2. Visibility `FollowersOnly`: an interstitial reminds the user how many approved followers will see it, with two CTAs ("Followers only" / "Make it public").
 - AC3. Visibility `OnlyMe`: an interstitial reminds the user the post is saved privately and that they can change visibility later from the post **⋮** menu or edit screen; two CTAs ("Save private" / "Cancel").
-- AC4. After successful publish, the user lands back on the Home Feed with the new post anchored at the top of the list.
+- AC4. *(Updated 2026-11-07)* After successful publish, the success toast shows and the user returns to the screen the form was opened from (`FR-POST-001` AC9); the Home Feed is the fallback when the form had nothing underneath. Feed caches are refreshed so the new post appears wherever it belongs.
 
 **Related.** Screens: 2.4 · Domain: `PostVisibility`.
 
@@ -540,6 +541,7 @@ A signed-in viewer of a `Public` post that is `open` or `closed_delivered` may s
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
+| 0.19 | 2026-11-07 | `FR-POST-001` AC6 — a blocked publish scrolls to the field with the problem and outlines it in red, with the message under it, instead of one message above the bottom Publish button. |
 | 0.18 | 2026-11-04 | `FR-POST-001` AC6 (#1411) — the rides form gets "from my current location" (origin) and "leave now" (departure) switches; see `FR-RIDE-003` AC6–AC7. |
 | 0.17 | 2026-11-04 | `FR-POST-001` AC6 + AC8 (KC#1741) — the create category picker is one horizontally scrolling row of chips instead of a 4x3 grid; labels, helper text and inline links in every create sub-form align to the reading-start edge in Hebrew and English. |
 | 0.16 | 2026-11-01 | `FR-POST-001` AC6 — five create categories (items, rides, food, housing, time) with the last used category + direction remembered; request / offer under the picker; curated per-category fields; no inline native date picker or slider (TestFlight crash). |

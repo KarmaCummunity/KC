@@ -206,6 +206,29 @@ The closure flow has strict invariants on counters.
 
 ---
 
+## FR-CLOSURE-011 — Close or assign an open offer to a named member
+
+**Description.**
+The owner of an open **give** offer can name the member who received it, using the same recipient picker as a social post (chats, or search). A listing-world post detail shows that action. "My listings" opens the same sheet instead of closing an offer with nobody named. Items, food and animals close when that one handoff is finished. A ride confirms one seat and completes the trip only after departure. A stay confirms one night for the chosen guest and completes it only inside the stay window; the listing stays open for other guests.
+
+**Source.**
+- Design: `docs/superpowers/specs/2026-11-07-owner-close-with-recipient-unified-design.md`
+- Decisions: D17, D19, D73, D104, D125, G34. Housing and rides defaults below.
+
+**Acceptance Criteria.**
+- AC1. On an open give listing post, the owner sees the world label («סומן כנמסר», «סומן כמסור», «סיום האירוח», «שיבוץ נוסע») and the existing closure steps.
+- AC2. Step 2 is the existing picker: chats and search (`SearchUsersForClosureUseCase`). The primary action requires a selection.
+- AC3. «Close without marking» is available for items and animals offers with no live handoff, and hidden for rides and housing.
+- AC4. `owner_complete_offer_with_user` refuses a non-owner, a closed or paused offer, the owner as recipient, a blocked pair, and a recipient who cannot see the listing.
+- AC5. Assigning an animals adoption or foster offer writes a handed-over handoff and closes the post as `closed_delivered`.
+- AC6. Assigning a passenger on a ride that has not left confirms one seat and does not close the ride. A further assign past the seat cap is refused.
+- AC7. Assigning a guest on a housing offer confirms that one stay (or completes it when the stay window is open) and does not close the listing.
+- AC8. Offer rows on My listings open this sheet when the listing has a feed post. Request listings keep `fulfill_my_listing`.
+
+**Related.** Screens: listing post detail, My listings, ride bookings, housing host, animal handoff. RPC: `0658_owner_complete_offer_with_user`.
+
+---
+
 ## FR-CLOSURE-010 — Suspect flag at 5+ reopens
 
 **Description.**
@@ -227,3 +250,4 @@ A post that has been reopened 5 or more times triggers a moderation flag.
 | Version | Date | Summary |
 | ------- | ---- | ------- |
 | 0.1 | 2026-05-05 | Initial draft from PRD §3.3.6, Flow 7, and Decisions D-6, D-7. |
+| 0.2 | 2026-11-07 | FR-CLOSURE-011: owner assign / close of an open offer with a named member. |

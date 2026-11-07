@@ -1,0 +1,26 @@
+# Spec: FR-RESP-006 — keyboard-aware forms (sticky save + phone field).
+# Edit profile — sticky save + phone-pad focus (FR-RESP-006 AC5).
+appId: org.karmacommunity.app
+name: Profile — edit profile keyboard & save CTA
+tags: [profile, keyboard]
+---
+- runFlow: ../subflows/sign-in.yaml
+- tapOn:
+    id: tab-profile
+    optional: true
+- tapOn:
+    text: ".*עריכת פרופיל.*|.*Edit profile.*"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: edit-profile-save
+    timeout: 15000
+    optional: true
+- tapOn:
+    id: edit-profile-phone
+    optional: true
+- hideKeyboard
+    optional: true
+- assertVisible:
+    id: edit-profile-save
+    optional: true

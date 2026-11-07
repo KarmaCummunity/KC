@@ -41,18 +41,58 @@ describe('SupabaseDemoDataRepository', () => {
     expect(rpc).toHaveBeenCalledWith('admin_demo_data_status');
   });
 
-  it('wipe calls admin_wipe_demo_data', async () => {
-    const { rpc, r } = repo({ data: { users_deleted: 5, organizations_deleted: 1, organizations_kept: 0 }, error: null });
+  it('wipe loops admin_wipe_demo_data_step until done', async () => {
+    const rpc = vi
+      .fn()
+      .mockResolvedValueOnce({ data: { done: false, progress_key: 'content' }, error: null })
+      .mockResolvedValueOnce({
+        data: {
+          done: true,
+          progress_key: 'done',
+          result: { users_deleted: 5, organizations_deleted: 1, organizations_kept: 0 },
+        },
+        error: null,
+      });
+    const r = new SupabaseDemoDataRepository({ rpc } as unknown as SupabaseClient<any>);
     await expect(r.wipe()).resolves.toMatchObject({ usersDeleted: 5 });
-    expect(rpc).toHaveBeenCalledWith('admin_wipe_demo_data');
+    expect(rpc).toHaveBeenCalledWith('admin_wipe_demo_data_step');
+    expect(rpc).toHaveBeenCalledTimes(2);
   });
 
-  it('seed passes the password through and omits it when not given', async () => {
-    const { rpc, r } = repo({ data: { users: 200, posts: 1, rides: 1, organizations: 3 }, error: null });
+  it('wipe keeps calling steps past a short batch count', async () => {
+    const rpc = vi.fn();
+    for (let i = 0; i < 24; i += 1) {
+      rpc.mockResolvedValueOnce({ data: { done: false, progress_key: 'content', retry: false }, error: null });
+    }
+    rpc.mockResolvedValueOnce({
+      data: {
+        done: true,
+        progress_key: 'done',
+        result: { users_deleted: 2, organizations_deleted: 1, organizations_kept: 0 },
+      },
+      error: null,
+    });
+    const r = new SupabaseDemoDataRepository({ rpc } as unknown as SupabaseClient<any>);
+    await expect(r.wipe()).resolves.toMatchObject({ usersDeleted: 2 });
+    expect(rpc).toHaveBeenCalledTimes(25);
+  });
+
+  it('seed loops admin_seed_demo_data_step until done', async () => {
+    const rpc = vi
+      .fn()
+      .mockResolvedValueOnce({ data: { done: false, progress_key: 'wipe' }, error: null })
+      .mockResolvedValueOnce({
+        data: {
+          done: true,
+          progress_key: 'done',
+          result: { users: 200, posts: 1, rides: 1, organizations: 3 },
+        },
+        error: null,
+      });
+    const r = new SupabaseDemoDataRepository({ rpc } as unknown as SupabaseClient<any>);
     await expect(r.seed('SeedPass-2026')).resolves.toMatchObject({ users: 200 });
-    expect(rpc).toHaveBeenLastCalledWith('admin_seed_demo_data', { p_password: 'SeedPass-2026' });
-    await r.seed();
-    expect(rpc).toHaveBeenLastCalledWith('admin_seed_demo_data', { p_password: undefined });
+    expect(rpc).toHaveBeenNthCalledWith(1, 'admin_seed_demo_data_step', { p_password: 'SeedPass-2026' });
+    expect(rpc).toHaveBeenNthCalledWith(2, 'admin_seed_demo_data_step', { p_password: undefined });
   });
 
   it('surfaces RPC errors', async () => {

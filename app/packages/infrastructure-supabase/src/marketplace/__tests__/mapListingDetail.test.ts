@@ -23,13 +23,21 @@ describe('mapListingDetail', () => {
       geo: { type: 'Point', coordinates: [34.78, 32.08] },
       max_radius_km: 25,
       media: [{ storage_path: 'u/b/0.jpg', sort_order: 0 }],
-      owner: { user_id: 'u1', display_name: 'Ada', avatar_url: null, share_handle: 'ada', city_id: '5000' },
+      owner: {
+        user_id: 'u1',
+        display_name: 'Ada',
+        avatar_url: null,
+        share_handle: 'ada',
+        city_id: '5000',
+        verification_level: 2,
+      },
     });
     expect(out?.listingId).toBe('l1');
     expect(out?.lat).toBe(32.08);
     expect(out?.media).toHaveLength(1);
     expect(out?.feedPostId).toBeNull();
     expect(out?.feedHidden).toBe(false);
+    expect(out?.owner?.verificationLevel).toBe(2);
   });
 
   it('maps the feed mirror post id when the listing has one (D-206)', () => {

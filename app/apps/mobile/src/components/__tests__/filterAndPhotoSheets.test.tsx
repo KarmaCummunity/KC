@@ -91,6 +91,36 @@ describe('PostFilterSheet', () => {
     expect(queryByText('filters.header')).toBeNull();
   });
 
+  it('shows feed settings link only on the home feed sheet', () => {
+    const onOpenFeedSettings = vi.fn();
+    const home = withTheme(
+      <PostFilterSheet
+        visible
+        value={FEED_FILTER}
+        onPatch={vi.fn()}
+        onClear={vi.fn()}
+        onClose={vi.fn()}
+        onOpenFeedSettings={onOpenFeedSettings}
+      />,
+    );
+    fireEvent.click(home.getByTestId('feed-filter-open-settings'));
+    expect(onOpenFeedSettings).toHaveBeenCalledOnce();
+    home.unmount();
+
+    const world = withTheme(
+      <PostFilterSheet
+        visible
+        value={FEED_FILTER}
+        onPatch={vi.fn()}
+        onClear={vi.fn()}
+        onClose={vi.fn()}
+        lockedWorld
+        onOpenFeedSettings={onOpenFeedSettings}
+      />,
+    );
+    expect(world.queryByTestId('feed-filter-open-settings')).toBeNull();
+  });
+
   it('commits a chip change to the parent', () => {
     const { getByText, onPatch } = renderSheet();
     fireEvent.click(getByText('filters.statusClosedOnly'));

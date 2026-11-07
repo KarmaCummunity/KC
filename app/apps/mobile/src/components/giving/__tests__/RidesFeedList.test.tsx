@@ -62,6 +62,7 @@ function feedState(sections: RideFeedSection[], extra: Partial<RidesHubFeedState
     routeActive: false,
     clearRoute: vi.fn(),
     refined: false,
+    activeFilterCount: 0,
     clear: vi.fn(),
     isLoading: false,
     isError: false,
@@ -114,7 +115,7 @@ describe('RidesFeedList', () => {
     const view = renderFeed(feedState([]));
     expect(view.container.textContent).toContain('rideFeed.empty');
     fireEvent.click(view.getByTestId('rides-feed-empty-create'));
-    expect(push).toHaveBeenCalledWith('/(tabs)/create?category=rides');
+    expect(push).toHaveBeenCalledWith('/create?category=rides');
     expect(view.queryByTestId('rides-feed-empty-clear')).toBeNull();
   });
 

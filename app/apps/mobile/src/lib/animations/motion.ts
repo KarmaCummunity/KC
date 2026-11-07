@@ -5,6 +5,14 @@
  * so this file stays testable in a pure Node/vitest environment.
  */
 
+/** Content screens share the navigation transition, so entry delays stay at 0. */
+export const ENTRY_DELAY = {
+  hero: 0,
+  section: 0,
+  buttons: 0,
+  decorative: 0,
+} as const;
+
 export const MOTION = {
   duration: {
     instant: 0,

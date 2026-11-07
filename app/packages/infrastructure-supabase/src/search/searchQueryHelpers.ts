@@ -5,12 +5,14 @@ import type { PostWithOwner } from '@kc/application';
 import type { Database } from '../database.types';
 import { POST_SELECT_OWNER, mapPostWithOwnerRow, type PostWithOwnerJoinedRow } from '../posts/mapPostRow';
 import { applyPostActorIdentityProjectionBatch } from '../posts/applyPostActorIdentityProjection';
+import { dropOrphanDeletedOwnerPosts } from '../posts/dropOrphanDeletedOwnerPosts';
+import { hydrateFeedPostOwners } from '../posts/hydrateFeedPostOwners';
 import { type LinkRow, type SearchUserRow, mapUserSearchResult, mapLinkSearchResult } from './searchMappers';
 import { orderByIds, pageFetchSize, toPagedBucket, type SearchBucket } from './searchBucket';
 import { quoteOrValue, findMatchingCategorySlug } from './searchUtils';
 
 type C = SupabaseClient<Database>;
-const U = 'user_id, display_name, share_handle, avatar_url, biography, city, city_name, followers_count, items_given_count';
+const U = 'user_id, display_name, share_handle, avatar_url, biography, city, city_name, followers_count, items_given_count, verification_level';
 
 export async function searchPosts(
   c: C,
@@ -37,7 +39,15 @@ export async function searchPosts(
     .in('post_id', [...page.items]);
   if (hydrateError) throw new Error(`searchPosts: ${hydrateError.message}`);
   const rows = orderByIds(page.items, (data ?? []) as unknown as PostWithOwnerJoinedRow[], (r) => r.post_id);
-  const items = await applyPostActorIdentityProjectionBatch(c, rows.map(mapPostWithOwnerRow), viewerId ?? null);
+  const mapped = rows.map(mapPostWithOwnerRow);
+  const items = dropOrphanDeletedOwnerPosts(
+    await applyPostActorIdentityProjectionBatch(
+      c,
+      await hydrateFeedPostOwners(c, mapped),
+      viewerId ?? null,
+    ),
+    viewerId ?? null,
+  );
   return { items, total: items.length, hasMore: page.hasMore };
 }
 

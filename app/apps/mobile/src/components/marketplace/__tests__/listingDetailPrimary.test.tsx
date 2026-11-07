@@ -4,6 +4,9 @@
 // primary only for a viewer with no flow action: a guest, a request listing, a world without a
 // flow. The owner's share buttons are secondary, so the owner's detail shows no primary.
 import { afterEach, describe, expect, it, vi } from 'vitest';
+vi.mock('../../giving/RidePlaceField', () => ({ RidePlaceField: () => null }));
+vi.mock('../../../hooks/useRidePlaces', () => ({ useRidePlaces: () => ({ data: [], isLoading: false }) }));
+vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarVisibility: () => false, shellTabBarHeightPx: () => 0, useShellTabBarScrollInset: () => 0 }));
 import React from 'react';
 import { cleanup, render, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -44,6 +47,7 @@ vi.mock('../ReportListingModal', () => ({ ReportListingModal: () => null }));
 vi.mock('../RideRouteCard', () => ({ RideRouteCard: () => null }));
 // The housing stay section has its own tests (housing/__tests__); not the subject here.
 vi.mock('../housing/HousingStayActions', () => ({ HousingStayActions: () => null }));
+vi.mock('../../closure/OwnerAssignUserButton', () => ({ OwnerAssignUserButton: () => null }));
 // The publisher card and the city lookup pull in Expo modules; neither holds a button.
 vi.mock('../../post-detail/PublisherCard', () => ({ PublisherCard: () => null }));
 vi.mock('../../../hooks/useCityName', () => ({ useCityName: () => null }));

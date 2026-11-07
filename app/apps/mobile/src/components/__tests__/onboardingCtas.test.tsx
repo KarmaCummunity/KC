@@ -2,6 +2,7 @@
 // Onboarding steps on the kit buttons (FR-AUTH-010 / 011 / 012 / 018, spec 17 §4.1.1, TD-243):
 // each step's call to action moves the flow on and keeps its disabled / busy rules.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+vi.mock('../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarVisibility: () => false, shellTabBarHeightPx: () => 0, useShellTabBarScrollInset: () => 0 }));
 import type React from 'react';
 import { cleanup, fireEvent } from '@testing-library/react';
 

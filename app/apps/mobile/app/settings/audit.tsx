@@ -3,7 +3,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, Redirect } from 'expo-router';
-import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
+import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { fontFamily, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { TextField } from '../../src/components/ui';
 import type { AuditEvent } from '@kc/domain';
@@ -19,7 +19,7 @@ import { KcFlashList } from '../../src/components/lists/KcFlashList';
 interface UserHit { userId: string; displayName: string; }
 
 export default function AuditScreen() {
-  const detailStackScreenOptions = useDetailStackScreenOptions();
+  const shellStackScreenOptions = useShellStackScreenOptions();
   const isAdmin = useIsSuperAdmin();
   const viewerId = useAuthStore((s) => s.session?.userId ?? null);
   const styles = useAuditScreenStyles();
@@ -77,7 +77,7 @@ export default function AuditScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['bottom']}>
-      <Stack.Screen options={{ ...detailStackScreenOptions, headerTitle: t('audit.title') }} />
+      <Stack.Screen options={{ ...shellStackScreenOptions, headerTitle: t('audit.title') }} />
       <TextField
         label={t('audit.searchPlaceholder')}
         value={query}

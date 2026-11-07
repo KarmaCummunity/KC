@@ -5,12 +5,17 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, typography, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-import { streetPlaceId, type RidePlace } from '@kc/domain';
+import { inputTextAlignStart } from '../../lib/rtlLayout';
+import { RIDE_HOUSE_NUMBER_MAX_LENGTH, streetPlaceId, type RidePlace } from '@kc/domain';
 import { SearchablePicker } from '../SearchablePicker/SearchablePicker';
 import { StreetPicker } from '../StreetPicker';
+import { formStreetNumberInputProps } from '../../lib/platform/formTextInputHints';
+import { TextField } from '../ui/TextField';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   label: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
+  // A number keeps a fixed direction (FR-RESP-006 AC21), pinned to the reading start.
+  houseNumber: { textAlign: inputTextAlignStart() },
 }));
 
 interface Props {
@@ -23,6 +28,10 @@ interface Props {
   readonly onChange: (place: RidePlace) => void;
   readonly onRetry?: () => void;
   readonly disabled?: boolean;
+  /** Private house number of a street place (FR-RIDE-003 AC9); the box shows only with a handler. */
+  readonly houseNumber?: string;
+  readonly onHouseNumberChange?: (value: string) => void;
+  readonly houseNumberTestID?: string;
 }
 
 /** Picker row key: kind and id together, since a city and a junction may share an id. */
@@ -35,7 +44,19 @@ const matchPlace = (p: RidePlace, q: string) => {
 };
 const renderPlace = (p: RidePlace) => ({ id: placeKey(p), name: p?.label ?? '' });
 
-export function RidePlaceField({ label, value, places, isLoading, error, onChange, onRetry, disabled }: Props) {
+export function RidePlaceField({
+  label,
+  value,
+  places,
+  isLoading,
+  error,
+  onChange,
+  onRetry,
+  disabled,
+  houseNumber,
+  onHouseNumberChange,
+  houseNumberTestID,
+}: Props) {
   const { t } = useTranslation();
   const styles = useStyles();
 
@@ -89,6 +110,21 @@ export function RidePlaceField({ label, value, places, isLoading, error, onChang
           <Text style={styles.label}>{t('ridePlaces.streetOptional')}</Text>
           <StreetPicker cityId={base.id} value={street} onChange={pickStreet} disabled={disabled} allowFreeText={false} />
         </>
+      ) : null}
+      {value?.kind === 'street' && onHouseNumberChange ? (
+        <TextField
+          hideLabel
+          label={t('ridePlaces.houseNumberPlaceholder')}
+          placeholder={t('ridePlaces.houseNumberPlaceholder')}
+          helperText={t('ridePlaces.houseNumberPrivateHint')}
+          value={houseNumber ?? ''}
+          onChangeText={onHouseNumberChange}
+          maxLength={RIDE_HOUSE_NUMBER_MAX_LENGTH}
+          editable={!disabled}
+          style={styles.houseNumber}
+          testID={houseNumberTestID}
+          {...formStreetNumberInputProps}
+        />
       ) : null}
     </>
   );

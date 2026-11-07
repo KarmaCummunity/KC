@@ -24,6 +24,7 @@ export const marketplaceMyListings = {
   myListingsPausedHint: 'מושהית: מוסתרת מכולם חוץ ממך',
   myListingsClosedHint: 'סגורה: אפשר רק להוסיף תמונות',
   myListingsErrorTitle: 'הפעולה לא בוצעה',
+  myListingsErrorNoPost: 'להצעה הזו אין עדיין פוסט שאפשר לשבץ אליו.',
   myListingsErrorWrongStatus: 'הפעולה לא זמינה במצב הנוכחי של המודעה.',
   myListingsErrorActiveHandoff: 'יש למודעה שמירה או הזמנה פעילה. צריך לסיים או לבטל אותה קודם.',
   myListingsErrorHandoffHistory: 'אי אפשר למחוק מודעה שנמסרה, כי היא חלק מההיסטוריה של הצד השני.',

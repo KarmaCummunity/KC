@@ -13,10 +13,11 @@ interface Props {
   /** True when the server has no saved password hash, so one must be typed. */
   readonly needsPassword: boolean;
   readonly pending: boolean;
+  readonly progressLabel?: string | null;
   readonly onSeed: (password: string | undefined) => void;
 }
 
-export function DemoDataSeedCard({ needsPassword, pending, onSeed }: Props) {
+export function DemoDataSeedCard({ needsPassword, pending, progressLabel, onSeed }: Props) {
   const styles = useStyles();
   const t = useLocaleBundle().admin.demoData;
   const [password, setPassword] = useState('');
@@ -39,9 +40,12 @@ export function DemoDataSeedCard({ needsPassword, pending, onSeed }: Props) {
         accessibilityRole="button"
         disabled={pending || tooShort}
         onPress={() => onSeed(needsPassword ? password : undefined)}
+        testID="admin-demo-seed"
         style={[styles.button, (pending || tooShort) && styles.buttonDisabled]}
       >
-        <Text style={styles.buttonLabel}>{pending ? t.seeding : t.seedButton}</Text>
+        <Text style={styles.buttonLabel}>
+          {pending ? (progressLabel ?? t.seeding) : t.seedButton}
+        </Text>
       </Pressable>
     </View>
   );

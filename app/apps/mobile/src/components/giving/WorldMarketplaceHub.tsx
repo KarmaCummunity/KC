@@ -1,97 +1,73 @@
-// Mapped to spec: FR-FEED-020 AC2 — a giving world's screen (items, food, knowledge): the
-// world header (intro, request / offer, sub-screens), search within the world, and the
-// world's feed of open offers and requests with its refinements, paged as the user scrolls.
-import React from 'react';
-import { View } from 'react-native';
+// Mapped to spec: FR-FEED-020 AC2 — a giving world's screen (items, food, housing, animals,
+// knowledge, time): the world header in the TopBar (title menu of the world's screens, map,
+// filter button), a one-line intro, and the world's feed. The feed is the main feed narrowed to
+// the world: the same post card (`PostFeedList` → `PostCardGrid`) and the same filter sheet
+// (`PostFilterSheet`: search, sort, filters) with the world locked.
+import React, { useCallback, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { spacing } from '@kc/ui';
-import type { DonationCategorySlug, MarketplaceBrowseRow } from '@kc/domain';
+import type { DonationCategorySlug } from '@kc/domain';
 import { Screen } from '../ui/Screen';
-import { KcFlashList } from '../lists/KcFlashList';
-import { KcRefreshControl } from '../lists/KcRefreshControl';
-import { ListingCard } from '../cards/ListingCard';
-import { kcGridCell } from '../cards/KcCard.styles';
+import { PostFeedList } from '../PostFeedList';
+import { PostFilterSheet } from '../PostFilterSheet';
 import { EmptyState, EmptyStateActions } from '../EmptyState';
-import { PrimaryButton } from '../ui/Buttons';
-import { PostGridSkeleton } from '../skeletons/PostGridSkeleton';
-import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
-import { LIST_END_THRESHOLD } from '../../hooks/usePrefetchNextPage';
-import { useWorldFeed, type WorldFeedState } from '../../hooks/useWorldFeed';
+import { useWorldPostFeed, type WorldPostFeedState } from '../../hooks/useWorldPostFeed';
 import { createRouteFor } from '../../lib/unifiedCreate/createCategories';
 import { WorldHubHeader, type WorldHubHeaderProps } from './WorldHubHeader';
+import { FEED_MATCHES_EVERY_N_POSTS } from '../../lib/feed/feedListLayout';
 import { WorldLinksSection } from './WorldLinksSection';
-import { WorldFeedControls } from './WorldFeedControls';
+import { useWorldHeader } from './useWorldHeader';
 
 export type WorldMarketplaceHubProps = WorldHubHeaderProps & {
   readonly worldSlug: string;
   /** Community links list shown under the feed (FR-DONATE-007). */
   readonly linksCategory?: DonationCategorySlug;
-  /** Secondary line per card; defaults to the listing summary. */
-  readonly rowMeta?: (item: MarketplaceBrowseRow) => string | null;
 };
 
-export function WorldMarketplaceHub({ rowMeta, worldSlug, linksCategory, ...headerProps }: WorldMarketplaceHubProps) {
-  const router = useRouter();
-  const { t } = useTranslation();
-  const inset = useShellTabBarScrollInset();
-  const feed = useWorldFeed(worldSlug);
+export function WorldMarketplaceHub({ worldSlug, linksCategory, subScreens = [], ...headerProps }: WorldMarketplaceHubProps) {
+  const feed = useWorldPostFeed(worldSlug);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const openFilters = useCallback(() => setFiltersOpen(true), []);
+  const screensMenu = useWorldHeader({
+    worldSlug,
+    subScreens,
+    activeFilterCount: feed.activeFilterCount,
+    onOpenFilters: openFilters,
+    mapFilter: feed.value,
+  });
 
   return (
-    <Screen blobs="content">
-      <KcFlashList
-        testID="world-feed-list"
-        data={feed.rows}
-        keyExtractor={(item) => item.listingId}
-        contentContainerStyle={{ paddingBottom: inset, paddingTop: spacing.sm }}
-        ListHeaderComponent={
-          <>
-            <WorldHubHeader {...headerProps} />
-            <WorldFeedControls worldSlug={worldSlug} feed={feed} />
-          </>
-        }
-        ListFooterComponent={linksCategory ? <WorldLinksSection categorySlug={linksCategory} /> : null}
-        numColumns={2}
+    <Screen blobs="off" hasNativeHeader testID="world-feed-list">
+      <PostFeedList
+        data={feed.posts}
+        isLoading={feed.isLoading}
+        isRefetching={feed.isRefetching}
+        isError={feed.isError}
+        onRefresh={feed.refresh}
+        onRetry={feed.refresh}
+        hasMore={feed.hasMore}
         onEndReached={feed.loadMore}
-        onEndReachedThreshold={LIST_END_THRESHOLD}
-        refreshControl={<KcRefreshControl refreshing={feed.isRefreshing} onRefresh={feed.refresh} />}
-        renderItem={({ item }) => (
-          <View style={kcGridCell}>
-            <ListingCard
-              item={item}
-              meta={rowMeta ? rowMeta(item) : undefined}
-              onPress={() => router.push(`/(tabs)/donations/marketplace/${item.listingId}`)}
-            />
-          </View>
-        )}
-        ListEmptyComponent={
-          feed.isLoading ? (
-            <PostGridSkeleton columns={2} />
-          ) : feed.isError && feed.rows.length === 0 ? (
-            <EmptyState
-              icon="cloud-offline-outline"
-              title={t('general.errorTitle')}
-              subtitle={t('errorBoundary.body')}
-              action={
-                <PrimaryButton
-                  testID="world-feed-retry"
-                  label={t('general.retry')}
-                  size="md"
-                  onPress={feed.refresh}
-                />
-              }
-            />
-          ) : (
-            <WorldFeedEmpty worldSlug={worldSlug} feed={feed} />
-          )
-        }
+        ListHeaderComponent={<WorldHubHeader {...headerProps} />}
+        matchesEveryNPosts={FEED_MATCHES_EVERY_N_POSTS}
+        matchesWorldSlug={worldSlug}
+        footer={linksCategory ? <WorldLinksSection categorySlug={linksCategory} /> : null}
+        emptyComponent={<WorldFeedEmpty worldSlug={worldSlug} feed={feed} />}
       />
+      <PostFilterSheet
+        visible={filtersOpen}
+        value={feed.value}
+        onPatch={feed.patch}
+        onClear={feed.clear}
+        onClose={() => setFiltersOpen(false)}
+        lockedWorld
+      />
+      {screensMenu}
     </Screen>
   );
 }
 
-/** Empty world feed: invite the first listing, or clear the search and filters that hid them. */
-function WorldFeedEmpty({ worldSlug, feed }: { readonly worldSlug: string; readonly feed: WorldFeedState }) {
+/** Empty world feed: invite the first post, or clear the search and filters that hid them. */
+function WorldFeedEmpty({ worldSlug, feed }: { readonly worldSlug: string; readonly feed: WorldPostFeedState }) {
   const { t } = useTranslation();
   const router = useRouter();
   return (

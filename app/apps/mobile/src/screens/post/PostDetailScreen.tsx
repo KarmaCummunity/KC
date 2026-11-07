@@ -1,10 +1,10 @@
 // Post detail — wired to live IPostRepository (P0.4-FE).
 // Mapped to: FR-POST-014, FR-POST-015, FR-POST-021, FR-POST-023, FR-CHAT-004, FR-CHAT-005. Closes TD-32 / AUDIT-P2-09.
-import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, TouchableOpacity, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 import { useTranslation } from 'react-i18next';
@@ -28,7 +28,18 @@ import {
   shellTabBarHeightPx,
 } from '../../navigation/useShellTabBarVisibility';
 import { ListingPostDetail } from './ListingPostDetail';
+import { ownerBarTabClearance } from '../../components/shell/tabBarGeometry';
 import { nativeStackHeaderRightIconOnly } from '../../navigation/nativeHeaderIconOnly';
+import { PostEngagementProvider } from '../../components/post-detail/PostEngagementContext';
+import { PostEngagementComposer } from '../../components/post-detail/PostEngagementComposer';
+import { PostDetailBottomChrome } from '../../components/post-detail/PostDetailBottomChrome';
+import {
+  POST_DETAIL_FLOATING_CTA_RESERVE_PX,
+  postDetailScrollBottomInset,
+} from '../../components/post-detail/postDetailBottomMetrics';
+import { useKeyboardVerticalOffset } from '../../lib/platform/useKeyboardVerticalOffset';
+import { postShowsEngagementSection } from '../../lib/postEngagementVisible';
+import { useSeededFeedPost } from '../../hooks/useSeededFeedPost';
 
 function normalizeRoutePostId(raw: string | string[] | undefined): string | undefined {
   const id = Array.isArray(raw) ? raw[0] : raw;
@@ -53,10 +64,6 @@ function postLocationDisplayText(post: PostWithOwner, t: (key: string) => string
   return `${post.address.cityName}, ${post.address.street} ${post.address.streetNumber}`;
 }
 
-// Floating CTA height (48) + bottom offset + visual buffer; reserved as scroll
-// inset so the last content rows are not hidden behind the pill.
-const FLOATING_CTA_RESERVED_HEIGHT = 84;
-
 export function PostDetailScreen() {
   const styles = usePostDetailStyles();
   const { colors } = useTheme();
@@ -69,6 +76,7 @@ export function PostDetailScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const viewerId = useAuthStore((s) => s.session?.userId ?? null);
+  const seed = useSeededFeedPost(postIdParam, viewerId, identityListingHostUserId);
 
   const query = useQuery({
     queryKey: ['post', postIdParam, viewerId, identityListingHostUserId ?? ''],
@@ -80,7 +88,18 @@ export function PostDetailScreen() {
       }),
     enabled: Boolean(postIdParam),
     staleTime: 60_000, // PERF-3: post detail — closure/edit actions invalidate explicitly
+    // Same row the feed or closed-profile list already loaded. Fresh copies skip
+    // the extra posts + identity reads; a stale copy still paints immediately.
+    ...(seed ? { initialData: { post: seed.post }, initialDataUpdatedAt: seed.updatedAt } : {}),
   });
+  const challengeId = query.data?.post?.challengeId ?? null;
+  useEffect(() => {
+    if (!challengeId) return;
+    router.replace({
+      pathname: '/(tabs)/donations/challenges/[challengeId]',
+      params: { challengeId },
+    });
+  }, [challengeId, router]);
 
   const [contactPosterBusy, setContactPosterBusy] = useState(false);
   const onOpenPosterChat = useCallback(async () => {
@@ -97,10 +116,14 @@ export function PostDetailScreen() {
 
   const showShellTabBar = useShellTabBarVisibility();
   const tabBarPad = shellTabBarHeightPx(showShellTabBar);
+  const safeBottom = useSafeAreaInsets().bottom;
+  // The centre "+" rises above the bar and covers a full-width action docked on it.
+  const ownerDockInset = showShellTabBar ? ownerBarTabClearance(tabBarPad, safeBottom) : 0;
   // KC#1387: the floating CTA is absolutely positioned, so the SafeAreaView's
   // bottom padding does not lift it. Its offset must include the safe-area
   // inset the docked bar extends under, or the bar covers the button.
   const ctaBottom = useShellTabBarScrollInset(spacing.base);
+  const keyboardOffset = useKeyboardVerticalOffset();
 
   const exitAfterOwnerMutation = (messageKey: 'closure.detailCloseSuccessToast' | 'closure.detailReopenSuccessToast') => {
     useFeedSessionStore.getState().showEphemeralToast(t(messageKey), 'success', 2200);
@@ -115,7 +138,7 @@ export function PostDetailScreen() {
       </View>
     );
   }
-  if (query.isError) {
+  if (query.isError && !query.data?.post) {
     return (
       <View style={styles.center}>
         <Text style={styles.errorTitle}>{t('post.detail.loadErrorTitle')}</Text>
@@ -126,6 +149,13 @@ export function PostDetailScreen() {
     );
   }
   const post = query.data?.post;
+  if (post?.challengeId) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
   if (!post) {
     return (
       <SafeAreaView style={styles.container}>
@@ -141,7 +171,7 @@ export function PostDetailScreen() {
   // G1 step 4a: a post of a listing world shows its listing's sections and actions in place.
   if (post.listingId) {
     return (
-      <ListingPostDetail post={post} listingId={post.listingId} viewerId={viewerId} bottomInset={tabBarPad} />
+      <ListingPostDetail post={post} listingId={post.listingId} viewerId={viewerId} bottomInset={ownerDockInset} />
     );
   }
 
@@ -155,15 +185,25 @@ export function PostDetailScreen() {
   });
 
   const showViewerContactCta = !isOwner && post.status === 'open';
-  // Floating CTA overlaps content; reserve space so the last rows stay readable.
-  const scrollBottomInset = tabBarPad + (showViewerContactCta ? FLOATING_CTA_RESERVED_HEIGHT : 0);
+  const showEngagementComposer = Boolean(viewerId) && postShowsEngagementSection(post.status);
+  const showOwnerChrome = isOwner && viewerId !== null;
+  const scrollBottomInset = postDetailScrollBottomInset({
+    tabBarOverlayInset: ownerDockInset,
+    hasOwnerBar: showOwnerChrome,
+    hasComposer: showEngagementComposer,
+    floatingCtaReserve: showViewerContactCta ? POST_DETAIL_FLOATING_CTA_RESERVE_PX : 0,
+  });
 
   const ownerNavigable = post.ownerProfileNavigableFromPost !== false;
   const ownerLabel = postOwnerDisplayLabel(post, t);
 
   return (
     // testID: stable E2E anchor for "the loaded post opened" (Maestro flow 06, KC#1235).
-    <SafeAreaView style={styles.container} edges={['bottom']} testID="post-detail-screen">
+    <SafeAreaView
+      style={styles.container}
+      edges={showEngagementComposer ? [] : ['bottom']}
+      testID="post-detail-screen"
+    >
       <Stack.Screen
         options={{
           // Under forceRTL=true, the inner row visually flips so the *first*
@@ -177,27 +217,43 @@ export function PostDetailScreen() {
           )),
         }}
       />
-      <PostDetailScrollContent
-        post={post}
-        isGive={isGive}
-        viewerId={viewerId}
-        ownerNavigable={ownerNavigable}
-        ownerLabel={ownerLabel}
-        locationText={locationText}
-        timeAgo={timeAgo}
-        scrollBottomInset={scrollBottomInset}
-      />
-
-      {isOwner && viewerId ? (
-        <OwnerActionsBar
-          post={post}
-          ownerId={viewerId}
-          tabBarOverlayInset={tabBarPad}
-          // onClosed / onReopened: toast + leave detail (lists invalidated in OwnerActionsBar).
-          onClosed={() => exitAfterOwnerMutation('closure.detailCloseSuccessToast')}
-          onReopened={() => exitAfterOwnerMutation('closure.detailReopenSuccessToast')}
-        />
-      ) : null}
+      <PostEngagementProvider postId={post.postId} viewerId={viewerId}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={keyboardOffset}
+        >
+          <PostDetailScrollContent
+            post={post}
+            isGive={isGive}
+            viewerId={viewerId}
+            ownerNavigable={ownerNavigable}
+            ownerLabel={ownerLabel}
+            locationText={locationText}
+            timeAgo={timeAgo}
+            scrollBottomInset={scrollBottomInset}
+          />
+          {showEngagementComposer || showOwnerChrome ? (
+            <PostDetailBottomChrome
+              tabBarOverlayInset={ownerDockInset}
+              ownerSlot={
+                showOwnerChrome ? (
+                  <OwnerActionsBar
+                    post={post}
+                    ownerId={viewerId!}
+                    embedded
+                    onClosed={() => exitAfterOwnerMutation('closure.detailCloseSuccessToast')}
+                    onReopened={() => exitAfterOwnerMutation('closure.detailReopenSuccessToast')}
+                  />
+                ) : undefined
+              }
+              composerSlot={
+                showEngagementComposer ? <PostEngagementComposer embedded /> : undefined
+              }
+            />
+          ) : null}
+        </KeyboardAvoidingView>
+      </PostEngagementProvider>
       {showViewerContactCta ? (
         <View
           style={[styles.cta, { bottom: ctaBottom }]}

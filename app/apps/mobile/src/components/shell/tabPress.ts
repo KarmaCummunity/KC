@@ -5,6 +5,7 @@
 // Mapped to: SRS §6.1 (5 tabs, D-16), FR-PROFILE-001 AC4.
 import type { Href } from 'expo-router';
 import { resolveActiveTabKey, type TabDefinition } from './tabs.config';
+import { closeCreateForm } from '../../navigation/closeCreateForm';
 
 /**
  * - `stay`      — the tab is active and its root screen is on top: keep it mounted as is.
@@ -43,9 +44,6 @@ export interface TabRepressRouter {
   canGoBack: () => boolean;
 }
 
-/** Where closing the create form lands when there is no screen to go back to (deep link / reload). */
-const FORM_CLOSE_FALLBACK: Href = '/(tabs)';
-
 /**
  * Handles a press on the already-active tab. Returns `true` when the press was
  * fully handled here; `false` means the caller should open the tab itself.
@@ -58,8 +56,7 @@ export function handleActiveTabRepress(
   const action = resolveTabPressAction(tab, segments);
   if (action === 'stay') return true;
   if (action === 'close') {
-    if (router.canGoBack()) router.back();
-    else router.dismissTo(FORM_CLOSE_FALLBACK);
+    closeCreateForm(router);
     return true;
   }
   if (action === 'popToRoot') {

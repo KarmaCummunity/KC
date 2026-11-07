@@ -8,9 +8,11 @@ import { TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, iconSize, spacing, typography, useTheme, Text } from '@kc/ui';
-import { AvatarInitials } from '../AvatarInitials';
+import type { VerificationLevel } from '@kc/domain';
+import { VerificationBadge } from '../VerificationBadge';
 import { isOpaqueSystemShareHandle } from '../../lib/shareHandleDisplay';
 import { rowDirectionStart } from '../../lib/rtlLayout';
+import { ProfileAvatar } from './ProfileAvatar';
 
 export interface ProfileHeaderProps {
   displayName: string;
@@ -22,10 +24,14 @@ export interface ProfileHeaderProps {
   privacyMode: 'Public' | 'Private';
   onLockPress?: () => void;
   size?: number;
+  verificationLevel?: VerificationLevel;
+  /** FR-VERIFY-013 AC1 — own incomplete profile: dot on the avatar, tap opens Edit profile. */
+  onIncompleteAvatarPress?: () => void;
 }
 
 export function ProfileHeader({
   displayName, handle, locationLine, avatarUrl, biography, privacyMode, onLockPress, size = 96,
+  verificationLevel, onIncompleteAvatarPress,
 }: ProfileHeaderProps) {
   const styles = useProfileHeaderStyles();
   const { colors } = useTheme();
@@ -33,9 +39,15 @@ export function ProfileHeader({
   const showLock = privacyMode === 'Private';
   return (
     <View style={styles.wrap}>
-      <AvatarInitials name={displayName} avatarUrl={avatarUrl} size={size} />
+      <ProfileAvatar
+        name={displayName}
+        avatarUrl={avatarUrl}
+        size={size}
+        onIncompletePress={onIncompleteAvatarPress}
+      />
       <View style={styles.nameRow}>
         <Text style={styles.displayName}>{displayName}</Text>
+        <VerificationBadge level={verificationLevel} size={iconSize.md} />
         {showLock ? (
           <TouchableOpacity onPress={onLockPress} accessibilityLabel={t('profile.privateProfileA11y')}>
             <Ionicons

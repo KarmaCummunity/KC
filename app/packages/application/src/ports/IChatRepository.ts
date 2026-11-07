@@ -1,4 +1,4 @@
-import type { Chat, Message } from '@kc/domain';
+import type { Chat, Message, VerificationLevel } from '@kc/domain';
 
 export interface ChatWithPreview extends Chat {
   otherParticipant: {
@@ -7,6 +7,7 @@ export interface ChatWithPreview extends Chat {
     avatarUrl: string | null;
     shareHandle: string | null;       // null when counterpart hard-deleted
     isDeleted: boolean;
+    verificationLevel?: VerificationLevel; // FR-VERIFY-001; absent = 0
   };
   lastMessage: Message | null;
   unreadCount: number;
@@ -51,6 +52,7 @@ export interface IChatRepository {
     avatarUrl: string | null;
     shareHandle: string | null;
     isDeleted: boolean;
+    verificationLevel?: VerificationLevel;
   }>;
 
   // Support thread (FR-CHAT-007)
