@@ -3905,6 +3905,13 @@ export type Database = {
             referencedColumns: ["listing_id"]
           },
           {
+            foreignKeyName: "listing_worlds_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
             foreignKeyName: "listing_worlds_world_slug_fkey"
             columns: ["world_slug"]
             isOneToOne: false
@@ -12226,6 +12233,10 @@ export type Database = {
           street_name: string
         }[]
       }
+      get_listing_additional_worlds: {
+        Args: { p_listing_id: string }
+        Returns: string[]
+      }
       get_listing_handoff: { Args: { p_listing_id: string }; Returns: Json }
       get_marketplace_listing_detail: {
         Args: { p_listing_id: string }
@@ -14916,6 +14927,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      set_listing_additional_worlds: {
+        Args: { p_listing_id: string; p_world_slugs: string[] }
+        Returns: undefined
       }
       set_ride_series_status: {
         Args: { p_series_id: string; p_status: string }
