@@ -7,20 +7,28 @@ import {
   gateFilesChanged,
   mergeRefOf,
   newestPrRun,
+  parseReferencedWorkflow,
   prMismatchErrors,
   runShapeErrors,
   siblingPrErrors,
 } from './ci-run-binding.mjs';
 
 const REPO = 'Org/KC';
-const HEAD = 'h'.repeat(40);
-const MERGE = 'm'.repeat(40);
+const HEAD = 'a'.repeat(40);
+const MERGE = 'c'.repeat(40);
 const BASE = 'b'.repeat(40);
-const TIP = 't'.repeat(40);
+const TIP = 'd'.repeat(40);
 const ENV = { GITHUB_TOKEN: 't' };
 
 const ref = (file, pr = 7, sha = MERGE, repo = REPO) => ({
   path: `${repo}/.github/workflows/${file}@refs/pull/${pr}/merge`,
+  sha,
+  ref: `refs/pull/${pr}/merge`,
+});
+
+/** GitHub also records the merge commit SHA in the path with `ref` separate. */
+const refByMergeSha = (file, pr = 7, sha = MERGE, repo = REPO) => ({
+  path: `${repo}/.github/workflows/${file}@${sha}`,
   sha,
   ref: `refs/pull/${pr}/merge`,
 });
@@ -97,6 +105,10 @@ test('push and dispatch runs count only on dev or main; merge groups only on the
 
 test('mergeRefOf needs every reference to be this repo at one refs/pull/N/merge commit', () => {
   assert.deepEqual(mergeRefOf(prRun(), REPO), { sha: MERGE, pr: 7 });
+  assert.deepEqual(
+    mergeRefOf(prRun({ referenced_workflows: [refByMergeSha('ci-static-guards.yml'), refByMergeSha('ci-pr.yml')] }), REPO),
+    { sha: MERGE, pr: 7 },
+  );
   assert.equal(mergeRefOf(prRun({ referenced_workflows: [] }), REPO), null);
   assert.equal(mergeRefOf(prRun({ referenced_workflows: [ref('a.yml'), ref('b.yml', 7, BASE)] }), REPO), null, 'two commits');
   assert.equal(mergeRefOf(prRun({ referenced_workflows: [ref('a.yml'), ref('b.yml', 8)] }), REPO), null, 'two PR refs');
@@ -105,6 +117,36 @@ test('mergeRefOf needs every reference to be this repo at one refs/pull/N/merge 
   assert.equal(mergeRefOf(prRun({ referenced_workflows: [branchRef] }), REPO), null, 'branch ref');
   const mislabelled = { ...ref('ci-pr.yml'), ref: 'refs/pull/8/merge' };
   assert.equal(mergeRefOf(prRun({ referenced_workflows: [mislabelled] }), REPO), null, 'ref disagrees with path');
+});
+
+test('parseReferencedWorkflow rejects SHA/path/ref mismatches', () => {
+  assert.deepEqual(parseReferencedWorkflow(ref('ci-pr.yml'), REPO), { pr: 7, sha: MERGE, ref: 'refs/pull/7/merge' });
+  assert.deepEqual(parseReferencedWorkflow(refByMergeSha('ci-pr.yml'), REPO), { pr: 7, sha: MERGE, ref: 'refs/pull/7/merge' });
+  assert.equal(
+    parseReferencedWorkflow({ path: `${REPO}/.github/workflows/ci-pr.yml@${MERGE}`, sha: BASE, ref: 'refs/pull/7/merge' }, REPO),
+    null,
+    'path sha ≠ sha field',
+  );
+  assert.equal(
+    mergeRefOf(
+      prRun({
+        referenced_workflows: [refByMergeSha('a.yml', 7), refByMergeSha('b.yml', 8)],
+      }),
+      REPO,
+    ),
+    null,
+    'two PR numbers in sha-path form',
+  );
+  assert.equal(
+    parseReferencedWorkflow({ path: `${REPO}/.github/workflows/ci-pr.yml@${MERGE}`, sha: MERGE, ref: 'refs/heads/dev' }, REPO),
+    null,
+    'non-merge ref',
+  );
+  assert.equal(
+    mergeRefOf(prRun({ referenced_workflows: [ref('a.yml'), refByMergeSha('b.yml', 7, BASE)] }), REPO),
+    null,
+    'mixed path styles with different shas',
+  );
 });
 
 test('gateFilesChanged picks workflow and judge files only', () => {
@@ -146,7 +188,7 @@ test('bindPrRun rejects another PR, another base, a moved head, a foreign merge 
   assert.match((await withApi(api(), () => bindPrRun(prRun(), REPO, ENV, { pr: 8 }))).errors[0], /PR #7, not PR #8/);
   assert.match((await withApi(api(), () => bindPrRun(prRun(), REPO, ENV, { baseRef: 'main' }))).errors[0], /not main/);
   const moved = api({ pr: prObject(7, 'dev', { sha: BASE }) });
-  assert.match((await withApi(moved, () => bindPrRun(prRun(), REPO, ENV))).errors[0], /but the run built hhhh/);
+  assert.match((await withApi(moved, () => bindPrRun(prRun(), REPO, ENV))).errors[0], /but the run built a{40}/);
   assert.match((await withApi(api({ parents: [BASE, MERGE] }), () => bindPrRun(prRun(), REPO, ENV))).errors[0], /does not merge head/);
   assert.match((await withApi(api({ status: 'diverged' }), () => bindPrRun(prRun(), REPO, ENV))).errors[0], /not part of dev/);
   const gate = api({ files: [{ filename: '.github/workflows/ci.yml' }] });

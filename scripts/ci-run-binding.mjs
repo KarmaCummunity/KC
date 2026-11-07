@@ -9,7 +9,9 @@
 //   • a run of this repository's .github/workflows/ci.yml, on a same-repo head;
 //   • for PR events, a run of PR #N into dev or main:
 //       – EVERY reusable-workflow reference the run records is a workflow of
-//         this repository at refs/pull/N/merge, all at one merge commit (a
+//         this repository at refs/pull/N/merge — either encoded in the path
+//         (`…@refs/pull/N/merge`) or as `…@<merge-sha>` with `ref` set to
+//         `refs/pull/N/merge` (GitHub records both forms) — all at one merge
 //         remote-form call to another PR's merge ref is recorded like a local
 //         one, so this alone is not proof — hence the next checks);
 //       – PR #N's head is this run's head branch and head SHA, and no PR from
@@ -53,19 +55,43 @@ export function runShapeErrors(run, repo) {
   return errors;
 }
 
+const WORKFLOW_PATH = /^([^/]+\/[^/]+)\/\.github\/workflows\/[^/@]+\.ya?ml@(.+)$/i;
+const MERGE_REF = /^refs\/pull\/(\d+)\/merge$/;
+const COMMIT_SHA = /^[0-9a-f]{40}$/;
+
 /**
- * The merge commit and PR number a PR-event run executed, or null unless
- * EVERY reusable-workflow reference is `<repo>/.github/workflows/<file>@refs/pull/N/merge`
- * with that same ref and one merge commit SHA. Pure.
+ * Parse one reusable-workflow reference into { pr, sha, ref }, or null when
+ * malformed, cross-repo, or path/ref/sha disagree. Pure.
+ */
+export function parseReferencedWorkflow(w, repo) {
+  const m = WORKFLOW_PATH.exec(w.path ?? '');
+  if (!m || !same(m[1], repo)) return null;
+  const suffix = m[2];
+  const mergeInPath = MERGE_REF.exec(suffix);
+  if (mergeInPath) {
+    if (w.ref !== suffix || typeof w.sha !== 'string' || !w.sha) return null;
+    return { pr: Number(mergeInPath[1]), sha: w.sha, ref: w.ref };
+  }
+  if (!COMMIT_SHA.test(suffix) || w.sha !== suffix) return null;
+  const mergeRef = MERGE_REF.exec(w.ref ?? '');
+  if (!mergeRef) return null;
+  return { pr: Number(mergeRef[1]), sha: w.sha, ref: w.ref };
+}
+
+/**
+ * The merge commit and PR number a PR-event run executed, or null unless EVERY
+ * reusable-workflow reference parses and shares one PR, merge commit SHA, and
+ * `refs/pull/N/merge` ref. Pure.
  */
 export function mergeRefOf(run, repo) {
   const refs = run.referenced_workflows ?? [];
   if (refs.length === 0) return null;
-  const pathRe = /^([^/]+\/[^/]+)\/\.github\/workflows\/[^/@]+\.ya?ml@(refs\/pull\/(\d+)\/merge)$/;
-  const parsed = refs.map((w) => ({ m: pathRe.exec(w.path ?? ''), w }));
-  const ok = parsed.every(({ m, w }) => m && same(m[1], repo) && w.ref === m[2] && w.sha === refs[0].sha && w.ref === refs[0].ref);
-  if (!ok || !refs[0].sha) return null;
-  return { sha: refs[0].sha, pr: Number(parsed[0].m[3]) };
+  const parsed = refs.map((w) => parseReferencedWorkflow(w, repo));
+  if (parsed.some((p) => p === null)) return null;
+  const first = parsed[0];
+  const uniform = parsed.every((p) => p.pr === first.pr && p.sha === first.sha && p.ref === first.ref);
+  if (!uniform || !first.sha) return null;
+  return { sha: first.sha, pr: first.pr };
 }
 
 /** Gate files among a compare's changed files. Pure. */
