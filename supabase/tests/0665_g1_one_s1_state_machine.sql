@@ -208,11 +208,11 @@ begin
   -- 5a. A post-owned listing: deleting the listing does NOT cascade-delete the owning post
   v_post := pg_temp.new_post(p.owner, 'open');
   insert into public.listings (
-    owner_id, kind_id, title, summary, city_id, address, geo, time_window, expires_at, details,
+    owner_id, kind_id, title, summary, city_id, geo, time_window, expires_at, details,
     anonymity_level, origin, moderation_status, published_at, status, legacy_post_id
   ) values (
     p.owner, kc_test.listing_kind_id('items', 'give_item'),
-    'Post owned listing', 'Summary', 'tel-aviv', 'Herzl 1',
+    'Post owned listing', 'Summary', 'tel-aviv',
     st_setsrid(st_makepoint(34.7818, 32.0853), 4326)::geography,
     tstzrange(now(), now() + interval '7 days'),
     now() + interval '7 days', '{"condition": "good"}'::jsonb,
@@ -229,11 +229,11 @@ begin
 
   -- 5b. A listing-sourced listing: deleting the listing deletes its mirror post
   insert into public.listings (
-    owner_id, kind_id, title, summary, city_id, address, geo, time_window, expires_at, details,
+    owner_id, kind_id, title, summary, city_id, geo, time_window, expires_at, details,
     anonymity_level, origin, moderation_status, published_at, status
   ) values (
     p.owner, kc_test.listing_kind_id('items', 'give_item'),
-    'Listing sourced', 'Summary', 'tel-aviv', 'Herzl 1',
+    'Listing sourced', 'Summary', 'tel-aviv',
     st_setsrid(st_makepoint(34.7818, 32.0853), 4326)::geography,
     tstzrange(now(), now() + interval '7 days'),
     now() + interval '7 days', '{"condition": "good"}'::jsonb,
