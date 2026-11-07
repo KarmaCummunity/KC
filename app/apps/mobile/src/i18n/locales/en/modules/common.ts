@@ -3,4 +3,9 @@
 export const commonEn = {
   deletedUser: 'Deleted user',
   requiredFieldA11y: 'Required field',
+  formKeyboard: {
+    next: 'Next',
+    prev: 'Previous',
+    done: 'Done',
+  },
 } as const;

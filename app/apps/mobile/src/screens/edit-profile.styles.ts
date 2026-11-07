@@ -1,4 +1,4 @@
-import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
+import { makeUseStyles, spacing, typography } from '@kc/ui';
 import { rtlTextAlignEnd } from '../lib/rtlLayout';
 
 export const useEditProfileStyles = makeUseStyles(({ colors }) => ({
@@ -9,17 +9,8 @@ export const useEditProfileStyles = makeUseStyles(({ colors }) => ({
     alignItems: 'center',
     backgroundColor: colors.background,
   },
-  scroll: { padding: spacing.lg, gap: spacing.base, paddingBottom: spacing['3xl'] },
+  scroll: { gap: spacing.base },
   field: { gap: spacing.xs },
   textarea: { minHeight: 90, textAlignVertical: 'top' },
   count: { ...typography.caption, color: colors.textDisabled, textAlign: rtlTextAlignEnd },
-  saveBtn: {
-    height: 52,
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: spacing.base,
-  },
-  saveText: { ...typography.button, color: colors.textInverse },
 }));

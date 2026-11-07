@@ -3,4 +3,9 @@
 export const commonHe = {
   deletedUser: 'משתמש שנמחק',
   requiredFieldA11y: 'שדה חובה',
+  formKeyboard: {
+    next: 'הבא',
+    prev: 'הקודם',
+    done: 'סיום',
+  },
 } as const;

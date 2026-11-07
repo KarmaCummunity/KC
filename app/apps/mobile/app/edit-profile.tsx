@@ -1,19 +1,11 @@
 // FR-PROFILE-007 — Edit Profile (getEditableProfile + UpdateProfileUseCase).
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useTheme, Text } from '@kc/ui';
-import { TextField } from '../src/components/ui';
+import { TextField, FormScreen, PrimaryButton } from '../src/components/ui';
 import { rtlTextAlignStart } from '../src/lib/rtlLayout';
 import { EditProfileAddressBlock } from '../src/components/EditProfileAddressBlock';
 import { EditProfileAvatar } from '../src/components/EditProfileAvatar';
@@ -24,10 +16,9 @@ import { removeUploadedAvatar } from '../src/services/avatarUpload';
 import { mapEditProfileSaveError } from '../src/lib/editProfileSaveErrors';
 import { useUnsavedChangesGuard } from '../src/hooks/useUnsavedChangesGuard';
 import { useEditProfileStyles } from '../src/screens/edit-profile.styles';
+import { useFormFieldFocus } from '../src/hooks/useFormFieldFocus';
 
 interface InitialState {
-  // Nullable after migration 0084 (user still in `pending_basic_info`). The form
-  // requires non-null on save; loaders default to '' so inputs stay controlled.
   readonly displayName: string | null;
   readonly cityId: string | null;
   readonly cityName: string | null;
@@ -38,6 +29,8 @@ interface InitialState {
   readonly avatarUrl: string | null;
 }
 
+const TEXT_FIELD_COUNT = 4;
+
 export default function EditProfileScreen() {
   const { t } = useTranslation();
   const styles = useEditProfileStyles();
@@ -46,6 +39,11 @@ export default function EditProfileScreen() {
   const queryClient = useQueryClient();
   const session = useAuthStore((s) => s.session);
   const setSession = useAuthStore((s) => s.setSession);
+  const fieldFocus = useFormFieldFocus(TEXT_FIELD_COUNT);
+  const nameField = fieldFocus.bindField(0);
+  const streetNumberField = fieldFocus.bindField(1);
+  const phoneField = fieldFocus.bindField(2);
+  const bioField = fieldFocus.bindField(3);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -57,8 +55,6 @@ export default function EditProfileScreen() {
   const [biography, setBiography] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [initial, setInitial] = useState<InitialState | null>(null);
-  // TD-138 — Alert.alert is a no-op on react-native-web; surface every
-  // validation / load / save failure via NotifyModal instead.
   const [notify, setNotify] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
@@ -95,7 +91,6 @@ export default function EditProfileScreen() {
     return () => { cancelled = true; };
   }, [session, t]);
 
-  // Audit §16.10 — confirm before discarding unsaved edits on Back.
   const isDirty = useMemo(() => {
     if (!initial) return false;
     const ts = street.trim() || null;
@@ -169,7 +164,6 @@ export default function EditProfileScreen() {
       }
       const includeBasicInfo = nameChanged || cityChanged;
       const profileAddress = addrChanged ? { street: nextStreet, streetNumber: nextNum } : undefined;
-      // TD-108: drop the Storage object before persisting null on remove.
       if (avatarChanged && avatarUrl === null && initial.avatarUrl) await removeUploadedAvatar(session.userId);
       await getUpdateProfileUseCase().execute({
         sessionUserId: session.userId,
@@ -198,39 +192,105 @@ export default function EditProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <EditProfileAvatar userId={session?.userId ?? ''} displayName={displayName}
-            avatarUrl={avatarUrl} disabled={saving} onChange={setAvatarUrl} />
-          <View style={styles.field}>
-            <TextField label={t('profile.editScreen.fullNameLabel')} value={displayName} onChangeText={setDisplayName}
-              maxLength={50} textAlign={rtlTextAlignStart} editable={!saving}
-              placeholder={t('profile.editScreen.fullNamePlaceholder')} />
-            <Text style={styles.count}>{displayName.length}/50</Text>
-          </View>
-          <EditProfileAddressBlock city={city} onCityChange={setCity} street={street}
-            streetNumber={streetNumber} onStreetChange={setStreet}
-            onStreetNumberChange={setStreetNumber} disabled={saving} />
-          <View style={styles.field}>
-            <TextField label={t('profile.editScreen.contactPhoneLabel')} value={contactPhone} onChangeText={setContactPhone}
-              maxLength={20} keyboardType="phone-pad" textAlign={rtlTextAlignStart} editable={!saving}
-              placeholder={t('profile.editScreen.contactPhonePlaceholder')} />
-          </View>
-          <View style={styles.field}>
-            <TextField label={t('profile.editScreen.biographyLabel')} style={styles.textarea} value={biography} onChangeText={setBiography}
-              maxLength={200} multiline textAlign={rtlTextAlignStart} editable={!saving}
-              placeholder={t('profile.editScreen.biographyPlaceholder')} />
-            <Text style={styles.count}>{biography.length}/200</Text>
-          </View>
-          <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-            {saving ? <ActivityIndicator color={colors.textInverse} /> : <Text style={styles.saveText}>{t('profile.editScreen.save')}</Text>}
-          </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
+    <>
+      <FormScreen
+        edges={['bottom']}
+        contentContainerStyle={styles.scroll}
+        keyboardAccessory={{
+          canGoPrev: fieldFocus.canGoPrev,
+          canGoNext: fieldFocus.canGoNext,
+          onPrev: fieldFocus.focusPrev,
+          onNext: fieldFocus.focusNext,
+          onDone: fieldFocus.dismiss,
+        }}
+        footer={
+          <PrimaryButton
+            label={t('profile.editScreen.save')}
+            fullWidth
+            loading={saving}
+            disabled={saving}
+            onPress={handleSave}
+          />
+        }
+      >
+        <EditProfileAvatar userId={session?.userId ?? ''} displayName={displayName}
+          avatarUrl={avatarUrl} disabled={saving} onChange={setAvatarUrl} />
+        <View style={styles.field}>
+          <TextField
+            ref={nameField.ref}
+            label={t('profile.editScreen.fullNameLabel')}
+            value={displayName}
+            onChangeText={setDisplayName}
+            maxLength={50}
+            textAlign={rtlTextAlignStart}
+            editable={!saving}
+            placeholder={t('profile.editScreen.fullNamePlaceholder')}
+            onFocus={nameField.onFocus}
+            inputAccessoryViewID={nameField.inputAccessoryViewID}
+            returnKeyType={nameField.returnKeyType}
+            blurOnSubmit={nameField.blurOnSubmit}
+            onSubmitEditing={nameField.onSubmitEditing}
+          />
+          <Text style={styles.count}>{displayName.length}/50</Text>
+        </View>
+        <EditProfileAddressBlock
+          city={city}
+          onCityChange={setCity}
+          street={street}
+          streetNumber={streetNumber}
+          onStreetChange={setStreet}
+          onStreetNumberChange={setStreetNumber}
+          disabled={saving}
+          streetNumberRef={streetNumberField.ref}
+          streetNumberInputProps={{
+            onFocus: streetNumberField.onFocus,
+            inputAccessoryViewID: streetNumberField.inputAccessoryViewID,
+            returnKeyType: streetNumberField.returnKeyType,
+            blurOnSubmit: streetNumberField.blurOnSubmit,
+            onSubmitEditing: streetNumberField.onSubmitEditing,
+          }}
+        />
+        <View style={styles.field}>
+          <TextField
+            ref={phoneField.ref}
+            label={t('profile.editScreen.contactPhoneLabel')}
+            value={contactPhone}
+            onChangeText={setContactPhone}
+            maxLength={20}
+            keyboardType="phone-pad"
+            textAlign={rtlTextAlignStart}
+            editable={!saving}
+            placeholder={t('profile.editScreen.contactPhonePlaceholder')}
+            onFocus={phoneField.onFocus}
+            inputAccessoryViewID={phoneField.inputAccessoryViewID}
+            returnKeyType={phoneField.returnKeyType}
+            blurOnSubmit={phoneField.blurOnSubmit}
+            onSubmitEditing={phoneField.onSubmitEditing}
+          />
+        </View>
+        <View style={styles.field}>
+          <TextField
+            ref={bioField.ref}
+            label={t('profile.editScreen.biographyLabel')}
+            style={styles.textarea}
+            value={biography}
+            onChangeText={setBiography}
+            maxLength={200}
+            multiline
+            textAlign={rtlTextAlignStart}
+            editable={!saving}
+            placeholder={t('profile.editScreen.biographyPlaceholder')}
+            onFocus={bioField.onFocus}
+            inputAccessoryViewID={bioField.inputAccessoryViewID}
+            returnKeyType={bioField.returnKeyType}
+            blurOnSubmit={bioField.blurOnSubmit}
+            onSubmitEditing={bioField.onSubmitEditing}
+          />
+          <Text style={styles.count}>{biography.length}/200</Text>
+        </View>
+      </FormScreen>
       <NotifyModal visible={notify !== null} title={notify?.title ?? ''}
         message={notify?.message ?? ''} onDismiss={() => setNotify(null)} />
-    </SafeAreaView>
+    </>
   );
 }
-
