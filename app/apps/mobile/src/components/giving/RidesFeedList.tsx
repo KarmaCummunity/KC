@@ -13,6 +13,7 @@ import { kcGridCell } from '../cards/KcCard.styles';
 import { KcRefreshControl } from '../lists/KcRefreshControl';
 import { EmptyState, EmptyStateActions } from '../EmptyState';
 import { PrimaryButton } from '../ui/Buttons';
+import { PostGridSkeleton } from '../skeletons/PostGridSkeleton';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
 import { createRouteFor } from '../../lib/unifiedCreate/createCategories';
 import { rideFeedCardExtras, rideFeedCardRow, rideFeedGridSections } from '../../lib/rides/ridesHubFeed';
@@ -48,7 +49,7 @@ export function RidesFeedList({ feed, header, footer }: Props) {
           {row.map((item) => <RideFeedCell key={item.listingId} item={item} />)}
         </View>
       )}
-      ListEmptyComponent={feed.isLoading ? null : <RidesFeedEmpty feed={feed} />}
+      ListEmptyComponent={feed.isLoading ? <PostGridSkeleton columns={2} /> : <RidesFeedEmpty feed={feed} />}
     />
   );
 }
