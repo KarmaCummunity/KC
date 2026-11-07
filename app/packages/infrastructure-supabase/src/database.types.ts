@@ -3880,6 +3880,46 @@ export type Database = {
           },
         ]
       }
+      listing_worlds: {
+        Row: {
+          created_at: string
+          listing_id: string
+          world_slug: string
+        }
+        Insert: {
+          created_at?: string
+          listing_id: string
+          world_slug: string
+        }
+        Update: {
+          created_at?: string
+          listing_id?: string
+          world_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_worlds_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "listing_worlds_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "listing_worlds_world_slug_fkey"
+            columns: ["world_slug"]
+            isOneToOne: false
+            referencedRelation: "worlds"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       listings: {
         Row: {
           anonymity_level: number
@@ -11659,6 +11699,7 @@ export type Database = {
       }
       create_marketplace_listing: {
         Args: {
+          p_additional_world_slugs?: string[]
           p_availability_status?: string
           p_category_id?: string
           p_city_id?: string
@@ -12191,6 +12232,10 @@ export type Database = {
           lng: number
           street_name: string
         }[]
+      }
+      get_listing_additional_worlds: {
+        Args: { p_listing_id: string }
+        Returns: string[]
       }
       get_listing_handoff: { Args: { p_listing_id: string }; Returns: Json }
       get_marketplace_listing_detail: {
@@ -14882,6 +14927,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      set_listing_additional_worlds: {
+        Args: { p_listing_id: string; p_world_slugs: string[] }
+        Returns: undefined
       }
       set_ride_series_status: {
         Args: { p_series_id: string; p_status: string }
