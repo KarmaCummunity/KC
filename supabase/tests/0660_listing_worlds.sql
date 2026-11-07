@@ -13,17 +13,17 @@ create temp table personas as
 select kc_test.create_user('mw_author') as author,
        kc_test.create_user('mw_viewer') as viewer;
 
--- ── 1. Create a listing with primary world 'time' ──────────────────────────────────────────────
+-- ── 1. Create a listing with primary world 'items' ──────────────────────────────────────────────
 select kc_test.act_as((select author from personas));
 
-insert into public.listings (
-  owner_id, world_slug, direction, title, summary, status, moderation_status, city_id
-) values (
-  (select author from personas), 'time', 'give', 'מתמטיקה בהתנדבות', 'שיעור פרטי במתמטיקה', 'open', 'published', 'tel-aviv'
-);
-
 create temp table my_listing as
-select listing_id from public.listings where title = 'מתמטיקה בהתנדבות' limit 1;
+select public.create_marketplace_listing(
+  p_kind_id => kc_test.listing_kind_id('items', 'give_item'),
+  p_title => 'מתמטיקה בהתנדבות',
+  p_summary => 'שיעור פרטי במתמטיקה',
+  p_direction => 'give',
+  p_city_id => 'tel-aviv'
+) as listing_id;
 
 do $$
 declare
@@ -41,7 +41,7 @@ $$;
 insert into public.listing_worlds (listing_id, world_slug)
 select listing_id, 'knowledge' from my_listing;
 
--- Attempting to add primary world 'time' fails
+-- Attempting to add primary world 'items' fails
 do $$
 declare
   v_lid uuid;
@@ -50,7 +50,7 @@ begin
   select listing_id into v_lid from my_listing;
   begin
     insert into public.listing_worlds (listing_id, world_slug)
-    values (v_lid, 'time');
+    values (v_lid, 'items');
   exception when sqlstate '23514' then
     v_failed := true;
   end;
@@ -77,7 +77,7 @@ $$;
 -- set_listing_additional_worlds updates the worlds and filters out primary
 select public.set_listing_additional_worlds(
   (select listing_id from my_listing),
-  array['knowledge', 'employment', 'time']
+  array['knowledge', 'employment', 'items']
 );
 
 do $$
@@ -96,7 +96,7 @@ $$;
 -- ── 3. browse_listings includes additional worlds ──────────────────────────────────────────────
 select kc_test.act_as((select viewer from personas));
 
--- Browse 'time' (primary world) returns the listing
+-- Browse 'items' (primary world) returns the listing
 do $$
 declare
   v_lid uuid;
@@ -104,10 +104,10 @@ declare
 begin
   select listing_id into v_lid from my_listing;
   select exists (
-    select 1 from public.browse_listings(p_world_slug => 'time') where listing_id = v_lid
+    select 1 from public.browse_listings(p_world_slug => 'items') where listing_id = v_lid
   ) into v_found;
   if not v_found then
-    raise exception 'browse_listings failed to return listing in primary world time';
+    raise exception 'browse_listings failed to return listing in primary world items';
   end if;
 end;
 $$;
