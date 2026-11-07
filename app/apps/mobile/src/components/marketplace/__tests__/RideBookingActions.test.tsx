@@ -2,6 +2,9 @@
 // G47 / D73 — the ride screen: the driver sees every booking and approves or declines each;
 // a passenger books a chosen number of seats and follows their own booking.
 import { afterEach, describe, expect, it, vi } from 'vitest';
+vi.mock('../../giving/RidePlaceField', () => ({ RidePlaceField: () => null }));
+vi.mock('../../../hooks/useRidePlaces', () => ({ useRidePlaces: () => ({ data: [], isLoading: false }) }));
+vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarVisibility: () => false, shellTabBarHeightPx: () => 0, useShellTabBarScrollInset: () => 0 }));
 import React from 'react';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -64,6 +67,7 @@ vi.mock('../../../lib/haptics', () => ({ hapticSuccess: vi.fn() }));
 // The card module pulls in native image/icon modules; only its time formatter is used here.
 vi.mock('../../cards/ListingCard', () => ({ formatRideTime: (iso: string | null) => iso }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+vi.mock('../../AvatarInitials', () => ({ AvatarInitials: () => null }));
 
 import { RideBookingActions, rideCapacity } from '../rides/RideBookingActions';
 

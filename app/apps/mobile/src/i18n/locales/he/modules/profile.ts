@@ -2,27 +2,27 @@
 // `index.ts` under the 200-LOC cap as the profile surface grows (TD-156).
 export const profileHe = {
   myProfile: 'הפרופיל שלי',
-  editProfile: 'ערוך פרופיל',
-  shareProfile: 'שתף פרופיל',
+  editProfile: 'לערוך פרופיל',
+  shareProfile: 'לשתף פרופיל',
   followers: 'עוקבים',
   following: 'במעקב',
   activePosts: 'פוסטים פעילים',
   closedPosts: 'פוסטים שנמסרו',
-  follow: 'עקוב',
+  follow: 'לעקוב',
   following_btn: 'מעקב פעיל ✓',
   requestSent: 'בקשה נשלחה ⏳',
-  sendMessage: 'שלח הודעה',
-  privateProfile: '🔒 הפרופיל פרטי. שלח בקשת עקיבה כדי לראות פוסטים.',
+  sendMessage: 'לשלוח הודעה',
+  privateProfile: '🔒 הפרופיל פרטי. אפשר לשלוח בקשת עקיבה כדי לראות פוסטים.',
 
   // Follow button states + confirm dialogs (FR-FOLLOW-011)
-  followCta: '+ עקוב',
+  followCta: '+ לעקוב',
   followingActive: 'עוקב ✓',
-  followRequestCta: '+ שלח בקשה',
+  followRequestCta: '+ לשלוח בקשה',
   unfollowConfirmTitle: 'להפסיק לעקוב?',
-  unfollowConfirmCta: 'הפסק לעקוב',
+  unfollowConfirmCta: 'להפסיק לעקוב',
   cancelRequestTitle: 'לבטל את בקשת המעקב?',
-  cancelRequestBody: 'תוכלי לשלוח בקשה חדשה בכל עת.',
-  cancelRequestCta: 'בטל בקשה',
+  cancelRequestBody: 'אפשר לשלוח בקשה חדשה בכל עת.',
+  cancelRequestCta: 'לבטל בקשה',
   cooldownRetryDays: 'ניתן לשלוח שוב בעוד {{days}} ימים',
   followUnavailable: 'המשתמש לא זמין למעקב כרגע',
 
@@ -59,7 +59,7 @@ export const profileHe = {
   savedSectionOpen: 'פוסטים פתוחים',
   savedSectionClosed: 'פוסטים סגורים',
   emptySavedOpenTitle: 'אין פוסטים פתוחים בשמורים',
-  emptySavedOpenSubtitle: 'שמרי פוסט פתוח מהפיד כדי לראות אותו כאן.',
+  emptySavedOpenSubtitle: 'אפשר לשמור פוסט פתוח מהפיד כדי לראות אותו כאן.',
   emptySavedClosedTitle: 'אין פוסטים סגורים בשמורים',
   emptySavedClosedSubtitle: 'פוסטים סגורים ששמרת יופיעו כאן.',
 
@@ -70,7 +70,7 @@ export const profileHe = {
   emptyOpenTitle: 'אין פוסטים פתוחים',
   emptyClosedTitle: 'אין פוסטים סגורים',
   emptyClosedTitleSelf: 'אין פוסטים סגורים עדיין',
-  emptySelfOpenSubtitle: 'פרסם את הפוסט הראשון שלך!',
+  emptySelfOpenSubtitle: 'לפרסם את הפוסט הראשון שלך!',
   emptySelfClosedSubtitle: 'פוסטים שסגרת או שקיבלת יופיעו כאן.',
   emptySelfClosedSubtitleLegacy: 'פוסטים שסגרת כ-נמסר יופיעו כאן.',
   emptyOtherOpenSubtitle: 'משתמש זה עוד לא פרסם פוסטים.',
@@ -84,24 +84,24 @@ export const profileHe = {
   // Avatar editor (EditProfileAvatar — FR-PROFILE-007)
   avatarChangeA11y: 'החלפת תמונת פרופיל',
   avatarAddA11y: 'הוספת תמונת פרופיל',
-  avatarChangeHint: 'החלף תמונה',
-  avatarAddHint: 'הוסף תמונה',
+  avatarChangeHint: 'להחליף תמונה',
+  avatarAddHint: 'להוסיף תמונה',
   avatarUploadFailedTitle: 'העלאת התמונה נכשלה',
-  avatarUploadRetry: 'נסה שוב.',
+  avatarUploadRetry: 'אפשר לנסות שוב.',
 
   // PhotoSourceSheet (FR-AUTH-011 AC1)
   photoSourceTitle: 'תמונת פרופיל',
   photoSourceCameraOption: '📷  צלם תמונה',
   photoSourceCameraA11y: 'צילום במצלמה',
-  photoSourceGalleryOption: '🖼️  בחר מהגלריה',
+  photoSourceGalleryOption: '🖼️  לבחור מהגלריה',
   photoSourceGalleryA11y: 'בחירה מהגלריה',
-  photoSourceRemoveOption: '🗑️  הסר תמונה',
+  photoSourceRemoveOption: '🗑️  להסיר תמונה',
   photoSourceRemoveA11y: 'הסרת התמונה הנוכחית',
 
   // CityPicker (FR-AUTH-010 AC2 — also reused by EditProfileAddressBlock)
-  cityPickerTitle: 'בחר עיר',
+  cityPickerTitle: 'לבחור עיר',
   cityPickerSearchPlaceholder: '...חיפוש עיר',
-  cityPickerError: 'שגיאה בטעינת רשימת הערים. נסה שוב.',
+  cityPickerError: 'שגיאה בטעינת רשימת הערים. אפשר לנסות שוב.',
   cityPickerEmpty: 'לא נמצאו ערים תואמות.',
   cityPickerCloseA11y: 'סגור',
 
@@ -163,14 +163,14 @@ export const profileHe = {
     invalidContactPhoneMessage: 'יש להזין עד 20 תווים.',
     biographyLabel: 'ביוגרפיה (אופציונלי)',
     biographyPlaceholder: 'קצת עליך — בלי קישורים',
-    save: 'שמור',
+    save: 'לשמור',
   },
 
   // Other user's profile (FR-PROFILE-002..004)
   otherScreen: {
     headerTitle: 'פרופיל',
     userNotFound: 'משתמש לא נמצא',
-    sendMessage: 'שלח הודעה',
+    sendMessage: 'לשלוח הודעה',
   },
 
   // Followers list (FR-PROFILE-009 / FR-PROFILE-010)
@@ -181,7 +181,7 @@ export const profileHe = {
     removeFollowerTitle: 'להסיר עוקב?',
     removeFollowerMessage:
       '{{name}} לא יראה יותר פוסטים שיועדו לעוקבים בלבד, ולא יקבל על כך הודעה. אם הפרופיל שלך פתוח הם יוכלו לעקוב מחדש מיד; אם הוא פרטי — יצטרכו לשלוח בקשה.',
-    removeFollowerConfirm: 'הסר',
+    removeFollowerConfirm: 'להסיר',
   },
 
   // Following list (FR-PROFILE-010)

@@ -1,20 +1,17 @@
 // Styles extracted from app/post/[id].tsx to keep the screen under the
 // 300-LOC cap (TD-29).
 import { Platform, type ViewStyle } from 'react-native';
-import { makeUseStyles, radius, spacing, typography } from '@kc/ui';
+import { darkColors, lightColors, makeUseStyles, radius, shadow, spacing, typography, zIndex } from '@kc/ui';
 import { heroCornerEnd, heroCornerStart } from '../../components/post-detail/postDetailCorner';
 import { rowDirectionStart, selfAlignStart, textAlignStart } from '../../lib/rtlLayout';
 
-const IMAGE_OVERLAY_BG = 'rgba(0, 0, 0, 0.68)';
-const IMAGE_OVERLAY_BORDER = 'rgba(255, 255, 255, 0.22)';
+// Over a photo the scrim, hairline and label stay the same in both themes.
+const IMAGE_OVERLAY_BG = darkColors.overlay;
+const IMAGE_OVERLAY_BORDER = `${lightColors.textInverse}38`;
+const IMAGE_OVERLAY_TEXT = lightColors.textInverse;
+const LOCATION_ICON_SIZE = 28;
 
-const overlayShadow = {
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.28,
-  shadowRadius: 4,
-  elevation: 3,
-};
+const overlayShadow = { ...shadow.card, shadowOpacity: shadow.glow.shadowOpacity };
 
 export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
   container: { flex: 1, backgroundColor: colors.background },
@@ -50,11 +47,10 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
     backgroundColor: colors.surface,
     borderWidth: isDark ? 1 : 0,
     borderColor: isDark ? colors.border : 'transparent',
+    ...shadow.card,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: isDark ? 0 : 0.06,
-    shadowRadius: 8,
-    elevation: isDark ? 0 : 2,
+    shadowOpacity: isDark ? 0 : shadow.card.shadowOpacity,
+    elevation: isDark ? 0 : shadow.card.elevation,
   },
   imageWrapClosed: {
     borderColor: isDark ? colors.success : `${colors.success}55`,
@@ -66,18 +62,18 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
     right: 0,
     bottom: 0,
     height: '38%',
-    backgroundColor: isDark ? 'rgba(74, 222, 128, 0.12)' : 'rgba(34, 197, 94, 0.14)',
+    backgroundColor: `${colors.success}${isDark ? '1F' : '24'}`,
   },
   statusBadgePos: {
     position: 'absolute',
     top: spacing.base,
-    zIndex: 2,
+    zIndex: zIndex.overlay,
     ...(heroCornerStart(spacing.base) as ViewStyle),
   },
   typeTagOverlay: {
     position: 'absolute',
     bottom: spacing.base,
-    zIndex: 2,
+    zIndex: zIndex.overlay,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
@@ -89,8 +85,8 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
     ...overlayShadow,
     ...(heroCornerEnd(spacing.base) as ViewStyle),
   },
-  giveTagText: { ...typography.label, color: colors.giveTag, fontWeight: '700' },
-  requestTagText: { ...typography.label, color: '#FFFFFF', fontWeight: '700' },
+  giveTagText: { ...typography.label, ...typography.bold, color: colors.giveTag },
+  requestTagText: { ...typography.label, ...typography.bold, color: IMAGE_OVERLAY_TEXT },
 
   content: {
     marginHorizontal: spacing.base,
@@ -102,11 +98,9 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: isDark ? colors.border : `${colors.border}88`,
+    ...shadow.card,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: isDark ? 0.12 : 0.04,
-    shadowRadius: 10,
-    elevation: isDark ? 0 : 1,
+    elevation: isDark ? 0 : shadow.card.elevation,
   },
   contentInset: {
     padding: spacing.md,
@@ -122,7 +116,6 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
   },
   title: {
     ...typography.h2,
-    fontSize: 22,
     color: colors.textPrimary,
     textAlign: textAlignStart(),
     letterSpacing: -0.2,
@@ -143,8 +136,8 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
   },
   showOriginalLink: {
     ...typography.caption,
+    ...typography.semiBold,
     color: colors.primary,
-    fontWeight: '600',
     textAlign: textAlignStart(),
   },
   metaChipsRow: {
@@ -156,9 +149,9 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
   metaChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
     borderRadius: radius.full,
     backgroundColor: isDark ? colors.surfaceRaised : colors.background,
     borderWidth: 1,
@@ -166,14 +159,13 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
   },
   metaChipText: {
     ...typography.caption,
+    ...typography.semiBold,
     color: colors.textPrimary,
-    fontWeight: '600',
   },
   description: {
     ...typography.body,
-    fontSize: 15,
+    fontSize: typography.button.fontSize,
     color: colors.textPrimary,
-    lineHeight: 22,
     textAlign: textAlignStart(),
   },
   sectionDivider: {
@@ -191,8 +183,8 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
     gap: spacing.sm,
   },
   locationIcon: {
-    width: 28,
-    height: 28,
+    width: LOCATION_ICON_SIZE,
+    height: LOCATION_ICON_SIZE,
     borderRadius: radius.sm,
     backgroundColor: colors.primarySurface,
     alignItems: 'center',
@@ -208,7 +200,7 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
     ...typography.caption,
     color: colors.textDisabled,
     textAlign: textAlignStart(),
-    paddingStart: 28 + spacing.sm,
+    paddingStart: LOCATION_ICON_SIZE + spacing.sm,
   },
   authorCard: {
     marginTop: spacing.sm,
@@ -221,10 +213,10 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
     alignItems: 'center',
     gap: spacing.md,
   },
-  authorInfo: { flex: 1, gap: 2 },
+  authorInfo: { flex: 1, gap: spacing.xs / 2 },
   authorName: {
     ...typography.body,
-    fontWeight: '600',
+    ...typography.semiBold,
     color: colors.textPrimary,
     textAlign: textAlignStart(),
   },
@@ -238,8 +230,7 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
     color: colors.textDisabled,
     textAlign: textAlignStart(),
     marginBottom: spacing.xs,
-    fontWeight: '600',
-    fontSize: 11,
+    ...typography.semiBold,
   },
 
   // Floating, self-centered pill CTA — sits above content, no full-width bar.
@@ -262,11 +253,8 @@ export const usePostDetailStyles = makeUseStyles(({ colors, isDark }) => ({
     borderRadius: radius.full,
     justifyContent: 'center',
     alignItems: 'center',
+    ...shadow.glow,
     shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: isDark ? 0.25 : 0.35,
-    shadowRadius: 12,
-    elevation: 6,
   },
-  messageBtnText: { ...typography.button, fontSize: 15, color: colors.textInverse },
+  messageBtnText: { ...typography.button, color: colors.textInverse },
 }));

@@ -112,7 +112,7 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
     gap: spacing.sm,
     marginBottom: spacing.xs,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
     borderRadius: radius.sm,
     backgroundColor: isDark ? colors.surfaceRaised : colors.background,
   },
@@ -131,7 +131,7 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
   },
   input: {
     ...typography.body,
-    fontSize: 15,
+    fontSize: typography.button.fontSize,
     color: colors.textPrimary,
     minHeight: 22,
     textAlignVertical: 'center',

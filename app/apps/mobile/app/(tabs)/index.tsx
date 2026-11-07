@@ -31,6 +31,7 @@ import { Screen } from '../../src/components/ui/Screen';
 import { useAuthStore } from '../../src/store/authStore';
 import type { KcFlashListRef } from '../../src/components/lists/KcFlashList';
 import { useFilterStore } from '../../src/store/filterStore';
+import { applyFilterPatch } from '../../src/store/applyFilterPatch';
 import { useFeedSessionStore } from '../../src/store/feedSessionStore';
 import { useFeedRealtime } from '../../src/hooks/useFeedRealtime';
 import { useFirstPostNudge } from '../../src/hooks/useFirstPostNudge';
@@ -201,25 +202,6 @@ export default function HomeFeedScreen() {
     searchQuery: filter.searchQuery,
   };
 
-  // Stable callback — zustand actions via getState() so SearchSection debounce
-  // does not retrigger an infinite loop (React #185).
-  const handleFilterPatch = useCallback((patch: Partial<PostFilterValue>) => {
-    const s = useFilterStore.getState();
-    if ('type' in patch) s.setType(patch.type ?? null);
-    if ('worlds' in patch) s.setWorlds(patch.worlds ?? []);
-    if ('subcategories' in patch) s.setSubcategories(patch.subcategories ?? []);
-    if ('categories' in patch) s.setCategories(patch.categories ?? []);
-    if ('itemConditions' in patch) s.setItemConditions(patch.itemConditions ?? []);
-    if ('locationFilter' in patch) s.setLocationFilter(patch.locationFilter ?? null);
-    if ('statusFilter' in patch) s.setStatusFilter(patch.statusFilter ?? 'open');
-    if ('sortOrder' in patch) s.setSortOrder(patch.sortOrder ?? 'newest');
-    if ('proximitySortCity' in patch || 'proximitySortCityName' in patch) {
-      s.setProximitySortCity(patch.proximitySortCity ?? null, patch.proximitySortCityName ?? null);
-    }
-    if ('followersOnly' in patch) s.setFollowersOnly(patch.followersOnly ?? false);
-    if ('searchQuery' in patch) s.setSearchQuery(patch.searchQuery ?? '');
-  }, []);
-
   const header = (
     <View>
       {completeProfileBanner.shouldShow && <CompleteProfileBanner onDismiss={completeProfileBanner.onDismiss} />}
@@ -291,7 +273,7 @@ export default function HomeFeedScreen() {
       <PostFilterSheet
         visible={sheetOpen}
         value={sheetValue}
-        onPatch={handleFilterPatch}
+        onPatch={applyFilterPatch}
         onClear={() => filter.clearAll()}
         onClose={() => setSheetOpen(false)}
         onOpenFeedSettings={() => {

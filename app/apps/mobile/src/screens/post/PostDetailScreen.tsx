@@ -186,7 +186,7 @@ export function PostDetailScreen() {
 
   const showViewerContactCta = !isOwner && post.status === 'open';
   const showEngagementComposer = Boolean(viewerId) && postShowsEngagementSection(post.status);
-  const showOwnerChrome = isOwner && viewerId;
+  const showOwnerChrome = isOwner && viewerId !== null;
   const scrollBottomInset = postDetailScrollBottomInset({
     tabBarOverlayInset: ownerDockInset,
     hasOwnerBar: showOwnerChrome,

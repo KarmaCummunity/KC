@@ -1,7 +1,7 @@
 // Unified dock for post detail: owner CTAs + comment composer share one surface above the tab bar.
 import React, { type ReactNode } from 'react';
 import { View } from 'react-native';
-import { makeUseStyles, spacing } from '@kc/ui';
+import { makeUseStyles, shadow, spacing } from '@kc/ui';
 import { Platform } from 'react-native';
 
 type Props = Readonly<{
@@ -39,11 +39,10 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
     backgroundColor: colors.surface,
     paddingTop: spacing.sm,
     paddingBottom: spacing.xs,
+    ...shadow.modal,
     shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: isDark ? 0.2 : 0.06,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: -shadow.modal.shadowOffset.height },
+    shadowOpacity: isDark ? shadow.modal.shadowOpacity : shadow.card.shadowOpacity,
   },
   ownerBlock: {
     paddingHorizontal: spacing.base,

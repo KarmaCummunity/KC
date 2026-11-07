@@ -12655,6 +12655,8 @@ export type Database = {
         }
         Returns: Json
       }
+      dev_mock_identity_verification_allowed: { Args: never; Returns: boolean }
+      dev_grant_mock_identity_verification: { Args: never; Returns: undefined }
       list_my_standing_orders: {
         Args: { p_limit?: number }
         Returns: {

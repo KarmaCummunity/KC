@@ -52,7 +52,8 @@ export const WORLD_CHROME_BY_SLUG: Record<string, WorldChromeConfig> = {
 };
 
 export function worldFeedPath(worldSlug: string): Href {
-  return `/(tabs)/donations/${worldSlug}` as Href;
+  const path = `/(tabs)/donations/${worldSlug}`;
+  return path as Href;
 }
 
 export function resolveWorldChrome(worldSlug: string | undefined | null): WorldChromeConfig | null {

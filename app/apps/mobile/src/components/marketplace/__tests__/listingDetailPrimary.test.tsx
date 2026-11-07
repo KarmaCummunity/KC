@@ -4,6 +4,9 @@
 // primary only for a viewer with no flow action: a guest, a request listing, a world without a
 // flow. The owner's share buttons are secondary, so the owner's detail shows no primary.
 import { afterEach, describe, expect, it, vi } from 'vitest';
+vi.mock('../../giving/RidePlaceField', () => ({ RidePlaceField: () => null }));
+vi.mock('../../../hooks/useRidePlaces', () => ({ useRidePlaces: () => ({ data: [], isLoading: false }) }));
+vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarVisibility: () => false, shellTabBarHeightPx: () => 0, useShellTabBarScrollInset: () => 0 }));
 import React from 'react';
 import { cleanup, render, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

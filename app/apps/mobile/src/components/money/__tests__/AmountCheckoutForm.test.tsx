@@ -2,6 +2,7 @@
 // Donation / standing-order amount form on the kit (spec 17 §4.1.1, TD-243): presets fill the
 // amount, the confirm waits for a valid amount, and it shows a spinner while the payment runs.
 import { afterEach, describe, expect, it, vi } from 'vitest';
+vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarVisibility: () => false, shellTabBarHeightPx: () => 0, useShellTabBarScrollInset: () => 0 }));
 import React from 'react';
 import { act, cleanup, fireEvent } from '@testing-library/react';
 

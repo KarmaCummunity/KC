@@ -12,7 +12,12 @@ interface ScrollArgs {
 }
 
 /** After a failed publish, bring the invalid field (or the footer error) into view on every platform. */
-export function scheduleScrollToListingField({ scroll, content, node, scrollY }: ScrollArgs & { readonly node: View | undefined }): () => void {
+export function scheduleScrollToListingField({
+  scroll,
+  content,
+  node,
+  scrollY,
+}: Omit<ScrollArgs, 'node'> & { readonly node: View | undefined }): () => void {
   const run = () => {
     if (!node) {
       scroll.scrollToEnd({ animated: true });
@@ -52,7 +57,8 @@ export function scrollWebFieldIntoView(node: View): boolean {
 }
 
 function scrollFieldWithWindow(scroll: ScrollView, node: View, scrollY: number, pad: number) {
-  scroll.measureInWindow((_sx, sy) => {
+  const host = scroll as unknown as Pick<View, 'measureInWindow'>;
+  host.measureInWindow((_sx, sy) => {
     node.measureInWindow((_fx, fy) => {
       const y = scrollY + (fy - sy) - pad;
       scroll.scrollTo({ y: Math.max(0, y), animated: true });

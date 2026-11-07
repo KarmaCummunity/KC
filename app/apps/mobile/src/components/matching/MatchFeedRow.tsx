@@ -4,6 +4,7 @@ import { View, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
+import { MirroredIcon } from '../ui/MirroredIcon';
 import type { MatchSuggestion } from '@kc/infrastructure-supabase';
 import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { Card } from '../ui/Card';
@@ -87,7 +88,7 @@ export function MatchFeedRow({ match, busy, onRespond }: Props) {
           ) : (
             <TouchableOpacity onPress={openListing} style={styles.viewLink} accessibilityRole="button">
               <Text style={styles.viewLinkText}>{t('matches.viewListing')}</Text>
-              <Ionicons name="chevron-forward" size={iconSize.sm} color={colors.primary} />
+              <MirroredIcon name="chevron-forward" size={iconSize.sm} color={colors.primary} />
             </TouchableOpacity>
           )}
         </View>
@@ -128,6 +129,6 @@ const useStyles = makeUseStyles(({ colors }) => ({
   },
   acceptBtn: { backgroundColor: colors.primary },
   declineBtn: { backgroundColor: colors.surfaceRaised, borderWidth: 1, borderColor: colors.border },
-  viewLink: { flexDirection: rowDirectionStart, alignItems: 'center' as const, gap: 2 },
+  viewLink: { flexDirection: rowDirectionStart, alignItems: 'center' as const, gap: spacing.xs / 2 },
   viewLinkText: { ...typography.caption, ...typography.bold, color: colors.primary },
 }));

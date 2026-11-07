@@ -21,17 +21,16 @@ interface Props {
 const useStyles = makeUseStyles(({ colors }) => ({
   wrap: { gap: spacing.xs },
   pills: { flexDirection: rowDirectionStart, flexWrap: 'wrap' as const, gap: spacing.xs },
-  pill: { paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.full },
+  pill: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.full },
   givePill: { backgroundColor: colors.primarySurface },
   requestPill: { backgroundColor: `${colors.secondary}18` },
-  pillText: { ...typography.label, fontSize: 11, fontWeight: '700' as const },
+  pillText: { ...typography.label, fontSize: typography.caption.fontSize, ...typography.bold },
   givePillText: { color: colors.giveTag },
   requestPillText: { color: colors.secondary },
-  chip: { backgroundColor: colors.surfaceRaised, borderWidth: 1, borderColor: colors.border },
-  chipText: { color: colors.textSecondary },
+  neutralPill: { backgroundColor: colors.surfaceRaised, borderWidth: 1, borderColor: colors.border },
+  neutralPillText: { color: colors.textSecondary },
   title: {
     ...typography.h2,
-    fontSize: 22,
     lineHeight: 28,
     letterSpacing: -0.2,
     color: colors.textPrimary,
@@ -50,13 +49,13 @@ export function PostDetailHeader({ title, titleNode, tone, badgeLabel, chip, clo
           <Text style={[s.pillText, isGive ? s.givePillText : s.requestPillText]}>{badgeLabel}</Text>
         </View>
         {chip ? (
-          <View style={[s.pill, s.chip]}>
-            <Text style={[s.pillText, s.chipText]}>{chip}</Text>
+          <View style={[s.pill, s.neutralPill]}>
+            <Text style={[s.pillText, s.neutralPillText]}>{chip}</Text>
           </View>
         ) : null}
         {closed ? (
-          <View style={[s.pill, s.chip]} testID="post-detail-closed">
-            <Text style={[s.pillText, s.chipText]}>{t('cards.closed')}</Text>
+          <View style={[s.pill, s.neutralPill]} testID="post-detail-closed">
+            <Text style={[s.pillText, s.neutralPillText]}>{t('cards.closed')}</Text>
           </View>
         ) : null}
       </View>

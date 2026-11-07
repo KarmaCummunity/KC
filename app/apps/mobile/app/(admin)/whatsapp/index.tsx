@@ -289,7 +289,6 @@ const useStyles = makeUseStyles(({ colors }) => ({
   },
   kpiValue: { fontSize: typography.h3.fontSize, ...typography.bold, color: colors.textPrimary },
   kpiLabel: { fontSize: typography.caption.fontSize, color: colors.textSecondary },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.xs },
   row: {
     backgroundColor: colors.surface, borderRadius: radius.sm, padding: spacing.md, marginBottom: spacing.xs,
     borderWidth: 1, borderColor: colors.border, gap: spacing.xs,

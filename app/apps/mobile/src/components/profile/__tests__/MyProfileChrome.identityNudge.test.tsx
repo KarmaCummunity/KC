@@ -2,7 +2,7 @@
 // FR-VERIFY-003 AC1 — profile card inviting identity verification.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { User } from '@kc/domain';
 

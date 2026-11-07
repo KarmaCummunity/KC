@@ -6,7 +6,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { iconSize, Text, useTheme } from '@kc/ui';
+import { iconSize, spacing, Text, useTheme } from '@kc/ui';
 import { isFeedWorldSlug } from '@kc/domain';
 import { Screen } from '../../src/components/ui/Screen';
 import { useAuthStore } from '../../src/store/authStore';
@@ -53,11 +53,14 @@ export default function EditListingScreen() {
   const listingId = post?.listingId;
   const direction: CreateDirection = post?.type === 'Request' ? 'request' : 'give';
 
+  const postId = post?.postId;
+  const postTitle = post?.title;
+  const postDescription = post?.description;
   useEffect(() => {
-    if (!post) return;
-    setTitle(post.title);
-    setSummary(post.description ?? '');
-  }, [post?.postId, post?.title, post?.description]);
+    if (!postId || postTitle === undefined) return;
+    setTitle(postTitle);
+    setSummary(postDescription ?? '');
+  }, [postId, postTitle, postDescription]);
 
   const onSaved = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ['post', id] });
@@ -71,7 +74,7 @@ export default function EditListingScreen() {
   if (postQuery.isLoading) {
     return (
       <Screen>
-        <ActivityIndicator style={{ marginTop: 48 }} />
+        <ActivityIndicator style={{ marginTop: spacing['3xl'] }} />
       </Screen>
     );
   }
@@ -132,7 +135,7 @@ export default function EditListingScreen() {
           editListingId={listingId}
           onSaved={onSaved}
           header={
-            <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+            <View style={{ paddingHorizontal: spacing.base, paddingBottom: spacing.sm }}>
               <Text style={styles.headerTitle}>{categoryLabel}</Text>
               <Text style={{ opacity: 0.7 }}>
                 {direction === 'give' ? t('post.unifiedCreate.offer') : t('post.unifiedCreate.request')}

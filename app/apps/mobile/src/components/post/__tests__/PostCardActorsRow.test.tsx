@@ -47,7 +47,7 @@ describe('PostCardActorsRow', () => {
   });
 
   it('shows only owner on open posts', () => {
-    const post = { ...base, status: 'open', recipientUser: null };
+    const post = { ...base, status: 'open', recipientUser: null } as PostWithOwner;
     render(<PostCardActorsRow post={post} />);
     expect(screen.getByTestId('post-card-owner')).toBeTruthy();
     expect(screen.queryByTestId('post-card-counterparty')).toBeNull();

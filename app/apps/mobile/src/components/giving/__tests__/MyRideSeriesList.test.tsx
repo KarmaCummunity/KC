@@ -2,6 +2,7 @@
 // FR-RIDE-046 — "my recurring rides": each series with its schedule, pause / resume,
 // cancel behind a confirm step, reschedule through the editor; the empty state.
 import { afterEach, describe, expect, it, vi } from 'vitest';
+vi.mock('../useWorldHeader', () => ({ WorldSubScreenChrome: () => null }));
 import React from 'react';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

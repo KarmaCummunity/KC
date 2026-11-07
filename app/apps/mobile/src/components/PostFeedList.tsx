@@ -17,7 +17,7 @@ import { PrimaryButton } from './ui/Buttons';
 import { PostGridSkeleton } from './skeletons/PostGridSkeleton';
 import { finishMark } from '../lib/observability/perfMarks';
 import { KcFlashList, type KcFlashListRef } from './lists/KcFlashList';
-import { buildFeedListEntries, type FeedListEntry, FEED_MATCHES_EVERY_N_POSTS } from '../lib/feed/feedListLayout';
+import { buildFeedListEntries, type FeedListEntry } from '../lib/feed/feedListLayout';
 import { MatchesFeedSection } from './matching/MatchesFeedSection';
 
 interface Props {
@@ -190,7 +190,7 @@ export function PostFeedList({
   }
   return (
     <KcFlashList
-      ref={listRef}
+      ref={listRef as React.Ref<KcFlashListRef<PostWithOwner | FeedListEntry>> | undefined}
       estimatedItemSize={280}
       style={styles.list}
       data={listData}

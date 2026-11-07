@@ -3,16 +3,15 @@ import React from 'react';
 import { View, ScrollView } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { PlatformSwitch, spacing, Text } from '@kc/ui';
 import { useShellStackScreenOptions } from '../src/navigation/shellStackScreenOptions';
 import { useShellTabBarScrollInset } from '../src/navigation/useShellTabBarVisibility';
 import { useIsSuperAdmin } from '../src/hooks/useIsSuperAdmin';
 import { useAdminRoles } from '../src/hooks/useAdminRoles';
 import { useSettingsAccountActions } from '../src/hooks/useSettingsAccountActions';
-import { container } from '../src/lib/container';
+import { useSimulateHardRefresh } from '../src/hooks/useSimulateHardRefresh';
 import { useAuthStore } from '../src/store/authStore';
-import { useChatStore } from '../src/store/chatStore';
 import { DeleteAccountConfirmModal } from '../src/components/DeleteAccountConfirmModal';
 import { DeleteAccountSuccessOverlay } from '../src/components/DeleteAccountSuccessOverlay';
 import { DonationSupportCard } from '../src/components/DonationSupportCard';
@@ -49,8 +48,7 @@ export default function SettingsScreen() {
   const activeStatus = useActiveStatusSetting(userId);
   const isSuperAdmin = useIsSuperAdmin();
   const { roles: adminRoles } = useAdminRoles();
-  const queryClient = useQueryClient();
-  const [hardRefreshing, setHardRefreshing] = React.useState(false);
+  const { hardRefreshing, simulateHardRefresh: handleSimulateHardRefresh } = useSimulateHardRefresh(userId);
   const {
     signingOut,
     resettingOnboarding,
@@ -61,23 +59,6 @@ export default function SettingsScreen() {
     handleResetOnboarding,
     handleSignOut,
   } = useSettingsAccountActions();
-
-  // Dev-only "simulate hard refresh" (FR-CHAT-012 verification aid).
-  const handleSimulateHardRefresh = async () => {
-    if (!session?.userId || hardRefreshing) return;
-    setHardRefreshing(true);
-    try {
-      useChatStore.getState().resetOnSignOut();
-      queryClient.clear();
-      await useChatStore.getState().startInboxSub(
-        session.userId,
-        container.chatRepo,
-        container.chatRealtime,
-      );
-    } finally {
-      setHardRefreshing(false);
-    }
-  };
 
   return (
     <View style={styles.container}>

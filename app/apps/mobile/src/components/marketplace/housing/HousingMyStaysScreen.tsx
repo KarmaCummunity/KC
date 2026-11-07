@@ -1,6 +1,7 @@
 // FR-HOUSING-037 — the guest's own stays in one list.
 import React from 'react';
-import { FlatList, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { KcFlashList } from '../../lists/KcFlashList';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +26,7 @@ export function HousingMyStaysScreen() {
     <>
       <WorldSubScreenChrome worldSlug="housing" activeScreenTestId="world-hub-housing-stays" />
       <Screen blobs="off" hasNativeHeader testID="housing-my-stays">
-      <FlatList
+      <KcFlashList
         data={stays.data ?? []}
         keyExtractor={(item) => item.handoffId}
         contentContainerStyle={styles.list}

@@ -25,12 +25,12 @@ export interface DemoDataSeedResult {
   readonly organizations: number;
 }
 
-export interface DemoDataOperationStep {
+export interface DemoDataOperationStep<R = DemoDataWipeResult | DemoDataSeedResult> {
   readonly done: boolean;
   readonly progressKey?: string;
   /** True when this step deleted nothing because rows were locked; the caller should wait and retry. */
   readonly retry?: boolean;
-  readonly result?: DemoDataWipeResult | DemoDataSeedResult;
+  readonly result?: R;
 }
 
 // RPCs return untyped jsonb; read each key defensively so a missing field becomes 0, not NaN.
@@ -67,7 +67,7 @@ export function mapDemoDataSeedResult(data: unknown): DemoDataSeedResult {
   };
 }
 
-export function mapDemoDataWipeStep(data: unknown): DemoDataOperationStep {
+export function mapDemoDataWipeStep(data: unknown): DemoDataOperationStep<DemoDataWipeResult> {
   const o = asObject(data);
   const done = o.done === true;
   const result = o.result !== undefined ? mapDemoDataWipeResult(o.result) : undefined;
@@ -75,7 +75,7 @@ export function mapDemoDataWipeStep(data: unknown): DemoDataOperationStep {
   return { done, progressKey, retry: o.retry === true, result };
 }
 
-export function mapDemoDataSeedStep(data: unknown): DemoDataOperationStep {
+export function mapDemoDataSeedStep(data: unknown): DemoDataOperationStep<DemoDataSeedResult> {
   const o = asObject(data);
   const done = o.done === true;
   const result = o.result !== undefined ? mapDemoDataSeedResult(o.result) : undefined;
@@ -104,7 +104,7 @@ export class SupabaseDemoDataRepository {
 
   /** Super admin only: deletes the demo users (with their content) and demo nonprofits. */
   async wipe(onProgress?: (progressKey: string) => void): Promise<DemoDataWipeResult> {
-    let step: DemoDataOperationStep = { done: false };
+    let step: DemoDataOperationStep<DemoDataWipeResult> = { done: false };
     let guard = 0;
     while (!step.done && guard < WIPE_STEP_GUARD) {
       guard += 1;
@@ -118,7 +118,7 @@ export class SupabaseDemoDataRepository {
     return step.result;
   }
 
-  async wipeStep(): Promise<DemoDataOperationStep> {
+  async wipeStep(): Promise<DemoDataOperationStep<DemoDataWipeResult>> {
     const { data, error } = await this.client.rpc('admin_wipe_demo_data_step');
     if (error) throw new Error(`wipeDemoData: ${error.message}`);
     return mapDemoDataWipeStep(data);
@@ -129,7 +129,7 @@ export class SupabaseDemoDataRepository {
    * seed users' login password; it is needed once and saved server-side as a hash.
    */
   async seed(password?: string, onProgress?: (progressKey: string) => void): Promise<DemoDataSeedResult> {
-    let step: DemoDataOperationStep = { done: false };
+    let step: DemoDataOperationStep<DemoDataSeedResult> = { done: false };
     let sentPassword = false;
     let guard = 0;
     while (!step.done && guard < SEED_STEP_GUARD) {
@@ -142,10 +142,10 @@ export class SupabaseDemoDataRepository {
     if (!step.done || !step.result) {
       throw new Error('seedDemoData: incomplete stepped seed');
     }
-    return mapDemoDataSeedResult(step.result);
+    return step.result;
   }
 
-  async seedStep(password?: string): Promise<DemoDataOperationStep> {
+  async seedStep(password?: string): Promise<DemoDataOperationStep<DemoDataSeedResult>> {
     const { data, error } = await this.client.rpc('admin_seed_demo_data_step', {
       p_password: password,
     });

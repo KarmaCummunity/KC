@@ -4,7 +4,7 @@ import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Text } from '@kc/ui';
+import { spacing, Text } from '@kc/ui';
 import { Screen } from '../components/ui/Screen';
 import { PrimaryButton, SecondaryButton } from '../components/ui/Buttons';
 import { useShellStackScreenOptions } from '../navigation/shellStackScreenOptions';
@@ -58,7 +58,7 @@ export function IdentityVerificationScreen() {
       <Stack.Screen options={{ ...shellStackOptions, headerTitle: t('verification.identity.title') }} />
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarPad }]}>
         <View style={styles.section}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
             <VerificationBadge level={level} />
             <Text style={styles.sectionLabel}>{levelLabel}</Text>
           </View>

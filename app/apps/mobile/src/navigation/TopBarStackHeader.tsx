@@ -64,12 +64,7 @@ export function resolveTopBarCenterTitle(options: StackHeaderArgs['options']): R
   return resolveStackHeaderTitle(options);
 }
 
-/** Maps a shell title patch to stack `setOptions` fields (`useShellTopBarChrome`). */
-export function stackOptionsForShellTopBarTitle(title: React.ReactNode | undefined): Record<string, unknown> {
-  if (title === undefined) return {};
-  if (typeof title === 'string') return { title, headerTitle: title };
-  return { title: '', headerTitle: () => title };
-}
+export { stackOptionsForShellTopBarTitle } from './shellTopBarTitleOptions';
 
 /** `header` screen option: renders the shared TopBar header for a stack screen. */
 export function topBarStackHeader({ navigation, options }: StackHeaderArgs) {

@@ -435,7 +435,7 @@ set search_path = public
 set statement_timeout = '120s'
 as $$
 begin
-  drop table if exists s_first, s_last, s_city, s_users;
+  drop table if exists s_first, s_last, s_city, s_users; -- migration-safety: allow — session temp tables from a previous step
   perform setseed(0.4242);
 
   create temp table s_first(n text) on commit drop;
@@ -482,7 +482,7 @@ set search_path = public
 set statement_timeout = '120s'
 as $$
 begin
-  drop table if exists s_users, s_chats;
+  drop table if exists s_users, s_chats; -- migration-safety: allow — session temp tables from a previous step
   create temp table s_users on commit drop as
   select au.id from auth.users au
    where au.email like '%@seed.kc.test'

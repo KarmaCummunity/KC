@@ -12,7 +12,8 @@ import { Stack, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { MirroredIcon } from '../../src/components/ui/MirroredIcon';
+import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import type { SurveyCompletionStatus, SurveyListItem } from '@kc/domain';
 import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
@@ -75,8 +76,8 @@ function SurveyRow({ item, onPress, onShare }: SurveyRowProps) {
             </Text>
           ) : null}
         </View>
-        <View style={[styles.chip, { backgroundColor: chip.bg }]}>
-          <Text style={[styles.chipText, { color: chip.text }]}>{chipLabel}</Text>
+        <View style={[styles.statusBadge, { backgroundColor: chip.bg }]}>
+          <Text style={[styles.statusBadgeText, { color: chip.text }]}>{chipLabel}</Text>
         </View>
       </Pressable>
       {onShare ? (
@@ -87,11 +88,11 @@ function SurveyRow({ item, onPress, onShare }: SurveyRowProps) {
           accessibilityLabel={t('survey.shareResearch.cardShareA11y')}
           hitSlop={8}
         >
-          <Ionicons name="share-social-outline" size={22} color={colors.primary} />
+          <Ionicons name="share-social-outline" size={iconSize.xl} color={colors.primary} />
         </Pressable>
       ) : null}
       <Pressable onPress={onPress} accessibilityRole="button" hitSlop={8}>
-        <Ionicons name="chevron-back" size={18} color={colors.textDisabled} />
+        <MirroredIcon name="chevron-back" size={iconSize.md} color={colors.textDisabled} />
       </Pressable>
     </View>
   );
@@ -173,11 +174,11 @@ export default function SurveysHubScreen() {
           >
             <Ionicons
               name="chatbubble-ellipses-outline"
-              size={20}
+              size={iconSize.lg}
               color={colors.primary}
             />
             <Text style={styles.feedbackText}>{t('survey.freeFeedbackRow')}</Text>
-            <Ionicons name="chevron-back" size={18} color={colors.textDisabled} />
+            <MirroredIcon name="chevron-back" size={iconSize.md} color={colors.textDisabled} />
           </Pressable>
         </ScrollView>
       )}
@@ -231,7 +232,7 @@ const useSurveysHubStyles = makeUseStyles(({ colors }) => ({
   shareBtnPressed: { opacity: 0.6 },
   rowTitle: {
     ...typography.body,
-    fontWeight: '600',
+    ...typography.semiBold,
     color: colors.textPrimary,
     textAlign: rtlTextAlignStart,
     ...webTextRtl,
@@ -240,17 +241,17 @@ const useSurveysHubStyles = makeUseStyles(({ colors }) => ({
     ...typography.caption,
     color: colors.textSecondary,
     textAlign: rtlTextAlignStart,
-    marginTop: 2,
+    marginTop: spacing.xs / 2,
     ...webTextRtl,
   },
-  chip: {
+  statusBadge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
+    paddingVertical: spacing.xs,
     borderRadius: radius.full,
   },
-  chipText: {
+  statusBadgeText: {
     ...typography.caption,
-    fontWeight: '600',
+    ...typography.semiBold,
     ...webTextRtl,
   },
   feedbackRow: {
@@ -269,7 +270,7 @@ const useSurveysHubStyles = makeUseStyles(({ colors }) => ({
     ...typography.body,
     color: colors.primary,
     flex: 1,
-    fontWeight: '600',
+    ...typography.semiBold,
     textAlign: rtlTextAlignStart,
     ...webTextRtl,
   },

@@ -2,14 +2,14 @@
 // V2-ADMIN-CRM-8 — V2 §13.9 Admin CRM (minimal contacts tracker).
 // List + search + status filter + per-row edit / delete / "mark contacted".
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, RefreshControl, View } from 'react-native';
+import { Alert, Platform, RefreshControl, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   CRM_CONTACT_STATUSES, hasPermission, isCrmContactError,
   type AdminPermission, type AdminRole,
   type CrmContact, type CrmContactStatus,
 } from '@kc/domain';
-import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { container } from '../../../src/lib/container';
 import { ContactCard } from '../../../src/components/admin/crm/ContactCard';
@@ -141,15 +141,6 @@ export default function CrmScreen() {
     [handleDelete, handleEdit, handleMarkContacted],
   );
 
-  if (rolesLoading) {
-    return <View style={styles.center}><Text>{t.loading}</Text></View>;
-  }
-  if (!can('crm.manage')) {
-    return <View style={styles.center}><Text style={styles.deniedTitle}>{t.forbiddenTitle}</Text></View>;
-  }
-
-  const rows = list.data?.rows ?? [];
-
   const statusOptions = useMemo(
     () => (['all', ...CRM_CONTACT_STATUSES] as readonly StatusFilter[]).map((s) => ({
       value: s,
@@ -162,6 +153,15 @@ export default function CrmScreen() {
     if (statusFilter === 'all') return t.title;
     return `${t.title} · ${t.statusFilters[statusFilter]}`;
   }, [statusFilter, t.statusFilters, t.title]);
+
+  if (rolesLoading) {
+    return <View style={styles.center}><Text>{t.loading}</Text></View>;
+  }
+  if (!can('crm.manage')) {
+    return <View style={styles.center}><Text style={styles.deniedTitle}>{t.forbiddenTitle}</Text></View>;
+  }
+
+  const rows = list.data?.rows ?? [];
 
   return (
     <View style={styles.root}>

@@ -57,14 +57,10 @@ vi.mock('../../giving/RideCreateSection', async () => {
     }) => (
       <>
         <ListingFieldFrame field="ride:origin" testID="ride-origin-frame">
-          <button
-            type="button"
-            data-testid="ride-section-fill"
-            onClick={() => {
-              p.setDetails((prev) => ({ ...prev, ...RIDE_FILL }));
-              p.onOriginCity({ id: '7000', name: 'לוד' });
-            }}
-          >
+          <button type="button" data-testid="ride-section-fill" onClick={() => {
+            p.setDetails((prev) => ({ ...prev, ...RIDE_FILL }));
+            p.onOriginCity({ id: '7000', name: 'לוד' });
+          }}>
             <span data-testid="ride-section" />
           </button>
         </ListingFieldFrame>
@@ -114,15 +110,8 @@ function renderForm(worldSlug: string, direction: 'give' | 'request', title = '�
     <QueryClientProvider client={client}>
       <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
         <ListingCreateForm
-          worldSlug={worldSlug}
-          header={null}
-          direction={dir}
-          title={title}
-          onTitleChange={() => {}}
-          summary=""
-          onSummaryChange={() => {}}
-          onPublished={onPublished}
-          onPublishActionChange={() => {}}
+          worldSlug={worldSlug} header={null} direction={dir} title={title} onTitleChange={() => {}}
+          summary="" onSummaryChange={() => {}} onPublished={onPublished} onPublishActionChange={() => {}}
         />
       </ThemeProvider>
     </QueryClientProvider>

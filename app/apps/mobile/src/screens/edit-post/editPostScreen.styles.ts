@@ -33,7 +33,7 @@ export const useEditPostScreenStyles = makeUseStyles(({ colors }) => ({
   },
   textarea: { minHeight: 100, textAlignVertical: 'top', paddingTop: spacing.md },
   charCount: { ...typography.caption, color: colors.textDisabled, textAlign: 'left' as const },
-  streetRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
+  streetRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'stretch' },
   streetInputStreet: { flex: 2, minWidth: 0 },
   streetInputHouse: { flex: 1, minWidth: 0, maxWidth: 120 },
   chips: { flexDirection: 'row' },

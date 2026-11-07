@@ -3,6 +3,8 @@
 // with their actions, a guest sees the request form; the request waits for valid input and for
 // the code of conduct before it reaches the server.
 import { afterEach, describe, expect, it, vi } from 'vitest';
+vi.mock('../../../StreetPicker', () => ({ StreetPicker: () => null }));
+vi.mock('../../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarVisibility: () => false, shellTabBarHeightPx: () => 0, useShellTabBarScrollInset: () => 0 }));
 import React from 'react';
 import { act, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

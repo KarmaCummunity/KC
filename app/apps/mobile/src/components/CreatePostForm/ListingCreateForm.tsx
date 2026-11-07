@@ -6,7 +6,7 @@ import React, { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { MAX_MEDIA_ASSETS } from '@kc/domain';
-import { Text, useTheme } from '@kc/ui';
+import { spacing, Text, useTheme } from '@kc/ui';
 import { TextField } from '../ui/TextField';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
@@ -106,7 +106,7 @@ export function ListingCreateForm({
   if (form.editLoading) {
     return (
       <View style={styles.scroll}>
-        <ActivityIndicator style={{ marginTop: 48 }} testID="listing-edit-loading" />
+        <ActivityIndicator style={{ marginTop: spacing['3xl'] }} testID="listing-edit-loading" />
       </View>
     );
   }

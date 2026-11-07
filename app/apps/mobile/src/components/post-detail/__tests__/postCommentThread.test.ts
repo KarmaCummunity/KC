@@ -4,7 +4,6 @@ import { buildCommentThreads } from '../postCommentThread';
 
 function comment(overrides: Partial<PostCommentWithAuthor> & Pick<PostCommentWithAuthor, 'commentId'>): PostCommentWithAuthor {
   return {
-    commentId: overrides.commentId,
     postId: 'p1',
     authorId: 'u1',
     parentCommentId: overrides.parentCommentId ?? null,

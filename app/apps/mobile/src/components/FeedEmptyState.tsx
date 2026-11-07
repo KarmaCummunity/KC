@@ -47,7 +47,11 @@ export function FeedEmptyState({
 
   return (
     <View style={styles.wrap} testID="feed-empty-state">
-      <Ionicons name="archive-outline" size={56} color={colors.textDisabled} />
+      <Ionicons
+        name="archive-outline"
+        size={56} // brand-guard-allow: empty-state illustration, above the icon scale
+        color={colors.textDisabled}
+      />
       <Text style={styles.title}>{t(titleKey)}</Text>
       <Text style={styles.body}>{t(bodyKey)}</Text>
       {showCommunityHint ? <FeedCommunityCounter template={communityTemplate} /> : null}
@@ -78,5 +82,5 @@ const useFeedEmptyStateStyles = makeUseStyles(({ colors }) => ({
     marginBottom: spacing.sm,
   },
   actions: { marginTop: spacing.base },
-  link: { ...typography.body, color: colors.primary, fontWeight: '600' as const, marginTop: spacing.sm },
+  link: { ...typography.body, ...typography.semiBold, color: colors.primary, marginTop: spacing.sm },
 }));

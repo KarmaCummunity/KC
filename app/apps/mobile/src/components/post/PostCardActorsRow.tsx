@@ -48,7 +48,7 @@ function ActorChip({ name, avatarUrl, handle, navigable, verificationLevel, pair
     </>
   );
 
-  const chipStyle = paired ? styles.chipPaired : styles.chip;
+  const chipStyle = paired ? styles.actorPaired : styles.actor;
 
   if (!navigable || !handle.trim()) {
     return (
@@ -123,7 +123,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
     maxWidth: '100%',
     flexWrap: 'wrap',
   },
-  chip: {
+  actor: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
@@ -131,7 +131,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
     minWidth: 0,
     maxWidth: '100%',
   },
-  chipPaired: {
+  actorPaired: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
@@ -141,12 +141,12 @@ const useStyles = makeUseStyles(({ colors }) => ({
   },
   name: {
     ...typography.caption,
-    fontWeight: '700',
+    ...typography.bold,
     color: colors.textPrimary,
     flex: 1,
     flexShrink: 1,
     minWidth: 0,
-    fontSize: 12,
+    fontSize: typography.bodySmall.fontSize,
   },
   nameLink: {
     color: colors.primary,

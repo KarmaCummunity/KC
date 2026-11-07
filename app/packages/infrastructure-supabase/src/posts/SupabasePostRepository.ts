@@ -249,16 +249,7 @@ export class SupabasePostRepository implements IPostRepository {
     excludeVisibility?: PostVisibility,
     profileOpenLinks?: Parameters<typeof getMyPostsPage>[7],
   ): Promise<{ posts: Post[]; nextCursor: string | null }> {
-    return getMyPostsPage(
-      this.client,
-      userId,
-      status,
-      limit,
-      cursor,
-      visibility,
-      excludeVisibility,
-      profileOpenLinks,
-    );
+    return getMyPostsPage(this.client, userId, status, limit, cursor, visibility, excludeVisibility, profileOpenLinks);
   }
 
   // ── Profile closed posts (publisher ∪ respondent) ────────────────────────
@@ -269,14 +260,7 @@ export class SupabasePostRepository implements IPostRepository {
     cursor?: string,
     listMode?: ProfileClosedPostsListMode,
   ): Promise<ProfileClosedPostsItem[]> {
-    return getProfileClosedPostsHelper(
-      this.client,
-      profileUserId,
-      viewerUserId,
-      limit,
-      cursor,
-      listMode ?? 'standard',
-    );
+    return getProfileClosedPostsHelper(this.client, profileUserId, viewerUserId, limit, cursor, listMode ?? 'standard');
   }
 
   async listPostActorIdentities(postId: string): Promise<PostActorIdentityRow[]> {

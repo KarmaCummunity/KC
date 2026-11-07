@@ -35,7 +35,6 @@ const useStyles = makeUseStyles(({ colors }) => ({
     marginTop: spacing.sm,
     gap: spacing.sm,
     alignSelf: 'stretch',
-    width: '100%',
   },
   summary: { ...typography.body, color: colors.textSecondary, textAlign: rtlTextAlignStart },
   section: {

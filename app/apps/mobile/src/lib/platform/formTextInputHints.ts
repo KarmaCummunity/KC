@@ -18,7 +18,7 @@ export const formPhoneInputProps = {
   textContentType: 'telephoneNumber',
 } as const satisfies Partial<TextInputProps>;
 
-/** Street / house number — digits with optional Hebrew or Latin suffix (e.g. 12א). */
+/** Street / house number — digits with an optional letter suffix (e.g. 12a). */
 export const formStreetNumberInputProps = {
   keyboardType: 'numbers-and-punctuation',
 } as const satisfies Partial<TextInputProps>;

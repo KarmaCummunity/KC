@@ -86,6 +86,6 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
     gap: spacing.sm,
   },
   badgeRow: { flexDirection: rowDirectionStart, alignItems: 'center' as const, gap: spacing.xs },
-  badge: { ...typography.label, color: colors.primary, fontWeight: '600' as const },
+  badge: { ...typography.label, ...typography.semiBold, color: colors.primary },
   chips: { flexDirection: rowDirectionStart, flexWrap: 'wrap' as const, gap: spacing.xs },
 }));

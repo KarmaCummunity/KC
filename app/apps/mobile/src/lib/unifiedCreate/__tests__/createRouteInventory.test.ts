@@ -40,9 +40,11 @@ describe('unified create — route inventory', () => {
 
   it('listing/post create forms are only mounted by the unified screen', () => {
     const mounts = files.filter((p) => /<(ListingCreateForm|MarketplaceCreateForm|CreatePostFormScrollContent|RideCreateSheet)\b/.test(readFileSync(p, 'utf8')));
-    // `WorldCreateForm` is the unified screen's own switch between the listing and link forms.
+    // `WorldCreateForm` is the unified screen's own switch between the listing and link forms;
+    // `edit-listing` reuses the listing form to edit an owner's existing listing (G1 owner edit).
     expect(mounts.map((p) => relative(MOBILE, p)).sort()).toEqual([
       'app/create.tsx',
+      'app/edit-listing/[id].tsx',
       'src/components/CreatePostForm/WorldCreateForm.tsx',
     ]);
   });

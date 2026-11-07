@@ -2,6 +2,7 @@
 // FR-CHAT-017 — the Inbox "+" opens the recipient picker; the picker lists the people I follow,
 // then other people found by name, and choosing one opens (or reuses) the pair's thread.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+vi.mock('../../../navigation/shellStackScreenOptions', () => ({ useShellStackScreenOptions: () => ({}) }));
 import React from 'react';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

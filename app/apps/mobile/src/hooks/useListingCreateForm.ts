@@ -39,37 +39,17 @@ import { trackActivationIfFirst, trackCoreLoop } from '../lib/analyticsCoreLoop'
 import { rememberRideRoute } from '../lib/rides/rideStartDetails';
 import { afterRidePublished } from '../lib/rides/afterRidePublished';
 import { rideSeriesUseCases } from '../services/rideSeriesComposition';
-import { RIDE_CREATE_DETAIL_KEYS } from '../components/giving/RideCreateSection';
 import type { RideRecurrenceDraft } from '../components/giving/RideRecurrenceFields';
-import { useOrgEventChoice, type OrgEventChoice } from './useOrgEventChoice';
+import { useOrgEventChoice } from './useOrgEventChoice';
+import { pickRideDetails, rideAutoTitle, withEventOrg } from '../lib/unifiedCreate/listingCreateDetails';
+
+export { rideAutoTitle };
 
 /** Matching radius sent with every listing; the world rules refine reach server-side. */
 const DEFAULT_RADIUS_KM = 25;
 const TITLE_MIN = 2;
 
 type City = { id: string; name: string };
-
-/** Rides have no title field (#1411): the title is built from the route, e.g. "Lod → Tel Aviv". */
-export function rideAutoTitle(
-  details: Readonly<Record<string, unknown>>,
-  format: (origin: string, dest: string) => string,
-): string {
-  const origin = typeof details.origin_label === 'string' ? details.origin_label.trim() : '';
-  const dest = typeof details.dest_label === 'string' ? details.dest_label.trim() : '';
-  return origin && dest ? format(origin, dest) : '';
-}
-
-/** An organization's event carries the organization it is published for (`details.org_id`). */
-function withEventOrg(details: Record<string, unknown>, choice: OrgEventChoice): Record<string, unknown> {
-  return choice.isOrgEvent && choice.orgId ? { ...details, org_id: choice.orgId } : details;
-}
-
-/** The ride route + schedule of `details` (empty for every other world). */
-function pickRideDetails(details: Readonly<Record<string, unknown>>): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const key of RIDE_CREATE_DETAIL_KEYS) if (key in details) out[key] = details[key];
-  return out;
-}
 
 interface Args {
   readonly worldSlug: string;

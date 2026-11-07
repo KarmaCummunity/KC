@@ -17,7 +17,7 @@ const completeRow = {
   avatarUrl: 'https://example.test/a.png',
 };
 
-function asUser(overrides: Partial<typeof completeRow> = {}): User {
+function asUser(overrides: Partial<User> = {}): User {
   return {
     userId,
     authProvider: 'phone',
@@ -34,6 +34,8 @@ function asUser(overrides: Partial<typeof completeRow> = {}): User {
     itemsReceivedCount: 0,
     followersCount: 0,
     followingCount: 0,
+    activePostsCountInternal: 0,
+    karmaPoints: 0,
     preferredLanguage: 'he',
     verificationLevel: 1,
     createdAt: '',

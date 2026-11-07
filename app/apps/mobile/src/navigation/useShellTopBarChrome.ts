@@ -4,7 +4,7 @@
 // a menu, live detail title, etc. (world feeds, future settings subtrees).
 import { useLayoutEffect, type ReactNode } from 'react';
 import { useNavigation } from 'expo-router';
-import { stackOptionsForShellTopBarTitle } from './TopBarStackHeader';
+import { stackOptionsForShellTopBarTitle } from './shellTopBarTitleOptions';
 
 export interface ShellTopBarChromePatch {
   /** Plain string or a center slot (world screens menu, dynamic label, …). */

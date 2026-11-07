@@ -166,7 +166,7 @@ set search_path = public
 set statement_timeout = '120s'
 as $$
 begin
-  drop table if exists s_first, s_last, s_city, s_users;
+  drop table if exists s_first, s_last, s_city, s_users; -- migration-safety: allow — session temp tables from a previous step
   perform set_config('request.jwt.claims', '', true);
   perform set_config('request.jwt.claim.sub', '', true);
   perform setseed(0.4242);
@@ -220,7 +220,7 @@ set search_path = public
 set statement_timeout = '120s'
 as $$
 begin
-  drop table if exists s_users, s_city, s_items, s_posts;
+  drop table if exists s_users, s_city, s_items, s_posts; -- migration-safety: allow — session temp tables from a previous step
   create temp table s_users on commit drop as
   select au.id,
          (substring(au.email from 'user([0-9]+)@'))::int as i,
@@ -310,7 +310,7 @@ set search_path = public
 set statement_timeout = '120s'
 as $$
 begin
-  drop table if exists s_users, s_chats;
+  drop table if exists s_users, s_chats; -- migration-safety: allow — session temp tables from a previous step
   create temp table s_users on commit drop as
   select au.id from auth.users au
    where au.email like '%@seed.kc.test'

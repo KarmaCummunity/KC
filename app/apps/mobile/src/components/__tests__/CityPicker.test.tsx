@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.hoisted(() => {
   (globalThis as { __DEV__?: boolean }).__DEV__ = false;

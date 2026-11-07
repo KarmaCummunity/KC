@@ -1,7 +1,7 @@
 // Avatar with a verification mark at the reading-end corner (FR-VERIFY-001 AC2).
 import React from 'react';
 import { View } from 'react-native';
-import { makeUseStyles, iconSize } from '@kc/ui';
+import { makeUseStyles, iconSize, radius } from '@kc/ui';
 import type { VerificationLevel } from '@kc/domain';
 import { AvatarInitials } from './AvatarInitials';
 import { VerificationBadge } from './VerificationBadge';
@@ -53,6 +53,6 @@ const useStyles = makeUseStyles(({ colors }) => ({
     end: -1,
     bottom: -1,
     backgroundColor: colors.surface,
-    borderRadius: 999,
+    borderRadius: radius.full,
   },
 }));

@@ -1,6 +1,7 @@
 // FR-HOUSING-036 — the host's housing offers and how many bookings are waiting.
 import React, { useMemo } from 'react';
-import { FlatList, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { KcFlashList } from '../../lists/KcFlashList';
 import { useRouter } from 'expo-router';
 import { useQueries } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -47,7 +48,7 @@ export function HousingMyHostingScreen() {
     <>
       <WorldSubScreenChrome worldSlug="housing" activeScreenTestId="world-hub-housing-hosting" />
       <Screen blobs="off" hasNativeHeader testID="housing-my-hosting">
-      <FlatList
+      <KcFlashList
         data={offers}
         keyExtractor={(item) => item.listingId}
         contentContainerStyle={styles.list}
