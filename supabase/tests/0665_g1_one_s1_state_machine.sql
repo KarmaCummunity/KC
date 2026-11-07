@@ -37,7 +37,9 @@ language plpgsql
 as $$
 declare
   v_id uuid;
+  v_taker uuid;
 begin
+  select taker into v_taker from personas;
   insert into public.posts (
     owner_id, title, description, category, type, status,
     location_display_level, city, street, street_number, visibility, world_slug, expires_at
@@ -45,6 +47,10 @@ begin
     p_owner, 'Test Post S1', 'Description', 'Furniture', 'Give', p_status,
     'CityOnly', 'tel-aviv', 'Herzl', '1', 'Public', 'items', p_expires
   ) returning post_id into v_id;
+
+  insert into public.recipients (post_id, recipient_user_id)
+  values (v_id, coalesce(v_taker, p_owner));
+
   return v_id;
 end $$;
 grant execute on function pg_temp.new_post(uuid, text, timestamptz) to public;
