@@ -579,7 +579,7 @@ The team sees how well matching v2 works per world, to tune `matching_settings` 
 - AC3. Completion is shown only for worlds that hand off through `giving_handoffs` (items, food, rides, knowledge); other worlds show "not tracked". A rate with a zero denominator renders as "—", never 0%.
 - AC4. Only super admin and moderator can open the screen or call `admin_match_quality` (`42501` otherwise; anon has no execute).
 
-**Related.** `supabase/tests/0454_admin_match_quality.sql` · `SupabaseMatchRepository.qualityByWorld` · `formatRate`.
+**Related.** `supabase/tests/0454_admin_match_quality.sql` · `SupabaseMatchRepository.qualityByWorld` · `formatAdminPercent`.
 
 ---
 

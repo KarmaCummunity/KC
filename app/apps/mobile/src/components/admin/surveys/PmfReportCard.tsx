@@ -9,7 +9,7 @@ import type { PmfSurveyReportView } from '@kc/application';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import { textAlignStart, rowDirectionStart } from '../../../lib/rtlLayout';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
-import { formatPmfPercent } from './formatPmfPercent';
+import { formatAdminPercent } from '../formatAdminPercent';
 
 export interface PmfReportCardProps {
   readonly view: PmfSurveyReportView | null;
@@ -38,10 +38,10 @@ export function PmfReportCard({ view, isLoading }: PmfReportCardProps): ReactEle
       ) : (
         <>
           <View style={styles.scoreRow}>
-            <Text style={styles.score}>{formatPmfPercent(summary.veryDisappointedShare)}</Text>
+            <Text style={styles.score}>{formatAdminPercent(summary.veryDisappointedShare)}</Text>
             <View style={styles.scoreText}>
               <Text style={styles.caption}>{t.scoreCaption}</Text>
-              <Text style={styles.caption}>{t.marginOfError(formatPmfPercent(summary.marginOfError95, 1))}</Text>
+              <Text style={styles.caption}>{t.marginOfError(formatAdminPercent(summary.marginOfError95, 1))}</Text>
             </View>
             <View style={[styles.badge, summary.meetsBenchmark ? styles.badgeGood : styles.badgeBad]}>
               <Text style={styles.badgeText}>
@@ -79,13 +79,13 @@ function OptionRow({ option }: { readonly option: PmfOptionSummary }): ReactElem
     <View style={styles.option}>
       <View style={styles.optionTop}>
         <Text style={styles.optionLabel} numberOfLines={2}>{option.labelHe}</Text>
-        <Text style={styles.optionValue}>{t.optionShare(formatPmfPercent(option.share), option.count)}</Text>
+        <Text style={styles.optionValue}>{t.optionShare(formatAdminPercent(option.share), option.count)}</Text>
       </View>
       <View style={styles.track}><View style={[styles.fill, { width }]} /></View>
       <Text style={styles.hint}>
         {option.retentionRate === null
           ? t.retentionPending
-          : t.retention(formatPmfPercent(option.retentionRate), option.retained, option.retentionBase)}
+          : t.retention(formatAdminPercent(option.retentionRate), option.retained, option.retentionBase)}
       </Text>
     </View>
   );
