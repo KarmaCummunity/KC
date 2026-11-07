@@ -683,112 +683,351 @@ declare
   v_n integer := 0;
   v_cur refcursor;
   r record;
+  v_followed uuid[] := '{}'::uuid[];
+  v_cats text[] := '{}'::text[];
+  v_vc_lat double precision;
+  v_vc_lon double precision;
+  v_post public.posts;
 begin
-  if p_filter_status = 'all' then
-    v_status_set := array['open', 'completed', 'cancelled'];
-  elsif p_filter_status = 'closed' then
-    v_status_set := array['completed', 'cancelled'];
-  else
-    v_status_set := array['open'];
-  end if;
-
   v_sort := coalesce(p_sort_order, 'newest');
-
-  if p_filter_center_city is not null then
-    select latitude, longitude into v_filter_lat, v_filter_lon
-    from public.cities
-    where id = p_filter_center_city;
+  if v_sort not in ('newest', 'oldest', 'distance', 'personalized') then
+    v_sort := 'newest';
   end if;
 
-  if p_proximity_sort_city is not null then
-    select latitude, longitude into v_center_lat, v_center_lon
-    from public.cities
-    where id = p_proximity_sort_city;
-  elsif p_viewer_id is not null then
-    select c.latitude, c.longitude into v_center_lat, v_center_lon
-    from public.users u
-    join public.cities c on c.id = u.city
-    where u.user_id = p_viewer_id;
+  select coalesce(max(case when config_key = 'freshness' then weight end), 0.35),
+         coalesce(max(case when config_key = 'follow_graph' then weight end), 0.25),
+         coalesce(max(case when config_key = 'engagement' then weight end), 0.20),
+         coalesce(max(case when config_key = 'geo' then weight end), 0.15),
+         coalesce(max(case when config_key = 'interest_category' then weight end), 0.05)
+    into w_fresh, w_follow, w_eng, w_geo, w_cat
+    from public.feed_ranking_config;
+
+  if v_sort = 'distance' then
+    if p_proximity_sort_city is not null then
+      select c.lat, c.lon into v_center_lat, v_center_lon
+      from public.cities c where c.city_id = p_proximity_sort_city;
+    elsif p_viewer_id is not null then
+      select c.lat, c.lon into v_center_lat, v_center_lon
+      from public.users u
+      join public.cities c on c.city_id = u.city
+      where u.user_id = p_viewer_id;
+    end if;
+    if v_center_lat is null then v_sort := 'newest'; end if;
+  elsif v_sort = 'personalized' and p_viewer_id is null then
+    v_sort := 'newest';
   end if;
 
-  if p_filter_search_query is not null and trim(p_filter_search_query) <> '' then
-    v_search_esc := replace(replace(replace(trim(p_filter_search_query), '\', '\\'), '%', '\%'), '_', '\_');
+  if p_filter_center_city is not null and p_filter_radius_km is not null then
+    select c.lat, c.lon into v_filter_lat, v_filter_lon
+    from public.cities c where c.city_id = p_filter_center_city;
   end if;
 
-  open v_cur for
-    select
-      p.post_id as pid,
-      case
-        when v_center_lat is not null and p.latitude is not null then
-          6371.0 * 2.0 * asin(sqrt(
-            power(sin(radians(p.latitude - v_center_lat) / 2.0), 2) +
-            cos(radians(v_center_lat)) * cos(radians(p.latitude)) *
-            power(sin(radians(p.longitude - v_center_lon) / 2.0), 2)
-          ))
-        else null
-      end as dist_km,
-      0.0::double precision as rscore
-    from public.feed_visible_posts p
-    where p.status = any(v_status_set)
-      and (p_filter_type is null or p.type = p_filter_type)
-      and (p_filter_categories is null or p.category = any(p_filter_categories))
-      and (p_filter_item_conditions is null or p.item_condition = any(p_filter_item_conditions))
-      and (
-        p_filter_worlds is null
-        or coalesce(p.listing_world_slug, 'items') = any(p_filter_worlds)
-        or (
-          p.listing_id is not null
-          and exists (
-            select 1 from public.listing_worlds lw
-             where lw.listing_id = p.listing_id
-               and lw.world_slug = any(p_filter_worlds)
-          )
-        )
-      )
-      and (
-        p_filter_subcategories is null
-        or (p.listing_id is not null and exists (
-          select 1 from public.listings l
-          join public.categories c on c.category_id = l.category_id
-          where l.listing_id = p.listing_id
-            and c.slug = any(p_filter_subcategories)
-        ))
-      )
-      and (
-        v_filter_lat is null or p_filter_radius_km is null
-        or (p.latitude is not null and (
-          6371.0 * 2.0 * asin(sqrt(
-            power(sin(radians(p.latitude - v_filter_lat) / 2.0), 2) +
-            cos(radians(v_filter_lat)) * cos(radians(p.latitude)) *
-            power(sin(radians(p.longitude - v_filter_lon) / 2.0), 2)
-          )) <= p_filter_radius_km
-        ))
-      )
-      and (
-        v_search_esc is null
-        or p.title ilike '%' || v_search_esc || '%'
-        or coalesce(p.description, '') ilike '%' || v_search_esc || '%'
-      )
-      and (
-        not p_followers_only
-        or p_viewer_id is null
-        or exists (
-          select 1 from public.follows f
-          where f.follower_id = p_viewer_id and f.following_id = p.owner_id
-        )
-      )
-      and (
-        p_cursor_created_at is null
-        or (p.created_at, p.post_id) < (p_cursor_created_at, p_cursor_post_id)
-      )
-    order by p.created_at desc, p.post_id desc;
+  v_status_set := case p_filter_status
+    when 'open'   then array['open']::text[]
+    when 'closed' then array['closed_delivered']::text[]
+    when 'all'    then array['open','closed_delivered']::text[]
+    else array['open']::text[]
+  end;
+
+  if p_filter_search_query is not null and length(trim(p_filter_search_query)) >= 2 then
+    v_search_esc := public.escape_ilike(trim(p_filter_search_query));
+  end if;
+
+  v_use_mv := v_sort = 'newest'
+    and v_search_esc is null
+    and coalesce(p_followers_only, false) = false
+    and p_filter_radius_km is null
+    and p_filter_center_city is null;
+
+  if p_viewer_id is not null then
+    v_followed := coalesce(array(
+      select fe.followed_id from public.follow_edges fe where fe.follower_id = p_viewer_id
+    ), '{}'::uuid[]);
+    if v_sort = 'personalized' then
+      v_cats := coalesce(array(
+        select distinct px.category
+          from public.post_reactions pr
+          join public.posts px on px.post_id = pr.post_id
+         where pr.user_id = p_viewer_id
+      ), '{}'::text[]);
+      select c.lat, c.lon into v_vc_lat, v_vc_lon
+        from public.users u
+        join public.cities c on c.city_id = u.city
+       where u.user_id = p_viewer_id;
+    end if;
+  end if;
+
+  if v_use_mv then
+    -- Newest fast path: walk feed_open_posts_mv_open_newest_idx in order.
+    open v_cur for
+      select p as prow, p.post_id as pid, null::double precision as dist, null::double precision as score
+        from kc_private.feed_open_posts_mv fm
+        join public.posts p on p.post_id = fm.post_id
+        join public.cities c on c.city_id = fm.city
+       where fm.status = any(v_status_set)
+         and (p_filter_type is null or fm.type = p_filter_type)
+         and (p_filter_categories is null or fm.category = any(p_filter_categories))
+         and (p_filter_item_conditions is null or fm.item_condition = any(p_filter_item_conditions))
+         and (
+           p_filter_worlds is null
+           or coalesce(p.listing_world_slug, 'items') = any(p_filter_worlds)
+           or (
+             p.listing_id is not null
+             and exists (
+               select 1 from public.listing_worlds lw
+                where lw.listing_id = p.listing_id
+                  and lw.world_slug = any(p_filter_worlds)
+             )
+           )
+         )
+         and (
+           p_filter_subcategories is null
+           or (
+             p.listing_id is not null
+             and exists (
+               -- 0565: the post carries its listing's sub-category (posts.category_id, 0551).
+               select 1 from public.categories cat
+               where cat.category_id = p.category_id
+                 and cat.slug = any(p_filter_subcategories)
+             )
+           )
+           or (
+             p.listing_id is null
+             and exists (
+               select 1 from public.categories cat
+               where cat.world_slug = 'items'
+                 and cat.legacy_post_category = p.category
+                 and cat.slug = any(p_filter_subcategories)
+             )
+           )
+         )
+         and (
+           p_cursor_created_at is null
+           or (fm.created_at, fm.post_id) < (p_cursor_created_at, p_cursor_post_id)
+         )
+       order by fm.created_at desc, fm.post_id desc;
+  elsif v_sort in ('personalized', 'distance') and v_search_esc is null then
+    open v_cur for
+      select q.prow, q.pid, q.dist, q.score
+        from (
+          select
+            p as prow,
+            fm.post_id as pid,
+            fm.created_at as cat,
+            case when v_sort = 'distance'
+                 then public.haversine_km(v_center_lat, v_center_lon, c.lat, c.lon)
+            end as dist,
+            case when v_filter_lat is not null
+                 then public.haversine_km(v_filter_lat, v_filter_lon, c.lat, c.lon)
+            end as filter_dist,
+            case when v_sort = 'personalized' then (
+              w_fresh * (1.0 / (1.0 + extract(epoch from (now() - fm.created_at)) / 86400.0))
+              + w_follow * case when fm.owner_id = any(v_followed) then 1.0 else 0.0 end
+              + w_eng * ln(1.0 + fm.reaction_count + fm.comment_count)
+              + w_geo * case when v_vc_lat is not null then
+                  1.0 / (1.0 + public.haversine_km(v_vc_lat, v_vc_lon, c.lat, c.lon) / 50.0)
+                else 0.0 end
+              + w_cat * case when fm.category = any(v_cats) then 1.0 else 0.0 end
+            )::double precision end as score
+          from kc_private.feed_open_posts_mv fm
+          join public.posts p on p.post_id = fm.post_id
+          join public.cities c on c.city_id = fm.city
+          where fm.status = any(v_status_set)
+            and (p_filter_type is null or fm.type = p_filter_type)
+            and (p_filter_categories is null or fm.category = any(p_filter_categories))
+            and (p_filter_item_conditions is null or fm.item_condition = any(p_filter_item_conditions))
+            and (
+           p_filter_worlds is null
+           or coalesce(p.listing_world_slug, 'items') = any(p_filter_worlds)
+           or (
+             p.listing_id is not null
+             and exists (
+               select 1 from public.listing_worlds lw
+                where lw.listing_id = p.listing_id
+                  and lw.world_slug = any(p_filter_worlds)
+             )
+           )
+         )
+            and (
+              p_filter_subcategories is null
+              or (
+                p.listing_id is not null
+                and exists (
+                  -- 0565: the post carries its listing's sub-category (posts.category_id, 0551).
+                  select 1 from public.categories cat
+                  where cat.category_id = p.category_id
+                    and cat.slug = any(p_filter_subcategories)
+                )
+              )
+              or (
+                p.listing_id is null
+                and exists (
+                  select 1 from public.categories cat
+                  where cat.world_slug = 'items'
+                    and cat.legacy_post_category = p.category
+                    and cat.slug = any(p_filter_subcategories)
+                )
+              )
+            )
+            and (coalesce(p_followers_only, false) = false or fm.owner_id = any(v_followed))
+        ) q
+       where (p_filter_radius_km is null or q.filter_dist is null or q.filter_dist <= p_filter_radius_km)
+         and (
+           case
+             when p_cursor_created_at is null then true
+             when v_sort = 'personalized' then
+               coalesce(q.score, 0) < coalesce(p_cursor_rank_score, 1e9)
+               or (coalesce(q.score, 0) = coalesce(p_cursor_rank_score, 0)
+                   and (q.cat, q.pid) < (p_cursor_created_at, p_cursor_post_id))
+             else
+               coalesce(q.dist, 1e9) > coalesce(p_cursor_distance, -1)
+               or (coalesce(q.dist, 1e9) = coalesce(p_cursor_distance, -1)
+                   and q.cat < p_cursor_created_at)
+               or (coalesce(q.dist, 1e9) = coalesce(p_cursor_distance, -1)
+                   and q.cat = p_cursor_created_at
+                   and q.pid > p_cursor_post_id)
+           end
+         )
+       order by
+         case when v_sort = 'personalized' then q.score end desc nulls last,
+         case when v_sort = 'distance' then q.dist end asc nulls last,
+         q.cat desc,
+         q.pid desc;
+  else
+    open v_cur for
+      select q.prow, q.pid, q.dist, q.score
+        from (
+          select
+            p as prow,
+            p.post_id as pid,
+            p.created_at as cat,
+            case when v_sort = 'distance'
+                 then public.haversine_km(v_center_lat, v_center_lon, c.lat, c.lon)
+            end as dist,
+            case when v_filter_lat is not null
+                 then public.haversine_km(v_filter_lat, v_filter_lon, c.lat, c.lon)
+            end as filter_dist,
+            case when v_sort = 'personalized' then (
+              w_fresh * (1.0 / (1.0 + extract(epoch from (now() - p.created_at)) / 86400.0))
+              + w_follow * case when p.owner_id = any(v_followed) then 1.0 else 0.0 end
+              + w_eng * ln(1.0 + coalesce(ps.reaction_count, 0) + coalesce(ps.comment_count, 0))
+              + w_geo * case when v_vc_lat is not null then
+                  1.0 / (1.0 + public.haversine_km(v_vc_lat, v_vc_lon, c.lat, c.lon) / 50.0)
+                else 0.0 end
+              + w_cat * case when p.category = any(v_cats) then 1.0 else 0.0 end
+            )::double precision end as score
+          from public.posts p
+          join public.cities c on c.city_id = p.city
+          left join public.post_stats ps on ps.post_id = p.post_id
+          where p.status = any(v_status_set)
+            and (p_filter_type is null or p.type = p_filter_type)
+            and (p_filter_categories is null or p.category = any(p_filter_categories))
+            and (p_filter_item_conditions is null or p.item_condition = any(p_filter_item_conditions))
+            and (
+           p_filter_worlds is null
+           or coalesce(p.listing_world_slug, 'items') = any(p_filter_worlds)
+           or (
+             p.listing_id is not null
+             and exists (
+               select 1 from public.listing_worlds lw
+                where lw.listing_id = p.listing_id
+                  and lw.world_slug = any(p_filter_worlds)
+             )
+           )
+         )
+            and (
+              p_filter_subcategories is null
+              or (
+                p.listing_id is not null
+                and exists (
+                  -- 0565: the post carries its listing's sub-category (posts.category_id, 0551).
+                  select 1 from public.categories cat
+                  where cat.category_id = p.category_id
+                    and cat.slug = any(p_filter_subcategories)
+                )
+              )
+              or (
+                p.listing_id is null
+                and exists (
+                  select 1 from public.categories cat
+                  where cat.world_slug = 'items'
+                    and cat.legacy_post_category = p.category
+                    and cat.slug = any(p_filter_subcategories)
+                )
+              )
+            )
+            and (
+              v_search_esc is null
+              or p.title ilike '%' || v_search_esc || '%' escape '\'
+              or p.description ilike '%' || v_search_esc || '%' escape '\'
+              or p.category ilike '%' || v_search_esc || '%' escape '\'
+            )
+            and (coalesce(p_followers_only, false) = false or p.owner_id = any(v_followed))
+        ) q
+       where (p_filter_radius_km is null or q.filter_dist is null or q.filter_dist <= p_filter_radius_km)
+         and (
+           case
+             when p_cursor_created_at is null then true
+             when v_sort = 'personalized' then
+               coalesce(q.score, 0) < coalesce(p_cursor_rank_score, 1e9)
+               or (coalesce(q.score, 0) = coalesce(p_cursor_rank_score, 0)
+                   and (q.cat, q.pid) < (p_cursor_created_at, p_cursor_post_id))
+             when v_sort = 'newest' then (q.cat, q.pid) < (p_cursor_created_at, p_cursor_post_id)
+             when v_sort = 'oldest' then (q.cat, q.pid) > (p_cursor_created_at, p_cursor_post_id)
+             when v_sort = 'distance' then
+               coalesce(q.dist, 1e9) > coalesce(p_cursor_distance, -1)
+               or (coalesce(q.dist, 1e9) = coalesce(p_cursor_distance, -1)
+                   and q.cat < p_cursor_created_at)
+               or (coalesce(q.dist, 1e9) = coalesce(p_cursor_distance, -1)
+                   and q.cat = p_cursor_created_at
+                   and q.pid > p_cursor_post_id)
+             else true
+           end
+         )
+       order by
+         case when v_sort = 'personalized' then q.score end desc nulls last,
+         case when v_sort = 'distance' then q.dist end asc nulls last,
+         case when v_sort = 'oldest' then q.cat end asc,
+         case when v_sort = 'oldest' then q.pid end asc,
+         case when v_sort in ('newest', 'distance', 'personalized') then q.cat end desc,
+         q.pid desc;
+  end if;
 
   loop
     fetch v_cur into r;
     exit when not found;
+    if (r.prow).post_id is null then
+      select p.* into v_post
+        from public.posts p
+       where p.post_id = r.pid and p.status = any(v_status_set);
+      continue when not found;
+    else
+      v_post := r.prow;
+    end if;
+    continue when not public.is_post_visible_to(v_post, p_viewer_id);
+    -- A post that exists for a listing kept out of the main feed (0557) is not listed.
+    continue when coalesce(v_post.feed_hidden, false);
+    if p_viewer_id is not null then
+      continue when exists (
+        select 1 from public.feed_post_hides h
+         where h.user_id = p_viewer_id and h.post_id = r.pid
+      );
+      continue when exists (
+        select 1 from public.feed_mute_filters mf
+         where mf.user_id = p_viewer_id
+           and (
+             (mf.filter_kind = 'user' and mf.filter_value = v_post.owner_id::text)
+             or (mf.filter_kind in ('category', 'world') and mf.filter_value = v_post.category)
+             or (mf.filter_kind = 'keyword' and (
+               v_post.title ilike '%' || public.escape_ilike(mf.filter_value) || '%' escape '\'
+               or v_post.description ilike '%' || public.escape_ilike(mf.filter_value) || '%' escape '\'
+             ))
+           )
+      );
+    end if;
     post_id := r.pid;
-    distance_km := r.dist_km;
-    rank_score := r.rscore;
+    distance_km := r.dist;
+    rank_score := r.score;
     return next;
     v_n := v_n + 1;
     exit when v_n >= v_lim;
@@ -799,138 +1038,14 @@ $$;
 
 revoke all on function public.feed_ranked_ids(
   uuid, text, text[], text[], text, text, double precision,
-  text, text, integer, double precision, timestamptz, uuid, text, boolean, double precision, text[], text[]
+  text, text, integer, double precision, timestamptz, uuid, text, boolean, double precision,
+  text[], text[]
 ) from public;
 
 grant execute on function public.feed_ranked_ids(
   uuid, text, text[], text[], text, text, double precision,
-  text, text, integer, double precision, timestamptz, uuid, text, boolean, double precision, text[], text[]
-) to authenticated, anon;
-
--- ── 7. matching_v2 candidate query (cross-world pairing) ──────────────────────────────
-create or replace function public.match_generate_candidates_for_listing(
-  p_listing public.listings
-)
-returns integer
-language plpgsql
-security definer
-set search_path = public, extensions
-as $$
-declare
-  v_src record;
-  v_set public.matching_settings;
-  v_world public.worlds;
-  v_count integer := 0;
-  v_opp_dir text;
-begin
-  select * into v_set from public.get_matching_settings();
-  if not coalesce(v_set.enabled, false) then
-    return 0;
-  end if;
-
-  select p_listing.listing_id as listing_id,
-         p_listing.owner_id as owner_id,
-         case when po.post_id is null then p_listing.world_slug else po.world_slug end as world_slug,
-         case when po.post_id is null then (case when p_listing.direction = 'request' then 'request' else 'give' end)
-              else (case when po.direction = 'request' then 'request' else 'give' end) end as direction,
-         case when po.post_id is null then p_listing.urgency_level else coalesce(po.urgency_level, p_listing.urgency_level) end as urgency_level,
-         case when po.post_id is null then p_listing.anonymity_level else 0 end as anonymity_level,
-         case when po.post_id is null then p_listing.status else p_listing.status end as status,
-         case when po.post_id is null then p_listing.moderation_status else p_listing.moderation_status end as moderation_status,
-         case when po.post_id is null then p_listing.details else coalesce(po.details, p_listing.details) end as details,
-         case when po.post_id is null then p_listing.geo else coalesce(po.geo, p_listing.geo) end as geo
-    into v_src
-    from (select 1) _
-    left join public.posts po on po.post_id = p_listing.legacy_post_id and p_listing.origin = 'native';
-
-  if v_src.status <> 'open' or v_src.moderation_status <> 'published'
-     or not (v_src.world_slug = any (v_set.worlds)) or v_src.anonymity_level = 1 then
-    return 0;
-  end if;
-
-  v_opp_dir := case when v_src.direction = 'give' then 'request' else 'give' end;
-  select * into v_world from public.worlds where slug = v_src.world_slug;
-
-  with pool as (
-    select c.*,
-           extensions.st_distance(v_src.geo, c.geo) / 1000.0 as dist_km
-      from public.listings c
-     where (
-       c.world_slug = v_src.world_slug
-       or exists (
-         select 1 from public.listing_worlds lw
-          where lw.listing_id = c.listing_id and lw.world_slug = v_src.world_slug
-       )
-       or exists (
-         select 1 from public.listing_worlds lw
-          where lw.listing_id = v_src.listing_id and lw.world_slug = c.world_slug
-       )
-       or exists (
-         select 1 from public.listing_worlds lw1
-          join public.listing_worlds lw2 on lw1.world_slug = lw2.world_slug
-          where lw1.listing_id = v_src.listing_id and lw2.listing_id = c.listing_id
-       )
-     )
-       and c.direction = v_opp_dir
-       and c.status = 'open'
-       and c.moderation_status = 'published'
-       and c.owner_id <> v_src.owner_id
-       and c.anonymity_level <> 1
-       and (
-         v_src.geo is null or c.geo is null
-         or v_src.world_slug = 'rides'
-         or extensions.st_dwithin(v_src.geo, c.geo, coalesce(v_set.max_distance_km, 30.0) * 1000.0)
-       )
-       and not exists (
-         select 1 from public.blocks b
-          where (b.blocker_id = v_src.owner_id and b.blocked_id = c.owner_id)
-             or (b.blocker_id = c.owner_id and b.blocked_id = v_src.owner_id)
-       )
-       and not exists (
-         select 1 from public.mutes m
-          where (m.user_id = v_src.owner_id and m.muted_id = c.owner_id)
-             or (m.user_id = c.owner_id and m.muted_id = v_src.owner_id)
-       )
-     order by
-       case when v_src.world_slug = 'rides' then
-         abs(extract(epoch from ((v_src.details ->> 'departs_at')::timestamptz - (c.details ->> 'departs_at')::timestamptz)))
-       else
-         extensions.st_distance(v_src.geo, c.geo)
-       end nulls last
-     limit coalesce(v_set.candidate_pool_limit, 50)
-  ),
-  scored as (
-    select
-      case when v_src.direction = 'give' then v_src.listing_id else p.listing_id end as offer_id,
-      case when v_src.direction = 'give' then p.listing_id else v_src.listing_id end as request_id,
-      case when v_src.direction = 'give' then v_src.owner_id else p.owner_id end as offer_owner,
-      case when v_src.direction = 'give' then p.owner_id else v_src.owner_id end as request_owner,
-      p.dist_km,
-      case when v_src.direction = 'give'
-        then public.match_score_pair(v_src.listing_id, p.listing_id)
-        else public.match_score_pair(p.listing_id, v_src.listing_id)
-      end as res
-    from pool p
-  )
-  insert into public.match_candidates (
-    offer_listing_id, request_listing_id, offer_owner_id, request_owner_id, world_slug,
-    score, components, distance_km, updated_at
-  )
-  select
-    s.offer_id, s.request_id, s.offer_owner, s.request_owner,
-    v_src.world_slug, (s.res).score, (s.res).components, s.dist_km, clock_timestamp()
-  from scored s
-  where (s.res).score >= coalesce(v_set.min_score_threshold, 0.60)
-  on conflict (offer_listing_id, request_listing_id)
-  do update set
-    score = excluded.score,
-    components = excluded.components,
-    distance_km = excluded.distance_km,
-    updated_at = excluded.updated_at;
-
-  get diagnostics v_count = row_count;
-  return v_count;
-end;
-$$;
+  text, text, integer, double precision, timestamptz, uuid, text, boolean, double precision,
+  text[], text[]
+) to anon, authenticated, service_role;
 
 commit;
