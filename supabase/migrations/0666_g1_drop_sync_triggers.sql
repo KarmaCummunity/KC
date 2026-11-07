@@ -1531,6 +1531,7 @@ declare
   v_expires timestamptz;
   v_condition text;
   v_cat text;
+  v_listing_id uuid;
 begin
   if v_uid is null then
     raise exception 'auth_required' using errcode = '42501';
@@ -1612,7 +1613,34 @@ begin
   )
   returning post_id into v_post_id;
 
-  return v_post_id;
+  if to_regclass('public.listings') is not null then
+    insert into public.listings (
+      owner_id, world_slug, kind_id, category_id, direction, title, summary, details,
+      city_id, geo, max_radius_km_override, urgency_level, availability_status, origin, moderation_status,
+      external_body_id, legacy_post_id, expires_at
+    ) values (
+      v_uid, v_kind.world_slug, p_kind_id, p_category_id, v_dir, p_title, p_summary, coalesce(p_details, '{}'::jsonb),
+      p_city_id, v_geo, p_max_radius_km, coalesce(p_urgency_level, 2), coalesce(p_availability_status, 'ongoing'),
+      'native', 'published',
+      p_external_body_id, v_post_id, v_expires
+    )
+    returning listing_id into v_listing_id;
+
+    update public.posts
+       set listing_id = v_listing_id,
+           listing_world_slug = v_kind.world_slug,
+           legacy_listing_id = v_listing_id,
+           details = (select details from public.listings where listing_id = v_listing_id),
+           expires_at = coalesce((select expires_at from public.listings where listing_id = v_listing_id), v_expires),
+           urgency_level = coalesce((select urgency_level from public.listings where listing_id = v_listing_id), p_urgency_level, 2)
+     where post_id = v_post_id;
+
+    if p_media_paths is not null and cardinality(p_media_paths) > 0 then
+      perform public.attach_listing_media(v_listing_id, p_media_paths);
+    end if;
+  end if;
+
+  return coalesce(v_listing_id, v_post_id);
 end;
 $$;
 

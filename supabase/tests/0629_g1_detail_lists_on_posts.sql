@@ -169,12 +169,8 @@ begin
     end if;
   end loop;
 end $$;
-grant execute on function pg_temp.assert_same(text) to public;
-grant execute on function pg_temp.old_detail(uuid) to public;
-grant execute on function pg_temp.old_my_listings(int, int, timestamptz, uuid) to public;
-grant execute on function pg_temp.old_profile_listings(uuid, int) to public;
-grant execute on function pg_temp.new_my_listings(int, int, timestamptz, uuid) to public;
-grant execute on function pg_temp.new_profile_listings(uuid, int) to public;
+grant execute on function pg_temp.assert_same(text), pg_temp.old_detail(uuid), pg_temp.old_my_listings(int, int, timestamptz, uuid),
+  pg_temp.old_profile_listings(uuid, int), pg_temp.new_my_listings(int, int, timestamptz, uuid), pg_temp.new_profile_listings(uuid, int) to public;
 
 -- ── T1 every shape, every stage, as owner, member and guest ─────────────────────────────────
 do $$
@@ -242,6 +238,10 @@ begin
     from (select listing_id, row_number() over (order by listing_id) as n
             from public.listings where owner_id in (p.owner, p.mentor)) r
    where l.listing_id = r.listing_id and l.published_at is not null;
+  update public.posts po
+     set published_at = l.published_at, created_at = l.created_at
+    from public.listings l
+   where po.post_id = l.legacy_post_id or po.listing_id = l.listing_id;
 
   -- The backfilled shape diverges last: a listing write after this would converge it again.
   update public.listings
@@ -276,9 +276,11 @@ begin
   perform kc_test.act_as(p.owner);
   perform public.resume_my_listing(v_ride);
   update public.listings set moderation_status = 'pending_review' where listing_id = v_ride;
+  update public.posts set moderation_status = 'pending_review' where listing_id = v_ride or post_id = v_ride;
   perform pg_temp.assert_same('held');
 
   update public.listings set moderation_status = 'published' where listing_id in (v_ride, v_knowledge);
+  update public.posts set moderation_status = 'published' where listing_id in (v_ride, v_knowledge) or post_id in (v_ride, v_knowledge);
   if exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
     perform kc_test.assert_true(public.post_id_of_listing(v_knowledge) is not null, 'publishing gave the knowledge listing its post');
   end if;

@@ -42,14 +42,14 @@ begin
   select * into p from personas;
   perform kc_test.act_as(p.driver);
 
-  v_post_id := public.create_marketplace_listing(
-    p_kind_id => kc_test.listing_kind_id('rides', 'ride_offer'),
-    p_title   => 'Haifa to TLV direct',
-    p_summary => 'fast highway ride',
-    p_details => kc_test.ride_route_tlv_jlm()
-                 || jsonb_build_object('departs_at', kc_test.iso_in(interval '2 hours'), 'seats_available', 2),
-    p_city_id => 'tel-aviv'
-  );
+  insert into public.posts (
+    owner_id, type, visibility, title, description, category, city, street, street_number,
+    world_slug, direction, post_type, details
+  ) values (
+    p.driver, 'Give', 'Public', 'Haifa to TLV direct', 'fast highway ride', 'Other', 'tel-aviv', 'Herzl', '1',
+    'rides', 'offer', 'ride',
+    kc_test.ride_route_tlv_jlm() || jsonb_build_object('departs_at', kc_test.iso_in(interval '2 hours'), 'seats_available', 2)
+  ) returning post_id into v_post_id;
 
   select * into v_post from public.posts where post_id = v_post_id;
   perform kc_test.assert_eq(v_post.title, 'Haifa to TLV direct', 'post title is saved');
@@ -72,6 +72,7 @@ do $$
 declare
   p personas;
   v_item_id uuid;
+  v_post_id uuid;
   h public.giving_handoffs;
   r public.post_handoffs;
 begin
@@ -84,6 +85,7 @@ begin
     p_details => '{"item_condition":"Good","fulfillment_mode":"owner_approval"}'::jsonb,
     p_city_id => 'tel-aviv'
   );
+  v_post_id := public.handoff_target_post_id(v_item_id);
 
   perform kc_test.act_as(p.taker);
   h := public.reserve_item_giving(v_item_id, 'pickup', null, null);
@@ -92,7 +94,7 @@ begin
   perform kc_test.assert_eq(h.listing_id, v_item_id, 'listing_id resolves to the post');
 
   select * into r from public.post_handoffs where handoff_id = h.handoff_id;
-  perform kc_test.assert_eq(r.post_id, v_item_id, 'post_handoffs points to post');
+  perform kc_test.assert_eq(r.post_id, v_post_id, 'post_handoffs points to post');
   perform kc_test.assert_eq(r.recipient_id, p.taker, 'recipient is taker');
 
   -- No row in giving_handoffs
@@ -102,13 +104,13 @@ begin
 
   -- Post availability is scheduled
   perform kc_test.assert_eq(
-    (select availability_status from public.posts where post_id = v_item_id),
+    (select availability_status from public.posts where post_id = v_post_id),
     'scheduled', 'post availability_status became scheduled');
 
   -- Cancel restores availability
   perform public.cancel_giving_handoff(h.handoff_id);
   perform kc_test.assert_eq(
-    (select availability_status from public.posts where post_id = v_item_id),
+    (select availability_status from public.posts where post_id = v_post_id),
     'immediate', 'post availability_status restored to immediate after cancel');
 end $$;
 
@@ -117,6 +119,7 @@ do $$
 declare
   p personas;
   v_ride_id uuid;
+  v_post_id uuid;
   h public.giving_handoffs;
 begin
   select * into p from personas;
@@ -129,6 +132,7 @@ begin
                  || jsonb_build_object('departs_at', kc_test.iso_in(interval '1 hour'), 'seats_available', 1),
     p_city_id => 'tel-aviv'
   );
+  v_post_id := public.handoff_target_post_id(v_ride_id);
 
   perform kc_test.act_as(p.rider);
   h := public.book_ride_seat(v_ride_id, 1, null);
@@ -141,7 +145,7 @@ begin
   h := public.complete_ride_trip(h.handoff_id);
   perform kc_test.assert_eq(h.status, 'handed_over', 'ride handoff handed over');
   perform kc_test.assert_eq(
-    (select status from public.posts where post_id = v_ride_id),
+    (select status from public.posts where post_id = v_post_id),
     'closed_delivered', 'ride post closed to closed_delivered');
 end $$;
 
@@ -150,6 +154,7 @@ do $$
 declare
   p personas;
   v_post_id uuid;
+  v_real_id uuid;
 begin
   select * into p from personas;
   perform kc_test.act_as(p.giver);
@@ -160,18 +165,19 @@ begin
     p_details => '{"item_condition":"Good"}'::jsonb,
     p_city_id => 'tel-aviv'
   );
+  v_real_id := public.handoff_target_post_id(v_post_id);
 
   perform public.pause_my_listing(v_post_id);
-  perform kc_test.assert_eq((select status from public.posts where post_id = v_post_id), 'paused', 'pause sets paused');
+  perform kc_test.assert_eq((select status from public.posts where post_id = v_real_id), 'paused', 'pause sets paused');
 
   perform public.resume_my_listing(v_post_id);
-  perform kc_test.assert_eq((select status from public.posts where post_id = v_post_id), 'open', 'resume sets open');
+  perform kc_test.assert_eq((select status from public.posts where post_id = v_real_id), 'open', 'resume sets open');
 
   perform public.fulfill_my_listing(v_post_id);
-  perform kc_test.assert_eq((select status from public.posts where post_id = v_post_id), 'closed_delivered', 'fulfill sets closed_delivered');
+  perform kc_test.assert_eq((select status from public.posts where post_id = v_real_id), 'closed_delivered', 'fulfill sets closed_delivered');
 
   perform public.delete_my_listing(v_post_id);
-  perform kc_test.assert_row_count(format('select 1 from public.posts where post_id = %L', v_post_id), 0, 'delete removes post');
+  perform kc_test.assert_row_count(format('select 1 from public.posts where post_id = %L', v_real_id), 0, 'delete removes post');
 end $$;
 
 rollback;
