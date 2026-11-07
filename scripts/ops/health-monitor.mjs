@@ -17,6 +17,7 @@ import { planAlertActions, unavailableReport } from './health-alerts.mjs';
 import { githubIssueChannel } from './github-issue-channel.mjs';
 
 const REPORT_SQL = 'select * from ops.run_health_checks()';
+const HAS_OPS_SQL = "select exists(select 1 from pg_proc p join pg_namespace n on p.pronamespace = n.oid where n.nspname = 'ops' and p.proname = 'run_health_checks') as has_ops";
 
 /** Supabase Management API client; `fetchImpl` is injectable for tests. */
 export function supabaseManagement({ projectRef, token, fetchImpl = fetch }) {
@@ -28,13 +29,29 @@ export function supabaseManagement({ projectRef, token, fetchImpl = fetch }) {
       if (!res.ok) throw new Error(`project status HTTP ${res.status}`);
       return (await res.json()).status ?? 'UNKNOWN';
     },
+    async hasHealthChecks() {
+      const res = await fetchImpl(`${base}/database/query`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ query: HAS_OPS_SQL }),
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`query HTTP ${res.status}${text ? `: ${text.slice(0, 200)}` : ''}`);
+      }
+      const data = await res.json();
+      return Boolean(data[0]?.has_ops);
+    },
     async healthReport() {
       const res = await fetchImpl(`${base}/database/query`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ query: REPORT_SQL }),
       });
-      if (!res.ok) throw new Error(`query HTTP ${res.status}`);
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`query HTTP ${res.status}${text ? `: ${text.slice(0, 200)}` : ''}`);
+      }
       return res.json();
     },
   };
@@ -49,6 +66,8 @@ export async function runMonitor({ env, supabase, channels, runbookUrl, dryRun =
   try {
     const status = await supabase.projectStatus();
     if (status !== 'ACTIVE_HEALTHY') return { env, skipped: `project status ${status}` };
+    const hasOps = await supabase.hasHealthChecks();
+    if (!hasOps) return { env, skipped: 'migration 0463 (ops.run_health_checks) not applied' };
     report = await supabase.healthReport();
   } catch (err) {
     report = unavailableReport(err.message);

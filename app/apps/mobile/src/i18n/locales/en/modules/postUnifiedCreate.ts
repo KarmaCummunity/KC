@@ -20,6 +20,8 @@ export const postUnifiedCreateEn = {
     linkWorldIntro: 'This world has no feed in the app yet. Add a link to a nonprofit, group or initiative — it appears in the world after KC team approval.',
     request: 'Request',
     offer: 'Offer',
+    additionalWorldsLabel: 'Show also in other worlds',
+    additionalWorldsHint: 'The listing will also appear in feeds of selected worlds',
     cityLabel: 'City',
     pickDate: 'Pick a date and time',
     amountPlaceholder: 'Up to ₪{{max}}',

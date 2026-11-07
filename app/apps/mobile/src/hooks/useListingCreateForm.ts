@@ -100,6 +100,8 @@ export function useListingCreateForm({
   const [city, setCity] = useState<City | null>(null);
   const [photos, setPhotos] = useState<PickedImage[]>([]);
   const [subcategoryId, setSubcategoryId] = useState<string | null>(null);
+  // Additional worlds this listing should appear in (#1475).
+  const [additionalWorlds, setAdditionalWorlds] = useState<string[]>([]);
   // Rides only: a recurring ride publishes a series instead of one listing (FR-RIDE-046).
   const [recurrence, setRecurrence] = useState<RideRecurrenceDraft | null>(null);
   // Rides only: "leave now" departs a few minutes after publishing, whenever that is (#1411).
@@ -232,6 +234,7 @@ export function useListingCreateForm({
           radiusKm: DEFAULT_RADIUS_KM,
           mediaPaths,
           worldSubcategoryId: showSubcategory ? subcategoryId : null,
+          additionalWorldSlugs: additionalWorlds.filter((w) => w !== worldSlug),
         }),
       );
       trackCoreLoop('listing_created', { world: worldSlug, cityId: city?.id ?? null });
@@ -268,6 +271,13 @@ export function useListingCreateForm({
     setPhotos,
     subcategoryId,
     setSubcategoryId,
+    additionalWorlds,
+    setAdditionalWorlds,
+    toggleAdditionalWorld: (slug: string) => {
+      setAdditionalWorlds((prev) =>
+        prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug],
+      );
+    },
     recurrence,
     setRecurrence,
     leaveNow,

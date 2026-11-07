@@ -19,6 +19,7 @@ import { inlineProblemField, renderedListingFields } from '../../lib/unifiedCrea
 import { CityPicker } from '../CityPicker';
 import { RideCreateSection } from '../giving/RideCreateSection';
 import { WorldSubcategoryPicker } from '../marketplace/WorldSubcategoryPicker';
+import { AdditionalWorldsPicker } from './AdditionalWorldsPicker';
 import { ListingDetailFields } from './ListingDetailFields';
 import { ListingFieldFrame, ListingFieldProblemContext } from './ListingFieldFrame';
 import { PhotoPicker } from './PhotoPicker';
@@ -186,6 +187,13 @@ export function ListingCreateForm({
               disabled={form.busy}
             />
           ) : null}
+
+          <AdditionalWorldsPicker
+            primaryWorldSlug={worldSlug}
+            selectedWorlds={form.additionalWorlds}
+            onToggle={form.toggleAdditionalWorld}
+            disabled={form.busy}
+          />
 
           <ListingDetailFields
             specs={form.specs}

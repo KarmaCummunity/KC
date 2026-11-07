@@ -207,6 +207,7 @@ export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
       p_category_id: input.categoryId ?? undefined,
       p_urgency_level: input.urgencyLevel ?? undefined,
       p_availability_status: input.availabilityStatus ?? undefined,
+      p_additional_world_slugs: input.additionalWorldSlugs ?? undefined,
     });
     if (error || !data) throw error ?? new Error('create_marketplace_listing failed');
     return data as string;

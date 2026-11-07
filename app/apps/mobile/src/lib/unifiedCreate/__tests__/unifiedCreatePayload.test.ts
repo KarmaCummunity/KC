@@ -57,4 +57,12 @@ describe('unified create — listing payload per category', () => {
     });
     expect(p).toMatchObject({ direction: null, summary: 's', externalBodyId: null, categoryId: null });
   });
+  it('passes additionalWorldSlugs when provided', () => {
+    const p = buildListingCreatePayload({
+      kindId: 'k', kindDirection: 'give', direction: 'give', title: 't', summary: 's', details: {},
+      cityId: null, lat: null, lng: null, radiusKm: 5, mediaPaths: [], worldSubcategoryId: null,
+      additionalWorldSlugs: ['knowledge', 'employment'],
+    });
+    expect(p.additionalWorldSlugs).toEqual(['knowledge', 'employment']);
+  });
 });

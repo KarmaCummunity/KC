@@ -107,6 +107,8 @@ export interface IMarketplaceRepository {
     categoryId?: string | null;
     urgencyLevel?: number;
     availabilityStatus?: string;
+    /** Additional worlds this listing should appear in (#1475). */
+    additionalWorldSlugs?: string[] | null;
   }): Promise<string>;
   recordSignal(listingId: string, signal: 'view' | 'save' | 'response'): Promise<void>;
   shareToFeed(listingId: string): Promise<string>;
