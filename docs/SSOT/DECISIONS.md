@@ -1934,6 +1934,16 @@ Owner rules that go with it:
 
 **Affected.** New `knowledge_*` tables and RPCs (migration range `0570–0589`), `supabase/functions/knowledge-*`, `embed-worker` provider, `packages/{domain,application,infrastructure-supabase}/src/knowledge/`, `apps/mobile` knowledge hub tabs and admin knowledge screens.
 
+## {{ENG:demo-data-platform-org-admin}} — The platform org admin manages demo data, scoped by one SQL predicate (2026-11-04)
+
+**Decision.** `admin_demo_data_status`, `admin_wipe_demo_data` and `admin_seed_demo_data` accept the super admin and the `org_admin` whose grant is scoped to the platform organization, through the single predicate `can_manage_demo_data(uid)` (migration `0611`). `demo_data.manage` in the client permission matrix lists `super_admin` and `org_admin`; the server decides the scope.
+
+**Why.** The PM runs the Karma Community org day to day as its org admin while the super admin seat belongs to the project account, and both need the demo-data screen. Only one active super admin may exist (`FR-ADMIN-017`), so a second super admin was not an option.
+
+**Rejected.** Letting every `org_admin` manage demo data (the org admins of the demo organizations could wipe the seed users they belong to). A second super admin (breaks the single-super-admin index, TD-95).
+
+**Affected.** `supabase/migrations/0614_demo_data_platform_admin.sql`, `supabase/tests/0614_demo_data_platform_admin.sql`, `packages/domain/src/admin/AdminPermission.ts`, `(admin)/demo-data`, `FR-ADMIN-031 AC6`. Same pattern as `admins.grant_role`: the client gate is coarse, the RPC re-checks the scope.
+
 ## D-222 — Tester builds show the housing and knowledge feeds ahead of the remote flag (2026-11-04)
 
 **Decision.** `withTesterActiveWorlds` (`@kc/domain`) forces `world_housing_enabled` and `world_knowledge_enabled` on in the flags the mobile app reads (`useRemoteAppFlags`) when `EXPO_PUBLIC_ENVIRONMENT=development`. Every consumer (hub tiles, world screens, create form) sees the same flags. A production build, or one with the variable unset, is unchanged and follows `app_flags`.

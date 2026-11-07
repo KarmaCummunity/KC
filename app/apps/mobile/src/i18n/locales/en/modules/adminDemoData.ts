@@ -2,7 +2,7 @@
 export const adminDemoDataEn = {
   title: 'Demo data',
   subtitle: 'Fake users and content of the dev environment, so you can test on real data only.',
-  forbiddenTitle: 'Only a super admin can manage demo data.',
+  forbiddenTitle: 'Only the super admin or the Karma Community org admin can manage demo data.',
   loading: 'Loading...',
   error: 'Could not load the status. Pull to refresh.',
   users: 'Demo users',

@@ -588,7 +588,7 @@ The team sees how well matching v2 works per world, to tune `matching_settings` 
 > **Status (2026-11-03):** ✅ Implemented — migrations `0591` + `0592`, screen `(admin)/demo-data`, permission `demo_data.manage`.
 
 **Description.**
-The kc-dev environment carries fake demo data (the `seed/kc-dev` seed). A super admin can delete it, and bring it back, from the portal, to test on real data only or on demo data when needed.
+The kc-dev environment carries fake demo data (the `seed/kc-dev` seed). A super admin or the platform org admin can delete it, and bring it back, from the portal, to test on real data only or on demo data when needed.
 
 **Acceptance Criteria.**
 - AC1. Admin → Demo data shows how many demo users and demo nonprofits exist (`admin_demo_data_status`). When none exist it shows an empty state that points to the "Seed KC dev" workflow.
@@ -596,7 +596,7 @@ The kc-dev environment carries fake demo data (the `seed/kc-dev` seed). A super 
 - AC3. Scope is exact: only auth users flagged `app_metadata.seed = true` with an `@seed.kc.test` e-mail, and organizations with `verification_method = 'demo_seed'`. Real users and look-alike accounts without the flag are never touched; on production, where no such data exists, the wipe deletes nothing.
 - AC4. A demo nonprofit that has payment history (non-cascading FKs) is kept and reported instead of failing the wipe.
 - AC5. A seed-flagged super admin cannot wipe itself (`cannot_wipe_self`).
-- AC6. Only super admin can open the screen or call either RPC (`42501` otherwise; anon has no execute). Each wipe writes an `admin_wipe_demo_data` audit event.
+- AC6. Only the super admin and the org admin of the platform org (`org_admin` scoped to the platform organization) can open the screen or call the RPCs (`42501` otherwise; anon has no execute). The org admins of every other organization are refused. The rule is the single predicate `can_manage_demo_data` (`0611`). Each wipe writes an `admin_wipe_demo_data` audit event.
 - AC7. When no demo data exists, the screen offers "Restore demo data" (`admin_seed_demo_data`): it wipes any leftovers and recreates the demo users, content and nonprofits immediately, with no external workflow. The seed logic lives in the database (`kc_dev_seed_demo_data`, `0592`); `seed/kc-dev/seed.sql` is a thin wrapper over the same function.
 - AC8. Restoring works only on a database carrying the dev marker row in `kc_dev_demo_config` (kc-dev). Anywhere else it fails with `not_dev_environment` and the screen explains that restoring is unavailable.
 - AC9. The demo users' login password is typed once (min 8 characters), stored only as a bcrypt hash, and reused on later restores. Each restore is audit-logged (`admin_seed_demo_data`).
@@ -625,3 +625,4 @@ The kc-dev environment carries fake demo data (the `seed/kc-dev` seed). A super 
 | 0.16 | 2026-10-30 | Added §18 / FR-ADMIN-029 — match quality dashboard (KC#1122): `admin_match_quality` (`0454`), `(admin)/matching`, `matching.view_quality`. |
 | 0.17 | 2026-11-03 | Added FR-ADMIN-031 — demo data removal and restore: `admin_demo_data_status` / `admin_wipe_demo_data` (`0591`), `admin_seed_demo_data` (`0592`), `(admin)/demo-data`, `demo_data.manage` (super admin only). |
 | 0.18 | 2026-11-04 | `FR-ADMIN-025 AC4` — the tree shows one card per person per org (all roles on the card, report count instead of the level badge), grouped by org, with nested connector lines. |
+| 0.19 | 2026-11-04 | `FR-ADMIN-031 AC6` — the platform org admin may manage demo data too (`can_manage_demo_data`, `0611`; `demo_data.manage` = super admin + org admin, scope checked by the server). See `{{ENG:demo-data-platform-org-admin}}`. |
