@@ -12,7 +12,7 @@ import { getMatchRepository } from '../../../src/services/matchingComposition';
 import { AdminFilterTopBarButton } from '../../../src/components/admin/AdminSearchFilterToolbar';
 import { FilterSection } from '../../../src/components/filterKit/FilterSection';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
-import { formatRate } from '../../../src/components/admin/matching/formatRate';
+import { formatAdminPercent } from '../../../src/components/admin/formatAdminPercent';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { textAlignStart } from '../../../src/lib/rtlLayout';
 
@@ -88,11 +88,11 @@ export default function MatchQualityScreen() {
           <Text style={styles.cardTitle}>{worldLabel(w)}</Text>
           <View style={styles.kpiGrid}>
             <Kpi label={t.metrics.notified} value={String(w.notifiedPairs)} />
-            <Kpi label={t.metrics.precision} value={formatRate(w.precisionProxy)} hint={t.counts(w.accepted, w.responses)} />
-            <Kpi label={t.metrics.chat} value={formatRate(w.chatRate)} hint={t.pairs(w.chatPairs)} />
+            <Kpi label={t.metrics.precision} value={formatAdminPercent(w.precisionProxy)} hint={t.counts(w.accepted, w.responses)} />
+            <Kpi label={t.metrics.chat} value={formatAdminPercent(w.chatRate)} hint={t.pairs(w.chatPairs)} />
             <Kpi
               label={t.metrics.completion}
-              value={formatRate(w.completionRate)}
+              value={formatAdminPercent(w.completionRate)}
               hint={w.completedPairs === null ? t.notTracked : t.pairs(w.completedPairs)}
             />
           </View>
