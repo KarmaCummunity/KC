@@ -40,6 +40,7 @@ import {
 } from '../../src/components/survey/hebrewSurveyFieldStyle';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
+import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVerticalOffset';
 
 type DemoAnswer = { rating: number | null; text: string };
 
@@ -61,6 +62,7 @@ export default function SurveyDemoScreen() {
   const { t } = useTranslation();
   const questions = useSurveyDemoQuestions();
   const useSideRail = bp === 'tablet' || bp === 'desktop' || bp === 'wide';
+  const keyboardOffset = useKeyboardVerticalOffset();
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, DemoAnswer>>(emptyAnswers);
@@ -108,7 +110,7 @@ export default function SurveyDemoScreen() {
       <KeyboardAvoidingView
         style={[styles.flex, styles.stage]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+        keyboardVerticalOffset={keyboardOffset}
       >
         <View style={styles.progressBar}>
           <Text style={styles.progressText}>

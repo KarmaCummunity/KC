@@ -26,6 +26,7 @@ import {
   shellTabBarHeightPx,
   useShellTabBarVisibility,
 } from '../../../src/navigation/useShellTabBarVisibility';
+import { useKeyboardVerticalOffset } from '../../../src/lib/platform/useKeyboardVerticalOffset';
 import { webTextRtl, webViewRtl } from '../../../src/lib/webRtlStyle';
 import { container } from '../../../src/lib/container';
 import {
@@ -64,6 +65,7 @@ function RunnerContent({
 }: RunnerContentProps) {
   const { t } = useTranslation();
   const styles = useRunnerStyles();
+  const keyboardOffset = useKeyboardVerticalOffset();
 
   const questions = bundle.questions as SurveyQuestion[];
   const total = questions.length;
@@ -78,7 +80,7 @@ function RunnerContent({
     <KeyboardAvoidingView
       style={[styles.flex, styles.stage]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+      keyboardVerticalOffset={keyboardOffset}
     >
       <View style={styles.progressBar}>
         <Text style={styles.progressText}>

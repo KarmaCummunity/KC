@@ -1,6 +1,5 @@
 import React, { type ReactNode } from 'react';
 import {
-  ActivityIndicator,
   ScrollView,
   TouchableOpacity,
   View,
@@ -60,7 +59,6 @@ export interface CreatePostFormScrollContentProps {
   readonly uploadingCount: number;
   readonly onAddPhotos: () => void;
   readonly onRemovePhoto: (path: string) => void;
-  readonly onPublishPress: () => void;
 }
 
 export function CreatePostFormScrollContent({
@@ -99,7 +97,6 @@ export function CreatePostFormScrollContent({
   uploadingCount,
   onAddPhotos,
   onRemovePhoto,
-  onPublishPress,
 }: CreatePostFormScrollContentProps) {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -237,18 +234,6 @@ export function CreatePostFormScrollContent({
         onHideFromCounterpartyChange={onHideFromCounterpartyChange}
       />
 
-      <TouchableOpacity
-        style={[styles.publishBtn, styles.publishBtnFooter]}
-        onPress={onPublishPress}
-        disabled={isPublishing}
-        accessibilityState={{ disabled: isPublishing }}
-      >
-        {isPublishing ? (
-          <ActivityIndicator color={colors.textInverse} size="small" />
-        ) : (
-          <Text style={styles.publishBtnText}>{t('post.publish')}</Text>
-        )}
-      </TouchableOpacity>
     </ScrollView>
   );
 }

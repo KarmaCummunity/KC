@@ -5,7 +5,7 @@
 // FR-AUTH-015 soft-gate preserved from #12 — Publish wraps publish.mutate() with requestSoftGate.
 // FR-NOTIF-015 AC1: push pre-prompt fires after first post published.
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,6 +34,8 @@ import { CreatePostFormScrollContent } from '../../src/components/CreatePostForm
 import { useUnifiedCreateCategory } from '../../src/hooks/useUnifiedCreateCategory';
 import { WorldCreateForm } from '../../src/components/CreatePostForm/WorldCreateForm';
 import { CreateFormHeaderPublishAction } from '../../src/components/CreatePostForm/CreateFormHeaderPublishAction';
+import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVerticalOffset';
+import { TAB_INLINE_FORM_HEADER_HEIGHT } from '../../src/lib/platform/formChromeHeights';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -90,6 +92,10 @@ export default function CreatePostScreen() {
     staleTime: 5 * 60_000, // PERF-3: profile (self) — edit-profile invalidates explicitly
   });
   const profilePrivacy = userQuery.data?.privacyMode ?? 'Public';
+  const keyboardOffset = useKeyboardVerticalOffset({
+    headerHeight: TAB_INLINE_FORM_HEADER_HEIGHT,
+    contentBelowTopSafeArea: true,
+  });
 
   useEffect(() => {
     if (profilePrivacy === 'Public' && form.visibility === 'FollowersOnly') {
@@ -206,6 +212,11 @@ export default function CreatePostScreen() {
           onPublishActionChange={setListingPublishState}
         />
       ) : (
+      <KeyboardAvoidingView
+        style={styles.scroll}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={keyboardOffset}
+      >
       <CreatePostFormScrollContent
         header={header}
         title={form.title}
@@ -242,8 +253,8 @@ export default function CreatePostScreen() {
         uploadingCount={uploadingCount}
         onAddPhotos={handlePick}
         onRemovePhoto={handleRemove}
-        onPublishPress={tryPublish}
       />
+      </KeyboardAvoidingView>
       )}
 
       <DraftResumeModal

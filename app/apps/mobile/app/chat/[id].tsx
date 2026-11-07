@@ -30,6 +30,8 @@ import { EnablePushModal } from '../../src/components/EnablePushModal';
 import { ChatNotFoundView } from '../../src/components/chat/ChatNotFoundView';
 import { NotifyModal } from '../../src/components/NotifyModal';
 import { ChatConversationHeader } from '../../src/components/chat/ChatConversationHeader';
+import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVerticalOffset';
+import { CHAT_CONVERSATION_HEADER_HEIGHT } from '../../src/lib/platform/formChromeHeights';
 import { useChatTypingIndicator } from '../../src/hooks/useChatTypingIndicator';
 import { useChatMessageReactions } from '../../src/hooks/useChatMessageReactions';
 import { pickChatImage, uploadChatImageAndSend } from '../../src/services/chatMediaUpload';
@@ -55,6 +57,9 @@ export default function ChatScreen() {
   const styles = useChatConversationStyles();
   const { colors } = useTheme();
   const userId = useAuthStore((s) => s.session?.userId)!;
+  const keyboardOffset = useKeyboardVerticalOffset({
+    headerHeight: CHAT_CONVERSATION_HEADER_HEIGHT,
+  });
 
   const messages = useChatStore((s) => s.threads[chatId] ?? EMPTY_MESSAGES);
   const { chat, counterpart, status: chatStatus } = useChatInit(chatId, userId);
@@ -206,7 +211,7 @@ export default function ChatScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={88}
+        keyboardVerticalOffset={keyboardOffset}
       >
         {chat?.anchorRideId ? (
           <AnchoredRideCard anchorRideId={chat.anchorRideId} />

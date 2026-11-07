@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
   View,
   type StyleProp,
   type ViewStyle,
@@ -38,7 +39,7 @@ export function FormScreen({
   const styles = useFormScreenStyles();
   const keyboardOffset = useKeyboardVerticalOffset({ headerless, headerHeight });
   const scrollStyles = useMemo(
-    () => [styles.scrollContent, contentContainerStyle],
+    () => StyleSheet.flatten([styles.scrollContent, contentContainerStyle]),
     [contentContainerStyle, styles.scrollContent],
   );
 

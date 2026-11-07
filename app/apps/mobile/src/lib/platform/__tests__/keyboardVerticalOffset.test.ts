@@ -18,4 +18,13 @@ describe('resolveKeyboardVerticalOffset', () => {
   it('honours an explicit header height override', () => {
     expect(resolveKeyboardVerticalOffset('ios', 20, 44, { headerHeight: 56 })).toBe(76);
   });
+
+  it('skips top inset when content already sits below the safe area', () => {
+    expect(
+      resolveKeyboardVerticalOffset('ios', 59, 0, {
+        headerHeight: 52,
+        contentBelowTopSafeArea: true,
+      }),
+    ).toBe(52);
+  });
 });
