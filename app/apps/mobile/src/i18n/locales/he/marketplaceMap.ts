@@ -11,4 +11,5 @@ export const marketplaceMap = {
   mapListHeader: '{{count}} מודעות באזור המוצג',
   mapTitle: 'מפה',
   mapEmpty: 'אין כאן מודעות עם מיקום. נסו להגדיל את המפה או לבחור קטגוריה אחרת.',
+  mapUnavailable: 'המפה לא זמינה כרגע בגרסה הזו. אפשר לעבור לתצוגת רשימה.',
 } as const;

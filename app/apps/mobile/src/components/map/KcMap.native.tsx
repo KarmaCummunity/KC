@@ -1,14 +1,18 @@
 // Native map (Apple Maps on iOS, Google Maps on Android) with clustered pins + ride route line.
 import React, { useEffect, useMemo, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
+import Constants from 'expo-constants';
+import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, shadow, spacing, typography, useTheme, Text } from '@kc/ui';
 import MapView, { Marker, Polyline, type Region } from 'react-native-maps';
 import { isValidLatLng, mapWorldColor, sanitizeRegion, sanitizeRoute } from '@kc/domain';
 import { createRegionChangeGate } from '../../lib/map/regionChangeGate';
+import { isNativeMapAvailable } from '../../lib/map/nativeMapAvailable';
 import { clusterGlyph, routePath, type KcMapProps } from './KcMap.types';
 
 export function KcMap(p: Readonly<KcMapProps>) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useStyles();
   const ref = useRef<MapView>(null);
   const onRegionChange = useRef(p.onRegionChange);
@@ -21,6 +25,14 @@ export function KcMap(p: Readonly<KcMapProps>) {
     const r = sanitizeRegion(p.focus?.region);
     if (r) ref.current?.animateToRegion(r as Region, 350);
   }, [p.focus]);
+
+  if (!isNativeMapAvailable(Platform.OS, Constants.expoConfig?.extra)) {
+    return (
+      <View style={[StyleSheet.absoluteFill, styles.unavailable]}>
+        <Text style={styles.unavailableText}>{t('marketplace.mapUnavailable')}</Text>
+      </View>
+    );
+  }
 
   const initialRegion = sanitizeRegion(p.initialRegion) ?? undefined;
   const route = sanitizeRoute(p.route);
@@ -124,4 +136,11 @@ const useStyles = makeUseStyles(({ colors }) => ({
   selected: { transform: [{ scale: 1.25 }], borderWidth: 3 },
   pinText: { ...typography.h3 },
   clusterText: { ...typography.button, color: colors.textInverse },
+  unavailable: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    padding: spacing.lg,
+    backgroundColor: colors.surface,
+  },
+  unavailableText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' as const },
 }));

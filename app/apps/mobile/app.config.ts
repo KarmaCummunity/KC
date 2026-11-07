@@ -46,6 +46,15 @@ function warnMissingSupabaseEnv(profile: string | undefined): void {
   }
 }
 
+// Without the key the Android map shows "unavailable" instead of the Google Maps SDK crashing (#1951).
+function warnMissingGoogleMapsKey(key: string | undefined): void {
+  if (process.env.EAS_BUILD !== 'true' && !process.env.CI) return;
+  if (process.env.EAS_BUILD_PLATFORM === 'ios' || key) return;
+  console.warn(
+    `[app.config] EAS profile "${process.env.EAS_BUILD_PROFILE ?? 'unknown'}" is missing EXPO_PUBLIC_GOOGLE_MAPS_API_KEY — the Android map is disabled in this build`,
+  );
+}
+
 function resolveGoogleServicesFile(): string | undefined {
   const fromEnv = process.env.GOOGLE_SERVICES_JSON?.trim();
   if (fromEnv && existsSync(fromEnv)) return fromEnv;
@@ -69,6 +78,7 @@ export default function expoAppConfig({ config }: ConfigContext): ExpoConfig {
 
   const googleServicesFile = resolveGoogleServicesFile();
   const googleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim();
+  warnMissingGoogleMapsKey(googleMapsApiKey);
   const android = {
     ...config.android,
     ...(googleServicesFile ? { googleServicesFile } : {}),
@@ -95,6 +105,7 @@ export default function expoAppConfig({ config }: ConfigContext): ExpoConfig {
         process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() &&
           process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim(),
       ),
+      googleMapsConfigured: Boolean(googleMapsApiKey),
       sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN?.trim() || undefined,
       posthogKey: process.env.EXPO_PUBLIC_POSTHOG_KEY?.trim() || undefined,
       // EAS project id is injected from the KC_EAS_PROJECT_ID repo variable (CI) or local env.

@@ -11,4 +11,5 @@ export const marketplaceMap = {
   mapListHeader: '{{count}} listings in this area',
   mapTitle: 'Map',
   mapEmpty: 'No listings with a location here. Zoom out or pick another category.',
+  mapUnavailable: "The map isn't available in this version yet. You can switch to the list view.",
 } as const;
