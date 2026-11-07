@@ -625,4 +625,4 @@ The kc-dev environment carries fake demo data (the `seed/kc-dev` seed). A super 
 | 0.16 | 2026-10-30 | Added §18 / FR-ADMIN-029 — match quality dashboard (KC#1122): `admin_match_quality` (`0454`), `(admin)/matching`, `matching.view_quality`. |
 | 0.17 | 2026-11-03 | Added FR-ADMIN-031 — demo data removal and restore: `admin_demo_data_status` / `admin_wipe_demo_data` (`0591`), `admin_seed_demo_data` (`0592`), `(admin)/demo-data`, `demo_data.manage` (super admin only). |
 | 0.18 | 2026-11-04 | `FR-ADMIN-025 AC4` — the tree shows one card per person per org (all roles on the card, report count instead of the level badge), grouped by org, with nested connector lines. |
-| 0.19 | 2026-11-04 | `FR-ADMIN-031 AC6` — the platform org admin may manage demo data too (`can_manage_demo_data`, `0611`; `demo_data.manage` = super admin + org admin, scope checked by the server). See `{{ENG:demo-data-platform-org-admin}}`. |
+| 0.19 | 2026-11-04 | `FR-ADMIN-031 AC6` — the platform org admin may manage demo data too (`can_manage_demo_data`, `0611`; `demo_data.manage` = super admin + org admin, scope checked by the server). See `D-225`. |

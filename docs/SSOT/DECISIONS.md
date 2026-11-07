@@ -1934,7 +1934,7 @@ Owner rules that go with it:
 
 **Affected.** New `knowledge_*` tables and RPCs (migration range `0570–0589`), `supabase/functions/knowledge-*`, `embed-worker` provider, `packages/{domain,application,infrastructure-supabase}/src/knowledge/`, `apps/mobile` knowledge hub tabs and admin knowledge screens.
 
-## {{ENG:demo-data-platform-org-admin}} — The platform org admin manages demo data, scoped by one SQL predicate (2026-11-04)
+## D-225 — The platform org admin manages demo data, scoped by one SQL predicate (2026-11-04)
 
 **Decision.** `admin_demo_data_status`, `admin_wipe_demo_data` and `admin_seed_demo_data` accept the super admin and the `org_admin` whose grant is scoped to the platform organization, through the single predicate `can_manage_demo_data(uid)` (migration `0611`). `demo_data.manage` in the client permission matrix lists `super_admin` and `org_admin`; the server decides the scope.
 
