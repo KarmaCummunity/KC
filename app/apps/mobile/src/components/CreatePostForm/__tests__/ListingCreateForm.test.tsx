@@ -135,7 +135,7 @@ afterEach(() => {
 });
 
 describe('ListingCreateForm — renders every category', () => {
-  for (const world of ['rides', 'food', 'housing', 'time']) {
+  for (const world of ['rides', 'food', 'housing', 'time', 'animals', 'knowledge']) {
     it(`${world}: both directions render and a direction switch keeps the form alive`, async () => {
       const { rerender } = renderForm(world, 'give');
       expect(await screen.findByTestId('listing-publish')).toBeTruthy();
