@@ -7,13 +7,16 @@ import { Platform } from 'react-native';
 type Props = Readonly<{
   /** Clears the floating tab bar and centre "+". */
   tabBarOverlayInset: number;
+  /** Compact pill CTA (FR-POST-015 AC6) shown above the surface, in flow so it never covers the composer. */
+  floatingSlot?: ReactNode;
   ownerSlot?: ReactNode;
   composerSlot?: ReactNode;
 }>;
 
-export function PostDetailBottomChrome({ tabBarOverlayInset, ownerSlot, composerSlot }: Props) {
+export function PostDetailBottomChrome({ tabBarOverlayInset, floatingSlot, ownerSlot, composerSlot }: Props) {
   const styles = useStyles();
-  if (!ownerSlot && !composerSlot) return null;
+  const hasSurface = Boolean(ownerSlot || composerSlot);
+  if (!floatingSlot && !hasSurface) return null;
 
   return (
     <View
@@ -21,10 +24,17 @@ export function PostDetailBottomChrome({ tabBarOverlayInset, ownerSlot, composer
       testID="post-detail-bottom-chrome"
       pointerEvents="box-none"
     >
-      <View style={styles.surface} pointerEvents="auto">
-        {ownerSlot ? <View style={styles.ownerBlock}>{ownerSlot}</View> : null}
-        {composerSlot ? <View style={composerSlot && ownerSlot ? styles.composerBlock : undefined}>{composerSlot}</View> : null}
-      </View>
+      {floatingSlot ? (
+        <View style={styles.floatingRow} pointerEvents="box-none">
+          {floatingSlot}
+        </View>
+      ) : null}
+      {hasSurface ? (
+        <View style={styles.surface} pointerEvents="auto">
+          {ownerSlot ? <View style={styles.ownerBlock}>{ownerSlot}</View> : null}
+          {composerSlot ? <View style={composerSlot && ownerSlot ? styles.composerBlock : undefined}>{composerSlot}</View> : null}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -32,6 +42,10 @@ export function PostDetailBottomChrome({ tabBarOverlayInset, ownerSlot, composer
 const useStyles = makeUseStyles(({ colors, isDark }) => ({
   outer: {
     ...(Platform.OS === 'web' ? {} : { width: '100%' }),
+  },
+  floatingRow: {
+    alignItems: 'center',
+    paddingBottom: spacing.sm,
   },
   surface: {
     borderTopWidth: 1,
