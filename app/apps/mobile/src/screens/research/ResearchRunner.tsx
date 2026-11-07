@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { PublicResearchError } from '@kc/domain';
 import type { PublicResearchBundle } from '@kc/domain';
 import { SurveyQuestionMap } from '../../components/survey/SurveyQuestionMap';
@@ -208,7 +208,7 @@ const useRunnerStyles = makeUseStyles(({ colors }) => ({
   },
   progressText: {
     ...typography.bodySmall,
-    fontWeight: '700',
+    ...typography.bold,
     color: colors.textPrimary,
     ...webTextRtl,
   },
@@ -231,7 +231,7 @@ const useRunnerStyles = makeUseStyles(({ colors }) => ({
   errorBox: {
     gap: spacing.sm,
     padding: spacing.base,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     backgroundColor: colors.errorLight,
     borderWidth: 1,
     borderColor: colors.error,
@@ -246,7 +246,7 @@ const useRunnerStyles = makeUseStyles(({ colors }) => ({
     alignSelf: 'flex-start',
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.base,
-    borderRadius: 8,
+    borderRadius: radius.md,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,

@@ -5,7 +5,7 @@
 
 import React, { useCallback } from 'react';
 import { View } from 'react-native';
-import type { TextInput } from '@kc/ui';
+import type { FocusableFieldRef } from '../hooks/useFormFieldFocus';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { TextField, type TextFieldProps } from './ui/TextField';
@@ -27,7 +27,7 @@ export interface EditProfileAddressBlockProps {
     TextFieldProps,
     'onFocus' | 'inputAccessoryViewID' | 'returnKeyType' | 'blurOnSubmit' | 'onSubmitEditing'
   >;
-  readonly streetNumberRef?: React.RefObject<TextInput | null>;
+  readonly streetNumberRef?: React.RefObject<FocusableFieldRef | null>;
 }
 
 export function EditProfileAddressBlock({

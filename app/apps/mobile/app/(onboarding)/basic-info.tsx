@@ -3,7 +3,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { makeUseStyles, typography, spacing, radius, useTheme, Text } from '@kc/ui';
+import { makeUseStyles, typography, spacing, radius, iconSize, useTheme, Text } from '@kc/ui';
 import { CityPicker } from '../../src/components/CityPicker';
 import { StreetPicker } from '../../src/components/StreetPicker';
 import { OnboardingStepHeader } from '../../src/components/OnboardingStepHeader';
@@ -71,7 +71,7 @@ export default function OnboardingBasicInfoScreen() {
         <View style={styles.iconHalo}>
           <Ionicons
             name="person-outline"
-            size={32}
+            size={iconSize['2xl']}
             color={colors.primary}
           />
         </View>

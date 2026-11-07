@@ -51,10 +51,6 @@
     "src/components/aside/RecentSearchesAside.tsx": {
       "iconSizeLiteral": 1
     },
-    "src/components/auth/AnimatedAuthInput.tsx": {
-      "shadowLiteral": 3,
-      "rawTextInput": 1
-    },
     "src/components/cards/PostDetailHeader.tsx": {
       "fontSizeLiteral": 1,
       "fontWeightLiteral": 1,
@@ -150,10 +146,6 @@
       "spacingLiteral": 5,
       "zIndexLiteral": 2,
       "shadowLiteral": 16
-    },
-    "src/screens/research/ResearchRunner.tsx": {
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 2
     },
     "src/screens/research/SurveyIntroBlock.tsx": {
       "fontWeightLiteral": 1,
