@@ -1,7 +1,8 @@
 -- 0665_g1_one_s1_state_machine | G1 step 6b (ADR-006, D-214, issue #1671):
 -- 1. Drops the dangerous `posts.listing_id ON DELETE CASCADE` foreign key so listings cleanup cannot cascade to posts.
--- 2. Drops legacy ride constraints on public.listings.
--- 3. Enforces the single S1 state machine on public.posts (spec 07 §7.1, D104) and owner lifecycle guards (active handoffs, expiry).
+-- 2. Adds trigger on listings delete so mirror posts of listing-sourced listings still go, but post-owned posts are preserved.
+-- 3. Drops legacy ride constraints on public.listings.
+-- 4. Enforces the single S1 state machine on public.posts (spec 07 §7.1, D104) and owner lifecycle guards (active handoffs, expiry).
 
 begin;
 
@@ -9,6 +10,33 @@ begin;
 -- 0466 added listing_id with `references public.listings(listing_id) on delete cascade`.
 -- Dropping this FK prevents deletions or drops on listings from destroying post records.
 alter table public.posts drop constraint if exists posts_listing_id_fkey;
+
+-- While listings still exist, deleting a listing-sourced listing deletes its mirror post,
+-- but a post-owned listing does NOT cascade to its post.
+create or replace function public.listings_delete_mirror_post()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  delete from public.posts
+   where listing_id = old.listing_id
+     and (old.legacy_post_id is null or post_id is distinct from old.legacy_post_id);
+  return old;
+end;
+$$;
+
+comment on function public.listings_delete_mirror_post() is
+  'G1 step 6b (0665): cleans up mirror posts when a listing-sourced listing is deleted, without cascading to post-owned posts.';
+
+revoke all on function public.listings_delete_mirror_post() from public, anon, authenticated;
+grant execute on function public.listings_delete_mirror_post() to service_role;
+
+drop trigger if exists listings_delete_mirror on public.listings;
+create trigger listings_delete_mirror
+  after delete on public.listings
+  for each row execute function public.listings_delete_mirror_post();
 
 -- ── 2. Legacy ride foreign keys on listings ──────────────────────────────────────────────────────
 alter table public.listings drop constraint if exists listings_legacy_ride_id_fkey;

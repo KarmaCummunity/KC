@@ -190,5 +190,61 @@ begin
   perform kc_test.assert_eq((select status from public.posts where post_id = v), 'paused', 'cancelled handoff permits pause');
 end $$;
 
+-- ── 5. Cascade Safety Fix ───────────────────────────────────────────────────────────────────
+do $$
+declare
+  p personas;
+  v_post uuid;
+  v_listing uuid;
+begin
+  select * into p from personas;
+
+  -- 5a. A post-owned listing: deleting the listing does NOT cascade-delete the owning post
+  v_post := pg_temp.new_post(p.owner, 'open');
+  insert into public.listings (
+    owner_id, kind_id, title, summary, city_id, address, geo, time_window, expires_at, details,
+    anonymity_level, origin, moderation_status, published_at, status, legacy_post_id
+  ) values (
+    p.owner, kc_test.listing_kind_id('items', 'give_item'),
+    'Post owned listing', 'Summary', 'tel-aviv', 'Herzl 1',
+    st_setsrid(st_makepoint(34.7818, 32.0853), 4326)::geography,
+    tstzrange(now(), now() + interval '7 days'),
+    now() + interval '7 days', '{"condition": "good"}'::jsonb,
+    3, 'native', 'published', now(), 'open', v_post
+  ) returning listing_id into v_listing;
+
+  update public.posts set listing_id = v_listing where post_id = v_post;
+
+  delete from public.listings where listing_id = v_listing;
+  perform kc_test.assert_row_count(
+    format('select 1 from public.posts where post_id = %L', v_post),
+    1, 'deleting derived listing does NOT delete owning post'
+  );
+
+  -- 5b. A listing-sourced listing: deleting the listing deletes its mirror post
+  insert into public.listings (
+    owner_id, kind_id, title, summary, city_id, address, geo, time_window, expires_at, details,
+    anonymity_level, origin, moderation_status, published_at, status
+  ) values (
+    p.owner, kc_test.listing_kind_id('items', 'give_item'),
+    'Listing sourced', 'Summary', 'tel-aviv', 'Herzl 1',
+    st_setsrid(st_makepoint(34.7818, 32.0853), 4326)::geography,
+    tstzrange(now(), now() + interval '7 days'),
+    now() + interval '7 days', '{"condition": "good"}'::jsonb,
+    3, 'native', 'published', now(), 'open'
+  ) returning listing_id into v_listing;
+
+  perform kc_test.assert_row_count(
+    format('select 1 from public.posts where listing_id = %L', v_listing),
+    1, 'mirror post created'
+  );
+
+  delete from public.listings where listing_id = v_listing;
+  perform kc_test.assert_row_count(
+    format('select 1 from public.posts where listing_id = %L', v_listing),
+    0, 'mirror post deleted when listing-sourced listing is deleted'
+  );
+end $$;
+
 rollback;
 \echo '✓ 0665_g1_one_s1_state_machine.sql passed'
