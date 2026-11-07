@@ -1,7 +1,7 @@
 import { View, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { typography, spacing, radius, useTheme, Text } from '@kc/ui';
-import { rowDirectionStart } from '../../lib/rtlLayout';
+import { layoutWritingDirectionStyle, rowDirectionStart } from '../../lib/rtlLayout';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 interface AgeConfirmationCheckboxProps {
@@ -46,7 +46,7 @@ export function AgeConfirmationCheckbox({ checked, onToggle }: AgeConfirmationCh
           color: colors.textPrimary,
           flex: 1,
           textAlign: rtlTextAlignStart,
-          writingDirection: 'rtl',
+          ...layoutWritingDirectionStyle(),
         }}
       >
         {t('legal.checkboxAge18')}

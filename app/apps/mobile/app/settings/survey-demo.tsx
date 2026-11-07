@@ -34,10 +34,7 @@ import {
   toProductionAnswers,
   toProductionQuestions,
 } from '../../src/components/survey-demo/surveyDemoAdapter';
-import {
-  hebrewSurveyFieldTextStyle,
-  SURVEY_TEXT_ALIGN,
-} from '../../src/components/survey/hebrewSurveyFieldStyle';
+import { inputTextAlignStart } from '../../src/lib/rtlLayout';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVerticalOffset';
@@ -184,12 +181,12 @@ function QuestionPanel({ question, index, answer, onRating, onText }: QuestionPa
 
       <TextField
         label={t('surveyDemo.textFieldLabel')}
-        style={[styles.textInput, hebrewSurveyFieldTextStyle()]}
+        style={styles.textInput}
         value={answer.text}
         onChangeText={onText}
         placeholder={question.textPlaceholder}
         placeholderTextColor={colors.textDisabled}
-        textAlign={SURVEY_TEXT_ALIGN}
+        textAlign={inputTextAlignStart()}
         multiline
         maxLength={500}
         accessibilityLabel={question.textPlaceholder}

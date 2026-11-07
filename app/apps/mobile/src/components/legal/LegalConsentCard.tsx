@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import type { LegalDocumentContent, LegalPendingItem } from '@kc/domain';
 import { typography, spacing, radius, useTheme, Text } from '@kc/ui';
 import { getLoadLegalDocumentUseCase } from '../../services/legalComposition';
-import { rowDirectionStart } from '../../lib/rtlLayout';
+import { layoutWritingDirectionStyle, rowDirectionStart } from '../../lib/rtlLayout';
+import { hebrewContentTextStyle } from '../../lib/hebrewContentDirection';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 interface LegalConsentCardProps {
@@ -65,7 +66,7 @@ export function LegalConsentCard({ item, checked, onToggle, onOpenReader }: Lega
           ...typography.h4,
           color: colors.textPrimary,
           textAlign: rtlTextAlignStart,
-          writingDirection: 'rtl',
+          ...layoutWritingDirectionStyle(),
         }}
       >
         {title}
@@ -79,8 +80,7 @@ export function LegalConsentCard({ item, checked, onToggle, onOpenReader }: Lega
               style={{
                 ...typography.body,
                 color: colors.textPrimary,
-                textAlign: rtlTextAlignStart,
-                writingDirection: 'rtl',
+                ...hebrewContentTextStyle(),
                 marginBottom: spacing.xs,
                 lineHeight: 22,
               }}
@@ -97,7 +97,7 @@ export function LegalConsentCard({ item, checked, onToggle, onOpenReader }: Lega
             ...typography.body,
             color: colors.primary,
             textAlign: rtlTextAlignStart,
-            writingDirection: 'rtl',
+            ...layoutWritingDirectionStyle(),
           }}
         >
           {t('legal.cardOpenFull')}
@@ -137,7 +137,7 @@ export function LegalConsentCard({ item, checked, onToggle, onOpenReader }: Lega
             color: colors.textPrimary,
             flex: 1,
             textAlign: rtlTextAlignStart,
-            writingDirection: 'rtl',
+            ...layoutWritingDirectionStyle(),
           }}
         >
           {checkboxLabel}
