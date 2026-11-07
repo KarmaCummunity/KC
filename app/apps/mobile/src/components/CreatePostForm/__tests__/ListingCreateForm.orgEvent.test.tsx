@@ -47,7 +47,7 @@ vi.mock('../../ui/DateTimeField', () => ({
 vi.mock('../../giving/RideCreateSection', () => ({ RIDE_CREATE_DETAIL_KEYS: [], RideCreateSection: () => null }));
 vi.mock('../../../services/listingImageUpload', () => ({ pickListingImages: vi.fn(async () => []), uploadListingImages: vi.fn() }));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn(), trackActivationIfFirst: vi.fn() }));
-vi.mock('../../../lib/haptics', () => ({ hapticLightTap: () => {} }));
+vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticLightTap: () => {} }));
 vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarScrollInset: () => 0 }));
 vi.mock('../../../store/authStore', () => {
   const state = { session: { userId: 'u1', accountCreatedAt: '2026-01-01T00:00:00.000Z' } };

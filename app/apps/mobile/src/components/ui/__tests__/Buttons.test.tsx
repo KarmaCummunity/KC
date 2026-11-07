@@ -16,8 +16,8 @@ vi.mock('react-native-reanimated', async () => {
     withTiming: (value: number) => value,
   };
 });
-const impactAsync = vi.fn(() => Promise.resolve());
-vi.mock('expo-haptics', () => ({ impactAsync: () => impactAsync(), ImpactFeedbackStyle: { Light: 'light' } }));
+const hapticLightImpact = vi.fn();
+vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => hapticLightImpact() }));
 vi.mock('@expo/vector-icons', () => ({
   Ionicons: ({ name }: { name: string }) => <span data-testid={`icon-${name}`} />,
 }));
@@ -27,7 +27,7 @@ import { AlertButton, DangerButton, GhostButton, PrimaryButton, SecondaryButton 
 import { MIN_TAP_TARGET, tapTargetHitSlop } from '../kitMetrics';
 
 afterEach(cleanup);
-beforeEach(() => impactAsync.mockClear());
+beforeEach(() => hapticLightImpact.mockClear());
 
 const withTheme = (ui: React.ReactElement, scheme: 'light' | 'dark' = 'light') =>
   render(<ThemeProvider mode={scheme} systemScheme={scheme} setMode={() => {}}>{ui}</ThemeProvider>);
@@ -45,7 +45,7 @@ describe('kit buttons', () => {
     const button = getByRole('button', { name: 'Publish' });
     fireEvent.click(button);
     expect(onPress).toHaveBeenCalledTimes(1);
-    expect(impactAsync).toHaveBeenCalledTimes(1);
+    expect(hapticLightImpact).toHaveBeenCalledTimes(1);
   });
 
   it('skips the haptic when asked and prefers an explicit accessibility label', () => {
@@ -55,7 +55,7 @@ describe('kit buttons', () => {
     );
     fireEvent.click(getByRole('button', { name: 'Open the partner site' }));
     expect(onPress).toHaveBeenCalledTimes(1);
-    expect(impactAsync).not.toHaveBeenCalled();
+    expect(hapticLightImpact).not.toHaveBeenCalled();
   });
 
   it('blocks presses and reports the state while disabled', () => {

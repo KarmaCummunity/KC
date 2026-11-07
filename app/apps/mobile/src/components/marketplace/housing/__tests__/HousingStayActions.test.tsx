@@ -20,7 +20,7 @@ vi.mock('react-i18next', async () => ({
 }));
 vi.mock('../../../../services/platformConfirm', () => ({ confirmAction: vi.fn(async () => true) }));
 vi.mock('../../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
-vi.mock('../../../../lib/haptics', () => ({ hapticSuccess: () => undefined }));
+vi.mock('../../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticSuccess: () => undefined }));
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('../../../closure/OwnerAssignUserButton', () => ({ OwnerAssignUserButton: () => null }));
 

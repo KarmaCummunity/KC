@@ -19,7 +19,7 @@ vi.mock('../../../hooks/useModalHardwareBack', () => ({ useModalHardwareBack: ()
 vi.mock('../../../lib/container', () => ({
   container: { socialFeed: { hidePost: () => Promise.resolve(), addMuteFilter: () => Promise.resolve() } },
 }));
-vi.mock('../../../lib/haptics', () => ({ hapticLightTap: () => {} }));
+vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticLightTap: () => {} }));
 vi.mock('../../../hooks/usePostMenuActions', () => ({
   usePostMenuActions: () => ({
     busy: false,

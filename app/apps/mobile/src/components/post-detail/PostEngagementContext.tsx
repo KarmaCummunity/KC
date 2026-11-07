@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { PostCommentWithAuthor, PostReactionType } from '@kc/infrastructure-supabase';
 import { container } from '../../lib/container';
-import { hapticLightTap, hapticSuccess } from '../../lib/haptics';
+import { hapticSuccess } from '../../lib/haptics';
 import { buildCommentThreads, type PostCommentThreadItem } from './postCommentThread';
 
 type ReplyTarget = { commentId: string; authorLabel: string };
@@ -88,7 +88,7 @@ export function PostEngagementProvider({ postId, viewerId, children }: ProviderP
         setActiveReaction(next);
         try {
           await container.postEngagement.setReaction(postId, next);
-          hapticLightTap();
+          if (next !== null) hapticSuccess();
           await refresh();
         } catch {
           setActiveReaction(previous);
@@ -107,7 +107,7 @@ export function PostEngagementProvider({ postId, viewerId, children }: ProviderP
         setBusy(true);
         try {
           await container.postEngagement.setCommentLike(commentId, liked);
-          hapticLightTap();
+          if (liked) hapticSuccess();
           await refresh();
         } finally {
           setBusy(false);
