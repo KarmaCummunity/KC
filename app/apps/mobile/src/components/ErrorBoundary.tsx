@@ -4,10 +4,9 @@
 // Route segments have their own boundary (RouteErrorBoundary) that shares
 // this fallback and report.
 import React from 'react';
-import { View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, typography, spacing, Text } from '@kc/ui';
-import { PrimaryButton } from './ui/Buttons';
+import { makeUseStyles, typography, spacing, radius, Text } from '@kc/ui';
 import { getSentryIfInit } from '../lib/observability/sentry';
 
 export type ErrorBoundaryProps = {
@@ -38,12 +37,16 @@ export function ErrorBoundaryFallback({ error, onRetry }: { error: Error; onRetr
       <Text style={styles.title}>{t('errorBoundary.title')}</Text>
       <Text style={styles.body}>{t('errorBoundary.body')}</Text>
       {__DEV__ ? <Text style={styles.errMessage}>{error.message}</Text> : null}
-      <PrimaryButton
+      <TouchableOpacity
         testID="error-boundary-retry"
-        label={t('general.retry')}
-        size="md"
+        accessibilityRole="button"
+        accessibilityLabel={t('general.retry')}
+        style={styles.retryBtn}
         onPress={onRetry}
-      />
+        activeOpacity={0.8}
+      >
+        <Text style={styles.retryText}>{t('general.retry')}</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -89,4 +92,17 @@ const useStyles = makeUseStyles(({ colors }) => ({
   title: { ...typography.h1, color: colors.textPrimary, textAlign: 'center' },
   body: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
   errMessage: { ...typography.caption, color: colors.textDisabled, textAlign: 'center' },
+  retryBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  retryText: {
+    ...typography.button,
+    color: colors.textInverse,
+  },
 }));

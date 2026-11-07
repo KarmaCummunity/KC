@@ -62,4 +62,60 @@ describe('SearchablePicker', () => {
     expect(onSelect).toHaveBeenCalledWith({ id: 'haifa', name: 'Haifa' });
     expect(screen.queryByRole('region', { name: 'Choose a city' })).toBeNull();
   });
+
+  it('renders error state with retry button when error is provided, and retries on press', () => {
+    const onRetry = vi.fn();
+    render(
+      <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
+        <SearchablePicker<{ id: string; name: string }>
+          title="Choose a city"
+          placeholder="Search cities"
+          value={null}
+          items={null}
+          isLoading={false}
+          error={new Error('Network error')}
+          errorText="Failed to load items"
+          onErrorRetry={onRetry}
+          onSelect={vi.fn()}
+          matchItem={() => true}
+          renderRow={(item) => item}
+        />
+      </ThemeProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Choose a city' }));
+    expect(screen.getByText('Failed to load items')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'general.retry' }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it('safely handles corrupted/null items in list without crashing', () => {
+    const onSelect = vi.fn();
+    const corruptedItems = [
+      null as unknown as { id: string; name: string },
+      undefined as unknown as { id: string; name: string },
+      { id: 'tel-aviv', name: 'Tel Aviv' },
+    ];
+
+    render(
+      <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
+        <SearchablePicker<{ id: string; name: string }>
+          title="Choose a city"
+          placeholder="Search cities"
+          value={null}
+          items={corruptedItems}
+          isLoading={false}
+          error={null}
+          onSelect={onSelect}
+          matchItem={(item, query) => (item?.name ?? '').toLowerCase().includes(query.toLowerCase())}
+          renderRow={(item) => item ?? { id: '', name: '' }}
+        />
+      </ThemeProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Choose a city' }));
+    expect(screen.getByText('Tel Aviv')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Tel Aviv' }));
+    expect(onSelect).toHaveBeenCalledWith({ id: 'tel-aviv', name: 'Tel Aviv' });
+  });
 });
