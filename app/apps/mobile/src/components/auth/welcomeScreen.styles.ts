@@ -25,6 +25,10 @@ export const useWelcomeScreenStyles = makeUseStyles(({ colors, isDark }) => ({
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing['3xl'],
   },
+  languageToggle: {
+    alignSelf: 'flex-end' as const,
+    marginTop: spacing.md,
+  },
 
   // ── Hero ──────────────────────────────────────────────────────────────
   hero: {

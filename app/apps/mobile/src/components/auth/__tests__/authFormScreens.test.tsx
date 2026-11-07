@@ -17,6 +17,7 @@ vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true
 vi.mock('../../../hooks/useModalHardwareBack', () => ({ useModalHardwareBack: () => {} }));
 vi.mock('expo-router', () => ({ useRouter: () => router }));
 vi.mock('../../ui/AmbientBlobs', () => ({ AmbientBlobs: () => null }));
+vi.mock('../AuthLanguageToggle', () => ({ AuthLanguageToggle: () => null }));
 vi.mock('../AuthSocialSignInBlock', () => ({ AuthSocialSignInBlock: () => null }));
 vi.mock('../../../services/authMessages', () => ({ mapAuthErrorToHebrew: (code: string) => code }));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: () => {} }));

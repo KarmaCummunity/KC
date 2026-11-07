@@ -332,6 +332,7 @@ A Settings row opening a language picker that switches the app UI locale between
 - AC4. Hebrew is the default for first-time / anonymous users; English is opt-in. `fallbackLng` is Hebrew, so any not-yet-translated key renders its Hebrew source rather than a raw key.
 - AC5. The choice is device-local (no account/DB dependency), so it works for signed-out web visitors at `/settings`.
 - AC6. Translated interface text follows the active reading direction. Content that exists only in Hebrew (legal document bodies and their change summaries until multi-language legal documents ship, #1733; server-authored survey copy) stays RTL and aligned to the visual right in both languages. No app source hardcodes `writingDirection: 'rtl'` outside the direction helpers (`apps/mobile/src/lib/{rtlLayout,hebrewContentDirection}.ts`); a source-scan test enforces it. On web the HTML template applies the stored language's direction before the app bundle runs, so styles resolved at module load already see it (#1749).
+- AC7. Signed-out visitors can switch language before signing in: the welcome screen and the auth form screens show a compact pill labelled with the other language in its own script ("English" / "עברית"), which runs the AC3 flow (#1939).
 
 **Related.** `apps/mobile/src/i18n/language.ts`, `apps/mobile/app/settings/language.tsx`, `apps/mobile/src/i18n/locales/en/**`, direction-aware helpers in `apps/mobile/src/lib/{rtlLayout,rtlTextAlignStart,webRtlStyle,hebrewContentDirection}.ts`.
 
@@ -347,3 +348,4 @@ A Settings row opening a language picker that switches the app UI locale between
 | 0.4 | 2026-07-05 | Added FR-SETTINGS-018 (App language — opt-in Hebrew/English UI switch; machine-translated English). |
 | 0.5 | 2026-10-30 | FR-SETTINGS-016 AC9–AC10 (KC#1058): single-choice questions and the Sean Ellis PMF survey gated by server-side active days (`0455`–`0457`). |
 | 0.6 | 2026-11-07 | FR-SETTINGS-018 AC6 (KC#1749): interface text follows the reading direction; Hebrew-only content stays RTL; hardcoded RTL guarded by a test. |
+| 0.7 | 2026-11-07 | FR-SETTINGS-018 AC7 (KC#1939): language switch on the sign-in screens. |

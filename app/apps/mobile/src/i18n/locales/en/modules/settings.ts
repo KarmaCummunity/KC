@@ -165,6 +165,7 @@ export const settingsEn = {
     optionEn: 'English',
     restartNote: 'Changing the language will reload the app.',
     saveFailed: 'Changing the language failed. Please try again.',
+    switchA11y: 'Change language / החלפת שפה',
   },
   whatsappRow: 'WhatsApp connection',
   whatsapp: {
