@@ -1,14 +1,10 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Keyboard } from 'react-native';
+import type { TextInput as KitTextInput } from '@kc/ui';
 import { KC_FORM_KEYBOARD_ACCESSORY_ID } from '../lib/platform/formKeyboardConstants';
 
-/** Ref target for chained focus — kit inputs implement `focus()`. */
-export interface FocusableFieldRef {
-  focus: () => void;
-}
-
 export interface FormFieldFocusBindings {
-  readonly ref: React.RefObject<FocusableFieldRef | null>;
+  readonly ref: React.RefObject<KitTextInput | null>;
   readonly onFocus: () => void;
   readonly inputAccessoryViewID: string;
   readonly returnKeyType: 'next' | 'done';
@@ -21,7 +17,7 @@ export interface FormFieldFocusBindings {
  */
 export function useFormFieldFocus(fieldCount: number) {
   const refs = useMemo(
-    () => Array.from({ length: fieldCount }, () => ({ current: null as FocusableFieldRef | null })),
+    () => Array.from({ length: fieldCount }, () => ({ current: null as KitTextInput | null })),
     [fieldCount],
   );
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
