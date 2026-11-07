@@ -125,6 +125,13 @@ export class SupabaseAuthService implements IAuthService {
     return toSession(data.session);
   }
 
+  async signInWithGoogleIdToken(idToken: string): Promise<AuthSession> {
+    const { data, error } = await this.client.auth.signInWithIdToken({ provider: 'google', token: idToken });
+    if (error) throw mapAuthError(error);
+    if (!data.session) throw new AuthError('unknown', 'google_no_session');
+    return toSession(data.session);
+  }
+
   async resendVerificationEmail(
     email: string,
     options?: { emailRedirectTo?: string },

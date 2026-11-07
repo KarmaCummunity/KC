@@ -8,6 +8,7 @@
 
 import { Platform } from 'react-native';
 import { pickAuthStorage } from './authSecureStorage';
+import { performNativeGoogleSignIn } from './googleNativeSignIn';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -157,7 +158,11 @@ export function getSignInUseCase(): SignInWithEmailUseCase {
 
 export function getSignInWithGoogleUseCase(): SignInWithGoogleUseCase {
   if (!_signInGoogle) {
-    _signInGoogle = new SignInWithGoogleUseCase(getAuthService(), openAuthSession);
+    _signInGoogle = new SignInWithGoogleUseCase(
+      getAuthService(),
+      openAuthSession,
+      Platform.OS === 'web' ? undefined : performNativeGoogleSignIn,
+    );
   }
   return _signInGoogle;
 }

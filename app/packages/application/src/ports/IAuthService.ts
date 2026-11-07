@@ -81,6 +81,13 @@ export interface IAuthService {
   signInWithApple(credential: AppleIdentityCredential): Promise<AuthSession>;
 
   /**
+   * FR-AUTH-003 / FR-AUTH-007 (native Google picker). Exchange the Google ID token
+   * from the OS account picker for a Supabase session — no browser redirect, so
+   * Google never sees the Supabase host as the redirect target.
+   */
+  signInWithGoogleIdToken(idToken: string): Promise<AuthSession>;
+
+  /**
    * FR-AUTH-006 (MVP gate): resend the signup verification email to `email`.
    * `emailRedirectTo` controls where the link lands after Supabase verifies the
    * token. Throws AuthError('rate_limited', ...) on too-frequent calls.

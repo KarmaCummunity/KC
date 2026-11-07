@@ -1,4 +1,7 @@
-/** FR-AUTH-003+007 (Google OAuth PKCE): Supabase auto-routes by `sub` — new user → sign up, existing → sign in. */
+/**
+ * FR-AUTH-003+007 (Google): Supabase auto-routes by `sub` — new user → sign up, existing → sign in.
+ * Native picker (ID token) first when injected; OAuth PKCE browser flow otherwise ({{ENG:native-google-sign-in}}).
+ */
 import type { IAuthService, AuthSession } from '../ports/IAuthService';
 import { AuthError } from './errors';
 
@@ -23,6 +26,18 @@ export type OpenAuthSession = (
   redirectTo: string,
 ) => Promise<string | null>;
 
+/**
+ * Native OS account picker (iOS/Android Google Sign-In SDK). `unavailable` means
+ * the picker cannot run on this device/build (no native module, no Play services,
+ * client IDs not configured) and the browser flow must be used instead.
+ */
+export type NativeGoogleSignInResult =
+  | { readonly kind: 'token'; readonly idToken: string }
+  | { readonly kind: 'cancelled' }
+  | { readonly kind: 'unavailable' };
+
+export type PerformNativeGoogleSignIn = () => Promise<NativeGoogleSignInResult>;
+
 export interface SignInWithGoogleInput {
   /** Deep link the OAuth provider redirects to after sign-in. */
   redirectTo: string;
@@ -36,9 +51,21 @@ export class SignInWithGoogleUseCase {
   constructor(
     private readonly auth: IAuthService,
     private readonly openAuthSession: OpenAuthSession,
+    private readonly performNativeSignIn?: PerformNativeGoogleSignIn,
   ) {}
 
   async execute(input: SignInWithGoogleInput): Promise<SignInWithGoogleOutput> {
+    const native = this.performNativeSignIn ? await this.performNativeSignIn() : null;
+    if (native?.kind === 'cancelled') {
+      throw new AuthError('unknown', 'oauth_dismissed');
+    }
+    if (native?.kind === 'token') {
+      return { session: await this.auth.signInWithGoogleIdToken(native.idToken) };
+    }
+    return this.executeBrowserFlow(input);
+  }
+
+  private async executeBrowserFlow(input: SignInWithGoogleInput): Promise<SignInWithGoogleOutput> {
     const url = await this.auth.getGoogleAuthUrl(input.redirectTo);
     const redirectUrl = await this.openAuthSession(url, input.redirectTo);
     if (!redirectUrl) {

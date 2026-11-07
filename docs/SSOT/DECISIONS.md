@@ -1973,3 +1973,15 @@ Owner rules that go with it:
 **Rejected.** Leaving it to the owner's "share to feed" button (members did not know to use it, and the PM asked for the listings to arrive). A per-kind switch (a private lesson is as feed-worthy as a course).
 
 **Affected.** `supabase/migrations/0613_knowledge_world_in_feed.sql`; tests `0557`, `0560` (a later ride occurrence is now the hidden example), `0522`; `docs/spec/requirements/23_knowledge.md`.
+
+## {{ENG:native-google-sign-in}} — Native Google account picker on iOS/Android (2026-11-08)
+
+**Decision.** On iOS and Android, "Continue with Google" opens the OS-native Google account picker (`@react-native-google-signin/google-signin`, free "Original" API) and exchanges the returned ID token via `supabase.auth.signInWithIdToken({ provider: 'google' })`. The browser OAuth flow (`openAuthSessionAsync` + `exchangeCodeForSession`) stays as the fallback whenever the picker is unavailable: Expo Go, binaries built before the module was added, missing `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` / `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, no Play services, or any picker error other than a user cancel. Web is unchanged (same-tab redirect, D-33). This supersedes the native part of D-33.
+
+**Why.** #1950: even after the Google Auth Platform branding was verified, Google's account chooser showed "Continue to `<project>.supabase.co`" because the browser flow's `redirect_uri` is the Supabase callback host, which KC cannot verify. The native picker sends no redirect URI.
+
+**Rejected.** Supabase custom domain (paid add-on; excluded by the free-only constraint, though it would also fix web). `expo-auth-session` with native client IDs (still a browser hop). The library's One Tap / Credential Manager API (sponsor-only package).
+
+**Open.** The free API cannot pass a nonce. If iOS ID tokens carry a nonce claim, Supabase rejects them unless the Google provider's "Skip nonce check" is enabled — a security trade-off that needs PM approval and is not enabled by this change. Native config (`app.json` plugin `iosUrlScheme`, client IDs) requires the iOS/Android OAuth clients created by the PM and a new native build.
+
+**Affected.** `app/packages/application/src/auth/SignInWithGoogle.ts`, `ports/IAuthService.ts` (`signInWithGoogleIdToken`); `app/packages/infrastructure-supabase/src/auth/SupabaseAuthService.ts`; `app/apps/mobile/src/services/googleNativeSignIn.ts`, `authComposition.ts`; `docs/spec/requirements/01_auth_and_onboarding.md` (FR-AUTH-002 note).
