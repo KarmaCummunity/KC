@@ -4141,13 +4141,6 @@ export type Database = {
             referencedColumns: ["post_id"]
           },
           {
-            foreignKeyName: "listings_legacy_ride_id_fkey"
-            columns: ["legacy_ride_id"]
-            isOneToOne: false
-            referencedRelation: "ride_listings"
-            referencedColumns: ["ride_id"]
-          },
-          {
             foreignKeyName: "listings_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: false
@@ -6621,20 +6614,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "listing_kinds"
             referencedColumns: ["kind_id"]
-          },
-          {
-            foreignKeyName: "posts_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "listings"
-            referencedColumns: ["listing_id"]
-          },
-          {
-            foreignKeyName: "posts_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "marketplace_listing_card"
-            referencedColumns: ["listing_id"]
           },
           {
             foreignKeyName: "posts_listing_world_slug_fkey"
@@ -10053,20 +10032,6 @@ export type Database = {
             referencedColumns: ["kind_id"]
           },
           {
-            foreignKeyName: "posts_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "listings"
-            referencedColumns: ["listing_id"]
-          },
-          {
-            foreignKeyName: "posts_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "marketplace_listing_card"
-            referencedColumns: ["listing_id"]
-          },
-          {
             foreignKeyName: "posts_listing_world_slug_fkey"
             columns: ["listing_world_slug"]
             isOneToOne: false
@@ -10208,13 +10173,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
-          },
-          {
-            foreignKeyName: "listings_legacy_ride_id_fkey"
-            columns: ["legacy_ride_id"]
-            isOneToOne: false
-            referencedRelation: "ride_listings"
-            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "listings_owner_id_fkey"
