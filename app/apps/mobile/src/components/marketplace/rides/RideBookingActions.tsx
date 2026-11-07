@@ -10,6 +10,7 @@ import { RideEmergencyButton } from './RideEmergencyButton';
 
 interface Props {
   readonly detail: MarketplaceListingDetail;
+  readonly hideOwnerAssign?: boolean;
 }
 
 /** Offered seats from the ride extension; a ride without the field offers one seat. */
@@ -18,7 +19,7 @@ export function rideCapacity(details: Record<string, unknown>): number {
   return typeof raw === 'number' && Number.isInteger(raw) && raw > 0 ? raw : 1;
 }
 
-export function RideBookingActions({ detail }: Props) {
+export function RideBookingActions({ detail, hideOwnerAssign = false }: Props) {
   const userId = useAuthStore((s) => s.session?.userId ?? null);
   if (detail.worldSlug !== 'rides' || detail.direction !== 'give' || !userId) return null;
 
@@ -33,6 +34,7 @@ export function RideBookingActions({ detail }: Props) {
         capacity={capacity}
         listingStatus={detail.listingStatus ?? ''}
         departsAt={typeof detail.details['departs_at'] === 'string' ? detail.details['departs_at'] : null}
+        hideOwnerAssign={hideOwnerAssign}
       />
     </>
   ) : (

@@ -2,6 +2,7 @@ export const timeVolunteer = {
   hubTitle: 'תרומת זמן',
   hubIntro: 'גלו משמרות, הירשמו או הצטרפו לרשימת המתנה, בצעו צ׳ק-אין ביום האירוע וצברו נקודות קארמה על שעות שתועדו.',
   myShiftsLink: 'המשמרות שלי',
+  opportunityDetail: 'פרטי התנדבות',
   organizerLink: 'ניהול התנדבויות',
   contactKcLink: 'פנייה לקהילת קארמה',
   loading: 'טוען…',

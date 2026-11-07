@@ -13,6 +13,7 @@ const ROW = {
   reserved_at: '2026-11-01T08:00:00Z',
   confirm_by: '2026-11-01T10:00:00Z',
   rated_by_me: true,
+  requested_stop_label: 'מחלף גלילות',
 };
 
 function repoWith(result: { data: unknown; error: { message: string } | null }) {
@@ -25,7 +26,11 @@ describe('SupabaseRideBookingRepository', () => {
   it('books seats and returns the new booking id', async () => {
     const { rpc, repo } = repoWith({ data: { handoff_id: 'h9' }, error: null });
     await expect(repo.bookSeat('l1', 2)).resolves.toBe('h9');
-    expect(rpc).toHaveBeenCalledWith('book_ride_seat', { p_listing_id: 'l1', p_seats: 2 });
+    expect(rpc).toHaveBeenCalledWith('book_ride_seat', {
+      p_listing_id: 'l1',
+      p_seats: 2,
+      p_requested_meeting_point: undefined,
+    });
   });
 
   it('throws when bookSeat RPC returns an error', async () => {
@@ -46,6 +51,7 @@ describe('SupabaseRideBookingRepository', () => {
         reservedAt: '2026-11-01T08:00:00Z',
         confirmBy: '2026-11-01T10:00:00Z',
         ratedByMe: true,
+        requestedStopLabel: 'מחלף גלילות',
       },
     ]);
     expect(rpc).toHaveBeenCalledWith('list_ride_bookings', { p_listing_id: 'l1' });
@@ -117,6 +123,7 @@ describe('SupabaseRideBookingRepository', () => {
         reservedAt: '2026-11-01T08:00:00Z',
         confirmBy: null,
         ratedByMe: false,
+        requestedStopLabel: null,
       });
     });
   });

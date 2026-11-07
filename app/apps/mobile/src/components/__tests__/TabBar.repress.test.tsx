@@ -80,6 +80,15 @@ describe('TabBar re-tap (#1633)', () => {
     expect(router.dismissAll).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith('/(tabs)');
   });
+
+  it('opens the create form over a root-level screen without popping it (FR-POST-001 AC9)', () => {
+    onRoute(['post', '[id]'], '/post/abc');
+    router.canDismiss.mockReturnValue(true);
+    const { getByTestId } = render(<TabBar />);
+    fireEvent.click(getByTestId('tab-create'));
+    expect(router.dismissAll).not.toHaveBeenCalled();
+    expect(router.push).toHaveBeenCalledWith('/create');
+  });
 });
 
 // FR-POST-001: the "+" turns into "×" while the create form is open.
@@ -87,13 +96,13 @@ describe('TabBar "+" button', () => {
   const turned = (el: HTMLElement) => el.querySelector('[style*="rotate(45deg)"]');
 
   it('is turned 45° into an "×" while the create form is open', () => {
-    onRoute(['(tabs)', 'create'], '/create');
+    onRoute(['create'], '/create');
     const { getByTestId } = render(<TabBar />);
     expect(turned(getByTestId('tab-create'))).not.toBeNull();
   });
 
   it('closes the create form when "+" is tapped again', () => {
-    onRoute(['(tabs)', 'create'], '/create');
+    onRoute(['create'], '/create');
     const { getByTestId } = render(<TabBar />);
     fireEvent.click(getByTestId('tab-create'));
     expect(router.back).toHaveBeenCalledTimes(1);

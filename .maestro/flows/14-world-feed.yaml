@@ -1,6 +1,6 @@
-# A giving world's own screen (food): search within the world and the offers / requests filter
-# render on device; the screen has no request / offer buttons, and the "+" tab opens the create
-# form on the food world.
+# A giving world's own screen (food): the title menu of the world's screens opens from the TopBar, and the
+# filter sheet is the main feed's one (search, sort, filters) with the world locked; the screen has no
+# request / offer buttons, and the "+" tab opens the create form on the food world.
 # Spec: docs/spec/requirements/06_feed_and_search.md FR-FEED-020 AC2 / AC4; docs/spec/07_cross_cutting_systems.md §7.3.
 appId: org.karmacommunity.app
 name: Worlds — food world feed and the "+" entry
@@ -22,12 +22,21 @@ tags: [donations, feed]
     id: donation-tile-food
 - extendedWaitUntil:
     visible:
-      id: world-feed-search
+      id: world-feed-filter-button
     timeout: 15000
 - tapOn:
-    id: world-feed-direction-request
+    id: world-screens-menu-toggle
 - assertVisible:
-    id: world-feed-direction-all
+    id: world-menu-feed
+- tapOn:
+    id: world-menu-feed
+- tapOn:
+    id: world-feed-filter-button
+- assertVisible:
+    id: filters-type
+- assertNotVisible:
+    id: filters-worlds
+- pressKey: back
 - tapOn:
     id: tab-create
 - extendedWaitUntil:

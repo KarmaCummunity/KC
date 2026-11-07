@@ -10,6 +10,7 @@ import type { FormFieldFocusBindings } from '../../hooks/useFormFieldFocus';
 import type { SurveyQuestion } from '@kc/domain';
 import { SurveyRatingRow } from '../../components/survey/SurveyRatingRow';
 import { webTextRtl } from '../../lib/webRtlStyle';
+import { formEmailInputProps } from '../../lib/platform/formTextInputHints';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 // Q11 is the final "contact us" question — identified by its position as the
@@ -102,9 +103,8 @@ export function ResearchQuestionPanel({
             placeholder={t('research.contactEmailPlaceholder')}
             placeholderTextColor={colors.textDisabled}
             textAlign={rtlTextAlignStart}
-            keyboardType="email-address"
-            autoCapitalize="none"
             maxLength={320}
+            {...formEmailInputProps}
             accessibilityLabel={t('research.contactEmailLabel')}
             onFocus={contactEmailFocus?.onFocus}
             inputAccessoryViewID={contactEmailFocus?.inputAccessoryViewID}

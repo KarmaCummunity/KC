@@ -20,6 +20,7 @@ vi.mock('../../../../services/platformConfirm', () => ({ confirmAction: vi.fn(as
 vi.mock('../../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 vi.mock('../../../../lib/haptics', () => ({ hapticSuccess: () => undefined }));
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('../../../closure/OwnerAssignUserButton', () => ({ OwnerAssignUserButton: () => null }));
 
 const state = vi.hoisted(() => ({ userId: 'u_guest' as string | null }));
 vi.mock('../../../../store/authStore', () => ({

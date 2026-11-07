@@ -5,7 +5,7 @@
 - Each world has its own sub-screens, form, closing flow and functionality **on shared infrastructure** (D36). A world may define **sub-categories** (the "item subcategory" pattern of D18) that drive the create form, browse filters and matching.
 - **A post lives in one primary world and may be marked for additional worlds** (D101). It is stored once, so edit, pause and cancel apply to every feed. Each world's feed shows posts where that world is primary **or** additional. Examples: a recurring volunteering slot shows in time and employment; a private maths lesson shows in knowledge and time.
 - The feed **is** the give-and-take marketplace between people and between people and organizations, filterable by world and by sub-category.
-- A world is either **active** (full in-app flow: form, matching, chat, closing) or a **portal** (links, knowledge and org blocks only). Launch flags switch a world between active and portal; they never hide it (D3, D60).
+- A world is either **active** (full in-app flow: form, matching, chat, closing) or a **portal** (links, knowledge and org blocks only). Launch flags switch a world between active and portal; they never hide it (D3, D60). In the Donations tab active worlds come first, then portals; each group follows the member's recent visits, kept on the device only (`FR-DONATE-001` AC8).
 - Religion is out; spirituality and philosophy are a knowledge sub-category (D45, kept). Emergency is a **mode**, not a world (D42).
 
 ## Giving worlds

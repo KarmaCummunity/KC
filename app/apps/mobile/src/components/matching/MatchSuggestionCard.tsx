@@ -3,7 +3,9 @@
 import React from 'react';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { spacing } from '@kc/ui';
+import { makeUseStyles, spacing } from '@kc/ui';
+import { View } from 'react-native';
+import { rowDirectionStart } from '../../lib/rtlLayout';
 import type { MatchSuggestion } from '@kc/infrastructure-supabase';
 import { KcCard } from '../cards/KcCard';
 import { listingWorldIcon } from '../cards/ListingCard';
@@ -23,6 +25,7 @@ const WIDE_IMAGE_RATIO = 0.28;
 export function MatchSuggestionCard({ match, busy, onRespond }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
+  const footerStyles = useMatchCardFooterStyles();
   const width = useShellContentWidth() - spacing.base * 2;
   const state = matchStateOf(match);
   const owner = match.otherOwner.displayName ?? t('matches.someone');
@@ -52,29 +55,51 @@ export function MatchSuggestionCard({ match, busy, onRespond }: Props) {
       chip={t(`marketplace.world.${match.worldSlug}`, { defaultValue: match.worldSlug })}
       details={details}
       location={match.distanceKm == null ? null : t('matches.distanceKm', { km: Math.round(match.distanceKm) })}
-      footer={
-        <>
+      footer={(
+        <View style={footerStyles.wrap}>
           {canRespond ? (
-            <>
-              <PrimaryButton
-                label={t('matches.accept')}
-                icon="checkmark"
-                loading={busy}
-                onPress={() => onRespond(match.candidateId, 'accept')}
-                testID={`match-accept-${match.candidateId}`}
-              />
-              <SecondaryButton
-                label={t('matches.decline')}
-                icon="close"
-                disabled={busy}
-                onPress={() => onRespond(match.candidateId, 'decline')}
-                testID={`match-decline-${match.candidateId}`}
-              />
-            </>
+            <View style={footerStyles.actionRow}>
+              <View style={footerStyles.actionCell}>
+                <SecondaryButton
+                  size="md"
+                  fullWidth
+                  label={t('matches.decline')}
+                  disabled={busy}
+                  onPress={() => onRespond(match.candidateId, 'decline')}
+                  testID={`match-decline-${match.candidateId}`}
+                />
+              </View>
+              <View style={footerStyles.actionCell}>
+                <PrimaryButton
+                  size="md"
+                  fullWidth
+                  label={t('matches.accept')}
+                  loading={busy}
+                  onPress={() => onRespond(match.candidateId, 'accept')}
+                  testID={`match-accept-${match.candidateId}`}
+                />
+              </View>
+            </View>
           ) : null}
-          <GhostButton label={t('matches.viewListing')} icon="open-outline" onPress={openListing} />
-        </>
-      }
+          <GhostButton
+            size="sm"
+            fullWidth
+            label={t('matches.viewListing')}
+            onPress={openListing}
+          />
+        </View>
+      )}
     />
   );
 }
+
+const useMatchCardFooterStyles = makeUseStyles(() => ({
+  wrap: { width: '100%', alignSelf: 'stretch' as const, gap: spacing.sm },
+  actionRow: {
+    width: '100%',
+    flexDirection: rowDirectionStart,
+    alignItems: 'stretch' as const,
+    gap: spacing.sm,
+  },
+  actionCell: { flex: 1, minWidth: 0 },
+}));

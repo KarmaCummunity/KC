@@ -17,6 +17,8 @@ import { PrimaryButton } from './ui/Buttons';
 import { PostGridSkeleton } from './skeletons/PostGridSkeleton';
 import { finishMark } from '../lib/observability/perfMarks';
 import { KcFlashList, type KcFlashListRef } from './lists/KcFlashList';
+import { buildFeedListEntries, type FeedListEntry, FEED_MATCHES_EVERY_N_POSTS } from '../lib/feed/feedListLayout';
+import { MatchesFeedSection } from './matching/MatchesFeedSection';
 
 interface Props {
   data: PostWithOwner[] | undefined;
@@ -33,6 +35,8 @@ interface Props {
   emptyComponent?: React.ReactNode;
   /** Optional sticky/scrollable banner rendered above the list. */
   ListHeaderComponent?: React.ReactNode;
+  /** Content under the last row (a world screen's community links), after the paging spinner. */
+  footer?: React.ReactNode;
   /** Forwarded to the underlying KcFlashList — used by the feed for scroll-to-top. */
   listRef?: React.Ref<KcFlashListRef<PostWithOwner>>;
   /** FR-TRANSLATE-003 — viewport tracking for viewport-gated translation. */
@@ -40,6 +44,10 @@ interface Props {
   viewabilityConfig?: { itemVisiblePercentThreshold?: number; minimumViewTime?: number };
   /** FR-TRANSLATE-003 — translated fields/status accessor for visible posts. */
   translations?: ReturnType<typeof useTranslatedPosts>;
+  /** Inject the matches banner in the feed every N posts while scrolling (0 = off). */
+  matchesEveryNPosts?: number;
+  /** Passed to inline matches strips in world feeds. */
+  matchesWorldSlug?: string;
 }
 
 export function PostFeedList({
@@ -54,10 +62,13 @@ export function PostFeedList({
   onCardPress,
   emptyComponent,
   ListHeaderComponent,
+  footer,
   listRef,
   onViewableItemsChanged,
   viewabilityConfig,
   translations,
+  matchesEveryNPosts = 0,
+  matchesWorldSlug,
 }: Props) {
   const styles = usePostFeedListStyles();
   const { colors } = useTheme();
@@ -68,22 +79,86 @@ export function PostFeedList({
     [styles.listContent, tabBarPad],
   );
 
-  const renderItem = useCallback(
-    ({ item }: { item: PostWithOwner }) => (
+  const useRowLayout = matchesEveryNPosts > 0;
+  const listData = useMemo(() => {
+    const posts = data ?? [];
+    if (!useRowLayout) return posts;
+    return buildFeedListEntries(posts, matchesEveryNPosts);
+  }, [data, matchesEveryNPosts, useRowLayout]);
+
+  const renderPostCell = useCallback(
+    (item: PostWithOwner) => (
       <View style={styles.cell}>
-      <PostCardGrid
-        post={item}
-        onCardPress={onCardPress}
-        translatedFields={translations?.getTranslatedFields(item.postId)}
-        titleStatus={translations?.getStatus(item.postId, 'title')}
-        descriptionStatus={translations?.getStatus(item.postId, 'description')}
-      />
+        <PostCardGrid
+          post={item}
+          onCardPress={onCardPress}
+          translatedFields={translations?.getTranslatedFields(item.postId)}
+          titleStatus={translations?.getStatus(item.postId, 'title')}
+          descriptionStatus={translations?.getStatus(item.postId, 'description')}
+        />
       </View>
     ),
     [onCardPress, translations, styles.cell],
   );
 
-  const keyExtractor = useCallback((p: PostWithOwner) => p.postId, []);
+  const renderItem = useCallback(
+    (info: { item: PostWithOwner | FeedListEntry }) => {
+      const item = info.item;
+      if (!useRowLayout) {
+        return renderPostCell(item as PostWithOwner);
+      }
+      const entry = item as FeedListEntry;
+      if (entry.kind === 'matches') {
+        return (
+          <View style={styles.matchesRow}>
+            <MatchesFeedSection
+              variant="feed"
+              maxVisible={2}
+              worldSlug={matchesWorldSlug}
+              inlineKey={entry.key}
+            />
+          </View>
+        );
+      }
+      return (
+        <View style={styles.postRow}>
+          {renderPostCell(entry.left)}
+          {entry.right ? renderPostCell(entry.right) : <View style={styles.cell} />}
+        </View>
+      );
+    },
+    [useRowLayout, renderPostCell, matchesWorldSlug, styles.matchesRow, styles.postRow, styles.cell],
+  );
+
+  const keyExtractor = useCallback(
+    (item: PostWithOwner | FeedListEntry) => {
+      if (!useRowLayout) return (item as PostWithOwner).postId;
+      const entry = item as FeedListEntry;
+      return entry.kind === 'matches' ? entry.key : entry.key;
+    },
+    [useRowLayout],
+  );
+
+  const handleViewableItemsChanged = useCallback(
+    (info: { viewableItems: ViewToken[]; changed: ViewToken[] }) => {
+      if (!onViewableItemsChanged) return;
+      if (!useRowLayout) {
+        onViewableItemsChanged(info);
+        return;
+      }
+      const flat: ViewToken[] = [];
+      for (const token of info.viewableItems) {
+        const entry = token.item as FeedListEntry | undefined;
+        if (!entry || entry.kind === 'matches') continue;
+        flat.push({ ...token, key: entry.left.postId, item: entry.left, isViewable: true });
+        if (entry.right) {
+          flat.push({ ...token, key: entry.right.postId, item: entry.right, isViewable: true });
+        }
+      }
+      onViewableItemsChanged({ viewableItems: flat, changed: info.changed });
+    },
+    [onViewableItemsChanged, useRowLayout],
+  );
 
   React.useEffect(() => {
     if ((data ?? []).length > 0) finishMark('feed.first_render');
@@ -118,9 +193,9 @@ export function PostFeedList({
       ref={listRef}
       estimatedItemSize={280}
       style={styles.list}
-      data={data ?? []}
+      data={listData}
       keyExtractor={keyExtractor}
-      numColumns={HOME_FEED_GRID_COLUMNS}
+      numColumns={useRowLayout ? 1 : HOME_FEED_GRID_COLUMNS}
       renderItem={renderItem}
       contentContainerStyle={listContentStyle as unknown as object}
       ListHeaderComponent={ListHeaderComponent as React.ComponentType | null | undefined}
@@ -134,16 +209,19 @@ export function PostFeedList({
         )
       }
       ListFooterComponent={
-        hasMore && data && data.length > 0 ? (
-          <View style={styles.footer}>
-            <ActivityIndicator color={colors.primary} />
-          </View>
-        ) : null
+        <>
+          {hasMore && data && data.length > 0 ? (
+            <View style={styles.footer}>
+              <ActivityIndicator color={colors.primary} />
+            </View>
+          ) : null}
+          {footer}
+        </>
       }
       refreshControl={
         <KcRefreshControl refreshing={isRefetching} onRefresh={onRefresh} />
       }
-      onViewableItemsChanged={onViewableItemsChanged}
+      onViewableItemsChanged={handleViewableItemsChanged}
       viewabilityConfig={viewabilityConfig}
       onEndReached={onEndReached}
       onEndReachedThreshold={LIST_END_THRESHOLD}
@@ -166,5 +244,7 @@ const usePostFeedListStyles = makeUseStyles(({ colors }) => ({
   listContent: { paddingTop: spacing.base },
   /** Even grid: each column cell takes an equal share and centres its card. */
   cell: { width: `${100 / HOME_FEED_GRID_COLUMNS}%` as const, alignItems: 'center' as const, marginBottom: spacing.md },
+  postRow: { flexDirection: 'row' as const, width: '100%' as const, marginBottom: spacing.md },
+  matchesRow: { width: '100%' as const, marginBottom: spacing.md },
   footer: { paddingVertical: spacing.base, alignItems: 'center' as const },
 }));

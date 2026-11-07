@@ -12,6 +12,7 @@ import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibi
 import { ChallengeCreateForm } from '../challenges/ChallengeCreateForm';
 import { CHALLENGES_QUERY_KEY, challengeUseCases } from '../../services/challengeComposition';
 import { challengeErrorMessage } from '../../lib/challenges/challengeErrorMessage';
+import { closeCreateForm } from '../../navigation/closeCreateForm';
 
 interface Props {
   /** Unified create header (category picker; the request / offer toggle is hidden here). */
@@ -33,9 +34,10 @@ export function ChallengeWorldCreateForm({ header, onPublishActionChange }: Prop
     setBusy(true);
     setErrorMessage(null);
     try {
-      const challengeId = await challengeUseCases.create().execute(draft);
+      await challengeUseCases.create().execute(draft);
       await queryClient.invalidateQueries({ queryKey: [CHALLENGES_QUERY_KEY] });
-      router.replace({ pathname: '/(tabs)/donations/challenges/[challengeId]', params: { challengeId } });
+      await queryClient.invalidateQueries({ queryKey: ['feed'] });
+      closeCreateForm(router);
     } catch (error) {
       setErrorMessage(challengeErrorMessage(t, error));
     } finally {

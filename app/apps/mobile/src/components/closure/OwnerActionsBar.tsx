@@ -29,9 +29,17 @@ interface Props {
   ownerId: string;
   /** Extra bottom padding when the global shell tab bar overlays this bar (post detail). */
   tabBarOverlayInset?: number;
-  /** Called after caches are invalidated following a successful "mark as delivered".
-   * Parent typically shows confirmation and navigates away from post detail. */
-  onClosed: () => void | Promise<void>;
+  /** Renders inside `PostDetailBottomChrome` — no outer bar chrome or tab inset. */
+  embedded?: boolean;
+  /** i18n key for the open-offer button. Defaults from post.type. */
+  markCtaKey?: string;
+  /** Listing offers name the recipient through owner_complete_offer_with_user. */
+  offerAssign?: boolean;
+  /** When false, step 2 has no "close without marking" (rides, housing). */
+  allowCloseWithout?: boolean;
+  /** Called after caches are invalidated following a successful close.
+   * `assigned` means the offer stayed open (one ride seat or one stay). */
+  onClosed: (outcome?: 'closed' | 'assigned') => void | Promise<void>;
   /** Called after a successful reopen. Parent typically shows confirmation and
    * navigates away from post detail (same as onClosed). */
   onReopened: () => void | Promise<void>;
@@ -40,7 +48,10 @@ interface Props {
 export function OwnerActionsBar(props: Readonly<Props>) {
   const styles = useStyles();
   const { colors } = useTheme();
-  const { post, ownerId, tabBarOverlayInset = 0, onClosed, onReopened } = props;
+  const {
+    post, ownerId, tabBarOverlayInset = 0, embedded = false, onClosed, onReopened,
+    markCtaKey, offerAssign = false, allowCloseWithout = true,
+  } = props;
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const startClosure = useClosureStore((s) => s.start);
@@ -64,17 +75,25 @@ export function OwnerActionsBar(props: Readonly<Props>) {
   // Only handle done-state for closures initiated from the post-detail screen.
   // Chat-initiated closures are handled by AnchoredPostCard's own done-handler.
   useEffect(() => {
-    if (closureStep !== 'done' || closureInitiator === 'chat') return;
+    // owner-assign is the same screen's "assign a user" button; it must refresh the passenger list too.
+    if (closureStep !== 'done' || (closureInitiator !== 'post-detail' && closureInitiator !== 'owner-assign')) return;
     hapticSuccess();
     trackSocialHandoverCompleted(postRef.current);
     const closedPostId = postRef.current.postId;
+    const outcome = useClosureStore.getState().lastOutcome ?? 'closed';
     resetClosure();
     void (async () => {
       await queryClient.invalidateQueries({ queryKey: ['feed'] });
       invalidateMyProfilePostQueries(queryClient, ownerId);
       await queryClient.invalidateQueries({ queryKey: ['post', closedPostId] });
       invalidatePersonalStatsCaches(queryClient, ownerId);
-      await Promise.resolve(onClosed());
+      // The passengers / guests / handoff sections read their own caches, not the post.
+      await queryClient.invalidateQueries({ queryKey: ['ride-bookings'] });
+      await queryClient.invalidateQueries({ queryKey: ['housing-offer-bookings'] });
+      await queryClient.invalidateQueries({ queryKey: ['giving-handoff'] });
+      await queryClient.invalidateQueries({ queryKey: ['giving-handoffs'] });
+      await queryClient.invalidateQueries({ queryKey: ['marketplace-detail'] });
+      await Promise.resolve(onClosed(outcome));
     })();
   }, [closureStep, closureInitiator, resetClosure, onClosed, queryClient, ownerId]);
 
@@ -91,7 +110,7 @@ export function OwnerActionsBar(props: Readonly<Props>) {
   }
 
   // Direction flips by post.type — see RecipientCallout for the same convention.
-  const markCtaText = post.type === 'Give' ? t('closure.markGiveCta') : t('closure.markRequestCta');
+  const markCtaText = t(markCtaKey ?? (post.type === 'Give' ? 'closure.markGiveCta' : 'closure.markRequestCta'));
 
   async function handleReopen() {
     setIsReopening(true);
@@ -114,18 +133,30 @@ export function OwnerActionsBar(props: Readonly<Props>) {
 
   return (
     <>
-      <View style={[styles.bar, { paddingBottom: spacing.base + tabBarOverlayInset }]}>
+      <View
+        style={[
+          embedded ? styles.barEmbedded : styles.bar,
+          !embedded ? { paddingBottom: spacing.base + tabBarOverlayInset } : null,
+        ]}
+      >
         {isOpen ? (
           <PrimaryButton
             label={markCtaText}
+            size="md"
             fullWidth
             disabled={closureBusy || closureStep !== 'idle'}
-            onPress={() => startClosure(post.postId, ownerId, post.type, { initiator: 'post-detail' })}
+            onPress={() => startClosure(post.postId, ownerId, post.type, {
+              initiator: 'post-detail',
+              offerAssign,
+              allowCloseWithout,
+              worldSlug: post.listingWorldSlug,
+            })}
           />
         ) : (
           <SecondaryButton
             label={t('closure.itemNotDeliveredCta')}
             accessibilityLabel={t('closure.itemNotDeliveredA11y')}
+            size="md"
             fullWidth
             disabled={isReopening || reopenOpen}
             onPress={() => {
@@ -166,10 +197,13 @@ export function OwnerActionsBar(props: Readonly<Props>) {
 const useStyles = makeUseStyles(({ colors }) => ({
   bar: {
     paddingHorizontal: spacing.base,
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+  },
+  barEmbedded: {
+    width: '100%',
   },
   busyOverlay: {
     position: 'absolute',

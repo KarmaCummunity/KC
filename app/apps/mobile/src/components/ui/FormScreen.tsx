@@ -1,6 +1,7 @@
 // Scrollable form body + sticky footer that stays above the keyboard (FR-RESP-006).
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -12,6 +13,10 @@ import {
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 import { makeUseStyles, spacing } from '@kc/ui';
 import { useKeyboardVerticalOffset } from '../../lib/platform/useKeyboardVerticalOffset';
+import {
+  shellTabBarHeightPx,
+  useShellTabBarVisibility,
+} from '../../navigation/useShellTabBarVisibility';
 import { KeyboardFormAccessory, type KeyboardFormAccessoryProps } from './KeyboardFormAccessory';
 
 export interface FormScreenProps {
@@ -26,6 +31,11 @@ export interface FormScreenProps {
   readonly testID?: string;
   /** Inside an existing `Screen` — skip the outer SafeAreaView. */
   readonly embedded?: boolean;
+  /**
+   * Lift the sticky footer above the floating shell tab bar. No-op when the bar
+   * is hidden. Safe-area bottom is handled by `edges` on the outer SafeAreaView.
+   */
+  readonly tabBarFooterInset?: boolean;
 }
 
 export function FormScreen({
@@ -38,9 +48,28 @@ export function FormScreen({
   keyboardAccessory,
   testID,
   embedded,
+  tabBarFooterInset = true,
 }: FormScreenProps) {
   const styles = useFormScreenStyles();
   const keyboardOffset = useKeyboardVerticalOffset({ headerless, headerHeight });
+  const tabBarVisible = useShellTabBarVisibility();
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardOpen(true),
+    );
+    const hide = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardOpen(false),
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  const footerTabBarLift =
+    footer && tabBarFooterInset && !keyboardOpen ? shellTabBarHeightPx(tabBarVisible) : 0;
   const scrollStyles = useMemo(
     () => StyleSheet.flatten([styles.scrollContent, contentContainerStyle]),
     [contentContainerStyle, styles.scrollContent],
@@ -67,7 +96,14 @@ export function FormScreen({
             {children}
           </ScrollView>
           {keyboardAccessory ? <KeyboardFormAccessory {...keyboardAccessory} /> : null}
-          {footer ? <View style={styles.footer}>{footer}</View> : null}
+          {footer ? (
+            <View
+              testID="form-screen-footer"
+              style={[styles.footer, footerTabBarLift > 0 && { paddingBottom: spacing.base + footerTabBarLift }]}
+            >
+              {footer}
+            </View>
+          ) : null}
         </View>
       </KeyboardAvoidingView>
     </Root>

@@ -12,6 +12,7 @@ import {
 } from '@kc/infrastructure-supabase';
 import {
   CompleteBasicInfoUseCase,
+  ReconcileDeferredBasicInfoUseCase,
   SetDateOfBirthUseCase,
   CompleteOnboardingUseCase,
   DeleteAccountUseCase,
@@ -33,6 +34,7 @@ let _userRepo: IUserRepository | null = null;
 let _cityRepo: ICityRepository | null = null;
 let _streetRepo: IStreetRepository | null = null;
 let _completeBasicInfo: CompleteBasicInfoUseCase | null = null;
+let _reconcileDeferredBasicInfo: ReconcileDeferredBasicInfoUseCase | null = null;
 let _setDateOfBirth: SetDateOfBirthUseCase | null = null;
 let _completeOnboarding: CompleteOnboardingUseCase | null = null;
 let _setAvatar: SetAvatarUseCase | null = null;
@@ -71,6 +73,14 @@ export function getCompleteBasicInfoUseCase(): CompleteBasicInfoUseCase {
     _completeBasicInfo = new CompleteBasicInfoUseCase(getUserRepo(), getAuthService());
   }
   return _completeBasicInfo;
+}
+
+/** FR-AUTH-015 — when basic info was saved via Edit Profile while onboarding stayed deferred. */
+export function getReconcileDeferredBasicInfoUseCase(): ReconcileDeferredBasicInfoUseCase {
+  if (!_reconcileDeferredBasicInfo) {
+    _reconcileDeferredBasicInfo = new ReconcileDeferredBasicInfoUseCase(getUserRepo());
+  }
+  return _reconcileDeferredBasicInfo;
 }
 
 /** FR-AUTH-015 AC1.b — date of birth alone, for a member who already finished onboarding. */

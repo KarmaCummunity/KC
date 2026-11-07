@@ -38,6 +38,7 @@ vi.mock('../../../services/ridesKnowledgeComposition', () => ({ ridesKnowledgeRp
 vi.mock('../../../lib/analytics', () => ({ track: vi.fn() }));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn() }));
 vi.mock('../../../lib/haptics', () => ({ hapticSuccess: vi.fn() }));
+vi.mock('../../closure/OwnerAssignUserButton', () => ({ OwnerAssignUserButton: () => null }));
 
 import { GivingHandoffActions } from '../GivingHandoffActions';
 import { HandoffActionButton } from '../HandoffActionButton';
@@ -109,12 +110,13 @@ describe('GivingHandoffActions', () => {
     );
   });
 
-  it('shows nothing to the owner before anyone reserved', async () => {
+  it('lets the owner assign a member before anyone reserved', async () => {
     getForListing.mockResolvedValue(null);
     currentUserId = 'u_owner';
     const owned = { ...ITEM, ownerId: 'u_owner' } as MarketplaceListingDetail;
     const { queryByTestId } = renderInProviders(<GivingHandoffActions detail={owned} />);
-    expect(queryByTestId('giving-handoff')).toBeNull();
+    expect(queryByTestId('giving-handoff')).not.toBeNull();
+    expect(queryByTestId('giving-handoff-reserve')).toBeNull();
   });
 
   it('owner confirms reservation (selects recipient) and can decline/cancel', async () => {

@@ -20,6 +20,7 @@ import { TextField } from '../../../src/components/ui/TextField';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { container } from '../../../src/lib/container';
 import { useLocaleBundle, type LocaleBundle } from '../../../src/i18n/useLocaleBundle';
+import { useAdminScreenTitle } from '../../../src/components/admin/useAdminScreenTitle';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
 
 type StatusFilter = OrgApplicationStatus | 'all';
@@ -55,6 +56,8 @@ export default function OrgApprovalsScreen() {
   const can = (perm: AdminPermission) => hasPermission(roles as readonly AdminRole[], perm);
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<StatusFilter>('pending');
+
+  useAdminScreenTitle(t.title);
 
   const filters = useMemo(() => ({
     status: tab === 'all' ? undefined : tab,
@@ -119,7 +122,6 @@ export default function OrgApprovalsScreen() {
 
   return (
     <View style={styles.root}>
-      <Text style={styles.title}>{t.title}</Text>
       <ScrollView horizontal style={adminChipScroll.scroll} showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.chips, adminChipScroll.content]}>
         {STATUS_TABS.map((s) => (
           <Chip

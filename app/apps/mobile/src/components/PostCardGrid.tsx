@@ -9,11 +9,12 @@ import type { PostWithOwner } from '@kc/application';
 import type { IdentityRoleForViewedProfile } from '@kc/domain';
 import { TranslatableText, type TranslatableStatus } from './TranslatableText';
 import { PROFILE_GRID_COLUMNS, usePostGridCardWidth } from '../hooks/useShellContentWidth';
-import { postOwnerDisplayLabel } from '../lib/postOwnerDisplayLabel';
+import { PostCardActorsRow } from './post/PostCardActorsRow';
 import { getSupabasePublicImageUrl, getSupabaseFeedImageUrl } from '../lib/imageUrl';
 import { PostMenuButton } from './post/PostMenuButton';
 import { KcCard } from './cards/KcCard';
 import { usePostCardGridStyles } from './PostCardGrid.styles';
+import { prefetchImages } from '../lib/imagePrefetch';
 import { finishMark } from '../lib/observability/perfMarks';
 import { cleanDisplayTitle } from '../lib/displayTitle';
 import { feedCardCategory } from '../lib/feedCardCategory';
@@ -92,12 +93,15 @@ function PostCardGridInner({
     [imageBucket, firstImagePath],
   );
 
-  const ownerLabel = postOwnerDisplayLabel(post, t);
   const economicRole = identityRole ? deriveEconomicRole(post.type, identityRole) : null;
 
   const onImageLoadOnce = React.useCallback(() => {
     finishMark('image.first_paint');
   }, []);
+
+  const warmPostImage = React.useCallback(() => {
+    prefetchImages([thumbUrl, fullUrl]);
+  }, [thumbUrl, fullUrl]);
 
   const navigateToPost = React.useCallback(() => {
     if (onCardPress) {
@@ -106,6 +110,13 @@ function PostCardGridInner({
     }
     if (onPressOverride) {
       onPressOverride();
+      return;
+    }
+    if (post.challengeId) {
+      router.push({
+        pathname: '/(tabs)/donations/challenges/[challengeId]',
+        params: { challengeId: post.challengeId },
+      });
       return;
     }
     const q =
@@ -124,6 +135,7 @@ function PostCardGridInner({
       width={cardWidth}
       dense={isProfileGrid}
       onPress={navigateToPost}
+      onPressIn={warmPostImage}
       accessibilityLabel={cleanDisplayTitle(post.title)}
       imageUri={thumbUrl}
       fallbackUri={fullUrl}
@@ -133,7 +145,7 @@ function PostCardGridInner({
       badgeLabel={isGive ? t('feed.giveTypeShort') : t('feed.requestTypeShort')}
       roleBadgeLabel={roleBadgeLabel}
       menu={<PostMenuButton post={post} iconColor={OVERLAY_ICON} overlaySize={isProfileGrid ? 'compact' : 'default'} />}
-      author={{ name: ownerLabel, avatarUrl: post.ownerAvatarUrl }}
+      authorsRow={<PostCardActorsRow post={post} />}
       title={
         <TranslatableText
           source={cleanDisplayTitle(post.title)}

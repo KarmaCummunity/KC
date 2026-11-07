@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../../../../../src/components/ui/Screen';
+import { TimeWorldSubScreenChrome } from '../../../../../src/components/giving/TimeWorldSubScreenChrome';
 import { PrimaryButton, SecondaryButton } from '../../../../../src/components/ui/Buttons';
 import { volunteerUseCases } from '../../../../../src/services/volunteerComposition';
 import { useAuthStore } from '../../../../../src/store/authStore';
@@ -72,7 +73,12 @@ export default function VolunteerOpportunityDetailScreen() {
   const isOrganizer = userId != null && d.organizerId === userId;
 
   return (
-    <Screen blobs="content">
+    <>
+      <TimeWorldSubScreenChrome
+        activeScreenTestId="time-opportunity-detail"
+        screenTitleKey="timeVolunteer.opportunityDetail"
+      />
+      <Screen blobs="off" hasNativeHeader>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.title}>{d.title}</Text>
         {d.locationLabel ? <Text style={styles.summary}>{d.locationLabel}</Text> : null}
@@ -119,6 +125,7 @@ export default function VolunteerOpportunityDetailScreen() {
           );
         })}
       </ScrollView>
-    </Screen>
+      </Screen>
+    </>
   );
 }

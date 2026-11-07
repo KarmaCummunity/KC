@@ -1,6 +1,7 @@
 // KC#871 — follow suggestions + profile completeness.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { toVerificationLevel, type VerificationLevel } from '@kc/domain';
 import type { Database } from '../database.types';
 
 export interface FollowSuggestionRow {
@@ -11,6 +12,7 @@ export interface FollowSuggestionRow {
   cityName: string | null;
   followersCount: number;
   reason: string;
+  verificationLevel: VerificationLevel;
 }
 
 export interface ProfileCompleteness {
@@ -34,6 +36,7 @@ export class SupabaseFollowSuggestionsRepository {
       city_name: string | null;
       followers_count: number;
       reason: string;
+      verification_level?: number | null;
     }>).map((r) => ({
       userId: r.user_id,
       displayName: r.display_name,
@@ -42,6 +45,7 @@ export class SupabaseFollowSuggestionsRepository {
       cityName: r.city_name,
       followersCount: r.followers_count,
       reason: r.reason,
+      verificationLevel: toVerificationLevel(r.verification_level),
     }));
   }
 

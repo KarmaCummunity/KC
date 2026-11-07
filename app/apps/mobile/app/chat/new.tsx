@@ -13,7 +13,7 @@ import { NotifyModal } from '../../src/components/NotifyModal';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
 import { ChatRecipientRow } from '../../src/components/chat/ChatRecipientRow';
 import { NativeStackHeaderTitle } from '../../src/navigation/NativeStackHeaderTitle';
-import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
+import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { useChatStartCandidates } from '../../src/hooks/useChatStartCandidates';
 import { useAuthStore } from '../../src/store/authStore';
 import { container } from '../../src/lib/container';
@@ -32,7 +32,7 @@ export default function NewChatScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useStyles();
-  const detailOptions = useDetailStackScreenOptions();
+  const detailOptions = useShellStackScreenOptions();
   const me = useAuthStore((s) => s.session?.userId);
   const [q, setQ] = useState('');
   const [opening, setOpening] = useState(false);

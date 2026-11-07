@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { makeUseStyles, spacing, Text } from '@kc/ui';
 import { KcRowCard } from '../../../../../src/components/cards/KcRowCard';
 import { Screen } from '../../../../../src/components/ui/Screen';
+import { TimeWorldSubScreenChrome } from '../../../../../src/components/giving/TimeWorldSubScreenChrome';
 import { PrimaryButton } from '../../../../../src/components/ui/Buttons';
 import { volunteerUseCases } from '../../../../../src/services/volunteerComposition';
 import { useShellTabBarScrollInset } from '../../../../../src/navigation/useShellTabBarVisibility';
@@ -30,7 +31,9 @@ export default function OrganizerVolunteerListScreen() {
   });
 
   return (
-    <Screen blobs="content">
+    <>
+      <TimeWorldSubScreenChrome activeScreenTestId="time-organizer" />
+      <Screen blobs="off" hasNativeHeader>
       <KcFlashList
         data={list.data ?? []}
         keyExtractor={(item) => item.opportunityId}
@@ -71,6 +74,7 @@ export default function OrganizerVolunteerListScreen() {
           />
         )}
       />
-    </Screen>
+      </Screen>
+    </>
   );
 }

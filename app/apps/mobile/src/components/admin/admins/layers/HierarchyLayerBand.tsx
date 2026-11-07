@@ -90,15 +90,28 @@ export function HierarchyLayerBand({ layer, orgAccents, verifiedOrgIds, onSelect
   // The hint names the roles present, so a deep chain stays self-explanatory.
   const hint = layer.roles.map((role) => L.admin.roles[role]).join(' · ');
 
+  const [collapsed, setCollapsed] = useState(false);
+
   return (
     <View style={[styles.band, { borderTopColor: accent }]}>
-      <View style={styles.header}>
+      <Pressable
+        testID={`hierarchy-layer-toggle-${layer.level}`}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: !collapsed }}
+        accessibilityLabel={
+          collapsed ? copy.expandLayerA11y(title) : copy.collapseLayerA11y(title)
+        }
+        onPress={() => setCollapsed((v) => !v)}
+        style={styles.header}
+      >
         <View style={[styles.iconBubble, { backgroundColor: `${accent}1F` }]}>
           {topRole && <Ionicons name={ROLE_ICON[topRole]} size={iconSize.md} color={accent} />}
         </View>
         <View style={styles.headerTexts}>
           <Text style={styles.title}>{title}</Text>
-          <Text style={styles.hint} numberOfLines={2}>{hint}</Text>
+          <Text style={styles.hint} numberOfLines={collapsed ? 1 : 2}>
+            {hint}
+          </Text>
         </View>
         <View
           accessible
@@ -107,17 +120,23 @@ export function HierarchyLayerBand({ layer, orgAccents, verifiedOrgIds, onSelect
         >
           <Text style={styles.countText}>{layer.headcount}</Text>
         </View>
-      </View>
-
-      {layer.groups.map((group) => (
-        <OrgCluster
-          key={group.orgId}
-          group={group}
-          accent={orgAccents.get(group.orgId) ?? colors.primary}
-          isVerified={verifiedOrgIds.has(group.orgId)}
-          onSelect={onSelect}
+        <Ionicons
+          name={collapsed ? 'chevron-forward' : 'chevron-down'}
+          size={iconSize.sm}
+          color={colors.textSecondary}
         />
-      ))}
+      </Pressable>
+
+      {!collapsed &&
+        layer.groups.map((group) => (
+          <OrgCluster
+            key={group.orgId}
+            group={group}
+            accent={orgAccents.get(group.orgId) ?? colors.primary}
+            isVerified={verifiedOrgIds.has(group.orgId)}
+            onSelect={onSelect}
+          />
+        ))}
     </View>
   );
 }

@@ -5,7 +5,7 @@ import { Stack, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { TextField, FormScreen, PrimaryButton } from '../../src/components/ui';
-import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
+import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { SurveyRatingRow } from '../../src/components/survey/SurveyRatingRow';
 import {
   hebrewSurveyFieldTextStyle,
@@ -22,7 +22,7 @@ const MIN_BODY = 10;
 const MAX_BODY = 500;
 
 export default function FreeFeedbackScreen() {
-  const detailStackScreenOptions = useDetailStackScreenOptions();
+  const shellStackScreenOptions = useShellStackScreenOptions();
   const { t } = useTranslation();
   const router = useRouter();
   const styles = useFeedbackStyles();
@@ -72,7 +72,7 @@ export default function FreeFeedbackScreen() {
     <>
       <Stack.Screen
         options={{
-          ...detailStackScreenOptions,
+          ...shellStackScreenOptions,
           headerTitle: t('survey.feedbackTitle'),
         }}
       />

@@ -8,6 +8,7 @@ import { Text } from '@kc/ui';
 import type { OrgEventChoice } from '../../hooks/useOrgEventChoice';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { Chip } from '../ui/Chip';
+import { ListingFieldFrame } from './ListingFieldFrame';
 import { OrganizationPicker } from './OrganizationPicker';
 
 interface Props {
@@ -40,12 +41,14 @@ export function TimeOfferKindChooser({ choice, disabled = false }: Props) {
         </View>
       </View>
       {choice.isOrgEvent ? (
-        <OrganizationPicker
-          organizations={choice.organizations}
-          value={choice.orgId}
-          onChange={choice.setOrgId}
-          disabled={disabled}
-        />
+        <ListingFieldFrame field="org">
+          <OrganizationPicker
+            organizations={choice.organizations}
+            value={choice.orgId}
+            onChange={choice.setOrgId}
+            disabled={disabled}
+          />
+        </ListingFieldFrame>
       ) : null}
     </>
   );

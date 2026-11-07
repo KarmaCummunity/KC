@@ -10,6 +10,7 @@ import { usePathname, useRouter, useSegments } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, shadow, spacing, useTheme } from '@kc/ui';
 import { TABS, resolveActiveTabKey, type IoniconName } from './shell/tabs.config';
+import { TAB_PLUS_DIAMETER_PX, TAB_PLUS_LIFT_PX } from './shell/tabBarGeometry';
 import { handleActiveTabRepress } from './shell/tabPress';
 import { createCategoryForPath, createRouteFor } from '../lib/unifiedCreate/createCategories';
 import { useReducedMotion } from '../hooks/useReducedMotion';
@@ -100,7 +101,7 @@ function PlusBtn({ active, onPress, label, testID }: PlusBtnProps) {
         <Animated.View style={{ transform: [{ rotate }] }}>
           <Ionicons
             name="add"
-            size={22} // brand-guard-allow: centre action glyph sized to its 40pt button
+            size={25} // brand-guard-allow: centre action glyph sized to its 60pt button
             color={colors.textInverse}
           />
         </Animated.View>
@@ -136,8 +137,9 @@ export function TabBar({ bottomInset = 0 }: Readonly<{ bottomInset?: number }> =
           if (handleActiveTabRepress(router, tab, segments)) return;
           // The bar is also shown over root-level screens (post/[id], chat, ...).
           // Pushing a tab route from there leaves that screen underneath, so the
-          // iOS swipe-back later jumps to it. Pop back to the tabs first.
-          if (segments[0] !== '(tabs)' && router.canDismiss()) router.dismissAll();
+          // iOS swipe-back later jumps to it. Pop back to the tabs first — except for
+          // "+", whose form opens over the current screen and returns to it (FR-POST-001 AC9).
+          if (!tab.isComposer && segments[0] !== '(tabs)' && router.canDismiss()) router.dismissAll();
           // "+" opens the form on the giving world on screen (its remembered offer / request).
           router.push(tab.isComposer ? createRouteFor(createCategoryForPath(pathname)) : tab.route);
         };
@@ -174,7 +176,8 @@ const useTabBarStyles = makeUseStyles(({ colors, isDark }) => ({
     alignItems: 'center' as const,
     width: '100%' as const,
     alignSelf: 'center' as const,
-    overflow: 'hidden' as const,
+    // Visible: the raised "+" button sticks out above the bar.
+    overflow: 'visible' as const,
     shadowColor: colors.shadow,
     // brand-guard-allow: the floating pill has no shared shadow preset (deeper than shadow.modal)
     shadowOffset: { width: 0, height: 10 }, // brand-guard-allow: floating pill shadow
@@ -204,13 +207,18 @@ const useTabBarStyles = makeUseStyles(({ colors, isDark }) => ({
   iconSlotActive: {
     backgroundColor: colors.primarySurface,
   },
+  // The centre action is taller than the 48pt bar: it rises above the bar's top edge, ringed in
+  // the screen background so it reads as a separate floating button.
   plusCircle: {
-    width: 40,
-    height: 40,
+    width: TAB_PLUS_DIAMETER_PX,
+    height: TAB_PLUS_DIAMETER_PX,
     borderRadius: radius.full,
     backgroundColor: colors.primary,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
+    borderWidth: 3,
+    borderColor: colors.background,
+    transform: [{ translateY: -TAB_PLUS_LIFT_PX }],
     ...shadow.glow,
   },
   plusCircleActive: { backgroundColor: colors.primaryDark },

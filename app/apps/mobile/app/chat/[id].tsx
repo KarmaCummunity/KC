@@ -37,17 +37,13 @@ import { useChatMessageReactions } from '../../src/hooks/useChatMessageReactions
 import { pickChatImage, uploadChatImageAndSend } from '../../src/services/chatMediaUpload';
 import type { MessageReactionType } from '@kc/infrastructure-supabase';
 import { webEnterToSend } from '../../src/components/chat/webEnterToSend';
+import { firstParam } from '../../src/lib/postChatPrefillDecision';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 const EMPTY_MESSAGES: OptimisticMessage[] = [];
 const chatThreadKeyExtractor = (row: ChatThreadListRow) =>
   row.rowType === 'message' ? row.message.clientId : row.rowKey;
-
-function routeStringParam(v: string | string[] | undefined): string | undefined {
-  const s = Array.isArray(v) ? v[0] : v;
-  return typeof s === 'string' && s.length > 0 ? s : undefined;
-}
 
 export default function ChatScreen() {
   const { id, prefill } = useLocalSearchParams<{ id: string; prefill?: string | string[] }>();
@@ -63,7 +59,7 @@ export default function ChatScreen() {
 
   const messages = useChatStore((s) => s.threads[chatId] ?? EMPTY_MESSAGES);
   const { chat, counterpart, status: chatStatus } = useChatInit(chatId, userId);
-  const prefillText = routeStringParam(prefill);
+  const prefillText = firstParam(prefill);
   const [input, setInput] = useState(() => prefillText ?? '');
   const autoPrefillDedupeRef = useRef<string | undefined>(prefillText);
 
@@ -207,6 +203,7 @@ export default function ChatScreen() {
         shareHandle={counterpart.shareHandle ?? undefined}
         onOpenMenu={() => setMenuOpen(true)}
         peerUserId={counterpart.isDeleted ? null : counterpart.userId}
+        peerVerificationLevel={counterpart.verificationLevel}
       />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

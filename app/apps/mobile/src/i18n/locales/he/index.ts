@@ -18,6 +18,7 @@ import { dateTimeField, rideFeed, rideRoutes, rideSafety, rideSchedule, rideSeri
 import { authHe } from './modules/auth';
 import { onboardingHe } from './modules/onboarding';
 import { dateOfBirthHe } from './modules/dateOfBirth';
+import { verificationHe } from './modules/verification';
 import { errorsHe } from './modules/errors';
 import { chatHe } from './modules/chat';
 import { chatNewHe } from './modules/chatNew';
@@ -61,6 +62,7 @@ const he = {
   // Onboarding (FR-AUTH-010..012, FR-AUTH-018) — see modules/onboarding.ts
   onboarding: onboardingHe,
   dateOfBirth: dateOfBirthHe,
+  verification: verificationHe,
 
   // Feed — see modules/feed.ts
   feed: feedHe,

@@ -69,6 +69,8 @@ export function useRidesHubFeed() {
     clearRoute,
     /** Anything narrowing the feed beyond "every upcoming ride". */
     refined: routeActive || direction !== 'all',
+    /** Badge count on the filter button, like the main feed's. */
+    activeFilterCount: Number(routeActive) + Number(direction !== 'all'),
     clear,
     isLoading: active.isLoading,
     isError: active.isError,

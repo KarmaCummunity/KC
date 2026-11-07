@@ -9,8 +9,10 @@ import type {
   PostType,
   PostVisibility,
 } from '@kc/domain';
+import { toVerificationLevel } from '@kc/domain';
 import type { PostWithOwner } from '@kc/application';
 import type { Database } from '../database.types';
+import { postMapPoint } from './postMapPoint';
 
 type PostRow = Database['public']['Tables']['posts']['Row'];
 type MediaAssetRow = Database['public']['Tables']['media_assets']['Row'];
@@ -18,11 +20,11 @@ type RecipientRow = Database['public']['Tables']['recipients']['Row'];
 type UserRow = Database['public']['Tables']['users']['Row'];
 
 type RecipientWithUserRow = RecipientRow & {
-  user?: Pick<UserRow, 'user_id' | 'display_name' | 'avatar_url' | 'share_handle'> | null;
+  user?: Pick<UserRow, 'user_id' | 'display_name' | 'avatar_url' | 'share_handle' | 'verification_level'> | null;
 };
 
 export interface PostJoinedRow extends PostRow {
-  city_ref?: { name_he: string } | null;
+  city_ref?: { name_he: string; lat?: number | null; lon?: number | null } | null;
   media_assets?: MediaAssetRow[] | null;
   recipient?: RecipientWithUserRow | null;
   // source_language is inherited from PostRow (database.types.ts Row type)
@@ -31,7 +33,7 @@ export interface PostJoinedRow extends PostRow {
 export interface PostWithOwnerJoinedRow extends PostJoinedRow {
   owner: Pick<
     UserRow,
-    'user_id' | 'display_name' | 'avatar_url' | 'share_handle' | 'privacy_mode'
+    'user_id' | 'display_name' | 'avatar_url' | 'share_handle' | 'privacy_mode' | 'verification_level'
   > | null;
 }
 
@@ -45,6 +47,13 @@ function mapMediaAsset(row: MediaAssetRow): MediaAsset {
     sizeBytes: row.size_bytes,
     createdAt: row.created_at,
   };
+}
+
+function challengeIdOf(row: PostJoinedRow): string | null {
+  const details = row.details;
+  if (!details || typeof details !== 'object' || Array.isArray(details)) return null;
+  const id = (details as { challenge_id?: unknown }).challenge_id;
+  return typeof id === 'string' && id.length > 0 ? id : null;
 }
 
 function mapAddress(row: PostJoinedRow): Address {
@@ -85,6 +94,8 @@ export function mapPostRow(row: PostJoinedRow): Post {
     reopenCount: row.reopen_count,
     listingId: row.listing_id ?? null,
     listingWorldSlug: row.listing_world_slug ?? null,
+    challengeId: challengeIdOf(row),
+    mapPoint: postMapPoint((row as { geo?: unknown }).geo, row.city_ref),
     deleteAfter: row.delete_after,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -100,6 +111,9 @@ function mapRecipientUser(row: PostJoinedRow): PostWithOwner['recipientUser'] {
     displayName: u.display_name,
     shareHandle: u.share_handle,
     avatarUrl: u.avatar_url,
+    verificationLevel: toVerificationLevel(
+      (u as { verification_level?: UserRow['verification_level'] }).verification_level,
+    ),
   };
 }
 
@@ -129,6 +143,9 @@ export function mapPostWithOwnerRow(row: PostWithOwnerJoinedRow): PostWithOwner 
     ownerAvatarUrl: row.owner.avatar_url,
     ownerHandle: row.owner.share_handle,
     ownerPrivacyMode: row.owner.privacy_mode as 'Public' | 'Private',
+    ownerVerificationLevel: toVerificationLevel(
+      (row.owner as { verification_level?: UserRow['verification_level'] }).verification_level,
+    ),
     recipientUser,
     distanceKm: null,
   };
@@ -139,13 +156,23 @@ export function mapPostWithOwnerRow(row: PostWithOwnerJoinedRow): PostWithOwner 
 // second round-trip.
 export const POST_SELECT_OWNER = `
   *,
-  city_ref:cities!posts_city_fkey(name_he),
+  city_ref:cities!posts_city_fkey(name_he, lat, lon),
   media_assets(*),
   recipient:recipients(
     *,
-    user:users!recipients_recipient_user_id_fkey(user_id, display_name, avatar_url, share_handle)
+    user:users!recipients_recipient_user_id_fkey(user_id, display_name, avatar_url, share_handle, verification_level)
   ),
-  owner:users!posts_owner_id_fkey(user_id, display_name, avatar_url, share_handle, privacy_mode)
+  owner:users_public!posts_owner_id_fkey(user_id, display_name, avatar_url, share_handle, privacy_mode, verification_level)
+`;
+
+// Feed cards show one photo, a title and the author. Skip the recipient join and
+// every extra photo so a weak connection can finish the page. Detail still loads
+// the full row. Owner via users_public (active projection) — reliable from feed_visible_posts.
+export const FEED_CARD_SELECT = `
+  *,
+  city_ref:cities!posts_city_fkey(name_he, lat, lon),
+  media_assets(media_asset_id, post_id, bucket, path, mime_type, size_bytes, created_at, ordinal).order(ordinal.asc).limit(1),
+  owner:users_public!posts_owner_id_fkey(user_id, display_name, avatar_url, share_handle, privacy_mode, verification_level)
 `;
 
 export const POST_SELECT_BARE = `

@@ -13,4 +13,5 @@ export const useEditProfileStyles = makeUseStyles(({ colors }) => ({
   field: { gap: spacing.xs },
   textarea: { minHeight: 90, textAlignVertical: 'top' },
   count: { ...typography.caption, color: colors.textDisabled, textAlign: rtlTextAlignEnd },
+  helper: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignEnd },
 }));

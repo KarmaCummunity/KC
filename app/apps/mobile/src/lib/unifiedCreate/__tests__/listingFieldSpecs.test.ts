@@ -107,10 +107,10 @@ describe('listing field specs — values', () => {
     expect(initialDetailsFor(foodOffer)).toEqual({ pickup_mode: 'pickup' });
   });
 
-  it('shows the cost-share amount only for an expense-sharing ride', () => {
+  it('keeps rides free: the cost model has no control and the amount stays hidden', () => {
+    expect(rideOffer.find((s) => s.key === 'reward_model')?.type).toBe('fixed');
     const amount = rideOffer.find((s) => s.key === 'cost_share_ils')!;
-    expect(isFieldVisible(amount, { reward_model: 'free' })).toBe(false);
-    expect(isFieldVisible(amount, { reward_model: 'expense_share' })).toBe(true);
+    expect(isFieldVisible(amount, initialDetailsFor(rideOffer))).toBe(false);
   });
 
   it('reports the first missing required field, in render order', () => {

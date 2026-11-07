@@ -13,7 +13,11 @@ export { SupabaseUserRepository } from './users/SupabaseUserRepository';
 export { SupabaseCityRepository } from './cities/SupabaseCityRepository';
 export { SupabaseStreetRepository } from './streets/SupabaseStreetRepository';
 export { SupabasePostRepository } from './posts/SupabasePostRepository';
-export { SupabasePostEngagementRepository, type PostReactionType } from './posts/SupabasePostEngagementRepository';
+export {
+  SupabasePostEngagementRepository,
+  type PostReactionType,
+  type PostCommentWithAuthor,
+} from './posts/SupabasePostEngagementRepository';
 export { SupabaseSavedPostsRepository } from './posts/SupabaseSavedPostsRepository';
 export { SupabaseNotificationInboxRepository } from './notifications/SupabaseNotificationInboxRepository';
 export { SupabaseChatV2Realtime } from './chat/SupabaseChatV2Realtime';
@@ -81,6 +85,7 @@ export { SupabaseRidePlaceRepository } from './rides/SupabaseRidePlaceRepository
 export { SupabaseRidesFeedRepository } from './rides/SupabaseRidesFeedRepository';
 export { SupabaseRideSavedRoutesRepository } from './rides/SupabaseRideSavedRoutesRepository';
 export { SupabaseRideSeriesRepository } from './rides/SupabaseRideSeriesRepository';
+export { SupabaseRideHouseNumberRepository } from './rides/SupabaseRideHouseNumberRepository';
 export { SupabaseRideSafetyRepository } from './rides/SupabaseRideSafetyRepository';
 export { SupabaseRideLegacyLinkRepository } from './rides/SupabaseRideLegacyLinkRepository';
 export { SupabaseSurveyRepository } from './survey/SupabaseSurveyRepository';

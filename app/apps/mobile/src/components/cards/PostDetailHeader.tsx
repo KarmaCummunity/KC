@@ -9,7 +9,9 @@ import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
 
 interface Props {
-  readonly title: string;
+  readonly title?: string;
+  /** When set, replaces the plain `title` text (e.g. translatable title). */
+  readonly titleNode?: React.ReactNode;
   readonly tone: 'give' | 'request';
   readonly badgeLabel: string;
   readonly chip?: string | null;
@@ -27,10 +29,17 @@ const useStyles = makeUseStyles(({ colors }) => ({
   requestPillText: { color: colors.secondary },
   chip: { backgroundColor: colors.surfaceRaised, borderWidth: 1, borderColor: colors.border },
   chipText: { color: colors.textSecondary },
-  title: { ...typography.h2, color: colors.textPrimary, textAlign: rtlTextAlignStart },
+  title: {
+    ...typography.h2,
+    fontSize: 22,
+    lineHeight: 28,
+    letterSpacing: -0.2,
+    color: colors.textPrimary,
+    textAlign: rtlTextAlignStart,
+  },
 }));
 
-export function PostDetailHeader({ title, tone, badgeLabel, chip, closed }: Props) {
+export function PostDetailHeader({ title, titleNode, tone, badgeLabel, chip, closed }: Props) {
   const { t } = useTranslation();
   const s = useStyles();
   const isGive = tone === 'give';
@@ -51,7 +60,7 @@ export function PostDetailHeader({ title, tone, badgeLabel, chip, closed }: Prop
           </View>
         ) : null}
       </View>
-      <Text style={s.title}>{cleanDisplayTitle(title)}</Text>
+      {titleNode ?? (title ? <Text style={s.title}>{cleanDisplayTitle(title)}</Text> : null)}
     </View>
   );
 }

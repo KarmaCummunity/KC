@@ -8,7 +8,7 @@
 //   2. messages (via startThreadSub) — populates the bubble list
 //   3. mark-read RPC + local badge clear
 import { useEffect, useState } from 'react';
-import type { Chat } from '@kc/domain';
+import type { Chat, VerificationLevel } from '@kc/domain';
 import { useChatStore } from '../store/chatStore';
 import { container } from '../lib/container';
 
@@ -17,6 +17,7 @@ export interface ChatCounterpart {
   displayName: string | null;
   shareHandle: string | null;
   isDeleted: boolean;
+  verificationLevel?: VerificationLevel;
 }
 
 const EMPTY_COUNTERPART: ChatCounterpart = {
@@ -57,6 +58,7 @@ export function useChatInit(chatId: string, userId: string) {
         displayName: cp.displayName,
         shareHandle: cp.shareHandle,
         isDeleted: cp.isDeleted,
+        verificationLevel: cp.verificationLevel,
       });
       setStatus('loaded');
 

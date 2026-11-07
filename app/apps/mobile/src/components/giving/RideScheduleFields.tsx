@@ -18,6 +18,7 @@ import {
 } from '@kc/domain';
 import { DateTimeField } from '../ui/DateTimeField';
 import { RideOptionSwitch } from './RideOptionSwitch';
+import { ListingFieldFrame } from '../CreatePostForm/ListingFieldFrame';
 
 /** Detail keys owned by this block, hidden from the generic schema fields. */
 export const RIDE_SCHEDULE_DETAIL_KEYS = ['departs_at', 'arrives_at', 'seats_available'] as const;
@@ -92,19 +93,21 @@ export function RideScheduleFields({ details, onChange, withSeats, leaveNow, onL
         onValueChange={setLeaveNow}
         disabled={disabled}
       />
-      <DateTimeField
-        testID="ride-departs-at"
-        label={t('rideSchedule.departure')}
-        value={departs}
-        minimumDate={new Date()}
-        disabled={disabled}
-        onChange={setDeparture}
-        shortcuts={RIDE_DEPARTURE_SHORTCUTS.map((key) => ({
-          key,
-          label: t(`rideSchedule.shortcut.${key}`),
-          at: () => rideDepartureFromShortcut(key, new Date()),
-        }))}
-      />
+      <ListingFieldFrame field="ride:departure">
+        <DateTimeField
+          testID="ride-departs-at"
+          label={t('rideSchedule.departure')}
+          value={departs}
+          minimumDate={new Date()}
+          disabled={disabled}
+          onChange={setDeparture}
+          shortcuts={RIDE_DEPARTURE_SHORTCUTS.map((key) => ({
+            key,
+            label: t(`rideSchedule.shortcut.${key}`),
+            at: () => rideDepartureFromShortcut(key, new Date()),
+          }))}
+        />
+      </ListingFieldFrame>
       <DateTimeField
         testID="ride-arrives-at"
         label={t('rideSchedule.arrival')}

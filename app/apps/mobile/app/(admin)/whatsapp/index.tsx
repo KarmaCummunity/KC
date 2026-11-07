@@ -7,7 +7,8 @@ import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { DangerButton, PrimaryButton } from '../../../src/components/ui/Buttons';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { container } from '../../../src/lib/container';
-import { AdminFilterChip } from '../../../src/components/admin/AdminFilterChip';
+import { AdminFilterTopBarButton } from '../../../src/components/admin/AdminSearchFilterToolbar';
+import { FilterSection } from '../../../src/components/filterKit/FilterSection';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
 import { confirmAction as platformConfirm } from '../../../src/services/platformConfirm';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
@@ -24,6 +25,7 @@ export default function WhatsAppAdminScreen() {
   const can = (perm: AdminPermission) => hasPermission(roles as readonly AdminRole[], perm);
   const queryClient = useQueryClient();
   const [outFilter, setOutFilter] = useState<OutFilter>('all');
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const enabled = can('whatsapp.manage');
   const invalidate = () => {
@@ -160,16 +162,26 @@ export default function WhatsAppAdminScreen() {
       </View>
 
       <Text style={styles.section}>{t.sections.outbound}</Text>
-      <View style={styles.chips}>
-        {(['all', 'queued', 'sent', 'failed'] as const).map((f) => (
-          <AdminFilterChip
-            key={f}
-            label={t.filters[f]}
-            active={outFilter === f}
-            onPress={() => setOutFilter(f)}
+      <AdminFilterTopBarButton
+        portalTitle={t.title}
+        activeFilterCount={outFilter === 'all' ? 0 : 1}
+        filterVisible={sheetOpen}
+        onOpenFilters={() => setSheetOpen(true)}
+        onCloseFilters={() => setSheetOpen(false)}
+        onClearFilters={() => setOutFilter('all')}
+        sheetTitle={t.sections.outbound}
+        filterButtonTestID="admin-whatsapp-filter-button"
+        filterSheetContent={(
+          <FilterSection<OutFilter>
+            options={(['all', 'queued', 'sent', 'failed'] as const).map((f) => ({
+              value: f,
+              label: t.filters[f],
+            }))}
+            value={outFilter}
+            onChange={(f) => setOutFilter(f ?? 'all')}
           />
-        ))}
-      </View>
+        )}
+      />
       {(outbound.data?.rows.length ?? 0) === 0 ? (
         <AdminListEmpty title={t.empty} hint="" />
       ) : (

@@ -6,29 +6,38 @@ import { Linking, Platform, Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
-import { rideNavigationAppsFor, rideNavigationUrl, type RidePlace, type RideRoute } from '@kc/domain';
+import {
+  rideAddressLabel,
+  rideNavigationAppsFor,
+  rideNavigationUrl,
+  type RideHouseNumbers,
+  type RidePlace,
+  type RideRoute,
+} from '@kc/domain';
 import { rowDirectionStart } from '../../lib/rtlLayout';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 interface Stop {
   readonly place: RidePlace;
   readonly role: 'origin' | 'meeting' | 'dest';
+  /** The private house number, known only to the driver and approved passengers (FR-RIDE-003 AC9). */
+  readonly houseNumber?: string;
 }
 
 /** Origin, then meeting points, then destination; ends that are missing are skipped. */
-export function routeStops(route: RideRoute): Stop[] {
+export function routeStops(route: RideRoute, houseNumbers: RideHouseNumbers = {}): Stop[] {
   return [
-    ...(route.origin ? [{ place: route.origin, role: 'origin' as const }] : []),
+    ...(route.origin ? [{ place: route.origin, role: 'origin' as const, houseNumber: houseNumbers.origin }] : []),
     ...route.meetingPoints.map((place) => ({ place, role: 'meeting' as const })),
-    ...(route.dest ? [{ place: route.dest, role: 'dest' as const }] : []),
+    ...(route.dest ? [{ place: route.dest, role: 'dest' as const, houseNumber: houseNumbers.dest }] : []),
   ];
 }
 
 const ROLE_LABEL = { origin: 'cards.from', meeting: 'ridePlaces.meetingPoint', dest: 'cards.to' } as const;
 const ROLE_ICON = { origin: 'radio-button-on', meeting: 'ellipse', dest: 'location' } as const;
 
-export function RideRouteStops({ route }: Readonly<{ route: RideRoute }>) {
-  const stops = routeStops(route);
+export function RideRouteStops({ route, houseNumbers }: Readonly<{ route: RideRoute; houseNumbers?: RideHouseNumbers }>) {
+  const stops = routeStops(route, houseNumbers);
   return (
     <View>
       {stops.map((stop, i) => (
@@ -44,6 +53,7 @@ function StopRow({ stop, last }: Readonly<{ stop: Stop; last: boolean }>) {
   const styles = useStyles();
   // The navigation app choices open under the place, one place at a time.
   const [open, setOpen] = useState(false);
+  const address = rideAddressLabel(stop.place, stop.houseNumber);
 
   return (
     <View style={styles.row} testID={`ride-stop-${stop.role}`}>
@@ -54,10 +64,10 @@ function StopRow({ stop, last }: Readonly<{ stop: Stop; last: boolean }>) {
       <View style={styles.body}>
         <Text style={styles.label}>{t(ROLE_LABEL[stop.role])}</Text>
         <View style={styles.placeRow}>
-          <Text style={styles.place} numberOfLines={2}>{stop.place.label}</Text>
+          <Text style={styles.place} numberOfLines={2}>{address}</Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={t('ridePlaces.navigateTo', { place: stop.place.label })}
+            accessibilityLabel={t('ridePlaces.navigateTo', { place: address })}
             testID={`ride-stop-navigate-${stop.role}`}
             onPress={() => setOpen((v) => !v)}
             style={styles.navigate}
@@ -66,13 +76,16 @@ function StopRow({ stop, last }: Readonly<{ stop: Stop; last: boolean }>) {
             <Text style={styles.navigateText}>{t('ridePlaces.navigate')}</Text>
           </Pressable>
         </View>
-        {open ? <NavigationApps place={stop.place} /> : null}
+        {stop.houseNumber && stop.place.kind === 'street' ? (
+          <Text style={styles.label}>{t('ridePlaces.houseNumberPrivateNote')}</Text>
+        ) : null}
+        {open ? <NavigationApps place={stop.place} houseNumber={stop.houseNumber} /> : null}
       </View>
     </View>
   );
 }
 
-function NavigationApps({ place }: Readonly<{ place: RidePlace }>) {
+function NavigationApps({ place, houseNumber }: Readonly<{ place: RidePlace; houseNumber?: string }>) {
   const { t } = useTranslation();
   const styles = useStyles();
   return (
@@ -84,7 +97,7 @@ function NavigationApps({ place }: Readonly<{ place: RidePlace }>) {
           testID={`ride-navigate-${app}`}
           style={styles.app}
           // A link that cannot open (no browser at all) has nothing useful to fall back to.
-          onPress={() => void Linking.openURL(rideNavigationUrl(app, place)).catch(() => undefined)}
+          onPress={() => void Linking.openURL(rideNavigationUrl(app, place, houseNumber)).catch(() => undefined)}
         >
           <Text style={styles.appText}>{t(`ridePlaces.navigationApp.${app}`)}</Text>
         </Pressable>

@@ -152,7 +152,7 @@ describe('postRepoQueries', () => {
   });
 
   describe('countProfileOpenPosts', () => {
-    it('counts open posts excluding listing mirrors without excludeOnlyMe', async () => {
+    it('counts open posts of every world, skipping feed-hidden ones, without excludeOnlyMe', async () => {
       const builder: any = {
         eq: vi.fn().mockReturnThis(),
         is: vi.fn().mockReturnThis(),
@@ -168,7 +168,8 @@ describe('postRepoQueries', () => {
 
       expect(from).toHaveBeenCalledWith('posts');
       expect(builder.eq).toHaveBeenCalledWith('owner_id', 'u_owner');
-      expect(builder.is).toHaveBeenCalledWith('listing_id', null);
+      expect(builder.eq).toHaveBeenCalledWith('feed_hidden', false);
+      expect(builder.is).not.toHaveBeenCalled();
       expect(builder.eq).toHaveBeenCalledWith('status', 'open');
       expect(builder.neq).not.toHaveBeenCalled();
       expect(count).toBe(3);

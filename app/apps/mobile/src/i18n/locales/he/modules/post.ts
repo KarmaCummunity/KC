@@ -206,9 +206,18 @@ export const postHe = {
 
   engagement: {
     title: 'תגובות',
+    titleWithCount: 'תגובות ({{count}})',
+    reactionsCount: '{{count}} אהבו',
     meta: '{{reactions}} רגשות · {{comments}} תגובות',
-    commentPlaceholder: 'כתוב תגובה…',
-    commentSend: 'פרסמו תגובה',
+    emptyComments: 'אין תגובות עדיין. היו הראשונים להגיב.',
+    loadError: 'לא הצלחנו לטעון את התגובות. נסו שוב.',
+    commentPlaceholder: 'הוסיפו תגובה…',
+    replyPlaceholder: 'כתבו תשובה…',
+    commentSend: 'פרסום',
+    reply: 'השיבו',
+    replyingTo: 'תשובה ל{{name}}',
+    cancelReply: 'ביטול תשובה',
+    commentLike: 'לייק לתגובה',
     reaction: {
       like: 'אהבתי',
       support: 'תמיכה',

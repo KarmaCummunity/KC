@@ -1,21 +1,26 @@
 // @vitest-environment jsdom
-// FR-FEED-020 AC2 — a giving world's screen: "request" / "offer" open the create form preset
-// to the world and direction; its feed lists offers and requests, narrows by direction, and
-// searches within the world; sub-screen links open the world's own screens; an empty,
-// filtered feed offers to clear the filters.
+// FR-FEED-020 AC2 — a giving world's screen: the TopBar carries the world's screens menu, the map
+// and a filter button; the feed is the main feed's posts query narrowed to the world, filtered
+// through the main feed's sheet with the world locked; an empty, filtered feed offers to clear.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@kc/ui';
-import type { MarketplaceBrowseRow } from '@kc/domain';
+import type { PostFilterValue } from '../../PostFilterSheet';
+
+type FeedPost = { postId: string };
+type SheetProps = {
+  visible: boolean;
+  lockedWorld?: boolean;
+  onPatch: (p: Partial<PostFilterValue>) => void;
+  onClear: () => void;
+};
 
 const mocks = vi.hoisted(() => ({
   push: vi.fn(),
-  browsePage: vi.fn(),
-  searchPage: vi.fn(),
-  getListingCards: vi.fn(),
-  listWorldSubcategories: vi.fn(),
+  execute: vi.fn(),
+  sheet: { last: null as SheetProps | null },
 }));
 
 vi.mock('react-native-reanimated', async () => (await import('../../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
@@ -25,50 +30,71 @@ vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }),
 }));
-vi.mock('expo-router', () => ({ useRouter: () => ({ push: mocks.push }) }));
-vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
-vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarScrollInset: () => 0 }));
-vi.mock('../../../services/marketplaceComposition', () => ({
-  marketplaceRepository: () => ({
-    browsePage: mocks.browsePage,
-    searchPage: mocks.searchPage,
-    getListingCards: mocks.getListingCards,
-    listWorldSubcategories: mocks.listWorldSubcategories,
-  }),
+vi.mock('expo-router', () => ({
+  useRouter: () => ({ push: mocks.push }),
+  useNavigation: () => ({ setOptions: (o: HeaderOptions) => header.set(o) }),
 }));
+vi.mock('../../../hooks/useAdminRoles', () => ({ useAdminRoles: () => ({ roles: [] }) }));
+vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
+vi.mock('../../../hooks/useModalHardwareBack', () => ({ useModalHardwareBack: () => {} }));
+vi.mock('../../../hooks/usePrefetchNextPage', () => ({ usePrefetchNextPage: () => {} }));
+vi.mock('../../../store/authStore', () => ({
+  useAuthStore: (sel: (s: { session: { userId: string } }) => unknown) => sel({ session: { userId: 'viewer-1' } }),
+}));
+vi.mock('../../../services/postsComposition', () => ({ getFeedUseCase: () => ({ execute: mocks.execute }) }));
 // Surfaces with their own tests and their own I/O.
 vi.mock('../../ui/Screen', () => ({ Screen: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
-vi.mock('../../DonationLinksList', () => ({ DonationLinksList: () => null }));
-vi.mock('../../cards/ListingCard', () => ({
-  ListingCard: ({ item }: { item: MarketplaceBrowseRow }) => <div data-testid={`card-${item.listingId}`}>{item.title}</div>,
+vi.mock('../WorldLinksSection', () => ({ WorldLinksSection: () => null }));
+vi.mock('../../PostFeedList', () => ({
+  PostFeedList: ({ data, isLoading, emptyComponent }: { data?: FeedPost[]; isLoading: boolean; emptyComponent?: React.ReactNode }) => (
+    <div>
+      {data?.map((p) => <div key={p.postId} data-testid={`post-${p.postId}`} />)}
+      {!isLoading && data?.length === 0 ? emptyComponent : null}
+    </div>
+  ),
+}));
+vi.mock('../../PostFilterSheet', () => ({
+  PostFilterSheet: (props: SheetProps) => {
+    mocks.sheet.last = props;
+    return props.visible ? <div data-testid="post-filter-sheet" /> : null;
+  },
 }));
 
 import { WorldMarketplaceHub } from '../WorldMarketplaceHub';
 import { worldSubScreens } from '../worldSubScreens';
 
-const card = (listingId: string, direction: 'give' | 'request') =>
-  ({ listingId, direction, title: listingId, worldSlug: 'food' }) as unknown as MarketplaceBrowseRow;
+type HeaderOptions = { headerTitle?: () => React.ReactNode; headerRight?: () => React.ReactNode };
+const header = { set: (_o: HeaderOptions) => {} };
+/** Renders what the hub puts into the stack header, as the TopBar would. */
+function HeaderHost() {
+  const [options, setOptions] = React.useState<HeaderOptions>({});
+  header.set = (o) => setOptions(o);
+  return (
+    <>
+      {options.headerTitle?.()}
+      {options.headerRight?.()}
+    </>
+  );
+}
 
 beforeEach(() => {
-  mocks.browsePage.mockResolvedValue({ rows: [card('offer-1', 'give'), card('request-1', 'request')], nextCursor: null });
-  mocks.searchPage.mockResolvedValue({ rows: ['s-offer', 's-request'], nextCursor: null });
-  mocks.getListingCards.mockResolvedValue([card('s-offer', 'give'), card('s-request', 'request')]);
-  mocks.listWorldSubcategories.mockResolvedValue([]);
+  mocks.execute.mockResolvedValue({ posts: [{ postId: 'p1' }, { postId: 'p2' }], nextCursor: null });
 });
 
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
-  vi.useRealTimers();
+  mocks.sheet.last = null;
 });
 
-function renderHub(worldSlug: 'food' | 'knowledge' = 'food') {
+function renderHub() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
       <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
+        <HeaderHost />
         <WorldMarketplaceHub
-          worldSlug={worldSlug}
+          worldSlug="food"
           icon="restaurant-outline"
           introKey="givingHandoff.foodHubIntro"
           subScreens={worldSubScreens('/(tabs)/donations/food/handoffs')}
@@ -78,84 +104,65 @@ function renderHub(worldSlug: 'food' | 'knowledge' = 'food') {
   );
 }
 
-const lastBrowseFilters = () => mocks.browsePage.mock.calls.at(-1)?.[0];
+const lastFeedFilter = () => mocks.execute.mock.calls.at(-1)?.[0]?.filter;
+const patchFilters = (p: Partial<PostFilterValue>) => mocks.sheet.last?.onPatch(p);
 
 describe('WorldMarketplaceHub — the world feed', () => {
-  it('has no request / offer buttons: the "+" tab opens the form on this world (D100)', () => {
+  it('opens the world screens menu from the title and links the sub-screens', () => {
     renderHub();
-    expect(screen.queryByTestId('world-hub-request')).toBeNull();
-    expect(screen.queryByTestId('world-hub-offer')).toBeNull();
-  });
-
-  it('links the world sub-screens', () => {
-    renderHub();
+    expect(screen.queryByTestId('world-hub-my-handoffs')).toBeNull();
+    fireEvent.click(screen.getByTestId('world-screens-menu-toggle'));
+    expect(screen.getByTestId('world-menu-feed')).toBeTruthy();
     fireEvent.click(screen.getByTestId('world-hub-my-handoffs'));
     expect(mocks.push).toHaveBeenLastCalledWith('/(tabs)/donations/food/handoffs');
-    fireEvent.click(screen.getByTestId('world-hub-my-listings'));
-    expect(mocks.push).toHaveBeenLastCalledWith('/(tabs)/donations/marketplace/my-listings');
   });
 
-  it('lists offers and requests of the world, then narrows to one direction', async () => {
+  it("opens the map on this world's feed, with the feed's filter (FR-FEED-021)", () => {
     renderHub();
-    expect(await screen.findByTestId('card-offer-1')).toBeTruthy();
-    expect(screen.getByTestId('card-request-1')).toBeTruthy();
-    expect(lastBrowseFilters()).toMatchObject({ worldSlug: 'food', direction: null, categoryId: null, radiusKm: 25 });
-    expect(screen.getByTestId('world-feed-direction-all').getAttribute('aria-checked')).toBe('true');
-    expect(
-      screen.getAllByRole('checkbox').map((c) => c.getAttribute('data-testid')).filter((id) => id?.startsWith('world-feed-direction-')),
-    ).toEqual(['world-feed-direction-all', 'world-feed-direction-give', 'world-feed-direction-request']);
-
-    fireEvent.click(screen.getByTestId('world-feed-direction-request'));
-    await waitFor(() => expect(lastBrowseFilters()).toMatchObject({ worldSlug: 'food', direction: 'request' }));
-    expect(screen.getByTestId('world-feed-direction-request').getAttribute('aria-checked')).toBe('true');
+    fireEvent.click(screen.getByTestId('world-open-map'));
+    const call = mocks.push.mock.lastCall?.[0] as { pathname: string; params: { world: string; filter: string } };
+    expect(call.pathname).toBe('/(tabs)/donations/marketplace/map');
+    expect(call.params.world).toBe('food');
+    expect(JSON.parse(call.params.filter)).toMatchObject({ worlds: ['food'], statusFilter: 'open', sortOrder: 'newest' });
   });
 
-  it('searches within the world and applies the direction to the results', async () => {
+  it("lists the world's posts through the main feed query, open and newest first", async () => {
     renderHub();
-    const input = screen.getByTestId('world-feed-search');
-    fireEvent.change(input, { target: { value: 'חלה' } });
-    expect(await screen.findByTestId('card-s-request')).toBeTruthy();
-    expect(mocks.searchPage).toHaveBeenCalledWith('חלה', 'food', expect.any(Number), null);
-    // The refine chips apply to browsing only; a text search spans the whole world.
-    expect(screen.queryByTestId('browse-refine-radius-25')).toBeNull();
-
-    fireEvent.click(screen.getByTestId('world-feed-direction-give'));
-    await waitFor(() => expect(screen.queryByTestId('card-s-request')).toBeNull());
-    expect(screen.getByTestId('card-s-offer')).toBeTruthy();
+    expect(await screen.findByTestId('post-p1')).toBeTruthy();
+    expect(mocks.execute).toHaveBeenCalledWith(expect.objectContaining({ viewerId: 'viewer-1', limit: 20 }));
+    expect(lastFeedFilter()).toMatchObject({ worlds: ['food'], statusFilter: 'open', sortOrder: 'newest' });
   });
 
-  it('does not search for a one-letter query', async () => {
+  it("opens the main feed's filter sheet with the world locked, and keeps the world on a patch", async () => {
     renderHub();
-    await screen.findByTestId('card-offer-1');
-    await act(async () => {
-      fireEvent.change(screen.getByTestId('world-feed-search'), { target: { value: 'ח' } });
-      await new Promise((resolve) => setTimeout(resolve, 300));
-    });
-    expect(mocks.searchPage).not.toHaveBeenCalled();
-    expect(screen.getByTestId('card-offer-1')).toBeTruthy();
+    await screen.findByTestId('post-p1');
+    fireEvent.click(screen.getByTestId('world-feed-filter-button'));
+    expect(screen.getByTestId('post-filter-sheet')).toBeTruthy();
+    expect(mocks.sheet.last?.lockedWorld).toBe(true);
+
+    patchFilters({ type: 'Request', worlds: ['items'], sortOrder: 'distance' });
+    await waitFor(() => expect(lastFeedFilter()).toMatchObject({ type: 'Request', worlds: ['food'], sortOrder: 'distance' }));
+    expect(screen.getByTestId('filter-button-badge').textContent).toBe('2');
   });
 
   it('offers to clear the filters of an empty feed, and clearing restores the whole world', async () => {
-    mocks.browsePage.mockImplementation(async (filters: { direction: string | null }) => ({
-      rows: filters.direction === 'request' ? [] : [card('offer-1', 'give')],
+    mocks.execute.mockImplementation(async ({ filter }: { filter: { type?: string } }) => ({
+      posts: filter.type === 'Request' ? [] : [{ postId: 'p1' }],
       nextCursor: null,
     }));
     renderHub();
-    await screen.findByTestId('card-offer-1');
-
-    fireEvent.click(screen.getByTestId('world-feed-direction-request'));
+    await screen.findByTestId('post-p1');
+    patchFilters({ type: 'Request' });
     fireEvent.click(await screen.findByTestId('world-feed-empty-clear'));
-    // The whole-world page is served again (from the query cache) and "all" is selected.
-    expect(await screen.findByTestId('card-offer-1')).toBeTruthy();
-    expect(screen.getByTestId('world-feed-direction-all').getAttribute('aria-checked')).toBe('true');
-    expect(screen.getByTestId('world-feed-direction-request').getAttribute('aria-checked')).toBe('false');
+    expect(await screen.findByTestId('post-p1')).toBeTruthy();
+    expect(screen.queryByTestId('filter-button-badge')).toBeNull();
   });
 
-  it('an empty, unfiltered world invites the first listing without a clear action', async () => {
-    mocks.browsePage.mockResolvedValue({ rows: [], nextCursor: null });
+  it('an empty, unfiltered world invites the first post without a clear action', async () => {
+    mocks.execute.mockResolvedValue({ posts: [], nextCursor: null });
     renderHub();
     fireEvent.click(await screen.findByTestId('world-feed-empty-create'));
-    expect(mocks.push).toHaveBeenLastCalledWith('/(tabs)/create?category=food');
+    expect(mocks.push).toHaveBeenLastCalledWith('/create?category=food');
     expect(screen.queryByTestId('world-feed-empty-clear')).toBeNull();
   });
 });

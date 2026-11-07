@@ -12,7 +12,9 @@ import { AnimatedEntry } from '../../src/components/animations/AnimatedEntry';
 import { staggerDelay } from '../../src/lib/animations/motion';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { TextField, FormScreen, PrimaryButton } from '../../src/components/ui';
+import { CompactStreetNumberField } from '../../src/components/address/CompactStreetNumberField';
 import { useFormFieldFocus } from '../../src/hooks/useFormFieldFocus';
+import { formPhoneInputProps } from '../../src/lib/platform/formTextInputHints';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -122,16 +124,13 @@ export default function OnboardingBasicInfoScreen() {
                   disabled={loading}
                 />
               </View>
-              <TextField
+              <CompactStreetNumberField
                 ref={streetNumberField.ref}
                 containerStyle={styles.streetNumberCol}
                 style={styles.streetNumberInput}
-                label={t('profile.streetNumberShort')}
                 value={streetNumber}
                 onChangeText={setStreetNumber}
-                placeholder={t('profile.streetNumberShort')}
                 editable={!loading}
-                maxLength={10}
                 onFocus={streetNumberField.onFocus}
                 inputAccessoryViewID={streetNumberField.inputAccessoryViewID}
                 returnKeyType={streetNumberField.returnKeyType}
@@ -152,8 +151,8 @@ export default function OnboardingBasicInfoScreen() {
           onChangeText={setContactPhone}
           placeholder={t('onboarding.contactPhonePlaceholder')}
           maxLength={20}
-          keyboardType="phone-pad"
           editable={!loading}
+          {...formPhoneInputProps}
           onFocus={phoneField.onFocus}
           inputAccessoryViewID={phoneField.inputAccessoryViewID}
           returnKeyType={phoneField.returnKeyType}

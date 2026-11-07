@@ -128,7 +128,9 @@ describe('SupabaseChatRepository — getCounterpart', () => {
 
   it('resolves the other participant when the user row is present', async () => {
     const { client } = makeFakeClient({
-      userData: { user_id: 'u_other', display_name: 'Alice', avatar_url: 'a.jpg', share_handle: 'alice' },
+      userData: {
+        user_id: 'u_other', display_name: 'Alice', avatar_url: 'a.jpg', share_handle: 'alice', verification_level: 2,
+      },
     });
     expect(await new SupabaseChatRepository(client).getCounterpart(CHAT, 'u_me')).toEqual({
       userId: 'u_other',
@@ -136,6 +138,7 @@ describe('SupabaseChatRepository — getCounterpart', () => {
       avatarUrl: 'a.jpg',
       shareHandle: 'alice',
       isDeleted: false,
+      verificationLevel: 2,
     });
   });
 

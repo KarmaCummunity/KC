@@ -5,7 +5,7 @@ import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
-import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
+import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { getMarketplaceSupabaseClient } from '../../src/services/marketplaceComposition';
@@ -22,7 +22,7 @@ async function fetchStatus(): Promise<LinkStatus> {
 }
 
 export default function WhatsAppLinkScreen() {
-  const detailStackScreenOptions = useDetailStackScreenOptions();
+  const shellStackScreenOptions = useShellStackScreenOptions();
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useScreenStyles();
@@ -74,7 +74,7 @@ export default function WhatsAppLinkScreen() {
     <>
       <Stack.Screen
         options={{
-          ...detailStackScreenOptions,
+          ...shellStackScreenOptions,
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.primary,
           headerTitle: t('settings.whatsapp.title'),

@@ -9,13 +9,24 @@ const m = vi.hoisted(() => ({
   onboardingState: 'completed' as string | null,
   missing: vi.fn(async () => false),
   forget: vi.fn(),
+  setOnboarding: vi.fn(),
+  reconcileExecute: vi.fn(async () => null as string | null),
 }));
 
 vi.mock('../../store/authStore', () => ({
-  useAuthStore: Object.assign(() => null, { getState: () => ({ onboardingState: m.onboardingState }) }),
+  useAuthStore: Object.assign(() => null, {
+    getState: () => ({
+      onboardingState: m.onboardingState,
+      session: { userId: 'u-1' },
+      setOnboardingState: m.setOnboarding,
+    }),
+  }),
 }));
 vi.mock('../../hooks/useDateOfBirthRequirement', () => ({
   useDateOfBirthRequirement: () => ({ isDateOfBirthMissing: m.missing, forgetDateOfBirthAnswer: m.forget }),
+}));
+vi.mock('../../services/userComposition', () => ({
+  getReconcileDeferredBasicInfoUseCase: () => ({ execute: m.reconcileExecute }),
 }));
 // The dialogs are tested on their own; stand-ins show which one is open and let it "save".
 vi.mock('../OnboardingSoftGateModal', () => ({
@@ -72,5 +83,14 @@ describe('SoftGateProvider', () => {
     press();
     await vi.waitFor(() => expect(action).toHaveBeenCalledTimes(1));
     expect(screen.queryByRole('button', { name: 'date of birth dialog' })).toBeNull();
+  });
+
+  it('skips the basic-info dialog when deferred fields were already saved via Edit Profile', async () => {
+    m.onboardingState = 'pending_basic_info';
+    m.reconcileExecute.mockResolvedValue('completed');
+    press();
+    await vi.waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole('button', { name: 'basic info dialog' })).toBeNull();
+    expect(m.setOnboarding).toHaveBeenCalledWith('completed');
   });
 });

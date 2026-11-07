@@ -52,6 +52,7 @@ function mapMyRow(r: MyRow): MyListingRow {
     urgencyLevel: r.urgency_level,
     availabilityStatus: r.availability_status,
     updatedAt: r.updated_at,
+    feedPostId: r.feed_post_id ?? null,
   };
 }
 

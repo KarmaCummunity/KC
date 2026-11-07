@@ -8891,6 +8891,7 @@ export type Database = {
           status_before_deletion: string | null
           updated_at: string
           user_id: string
+          verification_level: number
           verification_method: string | null
           verified_at: string | null
           volunteer_hours_total: number
@@ -8938,6 +8939,7 @@ export type Database = {
           status_before_deletion?: string | null
           updated_at?: string
           user_id: string
+          verification_level?: number
           verification_method?: string | null
           verified_at?: string | null
           volunteer_hours_total?: number
@@ -8985,6 +8987,7 @@ export type Database = {
           status_before_deletion?: string | null
           updated_at?: string
           user_id?: string
+          verification_level?: number
           verification_method?: string | null
           verified_at?: string | null
           volunteer_hours_total?: number
@@ -10141,6 +10144,7 @@ export type Database = {
           share_handle: string | null
           updated_at: string | null
           user_id: string | null
+          verification_level: number | null
         }
         Insert: {
           account_status?: string | null
@@ -10164,6 +10168,7 @@ export type Database = {
           share_handle?: string | null
           updated_at?: string | null
           user_id?: string | null
+          verification_level?: number | null
         }
         Update: {
           account_status?: string | null
@@ -10187,6 +10192,7 @@ export type Database = {
           share_handle?: string | null
           updated_at?: string | null
           user_id?: string | null
+          verification_level?: number | null
         }
         Relationships: [
           {
@@ -10680,6 +10686,8 @@ export type Database = {
         Returns: Json
       }
       admin_wipe_demo_data: { Args: never; Returns: Json }
+      admin_wipe_demo_data_step: { Args: never; Returns: Json }
+      admin_seed_demo_data_step: { Args: { p_password?: string }; Returns: Json }
       admin_world_flow_funnel: {
         Args: { p_days?: number }
         Returns: {
@@ -12210,6 +12218,10 @@ export type Database = {
         }[]
       }
       get_public_research_questions: { Args: { p_slug: string }; Returns: Json }
+      get_ride_house_numbers: {
+        Args: { p_listing_id: string }
+        Returns: { house_number: string; place_end: string }[]
+      }
       get_survey_bundle: { Args: { p_slug: string }; Returns: Json }
       get_volunteer_opportunity_detail: {
         Args: { p_opportunity_id: string }
@@ -12624,6 +12636,7 @@ export type Database = {
         Returns: {
           availability_status: string
           direction: string
+          feed_post_id: string | null
           kind_slug: string
           listing_id: string
           status: string
@@ -12633,6 +12646,14 @@ export type Database = {
           urgency_level: number
           world_slug: string
         }[]
+      }
+      owner_complete_offer_with_user: {
+        Args: {
+          p_mode?: string
+          p_recipient_id?: string
+          p_target: string
+        }
+        Returns: Json
       }
       list_my_standing_orders: {
         Args: { p_limit?: number }
@@ -12707,15 +12728,21 @@ export type Database = {
         Args: { p_listing_id: string }
         Returns: {
           avatar_url: string
+          cancel_reason: string | null
           confirm_by: string
           handoff_id: string
           passenger_name: string
           rated_by_me: boolean
           recipient_id: string
+          requested_stop_label: string | null
           reserved_at: string
           seats: number
           status: string
         }[]
+      }
+      reinstate_ride_booking: {
+        Args: { p_handoff_id: string }
+        Returns: Database['public']['Tables']['giving_handoffs']['Row']
       }
       list_ride_places: {
         Args: never
@@ -14212,6 +14239,7 @@ export type Database = {
           score: number
           share_handle: string
           user_id: string
+          verification_level: number
         }[]
       }
       rpc_get_or_create_support_thread: {
@@ -14883,6 +14911,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_ride_house_numbers: {
+        Args: { p_dest?: string; p_listing_id: string; p_origin?: string }
+        Returns: undefined
+      }
       set_ride_series_status: {
         Args: { p_series_id: string; p_status: string }
         Returns: undefined
@@ -15078,6 +15110,7 @@ export type Database = {
         Args: { p_day: string; p_user_id: string }
         Returns: number
       }
+      user_verification_level: { Args: { uid: string }; Returns: number }
       users_get_self_private_fields: { Args: never; Returns: Json }
       users_merge_notification_preferences: {
         Args: { p_merge: Json; p_user_id: string }
@@ -15086,6 +15119,10 @@ export type Database = {
       validate_listing_details: {
         Args: { p_details: Json; p_kind_id: string }
         Returns: boolean
+      }
+      verification_level_of: {
+        Args: { u: Database["public"]["Tables"]["users"]["Row"] }
+        Returns: number
       }
       visibility_to_anonymity_level: {
         Args: { p_visibility: string }

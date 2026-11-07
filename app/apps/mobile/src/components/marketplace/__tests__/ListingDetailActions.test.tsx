@@ -56,10 +56,20 @@ const DETAIL = {
   feedHidden: false,
 } as unknown as MarketplaceListingDetail;
 
-function renderActions(viewerId: string | null, onReport = vi.fn(), detail: MarketplaceListingDetail = DETAIL) {
+function renderActions(
+  viewerId: string | null,
+  onReport = vi.fn(),
+  detail: MarketplaceListingDetail = DETAIL,
+  moderationInHeader = false,
+) {
   const view = render(
     <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
-      <ListingDetailActions detail={detail} viewerId={viewerId} onReport={onReport} />
+      <ListingDetailActions
+        detail={detail}
+        viewerId={viewerId}
+        onReport={onReport}
+        moderationInHeader={moderationInHeader}
+      />
     </ThemeProvider>,
   );
   return { ...view, onReport };
@@ -158,6 +168,15 @@ describe('ListingDetailActions', () => {
     fireEvent.click(getByTestId('listing-action-block-owner'));
     await vi.waitFor(() => expect(back).toHaveBeenCalled(), SETTLE);
     expect(blockState.toggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides share link, report and block when moderation moves to the post header', () => {
+    const { queryByTestId } = renderActions('u_viewer', vi.fn(), DETAIL, true);
+
+    expect(queryByTestId('listing-action-share-link')).toBeNull();
+    expect(queryByTestId('listing-action-report')).toBeNull();
+    expect(queryByTestId('listing-action-block-owner')).toBeNull();
+    expect(queryByTestId('listing-action-start-chat')).not.toBeNull();
   });
 
   it('stays on the listing when the block is cancelled, and never offers the owner to block', async () => {

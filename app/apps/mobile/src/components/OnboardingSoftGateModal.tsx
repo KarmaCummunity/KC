@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { useFormFieldFocus } from '../hooks/useFormFieldFocus';
+import { formPhoneInputProps } from '../lib/platform/formTextInputHints';
 import { KeyboardFormAccessory } from './ui/KeyboardFormAccessory';
 import { dateOfBirthIssue } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
@@ -171,8 +172,8 @@ export function OnboardingSoftGateModal({ visible, onClose, onSaved }: Props) {
             onChangeText={setContactPhone}
             placeholder={t('onboarding.contactPhonePlaceholder')}
             maxLength={20}
-            keyboardType="phone-pad"
             editable={!saving}
+            {...formPhoneInputProps}
             onFocus={phoneField.onFocus}
             inputAccessoryViewID={phoneField.inputAccessoryViewID}
             returnKeyType={phoneField.returnKeyType}

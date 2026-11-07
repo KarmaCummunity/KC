@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { tabBarBottomOffset, tabBarBottomPadding, tabBarTotalHeight } from '../tabBarGeometry';
+import {
+  ownerBarTabClearance,
+  tabBarBottomOffset,
+  tabBarBottomPadding,
+  tabBarTotalHeight,
+  tabPlusOverhangPx,
+} from '../tabBarGeometry';
 
 const TAB_BAR_HEIGHT = 48; // TabBar.tsx / useShellTabBarVisibility.ts
 const SCROLL_EXTRA = 20; // useShellTabBarScrollInset default (spacing.lg)
@@ -35,6 +41,12 @@ describe('tab bar geometry (#1213)', () => {
   it('treats negative / NaN insets as 0', () => {
     expect(tabBarBottomPadding(-5)).toBe(0);
     expect(tabBarBottomPadding(Number.NaN)).toBe(0);
+  });
+
+  it('lifts a docked action above the raised plus button', () => {
+    expect(tabPlusOverhangPx(TAB_BAR_HEIGHT)).toBe(20);
+    expect(ownerBarTabClearance(TAB_BAR_HEIGHT, 0)).toBe(TAB_BAR_HEIGHT + 20);
+    expect(ownerBarTabClearance(TAB_BAR_HEIGHT, 34)).toBe(48 + 22 + 20);
   });
 
   it('scroll padding keeps last items visible above the bar', () => {

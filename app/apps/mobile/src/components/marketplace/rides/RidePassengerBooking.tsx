@@ -2,11 +2,14 @@
 // waiting (with its auto-cancel deadline, D96), approved, completed and rated
 // (docs/spec/05_giving_worlds.md §5.3 step 3, D73; spec 07 §7.7).
 import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, Switch, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { Text, typography } from '@kc/ui';
-import { isValidRideBookingSeats } from '@kc/domain';
+import { Text } from '@kc/ui';
+import { isValidRideBookingSeats, type RidePlace } from '@kc/domain';
+import { RidePlaceField } from '../../giving/RidePlaceField';
+import { useRidePlaces } from '../../../hooks/useRidePlaces';
+import { ridePlaceToMeetingPointPayload } from '../../../lib/rides/ridePlacePayload';
 import { givingHandoffUseCases } from '../../../services/givingHandoffComposition';
 import { rideBookingUseCases } from '../../../services/rideBookingComposition';
 import { HandoffRatingForm } from '../HandoffRatingForm';
@@ -31,6 +34,9 @@ export function RidePassengerBooking({ listingId, cityId, capacity, details }: P
   const { busy, run } = useRideBookingAction(listingId, cityId);
   const [seats, setSeats] = useState(1);
   const [rated, setRated] = useState(false);
+  const [wantStop, setWantStop] = useState(false);
+  const [requestedStop, setRequestedStop] = useState<RidePlace | null>(null);
+  const placesQuery = useRidePlaces();
   // The caller's own active (or completed, unrated) booking on this ride.
   const booking = useQuery({
     queryKey: ['giving-handoff', listingId],
@@ -63,7 +69,7 @@ export function RidePassengerBooking({ listingId, cityId, capacity, details }: P
 
   return (
     <View style={styles.box} testID="ride-passenger-booking">
-      <Text style={typography.h3}>{t('rideBooking.passengerTitle')}</Text>
+      <Text style={styles.title}>{t('rideBooking.passengerTitle')}</Text>
 
       {rated ? (
         <Text style={styles.caption} testID="ride-booking-completed-rated">
@@ -88,13 +94,48 @@ export function RidePassengerBooking({ listingId, cityId, capacity, details }: P
               <Text style={styles.stepperValue} testID="ride-booking-seats">{seats}</Text>
               <StepperButton label="+" a11y={t('rideBooking.moreSeats')} disabled={busy || seats >= maxSeats} onPress={() => changeSeats(1)} />
             </View>
+            <View style={styles.stopRow}>
+              <Text style={styles.caption}>{t('rideBooking.requestStopToggle')}</Text>
+              <Switch
+                accessibilityRole="switch"
+                value={wantStop}
+                onValueChange={setWantStop}
+                disabled={busy}
+                testID="ride-booking-stop-toggle"
+              />
+            </View>
+            {wantStop ? (
+              <>
+                <Text style={styles.caption}>{t('rideBooking.requestStopHint')}</Text>
+                <RidePlaceField
+                  label={t('rideBooking.requestStopLabel')}
+                  value={requestedStop}
+                  places={placesQuery.data ?? null}
+                  isLoading={placesQuery.isLoading}
+                  error={placesQuery.error}
+                  onRetry={() => void placesQuery.refetch()}
+                  onChange={setRequestedStop}
+                  disabled={busy}
+                />
+              </>
+            ) : null}
             <HandoffActionButton
               testID="giving-handoff-book-seat"
               label={t('rideBooking.book')}
               busy={busy}
+              disabled={wantStop && !requestedStop}
               onPress={() =>
                 void run(
-                  () => rideBookingUseCases.book().execute(listingId, seats, { capacity, departsAt: departsAtIso }),
+                  () =>
+                    rideBookingUseCases.book().execute(
+                      listingId,
+                      seats,
+                      { capacity, departsAt: departsAtIso },
+                      {
+                        requestedMeetingPoint:
+                          wantStop && requestedStop ? ridePlaceToMeetingPointPayload(requestedStop) : null,
+                      },
+                    ),
                   'match_made',
                 )
               }

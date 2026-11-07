@@ -1,15 +1,19 @@
 // FR-ADMIN-031 — Demo data: shows how much kc-dev fake data exists and lets a super admin
 // delete it in one press (admin_wipe_demo_data, 0591) and bring it back (admin_seed_demo_data, 0592).
+import { useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { hasPermission, type AdminRole } from '@kc/domain';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
+import { useTranslation } from 'react-i18next';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { getDemoDataRepository } from '../../../src/services/demoDataComposition';
 import { confirmAction } from '../../../src/services/platformConfirm';
+import { demoDataErrorKey } from '../../../src/lib/demoDataRpcError';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
 import { DemoDataSeedCard } from '../../../src/components/admin/demoData/DemoDataSeedCard';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
+import { useAdminScreenTitle } from '../../../src/components/admin/useAdminScreenTitle';
 import { textAlignStart } from '../../../src/lib/rtlLayout';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
@@ -20,9 +24,14 @@ export default function DemoDataScreen() {
   const styles = useStyles();
   const L = useLocaleBundle();
   const t = L.admin.demoData;
+  const { t: i18nT } = useTranslation();
   const queryClient = useQueryClient();
   const { roles, isLoading: rolesLoading } = useAdminRoles();
   const enabled = hasPermission(roles as readonly AdminRole[], 'demo_data.manage');
+
+  useAdminScreenTitle(t.title);
+  const [wipeProgress, setWipeProgress] = useState<string | null>(null);
+  const [seedProgress, setSeedProgress] = useState<string | null>(null);
 
   const status = useQuery({
     queryKey: STATUS_KEY,
@@ -31,31 +40,46 @@ export default function DemoDataScreen() {
     staleTime: 30_000,
   });
 
+  const alertRpcError = (err: unknown) => {
+    const message = err instanceof Error ? err.message : '';
+    const key = demoDataErrorKey(message);
+    Alert.alert(t.title, i18nT(key));
+  };
+
   const wipe = useMutation({
-    mutationFn: () => getDemoDataRepository().wipe(),
+    mutationFn: () => getDemoDataRepository().wipe((key) => setWipeProgress(key)),
     onSuccess: (r) => {
-      // Real data changed under every list in the app, so drop all cached queries.
       void queryClient.invalidateQueries();
+      void queryClient.invalidateQueries({ queryKey: STATUS_KEY });
       const kept = r.organizationsKept > 0 ? `\n${t.orgsKept(r.organizationsKept)}` : '';
       Alert.alert(t.doneTitle, `${t.done(r.usersDeleted, r.organizationsDeleted)}${kept}`);
     },
-    onError: () => Alert.alert(t.wipeFailed),
+    onError: alertRpcError,
+    onSettled: () => {
+      setWipeProgress(null);
+      void status.refetch();
+    },
   });
 
   const seed = useMutation({
-    mutationFn: (password: string | undefined) => getDemoDataRepository().seed(password),
+    mutationFn: (password: string | undefined) =>
+      getDemoDataRepository().seed(password, (key) => setSeedProgress(key)),
     onSuccess: (r) => {
       void queryClient.invalidateQueries();
+      void queryClient.invalidateQueries({ queryKey: STATUS_KEY });
       Alert.alert(t.seedDoneTitle, t.seedDone(r.users, r.posts, r.organizations));
     },
-    onError: () => Alert.alert(t.seedFailed),
+    onError: alertRpcError,
+    onSettled: () => {
+      setSeedProgress(null);
+      void status.refetch();
+    },
   });
 
   if (rolesLoading) {
     return <View style={styles.center}><Text>{t.loading}</Text></View>;
   }
-  // The client gate is coarse (every org_admin passes); the server refuses org admins outside the platform org.
-  const refused = status.isError && /forbidden/.test(status.error.message);
+  const refused = status.isError && /forbidden/i.test(status.error.message);
   if (!enabled || refused) {
     return <View style={styles.center}><Text style={styles.forbidden}>{t.forbiddenTitle}</Text></View>;
   }
@@ -81,16 +105,12 @@ export default function DemoDataScreen() {
       <Text style={styles.title}>{t.title}</Text>
       <Text style={styles.muted}>{t.subtitle}</Text>
 
-      {status.isError ? <Text style={styles.error}>{t.error}</Text> : null}
+      {status.isError && !refused ? (
+        <Text style={styles.error}>{i18nT(demoDataErrorKey(status.error.message))}</Text>
+      ) : null}
+
       {status.isSuccess && !hasDemo ? (
         <AdminListEmpty title={t.noneTitle} hint={canSeed ? t.noneHintRestore : t.noneHintNoRestore} />
-      ) : null}
-      {status.isSuccess && !hasDemo && canSeed ? (
-        <DemoDataSeedCard
-          needsPassword={!status.data?.hasSavedPassword}
-          pending={seed.isPending}
-          onSeed={(password) => seed.mutate(password)}
-        />
       ) : null}
 
       {status.isSuccess && hasDemo ? (
@@ -104,10 +124,25 @@ export default function DemoDataScreen() {
             disabled={wipe.isPending}
             onPress={() => { void onWipe(); }}
             style={[styles.wipeButton, wipe.isPending && styles.wipeButtonDisabled]}
+            testID="admin-demo-wipe"
           >
-            <Text style={styles.wipeLabel}>{wipe.isPending ? t.wiping : t.wipeButton}</Text>
+            <Text style={styles.wipeLabel}>
+              {wipe.isPending ? (wipeProgress ? t.wipeProgress(wipeProgress) : t.wiping) : t.wipeButton}
+            </Text>
           </Pressable>
         </View>
+      ) : null}
+
+      {status.isSuccess && canSeed ? (
+        <>
+          {hasDemo ? <Text style={styles.muted}>{t.seedWhileDemoExistsHint}</Text> : null}
+          <DemoDataSeedCard
+            needsPassword={!status.data?.hasSavedPassword}
+            pending={seed.isPending}
+            progressLabel={seedProgress ? t.seedProgress(seedProgress) : null}
+            onSeed={(password) => seed.mutate(password)}
+          />
+        </>
       ) : null}
     </ScrollView>
   );

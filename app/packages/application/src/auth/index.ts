@@ -12,6 +12,7 @@ export * from './SignInWithApple';
 export * from './SignOut';
 export * from './RestoreSession';
 export * from './CompleteBasicInfoUseCase';
+export * from './ReconcileDeferredBasicInfoUseCase';
 export * from './SetDateOfBirthUseCase';
 export * from './CompleteOnboardingUseCase';
 export * from './SetAvatarUseCase';

@@ -151,6 +151,31 @@ describe('SupabaseChallengeRepository', () => {
     await expect(repo.joinChallenge('c1')).rejects.toBeInstanceOf(ChallengeError);
   });
 
+  it('falls back to legacy join_challenge when p_show_on_profile is not on the server', async () => {
+    let joinCalls = 0;
+    const client = {
+      rpc: async (fn: string, args: Record<string, unknown>) => {
+        if (fn !== 'join_challenge') return { data: null, error: null };
+        joinCalls += 1;
+        if (joinCalls === 1) {
+          return {
+            data: null,
+            error: {
+              code: 'PGRST202',
+              message: 'Could not find the function public.join_challenge',
+              details: '',
+            },
+          };
+        }
+        expect(args).toEqual({ p_challenge_id: 'c1' });
+        return { data: null, error: null };
+      },
+    } as unknown as SupabaseClient;
+    const repo = new SupabaseChallengeRepository(client);
+    await expect(repo.joinChallenge('c1', false)).resolves.toBeUndefined();
+    expect(joinCalls).toBe(2);
+  });
+
   it('maps the goal-shape CHECK violation and keeps unknown errors as they are', async () => {
     const { repo: shape } = makeRepo({
       create_challenge: {

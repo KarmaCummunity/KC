@@ -5,7 +5,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IChatRepository, ChatWithPreview } from '@kc/application';
 import { ChatError } from '@kc/application';
-import type { Chat, Message } from '@kc/domain';
+import { toVerificationLevel, type Chat, type Message, type VerificationLevel } from '@kc/domain';
 import type { Database } from '../database.types';
 import { rowToChat, rowToMessage } from './rowMappers';
 import { mapChatError } from './mapChatError';
@@ -18,6 +18,7 @@ type Counterpart = {
   avatarUrl: string | null;
   shareHandle: string | null;
   isDeleted: boolean;
+  verificationLevel?: VerificationLevel;
 };
 
 export class SupabaseChatRepository implements IChatRepository {
@@ -162,7 +163,7 @@ export class SupabaseChatRepository implements IChatRepository {
     }
     const { data, error } = await this.client
       .from('users')
-      .select('user_id, display_name, avatar_url, share_handle')
+      .select('user_id, display_name, avatar_url, share_handle, verification_level')
       .eq('user_id', otherId)
       .maybeSingle();
     if (error) throw mapChatError(error);
@@ -181,6 +182,7 @@ export class SupabaseChatRepository implements IChatRepository {
       avatarUrl: data.avatar_url,
       shareHandle: data.share_handle,
       isDeleted: false,
+      verificationLevel: toVerificationLevel(data.verification_level),
     };
   }
 }

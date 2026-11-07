@@ -18,6 +18,7 @@ export function useSimilarListings(listingId: string | undefined) {
   return useQuery({
     queryKey: ['marketplace-similar', listingId],
     enabled: Boolean(listingId),
+    staleTime: 60_000,
     queryFn: () => (listingId ? marketplaceRepository().similarListings(listingId, 8) : []),
   });
 }

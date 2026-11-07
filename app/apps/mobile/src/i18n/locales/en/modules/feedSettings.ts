@@ -2,7 +2,9 @@
 export const feedSettingsEn = {
   title: 'Feed settings',
   settingsRow: 'Feed settings',
-  intro: 'Choose what you don’t want to see in your feed. Muted posts disappear right away, and you can undo it any time.',
+  intro: 'Choose what you don’t want to see in your feed. Muted posts disappear right away, and you can undo it any time. Quick filter and sort stay on the main feed menu.',
+  worldsTitle: 'Muted giving worlds',
+  worldsHint: 'Posts from a world (food, rides, time…) won’t show in your feed. Listings without a world count as «items».',
   keywordsTitle: 'Muted words',
   keywordPlaceholder: 'Add a word or phrase',
   add: 'Add',

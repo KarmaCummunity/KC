@@ -19,6 +19,7 @@ import { SortSection } from './SortSection';
 import { FiltersSection } from './FiltersSection';
 import { LocationFilterSection } from './LocationFilterSection';
 import { SearchSection } from './SearchSection';
+import { FeedSettingsLinkSection } from './FeedSettingsLinkSection';
 
 /**
  * Compact cap so the feed stays visible behind the sheet (FR-FEED-004 AC3:
@@ -47,6 +48,10 @@ interface PostFilterSheetProps {
   readonly onPatch: (patch: Partial<PostFilterValue>) => void;
   readonly onClear: () => void;
   readonly onClose: () => void;
+  /** A giving world's screen: the world is locked and its picker hidden (FR-FEED-020 AC2). */
+  readonly lockedWorld?: boolean;
+  /** Home feed only — opens feed mute / hide settings (keywords, categories, people). */
+  readonly onOpenFeedSettings?: () => void;
 }
 
 export function PostFilterSheet({
@@ -55,6 +60,8 @@ export function PostFilterSheet({
   onPatch,
   onClear,
   onClose,
+  lockedWorld = false,
+  onOpenFeedSettings,
 }: PostFilterSheetProps) {
   const { t } = useTranslation();
 
@@ -114,11 +121,15 @@ export function PostFilterSheet({
         onItemConditionsChange={(itemConditions) => onPatch({ itemConditions })}
         onStatusFilterChange={(statusFilter) => onPatch({ statusFilter })}
         onFollowersOnlyChange={(followersOnly) => onPatch({ followersOnly })}
+        hideWorldPicker={lockedWorld}
       />
       <LocationFilterSection
         value={value.locationFilter}
         onChange={(locationFilter) => onPatch({ locationFilter })}
       />
+      {!lockedWorld && onOpenFeedSettings ? (
+        <FeedSettingsLinkSection onPress={onOpenFeedSettings} />
+      ) : null}
     </FilterSheetFrame>
   );
 }

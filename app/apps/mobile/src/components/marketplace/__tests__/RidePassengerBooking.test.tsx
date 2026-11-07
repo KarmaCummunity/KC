@@ -23,6 +23,7 @@ const openRidePassengerChat = vi.fn();
 let sessionUserId: string | null = 'u_driver';
 
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: routerPush }) }));
+vi.mock('../../closure/OwnerAssignUserButton', () => ({ OwnerAssignUserButton: () => null }));
 // The kit buttons pull in reanimated and haptics; their press feedback is not under test here.
 vi.mock('react-native-reanimated', async () => (await import('../../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
 vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogTestKit')).hapticsDouble);

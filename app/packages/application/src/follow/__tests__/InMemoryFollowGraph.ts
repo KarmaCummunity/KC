@@ -84,6 +84,7 @@ export class InMemoryFollowStore {
       followersCount: this.edges.filter((e) => e.followedId === userId).length,
       followingCount: this.edges.filter((e) => e.followerId === userId).length,
       karmaPoints: 0,
+      verificationLevel: 0,
       createdAt: member?.createdAt ?? this.now(),
       updatedAt: member?.createdAt ?? this.now(),
       preferredLanguage: null,

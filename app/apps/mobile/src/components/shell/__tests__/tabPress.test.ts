@@ -21,7 +21,7 @@ describe('resolveTabPressAction', () => {
   });
 
   it('closes the create form when the composer "+" is re-tapped while it is open', () => {
-    expect(resolveTabPressAction(tabOf('create'), ['(tabs)', 'create'])).toBe('close');
+    expect(resolveTabPressAction(tabOf('create'), ['create'])).toBe('close');
   });
 
   it('stays on flat web segment trails without the (tabs) group', () => {
@@ -64,14 +64,14 @@ describe('handleActiveTabRepress', () => {
 
   it('closes the open create form by going back', () => {
     const router = { dismissTo: vi.fn(), back: vi.fn(), canGoBack: vi.fn(() => true) };
-    expect(handleActiveTabRepress(router, tabOf('create'), ['(tabs)', 'create'])).toBe(true);
+    expect(handleActiveTabRepress(router, tabOf('create'), ['create'])).toBe(true);
     expect(router.back).toHaveBeenCalledTimes(1);
     expect(router.dismissTo).not.toHaveBeenCalled();
   });
 
   it('falls back to home when the create form has nothing to go back to', () => {
     const router = { dismissTo: vi.fn(), back: vi.fn(), canGoBack: vi.fn(() => false) };
-    expect(handleActiveTabRepress(router, tabOf('create'), ['(tabs)', 'create'])).toBe(true);
+    expect(handleActiveTabRepress(router, tabOf('create'), ['create'])).toBe(true);
     expect(router.back).not.toHaveBeenCalled();
     expect(router.dismissTo).toHaveBeenCalledWith('/(tabs)');
   });

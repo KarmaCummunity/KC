@@ -42,10 +42,6 @@ import {
   useOtherProfileScreenStyles,
 } from '../../../src/components/profile/otherProfileScreen.styles';
 import { nativeStackHeaderRightIconOnly } from '../../../src/navigation/nativeHeaderIconOnly';
-import {
-  ProfileMarketplaceListings,
-} from '../../../src/components/profile/ProfileMarketplaceListings';
-
 export default function OtherProfileScreen() {
   const styles = useOtherProfileScreenStyles();
   const { colors } = useTheme();
@@ -124,6 +120,7 @@ export default function OtherProfileScreen() {
       userId: u!.userId,
       status: ['open'],
       limit: 30,
+      profileOpenLinks: { viewerUserId: me ?? null, listMode: 'standard' },
     }),
     enabled: Boolean(u?.userId) && activeTab === 'open',
     staleTime: 60_000, // PERF-3: profile (others) — follow state can flip; keep relatively fresh
@@ -178,6 +175,7 @@ export default function OtherProfileScreen() {
             avatarUrl={u.avatarUrl}
             biography={u.biography}
             privacyMode={u.privacyMode}
+            verificationLevel={u.verificationLevel}
           />
 
           <ProfileStatsRow
@@ -219,8 +217,6 @@ export default function OtherProfileScreen() {
             </View>
           ) : null}
         </View>
-
-        <ProfileMarketplaceListings ownerId={u.userId} />
 
         <ProfileTabs
           active={activeTab}

@@ -16,15 +16,18 @@ import { Modal } from '../../ui/Modal';
 import { DangerButton } from '../../ui/Buttons';
 import { TextField } from '../../ui/TextField';
 import { useRideBookingStyles } from '../rides/rideBookingStyles';
-import { HousingAddressCard } from './HousingAddressCard';
 import { HousingHostBookingRow, type HousingHostRowActions } from './HousingHostBookingRow';
+import { HousingHostPrivateDetailsEditor } from './HousingHostPrivateDetailsEditor';
 import { useHousingAction } from './useHousingAction';
+import { OwnerAssignUserButton } from '../../closure/OwnerAssignUserButton';
 
 interface Props {
   readonly listingId: string;
+  readonly cityId: string | null;
+  readonly hideOwnerAssign?: boolean;
 }
 
-export function HousingHostPanel({ listingId }: Props) {
+export function HousingHostPanel({ listingId, cityId, hideOwnerAssign = false }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
   const styles = useRideBookingStyles();
@@ -81,11 +84,11 @@ export function HousingHostPanel({ listingId }: Props) {
       {bookings.isSuccess && list.length === 0 ? (
         <Text style={styles.caption} testID="housing-bookings-empty">{t('housingStay.empty')}</Text>
       ) : null}
+      {!hideOwnerAssign ? <OwnerAssignUserButton targetId={listingId} worldSlug="housing" /> : null}
       {list.map((booking) => (
         <HousingHostBookingRow key={booking.handoffId} booking={booking} busy={busy} actions={actions} />
       ))}
-      {/* The host always sees their own exact place, as the guest will after approval. */}
-      <HousingAddressCard listingId={listingId} />
+      <HousingHostPrivateDetailsEditor listingId={listingId} cityId={cityId} />
       <Modal
         visible={cancelTarget !== null}
         onDismiss={() => setCancelTarget(null)}

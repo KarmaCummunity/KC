@@ -2,6 +2,7 @@
 // Bottom-sheet menu opened from PostMenuButton on PostDetail.
 // The frame, dismissal and motion come from the kit `BottomSheet` (spec 17 §4.1).
 import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { container } from '../../lib/container';
 import { View, StyleSheet } from 'react-native';
@@ -12,7 +13,9 @@ import { BottomSheet } from '../ui/BottomSheet';
 import { SheetActionRow } from '../ui/SheetActionRow';
 import { ConfirmActionModal } from './ConfirmActionModal';
 import { ReportPostModal } from './ReportPostModal';
+import { ReportListingModal } from '../marketplace/ReportListingModal';
 import { usePostMenuActions } from '../../hooks/usePostMenuActions';
+import { useUserBlock } from '../../hooks/useUserBlock';
 import { usePostShare } from '../../hooks/usePostShare';
 import { shouldShowPostExposureControls } from '../../hooks/usePostActorPrivacyModel';
 import { PostMenuExposureBlock } from './PostMenuExposureBlock';
@@ -26,6 +29,8 @@ interface Props {
   readonly post: PostWithOwner;
   /** When false, share row is omitted (e.g. post detail has a header share button). */
   readonly showShareInMenu?: boolean;
+  /** When set, the report row files against the listing (G1 step 4a) instead of the post. */
+  readonly listingId?: string | null;
   readonly viewerId: string | null;
   readonly isSuperAdmin: boolean;
   readonly isSaved: boolean;
@@ -42,6 +47,7 @@ export function PostMenuSheet({
   onClose,
   post,
   showShareInMenu = true,
+  listingId = null,
   viewerId,
   isSuperAdmin,
   isSaved,
@@ -51,6 +57,7 @@ export function PostMenuSheet({
   onEdit,
 }: Props) {
   const { t } = useTranslation();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const showToast = useFeedSessionStore((st) => st.showEphemeralToast);
   const styles = usePostMenuSheetStyles();
@@ -60,6 +67,7 @@ export function PostMenuSheet({
   const { canShare, share, busy: shareBusy } = usePostShare(post);
 
   const isOwner = viewerId !== null && post.ownerId === viewerId;
+  const block = useUserBlock(isOwner ? '' : post.ownerId);
   const canEditPost = (isOwner || isSuperAdmin) && post.status === 'open';
   const showExposureBlock = viewerId !== null && shouldShowPostExposureControls(viewerId, post);
 
@@ -117,10 +125,25 @@ export function PostMenuSheet({
               }}
             />
           ) : null}
+          {!isOwner && block.canBlock && !block.isBlocked ? (
+            <SheetActionRow
+              icon="ban-outline"
+              label={t('moderation.block.block')}
+              destructive
+              disabled={block.busy}
+              testID="post-menu-block-owner"
+              onPress={() => {
+                onClose();
+                void block.toggle().then((changed) => {
+                  if (changed && router.canGoBack()) router.back();
+                });
+              }}
+            />
+          ) : null}
           {isOwner ? null : (
             <SheetActionRow
               icon="flag-outline"
-              label={t('post.report')}
+              label={listingId ? t('marketplace.report') : t('post.report')}
               destructive
               onPress={() => openModal('report')}
             />
@@ -192,7 +215,11 @@ export function PostMenuSheet({
         onConfirm={handleAdminRemove}
       />
 
-      <ReportPostModal postId={post.postId} visible={active === 'report'} onClose={closeModal} />
+      {listingId ? (
+        <ReportListingModal listingId={listingId} visible={active === 'report'} onClose={closeModal} />
+      ) : (
+        <ReportPostModal postId={post.postId} visible={active === 'report'} onClose={closeModal} />
+      )}
     </>
   );
 }

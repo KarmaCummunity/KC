@@ -4,7 +4,7 @@ import { marketplaceMap } from './marketplaceMap';
 // Rides strings (FR-RIDE-*) live in `donations.rides.ts` (architecture file-size cap).
 import { rides } from './donations.rides';
 import { marketplaceErrors } from './donations.marketplaceErrors';
-import { marketplaceBrowseRefine, marketplaceWorldLabels } from './donations.marketplaceExtras';
+import { marketplaceWorldLabels } from './donations.marketplaceExtras';
 import { marketplaceAvailabilityLabels, marketplaceFieldLabels, marketplaceListingStatusLabels, marketplaceOptionLabels } from './donations.marketplaceFields';
 import { worldLaunch } from './donations.worldLaunch';
 import { linkWorldCategories } from './donations.linkWorlds';
@@ -277,7 +277,6 @@ export const marketplace = {
   statusClosed: 'הושלם',
   ...marketplaceMyListings,
   world: marketplaceWorldLabels,
-  browseRefine: marketplaceBrowseRefine,
   field: marketplaceFieldLabels,
   option: marketplaceOptionLabels,
   availability: marketplaceAvailabilityLabels,

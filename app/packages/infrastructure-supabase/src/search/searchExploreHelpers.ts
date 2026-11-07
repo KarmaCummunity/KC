@@ -5,11 +5,13 @@ import type { PostWithOwner } from '@kc/application';
 import type { Database } from '../database.types';
 import { POST_SELECT_OWNER, mapPostWithOwnerRow, type PostWithOwnerJoinedRow } from '../posts/mapPostRow';
 import { applyPostActorIdentityProjectionBatch } from '../posts/applyPostActorIdentityProjection';
+import { dropOrphanDeletedOwnerPosts } from '../posts/dropOrphanDeletedOwnerPosts';
+import { hydrateFeedPostOwners } from '../posts/hydrateFeedPostOwners';
 import { type LinkRow, type SearchUserRow, mapUserSearchResult, mapLinkSearchResult } from './searchMappers';
 import { pageFetchSize, toPagedBucket, type SearchBucket } from './searchBucket';
 
 type C = SupabaseClient<Database>;
-const U = 'user_id, display_name, share_handle, avatar_url, biography, city, city_name, followers_count, items_given_count';
+const U = 'user_id, display_name, share_handle, avatar_url, biography, city, city_name, followers_count, items_given_count, verification_level';
 
 export async function explorePosts(
   c: C,
@@ -24,7 +26,15 @@ export async function explorePosts(
   const { data, error } = await q.order('created_at', { ascending: false }).limit(pageFetchSize(limit));
   if (error) throw new Error(`explorePosts: ${error.message}`);
   const page = toPagedBucket((data ?? []) as unknown as PostWithOwnerJoinedRow[], limit);
-  const items = await applyPostActorIdentityProjectionBatch(c, page.items.map(mapPostWithOwnerRow), viewerId ?? null);
+  const mapped = page.items.map(mapPostWithOwnerRow);
+  const items = dropOrphanDeletedOwnerPosts(
+    await applyPostActorIdentityProjectionBatch(
+      c,
+      await hydrateFeedPostOwners(c, mapped),
+      viewerId ?? null,
+    ),
+    viewerId ?? null,
+  );
   return { items, total: items.length, hasMore: page.hasMore };
 }
 

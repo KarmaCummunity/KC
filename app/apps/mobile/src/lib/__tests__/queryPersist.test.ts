@@ -8,6 +8,9 @@ describe('isPersistableQueryKey (#894)', () => {
     expect(isPersistableQueryKey(['user-profile', 'uid'])).toBe(true);
     expect(isPersistableQueryKey(['profile-posts', 'uid'])).toBe(true);
     expect(isPersistableQueryKey(['chat-inbox'])).toBe(true);
+    expect(isPersistableQueryKey(['universalSearch', '', {}])).toBe(true);
+    expect(isPersistableQueryKey(['post', 'pid'])).toBe(true);
+    expect(isPersistableQueryKey(['profile-closed-posts', 'uid'])).toBe(true);
   });
 
   it('skips volatile or sensitive keys', () => {

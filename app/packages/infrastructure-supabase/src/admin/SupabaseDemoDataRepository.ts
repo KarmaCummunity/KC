@@ -25,6 +25,14 @@ export interface DemoDataSeedResult {
   readonly organizations: number;
 }
 
+export interface DemoDataOperationStep {
+  readonly done: boolean;
+  readonly progressKey?: string;
+  /** True when this step deleted nothing because rows were locked; the caller should wait and retry. */
+  readonly retry?: boolean;
+  readonly result?: DemoDataWipeResult | DemoDataSeedResult;
+}
+
 // RPCs return untyped jsonb; read each key defensively so a missing field becomes 0, not NaN.
 const count = (obj: Record<string, unknown>, key: string): number => Number(obj[key] ?? 0);
 const asObject = (data: unknown): Record<string, unknown> =>
@@ -59,6 +67,31 @@ export function mapDemoDataSeedResult(data: unknown): DemoDataSeedResult {
   };
 }
 
+export function mapDemoDataWipeStep(data: unknown): DemoDataOperationStep {
+  const o = asObject(data);
+  const done = o.done === true;
+  const result = o.result !== undefined ? mapDemoDataWipeResult(o.result) : undefined;
+  const progressKey = typeof o.progress_key === 'string' ? o.progress_key : undefined;
+  return { done, progressKey, retry: o.retry === true, result };
+}
+
+export function mapDemoDataSeedStep(data: unknown): DemoDataOperationStep {
+  const o = asObject(data);
+  const done = o.done === true;
+  const result = o.result !== undefined ? mapDemoDataSeedResult(o.result) : undefined;
+  const progressKey = typeof o.progress_key === 'string' ? o.progress_key : undefined;
+  return { done, progressKey, retry: o.retry === true, result };
+}
+
+const WIPE_STEP_GUARD = 80;
+const SEED_STEP_GUARD = 120;
+
+function pause(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 export class SupabaseDemoDataRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
@@ -70,19 +103,53 @@ export class SupabaseDemoDataRepository {
   }
 
   /** Super admin only: deletes the demo users (with their content) and demo nonprofits. */
-  async wipe(): Promise<DemoDataWipeResult> {
-    const { data, error } = await this.client.rpc('admin_wipe_demo_data');
+  async wipe(onProgress?: (progressKey: string) => void): Promise<DemoDataWipeResult> {
+    let step: DemoDataOperationStep = { done: false };
+    let guard = 0;
+    while (!step.done && guard < WIPE_STEP_GUARD) {
+      guard += 1;
+      step = await this.wipeStep();
+      if (step.progressKey) onProgress?.(step.progressKey);
+      if (!step.done && step.retry) await pause(300);
+    }
+    if (!step.done || !step.result) {
+      throw new Error('wipeDemoData: incomplete stepped wipe');
+    }
+    return step.result;
+  }
+
+  async wipeStep(): Promise<DemoDataOperationStep> {
+    const { data, error } = await this.client.rpc('admin_wipe_demo_data_step');
     if (error) throw new Error(`wipeDemoData: ${error.message}`);
-    return mapDemoDataWipeResult(data);
+    return mapDemoDataWipeStep(data);
   }
 
   /**
    * Super admin, kc-dev only: wipes then recreates the demo data. `password` (min 8 chars) is the
    * seed users' login password; it is needed once and saved server-side as a hash.
    */
-  async seed(password?: string): Promise<DemoDataSeedResult> {
-    const { data, error } = await this.client.rpc('admin_seed_demo_data', { p_password: password });
+  async seed(password?: string, onProgress?: (progressKey: string) => void): Promise<DemoDataSeedResult> {
+    let step: DemoDataOperationStep = { done: false };
+    let sentPassword = false;
+    let guard = 0;
+    while (!step.done && guard < SEED_STEP_GUARD) {
+      guard += 1;
+      step = await this.seedStep(!sentPassword ? password : undefined);
+      sentPassword = true;
+      if (step.progressKey) onProgress?.(step.progressKey);
+      if (!step.done && step.retry) await pause(300);
+    }
+    if (!step.done || !step.result) {
+      throw new Error('seedDemoData: incomplete stepped seed');
+    }
+    return mapDemoDataSeedResult(step.result);
+  }
+
+  async seedStep(password?: string): Promise<DemoDataOperationStep> {
+    const { data, error } = await this.client.rpc('admin_seed_demo_data_step', {
+      p_password: password,
+    });
     if (error) throw new Error(`seedDemoData: ${error.message}`);
-    return mapDemoDataSeedResult(data);
+    return mapDemoDataSeedStep(data);
   }
 }

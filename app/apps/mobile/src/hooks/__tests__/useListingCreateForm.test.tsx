@@ -26,15 +26,18 @@ describe('useListingCreateForm', () => {
     const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'food', direction: 'give', title: ' ', summary: '', onPublished: vi.fn() }), { wrapper });
     await waitFor(() => expect(result.current.kind?.kindId).toBe('k1'));
     await act(() => result.current.publish());
-    expect(result.current.error).toBe('post.unifiedCreate.errors.titleRequired');
+    expect(result.current.error).toEqual({ message: 'post.unifiedCreate.errors.titleRequired', field: 'title' });
     result.current.setDetail('title', 'unused');
     const validTitle = renderHook(() => useListingCreateForm({ worldSlug: 'food', direction: 'give', title: 'Bread', summary: '', onPublished: vi.fn() }), { wrapper });
     await waitFor(() => expect(validTitle.result.current.kind).toBeTruthy());
     await act(() => validTitle.result.current.publish());
-    expect(validTitle.result.current.error).toContain('fieldRequired');
+    expect(validTitle.result.current.error?.message).toContain('fieldRequired');
+    expect(validTitle.result.current.error?.field).toMatch(/^detail:/);
     act(() => { validTitle.result.current.setDetail('food_type', 'fresh'); validTitle.result.current.setDetail('expires_at', '2030-01-01'); });
+    // Editing the form clears the previous problem.
+    expect(validTitle.result.current.error).toBeNull();
     await act(() => validTitle.result.current.publish());
-    expect(validTitle.result.current.error).toBe('post.unifiedCreate.errors.cityRequired');
+    expect(validTitle.result.current.error).toEqual({ message: 'post.unifiedCreate.errors.cityRequired', field: 'city' });
     expect(repo.createListing).not.toHaveBeenCalled();
   });
   it('publishes valid details and maps repository errors while releasing busy lock', async () => {
@@ -49,7 +52,7 @@ describe('useListingCreateForm', () => {
     expect(activation).toHaveBeenCalledWith({ world: 'food', cityId: 'city-1', accountCreatedAt: 'today' });
     repo.createListing.mockRejectedValueOnce(new Error('offline'));
     await act(() => result.current.publish());
-    expect(result.current.error).toBe('marketplace.errors.generic');
+    expect(result.current.error).toEqual({ message: 'marketplace.errors.generic', field: null });
     expect(result.current.busy).toBe(false);
   });
   it('does not publish while signed out', async () => {

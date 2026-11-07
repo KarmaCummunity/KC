@@ -6,11 +6,14 @@ import { format } from 'date-fns';
 import { Switch, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@kc/ui';
+import { formDecimalInputProps, formIntegerInputProps } from '../../lib/platform/formTextInputHints';
 import { TextField } from '../ui/TextField';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { DateTimeField } from '../ui/DateTimeField';
-import { clampWholeNumber, isFieldVisible, type ListingFieldSpec } from '../../lib/unifiedCreate/listingFieldSpecs';
+import { clampWholeNumber, visibleDetailSpecs, type ListingFieldSpec } from '../../lib/unifiedCreate/listingFieldSpecs';
+import { detailField } from '../../lib/unifiedCreate/listingFormProblem';
 import { CountStepper } from './CountStepper';
+import { ListingFieldFrame, useListingFieldProblem } from './ListingFieldFrame';
 import { Chip } from '../ui/Chip';
 
 type Details = Readonly<Record<string, unknown>>;
@@ -22,22 +25,28 @@ interface Props {
   readonly disabled?: boolean;
 }
 
-/** Field types whose control (the kit TextField) renders its own label. */
+/** Field types whose control (the kit TextField) renders its own label and error state. */
 const SELF_LABELLED: ReadonlySet<ListingFieldSpec['type']> = new Set(['text', 'amount', 'integer']);
 
 export function ListingDetailFields({ specs, details, onChange, disabled = false }: Props) {
   const styles = useCreatePostStyles();
   return (
     <>
-      {specs
-        // A `fixed` detail is set by the form itself and has no control.
-        .filter((spec) => spec.type !== 'fixed' && isFieldVisible(spec, details))
-        .map((spec) => (
-          <View key={spec.key} style={styles.section} testID={`listing-field-${spec.key}`}>
-            {SELF_LABELLED.has(spec.type) ? null : <FieldLabel spec={spec} />}
+      {visibleDetailSpecs(specs, details).map((spec) => {
+        const selfLabelled = SELF_LABELLED.has(spec.type);
+        return (
+          <ListingFieldFrame
+            key={spec.key}
+            field={detailField(spec.key)}
+            label={selfLabelled ? null : <FieldLabel spec={spec} />}
+            outlined={!selfLabelled}
+            style={styles.section}
+            testID={`listing-field-${spec.key}`}
+          >
             <FieldControl spec={spec} value={details[spec.key]} onChange={onChange} disabled={disabled} />
-          </View>
-        ))}
+          </ListingFieldFrame>
+        );
+      })}
     </>
   );
 }
@@ -65,6 +74,7 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
   const { t } = useTranslation();
   const set = (next: unknown) => onChange(spec.key, next);
   const label = `${t(`marketplace.field.${spec.key}`)}${spec.required ? ' *' : ''}`;
+  const errorText = useListingFieldProblem(detailField(spec.key)) ?? undefined;
 
   switch (spec.type) {
     case 'choice':
@@ -155,7 +165,8 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
       return (
         <TextField
           label={label}
-          keyboardType="numeric"
+          errorText={errorText}
+          {...formDecimalInputProps}
           value={typeof value === 'number' ? String(value) : ''}
           onChangeText={(text) => {
             const n = Number.parseFloat(text);
@@ -170,7 +181,8 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
         <TextField
           testID={`listing-integer-${spec.key}`}
           label={label}
-          keyboardType="number-pad"
+          errorText={errorText}
+          {...formIntegerInputProps}
           value={typeof value === 'number' ? String(value) : ''}
           onChangeText={(text) => set(clampWholeNumber(text, spec.min, spec.max))}
           placeholder={t('post.unifiedCreate.integerPlaceholder', { min: spec.min, max: spec.max })}
@@ -181,6 +193,7 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
       return (
         <TextField
           label={label}
+          errorText={errorText}
           value={typeof value === 'string' ? value : ''}
           onChangeText={set}
           multiline={spec.multiline}

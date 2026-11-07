@@ -55,4 +55,7 @@ export const postEditEn = {
     urgencyPlaceholder: 'For example: needed by Friday',
     sectionVisibility: 'Who will see the post',
   },
+  editListing: {
+    headerTitle: 'Edit {{category}}',
+  },
 } as const;

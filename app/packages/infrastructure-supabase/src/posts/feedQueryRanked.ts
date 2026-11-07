@@ -1,11 +1,10 @@
 // feedQueryRanked — distance-aware feed page via the `feed_ranked_ids` RPC.
 // Mapped to FR-FEED-006 (Haversine sort) and the radius branch of FR-FEED-004.
 //
-// Two round-trips by design:
+// Round-trips:
 //   1. RPC returns ordered post_id + distance_km tuples (server applies
 //      filters, visibility predicate, and keyset cursor).
-//   2. Adapter fetches full PostWithOwner rows by IN(...) and re-orders +
-//      attaches distanceKm client-side.
+//   2. Card rows and identity rows are requested together, then re-ordered.
 //
 // The cursor used here is a 3-field JSON token so the same opaque string can
 // move across all sort modes (newest/oldest use only `createdAt`).
@@ -18,11 +17,16 @@ import type {
 } from '@kc/application';
 import type { Database } from '../database.types';
 import {
-  POST_SELECT_OWNER,
+  FEED_CARD_SELECT,
   mapPostWithOwnerRow,
   type PostWithOwnerJoinedRow,
 } from './mapPostRow';
-import { applyPostActorIdentityProjectionBatch } from './applyPostActorIdentityProjection';
+import { dropOrphanDeletedOwnerPosts } from './dropOrphanDeletedOwnerPosts';
+import { hydrateFeedPostOwners } from './hydrateFeedPostOwners';
+import {
+  applyPostActorIdentityProjectionBatch,
+  fetchPostActorIdentitiesByPostIds,
+} from './applyPostActorIdentityProjection';
 
 export interface RankedCursor {
   distanceKm: number | null;
@@ -102,11 +106,13 @@ export async function fetchRankedFeedPage(
   const page = hasMore ? ranked.slice(0, pageLimit) : ranked;
   const ids = page.map((r) => r.post_id);
 
-  const { data: postRows, error: postsError } = await client
-    .from('posts')
-    .select(POST_SELECT_OWNER)
-    .in('post_id', ids);
+  // The identity rows only need the ids, so they travel with the post rows.
+  // A failure here falls back to the projection's own read.
+  const postsPromise = client.from('posts').select(FEED_CARD_SELECT).in('post_id', ids);
+  const identityPromise = fetchPostActorIdentitiesByPostIds(client, ids).catch(() => undefined);
+  const { data: postRows, error: postsError } = await postsPromise;
   if (postsError) throw new Error(`fetchRankedFeedPage.posts: ${postsError.message}`);
+  const prefetchedIdentities = await identityPromise;
 
   // Re-order to match the RPC's ranking and attach distance_km.
   const byId = new Map<string, PostWithOwner>();
@@ -121,7 +127,15 @@ export async function fetchRankedFeedPage(
     posts.push({ ...post, distanceKm: distanceById.get(id) ?? null });
   }
 
-  const projected = await applyPostActorIdentityProjectionBatch(client, posts, viewerId);
+  const projected = dropOrphanDeletedOwnerPosts(
+    await applyPostActorIdentityProjectionBatch(
+      client,
+      await hydrateFeedPostOwners(client, posts),
+      viewerId,
+      { prefetchedIdentities },
+    ),
+    viewerId,
+  );
 
   const last = page[page.length - 1];
   const nextCursor = hasMore && last

@@ -16,7 +16,10 @@ export default function HousingWorldScreen() {
         icon="home-outline"
         introKey="donations.worldFeed.housingIntro"
         linksCategory="housing"
-        subScreens={worldSubScreens('/(tabs)/donations/housing/handoffs')}
+        subScreens={worldSubScreens('/(tabs)/donations/housing/handoffs', [
+          { labelKey: 'housingStay.myHosting.nav', path: '/(tabs)/donations/housing/hosting', testID: 'world-hub-housing-hosting' },
+          { labelKey: 'housingStay.myStays.nav', path: '/(tabs)/donations/housing/stays', testID: 'world-hub-housing-stays' },
+        ])}
       />
     </WorldLaunchGateBySlug>
   );

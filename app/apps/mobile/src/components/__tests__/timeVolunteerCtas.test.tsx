@@ -105,7 +105,7 @@ describe('organizer screens', () => {
     execute.listOrganizer.mockResolvedValue([]);
     const { getByRole } = renderScreen(<OrganizerListScreen />);
     fireEvent.click(getByRole('button', { name: 'timeVolunteer.createOpportunity' }));
-    expect(router.push).toHaveBeenCalledWith('/(tabs)/create?category=time&direction=give');
+    expect(router.push).toHaveBeenCalledWith('/create?category=time&direction=give');
   });
 });
 

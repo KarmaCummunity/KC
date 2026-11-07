@@ -14,6 +14,7 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { useClosureStore } from '../../store/closureStore';
+import { closureCopyKeys } from '../../lib/closureCopy';
 import { GhostButton, PrimaryButton, SecondaryButton } from '../ui/Buttons';
 import { ChatsPane, ModeTabs, SearchPane } from './ClosureRecipientPanes';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
@@ -46,6 +47,10 @@ export function ClosureStep2({
   const setPickMode = useClosureStore((s) => s.setPickMode);
   const setSearchQuery = useClosureStore((s) => s.setSearchQuery);
   const selectRecipient = useClosureStore((s) => s.selectRecipient);
+  const allowCloseWithout = useClosureStore((s) => s.allowCloseWithout);
+  const postType = useClosureStore((s) => s.postType);
+  const worldSlug = useClosureStore((s) => s.worldSlug);
+  const copy = closureCopyKeys(postType, worldSlug);
 
   const showNoResultsHint =
     pickMode === 'search' &&
@@ -58,7 +63,12 @@ export function ClosureStep2({
       <ModeTabs pickMode={pickMode} chatsCount={candidates.length} onChange={setPickMode} />
 
       {pickMode === 'chats' ? (
-        <ChatsPane candidates={candidates} selectedId={selectedId} onSelect={selectRecipient} />
+        <ChatsPane
+          candidates={candidates}
+          selectedId={selectedId}
+          onSelect={selectRecipient}
+          emptyLabel={t(copy.chatsEmpty)}
+        />
       ) : (
         <SearchPane
           query={searchQuery}
@@ -74,20 +84,22 @@ export function ClosureStep2({
 
       <View style={styles.actions}>
         <PrimaryButton
-          label={t('closure.step2MarkAndClose')}
+          label={t(copy.step2Primary)}
           size="md"
           fullWidth
           loading={isBusy}
           disabled={!selectedId}
           onPress={onMarkAndClose}
         />
-        <SecondaryButton
-          label={t('closure.step2CloseWithoutMarking')}
-          size="md"
-          fullWidth
-          disabled={isBusy}
-          onPress={onCloseWithoutMarking}
-        />
+        {allowCloseWithout ? (
+          <SecondaryButton
+            label={t('closure.step2CloseWithoutMarking')}
+            size="md"
+            fullWidth
+            disabled={isBusy}
+            onPress={onCloseWithoutMarking}
+          />
+        ) : null}
         <GhostButton label={t('general.cancel')} size="md" fullWidth disabled={isBusy} onPress={onCancel} />
       </View>
       {showNoResultsHint ? <Text style={styles.helper}>{t('closure.step2NoSearchResults')}</Text> : null}

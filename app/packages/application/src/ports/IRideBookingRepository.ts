@@ -7,7 +7,11 @@ import type { RideBooking } from '@kc/domain';
  */
 export interface IRideBookingRepository {
   /** Passenger books `seats` on an open ride offer; resolves to the new booking id. */
-  bookSeat(listingId: string, seats: number): Promise<string>;
+  bookSeat(
+    listingId: string,
+    seats: number,
+    requestedMeetingPoint?: Record<string, unknown> | null,
+  ): Promise<string>;
   /** Driver only: every waiting, approved or completed booking on the ride. */
   listForRide(listingId: string): Promise<RideBooking[]>;
   /** Driver approves a waiting booking. */
@@ -20,4 +24,6 @@ export interface IRideBookingRepository {
   complete(handoffId: string): Promise<void>;
   /** Driver only: completes confirmed bookings and closes the ride offer. */
   completeRide(listingId: string): Promise<number>;
+  /** Driver only: puts back a passenger they declined or cancelled by mistake. */
+  reinstate(handoffId: string): Promise<void>;
 }

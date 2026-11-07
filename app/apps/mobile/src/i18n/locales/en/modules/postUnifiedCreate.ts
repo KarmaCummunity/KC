@@ -35,6 +35,15 @@ export const postUnifiedCreateEn = {
       knowledge: 'e.g. Private math lesson, or Python for beginners',
       time: 'e.g. Help with groceries',
     },
+    descPlaceholder: {
+      rides: 'More about the ride — room for a bag, stops, how to spot the car...',
+      food: 'More about the food — amount, pickup time, notes...',
+      housing: 'More about the place — what it has, house rules, how to get there...',
+      animals: 'More about the animal — temperament, needs, history...',
+      time: 'More about the help — what is needed, how long, where...',
+      knowledge: 'More about the learning — topic, level, who it suits...',
+      default: 'More details...',
+    },
     rideAutoTitle: '{{origin}} → {{dest}}',
     errors: {
       titleRequired: 'Please write a title (at least 2 characters)',

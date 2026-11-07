@@ -12,6 +12,7 @@ import { usePasswordResetStyles } from '../../src/components/auth/passwordResetS
 import { AuthStatusScreen } from '../../src/components/auth/AuthStatusScreen';
 import { FormScreen, GhostButton, PrimaryButton } from '../../src/components/ui';
 import { useFormFieldFocus } from '../../src/hooks/useFormFieldFocus';
+import { formEmailInputProps } from '../../src/lib/platform/formTextInputHints';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -99,10 +100,8 @@ export default function ForgotPasswordScreen() {
         value={email}
         onChangeText={setEmail}
         placeholder={t('auth.emailPlaceholder')}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        autoComplete="email"
         editable={!loading}
+        {...formEmailInputProps}
         onFocus={emailField.onFocus}
         inputAccessoryViewID={emailField.inputAccessoryViewID}
         returnKeyType={emailField.returnKeyType}

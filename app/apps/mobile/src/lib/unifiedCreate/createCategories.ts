@@ -139,11 +139,11 @@ export function isCreateDirection(value: unknown): value is CreateDirection {
  * direction without a known category is dropped: the form would not know where it applies.
  */
 export function createRouteFor(categoryId?: string | null, direction?: CreateDirection | null): Href {
-  if (!isCreateCategoryId(categoryId)) return '/(tabs)/create';
+  if (!isCreateCategoryId(categoryId)) return '/create';
   const category = encodeURIComponent(categoryId);
   return isCreateDirection(direction)
-    ? `/(tabs)/create?category=${category}&direction=${direction}`
-    : `/(tabs)/create?category=${category}`;
+    ? `/create?category=${category}&direction=${direction}`
+    : `/create?category=${category}`;
 }
 
 /**

@@ -11,6 +11,7 @@ import { useExternalDonations } from '../../hooks/useExternalDonations';
 import { useFormFieldFocus } from '../../hooks/useFormFieldFocus';
 import { Screen } from '../ui/Screen';
 import { FormScreen } from '../ui/FormScreen';
+import { formDecimalInputProps } from '../../lib/platform/formTextInputHints';
 import { TextField } from '../ui/TextField';
 import { PrimaryButton } from '../ui/Buttons';
 import { Chip } from '../ui/Chip';
@@ -85,7 +86,7 @@ export function AmountCheckoutForm(props: AmountCheckoutFormProps) {
       <TextField
         ref={amountField.ref}
         label={amountLabel}
-        keyboardType="decimal-pad"
+        {...formDecimalInputProps}
         value={amount}
         onChangeText={setAmount}
         style={styles.amount}

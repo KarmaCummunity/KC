@@ -19,6 +19,8 @@ type QuietHours = NonNullable<NotificationPreferences['quietHours']>;
 interface Props {
   value: NotificationPreferences['quietHours'];
   onChange: (next: QuietHours) => void;
+  /** When the parent screen already shows the section title (e.g. feed settings card). */
+  hideSectionTitle?: boolean;
 }
 
 function TimeField({ label, value, onCommit }: { label: string; value: string; onCommit: (v: string) => void }) {
@@ -61,13 +63,13 @@ function TimeField({ label, value, onCommit }: { label: string; value: string; o
   );
 }
 
-export function QuietHoursSection({ value, onChange }: Props) {
+export function QuietHoursSection({ value, onChange, hideSectionTitle }: Props) {
   const { t } = useTranslation();
   const styles = useStyles();
   const qh: QuietHours = value ?? DEFAULT_QUIET_HOURS;
   return (
     <View>
-      <Text style={styles.header}>{t('notifications.quietHoursSection')}</Text>
+      {hideSectionTitle ? null : <Text style={styles.header}>{t('notifications.quietHoursSection')}</Text>}
       <NotificationToggleRow
         label={t('notifications.quietHoursEnabled')}
         caption={t('notifications.quietHoursCaption')}

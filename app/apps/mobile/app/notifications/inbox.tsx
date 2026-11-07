@@ -7,7 +7,7 @@ import { Stack, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
-import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
+import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { useAuthStore } from '../../src/store/authStore';
 import { container } from '../../src/lib/container';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
@@ -34,7 +34,7 @@ export default function NotificationInboxScreen() {
   const router = useRouter();
   const userId = useAuthStore((s) => s.session?.userId);
   const qc = useQueryClient();
-  const detailOptions = useDetailStackScreenOptions();
+  const shellStackOptions = useShellStackScreenOptions();
   const { colors } = useTheme();
 
   const query = useQuery({
@@ -103,9 +103,8 @@ export default function NotificationInboxScreen() {
     <View style={styles.container} testID="notification-inbox-screen">
       <Stack.Screen
         options={{
-          ...detailOptions,
+          ...shellStackOptions,
           headerTitle: t('notifications.inboxTitle'),
-          headerLargeTitle: false,
         }}
       />
       <KcFlashList

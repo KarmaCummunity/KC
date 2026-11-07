@@ -1,9 +1,10 @@
 import React, { useCallback, useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 import { KcFlashList } from '../../../../src/components/lists/KcFlashList';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
+import { textAlignStart } from '../../../../src/lib/rtlLayout';
 import type { MyListingRow } from '@kc/domain';
 import { KcRowCard } from '../../../../src/components/cards/KcRowCard';
 import { listingWorldIcon } from '../../../../src/components/cards/ListingCard';
@@ -11,15 +12,16 @@ import { cleanDisplayTitle } from '../../../../src/lib/displayTitle';
 import { Screen } from '../../../../src/components/ui/Screen';
 import { useMyMarketplaceListings } from '../../../../src/hooks/useMyMarketplaceListings';
 import { useMyListingActions } from '../../../../src/hooks/useMyListingActions';
+import { MyListingsClosureHost } from '../../../../src/components/marketplace/MyListingsClosureHost';
 import { useShellTabBarScrollInset } from '../../../../src/navigation/useShellTabBarVisibility';
 import { LIST_END_THRESHOLD } from '../../../../src/hooks/usePrefetchNextPage';
+import { WorldSubScreenChrome } from '../../../../src/components/giving/useWorldHeader';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   header: { padding: spacing.md, gap: spacing.xs },
-  title: { ...typography.h2, color: colors.textPrimary },
-  hint: { ...typography.caption, color: colors.textSecondary },
+  hint: { ...typography.caption, color: colors.textSecondary, textAlign: textAlignStart() },
   actions: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: spacing.sm },
   btn: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.sm, backgroundColor: colors.surfaceRaised },
   btnDanger: { backgroundColor: colors.errorLight },
@@ -38,7 +40,7 @@ interface MyListingRowItemProps {
   readonly onOpen: (listingId: string) => void;
   readonly onEdit: (listingId: string) => void;
   readonly onPause: (listingId: string) => void;
-  readonly onFulfill: (listingId: string) => void;
+  readonly onFulfill: (listing: MyListingRow) => void;
   readonly onResume: (listingId: string) => void;
   readonly onDelete: (listingId: string) => void;
   readonly onAddPhotos: (listingId: string) => void;
@@ -62,7 +64,7 @@ const MyListingRowItem = React.memo(function MyListingRowItem({
   const handleOpen = useCallback(() => onOpen(item.listingId), [item.listingId, onOpen]);
   const handleEdit = useCallback(() => onEdit(item.listingId), [item.listingId, onEdit]);
   const handlePause = useCallback(() => onPause(item.listingId), [item.listingId, onPause]);
-  const handleFulfill = useCallback(() => onFulfill(item.listingId), [item.listingId, onFulfill]);
+  const handleFulfill = useCallback(() => onFulfill(item), [item, onFulfill]);
   const handleResume = useCallback(() => onResume(item.listingId), [item.listingId, onResume]);
   const handleDelete = useCallback(() => onDelete(item.listingId), [item.listingId, onDelete]);
   const handleAddPhotos = useCallback(() => onAddPhotos(item.listingId), [item.listingId, onAddPhotos]);
@@ -92,7 +94,9 @@ const MyListingRowItem = React.memo(function MyListingRowItem({
             <Text style={styles.btnText}>{t('marketplace.myListingsPause')}</Text>
           </Pressable>
           <Pressable style={styles.btn} disabled={busy} onPress={handleFulfill}>
-            <Text style={styles.btnText}>{t('marketplace.myListingsFulfill')}</Text>
+            <Text style={styles.btnText}>
+              {item.direction === 'give' ? t('closure.assignUserCta') : t('marketplace.myListingsFulfill')}
+            </Text>
           </Pressable>
         </>
       ) : null}
@@ -134,6 +138,8 @@ const MyListingRowItem = React.memo(function MyListingRowItem({
 
 export default function MyListingsScreen() {
   const { t } = useTranslation();
+  const { world: worldParam } = useLocalSearchParams<{ world?: string | string[] }>();
+  const worldSlug = typeof worldParam === 'string' ? worldParam : Array.isArray(worldParam) ? worldParam[0] : undefined;
   const router = useRouter();
   const styles = useStyles();
   const inset = useShellTabBarScrollInset();
@@ -149,8 +155,11 @@ export default function MyListingsScreen() {
 
   const handleEdit = useCallback(
     (listingId: string) =>
-      router.push(`/(tabs)/donations/marketplace/my-listings/edit/${listingId}`),
-    [router],
+      router.push({
+        pathname: '/(tabs)/donations/marketplace/my-listings/edit/[listingId]',
+        params: { listingId, ...(worldSlug ? { world: worldSlug } : {}) },
+      }),
+    [router, worldSlug],
   );
 
   const contentContainerStyle = useMemo(() => ({ paddingBottom: inset }), [inset]);
@@ -178,11 +187,15 @@ export default function MyListingsScreen() {
   );
 
   return (
-    <Screen>
+    <>
+      {worldSlug ? (
+        <WorldSubScreenChrome worldSlug={worldSlug} activeScreenTestId="world-hub-my-listings" />
+      ) : null}
+      <Screen hasNativeHeader blobs="off">
       <View style={styles.header}>
-        <Text style={styles.title}>{t('marketplace.myListingsTitle')}</Text>
         <Text style={styles.hint}>{t('marketplace.myListingsSubtitle')}</Text>
       </View>
+      <MyListingsClosureHost onDone={() => { void refetch(); }} />
       <KcFlashList
         data={rows}
         keyExtractor={myListingKeyExtractor}
@@ -197,6 +210,7 @@ export default function MyListingsScreen() {
         }
         renderItem={renderItem}
       />
-    </Screen>
+      </Screen>
+    </>
   );
 }

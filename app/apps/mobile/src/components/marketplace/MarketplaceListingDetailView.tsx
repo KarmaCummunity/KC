@@ -20,19 +20,34 @@ import { PostDetailHeader } from '../cards/PostDetailHeader';
 import { SimilarListingCard } from '../cards/SimilarListingCard';
 import { useAuthStore } from '../../store/authStore';
 import { ListingDetailActions } from './ListingDetailActions';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rtlTextAlignStart, rowDirectionStart } from '../../lib/rtlLayout';
 import { PublisherCard } from '../post-detail/PublisherCard';
 import { DetailHeroCard } from '../post-detail/DetailHeroCard';
 import { usePostDetailStyles } from '../../screens/post/postDetailScreen.styles';
 import { ListingMediaGallery } from './ListingMediaGallery';
 import { useCityName } from '../../hooks/useCityName';
+import { useRideHouseNumbers } from '../../hooks/useRideHouseNumbers';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   // Flow actions (reserve / claim / book / message) sit below the content card, like the post page's CTA.
-  actions: { marginHorizontal: spacing.base, marginTop: spacing.base, gap: spacing.md },
+  actions: {
+    marginHorizontal: spacing.base,
+    marginTop: spacing.sm,
+    gap: spacing.sm,
+    alignSelf: 'stretch',
+    width: '100%',
+  },
   summary: { ...typography.body, color: colors.textSecondary, textAlign: rtlTextAlignStart },
-  section: { ...typography.h3, color: colors.textPrimary, marginHorizontal: spacing.base, marginTop: spacing.lg, marginBottom: spacing.sm },
-  similarRow: { paddingHorizontal: spacing.base },
+  section: {
+    ...typography.h3,
+    color: colors.textPrimary,
+    marginHorizontal: spacing.base,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+    textAlign: rtlTextAlignStart,
+    alignSelf: 'stretch',
+  },
+  similarRow: { paddingHorizontal: spacing.base, flexDirection: rowDirectionStart },
   similarCell: { marginEnd: spacing.sm, paddingVertical: spacing.xs },
 }));
 
@@ -41,6 +56,8 @@ interface Props {
   bottomInset: number;
   /** Rendered under the actions, before the similar listings (the post's likes and comments). */
   footer?: ReactNode;
+  /** Share, report and block live in the post-detail header; omit them from the action row. */
+  moderationInHeader?: boolean;
 }
 
 /** Placeholder icon for listings without photos; rides get a car like their cards. */
@@ -49,7 +66,7 @@ function fallbackIconFor(detail: MarketplaceListingDetail) {
   return detail.direction === 'give' ? ('gift-outline' as const) : ('search-outline' as const);
 }
 
-export function MarketplaceListingDetailView({ detail, bottomInset, footer }: Props) {
+export function MarketplaceListingDetailView({ detail, bottomInset, footer, moderationInHeader = false }: Props) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const styles = useStyles();
@@ -63,6 +80,7 @@ export function MarketplaceListingDetailView({ detail, bottomInset, footer }: Pr
   const worldLabel = i18n.language.startsWith('he') ? detail.worldLabelHe : detail.worldLabelEn;
   const kindLabel = i18n.language.startsWith('he') ? detail.kindLabelHe : detail.kindLabelEn;
   const ownerCityName = useCityName(detail.owner?.cityId ?? null);
+  const rideHouseNumbers = useRideHouseNumbers(detail.listingId, detail.worldSlug === 'rides');
 
   return (
     <>
@@ -77,7 +95,14 @@ export function MarketplaceListingDetailView({ detail, bottomInset, footer }: Pr
             badgeLabel={detail.direction === 'request' ? t('feed.requestTypeShort') : t('feed.giveTypeShort')}
             chip={worldLabel}
           />
-          {detail.worldSlug === 'rides' ? <RideRouteCard details={detail.details} direction={detail.direction} /> : null}
+          {detail.worldSlug === 'rides' ? (
+            <RideRouteCard
+              embedded
+              details={detail.details}
+              direction={detail.direction}
+              houseNumbers={rideHouseNumbers}
+            />
+          ) : null}
           {detail.worldSlug === 'rides' ? <RideSeriesOccurrences listingId={detail.listingId} details={detail.details} /> : null}
           {detail.worldSlug === 'rides' && viewerId === detail.ownerId ? <RidePublishAgainButton details={detail.details} /> : null}
           {detail.worldSlug === 'rides' && viewerId === detail.ownerId ? <RideSeriesManageLink details={detail.details} /> : null}
@@ -91,15 +116,21 @@ export function MarketplaceListingDetailView({ detail, bottomInset, footer }: Pr
               avatarUrl={detail.owner.avatarUrl}
               cityName={ownerCityName}
               profileRef={detail.owner.shareHandle || detail.owner.userId}
+              verificationLevel={detail.owner.verificationLevel}
             />
           ) : null}
         </View>
         <View style={styles.actions}>
           <GivingHandoffActions detail={detail} />
-          <RideBookingActions detail={detail} />
-          <HousingStayActions detail={detail} />
+          <RideBookingActions detail={detail} hideOwnerAssign={moderationInHeader} />
+          <HousingStayActions detail={detail} hideOwnerAssign={moderationInHeader} />
           <EventRegistrationActions detail={detail} />
-          <ListingDetailActions detail={detail} viewerId={viewerId} onReport={() => setReportOpen(true)} />
+          <ListingDetailActions
+            detail={detail}
+            viewerId={viewerId}
+            onReport={() => setReportOpen(true)}
+            moderationInHeader={moderationInHeader}
+          />
         </View>
         {footer}
         {similar.length > 0 ? (
@@ -118,7 +149,9 @@ export function MarketplaceListingDetailView({ detail, bottomInset, footer }: Pr
           </>
         ) : null}
       </ScrollView>
-      <ReportListingModal listingId={detail.listingId} visible={reportOpen} onClose={() => setReportOpen(false)} />
+      {!moderationInHeader ? (
+        <ReportListingModal listingId={detail.listingId} visible={reportOpen} onClose={() => setReportOpen(false)} />
+      ) : null}
     </>
   );
 }

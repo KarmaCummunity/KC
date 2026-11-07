@@ -21,6 +21,7 @@ import { AmbientBlobs } from '../ui/AmbientBlobs';
 import { AnimatedAuthInput } from './AnimatedAuthInput';
 import { PrimaryButton } from '../ui/Buttons';
 import { MirroredIcon, useDirectionalBackIcon } from '../ui/MirroredIcon';
+import { formEmailInputProps } from '../../lib/platform/formTextInputHints';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import type { AuthEmailForm } from './useAuthEmailForm';
 import { useKeyboardVerticalOffset } from '../../lib/platform/useKeyboardVerticalOffset';
@@ -176,9 +177,8 @@ function AuthCredentialFields({
         value={form.email}
         onChangeText={form.setEmail}
         placeholder={t('auth.emailPlaceholder')}
-        keyboardType="email-address"
-        autoCapitalize="none"
         editable={!form.loading}
+        {...formEmailInputProps}
         onFocus={emailField.onFocus}
         inputAccessoryViewID={emailField.inputAccessoryViewID}
         returnKeyType={emailField.returnKeyType}

@@ -6,7 +6,9 @@ import { TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, iconSize, Text } from '@kc/ui';
 import { MirroredIcon } from '../ui/MirroredIcon';
+import type { VerificationLevel } from '@kc/domain';
 import { AvatarInitials } from '../AvatarInitials';
+import { VerificationBadge } from '../VerificationBadge';
 import { KCImage } from '../ui/KCImage';
 import { usePostCardGridStyles } from '../PostCardGrid.styles';
 import { useKcCardExtraStyles } from './KcCard.styles';
@@ -17,6 +19,8 @@ export interface KcCardProps {
   width: number;
   dense?: boolean;
   onPress: () => void;
+  /** Fires on touch-down, before navigation, so a photo can start downloading. */
+  onPressIn?: () => void;
   accessibilityLabel?: string;
   imageUri?: string | null;
   fallbackUri?: string | null;
@@ -26,7 +30,9 @@ export interface KcCardProps {
   badgeLabel: string;
   roleBadgeLabel?: string | null;
   menu?: React.ReactNode;
-  author?: { name: string; avatarUrl?: string | null } | null;
+  author?: { name: string; avatarUrl?: string | null; verificationLevel?: VerificationLevel } | null;
+  /** Overrides `author` — e.g. tappable owner + counterparty row that must not trigger card press. */
+  authorsRow?: React.ReactNode;
   /** Plain title, or a custom node (e.g. translatable text). */
   title: React.ReactNode;
   chip?: string | null;
@@ -61,6 +67,7 @@ function KcCardInner(p: Readonly<KcCardProps>) {
       style={[styles.card, { width: p.width }, p.closed && extra.closed]}
       activeOpacity={0.86}
       onPress={p.onPress}
+      onPressIn={p.onPressIn}
       accessibilityRole="button"
       accessibilityLabel={p.accessibilityLabel}
     >
@@ -108,10 +115,12 @@ function KcCardInner(p: Readonly<KcCardProps>) {
             ) : null}
           </View>
         ) : null}
-        {p.author && !p.dense ? (
+        {p.authorsRow && !p.dense ? p.authorsRow : null}
+        {!p.authorsRow && p.author && !p.dense ? (
           <View style={styles.authorRow} accessibilityLabel={p.author.name}>
             <AvatarInitials name={p.author.name} avatarUrl={p.author.avatarUrl ?? null} size={OWNER_AVATAR_SIZE} />
             <Text style={styles.ownerName} numberOfLines={1}>{p.author.name}</Text>
+            <VerificationBadge level={p.author.verificationLevel} />
           </View>
         ) : null}
 

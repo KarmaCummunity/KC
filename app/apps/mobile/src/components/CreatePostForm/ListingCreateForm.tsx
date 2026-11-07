@@ -2,7 +2,7 @@
 // housing, time). Rides drop the title (built from the route) and put the optional car photo
 // last (#1411). Same layout and controls as the items post form: header → photos → title
 // → category-specific fields → description → location → publish.
-import React, { useEffect, useRef, type ReactNode } from 'react';
+import React, { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { MAX_MEDIA_ASSETS } from '@kc/domain';
@@ -13,10 +13,14 @@ import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibi
 import { pickListingImages } from '../../services/listingImageUpload';
 import type { CreateDirection } from '../../lib/unifiedCreate/createCategories';
 import { useListingCreateForm } from '../../hooks/useListingCreateForm';
+import { useScrollToListingProblem } from '../../hooks/useScrollToListingProblem';
+import { visibleDetailSpecs } from '../../lib/unifiedCreate/listingFieldSpecs';
+import { inlineProblemField, renderedListingFields } from '../../lib/unifiedCreate/listingFormProblem';
 import { CityPicker } from '../CityPicker';
 import { RideCreateSection } from '../giving/RideCreateSection';
 import { WorldSubcategoryPicker } from '../marketplace/WorldSubcategoryPicker';
 import { ListingDetailFields } from './ListingDetailFields';
+import { ListingFieldFrame, ListingFieldProblemContext } from './ListingFieldFrame';
 import { PhotoPicker } from './PhotoPicker';
 import { ListingKindChooser } from './ListingKindChooser';
 import { TimeOfferKindChooser } from './TimeOfferKindChooser';
@@ -35,6 +39,8 @@ interface Props {
   readonly onSummaryChange: (v: string) => void;
   readonly onPublished: (listingId: string) => void;
   readonly onPublishActionChange: (action: (() => void) | null, loading: boolean) => void;
+  readonly editListingId?: string | null;
+  readonly onSaved?: () => void;
 }
 
 export function ListingCreateForm({
@@ -47,14 +53,34 @@ export function ListingCreateForm({
   onSummaryChange,
   onPublished,
   onPublishActionChange,
+  editListingId = null,
+  onSaved,
 }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useCreatePostStyles();
   const tabBarPad = useShellTabBarScrollInset();
-  const form = useListingCreateForm({ worldSlug, direction, title, summary, onPublished });
+  const form = useListingCreateForm({
+    worldSlug,
+    direction,
+    title,
+    summary,
+    onPublished,
+    editListingId,
+    onSaved,
+  });
   const publishRef = useRef(form.publish);
   publishRef.current = form.publish;
+  const rendered = renderedListingFields({
+    isRides: form.isRides,
+    isOrgEvent: form.eventChoice.isOrgEvent,
+    detailKeys: visibleDetailSpecs(form.specs, form.details).map((s) => s.key),
+  });
+  const invalidField = inlineProblemField(form.error, rendered);
+  const { scrollRef, contentRef, register, onScroll } = useScrollToListingProblem(form.error, invalidField);
+  const message = form.error?.message ?? null;
+  const problemContext = useMemo(() => ({ invalidField, message, register }), [invalidField, message, register]);
+  const titleProblem = invalidField === 'title' ? message : null;
 
   useEffect(() => {
     onPublishActionChange(() => void publishRef.current(), form.busy);
@@ -77,122 +103,154 @@ export function ListingCreateForm({
     />
   );
 
+  if (form.editLoading) {
+    return (
+      <View style={styles.scroll}>
+        <ActivityIndicator style={{ marginTop: 48 }} testID="listing-edit-loading" />
+      </View>
+    );
+  }
+
   return (
     <ScrollView
+      ref={scrollRef}
       style={styles.scroll}
       contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarPad }]}
       keyboardShouldPersistTaps="handled"
+      onScroll={onScroll}
+      scrollEventThrottle={16}
       testID="listing-create-form"
     >
+      <View ref={contentRef} collapsable={false}>
       {header}
-      <KindGate
-        loading={form.kindsQuery.isPending}
-        missing={!form.kind}
-        onRetry={() => void form.kindsQuery.refetch()}
-      >
-        {/* Several kinds in this direction (animals, knowledge): the member says which one. */}
-        {form.eventChoice.isOrgEvent ? null : (
-          <ListingKindChooser
-            choices={form.kindChoices}
-            selectedKindId={form.kind?.kindId ?? null}
-            onChoose={form.chooseKind}
+      <ListingFieldProblemContext.Provider value={problemContext}>
+        <KindGate
+          loading={form.kindsQuery.isPending}
+          missing={!form.kind}
+          onRetry={() => void form.kindsQuery.refetch()}
+        >
+          {/* Several kinds in this direction (animals, knowledge): the member says which one. */}
+          {form.eventChoice.isOrgEvent ? null : (
+            <ListingKindChooser
+              choices={form.kindChoices}
+              selectedKindId={form.kind?.kindId ?? null}
+              onChoose={form.chooseKind}
+              disabled={form.busy}
+            />
+          )}
+
+          {/* A member of an organization picks a volunteer shift or the organization's event (G1 step 5). */}
+          {form.eventChoice.available ? <TimeOfferKindChooser choice={form.eventChoice} disabled={form.busy} /> : null}
+
+          {form.isRides ? null : photoPicker}
+
+          {/* Rides have no title (#1411): it is built from the route. */}
+          {form.isRides ? null : (
+            <ListingFieldFrame field="title" outlined={false} style={styles.section}>
+              <TextField
+                testID="listing-title"
+                label={`${t('post.title')} *`}
+                value={title}
+                onChangeText={onTitleChange}
+                placeholder={t(`post.unifiedCreate.titlePlaceholder.${worldSlug}`, { defaultValue: t('post.titlePlaceholder') })}
+                maxLength={TITLE_MAX}
+                editable={!form.busy}
+                errorText={titleProblem ?? undefined}
+              />
+              <Text style={styles.charCount}>{title.length}/{TITLE_MAX}</Text>
+            </ListingFieldFrame>
+          )}
+
+          {form.isRides ? (
+            <RideCreateSection
+              details={form.details}
+              setDetails={form.setDetails}
+              onOriginCity={form.setCity}
+              isOffer={direction === 'give'}
+              recurrence={form.isEdit ? null : form.recurrence}
+              onRecurrenceChange={form.isEdit ? () => {} : form.setRecurrence}
+              leaveNow={form.isEdit ? false : form.leaveNow}
+              onLeaveNowChange={form.isEdit ? () => {} : form.setLeaveNow}
+              onOriginFromHereChange={form.setOriginFromHere}
+              houseNumbers={form.houseNumbers}
+              onHouseNumbersChange={form.setHouseNumbers}
+              disabled={form.busy}
+            />
+          ) : null}
+
+          {form.showSubcategory ? (
+            <WorldSubcategoryPicker
+              worldSlug={worldSlug}
+              value={form.subcategoryId}
+              onChange={form.setSubcategoryId}
+              disabled={form.busy}
+            />
+          ) : null}
+
+          <ListingDetailFields
+            specs={form.specs}
+            details={form.details}
+            onChange={form.setDetail}
             disabled={form.busy}
           />
-        )}
 
-        {/* A member of an organization picks a volunteer shift or the organization's event (G1 step 5). */}
-        {form.eventChoice.available ? <TimeOfferKindChooser choice={form.eventChoice} disabled={form.busy} /> : null}
-
-        {form.isRides ? null : photoPicker}
-
-        {/* Rides have no title (#1411): it is built from the route. */}
-        {form.isRides ? null : (
           <View style={styles.section}>
             <TextField
-              testID="listing-title"
-              label={`${t('post.title')} *`}
-              value={title}
-              onChangeText={onTitleChange}
-              placeholder={t(`post.unifiedCreate.titlePlaceholder.${worldSlug}`)}
-              maxLength={TITLE_MAX}
+              testID="listing-summary"
+              label={t('post.description')}
+              value={summary}
+              onChangeText={onSummaryChange}
+              placeholder={t(`post.unifiedCreate.descPlaceholder.${worldSlug}`, {
+                defaultValue: t('post.unifiedCreate.descPlaceholder.default'),
+              })}
+              multiline
+              maxLength={SUMMARY_MAX}
               editable={!form.busy}
             />
-            <Text style={styles.charCount}>{title.length}/{TITLE_MAX}</Text>
+            <Text style={styles.charCount}>{summary.length}/{SUMMARY_MAX}</Text>
           </View>
-        )}
 
-        {form.isRides ? (
-          <RideCreateSection
-            details={form.details}
-            setDetails={form.setDetails}
-            onOriginCity={form.setCity}
-            isOffer={direction === 'give'}
-            recurrence={form.recurrence}
-            onRecurrenceChange={form.setRecurrence}
-            leaveNow={form.leaveNow}
-            onLeaveNowChange={form.setLeaveNow}
-            disabled={form.busy}
-          />
-        ) : null}
+          {/* Rides keep it simple (#1411): the optional car photo sits at the bottom. */}
+          {form.isRides ? photoPicker : null}
 
-        {form.showSubcategory ? (
-          <WorldSubcategoryPicker
-            worldSlug={worldSlug}
-            value={form.subcategoryId}
-            onChange={form.setSubcategoryId}
-            disabled={form.busy}
-          />
-        ) : null}
-
-        <ListingDetailFields specs={form.specs} details={form.details} onChange={form.setDetail} disabled={form.busy} />
-
-        <View style={styles.section}>
-          <TextField
-            testID="listing-summary"
-            label={t('post.description')}
-            value={summary}
-            onChangeText={onSummaryChange}
-            placeholder={t('post.descPlaceholder')}
-            multiline
-            maxLength={SUMMARY_MAX}
-            editable={!form.busy}
-          />
-          <Text style={styles.charCount}>{summary.length}/{SUMMARY_MAX}</Text>
-        </View>
-
-        {/* Rides keep it simple (#1411): the optional car photo sits at the bottom. */}
-        {form.isRides ? photoPicker : null}
-
-        {form.isRides ? null : (
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>
-              {t('post.unifiedCreate.cityLabel')} <Text style={styles.required}>*</Text>
-            </Text>
-            <CityPicker value={form.city} onChange={form.setCity} disabled={form.busy} />
-          </View>
-        )}
-
-        {form.error ? (
-          <Text style={styles.sectionHint} accessibilityRole="alert" testID="listing-error">
-            {form.error}
-          </Text>
-        ) : null}
-
-        <TouchableOpacity
-          testID="listing-publish"
-          style={[styles.publishBtn, styles.publishBtnFooter]}
-          onPress={() => void form.publish()}
-          disabled={!form.canPublish}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !form.canPublish }}
-        >
-          {form.busy ? (
-            <ActivityIndicator color={colors.textInverse} size="small" />
-          ) : (
-            <Text style={styles.publishBtnText}>{t('post.publish')}</Text>
+          {form.isRides ? null : (
+            <ListingFieldFrame
+              field="city"
+              style={styles.section}
+              label={
+                <Text style={styles.sectionLabel}>
+                  {t('post.unifiedCreate.cityLabel')} <Text style={styles.required}>*</Text>
+                </Text>
+              }
+            >
+              <CityPicker value={form.city} onChange={form.setCity} disabled={form.busy} />
+            </ListingFieldFrame>
           )}
-        </TouchableOpacity>
-      </KindGate>
+
+          {/* Only problems no section owns (server errors) sit above Publish. */}
+          {form.error && !invalidField ? (
+            <Text style={styles.sectionHint} accessibilityRole="alert" testID="listing-error">
+              {form.error.message}
+            </Text>
+          ) : null}
+
+          <TouchableOpacity
+            testID="listing-publish"
+            style={[styles.publishBtn, styles.publishBtnFooter]}
+            onPress={() => void form.publish()}
+            disabled={!form.canPublish}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !form.canPublish }}
+          >
+            {form.busy ? (
+              <ActivityIndicator color={colors.textInverse} size="small" />
+            ) : (
+              <Text style={styles.publishBtnText}>{t('post.publish')}</Text>
+            )}
+          </TouchableOpacity>
+        </KindGate>
+      </ListingFieldProblemContext.Provider>
+      </View>
     </ScrollView>
   );
 }

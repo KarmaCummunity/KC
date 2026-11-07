@@ -11,6 +11,7 @@ let dismissExplainerImpl: () => Promise<void> = () => Promise.resolve();
 vi.mock('../../services/postsComposition', () => ({
   getGetClosureCandidatesUseCase: () => ({ execute: () => candidatesImpl() }),
   getMarkAsDeliveredUseCase: () => ({ execute: () => markDeliveredImpl() }),
+  getOwnerCompleteOfferUseCase: () => ({ execute: () => Promise.resolve({ closed: true }) }),
 }));
 
 vi.mock('../../services/userComposition', () => ({

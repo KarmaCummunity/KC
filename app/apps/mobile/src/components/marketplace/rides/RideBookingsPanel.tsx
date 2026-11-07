@@ -5,8 +5,8 @@ import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { Text, typography } from '@kc/ui';
-import { canApproveRideBooking, summarizeRideSeats } from '@kc/domain';
+import { Text } from '@kc/ui';
+import { canApproveRideBooking, canReinstateRideBooking, summarizeRideSeats } from '@kc/domain';
 import { useAuthStore } from '../../../store/authStore';
 import { givingHandoffUseCases } from '../../../services/givingHandoffComposition';
 import {
@@ -19,6 +19,7 @@ import { HandoffActionButton } from '../HandoffActionButton';
 import { confirmAction } from '../../../services/platformConfirm';
 import { useRideBookingAction } from './useRideBookingAction';
 import { useRideBookingStyles } from './rideBookingStyles';
+import { OwnerAssignUserButton } from '../../closure/OwnerAssignUserButton';
 
 interface Props {
   readonly listingId: string;
@@ -27,9 +28,18 @@ interface Props {
   readonly capacity: number;
   readonly listingStatus: string;
   readonly departsAt: string | null;
+  /** Post detail docks assign in the bottom chrome instead of this panel. */
+  readonly hideOwnerAssign?: boolean;
 }
 
-export function RideBookingsPanel({ listingId, cityId, capacity, listingStatus, departsAt }: Props) {
+export function RideBookingsPanel({
+  listingId,
+  cityId,
+  capacity,
+  listingStatus,
+  departsAt,
+  hideOwnerAssign = false,
+}: Props) {
   const { t } = useTranslation();
   const router = useRouter();
   const styles = useRideBookingStyles();
@@ -42,6 +52,7 @@ export function RideBookingsPanel({ listingId, cityId, capacity, listingStatus, 
 
   const list = bookings.data ?? [];
   const seats = summarizeRideSeats(capacity, list);
+  const hasReinstatable = list.some((b) => canReinstateRideBooking(b));
   const canFinishRide = listingStatus === 'open'
     && departsAt !== null
     && Number.isFinite(Date.parse(departsAt))
@@ -76,11 +87,16 @@ export function RideBookingsPanel({ listingId, cityId, capacity, listingStatus, 
         alert(t('givingHandoff.ratingThanks'));
       }),
     chat: (recipientId) => void onChat(recipientId),
+    reinstate: (id) =>
+      void run(
+        () => rideBookingUseCases.reinstate().execute(id, { bookings: list }),
+        'match_made',
+      ),
   };
 
   return (
     <View style={styles.box} testID="ride-bookings-panel">
-      <Text style={typography.h3}>{t('rideBooking.driverTitle')}</Text>
+      <Text style={styles.title}>{t('rideBooking.driverTitle')}</Text>
       <Text style={styles.caption} testID="ride-bookings-seats">
         {t('rideBooking.seatSummary', { free: seats.free, capacity: seats.capacity })}
       </Text>
@@ -99,8 +115,14 @@ export function RideBookingsPanel({ listingId, cityId, capacity, listingStatus, 
           <Text style={styles.caption}>{t('rideBooking.loadError')}</Text>
         </Pressable>
       ) : null}
+      {hasReinstatable ? (
+        <Text style={styles.caption} testID="ride-bookings-reinstate-hint">{t('rideBooking.reinstateHint')}</Text>
+      ) : null}
       {bookings.isSuccess && list.length === 0 ? (
         <Text style={styles.caption} testID="ride-bookings-empty">{t('rideBooking.empty')}</Text>
+      ) : null}
+      {listingStatus === 'open' && !hideOwnerAssign ? (
+        <OwnerAssignUserButton targetId={listingId} worldSlug="rides" />
       ) : null}
 
       {list.map((booking) => (
@@ -110,6 +132,7 @@ export function RideBookingsPanel({ listingId, cityId, capacity, listingStatus, 
           busy={busy}
           actions={actions}
           canApprove={canApproveRideBooking(capacity, list, booking)}
+          canReinstate={canReinstateRideBooking(booking)}
         />
       ))}
     </View>

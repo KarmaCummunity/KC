@@ -2,9 +2,13 @@
 // Spec: docs/spec/05_giving_worlds.md §5.3 step 3 — the driver sees every booking and
 // approves or declines each (D73); unapproved bookings expire (D96). Gap G47.
 
-/** Booking states the driver manages; cancelled bookings are history and are not listed. */
+/** Active booking states on a ride offer. */
 export const RIDE_BOOKING_STATUSES = ['reserved', 'confirmed', 'handed_over'] as const;
 export type RideBookingStatus = (typeof RIDE_BOOKING_STATUSES)[number];
+
+/** Driver list may include a recently cancelled row the owner can reinstate. */
+export const RIDE_BOOKING_CANCELLED_STATUS = 'cancelled' as const;
+export type RideBookingListStatus = RideBookingStatus | typeof RIDE_BOOKING_CANCELLED_STATUS;
 
 /** Upper bound of seats one passenger can book at once (mirrors `book_ride_seat`). */
 export const RIDE_BOOKING_MAX_SEATS = 8;
@@ -15,12 +19,16 @@ export interface RideBooking {
   readonly passengerName: string;
   readonly avatarUrl: string | null;
   readonly seats: number;
-  readonly status: RideBookingStatus;
+  readonly status: RideBookingListStatus;
   readonly reservedAt: string;
+  /** Set when `status` is `cancelled` and the driver may reinstate this row. */
+  readonly cancelReason?: string | null;
   /** Approval deadline: 12 hours after booking or departure, whichever is earlier (D96). */
   readonly confirmBy: string | null;
   /** True once the driver rated this passenger after the trip (spec 07 §7.7). */
   readonly ratedByMe: boolean;
+  /** Passenger-requested meeting point label, shown to the driver before approval. */
+  readonly requestedStopLabel: string | null;
 }
 
 /** How a ride's seats are split between waiting, approved and completed bookings. */
@@ -35,6 +43,19 @@ export interface RideSeatSummary {
 
 export function isRideBookingStatus(value: string): value is RideBookingStatus {
   return (RIDE_BOOKING_STATUSES as readonly string[]).includes(value);
+}
+
+export function isRideBookingListStatus(value: string): value is RideBookingListStatus {
+  return isRideBookingStatus(value) || value === RIDE_BOOKING_CANCELLED_STATUS;
+}
+
+const REINSTATE_CANCEL_REASONS = new Set(['declined', 'driver_cancelled']);
+
+/** True when the driver may call `reinstate_ride_booking` for this list row. */
+export function canReinstateRideBooking(booking: RideBooking): boolean {
+  return booking.status === RIDE_BOOKING_CANCELLED_STATUS
+    && booking.cancelReason != null
+    && REINSTATE_CANCEL_REASONS.has(booking.cancelReason);
 }
 
 /** True when `seats` is a whole number a single booking may request. */

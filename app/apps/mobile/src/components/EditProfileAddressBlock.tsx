@@ -8,7 +8,8 @@ import { View } from 'react-native';
 import type { TextInput as KitTextInput } from '@kc/ui';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
-import { TextField, type TextFieldProps } from './ui/TextField';
+import type { TextFieldProps } from './ui/TextField';
+import { CompactStreetNumberField } from './address/CompactStreetNumberField';
 import { CityPicker } from './CityPicker';
 import { StreetPicker } from './StreetPicker';
 import { applyAddressResetOnCityChange } from '../lib/addressResetOnCityChange';
@@ -81,15 +82,13 @@ export function EditProfileAddressBlock({
               disabled={disabled}
             />
           </View>
-          <TextField
+          <CompactStreetNumberField
             ref={streetNumberRef}
             containerStyle={styles.streetInputHouse}
-            label={t('profile.streetNumberShort')}
+            style={styles.streetNumberInput}
             value={streetNumber}
             onChangeText={onStreetNumberChange}
-            placeholder={t('profile.streetNumberShort')}
             editable={!disabled && !!city}
-            maxLength={10}
             {...streetNumberInputProps}
           />
         </View>
@@ -105,4 +104,5 @@ const useStyles = makeUseStyles(({ colors }) => ({
   streetRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start', width: '100%' },
   streetCol: { flex: 2, minWidth: 0 },
   streetInputHouse: { flex: 1, minWidth: 0, maxWidth: 120 },
+  streetNumberInput: { textAlign: rtlTextAlignStart },
 }));

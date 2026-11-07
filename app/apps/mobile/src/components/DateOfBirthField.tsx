@@ -7,7 +7,9 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { composeIsoDate, dateOfBirthIssue, parseIsoDate } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { formIntegerInputProps } from '../lib/platform/formTextInputHints';
 import { TextField } from './ui/TextField';
+import { rtlTextAlignStart } from '../lib/rtlTextAlignStart';
 
 interface Props {
   /** ISO `YYYY-MM-DD`, or null while the three parts do not form a valid date. */
@@ -45,7 +47,7 @@ export function DateOfBirthField({ value, onChange, disabled }: Props) {
         set(clean);
         next(clean);
       }}
-      keyboardType="number-pad"
+      {...formIntegerInputProps}
       maxLength={max}
       editable={!disabled}
       containerStyle={styles.part}
@@ -67,9 +69,9 @@ export function DateOfBirthField({ value, onChange, disabled }: Props) {
 
 const useStyles = makeUseStyles(({ colors }) => ({
   wrapper: { gap: spacing.xs },
-  label: { ...typography.label, color: colors.textSecondary },
+  label: { ...typography.label, color: colors.textSecondary, textAlign: rtlTextAlignStart },
   row: { flexDirection: 'row', gap: spacing.sm },
   part: { flex: 1 },
-  helper: { ...typography.bodySmall, color: colors.textSecondary },
-  error: { ...typography.bodySmall, color: colors.error },
+  helper: { ...typography.bodySmall, color: colors.textSecondary, textAlign: rtlTextAlignStart },
+  error: { ...typography.bodySmall, color: colors.error, textAlign: rtlTextAlignStart },
 }));

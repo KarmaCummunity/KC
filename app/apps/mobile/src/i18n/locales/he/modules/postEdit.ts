@@ -55,4 +55,7 @@ export const postEditHe = {
     urgencyPlaceholder: 'לדוגמה: צריך עד שישי',
     sectionVisibility: 'מי יראה את הפוסט',
   },
+  editListing: {
+    headerTitle: 'עריכת {{category}}',
+  },
 } as const;

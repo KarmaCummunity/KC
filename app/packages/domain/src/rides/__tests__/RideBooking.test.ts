@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   canApproveRideBooking,
   canBookRideSeats,
+  canReinstateRideBooking,
   canPerformBookingAction,
   getRideRemainingCapacity,
   isRideBookingStatus,
@@ -24,6 +25,7 @@ function booking(status: RideBooking['status'], seats: number): RideBooking {
     reservedAt: '2026-11-01T08:00:00Z',
     confirmBy: null,
     ratedByMe: false,
+    requestedStopLabel: null,
   };
 }
 
@@ -189,5 +191,15 @@ describe('isRideTripCompletable', () => {
     expect(isRideTripCompletable(null, base)).toBe(true);
     expect(isRideTripCompletable(undefined, base)).toBe(true);
     expect(isRideTripCompletable('invalid-date', base)).toBe(true);
+  });
+});
+
+describe('canReinstateRideBooking', () => {
+  it('allows driver-cancelled and declined rows only', () => {
+    const base = booking('cancelled', 1);
+    expect(canReinstateRideBooking({ ...base, cancelReason: 'driver_cancelled' })).toBe(true);
+    expect(canReinstateRideBooking({ ...base, cancelReason: 'declined' })).toBe(true);
+    expect(canReinstateRideBooking({ ...base, cancelReason: 'expired' })).toBe(false);
+    expect(canReinstateRideBooking(booking('confirmed', 1))).toBe(false);
   });
 });

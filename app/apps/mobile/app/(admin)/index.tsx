@@ -17,6 +17,7 @@ import { useAdminTasksList } from '../../src/hooks/useAdminTasks';
 import { useReportsInbox } from '../../src/hooks/useReportsInbox';
 import { getCommunityStatsSnapshotUseCase } from '../../src/services/postsComposition';
 import { useLocaleBundle } from '../../src/i18n/useLocaleBundle';
+import { useAdminPortalChrome } from '../../src/components/admin/AdminPortalChrome';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -95,6 +96,8 @@ export default function AdminDashboard(): ReactElement {
   if (canViewAudit) cards.push({ key: 'audit', label: t.auditKpi, value: t.auditOpenLabel, icon: 'time-outline', accent: colors.warning, accentBg: colors.warningLight, href: '/(admin)/audit' });
 
   const goTo = (path: string): void => router.push(path as never);
+
+  useAdminPortalChrome({ title: L.admin.portalTitle });
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.root}>

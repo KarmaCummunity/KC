@@ -14,7 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import type { SurveyCompletionStatus, SurveyListItem } from '@kc/domain';
-import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
+import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { NotifyModal } from '../../src/components/NotifyModal';
@@ -98,7 +98,7 @@ function SurveyRow({ item, onPress, onShare }: SurveyRowProps) {
 }
 
 export default function SurveysHubScreen() {
-  const detailStackScreenOptions = useDetailStackScreenOptions();
+  const shellStackScreenOptions = useShellStackScreenOptions();
   const { t } = useTranslation();
   const router = useRouter();
   const styles = useSurveysHubStyles();
@@ -135,7 +135,7 @@ export default function SurveysHubScreen() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen
         options={{
-          ...detailStackScreenOptions,
+          ...shellStackScreenOptions,
           headerTitle: t('survey.hubTitle'),
         }}
       />

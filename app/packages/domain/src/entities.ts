@@ -18,6 +18,7 @@ import type {
   ReportStatus,
   ReportTargetType,
 } from './value-objects';
+import type { VerificationLevel } from './verificationLevel';
 
 // ── User ──────────────────────────────────────
 
@@ -64,6 +65,8 @@ export interface User {
   followingCount: number;
   /** Engagement score (FR-KARMA-001). Server-maintained, floored at 0. */
   karmaPoints: number;
+  /** FR-VERIFY-001 badge level. Server-derived (`users.verification_level`, migration 0637). */
+  verificationLevel: VerificationLevel;
   readonly createdAt: string;
   updatedAt: string;
   /** FR-TRANSLATE — reader's BCP-47 output language; null = resolve from device locale. */

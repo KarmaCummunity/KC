@@ -12,6 +12,10 @@ vi.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 20, bottom: 34, left: 0, right: 0 }),
 }));
 vi.mock('@react-navigation/elements', () => ({ useHeaderHeight: () => 44 }));
+vi.mock('../../../navigation/useShellTabBarVisibility', () => ({
+  useShellTabBarVisibility: () => true,
+  shellTabBarHeightPx: (visible: boolean) => (visible ? 48 : 0),
+}));
 vi.mock('react-native', async () => {
   const RN = await vi.importActual<typeof import('react-native')>('react-native');
   return {
@@ -61,5 +65,15 @@ describe('FormScreen', () => {
     const { getByTestId } = renderForm({ headerless: true });
     const kav = getByTestId('kav');
     expect(Number(kav.getAttribute('data-offset'))).toBe(20);
+  });
+
+  it('lifts the sticky footer above the shell tab bar when tabBarFooterInset is enabled', () => {
+    const withInset = renderForm({ tabBarFooterInset: true });
+    const footer = withInset.getByTestId('form-screen-footer') as HTMLElement;
+    expect(footer.style.paddingBottom).toBe('64px');
+    cleanup();
+    const withoutInset = renderForm({ tabBarFooterInset: false });
+    const plainFooter = withoutInset.getByTestId('form-screen-footer') as HTMLElement;
+    expect(plainFooter.style.paddingBottom).toBe('');
   });
 });

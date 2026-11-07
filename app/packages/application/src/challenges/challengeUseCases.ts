@@ -36,8 +36,8 @@ export class GetChallengeUseCase {
 
 export class JoinChallengeUseCase {
   constructor(private readonly repo: IChallengeRepository) {}
-  execute(challengeId: string): Promise<void> {
-    return this.repo.joinChallenge(challengeId);
+  execute(challengeId: string, showOnProfile = true): Promise<void> {
+    return this.repo.joinChallenge(challengeId, showOnProfile);
   }
 }
 

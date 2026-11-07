@@ -40,6 +40,17 @@ function toChallengeError(error: PostgrestError): Error {
   return error;
 }
 
+/** Pre-0655 DB: join_challenge had only (uuid); PostgREST rejects p_show_on_profile. */
+function isJoinProfileRpcUnavailable(error: PostgrestError): boolean {
+  const text = `${error.code ?? ''} ${error.message ?? ''} ${error.details ?? ''}`.toLowerCase();
+  return (
+    text.includes('pgrst202') ||
+    text.includes('could not find the function') ||
+    text.includes('p_show_on_profile') ||
+    text.includes('schema cache')
+  );
+}
+
 function mapSummary(row: SummaryRow): ChallengeSummary {
   return {
     challengeId: row.challenge_id,
@@ -141,9 +152,19 @@ export class SupabaseChallengeRepository implements IChallengeRepository {
     return row ? mapSummary(row) : null;
   }
 
-  async joinChallenge(challengeId: string) {
-    const { error } = await this.client.rpc('join_challenge', { p_challenge_id: challengeId });
-    if (error) throw toChallengeError(error);
+  async joinChallenge(challengeId: string, showOnProfile = true) {
+    const withProfile = await this.client.rpc('join_challenge', {
+      p_challenge_id: challengeId,
+      p_show_on_profile: showOnProfile,
+    } as { p_challenge_id: string; p_show_on_profile: boolean });
+    if (!withProfile.error) return;
+
+    if (isJoinProfileRpcUnavailable(withProfile.error)) {
+      const legacy = await this.client.rpc('join_challenge', { p_challenge_id: challengeId });
+      if (legacy.error) throw toChallengeError(legacy.error);
+      return;
+    }
+    throw toChallengeError(withProfile.error);
   }
 
   async leaveChallenge(challengeId: string) {

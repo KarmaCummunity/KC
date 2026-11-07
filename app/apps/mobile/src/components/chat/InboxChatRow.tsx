@@ -10,6 +10,8 @@ import { OnlineDot } from './OnlineDot';
 import { formatRelativeChatTime } from '../../lib/formatRelativeChatTime';
 import { formatInboxPreview } from '../../lib/formatInboxPreview';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart } from '../../lib/rtlLayout';
+import { VerificationBadge } from '../VerificationBadge';
 interface Props {
   readonly item: ChatWithPreview;
   readonly onOpen: (chatId: string) => void;
@@ -45,7 +47,10 @@ function InboxChatRowInner({ item, onOpen, onRequestHide }: Props) {
             <Text style={styles.chatTime}>
               {formatRelativeChatTime(item.lastMessage?.createdAt ?? item.lastMessageAt)}
             </Text>
-            <Text style={styles.chatName}>{otherName}</Text>
+            <View style={styles.chatNameRow}>
+              <Text style={styles.chatName}>{otherName}</Text>
+              <VerificationBadge level={other?.verificationLevel} />
+            </View>
           </View>
           <Text style={styles.chatPreview} numberOfLines={1}>
             {formatInboxPreview(item.lastMessage, t)}
@@ -93,6 +98,7 @@ const useInboxChatRowStyles = makeUseStyles(({ colors }) => ({
   },
   chatInfo: { flex: 1, gap: spacing.xs },
   chatHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  chatNameRow: { flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.xs },
   chatName: {
     ...typography.body,
     ...typography.semiBold,

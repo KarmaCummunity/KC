@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { ChallengeProgressResult, ChallengeSummary } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { Card } from '../ui/Card';
+import { formDecimalInputProps } from '../../lib/platform/formTextInputHints';
 import { TextField } from '../ui/TextField';
 import { PrimaryButton, SecondaryButton } from '../ui/Buttons';
 import { parseOptionalNumber } from '../../lib/challenges/challengeDraftFromForm';
@@ -66,7 +67,7 @@ export function ChallengeReportCard({ challenge, busy, lastResult, errorMessage,
             label={t('challenges.detail.reportValue')}
             value={valueText}
             onChangeText={setValueText}
-            keyboardType="decimal-pad"
+            {...formDecimalInputProps}
             testID="challenge-report-value"
           />
           <PrimaryButton

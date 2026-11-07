@@ -46,6 +46,7 @@ The Home Feed shows public posts that the viewer is allowed to see, sorted in re
 - AC3. There is **no** algorithmic boost based on follow relationships, popularity, or category in MVP.
 - AC4. Pagination: 20 posts per page; infinite scroll on mobile, "Load more" button on Web.
 - AC5. *(D-206, 2026-10-31)* Native items and food listings are part of the feed through their mirror posts (`posts.listing_id`, migration `0466`; FR-POST-001 AC5). The feed card shows the listing's photo from the `listing-images` bucket and opens the listing detail.
+   - *(PM, 2026-11-07)* The Home Feed shows posts only: the "Marketplace for you" listing strip is removed (the map button stays). Posts of every giving world stay in the feed, and the giving-world filter stays.
 
 **Related.** Screens: 2.1 · Domain: `Post`, `FollowEdge`.
 
@@ -513,6 +514,21 @@ The main feed shows open posts of **every** create category (items, rides, food,
 
 ---
 
+## FR-FEED-021 — The feed on a map
+
+**Description.**
+The map button in the top bar of the main feed and of every giving world's feed opens a map of **the same posts that feed shows, with its current filter** (PM, 2026-11-07).
+
+**Acceptance Criteria.**
+- AC1. ✅ The map runs the feed's own query (`GetFeedUseCase`, same filter and order, up to 300 posts) and places every post that has a position. The route carries the opening feed's filter (`filter` param, `encodeMapFilter`); a bare `world` param narrows to that world; no param = the whole main feed.
+- AC2. ✅ A post's position is its own point (`posts.geo`), else its city's centre (`cities.lat / lon`, `FR-FEED-019`), rounded to 3 decimals (~100 m) (`postMapPoint`).
+- AC3. ✅ Pins cluster by viewport; a pin or a stacked cluster opens a preview sheet of post cards; the list mode lists the posts in view; a card opens the post. Near me and the map / list toggle stay.
+- AC4. ✅ The map's header has the filter button: it opens the same filter sheet (`FR-FEED-004`) on the opening feed's value; a change re-runs the map's query at once. A world's map keeps the world locked. The map's filter is its own: it does not change the feed's saved filter (`FR-FEED-005`).
+
+**Related.** `FR-FEED-001`, `FR-FEED-004`, `FR-FEED-020`. Tests: `postMapPoint.test.ts`, `postMap.test.ts`, `WorldMarketplaceHub.test.tsx`.
+
+---
+
 | Version | Date | Summary |
 | ------- | ---- | ------- |
 | 0.1 | 2026-05-05 | Initial draft from PRD §3.3.1–§3.3.2 and Decisions D-8, D-9, D-15. |
@@ -522,3 +538,4 @@ The main feed shows open posts of **every** create category (items, rides, food,
 | 0.5 | 2026-11-01 | `FR-FEED-020` AC1 done: rides, housing and time listings mirror into the main feed with their world on the card (`0522`). |
 | 0.6 | 2026-11-01 | `FR-FEED-020` AC2 for items, food and rides: request / offer, search, direction filter, refinements, sub-screens. |
 | 0.7 | 2026-11-02 | `FR-FEED-020` AC2 / AC3 done: housing and time world screens; the time world is active. |
+| 0.8 | 2026-11-07 | Home Feed: the "Marketplace for you" listing strip is removed (`FR-FEED-001` AC5). Added `FR-FEED-021`: the map shows the opening feed's posts with its filter. |

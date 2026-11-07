@@ -115,6 +115,11 @@ function ThemedRootShell() {
               <Stack.Screen name="(guest)" />
               <Stack.Screen name="(onboarding)" />
               <Stack.Screen name="(tabs)" />
+              {/* FR-POST-001 AC9 — the create form slides up over the screen it was opened from. */}
+              <Stack.Screen
+                name="create"
+                options={{ animation: Platform.OS === 'web' ? 'fade' : 'slide_from_bottom' }}
+              />
               {/* FR-ADMIN-011 AC1 — register the admin group at the root so
                   native stack navigation can resolve `/(admin)` targets.
                   Without this, `router.push('/(admin)')` is a no-op on iOS /
@@ -135,6 +140,10 @@ function ThemedRootShell() {
               {/* FR-RESEARCH-001 — public web survey; no auth shell */}
               <Stack.Screen name="research" options={{ headerShown: false }} />
               <Stack.Screen name="edit-profile" options={{ ...detailStackScreenOptions, headerTitle: i18n.t('settings.editProfileTitle') }} />
+              <Stack.Screen
+                name="identity-verification"
+                options={{ ...detailStackScreenOptions, headerTitle: i18n.t('verification.identity.title') }}
+              />
               <Stack.Screen name="post/[id]" options={{ ...detailStackScreenOptions, headerTitle: i18n.t('post.detailTitle') }} />
               <Stack.Screen name="listing/[listingId]" options={{ ...detailStackScreenOptions, headerTitle: '' }} />
               {/* user/[handle]/* owns its own header via the nested _layout */}

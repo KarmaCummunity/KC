@@ -1,6 +1,8 @@
 // app/apps/mobile/app/(admin)/money/accounts.tsx
 // FR-FIN-003 (lean) — financial accounts with computed balances.
 import React, { useCallback, useMemo, useState } from 'react';
+import { PrimaryButton } from '../../../src/components/ui/Buttons';
+import { useAdminPortalChrome } from '../../../src/components/admin/AdminPortalChrome';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { hasPermission, isFinanceLedgerError, type AdminRole, type FinanceAccount } from '@kc/domain';
@@ -10,7 +12,6 @@ import { container } from '../../../src/lib/container';
 import { formatMoney } from '../../../src/lib/formatMoney';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
 import { AdminScreenGuard } from '../../../src/components/admin/AdminScreenGuard';
-import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
 import { FinanceAccountCard } from '../../../src/components/admin/money/FinanceAccountCard';
 import { FinanceAccountFormModal } from '../../../src/components/admin/money/FinanceAccountFormModal';
 import { MoneySubNav } from '../../../src/components/admin/money/MoneySubNav';
@@ -28,6 +29,19 @@ export default function MoneyAccountsScreen() {
 
   const [editing, setEditing] = useState<FinanceAccount | null>(null);
   const [creating, setCreating] = useState(false);
+
+  const newAccountBtn = useMemo(
+    () => (
+      <PrimaryButton
+        label={t.accounts.newBtn}
+        size="sm"
+        onPress={() => setCreating(true)}
+        testID="admin-money-account-new"
+      />
+    ),
+    [t.accounts.newBtn],
+  );
+  useAdminPortalChrome({ headerRight: newAccountBtn });
 
   const list = useQuery({
     queryKey: ['admin.money.accounts'],
@@ -66,7 +80,6 @@ export default function MoneyAccountsScreen() {
   return (
     <AdminScreenGuard isLoading={rolesLoading} allowed={allowed} loadingLabel={t.loading} forbiddenLabel={t.forbiddenTitle}>
       <View style={styles.root}>
-        <AdminScreenHeader title={t.accounts.title} newLabel={t.accounts.newBtn} onNew={() => setCreating(true)} />
         <MoneySubNav active="accounts" />
         <ScrollView
           contentContainerStyle={styles.content}

@@ -27,9 +27,11 @@ interface Props {
   /** Signed-in viewer; null for a guest, who sees the viewer actions like any non-owner. */
   readonly viewerId: string | null;
   readonly onReport: () => void;
+  /** Post detail already exposes share, report and block in the header ⋮ menu (G1 step 4a). */
+  readonly moderationInHeader?: boolean;
 }
 
-export function ListingDetailActions({ detail, viewerId, onReport }: Props) {
+export function ListingDetailActions({ detail, viewerId, onReport, moderationInHeader = false }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
   const styles = useStyles();
@@ -92,12 +94,14 @@ export function ListingDetailActions({ detail, viewerId, onReport }: Props) {
           onPress={() => void startChat()}
         />
       ) : null}
-      <SecondaryButton
-        testID="listing-action-share-link"
-        label={t('marketplace.shareLink')}
-        size="md"
-        onPress={() => void shareLink()}
-      />
+      {!moderationInHeader ? (
+        <SecondaryButton
+          testID="listing-action-share-link"
+          label={t('marketplace.shareLink')}
+          size="md"
+          onPress={() => void shareLink()}
+        />
+      ) : null}
       {canShareToFeed ? (
         <SecondaryButton
           testID="listing-action-share-feed"
@@ -107,10 +111,10 @@ export function ListingDetailActions({ detail, viewerId, onReport }: Props) {
           onPress={() => void shareToFeed()}
         />
       ) : null}
-      {!isOwner ? (
+      {!isOwner && !moderationInHeader ? (
         <SecondaryButton testID="listing-action-report" label={t('marketplace.report')} size="md" onPress={onReport} />
       ) : null}
-      {block.canBlock && !block.isBlocked ? (
+      {!moderationInHeader && block.canBlock && !block.isBlocked ? (
         <SecondaryButton
           testID="listing-action-block-owner"
           label={t('moderation.block.block')}

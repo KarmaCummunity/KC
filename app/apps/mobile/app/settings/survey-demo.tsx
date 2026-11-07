@@ -13,7 +13,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Stack } from 'expo-router';
 import { makeUseStyles, spacing, typography, useBreakpoint, useTheme, Text } from '@kc/ui';
 import { TextField } from '../../src/components/ui';
-import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
+import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import {
   shellTabBarHeightPx,
   useShellTabBarVisibility,
@@ -53,7 +53,7 @@ function emptyAnswers(): Record<string, DemoAnswer> {
 export default function SurveyDemoScreen() {
   // All hooks must run unconditionally (Rules of Hooks). The __DEV__ gate is
   // applied after all hooks have been called.
-  const detailStackScreenOptions = useDetailStackScreenOptions();
+  const shellStackScreenOptions = useShellStackScreenOptions();
   const { colors } = useTheme();
   const bp = useBreakpoint();
   const styles = useScreenStyles();
@@ -101,7 +101,7 @@ export default function SurveyDemoScreen() {
     <SafeAreaView style={styles.safe} edges={['left', 'right']}>
       <Stack.Screen
         options={{
-          ...detailStackScreenOptions,
+          ...shellStackScreenOptions,
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.primary,
           headerTitle: t('surveyDemo.screenTitle'),

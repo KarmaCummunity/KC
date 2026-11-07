@@ -1,12 +1,12 @@
 // Settings screen stub — SRS §3.5, FR-AUTH-017 (logout)
 import React from 'react';
 import { View, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { PlatformSwitch, spacing, useTheme, Text } from '@kc/ui';
-import { BackButton } from '../src/components/BackButton';
+import { PlatformSwitch, spacing, Text } from '@kc/ui';
+import { useShellStackScreenOptions } from '../src/navigation/shellStackScreenOptions';
+import { useShellTabBarScrollInset } from '../src/navigation/useShellTabBarVisibility';
 import { useIsSuperAdmin } from '../src/hooks/useIsSuperAdmin';
 import { useAdminRoles } from '../src/hooks/useAdminRoles';
 import { useSettingsAccountActions } from '../src/hooks/useSettingsAccountActions';
@@ -22,6 +22,7 @@ import { ConfirmActionModal } from '../src/components/post/ConfirmActionModal';
 import { usePrivateProfileToggle } from '../src/hooks/usePrivateProfileToggle';
 import { useActiveStatusSetting } from '../src/hooks/useActiveStatusSetting';
 import { useSettingsScreenStyles } from '../src/screens/settings.styles';
+import { effectiveVerificationLevel } from '@kc/domain';
 import { getUserRepo } from '../src/services/userComposition';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
@@ -32,8 +33,9 @@ const SHOW_SETTINGS_DEBUG_TOOLS =
 export default function SettingsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { colors } = useTheme();
   const styles = useSettingsScreenStyles();
+  const shellStackOptions = useShellStackScreenOptions();
+  const tabBarPad = useShellTabBarScrollInset();
   const session = useAuthStore((s) => s.session);
   const userId = session?.userId;
   const userQuery = useQuery({
@@ -78,14 +80,15 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <BackButton tintColor={colors.primary} />
-        <Text style={styles.title}>{t('settings.title')}</Text>
-        <View style={{ width: 40 }} />
-      </View>
+    <View style={styles.container}>
+      <Stack.Screen
+        options={{
+          ...shellStackOptions,
+          headerTitle: t('settings.title'),
+        }}
+      />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarPad }]}>
         <View style={styles.supportCardWrap}>
           <DonationSupportCard />
         </View>
@@ -101,6 +104,14 @@ export default function SettingsScreen() {
             icon="person-outline"
             onPress={() => router.push('/edit-profile')}
           />
+          {userQuery.data && effectiveVerificationLevel(userQuery.data) < 2 ? (
+            <SettingsScreenRow
+              testID="settings-row-identity-verification"
+              label={t('verification.identity.settingsRow')}
+              icon="shield-checkmark-outline"
+              onPress={() => router.push('/identity-verification')}
+            />
+          ) : null}
         </View>
 
         <Text style={styles.sectionTitle}>{t('settings.appearance')}</Text>
@@ -289,6 +300,6 @@ export default function SettingsScreen() {
         onConfirm={handleDeleteConfirm}
       />
       <DeleteAccountSuccessOverlay visible={deleteSuccessVisible} />
-    </SafeAreaView>
+    </View>
   );
 }

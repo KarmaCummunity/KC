@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ChatError } from '@kc/application';
 import { iconSize, makeUseStyles, typography, spacing, radius, useTheme, Text } from '@kc/ui';
 import { Chip, TextField, FormScreen, PrimaryButton } from '../../src/components/ui';
-import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
+import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { Card } from '../../src/components/ui/Card';
 import { container } from '../../src/lib/container';
 import { NotifyModal } from '../../src/components/NotifyModal';
@@ -20,7 +20,7 @@ const CATEGORIES = ['Bug', 'Account', 'Suggestion', 'Other'] as const;
 const MAX_DESC = 500;
 
 export default function ReportIssueScreen() {
-  const detailStackScreenOptions = useDetailStackScreenOptions();
+  const shellStackScreenOptions = useShellStackScreenOptions();
   const router = useRouter();
   const { t } = useTranslation();
   const styles = useReportIssueScreenStyles();
@@ -57,7 +57,7 @@ export default function ReportIssueScreen() {
     <>
       <Stack.Screen
         options={{
-          ...detailStackScreenOptions,
+          ...shellStackScreenOptions,
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.primary,
           headerTitle: t('settings.reportIssueScreen.title'),

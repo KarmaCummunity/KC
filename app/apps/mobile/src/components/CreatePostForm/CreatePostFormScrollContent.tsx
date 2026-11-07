@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme, Text, TextInput } from '@kc/ui';
+import { formStreetNumberInputProps } from '../../lib/platform/formTextInputHints';
 import { ALL_CATEGORIES, ITEM_CONDITIONS } from '@kc/domain';
 import type { Category, ItemCondition, LocationDisplayLevel, PostVisibility } from '@kc/domain';
 import { CityPicker } from '../CityPicker';
@@ -179,6 +180,7 @@ export function CreatePostFormScrollContent({
             placeholderTextColor={colors.textDisabled}
             textAlign={rtlTextAlignStart}
             editable={!isPublishing && !!city}
+            {...formStreetNumberInputProps}
             onFocus={streetNumberField.onFocus}
             inputAccessoryViewID={streetNumberField.inputAccessoryViewID}
             returnKeyType={streetNumberField.returnKeyType}

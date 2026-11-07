@@ -17,6 +17,7 @@ export interface RideBookingRowActions {
   readonly complete: (handoffId: string) => void;
   readonly cancel: (handoffId: string) => void;
   readonly rate: (handoffId: string, rating: number, note: string | null) => void;
+  readonly reinstate?: (handoffId: string) => void;
   readonly chat?: (recipientId: string) => void;
 }
 
@@ -26,6 +27,7 @@ interface Props {
   readonly actions: RideBookingRowActions;
   /** False when approving this booking would exceed remaining ride capacity. */
   readonly canApprove?: boolean;
+  readonly canReinstate?: boolean;
 }
 
 /** The driver's action pair per booking state: the main action and its outlined alternative. */
@@ -34,7 +36,7 @@ const ACTION_PAIRS = {
   confirmed: { main: 'complete', mainLabel: 'rideBooking.completeTrip', other: 'cancel', otherLabel: 'rideBooking.cancel' },
 } as const;
 
-export function RideBookingRow({ booking, busy, actions, canApprove = true }: Props) {
+export function RideBookingRow({ booking, busy, actions, canApprove = true, canReinstate = false }: Props) {
   const { t } = useTranslation();
   const styles = useRideBookingStyles();
   const id = booking.handoffId;
@@ -46,13 +48,34 @@ export function RideBookingRow({ booking, busy, actions, canApprove = true }: Pr
     <View style={styles.row} testID={`ride-booking-${id}`}>
       <Text style={styles.name}>{booking.passengerName || t('rideBooking.passengerFallback')}</Text>
       <Text style={styles.caption}>
-        {t('rideBooking.seatsCount', { count: booking.seats })} · {t(`rideBooking.statusLabel.${booking.status}`)}
+        {t('rideBooking.seatsCount', { count: booking.seats })}
+        {' · '}
+        {booking.status === 'cancelled'
+          ? t('rideBooking.statusLabel.cancelled')
+          : t(`rideBooking.statusLabel.${booking.status}`)}
       </Text>
       {deadline ? <Text style={styles.caption}>{t('rideBooking.approveBy', { time: deadline })}</Text> : null}
+      {booking.requestedStopLabel ? (
+        <Text style={styles.caption} testID={`ride-booking-stop-${id}`}>
+          {t('rideBooking.requestedStopForDriver', { place: booking.requestedStopLabel })}
+        </Text>
+      ) : null}
       {isApproveBlocked ? (
         <Text style={styles.warning} testID={`ride-booking-exceeds-${id}`}>
           {t('rideBooking.exceedsCapacity')}
         </Text>
+      ) : null}
+
+      {booking.status === 'cancelled' && canReinstate && actions.reinstate ? (
+        <View style={styles.actions}>
+          <HandoffActionButton
+            inRow
+            testID={`ride-booking-reinstate-${id}`}
+            label={t('rideBooking.reinstate')}
+            busy={busy}
+            onPress={() => actions.reinstate?.(id)}
+          />
+        </View>
       ) : null}
 
       {pair ? (

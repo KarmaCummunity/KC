@@ -31,4 +31,8 @@ export const adminLayersHe = {
   personA11y:  (name: string, role: string, org: string, extraRoles: number) =>
     extraRoles > 0 ? `${name}, ${role} ${extraRolesHe(extraRoles)}, ${org}` : `${name}, ${role}, ${org}`,
   headcountA11y: (n: number) => `${n} אנשים בשכבה`,
+  collapseLayerA11y: (title: string) => `כיווץ שכבת ${title}`,
+  expandLayerA11y: (title: string) => `הרחבת שכבת ${title}`,
+  collapseCommunityA11y: 'כיווץ שכבת הקהילה',
+  expandCommunityA11y: 'הרחבת שכבת הקהילה',
 } as const;

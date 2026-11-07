@@ -103,10 +103,6 @@
     "src/components/search/SearchSocialSections.tsx": {
       "iconSizeLiteral": 1
     },
-    "src/components/search/UserResultCard.tsx": {
-      "iconSizeLiteral": 3,
-      "unmirroredDirectionalIcon": 1
-    },
     "src/components/search/searchResultCard.styles.ts": {
       "fontSizeLiteral": 4,
       "fontWeightLiteral": 3,

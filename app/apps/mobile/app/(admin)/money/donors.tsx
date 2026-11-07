@@ -10,7 +10,6 @@ import { container } from '../../../src/lib/container';
 import { formatMoney } from '../../../src/lib/formatMoney';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
 import { AdminScreenGuard } from '../../../src/components/admin/AdminScreenGuard';
-import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
 import { MoneySubNav } from '../../../src/components/admin/money/MoneySubNav';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 
@@ -36,7 +35,6 @@ export default function MoneyDonorsScreen() {
   return (
     <AdminScreenGuard isLoading={rolesLoading} allowed={allowed} loadingLabel={t.loading} forbiddenLabel={t.forbiddenTitle}>
       <View style={styles.root}>
-        <AdminScreenHeader title={t.donors.title} />
         <MoneySubNav active="donors" />
         <ScrollView
           contentContainerStyle={styles.content}

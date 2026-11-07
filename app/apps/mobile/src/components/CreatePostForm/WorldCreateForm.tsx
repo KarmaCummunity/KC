@@ -4,10 +4,11 @@ import React from 'react';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
 import type { CreateCategoryConfig, CreateDirection } from '../../lib/unifiedCreate/createCategories';
-import { hubHrefForWorld } from '../../navigation/donationsHubTiles';
+import { closeCreateForm } from '../../navigation/closeCreateForm';
 import { useLaunchWorldEnabled } from '../../hooks/useLaunchWorldFlags';
 import { ChallengeWorldCreateForm } from './ChallengeWorldCreateForm';
 import { LinkCreateForm } from './LinkCreateForm';
+import { HousingCreateVerificationGate } from './HousingCreateVerificationGate';
 import { ListingCreateForm } from './ListingCreateForm';
 
 interface Props {
@@ -35,14 +36,13 @@ export function WorldCreateForm({ category, header, direction, title, onTitleCha
         key={category.id}
         categorySlug={category.linkCategory}
         header={header}
-        // The link waits for review (D9); the world's screen shows it to its submitter meanwhile.
-        onAdded={() => router.replace(hubHrefForWorld(category.id))}
+        onAdded={() => closeCreateForm(router)}
         onPublishActionChange={onPublishActionChange}
       />
     );
   }
   if (category.engine === 'listing' && category.worldSlug) {
-    return (
+    const listing = (
       <ListingCreateForm
         key={category.worldSlug}
         worldSlug={category.worldSlug}
@@ -52,10 +52,18 @@ export function WorldCreateForm({ category, header, direction, title, onTitleCha
         onTitleChange={onTitleChange}
         summary={summary}
         onSummaryChange={onSummaryChange}
-        onPublished={(id) => router.replace(`/(tabs)/donations/marketplace/${id}`)}
+        onPublished={() => closeCreateForm(router)}
         onPublishActionChange={onPublishActionChange}
       />
     );
+    if (category.worldSlug === 'housing') {
+      return (
+        <HousingCreateVerificationGate header={header} onPublishActionChange={onPublishActionChange}>
+          {listing}
+        </HousingCreateVerificationGate>
+      );
+    }
+    return listing;
   }
   return null;
 }

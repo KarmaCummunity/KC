@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
+  FEED_CARD_SELECT,
   mapPostRow,
   mapPostWithOwnerRow,
+  POST_SELECT_OWNER,
   type PostJoinedRow,
   type PostWithOwnerJoinedRow,
 } from '../mapPostRow';
@@ -62,6 +64,11 @@ describe('mapPostRow (TD-50)', () => {
   it('maps listing_id → listingId for a feed mirror, null for a plain post (D-206)', () => {
     expect(mapPostRow(makeRow({ listing_id: 'l_1' })).listingId).toBe('l_1');
     expect(mapPostRow(makeRow()).listingId).toBeNull();
+  });
+
+  it('reads a challenge post back to its challenge (docs/spec/10)', () => {
+    expect(mapPostRow(makeRow({ details: { challenge_id: 'c_1' } })).challengeId).toBe('c_1');
+    expect(mapPostRow(makeRow()).challengeId).toBeNull();
   });
 
   it('maps listing_world_slug → listingWorldSlug, null when absent (FR-FEED-020)', () => {
@@ -169,6 +176,47 @@ describe('mapPostWithOwnerRow (TD-50)', () => {
     expect(out.distanceKm).toBeNull();
   });
 
+  it('maps owner verification_level → ownerVerificationLevel (FR-VERIFY-001)', () => {
+    const out = mapPostWithOwnerRow(
+      makeOwnerRow({
+        owner: {
+          user_id: 'u_1',
+          display_name: 'אבי',
+          avatar_url: null,
+          share_handle: 'avi',
+          privacy_mode: 'Public',
+          verification_level: 2,
+        },
+      }),
+    );
+    expect(out.ownerVerificationLevel).toBe(2);
+  });
+
+  it('owner embed selects verification_level for feed cards and detail (FR-VERIFY-001)', () => {
+    expect(FEED_CARD_SELECT).toContain('verification_level');
+    expect(POST_SELECT_OWNER).toContain('verification_level');
+  });
+
+  it('maps recipient verification_level (FR-VERIFY-001)', () => {
+    const out = mapPostWithOwnerRow(
+      makeOwnerRow({
+        recipient: {
+          post_id: 'p_1',
+          recipient_user_id: 'u_9',
+          marked_at: '2026-05-15T10:00:00.000Z',
+          user: {
+            user_id: 'u_9',
+            display_name: 'דנה',
+            share_handle: 'dana',
+            avatar_url: null,
+            verification_level: 1,
+          },
+        } as never,
+      }),
+    );
+    expect(out.recipientUser?.verificationLevel).toBe(1);
+  });
+
   it('returns ownerName: null when owner is null (orphan FK); UI renders placeholder', () => {
     const out = mapPostWithOwnerRow(makeOwnerRow({ owner: null }));
     expect(out.ownerName).toBeNull();
@@ -199,6 +247,7 @@ describe('mapPostWithOwnerRow (TD-50)', () => {
       displayName: 'דנה',
       shareHandle: 'dana',
       avatarUrl: null,
+      verificationLevel: 0,
     });
   });
 

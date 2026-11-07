@@ -19,6 +19,7 @@ const ROOT_LAYOUT = '_layout.tsx';
 const ROOT_BOUNDARY_ONLY = [
   'dev/shell-preview.tsx',
   'edit-post/[id].tsx',
+  'edit-listing/[id].tsx',
   'edit-profile.tsx',
   'follow/suggestions.tsx',
   'karma-history.tsx',
