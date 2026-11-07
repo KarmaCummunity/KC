@@ -18,6 +18,10 @@ vi.mock('react-native-maps', () => {
   const Polyline = () => <div data-kind="polyline" />;
   return { __esModule: true, default: MapView, Marker, Polyline };
 });
+const mapAvailability = { available: true };
+vi.mock('expo-constants', () => ({ default: { expoConfig: { extra: {} } } }));
+vi.mock('../../../lib/map/nativeMapAvailable', () => ({ isNativeMapAvailable: () => mapAvailability.available }));
+vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
 
 import { KcMap } from '../KcMap.native';
 
@@ -84,5 +88,17 @@ describe('KcMap.native', () => {
       vi.advanceTimersByTime(300);
     });
     expect(onRegionChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the unavailable state instead of mounting MapView when the build has no Google Maps key (#1951)', () => {
+    mapAvailability.available = false;
+    captured.children = null;
+    try {
+      renderMap({ clusters: [cluster('a', 31.95, 34.89)] });
+      expect(captured.children).toBeNull();
+      expect(document.body.textContent).toContain('marketplace.mapUnavailable');
+    } finally {
+      mapAvailability.available = true;
+    }
   });
 });

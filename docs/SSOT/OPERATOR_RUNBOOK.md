@@ -83,6 +83,7 @@ Repository settings only the owner (admin) can apply. Tracked as `INFRA-CI-OWNER
 4. **Mobile store** (nightly mobile, `INFRA-CI-4`; PR #1304 is already merged, so the nightly fails until this is done).
    - Environment `mobile-store` (deployment branches `dev` + `main`) with secret `MOBILE_SUPABASE_ANON_KEY` = the **kc-dev** publishable key.
    - EAS → project → Environment variables → `preview`: the Sentry values and the `GOOGLE_SERVICES_JSON` file variable.
+   - EAS → `preview` and `production`: `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` (Google Cloud → Maps SDK for Android key, restricted to package `org.karmacommunity.app` + the Play app-signing SHA-1). Without it the Android map is disabled (#1951).
    - Verify the iOS signing secrets are present (`KC_IOS_*`, `ASC_*`).
    - Allow `mobile/*` tags (if a tag ruleset restricts tag creation, add `mobile/*` to the allowed patterns).
    - Then dispatch **Mobile nightly** once on `dev` to confirm.
