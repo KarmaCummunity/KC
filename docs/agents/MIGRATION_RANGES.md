@@ -118,13 +118,14 @@ Last applied on kc-dev when this was written: `0239`.
 | 0610–0614 | G1 one Post model (ADR-006) steps that redefine functions of the housing range (`0602` / `0603`): `0610` step 3b‴ housing writers on `post_handoffs` (merged). `0611–0614` were used by other work: `0611_report_sla_alert.sql`, `0612_animals_world_direct.sql`, `0613_knowledge_world_in_feed.sql`, `0614_demo_data_platform_admin.sql` (FR-ADMIN-031 AC6, #1871). A later change to `request / decide / cancel / complete_housing_booking`, `mark_housing_no_show`, `housing_bookings_sweep`, `cancel_giving_handoff` or `karma_award_handoff` must use a number above the last file that defines it. | `0610` merged, `0614` in progress |
 | 0615–0619 | — | free |
 | 0620–0639 | G1 one Post model step 6 (ADR-006): `0620` step 6a-2 handoff readers on `post_handoffs` (merged #1897), `0621` step 6a-3a handoff triggers, rating foreign keys, `rate_giving_handoff` and the food sweep on `post_handoffs` (merged #1898), `0622` step 6a-3b writer RPCs return rows built from `post_handoffs` (merged #1901), `0623` step 6a-4a ride readers on `posts` / `ride_post_details` / `post_handoffs` (merged #1903), `0624` step 6a-4b ride writers on `posts` / `ride_post_details` (merged #1904), `0625` step 6a-5a the listing write cap on `posts` (merged #1905), `0626` step 6a-5b the listing columns on `posts` (merged #1906), `0627` step 6a-5c the owner RPCs lock the post first (merged #1908), `0628` step 6a-5d listing visibility on `posts` and the #1907 moderation-hold fix (merged #1909), `0629` step 6a-5e the listing detail and owner / profile lists on `posts` (merged #1912), `0630` step 6a-5f browse and recommendations on `posts` (merged #1913), `0631` step 6a-5f map pins, clusters (#1911) and rides feed on `posts` (merged #1913), `0632` step 6a-5g search and similar listings on `posts` (merged #1914), `0633` step 6a-6a `post_embeddings` and the search vector signal on it (merged #1916), `0634` step 6a-6b the embed worker's queue RPCs (merged #1917), `0635` step 6a-6c matching v2 on the record (merged #1918), `0636` step 6a-6d the match readers on the record (in review); `0633–0638` reserved for 6a-6 (a–f: embeddings, embed worker, matching, WhatsApp bot); `0639` free — numbered above the housing range so they may redefine its functions | in progress |
-| 0640–0659 | G1 one Post model steps 6b–6d (ADR-006, D-214): `6b` one S1 state machine, `6c` drop the sync triggers, `6d` drop `listings` / `giving_handoffs` (6d needs a production verification run and PM approval) | claimed |
-| 0660–0664 | multi-world posts: `listing_worlds`, multi-world feeds, search, matching (#1475) | in progress |
-| 0665+ | — | free |
+| 0640–0659 | — (superseded by 0665–0675 after 0660 merged) | free |
+| 0660–0664 | multi-world posts: `listing_worlds`, multi-world feeds, search, matching (#1475) | merged |
+| 0665–0675 | G1 one Post model steps 6b–6d (ADR-006, D-214, #1671): `6b` one S1 state machine, `6c` drop the sync triggers, `6d` drop `listings` / `giving_handoffs` | in progress |
+| 0676+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0665+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0676+`.
 
 ## How to claim
 
