@@ -7,7 +7,12 @@ describe('resolveDateFnsLocale', () => {
     expect(resolveDateFnsLocale('he-IL').code).toBe('he');
   });
 
+  it('returns English locale for en and en-US', () => {
+    expect(resolveDateFnsLocale('en').code).toBe('en-US');
+    expect(resolveDateFnsLocale('en-US').code).toBe('en-US');
+  });
+
   it('falls back to Hebrew for unknown languages', () => {
-    expect(resolveDateFnsLocale('en').code).toBe('he');
+    expect(resolveDateFnsLocale('fr').code).toBe('he');
   });
 });

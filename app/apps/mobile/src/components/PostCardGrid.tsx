@@ -2,8 +2,8 @@
 import React from 'react';
 import { useRouter } from 'expo-router';
 import { formatDistanceToNow } from 'date-fns';
-import { he as dateFnsHe } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
+import { resolveDateFnsLocale } from '../lib/resolveDateFnsLocale';
 import { avatarPalette, spacing } from '@kc/ui';
 import type { PostWithOwner } from '@kc/application';
 import type { IdentityRoleForViewedProfile } from '@kc/domain';
@@ -54,17 +54,18 @@ function PostCardGridInner({
   // renders only the title; description is translated for post-detail reuse.
 }: PostCardGridProps) {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const styles = usePostCardGridStyles();
   const cardWidth = usePostGridCardWidth(columns, gap);
   const isProfileGrid = columns === PROFILE_GRID_COLUMNS;
   const isGive = post.type === 'Give';
   // A rides / food / housing / time listing shows its world rather than the "Other" category.
   const cardCategory = feedCardCategory(post);
+  const dateLocale = resolveDateFnsLocale(i18n?.language ?? 'he');
 
   const timeAgo = React.useMemo(
-    () => formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: dateFnsHe }),
-    [post.createdAt],
+    () => formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: dateLocale }),
+    [post.createdAt, dateLocale],
   );
 
   const locationText = post.locationDisplayLevel === 'CityOnly'

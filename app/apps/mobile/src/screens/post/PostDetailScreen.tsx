@@ -7,8 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
-import { he as dateFnsHe } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
+import { resolveDateFnsLocale } from '../../lib/resolveDateFnsLocale';
 import type { PostWithOwner } from '@kc/application';
 import { spacing, useTheme, Text, iconSize } from '@kc/ui';
 import { EmptyState } from '../../components/EmptyState';
@@ -67,7 +67,7 @@ export function PostDetailScreen() {
   const postIdParam = normalizeRoutePostId(rawId);
   const identityListingHostUserId = normalizeOptionalUserId(rawFromProfile);
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const viewerId = useAuthStore((s) => s.session?.userId ?? null);
 
   const query = useQuery({
@@ -149,7 +149,10 @@ export function PostDetailScreen() {
   const isOwner = viewerId !== null && post.ownerId === viewerId;
   const isGive = post.type === 'Give';
   const locationText = postLocationDisplayText(post, t);
-  const timeAgo = formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: dateFnsHe });
+  const timeAgo = formatDistanceToNow(new Date(post.createdAt), {
+    addSuffix: true,
+    locale: resolveDateFnsLocale(i18n?.language ?? 'he'),
+  });
 
   const showViewerContactCta = !isOwner && post.status === 'open';
   // Floating CTA overlaps content; reserve space so the last rows stay readable.
