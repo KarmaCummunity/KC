@@ -207,19 +207,8 @@ begin
 
   -- 5a. A post-owned listing: deleting the listing does NOT cascade-delete the owning post
   v_post := pg_temp.new_post(p.owner, 'open');
-  insert into public.listings (
-    owner_id, world_slug, kind_id, direction, title, summary, city_id, geo, time_window, expires_at, details,
-    anonymity_level, origin, moderation_status, published_at, status, legacy_post_id
-  ) values (
-    p.owner, 'items', kc_test.listing_kind_id('items', 'give_item'), 'give',
-    'Post owned listing', 'Summary', 'tel-aviv',
-    st_setsrid(st_makepoint(34.7818, 32.0853), 4326)::geography,
-    tstzrange(now(), now() + interval '7 days'),
-    now() + interval '7 days', '{"item_condition": "Good"}'::jsonb,
-    3, 'native', 'published', now(), 'open', v_post
-  ) returning listing_id into v_listing;
-
-  update public.posts set listing_id = v_listing where post_id = v_post;
+  select listing_id into v_listing from public.listings where legacy_post_id = v_post;
+  perform kc_test.assert_true(v_listing is not null, 'post-owned listing derived');
 
   delete from public.listings where listing_id = v_listing;
   perform kc_test.assert_row_count(
