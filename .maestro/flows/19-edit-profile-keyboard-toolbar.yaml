@@ -1,17 +1,25 @@
-# Edit profile smoke — save CTA stays reachable (FR-RESP-006).
+# Edit profile — sticky save + phone-pad focus (FR-RESP-006 AC5).
 appId: org.karmacommunity.app
-name: Profile — edit profile save affordance
-tags: [profile]
+name: Profile — edit profile keyboard & save CTA
+tags: [profile, keyboard]
 ---
 - runFlow: ../subflows/sign-in.yaml
 - tapOn:
     id: profile-tab
     optional: true
-- scrollUntilVisible:
-    element:
-      text: ".*עריכת פרופיל.*|.*Edit profile.*"
-    direction: DOWN
+- tapOn:
+    text: ".*עריכת פרופיל.*|.*Edit profile.*"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: edit-profile-save
+    timeout: 15000
     optional: true
 - tapOn:
+    id: edit-profile-phone
+    optional: true
+- hideKeyboard
+    optional: true
+- assertVisible:
     id: edit-profile-save
     optional: true

@@ -4,11 +4,13 @@
 // a main flow is an `lg` kit button). `AmountCheckoutScreen` frames it and shows
 // the external-provider notice instead while in-app payments are off.
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, View } from 'react-native';
+import { View } from 'react-native';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import type { ExternalDonationKind } from '../../config/featureFlags';
 import { useExternalDonations } from '../../hooks/useExternalDonations';
+import { useFormFieldFocus } from '../../hooks/useFormFieldFocus';
 import { Screen } from '../ui/Screen';
+import { FormScreen } from '../ui/FormScreen';
 import { TextField } from '../ui/TextField';
 import { PrimaryButton } from '../ui/Buttons';
 import { Chip } from '../ui/Chip';
@@ -46,6 +48,8 @@ export function AmountCheckoutForm(props: AmountCheckoutFormProps) {
   const [busy, setBusy] = useState(false);
   const parsed = parseAmountIls(amount);
   const valid = Number.isFinite(parsed) && parsed >= MIN_AMOUNT_ILS;
+  const fieldFocus = useFormFieldFocus(1);
+  const amountField = fieldFocus.bindField(0);
 
   const submit = async () => {
     setBusy(true);
@@ -57,35 +61,49 @@ export function AmountCheckoutForm(props: AmountCheckoutFormProps) {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={styles.body}>
-        {intro ? <Text style={styles.intro}>{intro}</Text> : null}
-        <TextField
-          label={amountLabel}
-          keyboardType="decimal-pad"
-          value={amount}
-          onChangeText={setAmount}
-          style={styles.amount}
+    <FormScreen
+      embedded
+      contentContainerStyle={styles.body}
+      keyboardAccessory={{
+        canGoPrev: fieldFocus.canGoPrev,
+        canGoNext: fieldFocus.canGoNext,
+        onPrev: fieldFocus.focusPrev,
+        onNext: fieldFocus.focusNext,
+        onDone: fieldFocus.dismiss,
+      }}
+      footer={
+        <PrimaryButton
+          label={submitLabel}
+          fullWidth
+          loading={busy}
+          disabled={!valid || !ready}
+          onPress={() => void submit()}
         />
-        {presets.length > 0 ? (
-          <View style={styles.presets}>
-            {presets.map((preset) => (
-              <Chip key={preset} label={`₪${preset}`} selected={parsed === preset} onPress={() => setAmount(String(preset))} />
-            ))}
-          </View>
-        ) : null}
-        {note ? <Text style={styles.note}>{note}</Text> : null}
-        <View style={styles.submit}>
-          <PrimaryButton
-            label={submitLabel}
-            fullWidth
-            loading={busy}
-            disabled={!valid || !ready}
-            onPress={() => void submit()}
-          />
+      }
+    >
+      {intro ? <Text style={styles.intro}>{intro}</Text> : null}
+      <TextField
+        ref={amountField.ref}
+        label={amountLabel}
+        keyboardType="decimal-pad"
+        value={amount}
+        onChangeText={setAmount}
+        style={styles.amount}
+        onFocus={amountField.onFocus}
+        inputAccessoryViewID={amountField.inputAccessoryViewID}
+        returnKeyType={amountField.returnKeyType}
+        blurOnSubmit={amountField.blurOnSubmit}
+        onSubmitEditing={amountField.onSubmitEditing}
+      />
+      {presets.length > 0 ? (
+        <View style={styles.presets}>
+          {presets.map((preset) => (
+            <Chip key={preset} label={`₪${preset}`} selected={parsed === preset} onPress={() => setAmount(String(preset))} />
+          ))}
         </View>
-      </View>
-    </KeyboardAvoidingView>
+      ) : null}
+      {note ? <Text style={styles.note}>{note}</Text> : null}
+    </FormScreen>
   );
 }
 
@@ -111,12 +129,10 @@ export function AmountCheckoutScreen({ kind, orgId, listingId = null, ...form }:
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  fill: { flex: 1 },
-  body: { padding: spacing.lg, gap: spacing.md, flex: 1 },
+  body: { padding: spacing.lg, gap: spacing.md, flexGrow: 1 },
   intro: { ...typography.body, color: colors.textSecondary },
   // The amount is the point of the screen: shown larger than ordinary field text.
   amount: { ...typography.h3, color: colors.textPrimary },
   presets: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   note: { ...typography.caption, color: colors.textSecondary },
-  submit: { marginTop: spacing.lg },
 }));

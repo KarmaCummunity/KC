@@ -1,12 +1,12 @@
 // Animated input with orange border glow on focus — RTL-ready.
-import React, { useState } from 'react';
+import React, { forwardRef, useState } from 'react';
 import { View, type TextInputProps } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
-import { makeUseStyles, spacing, radius, typography, useTheme, TextInput, Text } from '@kc/ui';
+import { makeUseStyles, spacing, radius, typography, useTheme, TextInput, Text, type TextInput as UiTextInput } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 interface AnimatedAuthInputProps extends TextInputProps {
@@ -49,12 +49,15 @@ const useAnimatedAuthInputStyles = makeUseStyles(({ colors, isDark }) => ({
   },
 }));
 
-export function AnimatedAuthInput({
-  label,
-  onFocus,
-  onBlur,
-  ...rest
-}: AnimatedAuthInputProps) {
+export const AnimatedAuthInput = forwardRef<UiTextInput, AnimatedAuthInputProps>(function AnimatedAuthInput(
+  {
+    label,
+    onFocus,
+    onBlur,
+    ...rest
+  },
+  ref,
+) {
   const { colors } = useTheme();
   const styles = useAnimatedAuthInputStyles();
   const [focused, setFocused] = useState(false);
@@ -90,6 +93,7 @@ export function AnimatedAuthInput({
         ]}
       >
         <TextInput
+          ref={ref}
           style={styles.input}
           placeholderTextColor={colors.textDisabled}
           textAlign={rtlTextAlignStart}
@@ -100,4 +104,4 @@ export function AnimatedAuthInput({
       </Animated.View>
     </View>
   );
-}
+});

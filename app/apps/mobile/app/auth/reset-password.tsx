@@ -10,6 +10,7 @@ import { AnimatedAuthInput } from '../../src/components/auth/AnimatedAuthInput';
 import { usePasswordResetStyles } from '../../src/components/auth/passwordResetScreen.styles';
 import { AuthStatusScreen } from '../../src/components/auth/AuthStatusScreen';
 import { FormScreen, PrimaryButton } from '../../src/components/ui';
+import { useFormFieldFocus } from '../../src/hooks/useFormFieldFocus';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -30,6 +31,9 @@ export default function ResetPasswordScreen() {
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fieldFocus = useFormFieldFocus(2);
+  const passwordField = fieldFocus.bindField(0);
+  const confirmField = fieldFocus.bindField(1);
 
   const onSubmit = async () => {
     if (password !== confirm) {
@@ -67,6 +71,13 @@ export default function ResetPasswordScreen() {
       headerless
       edges={['top', 'bottom']}
       contentContainerStyle={styles.content}
+      keyboardAccessory={{
+        canGoPrev: fieldFocus.canGoPrev,
+        canGoNext: fieldFocus.canGoNext,
+        onPrev: fieldFocus.focusPrev,
+        onNext: fieldFocus.focusNext,
+        onDone: fieldFocus.dismiss,
+      }}
       footer={
         <PrimaryButton
           testID="reset-password-submit"
@@ -80,6 +91,7 @@ export default function ResetPasswordScreen() {
     >
       <Text style={styles.title}>{t('auth.resetPasswordTitle')}</Text>
       <AnimatedAuthInput
+        ref={passwordField.ref}
         testID="reset-password-new"
         label={t('auth.passwordRuleLabel')}
         value={password}
@@ -88,8 +100,14 @@ export default function ResetPasswordScreen() {
         secureTextEntry
         autoComplete="new-password"
         editable={!loading}
+        onFocus={passwordField.onFocus}
+        inputAccessoryViewID={passwordField.inputAccessoryViewID}
+        returnKeyType={passwordField.returnKeyType}
+        blurOnSubmit={passwordField.blurOnSubmit}
+        onSubmitEditing={passwordField.onSubmitEditing}
       />
       <AnimatedAuthInput
+        ref={confirmField.ref}
         testID="reset-password-confirm"
         label={t('auth.resetPasswordConfirmLabel')}
         value={confirm}
@@ -98,7 +116,11 @@ export default function ResetPasswordScreen() {
         secureTextEntry
         autoComplete="new-password"
         editable={!loading}
-        onSubmitEditing={onSubmit}
+        onFocus={confirmField.onFocus}
+        inputAccessoryViewID={confirmField.inputAccessoryViewID}
+        returnKeyType={confirmField.returnKeyType}
+        blurOnSubmit={confirmField.blurOnSubmit}
+        onSubmitEditing={confirmField.onSubmitEditing}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </FormScreen>

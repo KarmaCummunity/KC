@@ -24,6 +24,8 @@ export interface FormScreenProps {
   readonly contentContainerStyle?: StyleProp<ViewStyle>;
   readonly keyboardAccessory?: Omit<KeyboardFormAccessoryProps, 'nativeId'> & { nativeId?: string };
   readonly testID?: string;
+  /** Inside an existing `Screen` — skip the outer SafeAreaView. */
+  readonly embedded?: boolean;
 }
 
 export function FormScreen({
@@ -35,6 +37,7 @@ export function FormScreen({
   contentContainerStyle,
   keyboardAccessory,
   testID,
+  embedded,
 }: FormScreenProps) {
   const styles = useFormScreenStyles();
   const keyboardOffset = useKeyboardVerticalOffset({ headerless, headerHeight });
@@ -42,9 +45,13 @@ export function FormScreen({
     () => StyleSheet.flatten([styles.scrollContent, contentContainerStyle]),
     [contentContainerStyle, styles.scrollContent],
   );
+  const Root = embedded ? View : SafeAreaView;
+  const rootProps = embedded
+    ? ({ style: styles.fill, testID } as const)
+    : ({ style: styles.fill, edges, testID } as const);
 
   return (
-    <SafeAreaView style={styles.fill} edges={edges} testID={testID}>
+    <Root {...rootProps}>
       <KeyboardAvoidingView
         style={styles.fill}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -63,7 +70,7 @@ export function FormScreen({
           {footer ? <View style={styles.footer}>{footer}</View> : null}
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </Root>
   );
 }
 

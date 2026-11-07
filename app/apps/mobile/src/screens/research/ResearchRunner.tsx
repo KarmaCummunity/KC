@@ -2,6 +2,7 @@
 import React from 'react';
 import {
   KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   View,
@@ -20,6 +21,9 @@ import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { ResearchEndShareCard } from '../../components/research/ResearchEndShareCard';
 import { ResearchQuestionPanel } from './ResearchQuestionPanel';
 import { SurveyIntroBlock } from './SurveyIntroBlock';
+import { useKeyboardVerticalOffset } from '../../lib/platform/useKeyboardVerticalOffset';
+import { useFormFieldFocus } from '../../hooks/useFormFieldFocus';
+import { KeyboardFormAccessory } from '../../components/ui/KeyboardFormAccessory';
 
 export type AnswerEntry = { rating: number | null; answerText: string | null };
 
@@ -82,6 +86,8 @@ export function ResearchRunner({
   const answer = answers[question.id] ?? { rating: null, answerText: null };
   const isLast = activeIndex === total - 1;
   const currentRated = answer.rating !== null;
+  const keyboardOffset = useKeyboardVerticalOffset({ headerless: true });
+  const fieldFocus = useFormFieldFocus(isLast ? 3 : 1);
 
   let nextLabel: string | undefined;
   if (submitting) {
@@ -102,7 +108,18 @@ export function ResearchRunner({
   }
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior="padding">
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={keyboardOffset}
+    >
+      <KeyboardFormAccessory
+        canGoPrev={fieldFocus.canGoPrev}
+        canGoNext={fieldFocus.canGoNext}
+        onPrev={fieldFocus.focusPrev}
+        onNext={fieldFocus.focusNext}
+        onDone={fieldFocus.dismiss}
+      />
       <ScrollView
         style={styles.flex}
         contentContainerStyle={[
@@ -146,6 +163,9 @@ export function ResearchRunner({
           contactWindowHe={contactWindowHe}
           onContactEmail={setContactEmail}
           onContactWindow={setContactWindowHe}
+          textFieldFocus={fieldFocus.bindField(0)}
+          contactEmailFocus={isLast ? fieldFocus.bindField(1) : undefined}
+          contactWindowFocus={isLast ? fieldFocus.bindField(2) : undefined}
         />
 
         {isLast ? <ResearchEndShareCard /> : null}

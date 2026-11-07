@@ -254,6 +254,7 @@ export default function EditProfileScreen() {
         <View style={styles.field}>
           <TextField
             ref={phoneField.ref}
+            testID="edit-profile-phone"
             label={t('profile.editScreen.contactPhoneLabel')}
             value={contactPhone}
             onChangeText={setContactPhone}

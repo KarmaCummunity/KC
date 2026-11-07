@@ -10,6 +10,11 @@ vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogT
 vi.mock('@expo/vector-icons', async () => (await import('../../ui/__tests__/kitDialogTestKit')).iconsDouble);
 vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 vi.mock('../../ui/Screen', () => ({ Screen: ({ children }: { children: React.ReactNode }) => children }));
+vi.mock('@react-navigation/elements', () => ({ useHeaderHeight: () => 44 }));
+vi.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
 const payments = vi.hoisted(() => ({ external: false, openExternal: vi.fn() }));
 vi.mock('../../../hooks/useExternalDonations', () => ({ useExternalDonations: () => payments }));
 
