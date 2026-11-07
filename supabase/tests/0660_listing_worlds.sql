@@ -179,7 +179,7 @@ $$;
 -- ── 4. search_listings by world includes additional worlds ─────────────────────────────────────
 -- Ensure search vector exists
 update public.listings
-   set search_vector = to_tsvector('hebrew_nostop', title || ' ' || coalesce(summary, ''))
+   set search_vector = to_tsvector('simple', title || ' ' || coalesce(summary, ''))
  where listing_id = (select listing_id from my_listing);
 
 do $$
