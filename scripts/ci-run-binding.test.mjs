@@ -122,7 +122,11 @@ test('mergeRefOf needs every reference to be this repo at one refs/pull/N/merge 
 test('parseReferencedWorkflow rejects SHA/path/ref mismatches', () => {
   assert.deepEqual(parseReferencedWorkflow(ref('ci-pr.yml'), REPO), { pr: 7, sha: MERGE, ref: 'refs/pull/7/merge' });
   assert.deepEqual(parseReferencedWorkflow(refByMergeSha('ci-pr.yml'), REPO), { pr: 7, sha: MERGE, ref: 'refs/pull/7/merge' });
-  assert.equal(parseReferencedWorkflow(refByMergeSha('ci-pr.yml', 7, BASE), REPO), null, 'path sha ≠ sha field');
+  assert.equal(
+    parseReferencedWorkflow({ path: `${REPO}/.github/workflows/ci-pr.yml@${MERGE}`, sha: BASE, ref: 'refs/pull/7/merge' }, REPO),
+    null,
+    'path sha ≠ sha field',
+  );
   assert.equal(
     parseReferencedWorkflow({ ...refByMergeSha('ci-pr.yml'), ref: 'refs/pull/8/merge' }, REPO),
     null,
