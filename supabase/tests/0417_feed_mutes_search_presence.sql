@@ -95,7 +95,7 @@ begin
   values (b, 'Give', 'qxfm secret', 'open', 'OnlyMe', 'tel-aviv', 'Test', '1', 'CityOnly', 'Other');
   insert into public.feed_post_hides (user_id, post_id) select a, id from t_posts where k = 'hidden';
   insert into public.feed_mute_filters (user_id, filter_kind, filter_value) values
-    (a, 'user', e::text), (a, 'world', 'Tools'), (a, 'keyword', 'zebra');
+    (a, 'user', e::text), (a, 'category', 'Tools'), (a, 'keyword', 'zebra');
 end $$;
 
 -- ── feed_visible_posts: hides + mutes apply to the viewer only ───────────────

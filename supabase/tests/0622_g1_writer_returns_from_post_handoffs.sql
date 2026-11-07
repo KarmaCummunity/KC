@@ -60,7 +60,8 @@ begin
   perform kc_test.assert_true(p_row.listing_id is not null, p_message || ': a listing id');
   perform kc_test.assert_eq(p_row.listing_id, public.listing_id_of_post(r.post_id),
     p_message || ': the listing of the record''s post');
-  perform kc_test.assert_eq(to_jsonb(p_row) - 'listing_id', to_jsonb(r) - 'post_id',
+  -- requested_meeting_point (0649) lives on the record only; giving_handoffs has no such column.
+  perform kc_test.assert_eq(to_jsonb(p_row) - 'listing_id', to_jsonb(r) - 'post_id' - 'requested_meeting_point',
     p_message || ': every other column is the record''s (ids, seats, timestamps, reason)');
 
   select * into g from public.giving_handoffs where handoff_id = p_row.handoff_id;

@@ -261,6 +261,8 @@ declare
   v_post uuid;
   h_a uuid;
   h_b uuid;
+  c_ride_cols constant text := 'handoff_id, recipient_id, passenger_name, avatar_url, seats, status,
+    reserved_at, confirm_by, rated_by_me';
 begin
   select * into p from personas;
   v_ride := kc_test.create_ride_offer(p.driver, p_seats => 4);
@@ -273,9 +275,10 @@ begin
   perform public.confirm_ride_booking(h_b);
 
   -- list_ride_bookings: the driver's rows, by listing id and by post id.
-  perform pg_temp.assert_same_rows(format('select * from public.list_ride_bookings(%L)', v_ride),
+  -- The columns added later (requested_stop_label 0649, cancel_reason 0655) are not part of the old payload.
+  perform pg_temp.assert_same_rows(format('select %s from public.list_ride_bookings(%L)', c_ride_cols, v_ride),
     format('select * from pg_temp.old_ride_bookings(%L)', v_ride), 2, 'rides: the bookings by listing id');
-  perform pg_temp.assert_same_rows(format('select * from public.list_ride_bookings(%L)', v_post),
+  perform pg_temp.assert_same_rows(format('select %s from public.list_ride_bookings(%L)', c_ride_cols, v_post),
     format('select * from pg_temp.old_ride_bookings(%L)', v_ride), 2, 'rides: and by post id');
   perform kc_test.assert_eq((select b.seats from public.list_ride_bookings(v_post) b where b.handoff_id = h_b), 2,
     'rides: the confirmed booking holds two seats');

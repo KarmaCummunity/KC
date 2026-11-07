@@ -14,7 +14,7 @@ const ROW = {
   confirm_by: '2026-11-01T10:00:00Z',
   rated_by_me: true,
   requested_stop_label: 'מחלף גלילות',
-  cancel_reason: null,
+  cancel_reason: null as unknown as string,
 };
 
 function repoWith(result: { data: unknown; error: { message: string } | null }) {

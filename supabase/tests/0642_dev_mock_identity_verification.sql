@@ -5,13 +5,8 @@ do $test$
 declare
   v_uid uuid;
 begin
-  select user_id into v_uid from public.users order by created_at limit 1;
-  if v_uid is null then
-    raise notice 'skip 0642: no users';
-    return;
-  end if;
-
-  perform kc_test.set_auth(v_uid);
+  v_uid := kc_test.create_user('mock_verify');
+  perform kc_test.act_as(v_uid);
   update public.users
      set verified_at = null, verification_method = null
    where user_id = v_uid;

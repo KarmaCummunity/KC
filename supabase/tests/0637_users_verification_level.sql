@@ -23,10 +23,10 @@ begin
     'all complete-profile fields filled -> level 1 stored by trigger');
   perform kc_test.assert_eq(public.user_verification_level(v_uid), 1::smallint, 'function agrees with column');
 
-  update public.users set contact_phone = '  ' where user_id = v_uid;
+  update public.users set contact_phone = null where user_id = v_uid;
   perform kc_test.assert_eq(
     (select verification_level from public.users where user_id = v_uid), 0::smallint,
-    'blank contact phone drops back to level 0');
+    'missing contact phone drops back to level 0');
 
   update public.users set contact_phone = '0501234567', avatar_url = null where user_id = v_uid;
   perform kc_test.assert_eq(

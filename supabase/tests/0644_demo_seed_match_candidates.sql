@@ -31,10 +31,14 @@ begin
   perform kc_test.assert_true(u1 is not null, 'user1 exists');
 
   perform kc_test.act_as(u1);
+  -- The seed leaves request.jwt.claim.sub on its actor for the audit row; auth.uid() prefers it.
+  perform set_config('request.jwt.claim.sub', u1::text, true);
   select count(*)::int into n from public.rpc_my_matches(30);
   perform kc_test.assert_true(n >= 3,
     'user1 sees at least three open matches for the hub / feed UI');
 
+  perform kc_test.act_as(p.super_admin);
+  perform set_config('request.jwt.claim.sub', p.super_admin::text, true);
   perform public.admin_wipe_demo_data();
 end $$;
 

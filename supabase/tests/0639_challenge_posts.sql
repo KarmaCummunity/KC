@@ -48,4 +48,4 @@ begin
     'paused', 'ending a challenge takes its post out of the open feed');
 end $$;
 
-commit;
+rollback;

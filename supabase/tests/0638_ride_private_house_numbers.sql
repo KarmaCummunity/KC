@@ -59,8 +59,10 @@ begin
   perform kc_test.act_as(p.stranger);
   perform kc_test.assert_row_count(format('select 1 from public.get_ride_house_numbers(%L)', r.street_ride), 0,
     'a stranger reads nothing');
-  perform kc_test.assert_raises('select * from public.ride_listing_house_numbers',
-    'permission denied', 'the table itself is closed');
+  perform kc_test.assert_true(
+    not has_table_privilege('authenticated', 'public.ride_listing_house_numbers', 'select')
+    and not has_table_privilege('anon', 'public.ride_listing_house_numbers', 'select'),
+    'the table itself is closed');
 
   -- Clearing: a blank number removes the row.
   perform kc_test.act_as(p.driver);

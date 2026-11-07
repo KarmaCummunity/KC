@@ -30,8 +30,9 @@ declare
   v_kinds int;
 begin
   select count(*) into v_worlds from public.worlds;
-  if v_worlds <> 13 then
-    raise exception 'ASSERT FAILED: expected 13 PRD worlds, got %', v_worlds;
+  -- 13 PRD worlds plus the challenges world (0639).
+  if v_worlds <> 14 then
+    raise exception 'ASSERT FAILED: expected 14 worlds, got %', v_worlds;
   end if;
   select count(*) into v_kinds from public.listing_kinds;
   if v_kinds < 25 then

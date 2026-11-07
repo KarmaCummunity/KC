@@ -52,7 +52,8 @@ begin
     order by m.sort_order), '[]'::jsonb) into v_media
     from public.listing_media m where m.listing_id = v_listing_id;
   select jsonb_build_object('user_id', u.user_id, 'display_name', u.display_name,
-    'avatar_url', u.avatar_url, 'share_handle', u.share_handle, 'city_id', u.city)
+    'avatar_url', u.avatar_url, 'share_handle', u.share_handle, 'city_id', u.city,
+    'verification_level', u.verification_level) -- 0652
     into v_owner from public.users u where u.user_id = v_row.owner_id;
 
   return jsonb_build_object(

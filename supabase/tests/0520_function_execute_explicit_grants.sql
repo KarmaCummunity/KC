@@ -118,7 +118,9 @@ select pg_temp.assert_none($q$
        'list_ride_series_occurrences', 'list_rides_feed', 'list_verified_nonprofits', 'list_volunteer_opportunities',
        'map_listing_clusters', 'map_listing_pins', 'marketplace_search', 'profile_closed_posts',
        'profile_closed_posts_count', 'ride_listings_search', 'rpc_org_transparency', 'search_listings', 'search_posts_page',
-       'search_users_page', 'similar_listings'])
+       'search_users_page', 'similar_listings',
+       'user_verification_level' -- FR-VERIFY-001: same 0..3 value as the public users.verification_level column
+       ])
 $q$, 'SECURITY DEFINER functions executable by anon outside the public-read list');
 
 -- ── 5. RLS policies keep the functions they evaluate ─────────────────────────
