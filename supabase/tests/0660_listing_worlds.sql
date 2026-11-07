@@ -77,7 +77,7 @@ $$;
 -- set_listing_additional_worlds updates the worlds and filters out primary
 select public.set_listing_additional_worlds(
   (select listing_id from my_listing),
-  array['knowledge', 'employment', 'items']
+  array['knowledge', 'time', 'items']
 );
 
 do $$
@@ -87,7 +87,7 @@ declare
 begin
   select listing_id into v_lid from my_listing;
   v_worlds := public.get_listing_additional_worlds(v_lid);
-  if v_worlds <> array['employment', 'knowledge'] then
+  if v_worlds <> array['knowledge', 'time'] then
     raise exception 'set_listing_additional_worlds unexpected: %', v_worlds;
   end if;
 end;
@@ -128,7 +128,7 @@ begin
 end;
 $$;
 
--- Browse 'employment' (additional world) returns the listing
+-- Browse 'time' (additional world) returns the listing
 do $$
 declare
   v_lid uuid;
@@ -136,10 +136,10 @@ declare
 begin
   select listing_id into v_lid from my_listing;
   select exists (
-    select 1 from public.browse_listings(p_world_slug => 'employment') where listing_id = v_lid
+    select 1 from public.browse_listings(p_world_slug => 'time') where listing_id = v_lid
   ) into v_found;
   if not v_found then
-    raise exception 'browse_listings failed to return listing in additional world employment';
+    raise exception 'browse_listings failed to return listing in additional world time';
   end if;
 end;
 $$;
