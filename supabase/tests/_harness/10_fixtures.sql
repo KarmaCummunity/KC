@@ -62,15 +62,52 @@ language plpgsql
 as $$
 declare
   v_listing_id uuid;
+  v_post_id uuid;
+  v_kind_id uuid := kc_test.listing_kind_id(p_world_slug, p_kind_slug);
 begin
   perform kc_test.act_as(p_owner_id);
   insert into public.listings (
     owner_id, world_slug, kind_id, direction, title, origin, moderation_status, details, expires_at
   ) values (
-    p_owner_id, p_world_slug, kc_test.listing_kind_id(p_world_slug, p_kind_slug), p_direction,
-    p_title, 'native', 'published', p_details, p_expires_at
+    p_owner_id, p_world_slug, v_kind_id, p_direction,
+    p_title, 'native', 'published', p_details, coalesce(p_expires_at, nullif(p_details->>'expires_at', '')::timestamptz)
   )
   returning listing_id into v_listing_id;
+
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync')
+     and (select moderation_status from public.listings where listing_id = v_listing_id) = 'published' then
+    insert into public.posts (
+      owner_id, type, visibility, title, description, category, city, street, street_number,
+      location_display_level, world_slug, direction, post_type, details, category_id,
+      expires_at, listing_id, listing_world_slug, kind_id, moderation_status, availability_status,
+      urgency_level
+    ) values (
+      p_owner_id, case p_direction when 'request' then 'Request' else 'Give' end, 'Public',
+      left(p_title, 80), null, 'Other', 'tel-aviv', 'Marketplace', '1', 'CityOnly',
+      p_world_slug, case p_direction when 'request' then 'request' else 'offer' end,
+      case when p_world_slug = 'rides' then 'ride' else 'standard' end,
+      coalesce(p_details, '{}'::jsonb), null,
+      coalesce(p_expires_at, nullif(p_details->>'expires_at', '')::timestamptz), v_listing_id, p_world_slug, v_kind_id, 'published', 'ongoing',
+      (select urgency_level from public.listings where listing_id = v_listing_id)
+    )
+    returning post_id into v_post_id;
+
+    if p_world_slug = 'rides' then
+      insert into public.ride_post_details (
+        post_id, departs_at, arrives_at, seats_available, origin_place_id, dest_place_id
+      ) values (
+        v_post_id,
+        nullif(p_details->>'departs_at', '')::timestamptz,
+        nullif(p_details->>'arrives_at', '')::timestamptz,
+        coalesce((p_details->>'seats_available')::int, 1),
+        p_details->>'origin_place_id',
+        p_details->>'dest_place_id'
+      ) on conflict (post_id) do update set
+        departs_at = excluded.departs_at,
+        seats_available = excluded.seats_available;
+    end if;
+  end if;
+
   return v_listing_id;
 end;
 $$;
@@ -80,7 +117,16 @@ returns text
 language sql
 stable
 as $$
-  select status::text from public.listings where listing_id = p_listing_id;
+  select case
+    when exists (select 1 from public.listings where listing_id = p_listing_id) then
+      (select status::text from public.listings where listing_id = p_listing_id)
+    else
+      case (select status::text from public.posts where post_id = p_listing_id)
+        when 'closed_delivered' then 'closed'
+        when 'paused' then 'cancelled'
+        else (select status::text from public.posts where post_id = p_listing_id)
+      end
+  end;
 $$;
 
 create function kc_test.handoff_status(p_handoff_id uuid)
@@ -88,5 +134,8 @@ returns text
 language sql
 stable
 as $$
-  select status::text from public.giving_handoffs where handoff_id = p_handoff_id;
+  select coalesce(
+    (select status::text from public.giving_handoffs where handoff_id = p_handoff_id),
+    (select status::text from public.post_handoffs where handoff_id = p_handoff_id)
+  );
 $$;
