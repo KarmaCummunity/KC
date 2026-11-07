@@ -32,6 +32,7 @@ export const postUnifiedCreateEn = {
       food: 'e.g. Tray of homemade pasta',
       housing: 'e.g. Spare room for the weekend',
       animals: 'e.g. Kittens to adopt, or dog-sitting on weekdays',
+      knowledge: 'e.g. Private math lesson, or Python for beginners',
       time: 'e.g. Help with groceries',
     },
     rideAutoTitle: '{{origin}} → {{dest}}',

@@ -20,6 +20,7 @@ describe('giving worlds (spec 04, D100)', () => {
   it('keeps feed worlds a subset of the worlds', () => {
     for (const slug of FEED_WORLD_SLUGS) expect(isGivingWorldSlug(slug)).toBe(true);
     expect(isFeedWorldSlug('rides')).toBe(true);
+    expect(isFeedWorldSlug('knowledge')).toBe(true);
     expect(isFeedWorldSlug('medical')).toBe(false);
   });
 
