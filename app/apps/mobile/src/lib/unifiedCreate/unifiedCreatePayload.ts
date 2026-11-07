@@ -66,6 +66,8 @@ export interface ListingPayloadArgs {
   mediaPaths: string[];
   /** The picked world subcategory (food), null when none (KC#1296). */
   worldSubcategoryId: string | null;
+  /** Additional worlds this listing should appear in (#1475). */
+  additionalWorldSlugs?: string[] | null;
 }
 
 export function buildListingCreatePayload(a: ListingPayloadArgs) {
@@ -84,5 +86,8 @@ export function buildListingCreatePayload(a: ListingPayloadArgs) {
     // from this form is ever attached to an external body.
     externalBodyId: null,
     categoryId: a.worldSubcategoryId,
+    ...(a.additionalWorldSlugs && a.additionalWorldSlugs.length > 0
+      ? { additionalWorldSlugs: a.additionalWorldSlugs }
+      : {}),
   };
 }

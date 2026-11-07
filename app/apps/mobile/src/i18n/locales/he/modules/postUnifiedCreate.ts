@@ -20,6 +20,8 @@ export const postUnifiedCreateHe = {
     linkWorldIntro: 'לעולם הזה עוד אין פיד באפליקציה. אפשר להוסיף כאן קישור לעמותה, לקבוצה או ליוזמה — הוא יופיע בעולם אחרי אישור של צוות KC.',
     request: 'לבקש',
     offer: 'להציע',
+    additionalWorldsLabel: 'הצג גם בעולמות נוספים',
+    additionalWorldsHint: 'המודעה תופיע גם בפידים של העולמות שנבחרו',
     cityLabel: 'עיר',
     pickDate: 'בחירת תאריך ושעה',
     amountPlaceholder: 'עד {{max}} ₪',

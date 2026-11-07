@@ -3880,6 +3880,39 @@ export type Database = {
           },
         ]
       }
+      listing_worlds: {
+        Row: {
+          created_at: string
+          listing_id: string
+          world_slug: string
+        }
+        Insert: {
+          created_at?: string
+          listing_id: string
+          world_slug: string
+        }
+        Update: {
+          created_at?: string
+          listing_id?: string
+          world_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_worlds_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "listing_worlds_world_slug_fkey"
+            columns: ["world_slug"]
+            isOneToOne: false
+            referencedRelation: "worlds"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       listings: {
         Row: {
           anonymity_level: number
@@ -11659,6 +11692,7 @@ export type Database = {
       }
       create_marketplace_listing: {
         Args: {
+          p_additional_world_slugs?: string[]
           p_availability_status?: string
           p_category_id?: string
           p_city_id?: string

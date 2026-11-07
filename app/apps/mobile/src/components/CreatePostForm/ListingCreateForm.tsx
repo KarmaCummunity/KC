@@ -16,6 +16,7 @@ import { useListingCreateForm } from '../../hooks/useListingCreateForm';
 import { CityPicker } from '../CityPicker';
 import { RideCreateSection } from '../giving/RideCreateSection';
 import { WorldSubcategoryPicker } from '../marketplace/WorldSubcategoryPicker';
+import { AdditionalWorldsPicker } from './AdditionalWorldsPicker';
 import { ListingDetailFields } from './ListingDetailFields';
 import { PhotoPicker } from './PhotoPicker';
 import { ListingKindChooser } from './ListingKindChooser';
@@ -143,6 +144,13 @@ export function ListingCreateForm({
             disabled={form.busy}
           />
         ) : null}
+
+        <AdditionalWorldsPicker
+          primaryWorldSlug={worldSlug}
+          selectedWorlds={form.additionalWorlds}
+          onToggle={form.toggleAdditionalWorld}
+          disabled={form.busy}
+        />
 
         <ListingDetailFields specs={form.specs} details={form.details} onChange={form.setDetail} disabled={form.busy} />
 
