@@ -10,7 +10,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { resolveDateFnsLocale } from '../../lib/resolveDateFnsLocale';
 import type { PostWithOwner } from '@kc/application';
-import { spacing, useTheme, Text, iconSize } from '@kc/ui';
+import { useTheme, Text, iconSize } from '@kc/ui';
 import { EmptyState } from '../../components/EmptyState';
 import { useAuthStore } from '../../store/authStore';
 import { getPostByIdUseCase } from '../../services/postsComposition';
@@ -24,7 +24,6 @@ import { PostDetailScrollContent } from './PostDetailScrollContent';
 import { usePostDetailStyles } from './postDetailScreen.styles';
 import {
   useShellTabBarVisibility,
-  useShellTabBarScrollInset,
   shellTabBarHeightPx,
 } from '../../navigation/useShellTabBarVisibility';
 import { ListingPostDetail } from './ListingPostDetail';
@@ -33,10 +32,7 @@ import { nativeStackHeaderRightIconOnly } from '../../navigation/nativeHeaderIco
 import { PostEngagementProvider } from '../../components/post-detail/PostEngagementContext';
 import { PostEngagementComposer } from '../../components/post-detail/PostEngagementComposer';
 import { PostDetailBottomChrome } from '../../components/post-detail/PostDetailBottomChrome';
-import {
-  POST_DETAIL_FLOATING_CTA_RESERVE_PX,
-  postDetailScrollBottomInset,
-} from '../../components/post-detail/postDetailBottomMetrics';
+import { postDetailScrollBottomInset } from '../../components/post-detail/postDetailBottomMetrics';
 import { useKeyboardVerticalOffset } from '../../lib/platform/useKeyboardVerticalOffset';
 import { postShowsEngagementSection } from '../../lib/postEngagementVisible';
 import { useSeededFeedPost } from '../../hooks/useSeededFeedPost';
@@ -119,10 +115,6 @@ export function PostDetailScreen() {
   const safeBottom = useSafeAreaInsets().bottom;
   // The centre "+" rises above the bar and covers a full-width action docked on it.
   const ownerDockInset = showShellTabBar ? ownerBarTabClearance(tabBarPad, safeBottom) : 0;
-  // KC#1387: the floating CTA is absolutely positioned, so the SafeAreaView's
-  // bottom padding does not lift it. Its offset must include the safe-area
-  // inset the docked bar extends under, or the bar covers the button.
-  const ctaBottom = useShellTabBarScrollInset(spacing.base);
   const keyboardOffset = useKeyboardVerticalOffset();
 
   const exitAfterOwnerMutation = (messageKey: 'closure.detailCloseSuccessToast' | 'closure.detailReopenSuccessToast') => {
@@ -191,11 +183,33 @@ export function PostDetailScreen() {
     tabBarOverlayInset: ownerDockInset,
     hasOwnerBar: showOwnerChrome,
     hasComposer: showEngagementComposer,
-    floatingCtaReserve: showViewerContactCta ? POST_DETAIL_FLOATING_CTA_RESERVE_PX : 0,
   });
 
   const ownerNavigable = post.ownerProfileNavigableFromPost !== false;
   const ownerLabel = postOwnerDisplayLabel(post, t);
+
+  const contactPill = (
+    <TouchableOpacity
+      style={styles.messageBtn}
+      activeOpacity={0.85}
+      onPress={() => void onOpenPosterChat()}
+      disabled={contactPosterBusy}
+      accessibilityRole="button"
+      accessibilityState={{ busy: contactPosterBusy }}
+      accessibilityLabel={
+        contactPosterBusy ? t('post.detail.contactOpeningA11y') : t('post.detail.contactA11y')
+      }
+    >
+      {contactPosterBusy ? (
+        <ActivityIndicator size="small" color={colors.textInverse} />
+      ) : (
+        <>
+          <Ionicons name="chatbubble-outline" size={iconSize.md} color={colors.textInverse} />
+          <Text style={styles.messageBtnText}>{t('post.detail.contactCta')}</Text>
+        </>
+      )}
+    </TouchableOpacity>
+  );
 
   return (
     // testID: stable E2E anchor for "the loaded post opened" (Maestro flow 06, KC#1235).
@@ -233,9 +247,10 @@ export function PostDetailScreen() {
             timeAgo={timeAgo}
             scrollBottomInset={scrollBottomInset}
           />
-          {showEngagementComposer || showOwnerChrome ? (
+          {showEngagementComposer || showOwnerChrome || showViewerContactCta ? (
             <PostDetailBottomChrome
               tabBarOverlayInset={ownerDockInset}
+              floatingSlot={showViewerContactCta ? contactPill : undefined}
               ownerSlot={
                 showOwnerChrome ? (
                   <OwnerActionsBar
@@ -254,33 +269,6 @@ export function PostDetailScreen() {
           ) : null}
         </KeyboardAvoidingView>
       </PostEngagementProvider>
-      {showViewerContactCta ? (
-        <View
-          style={[styles.cta, { bottom: ctaBottom }]}
-          pointerEvents="box-none"
-        >
-          <TouchableOpacity
-            style={styles.messageBtn}
-            activeOpacity={0.85}
-            onPress={() => void onOpenPosterChat()}
-            disabled={contactPosterBusy}
-            accessibilityRole="button"
-            accessibilityState={{ busy: contactPosterBusy }}
-            accessibilityLabel={
-              contactPosterBusy ? t('post.detail.contactOpeningA11y') : t('post.detail.contactA11y')
-            }
-          >
-            {contactPosterBusy ? (
-              <ActivityIndicator size="small" color={colors.textInverse} />
-            ) : (
-              <>
-                <Ionicons name="chatbubble-outline" size={iconSize.md} color={colors.textInverse} />
-                <Text style={styles.messageBtnText}>{t('post.detail.contactCta')}</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-      ) : null}
     </SafeAreaView>
   );
 }
