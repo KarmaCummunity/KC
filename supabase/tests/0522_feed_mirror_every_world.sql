@@ -9,8 +9,11 @@ create temp table personas as
 select kc_test.create_user('every_world_giver')  as giver,
        kc_test.create_user('every_world_viewer') as viewer;
 
--- Housing publishes only for a verified identity (worlds.requires_verification).
+-- Housing publishes only for a verified identity (worlds.requires_verification) who accepted
+-- the housing code of conduct (0600).
 update public.users set verified_at = now() where user_id = (select giver from personas);
+insert into public.housing_conduct_acceptances (user_id, version)
+select giver, public.housing_conduct_version() from personas;
 
 /** The mirror post of a listing, or null. */
 create function pg_temp.mirror_of(p_listing uuid)
@@ -43,13 +46,13 @@ begin
   return v_row;
 end $$;
 
--- 1) Every create category mirrors into the feed; the other worlds do not (yet).
+-- 1) Every create category mirrors into the feed (animals since 0612, knowledge since 0613); the other worlds do not (yet).
 do $$
 begin
   perform kc_test.assert_eq(
     (select array_agg(slug order by slug) from public.worlds where feed_mirror),
-    array['food', 'housing', 'items', 'rides', 'time']::text[],
-    'exactly the five create categories mirror into the main feed');
+    array['animals', 'food', 'housing', 'items', 'knowledge', 'rides', 'time']::text[],
+    'exactly the seven mirrored worlds reach the main feed');
 end $$;
 
 -- 2) A ride offer and a ride request reach the main feed with their world, direction and
@@ -98,13 +101,16 @@ begin
 
   for r in
     select * from (values
-      ('housing', 'host_offer',      'give',    'Guest room for a night', 'Give'),
-      ('housing', 'stay_request',    'request', 'Bed for two hikers',     'Request'),
-      ('time',    'volunteer_shift', 'give',    'Two hours of tutoring',  'Give'),
-      ('time',    'support_request', 'request', 'Company for a walk',     'Request')
-    ) as t(world, kind, direction, title, post_type)
+      -- Housing stay kinds carry binding schemas since 0600.
+      ('housing', 'host_offer',      'give',    'Guest room for a night', 'Give', kc_test.housing_offer_details()),
+      ('housing', 'stay_request',    'request', 'Bed for two hikers',     'Request', jsonb_build_object(
+        'stay_purpose', 'trail_walk', 'adults', 2, 'minors', 0,
+        'check_in_date', (public.housing_today() + 3)::text, 'check_out_date', (public.housing_today() + 4)::text)),
+      ('time',    'volunteer_shift', 'give',    'Two hours of tutoring',  'Give', '{}'::jsonb),
+      ('time',    'support_request', 'request', 'Company for a walk',     'Request', '{}'::jsonb)
+    ) as t(world, kind, direction, title, post_type, details)
   loop
-    v_listing := kc_test.create_listing(p.giver, r.world, r.kind, r.direction, r.title, '{}'::jsonb);
+    v_listing := kc_test.create_listing(p.giver, r.world, r.kind, r.direction, r.title, r.details);
     update public.listings set anonymity_level = 3 where listing_id = v_listing;
     v_mirror := pg_temp.mirror_of(v_listing);
     perform kc_test.assert_true(v_mirror.post_id is not null, format('a %s %s listing gets a mirror', r.world, r.kind));
@@ -115,8 +121,9 @@ begin
   end loop;
 end $$;
 
--- 3b) Housing and time default to followers-only (worlds.default_anonymity_level = 2): the
---     mirror keeps that privacy, so a follower sees it in the feed and a stranger does not.
+-- 3b) Time defaults to followers-only (worlds.default_anonymity_level = 2): the mirror keeps
+--     that privacy, so a follower sees it in the feed and a stranger does not. Housing is
+--     public by default since 0600 (FR-HOUSING-004 AC4).
 do $$
 declare
   p personas;
@@ -127,9 +134,14 @@ begin
   select * into p from personas;
   insert into public.follow_edges (follower_id, followed_id) values (v_follower, p.giver);
 
-  v_listing := kc_test.create_listing(p.giver, 'housing', 'host_offer', 'give', 'Sofa for a night', '{}'::jsonb);
+  v_listing := kc_test.create_listing(p.giver, 'housing', 'host_offer', 'give', 'Sofa for a night',
+                                      kc_test.housing_offer_details());
+  perform kc_test.assert_eq((pg_temp.mirror_of(v_listing)).visibility, 'Public',
+                            'a default housing listing mirrors as public (FR-HOUSING-004 AC4)');
+
+  v_listing := kc_test.create_listing(p.giver, 'time', 'volunteer_shift', 'give', 'An hour of company', '{}'::jsonb);
   v_mirror := pg_temp.mirror_of(v_listing);
-  perform kc_test.assert_eq(v_mirror.visibility, 'FollowersOnly', 'a default housing listing mirrors as followers-only');
+  perform kc_test.assert_eq(v_mirror.visibility, 'FollowersOnly', 'a default time listing mirrors as followers-only');
   perform kc_test.assert_true(pg_temp.in_feed(v_follower, v_mirror.post_id), 'a follower sees the followers-only listing');
   perform kc_test.assert_true(not pg_temp.in_feed(p.viewer, v_mirror.post_id), 'a stranger does not see it');
 end $$;
@@ -172,12 +184,14 @@ begin
 
   update public.worlds set feed_mirror = false where slug = 'time';
   v_shift := kc_test.create_listing(p.giver, 'time', 'volunteer_shift', 'give', 'Kitchen shift', '{}'::jsonb);
-  perform kc_test.assert_true(pg_temp.mirror_of(v_shift) is null, 'a world without feed_mirror is not mirrored automatically');
+  -- Since 0557 the listing has its post at once, kept out of the main feed until shared.
+  perform kc_test.assert_true((pg_temp.mirror_of(v_shift)).feed_hidden, 'a world without feed_mirror gets a post hidden from the feed');
 
   perform kc_test.act_as(p.giver);
   perform public.share_listing_to_feed(v_shift);
   perform kc_test.assert_eq(
     (pg_temp.mirror_of(v_shift)).listing_world_slug, 'time', 'a manual share records the listing world');
+  perform kc_test.assert_true(not (pg_temp.mirror_of(v_shift)).feed_hidden, 'and exposes the post in the feed');
   update public.worlds set feed_mirror = true where slug = 'time';
 end $$;
 

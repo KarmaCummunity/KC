@@ -23,14 +23,18 @@ export const postUnifiedCreateEn = {
     cityLabel: 'City',
     pickDate: 'Pick a date and time',
     amountPlaceholder: 'Up to ₪{{max}}',
+    integerPlaceholder: '{{min}}–{{max}}',
     inMinutes: { 30: 'In 30 min', 60: 'In 1 hour' },
     duration: { 30: '30 min', 60: '1 hour', 120: '2 hours', 180: '3 hours', 240: '4 hours' },
+    kindLabel: 'What exactly?',
     titlePlaceholder: {
       rides: 'e.g. Ride from Lod to Tel Aviv',
       food: 'e.g. Tray of homemade pasta',
       housing: 'e.g. Spare room for the weekend',
+      animals: 'e.g. Kittens to adopt, or dog-sitting on weekdays',
       time: 'e.g. Help with groceries',
     },
+    rideAutoTitle: '{{origin}} → {{dest}}',
     errors: {
       titleRequired: 'Please write a title (at least 2 characters)',
       fieldRequired: 'Please fill in: {{field}}',

@@ -78,10 +78,12 @@ insert into internal_helpers values
   ('public.validate_listing_details(uuid, jsonb)'),
   ('public.listing_upsert_from_post(public.posts)'),
   ('public.listing_upsert_from_ride(public.ride_listings)'),
-  ('public.listing_feed_mirror_upsert(public.listings)'),
+  ('public.listing_feed_mirror_upsert(public.listings, boolean)'),
+  ('public.listing_feed_hidden(public.listings)'),
   ('public.listing_feed_mirror_sync_media(uuid, uuid)'),
   ('public.food_expired_listings_sweep()'),
   ('public.giving_handoff_no_show_sweep()'),
+  ('public.giving_handoff_row_of(uuid)'),
   ('public.karma_recompute_nightly()'),
   ('public.ride_complete_pending_rating_cleanup()');
 
@@ -110,10 +112,12 @@ select pg_temp.assert_none($q$
        'shows_active_status',
        -- public-read RPCs
        'browse_listings', 'get_marketplace_listing_detail', 'get_nonprofit_public_page',
-       'get_public_research_questions', 'get_volunteer_opportunity_detail', 'list_profile_listings',
+       'get_public_research_questions', 'get_volunteer_opportunity_detail',
+       'list_kc_support_channels', -- FR-DONATE-011 AC9: masks payee_phone for anon
+       'list_profile_listings',
        'list_ride_series_occurrences', 'list_rides_feed', 'list_verified_nonprofits', 'list_volunteer_opportunities',
        'map_listing_clusters', 'map_listing_pins', 'marketplace_search', 'profile_closed_posts',
-       'profile_closed_posts_count', 'ride_listings_search', 'search_listings', 'search_posts_page',
+       'profile_closed_posts_count', 'ride_listings_search', 'rpc_org_transparency', 'search_listings', 'search_posts_page',
        'search_users_page', 'similar_listings'])
 $q$, 'SECURITY DEFINER functions executable by anon outside the public-read list');
 

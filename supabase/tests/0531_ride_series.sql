@@ -106,10 +106,15 @@ begin
     (select f.recurrence ->> 'id' from public.list_rides_feed(200) f where f.listing_id = v_first.listing_id) = v_series::text,
     'the rides feed returns the recurrence of an occurrence');
   perform kc_test.assert_eq(
+    (select count(*) from public.posts po
+      where po.listing_id in (select listing_id from pg_temp.occurrences(v_series)) and not po.feed_hidden),
+    1::bigint, 'only one occurrence of a series is listed in the main feed');
+  perform kc_test.assert_true(exists (select 1 from public.posts po where po.listing_id = v_first.listing_id and not po.feed_hidden),
+    'the listed occurrence is the soonest one');
+  -- Since 0557 the later occurrences have their posts too, hidden, so a booking can hang on them.
+  perform kc_test.assert_eq(
     (select count(*) from public.posts po where po.listing_id in (select listing_id from pg_temp.occurrences(v_series))),
-    1::bigint, 'only one occurrence of a series is mirrored into the main feed');
-  perform kc_test.assert_true(exists (select 1 from public.posts po where po.listing_id = v_first.listing_id),
-    'the mirrored occurrence is the soonest one');
+    (select count(*) from pg_temp.occurrences(v_series)), 'every occurrence has its post');
 end $$;
 
 -- 2) When the mirrored occurrence departs, the sweep hands the main feed to the next one.
@@ -128,8 +133,8 @@ begin
   update public.listings set status = 'expired' where listing_id = v_first;
   perform kc_test.act_as_anon();
   perform public.ride_series_sweep();
-  perform kc_test.assert_true(exists (select 1 from public.posts po where po.listing_id = v_second),
-    'the next occurrence is mirrored once it is the soonest');
+  perform kc_test.assert_true(exists (select 1 from public.posts po where po.listing_id = v_second and not po.feed_hidden),
+    'the next occurrence is listed in the feed once it is the soonest');
 end $$;
 
 -- 2b) The rides feed lists today's and tomorrow's occurrences and folds the later ones into one

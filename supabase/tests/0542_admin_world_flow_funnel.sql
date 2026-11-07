@@ -3,11 +3,14 @@
 -- (nested counts, the all-cancelled rule, the medians), the separate request row, and null
 -- handoff columns for a world that does not hand off through giving_handoffs.
 --
--- Listings already on the stack (seed data) are deleted inside this transaction so the
--- cohort holds only this file's fixtures; everything is rolled back at the end.
+-- Posts and listings already on the stack (seed data) are deleted inside this transaction so
+-- the cohort holds only this file's fixtures; everything is rolled back at the end. Since 0565
+-- the cohort is the posts (created when their listing is published) and the stages read
+-- post_handoffs, which the giving_handoffs inserts below reach through the 0553 sync.
 
 begin;
 
+delete from public.posts;
 delete from public.listings;
 
 create temp table personas as
@@ -35,6 +38,9 @@ begin
     '{"item_condition":"Good","fulfillment_mode":"owner_approval"}'::jsonb,
     now() + interval '60 days');
   update public.listings set published_at = now() - make_interval(days => p_days_ago)
+   where listing_id = v_listing;
+  -- 0565: the funnel dates the cohort by the post, created when the listing was published.
+  update public.posts set created_at = now() - make_interval(days => p_days_ago)
    where listing_id = v_listing;
   return v_listing;
 end $$;

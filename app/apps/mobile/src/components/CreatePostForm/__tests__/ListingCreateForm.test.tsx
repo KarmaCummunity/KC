@@ -88,6 +88,8 @@ vi.mock('../../CityPicker', () => ({
 import { ListingCreateForm } from '../ListingCreateForm';
 
 const RIDE_FILL = vi.hoisted(() => ({
+  origin_label: 'לוד',
+  dest_label: 'תל אביב',
   origin_lat: 31.95,
   origin_lng: 34.89,
   origin_city_id: '7000',
@@ -139,7 +141,9 @@ describe('ListingCreateForm — renders every category', () => {
       expect(await screen.findByTestId('listing-publish')).toBeTruthy();
       rerender('request');
       expect(await screen.findByTestId('listing-publish')).toBeTruthy();
-      expect(screen.getByTestId('listing-title')).toBeTruthy();
+      // Rides have no title field (#1411); every other world keeps it.
+      if (world === 'rides') expect(screen.queryByTestId('listing-title')).toBeNull();
+      else expect(screen.getByTestId('listing-title')).toBeTruthy();
       // No inline native picker anywhere in the scrolling form.
       expect(mocks.nativeDatePicker).not.toHaveBeenCalled();
     });
@@ -222,8 +226,10 @@ describe('ListingCreateForm — publish', () => {
       fireEvent.click(screen.getByTestId('listing-publish'));
     });
     await waitFor(() => expect(onPublished).toHaveBeenCalledWith('listing-1'));
-    const payload = mocks.createListing.mock.calls[0]![0] as { details: Record<string, unknown>; cityId: string };
+    const payload = mocks.createListing.mock.calls[0]![0] as { details: Record<string, unknown>; cityId: string; title: string };
     expect(payload.cityId).toBe('7000');
+    // No title field: the title is built from the route, and no photo is needed (#1411).
+    expect(payload.title).toBe('post.unifiedCreate.rideAutoTitle');
     expect(payload.details).toMatchObject({ ...RIDE_FILL, reward_model: 'free' });
     expect(payload.details).not.toHaveProperty('cost_share_ils');
     expect(mocks.rememberRideRoute).toHaveBeenCalledWith(expect.objectContaining(RIDE_FILL));

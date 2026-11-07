@@ -46,7 +46,10 @@ export function GivingHandoffActions({ detail }: Props) {
   const invalidate = async () => {
     await qc.invalidateQueries({ queryKey: ['giving-handoff', detail.listingId] });
     await qc.invalidateQueries({ queryKey: ['marketplace'] });
-    await qc.invalidateQueries({ queryKey: ['marketplace-detail', detail.listingId] });
+    // Every detail query of this listing, by listing id or by post id (the post page, 0561), and
+    // the post itself: a hand-over closes a post-form item's post (G34).
+    await qc.invalidateQueries({ queryKey: ['marketplace-detail'] });
+    await qc.invalidateQueries({ queryKey: ['post'] });
     await qc.invalidateQueries({ queryKey: ['giving-handoffs'] });
     await qc.invalidateQueries({ queryKey: ['feed'] });
   };

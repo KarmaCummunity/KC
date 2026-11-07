@@ -25,7 +25,7 @@ Rides live in WhatsApp groups; dedicated apps failed on critical mass. This worl
 
 One rides flow (D70): ride offers and requests are posts with a ride extension; bookings use the generic handoff stage. The separate legacy ride screens are retired; their emergency button and cost-sharing caps attach to this flow.
 
-1. Driver posts (quick publish, D75) — origin, destination, up to 3 meeting points, departure, estimated end, seats. The last route is remembered and a past ride can be published again. Anyone may drive; verification is shown (D23). A **recurring ride** (D103) is the same post with weekdays, a departure time and an optional end date: the server publishes one ordinary ride per upcoming day (30 days ahead), cards say "every Sun–Thu at 07:30", an occurrence lists the series' other dates to book, and the member pauses, reschedules or cancels the series from "my recurring rides"; a ride someone already booked stays an agreed ride.
+1. Driver posts (quick publish, D75) — origin (with a "from my current location" switch: the nearest official city), destination, up to 3 meeting points, departure (with a "leave now" switch: 5 minutes after publishing), estimated end, seats. The last route is remembered and a past ride can be published again. Anyone may drive; verification is shown (D23). A **recurring ride** (D103) is the same post with weekdays, a departure time and an optional end date: the server publishes one ordinary ride per upcoming day (30 days ahead), cards say "every Sun–Thu at 07:30", an occurrence lists the series' other dates to book, and the member pauses, reschedules or cancels the series from "my recurring rides"; a ride someone already booked stays an agreed ride.
 2. Places — origin, destination and meeting points are picked **only** from official catalogs: cities, streets, and named junctions & interchanges. No free-text places (D71).
 3. Passenger books a seat or posts a ride request. The driver sees every booking on the ride and approves or declines each; both sides get a push on every change (D73). Chat per pair (D13). An unapproved booking expires 12 hours after it was made or at departure, whichever is earlier, and frees its seats (D96).
 4. Saved route (D74) — a user follows a route (from → to, optional days and hours) and is notified of new rides along it; the rides form of the saved filter (D10). Urgent rides notifications bypass quiet hours (D95).
@@ -34,6 +34,7 @@ One rides flow (D70): ride offers and requests are posts with a ride extension; 
 7. "Ride completed" — the driver can finish the ride once from the offer; confirmed bookings complete together, earn the existing driver/passenger karma values, the offer closes immediately, and each passenger may optionally rate the driver. Pending unapproved bookings are cancelled. If the driver does not finish it, an uncompleted offer still expires 30 minutes after estimated end (or departure when no end was set) (D21). The app emits the existing `handover_completed` core-loop event (`0530`).
 
 Feed (D75): offers and requests together, sorted by departure, grouped today / tomorrow / later; departed rides are hidden.
+Hub screen (#1626): the rides world opens on that feed, on the shared listing card in the 2-column grid every world feed uses. On top of it: the offers / requests chips (rides have no subcategories) and the route search as a collapsed filter. With both ends picked, the feed shows the ride offers along that route (`find_ride_listing_matches`, 15 km) and the collapsed row names the route, with "clear". The community links ("nonprofits and links") sit collapsed under the feed. An empty feed invites publishing a ride; a filtered empty feed offers to clear the filters.
 Rules: no profit — cost-sharing caps (₪70 intercity / ₪20 urban). Secondary use: moving items/food.
 Gaps: G44–G46, G48, G49 (G47 ✅), G52 ✅.
 
@@ -60,19 +61,38 @@ Emotional support only via a hotline.
 Sub-categories (D100): elderly & loneliness (D39, S24; home visit requires volunteer ID verification, D48), sport, cleanups, class seats, general. Organizations that are not lawful employers recruit volunteers here, not in employment.
 
 ## 5.5 Money (`money`) — MVP (Grow) → phase 2
-No money between users (D4). Now: donate to KC, one-time or recurring, via a Grow hosted payment page (D20) — the app only redirects and receives confirmation, so the provider can be swapped without code. Bit / PayBox transfer links are interim only and disappear once the one-time clearing page is live (D64). Vision: a JGive-like platform inside the app for every approved org, section-46 receipts, with JGive as partner (D37). No post form. Org directory with proper-management badge (S35).
+No money between users (D4). Now: donate to KC, one-time or recurring, via a Grow hosted payment page (D20) — the app only redirects and receives confirmation, so the provider can be swapped without code. Bit / PayBox transfer links are interim only and disappear once the one-time clearing page is live (D64). Vision: a JGive-like platform inside the app for every approved org, section-46 receipts, with JGive as partner (D37). No post form. Org directory with proper-management badge (S35). Meanwhile the money goes to the founder's personal account and Bit / PayBox show the payee phone to signed-in users (D121).
 
-## 5.6 Housing (`housing`) — next to launch (D30)
-Two tracks: (a) community hosting à la Couchsurfing; (b) housing for at-risk populations (street people, at-risk youth, foster care, people fleeing violence) — only via professional bodies. **ID verification required for both sides** (D30).
-1. Verified host posts — room/couch, dates, nights, house rules; city only.
-2. Verified guest requests — both see verification level, completed stays, seniority — not ratings (S16, D24).
-3. Chat before approval — exact address revealed only after approval.
-4. "Hosting done" — karma, internal rating. At-risk track: confidential request via org, not in the public feed.
-Always free. Minors only with a parent; at-risk youth only via an org (S16). Emergency: evacuee hosting (D42).
+## 5.6 Housing & spaces (`housing`) — next to launch (D30, `D112`)
+Free sharing of **space** (`D112`): a bed for a night, a roof in a crisis, a room for a gathering, a corner to store belongings. Commercial platforms (Airbnb, Booking, storage companies) do not serve giving; WhatsApp "who can host" messages have no trust, privacy or follow-up. Detailed FRs: [`spec/requirements/21_housing.md`](requirements/21_housing.md) (`FR-HOUSING-*`).
+
+Four sub-categories on one booking engine:
+| Sub-category | Who it serves | Track | Public |
+|---|---|---|---|
+| Stays & hosting | travellers, tourists, trail walkers ("trail angels"), family visits, medical-treatment companions | community | ✅ |
+| Emergency shelter | homeless people, people fleeing violence, at-risk youth, evacuees without a host | assisted — only via professional bodies | ❌ never |
+| Event & gathering space | a party, a birthday, a meeting or study session, a workshop, a rehearsal, a community gathering | community | ✅ |
+| Storage space | personal belongings (moving, abroad, renovation) or equipment of a nonprofit organization — never for-profit goods (`D114`) | community | ✅ |
+
+**Rules for every sub-category.** ID verification for both sides in every sub-category (D30, `D116`) — an ID document + live selfie (`D117`, 07.14) — checked **before** the form is filled (`TD-245`); organizations offer, request and search like members (`D115`); a code of conduct accepted once per version (`S59`); always free — no rent, deposit, fee or work as a condition, and an event held in a lent space is free for its attendees (`S55`); city + neighborhood and a fuzzed map circle in public, the exact address and access instructions only for the confirmed guest from approval until 24 h after the end (`S53`); users see verification level, completed stays and seniority, never ratings (S16, D24); minors only with a parent, at-risk youth only via an organization (S16).
+
+Community journey:
+1. Verified host posts an offer — place type, capacity, availability (window / weekly / ongoing, blackout dates), rules, amenities, accessibility; or a verified guest posts a request (dates, party, needs).
+2. Guest requests to book (or a host proposes a place to a request) with a message; up to 3 pending requests at a time, the first confirmation withdraws the overlapping others (`S54`).
+3. Host approves or declines; the server enforces capacity per night / slot / m³. An unanswered request expires 24 h after it was made or at its start, whichever is earlier (`S52`).
+4. Chat per pair (D13); emergency button from 1 h before start to 2 h after the end (`S59`); a safety-incident report freezes the reported member in housing at once pending a 24 h review.
+5. "Stay completed" / "event completed" / "goods returned" — karma (07.6), internal rating, within 7 days of the end; nothing auto-completes. Storage records an inventory with a photo at drop-off (`S56`).
+
+Assisted track (`D113`; details `S57`): members join a **shelter pool** (visible only to coordinators of verified organizations in their districts); a person in need sends a **confidential shelter request** (verification not required to ask; the hotline block appears at once) that the organizations in the district take within an urgency SLA (tonight 2 h); a **coordinator** places the person with a pool host, may represent an off-platform guest, and checks in at least every 72 h. KC never places a person itself.
+
+Limits: community stays 1–30 nights, longer needs through organizations (`D120`); events 1–12 h, ending by the host's quiet hour; storage 7–180 days (`S54`). Emergency: "host evacuees" template, evacuee requests first in the declared region (D42); an evacuee guest who left home without documents may be confirmed by a recognised organization instead of ID verification, hosts always verify (`D122`). Legal texts are drafted by KC and reviewed by counsel once before launch — development never waits for it (`D118`, [`docs/legal/drafts/`](../legal/drafts/housing_and_verification_he.md)). Phases: H0 verification → H1 stays → H2 event space + storage → H3 assisted track (needs ORG-P1) → H4 emergency template (G25). Gap: G21.
 
 ## 5.7 Knowledge, rights & legal aid (`knowledge`) — phase 2
-Content exists (Kol Zchut, Campus IL); the missing piece is personal connection. Lessons and mentoring for free, plus rights and legal aid (D40): a pro-bono "consulting hour" post by lawyers, accountants, advisors (S36). No binding legal advice in posts — refer to an authorized party.
-Sub-categories (D100): science & technology, history & heritage, culture & art, spirituality & philosophy, rights & legal aid, lessons & mentoring. A recurring lesson may also be marked for the time world (D101). Listing approval rule pending (KC#1037).
+Full spec: [18 — Knowledge world](./18_knowledge_world.md) (D119, PM 2026-11-03). Content exists (Kol Zchut, Campus IL); the missing pieces are personal connection and a trustworthy, searchable map of free knowledge. Two layers on one world (S63):
+1. **Give & take posts** — lesson offer (slots, recurring like rides), mentoring offer, pro-bono consulting hour by lawyers, accountants, advisors (S36; ID-verified, S70), learning request, mentoring request, question with an accepted answer. Booking → session completed → karma and rating (7.5–7.7). A lesson may also be marked for the time world (D101).
+2. **Free knowledge library** — curated resources (course, article, link, book, video, document, podcast, tool, dataset) with provenance, license, review before publish (S65), quality signals and link health; native courses with modules, lessons, quizzes, private progress and a completion record (S69); external courses can be tracked too.
+Rules: everything free; no binding legal or medical advice (D40) — a disclaimer on rights & legal aid and consulting hours; shelf rules of [06](./06_domain_hubs.md). Sub-categories (D100) are the **shelf** axis: science & technology, history & heritage, culture & art, spirituality & philosophy, rights & legal aid, lessons & mentoring; subjects come from a curated **topic graph** with aliases (S64); format is the kind. Storage and one retrieval call are built so AI agents can search the library and the open offers with citations (S67). Listing approval rule (KC#1037) is answered by the review rule above.
+Tech: `listing_kinds` course / private_lesson / mentorship_request (`0241`, `0395`), slot booking on `giving_handoffs` (`0396`), four sub-categories seeded (`0535`); topic graph with aliases, proposals, review and the six shelves (`0570`, G55 🟡); engineering contract `spec/requirements/23_knowledge.md` (FR-KNOW-001..024). Gaps: G55, G56, G57, G58, G59, G60.
 
 ## 5.8 Medical (`medical`) — directory now, feed later
 A world of its own (D100; was a domain under D45). **Only verified medical bodies publish** (D30, S17) — Yad Sarah, MDA, Ezer Mizion, ADI; regular users view, contact, borrow and return. The curated philanthropic medical directory (24 bodies, 10 topics, KC#1314) feeds the hub.
@@ -84,6 +104,8 @@ Rules: no medical advice in any post; a "not medical advice" notice on every med
 ## 5.9 Animals (`animals`) — phase 2
 Give and take for animals (D100): supplies, foster, adoption, care and training knowledge, feeding and water points (plug-in map). SPCA as lead partner. **Everyone may publish and take** (PM 2026-11-02); the only rule is the platform-wide one — everything is free, nothing is sold.
 
+**Kinds (PM 2026-11-04, `D125`).** Members deal with each other directly, no organization in between: *hand an animal over* (offer) or *looking to adopt* (request), and *boarding / pet-sitting* offered or asked for, in three modes — full boarding, part-time boarding, pet-sitting — at the carer's home, the animal's home or either. Animal species: dog, cat, rabbit, bird, rodent, reptile, other. Publishing needs a verified identity (world rule). An external body is optional, never required. Migration `0612`; animals listings reach the main feed.
+
 ## 5.10 Democracy (`democracy`) — phase 3
 Kept as a world, empty for now (D100). Content is the governance layer of [11](./11_governance.md): rules, rule parameters, proposals and votes (KC#1032), civic knowledge and advocacy nonprofits (D40). Strict party-political neutrality (S25).
 
@@ -91,7 +113,7 @@ Kept as a world, empty for now (D100). Content is the governance layer of [11](.
 Give = post a job; take = apply (D100). **Only a verified organization that is regulated by law and may legally employ people posts jobs**; an organization that is not such recruits volunteers in the time world (PM 2026-11-02; refines D41, D53, D57). Free posting; philanthropic and nonprofit-sector roles only; no karma on paid jobs (S27). Applications open a chat anchored on the job; no CV storage in v1. Job board gap: G28.
 
 ## 5.12 Challenges (`challenges`) — phase 2
-Give = open a challenge; take = join (D100). Community and personal challenges, with every anonymity level the app supports. The one challenge engine of [10](./10_challenges.md) (D46) stays: a giving challenge can still be opened from inside any world and is counted from closings. Supersedes "challenges are a layer, not a world" (D43) for the product structure only; the engine, karma rules and streaks in 10 are unchanged.
+Give = open a challenge; take = join (D100). Community and personal challenges, with every anonymity level the app supports. The one challenge engine of [10](./10_challenges.md) (D46) stays: a giving challenge can still be opened from inside any world and is counted from closings. Supersedes "challenges are a layer, not a world" (D43) for the product structure only; the engine, karma rules and streaks in 10 are unchanged. First slice shipped (migration `0594`): personal and community challenges with join, per-cycle reports, live streaks, a participants-only leaderboard and karma, active by default behind the launch flag `world_challenges_enabled` (D60). Behaviour: [10](./10_challenges.md).
 
 ## 5.13 Experiences — removed (D100)
 The experiences world (D45) was dropped: unused tickets are items (sub-category tickets, expiry at event date), free class places and workshops are time posts. Free only — a priced ticket breaches the terms.

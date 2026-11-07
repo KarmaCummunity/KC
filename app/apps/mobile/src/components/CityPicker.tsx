@@ -21,13 +21,22 @@ interface Props {
 
 // Module-scope helpers — referentially stable so the SearchablePicker doesn't
 // invalidate its memoized filter list on every render.
-const matchCity = (c: City, q: string): boolean =>
-  c.nameHe.includes(q) || c.nameEn.toLowerCase().includes(q.toLowerCase());
-const renderCity = (c: City) => ({ id: c.cityId, name: c.nameHe });
+const matchCity = (c: City, q: string): boolean => {
+  if (!c) return false;
+  const trimmed = (q ?? '').trim().toLowerCase();
+  if (!trimmed) return true;
+  const nameHe = c.nameHe ?? '';
+  const nameEn = (c.nameEn ?? '').toLowerCase();
+  return nameHe.includes(trimmed) || nameEn.includes(trimmed);
+};
+const renderCity = (c: City) => ({
+  id: c?.cityId ?? '',
+  name: c?.nameHe ?? c?.nameEn ?? '',
+});
 
 export function CityPicker({ value, onChange, disabled }: Props) {
   const { t } = useTranslation();
-  const { data, isLoading, error } = useQuery<City[]>({
+  const { data, isLoading, error, refetch } = useQuery<City[]>({
     queryKey: ['cities'],
     queryFn: listCities,
     staleTime: 1000 * 60 * 60, // 1h — cities rarely change.
@@ -38,7 +47,7 @@ export function CityPicker({ value, onChange, disabled }: Props) {
       title={t('profile.cityPickerTitle')}
       placeholder={t('profile.cityPickerSearchPlaceholder')}
       value={value}
-      items={data ?? null}
+      items={Array.isArray(data) ? data : null}
       isLoading={isLoading}
       error={error}
       disabled={disabled}
@@ -47,6 +56,7 @@ export function CityPicker({ value, onChange, disabled }: Props) {
       renderRow={renderCity}
       emptyText={t('profile.cityPickerEmpty')}
       errorText={t('profile.cityPickerError')}
+      onErrorRetry={() => void refetch()}
     />
   );
 }

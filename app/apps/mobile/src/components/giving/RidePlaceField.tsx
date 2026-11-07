@@ -4,12 +4,13 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, typography, Text } from '@kc/ui';
+import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { streetPlaceId, type RidePlace } from '@kc/domain';
 import { SearchablePicker } from '../SearchablePicker/SearchablePicker';
 import { StreetPicker } from '../StreetPicker';
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  label: { ...typography.caption, color: colors.textSecondary },
+  label: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
 }));
 
 interface Props {
@@ -25,9 +26,14 @@ interface Props {
 }
 
 /** Picker row key: kind and id together, since a city and a junction may share an id. */
-const placeKey = (p: Pick<RidePlace, 'kind' | 'id'>) => `${p.kind}:${p.id}`;
-const matchPlace = (p: RidePlace, q: string) => p.label.includes(q.trim());
-const renderPlace = (p: RidePlace) => ({ id: placeKey(p), name: p.label });
+const placeKey = (p: Pick<RidePlace, 'kind' | 'id'>) => `${p?.kind ?? ''}:${p?.id ?? ''}`;
+const matchPlace = (p: RidePlace, q: string) => {
+  if (!p) return false;
+  const trimmed = (q ?? '').trim();
+  if (!trimmed) return true;
+  return (p.label ?? '').includes(trimmed);
+};
+const renderPlace = (p: RidePlace) => ({ id: placeKey(p), name: p?.label ?? '' });
 
 export function RidePlaceField({ label, value, places, isLoading, error, onChange, onRetry, disabled }: Props) {
   const { t } = useTranslation();

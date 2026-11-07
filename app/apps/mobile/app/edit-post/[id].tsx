@@ -119,7 +119,7 @@ export default function EditPostScreen() {
       })),
     );
     setSeeded(true);
-  }, [post, seeded]);
+  }, [post, seeded, setCity, setStreet, setStreetNumber]);
 
   useEffect(() => {
     if (!viewerId || identityQuery.data == null) return;

@@ -12,6 +12,7 @@ interface Row {
   profileStreet?: string | null;
   profileStreetNumber?: string | null;
   contactPhone?: string | null;
+  dateOfBirth?: string | null;
   onboardingState: OnboardingState;
   basicInfoSkipped?: boolean;
   avatarUrl?: string | null;
@@ -141,6 +142,11 @@ export function makeFakeUserRepo(seed: Record<string, Row> = {}): FakeUserRepo {
         onboardingState: 'pending_basic_info' as OnboardingState,
       };
       rows.set(userId, { ...row, profileStreet: street, profileStreetNumber: streetNumber });
+    },
+    // The caller's own row: the real RPC takes no user id and reads auth.uid().
+    async setDateOfBirth(dateOfBirth) {
+      const userId = [...rows.keys()][0]!;
+      rows.set(userId, { ...rows.get(userId)!, dateOfBirth });
     },
     async setContactPhone(userId, contactPhone) {
       const row = rows.get(userId) ?? {

@@ -7,6 +7,7 @@ export function scrubUserForNonOwner(user: User): User {
   return {
     ...user,
     contactPhone: null,
+    dateOfBirth: null,
     profileStreet: null,
     profileStreetNumber: null,
     notificationPreferences: { ...DEFAULT_NOTIFICATION_PREFS },

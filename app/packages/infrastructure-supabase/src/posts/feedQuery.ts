@@ -27,6 +27,10 @@ export function buildFeedQuery(
   // The view shares posts' row shape; type it as posts for the select-string parser.
   let q = client.from(source as 'posts').select(POST_SELECT_OWNER);
 
+  // A post that exists for a listing kept out of the main feed (posts.feed_hidden, 0557) is
+  // never listed; the view filters it too, the guests' `posts` source needs it here.
+  q = q.eq('feed_hidden', false);
+
   // statusFilter: 'open' (default), 'closed' (delivered only), 'all'.
   const status = filter.statusFilter ?? 'open';
   if (status === 'all') {

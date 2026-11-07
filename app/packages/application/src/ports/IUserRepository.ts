@@ -134,6 +134,13 @@ export interface IUserRepository {
   setContactPhone(userId: string, contactPhone: string | null): Promise<void>;
 
   /**
+   * FR-AUTH-010 AC2.d — stores the caller's private date of birth (ISO `YYYY-MM-DD`) through
+   * `rpc_set_date_of_birth`, which re-checks the 18+ rule on the server. Throws `ProfileError`
+   * with `invalid_date_of_birth` or `underage` when the server rejects it.
+   */
+  setDateOfBirth(isoDate: string): Promise<void>;
+
+  /**
    * FR-PROFILE-007 — atomic multi-field edit (audit §3.5). All present fields
    * land in one `UPDATE users SET ...` statement, so a transport-layer failure
    * never leaves the user with a half-applied edit (e.g. new name + old city).

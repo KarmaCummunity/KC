@@ -2,13 +2,14 @@
 // Renders the curated field set of one listing kind (lib/unifiedCreate/listingFieldSpecs)
 // with a purpose-built control per field type, styled like the rest of the create form.
 import React from 'react';
+import { format } from 'date-fns';
 import { Switch, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@kc/ui';
 import { TextField } from '../ui/TextField';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { DateTimeField } from '../ui/DateTimeField';
-import { isFieldVisible, type ListingFieldSpec } from '../../lib/unifiedCreate/listingFieldSpecs';
+import { clampWholeNumber, isFieldVisible, type ListingFieldSpec } from '../../lib/unifiedCreate/listingFieldSpecs';
 import { CountStepper } from './CountStepper';
 import { Chip } from '../ui/Chip';
 
@@ -22,14 +23,15 @@ interface Props {
 }
 
 /** Field types whose control (the kit TextField) renders its own label. */
-const SELF_LABELLED: ReadonlySet<ListingFieldSpec['type']> = new Set(['text', 'amount']);
+const SELF_LABELLED: ReadonlySet<ListingFieldSpec['type']> = new Set(['text', 'amount', 'integer']);
 
 export function ListingDetailFields({ specs, details, onChange, disabled = false }: Props) {
   const styles = useCreatePostStyles();
   return (
     <>
       {specs
-        .filter((spec) => isFieldVisible(spec, details))
+        // A `fixed` detail is set by the form itself and has no control.
+        .filter((spec) => spec.type !== 'fixed' && isFieldVisible(spec, details))
         .map((spec) => (
           <View key={spec.key} style={styles.section} testID={`listing-field-${spec.key}`}>
             {SELF_LABELLED.has(spec.type) ? null : <FieldLabel spec={spec} />}
@@ -121,6 +123,34 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
           disabled={disabled}
         />
       );
+    case 'date':
+      return (
+        <DateTimeField
+          testID={`listing-date-${spec.key}`}
+          mode="date"
+          // A stored `yyyy-MM-dd` is a local calendar day: read it at local midnight.
+          value={typeof value === 'string' && value ? new Date(`${value}T00:00`) : null}
+          onChange={(d) => set(format(d, 'yyyy-MM-dd'))}
+          label={t(`marketplace.field.${spec.key}`)}
+          placeholder={t('post.unifiedCreate.pickDate')}
+          minimumDate={new Date()}
+          disabled={disabled}
+        />
+      );
+    case 'time':
+      return (
+        <DateTimeField
+          testID={`listing-time-${spec.key}`}
+          mode="time"
+          value={timeOfDay(typeof value === 'string' && value ? value : spec.defaultValue)}
+          onChange={(d) => set(format(d, 'HH:mm'))}
+          label={t(`marketplace.field.${spec.key}`)}
+          placeholder={spec.defaultValue}
+          disabled={disabled}
+        />
+      );
+    case 'fixed':
+      return null;
     case 'amount':
       return (
         <TextField
@@ -132,6 +162,18 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
             set(Number.isFinite(n) ? Math.min(Math.max(n, 0), spec.max) : undefined);
           }}
           placeholder={t('post.unifiedCreate.amountPlaceholder', { max: spec.max })}
+          editable={!disabled}
+        />
+      );
+    case 'integer':
+      return (
+        <TextField
+          testID={`listing-integer-${spec.key}`}
+          label={label}
+          keyboardType="number-pad"
+          value={typeof value === 'number' ? String(value) : ''}
+          onChangeText={(text) => set(clampWholeNumber(text, spec.min, spec.max))}
+          placeholder={t('post.unifiedCreate.integerPlaceholder', { min: spec.min, max: spec.max })}
           editable={!disabled}
         />
       );
@@ -149,6 +191,14 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
     case 'toggle':
       return <Switch value={value === true} onValueChange={set} disabled={disabled} />;
   }
+}
+
+/** A stored `HH:mm` as today's Date at that local time, for the time picker. */
+function timeOfDay(hhmm: string): Date {
+  const [hours = 0, minutes = 0] = hhmm.split(':').map(Number);
+  const d = new Date();
+  d.setHours(hours, minutes, 0, 0);
+  return d;
 }
 
 interface ChipRowProps<T extends string | number> {

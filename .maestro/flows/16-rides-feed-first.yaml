@@ -1,0 +1,43 @@
+# The rides world opens on its feed (#1626): the route search is a collapsed filter on top, the
+# offers / requests chips sit with it, and the feed (or its "publish a ride" empty state) follows.
+# Spec: docs/spec/requirements/15_rides.md FR-RIDE-002; docs/spec/05_giving_worlds.md §5.3 "Feed" (D75).
+appId: org.karmacommunity.app
+name: Rides — feed first, route search as a filter
+tags: [donations, rides, feed]
+---
+- runFlow: ../subflows/sign-in.yaml
+- tapOn:
+    id: tab-donations
+- extendedWaitUntil:
+    visible:
+      id: donations-hub
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: donation-tile-rides
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: donation-tile-rides
+- extendedWaitUntil:
+    visible:
+      id: rides-feed
+    timeout: 15000
+# The route search starts collapsed and opens on tap.
+- assertVisible:
+    id: rides-route-filter-toggle
+- assertNotVisible:
+    id: rides-route-filter-panel
+- tapOn:
+    id: rides-route-filter-toggle
+- assertVisible:
+    id: rides-route-filter-panel
+- tapOn:
+    id: rides-route-filter-toggle
+# Same offers / requests chips as every other world feed.
+- tapOn:
+    id: world-feed-direction-request
+- assertVisible:
+    id: world-feed-direction-all
+- tapOn:
+    id: world-feed-direction-all

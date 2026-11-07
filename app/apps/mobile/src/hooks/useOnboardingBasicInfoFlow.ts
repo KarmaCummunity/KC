@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
+import { dateOfBirthIssue } from '@kc/domain';
 import { useAuthStore } from '../store/authStore';
 import { useFeedSessionStore } from '../store/feedSessionStore';
 import { getCompleteBasicInfoUseCase, markBasicInfoSkipped } from '../services/userComposition';
@@ -19,10 +20,13 @@ export function useOnboardingBasicInfoFlow() {
     city, street, streetNumber, setCity, setStreet, setStreetNumber,
   } = useAddressStateWithCityReset({});
   const [contactPhone, setContactPhone] = useState('');
+  /** ISO `YYYY-MM-DD`, or null until the three parts form a real date (FR-AUTH-010 AC2.d). */
+  const [dateOfBirth, setDateOfBirth] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const addressIssue = getProfileAddressPairIssue(street, streetNumber);
-  const hasRequiredFields = displayName.trim().length > 0 && city !== null;
+  const hasRequiredFields =
+    displayName.trim().length > 0 && city !== null && dateOfBirth !== null && dateOfBirthIssue(dateOfBirth, new Date()) === null;
   const canSubmit = hasRequiredFields && addressIssue === null;
 
   const showAddressToast = () => {
@@ -48,7 +52,7 @@ export function useOnboardingBasicInfoFlow() {
       );
       return;
     }
-    if (!hasRequiredFields || !city) {
+    if (!hasRequiredFields || !city || !dateOfBirth) {
       useFeedSessionStore.getState().showEphemeralToast(t('onboarding.fillNameAndCity'), 'error', 2500);
       return;
     }
@@ -64,6 +68,7 @@ export function useOnboardingBasicInfoFlow() {
         displayName,
         cityId: city.id,
         cityName: city.name,
+        dateOfBirth,
         profileStreet: street,
         profileStreetNumber: streetNumber,
         contactPhone,
@@ -106,6 +111,8 @@ export function useOnboardingBasicInfoFlow() {
     setStreetNumber,
     contactPhone,
     setContactPhone,
+    dateOfBirth,
+    setDateOfBirth,
     loading,
     hasRequiredFields,
     canSubmit,

@@ -11,7 +11,7 @@ import { cleanDisplayTitle } from '../../lib/displayTitle';
 import { worldChipKey } from '../../lib/feedCardCategory';
 import { usePostGridCardWidth } from '../../hooks/useShellContentWidth';
 import { KcCard } from './KcCard';
-import { listingCardDetails, listingCardRoute } from './listingCardContent';
+import { listingCardDetails, listingCardRoute, type ListingCardDetail } from './listingCardContent';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -43,24 +43,29 @@ interface Props {
   variant?: 'grid' | 'tile';
   /** Optional secondary line (defaults to summary). */
   meta?: string | null;
+  /** Extra lines after the card's own details (e.g. a ride's pickup points or recurrence). */
+  extraDetails?: readonly ListingCardDetail[];
 }
 
 const TILE_WIDTH = 200;
 
-function ListingCardInner({ item, onPress, variant = 'grid', meta }: Readonly<Props>) {
+function ListingCardInner({ item, onPress, variant = 'grid', meta, extraDetails }: Readonly<Props>) {
   const { t } = useTranslation();
   const gridWidth = usePostGridCardWidth(2);
   const isRequest = item.direction === 'request';
   const isRide = item.worldSlug === 'rides';
   const title = cleanDisplayTitle(item.title);
   const ride = isRide ? item.ride ?? null : null;
-  const details = listingCardDetails({
-    ride,
-    isRequest,
-    secondary: meta === undefined ? item.summary : meta,
-    t,
-    formatTime: formatRideTime,
-  });
+  const details = [
+    ...listingCardDetails({
+      ride,
+      isRequest,
+      secondary: meta === undefined ? item.summary : meta,
+      t,
+      formatTime: formatRideTime,
+    }),
+    ...(extraDetails ?? []),
+  ];
   const route = listingCardRoute(ride, t);
   const author = item.publisher
     ? { name: item.publisher.displayName ?? t('marketplace.anonymousOwner'), avatarUrl: item.publisher.avatarUrl }

@@ -6,7 +6,7 @@
 // - `OverlayBackdrop`     — the dimmed, tappable layer behind the surface.
 // - `OverlayHeader`       — title row with the accessible close control.
 import React, { useCallback, useEffect } from 'react';
-import { AccessibilityInfo, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Platform, Pressable, StyleSheet, View, findNodeHandle } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
@@ -49,7 +49,19 @@ export function useFocusTitleOnOpen(visible: boolean, titleRef: React.RefObject<
   useEffect(() => {
     if (!visible || Platform.OS === 'web') return;
     const timer = setTimeout(() => {
-      if (titleRef.current) AccessibilityInfo.sendAccessibilityEvent(titleRef.current, 'focus');
+      try {
+        if (!titleRef.current) return;
+        const handle = findNodeHandle(titleRef.current);
+        if (typeof handle === 'number' && handle > 0) {
+          AccessibilityInfo.sendAccessibilityEvent(
+            handle as unknown as Parameters<typeof AccessibilityInfo.sendAccessibilityEvent>[0],
+            'focus',
+          );
+        }
+      } catch (err) {
+        // Safe: accessibility focus announcement is progressive enhancement; never crash.
+        if (__DEV__) console.warn('useFocusTitleOnOpen accessibility focus failed:', err);
+      }
     }, FOCUS_DELAY_MS);
     return () => clearTimeout(timer);
   }, [visible, titleRef]);

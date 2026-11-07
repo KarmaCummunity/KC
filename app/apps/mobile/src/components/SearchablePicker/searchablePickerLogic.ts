@@ -13,10 +13,16 @@ export function filterItems<T>(
   query: string,
   match: (item: T, q: string) => boolean,
 ): readonly T[] {
-  if (!items) return [];
-  const q = query.trim();
+  if (!items || !Array.isArray(items)) return [];
+  const q = (query ?? '').trim();
   if (!q) return items;
-  return items.filter((it) => match(it, q));
+  return items.filter((it) => {
+    try {
+      return Boolean(match(it, q));
+    } catch {
+      return false;
+    }
+  });
 }
 
 /**
@@ -31,10 +37,17 @@ export function shouldShowFreeTextRow<T>(args: {
   readonly renderRow: (item: T) => SearchablePickerItemDescriptor;
 }): boolean {
   if (!args.allowFreeText) return false;
-  const trimmed = args.query.trim();
+  const trimmed = (args.query ?? '').trim();
   if (trimmed.length === 0) return false;
-  if (!args.items) return true; // no canonical list — free text is the only option
-  return !args.items.some((it) => args.renderRow(it).name === trimmed);
+  if (!args.items || !Array.isArray(args.items)) return true; // no canonical list — free text is the only option
+  return !args.items.some((it) => {
+    try {
+      const row = args.renderRow(it);
+      return row?.name === trimmed;
+    } catch {
+      return false;
+    }
+  });
 }
 
 /**

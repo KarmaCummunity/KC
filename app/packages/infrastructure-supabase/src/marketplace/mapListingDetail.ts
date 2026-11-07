@@ -43,5 +43,6 @@ export function mapListingDetail(raw: unknown): MarketplaceListingDetail | null 
         }
       : null,
     feedPostId: o.feed_post_id != null ? String(o.feed_post_id) : null,
+    feedHidden: o.feed_hidden === true,
   };
 }

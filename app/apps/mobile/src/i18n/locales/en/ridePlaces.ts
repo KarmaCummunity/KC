@@ -2,6 +2,8 @@
 // catalogs — a city (with an optional street) or a junction / interchange (spec 05 §5.3, D71).
 export const ridePlaces = {
   fieldOrigin: 'From',
+  fromCurrentLocation: 'From my current location',
+  locationUnavailable: "We couldn't get your location. You can pick a starting point by hand.",
   fieldDest: 'To',
   pickerTitle: 'Choose a place',
   pickerSearch: 'Search a city, junction or interchange',

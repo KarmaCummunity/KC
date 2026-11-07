@@ -44,7 +44,7 @@ export function RideRouteCard({ details, direction }: Readonly<Props>) {
   if (isFree && direction !== 'give') chips.push({ icon: 'wallet-outline', text: t('cards.free') });
 
   return (
-    <View style={styles.card}>
+    <View style={styles.card} testID="ride-route-card">
       <View style={styles.badgeRow}>
         <Ionicons name="car" size={iconSize.md} color={colors.primary} />
         <Text style={styles.badge}>{t(direction === 'request' ? 'cards.rideRequest' : 'cards.rideOffer')}</Text>

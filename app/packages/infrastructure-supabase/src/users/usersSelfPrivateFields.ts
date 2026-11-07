@@ -10,6 +10,8 @@ export interface UsersSelfPrivateSlice {
   active_posts_count_internal: number;
   /** FR-KARMA-007 — self-only; added to RPC in migration 0191. */
   karma_points: number;
+  /** FR-AUTH-010 AC2.d — ISO `YYYY-MM-DD`; added to the RPC in migration 0590. */
+  date_of_birth: string | null;
 }
 
 /** Owner-only fields from users_get_self_private_fields() (migration 0163). */
@@ -32,5 +34,6 @@ export function mergeSelfPrivateFields(user: User, slice: UsersSelfPrivateSlice)
     isSuperAdmin: slice.is_super_admin,
     activePostsCountInternal: slice.active_posts_count_internal,
     karmaPoints: slice.karma_points ?? 0,
+    dateOfBirth: slice.date_of_birth ?? null,
   };
 }

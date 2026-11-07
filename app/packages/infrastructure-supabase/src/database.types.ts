@@ -843,6 +843,215 @@ export type Database = {
           },
         ]
       }
+      challenge_participations: {
+        Row: {
+          best_streak: number
+          challenge_id: string
+          completed_at: string | null
+          current_streak: number
+          joined_at: string
+          last_success_cycle: string | null
+          participation_id: string
+          successful_cycles: number
+          user_id: string
+        }
+        Insert: {
+          best_streak?: number
+          challenge_id: string
+          completed_at?: string | null
+          current_streak?: number
+          joined_at?: string
+          last_success_cycle?: string | null
+          participation_id?: string
+          successful_cycles?: number
+          user_id: string
+        }
+        Update: {
+          best_streak?: number
+          challenge_id?: string
+          completed_at?: string | null
+          current_streak?: number
+          joined_at?: string
+          last_success_cycle?: string | null
+          participation_id?: string
+          successful_cycles?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_participations_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["challenge_id"]
+          },
+          {
+            foreignKeyName: "challenge_participations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "challenge_participations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "challenge_participations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      challenge_progress_entries: {
+        Row: {
+          challenge_id: string
+          cycle_start: string
+          entry_id: string
+          goal_met: boolean
+          note: string | null
+          reported_at: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          challenge_id: string
+          cycle_start: string
+          entry_id?: string
+          goal_met: boolean
+          note?: string | null
+          reported_at?: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          challenge_id?: string
+          cycle_start?: string
+          entry_id?: string
+          goal_met?: boolean
+          note?: string | null
+          reported_at?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_progress_entries_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["challenge_id"]
+          },
+          {
+            foreignKeyName: "challenge_progress_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "challenge_progress_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "challenge_progress_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      challenges: {
+        Row: {
+          cadence: string
+          challenge_id: string
+          created_at: string
+          creator_id: string
+          description: string | null
+          difficulty: string | null
+          ends_at: string | null
+          goal_direction: string | null
+          goal_value: number | null
+          measurement: string
+          participants_count: number
+          scope: string
+          status: string
+          target_cycles: number | null
+          title: string
+          topic_label: string | null
+          updated_at: string
+        }
+        Insert: {
+          cadence: string
+          challenge_id?: string
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          difficulty?: string | null
+          ends_at?: string | null
+          goal_direction?: string | null
+          goal_value?: number | null
+          measurement: string
+          participants_count?: number
+          scope: string
+          status?: string
+          target_cycles?: number | null
+          title: string
+          topic_label?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cadence?: string
+          challenge_id?: string
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          difficulty?: string | null
+          ends_at?: string | null
+          goal_direction?: string | null
+          goal_value?: number | null
+          measurement?: string
+          participants_count?: number
+          scope?: string
+          status?: string
+          target_cycles?: number | null
+          title?: string
+          topic_label?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenges_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "challenges_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "challenges_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       chats: {
         Row: {
           anchor_listing_id: string | null
@@ -1770,6 +1979,61 @@ export type Database = {
           },
         ]
       }
+      event_post_details: {
+        Row: {
+          address: string | null
+          capacity: number | null
+          ends_at: string
+          org_id: string
+          post_id: string
+          registration_policy: string
+          starts_at: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          capacity?: number | null
+          ends_at: string
+          org_id: string
+          post_id: string
+          registration_policy: string
+          starts_at: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          capacity?: number | null
+          ends_at?: string
+          org_id?: string
+          post_id?: string
+          registration_policy?: string
+          starts_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_post_details_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["org_id"]
+          },
+          {
+            foreignKeyName: "event_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "event_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+        ]
+      }
       external_bodies: {
         Row: {
           body_id: string
@@ -2158,8 +2422,83 @@ export type Database = {
           },
         ]
       }
+      finance_accounts: {
+        Row: {
+          account_id: string
+          created_at: string
+          created_by: string | null
+          is_active: boolean
+          kind: string
+          last4: string | null
+          name: string
+          opening_balance_at: string | null
+          opening_balance_cents: number
+          org_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string
+          created_at?: string
+          created_by?: string | null
+          is_active?: boolean
+          kind: string
+          last4?: string | null
+          name: string
+          opening_balance_at?: string | null
+          opening_balance_cents?: number
+          org_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          created_by?: string | null
+          is_active?: boolean
+          kind?: string
+          last4?: string | null
+          name?: string
+          opening_balance_at?: string | null
+          opening_balance_cents?: number
+          org_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_accounts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "finance_accounts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "finance_accounts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "finance_accounts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["org_id"]
+          },
+        ]
+      }
       finance_ledger_entries: {
         Row: {
+          account_id: string | null
           amount_cents: number
           category: string | null
           counterparty: string | null
@@ -2170,14 +2509,17 @@ export type Database = {
           description: string | null
           direction: string
           entry_id: string
+          is_public: boolean
           kind: string
           occurred_at: string
+          org_id: string
           reference_url: string | null
           status: string
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          account_id?: string | null
           amount_cents: number
           category?: string | null
           counterparty?: string | null
@@ -2188,14 +2530,17 @@ export type Database = {
           description?: string | null
           direction: string
           entry_id?: string
+          is_public?: boolean
           kind: string
           occurred_at?: string
+          org_id: string
           reference_url?: string | null
           status?: string
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          account_id?: string | null
           amount_cents?: number
           category?: string | null
           counterparty?: string | null
@@ -2206,14 +2551,23 @@ export type Database = {
           description?: string | null
           direction?: string
           entry_id?: string
+          is_public?: boolean
           kind?: string
           occurred_at?: string
+          org_id?: string
           reference_url?: string | null
           status?: string
           updated_at?: string
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "finance_ledger_entries_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "finance_accounts"
+            referencedColumns: ["account_id"]
+          },
           {
             foreignKeyName: "finance_ledger_entries_created_by_fkey"
             columns: ["created_by"]
@@ -2234,6 +2588,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users_public"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "finance_ledger_entries_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["org_id"]
           },
           {
             foreignKeyName: "finance_ledger_entries_updated_by_fkey"
@@ -2419,10 +2780,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "giving_handoff_ratings_handoff_id_fkey"
+            foreignKeyName: "giving_handoff_ratings_post_handoff_fkey"
             columns: ["handoff_id"]
             isOneToOne: false
-            referencedRelation: "giving_handoffs"
+            referencedRelation: "post_handoffs"
             referencedColumns: ["handoff_id"]
           },
           {
@@ -2589,6 +2950,164 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users_public"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      housing_booking_details: {
+        Row: {
+          adults: number
+          cancel_note: string | null
+          check_in_date: string
+          check_out_date: string
+          created_at: string
+          decision_note: string | null
+          handoff_id: string
+          late_cancel: boolean
+          message: string
+          minors: number
+          minors_guardian_ack: boolean
+        }
+        Insert: {
+          adults: number
+          cancel_note?: string | null
+          check_in_date: string
+          check_out_date: string
+          created_at?: string
+          decision_note?: string | null
+          handoff_id: string
+          late_cancel?: boolean
+          message: string
+          minors?: number
+          minors_guardian_ack?: boolean
+        }
+        Update: {
+          adults?: number
+          cancel_note?: string | null
+          check_in_date?: string
+          check_out_date?: string
+          created_at?: string
+          decision_note?: string | null
+          handoff_id?: string
+          late_cancel?: boolean
+          message?: string
+          minors?: number
+          minors_guardian_ack?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "housing_booking_details_post_handoff_fkey"
+            columns: ["handoff_id"]
+            isOneToOne: true
+            referencedRelation: "post_handoffs"
+            referencedColumns: ["handoff_id"]
+          },
+        ]
+      }
+      housing_conduct_acceptances: {
+        Row: {
+          accepted_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          accepted_at?: string
+          user_id: string
+          version: number
+        }
+        Update: {
+          accepted_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "housing_conduct_acceptances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "housing_conduct_acceptances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "housing_conduct_acceptances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      housing_private_details: {
+        Row: {
+          access_instructions: string | null
+          apartment: string | null
+          city_id: string
+          entrance_notes: string | null
+          floor: string | null
+          house_number: string
+          listing_id: string
+          street_id: number
+          true_geo: unknown
+          updated_at: string
+        }
+        Insert: {
+          access_instructions?: string | null
+          apartment?: string | null
+          city_id: string
+          entrance_notes?: string | null
+          floor?: string | null
+          house_number: string
+          listing_id: string
+          street_id: number
+          true_geo?: unknown
+          updated_at?: string
+        }
+        Update: {
+          access_instructions?: string | null
+          apartment?: string | null
+          city_id?: string
+          entrance_notes?: string | null
+          floor?: string | null
+          house_number?: string
+          listing_id?: string
+          street_id?: number
+          true_geo?: unknown
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "housing_private_details_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "housing_private_details_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "housing_private_details_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "housing_private_details_street_fk"
+            columns: ["city_id", "street_id"]
+            isOneToOne: false
+            referencedRelation: "streets"
+            referencedColumns: ["city_id", "street_id"]
           },
         ]
       }
@@ -2786,10 +3305,29 @@ export type Database = {
         }
         Relationships: []
       }
+      kc_dev_demo_config: {
+        Row: {
+          created_at: string
+          password_hash: string | null
+          singleton: boolean
+        }
+        Insert: {
+          created_at?: string
+          password_hash?: string | null
+          singleton?: boolean
+        }
+        Update: {
+          created_at?: string
+          password_hash?: string | null
+          singleton?: boolean
+        }
+        Relationships: []
+      }
       kc_support_channels: {
         Row: {
           channel: string
           is_active: boolean
+          payee_phone: string | null
           provider_label: string
           updated_at: string
           url: string
@@ -2797,6 +3335,7 @@ export type Database = {
         Insert: {
           channel: string
           is_active?: boolean
+          payee_phone?: string | null
           provider_label: string
           updated_at?: string
           url: string
@@ -2804,11 +3343,202 @@ export type Database = {
         Update: {
           channel?: string
           is_active?: boolean
+          payee_phone?: string | null
           provider_label?: string
           updated_at?: string
           url?: string
         }
         Relationships: []
+      }
+      knowledge_topic_aliases: {
+        Row: {
+          alias: string
+          alias_id: string
+          alias_norm: string | null
+          created_at: string
+          lang: string
+          topic_id: string
+        }
+        Insert: {
+          alias: string
+          alias_id?: string
+          alias_norm?: string | null
+          created_at?: string
+          lang?: string
+          topic_id: string
+        }
+        Update: {
+          alias?: string
+          alias_id?: string
+          alias_norm?: string | null
+          created_at?: string
+          lang?: string
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_topic_aliases_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_topics"
+            referencedColumns: ["topic_id"]
+          },
+        ]
+      }
+      knowledge_topic_follows: {
+        Row: {
+          created_at: string
+          topic_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          topic_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          topic_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_topic_follows_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_topics"
+            referencedColumns: ["topic_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topic_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topic_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topic_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      knowledge_topics: {
+        Row: {
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          description_he: string | null
+          label_en: string
+          label_he: string
+          legacy_category_slug: string | null
+          merged_into_id: string | null
+          parent_id: string | null
+          slug: string
+          sort_order: number
+          status: string
+          topic_id: string
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          description_he?: string | null
+          label_en: string
+          label_he: string
+          legacy_category_slug?: string | null
+          merged_into_id?: string | null
+          parent_id?: string | null
+          slug: string
+          sort_order?: number
+          status?: string
+          topic_id?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          description_he?: string | null
+          label_en?: string
+          label_he?: string
+          legacy_category_slug?: string | null
+          merged_into_id?: string | null
+          parent_id?: string | null
+          slug?: string
+          sort_order?: number
+          status?: string
+          topic_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_topics_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topics_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topics_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topics_merged_into_id_fkey"
+            columns: ["merged_into_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_topics"
+            referencedColumns: ["topic_id"]
+          },
+          {
+            foreignKeyName: "knowledge_topics_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_topics"
+            referencedColumns: ["topic_id"]
+          },
+        ]
       }
       legal_document_versions: {
         Row: {
@@ -4662,6 +5392,7 @@ export type Database = {
           public_tagline_en: string | null
           public_tagline_he: string | null
           slug: string
+          transparency_settings: Json
           verification_method: string | null
           verified_at: string | null
         }
@@ -4676,6 +5407,7 @@ export type Database = {
           public_tagline_en?: string | null
           public_tagline_he?: string | null
           slug: string
+          transparency_settings?: Json
           verification_method?: string | null
           verified_at?: string | null
         }
@@ -4690,6 +5422,7 @@ export type Database = {
           public_tagline_en?: string | null
           public_tagline_he?: string | null
           slug?: string
+          transparency_settings?: Json
           verification_method?: string | null
           verified_at?: string | null
         }
@@ -5232,6 +5965,172 @@ export type Database = {
           },
         ]
       }
+      post_embeddings: {
+        Row: {
+          embedding: string
+          embedding_model: string
+          post_id: string
+          updated_at: string
+        }
+        Insert: {
+          embedding: string
+          embedding_model: string
+          post_id: string
+          updated_at?: string
+        }
+        Update: {
+          embedding?: string
+          embedding_model?: string
+          post_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_embeddings_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "post_embeddings_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+        ]
+      }
+      post_handoffs: {
+        Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          post_id: string
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        Insert: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          confirm_by?: string | null
+          confirmed_at?: string | null
+          handed_over_at?: string | null
+          handoff_id?: string
+          no_show_at?: string | null
+          owner_id: string
+          pickup_mode?: string
+          pickup_window_end?: string | null
+          pickup_window_start?: string | null
+          post_id: string
+          recipient_id: string
+          reserved_at?: string
+          seats?: number
+          slot_ends_at?: string | null
+          slot_starts_at?: string | null
+          status?: string
+          world_slug: string
+        }
+        Update: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          confirm_by?: string | null
+          confirmed_at?: string | null
+          handed_over_at?: string | null
+          handoff_id?: string
+          no_show_at?: string | null
+          owner_id?: string
+          pickup_mode?: string
+          pickup_window_end?: string | null
+          pickup_window_start?: string | null
+          post_id?: string
+          recipient_id?: string
+          reserved_at?: string
+          seats?: number
+          slot_ends_at?: string | null
+          slot_starts_at?: string | null
+          status?: string
+          world_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_handoffs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_world_slug_fkey"
+            columns: ["world_slug"]
+            isOneToOne: false
+            referencedRelation: "worlds"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       post_reactions: {
         Row: {
           created_at: string
@@ -5413,93 +6312,178 @@ export type Database = {
       }
       posts: {
         Row: {
+          availability_status: string
+          beneficiary_org_id: string | null
           category: string
+          category_id: string | null
           city: string
           created_at: string
           delete_after: string | null
           description: string | null
+          details: Json
+          direction: string
           estimated_value: number | null
+          expires_at: string | null
+          external_body_id: string | null
+          feed_hidden: boolean
+          geo: unknown
           item_condition: string | null
+          kind_id: string | null
+          legacy_listing_id: string | null
           listing_id: string | null
           listing_world_slug: string | null
           location_display_level: string
+          max_radius_km_override: number | null
+          moderation_status: string
           owner_id: string
           post_id: string
+          post_type: string
+          published_at: string | null
           reopen_count: number
           search_vector: unknown
+          source: string
           source_language: string | null
           source_language_confidence: number | null
           status: string
           status_before_admin_removal: string | null
           street: string
           street_number: string
+          time_window: unknown
           title: string
           type: string
           updated_at: string
           urgency: string | null
+          urgency_level: number | null
           visibility: string
+          world_slug: string
         }
         Insert: {
+          availability_status?: string
+          beneficiary_org_id?: string | null
           category?: string
+          category_id?: string | null
           city: string
           created_at?: string
           delete_after?: string | null
           description?: string | null
+          details?: Json
+          direction?: string
           estimated_value?: number | null
+          expires_at?: string | null
+          external_body_id?: string | null
+          feed_hidden?: boolean
+          geo?: unknown
           item_condition?: string | null
+          kind_id?: string | null
+          legacy_listing_id?: string | null
           listing_id?: string | null
           listing_world_slug?: string | null
           location_display_level?: string
+          max_radius_km_override?: number | null
+          moderation_status?: string
           owner_id: string
           post_id?: string
+          post_type?: string
+          published_at?: string | null
           reopen_count?: number
           search_vector?: unknown
+          source?: string
           source_language?: string | null
           source_language_confidence?: number | null
           status?: string
           status_before_admin_removal?: string | null
           street: string
           street_number: string
+          time_window?: unknown
           title: string
           type: string
           updated_at?: string
           urgency?: string | null
+          urgency_level?: number | null
           visibility?: string
+          world_slug?: string
         }
         Update: {
+          availability_status?: string
+          beneficiary_org_id?: string | null
           category?: string
+          category_id?: string | null
           city?: string
           created_at?: string
           delete_after?: string | null
           description?: string | null
+          details?: Json
+          direction?: string
           estimated_value?: number | null
+          expires_at?: string | null
+          external_body_id?: string | null
+          feed_hidden?: boolean
+          geo?: unknown
           item_condition?: string | null
+          kind_id?: string | null
+          legacy_listing_id?: string | null
           listing_id?: string | null
           listing_world_slug?: string | null
           location_display_level?: string
+          max_radius_km_override?: number | null
+          moderation_status?: string
           owner_id?: string
           post_id?: string
+          post_type?: string
+          published_at?: string | null
           reopen_count?: number
           search_vector?: unknown
+          source?: string
           source_language?: string | null
           source_language_confidence?: number | null
           status?: string
           status_before_admin_removal?: string | null
           street?: string
           street_number?: string
+          time_window?: unknown
           title?: string
           type?: string
           updated_at?: string
           urgency?: string | null
+          urgency_level?: number | null
           visibility?: string
+          world_slug?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "posts_beneficiary_org_id_fkey"
+            columns: ["beneficiary_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["org_id"]
+          },
+          {
+            foreignKeyName: "posts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["category_id"]
+          },
           {
             foreignKeyName: "posts_city_fkey"
             columns: ["city"]
             isOneToOne: false
             referencedRelation: "cities"
             referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "posts_external_body_id_fkey"
+            columns: ["external_body_id"]
+            isOneToOne: false
+            referencedRelation: "external_bodies"
+            referencedColumns: ["body_id"]
+          },
+          {
+            foreignKeyName: "posts_kind_id_fkey"
+            columns: ["kind_id"]
+            isOneToOne: false
+            referencedRelation: "listing_kinds"
+            referencedColumns: ["kind_id"]
           },
           {
             foreignKeyName: "posts_listing_id_fkey"
@@ -5542,6 +6526,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users_public"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "posts_world_slug_fkey"
+            columns: ["world_slug"]
+            isOneToOne: false
+            referencedRelation: "worlds"
+            referencedColumns: ["slug"]
           },
         ]
       }
@@ -6366,6 +7357,138 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users_public"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      ride_post_details: {
+        Row: {
+          arrives_at: string | null
+          cargo_food: boolean | null
+          cargo_items: boolean | null
+          constraints: string | null
+          cost_share_ils: number | null
+          created_at: string
+          departs_at: string
+          dest_city_id: string | null
+          dest_label: string | null
+          dest_lat: number | null
+          dest_lng: number | null
+          dest_place_id: string | null
+          dest_place_kind: string | null
+          linked_listing_id: string | null
+          luggage: boolean | null
+          meeting_points: Json
+          origin_city_id: string | null
+          origin_label: string | null
+          origin_lat: number | null
+          origin_lng: number | null
+          origin_place_id: string | null
+          origin_place_kind: string | null
+          passengers: number | null
+          post_id: string
+          reward_model: string | null
+          seats_available: number | null
+          series_id: string | null
+          series_on: string | null
+          updated_at: string
+        }
+        Insert: {
+          arrives_at?: string | null
+          cargo_food?: boolean | null
+          cargo_items?: boolean | null
+          constraints?: string | null
+          cost_share_ils?: number | null
+          created_at?: string
+          departs_at: string
+          dest_city_id?: string | null
+          dest_label?: string | null
+          dest_lat?: number | null
+          dest_lng?: number | null
+          dest_place_id?: string | null
+          dest_place_kind?: string | null
+          linked_listing_id?: string | null
+          luggage?: boolean | null
+          meeting_points?: Json
+          origin_city_id?: string | null
+          origin_label?: string | null
+          origin_lat?: number | null
+          origin_lng?: number | null
+          origin_place_id?: string | null
+          origin_place_kind?: string | null
+          passengers?: number | null
+          post_id: string
+          reward_model?: string | null
+          seats_available?: number | null
+          series_id?: string | null
+          series_on?: string | null
+          updated_at?: string
+        }
+        Update: {
+          arrives_at?: string | null
+          cargo_food?: boolean | null
+          cargo_items?: boolean | null
+          constraints?: string | null
+          cost_share_ils?: number | null
+          created_at?: string
+          departs_at?: string
+          dest_city_id?: string | null
+          dest_label?: string | null
+          dest_lat?: number | null
+          dest_lng?: number | null
+          dest_place_id?: string | null
+          dest_place_kind?: string | null
+          linked_listing_id?: string | null
+          luggage?: boolean | null
+          meeting_points?: Json
+          origin_city_id?: string | null
+          origin_label?: string | null
+          origin_lat?: number | null
+          origin_lng?: number | null
+          origin_place_id?: string | null
+          origin_place_kind?: string | null
+          passengers?: number | null
+          post_id?: string
+          reward_model?: string | null
+          seats_available?: number | null
+          series_id?: string | null
+          series_on?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_post_details_dest_city_id_fkey"
+            columns: ["dest_city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "ride_post_details_origin_city_id_fkey"
+            columns: ["origin_city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "ride_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "ride_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "ride_post_details_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "ride_series"
+            referencedColumns: ["series_id"]
           },
         ]
       }
@@ -7740,6 +8863,7 @@ export type Database = {
           closure_explainer_dismissed: boolean
           contact_phone: string | null
           created_at: string
+          date_of_birth: string | null
           deletion_purge_at: string | null
           deletion_requested_at: string | null
           display_name: string | null
@@ -7786,6 +8910,7 @@ export type Database = {
           closure_explainer_dismissed?: boolean
           contact_phone?: string | null
           created_at?: string
+          date_of_birth?: string | null
           deletion_purge_at?: string | null
           deletion_requested_at?: string | null
           display_name?: string | null
@@ -7832,6 +8957,7 @@ export type Database = {
           closure_explainer_dismissed?: boolean
           contact_phone?: string | null
           created_at?: string
+          date_of_birth?: string | null
           deletion_purge_at?: string | null
           deletion_requested_at?: string | null
           display_name?: string | null
@@ -8577,93 +9703,178 @@ export type Database = {
       }
       feed_visible_posts: {
         Row: {
+          availability_status: string | null
+          beneficiary_org_id: string | null
           category: string | null
+          category_id: string | null
           city: string | null
           created_at: string | null
           delete_after: string | null
           description: string | null
+          details: Json | null
+          direction: string | null
           estimated_value: number | null
+          expires_at: string | null
+          external_body_id: string | null
+          feed_hidden: boolean | null
+          geo: unknown
           item_condition: string | null
+          kind_id: string | null
+          legacy_listing_id: string | null
           listing_id: string | null
           listing_world_slug: string | null
           location_display_level: string | null
+          max_radius_km_override: number | null
+          moderation_status: string | null
           owner_id: string | null
           post_id: string | null
+          post_type: string | null
+          published_at: string | null
           reopen_count: number | null
           search_vector: unknown
+          source: string | null
           source_language: string | null
           source_language_confidence: number | null
           status: string | null
           status_before_admin_removal: string | null
           street: string | null
           street_number: string | null
+          time_window: unknown
           title: string | null
           type: string | null
           updated_at: string | null
           urgency: string | null
+          urgency_level: number | null
           visibility: string | null
+          world_slug: string | null
         }
         Insert: {
+          availability_status?: string | null
+          beneficiary_org_id?: string | null
           category?: string | null
+          category_id?: string | null
           city?: string | null
           created_at?: string | null
           delete_after?: string | null
           description?: string | null
+          details?: Json | null
+          direction?: string | null
           estimated_value?: number | null
+          expires_at?: string | null
+          external_body_id?: string | null
+          feed_hidden?: boolean | null
+          geo?: unknown
           item_condition?: string | null
+          kind_id?: string | null
+          legacy_listing_id?: string | null
           listing_id?: string | null
           listing_world_slug?: string | null
           location_display_level?: string | null
+          max_radius_km_override?: number | null
+          moderation_status?: string | null
           owner_id?: string | null
           post_id?: string | null
+          post_type?: string | null
+          published_at?: string | null
           reopen_count?: number | null
           search_vector?: unknown
+          source?: string | null
           source_language?: string | null
           source_language_confidence?: number | null
           status?: string | null
           status_before_admin_removal?: string | null
           street?: string | null
           street_number?: string | null
+          time_window?: unknown
           title?: string | null
           type?: string | null
           updated_at?: string | null
           urgency?: string | null
+          urgency_level?: number | null
           visibility?: string | null
+          world_slug?: string | null
         }
         Update: {
+          availability_status?: string | null
+          beneficiary_org_id?: string | null
           category?: string | null
+          category_id?: string | null
           city?: string | null
           created_at?: string | null
           delete_after?: string | null
           description?: string | null
+          details?: Json | null
+          direction?: string | null
           estimated_value?: number | null
+          expires_at?: string | null
+          external_body_id?: string | null
+          feed_hidden?: boolean | null
+          geo?: unknown
           item_condition?: string | null
+          kind_id?: string | null
+          legacy_listing_id?: string | null
           listing_id?: string | null
           listing_world_slug?: string | null
           location_display_level?: string | null
+          max_radius_km_override?: number | null
+          moderation_status?: string | null
           owner_id?: string | null
           post_id?: string | null
+          post_type?: string | null
+          published_at?: string | null
           reopen_count?: number | null
           search_vector?: unknown
+          source?: string | null
           source_language?: string | null
           source_language_confidence?: number | null
           status?: string | null
           status_before_admin_removal?: string | null
           street?: string | null
           street_number?: string | null
+          time_window?: unknown
           title?: string | null
           type?: string | null
           updated_at?: string | null
           urgency?: string | null
+          urgency_level?: number | null
           visibility?: string | null
+          world_slug?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "posts_beneficiary_org_id_fkey"
+            columns: ["beneficiary_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["org_id"]
+          },
+          {
+            foreignKeyName: "posts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["category_id"]
+          },
           {
             foreignKeyName: "posts_city_fkey"
             columns: ["city"]
             isOneToOne: false
             referencedRelation: "cities"
             referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "posts_external_body_id_fkey"
+            columns: ["external_body_id"]
+            isOneToOne: false
+            referencedRelation: "external_bodies"
+            referencedColumns: ["body_id"]
+          },
+          {
+            foreignKeyName: "posts_kind_id_fkey"
+            columns: ["kind_id"]
+            isOneToOne: false
+            referencedRelation: "listing_kinds"
+            referencedColumns: ["kind_id"]
           },
           {
             foreignKeyName: "posts_listing_id_fkey"
@@ -8706,6 +9917,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users_public"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "posts_world_slug_fkey"
+            columns: ["world_slug"]
+            isOneToOne: false
+            referencedRelation: "worlds"
+            referencedColumns: ["slug"]
           },
         ]
       }
@@ -8996,6 +10214,20 @@ export type Database = {
         Args: { p_shift_id: string }
         Returns: undefined
       }
+      accept_housing_conduct: {
+        Args: { p_version: number }
+        Returns: {
+          accepted_at: string
+          user_id: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "housing_conduct_acceptances"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       accept_legal_document: {
         Args: {
           p_doc_type: Database["public"]["Enums"]["legal_doc_type"]
@@ -9018,6 +10250,23 @@ export type Database = {
       actor_scope_rank: {
         Args: { p_actor: string; p_scope: string }
         Returns: number
+      }
+      add_knowledge_topic_alias: {
+        Args: { p_alias: string; p_lang?: string; p_topic_id: string }
+        Returns: {
+          alias: string
+          alias_id: string
+          alias_norm: string | null
+          created_at: string
+          lang: string
+          topic_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "knowledge_topic_aliases"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       add_my_listing_media: {
         Args: { p_listing_id: string; p_storage_paths: string[] }
@@ -9122,6 +10371,7 @@ export type Database = {
         Args: { p_message_id: string }
         Returns: undefined
       }
+      admin_demo_data_status: { Args: never; Returns: Json }
       admin_dismiss_report: {
         Args: { p_report_id: string }
         Returns: undefined
@@ -9306,6 +10556,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_seed_demo_data: { Args: { p_password?: string }; Returns: Json }
       admin_set_external_body_status: {
         Args: {
           p_body_id: string
@@ -9428,6 +10679,7 @@ export type Database = {
         Args: { p_limit?: number; p_offset?: number }
         Returns: Json
       }
+      admin_wipe_demo_data: { Args: never; Returns: Json }
       admin_world_flow_funnel: {
         Args: { p_days?: number }
         Returns: {
@@ -9904,13 +11156,78 @@ export type Database = {
         Args: { granter_uid: string; target_role: string; target_scope: string }
         Returns: boolean
       }
+      can_manage_demo_data: { Args: { p_uid: string }; Returns: boolean }
       can_manage_grant: {
         Args: { p_actor: string; p_grant_id: string }
         Returns: boolean
       }
+      can_view_housing_private_details: {
+        Args: { p_listing_id: string; p_viewer: string }
+        Returns: boolean
+      }
+      cancel_event_registration: {
+        Args: { p_handoff_id: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          post_id: string
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "post_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cancel_giving_handoff: {
         Args: { p_handoff_id: string }
         Returns: undefined
+      }
+      cancel_housing_booking: {
+        Args: { p_handoff_id: string; p_note?: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          listing_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "giving_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       cancel_ride_booking: {
         Args: { p_handoff_id: string }
@@ -9969,6 +11286,76 @@ export type Database = {
         Args: { p_signup_id: string }
         Returns: undefined
       }
+      challenge_compute_streaks: {
+        Args: { p_challenge_id: string; p_user_id: string }
+        Returns: {
+          best_streak: number
+          current_streak: number
+          last_success_cycle: string
+          successful_cycles: number
+        }[]
+      }
+      challenge_cycle_start: {
+        Args: { p_cadence: string; p_date: string }
+        Returns: string
+      }
+      challenge_cycle_step: { Args: { p_cadence: string }; Returns: number }
+      challenge_goal_met: {
+        Args: {
+          p_goal_direction: string
+          p_goal_value: number
+          p_measurement: string
+          p_value: number
+        }
+        Returns: boolean
+      }
+      challenge_grant_karma_once: {
+        Args: {
+          p_event: string
+          p_points: number
+          p_ref_id: string
+          p_ref_type: string
+          p_user: string
+        }
+        Returns: number
+      }
+      challenge_karma_points: {
+        Args: { p_event: string; p_participants: number; p_scope: string }
+        Returns: number
+      }
+      challenge_live_streak: {
+        Args: { p_cadence: string; p_last_success: string; p_streak: number }
+        Returns: number
+      }
+      challenge_summary_rows: {
+        Args: { p_viewer: string }
+        Returns: {
+          cadence: string
+          challenge_id: string
+          created_at: string
+          creator_display_name: string
+          creator_id: string
+          description: string
+          difficulty: string
+          ends_at: string
+          goal_direction: string
+          goal_value: number
+          joined: boolean
+          joined_at: string
+          measurement: string
+          my_best_streak: number
+          my_completed: boolean
+          my_current_streak: number
+          my_successful_cycles: number
+          participants_count: number
+          scope: string
+          status: string
+          target_cycles: number
+          title: string
+          topic_label: string
+        }[]
+      }
+      challenge_today: { Args: never; Returns: string }
       chat_media_path_chat_ids: { Args: { p_name: string }; Returns: string[] }
       check_in_volunteer_shift: { Args: { p_signup_id: string }; Returns: Json }
       check_survey_prompt_eligibility: {
@@ -10012,31 +11399,50 @@ export type Database = {
       close_post_with_recipient: {
         Args: { p_post_id: string; p_recipient_user_id: string }
         Returns: {
+          availability_status: string
+          beneficiary_org_id: string | null
           category: string
+          category_id: string | null
           city: string
           created_at: string
           delete_after: string | null
           description: string | null
+          details: Json
+          direction: string
           estimated_value: number | null
+          expires_at: string | null
+          external_body_id: string | null
+          feed_hidden: boolean
+          geo: unknown
           item_condition: string | null
+          kind_id: string | null
+          legacy_listing_id: string | null
           listing_id: string | null
           listing_world_slug: string | null
           location_display_level: string
+          max_radius_km_override: number | null
+          moderation_status: string
           owner_id: string
           post_id: string
+          post_type: string
+          published_at: string | null
           reopen_count: number
           search_vector: unknown
+          source: string
           source_language: string | null
           source_language_confidence: number | null
           status: string
           status_before_admin_removal: string | null
           street: string
           street_number: string
+          time_window: unknown
           title: string
           type: string
           updated_at: string
           urgency: string | null
+          urgency_level: number | null
           visibility: string
+          world_slug: string
         }
         SetofOptions: {
           from: "*"
@@ -10051,6 +11457,36 @@ export type Database = {
       }
       closure_cleanup_expired: { Args: never; Returns: number }
       closure_cleanup_expired_with_metric: { Args: never; Returns: number }
+      complete_housing_booking: {
+        Args: { p_handoff_id: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          listing_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "giving_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       complete_knowledge_session: {
         Args: { p_handoff_id: string }
         Returns: {
@@ -10175,6 +11611,22 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      create_challenge: {
+        Args: {
+          p_cadence: string
+          p_description?: string
+          p_difficulty?: string
+          p_ends_at?: string
+          p_goal_direction?: string
+          p_goal_value?: number
+          p_measurement: string
+          p_scope: string
+          p_target_cycles?: number
+          p_title: string
+          p_topic_label?: string
+        }
+        Returns: string
       }
       create_donation_intent: {
         Args: {
@@ -10324,6 +11776,66 @@ export type Database = {
       }
       cron_feed_cache_worker: { Args: never; Returns: number }
       cron_refresh_feed_open_posts_mv_if_dirty: { Args: never; Returns: number }
+      decide_event_registration: {
+        Args: { p_approve: boolean; p_handoff_id: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          post_id: string
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "post_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      decide_housing_booking: {
+        Args: { p_approve: boolean; p_handoff_id: string; p_note?: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          listing_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "giving_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       decline_ride_booking: {
         Args: { p_handoff_id: string }
         Returns: {
@@ -10373,6 +11885,26 @@ export type Database = {
           radius_km: number
         }[]
       }
+      embedding_job_fail: {
+        Args: { p_error: string; p_job_id: string }
+        Returns: undefined
+      }
+      embedding_job_store: {
+        Args: { p_embedding: string; p_job_id: string; p_model: string }
+        Returns: boolean
+      }
+      embedding_jobs_claim: {
+        Args: { p_limit?: number }
+        Returns: {
+          details: Json
+          job_id: string
+          listing_id: string
+          model: string
+          summary: string
+          title: string
+        }[]
+      }
+      end_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
       enforce_rate_limit: {
         Args: { p_key: string; p_max: number; p_window_seconds: number }
         Returns: undefined
@@ -10396,6 +11928,40 @@ export type Database = {
         Returns: string
       }
       escape_ilike: { Args: { p: string }; Returns: string }
+      event_promote_waitlist: {
+        Args: { p_post_id: string }
+        Returns: undefined
+      }
+      event_registration_for_update: {
+        Args: { p_handoff_id: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          post_id: string
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "post_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       feed_cache_enqueue: { Args: { p_user_id: string }; Returns: number }
       feed_cache_enqueue_active_users: {
         Args: { p_limit?: number }
@@ -10434,6 +12000,44 @@ export type Database = {
           rank_score: number
         }[]
       }
+      finance_account_upsert: {
+        Args: {
+          p_account_id?: string
+          p_is_active?: boolean
+          p_kind?: string
+          p_last4?: string
+          p_name?: string
+          p_opening_balance_at?: string
+          p_opening_balance_cents?: number
+          p_sort_order?: number
+        }
+        Returns: string
+      }
+      finance_accounts_list: {
+        Args: never
+        Returns: {
+          account_id: string
+          balance_cents: number
+          entry_count: number
+          is_active: boolean
+          kind: string
+          last4: string
+          name: string
+          opening_balance_at: string
+          opening_balance_cents: number
+          sort_order: number
+        }[]
+      }
+      finance_donors_summary: {
+        Args: { p_limit?: number }
+        Returns: {
+          donations_count: number
+          donor_name: string
+          first_at: string
+          last_at: string
+          total_cents: number
+        }[]
+      }
       finance_ledger_delete: {
         Args: { p_entry_id: string }
         Returns: undefined
@@ -10449,6 +12053,7 @@ export type Database = {
           p_to?: string
         }
         Returns: {
+          account_id: string
           amount_cents: number
           category: string
           counterparty: string
@@ -10457,6 +12062,7 @@ export type Database = {
           description: string
           direction: string
           entry_id: string
+          is_public: boolean
           kind: string
           occurred_at: string
           reference_url: string
@@ -10477,18 +12083,26 @@ export type Database = {
       }
       finance_ledger_upsert: {
         Args: {
+          p_account_id?: string
           p_amount_cents?: number
           p_category?: string
           p_counterparty?: string
           p_currency?: string
           p_description?: string
           p_entry_id?: string
+          p_is_public?: boolean
           p_kind?: string
           p_occurred_at?: string
           p_reference_url?: string
           p_status?: string
         }
         Returns: string
+      }
+      finance_platform_org_id: { Args: never; Returns: string }
+      finance_transparency_settings_get: { Args: never; Returns: Json }
+      finance_transparency_settings_set: {
+        Args: { p_settings: Json }
+        Returns: Json
       }
       find_matches: {
         Args: { p_limit?: number; p_listing_id: string; p_viewer?: string }
@@ -10531,11 +12145,53 @@ export type Database = {
         Returns: number
       }
       fulfill_my_listing: { Args: { p_listing_id: string }; Returns: undefined }
+      get_challenge: {
+        Args: { p_challenge_id: string }
+        Returns: {
+          cadence: string
+          challenge_id: string
+          created_at: string
+          creator_display_name: string
+          creator_id: string
+          description: string
+          difficulty: string
+          ends_at: string
+          goal_direction: string
+          goal_value: number
+          joined: boolean
+          measurement: string
+          my_best_streak: number
+          my_completed: boolean
+          my_current_streak: number
+          my_successful_cycles: number
+          participants_count: number
+          scope: string
+          status: string
+          target_cycles: number
+          title: string
+          topic_label: string
+        }[]
+      }
       get_chat_counterparty_contact: {
         Args: { p_chat_id: string }
         Returns: string
       }
       get_donation_receipt: { Args: { p_payment_id: string }; Returns: Json }
+      get_housing_private_details: {
+        Args: { p_listing_id: string }
+        Returns: {
+          access_instructions: string
+          apartment: string
+          city_id: string
+          entrance_notes: string
+          floor: string
+          house_number: string
+          lat: number
+          listing_id: string
+          lng: number
+          street_name: string
+        }[]
+      }
       get_listing_handoff: { Args: { p_listing_id: string }; Returns: Json }
       get_marketplace_listing_detail: {
         Args: { p_listing_id: string }
@@ -10562,6 +12218,46 @@ export type Database = {
       get_volunteer_shift_ics: { Args: { p_shift_id: string }; Returns: string }
       giving_handoff_copy_key: { Args: { p_kind: string }; Returns: string }
       giving_handoff_no_show_sweep: { Args: never; Returns: number }
+      giving_handoff_row_of: {
+        Args: { p_handoff_id: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          listing_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "giving_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      giving_handoff_upsert_from_post_handoff: {
+        Args: { p_h: Database["public"]["Tables"]["post_handoffs"]["Row"] }
+        Returns: undefined
+      }
+      handoff_target_listing_id: { Args: { p_id: string }; Returns: string }
+      handoff_target_post_id: { Args: { p_id: string }; Returns: string }
+      has_accepted_housing_conduct: {
+        Args: { p_user: string }
+        Returns: boolean
+      }
       has_admin_role:
         | { Args: { role_name: string; uid: string }; Returns: boolean }
         | {
@@ -10580,6 +12276,75 @@ export type Database = {
         Args: { lat1: number; lat2: number; lon1: number; lon2: number }
         Returns: number
       }
+      housing_assert_eligible: {
+        Args: { p_action: string; p_user: string }
+        Returns: undefined
+      }
+      housing_assert_nights_bookable: {
+        Args: {
+          p_exclude: string
+          p_in: string
+          p_listing: Database["public"]["Tables"]["listings"]["Row"]
+          p_out: string
+          p_party: number
+        }
+        Returns: undefined
+      }
+      housing_booking_enqueue: {
+        Args: {
+          p_actor: string
+          p_category?: string
+          p_kind: string
+          p_row: Database["public"]["Tables"]["post_handoffs"]["Row"]
+          p_to: string
+        }
+        Returns: undefined
+      }
+      housing_bookings_sweep: { Args: never; Returns: Json }
+      housing_check_in_at: {
+        Args: { p_day: string; p_details: Json }
+        Returns: string
+      }
+      housing_check_in_deadline: {
+        Args: { p_day: string; p_details: Json }
+        Returns: string
+      }
+      housing_check_offer_details: {
+        Args: { p_details: Json; p_is_insert: boolean }
+        Returns: string
+      }
+      housing_check_out_at: {
+        Args: { p_day: string; p_details: Json }
+        Returns: string
+      }
+      housing_check_request_details: {
+        Args: { p_details: Json; p_is_insert: boolean }
+        Returns: string
+      }
+      housing_conduct_version: { Args: never; Returns: number }
+      housing_fuzzed_point: {
+        Args: { p_listing_id: string; p_true: unknown }
+        Returns: unknown
+      }
+      housing_guest_has_overlap: {
+        Args: {
+          p_exclude: string
+          p_guest: string
+          p_in: string
+          p_out: string
+        }
+        Returns: boolean
+      }
+      housing_guests_on_night: {
+        Args: { p_exclude: string; p_listing_id: string; p_night: string }
+        Returns: number
+      }
+      housing_local_midnight: { Args: { p_day: string }; Returns: string }
+      housing_night_open: {
+        Args: { p_details: Json; p_night: string }
+        Returns: boolean
+      }
+      housing_today: { Args: never; Returns: string }
       inject_system_message: {
         Args: { p_body?: string; p_chat_id: string; p_payload: Json }
         Returns: string
@@ -10606,7 +12371,9 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_demo_seed_user: { Args: { p_user_id: string }; Returns: boolean }
       is_donation_link_reviewer: { Args: { p_uid: string }; Returns: boolean }
+      is_event_kind: { Args: { p_kind_id: string }; Returns: boolean }
       is_following: {
         Args: { followed: string; follower: string }
         Returns: boolean
@@ -10632,6 +12399,7 @@ export type Database = {
       }
       is_private_profile: { Args: { p_user_id: string }; Returns: boolean }
       is_pro: { Args: { p_user_id: string }; Returns: boolean }
+      join_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
       karma_apply: {
         Args: {
           p_delta: number
@@ -10645,6 +12413,7 @@ export type Database = {
       karma_award_handoff: {
         Args: {
           p_giver: string
+          p_giver_units?: number
           p_handoff_id: string
           p_receiver: string
           p_world: string
@@ -10679,7 +12448,104 @@ export type Database = {
       }
       kc_dev_is_e2e_title: { Args: { p_title: string }; Returns: boolean }
       kc_dev_is_seeded: { Args: never; Returns: boolean }
+      kc_dev_seed_demo_data: {
+        Args: { p_password_hash: string }
+        Returns: Json
+      }
+      kc_dev_wipe_demo_data: { Args: never; Returns: Json }
+      knowledge_normalize_text: { Args: { p: string }; Returns: string }
+      knowledge_topic_merge: {
+        Args: { p_into: string; p_topic_id: string }
+        Returns: undefined
+      }
+      knowledge_topic_subtree_height: {
+        Args: { p_topic_id: string }
+        Returns: number
+      }
+      leave_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
       list_active_surveys: { Args: never; Returns: Json }
+      list_challenge_leaderboard: {
+        Args: { p_challenge_id: string; p_limit?: number }
+        Returns: {
+          best_streak: number
+          completed: boolean
+          current_streak: number
+          display_name: string
+          is_me: boolean
+          successful_cycles: number
+          user_id: string
+        }[]
+      }
+      list_challenges: {
+        Args: { p_limit?: number; p_offset?: number; p_view?: string }
+        Returns: {
+          cadence: string
+          challenge_id: string
+          created_at: string
+          creator_display_name: string
+          creator_id: string
+          description: string
+          difficulty: string
+          ends_at: string
+          goal_direction: string
+          goal_value: number
+          joined: boolean
+          measurement: string
+          my_best_streak: number
+          my_completed: boolean
+          my_current_streak: number
+          my_successful_cycles: number
+          participants_count: number
+          scope: string
+          status: string
+          target_cycles: number
+          title: string
+          topic_label: string
+        }[]
+      }
+      list_event_registrations: {
+        Args: { p_target: string }
+        Returns: {
+          confirmed_at: string
+          display_name: string
+          handoff_id: string
+          recipient_id: string
+          reserved_at: string
+          status: string
+        }[]
+      }
+      list_housing_bookings: {
+        Args: { p_listing_id: string }
+        Returns: {
+          adults: number
+          avatar_url: string
+          check_in_date: string
+          check_out_date: string
+          confirm_by: string
+          guest_completed_stays: number
+          guest_member_since: string
+          guest_name: string
+          guest_verified: boolean
+          handoff_id: string
+          message: string
+          minors: number
+          rated_by_me: boolean
+          recipient_id: string
+          reserved_at: string
+          slot_ends_at: string
+          slot_starts_at: string
+          status: string
+        }[]
+      }
+      list_kc_support_channels: {
+        Args: never
+        Returns: {
+          channel: string
+          payee_phone: string
+          provider_label: string
+          url: string
+        }[]
+      }
       list_my_blocked_users: {
         Args: never
         Returns: {
@@ -10687,6 +12553,16 @@ export type Database = {
           blocked_at: string
           display_name: string
           user_id: string
+        }[]
+      }
+      list_my_challenge_entries: {
+        Args: { p_challenge_id: string; p_limit?: number }
+        Returns: {
+          cycle_start: string
+          goal_met: boolean
+          note: string
+          reported_at: string
+          value: number
         }[]
       }
       list_my_donation_history: {
@@ -10713,6 +12589,29 @@ export type Database = {
           status: string
           title: string
           world_slug: string
+        }[]
+      }
+      list_my_housing_stays: {
+        Args: { p_limit?: number }
+        Returns: {
+          adults: number
+          can_view_address: boolean
+          cancel_reason: string
+          check_in_date: string
+          check_out_date: string
+          city_id: string
+          confirm_by: string
+          handoff_id: string
+          host_id: string
+          host_name: string
+          listing_id: string
+          listing_title: string
+          minors: number
+          rated_by_me: boolean
+          reserved_at: string
+          slot_ends_at: string
+          slot_starts_at: string
+          status: string
         }[]
       }
       list_my_listings: {
@@ -10890,6 +12789,14 @@ export type Database = {
         }[]
       }
       listing_details_expires_at: { Args: { p_details: Json }; Returns: string }
+      listing_embedding_of: {
+        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
+        Returns: string
+      }
+      listing_feed_hidden: {
+        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
+        Returns: boolean
+      }
       listing_feed_mirror_status: {
         Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
         Returns: string
@@ -10899,13 +12806,21 @@ export type Database = {
         Returns: undefined
       }
       listing_feed_mirror_upsert: {
-        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
+        Args: {
+          p_feed_hidden?: boolean
+          p_listing: Database["public"]["Tables"]["listings"]["Row"]
+        }
         Returns: string
       }
       listing_geo_from_city: { Args: { p_city_id: string }; Returns: unknown }
       listing_has_active_handoff: {
         Args: { p_listing_id: string }
         Returns: boolean
+      }
+      listing_id_of_post: { Args: { p_post_id: string }; Returns: string }
+      listing_kind_for_post: {
+        Args: { p_direction: string; p_world_slug: string }
+        Returns: string
       }
       listing_lock_own: {
         Args: { p_listing_id: string }
@@ -10952,6 +12867,59 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      listing_record_of: {
+        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
+        Returns: {
+          anonymity_level: number
+          availability_status: string
+          beneficiary_org_id: string | null
+          canonical_id: string | null
+          category_id: string | null
+          city_id: string | null
+          created_at: string
+          details: Json
+          direction: string
+          embedding: string | null
+          embedding_model: string | null
+          expires_at: string | null
+          external_body_id: string | null
+          geo: unknown
+          geo_mode_override: string | null
+          geo_weight_override: number | null
+          kind_id: string
+          legacy_post_id: string | null
+          legacy_ride_id: string | null
+          listing_id: string
+          max_radius_km_override: number | null
+          moderation_status: string
+          origin: string
+          owner_id: string
+          published_at: string | null
+          search_vector: unknown
+          status: string
+          summary: string | null
+          time_window: unknown
+          title: string
+          updated_at: string
+          urgency_level: number
+          visibility: string
+          world_slug: string
+        }[]
+        SetofOptions: {
+          from: "listings"
+          to: "listings"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      listing_set_post_status: {
+        Args: {
+          p_listing: Database["public"]["Tables"]["listings"]["Row"]
+          p_status: string
+        }
+        Returns: boolean
+      }
+      listing_status_for_post: { Args: { p_status: string }; Returns: string }
       listing_upsert_from_post: {
         Args: { p_post: Database["public"]["Tables"]["posts"]["Row"] }
         Returns: undefined
@@ -11005,7 +12973,67 @@ export type Database = {
           world_slug: string
         }[]
       }
+      mark_event_attendance: {
+        Args: { p_attended: boolean; p_handoff_id: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          post_id: string
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "post_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       mark_giving_handed_over: {
+        Args: { p_handoff_id: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          listing_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "giving_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      mark_housing_no_show: {
         Args: { p_handoff_id: string }
         Returns: {
           cancel_reason: string | null
@@ -11229,6 +13257,96 @@ export type Database = {
         Args: { p_idempotency_key: string; p_lines: Json; p_txn_id: string }
         Returns: undefined
       }
+      post_close_from_handoff: {
+        Args: { p_h: Database["public"]["Tables"]["post_handoffs"]["Row"] }
+        Returns: undefined
+      }
+      post_handoff_seats_taken: {
+        Args: { p_exclude?: string; p_post_id: string }
+        Returns: number
+      }
+      post_handoffs_sync_listing: {
+        Args: { p_listing_id: string }
+        Returns: undefined
+      }
+      post_handoffs_upsert_from_giving: {
+        Args: { p_h: Database["public"]["Tables"]["giving_handoffs"]["Row"] }
+        Returns: undefined
+      }
+      post_id_of_listing: { Args: { p_listing_id: string }; Returns: string }
+      post_listing_visible_to: {
+        Args: {
+          p_post: Database["public"]["Tables"]["posts"]["Row"]
+          p_viewer: string
+        }
+        Returns: boolean
+      }
+      post_lock_own_listing: {
+        Args: { p_target: string }
+        Returns: {
+          availability_status: string
+          beneficiary_org_id: string | null
+          category: string
+          category_id: string | null
+          city: string
+          created_at: string
+          delete_after: string | null
+          description: string | null
+          details: Json
+          direction: string
+          estimated_value: number | null
+          expires_at: string | null
+          external_body_id: string | null
+          feed_hidden: boolean
+          geo: unknown
+          item_condition: string | null
+          kind_id: string | null
+          legacy_listing_id: string | null
+          listing_id: string | null
+          listing_world_slug: string | null
+          location_display_level: string
+          max_radius_km_override: number | null
+          moderation_status: string
+          owner_id: string
+          post_id: string
+          post_type: string
+          published_at: string | null
+          reopen_count: number
+          search_vector: unknown
+          source: string
+          source_language: string | null
+          source_language_confidence: number | null
+          status: string
+          status_before_admin_removal: string | null
+          street: string
+          street_number: string
+          time_window: unknown
+          title: string
+          type: string
+          updated_at: string
+          urgency: string | null
+          urgency_level: number | null
+          visibility: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "posts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      post_owns_listing: {
+        Args: { p_post: Database["public"]["Tables"]["posts"]["Row"] }
+        Returns: boolean
+      }
+      post_record_set_status: {
+        Args: {
+          p_post: Database["public"]["Tables"]["posts"]["Row"]
+          p_status: string
+        }
+        Returns: undefined
+      }
       post_relevance_reminder_due: {
         Args: { p_age_days: number }
         Returns: boolean
@@ -11242,6 +13360,11 @@ export type Database = {
         }
         Returns: undefined
       }
+      post_sync_from_listing: {
+        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
+        Returns: undefined
+      }
+      post_unification_report: { Args: never; Returns: Json }
       profile_closed_posts: {
         Args: {
           p_cursor?: string
@@ -11263,6 +13386,37 @@ export type Database = {
           p_viewer_user_id: string
         }
         Returns: number
+      }
+      propose_knowledge_topic: {
+        Args: {
+          p_description_he?: string
+          p_label_en: string
+          p_label_he: string
+          p_parent_slug?: string
+          p_slug: string
+        }
+        Returns: {
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          description_he: string | null
+          label_en: string
+          label_he: string
+          legacy_category_slug: string | null
+          merged_into_id: string | null
+          parent_id: string | null
+          slug: string
+          sort_order: number
+          status: string
+          topic_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "knowledge_topics"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       provider_webhook_apply: {
         Args: { p_event_id: string; p_payload: Json; p_provider_slug: string }
@@ -11328,34 +13482,83 @@ export type Database = {
         Args: { p_concurrent?: boolean }
         Returns: number
       }
+      register_for_event: {
+        Args: { p_target: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          post_id: string
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "post_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       reopen_post_deleted_no_recipient: {
         Args: { p_post_id: string }
         Returns: {
+          availability_status: string
+          beneficiary_org_id: string | null
           category: string
+          category_id: string | null
           city: string
           created_at: string
           delete_after: string | null
           description: string | null
+          details: Json
+          direction: string
           estimated_value: number | null
+          expires_at: string | null
+          external_body_id: string | null
+          feed_hidden: boolean
+          geo: unknown
           item_condition: string | null
+          kind_id: string | null
+          legacy_listing_id: string | null
           listing_id: string | null
           listing_world_slug: string | null
           location_display_level: string
+          max_radius_km_override: number | null
+          moderation_status: string
           owner_id: string
           post_id: string
+          post_type: string
+          published_at: string | null
           reopen_count: number
           search_vector: unknown
+          source: string
           source_language: string | null
           source_language_confidence: number | null
           status: string
           status_before_admin_removal: string | null
           street: string
           street_number: string
+          time_window: unknown
           title: string
           type: string
           updated_at: string
           urgency: string | null
+          urgency_level: number | null
           visibility: string
+          world_slug: string
         }
         SetofOptions: {
           from: "*"
@@ -11367,31 +13570,50 @@ export type Database = {
       reopen_post_marked: {
         Args: { p_post_id: string }
         Returns: {
+          availability_status: string
+          beneficiary_org_id: string | null
           category: string
+          category_id: string | null
           city: string
           created_at: string
           delete_after: string | null
           description: string | null
+          details: Json
+          direction: string
           estimated_value: number | null
+          expires_at: string | null
+          external_body_id: string | null
+          feed_hidden: boolean
+          geo: unknown
           item_condition: string | null
+          kind_id: string | null
+          legacy_listing_id: string | null
           listing_id: string | null
           listing_world_slug: string | null
           location_display_level: string
+          max_radius_km_override: number | null
+          moderation_status: string
           owner_id: string
           post_id: string
+          post_type: string
+          published_at: string | null
           reopen_count: number
           search_vector: unknown
+          source: string
           source_language: string | null
           source_language_confidence: number | null
           status: string
           status_before_admin_removal: string | null
           street: string
           street_number: string
+          time_window: unknown
           title: string
           type: string
           updated_at: string
           urgency: string | null
+          urgency_level: number | null
           visibility: string
+          world_slug: string
         }
         SetofOptions: {
           from: "*"
@@ -11400,7 +13622,17 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      report_challenge_progress: {
+        Args: {
+          p_challenge_id: string
+          p_note?: string
+          p_report_date?: string
+          p_value: number
+        }
+        Returns: Json
+      }
       report_donation_link: { Args: { p_link_id: string }; Returns: undefined }
+      report_sla_alert_sweep: { Args: never; Returns: number }
       reports_case_detail: {
         Args: { p_target_id: string; p_target_type: string }
         Returns: Json
@@ -11414,6 +13646,44 @@ export type Database = {
           p_target_type_filter?: string
         }
         Returns: Json
+      }
+      request_housing_booking: {
+        Args: {
+          p_adults: number
+          p_check_in: string
+          p_check_out: string
+          p_listing_id: string
+          p_message?: string
+          p_minors?: number
+          p_minors_guardian_ack?: boolean
+        }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          listing_id: string
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          recipient_id: string
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "giving_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       reserve_item_giving: {
         Args: {
@@ -11451,6 +13721,15 @@ export type Database = {
         }
       }
       resolve_comment_mentions: { Args: { p_body: string }; Returns: string[] }
+      resolve_knowledge_topics: {
+        Args: { p_text: string }
+        Returns: {
+          matched_slug: string
+          slug: string
+          topic_id: string
+          via: string
+        }[]
+      }
       resolve_match_weights: {
         Args: { p_user: string; p_world: string }
         Returns: {
@@ -11480,6 +13759,37 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "standing_orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      review_knowledge_topic: {
+        Args: {
+          p_action: string
+          p_label_en?: string
+          p_label_he?: string
+          p_merge_into_id?: string
+          p_topic_id: string
+        }
+        Returns: {
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          description_he: string | null
+          label_en: string
+          label_he: string
+          legacy_category_slug: string | null
+          merged_into_id: string | null
+          parent_id: string | null
+          slug: string
+          sort_order: number
+          status: string
+          topic_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "knowledge_topics"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -11667,6 +13977,17 @@ export type Database = {
           p_lng2: number
         }
         Returns: boolean
+      }
+      ride_post_details_upsert: {
+        Args: { p_details: Json; p_post_id: string }
+        Returns: undefined
+      }
+      ride_post_set_status: {
+        Args: {
+          p_post: Database["public"]["Tables"]["posts"]["Row"]
+          p_status: string
+        }
+        Returns: undefined
       }
       ride_quiet_window_end: {
         Args: { p_at?: string; p_user: string }
@@ -12058,6 +14379,7 @@ export type Database = {
         }
       }
       rpc_notification_inbox_unread_count: { Args: never; Returns: number }
+      rpc_org_transparency: { Args: { p_slug?: string }; Returns: Json }
       rpc_profile_completeness: { Args: { p_user_id?: string }; Returns: Json }
       rpc_recipient_unmark_self: {
         Args: { p_post_id: string }
@@ -12343,6 +14665,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      rpc_set_date_of_birth: {
+        Args: { p_date_of_birth: string }
+        Returns: undefined
+      }
       rpc_set_message_reaction: {
         Args: { p_message_id: string; p_reaction_type: string }
         Returns: {
@@ -12526,6 +14852,37 @@ export type Database = {
         Args: { p_city_id: string; p_count?: number; p_owner_id: string }
         Returns: number
       }
+      set_housing_private_details: {
+        Args: {
+          p_access_instructions?: string
+          p_apartment?: string
+          p_entrance_notes?: string
+          p_floor?: string
+          p_house_number: string
+          p_lat?: number
+          p_listing_id: string
+          p_lng?: number
+          p_street_id: number
+        }
+        Returns: {
+          access_instructions: string | null
+          apartment: string | null
+          city_id: string
+          entrance_notes: string | null
+          floor: string | null
+          house_number: string
+          listing_id: string
+          street_id: number
+          true_geo: unknown
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "housing_private_details"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_ride_series_status: {
         Args: { p_series_id: string; p_status: string }
         Returns: undefined
@@ -12664,6 +15021,36 @@ export type Database = {
           p_urgency_level?: number
         }
         Returns: undefined
+      }
+      update_my_proposed_knowledge_topic: {
+        Args: {
+          p_description_he?: string
+          p_label_en: string
+          p_label_he: string
+          p_topic_id: string
+        }
+        Returns: {
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          description_he: string | null
+          label_en: string
+          label_he: string
+          legacy_category_slug: string | null
+          merged_into_id: string | null
+          parent_id: string | null
+          slug: string
+          sort_order: number
+          status: string
+          topic_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "knowledge_topics"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       update_ride_series: {
         Args: {

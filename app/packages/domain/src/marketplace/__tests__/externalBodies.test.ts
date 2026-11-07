@@ -37,11 +37,11 @@ describe('matchExternalBody', () => {
 
 describe('routed worlds with a picked organisation', () => {
   it('passes the client rule once an external body is selected', () => {
-    expect(validateMarketplaceWorldRules({ worldSlug: 'animals', direction: 'give', details: {}, photoCount: 0 })).toBe(
+    expect(validateMarketplaceWorldRules({ worldSlug: 'environment', direction: 'give', details: {}, photoCount: 0 })).toBe(
       'routed_world_requires_external_body',
     );
     expect(
-      validateMarketplaceWorldRules({ worldSlug: 'animals', direction: 'give', details: {}, photoCount: 0, externalBodyId: spca.bodyId }),
+      validateMarketplaceWorldRules({ worldSlug: 'environment', direction: 'give', details: {}, photoCount: 0, externalBodyId: spca.bodyId }),
     ).toBeNull();
   });
   it('maps the new server codes', () => {

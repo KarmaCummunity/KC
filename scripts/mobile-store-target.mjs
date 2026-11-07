@@ -4,7 +4,9 @@
 //
 // workflow_call: requires inputs.ref (validated). workflow_dispatch on dev:
 // optional inputs.ref, otherwise the newest green dev commit (same walkback
-// as mobile-nightly resolve).
+// as mobile-nightly resolve). A `[skip ci]` version bump on dev may certify
+// via its parent's green `CI gate` when it matches deploy-target.mjs bump
+// shape; the bump SHA itself is built, not the parent.
 //
 // Env: GITHUB_TOKEN, GITHUB_REPOSITORY, GITHUB_API_URL (optional),
 // EVENT_NAME, GITHUB_REF, GITHUB_SHA (ignored when resolving),
@@ -14,12 +16,56 @@
 import { appendFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
+  bumpCommitErrors,
+  findGatedRun,
+} from './deploy-target.mjs';
+import {
   branchFromPushRuns,
   fetchSuccessfulPushRunsForSha,
   isCommitSha,
   parseLookback,
   resolveNewestGreenDevSha,
 } from './resolve-green-dev-sha.mjs';
+
+const DEV_BRANCH = 'dev';
+const REFUSE_MSG = (sha) => `${sha} has no successful CI push run on dev; refusing to build it.`;
+
+/**
+ * Certify `sha` for a dev store build: a successful dev push CI run on the
+ * commit itself, or a verified version-only bump whose parent has a green
+ * `CI gate` on dev (same policy as deploy-target.mjs).
+ */
+export async function certifyStoreBuildSha(api, repo, sha, { jobsOf }) {
+  const runs = await fetchSuccessfulPushRunsForSha(api, repo, sha);
+  const branch = branchFromPushRuns(runs);
+  if (branch) {
+    if (branch !== DEV_BRANCH) {
+      throw new Error(REFUSE_MSG(sha));
+    }
+    return { sha, branch, inheritedFrom: null };
+  }
+
+  const commit = await api(`/repos/${repo}/commits/${sha}`);
+  const shapeErrors = bumpCommitErrors(commit);
+  if (shapeErrors.length > 0) {
+    throw new Error(REFUSE_MSG(sha));
+  }
+
+  const parent = commit.parents[0].sha;
+  const parentRuns = (
+    await api(
+      `/repos/${repo}/actions/workflows/ci.yml/runs?head_sha=${parent}&event=push&per_page=20`,
+    )
+  ).workflow_runs;
+  const runId = await findGatedRun(parentRuns, jobsOf, new Set([DEV_BRANCH]));
+  if (!runId) {
+    throw new Error(
+      `${REFUSE_MSG(sha)} (certified version bump, but parent ${parent} has no green "CI gate" on dev)`,
+    );
+  }
+
+  return { sha, branch: DEV_BRANCH, inheritedFrom: parent };
+}
 
 /** Fail closed when manual dispatch is not from the dev branch ref. */
 export function assertDevDispatchAllowed(eventName, githubRef) {
@@ -85,13 +131,16 @@ export async function resolveStoreTarget(env, api = (path) => githubGet(path, en
   const sha = pickBuildSha({ eventName, inputRef, resolvedGreenSha });
   if (!isCommitSha(sha)) throw new Error(`Ref is not a commit SHA: ${sha}`);
 
-  const runs = await fetchSuccessfulPushRunsForSha(api, repo, sha);
-  const branch = branchFromPushRuns(runs);
-  if (!branch) {
-    throw new Error(`${sha} has no successful CI push run on dev; refusing to build it.`);
-  }
+  const jobsOf = async (runId) =>
+    (await api(`/repos/${repo}/actions/runs/${runId}/jobs?per_page=100`)).jobs;
+  const certified = await certifyStoreBuildSha(api, repo, sha, { jobsOf });
 
-  return { sha, branch, resolvedFromGreenWalk: Boolean(resolvedGreenSha && !inputRef) };
+  return {
+    sha: certified.sha,
+    branch: certified.branch,
+    inheritedFrom: certified.inheritedFrom,
+    resolvedFromGreenWalk: Boolean(resolvedGreenSha && !inputRef),
+  };
 }
 
 async function main() {
@@ -99,6 +148,11 @@ async function main() {
   writeOutputs({ sha: target.sha, branch: target.branch });
   if (target.resolvedFromGreenWalk) {
     console.log(`Resolved past dev tip to green commit ${target.sha}`);
+  }
+  if (target.inheritedFrom) {
+    console.log(
+      `::notice::${target.sha} is a certified version-only bump; build certification inherited from parent ${target.inheritedFrom} (green CI gate on dev).`,
+    );
   }
 }
 

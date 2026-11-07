@@ -1,5 +1,6 @@
-// Stack layout for My Profile. `index` / `closed` keep the profile chrome;
-// `saved` / `hidden` / `removed` are pushed list screens with a standard back header.
+// Stack layout for My Profile. `index` holds the profile chrome and both posts lanes;
+// `closed` only redirects its legacy URL there; `saved` / `hidden` / `removed` are
+// pushed list screens with a standard back header.
 // Mapped to: FR-PROFILE-001 AC4, FR-PROFILE-016.
 import React from 'react';
 import { Stack } from 'expo-router';

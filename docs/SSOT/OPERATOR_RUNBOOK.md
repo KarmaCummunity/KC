@@ -87,6 +87,7 @@ Repository settings only the owner (admin) can apply. Tracked as `INFRA-CI-OWNER
    - Allow `mobile/*` tags (if a tag ruleset restricts tag creation, add `mobile/*` to the allowed patterns).
    - Then dispatch **Mobile nightly** once on `dev` to confirm.
 5. **Import the ruleset (`INFRA-CI-2`).** The gate-integrity PR #1319 is merged.
+   - **Squash message (every release).** In the merge box delete everything below the title: the default message lists every commit, 117 of them carried `[skip ci]` in the first release, so GitHub skipped all CI on `main` and the deploy could not start (`TD-275`, `RELEASE_CHECKLIST.md`).
    - **First release to `main` (one-time).** The release PR into `main` loads its judges from `main`, which has none yet, so its `CI gate` fails at `detect changes` and no lane runs. `main`'s classic protection includes administrators, so not even an admin can merge it. Before you merge, check that the latest `dev` push run of **CI** is green: it runs every lane except the release lane. Then: Settings → Branches → `main` → edit → untick **Do not allow bypassing the above settings** → merge the release PR → tick it again. The push to `main` then runs the full CI with `main`'s new judges, and **Deploy** waits for your approval click. Every later release is judged normally.
    - **One-time bootstrap.** The judges now load only from the base commit, with no fallback to the PR's copy. The PR that introduces a judge module (the test-integrity guard, the run binding) therefore fails its own `static` lane / `CI gate`, because its base does not have them yet. Read the diff, then merge it once with your admin override (the live `dev` ruleset allows the repository-admin bypass; the committed `dev-main.json` has no bypass actors). Every later PR is judged by the merged copy. Done for #1319; repeat only for a future judge-first PR that cannot pass its own gate.
    - **Version-bump App (`TD-231`) — before you delete `AGENT_MERGE_TOKEN` or import the ruleset.** `bump-version-on-merge.yml` pushes the ID commit and a `[skip ci]` `app/VERSION` commit straight to `dev` after every merge, as a third GitHub App whose only power is that push:
@@ -524,6 +525,12 @@ on conflict (channel) do update
   set url = excluded.url, provider_label = excluded.provider_label, is_active = true;
 ```
 
+**Payee phone (interim, D121).** Set the number donors transfer to in Bit / PayBox — digits only, never in the repo. Signed-in users see it under the Bit / PayBox buttons; guests never receive it:
+
+```sql
+update public.kc_support_channels set payee_phone = '05XXXXXXXX' where channel in ('bit', 'paybox');
+```
+
 As soon as an active `card_one_time` row exists, the app hides Bit / PayBox on its own (D64) — on the Money hub and on the About / Settings card. Once clearing is confirmed working on prod, remove the interim rows for good: `delete from public.kc_support_channels where channel in ('bit', 'paybox');`
 
 The app has **no compiled payment links**: if this table cannot be read, donors see "unavailable" rather than a stale link.
@@ -556,6 +563,16 @@ The hourly **Ops health monitor** (`.github/workflows/ops-health.yml`, G42) read
 | `rides_trips_not_completed` | Confirmed seats not completed a day after departure. | Check the completion flow (`complete_ride_trip`); users may need a reminder. |
 
 **Adding a check** (any giving world): a migration with a `stable` function `ops.check_<key>()` returning `ops.health_result` (count + data-free detail) and a row in `ops.health_checks`; extend `supabase/tests/0463_ops_health_registry.sql` or the world's own test.
+
+## Report handling clock {#report-handling-clock}
+
+Apple and Google expect a reported item to be acted on within **24 h** (FR-ADMIN-012 AC5/AC6, #1039). Owners: the two platform admin accounts (super-admin and KC manager); each is the other's backup. Email addresses are not recorded in the repo.
+
+1. **Where.** Admin portal → Reports (`/(admin)/reports`), oldest case first. A yellow badge means the case has waited 12 h, a red one 24 h.
+2. **Alert.** At 12 h each active super-admin / moderator gets a push, "Report waiting over 12 hours", that opens the case. It is sent once per case by `report_sla_alert_sweep()` (pg_cron job `report_sla_alert_hourly`, minute 17 of every hour).
+3. **Act.** Open the case and choose *Confirm removal*, *Dismiss*, *Manual remove*, *Permanent ban* or *Open support thread*. Removing or dismissing takes the case out of the inbox and the clock stops.
+4. **If nobody is reachable.** The backup admin acts. If both are away, hide the target (*Manual remove*) first and review later: a hidden item can be restored, a missed deadline cannot.
+5. **If no alert arrives.** `select jobname, status, start_time from cron.job_run_details where command like '%report_sla_alert_sweep%' order by start_time desc limit 5;` then check `notifications_outbox` for `kind = 'report_sla_warning'` and the `dispatch-notification` logs.
 
 ## Publishing legal documents (FR-SETTINGS-010)
 

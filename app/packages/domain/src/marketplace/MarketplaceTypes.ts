@@ -92,8 +92,10 @@ export interface MarketplaceListingDetail {
   readonly maxRadiusKm: number | null;
   readonly media: readonly MarketplaceListingMedia[];
   readonly owner: MarketplaceListingOwner | null;
-  /** The listing's feed mirror post, when it has one (D-206); null until shared or mirrored. */
+  /** The listing's post, when it has one (D-206, D-218); null until published. */
   readonly feedPostId: string | null;
+  /** The post exists but the main feed does not list it yet (0557): unshared, or a later ride occurrence. */
+  readonly feedHidden: boolean;
 }
 
 export interface MarketplaceSimilarListing {

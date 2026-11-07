@@ -1,8 +1,8 @@
 // app/apps/mobile/src/components/profile/MyProfileChrome.tsx
-// Shared chrome for My Profile open/closed routes (`/profile`, `/profile/closed`).
-// Renders TopBar + profile card (⋮ menu: web uses `right` when `dir=rtl` / `I18nManager.isRTL`; native uses `start`) + …
-// Tab clicks navigate to the sibling route (router.replace, so no back-stack
-// build-up across tab toggles).
+// Chrome of the My Profile screen (`/profile`): TopBar + profile card (⋮ menu: web uses
+// `right` when `dir=rtl` / `I18nManager.isRTL`; native uses `start`) + open / closed tabs.
+// The tabs are controlled by the screen: switching swaps only the posts list below, so
+// this chrome stays mounted and its entry animations never replay (#1633).
 // Mapped to: FR-PROFILE-001 AC1, AC4.
 import React from 'react';
 import {
@@ -50,7 +50,14 @@ function profileMenuCornerHorizontalInset(): Pick<ViewStyle, 'left' | 'right' | 
   return rtl ? { right: spacing.sm } : { left: spacing.sm };
 }
 
-export function MyProfileChrome({ activeTab }: Readonly<{ activeTab: ProfilePostsTab }>) {
+export interface MyProfileChromeProps {
+  /** Posts lane highlighted in the tab strip. */
+  activeTab: ProfilePostsTab;
+  /** Called with the lane the member taps; the screen owns the tab state. */
+  onTabChange: (tab: ProfilePostsTab) => void;
+}
+
+export function MyProfileChrome({ activeTab, onTabChange }: Readonly<MyProfileChromeProps>) {
   const styles = useMyProfileChromeStyles();
   const { colors } = useTheme();
   const router = useRouter();
@@ -75,12 +82,6 @@ export function MyProfileChrome({ activeTab }: Readonly<{ activeTab: ProfilePost
   const displayName = user?.displayName?.trim() || fallbackName;
   const avatarUrl = user?.avatarUrl ?? null;
   const biography = user?.biography ?? null;
-
-  const goToTab = (next: ProfilePostsTab) => {
-    if (next === activeTab) return;
-    if (next === 'closed') router.replace('/(tabs)/profile/closed');
-    else router.replace('/(tabs)/profile');
-  };
 
   return (
     <>
@@ -154,7 +155,9 @@ export function MyProfileChrome({ activeTab }: Readonly<{ activeTab: ProfilePost
       <MotionEntry variant="bottom" delay={ENTRY_DELAY.section}>
         <ProfileTabs
           active={activeTab}
-          onChange={goToTab}
+          onChange={(next) => {
+            if (next !== activeTab) onTabChange(next);
+          }}
           openCount={tabCounts.openCount}
           closedCount={tabCounts.closedCount}
         />

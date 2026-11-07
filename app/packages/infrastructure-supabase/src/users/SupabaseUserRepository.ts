@@ -2,7 +2,7 @@
 // SupabaseUserRepository — adapter for IUserRepository.
 // Slice A (P0.3): only onboarding read/write methods are wired. The remaining
 // methods throw `not_implemented` and will be filled in by P0.4 / P1.1 / P2.4.
-// docs/SSOT/spec/01_auth_and_onboarding.md
+// docs/spec/requirements/01_auth_and_onboarding.md
 // ─────────────────────────────────────────────
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -14,6 +14,7 @@ import {
   supabaseGetOnboardingBootstrap,
   supabaseMarkBasicInfoSkipped,
   supabaseSetBasicInfo,
+  supabaseSetDateOfBirth,
 } from './onboardingSupabase';
 import {
   supabaseGetEditableProfile,
@@ -141,6 +142,10 @@ export class SupabaseUserRepository implements IUserRepository {
 
   setContactPhone(userId: string, contactPhone: string | null): Promise<void> {
     return supabaseSetContactPhone(this.client, userId, contactPhone);
+  }
+
+  setDateOfBirth(isoDate: string): Promise<void> {
+    return supabaseSetDateOfBirth(this.client, isoDate);
   }
 
   updateEditableProfile(userId: string, patch: EditableProfilePatch): Promise<void> {

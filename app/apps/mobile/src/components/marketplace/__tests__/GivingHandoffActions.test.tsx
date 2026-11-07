@@ -179,7 +179,9 @@ describe('GivingHandoffActions', () => {
     await vi.waitFor(() => {
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['feed'] });
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['marketplace'] });
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['marketplace-detail', 'l_item'] });
+      // Every detail of the listing (by listing id or post id, 0561) and the post a hand-over closes (G34).
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['marketplace-detail'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['post'] });
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['giving-handoffs'] });
     });
   });

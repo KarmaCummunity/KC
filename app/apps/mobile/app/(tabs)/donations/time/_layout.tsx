@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { nestedStackGestureOptions } from '../../../../src/navigation/nestedStackGestureOptions';
+import { topBarStackHeaderOptions } from '../../../../src/navigation/TopBarStackHeader';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
 
@@ -9,7 +10,7 @@ export default function TimeVolunteerLayout() {
   return (
     <Stack
       screenOptions={{ ...nestedStackGestureOptions,
-        headerShown: true,
+        ...topBarStackHeaderOptions,
         headerBackTitle: t('general.back'),
       }}
     >
@@ -22,7 +23,6 @@ export default function TimeVolunteerLayout() {
         options={{ headerTitle: t('timeVolunteer.hubTitle') }}
       />
       <Stack.Screen name="organizer/index" options={{ headerTitle: t('timeVolunteer.organizerTitle') }} />
-      <Stack.Screen name="organizer/create" options={{ headerTitle: t('timeVolunteer.createTitle') }} />
       <Stack.Screen
         name="organizer/[opportunityId]"
         options={{ headerTitle: t('timeVolunteer.organizerTitle') }}

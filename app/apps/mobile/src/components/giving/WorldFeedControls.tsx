@@ -1,5 +1,6 @@
 // Mapped to spec: FR-FEED-020 AC2 — the controls above a giving world's feed: search within
 // the world, the offers / requests filter, and the world's subcategory + distance chips.
+// `WorldFeedDirectionChips` is exported so the rides feed uses the very same filter row.
 // Rebuilt on top of the shared filterKit (issue #1457).
 import React from 'react';
 import { View } from 'react-native';
@@ -23,6 +24,28 @@ const DIRECTION_CHIPS: ReadonlyArray<{ direction: WorldFeedDirection; labelKey: 
   { direction: 'request', labelKey: 'donations.worldFeed.directionRequest', testID: 'world-feed-direction-request' },
 ];
 
+/** The offers / requests chip row shared by every world feed, rides included (#1626). */
+export function WorldFeedDirectionChips({
+  value,
+  onChange,
+}: Readonly<{ value: WorldFeedDirection; onChange: (direction: WorldFeedDirection) => void }>) {
+  const { t } = useTranslation();
+  const options = DIRECTION_CHIPS.map(({ direction, labelKey, testID }) => ({
+    value: direction,
+    label: t(labelKey),
+    testID,
+  }));
+  return (
+    <FilterChipRow<WorldFeedDirection>
+      options={options}
+      value={value}
+      // The row is single-select with no "none": a tap on the selected chip keeps it.
+      onChange={(direction) => { if (direction) onChange(direction); }}
+      accessibilityLabel={t('donations.worldFeed.directionRowA11y')}
+    />
+  );
+}
+
 interface Props {
   readonly worldSlug: string;
   readonly feed: WorldFeedState;
@@ -31,12 +54,6 @@ interface Props {
 export function WorldFeedControls({ worldSlug, feed }: Props) {
   const { t } = useTranslation();
   const styles = useStyles();
-
-  const directionOptions = DIRECTION_CHIPS.map(({ direction, labelKey, testID }) => ({
-    value: direction,
-    label: t(labelKey),
-    testID,
-  }));
 
   return (
     <View style={styles.root}>
@@ -48,12 +65,7 @@ export function WorldFeedControls({ worldSlug, feed }: Props) {
         onChangeText={feed.setQuery}
         style={styles.searchBar}
       />
-      <FilterChipRow<WorldFeedDirection>
-        options={directionOptions}
-        value={feed.direction}
-        onChange={(d) => { if (d) feed.setDirection(d); }}
-        accessibilityLabel={t('donations.worldFeed.directionRowA11y')}
-      />
+      <WorldFeedDirectionChips value={feed.direction} onChange={feed.setDirection} />
       {/* A text search spans every subcategory and distance, so these refine browsing only. */}
       {feed.searching ? null : (
         <BrowseRefineChips

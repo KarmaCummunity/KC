@@ -59,6 +59,6 @@ jobs:
           if gh pr list --head "$branch" --state open --json number -q '.[0].number' | grep -q .; then
             echo "Sync PR already open."; exit 0
           fi
-          gh pr create --base dev --head "$branch" \
+          gh pr create --base dev --head "$branch" --label no-auto-merge \
             --title "chore: sync main ($short) into dev (ancestry only)" \
             --body "Mapped to spec: INFRA/release. Zero-diff \`-s ours\` merge of main into dev so the next release PR doesn't conflict. **Merge as a merge commit** (temporarily allow merge commits), not squash."

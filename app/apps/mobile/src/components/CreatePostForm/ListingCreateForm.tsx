@@ -1,5 +1,6 @@
 // Mapped to spec: FR-POST-001 AC6 — the create form of the listing categories (rides, food,
-// housing, time). Same layout and controls as the items post form: header → photos → title
+// housing, time). Rides drop the title (built from the route) and put the optional car photo
+// last (#1411). Same layout and controls as the items post form: header → photos → title
 // → category-specific fields → description → location → publish.
 import React, { useEffect, useRef, type ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-native';
@@ -17,6 +18,8 @@ import { RideCreateSection } from '../giving/RideCreateSection';
 import { WorldSubcategoryPicker } from '../marketplace/WorldSubcategoryPicker';
 import { ListingDetailFields } from './ListingDetailFields';
 import { PhotoPicker } from './PhotoPicker';
+import { ListingKindChooser } from './ListingKindChooser';
+import { TimeOfferKindChooser } from './TimeOfferKindChooser';
 
 const TITLE_MAX = 80;
 const SUMMARY_MAX = 500;
@@ -63,6 +66,17 @@ export function ListingCreateForm({
     if (next.length > 0) form.setPhotos((prev) => [...prev, ...next].slice(0, MAX_MEDIA_ASSETS));
   };
 
+  const photoPicker = (
+    <PhotoPicker
+      uploads={form.photos.map((p) => ({ path: p.uri, previewUri: p.uri }))}
+      isUploading={false}
+      uploadingCount={0}
+      required={false}
+      onAdd={() => void addPhotos()}
+      onRemove={(uri) => form.setPhotos((prev) => prev.filter((p) => p.uri !== uri))}
+    />
+  );
+
   return (
     <ScrollView
       style={styles.scroll}
@@ -76,27 +90,36 @@ export function ListingCreateForm({
         missing={!form.kind}
         onRetry={() => void form.kindsQuery.refetch()}
       >
-        <PhotoPicker
-          uploads={form.photos.map((p) => ({ path: p.uri, previewUri: p.uri }))}
-          isUploading={false}
-          uploadingCount={0}
-          required={false}
-          onAdd={() => void addPhotos()}
-          onRemove={(uri) => form.setPhotos((prev) => prev.filter((p) => p.uri !== uri))}
-        />
-
-        <View style={styles.section}>
-          <TextField
-            testID="listing-title"
-            label={`${t('post.title')} *`}
-            value={title}
-            onChangeText={onTitleChange}
-            placeholder={t(`post.unifiedCreate.titlePlaceholder.${worldSlug}`)}
-            maxLength={TITLE_MAX}
-            editable={!form.busy}
+        {/* Several kinds in this direction (animals, knowledge): the member says which one. */}
+        {form.eventChoice.isOrgEvent ? null : (
+          <ListingKindChooser
+            choices={form.kindChoices}
+            selectedKindId={form.kind?.kindId ?? null}
+            onChoose={form.chooseKind}
+            disabled={form.busy}
           />
-          <Text style={styles.charCount}>{title.length}/{TITLE_MAX}</Text>
-        </View>
+        )}
+
+        {/* A member of an organization picks a volunteer shift or the organization's event (G1 step 5). */}
+        {form.eventChoice.available ? <TimeOfferKindChooser choice={form.eventChoice} disabled={form.busy} /> : null}
+
+        {form.isRides ? null : photoPicker}
+
+        {/* Rides have no title (#1411): it is built from the route. */}
+        {form.isRides ? null : (
+          <View style={styles.section}>
+            <TextField
+              testID="listing-title"
+              label={`${t('post.title')} *`}
+              value={title}
+              onChangeText={onTitleChange}
+              placeholder={t(`post.unifiedCreate.titlePlaceholder.${worldSlug}`)}
+              maxLength={TITLE_MAX}
+              editable={!form.busy}
+            />
+            <Text style={styles.charCount}>{title.length}/{TITLE_MAX}</Text>
+          </View>
+        )}
 
         {form.isRides ? (
           <RideCreateSection
@@ -106,6 +129,8 @@ export function ListingCreateForm({
             isOffer={direction === 'give'}
             recurrence={form.recurrence}
             onRecurrenceChange={form.setRecurrence}
+            leaveNow={form.leaveNow}
+            onLeaveNowChange={form.setLeaveNow}
             disabled={form.busy}
           />
         ) : null}
@@ -134,6 +159,9 @@ export function ListingCreateForm({
           />
           <Text style={styles.charCount}>{summary.length}/{SUMMARY_MAX}</Text>
         </View>
+
+        {/* Rides keep it simple (#1411): the optional car photo sits at the bottom. */}
+        {form.isRides ? photoPicker : null}
 
         {form.isRides ? null : (
           <View style={styles.section}>

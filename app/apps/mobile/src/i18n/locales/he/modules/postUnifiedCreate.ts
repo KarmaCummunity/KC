@@ -23,14 +23,18 @@ export const postUnifiedCreateHe = {
     cityLabel: 'עיר',
     pickDate: 'בחירת תאריך ושעה',
     amountPlaceholder: 'עד {{max}} ₪',
+    integerPlaceholder: '{{min}}–{{max}}',
     inMinutes: { 30: 'בעוד חצי שעה', 60: 'בעוד שעה' },
     duration: { 30: 'חצי שעה', 60: 'שעה', 120: 'שעתיים', 180: '3 שעות', 240: '4 שעות' },
+    kindLabel: 'מה בדיוק?',
     titlePlaceholder: {
       rides: 'למשל: נסיעה מלוד לתל אביב',
       food: 'למשל: מגש פסטה ביתית',
       housing: 'למשל: חדר פנוי לסוף השבוע',
+      animals: 'למשל: חתולים לאימוץ, או שמירה על כלב בימי חול',
       time: 'למשל: עזרה בקניות',
     },
+    rideAutoTitle: '{{origin}} ← {{dest}}',
     errors: {
       titleRequired: 'נא לכתוב כותרת (לפחות 2 תווים)',
       fieldRequired: 'נא למלא: {{field}}',

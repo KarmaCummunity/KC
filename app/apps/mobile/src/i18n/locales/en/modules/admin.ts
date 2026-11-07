@@ -7,6 +7,8 @@ import { adminOrgApprovalsEn } from './adminOrgApprovals';
 import { adminDonationLinksEn } from './adminDonationLinks';
 import { adminWhatsAppEn } from './adminWhatsApp';
 import { adminMatchingEn } from './adminMatching';
+import { adminDemoDataEn } from './adminDemoData';
+import { adminOrgTreeEn } from './adminOrgTree';
 import { adminStatsEn } from './adminStats';
 import { adminSurveysEn } from './adminSurveys';
 import { adminTasksEn } from './adminTasks';
@@ -30,6 +32,7 @@ export const adminEn = {
     audit:         'Audit Log',
     whatsapp:      'WhatsApp',
     matching:      'Match quality',
+    demoData:      'Demo data',
     donationLinks: 'Donation links',
     stats:         'Statistics',
   },
@@ -89,6 +92,8 @@ export const adminEn = {
       ageDays:        (d: number) => `${d} days ago`,
       ageHours:       (h: number) => `${h} hours ago`,
       ageMinutes:     (m: number) => `${m} minutes ago`,
+      slaWarning:     'Waiting over 12 h',
+      slaOverdue:     'Overdue (24 h)',
     },
   },
   caseDetail: {
@@ -146,6 +151,8 @@ export const adminEn = {
   money: adminMoneyEn,
   whatsapp: adminWhatsAppEn,
   matching: adminMatchingEn,
+  demoData: adminDemoDataEn,
+  orgTree: adminOrgTreeEn,
   stats: adminStatsEn,
   crm: adminCrmEn,
   orgApprovals: adminOrgApprovalsEn,

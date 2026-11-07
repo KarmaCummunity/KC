@@ -1,16 +1,19 @@
 // Client-side mirror of the server world rules (0266 listings_enforce_world_rules) and a
 // mapper from server error codes to stable codes the UI can translate.
 // Items photos are optional (product decision; 0357 dropped the 0351 items image check).
-// Keep in sync with supabase/migrations/0266, 0357, 0539 (food expiry binds offers only).
+// Keep in sync with supabase/migrations/0266, 0357, 0539 (food expiry binds offers only),
+// 0563 (an organization's event ends after it starts) and 0612 (animals are no longer routed).
 
-export const ROUTED_WORLDS = ['medical', 'animals', 'environment'] as const;
+// Animals left this list in 0612: members give and take directly there (PM 2026-11-04).
+export const ROUTED_WORLDS = ['medical', 'environment'] as const;
 
 export type MarketplaceRuleErrorCode =
   | 'food_expiry_required'
   | 'routed_world_requires_external_body'
   | 'ride_route_required'
   | 'ride_departure_past'
-  | 'knowledge_slot_invalid';
+  | 'knowledge_slot_invalid'
+  | 'event_window_invalid';
 
 /** Server-raised listing error codes the UI has friendly copy for. */
 export const MARKETPLACE_SERVER_ERROR_CODES = [
@@ -19,6 +22,7 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'ride_route_required',
   'ride_departure_past',
   'knowledge_slot_invalid',
+  'event_window_invalid',
   'seats_exhausted',
   'ride_seats_exhausted',
   'slots_exhausted',
@@ -72,6 +76,34 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'ride_series_not_found',
   'ride_series_cancelled',
   'ride_series_status_invalid',
+  // Housing stays (0600–0603, spec 21_housing.md): conduct, dates, capacity, privacy, lifecycle.
+  'housing_conduct_required',
+  'housing_conduct_version_stale',
+  'housing_nights_out_of_range',
+  'housing_dates_invalid',
+  'housing_dates_unavailable',
+  'housing_details_invalid',
+  'housing_tent_facilities_required',
+  'housing_capacity_exceeded',
+  'housing_policy_mismatch',
+  'housing_minor_unaccompanied',
+  'housing_message_required',
+  'housing_pending_cap',
+  'housing_booking_overlap',
+  'housing_private_details_hidden',
+  'housing_city_required',
+  'housing_booking_started',
+  'housing_cancel_reason_required',
+  'housing_not_in_window',
+  'housing_note_too_long',
+  'housing_use_booking_cancel',
+  // G1 step 5 (0563) — organization events: membership, verified-only registration, organizer actions.
+  'event_org_required',
+  'verification_required',
+  'not_owner',
+  'invalid_transition',
+  // G1 step 5c (0564) — attendance is marked only once the event has started.
+  'event_not_started',
 ] as const;
 
 export type MarketplaceServerErrorCode = (typeof MARKETPLACE_SERVER_ERROR_CODES)[number];
@@ -109,6 +141,12 @@ export function validateMarketplaceWorldRules(input: WorldRulesInput): Marketpla
 
   if (worldSlug === 'knowledge') {
     const code = validateKnowledgeSlot(details, input.now);
+    if (code) return code;
+  }
+
+  // Only an organization's event carries a window in the time world (0563).
+  if (worldSlug === 'time') {
+    const code = validateEventWindow(details);
     if (code) return code;
   }
 
@@ -153,6 +191,15 @@ export function validateKnowledgeSlot(
   return null;
 }
 
+/** An event with a window needs both ends, and its end after its start (0563 listings_event_guard). */
+export function validateEventWindow(details: Record<string, unknown>): MarketplaceRuleErrorCode | null {
+  if (details.starts_at === undefined && details.ends_at === undefined) return null;
+  const start = parseTime(details.starts_at);
+  const end = parseTime(details.ends_at);
+  if (Number.isNaN(start) || Number.isNaN(end) || end <= start) return 'event_window_invalid';
+  return null;
+}
+
 /** Extracts a known listing error code from a PostgREST / Postgres error (or null). */
 export function mapMarketplaceServerError(err: unknown): MarketplaceServerErrorCode | null {
   if (!err || typeof err !== 'object') {
@@ -161,7 +208,11 @@ export function mapMarketplaceServerError(err: unknown): MarketplaceServerErrorC
   const e = err as { message?: unknown; details?: unknown; hint?: unknown };
   for (const field of [e.message, e.details, e.hint]) {
     if (typeof field === 'string') {
-      if (field.includes('giving_handoffs_active_listing_uidx')) {
+      // One live handoff per item / food offer: the legacy index and the post record's (0555).
+      if (
+        field.includes('giving_handoffs_active_listing_uidx') ||
+        field.includes('post_handoffs_active_post_uidx')
+      ) {
         return 'listing_not_available';
       }
       const code = matchCode(field);

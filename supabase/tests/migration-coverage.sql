@@ -41,7 +41,8 @@ declare
     'open','confirmed_violation','dismissed_no_violation'
   ];
   v_post_statuses   text[] := array[
-    'open','closed_delivered','deleted_no_recipient','expired','removed_admin','hidden_pending_review'
+    'open','closed_delivered','deleted_no_recipient','expired','removed_admin','hidden_pending_review',
+    'paused'
   ];
   v_account_statuses text[] := array[
     'pending_verification','active','suspended_for_false_reports',

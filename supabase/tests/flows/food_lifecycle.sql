@@ -96,11 +96,11 @@ begin
     'scheduled', 'the claimed offer is scheduled for pickup');
   perform kc_test.assert_eq(kc_test.listing_status(v_listing), 'open', 'the claimed offer stays open until handed over');
 
-  -- The app maps this index to `listing_not_available` (@kc/domain mapMarketplaceServerError).
+  -- The record's one-live-claim index (post_handoffs_active_post_uidx, 0555) surfaces as the
+  -- code the app already shows for it.
   perform kc_test.act_as(p.latecomer);
   perform kc_test.assert_raises(format('select public.claim_food_giving(%L)', v_listing),
-    'duplicate key value violates unique constraint "giving_handoffs_active_listing_uidx"',
-    'a second member cannot claim an offer with a live claim');
+    'listing_not_available', 'a second member cannot claim an offer with a live claim');
 end $$;
 
 -- 3) Hand over and rate: the listing closes, karma follows §7.6, each side rates once.

@@ -34,6 +34,7 @@ const createMockUser = (overrides: Partial<User> = {}): User => ({
   profileStreet: null,
   profileStreetNumber: null,
   contactPhone: null,
+  dateOfBirth: null,
   biography: null,
   avatarUrl: null,
   privacyMode: 'Public',

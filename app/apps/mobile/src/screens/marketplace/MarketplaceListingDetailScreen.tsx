@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type ReactNode } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { spacing, Text } from '@kc/ui';
@@ -11,9 +11,11 @@ import { useMarketplaceListingDetail } from '../../hooks/useMarketplaceListingDe
 type Props = {
   readonly listingId: string | undefined;
   readonly bottomInset?: number;
+  /** Rendered under the listing's actions; the post detail passes the post's likes and comments. */
+  readonly footer?: ReactNode;
 };
 
-export function MarketplaceListingDetailScreen({ listingId, bottomInset = 0 }: Props) {
+export function MarketplaceListingDetailScreen({ listingId, bottomInset = 0, footer }: Props) {
   const { t } = useTranslation();
   const { data: detail, isLoading, isError, refetch } = useMarketplaceListingDetail(listingId);
 
@@ -55,7 +57,7 @@ export function MarketplaceListingDetailScreen({ listingId, bottomInset = 0 }: P
 
   return (
     <Screen testID="post-detail-screen">
-      <MarketplaceListingDetailView detail={detail} bottomInset={bottomInset} />
+      <MarketplaceListingDetailView detail={detail} bottomInset={bottomInset} footer={footer} />
     </Screen>
   );
 }

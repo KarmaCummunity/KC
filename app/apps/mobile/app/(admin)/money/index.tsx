@@ -16,6 +16,7 @@ import { container } from '../../../src/lib/container';
 import { FinanceEntryCard } from '../../../src/components/admin/money/FinanceEntryCard';
 import { FinanceEntryFormModal } from '../../../src/components/admin/money/FinanceEntryFormModal';
 import { AdminFilterChip } from '../../../src/components/admin/AdminFilterChip';
+import { MoneySubNav } from '../../../src/components/admin/money/MoneySubNav';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
 import { confirmAction as platformConfirm } from '../../../src/services/platformConfirm';
 import { useLocaleBundle, type LocaleBundle } from '../../../src/i18n/useLocaleBundle';
@@ -44,17 +45,19 @@ const financeKeyExtractor = (e: FinanceEntry) => e.entryId;
 
 const FinanceRowItem = React.memo(function FinanceRowItem({
   entry,
+  accountName,
   onEdit,
   onDelete,
 }: {
   entry: FinanceEntry;
+  accountName: string | null;
   onEdit: (entry: FinanceEntry) => void;
   onDelete: (entryId: string) => void;
 }) {
   const handleEdit = useCallback(() => onEdit(entry), [entry, onEdit]);
   const handleDelete = useCallback(() => onDelete(entry.entryId), [entry.entryId, onDelete]);
 
-  return <FinanceEntryCard entry={entry} onEdit={handleEdit} onDelete={handleDelete} />;
+  return <FinanceEntryCard entry={entry} accountName={accountName} onEdit={handleEdit} onDelete={handleDelete} />;
 });
 
 export default function MoneyScreen() {
@@ -80,6 +83,19 @@ export default function MoneyScreen() {
     enabled:  can('money.manage'),
     staleTime: 15_000,
   });
+  const accounts = useQuery({
+    queryKey: ['admin.money.accounts'],
+    queryFn:  () => container.listFinanceAccounts.execute(),
+    enabled:  can('money.manage'),
+    staleTime: 60_000,
+  });
+  const accountNames = useMemo(
+    () => new Map((accounts.data ?? []).map((a) => [a.accountId, a.name])),
+    [accounts.data],
+  );
+  // Newest entries come first, so the first one with an account is the most recently used one.
+  const lastUsedAccountId = list.data?.rows.find((r) => r.accountId !== null)?.accountId ?? null;
+
   const summary = useQuery({
     queryKey: ['admin.money.summary'],
     queryFn:  () => container.getFinanceSummary.execute({}),
@@ -92,6 +108,8 @@ export default function MoneyScreen() {
     onSuccess:  () => {
       void queryClient.invalidateQueries({ queryKey: ['admin.money.list'] });
       void queryClient.invalidateQueries({ queryKey: ['admin.money.summary'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin.money.accounts'] });
+      void queryClient.invalidateQueries({ queryKey: ['org-transparency'] });
     },
   });
 
@@ -117,9 +135,14 @@ export default function MoneyScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: FinanceEntry }) => (
-      <FinanceRowItem entry={item} onEdit={handleEdit} onDelete={handleDelete} />
+      <FinanceRowItem
+        entry={item}
+        accountName={item.accountId ? (accountNames.get(item.accountId) ?? null) : null}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
     ),
-    [handleDelete, handleEdit],
+    [accountNames, handleDelete, handleEdit],
   );
 
   if (rolesLoading) {
@@ -135,6 +158,8 @@ export default function MoneyScreen() {
         <Text style={styles.title}>{t.title}</Text>
         <PrimaryButton testID="admin-money-new" label={t.newBtn} size="sm" onPress={() => setCreating(true)} />
       </View>
+
+      <MoneySubNav active="ledger" />
 
       <View style={styles.summaryBox}>
         <Text style={styles.summaryHeading}>{t.summary.period}</Text>
@@ -185,12 +210,16 @@ export default function MoneyScreen() {
       {(creating || editing) && (
         <FinanceEntryFormModal
           initial={editing}
+          accounts={accounts.data ?? []}
+          defaultAccountId={lastUsedAccountId}
           onClose={() => { setCreating(false); setEditing(null); }}
           onSaved={() => {
             setCreating(false);
             setEditing(null);
             void queryClient.invalidateQueries({ queryKey: ['admin.money.list'] });
             void queryClient.invalidateQueries({ queryKey: ['admin.money.summary'] });
+            void queryClient.invalidateQueries({ queryKey: ['admin.money.accounts'] });
+            void queryClient.invalidateQueries({ queryKey: ['org-transparency'] });
           }}
         />
       )}

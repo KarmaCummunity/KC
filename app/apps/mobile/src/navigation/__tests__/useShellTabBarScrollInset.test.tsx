@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // KC#1387: anything anchored above the docked tab bar (scroll content, the
-// post-detail floating CTA) must clear the bar's full height — the 60px icon
+// post-detail floating CTA) must clear the bar's full height — the 48px icon
 // row *plus* the bottom safe-area inset the bar extends under. An absolutely
 // positioned element gets no lift from a SafeAreaView's padding, so the hook
 // has to return the inset itself.
@@ -45,7 +45,7 @@ describe('useShellTabBarScrollInset', () => {
   it('adds the bar height and the safe-area inset to the extra gap while the bar shows', () => {
     mocks.segments = ['(tabs)'];
     mocks.insetBottom = 34;
-    expect(readInset(16)).toBe(16 + 60 + 34);
+    expect(readInset(16)).toBe(16 + 48 + 34);
   });
 
   it('keeps only the gap and the inset where the bar is hidden (chat conversation)', () => {
@@ -57,6 +57,6 @@ describe('useShellTabBarScrollInset', () => {
   it('collapses to the bar height alone on a device without a bottom inset', () => {
     mocks.segments = ['post', '[id]'];
     mocks.insetBottom = 0;
-    expect(readInset(0)).toBe(60);
+    expect(readInset(0)).toBe(48);
   });
 });

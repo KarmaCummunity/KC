@@ -70,6 +70,21 @@ export const notificationsEn = {
   // D74 — a new ride on a route the user follows (0516).
   rideRouteMatchTitle: 'A new ride on your route',
   rideRouteMatchBody: '{{origin}} → {{dest}} · {{when}}',
+  // FR-HOUSING-017 (0602–0603) — housing booking changes; mirrored in dispatch-notification/i18n.json.
+  housingBookingRequestedTitle: 'New stay request',
+  housingBookingRequestedBody: '{{name}} would like to stay at "{{listingTitle}}" from {{checkIn}} ({{guests}} guests). Approve or decline.',
+  housingBookingConfirmedTitle: 'Your stay is confirmed',
+  housingBookingConfirmedBody: '{{name}} approved your stay at "{{listingTitle}}". The address is on your booking card.',
+  housingBookingDeclinedTitle: 'Your stay request was declined',
+  housingBookingDeclinedBody: '{{name}} can\'t host you at "{{listingTitle}}". Try another place.',
+  housingBookingExpiredTitle: 'Your stay request expired',
+  housingBookingExpiredBody: 'The host didn\'t answer your request for "{{listingTitle}}" in time. Try another place.',
+  housingBookingSupersededTitle: 'Your guest found another place',
+  housingBookingSupersededBody: '{{name}} no longer needs "{{listingTitle}}" on those dates. Thanks for offering!',
+  housingBookingCancelledTitle: 'A stay was cancelled',
+  housingBookingCancelledBody: '{{name}} cancelled the booking at "{{listingTitle}}".',
+  housingBookingCompletedTitle: 'Your stay is complete',
+  housingBookingCompletedBody: 'Thanks for staying at "{{listingTitle}}". You can rate the stay.',
   // FR-NOTIF-018 (0528) — item and food handoffs; mirrored in dispatch-notification/i18n.json.
   givingHandoffRequestedTitle: 'New request for "{{listingTitle}}"',
   givingHandoffRequestedBody: '{{name}} would like it. Approve or decline.',
