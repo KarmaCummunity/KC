@@ -8,7 +8,7 @@ import { getLoadLegalDocumentUseCase } from '../../services/legalComposition';
 import { makeLegalMarkdownStyles } from './LegalMarkdownStyles';
 import { makeLegalMarkdownRules } from './legalMarkdownRules';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
-import { selfAlignStart } from '../../lib/rtlLayout';
+import { layoutWritingDirectionStyle, selfAlignStart } from '../../lib/rtlLayout';
 
 function formatHebrewDate(d: Date): string {
   // DD.MM.YYYY per spec §7.1
@@ -60,7 +60,7 @@ export function LegalDocumentReader({ docType }: LegalDocumentReaderProps) {
             ...typography.body,
             color: colors.textPrimary,
             textAlign: rtlTextAlignStart,
-            writingDirection: 'rtl',
+            ...layoutWritingDirectionStyle(),
           }}
         >
           {t('legal.loadFailed')}
@@ -88,7 +88,7 @@ export function LegalDocumentReader({ docType }: LegalDocumentReaderProps) {
             ...typography.h2,
             color: colors.textPrimary,
             textAlign: rtlTextAlignStart,
-            writingDirection: 'rtl',
+            ...layoutWritingDirectionStyle(),
           }}
         >
           {docType === 'terms' ? t('legal.termsTitle') : t('legal.privacyTitle')}
@@ -98,7 +98,7 @@ export function LegalDocumentReader({ docType }: LegalDocumentReaderProps) {
             ...typography.caption,
             color: colors.textSecondary,
             textAlign: rtlTextAlignStart,
-            writingDirection: 'rtl',
+            ...layoutWritingDirectionStyle(),
             marginTop: spacing.xs,
           }}
         >

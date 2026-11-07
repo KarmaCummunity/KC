@@ -5,12 +5,14 @@ import { useTranslation } from 'react-i18next';
 import { usePathname } from 'expo-router';
 import type { LegalPendingItem } from '@kc/domain';
 import type { CheckPendingLegalAcksResult } from '@kc/application';
-import { typography, spacing, useTheme, Text } from '@kc/ui';
+import { typography, spacing, radius, useTheme, Text } from '@kc/ui';
 import { useAuthStore } from '../../store/authStore';
 import { getCheckPendingLegalAcksUseCase } from '../../services/legalComposition';
 import { useModalStackIsEmpty } from './useActiveModalStack';
 import { LegalConsentScreen, type LegalConsentMode } from './LegalConsentScreen';
-import { rowDirectionStart } from '../../lib/rtlLayout';
+import { LegalUpdateBannerStrip } from './LegalUpdateBannerStrip';
+import { legalUpdateDaysRemaining } from './legalConsentRules';
+import { layoutWritingDirectionStyle, rowDirectionStart } from '../../lib/rtlLayout';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 const FOREGROUND_DEBOUNCE_MS = 500;
@@ -64,7 +66,6 @@ export function LegalConsentGate({ children }: LegalConsentGateProps) {
         userOptedToAcceptNow: false,
       });
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.warn('[legal] consent_check_failed', {
         reason: (err as Error).message,
         timestamp: new Date().toISOString(),
@@ -105,7 +106,7 @@ export function LegalConsentGate({ children }: LegalConsentGateProps) {
           style={{
             marginTop: spacing.md,
             padding: spacing.md,
-            borderRadius: 8,
+            borderRadius: radius.sm,
             backgroundColor: colors.primary,
             alignItems: 'center',
           }}
@@ -127,7 +128,11 @@ export function LegalConsentGate({ children }: LegalConsentGateProps) {
   // Full-screen consent: server says block, or user voluntarily opted to accept now from the sheet
   if (mustBlock || state.userOptedToAcceptNow) {
     return (
-      <Modal visible animationType="slide" onRequestClose={noop}>
+      <Modal // brand-guard-allow: full-screen blocking consent screen, not a dialog
+        visible
+        animationType="slide"
+        onRequestClose={noop}
+      >
         <LegalConsentScreen
           mode={screenMode}
           pending={state.result.pending}
@@ -140,7 +145,7 @@ export function LegalConsentGate({ children }: LegalConsentGateProps) {
   // Banner mode: in-shell affordance + first-foreground sheet
   return (
     <View style={{ flex: 1 }}>
-      <BannerStrip
+      <LegalUpdateBannerStrip
         pending={state.result.pending}
         onOpen={() => setState({ ...state, userOptedToAcceptNow: true })}
       />
@@ -181,7 +186,12 @@ function FirstForegroundSheet({ pending, onSnooze, onAcceptNow }: FirstForegroun
       ? ({ width: '100%', maxWidth: 560, alignSelf: 'center' } as const)
       : undefined;
   return (
-    <Modal visible animationType="slide" presentationStyle="pageSheet" transparent>
+    <Modal // brand-guard-allow: pre-existing update sheet, kit migration out of scope for #1749
+      visible
+      animationType="slide"
+      presentationStyle="pageSheet"
+      transparent
+    >
       <View
         style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay }}
       >
@@ -189,8 +199,8 @@ function FirstForegroundSheet({ pending, onSnooze, onAcceptNow }: FirstForegroun
           style={[
             {
               backgroundColor: colors.surface,
-              borderTopLeftRadius: 16,
-              borderTopRightRadius: 16,
+              borderTopStartRadius: radius.lg,
+              borderTopEndRadius: radius.lg,
               paddingBottom: insets.bottom,
             },
             sheetStyle,
@@ -203,7 +213,7 @@ function FirstForegroundSheet({ pending, onSnooze, onAcceptNow }: FirstForegroun
                 ...typography.h4,
                 color: colors.textPrimary,
                 textAlign: rtlTextAlignStart,
-                writingDirection: 'rtl',
+                ...layoutWritingDirectionStyle(),
               }}
             >
               {t('legal.updateBannerHeading')}
@@ -213,12 +223,12 @@ function FirstForegroundSheet({ pending, onSnooze, onAcceptNow }: FirstForegroun
                 ...typography.body,
                 color: colors.textPrimary,
                 textAlign: rtlTextAlignStart,
-                writingDirection: 'rtl',
+                ...layoutWritingDirectionStyle(),
                 marginTop: spacing.sm,
                 lineHeight: 24,
               }}
             >
-              {t('legal.updateBannerCountdown', { days: daysRemaining(pending) })}
+              {t('legal.updateBannerCountdown', { days: legalUpdateDaysRemaining(pending) })}
             </Text>
             <View style={{ flexDirection: rowDirectionStart, gap: spacing.sm, marginTop: spacing.lg }}>
               {/* Primary action sits at the inline-start edge (right in RTL Hebrew),
@@ -228,7 +238,7 @@ function FirstForegroundSheet({ pending, onSnooze, onAcceptNow }: FirstForegroun
                 style={{
                   flex: 1,
                   padding: spacing.md,
-                  borderRadius: 8,
+                  borderRadius: radius.sm,
                   backgroundColor: colors.primary,
                   alignItems: 'center',
                 }}
@@ -242,7 +252,7 @@ function FirstForegroundSheet({ pending, onSnooze, onAcceptNow }: FirstForegroun
                 style={{
                   flex: 1,
                   padding: spacing.md,
-                  borderRadius: 8,
+                  borderRadius: radius.sm,
                   backgroundColor: colors.surfaceRaised,
                   alignItems: 'center',
                 }}
@@ -256,45 +266,5 @@ function FirstForegroundSheet({ pending, onSnooze, onAcceptNow }: FirstForegroun
         </View>
       </View>
     </Modal>
-  );
-}
-
-function daysRemaining(pending: readonly LegalPendingItem[]): number {
-  // Display-only; server is the source of truth for the banner→modal flip.
-  if (pending.length === 0) return 7;
-  const earliest = Math.min(...pending.map((p) => p.currentEffectiveDate.getTime()));
-  const elapsedDays = Math.floor((Date.now() - earliest) / 86_400_000);
-  return Math.max(0, 7 - elapsedDays);
-}
-
-interface BannerStripProps {
-  readonly pending: readonly LegalPendingItem[];
-  readonly onOpen: () => void;
-}
-
-function BannerStrip({ pending, onOpen }: BannerStripProps) {
-  const { t } = useTranslation();
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      onPress={onOpen}
-      style={{
-        backgroundColor: colors.warningLight,
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.md,
-      }}
-    >
-      <Text
-        style={{
-          ...typography.bodySmall,
-          color: colors.textPrimary,
-          textAlign: rtlTextAlignStart,
-          writingDirection: 'rtl',
-        }}
-      >
-        {t('legal.updateBannerHeading')} ·{' '}
-        {t('legal.updateBannerCountdown', { days: daysRemaining(pending) })}
-      </Text>
-    </Pressable>
   );
 }

@@ -45,11 +45,6 @@
       "spacingLiteral": 1,
       "adHocChip": 1
     },
-    "src/components/legal/LegalConsentGate.tsx": {
-      "radiusLiteral": 5,
-      "physicalSide": 2,
-      "rawModal": 2
-    },
     "src/components/map/MapExplorer.styles.ts": {
       "colorLiteral": 3,
       "fontWeightLiteral": 4,

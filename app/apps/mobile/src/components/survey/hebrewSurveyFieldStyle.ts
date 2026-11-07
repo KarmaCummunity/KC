@@ -1,5 +1,5 @@
 import { Platform, type TextStyle } from 'react-native';
-import { webTextRtl } from '../../lib/webRtlStyle';
+import { hebrewContentTextStyle } from '../../lib/hebrewContentDirection';
 
 /**
  * Hebrew survey TextInput alignment — physical `right` on every platform so
@@ -7,12 +7,14 @@ import { webTextRtl } from '../../lib/webRtlStyle';
  */
 export const SURVEY_TEXT_ALIGN = 'right' as const;
 
-/** RTL-safe TextInput style for Hebrew survey fields (native + RN-web). */
+/**
+ * RTL TextInput style for a server-authored Hebrew survey field (native + RN-web), whatever the
+ * UI language. Native inputs do not mirror `left` / `right`, so the physical edge is used.
+ */
 export function hebrewSurveyFieldTextStyle(): TextStyle {
   return {
+    ...hebrewContentTextStyle(),
     textAlign: SURVEY_TEXT_ALIGN,
-    writingDirection: 'rtl',
-    ...webTextRtl,
     ...(Platform.OS !== 'web' ? { textAlignVertical: 'top' as const } : {}),
   };
 }
