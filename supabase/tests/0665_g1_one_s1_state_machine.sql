@@ -215,7 +215,7 @@ begin
     'Post owned listing', 'Summary', 'tel-aviv',
     st_setsrid(st_makepoint(34.7818, 32.0853), 4326)::geography,
     tstzrange(now(), now() + interval '7 days'),
-    now() + interval '7 days', '{"condition": "good"}'::jsonb,
+    now() + interval '7 days', '{"item_condition": "Good"}'::jsonb,
     3, 'native', 'published', now(), 'open', v_post
   ) returning listing_id into v_listing;
 
@@ -236,7 +236,7 @@ begin
     'Listing sourced', 'Summary', 'tel-aviv',
     st_setsrid(st_makepoint(34.7818, 32.0853), 4326)::geography,
     tstzrange(now(), now() + interval '7 days'),
-    now() + interval '7 days', '{"condition": "good"}'::jsonb,
+    now() + interval '7 days', '{"item_condition": "Good"}'::jsonb,
     3, 'native', 'published', now(), 'open'
   ) returning listing_id into v_listing;
 
