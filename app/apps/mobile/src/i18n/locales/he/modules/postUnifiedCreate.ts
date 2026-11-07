@@ -32,6 +32,7 @@ export const postUnifiedCreateHe = {
       food: 'למשל: מגש פסטה ביתית',
       housing: 'למשל: חדר פנוי לסוף השבוע',
       animals: 'למשל: חתולים לאימוץ, או שמירה על כלב בימי חול',
+      knowledge: 'למשל: שיעור פרטי במתמטיקה, או קורס פייתון למתחילים',
       time: 'למשל: עזרה בקניות',
     },
     rideAutoTitle: '{{origin}} ← {{dest}}',
