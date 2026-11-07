@@ -40,10 +40,10 @@ declare
 begin
   insert into public.posts (
     owner_id, title, description, category, type, status,
-    location_display_level, address, visibility, world_slug, expires_at
+    location_display_level, city, street, street_number, visibility, world_slug, expires_at
   ) values (
     p_owner, 'Test Post S1', 'Description', 'Furniture', 'Give', p_status,
-    'CityOnly', '{"city":"Tel Aviv"}'::jsonb, 'Public', 'items', p_expires
+    'CityOnly', 'tel-aviv', 'Herzl', '1', 'Public', 'items', p_expires
   ) returning post_id into v_id;
   return v_id;
 end $$;
