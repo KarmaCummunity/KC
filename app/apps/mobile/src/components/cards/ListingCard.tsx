@@ -4,11 +4,12 @@
 import React from 'react';
 import type { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { format } from 'date-fns';
+import { format, type Locale } from 'date-fns';
 import { he as dateFnsHe } from 'date-fns/locale';
 import type { MarketplaceBrowseRow } from '@kc/domain';
 import { cleanDisplayTitle } from '../../lib/displayTitle';
 import { worldChipKey } from '../../lib/feedCardCategory';
+import { resolveDateFnsLocale } from '../../lib/resolveDateFnsLocale';
 import { usePostGridCardWidth } from '../../hooks/useShellContentWidth';
 import { KcCard } from './KcCard';
 import { listingCardDetails, listingCardRoute, type ListingCardDetail } from './listingCardContent';
@@ -22,6 +23,7 @@ const WORLD_ICON: Record<string, IconName> = {
   housing: 'home-outline',
   knowledge: 'school-outline',
   time: 'time-outline',
+  animals: 'paw-outline',
   money: 'cash-outline',
 };
 
@@ -29,11 +31,11 @@ export function listingWorldIcon(worldSlug: string): IconName {
   return WORLD_ICON[worldSlug] ?? 'pricetag-outline';
 }
 
-export function formatRideTime(iso: string | null | undefined): string | null {
+export function formatRideTime(iso: string | null | undefined, locale: Locale = dateFnsHe): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  return format(d, 'EEEE d/M · HH:mm', { locale: dateFnsHe });
+  return format(d, 'EEEE d/M · HH:mm', { locale });
 }
 
 interface Props {
@@ -50,7 +52,8 @@ interface Props {
 const TILE_WIDTH = 200;
 
 function ListingCardInner({ item, onPress, variant = 'grid', meta, extraDetails }: Readonly<Props>) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = resolveDateFnsLocale(i18n?.language ?? 'he');
   const gridWidth = usePostGridCardWidth(2);
   const isRequest = item.direction === 'request';
   const isRide = item.worldSlug === 'rides';
@@ -62,7 +65,7 @@ function ListingCardInner({ item, onPress, variant = 'grid', meta, extraDetails 
       isRequest,
       secondary: meta === undefined ? item.summary : meta,
       t,
-      formatTime: formatRideTime,
+      formatTime: (iso) => formatRideTime(iso, dateLocale),
     }),
     ...(extraDetails ?? []),
   ];

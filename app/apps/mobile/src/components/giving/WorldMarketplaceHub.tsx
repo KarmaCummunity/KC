@@ -14,6 +14,7 @@ import { ListingCard } from '../cards/ListingCard';
 import { kcGridCell } from '../cards/KcCard.styles';
 import { EmptyState, EmptyStateActions } from '../EmptyState';
 import { PrimaryButton } from '../ui/Buttons';
+import { PostGridSkeleton } from '../skeletons/PostGridSkeleton';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
 import { LIST_END_THRESHOLD } from '../../hooks/usePrefetchNextPage';
 import { useWorldFeed, type WorldFeedState } from '../../hooks/useWorldFeed';
@@ -64,7 +65,9 @@ export function WorldMarketplaceHub({ rowMeta, worldSlug, linksCategory, ...head
           </View>
         )}
         ListEmptyComponent={
-          feed.isLoading ? null : feed.isError && feed.rows.length === 0 ? (
+          feed.isLoading ? (
+            <PostGridSkeleton columns={2} />
+          ) : feed.isError && feed.rows.length === 0 ? (
             <EmptyState
               icon="cloud-offline-outline"
               title={t('general.errorTitle')}

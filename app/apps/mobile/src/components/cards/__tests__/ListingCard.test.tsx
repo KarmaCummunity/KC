@@ -19,7 +19,8 @@ vi.mock('react-i18next', () => ({
 }));
 vi.mock('../../../hooks/useShellContentWidth', () => ({ usePostGridCardWidth: () => 180 }));
 
-import { ListingCard } from '../ListingCard';
+import { enUS } from 'date-fns/locale/en-US';
+import { formatRideTime, listingWorldIcon, ListingCard } from '../ListingCard';
 
 afterEach(cleanup);
 
@@ -75,5 +76,16 @@ describe('ListingCard', () => {
   it('keeps the marketplace world name for a world that is not a create category', () => {
     const { getByText } = renderCard({ ...RIDE_OFFER, worldSlug: 'environment', ride: null });
     expect(getByText('marketplace.world.environment')).toBeTruthy();
+  });
+
+  it('resolves correct icons for worlds including animals', () => {
+    expect(listingWorldIcon('animals')).toBe('paw-outline');
+    expect(listingWorldIcon('knowledge')).toBe('school-outline');
+    expect(listingWorldIcon('rides')).toBe('car-outline');
+  });
+
+  it('formats ride time in English when English locale is provided', () => {
+    const formatted = formatRideTime('2026-11-08T10:00:00Z', enUS);
+    expect(formatted).toMatch(/Sunday|10:00/);
   });
 });
