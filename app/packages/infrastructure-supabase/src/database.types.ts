@@ -13272,6 +13272,10 @@ export type Database = {
         Args: { p_h: Database["public"]["Tables"]["giving_handoffs"]["Row"] }
         Returns: undefined
       }
+      post_has_recipients: {
+        Args: { p_post_id: string }
+        Returns: boolean
+      }
       post_id_of_listing: { Args: { p_listing_id: string }; Returns: string }
       post_listing_visible_to: {
         Args: {
