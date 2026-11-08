@@ -9,5 +9,9 @@ defineWorldJourney({
   titleHe: 'עוגיות טריות לחלוקה',
   claim: { testId: 'giving-handoff-claim', label: 'תפיסה מהירה — הצלת מזון', resultsIn: 'confirmed' },
   // The food form requires a future expiry (marketplaceWorldRules: food_expiry_required).
-  details: () => ({ pickup_mode: 'pickup', expires_at: new Date(Date.now() + TWO_DAYS_MS).toISOString() }),
+  // Matches give_food detail_schema (0241): required food_type + expires_at; no pickup_mode.
+  details: () => ({
+    food_type: 'cooked',
+    expires_at: new Date(Date.now() + TWO_DAYS_MS).toISOString(),
+  }),
 });
