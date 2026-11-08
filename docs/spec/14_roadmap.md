@@ -1,6 +1,6 @@
 # 14 — Phase map
 
-Order within a phase is a KC fill. **Current status (2026-10-30): store release paused; focus on spec, architecture and GTM.**
+Order within a phase is a KC fill. **Current status (2026-11-08): initial store release resumed** (TestFlight / Play internal, then public listing prep per `docs/store/`); spec, architecture and GTM continue in parallel.
 
 | Phase | Contents |
 |---|---|
