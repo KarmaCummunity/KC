@@ -1747,14 +1747,14 @@ begin
     owner_id, type, visibility, title, description, category, city, street, street_number,
     location_display_level, world_slug, direction, post_type, details, category_id, geo,
     urgency_level, external_body_id, kind_id, availability_status, max_radius_km_override,
-    moderation_status, published_at, expires_at, item_condition, listing_id, listing_world_slug, legacy_listing_id
+    moderation_status, published_at, expires_at, item_condition
   ) values (
     v_uid, case v_dir when 'request' then 'Request' else 'Give' end, 'Public', p_title,
     nullif(trim(coalesce(p_summary, '')), ''), v_cat, v_city, 'Marketplace', '1', 'CityOnly',
     v_kind.world_slug, v_post_dir, case when v_kind.world_slug = 'rides' then 'ride' when public.is_event_kind(p_kind_id) then 'event' else 'standard' end,
     coalesce(p_details, '{}'::jsonb), p_category_id, v_geo, coalesce(p_urgency_level, 2), p_external_body_id,
     p_kind_id, coalesce(p_availability_status, 'ongoing'), p_max_radius_km, 'published', now(),
-    v_expires, v_condition, v_listing_id, v_kind.world_slug, v_listing_id
+    v_expires, v_condition
   )
   returning post_id into v_post_id;
 
@@ -1770,6 +1770,10 @@ begin
         'native', 'published',
         p_external_body_id, v_post_id, v_expires
       );
+
+      update public.posts
+         set listing_id = v_listing_id, listing_world_slug = v_kind.world_slug, legacy_listing_id = v_listing_id
+       where post_id = v_post_id;
 
       if p_media_paths is not null and cardinality(p_media_paths) > 0 then
         perform public.attach_listing_media(v_listing_id, p_media_paths);
