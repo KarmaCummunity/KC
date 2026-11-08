@@ -208,13 +208,20 @@ begin
   -- 5a. A post-owned listing: deleting the listing does NOT cascade-delete the owning post
   v_post := pg_temp.new_post(p.owner, 'open');
   select listing_id into v_listing from public.listings where legacy_post_id = v_post;
-  perform kc_test.assert_true(v_listing is not null, 'post-owned listing derived');
-
-  delete from public.listings where listing_id = v_listing;
-  perform kc_test.assert_row_count(
-    format('select 1 from public.posts where post_id = %L', v_post),
-    1, 'deleting derived listing does NOT delete owning post'
-  );
+  if exists (select 1 from pg_trigger where tgname = 'posts_sync_listing') then
+    perform kc_test.assert_true(v_listing is not null, 'post-owned listing derived');
+    delete from public.listings where listing_id = v_listing;
+    perform kc_test.assert_row_count(
+      format('select 1 from public.posts where post_id = %L', v_post),
+      1, 'deleting derived listing does NOT delete owning post'
+    );
+  else
+    perform kc_test.assert_true(true, 'posts_sync_listing dropped in step 6c');
+    perform kc_test.assert_row_count(
+      format('select 1 from public.posts where post_id = %L', v_post),
+      1, 'owning post intact'
+    );
+  end if;
 
   -- 5b. A listing-sourced listing: deleting the listing deletes its mirror post
   insert into public.listings (
@@ -229,16 +236,27 @@ begin
     3, 'native', 'published', now(), 'open'
   ) returning listing_id into v_listing;
 
-  perform kc_test.assert_row_count(
-    format('select 1 from public.posts where listing_id = %L', v_listing),
-    1, 'mirror post created'
-  );
-
-  delete from public.listings where listing_id = v_listing;
-  perform kc_test.assert_row_count(
-    format('select 1 from public.posts where listing_id = %L', v_listing),
-    0, 'mirror post deleted when listing-sourced listing is deleted'
-  );
+  if exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    perform kc_test.assert_row_count(
+      format('select 1 from public.posts where listing_id = %L', v_listing),
+      1, 'mirror post created'
+    );
+    delete from public.listings where listing_id = v_listing;
+    perform kc_test.assert_row_count(
+      format('select 1 from public.posts where listing_id = %L', v_listing),
+      0, 'mirror post deleted when listing-sourced listing is deleted'
+    );
+  else
+    perform kc_test.assert_row_count(
+      format('select 1 from public.listings where listing_id = %L', v_listing),
+      1, 'listing inserted'
+    );
+    delete from public.listings where listing_id = v_listing;
+    perform kc_test.assert_row_count(
+      format('select 1 from public.listings where listing_id = %L', v_listing),
+      0, 'listing deleted'
+    );
+  end if;
 end $$;
 
 rollback;

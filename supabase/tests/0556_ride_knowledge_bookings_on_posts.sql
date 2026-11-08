@@ -90,6 +90,16 @@ begin
       'slot_ends_at', kc_test.iso_in(interval '2 hours')));
   -- Knowledge listings start in pending_review (0266); simulate the moderator's approval.
   update public.listings set moderation_status = 'published' where listing_id = v_listing;
+  if public.post_id_of_listing(v_listing) is null then
+    insert into public.posts (
+      owner_id, type, visibility, title, city, street, street_number, location_display_level,
+      world_slug, direction, post_type, details, listing_id, listing_world_slug, moderation_status
+    ) values (
+      p.mentor, 'Give', 'Public', 'intro to sql', 'tel-aviv', 'Marketplace', '1', 'CityOnly',
+      'knowledge', 'offer', 'standard',
+      (select details from public.listings where listing_id = v_listing), v_listing, 'knowledge', 'published'
+    );
+  end if;
   v_post := public.post_id_of_listing(v_listing);
   perform kc_test.assert_true(v_post is not null, 'a published knowledge offer has its post (0557)');
 

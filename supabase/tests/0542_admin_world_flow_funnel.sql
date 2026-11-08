@@ -54,11 +54,25 @@ declare
   v_published timestamptz := (select published_at from public.listings where listing_id = p_listing);
   v_done timestamptz := v_published + make_interval(hours => coalesce(p_done_after, p_booked_after));
 begin
-  insert into public.giving_handoffs (
-    listing_id, owner_id, recipient_id, world_slug, status,
+  if to_regclass('public.giving_handoffs') is not null then
+    insert into public.giving_handoffs (
+      listing_id, owner_id, recipient_id, world_slug, status,
+      reserved_at, confirmed_at, handed_over_at, cancelled_at
+    )
+    select p_listing, l.owner_id, p_recipient, l.world_slug, p_status,
+           v_published + make_interval(hours => p_booked_after),
+           case when p_status in ('confirmed', 'handed_over') then v_done end,
+           case when p_status = 'handed_over' then v_done end,
+           case when p_status = 'cancelled' then v_done end
+      from public.listings l
+     where l.listing_id = p_listing;
+  end if;
+
+  insert into public.post_handoffs (
+    post_id, owner_id, recipient_id, world_slug, status,
     reserved_at, confirmed_at, handed_over_at, cancelled_at
   )
-  select p_listing, l.owner_id, p_recipient, l.world_slug, p_status,
+  select coalesce((select post_id from public.posts where listing_id = p_listing), l.legacy_post_id, p_listing), l.owner_id, p_recipient, l.world_slug, p_status,
          v_published + make_interval(hours => p_booked_after),
          case when p_status in ('confirmed', 'handed_over') then v_done end,
          case when p_status = 'handed_over' then v_done end,
@@ -100,6 +114,9 @@ begin
   perform pg_temp.handoff(v_recovered, p.second_taker, 'handed_over', 10, 50);
   -- Both completed listings closed, as the handover flow leaves them.
   update public.listings set status = 'closed' where listing_id in (v_completed, v_recovered);
+  update public.posts set status = 'closed_delivered'
+   where listing_id in (v_completed, v_recovered)
+      or post_id in (select legacy_post_id from public.listings where listing_id in (v_completed, v_recovered));
   -- Published 40 days ago: outside the 30-day cohort, inside a 60-day one.
   perform pg_temp.handoff(pg_temp.item_offer(p.giver, 'old', 40), p.taker, 'handed_over', 1, 2);
 

@@ -124,6 +124,11 @@ begin
   update public.listings
      set details = jsonb_set(details, '{seats_available}', '1'::jsonb)
    where listing_id = v_ride;
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    update public.posts
+       set details = jsonb_set(details, '{seats_available}', '1'::jsonb)
+     where listing_id = v_ride or post_id = v_ride;
+  end if;
   perform kc_test.act_as(p.driver);
   perform kc_test.assert_raises(format('select public.confirm_ride_booking(%L)', v_over_capacity),
     'ride_seats_exhausted', 'approval fails when occupied bookings exceed the current capacity');

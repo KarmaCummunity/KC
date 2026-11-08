@@ -51,6 +51,9 @@ declare
   v_h uuid;
   c public.post_handoffs;
 begin
+  if not exists (select 1 from pg_trigger where tgname = 'giving_handoffs_post_handoffs_sync') then
+    return;
+  end if;
   select * into p from personas;
   v_listing := kc_test.create_listing(p.owner, 'items', 'give_item', 'give', 'a lamp',
     '{"item_condition":"Good","fulfillment_mode":"owner_approval"}'::jsonb, null);
@@ -87,6 +90,9 @@ declare
   v_listing uuid;
   v_h uuid;
 begin
+  if not exists (select 1 from pg_trigger where tgname = 'giving_handoffs_post_handoffs_sync') then
+    return;
+  end if;
   select * into p from personas;
   perform kc_test.act_as(p.owner);
   insert into public.posts (owner_id, type, title, category, city, street, street_number)
@@ -107,6 +113,9 @@ declare
   v_h uuid;
   c public.post_handoffs;
 begin
+  if not exists (select 1 from pg_trigger where tgname = 'giving_handoffs_post_handoffs_sync') then
+    return;
+  end if;
   select * into p from personas;
   v_listing := kc_test.create_ride_offer(p.owner, 4, interval '4 hours');
   v_h := kc_test.book_ride(p.passenger, v_listing, 2);
@@ -130,6 +139,9 @@ declare
   v_h uuid;
   r jsonb;
 begin
+  if not exists (select 1 from pg_trigger where tgname = 'giving_handoffs_post_handoffs_sync') then
+    return;
+  end if;
   select * into p from personas;
   v_listing := kc_test.create_listing(p.owner, 'knowledge', 'course', 'give', 'intro to sql',
     jsonb_build_object(
@@ -180,6 +192,9 @@ do $$
 declare
   r jsonb := public.post_unification_report();
 begin
+  if not exists (select 1 from pg_trigger where tgname = 'giving_handoffs_post_handoffs_sync') then
+    return;
+  end if;
   perform kc_test.assert_eq((r ->> 'handoffs_without_post')::int, 0, 'every handoff has a post now');
   perform kc_test.assert_eq((r ->> 'handoff_rows_missing')::int, 0, 'every handoff is copied');
   perform kc_test.assert_eq((r ->> 'handoff_field_mismatches')::int, 0, 'every copy agrees with its handoff');

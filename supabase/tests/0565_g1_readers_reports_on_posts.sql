@@ -1,35 +1,15 @@
--- supabase/tests/0565_g1_readers_reports_on_posts.sql | 0565 (G1 step 6a-1, ADR-006): the leaf readers
--- read `posts` / `post_handoffs` instead of `listings` / `giving_handoffs`, with the same results:
---   1. admin_world_flow_funnel counts a handed-over item, a post-form item and a ride booking as it
---      did on the listing side (deltas over a baseline, so other rows cannot skew it);
---   2. my_world_givings counts a handed-over handoff and a closed post; a time-world attendance,
---      which lives on post_handoffs only (0563 / 0564), now counts too;
---   3. the rides health checks read the handoff record and the ride's post;
---   4. feed_ranked_ids still finds a listing-world post by its sub-category (posts.category_id);
---   5. a report on a listing still resolves its title and owner — a listing with a post, the
---      listing of a post-form item, and a listing that has no post (fallback);
---   6. get_nonprofit_public_page lists money campaigns by listing id with the listing status.
--- STABLE helpers (post_id_of_listing) are read in a statement after the one that creates the row.
--- Runs in a rolled-back transaction.
-
+-- supabase/tests/0565_g1_readers_reports_on_posts.sql | 0565 (G1 step 6a-1, ADR-006): leaf readers on posts/post_handoffs
 begin;
 
 create temp table personas as
-select kc_test.create_user('rd_giver')            as giver,
-       kc_test.create_user('rd_taker')            as taker,
-       kc_test.create_user('rd_driver')           as driver,
-       kc_test.create_user('rd_passenger')        as passenger,
-       kc_test.create_user('rd_second_passenger') as second_passenger,
-       kc_test.create_user('rd_reporter')         as reporter,
-       kc_test.create_user('rd_moderator')        as moderator,
-       gen_random_uuid()                          as org_id;
+select kc_test.create_user('rd_giver') as giver, kc_test.create_user('rd_taker') as taker,
+       kc_test.create_user('rd_driver') as driver, kc_test.create_user('rd_passenger') as passenger,
+       kc_test.create_user('rd_second_passenger') as second_passenger, kc_test.create_user('rd_reporter') as reporter,
+       kc_test.create_user('rd_moderator') as moderator, gen_random_uuid() as org_id;
 
 insert into public.admin_role_grants (user_id, role) select moderator, 'moderator' from personas;
 
--- Fixture ids shared by the blocks below.
 create temp table fx (k text primary key, id uuid);
-
--- The 30-day funnel before and after the fixtures.
 create temp table funnel_before (
   world_slug text, world_label_he text, world_label_en text, direction text,
   published integer, booked integer, confirmed integer, completed integer, cancelled integer,
@@ -48,11 +28,7 @@ end $$;
 -- ── fixtures: a handed-over item, a post-form item, a ride with two bookings ────────────────
 do $$
 declare
-  p personas;
-  v_item uuid;
-  v_post uuid;
-  v_ride uuid;
-  v_confirmed uuid;
+  p personas; v_item uuid; v_post uuid; v_ride uuid; v_confirmed uuid;
 begin
   select * into p from personas;
 
@@ -63,6 +39,11 @@ begin
   insert into public.giving_handoffs (listing_id, owner_id, recipient_id, world_slug, status, confirmed_at, handed_over_at)
   values (v_item, p.giver, p.taker, 'items', 'handed_over', now(), now());
   update public.listings set status = 'closed' where listing_id = v_item;
+  if not exists (select 1 from pg_trigger where tgname = 'giving_handoffs_post_handoffs_sync') then
+    insert into public.post_handoffs (post_id, owner_id, recipient_id, world_slug, status, confirmed_at, handed_over_at)
+    values (public.post_id_of_listing(v_item), p.giver, p.taker, 'items', 'handed_over', now(), now());
+    update public.posts set status = 'closed_delivered' where post_id = public.post_id_of_listing(v_item);
+  end if;
 
   -- An item made through the post form: the post owns an origin-'post' listing (0243).
   perform kc_test.act_as(p.giver);
@@ -70,6 +51,10 @@ begin
   values (p.giver, 'Give', 'Wooden stool', 'Other', 'tel-aviv', 'Herzl', '1')
   returning post_id into v_post;
   insert into fx values ('item_post', v_post);
+  if not exists (select 1 from pg_trigger where tgname = 'posts_sync_listing') then
+    insert into public.listings (owner_id, world_slug, kind_id, direction, title, origin, moderation_status, legacy_post_id)
+    values (p.giver, 'items', kc_test.listing_kind_id('items', 'give_item'), 'give', 'Wooden stool', 'post', 'published', v_post);
+  end if;
 
   -- A ride with one booking waiting for the driver and one the driver confirmed.
   v_ride := kc_test.create_ride_offer(p.driver, p_seats => 3);
@@ -290,6 +275,11 @@ begin
   update public.listings set beneficiary_org_id = p.org_id where listing_id in (v_open, v_closed, v_paused);
   update public.listings set status = 'closed' where listing_id = v_closed;
   update public.listings set status = 'cancelled' where listing_id = v_paused;
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    update public.posts set beneficiary_org_id = p.org_id where listing_id in (v_open, v_closed, v_paused);
+    update public.posts set status = 'closed_delivered' where listing_id = v_closed;
+    update public.posts set status = 'paused' where listing_id = v_paused;
+  end if;
 
   v_campaigns := public.get_nonprofit_public_page('readers-test-nonprofit') -> 'campaigns';
   perform kc_test.assert_eq(jsonb_array_length(v_campaigns), 2, 'the open and the closed campaign, not the paused one');

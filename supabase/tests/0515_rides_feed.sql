@@ -23,6 +23,9 @@ begin
   update public.listings
      set details = details || jsonb_build_object('departs_at', kc_test.iso_in(-interval '10 minutes'))
    where listing_id = v_departed;
+  update public.posts
+     set details = details || jsonb_build_object('departs_at', kc_test.iso_in(-interval '10 minutes'))
+   where listing_id = v_departed or post_id in (select legacy_post_id from public.listings where listing_id = v_departed);
   perform kc_test.book_ride(p.rider, v_sooner, 2);
 
   perform kc_test.act_as_anon();
@@ -47,6 +50,7 @@ declare
   v_ride uuid := kc_test.create_ride_offer((select driver from personas), 2, interval '4 hours');
 begin
   update public.listings set status = 'closed' where listing_id = v_ride;
+  update public.posts set status = 'closed_delivered' where listing_id = v_ride or post_id in (select legacy_post_id from public.listings where listing_id = v_ride);
   perform kc_test.act_as_anon();
   perform kc_test.assert_row_count(format('select 1 from public.list_rides_feed(200) where listing_id = %L', v_ride), 0,
     'a closed ride is not in the feed');

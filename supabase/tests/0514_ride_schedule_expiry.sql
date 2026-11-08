@@ -61,6 +61,8 @@ begin
   v_past := kc_test.create_ride_offer((select driver from personas), 2, interval '2 hours');
   v_future := kc_test.create_ride_offer((select driver from personas), 2, interval '2 hours');
   update public.listings set expires_at = now() - interval '1 minute' where listing_id = v_past;
+  update public.posts set expires_at = now() - interval '1 minute'
+   where listing_id = v_past or post_id in (select legacy_post_id from public.listings where listing_id = v_past);
 
   perform kc_test.act_as_anon();
   perform kc_test.assert_true(public.rides_expired_listings_sweep() >= 1, 'the sweep closes overdue offers');

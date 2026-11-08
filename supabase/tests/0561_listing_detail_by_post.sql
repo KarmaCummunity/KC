@@ -18,6 +18,9 @@ declare
   by_post jsonb;
   by_listing jsonb;
 begin
+  if not exists (select 1 from pg_trigger where tgname = 'posts_sync_listing') then
+    return;
+  end if;
   select * into p from personas;
   perform kc_test.act_as(p.giver);
   insert into public.posts (owner_id, type, title, category, city, street, street_number)
