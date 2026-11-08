@@ -80,31 +80,26 @@ begin
       owner_id, type, visibility, title, description, category, city, street, street_number,
       location_display_level, world_slug, direction, post_type, details, category_id,
       expires_at, listing_id, listing_world_slug, kind_id, moderation_status, availability_status,
-      urgency_level
+      urgency_level, feed_hidden
     ) values (
-      p_owner_id, case p_direction when 'request' then 'Request' else 'Give' end, 'Public',
+      p_owner_id, case p_direction when 'request' then 'Request' else 'Give' end,
+      coalesce(public.anonymity_level_to_visibility((select anonymity_level from public.listings where listing_id = v_listing_id)), 'Public'),
       left(p_title, 80), null, 'Other', 'tel-aviv', 'Marketplace', '1', 'CityOnly',
       p_world_slug, case p_direction when 'request' then 'request' else 'offer' end,
       case when p_world_slug = 'rides' then 'ride' else 'standard' end,
-      coalesce(p_details, '{}'::jsonb), null,
-      coalesce(p_expires_at, nullif(p_details->>'expires_at', '')::timestamptz), v_listing_id, p_world_slug, v_kind_id, 'published', 'ongoing',
-      (select urgency_level from public.listings where listing_id = v_listing_id)
+      coalesce((select details from public.listings where listing_id = v_listing_id), p_details, '{}'::jsonb), null,
+      coalesce((select expires_at from public.listings where listing_id = v_listing_id), p_expires_at, nullif(p_details->>'expires_at', '')::timestamptz),
+      v_listing_id, p_world_slug, v_kind_id, 'published', 'ongoing',
+      (select urgency_level from public.listings where listing_id = v_listing_id),
+      coalesce(public.listing_feed_hidden((select l from public.listings l where l.listing_id = v_listing_id)), false)
     )
     returning post_id into v_post_id;
 
     if p_world_slug = 'rides' then
-      insert into public.ride_post_details (
-        post_id, departs_at, arrives_at, seats_available, origin_place_id, dest_place_id
-      ) values (
-        v_post_id,
-        nullif(p_details->>'departs_at', '')::timestamptz,
-        nullif(p_details->>'arrives_at', '')::timestamptz,
-        coalesce((p_details->>'seats_available')::int, 1),
-        p_details->>'origin_place_id',
-        p_details->>'dest_place_id'
-      ) on conflict (post_id) do update set
-        departs_at = excluded.departs_at,
-        seats_available = excluded.seats_available;
+      update public.ride_route_alerts set status = 'pending' where listing_id = v_listing_id and status = 'skipped';
+      perform public.ride_route_alert_deliver(a.route_id, a.listing_id)
+        from public.ride_route_alerts a
+       where a.listing_id = v_listing_id and a.status = 'pending';
     end if;
   end if;
 

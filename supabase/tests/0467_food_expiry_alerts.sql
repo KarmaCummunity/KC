@@ -24,7 +24,9 @@ end $$;
 /** An open native food offer expiring at `p_expires_at` (must be in the future at insert). */
 create or replace function pg_temp.mk_food(p_owner uuid, p_title text, p_expires_at timestamptz)
 returns uuid language plpgsql as $$
-declare v_id uuid;
+declare
+  v_id uuid;
+  p_post uuid;
 begin
   insert into public.listings (owner_id, world_slug, kind_id, direction, title, origin, moderation_status,
                                details, expires_at)
@@ -33,6 +35,19 @@ begin
          p_expires_at
     from public.listing_kinds where world_slug = 'food' and slug = 'give_food'
   returning listing_id into v_id;
+
+  insert into public.posts (
+    owner_id, type, visibility, title, category, city, street, street_number,
+    world_slug, direction, post_type, details, listing_id, listing_world_slug, legacy_listing_id,
+    status, moderation_status, published_at, expires_at
+  )
+  select p_owner, 'Give', 'Public', p_title, 'Other', 'tel-aviv', 'Marketplace', '1',
+         'food', 'offer', 'standard',
+         jsonb_build_object('food_type', 'cooked', 'expires_at', to_char(p_expires_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')),
+         v_id, 'food', v_id, 'open', 'published', now(), p_expires_at
+  returning post_id into p_post;
+  update public.listings set legacy_post_id = p_post where listing_id = v_id;
+
   return v_id;
 end $$;
 
@@ -75,6 +90,7 @@ begin
   alter table public.listings disable trigger listings_food_expiry_block;
   update public.listings set expires_at = now() - interval '1 minute' where listing_id = v_stale;
   alter table public.listings enable trigger listings_food_expiry_block;
+  update public.posts set expires_at = now() - interval '1 minute' where listing_id = v_stale;
 
   perform public.food_expired_listings_sweep();
   perform public.food_expired_listings_sweep();

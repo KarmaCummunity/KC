@@ -49,6 +49,13 @@ begin
   insert into public.posts (owner_id, type, title, category, city, street, street_number, item_condition)
   values (p.owner, 'Give', 'a bookshelf', 'Furniture', 'tel-aviv', 'Herzl', '1', 'Good')
   returning post_id into v_post;
+  if not exists (select 1 from pg_trigger where tgname = 'posts_sync_listing') then
+    insert into public.listings (
+      owner_id, world_slug, kind_id, direction, title, origin, moderation_status, legacy_post_id
+    ) values (
+      p.owner, 'items', kc_test.listing_kind_id('items', 'give_item'), 'give', 'a bookshelf', 'post', 'published', v_post
+    );
+  end if;
   insert into shapes select 'items', listing_id from public.listings where legacy_post_id = v_post;
   perform kc_test.assert_row_count(
     'select 1 from public.embedding_jobs j join shapes s using (listing_id) where j.status = ''pending''', 3,

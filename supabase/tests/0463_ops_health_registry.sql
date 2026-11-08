@@ -43,6 +43,7 @@ begin
   v_ride := kc_test.create_ride_offer(p.driver, p_seats => 2);
   v_booking := kc_test.book_ride(p.passenger, v_ride);
   update public.giving_handoffs set confirm_by = now() - interval '1 minute' where handoff_id = v_booking;
+  update public.post_handoffs set confirm_by = now() - interval '1 minute' where handoff_id = v_booking;
   perform kc_test.assert_eq(pg_temp.check_value('rides_bookings_unconfirmed'), v_before_unconfirmed + 1,
     'a booking past confirm-by is counted');
   perform kc_test.assert_eq(pg_temp.check_status('rides_bookings_unconfirmed'), 'alert',

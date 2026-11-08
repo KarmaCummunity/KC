@@ -20,7 +20,10 @@ language sql
 as $$
   select count(*) from public.notifications_outbox
    where user_id = p_user and kind = p_kind and data -> 'params' ->> 'listingId' = (
-     select listing_id::text from public.giving_handoffs where handoff_id = p_handoff)
+     select coalesce(
+       (select listing_id::text from public.giving_handoffs where handoff_id = p_handoff),
+       (select coalesce(public.listing_id_of_post(post_id), post_id)::text from public.post_handoffs where handoff_id = p_handoff)
+     ))
      and dedupe_key like p_kind || ':' || p_handoff::text || ':%'
 $$;
 -- Every giving_handoff_* push queued for one user about one handoff.
@@ -164,7 +167,10 @@ begin
   v_handoff := (public.reserve_item_giving(v_listing)).handoff_id;
 
   perform set_config('request.jwt.claims', '', true);
-  update public.giving_handoffs set status = 'cancelled', cancelled_at = now() where handoff_id = v_handoff;
+  update public.post_handoffs set status = 'cancelled', cancelled_at = now() where handoff_id = v_handoff;
+  if to_regclass('public.giving_handoffs') is not null then
+    update public.giving_handoffs set status = 'cancelled', cancelled_at = now() where handoff_id = v_handoff;
+  end if;
   perform kc_test.assert_eq(pg_temp.notified(p.giver, 'giving_handoff_cancelled', v_handoff), 1::bigint,
     'a system cancel reaches the giver');
   perform kc_test.assert_eq(pg_temp.notified(p.requester, 'giving_handoff_cancelled', v_handoff), 1::bigint,

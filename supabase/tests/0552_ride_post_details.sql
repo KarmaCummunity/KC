@@ -55,6 +55,12 @@ begin
            'arrives_at', kc_test.iso_in(interval '5 hours'),
            'cost_share_ils', 15)
    where listing_id = v_listing;
+  update public.posts
+     set details = details || jsonb_build_object(
+           'seats_available', 2,
+           'arrives_at', kc_test.iso_in(interval '5 hours'),
+           'cost_share_ils', 15)
+   where listing_id = v_listing or post_id in (select legacy_post_id from public.listings where listing_id = v_listing);
   d := pg_temp.details_of(v_listing);
   perform kc_test.assert_eq(d.seats_available, 2, 'fewer seats reach the extension');
   perform kc_test.assert_eq(d.arrives_at, kc_test.iso_in(interval '5 hours')::timestamptz, 'the estimated end reaches the extension');

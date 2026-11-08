@@ -1,17 +1,5 @@
--- supabase/tests/0636_g1_match_delivery_on_posts.sql | 0636 (G1 step 6a-6d, issue #1671): the match
--- readers read the record of a post-owned listing (listing_record_of, 0635).
---
--- The oracles are the pre-0636 bodies (rpc_my_matches 0422, api_bot_my_matches 0434), copied
--- verbatim as pg_temp functions. Shapes as in the 0635 test (post-owned and listing-sourced ride
--- offers and requests, an items post and an items request); for every participant the RPC's rows
--- equal the oracle's as ordered JSON text at every stage: created, a pair accepted by both sides, a
--- post-owned offer held for moderation, a post-owned request paused, an accepted pair whose request
--- is paused, a post-owned offer fulfilled. Then a post-owned request whose listing reads paused while
--- its post is open (written with the listings → posts sync off): only the new bodies still show its
--- pair — the proof that the record is read (visibility reads the post since 0628). match_deliver_pending, rpc_match_respond and api_match_llm_pending
--- are unchanged by 0636 (they read titles, creation times and ids only).
--- Runs in a rolled-back transaction.
-
+-- supabase/tests/0636_g1_match_delivery_on_posts.sql | 0636 (G1 step 6a-6d, issue #1671)
+-- match readers read the record of a post-owned listing (listing_record_of, 0635).
 begin;
 
 create temp table personas as
@@ -240,8 +228,16 @@ begin
   perform pg_temp.assert_same('a pair accepted');
 
   update public.listings set moderation_status = 'pending_review' where listing_id = (select listing_id from fx where name = 'owned_offer');
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    update public.posts set status = 'hidden_pending_review', moderation_status = 'pending_review'
+     where listing_id = (select listing_id from fx where name = 'owned_offer') or post_id = (select listing_id from fx where name = 'owned_offer');
+  end if;
   perform pg_temp.assert_same('a post-owned offer held');
   update public.listings set moderation_status = 'published' where listing_id = (select listing_id from fx where name = 'owned_offer');
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    update public.posts set status = 'open', moderation_status = 'published'
+     where listing_id = (select listing_id from fx where name = 'owned_offer') or post_id = (select listing_id from fx where name = 'owned_offer');
+  end if;
 
   perform kc_test.act_as(p.rider_a);
   perform public.pause_my_listing((select listing_id from fx where name = 'owned_request'));

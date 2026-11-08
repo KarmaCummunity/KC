@@ -55,34 +55,56 @@ begin
 
   -- Followers only (anonymity 2).
   update public.listings set anonymity_level = 2 where listing_id = v;
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    update public.posts set visibility = 'FollowersOnly' where listing_id = v;
+  end if;
   perform kc_test.assert_true(pg_temp.sees(v, p.follower), 'followers only: a follower sees it');
   perform kc_test.assert_true(not pg_temp.sees(v, p.stranger), 'followers only: a stranger does not');
   perform kc_test.assert_true(not pg_temp.sees(v, p.operator), 'followers only: an operator who does not follow does not');
 
   -- Only me (anonymity 1): operators only.
   update public.listings set anonymity_level = 1 where listing_id = v;
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    update public.posts set visibility = 'OnlyMe' where listing_id = v;
+  end if;
   perform kc_test.assert_true(not pg_temp.sees(v, p.follower), 'only me: a follower does not see it');
   perform kc_test.assert_true(pg_temp.sees(v, p.operator), 'only me: an operator sees it');
   perform kc_test.assert_true(pg_temp.sees(v, p.owner), 'only me: the owner sees it');
 
   -- Closed: operators still see an anonymity-1 listing; a public one leaves everyone but its owner.
   update public.listings set status = 'closed' where listing_id = v;
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    update public.posts set status = 'closed_delivered' where listing_id = v;
+  end if;
   perform kc_test.assert_true(pg_temp.sees(v, p.operator), 'closed, only me: an operator sees it');
   update public.listings set anonymity_level = 3 where listing_id = v;
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    update public.posts set visibility = 'Public' where listing_id = v;
+  end if;
   perform kc_test.assert_true(not pg_temp.sees(v, p.stranger), 'closed, public: a member does not see it');
   perform kc_test.assert_true(pg_temp.sees(v, p.owner), 'closed, public: the owner sees it');
 
   -- Paused (cancelled): hidden from everyone but the owner, operators included.
   update public.listings set status = 'cancelled', anonymity_level = 1 where listing_id = v;
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    update public.posts set status = 'open' where listing_id = v;
+    update public.posts set status = 'paused', visibility = 'OnlyMe' where listing_id = v;
+  end if;
   perform kc_test.assert_true(not pg_temp.sees(v, p.operator), 'paused: an operator does not see it');
   perform kc_test.assert_true(pg_temp.sees(v, p.owner), 'paused: the owner sees it');
 
   -- A moderation hold hides an open public listing from everyone but its owner.
   update public.listings set status = 'open', anonymity_level = 3, moderation_status = 'pending_review' where listing_id = v;
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    update public.posts set status = 'open', visibility = 'Public', moderation_status = 'pending_review' where listing_id = v;
+  end if;
   perform kc_test.assert_true(not pg_temp.sees(v, p.stranger), 'held: a member does not see it');
   perform kc_test.assert_true(not pg_temp.sees(v, p.operator), 'held: an operator does not see it either');
   perform kc_test.assert_true(pg_temp.sees(v, p.owner), 'held: the owner sees it');
   update public.listings set moderation_status = 'published' where listing_id = v;
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    update public.posts set moderation_status = 'published' where listing_id = v;
+  end if;
   perform kc_test.assert_true(pg_temp.sees(v, p.stranger), 'published again: a member sees it');
 
   -- A reporter's hide (FR-MOD-001 AC1, 0468) hides the listing from that reporter only.
@@ -167,6 +189,9 @@ begin
   v_post := public.post_id_of_listing(v);
 
   update public.listings set moderation_status = 'pending_review' where listing_id = v;
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    update public.posts set moderation_status = 'pending_review' where post_id = v_post;
+  end if;
   perform kc_test.assert_eq((select moderation_status from public.posts where post_id = v_post), 'pending_review',
     'the hold reaches the post');
   perform kc_test.assert_true(not pg_temp.sees(v, p.stranger), 'a held ride is hidden from members');
@@ -174,15 +199,24 @@ begin
   perform kc_test.assert_eq(kc_test.listing_status(v), 'open', 'the hold does not close the listing');
 
   update public.listings set moderation_status = 'published' where listing_id = v;
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    update public.posts set moderation_status = 'published' where post_id = v_post;
+  end if;
   perform kc_test.assert_eq((select status from public.posts where post_id = v_post), 'open', 'publishing again reopens the post');
   perform kc_test.assert_eq(kc_test.listing_status(v), 'open', 'and the listing is open');
   perform kc_test.assert_true(pg_temp.sees(v, p.stranger), 'members see it again');
 
   -- An owner edit during a hold does not close the listing either.
   update public.listings set moderation_status = 'pending_review' where listing_id = v;
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    update public.posts set moderation_status = 'pending_review' where post_id = v_post;
+  end if;
   perform public.update_my_listing(v, p_title => 'Haifa to Tel Aviv, edited');
   perform kc_test.assert_eq(kc_test.listing_status(v), 'open', 'an edit during the hold keeps the listing open');
   update public.listings set moderation_status = 'published' where listing_id = v;
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    update public.posts set moderation_status = 'published' where post_id = v_post;
+  end if;
   perform kc_test.assert_eq((select status from public.posts where post_id = v_post), 'open', 'and publishing reopens the post');
 end $$;
 

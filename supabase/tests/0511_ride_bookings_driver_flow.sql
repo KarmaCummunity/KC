@@ -33,7 +33,7 @@ begin
   v_second := kc_test.book_ride(p.passenger2, v_ride, 2);
 
   perform kc_test.assert_true(
-    (select confirm_by from public.giving_handoffs where handoff_id = v_first)
+    (select confirm_by from public.post_handoffs where handoff_id = v_first)
       <= now() + interval '2 hours' + interval '1 minute',
     'a booking must be approved before departure when departure comes first');
   perform kc_test.assert_eq(pg_temp.notified(p.driver, 'ride_booking_requested', v_first), 1::bigint,
@@ -78,7 +78,7 @@ begin
   perform kc_test.assert_eq(pg_temp.notified(p.passenger1, 'ride_booking_confirmed', v_first), 1::bigint,
     'an approved passenger is notified');
   perform kc_test.assert_eq(
-    (select cancel_reason from public.giving_handoffs where handoff_id = v_second), 'declined',
+    (select cancel_reason from public.post_handoffs where handoff_id = v_second), 'declined',
     'a declined booking records why it ended');
   perform kc_test.assert_eq(pg_temp.notified(p.passenger2, 'ride_booking_declined', v_second), 1::bigint,
     'a declined passenger is notified');
@@ -99,7 +99,7 @@ begin
   perform public.cancel_ride_booking(v_booking);
 
   perform kc_test.assert_eq(
-    (select cancel_reason from public.giving_handoffs where handoff_id = v_booking), 'passenger_cancelled',
+    (select cancel_reason from public.post_handoffs where handoff_id = v_booking), 'passenger_cancelled',
     'a passenger''s own cancel is recorded as theirs');
   perform kc_test.assert_eq(pg_temp.notified(p.driver, 'ride_booking_cancelled', v_booking), 1::bigint,
     'the driver hears that a passenger cancelled');
@@ -115,13 +115,16 @@ begin
   select * into p from personas;
   v_ride := kc_test.create_ride_offer(p.driver, p_seats => 1);
   v_booking := kc_test.book_ride(p.passenger1, v_ride);
-  update public.giving_handoffs set confirm_by = now() - interval '1 minute' where handoff_id = v_booking;
+  update public.post_handoffs set confirm_by = now() - interval '1 minute' where handoff_id = v_booking;
+  if to_regclass('public.giving_handoffs') is not null then
+    update public.giving_handoffs set confirm_by = now() - interval '1 minute' where handoff_id = v_booking;
+  end if;
 
   perform kc_test.act_as_anon();
   perform kc_test.assert_true(public.ride_bookings_expire_sweep() >= 1, 'the sweep expires overdue bookings');
   perform kc_test.assert_eq(kc_test.handoff_status(v_booking), 'cancelled', 'an overdue booking is cancelled');
   perform kc_test.assert_eq(
-    (select cancel_reason from public.giving_handoffs where handoff_id = v_booking), 'expired',
+    (select cancel_reason from public.post_handoffs where handoff_id = v_booking), 'expired',
     'an overdue booking records that it expired');
   perform kc_test.assert_eq(pg_temp.notified(p.passenger1, 'ride_booking_expired', v_booking), 1::bigint,
     'the passenger hears the booking expired');

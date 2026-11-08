@@ -11,12 +11,21 @@ select kc_test.create_user('givings_me') as me,
 -- A handoff on a fresh items listing of `p_owner` to `p_recipient`, in `p_status`.
 create function pg_temp.handoff(p_owner uuid, p_recipient uuid, p_status text)
 returns uuid language plpgsql as $$
-declare v_listing uuid;
+declare
+  v_listing uuid;
+  v_post_id uuid;
 begin
   v_listing := kc_test.create_listing(p_owner, 'items', 'give_item', 'give', 'item ' || p_status,
     '{"item_condition":"Good","fulfillment_mode":"owner_approval"}'::jsonb, now() + interval '30 days');
-  insert into public.giving_handoffs (listing_id, owner_id, recipient_id, world_slug, status, confirmed_at, handed_over_at)
-  values (v_listing, p_owner, p_recipient, 'items', p_status,
+  select coalesce(legacy_post_id, v_listing) into v_post_id from public.listings where listing_id = v_listing;
+  if to_regclass('public.giving_handoffs') is not null then
+    insert into public.giving_handoffs (listing_id, owner_id, recipient_id, world_slug, status, confirmed_at, handed_over_at)
+    values (v_listing, p_owner, p_recipient, 'items', p_status,
+            case when p_status in ('confirmed', 'handed_over') then now() end,
+            case when p_status = 'handed_over' then now() end);
+  end if;
+  insert into public.post_handoffs (post_id, owner_id, recipient_id, world_slug, status, confirmed_at, handed_over_at)
+  values (v_post_id, p_owner, p_recipient, 'items', p_status,
           case when p_status in ('confirmed', 'handed_over') then now() end,
           case when p_status = 'handed_over' then now() end);
   return v_listing;
@@ -36,6 +45,7 @@ begin
   -- Created first: inside a WHERE clause the volatile builder would run once per scanned row.
   v_closed := pg_temp.handoff(p.me, p.other, 'handed_over');
   update public.listings set status = 'closed' where listing_id = v_closed;
+  update public.posts set status = 'closed_delivered' where listing_id = v_closed or post_id in (select legacy_post_id from public.listings where listing_id = v_closed);
   perform pg_temp.handoff(p.me, p.other, 'handed_over');
   perform pg_temp.handoff(p.other, p.me, 'handed_over');
   perform pg_temp.handoff(p.me, p.other, 'reserved');

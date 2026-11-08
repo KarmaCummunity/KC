@@ -103,6 +103,9 @@ begin
     if new.expires_at is null then
       raise exception 'food_expiry_required' using errcode = '23514';
     end if;
+    if new.expires_at <= now() then
+      new.status := 'expired';
+    end if;
   end if;
 
   if new.world_slug = 'items' then
@@ -112,6 +115,26 @@ begin
   end if;
 
   if new.world_slug = 'rides' then
+    if to_regproc('ride_details_with_place') is not null then
+      new.details := public.ride_details_with_place(coalesce(new.details, '{}'::jsonb), 'origin');
+      new.details := public.ride_details_with_place(new.details, 'dest');
+    end if;
+
+    begin
+      declare
+        v_departs timestamptz := nullif(new.details->>'departs_at', '')::timestamptz;
+        v_arrives timestamptz := nullif(new.details->>'arrives_at', '')::timestamptz;
+      begin
+        if (new.direction in ('give', 'offer') or new.type = 'Give') and coalesce(v_arrives, v_departs) is not null then
+          if tg_op = 'INSERT' or (tg_op = 'UPDATE' and new.details is distinct from old.details) then
+            new.expires_at := coalesce(v_arrives, v_departs) + interval '30 minutes';
+          end if;
+        end if;
+      end;
+    exception when others then
+      null;
+    end;
+
     v_cost := nullif(new.details->>'cost_share_ils', '')::numeric;
     if v_cost is not null then
       select (param_value #>> '{}')::numeric into v_max_rides
@@ -144,6 +167,12 @@ begin
     end if;
   end if;
 
+  if public.is_event_kind(new.kind_id) then
+    if (new.details ->> 'ends_at')::timestamptz <= (new.details ->> 'starts_at')::timestamptz then
+      raise exception 'event_window_invalid' using errcode = '23514';
+    end if;
+  end if;
+
   if new.world_slug = 'romantic_matchmaking' then
     v_birth := nullif(new.details->>'birth_date', '')::date;
     if v_birth is not null and age(v_birth) < (v_min_age || ' years')::interval then
@@ -160,7 +189,7 @@ grant execute on function public.posts_enforce_world_rules() to service_role;
 
 drop trigger if exists posts_before_write_world_rules on public.posts;
 create trigger posts_before_write_world_rules
-  before insert or update of details, expires_at, status, owner_id, external_body_id on public.posts
+  before insert or update of details, expires_at, status, owner_id, external_body_id, kind_id on public.posts
   for each row execute function public.posts_enforce_world_rules();
 
 -- ── 3. giving_handoff_row_of: fallback listing_id to post_id ───────────────────────────────────
@@ -205,6 +234,95 @@ $$;
 
 revoke all on function public.giving_handoff_row_of(uuid) from public, anon, authenticated;
 grant execute on function public.giving_handoff_row_of(uuid) to service_role;
+
+-- ── 3b. is_listing_visible_to: early status/moderation checks when sync triggers are dropped ───────
+create or replace function public.is_listing_visible_to(p_listing public.listings, p_viewer uuid)
+returns boolean
+language plpgsql
+stable security definer
+set search_path to 'public'
+as $$
+declare
+  v_post public.posts;
+  v_ride public.ride_listings;
+begin
+  if p_listing.owner_id = p_viewer then
+    return true;
+  end if;
+
+  if public.is_account_pending_deletion(p_listing.owner_id) then
+    return false;
+  end if;
+
+  if p_listing.moderation_status <> 'published' then
+    return false;
+  end if;
+
+  if p_listing.status not in ('open', 'closed') then
+    return false;
+  end if;
+
+  if exists (
+    select 1 from public.reporter_hides h
+     where h.reporter_id = p_viewer
+       and h.target_type = 'listing'
+       and h.target_id   = p_listing.listing_id
+  ) then
+    return false;
+  end if;
+
+  if p_listing.legacy_post_id is not null then
+    select * into v_post from public.posts where post_id = p_listing.legacy_post_id;
+    if not found then
+      return false;
+    end if;
+    return public.is_post_visible_to(v_post, p_viewer);
+  end if;
+
+  if p_listing.legacy_ride_id is not null then
+    select * into v_ride from public.ride_listings where ride_id = p_listing.legacy_ride_id;
+    if not found then
+      return false;
+    end if;
+    if v_ride.owner_id = p_viewer then
+      return true;
+    end if;
+    if public.is_blocked(p_viewer, v_ride.owner_id) then
+      return false;
+    end if;
+    if v_ride.status <> 'open' then
+      return false;
+    end if;
+    return v_ride.visibility = 'Public'
+      or (v_ride.visibility = 'FollowersOnly' and public.is_following(p_viewer, v_ride.owner_id));
+  end if;
+
+  select * into v_post from public.posts where listing_id = p_listing.listing_id;
+  if found then
+    return public.post_listing_visible_to(v_post, p_viewer);
+  end if;
+
+  if public.is_blocked(p_viewer, p_listing.owner_id) then
+    return false;
+  end if;
+
+  case p_listing.anonymity_level
+    when 3 then
+      return p_listing.status = 'open'
+        or (p_listing.status = 'closed' and p_listing.owner_id = p_viewer);
+    when 2 then
+      return p_listing.status = 'open'
+        and public.is_following(p_viewer, p_listing.owner_id);
+    when 1 then
+      return public.is_listing_operator(p_viewer);
+    else
+      return false;
+  end case;
+end;
+$$;
+
+revoke all on function public.is_listing_visible_to(public.listings, uuid) from public;
+grant execute on function public.is_listing_visible_to(public.listings, uuid) to anon, authenticated, service_role;
 
 -- ── 4. post_lock_own_listing & post_record_set_status ──────────────────────────────────────────
 create or replace function public.post_lock_own_listing(p_target uuid)
@@ -1457,7 +1575,7 @@ begin
       jsonb_build_object('listingTitle', coalesce(r.title, '')),
       jsonb_build_object('route', '/(tabs)/donations/marketplace/[listingId]',
                          'params', jsonb_build_object('listingId', coalesce(public.listing_id_of_post(r.post_id), r.post_id)::text)),
-      'food_expired:' || r.post_id::text,
+      'food_expired:' || coalesce(public.listing_id_of_post(r.post_id), r.post_id)::text,
       false
     );
     v_count := v_count + 1;
@@ -1598,46 +1716,42 @@ begin
     v_cat := 'Other';
   end if;
 
+  v_listing_id := gen_random_uuid();
+
   insert into public.posts (
     owner_id, type, visibility, title, description, category, city, street, street_number,
     location_display_level, world_slug, direction, post_type, details, category_id, geo,
     urgency_level, external_body_id, kind_id, availability_status, max_radius_km_override,
-    moderation_status, published_at, expires_at, item_condition
+    moderation_status, published_at, expires_at, item_condition, listing_id, listing_world_slug, legacy_listing_id
   ) values (
     v_uid, case v_dir when 'request' then 'Request' else 'Give' end, 'Public', p_title,
     nullif(trim(coalesce(p_summary, '')), ''), v_cat, v_city, 'Marketplace', '1', 'CityOnly',
     v_kind.world_slug, v_post_dir, case when v_kind.world_slug = 'rides' then 'ride' else 'standard' end,
     coalesce(p_details, '{}'::jsonb), p_category_id, v_geo, coalesce(p_urgency_level, 2), p_external_body_id,
     p_kind_id, coalesce(p_availability_status, 'ongoing'), p_max_radius_km, 'published', now(),
-    v_expires, v_condition
+    v_expires, v_condition, v_listing_id, v_kind.world_slug, v_listing_id
   )
   returning post_id into v_post_id;
 
   if to_regclass('public.listings') is not null then
-    insert into public.listings (
-      owner_id, world_slug, kind_id, category_id, direction, title, summary, details,
-      city_id, geo, max_radius_km_override, urgency_level, availability_status, origin, moderation_status,
-      external_body_id, legacy_post_id, expires_at
-    ) values (
-      v_uid, v_kind.world_slug, p_kind_id, p_category_id, v_dir, p_title, p_summary, coalesce(p_details, '{}'::jsonb),
-      p_city_id, v_geo, p_max_radius_km, coalesce(p_urgency_level, 2), coalesce(p_availability_status, 'ongoing'),
-      'native', 'published',
-      p_external_body_id, v_post_id, v_expires
-    )
-    returning listing_id into v_listing_id;
+    begin
+      insert into public.listings (
+        listing_id, owner_id, world_slug, kind_id, category_id, direction, title, summary, details,
+        city_id, geo, max_radius_km_override, urgency_level, availability_status, origin, moderation_status,
+        external_body_id, legacy_post_id, expires_at
+      ) values (
+        v_listing_id, v_uid, v_kind.world_slug, p_kind_id, p_category_id, v_dir, p_title, p_summary, coalesce(p_details, '{}'::jsonb),
+        p_city_id, v_geo, p_max_radius_km, coalesce(p_urgency_level, 2), coalesce(p_availability_status, 'ongoing'),
+        'native', 'published',
+        p_external_body_id, v_post_id, v_expires
+      );
 
-    update public.posts
-       set listing_id = v_listing_id,
-           listing_world_slug = v_kind.world_slug,
-           legacy_listing_id = v_listing_id,
-           details = (select details from public.listings where listing_id = v_listing_id),
-           expires_at = coalesce((select expires_at from public.listings where listing_id = v_listing_id), v_expires),
-           urgency_level = coalesce((select urgency_level from public.listings where listing_id = v_listing_id), p_urgency_level, 2)
-     where post_id = v_post_id;
-
-    if p_media_paths is not null and cardinality(p_media_paths) > 0 then
-      perform public.attach_listing_media(v_listing_id, p_media_paths);
-    end if;
+      if p_media_paths is not null and cardinality(p_media_paths) > 0 then
+        perform public.attach_listing_media(v_listing_id, p_media_paths);
+      end if;
+    exception when others then
+      raise;
+    end;
   end if;
 
   return coalesce(v_listing_id, v_post_id);
@@ -1651,5 +1765,483 @@ revoke all on function public.create_marketplace_listing(
 grant execute on function public.create_marketplace_listing(
   uuid, text, text, jsonb, text, uuid, text, smallint, text, double precision, double precision, numeric, text[], uuid, text[]
 ) to authenticated;
+
+-- ── 5. Moderation on listings mirrors to posts when sync triggers are dropped ───────────────────
+create or replace function public.reports_listing_auto_remove_on_insert()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  distinct_reporters int;
+  v_owner_id         uuid;
+  v_owner_chat       uuid;
+begin
+  if new.target_type <> 'listing' or new.target_id is null then
+    return new;
+  end if;
+
+  perform pg_advisory_xact_lock(
+    hashtext('mod_target_listing_' || new.target_id::text)::bigint);
+
+  select count(distinct reporter_id) into distinct_reporters
+    from public.reports
+   where target_type = 'listing'
+     and target_id   = new.target_id
+     and status      = 'open'
+     and created_at >= now() - interval '14 days';
+
+  if distinct_reporters >= 3 then
+    update public.listings
+       set status = 'hidden_pending_review', updated_at = now()
+     where listing_id = new.target_id
+       and status = 'open'
+    returning owner_id into v_owner_id;
+
+    if found then
+      update public.posts
+         set status = 'hidden_pending_review', updated_at = now()
+       where (listing_id = new.target_id or legacy_listing_id = new.target_id or post_id = new.target_id)
+         and status = 'open';
+
+      insert into public.audit_events (actor_id, action, target_type, target_id, metadata)
+      values (null, 'auto_remove_target', 'listing', new.target_id,
+              jsonb_build_object('distinct_reporters', distinct_reporters));
+
+      begin
+        if v_owner_id is not null and v_owner_id <> new.reporter_id then
+          v_owner_chat := public.find_or_create_support_chat(v_owner_id);
+          if v_owner_chat is not null then
+            perform public.inject_system_message(v_owner_chat,
+              jsonb_build_object('kind', 'owner_auto_removed',
+                                 'target_type', 'listing',
+                                 'target_id', new.target_id,
+                                 'outcome', 'hidden_pending_review'),
+              null);
+          end if;
+        end if;
+      exception when others then
+        raise warning 'owner_auto_removed message failed: % (state %, listing %)',
+          sqlerrm, sqlstate, new.target_id;
+      end;
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+
+create or replace function public.admin_restore_target(p_target_type text, p_target_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = 'public'
+as $$
+declare
+  v_actor     uuid := auth.uid();
+  v_changed   boolean := false;
+  v_reporters uuid[];
+begin
+  perform public.admin_assert_role(v_actor, array['super_admin','moderator']);
+
+  if p_target_type not in ('post','user','chat','listing') then
+    raise exception 'invalid_target_type' using errcode = 'P0010';
+  end if;
+
+  if p_target_type = 'post' then
+    if not exists (select 1 from public.posts where post_id = p_target_id) then
+      raise exception 'target_not_found' using errcode = 'P0017', detail = 'post';
+    end if;
+  elsif p_target_type = 'user' then
+    if not exists (select 1 from public.users where user_id = p_target_id) then
+      raise exception 'target_not_found' using errcode = 'P0017', detail = 'user';
+    end if;
+  elsif p_target_type = 'chat' then
+    if not exists (select 1 from public.chats where chat_id = p_target_id) then
+      raise exception 'target_not_found' using errcode = 'P0017', detail = 'chat';
+    end if;
+  elsif p_target_type = 'listing' then
+    if not exists (select 1 from public.listings where listing_id = p_target_id) then
+      raise exception 'target_not_found' using errcode = 'P0017', detail = 'listing';
+    end if;
+  end if;
+
+  if p_target_type = 'post' then
+    update public.posts set status = 'open', moderation_status = 'published', updated_at = now()
+     where post_id = p_target_id and (status in ('removed_admin', 'hidden_pending_review', 'paused') or moderation_status = 'held');
+    v_changed := found;
+  elsif p_target_type = 'user' then
+    if exists (select 1 from public.users
+               where user_id = p_target_id
+                 and account_status not in ('suspended_admin','active')) then
+      raise exception 'invalid_restore_state'
+        using errcode = 'P0011', detail = 'user not in suspended_admin state';
+    end if;
+    update public.users set account_status = 'active'
+     where user_id = p_target_id and account_status = 'suspended_admin';
+    v_changed := found;
+  elsif p_target_type = 'chat' then
+    update public.chats set removed_at = null
+     where chat_id = p_target_id and removed_at is not null;
+    v_changed := found;
+  elsif p_target_type = 'listing' then
+    update public.listings set status = 'open', updated_at = now()
+     where listing_id = p_target_id and status in ('removed_admin', 'hidden_pending_review');
+    v_changed := found;
+    update public.posts set status = 'open', updated_at = now()
+     where (listing_id = p_target_id or legacy_listing_id = p_target_id or post_id = p_target_id)
+       and status in ('removed_admin', 'hidden_pending_review');
+  end if;
+
+  if not v_changed then return; end if;
+
+  select coalesce(array_agg(distinct reporter_id order by reporter_id), array[]::uuid[])
+    into v_reporters
+    from public.reports
+   where target_type = p_target_type
+     and target_id   = p_target_id
+     and status      = 'open';
+
+  insert into public.audit_events (actor_id, action, target_type, target_id, metadata)
+  values (v_actor, 'restore_target', p_target_type, p_target_id,
+          jsonb_build_object('distinct_reporters', to_jsonb(v_reporters)));
+end;
+$$;
+
+create or replace function public.admin_remove_listing(p_listing_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_actor uuid := auth.uid();
+begin
+  perform public.admin_assert_role(v_actor, array['super_admin','moderator']);
+
+  update public.listings
+     set status = 'removed_admin', updated_at = now()
+   where listing_id = p_listing_id
+     and status <> 'removed_admin';
+
+  if not found then return; end if;
+
+  update public.posts
+     set status_before_admin_removal = case when status = 'hidden_pending_review' then 'open' else status end,
+         status = 'removed_admin',
+         updated_at = now()
+   where (listing_id = p_listing_id or legacy_listing_id = p_listing_id or post_id = p_listing_id)
+     and status <> 'removed_admin';
+
+  insert into public.audit_events (actor_id, action, target_type, target_id, metadata)
+  values (v_actor, 'manual_remove_target', 'listing', p_listing_id, '{}'::jsonb);
+end;
+$$;
+
+create or replace function public.ride_series_materialize_day(p_series public.ride_series, p_on date)
+returns int
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_departs timestamptz := (p_on + p_series.depart_time) at time zone 'Asia/Jerusalem';
+  v_details jsonb;
+  v_direction text := case when p_series.direction = 'request' then 'request' else 'offer' end;
+  v_hidden boolean;
+  v_post_id uuid;
+  v_listing_id uuid;
+begin
+  if (p_series.weekdays & (1 << extract(dow from p_on)::int)) = 0 or v_departs <= now() then
+    return 0;
+  end if;
+  if exists (select 1 from public.ride_post_details r
+              where r.series_id = p_series.series_id
+                and r.series_on = p_on) then
+    return 0;
+  end if;
+
+  v_details := p_series.details
+    || jsonb_build_object('departs_at', v_departs, 'ride_series', public.ride_series_marker(p_series, p_on));
+  if p_series.duration_minutes is not null then
+    v_details := v_details
+      || jsonb_build_object('arrives_at', v_departs + make_interval(mins => p_series.duration_minutes));
+  end if;
+
+  if public.listing_kind_for_post('rides', v_direction) = p_series.kind_id then
+    v_hidden := not exists (select 1 from public.worlds w where w.slug = 'rides' and w.feed_mirror)
+      or exists (select 1 from public.ride_post_details r
+                   join public.posts o on o.post_id = r.post_id
+                  where r.series_id = p_series.series_id
+                    and o.status = 'open'
+                    and r.departs_at > now()
+                    and r.departs_at < v_departs);
+    begin
+      insert into public.posts (
+        owner_id, type, visibility, title, description, category, city, street, street_number,
+        location_display_level, world_slug, direction, post_type, details, expires_at, feed_hidden
+      ) values (
+        p_series.owner_id, case when v_direction = 'request' then 'Request' else 'Give' end, 'Public',
+        left(p_series.title, 80), nullif(trim(coalesce(p_series.summary, '')), ''), 'Other',
+        coalesce((select u.city from public.users u where u.user_id = p_series.owner_id), 'tel-aviv'),
+        'Marketplace', '1', 'CityOnly', 'rides', v_direction, 'ride', v_details,
+        v_departs + interval '30 minutes', v_hidden
+      ) returning post_id into v_post_id;
+
+      if to_regclass('public.listings') is not null then
+        insert into public.listings (
+          owner_id, world_slug, kind_id, direction, title, summary, details, origin, moderation_status, expires_at, legacy_post_id
+        ) values (
+          p_series.owner_id, 'rides', p_series.kind_id, p_series.direction, p_series.title, p_series.summary,
+          v_details, 'native', 'published', v_departs + interval '30 minutes', v_post_id
+        ) returning listing_id into v_listing_id;
+
+        update public.posts
+           set listing_id = v_listing_id, legacy_listing_id = v_listing_id, listing_world_slug = 'rides',
+               details = (select details from public.listings where listing_id = v_listing_id),
+               expires_at = (select expires_at from public.listings where listing_id = v_listing_id)
+         where post_id = v_post_id;
+      end if;
+    exception when unique_violation then
+      return 0;
+    end;
+    return 1;
+  end if;
+
+  begin
+    insert into public.listings (
+      owner_id, world_slug, kind_id, direction, title, summary, details, origin, moderation_status, expires_at
+    ) values (
+      p_series.owner_id, 'rides', p_series.kind_id, p_series.direction, p_series.title, p_series.summary,
+      v_details, 'native', 'published',
+      v_departs + interval '30 minutes'
+    );
+  exception when unique_violation then
+    return 0;
+  end;
+  return 1;
+end;
+$$;
+
+create or replace function public.set_ride_series_status(p_series_id uuid, p_status text)
+returns void
+language plpgsql
+security definer
+set search_path to 'public'
+as $$
+declare
+  s public.ride_series := public.ride_series_for_update(p_series_id);
+begin
+  if p_status not in ('active', 'paused', 'cancelled') then
+    raise exception 'ride_series_status_invalid' using errcode = '22023';
+  end if;
+  if p_status = s.status then
+    return;
+  end if;
+
+  update public.ride_series set status = p_status where series_id = s.series_id;
+
+  if p_status = 'active' then
+    perform public.ride_series_materialize(s.series_id);
+    return;
+  end if;
+  perform public.ride_series_drop_unbooked(s.series_id);
+  if p_status = 'cancelled' then
+    update public.posts p
+       set details = p.details - 'ride_series', updated_at = now()
+      from public.ride_post_details r
+     where r.post_id = p.post_id and r.series_id = s.series_id;
+
+    if to_regclass('public.listings') is not null then
+      update public.listings
+         set details = details - 'ride_series', updated_at = now()
+       where details -> 'ride_series' ->> 'id' = s.series_id::text;
+    end if;
+  end if;
+end;
+$$;
+
+create or replace function public.mark_giving_handed_over(p_handoff_id uuid)
+returns giving_handoffs
+language plpgsql
+security definer
+set search_path to 'public'
+as $$
+declare
+  v_h public.post_handoffs;
+  v_row public.giving_handoffs;
+begin
+  update public.post_handoffs
+     set status = 'handed_over', handed_over_at = now()
+   where handoff_id = p_handoff_id
+     and status = 'confirmed'
+     and (owner_id = auth.uid() or recipient_id = auth.uid())
+  returning * into v_h;
+  if not found then raise exception 'handoff_not_confirmed' using errcode = '23514'; end if;
+
+  if v_h.world_slug = 'items'
+     and exists (select 1 from public.posts p where p.post_id = v_h.post_id and p.listing_id is null) then
+    -- One closing system (G34): the post closure pays giver 20 + value bonus / receiver 15 once.
+    perform public.post_close_from_handoff(v_h);
+  else
+    if to_regclass('public.listings') is not null then
+      update public.listings
+         set status = 'closed', availability_status = 'ongoing', updated_at = now()
+       where listing_id = public.listing_id_of_post(v_h.post_id);
+    end if;
+    update public.posts
+       set status = 'closed_delivered', availability_status = 'ongoing', updated_at = now()
+     where post_id = v_h.post_id;
+    perform public.karma_award_handoff(v_h.owner_id, v_h.recipient_id, v_h.world_slug, p_handoff_id);
+  end if;
+
+  v_row := public.giving_handoff_row_of(p_handoff_id); -- 0622: built from the record
+  return v_row;
+end;
+$$;
+
+create or replace function public.trg_write_rate_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_claims text := coalesce(current_setting('request.jwt.claims', true), '');
+  v_role text;
+  v_actor uuid;
+  v_max int;
+begin
+  if v_claims = '' or pg_trigger_depth() > 1 then
+    return new;
+  end if;
+
+  if tg_table_name = 'listings' and to_jsonb(new)->>'legacy_post_id' is not null then
+    return new;
+  end if;
+
+  begin
+    v_role := v_claims::jsonb ->> 'role';
+  exception when others then
+    v_role := null;
+  end;
+  if coalesce(v_role, 'authenticated') not in ('authenticated', 'anon') then
+    return new;
+  end if;
+
+  -- 0625: a post is counted for its owner, like the listing it derives.
+  if tg_table_name in ('listings', 'posts') then
+    v_actor := new.owner_id;
+  elsif tg_table_name in ('giving_handoffs', 'post_handoffs') then
+    -- Both handoff tables share one bucket (tg_argv[1]); the derived write of either side runs
+    -- at trigger depth 2 and is skipped above, so a handoff is counted once.
+    v_actor := new.recipient_id;
+  elsif tg_table_name = 'follow_edges' then
+    v_actor := new.follower_id;
+  end if;
+  if v_actor is null then
+    return new;
+  end if;
+
+  select (p.param_value #>> '{}')::int into v_max
+    from public.marketplace_rule_params p
+   where p.rule_code = tg_argv[0]
+     and p.param_key = 'max_per_hour';
+  if v_max is null or v_max < 1 then
+    raise exception 'invalid_rate_limit_args' using errcode = '22023';
+  end if;
+
+  perform public.enforce_rate_limit(tg_argv[1] || ':' || v_actor::text, v_max, 3600);
+  return new;
+end;
+$$;
+
+revoke all on function public.trg_write_rate_limit() from public, anon, authenticated;
+
+-- ── 12. House numbers RPCs on posts / post_handoffs ──────────────────────────────────────────────
+create or replace function public.set_ride_house_numbers(
+  p_listing_id uuid,
+  p_origin text default null,
+  p_dest text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_listing_id uuid := public.handoff_target_listing_id(p_listing_id);
+  v_details jsonb;
+  v_end text;
+  v_number text;
+begin
+  select p.details into v_details
+    from public.posts p
+   where (p.post_id = v_listing_id or p.listing_id = v_listing_id)
+     and p.world_slug = 'rides' and p.owner_id = auth.uid();
+  if not found and to_regclass('public.listings') is not null then
+    select l.details into v_details
+      from public.listings l
+     where l.listing_id = v_listing_id and l.world_slug = 'rides' and l.owner_id = auth.uid();
+  end if;
+  if v_details is null then
+    raise exception 'owner_only' using errcode = '42501';
+  end if;
+
+  foreach v_end in array array['origin', 'dest'] loop
+    v_number := nullif(btrim(case v_end when 'origin' then p_origin else p_dest end), '');
+    if v_number is null then
+      delete from public.ride_listing_house_numbers where listing_id = v_listing_id and place_end = v_end;
+    else
+      if coalesce(v_details ->> (v_end || '_place_kind'), '') <> 'street' then
+        raise exception 'ride_house_number_not_street' using errcode = '22023';
+      end if;
+      if v_number !~ '^[0-9]{1,4}[א-תA-Za-z]?$' then
+        raise exception 'ride_house_number_invalid' using errcode = '22023';
+      end if;
+      insert into public.ride_listing_house_numbers (listing_id, place_end, house_number, updated_at)
+      values (v_listing_id, v_end, v_number, now())
+      on conflict (listing_id, place_end)
+      do update set house_number = excluded.house_number, updated_at = now();
+    end if;
+  end loop;
+end;
+$$;
+
+revoke all on function public.set_ride_house_numbers(uuid, text, text) from public, anon;
+grant execute on function public.set_ride_house_numbers(uuid, text, text) to authenticated;
+
+create or replace function public.get_ride_house_numbers(p_listing_id uuid)
+returns table (place_end text, house_number text)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with target as (select public.handoff_target_listing_id(p_listing_id) as listing_id)
+  select n.place_end, n.house_number
+    from public.ride_listing_house_numbers n
+    join target t on t.listing_id = n.listing_id
+   where auth.uid() is not null
+     and (
+       exists (select 1 from public.listings l where l.listing_id = t.listing_id and l.owner_id = auth.uid())
+       or exists (select 1 from public.posts p where (p.post_id = t.listing_id or p.listing_id = t.listing_id) and p.owner_id = auth.uid())
+       or exists (
+         select 1 from public.giving_handoffs h
+          where h.listing_id = t.listing_id
+            and h.recipient_id = auth.uid()
+            and h.status in ('confirmed', 'handed_over'))
+       or exists (
+         select 1 from public.post_handoffs ph
+           join public.posts p on p.post_id = ph.post_id
+          where (p.post_id = t.listing_id or p.listing_id = t.listing_id)
+            and ph.recipient_id = auth.uid()
+            and ph.status in ('confirmed', 'handed_over'))
+     );
+$$;
+
+revoke all on function public.get_ride_house_numbers(uuid) from public, anon;
+grant execute on function public.get_ride_house_numbers(uuid) to authenticated;
 
 commit;

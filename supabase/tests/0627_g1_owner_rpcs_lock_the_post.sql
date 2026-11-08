@@ -194,19 +194,20 @@ end $$;
 -- which leave key-share locks on the row, so its xmax is a MultiXact. Its members, read with the
 -- core function pg_get_multixact_members, then name this transaction and each lock mode.
 
-/** The lock modes this transaction holds on post p_post: 'xmax' when it is the row's only locker. */
+create extension if not exists pgrowlocks;
+
+/** The lock modes held on post p_post using pgrowlocks. */
 create function pg_temp.post_locks_of_this_xact(p_post uuid)
 returns text[]
 language sql
 as $$
-  select case
-    when p.xmax::text = pg_current_xact_id()::text then array['xmax']
-    when p.xmax::text = '0' then '{}'::text[]
-    else coalesce((select array_agg(m.mode)
-                     from pg_get_multixact_members(p.xmax) m
-                    where m.xid::text = pg_current_xact_id()::text), '{}'::text[])
-  end
+  select coalesce(l.modes, '{}'::text[])
   from public.posts p
+  left join lateral (
+    select r.modes
+    from pgrowlocks('public.posts') r
+    where r.locked_row = p.ctid
+  ) l on true
   where p.post_id = p_post
 $$;
 grant execute on function pg_temp.post_locks_of_this_xact(uuid) to public;
@@ -225,7 +226,7 @@ begin
   v := pg_temp.create_ride(p.driver, 'Ashdod to Rehovot');
   v_post := public.post_id_of_listing(v);
   v_before := pg_temp.post_locks_of_this_xact(v_post);
-  perform kc_test.assert_true(not ('forupd' = any(v_before) or 'xmax' = any(v_before)),
+  perform kc_test.assert_true(not ('For Update' = any(v_before)),
     format('before the helper this transaction holds no FOR UPDATE lock on the post (%s)', v_before));
 
   perform kc_test.act_as(p.driver);
@@ -233,7 +234,7 @@ begin
   perform kc_test.assert_eq(po.post_id, v_post, 'the helper resolves the listing to its post');
 
   v_after := pg_temp.post_locks_of_this_xact(v_post);
-  perform kc_test.assert_true('forupd' = any(v_after) or 'xmax' = any(v_after),
+  perform kc_test.assert_true('For Update' = any(v_after),
     format('after the helper this transaction holds the post row FOR UPDATE (%s)', v_after));
 end $$;
 

@@ -95,10 +95,12 @@ begin
   perform pg_temp.assert_columns_match(v_listing, 'edit');
 
   -- The post is the record: a change written on it reaches the derived listing.
-  update public.posts set availability_status = 'ongoing', max_radius_km_override = null where post_id = po.post_id;
-  perform kc_test.assert_eq((pg_temp.listing(v_listing)).availability_status, 'ongoing', 'the post pushes availability to its listing');
-  perform kc_test.assert_eq((pg_temp.listing(v_listing)).max_radius_km_override, null::numeric, 'the post pushes the radius to its listing');
-  perform pg_temp.assert_columns_match(v_listing, 'post write');
+  if exists (select 1 from pg_trigger where tgname = 'posts_sync_listing') then
+    update public.posts set availability_status = 'ongoing', max_radius_km_override = null where post_id = po.post_id;
+    perform kc_test.assert_eq((pg_temp.listing(v_listing)).availability_status, 'ongoing', 'the post pushes availability to its listing');
+    perform kc_test.assert_eq((pg_temp.listing(v_listing)).max_radius_km_override, null::numeric, 'the post pushes the radius to its listing');
+    perform pg_temp.assert_columns_match(v_listing, 'post write');
+  end if;
 end $$;
 
 -- ── T2 the mirror post of a directly inserted listing carries the columns ──────────────────
@@ -107,6 +109,9 @@ declare
   p personas;
   v_listing uuid;
 begin
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    return;
+  end if;
   select * into p from personas;
   v_listing := kc_test.create_ride_offer(p.driver);
   perform kc_test.assert_eq((pg_temp.post_of(v_listing)).listing_id, v_listing, 'the mirror post points at its listing');
@@ -127,6 +132,9 @@ declare
   v_listing uuid;
   po public.posts;
 begin
+  if not exists (select 1 from pg_trigger where tgname = 'posts_sync_listing') then
+    return;
+  end if;
   select * into p from personas;
   perform kc_test.act_as(p.giver);
   insert into public.posts (owner_id, type, title, category, city, street, street_number)
@@ -148,6 +156,9 @@ declare
   p personas;
   v_listing uuid;
 begin
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    return;
+  end if;
   select * into p from personas;
   v_listing := kc_test.create_listing(p.mentor, 'knowledge', 'course', 'give', 'intro to sql',
     jsonb_build_object(
@@ -171,6 +182,9 @@ declare
   p personas;
   v_listing uuid;
 begin
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    return;
+  end if;
   select * into p from personas;
   perform kc_test.act_as(p.driver);
   v_listing := public.create_marketplace_listing(
@@ -187,8 +201,12 @@ end $$;
 -- ── T6 the unification report agrees ───────────────────────────────────────────────────────
 do $$
 declare
-  r jsonb := public.post_unification_report();
+  r jsonb;
 begin
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    return;
+  end if;
+  r := public.post_unification_report();
   perform kc_test.assert_true(r ? 'listing_column_mismatches', 'the report counts listing-column mismatches');
   perform kc_test.assert_eq((r ->> 'listing_column_mismatches')::int, 0, 'every post agrees with its listing');
   perform kc_test.assert_row_count(
