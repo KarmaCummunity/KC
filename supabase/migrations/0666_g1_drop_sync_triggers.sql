@@ -103,7 +103,7 @@ begin
     if new.expires_at is null then
       raise exception 'food_expiry_required' using errcode = '23514';
     end if;
-    if new.expires_at <= now() then
+    if tg_op = 'INSERT' and new.expires_at <= now() then
       new.status := 'expired';
     end if;
   end if;
