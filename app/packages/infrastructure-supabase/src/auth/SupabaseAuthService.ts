@@ -125,6 +125,18 @@ export class SupabaseAuthService implements IAuthService {
     return toSession(data.session);
   }
 
+  // No nonce: the native Google SDK doesn't expose one, so the Supabase Google
+  // provider must run with nonce checks skipped (#1955).
+  async signInWithGoogleIdToken(idToken: string): Promise<AuthSession> {
+    const { data, error } = await this.client.auth.signInWithIdToken({
+      provider: 'google',
+      token: idToken,
+    });
+    if (error) throw mapAuthError(error);
+    if (!data.session) throw new AuthError('unknown', 'google_no_session');
+    return toSession(data.session);
+  }
+
   async resendVerificationEmail(
     email: string,
     options?: { emailRedirectTo?: string },
