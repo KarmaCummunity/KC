@@ -76,6 +76,31 @@ create trigger posts_sync_post_details
   after insert or update of details, kind_id, world_slug, post_type on public.posts
   for each row execute function public.posts_sync_post_details();
 
+-- 2b. posts_event_type: sets post_type = 'event' when kind is an event kind (0563)
+create or replace function public.posts_event_type()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if public.is_event_kind(new.kind_id)
+     or exists (
+       select 1 from public.listings l
+        where l.listing_id = new.listing_id and public.is_event_kind(l.kind_id)) then
+    new.post_type := 'event';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.posts_event_type() from public, anon, authenticated;
+
+drop trigger if exists posts_one_model_event_type on public.posts;
+create trigger posts_one_model_event_type
+  before insert or update on public.posts
+  for each row execute function public.posts_event_type();
+
 -- World rules enforcement on public.posts (mirrors listings_enforce_world_rules)
 create or replace function public.posts_enforce_world_rules()
 returns trigger
@@ -1726,7 +1751,7 @@ begin
   ) values (
     v_uid, case v_dir when 'request' then 'Request' else 'Give' end, 'Public', p_title,
     nullif(trim(coalesce(p_summary, '')), ''), v_cat, v_city, 'Marketplace', '1', 'CityOnly',
-    v_kind.world_slug, v_post_dir, case when v_kind.world_slug = 'rides' then 'ride' else 'standard' end,
+    v_kind.world_slug, v_post_dir, case when v_kind.world_slug = 'rides' then 'ride' when public.is_event_kind(p_kind_id) then 'event' else 'standard' end,
     coalesce(p_details, '{}'::jsonb), p_category_id, v_geo, coalesce(p_urgency_level, 2), p_external_body_id,
     p_kind_id, coalesce(p_availability_status, 'ongoing'), p_max_radius_km, 'published', now(),
     v_expires, v_condition, v_listing_id, v_kind.world_slug, v_listing_id
