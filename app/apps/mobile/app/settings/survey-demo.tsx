@@ -38,6 +38,9 @@ import { inputTextAlignStart } from '../../src/lib/rtlLayout';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVerticalOffset';
+import { useFormFieldFocus } from '../../src/hooks/useFormFieldFocus';
+import type { FormFieldFocusBindings } from '../../src/hooks/useFormFieldFocus';
+import { KeyboardFormAccessory } from '../../src/components/ui/KeyboardFormAccessory';
 
 type DemoAnswer = { rating: number | null; text: string };
 
@@ -60,6 +63,8 @@ export default function SurveyDemoScreen() {
   const questions = useSurveyDemoQuestions();
   const useSideRail = bp === 'tablet' || bp === 'desktop' || bp === 'wide';
   const keyboardOffset = useKeyboardVerticalOffset();
+  const fieldFocus = useFormFieldFocus(1);
+  const textFieldFocus = fieldFocus.bindField(0);
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, DemoAnswer>>(emptyAnswers);
@@ -109,6 +114,13 @@ export default function SurveyDemoScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={keyboardOffset}
       >
+        <KeyboardFormAccessory
+          canGoPrev={fieldFocus.canGoPrev}
+          canGoNext={fieldFocus.canGoNext}
+          onPrev={fieldFocus.focusPrev}
+          onNext={fieldFocus.focusNext}
+          onDone={fieldFocus.dismiss}
+        />
         <View style={styles.progressBar}>
           <Text style={styles.progressText}>
             {t('surveyDemo.progress', { current: activeIndex + 1, total })}
@@ -133,6 +145,7 @@ export default function SurveyDemoScreen() {
               answer={answer}
               onRating={(rating) => setAnswer({ rating })}
               onText={(text) => setAnswer({ text })}
+              textFieldFocus={textFieldFocus}
             />
           </ScrollView>
         </View>
@@ -155,9 +168,10 @@ type QuestionPanelProps = {
   readonly answer: DemoAnswer;
   readonly onRating: (rating: number) => void;
   readonly onText: (text: string) => void;
+  readonly textFieldFocus?: FormFieldFocusBindings;
 };
 
-function QuestionPanel({ question, index, answer, onRating, onText }: QuestionPanelProps) {
+function QuestionPanel({ question, index, answer, onRating, onText, textFieldFocus }: QuestionPanelProps) {
   const styles = usePanelStyles();
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -180,6 +194,7 @@ function QuestionPanel({ question, index, answer, onRating, onText }: QuestionPa
       </View>
 
       <TextField
+        ref={textFieldFocus?.ref}
         label={t('surveyDemo.textFieldLabel')}
         style={styles.textInput}
         value={answer.text}
@@ -190,6 +205,11 @@ function QuestionPanel({ question, index, answer, onRating, onText }: QuestionPa
         multiline
         maxLength={500}
         accessibilityLabel={question.textPlaceholder}
+        onFocus={textFieldFocus?.onFocus}
+        inputAccessoryViewID={textFieldFocus?.inputAccessoryViewID}
+        returnKeyType={textFieldFocus?.returnKeyType}
+        blurOnSubmit={textFieldFocus?.blurOnSubmit}
+        onSubmitEditing={textFieldFocus?.onSubmitEditing}
       />
     </Card>
   );

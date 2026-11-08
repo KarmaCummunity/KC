@@ -197,23 +197,29 @@ export default function CreatePostScreen() {
       {!ready ? (
         <ActivityIndicator style={styles.scroll} testID="create-preferences-loading" />
       ) : activeCategory.engine !== 'post' ? (
-        <WorldCreateForm
-          category={activeCategory}
-          header={header}
-          direction={direction}
-          title={form.title}
-          onTitleChange={form.setTitle}
-          summary={form.description}
-          onSummaryChange={form.setDescription}
-          onPublishActionChange={setListingPublishState}
-        />
+        <KeyboardAvoidingView
+          style={styles.scroll}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={keyboardOffset}
+        >
+          <WorldCreateForm
+            category={activeCategory}
+            header={header}
+            direction={direction}
+            title={form.title}
+            onTitleChange={form.setTitle}
+            summary={form.description}
+            onSummaryChange={form.setDescription}
+            onPublishActionChange={setListingPublishState}
+          />
+        </KeyboardAvoidingView>
       ) : (
       <KeyboardAvoidingView
         style={styles.scroll}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={keyboardOffset}
       >
-      <CreatePostFormScrollContent
+        <CreatePostFormScrollContent
         header={header}
         title={form.title}
         onTitleChange={form.setTitle}
@@ -249,7 +255,7 @@ export default function CreatePostScreen() {
         uploadingCount={uploadingCount}
         onAddPhotos={handlePick}
         onRemovePhoto={handleRemove}
-      />
+        />
       </KeyboardAvoidingView>
       )}
 
