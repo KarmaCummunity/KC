@@ -83,3 +83,19 @@ export function useFormFieldFocus(fieldCount: number) {
     activeIndex,
   };
 }
+
+/** Props for `FormScreen` / `KeyboardFormAccessory` from `useFormFieldFocus` (FR-RESP-006). */
+export function formKeyboardAccessoryProps(
+  fieldFocus: Pick<
+    ReturnType<typeof useFormFieldFocus>,
+    'canGoPrev' | 'canGoNext' | 'focusPrev' | 'focusNext' | 'dismiss'
+  >,
+) {
+  return {
+    canGoPrev: fieldFocus.canGoPrev,
+    canGoNext: fieldFocus.canGoNext,
+    onPrev: fieldFocus.focusPrev,
+    onNext: fieldFocus.focusNext,
+    onDone: fieldFocus.dismiss,
+  } as const;
+}

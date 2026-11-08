@@ -7,10 +7,7 @@ import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { TextField, FormScreen, PrimaryButton } from '../../src/components/ui';
 import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { SurveyRatingRow } from '../../src/components/survey/SurveyRatingRow';
-import {
-  hebrewSurveyFieldTextStyle,
-  SURVEY_TEXT_ALIGN,
-} from '../../src/components/survey/hebrewSurveyFieldStyle';
+import { inputTextAlignStart } from '../../src/lib/rtlLayout';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { useFeedSessionStore } from '../../src/store/feedSessionStore';
@@ -110,12 +107,12 @@ export default function FreeFeedbackScreen() {
           <TextField
             ref={bodyField.ref}
             label={t('survey.feedbackBodyLabel')}
-            style={[styles.textInput, hebrewSurveyFieldTextStyle()]}
+            style={styles.textInput}
             value={body}
             onChangeText={handleBodyChange}
             placeholder={t('survey.feedbackBodyPlaceholder')}
             placeholderTextColor={colors.textDisabled}
-            textAlign={SURVEY_TEXT_ALIGN}
+            textAlign={inputTextAlignStart()}
             multiline
             maxLength={MAX_BODY}
             accessibilityLabel={t('survey.feedbackBodyLabel')}

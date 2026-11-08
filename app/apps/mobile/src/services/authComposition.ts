@@ -21,6 +21,7 @@ import {
   RestoreSessionUseCase,
   SignInWithEmailUseCase,
   SignInWithGoogleUseCase,
+  SignInWithGoogleNativeUseCase,
   SignInWithAppleUseCase,
   SignOutUseCase,
   SignUpWithEmailUseCase,
@@ -33,12 +34,15 @@ import {
   type OpenAuthSession,
   type PerformAppleSignIn,
 } from '@kc/application';
+import Constants from 'expo-constants';
 import { webBaseUrl } from '../config/featureFlags';
+import { resolveGoogleNativeSignInConfig } from '../lib/auth/googleNativeSignInConfig';
+import { createGoogleIdTokenRequester } from './googleNativeSignIn';
 
 let _authService: IAuthService | null = null;
 let _signUp: SignUpWithEmailUseCase | null = null;
 let _signIn: SignInWithEmailUseCase | null = null;
-let _signInGoogle: SignInWithGoogleUseCase | null = null;
+let _signInGoogle: SignInWithGoogleUseCase | SignInWithGoogleNativeUseCase | null = null;
 let _signInApple: SignInWithAppleUseCase | null = null;
 let _signOut: SignOutUseCase | null = null;
 let _restore: RestoreSessionUseCase | null = null;
@@ -155,10 +159,14 @@ export function getSignInUseCase(): SignInWithEmailUseCase {
   return _signIn;
 }
 
-export function getSignInWithGoogleUseCase(): SignInWithGoogleUseCase {
-  if (!_signInGoogle) {
-    _signInGoogle = new SignInWithGoogleUseCase(getAuthService(), openAuthSession);
-  }
+/** Native platforms; web uses `redirectToGoogleSignInWeb`. #1955: native sheet when configured, else browser. */
+export function getSignInWithGoogleUseCase(): SignInWithGoogleUseCase | SignInWithGoogleNativeUseCase {
+  if (_signInGoogle) return _signInGoogle;
+  const browserFlow = new SignInWithGoogleUseCase(getAuthService(), openAuthSession);
+  const native = resolveGoogleNativeSignInConfig(Platform.OS, Constants.expoConfig?.extra);
+  _signInGoogle = native
+    ? new SignInWithGoogleNativeUseCase(getAuthService(), createGoogleIdTokenRequester(native), browserFlow)
+    : browserFlow;
   return _signInGoogle;
 }
 

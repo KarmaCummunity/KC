@@ -8,6 +8,7 @@ export { ResetPasswordUseCase, type ResetPasswordInput } from './ResetPassword';
 export { assertPasswordPolicy, MIN_PASSWORD_LEN } from './passwordPolicy';
 export * from './SignInWithEmail';
 export * from './SignInWithGoogle';
+export * from './SignInWithGoogleNative';
 export * from './SignInWithApple';
 export * from './SignOut';
 export * from './RestoreSession';

@@ -16,6 +16,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, wit
 import { makeUseStyles, typography, spacing, radius, shadow, iconSize, useTheme, Text } from '@kc/ui';
 import { VerificationPendingPanel } from './VerificationPendingPanel';
 import { AuthSocialSignInBlock } from './AuthSocialSignInBlock';
+import { AuthLanguageToggle } from './AuthLanguageToggle';
 import { NotifyModal } from '../NotifyModal';
 import { AmbientBlobs } from '../ui/AmbientBlobs';
 import { AnimatedAuthInput } from './AnimatedAuthInput';
@@ -108,6 +109,7 @@ export function AuthFormScreen({
               <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
                 <MirroredIcon name={backIcon} size={iconSize.xl} color={colors.primary} />
               </TouchableOpacity>
+              <AuthLanguageToggle />
               <Image source={require('../../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
             </Animated.View>
 

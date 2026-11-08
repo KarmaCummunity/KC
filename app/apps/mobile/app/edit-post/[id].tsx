@@ -2,7 +2,7 @@
 // FR-POST-005 — images: same picker + upload pipeline as create.
 // Closes TD-130.
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,6 +34,8 @@ import { NotifyModal } from '../../src/components/NotifyModal';
 import { syncOwnerPostActorIdentity } from '../../src/lib/syncOwnerPostActorIdentity';
 import { getUserRepo } from '../../src/services/userComposition';
 import { useEditPostScreenStyles } from '../../src/screens/edit-post/editPostScreen.styles';
+import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVerticalOffset';
+import { TAB_INLINE_FORM_HEADER_HEIGHT } from '../../src/lib/platform/formChromeHeights';
 
 const POST_IMAGES_BUCKET = 'post-images';
 function assetUrl(path: string): string {
@@ -49,6 +51,10 @@ export default function EditPostScreen() {
   const queryClient = useQueryClient();
   const viewerId = useAuthStore((s) => s.session?.userId ?? null);
   const isSuperAdmin = useIsSuperAdmin();
+  const keyboardOffset = useKeyboardVerticalOffset({
+    headerHeight: TAB_INLINE_FORM_HEADER_HEIGHT,
+    contentBelowTopSafeArea: true,
+  });
 
   const query = useQuery({
     queryKey: ['post', id, viewerId],
@@ -304,37 +310,43 @@ export default function EditPostScreen() {
         </TouchableOpacity>
       </View>
 
-      <EditPostFormScrollContent
-        isGive={isGive}
-        isSaving={isSaving}
-        uploads={uploads}
-        uploadingCount={uploadingCount}
-        onAddPhotos={handlePickImages}
-        onRemovePhoto={handleRemoveImage}
-        title={title}
-        onTitleChange={setTitle}
-        city={city}
-        onCityChange={setCity}
-        street={street}
-        onStreetChange={setStreet}
-        streetNumber={streetNumber}
-        onStreetNumberChange={setStreetNumber}
-        description={description}
-        onDescriptionChange={setDescription}
-        category={category}
-        onCategoryChange={setCategory}
-        condition={condition}
-        onConditionChange={setCondition}
-        locationDisplayLevel={locationDisplayLevel}
-        onLocationDisplayLevelChange={setLocationDisplayLevel}
-        urgency={urgency}
-        onUrgencyChange={setUrgency}
-        visibility={visibility}
-        onVisibilityChange={setVisibility}
-        profilePrivacy={profilePrivacy}
-        hideFromCounterparty={hideFromCounterparty}
-        onHideFromCounterpartyChange={setHideFromCounterparty}
-      />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={keyboardOffset}
+      >
+        <EditPostFormScrollContent
+          isGive={isGive}
+          isSaving={isSaving}
+          uploads={uploads}
+          uploadingCount={uploadingCount}
+          onAddPhotos={handlePickImages}
+          onRemovePhoto={handleRemoveImage}
+          title={title}
+          onTitleChange={setTitle}
+          city={city}
+          onCityChange={setCity}
+          street={street}
+          onStreetChange={setStreet}
+          streetNumber={streetNumber}
+          onStreetNumberChange={setStreetNumber}
+          description={description}
+          onDescriptionChange={setDescription}
+          category={category}
+          onCategoryChange={setCategory}
+          condition={condition}
+          onConditionChange={setCondition}
+          locationDisplayLevel={locationDisplayLevel}
+          onLocationDisplayLevelChange={setLocationDisplayLevel}
+          urgency={urgency}
+          onUrgencyChange={setUrgency}
+          visibility={visibility}
+          onVisibilityChange={setVisibility}
+          profilePrivacy={profilePrivacy}
+          hideFromCounterparty={hideFromCounterparty}
+          onHideFromCounterpartyChange={setHideFromCounterparty}
+        />
+      </KeyboardAvoidingView>
       <NotifyModal visible={notify !== null} title={notify?.title ?? ''} message={notify?.message ?? ''} onDismiss={() => setNotify(null)} />
     </SafeAreaView>
   );

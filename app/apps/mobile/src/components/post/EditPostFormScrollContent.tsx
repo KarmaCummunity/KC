@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@kc/ui';
@@ -13,6 +13,8 @@ import { PhotoPicker } from '../CreatePostForm/PhotoPicker';
 import { EditPostExposureSection } from './EditPostExposureSection';
 import type { UploadedAsset } from '../../services/imageUpload';
 import { useEditPostScreenStyles } from '../../screens/edit-post/editPostScreen.styles';
+import { useFormFieldFocus } from '../../hooks/useFormFieldFocus';
+import { KeyboardFormAccessory } from '../ui/KeyboardFormAccessory';
 
 export interface EditPostFormScrollContentProps {
   readonly isGive: boolean;
@@ -79,9 +81,30 @@ export function EditPostFormScrollContent({
 }: EditPostFormScrollContentProps) {
   const { t } = useTranslation();
   const styles = useEditPostScreenStyles();
+  const textFieldCount = isGive ? 3 : 4;
+  const fieldFocus = useFormFieldFocus(textFieldCount);
+  const titleField = fieldFocus.bindField(0);
+  const streetNumberField = fieldFocus.bindField(1);
+  const descriptionField = fieldFocus.bindField(2);
+  const urgencyField = useMemo(
+    () => (isGive ? null : fieldFocus.bindField(3)),
+    [fieldFocus, isGive],
+  );
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+    <>
+      <KeyboardFormAccessory
+        canGoPrev={fieldFocus.canGoPrev}
+        canGoNext={fieldFocus.canGoNext}
+        onPrev={fieldFocus.focusPrev}
+        onNext={fieldFocus.focusNext}
+        onDone={fieldFocus.dismiss}
+      />
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.scrollContent}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={[styles.typeBadge, isGive ? styles.typeBadgeGive : styles.typeBadgeRequest]}>
         <Text style={styles.typeBadgeText}>
           {isGive ? t('post.editPost.typeBadgeGive') : t('post.editPost.typeBadgeRequest')}
@@ -100,11 +123,17 @@ export function EditPostFormScrollContent({
 
       <View style={styles.section}>
         <TextField
+          ref={titleField.ref}
           label={`${t('post.editPost.sectionTitle')} *`}
           value={title}
           onChangeText={onTitleChange}
           placeholder={t('post.editPost.titlePlaceholder')}
           maxLength={80}
+          onFocus={titleField.onFocus}
+          inputAccessoryViewID={titleField.inputAccessoryViewID}
+          returnKeyType={titleField.returnKeyType}
+          blurOnSubmit={titleField.blurOnSubmit}
+          onSubmitEditing={titleField.onSubmitEditing}
         />
         <Text style={styles.charCount}>{title.length}/80</Text>
       </View>
@@ -124,23 +153,35 @@ export function EditPostFormScrollContent({
             />
           </View>
           <CompactStreetNumberField
+            ref={streetNumberField.ref}
             containerStyle={styles.streetInputHouse}
             value={streetNumber}
             onChangeText={onStreetNumberChange}
             placeholder={t('post.editPost.streetNumberPlaceholder')}
             editable={!isSaving && !!city}
+            onFocus={streetNumberField.onFocus}
+            inputAccessoryViewID={streetNumberField.inputAccessoryViewID}
+            returnKeyType={streetNumberField.returnKeyType}
+            blurOnSubmit={streetNumberField.blurOnSubmit}
+            onSubmitEditing={streetNumberField.onSubmitEditing}
           />
         </View>
       </View>
 
       <View style={styles.section}>
         <TextField
+          ref={descriptionField.ref}
           label={t('post.editPost.sectionDescription')}
           value={description}
           onChangeText={onDescriptionChange}
           placeholder={t('post.editPost.descriptionPlaceholder')}
           multiline
           maxLength={500}
+          onFocus={descriptionField.onFocus}
+          inputAccessoryViewID={descriptionField.inputAccessoryViewID}
+          returnKeyType={descriptionField.returnKeyType}
+          blurOnSubmit={descriptionField.blurOnSubmit}
+          onSubmitEditing={descriptionField.onSubmitEditing}
         />
         <Text style={styles.charCount}>{description.length}/500</Text>
       </View>
@@ -190,11 +231,17 @@ export function EditPostFormScrollContent({
       {!isGive && (
         <View style={styles.section}>
           <TextField
+            ref={urgencyField?.ref}
             label={t('post.editPost.sectionUrgency')}
             value={urgency}
             onChangeText={onUrgencyChange}
             placeholder={t('post.editPost.urgencyPlaceholder')}
             maxLength={100}
+            onFocus={urgencyField?.onFocus}
+            inputAccessoryViewID={urgencyField?.inputAccessoryViewID}
+            returnKeyType={urgencyField?.returnKeyType}
+            blurOnSubmit={urgencyField?.blurOnSubmit}
+            onSubmitEditing={urgencyField?.onSubmitEditing}
           />
         </View>
       )}
@@ -208,5 +255,6 @@ export function EditPostFormScrollContent({
         disabled={isSaving}
       />
     </ScrollView>
+    </>
   );
 }

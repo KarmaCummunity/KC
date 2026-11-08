@@ -9,7 +9,7 @@ Release mechanics: [docs/agents/RELEASE.md](../agents/RELEASE.md).
 | [listing-he.md](./listing-he.md) / [listing-en.md](./listing-en.md) | Name, subtitle, short/full description, keywords, categories, URLs, what's new |
 | `app/apps/mobile/public/privacy.html` → `/privacy` | Public privacy policy, he + en (`#en`), no login, no JS |
 | `app/apps/mobile/public/terms.html` → `/terms` | Public terms of use, he + en, incl. zero-tolerance UGC clause (Apple 1.2) |
-| `app/apps/mobile/public/support.html` → `/support` | **Support URL**: contact email, FAQ, how to report / block / delete account (he + en) |
+| `app/apps/mobile/public/support.html` → `/support` | **Support URL**: contact email, FAQ, how to report / block / delete account (he by default, en at `#en`; one language shown at a time, CSS-only toggle) |
 
 ## Readiness checklist
 

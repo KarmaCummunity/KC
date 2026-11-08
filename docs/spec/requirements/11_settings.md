@@ -1,6 +1,6 @@
 # 2.11 Settings
 
-> **Status:** ✅ Core Complete — Settings layout, privacy, legal, about, logout shipped. FR-SETTINGS-006 (Notifications toggles) shipped in P1.5 PR-1. ⚠️ Audit 2026-05-16: 🔴 **FR-SETTINGS-010** Terms/Privacy are static inline strings, not in-app web views with remote-config URLs + AC3 re-acknowledge (TD-80, BACKLOG P2.18 — EU/IL privacy gap). 🟠 FR-SETTINGS-002 Account section unbuilt; FR-SETTINGS-011 AC1 logout has no confirmation modal; FR-SETTINGS-012 AC1 delete-account modal uses keyword instead of display_name. (✅ 2026-06-09: the un-owned About `support@karma.community` mailto was removed — single operated mailbox `karmacommunity2.0@gmail.com`, `D-59`.) TD-99. See `docs/SSOT/archive/audit/2026-05-16/06_donations_stats_settings.md`. 🟡 **FR-SETTINGS-015..017** (Surveys & feedback hub, server-driven survey runner, free feedback form) — code complete, post-merge QA pending (BACKLOG P2.34); individual FR statuses remain ⏳ Planned until manual QA on dev confirms ACs. ✅ 2026-07-05: **FR-SETTINGS-018** (App language — Hebrew/English UI switch) shipped — opt-in English, machine-translated (TD-176), direction-aware layout (residual long-form RTL polish TD-177; native prod reload TD-178).
+> **Status:** ✅ Core Complete — Settings layout, privacy, legal, about, logout shipped. FR-SETTINGS-006 (Notifications toggles) shipped in P1.5 PR-1. ⚠️ Audit 2026-05-16: 🔴 **FR-SETTINGS-010** Terms/Privacy are static inline strings, not in-app web views with remote-config URLs + AC3 re-acknowledge (TD-80, BACKLOG P2.18 — EU/IL privacy gap). 🟠 FR-SETTINGS-002 Account section unbuilt; FR-SETTINGS-011 AC1 logout has no confirmation modal; FR-SETTINGS-012 AC1 delete-account modal uses keyword instead of display_name. (✅ 2026-06-09: the un-owned About `support@karma.community` mailto was removed — single operated mailbox `karmacommunity2.0@gmail.com`, `D-59`.) TD-99. See `docs/SSOT/archive/audit/2026-05-16/06_donations_stats_settings.md`. 🟡 **FR-SETTINGS-015..017** (Surveys & feedback hub, server-driven survey runner, free feedback form) — code complete, post-merge QA pending (BACKLOG P2.34); individual FR statuses remain ⏳ Planned until manual QA on dev confirms ACs. ✅ 2026-07-05: **FR-SETTINGS-018** (App language — Hebrew/English UI switch) shipped — opt-in English, machine-translated (TD-176), direction-aware layout (✅ 2026-11-07 residual hardcoded RTL removed, AC6, #1749; native prod reload TD-178).
 
 
 
@@ -331,10 +331,12 @@ A Settings row opening a language picker that switches the app UI locale between
 - AC3. Selecting a language persists the choice locally (web `localStorage`, native `AsyncStorage`), switches the react-i18next locale, sets the reading direction (Hebrew = RTL, English = LTR), and reloads the app to apply it.
 - AC4. Hebrew is the default for first-time / anonymous users; English is opt-in. `fallbackLng` is Hebrew, so any not-yet-translated key renders its Hebrew source rather than a raw key.
 - AC5. The choice is device-local (no account/DB dependency), so it works for signed-out web visitors at `/settings`.
+- AC6. Translated interface text follows the active reading direction. Content that exists only in Hebrew (legal document bodies and their change summaries until multi-language legal documents ship, #1733; server-authored survey copy) stays RTL and aligned to the visual right in both languages. No app source hardcodes `writingDirection: 'rtl'` outside the direction helpers (`apps/mobile/src/lib/{rtlLayout,hebrewContentDirection}.ts`); a source-scan test enforces it. On web the HTML template applies the stored language's direction before the app bundle runs, so styles resolved at module load already see it (#1749).
+- AC7. Signed-out visitors can switch language before signing in: the welcome screen and the auth form screens show a compact pill labelled with the other language in its own script ("English" / "עברית"), which runs the AC3 flow (#1939).
 
-**Related.** `apps/mobile/src/i18n/language.ts`, `apps/mobile/app/settings/language.tsx`, `apps/mobile/src/i18n/locales/en/**`, direction-aware helpers in `apps/mobile/src/lib/{rtlLayout,rtlTextAlignStart,webRtlStyle}.ts`.
+**Related.** `apps/mobile/src/i18n/language.ts`, `apps/mobile/app/settings/language.tsx`, `apps/mobile/src/i18n/locales/en/**`, direction-aware helpers in `apps/mobile/src/lib/{rtlLayout,rtlTextAlignStart,webRtlStyle,hebrewContentDirection}.ts`.
 
-**Known gaps.** Residual hardcoded RTL in long-form legal/survey/markdown content is not yet direction-aware (`TD-177`); machine-translated copy pending human polish (`TD-176`); native production reload needs `expo-updates` (`TD-178`).
+**Known gaps.** Machine-translated copy pending human polish (`TD-176`); native production reload needs `expo-updates` (`TD-178`).
 
 ---
 
@@ -345,3 +347,5 @@ A Settings row opening a language picker that switches the app UI locale between
 | 0.3 | 2026-05-26 | Added FR-SETTINGS-015..017 (Surveys & feedback hub, server-driven survey runner, free feedback form). Updated status header with ⏳ note. |
 | 0.4 | 2026-07-05 | Added FR-SETTINGS-018 (App language — opt-in Hebrew/English UI switch; machine-translated English). |
 | 0.5 | 2026-10-30 | FR-SETTINGS-016 AC9–AC10 (KC#1058): single-choice questions and the Sean Ellis PMF survey gated by server-side active days (`0455`–`0457`). |
+| 0.6 | 2026-11-07 | FR-SETTINGS-018 AC6 (KC#1749): interface text follows the reading direction; Hebrew-only content stays RTL; hardcoded RTL guarded by a test. |
+| 0.7 | 2026-11-07 | FR-SETTINGS-018 AC7 (KC#1939): language switch on the sign-in screens. |

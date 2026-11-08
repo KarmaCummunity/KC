@@ -46,6 +46,23 @@ function warnMissingSupabaseEnv(profile: string | undefined): void {
   }
 }
 
+// Without the key the Android map shows "unavailable" instead of the Google Maps SDK crashing (#1951).
+function warnMissingGoogleMapsKey(key: string | undefined): void {
+  if (process.env.EAS_BUILD !== 'true' && !process.env.CI) return;
+  if (process.env.EAS_BUILD_PLATFORM === 'ios' || key) return;
+  console.warn(
+    `[app.config] EAS profile "${process.env.EAS_BUILD_PROFILE ?? 'unknown'}" is missing EXPO_PUBLIC_GOOGLE_MAPS_API_KEY — the Android map is disabled in this build`,
+  );
+}
+
+const GOOGLE_CLIENT_ID_SUFFIX = '.apps.googleusercontent.com';
+
+/** #1955: the Google Sign-In SDK needs the iOS client ID reversed as a URL scheme. */
+function googleIosUrlScheme(iosClientId: string | undefined): string | undefined {
+  if (!iosClientId?.endsWith(GOOGLE_CLIENT_ID_SUFFIX)) return undefined;
+  return `com.googleusercontent.apps.${iosClientId.slice(0, -GOOGLE_CLIENT_ID_SUFFIX.length)}`;
+}
+
 function resolveGoogleServicesFile(): string | undefined {
   const fromEnv = process.env.GOOGLE_SERVICES_JSON?.trim();
   if (fromEnv && existsSync(fromEnv)) return fromEnv;
@@ -69,6 +86,7 @@ export default function expoAppConfig({ config }: ConfigContext): ExpoConfig {
 
   const googleServicesFile = resolveGoogleServicesFile();
   const googleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim();
+  warnMissingGoogleMapsKey(googleMapsApiKey);
   const android = {
     ...config.android,
     ...(googleServicesFile ? { googleServicesFile } : {}),
@@ -78,8 +96,16 @@ export default function expoAppConfig({ config }: ConfigContext): ExpoConfig {
     },
   };
 
+  const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim() || undefined;
+  const iosUrlScheme = googleIosUrlScheme(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim());
+  const googleIosClientId = iosUrlScheme ? process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim() : undefined;
+
   return {
     ...config,
+    plugins: [
+      ...(config.plugins ?? []),
+      ...(iosUrlScheme ? [['@react-native-google-signin/google-signin', { iosUrlScheme }] as [string, object]] : []),
+    ],
     android,
     version: readAppVersion(),
     // OTA (expo-updates): the EAS Update channels in eas.json serve this project.
@@ -95,6 +121,9 @@ export default function expoAppConfig({ config }: ConfigContext): ExpoConfig {
         process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() &&
           process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim(),
       ),
+      googleMapsConfigured: Boolean(googleMapsApiKey),
+      googleWebClientId,
+      googleIosClientId,
       sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN?.trim() || undefined,
       posthogKey: process.env.EXPO_PUBLIC_POSTHOG_KEY?.trim() || undefined,
       // EAS project id is injected from the KC_EAS_PROJECT_ID repo variable (CI) or local env.

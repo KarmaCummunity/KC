@@ -186,6 +186,8 @@ Agents are not woken by merge-queue failures, so a lane that only fails in the q
 | --- | --- |
 | Sentry / FCM | `EXPO_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_URL`, `SENTRY_AUTH_TOKEN` (optional) and the `GOOGLE_SERVICES_JSON` file variable — Android cloud builds take these only from EAS |
 | Supabase | Either no `EXPO_PUBLIC_SUPABASE_*`, or the kc-dev values; a prod value can reach the cloud build and is then caught by `verify` |
+| Google Maps (Android) | `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` (also in `production`) — Maps SDK for Android key restricted to the app package + Play signing SHA-1; without it the Android map is disabled (#1951) |
+| Google sign-in (native) | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` + `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` (also in `production`) — OAuth client IDs (public, not secrets) for the native Google account sheet; without them sign-in uses the browser flow (#1955) |
 
 Store credentials stay repository-level for now (`TD-227`): secrets `EXPO_TOKEN`, `ASC_API_KEY_ID`, `ASC_API_KEY_ISSUER_ID`, `ASC_API_KEY_P8`, `KC_IOS_TEAM_ID`, `KC_IOS_DIST_P12_B64`, `KC_IOS_DIST_P12_PASSWORD`, `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`; variables `KC_ASC_APP_ID`, `KC_EAS_PROJECT_ID`, `KC_IOS_DIST_CERT_ID`. The preview workflow (`kc-mobile-eas-preview.yml`, manual) builds on EAS cloud and takes its config from the eas.json `preview` profile + EAS `preview` environment.
 

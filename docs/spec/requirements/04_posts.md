@@ -325,7 +325,7 @@ The screen rendered when any non-owner viewer opens a post they are allowed to s
 - AC3. Secondary CTA: dynamic follow button per `FR-FOLLOW-011`.
 - AC4. `⋮` menu: "Report" (`FR-MOD-001`). (Per `EXEC-9`, the "Block User" item is removed from MVP scope.)
 - AC5. If the post is no longer visible to the viewer (e.g., follower removed, post auto-removed) the screen renders an empty state: *"This post is no longer available. It may have been removed or limited to followers only."*
-- AC6. The primary "Send Message to Poster" CTA (`FR-CHAT-005`) is shown only when `Post.status === 'open'`; it is hidden for any non-open lifecycle state (including `closed_delivered`, `expired`, `removed_admin`, etc.). The CTA renders as a compact floating pill (not a full-width bottom bar).
+- AC6. The primary "Send Message to Poster" CTA (`FR-CHAT-005`) is shown only when `Post.status === 'open'`; it is hidden for any non-open lifecycle state (including `closed_delivered`, `expired`, `removed_admin`, etc.). The CTA renders as a compact floating pill (not a full-width bottom bar). It sits just above the docked comment composer and never covers it, including while the keyboard is open (KC#1946).
 - AC7. When a viewer can still see a post in a limited/non-active state, the detail screen surfaces it explicitly: `removed_admin` and `expired` show both a hero status pill and an inline notice banner; `FollowersOnly` / `OnlyMe` visibility shows an inline notice (to owner and permitted viewers alike). Give posts additionally show an estimated-value chip when `estimated_value > 0`.
 
 **Related.** Screens: 2.3 · Domain: `Post`, `LocationDisplayLevel`.
