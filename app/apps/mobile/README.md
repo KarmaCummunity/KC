@@ -64,6 +64,7 @@ Set Supabase and Sentry values as [EAS secrets](https://docs.expo.dev/build-refe
      - `EXPO_PUBLIC_POSTHOG_KEY` / optional `EXPO_PUBLIC_POSTHOG_HOST` (PostHog is a no-op without the key)
      - `GOOGLE_SERVICES_JSON` — **EAS file** env pointing at `google-services.json` for FCM (Android push)
      - `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` — Google **Maps SDK for Android** key, restricted to package `org.karmacommunity.app` + the Play app-signing SHA-1. Without it the Android map shows "unavailable" (the Google Maps SDK would otherwise crash, #1951). iOS uses Apple Maps and needs no key. Native change: takes effect only in a new store build.
+     - `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` + `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` — Google OAuth client IDs for the **native** Google account sheet (shows the app name instead of the Supabase hostname, #1955). Android needs the web ID; iOS needs both (the iOS ID also becomes the URL scheme). Unset → the browser OAuth flow. Requires "Skip nonce checks" on the Supabase Google provider. Native change: new store build only.
      - `SENTRY_AUTH_TOKEN` (optional source maps; store workflows set `SENTRY_DISABLE_AUTO_UPLOAD` when absent)
 
 2. **Apple (TestFlight)**
