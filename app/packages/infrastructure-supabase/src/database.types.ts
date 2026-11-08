@@ -12443,16 +12443,38 @@ export type Database = {
         Args: { p_action: string; p_user: string }
         Returns: undefined
       }
-      housing_assert_nights_bookable: {
-        Args: {
-          p_exclude: string
-          p_in: string
-          p_listing: Database["public"]["Tables"]["listings"]["Row"]
-          p_out: string
-          p_party: number
-        }
-        Returns: undefined
-      }
+      housing_assert_nights_bookable:
+        | {
+            Args: {
+              p_details: Json
+              p_exclude: string
+              p_id: string
+              p_in: string
+              p_out: string
+              p_party: number
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_exclude: string
+              p_in: string
+              p_listing: Database["public"]["Tables"]["listings"]["Row"]
+              p_out: string
+              p_party: number
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_exclude: string
+              p_in: string
+              p_out: string
+              p_party: number
+              p_post: Database["public"]["Tables"]["posts"]["Row"]
+            }
+            Returns: undefined
+          }
       housing_booking_enqueue: {
         Args: {
           p_actor: string
@@ -13432,10 +13454,12 @@ export type Database = {
         Args: { p_message: string; p_shift_id: string }
         Returns: number
       }
-      owner_complete_offer_with_user: {
-        Args: { p_mode?: string; p_recipient_id?: string; p_target: string }
-        Returns: Json
-      }
+      owner_complete_offer_with_user:
+        | { Args: { p_recipient_id: string; p_target: string }; Returns: Json }
+        | {
+            Args: { p_mode?: string; p_recipient_id?: string; p_target: string }
+            Returns: Json
+          }
       owner_offer_set_status: {
         Args: {
           p_listing: Database["public"]["Tables"]["listings"]["Row"]
@@ -13479,6 +13503,10 @@ export type Database = {
       payment_ledger_post_balanced: {
         Args: { p_idempotency_key: string; p_lines: Json; p_txn_id: string }
         Returns: undefined
+      }
+      pgrowlocks: {
+        Args: { relname: string }
+        Returns: Record<string, unknown>[]
       }
       post_close_from_handoff: {
         Args: { p_h: Database["public"]["Tables"]["post_handoffs"]["Row"] }
