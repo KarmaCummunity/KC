@@ -17,7 +17,8 @@ declare
 begin
   v_listing := kc_test.create_listing(p_owner, 'items', 'give_item', 'give', 'item ' || p_status,
     '{"item_condition":"Good","fulfillment_mode":"owner_approval"}'::jsonb, now() + interval '30 days');
-  select coalesce(legacy_post_id, v_listing) into v_post_id from public.listings where listing_id = v_listing;
+  select coalesce(legacy_post_id, (select post_id from public.posts where listing_id = v_listing limit 1)) into v_post_id
+    from public.listings where listing_id = v_listing;
   if to_regclass('public.giving_handoffs') is not null then
     insert into public.giving_handoffs (listing_id, owner_id, recipient_id, world_slug, status, confirmed_at, handed_over_at)
     values (v_listing, p_owner, p_recipient, 'items', p_status,

@@ -33,10 +33,12 @@ begin
 
   insert into public.post_handoffs (post_id, owner_id, recipient_id, world_slug, status,
                                     confirmed_at, handed_over_at)
-  select coalesce(l.legacy_post_id, l.listing_id), l.owner_id, (select taker from personas), l.world_slug, p_status,
+  select coalesce(l.legacy_post_id, (select post_id from public.posts p where p.listing_id = l.listing_id limit 1)),
+         l.owner_id, (select taker from personas), l.world_slug, p_status,
          case when p_status in ('confirmed', 'handed_over') then now() end,
          case when p_status = 'handed_over' then now() end
-    from public.listings l where l.listing_id = p_listing;
+    from public.listings l where l.listing_id = p_listing
+     and coalesce(l.legacy_post_id, (select post_id from public.posts p where p.listing_id = l.listing_id limit 1)) is not null;
 end $$;
 
 -- The listing as a non-owner sees it: through the visibility predicate and the feed mirror.
@@ -114,7 +116,8 @@ begin
 
   -- Once the handoff is cancelled the owner may act again.
   update public.giving_handoffs set status = 'cancelled', cancelled_at = now() where listing_id = v;
-  update public.post_handoffs set status = 'cancelled', cancelled_at = now() where post_id in (select coalesce(legacy_post_id, listing_id) from public.listings where listing_id = v);
+  update public.post_handoffs set status = 'cancelled', cancelled_at = now()
+   where post_id in (select post_id from public.posts where listing_id = v or post_id = v);
   perform public.pause_my_listing(v);
   perform kc_test.assert_eq(kc_test.listing_status(v), 'cancelled', 'pause works after the cancel');
 end $$;

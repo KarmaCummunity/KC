@@ -88,9 +88,15 @@ begin
   values (v_stale, v_giver, v_taker, 'food', 'reserved')
   returning handoff_id into v_handoff;
   alter table public.listings disable trigger listings_food_expiry_block;
+  if exists (select 1 from pg_trigger where tgname = 'posts_before_write_world_rules') then
+    alter table public.posts disable trigger posts_before_write_world_rules;
+  end if;
   update public.listings set expires_at = now() - interval '1 minute' where listing_id = v_stale;
-  alter table public.listings enable trigger listings_food_expiry_block;
   update public.posts set expires_at = now() - interval '1 minute' where listing_id = v_stale;
+  alter table public.listings enable trigger listings_food_expiry_block;
+  if exists (select 1 from pg_trigger where tgname = 'posts_before_write_world_rules') then
+    alter table public.posts enable trigger posts_before_write_world_rules;
+  end if;
 
   perform public.food_expired_listings_sweep();
   perform public.food_expired_listings_sweep();
