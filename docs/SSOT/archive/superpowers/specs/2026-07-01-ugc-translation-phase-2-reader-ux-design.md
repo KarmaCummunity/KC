@@ -71,7 +71,7 @@ All new UI code lives in `apps/mobile`; all new business logic reuses the existi
 - **Accessibility:** toggle is `accessibilityRole="button"` with a clear `he` label; the label change is announced.
 
 ### 4.6 Settings language picker
-- In `settings.tsx`: a "Translation language" row opening a picker of supported target languages (the set the `translate` Edge Function/provider supports; sourced from a single constant so KC and GLOWE stay in sync).
+- In `settings.tsx`: a "Translation language" row opening a picker of supported target languages (the set the `translate` Edge Function/provider supports; sourced from a single constant so client and server stay in sync).
 - Selecting a language calls `IUserRepository.setPreferredLanguage` (FR-TRANSLATE-001 AC5) and invalidates the current-user + `['post-translations', …]` queries so the reader language and all rendered translations refresh.
 - Includes a "device default" choice that persists `null` (resolve from device locale at runtime, AC3).
 

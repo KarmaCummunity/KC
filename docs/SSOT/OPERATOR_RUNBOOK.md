@@ -19,7 +19,7 @@ supabase gen types typescript --project-id <ref> \
 
 ## Migration application rules (READ FIRST) {#application-rules}
 
-The repo uses **sequential** migration files (`supabase/migrations/NNNN_snake.sql`, e.g. `0212_glowe_event_registration.sql`). The `schema_migrations` ledger on each Supabase project must match those file versions exactly.
+The repo uses **sequential** migration files (`supabase/migrations/NNNN_snake.sql`, e.g. `0243_listings_legacy_sync.sql`). The `schema_migrations` ledger on each Supabase project must match those file versions exactly.
 
 **Rule:** apply schema changes to the dev DB ONLY as committed sequential files, via **`supabase db push`** / **`supabase migration up`** — or let the **Deploy** workflow apply them after a `dev` push passes CI.
 
@@ -650,9 +650,9 @@ The published row should show the new `current_version`. For `standard` / `criti
 
 ---
 
-## External GLOWE contributors (INFRA-OSS-8)
+## External contributors (INFRA-OSS-8)
 
-Org project board: [GloWe (#2)](https://github.com/orgs/KarmaCummunity/projects/2) — public.
+Org project board: [KC (#2)](https://github.com/orgs/KarmaCummunity/projects/2) — public.
 
 ### Labels
 
@@ -661,12 +661,12 @@ Org project board: [GloWe (#2)](https://github.com/orgs/KarmaCummunity/projects/
 | `contributor-facing` | Safe for volunteers |
 | `good first issue` / `help wanted` | Entry / next tasks |
 | `maintainer-only` | Org-admin / PM only (Snyk, CodeRabbit, GitGuardian, Phase C, …) |
-| `area:glowe-web` / `area:docs` / `area:a11y` / `area:i18n` | Area filter |
+| `area:mobile` / `area:docs` / `area:a11y` / `area:i18n` | Area filter |
 | `size:S` / `size:M` | Effort hint |
 
 ### Project views (maintainer setup)
 
-**Project:** [GloWe #2](https://github.com/orgs/KarmaCummunity/projects/2)
+**Project:** [KC #2](https://github.com/orgs/KarmaCummunity/projects/2)
 
 | View | Layout | Filter | URL |
 |------|--------|--------|-----|
@@ -699,7 +699,7 @@ gh api -X POST orgs/KarmaCummunity/projectsV2/2/views \
 Set **Contributor board** as the project default in the UI: project **⋯ → Settings →
 Default view**.
 
-Custom fields (optional): **Size** (S/M/L), **Area** (glowe-web/docs/a11y/i18n).
+Custom fields (optional): **Size** (S/M/L), **Area** (mobile/docs/a11y/i18n).
 
 #### One-time: grant CLI project scope + bulk-add items
 

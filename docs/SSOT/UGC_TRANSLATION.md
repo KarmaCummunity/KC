@@ -42,7 +42,7 @@ flowchart LR
 | App adapter | `EdgeFnTranslationService` | `requestTranslation` (single) + `requestTranslationsBatch` |
 | Feed materialization | `MaterializePostTranslationsUseCase` | Sends all post misses in one batch invoke |
 
-Migration `0238` drops GloWe-only `glowe_content_translations`; KC uses **`content_translations` only**. Migration `0239` extends CHECK constraints and purge triggers for `ride_listing` and `user` biography.
+KC uses **`content_translations` only**. Migration `0239` extends CHECK constraints and purge triggers for `ride_listing` and `user` biography.
 
 ### Batch API contract
 

@@ -95,7 +95,7 @@ Stops you from accidentally committing tokens / `.env` files:
 
 ```bash
 brew install gitleaks
-cd /path/to/your/clone/of/GloWe
+cd /path/to/your/clone/of/KC
 gitleaks protect --staged --redact   # run before each push (CI can run this too later)
 ```
 

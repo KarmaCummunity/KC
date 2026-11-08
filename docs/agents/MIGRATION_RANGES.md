@@ -6,7 +6,7 @@ Last applied on kc-dev when this was written: `0239`.
 
 | Range | Owner / issue | Status |
 |---|---|---|
-| 0238–0239 | #852 (GloWe removal, translation) | merged |
+| 0238–0239 | #852 (retired product removal, translation) | merged |
 | 0240–0247 | #860 (unified schema) | merged |
 | 0248–0249 | — | free |
 | 0250–0259 | social (#885, #887) | merged |
@@ -121,11 +121,12 @@ Last applied on kc-dev when this was written: `0239`.
 | 0640–0659 | — (superseded by 0665–0675 after 0660 merged) | free |
 | 0660–0664 | multi-world posts: `listing_worlds`, multi-world feeds, search, matching (#1475) | merged |
 | 0665–0675 | G1 one Post model steps 6b–6d (ADR-006, D-214, #1671): `6b` one S1 state machine, `6c` drop the sync triggers, `6d` drop `listings` / `giving_handoffs` | in progress |
-| 0676+ | — | free |
+| 0676 | #1961 reset the public schema comment (retired product cleanup) | in progress |
+| 0677+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0676+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0677+`.
 
 ## How to claim
 

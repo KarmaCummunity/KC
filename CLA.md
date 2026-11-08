@@ -3,7 +3,7 @@
 Version 1.0 — 2026-07-12
 
 This Contributor License Agreement ("Agreement") applies to any contribution you
-submit to the KarmaCommunity/GloWe repository ("Project"). By opening a pull
+submit to the KarmaCummunity/KC repository ("Project"). By opening a pull
 request against this repository, or by checking the CLA checkbox in the pull
 request template, you agree to the terms below on your own behalf or, if
 applicable, on behalf of the organization identified in the Entity section.

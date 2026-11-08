@@ -1112,37 +1112,19 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 ---
 
-## D-61 — GloWe frontend shares KC's Supabase backend; data namespaced `glowe_` (2026-06-25)
+## D-61 — Retired (product removed, D-190)
 
-**Date.** 2026-06-25
-
-**Decision.** The GloWe static frontend is added as an **additional** frontend (`app/apps/glowe-web`, design 1:1, not a replacement for the KC mobile app) wired to the **same** Supabase project as KC. Phase A shares **identity only**: a single Supabase Auth user (`auth.users`) backs both frontends ("log in once, same account in both"). GloWe-owned data lives in `public` under the `glowe_` table prefix (migration `0204`), kept deliberately isolated so it can later be migrated entity-by-entity onto KC's native tables and dropped as the products converge. Long-term intent (per PM): GloWe becomes the primary frontend riding on KC's infrastructure.
-
-**Rationale.** GloWe was already a Supabase-aware static app with a backend adapter + local fallback, so the design ports for almost no work — the real cost is data wiring. Sharing identity first delivers the headline goal immediately with minimal, reversible change and zero risk to KC's native schema. The `glowe_` prefix avoids collision with `public.posts` / `public.users` without a PostgREST exposed-schema config change on the shared project, keeping the blast radius to the GloWe app + one additive migration.
-
-**Alternatives rejected.** (a) Dedicated `glowe` Postgres schema — cleaner namespacing but needs the project's exposed-schemas list changed (shared-config blast radius) for no Phase-A benefit. (b) Rewriting GloWe in React Native inside the KC app — discards the 1:1 design and is weeks of work for the same identity outcome. (c) Mapping GloWe onto KC's native tables now — that is Phase B (shared content); entity models don't map 1:1, so it would block the quick win.
-
-**Phase A follow-ons (2026-06-25, PM calls).**
-- **Auth is Google-only.** Email/password sign-up and sign-in are hidden from the GloWe UI — both modals show a single "Continue with Google" CTA. The static email/password markup in GloWe's original page templates is overwritten at runtime (`upgradeLoginModal()` / `renderRegistrationWizard()` in `js/app.js`) so every page is consistently Google-only. The legacy email/password handlers and multi-step profile wizard remain in code but unrendered; profile completion moves to a post-sign-in step (Phase B).
-- **Hosting: `/glowe` sub-path of the main domain** (not a separate domain). `app/scripts/web-postbuild.mjs` copies `app/apps/glowe-web/**` into `dist/glowe/` during `pnpm build:web`, so the Cloudflare Pages deploy serves GloWe at `<main-domain>/glowe` alongside the KC web app. GloWe uses relative paths, so it works unchanged; Cloudflare serves the real `/glowe/*` static files before the KC SPA catch-all. Same-domain hosting means OAuth `redirectTo` reuses KC's already-allowlisted origins. A dedicated GloWe domain remains possible later.
-
-**Affected docs.** `docs/spec/requirements/17_glowe_frontend.md` (FR-GLOWE-001), migration `0204_glowe_schema.sql`, `docs/SSOT/BACKLOG.md` (GLOWE.A/B/C), `app/apps/glowe-web/**`, `app/scripts/web-postbuild.mjs`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-62 — GloWe session isolation from KC via dedicated Supabase storageKey + local signOut scope (2026-06-29)
 
-**Date.** 2026-06-29
+## D-62 — Retired (product removed, D-190)
 
-**Decision.** GloWe's Supabase client (`app/apps/glowe-web/js/backend.js`) now initialises with `auth.storageKey: 'glowe-auth-v1'` instead of the Supabase default `sb-<project-ref>-auth-token`. Sign-out uses `scope: 'local'` (clears only GloWe's own localStorage token without revoking the server-side refresh token). `logout()` in `auth.js` immediately calls `refreshPersonalAreaIfVisible()` so the Personal Area card disappears without waiting for the async `onAuthStateChange` cycle.
-
-**Rationale.** GloWe and KC are both served under `karma-community.pages.dev` and connect to the same Supabase project. Without a distinct storage key they share `sb-<ref>-auth-token` in localStorage, meaning (a) a KC sign-in silently signs GloWe in, (b) a GloWe sign-out revokes the server-side token and also logs KC out, and (c) GloWe's Personal Area still displayed the cached profile after logout because the `onAuthStateChange` callback only refreshed it when `gloweUser` was still set at the time it fired (it wasn't, since `logout()` removed it synchronously first). Using `scope:'local'` is correct here: KC retains a fully working session because its refresh token is untouched; GloWe gets a clean sign-out.
-
-**Alternatives rejected.** Global `signOut()` — the current default; revokes the shared Supabase session and silently kills KC. Separate Supabase project for GloWe — overkill for Phase A; sharing identity is intentional (D-61).
-
-**Affected docs.** `app/apps/glowe-web/js/backend.js`, `app/apps/glowe-web/js/auth.js`, `docs/spec/requirements/17_glowe_frontend.md`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
+
 
 ## D-63 — Cross-language UGC translation: demand-driven cache + zero-retention/DPA LLM-flash provider (2026-06-29)
 
@@ -1186,19 +1168,12 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 ---
 
-## D-66 — GloWe Events are opportunities-with-a-date; RSVPs are applications (additive, no new tables) (2026-06-29)
+## D-66 — Retired (product removed, D-190)
 
-**Date.** 2026-06-29
-
-**Decision.** The GloWe event-publishing & RSVP feature is built as an **additive extension** of `glowe_opportunities` (FR-GLOWE-007) and `glowe_applications` (FR-GLOWE-012), not as a parallel `glowe_events` / `glowe_event_registrations` schema. An **Event** is an opportunity that carries `start_at` plus event metadata (`event_type`, `event_link`/`link_visibility`/`link_reveal_hours`, `capacity`, `registration_mode`, `status`); an **RSVP** is a `glowe_applications` row with registration columns (`submitted_email`/`phone`/`comment`, `waitlist_position`, `rejection_note`, `decided_at`/`decided_by`). A `BEFORE INSERT/UPDATE` status guard (`glowe_applications_guard_status`) prevents applicants from self-deciding their status; privileged organizer decisions go through `SECURITY DEFINER` RPCs that bypass the guard (mirrors the posts guard, migration `0199`). Schema foundation lands in migration `0211`.
-
-**Rationale.** This honors the convergence direction (D-61): events ride the existing read/write/RLS/translation paths, so home and cards render an event as an opportunity with zero new plumbing, and entity-by-entity migration onto KC-native tables stays simple. It also resolves the conflict between the richer PM brainstorm (gated/open approval, capacity/waitlist, organizer mini-portal) and the member-experience design's thin "Event = validation profile over an opportunity": the rich features are delivered **incrementally as additive columns + RPCs**, never as a separate table.
-
-**Alternatives rejected.** Separate `glowe_events` + `glowe_event_registrations` tables (duplicates the opportunity/application read, RLS, translation, and moderation paths; fights the convergence goal); keeping events a pure client-side validation profile with no schema (cannot express gated approval, capacity, link-reveal timing, or organizer decisions safely).
-
-**Affected docs.** `docs/SSOT/archive/superpowers/specs/2026-06-29-glowe-event-rsvp-org-portal-design.md`, `docs/SSOT/archive/superpowers/specs/2026-06-29-glowe-member-experience-and-create-system-design.md`, `docs/spec/requirements/17_glowe_frontend.md` (FR-GLOWE-007 AC9, FR-GLOWE-012 AC7).
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
+
 
 ## D-155 — Karma economy: self-only visibility, server-authoritative single-anchor, status-anchored closure
 
@@ -1228,19 +1203,12 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 ---
 
-## D-169 — KC-root-behind-/glowe redirect is dev-only, not shipped to prod (revises the 2026-07-04 GLOWE-only directive for `main`)
+## D-169 — Retired (product removed, D-190)
 
-**Date.** 2026-07-05
-
-**Decision.** `app/scripts/web-postbuild.mjs` previously wrote an **unconditional** Cloudflare `_redirects` rule (`/ → /glowe/ 302`) plus an `index.html` meta-refresh shim, gating the entire KC web root behind GLOWE in every environment. This is now environment-gated: the root-redirect-to-`/glowe` behavior applies **only** when `EXPO_PUBLIC_ENVIRONMENT === 'development'` (the `dev` / `cloudflare-dev` deploy). On every other value — including missing/unknown, fail-safe-closed, same convention as `isDevEnvironment()` — the KC root serves the real KC web app. GLOWE itself is unaffected: it is copied to `dist/glowe/` and reachable at `/glowe` in **every** environment regardless of this gate.
-
-**Rationale.** PM (2026-07-05): dev may keep redirecting straight to GLOWE while building/testing it, but KC production (`main`, the public `karma-community-kc.com` domain) must serve the actual KC app at its root, not force every visitor into GLOWE. This revises the standing 2026-07-04 "GLOWE-only frontend" directive for the `main` branch specifically — that directive still governs day-to-day *development* priority (GLOWE-only work continues on `dev`), but no longer means KC prod's root URL redirects away from KC.
-
-**Alternatives rejected.** Reverting the redirect entirely (undoing D-61-era GLOWE-only work) — throws away the dev-mode gate the team is still using. A separate script/flag disconnected from `EXPO_PUBLIC_ENVIRONMENT` — the env var already differs per Cloudflare Pages environment (`cloudflare-dev` vs `cloudflare-prod`), so reusing it needs zero new deploy config, consistent with `areGloweLinksEnabled()` (D-168) the same day.
-
-**Affected docs.** `app/scripts/web-postbuild.mjs`; `docs/spec/requirements/17_glowe_frontend.md`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
+
 
 ## D-167 — English UI locale ships opt-in and machine-translated (delivers D-24 slice)
 
@@ -1256,242 +1224,145 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 ---
 
-## D-168 — GLOWE partnership links in KC are environment-gated (dev on, prod off)
+## D-168 — Retired (product removed, D-190)
 
-**Date.** 2026-07-05
-
-**Decision.** The two GLOWE deep-link entry points inside the KC app — the Settings → Support "GLOWE" row and the Donations-hub GLOWE partnership banner — are gated by `areGloweLinksEnabled()` (`apps/mobile/src/config/environment.ts`). They render in the development build and are **hidden in production**. The gate follows the existing per-environment `EXPO_PUBLIC_ENVIRONMENT` (fail-safe to production when unset/unknown), so no new per-environment deploy config is needed; an explicit `EXPO_PUBLIC_GLOWE_LINKS` override ('1'/'0') exists for local testing.
-
-**Rationale.** GLOWE is still a development-only product surface (dev.karma-community.pages.dev/glowe). KC production should not promote or redirect users to an unlaunched product. Reusing `EXPO_PUBLIC_ENVIRONMENT` keeps the condition automatic across the `cloudflare-dev` and `cloudflare-prod` builds (the value already differs) and prod-safe by default (fail-safe hides the links). When GLOWE launches, flip the gate (or point it at a launch flag) rather than editing each call site.
-
-**Alternatives rejected.** A dedicated required env var configured in both GitHub environments — more moving parts, and a missing value would fail open (show GLOWE on prod). Hardcoding removal on `main` — diverges the branches and breaks the single-codebase promotion flow.
-
-**Affected docs.** `apps/mobile/src/config/environment.ts`; `apps/mobile/app/settings.tsx`; `apps/mobile/app/(tabs)/donations/index.tsx`; `docs/spec/requirements/17_glowe_frontend.md`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-67 — GloWe community-post share keeps social buttons and adds copy-link
 
-> **Superseded by `D-177` (2026-07-15).** GloWe posts now share via one native Web Share button with a silent clipboard+toast desktop fallback; the social buttons and standalone copy-link described below were removed.
+## D-67 — Retired (product removed, D-190)
 
-**Date.** 2026-07-04
-
-**Decision.** FR-GLOWE-008 AC5 ("share a community post") is satisfied by **both** the existing social-network share buttons (Facebook / LinkedIn / X / WhatsApp) **and** a new "Copy link" control that writes the post's canonical URL to the clipboard via `navigator.clipboard.writeText` and confirms with a success toast. The canonical URL is derived by a pure helper `GlowePosts.postCanonicalUrl(postId, origin)` → `<origin>/glowe/pages/community.html?post=<id>`, so the shared link is stable, keyed on the post id (not the mutable title), and testable in isolation.
-
-**Rationale.** Social buttons open a share dialog on a third-party network, which is friction when the user just wants the link to paste into a DM, WhatsApp status, or their own notes. Copy-link is the lowest-friction, platform-agnostic share and is what most users reach for. Keeping both costs one small button and satisfies AC5's intent (make a post shareable) without removing a working path. Keying the URL on `postId` (previously the share path used `encodeURIComponent(post.title)`) fixes a latent bug where two posts with the same title collided and edited titles broke old links.
-
-**Alternatives rejected.** Replace social buttons with copy-link only — drops a working feature some users prefer and is a scope regression. Copy-link only via the native Web Share API (`navigator.share`) — unavailable on desktop browsers where GloWe is primarily used; clipboard copy works everywhere with a graceful `showSuccessModal` fallback when the Clipboard API is blocked.
-
-**Affected docs.** `docs/spec/requirements/17_glowe_frontend.md` (FR-GLOWE-008 AC5); `app/apps/glowe-web/js/glowe-posts.js`, `app/apps/glowe-web/js/app.js`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-68 — GloWe guest conversion ships Mode A (instant contextual prompt); Mode B is PM-gated
 
-**Date.** 2026-07-04
+## D-68 — Retired (product removed, D-190)
 
-**Decision.** Guest → member conversion (FR-GLOWE-023) ships **Mode A**: the moment a guest triggers an identity-required action, an action-tailored join modal opens immediately (single **Continue with Google** CTA), the intent is remembered, and the action resumes after sign-in. **Mode B** — progressive disclosure, where the guest may open and fill the action's form and is only walled at the final submit (with their typed input preserved and auto-submitted after sign-in) — is a deferred optimization that must **not** be implemented without an explicit PM instruction.
-
-**Rationale.** Mode A is the lower-risk baseline: it is simple, consistent across every action, and does not require preserving/replaying arbitrary form state across an OAuth redirect. Mode B typically converts better (sunk-cost + the guest sees the value before the wall) but is a measured optimization best run once we can compare conversion data — and it is materially more work per action. PM (2026-07-04) explicitly chose "A now, B later, only on my explicit instruction."
-
-**Alternatives rejected.** Ship Mode B directly — more surface area and per-action input-preservation complexity for an unproven conversion delta. A blocking login wall on entry — rejected earlier in the brainstorm: kills deep-link/SEO discovery for a global NGO-discovery product (web has no entry gate; guest is the default).
-
-**Affected docs.** `docs/spec/requirements/17_glowe_frontend.md` (FR-GLOWE-023); `docs/SSOT/archive/superpowers/specs/2026-07-04-glowe-guest-mode-contextual-join-design.md`; `app/apps/glowe-web/js/glowe-guest.js`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-69 — GloWe messaging rides KC chats directly; offers surface on the Wishing Well; dev seeded with persona fixtures
 
-**Date.** 2026-07-05
+## D-69 — Retired (product removed, D-190)
 
-**Decision.** Three launch-hardening calls made under autonomous CTO authority:
-
-1. **Messaging (FR-GLOWE-014 supersession).** GloWe direct messaging is implemented straight on KC's shared `public.chats` / `public.messages` from the static web client (canonical-pair insert + RLS; `rpc_chat_mark_read`, `rpc_unread_counts_for_chats`, `rpc_chat_unread_total`), skipping the planned outreach-post stub entirely. A fresh Google user is `account_status='active'`, so no schema or RLS change was needed. Realtime push into an open thread is deferred (thread refreshes on send/open).
-2. **Volunteer offers (FR-GLOWE-016).** An individual's standing "Volunteer Offer" persists as `glowe_posts.post_type='offer'` (CHECK widened in migration `0227`) and surfaces on the Wishing Well board alongside needs with a "Volunteer Offer" tag — no new surface, one discriminator (`GloweCreate.isOpenOffer`).
-3. **Dev seed personas.** The dev DB is populated by `scripts/seed-glowe-dev.mjs` (dev-only, idempotent, prod-ref-guarded) via a manual `Seed GloWe dev data` workflow: 6 realistic Israeli orgs (incl. a permanently-pending review fixture that reseeds back to pending) + 12 volunteers with a **committed default fixture password** (overridable via the `GLOWE_SEED_PASSWORD` secret). These are regular, non-privileged accounts on a non-production project; the E2E suite signs in as them by password grant.
-
-**Rationale.** (1) The stub would have produced throwaway UX and a second messaging model to migrate off; riding KC chats now means Phase C convergence is already done for messaging, and recipients get KC push notifications for free. (2) A dedicated offers surface is speculative (YAGNI) — the needs board is where helpers and askers already meet. (3) Deterministic personas make the full-flow E2E reproducible and give the PM a realistic demo environment; a committed default password for throwaway dev fixtures is the standard trade-off (same class as the local `seed.sql` fixtures), while the CI super-admin credential stays a secret.
-
-**Affected docs.** `spec/17_glowe_frontend.md` (FR-GLOWE-013/014/015/016 statuses); `docs/SSOT/TESTING.md` (GloWe suite); migration `0227_glowe_reports.sql`; `scripts/seed-glowe-dev.mjs`; `.github/workflows/seed-glowe-dev.yml`, `.github/workflows/ci-e2e-dev.yml`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-177 — GloWe posts share via one native Share button (supersedes D-67); design-fixes UX pass
 
-**Date.** 2026-07-15
+## D-177 — Retired (product removed, D-190)
 
-**Decision.** Every GloWe post-type card (community post, wish, opportunity, forum thread) exposes **one** Share icon button that calls the platform's native share sheet through the Web Share API (`navigator.share`), exactly like every consumer app. The per-network buttons (Facebook/LinkedIn/X/WhatsApp) and the standalone "Copy link" control are **removed**. On desktop browsers lacking `navigator.share`, the button falls back **silently** to copying the resolved absolute URL to the clipboard and confirming with a lightweight toast (`showToast`; `showSuccessModal` if the Clipboard API is blocked). This **supersedes `D-67`**, which had retained the social buttons + copy-link and rejected `navigator.share` over desktop support — the silent clipboard+toast fallback resolves that concern, and the PM (2026-07-15) explicitly asked for "a normal share mechanism like every app — no other-app tags, no copy link."
-
-Shipped in the same change-set: a GloWe design-fixes pass addressing nine reviewed UX defects (pure CSS/template polish, no `FR-*` AC change beyond AC5 above): (1) RTL alignment of the `...` action menu + its panel; (2) explicit empty state for opportunity requirements/responsibilities; (3) grouping Location/Duration/Commitment into one proximate meta block; (4) de-buttoning the static "What happens next" steps (numbered list, not ghost buttons); (5) collapsing the long Wishing Well filter lists into `<details>` accordions + capping the sticky sidebar height to end the scroll conflict; (6) anchoring grid-card action rows to a single bottom baseline; (7) single-line metadata badges (nowrap + ellipsis + title tooltip); (8) icons + a count on the Comment/Send actions and a localized, RTL comment summary; and the "Show original" translation toggle re-anchored adjacent to its post content.
-
-**Rationale.** A single familiar Share affordance is lower cognitive load than a row of network buttons (Progressive Disclosure), routes to whatever apps the user actually has, and drops the unstyled "Copy link" that broke visual consistency. The native sheet is the mechanism users already know (Jakob's Law); the clipboard+toast fallback keeps desktop parity without reintroducing per-network clutter.
-
-**Alternatives rejected.** Keep D-67's dual paths — the PM explicitly rejected the network buttons and copy-link. A desktop popover menu of copy/options — more surface for no real gain over a quiet copy+toast (the PM chose the silent fallback).
-
-**Affected docs.** `docs/spec/requirements/17_glowe_frontend.md` (FR-GLOWE-008 AC5); `app/apps/glowe-web/js/app.js`, `js/glowe-translate.js`, `css/styles.css`, `pages/wishing-well.html`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-178 — Personal Area gate replaced hard redirect with the FR-GLOWE-023 contextual join modal
 
-**Date.** 2026-07-16
+## D-178 — Retired (product removed, D-190)
 
-**Decision.** `requireGloweMember()` (a hard `window.location.href` redirect back to the guest home) is removed. The bottom-nav "Profile" tab and the header's "Personal Area" link both point at `my-applications.html` unconditionally; `initMyApplicationsPage()` now renders an in-page sign-in prompt on `personal-area-content` for anonymous visitors (the same pattern already used by `settings`/`messages`) and immediately opens the `open-personal-area` contextual join modal via `GloweGuest.requireMemberForAction` (already registered in `GLOWE_JOIN_ACTIONS` but previously unwired). Google sign-in reloads the page and the personal area renders normally.
-
-**Rationale.** PM report: tapping the "Profile" tab while signed out visibly flashed and bounced back to the marketing home, reading as a broken tab rather than an auth gate. `requireGloweMember()`'s silent-redirect design (FR-GLOWE-016 AC1, as originally written) predates FR-GLOWE-023's contextual-join pattern, which every other identity-gated action (create, apply, RSVP, message, save, report) already uses. Aligning the last remaining hard-redirect gate onto the existing pattern is a bug fix, not a new feature.
-
-**Alternatives rejected.** A dedicated `/login` page — the app is Google-only auth via modal (`D-33`); a full page would duplicate `showJoinPrompt()`'s UI for no gain. Keeping the redirect but adding a toast — still a dead-end tap; the contextual modal already solves this everywhere else.
-
-**Affected docs.** `spec/17_glowe_frontend.md` (`FR-GLOWE-016` AC1); `app/apps/glowe-web/js/{app.js,auth.js}`; `app/apps/glowe-web/css/styles.css` (header auth button now inline instead of a stretched mobile banner, moved next to `.lang-toggle`).
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-179 — GloWe bilingual display names stored as columns, not via UGC translation (2026-07-17)
 
-**Decision.** Person and organization display names on GloWe are bilingual via dedicated DB columns (`display_name_en`, `org_name_en`, plus content snapshots `author_name_en` / `organization_en`). English variants are user-editable and auto-generated on onboarding when the source name is non-Latin (`glowe-generate-name-en`). They are **not** translated on-demand through `glowe-translate` / `glowe_content_translations`. KC `public.users.display_name` is unchanged.
+## D-179 — Retired (product removed, D-190)
 
-**Rationale.** FR-TRANSLATE-005 AC4 deliberately excludes proper names from the UGC cache (no user edit of a cached translation; names are identity, not prose). Readers on the EN interface still need Latin names for Hebrew/Arabic/etc. registrants. Storing an editable `_en` column mirrors the cities `name_he`/`name_en` pattern and lets the owner correct auto-transliterations.
-
-**Alternatives rejected.** *Route names through `glowe-translate`* — violates AC4 and produces non-editable cached strings. *Add `display_name_en` on KC `users` in the same change* — out of GloWe MVP scope (PM: GloWe only). *Deterministic transliteration table only* — poor quality for org legal names; LLM transliteration with user override is better.
-
-**Affected.** Migration `0230_glowe_bilingual_names.sql`; Edge Function `glowe-generate-name-en`; `app/apps/glowe-web/js/{backend.js,app.js,glowe-localized-name.js,glowe-posts.js,glowe-opportunities.js,glowe-create.js,glowe-wishes.js}`; `spec/17_glowe_frontend.md` FR-GLOWE-024; `spec/18_translation.md` note.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-180 — GloWe translation toggle slot + card action grid convention (2026-07-19)
 
-**Decision.** Every translated UGC card reserves a `.tr-slot` under the header/author row for the "Show original" / "Show translation" control. `glowe-translate.js` injects into that slot first. Shared helpers live in `js/glowe-ui-conventions.js`. Organization card footers use `.card-actions--consistent` (CSS grid) with short Save/Saved labels so saved vs unsaved cards share one layout. Meta chips (location/scope, type/impact) are deduped before render.
+## D-180 — Retired (product removed, D-190)
 
-**Rationale.** PM reported inconsistent toggle placement and org-card footers that reflow when the save label length changes. A single convention file prevents per-card drift.
-
-**Affected.** `glowe-ui-conventions.js`, `glowe-translate.js`, `app.js` card renderers, `styles.css`; FR-TRANSLATE-005 AC7; migration `0231` (comments + tags).
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
+
 
 ## D-181 — App-wide semver (`app/VERSION`) with auto patch on every `dev` push (2026-07-19)
 
-**Decision.** Product version is app-wide semver in `app/VERSION`. **PATCH is bumped in every PR into `dev` by the authoring agent** (org policy blocks GitHub Actions from creating PRs, so push-triggered auto-bump cannot land). Optional `workflow_dispatch` on `Bump app version` only prepares a `chore/version-bump-*` branch. **MAJOR/MINOR** are manual for breaking / significant feature sets. GloWe footer shows `vX.Y.Z` from `glowe-version.js`; `web-postbuild` re-stamps from `app/VERSION` on deploy. KC mobile UI display deferred.
+**Decision.** Product version is app-wide semver in `app/VERSION`. **PATCH is bumped in every PR into `dev` by the authoring agent** (org policy blocks GitHub Actions from creating PRs, so push-triggered auto-bump cannot land). Optional `workflow_dispatch` on `Bump app version` only prepares a `chore/version-bump-*` branch. **MAJOR/MINOR** are manual for breaking / significant feature sets. KC mobile UI display deferred.
 
 **Rationale.** PM needs a normal `x.x.x` marker on the live `dev` site to verify deploys; the version applies to the whole app. Auto-PR bump was attempted and blocked at the org Actions permission layer (same family as TD-182 / GH006). Agent-owned PATCH bumps keep the counter honest without requiring an org policy change.
 
-**Affected.** `app/VERSION`, `scripts/bump-app-version.mjs`, `.github/workflows/bump-app-version.yml`, `glowe-version.js`, `ensureGlobalFooter`, `web-postbuild.mjs`; FR-GLOWE-025; bold rule in `CLAUDE.md`.
+**Affected.** `app/VERSION`, `scripts/bump-app-version.mjs`, `.github/workflows/bump-app-version.yml`, `web-postbuild.mjs`; bold rule in `CLAUDE.md`.
 
 ---
 
-## D-182 — GloWe production synthetics + admin health panel (2026-07-22)
+## D-182 — Retired (product removed, D-190)
 
-**Decision.** Store automated GloWe live-site probe results in `glowe_health_checks` (migration `0233`) and surface them in the GloWe admin portal. Probes are **read-only Playwright** journeys (`prod-health` project) run from `glowe-prod-smoke.yml` after `dev` deploy and on a 15-minute cron. **GloWe production** (`https://dev.karma-community.pages.dev/glowe`) is a **separate live URL** from **KC production** (`https://karma-community-kc.com`); ingest targets the **dev** Supabase project (GloWe's backend today). KC HTTP smoke stays in `prod-smoke.yml` on `main` only.
-
-**Rationale.** HTTP-200 smoke cannot catch broken feeds, auth wiring, or Supabase client failures. Admins need in-product visibility without opening GitHub Actions. Reuses existing Playwright infra and GloWe admin RBAC (`is_glowe_admin`).
-
-**Alternatives rejected.** Third-party-only monitoring (Checkly) without admin portal integration — rejected for MVP (add later as redundant channel). Write probes in prod — deferred (canary user in a follow-up). Polling-only checks without browser — insufficient for JS/runtime failures.
-
-**Mapped to:** `INFRA-QA-W7`, FR-GLOWE-018 extension.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-183 — GloWe follow system rides KC `follow_edges` (2026-07-22)
 
-**Decision.** GloWe follow/unfollow uses KC's existing `follow_edges` graph via thin `backend.js` adapters (`kcFollow`, `kcUnfollow`, `kcGetFollowState`, `kcListFollowers`, `kcListFollowing`, `kcPublicCounts`) plus pure helpers in `glowe-follow.js` — the same pattern as the GloWe chat Realtime slice. MVP is public follow/unfollow only; private accounts hide the Follow button and show an approval-required note (no follow-request flow). No shared TypeScript package import from GloWe, no new RPCs, no DB migrations.
+## D-183 — Retired (product removed, D-190)
 
-**Rationale.** KC already owns the follow domain in `@kc/application` / `infrastructure-supabase`; GloWe is vanilla JS with no bundler. Reusing `follow_edges` + RLS keeps one graph for KC mobile and GloWe without duplicating schema or business rules.
-
-**Alternatives rejected.** *New GloWe-only follow table* — violates D-61 shared identity. *Import `@kc/application` from GloWe* — no bundler, out of scope. *New batch follow-state RPC* — deferred; sequential per-id hydration is acceptable for MVP org directory size.
-
-**Affected.** `app/apps/glowe-web/js/{glowe-follow.js,glowe-follow-ui.js,backend.js,app.js,glowe-guest.js}`; `pages/{profile,organizations,my-applications,connections}.html`; `styles.css`; FR-GLOWE-026; FR-FOLLOW-001/002/011 (MVP subset); design `docs/superpowers/specs/2026-07-22-glowe-follow-system-design.md`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-184 — GloWe Home is a unified discovery feed (2026-07-27)
 
-**Decision.** Signed-in Home is feed-only: one unified card chrome for posts, opportunities, events, wishes, volunteer offers, forum groups, and forum threads (org profiles excluded). Ranking is client-side hot(score) = recency + comments + saves, then a diversity pass; progressive paging is 10 then +8. Guests see a 10-item peek + join CTA on the marketing home. A server RPC may replace the client merge later without changing card renderers.
+## D-184 — Retired (product removed, D-190)
 
-**Rationale.** PM asked for one coherent discovery surface instead of mismatched card layouts and a desktop 6-item "See all" gate. Client merge reuses existing `listAll` loaders for MVP speed (hybrid Phase 1).
-
-**Alternatives rejected.** Keep capped posts+opportunities strip; include org directory cards on Home; dump the full catalog without progressive load.
-
-**Affected.** `app/apps/glowe-web/js/glowe-home-feed*.js`, `app.js`, `index.html`, `styles.css`; FR-GLOWE-016 AC2; design/plan under `docs/SSOT/archive/superpowers/{specs,plans}/2026-07-27-glowe-unified-home-feed*`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-185 — GloWe publishing rules and profile privacy are enforced in Postgres (2026-07-27)
 
-**Decision.** The GloWe capability matrix (who may publish which content kind) lives in `public.glowe_can_create()` and is applied by `BEFORE INSERT` triggers on `glowe_posts` and `glowe_opportunities`. The browser keeps a mirror in `canCreate()` (`glowe-create.js`) purely to render the create menu without a round trip; the database is the enforcement point. `glowe_profiles` moves to the migration-0163 pattern used by `public.users`: a row policy that hides unapproved organization applications, column-scoped `SELECT` grants that exclude PII, a `glowe_public_profiles` projection view, and an owner-only `glowe_get_self_private_fields()` RPC. Content creation is rate limited via the existing `enforce_rate_limit()` (30 posts / 15 opportunities / 40 applications per hour), exempting non-client JWT roles.
+## D-185 — Retired (product removed, D-190)
 
-**Rationale.** Pre-launch review found all three rules existed only as client-side JavaScript: any signed-in user could POST directly at PostgREST to publish as an unapproved organization or create an event as a private individual, and `anon` could read every pending/rejected organization application together with the reviewer's private `org_review_note`, org contact details and the `raw_profile` PII blob.
-
-**Consequence (deliberate).** An organization's contact email is no longer rendered on its public profile page; the page falls back to "Contact through GloWe messages". Applicant emails still reach opportunity owners, which flows through the `SECURITY DEFINER` RPC in migration 0220.
-
-**Alternatives rejected.** Keep the checks client-side and accept the risk; use a `SECURITY DEFINER` view instead of column grants (diverges from the existing `users_public` pattern); enforce the rules in Edge Functions (leaves the direct PostgREST path open).
-
-**Affected.** `supabase/migrations/0236_glowe_publish_guards_and_profile_privacy.sql`, `supabase/tests/0236_glowe_publish_guards.sql`, `app/apps/glowe-web/js/{backend.js,glowe-create.js}`; FR-GLOWE-003, FR-GLOWE-016; supersedes the blanket read policy in migration 0204.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-186 — GloWe has one registration path for opportunities and events (2026-07-27)
 
-**Decision.** Volunteering opportunities and events share a single apply/RSVP entry point, `public.glowe_apply_to_opportunity()` (migration `0237`), which reads `registration_mode` and `capacity` off the listing and returns the resolved status: `open` → `Accepted`, `open` at capacity → `Waitlisted` with a position, `gated` → `Pending`. Seat allocation lives in one place, `public.glowe_next_waitlist_position()`, shared by the apply RPC and both decision RPCs. `glowe_register_for_event()` survives as a thin event-only wrapper (it still asserts the target is an event) so existing callers and the 0212–0214 regression tests are untouched. The browser never assumes an outcome: it renders whatever status the server returns.
+## D-186 — Retired (product removed, D-190)
 
-**Rationale.** The two halves of FR-GLOWE-012 had drifted. Events went through an RPC that honoured `registration_mode`; plain opportunities were a direct `INSERT` from `app.js` with a hardcoded `'Pending'`, so an organization literally could not offer an opportunity on "everyone can join" terms even though the column existed. Capacity was worse: only checked when an organizer accepted an event registration by hand, so open-mode events could be filled past their stated capacity and plain opportunities could always be overfilled. The PM requirement — the post owner chooses between approving one by one and letting everyone in — was only half implemented.
-
-**Consequence (deliberate).** Accepting an applicant into a full listing now returns `Waitlisted` instead of overfilling, for both decision RPCs; the owner is told. An applicant already holding a waitlist place keeps that place when such an accept fails, rather than being sent to the back of the queue. `glowe_list_applications_for_opportunity()` gained a `waitlist_position` column (a `DROP`/`CREATE`, since a `RETURNS TABLE` change is not replaceable in place) and orders the waitlist group by it.
-
-**Alternatives rejected.** Give plain opportunities their own capacity RPC (two rules to keep in sync — the exact drift being fixed); enforce capacity only at decision time (leaves open mode overfillable); make the browser compute the outcome and write the status (the client is not a trustworthy enforcement point — see D-185).
-
-**Affected.** `supabase/migrations/0237_glowe_unified_registration.sql`, `supabase/tests/0237_glowe_unified_registration.sql`, `app/apps/glowe-web/js/{app.js,backend.js,glowe-opportunities.js,glowe-organizations.js}`, `pages/opportunity.html`; FR-GLOWE-012 AC5–AC8, FR-GLOWE-007-C.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-189 — GloWe staging branch + dual URLs + Playwright visual gate (2026-07-27)
 
-**Decision.** GloWe gets two live URLs on Cloudflare Pages branch aliases:
+## D-189 — Retired (product removed, D-190)
 
-| URL | Branch | Role |
-| --- | --- | --- |
-| `https://dev.karma-community.pages.dev/glowe/` | `dev` | **Production** — stable front door for users (unchanged from D-182) |
-| `https://staging.karma-community.pages.dev/glowe/` | `staging` | **Integration** — ongoing feature work before release |
-
-Feature PRs target `staging`; release PRs are `staging` → `dev`. `CI — GloWe E2E (dev + staging)` runs Playwright journeys + `toHaveScreenshot()` visual regression on every PR/push to either branch (`GLOWE_STAGING_URL` / `GLOWE_PROD_URL`). KC production (`main` → `karma-community-kc.com/glowe`) remains a separate, slower-moving bundle until a `dev` → `main` release promotes it.
-
-**Rationale.** PM wants automated E2E every dev version and a clear prod vs integration split without renaming the stable `dev` branch that already acts as GloWe's production line. A dedicated `staging` branch + Cloudflare branch alias is simpler than PR-preview URLs (no per-PR secret wiring) and keeps `dev` deploys user-visible only after an explicit promotion.
-
-**Alternatives rejected.** Treat `karma-community-kc.com/glowe` as GloWe prod (currently lags `dev`); run E2E only on `dev` → `main` release PRs (too late in the cycle); Maestro for web (Playwright suite already exists).
-
-**Affected.** `.github/workflows/{ci-e2e-glowe,deploy-web}.yml`, `tests/e2e/journeys/glowe-visual.spec.ts`, `docs/SSOT/{ENVIRONMENTS,TESTING}.md`, GitHub vars `GLOWE_STAGING_URL`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-190 — GloWe product removed; KC-only repo (2026-10-16)
 
-**Decision.** Remove the GloWe static frontend (`app/apps/glowe-web`), GloWe CI/deploy/smoke workflows, Edge Functions `glowe-translate` / `glowe-generate-name-en`, and all `glowe_*` database objects via forward migration `0238_drop_glowe_product.sql`. KC mobile/web export and shared Supabase core remain the sole product surface.
+## D-190 — Second product removed; KC-only repo (2026-10-16)
 
-**Rationale.** Repository renamed to Karma Community (KC); maintaining a parallel GloWe product fork inside the monorepo duplicated backend schema and confused contributors.
+**Decision.** Remove the second static web product that shared KC's Supabase backend: its frontend tree, its CI/deploy/smoke workflows, its Edge Functions and all of its namespaced database objects (forward migration `0238`). KC mobile/web export and the shared Supabase core remain the sole product surface. On 2026-11-08 (#1961) every remaining trace was removed from the repo: its historical migrations became no-ops (version numbers kept for the ledger), and docs, configs and comments were rewritten.
 
-**Alternatives rejected.** Leave schema in place unused (ongoing RLS/types/CI cost); rename-only without drops (misleading `glowe_*` API surface).
+**Rationale.** Repository renamed to Karma Community (KC); maintaining a parallel product fork inside the monorepo duplicated backend schema and confused contributors.
 
-**Affected.** Migration `0238`, `AGENTS.md`, `README.md`, `.github/workflows/*`, `app/scripts/web-postbuild.mjs`, archived spec `docs/SSOT/archive/17_glowe_frontend.md`.
+**Alternatives rejected.** Leave schema in place unused (ongoing RLS/types/CI cost); rename-only without drops (misleading API surface).
 
-**Manual follow-up.** Delete GitHub Actions variables `GLOWE_PROD_URL`, `GLOWE_STAGING_URL`, `GLOWE_SEED_PASSWORD`; disable or remove branch-protection required checks for deleted workflows (`CI — GloWe E2E`, `glowe-prod-smoke`).
+**Affected.** Migrations `0204`–`0238`, `0676`, `AGENTS.md`, `README.md`, `.github/workflows/*`, `app/scripts/web-postbuild.mjs`.
 
 ---
 
-## D-191 — Port GloWe smart UGC translation to KC `translate` (2026-10-16)
 
-**Decision.** Retire the separate `glowe-translate` function and `glowe_content_translations` table with GloWe sunset, but **keep** the batch-oriented translation engine on KC: shared `kcSource` registry, server-side source reads, cache poison recovery, and `translateMany` fan-out on the existing `translate` Edge Function writing to `content_translations`. Extend the cache schema for `ride_listing` and `user` biography (migration `0239`).
+## D-191 — Smart UGC translation engine lives in KC `translate` (2026-10-16)
 
-**Rationale.** Naveh: the smart auto-translation mechanism built for GloWe should power KC UGC (posts today; rides/profiles/chats as registered), without reviving GloWe product tables.
+**Decision.** Keep one batch-oriented translation engine on KC: shared `kcSource` registry, server-side source reads, cache poison recovery, and `translateMany` fan-out on the `translate` Edge Function writing to `content_translations`. The separate translation function and cache table of the removed product (D-190) are gone. Extend the cache schema for `ride_listing` and `user` biography (migration `0239`).
 
-**Alternatives rejected.** Reintroduce `glowe_content_translations` alongside KC cache (duplicate pipelines); client-supplied source text for batch (cache-poisoning risk).
+**Rationale.** Naveh: the smart auto-translation mechanism should power KC UGC (posts today; rides/profiles/chats as registered).
+
+**Alternatives rejected.** A second cache table alongside KC's (duplicate pipelines); client-supplied source text for batch (cache-poisoning risk).
 
 **Affected.** `supabase/functions/translate/**`, `supabase/functions/_shared/translation/kcSource.ts`, migration `0239`, `EdgeFnTranslationService`, `MaterializePostTranslationsUseCase`, `docs/SSOT/UGC_TRANSLATION.md`, `docs/spec/requirements/18_translation.md`.
 
 ---
 
+
 ## D-192 — KC mobile store track resumed; EAS + CI (2026-10-16)
 
 **Decision.** Unpause the Expo KC app (`app/apps/mobile`) for App Store / Google Play delivery: document local + EAS workflows and add GitHub Actions for EAS builds with TestFlight / Play **internal** submit (no App Review). Native ids: `org.karmacommunity.app`. Marketing version follows `app/VERSION` via `app.config.ts`; EAS production profile uses remote `autoIncrement` for build numbers.
 
-**Rationale.** Issues #836 / #837; KC mobile shares the Supabase backend and needs store-ready builds after GloWe sunset (D-190).
+**Rationale.** Issues #836 / #837; KC mobile shares the Supabase backend and needs store-ready builds after the second product was removed (D-190).
 
 **Affected.** `app/apps/mobile/{README.md,eas.json,app.config.ts}`, `.github/workflows/kc-mobile-*.yml`, `README.md`, `AGENTS.md`, `CONTRIBUTING.md`.
 
@@ -1851,25 +1722,25 @@ Owner rules that go with it:
 | 4.23 | 2026-10-30 | Added `D-195` (three-tier CI/CD: single required `CI gate` PR check, nightly mobile builds, one owner approval before prod; supersedes parts of `D-53` and `D-193`). |
 | 4.22 | 2026-10-17 | Added `D-193` (CI speed: pnpm/Turbo cache + path-filter skips; single TestFlight/Play workflows; closes #941/#942). |
 | 4.21 | 2026-10-16 | Added `D-192` (KC mobile store track + EAS CI; unpause #836 / #837). |
-| 4.20 | 2026-10-16 | Added `D-191` (GloWe translation engine ported to KC `translate` + `content_translations`). |
-| 4.19 | 2026-10-16 | Added `D-190` (GloWe sunset; KC-only codebase; migration `0238`). |
-| 4.18 | 2026-07-27 | Added `D-189` (GloWe `staging` branch + dual URLs + Playwright visual gate; INFRA-QA-W1/W2). |
-| 4.17 | 2026-07-27 | Added `D-186` (one registration path for GloWe opportunities and events; capacity + registration_mode enforced server-side; FR-GLOWE-012). |
-| 4.16 | 2026-07-27 | Added `D-185` (GloWe publish guards + profile privacy enforced in Postgres; FR-GLOWE-003 / FR-GLOWE-016). |
-| 4.15 | 2026-07-27 | Added `D-184` (GloWe Home unified discovery feed; FR-GLOWE-016 AC2 rewrite). |
-| 4.14 | 2026-07-22 | Added `D-183` (GloWe follow on KC `follow_edges` via `backend.js` + `glowe-follow.js`; public MVP only; FR-GLOWE-026). |
-| 4.13 | 2026-07-22 | Added `D-182` (GloWe prod synthetics → `glowe_health_checks` + admin health panel; `INFRA-QA-W7`). |
-| 4.12 | 2026-07-19 | Added `D-181` (app-wide semver + auto patch on `dev` push; GloWe footer `vX.Y.Z`; FR-GLOWE-025). |
-| 4.11 | 2026-07-19 | Added `D-180` (GloWe `.tr-slot` toggle convention + consistent org card actions; FR-TRANSLATE-005 comments/tags). |
-| 4.10 | 2026-07-16 | Added `D-178` (Personal Area / bottom-nav "Profile" tab gate replaced hard redirect-home with the FR-GLOWE-023 contextual join modal; header auth button moved inline next to the language toggle on mobile). |
-| 4.9 | 2026-07-15 | Added `D-177` (GloWe posts share via one native Web Share button with silent clipboard+toast desktop fallback; removes per-network buttons + copy-link; **supersedes `D-67`**; bundles the nine-item GloWe design-fixes UX pass; `FR-GLOWE-008` AC5). |
-| 4.8 | 2026-07-05 | Added `D-69` (GloWe messaging on KC chats supersedes outreach stub; volunteer offers as `post_type='offer'` on the Wishing Well; dev persona seed + workflow; `FR-GLOWE-013..016`). |
-| 4.7 | 2026-07-04 | Added `D-68` (GloWe guest conversion ships Mode A instant contextual join now; Mode B progressive disclosure is PM-gated; `FR-GLOWE-023`). |
-| 4.6 | 2026-07-04 | Added `D-67` (GloWe community-post share keeps social buttons and adds a copy-link control writing `postCanonicalUrl` to the clipboard; canonical URL keyed on `postId`; `FR-GLOWE-008` AC5). |
-| 4.5 | 2026-06-29 | Added `D-66` (GloWe Events are opportunities-with-a-date and RSVPs are applications — additive columns + status guard in migration `0211`, no `glowe_events`/`glowe_event_registrations` tables; reconciles the rich event brainstorm with the convergence model; `FR-GLOWE-007` AC9, `FR-GLOWE-012` AC7). |
+| 4.20 | 2026-10-16 | Added `D-191` (smart translation engine on KC `translate` + `content_translations`). |
+| 4.19 | 2026-10-16 | Added `D-190` (second product removed; KC-only codebase; migration `0238`). |
+| 4.18 | 2026-07-27 | Added `D-189` (retired since, D-190). |
+| 4.17 | 2026-07-27 | Added `D-186` (retired since, D-190). |
+| 4.16 | 2026-07-27 | Added `D-185` (retired since, D-190). |
+| 4.15 | 2026-07-27 | Added `D-184` (retired since, D-190). |
+| 4.14 | 2026-07-22 | Added `D-183` (retired since, D-190). |
+| 4.13 | 2026-07-22 | Added `D-182` (retired since, D-190). |
+| 4.12 | 2026-07-19 | Added `D-181` (app-wide semver + auto patch on `dev` push). |
+| 4.11 | 2026-07-19 | Added `D-180` (retired since, D-190). |
+| 4.10 | 2026-07-16 | Added `D-178` (retired since, D-190). |
+| 4.9 | 2026-07-15 | Added `D-177` (retired since, D-190). |
+| 4.8 | 2026-07-05 | Added `D-69` (retired since, D-190). |
+| 4.7 | 2026-07-04 | Added `D-68` (retired since, D-190). |
+| 4.6 | 2026-07-04 | Added `D-67` (retired since, D-190). |
+| 4.5 | 2026-06-29 | Added `D-66` (retired since, D-190). |
 | 4.4 | 2026-06-29 | Added `D-65` (UGC translation Phase 1b: free Gemini Flash now + pluggable provider seam → paid DPA Flash before public launch is env-only; `TranslateAndCache`/`ITranslationProvider` realized server-side in the `translate` Edge Function; app depends on new `ITranslationService` port). Recorded alongside `D-63`/`D-64` (translation epic). |
-| 4.3 | 2026-06-29 | Added `D-62` (GloWe session isolation: `storageKey:'glowe-auth-v1'` + `scope:'local'` signOut + immediate Personal Area refresh on logout; fixes profile-still-visible-after-logout bug). |
-| 4.2 | 2026-06-25 | Added `D-61` (GloWe added as an additional frontend on KC's shared Supabase backend; Phase A shares Auth identity only; GloWe data namespaced `glowe_`, migration `0204`; `FR-GLOWE-001`, `spec/17_glowe_frontend.md`). |
+| 4.3 | 2026-06-29 | Added `D-62` (retired since, D-190). |
+| 4.2 | 2026-06-25 | Added `D-61` (retired since, D-190). |
 | 4.1 | 2026-06-08 | Added `D-155` (karma economy: self-only at MVP, single-anchor awards, status-anchored closure, own-row Realtime). Added `D-156` (anti-collusion caps as hard precondition for karma public flip; `FR-KARMA-008`). |
 | 4.0 | 2026-06-04 | Added `D-58` (native Sign in with Apple via `signInWithIdToken` + raw nonce; `FR-AUTH-004` implemented; mirrors `D-33`; Apple portion of `TD-24` closed in code; live flow pends Supabase Apple provider config). |
 | 3.9 | 2026-06-01 | Added `D-57` (reports require an active account — `reports_insert_self` gated on `is_active_member`; migration `0183`; closes `TD-88`). |
