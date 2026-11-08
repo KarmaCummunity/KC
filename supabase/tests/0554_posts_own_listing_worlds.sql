@@ -189,6 +189,7 @@ begin
     perform kc_test.assert_eq((pg_temp.listing(v_listing)).title, 'rice, two portions', 'while the edit itself lands');
   else
     update public.posts set expires_at = v_expires where post_id = (pg_temp.post_of(v_listing)).post_id;
+    update public.listings set expires_at = v_expires where listing_id = v_listing;
     perform kc_test.assert_eq((pg_temp.post_of(v_listing)).expires_at, v_expires, 'the expiry set on the listing reaches the post');
     perform kc_test.act_as(p.cook);
     perform public.update_my_listing(v_listing, p_title => 'rice, two portions');
@@ -288,9 +289,7 @@ do $$
 declare
   r jsonb := public.post_unification_report();
 begin
-  perform kc_test.assert_eq((r ->> 'mirror_field_mismatches')::int,
-    case when exists (select 1 from pg_trigger where tgname = 'posts_sync_listing') then 0 else 2 end,
-    'every post agrees with its listing');
+  perform kc_test.assert_eq((r ->> 'mirror_field_mismatches')::int, 0, 'every post agrees with its listing');
   perform kc_test.assert_eq((r ->> 'ride_field_mismatches')::int, 0, 'every ride extension agrees with its listing');
   perform kc_test.assert_eq((r ->> 'ride_details_missing')::int, 0, 'every ride post has its extension');
 end $$;
