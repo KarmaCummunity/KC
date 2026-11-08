@@ -38,7 +38,7 @@ import { inputTextAlignStart } from '../../src/lib/rtlLayout';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVerticalOffset';
-import { useFormFieldFocus } from '../../src/hooks/useFormFieldFocus';
+import { formKeyboardAccessoryProps, useFormFieldFocus } from '../../src/hooks/useFormFieldFocus';
 import type { FormFieldFocusBindings } from '../../src/hooks/useFormFieldFocus';
 import { KeyboardFormAccessory } from '../../src/components/ui/KeyboardFormAccessory';
 
@@ -114,13 +114,7 @@ export default function SurveyDemoScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={keyboardOffset}
       >
-        <KeyboardFormAccessory
-          canGoPrev={fieldFocus.canGoPrev}
-          canGoNext={fieldFocus.canGoNext}
-          onPrev={fieldFocus.focusPrev}
-          onNext={fieldFocus.focusNext}
-          onDone={fieldFocus.dismiss}
-        />
+        <KeyboardFormAccessory {...formKeyboardAccessoryProps(fieldFocus)} />
         <View style={styles.progressBar}>
           <Text style={styles.progressText}>
             {t('surveyDemo.progress', { current: activeIndex + 1, total })}

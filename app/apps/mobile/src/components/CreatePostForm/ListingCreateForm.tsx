@@ -24,8 +24,9 @@ import { ListingDetailFields } from './ListingDetailFields';
 import { ListingFieldFrame, ListingFieldProblemContext } from './ListingFieldFrame';
 import { PhotoPicker } from './PhotoPicker';
 import { ListingKindChooser } from './ListingKindChooser';
+import { KindGate } from './ListingKindGate';
 import { TimeOfferKindChooser } from './TimeOfferKindChooser';
-import { useFormFieldFocus } from '../../hooks/useFormFieldFocus';
+import { formKeyboardAccessoryProps, useFormFieldFocus } from '../../hooks/useFormFieldFocus';
 import { KeyboardFormAccessory } from '../ui/KeyboardFormAccessory';
 
 const TITLE_MAX = 80;
@@ -123,13 +124,7 @@ export function ListingCreateForm({
 
   return (
     <>
-      <KeyboardFormAccessory
-        canGoPrev={fieldFocus.canGoPrev}
-        canGoNext={fieldFocus.canGoNext}
-        onPrev={fieldFocus.focusPrev}
-        onNext={fieldFocus.focusNext}
-        onDone={fieldFocus.dismiss}
-      />
+      <KeyboardFormAccessory {...formKeyboardAccessoryProps(fieldFocus)} />
     <ScrollView
       ref={scrollRef}
       style={styles.scroll}
@@ -290,28 +285,5 @@ export function ListingCreateForm({
       </View>
     </ScrollView>
     </>
-  );
-}
-
-interface KindGateProps {
-  readonly loading: boolean;
-  readonly missing: boolean;
-  readonly onRetry: () => void;
-  readonly children: ReactNode;
-}
-
-/** Spinner while the world's kinds load; a retry message when none can be used. */
-function KindGate({ loading, missing, onRetry, children }: KindGateProps) {
-  const { t } = useTranslation();
-  const styles = useCreatePostStyles();
-  if (loading) return <ActivityIndicator testID="listing-kinds-loading" />;
-  if (!missing) return <>{children}</>;
-  return (
-    <View style={styles.section} testID="listing-kinds-error">
-      <Text style={styles.sectionHint}>{t('post.unifiedCreate.errors.loadFailed')}</Text>
-      <TouchableOpacity onPress={onRetry} accessibilityRole="button">
-        <Text style={styles.sectionLabel}>{t('general.retry')}</Text>
-      </TouchableOpacity>
-    </View>
   );
 }
