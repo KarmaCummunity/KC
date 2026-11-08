@@ -1,20 +1,13 @@
 // Challenge full post — post-detail shell (hero, publisher, engagement) plus challenge engine UI.
 // Mapped to: docs/spec/10_challenges.md, FR-FEED-020.
 import React, { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ChallengeProgressResult } from '@kc/domain';
-import { iconSize, spacing, useTheme, Text } from '@kc/ui';
+import { spacing, useTheme } from '@kc/ui';
 import { EmptyState } from '../../components/EmptyState';
 import { PostMenuButton } from '../../components/post/PostMenuButton';
 import { PostShareButton } from '../../components/post/PostShareButton';
@@ -42,6 +35,7 @@ import { useChallengeLinkedPost } from '../../hooks/useChallengeLinkedPost';
 import { usePostDetailStyles } from '../post/postDetailScreen.styles';
 import { ChallengePostDetailView } from './ChallengePostDetailView';
 import { ChallengePostDetailPanels } from './ChallengePostDetailPanels';
+import { ChallengeJoinPill } from './ChallengeJoinPill';
 
 function normalizeChallengeId(raw: string | string[] | undefined): string {
   const id = Array.isArray(raw) ? raw[0] : raw;
@@ -176,11 +170,17 @@ export default function ChallengePostDetail() {
   const showJoinCta = !joined && active;
   const showEngagementComposer =
     Boolean(myUserId) && post != null && postShowsEngagementSection(post.status);
+  // With the composer docked, the pill rides in the bottom chrome above it so it never covers the input.
+  const dockJoinPill = showJoinCta && showEngagementComposer;
+  const floatJoinPill = showJoinCta && !showEngagementComposer;
   const scrollBottomInset = postDetailScrollBottomInset({
     tabBarOverlayInset: tabBarDockInset,
     hasComposer: showEngagementComposer,
-    floatingCtaReserve: showJoinCta ? POST_DETAIL_FLOATING_CTA_RESERVE_PX : 0,
+    floatingCtaReserve: floatJoinPill ? POST_DETAIL_FLOATING_CTA_RESERVE_PX : 0,
   });
+  const joinPill = (
+    <ChallengeJoinPill busy={membership.isPending} onPress={() => void requestJoin()} />
+  );
 
   const panels = (
     <ChallengePostDetailPanels
@@ -239,6 +239,7 @@ export default function ChallengePostDetail() {
             {showEngagementComposer ? (
               <PostDetailBottomChrome
                 tabBarOverlayInset={tabBarDockInset}
+                floatingSlot={dockJoinPill ? joinPill : undefined}
                 composerSlot={<PostEngagementComposer embedded />}
               />
             ) : null}
@@ -248,27 +249,9 @@ export default function ChallengePostDetail() {
         body
       )}
 
-      {showJoinCta ? (
+      {floatJoinPill ? (
         <View style={[styles.cta, { bottom: ctaBottom }]} pointerEvents="box-none">
-          <TouchableOpacity
-            style={styles.messageBtn}
-            activeOpacity={0.85}
-            onPress={() => void requestJoin()}
-            disabled={membership.isPending}
-            accessibilityRole="button"
-            accessibilityState={{ busy: membership.isPending }}
-            accessibilityLabel={t('challenges.detail.join')}
-            testID="challenge-join-floating"
-          >
-            {membership.isPending ? (
-              <ActivityIndicator size="small" color={colors.textInverse} />
-            ) : (
-              <>
-                <Ionicons name="add-circle-outline" size={iconSize.md} color={colors.textInverse} />
-                <Text style={styles.messageBtnText}>{t('challenges.detail.join')}</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          {joinPill}
         </View>
       ) : null}
     </SafeAreaView>
