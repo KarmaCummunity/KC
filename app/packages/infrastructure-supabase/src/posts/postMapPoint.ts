@@ -16,7 +16,7 @@ function valid(lat: number, lng: number): boolean {
 export function parseWkbPoint(hex: unknown): MapPoint | null {
   if (typeof hex !== 'string' || hex.length < 42 || !/^[0-9a-fA-F]+$/.test(hex)) return null;
   const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  for (let i = 0; i < bytes.length; i++) bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
   const view = new DataView(bytes.buffer);
   const little = bytes[0] === 1;
   const type = view.getUint32(1, little);

@@ -133,8 +133,7 @@ export function PostFeedList({
   const keyExtractor = useCallback(
     (item: PostWithOwner | FeedListEntry) => {
       if (!useRowLayout) return (item as PostWithOwner).postId;
-      const entry = item as FeedListEntry;
-      return entry.kind === 'matches' ? entry.key : entry.key;
+      return (item as FeedListEntry).key;
     },
     [useRowLayout],
   );
