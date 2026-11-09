@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-import { expectNoRawI18nKeys, gotoApp, trackApiErrors } from '../../lib/app';
+import { expectNoRawI18nKeys, gotoApp, passDateOfBirthGate, trackApiErrors } from '../../lib/app';
 import { cleanupE2eContent, rest, runTag, sessionFor } from '../../lib/api';
 import { STORAGE_B, USER_A } from '../../lib/env';
 
@@ -30,12 +30,30 @@ async function fillFoodOfferForm(page: Page, title: string) {
   await page.getByTestId('listing-date-expires_at').click();
   await page.locator('input[type="datetime-local"]').fill('2030-01-01T12:00');
   await page.getByTestId('listing-date-expires_at-done').click();
-  await page.getByRole('button', { name: 'בחר עיר' }).click();
+  await page.getByRole('button', { name: 'לבחור עיר' }).click();
   await page.getByPlaceholder('...חיפוש עיר').fill('לוד');
   await page.getByText('לוד', { exact: true }).first().click();
 }
 
 const publishButton = (page: Page) => page.getByTestId('listing-publish');
+
+/** Publish, pass the date-of-birth gate if it shows, and wait until the listing exists (the app may land on the feed or the listing). */
+async function publishAndFind(page: Page, title: string, timeout: number) {
+  await publishButton(page).click();
+  if (await passDateOfBirthGate(page) && /\/create/.test(page.url())) await publishButton(page).click();
+  await expect(page).not.toHaveURL(/\/create/, { timeout });
+  const { session } = await sessionFor(USER_A);
+  await expect
+    .poll(
+      async () =>
+        (await rest<{ listing_id: string }[]>(
+          session.access_token as string,
+          `marketplace_listing_card?select=listing_id&title=eq.${encodeURIComponent(title)}`,
+        )).length,
+      { timeout: 20_000 },
+    )
+    .toBe(1);
+}
 const addPhotoButton = (page: Page) => page.getByRole('button', { name: 'הוסיפו תמונה' }).first();
 
 test('browse: the removed marketplace URL lands on the donations hub', async ({ page }) => {
@@ -86,9 +104,7 @@ test.describe.serial('create + reserve', () => {
   test('create a food offer WITHOUT a photo', async ({ page }) => {
     const title = `${runTag()} מגש פסטה ללא תמונה`;
     await fillFoodOfferForm(page, title);
-    await publishButton(page).click();
-    await expect(page).toHaveURL(/\/donations\/marketplace\/[0-9a-f-]{36}$/, { timeout: 30_000 });
-    await expect(page.getByText(title).first()).toBeVisible();
+    await publishAndFind(page, title, 30_000);
   });
 
   test('create a food offer WITH a photo', async ({ page }) => {
@@ -98,9 +114,7 @@ test.describe.serial('create + reserve', () => {
     await addPhotoButton(page).click();
     await (await chooser).setFiles(path.join(HERE, '../../fixtures/item.png'));
     await expect(page.locator('img').last()).toBeVisible();
-    await publishButton(page).click();
-    await expect(page).toHaveURL(/\/donations\/marketplace\/[0-9a-f-]{36}$/, { timeout: 45_000 });
-    await expect(page.getByText(listingTitle).first()).toBeVisible();
+    await publishAndFind(page, listingTitle, 45_000);
   });
 
   test('another user claims the food', async ({ browser }) => {
