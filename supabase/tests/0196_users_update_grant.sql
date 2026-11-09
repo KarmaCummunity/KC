@@ -27,10 +27,14 @@ begin
     raise exception 'SECURITY REGRESSION (H1): a client role can UPDATE a privileged users column';
   end if;
 
+  -- 0698: the onboarding stage moved behind rpc_set_onboarding_state.
+  if has_column_privilege('authenticated','public.users','onboarding_state','UPDATE') then
+    raise exception 'REGRESSION (0698): authenticated can UPDATE users.onboarding_state directly';
+  end if;
+
   -- Profile columns the app writes must remain updatable (no breakage).
   if not has_column_privilege('authenticated','public.users','display_name','UPDATE')
      or not has_column_privilege('authenticated','public.users','privacy_mode','UPDATE')
-     or not has_column_privilege('authenticated','public.users','onboarding_state','UPDATE')
      or not has_column_privilege('authenticated','public.users','contact_phone','UPDATE') then
     raise exception 'BROKE PROFILE EDIT: authenticated lost UPDATE on a profile column';
   end if;

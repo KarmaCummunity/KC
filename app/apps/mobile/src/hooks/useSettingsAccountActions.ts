@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { getDeleteAccountUseCase, setOnboardingStateDirect } from '../services/userComposition';
+import { getDeleteAccountUseCase, resetOnboardingForDev } from '../services/userComposition';
 import { performFullSignOut } from '../services/performFullSignOut';
 import { useAuthStore } from '../store/authStore';
 import { container } from '../lib/container';
@@ -43,7 +43,7 @@ export function useSettingsAccountActions() {
     if (!session) return;
     setResettingOnboarding(true);
     try {
-      await setOnboardingStateDirect(session.userId, 'pending_basic_info');
+      await resetOnboardingForDev();
       setOnboardingStateLocal('pending_basic_info');
       useAuthStore.getState().setBasicInfoSkipped(false);
       router.replace('/(onboarding)/about-intro');
