@@ -13371,6 +13371,7 @@ export type Database = {
           confirmed_at: string | null
           handed_over_at: string | null
           handoff_id: string
+          knowledge_slot_id: string | null
           no_show_at: string | null
           owner_id: string
           pickup_mode: string
@@ -14014,6 +14015,7 @@ export type Database = {
           confirmed_at: string | null
           handed_over_at: string | null
           handoff_id: string
+          knowledge_slot_id: string | null
           no_show_at: string | null
           owner_id: string
           pickup_mode: string
@@ -14203,6 +14205,7 @@ export type Database = {
           confirmed_at: string | null
           handed_over_at: string | null
           handoff_id: string
+          knowledge_slot_id: string | null
           no_show_at: string | null
           owner_id: string
           pickup_mode: string
@@ -15396,6 +15399,7 @@ export type Database = {
           confirmed_at: string | null
           handed_over_at: string | null
           handoff_id: string
+          knowledge_slot_id: string | null
           no_show_at: string | null
           owner_id: string
           pickup_mode: string
@@ -15925,6 +15929,7 @@ export type Database = {
           confirmed_at: string | null
           handed_over_at: string | null
           handoff_id: string
+          knowledge_slot_id: string | null
           no_show_at: string | null
           owner_id: string
           pickup_mode: string
