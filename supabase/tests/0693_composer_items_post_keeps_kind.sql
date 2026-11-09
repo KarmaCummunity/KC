@@ -21,13 +21,16 @@ begin
   select * into p from personas;
   perform kc_test.act_as(p.owner);
 
-  -- The columns SupabasePostRepository.create writes: no kind and no world.
+  -- The columns SupabasePostRepository.create writes: no kind and no world. Run as the client's
+  -- role: act_as sets only the claims, and the trigger runs with the caller's privileges.
+  perform set_config('role', 'authenticated', true);
   insert into public.posts (owner_id, type, title, description, category, city, street, street_number, item_condition)
   values (p.owner, 'Give', 'a bookshelf', 'solid oak', 'Furniture', 'tel-aviv', 'Herzl', '1', 'Good')
   returning post_id into v_give;
   insert into public.posts (owner_id, type, title, description, category, city, street, street_number)
   values (p.owner, 'Request', 'looking for a lamp', 'any lamp', 'Furniture', 'tel-aviv', 'Herzl', '1')
   returning post_id into v_request;
+  perform set_config('role', 'none', true);
 
   perform kc_test.assert_eq((select kind_id from public.posts where post_id = v_give), v_give_item,
     'a composer give post gets the give_item kind');

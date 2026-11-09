@@ -49,8 +49,14 @@ begin
   end if;
 
   -- Native items posts from the composer carry no kind of their own.
+  -- Read inline: this trigger runs as the client, and listing_kind_for_post is service-role only.
   if tg_op = 'INSERT' and new.listing_id is null and new.kind_id is null and new.world_slug = 'items' then
-    new.kind_id := public.listing_kind_for_post('items', new.direction);
+    select lk.kind_id into new.kind_id
+      from public.listing_kinds lk
+     where lk.world_slug = 'items'
+       and lk.is_active
+       and lk.slug = case when new.direction = 'request' then 'request_item' else 'give_item' end
+     limit 1;
   end if;
 
   if new.listing_id is null then
