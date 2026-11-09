@@ -5,10 +5,10 @@ Each section ends with a **Tech** line: decisions · legacy spec superseded/kept
 ## 7.1 Post, statuses, expiry
 Everything published in KC is one `Post` (D2, D16, D19): one primary giving world plus optional additional worlds (D100, D101), direction (offer/request), status, visibility, anonymity, location, likes & comments. Special types add an extension — ride, event (D31), housing stay (D30), job (D41). **Handoff is the closing stage, not a type** (D19). An imported WhatsApp post is a normal Post with source `imported` until claimed (S21).
 
-Statuses: `open`, `closed_delivered`, `deleted_no_recipient`, `expired`, `removed_admin`, `hidden_pending_review` (D33).
-- **State machine (S1):** `open → (hidden_pending_review ↔ open) → closed_delivered | expired | deleted_no_recipient | removed_admin`; reopen from `closed_delivered` and `expired`, by owner only.
+Statuses: `open`, `paused` (D104), `closed_delivered`, `deleted_no_recipient`, `expired`, `removed_admin`, `hidden_pending_review` (D33).
+- **State machine (S1):** `open → (hidden_pending_review ↔ open) → closed_delivered | expired | deleted_no_recipient | removed_admin`; `open ↔ paused` by the owner; reopen from `closed_delivered` and `deleted_no_recipient`, by owner only; an **expired post is not reopened — the owner republishes it as a new post** carrying all of its fields ({{D:expired-post-republish}}). The graph is one machine on the FSM kernel (`postMachine`, catalog machine `post`, `0681`); every move outside it is refused by the database ([`docs/architecture/state-machines.md`](../architecture/state-machines.md)).
 - **Permissions (S2):** edit/delete — owner and super-admin; hide — KC admin; a suspended user cannot create, edit or comment.
-- **Expiry by type (D21):** food offer — at expiry date (alert 24h before and at expiry; close at midnight of expiry date, S4); ride offer — 30 min after estimated end; event & ticket — at their date; items and all requests — no expiry; the owner gets relevance reminders instead (D59).
+- **Expiry by type (D21):** food offer — at expiry date (alert 24h before and at expiry; close at midnight of expiry date, S4); ride offer — 30 min after estimated end; event & ticket — when the event ends ({{D:event-expires-at-end}}); items and all requests — no expiry; the owner gets relevance reminders instead (D59).
 - **Relevance reminder (S3):** 14 days after publish, then every 30 days: "Still relevant?" → bump / close. Bump updates sort time, not `created_at`.
 - **Owner management (D104, PM 2026-11-03):** what the owner may do with their own post, by status, enforced on the server:
   - **open** — edit, pause, mark delivered, delete, add photos.

@@ -9,3 +9,4 @@ export type {
 } from './machine';
 export { FSM_MACHINES } from './catalog';
 export { adminTaskMachine } from './machines/adminTask';
+export { postMachine } from './machines/post';

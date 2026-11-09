@@ -1,6 +1,6 @@
 # State machines — inventory and migration onto the FSM kernel
 
-> **Status:** 2026-11-09. Wave 0 shipped (kernel + admin-task pilot, `0680`). Gap `{{G:fsm-kernel-lifecycles}}`.
+> **Status:** 2026-11-09. Wave 0 ✅ (kernel + admin-task pilot, `0680`). Wave 1a ✅ (post S1 graph on the kernel, `0681`). Gap `{{G:fsm-kernel-lifecycles}}`.
 > **Kernel design:** [`docs/superpowers/specs/2026-11-09-fsm-kernel-design.md`](../superpowers/specs/2026-11-09-fsm-kernel-design.md).
 > **Rule:** a lifecycle has **one** graph. It is declared in `@kc/domain` (`app/packages/domain/src/fsm/machines/`), mirrored row-for-row in `fsm_state` / `fsm_edge` (locked by the contract test), and enforced in Postgres by `fsm_assert_transition` from the RPC and from a `before update of status` trigger. No other copy of the move list may exist: not a SQL `case`, not a TS record, not a UI condition.
 
@@ -30,7 +30,7 @@ Per design spec §4.1, one PR per machine (or per tight family), each with code 
 
 | Machine | Stored in | States | Copies today | Enforcement today | Wave |
 |---|---|---|---|---|---|
-| **Post (S1)** | `posts.status` | open, paused, closed_delivered, deleted_no_recipient, expired, hidden_pending_review, removed_admin | SQL check (`0551`), trigger `posts_enforce_status_fsm` (`0665`), TS `POST_STATUS_TRANSITIONS` (`domain/src/posts.ts`, tests only), 15+ writer RPCs and sweeps, owner action bars | one hand-written trigger + per-RPC `where` filters | **1** |
+| **Post (S1)** | `posts.status` | open, paused, closed_delivered, deleted_no_recipient, expired, hidden_pending_review, removed_admin | kernel (`postMachine`, `0681`) + SQL check (`0551`); 15+ writer RPCs and sweeps still filter by status; owner action bars | `fsm_assert_transition` in the `posts_status_fsm` trigger | **1a ✅** / 1b |
 | Post admin-removal memory | `posts.status_before_admin_removal` | open, closed_delivered, deleted_no_recipient | SQL check (`0097`) | check only | 1 (with S1) |
 | **Handoff** (items, food, animals) | `post_handoffs.status` | reserved, confirmed, handed_over, cancelled, no_show | SQL check (`0564`), TS `canTransitionGivingHandoff` (tests only), ~25 writer RPCs and sweeps | per-RPC filters, no trigger | **2** |
 | **Ride booking** | `post_handoffs.status` (world `rides`) | reserved, confirmed, handed_over, cancelled | TS `isValidRideBookingTransition`, `canReinstateRideBooking`, ride RPCs (`0624`, `0649`, `0655`) | per-RPC filters | **2** |
@@ -78,13 +78,13 @@ Per design spec §4.1, one PR per machine (or per tight family), each with code 
 Each item is a task for the wave that owns the machine; the fix ships with a regression test that fails before it.
 
 **Post (S1)**
-- TS `POST_STATUS_TRANSITIONS` rejects a same-status move; the SQL trigger treats it as a no-op. The TS graph has no production caller.
-- Spec `07_cross_cutting_systems.md` §7.1 lists no `paused` state and allows reopen only from `closed_delivered` / `expired`; code also reopens `deleted_no_recipient` and restores `removed_admin` → `open`.
+- ~~TS `POST_STATUS_TRANSITIONS` and the trigger's `case` list were two copies of the graph.~~ ✅ wave 1a: one kernel machine; the TS helper delegates to it.
+- ~~Spec §7.1 listed no `paused` state and reopened from `expired`.~~ ✅ wave 1a: spec reconciled; `expired → open` removed ({{D:expired-post-republish}}).
 - `admin_remove_post` (`0452`) refuses `paused` and `expired`; the trigger allows both into `removed_admin`.
 - `admin_remove_listing` (`0666`) stores `paused` / `expired` into `status_before_admin_removal`, whose check (`0097`) rejects them, so the call fails on those posts.
 - `admin_restore_target` (`0666`) always restores to `open` (ignores `status_before_admin_removal`) and keeps a branch on `moderation_status = 'held'`, a value the check does not allow.
 - `mark_giving_handed_over` (`0666`) writes `closed_delivered` without a source-status filter and raises on `expired` / `removed_admin` posts.
-- `expired → open` is in the graph but no RPC performs it; the expired screen calls `rpc_republish_post` (`0155`), which clones only the legacy item columns (no `world_slug`, `details`, `kind_id`).
+- The expired screen calls `rpc_republish_post` (`0155`), which clones only the legacy item columns (no `world_slug`, `details`, `kind_id`); {{D:expired-post-republish}} requires a full copy (wave 1b).
 - Items get `expires_at = now() + 30 days` (`0612`, `0666`) while D21 says items never expire and no sweep expires them: after 30 days a paused item cannot resume and never expires.
 - Pause / fulfill / delete RPCs (`0666`) count `time` (event) handoffs as active; the trigger (`0665`) excludes them.
 - Two `owner_complete_offer_with_user` overloads coexist (`0658` with `p_mode`, `0666` without) with different handoff and karma behaviour; the app calls the `0658` one.
@@ -145,7 +145,9 @@ One PR per row. Each wave starts only after the previous one is merged, so the c
 | Wave | Machines | Why this order |
 |---|---|---|
 | 0 ✅ | Kernel, admin task | Infrastructure + a pilot with no product change |
-| 1 | Post S1 (roles owner / recipient / admin / system), `status_before_admin_removal` | One graph already agreed in TS and SQL; one trigger to replace; fixes the S1 items in §4; prerequisite for G1 step 6d (drop `listings`) |
+| 1a ✅ | Post S1 graph on the kernel (`0681`), no roles yet | One graph already agreed in TS and SQL; one trigger to replace; prerequisite for G1 step 6d (drop `listings`) |
+| 1b | S1 writer fixes from §4: admin remove / restore and `status_before_admin_removal`, `mark_giving_handed_over` source filter, owner RPCs' `time` filter, one `owner_complete_offer_with_user`, full-copy republish, items without TTL (D21), events expire when they end | Behaviour fixes on the agreed graph, each with a regression test |
+| 1c | Writer-declared actor role (`owner` / `recipient` / `admin` / `system`) passed to the trigger, then role-restricted S1 edges | Needs a small kernel addendum: the trigger cannot infer the actor (a report's auto-hide runs in the reporter's session) |
 | 2 | Handoffs as five machines on one table (`item_handoff`, `ride_booking`, `housing_booking`, `event_registration`, `knowledge_session`), one `before update` trigger choosing the machine by `world_slug`; reservation-expiry sweep | Most writers and most divergences; TS copies collapse to the kernel |
 | 3 | Account status (+ composite invariant check beside the kernel call), onboarding | Many writers, failing checks, drifted unions |
 | 4 | Reports, follow requests, review-queue family, content moderation | Small graphs; replaces hand-written triggers and RLS-only edges |
@@ -154,12 +156,15 @@ One PR per row. Each wave starts only after the previous one is merged, so the c
 | 7 | WhatsApp outbound and session, template review, chat message | Service-only, lowest risk |
 | — | `listings`, `giving_handoffs`, `ride_listings`, `ride_participants`, `ride_templates`, `listing_matches` | Retire with G1 / G44 / matching v2, never port |
 
-## 7. Product questions for the PM (block the wave that owns them)
+## 7. Product decisions
 
-1. **Items TTL (wave 1).** D21 says items never expire, yet items carry a 30-day `expires_at`. Drop the TTL for items, or add an item expiry sweep?
-2. **Reopen an expired post (wave 1).** Real `expired → open` with a new date, or keep "republish" as a new post (and fix its clone)?
-3. **Events at their date (wave 1).** `open → expired` when the event starts or ends?
-4. **Unban (wave 3).** Is `banned → active` an admin edge, and who may take it?
-5. **Suspension lift threshold (wave 3).** One number for suspend and lift (5 distinct reporters?).
-6. **`delivered` chat state (wave 7).** Write it from the client receipt, or drop it?
-7. **Money vocabulary (wave 6).** One word for a completed payment (`paid` or `succeeded`) and `cancelled` everywhere.
+Answered by the PM on 2026-11-09:
+- Items have no expiry (D21 stands): the 30-day `expires_at` on items goes (wave 1b).
+- An expired post is republished as a new post, never reopened ({{D:expired-post-republish}}; graph change in wave 1a, full copy in 1b).
+- An event or ticket expires when it ends ({{D:event-expires-at-end}}; wave 1b).
+
+Open, block the wave that owns them:
+1. **Unban (wave 3).** Is `banned → active` an admin edge, and who may take it?
+2. **Suspension lift threshold (wave 3).** One number for suspend and lift (5 distinct reporters?).
+3. **`delivered` chat state (wave 7).** Write it from the client receipt, or drop it?
+4. **Money vocabulary (wave 6).** One word for a completed payment (`paid` or `succeeded`) and `cancelled` everywhere.

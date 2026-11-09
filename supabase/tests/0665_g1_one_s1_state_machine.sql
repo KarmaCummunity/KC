@@ -76,11 +76,16 @@ begin
   update public.posts set status = 'open' where post_id = v;
   perform kc_test.assert_eq((select status from public.posts where post_id = v), 'open', 'closed_delivered -> open');
 
-  -- open -> expired -> open (reopen)
+  -- open -> expired; since 0681 an expired post is republished, never reopened.
   update public.posts set status = 'expired' where post_id = v;
   perform kc_test.assert_eq((select status from public.posts where post_id = v), 'expired', 'open -> expired');
+  perform kc_test.assert_raises(
+    format('update public.posts set status = %L where post_id = %L', 'open', v),
+    'posts_status_transition_invalid', 'expired -> open is invalid (republish instead)'
+  );
+  -- Back to open through review so the rest of this block starts from open.
+  update public.posts set status = 'hidden_pending_review' where post_id = v;
   update public.posts set status = 'open' where post_id = v;
-  perform kc_test.assert_eq((select status from public.posts where post_id = v), 'open', 'expired -> open');
 
   -- open -> hidden_pending_review -> open (restore)
   update public.posts set status = 'hidden_pending_review' where post_id = v;
