@@ -7,6 +7,13 @@ export const adminDemoDataEn = {
   error: 'Could not load the status. Pull to refresh.',
   users: 'Demo users',
   organizations: 'Demo nonprofits',
+  ridePosts: 'Rides (posts)',
+  itemPosts: 'Item posts',
+  orgMemberships: 'Roles on demo nonprofits',
+  postMedia: 'Demo photos (DB)',
+  legacyRides: 'Legacy rides (ride_listings)',
+  legacyRidesHint:
+    'Rides still live in the old table but not as posts — likely a seed before migration 0676. Re-run restore demo data after deploy.',
   noneTitle: 'No demo data in the system',
   noneHintRestore: 'You can bring it back with one press.',
   noneHintNoRestore: 'Restoring is available in the dev environment only.',
@@ -27,7 +34,8 @@ export const adminDemoDataEn = {
   passwordLabel: 'Password for the demo users',
   passwordHint: 'Needed once, at least 8 characters. It is stored hashed.',
   seedDoneTitle: 'Demo data restored',
-  seedDone: (users: number, posts: number, orgs: number) => `Created ${users} users, ${posts} posts and ${orgs} nonprofits.`,
+  seedDone: (users: number, posts: number, rides: number, orgs: number, orgMembers: number) =>
+    `Created ${users} users, ${posts} posts (${rides} rides), ${orgs} nonprofits and ${orgMembers} org roles.`,
   seedFailed: 'Restoring failed. Try again.',
   wipeButton: 'Delete all demo data',
   wiping: 'Deleting...',

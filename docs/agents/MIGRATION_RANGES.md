@@ -124,7 +124,8 @@ Last applied on kc-dev when this was written: `0239`.
 | 0676 | #1964 demo rides on posts + wipe/restore ride coverage test | in review |
 | 0677 | #1964 demo post media paths + org_memberships on demo orgs | in review |
 | 0678 | #1964 verification 0..2 mix, OnlyMe posts, storage JPEG fixtures | in review |
-| 0679+ | — | free |
+| 0679 | FR-ADMIN-031 admin_demo_data_status ride/org/media KPIs | in review |
+| 0680+ | — | free |
 
 ## Next free ranges
 

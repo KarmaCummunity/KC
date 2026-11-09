@@ -13,10 +13,38 @@ function repo(result: { data: unknown; error: { message: string } | null }) {
 
 describe('demo data mappers', () => {
   it('maps status counts and defaults missing keys to 0', () => {
-    expect(mapDemoDataStatus({ demo_users: 200, demo_organizations: 3, can_seed: true, has_saved_password: true }))
-      .toEqual({ demoUsers: 200, demoOrganizations: 3, canSeed: true, hasSavedPassword: true });
-    expect(mapDemoDataStatus(null))
-      .toEqual({ demoUsers: 0, demoOrganizations: 0, canSeed: false, hasSavedPassword: false });
+    expect(mapDemoDataStatus({
+      demo_users: 200,
+      demo_organizations: 3,
+      demo_ride_posts: 120,
+      demo_item_posts: 480,
+      demo_legacy_ride_listings: 0,
+      demo_org_memberships: 15,
+      demo_post_media: 60,
+      can_seed: true,
+      has_saved_password: true,
+    })).toEqual({
+      demoUsers: 200,
+      demoOrganizations: 3,
+      demoRidePosts: 120,
+      demoItemPosts: 480,
+      demoLegacyRideListings: 0,
+      demoOrgMemberships: 15,
+      demoPostMedia: 60,
+      canSeed: true,
+      hasSavedPassword: true,
+    });
+    expect(mapDemoDataStatus(null)).toEqual({
+      demoUsers: 0,
+      demoOrganizations: 0,
+      demoRidePosts: 0,
+      demoItemPosts: 0,
+      demoLegacyRideListings: 0,
+      demoOrgMemberships: 0,
+      demoPostMedia: 0,
+      canSeed: false,
+      hasSavedPassword: false,
+    });
   });
 
   it('maps wipe counts including kept organizations', () => {
@@ -37,7 +65,17 @@ describe('mapDemoDataSeedResult', () => {
 describe('SupabaseDemoDataRepository', () => {
   it('getStatus calls admin_demo_data_status', async () => {
     const { rpc, r } = repo({ data: { demo_users: 5, demo_organizations: 1, can_seed: true, has_saved_password: false }, error: null });
-    await expect(r.getStatus()).resolves.toEqual({ demoUsers: 5, demoOrganizations: 1, canSeed: true, hasSavedPassword: false });
+    await expect(r.getStatus()).resolves.toEqual({
+      demoUsers: 5,
+      demoOrganizations: 1,
+      demoRidePosts: 0,
+      demoItemPosts: 0,
+      demoLegacyRideListings: 0,
+      demoOrgMemberships: 0,
+      demoPostMedia: 0,
+      canSeed: true,
+      hasSavedPassword: false,
+    });
     expect(rpc).toHaveBeenCalledWith('admin_demo_data_status');
   });
 
