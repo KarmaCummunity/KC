@@ -335,15 +335,26 @@ begin
    order by u.is_super_admin desc nulls last
    limit 1;
 
-  insert into public.reports (reporter_id, target_type, target_id, reason, note, status, created_at)
+  insert into public.reports (
+    reporter_id, target_type, target_id, reason, note, status, created_at, resolved_at, resolved_by)
   select
     r.reporter_id,
     'user',
     r.target_id,
     (array['Spam','Offensive','Misleading','Illegal','Other'])[1 + (r.g % 5)],
     'דיווח דמה על משתמש',
-    'open',
-    v_now - ((r.g % 14) || ' days')::interval
+    case
+      when v_resolver is not null and r.g % 4 = 2 then 'dismissed_no_violation'
+      when v_resolver is not null and r.g % 4 = 3 then 'confirmed_violation'
+      else 'open'
+    end,
+    v_now - ((r.g % 14) || ' days')::interval,
+    case
+      when v_resolver is not null and r.g % 4 in (2, 3)
+        then v_now - ((r.g % 14) || ' days')::interval + interval '2 days'
+      else null
+    end,
+    case when v_resolver is not null and r.g % 4 in (2, 3) then v_resolver else null end
   from (
     select g,
       (select au.id from auth.users au
@@ -356,7 +367,8 @@ begin
   ) r
   where r.reporter_id is not null and r.target_id is not null and r.reporter_id <> r.target_id;
 
-  insert into public.reports (reporter_id, target_type, target_id, reason, note, status, created_at)
+  insert into public.reports (
+    reporter_id, target_type, target_id, reason, note, status, created_at, resolved_at, resolved_by)
   select
     (select au.id from auth.users au
       where au.email like '%@seed.kc.test' and coalesce(au.raw_app_meta_data->>'seed','') = 'true'
@@ -368,20 +380,36 @@ begin
      order by md5(p.post_id::text || g::text) offset 0 limit 1),
     (array['Spam','Offensive','Misleading'])[1 + (g % 3)],
     'דיווח דמה על פוסט',
-    'open',
-    v_now - ((g % 10) || ' days')::interval
+    case
+      when v_resolver is not null and g % 3 = 0 then 'dismissed_no_violation'
+      else 'open'
+    end,
+    v_now - ((g % 10) || ' days')::interval,
+    case
+      when v_resolver is not null and g % 3 = 0
+        then v_now - ((g % 10) || ' days')::interval + interval '1 day'
+      else null
+    end,
+    case when v_resolver is not null and g % 3 = 0 then v_resolver else null end
   from generate_series(1, 40) g
   where exists (select 1 from public.posts p join auth.users a on a.id = p.owner_id where a.email like '%@seed.kc.test');
 
-  insert into public.reports (reporter_id, target_type, target_id, reason, note, status, created_at)
+  insert into public.reports (
+    reporter_id, target_type, target_id, reason, note, status, created_at, resolved_at, resolved_by)
   select
     c.participant_a,
     'chat',
     c.chat_id,
     (array['Spam','Offensive','Other'])[1 + (c.g % 3)],
     'דיווח דמה על שיחה',
-    'open',
-    v_now - ((c.g % 7) || ' days')::interval
+    case when v_resolver is not null and c.g % 5 = 0 then 'confirmed_violation' else 'open' end,
+    v_now - ((c.g % 7) || ' days')::interval,
+    case
+      when v_resolver is not null and c.g % 5 = 0
+        then v_now - ((c.g % 7) || ' days')::interval + interval '1 day'
+      else null
+    end,
+    case when v_resolver is not null and c.g % 5 = 0 then v_resolver else null end
   from (
     select chat_id, participant_a, row_number() over (order by chat_id) as g
     from public.chats c
@@ -389,7 +417,8 @@ begin
     limit 30
   ) c;
 
-  insert into public.reports (reporter_id, target_type, target_id, reason, note, status, created_at)
+  insert into public.reports (
+    reporter_id, target_type, target_id, reason, note, status, created_at, resolved_at, resolved_by)
   select
     (select au.id from auth.users au
       where au.email like '%@seed.kc.test' and coalesce(au.raw_app_meta_data->>'seed','') = 'true'
@@ -398,33 +427,15 @@ begin
     null,
     'Other',
     'דיווח כללי (ללא יעד)',
-    'open',
-    v_now - ((g % 5) || ' days')::interval
+    case when v_resolver is not null and g % 2 = 1 then 'dismissed_no_violation' else 'open' end,
+    v_now - ((g % 5) || ' days')::interval,
+    case
+      when v_resolver is not null and g % 2 = 1
+        then v_now - ((g % 5) || ' days')::interval + interval '1 day'
+      else null
+    end,
+    case when v_resolver is not null and g % 2 = 1 then v_resolver else null end
   from generate_series(1, 8) g;
-
-  if v_resolver is not null then
-    update public.reports r
-       set status = 'dismissed_no_violation',
-           resolved_at = r.created_at + interval '2 days',
-           resolved_by = v_resolver
-     where r.report_id in (
-       select report_id from public.reports
-        where reporter_id in (select id from auth.users where email like '%@seed.kc.test')
-        order by created_at
-        offset 10 limit 25
-     );
-
-    update public.reports r
-       set status = 'confirmed_violation',
-           resolved_at = r.created_at + interval '1 day',
-           resolved_by = v_resolver
-     where r.report_id in (
-       select report_id from public.reports
-        where reporter_id in (select id from auth.users where email like '%@seed.kc.test')
-        order by created_at
-        offset 35 limit 15
-     );
-  end if;
 
   alter table public.reports enable trigger reports_rate_limit;
 end;
