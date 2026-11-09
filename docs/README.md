@@ -14,5 +14,5 @@
 
 | Historical (do not implement from) | Purpose |
 |------------------------------------|---------|
-| [`SSOT/archive/`](./SSOT/archive) | Superseded SRS, backlog and tech-debt history, audits, removed GloWe product, past designs |
+| [`SSOT/archive/`](./SSOT/archive) | Superseded SRS, backlog and tech-debt history, audits, past designs |
 | [`../PRD_V2_NOT_FOR_MVP/`](../PRD_V2_NOT_FOR_MVP) | Post-MVP product vision — a treasure: never archive or delete it |

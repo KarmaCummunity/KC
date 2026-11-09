@@ -17,7 +17,7 @@
 **Hidden meaning (D67, refined by D93).** The initials also stand for "קיבוץ קפיטליסטי" ("capitalist kibbutz"). It is an easter egg: it never appears in product surfaces — UI copy, store listings, marketing visuals or the logo — **except the About screen and its FAQ**, where it may appear subtly (PM 2026-10-30).
 
 Rules:
-- Never introduce another product name in KC surfaces. GloWe (`app/apps/glowe-web`, `glowe-*` packages) is a separate product and is out of scope for this brand book.
+- Never introduce another product name in KC surfaces.
 - In Hebrew copy write "קהילת קארמה" or "KC"; do not transliterate "Karma Community" into Hebrew letters.
 
 ## 2. Logo

@@ -7,8 +7,6 @@ Thank you for helping improve KC. Process rules for agents: [`AGENTS.md`](AGENTS
 **KC mobile + web export** (`app/apps/mobile/`) and the **shared Supabase backend**
 (`supabase/`, `app/packages/**`) are in scope.
 
-The former GloWe static site was removed (see `D-190` in [`docs/SSOT/DECISIONS.md`](docs/SSOT/DECISIONS.md)).
-
 ## Local setup
 
 1. `./scripts/dev-up.sh` — Docker + local Supabase + migrations

@@ -36,14 +36,14 @@ export const ALLOWED_ORIGINS: string[] = [...new Set([...DEV_ORIGINS, ...KC_PAGE
 // must reach Edge Functions — a silent CORS miss breaks client calls with no log.
 const LOCAL_LOOPBACK =
   /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i;
-const GLOWE_PAGES_PREVIEW =
+const KC_PAGES_PREVIEW =
   /^https:\/\/([a-z0-9-]+\.)?karma-community\.pages\.dev$/i;
 
 export function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
   if (ALLOWED_ORIGINS.includes(origin)) return true;
   if (LOCAL_LOOPBACK.test(origin)) return true;
-  if (GLOWE_PAGES_PREVIEW.test(origin)) return true;
+  if (KC_PAGES_PREVIEW.test(origin)) return true;
   return false;
 }
 

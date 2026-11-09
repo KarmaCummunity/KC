@@ -3,7 +3,7 @@
 -- A private date of birth, required at sign-up and at least 18 years old (the consent screen
 -- already makes every new member confirm 18+, FR-AUTH-005 AC5.a; this stores and enforces it).
 --
---   * `users.date_of_birth` is nullable: GloWe accounts share this table and never see the KC
+--   * `users.date_of_birth` is nullable: accounts from the retired product (D-190) never saw the KC
 --     sign-up, and existing members have none yet. "Required" is enforced in the app flow
 --     (basic-info step and the soft gate before the first meaningful action).
 --   * Private. The column has no SELECT or UPDATE grant for clients (0163 / 0196 grant

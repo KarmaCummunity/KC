@@ -15,7 +15,7 @@
 | `EXPO_PUBLIC_ENVIRONMENT` | `production` | `development` | `development` |
 | In-app dev banner | hidden | visible | visible |
 
-> **GloWe sunset (2026-10-16, D-190):** The GloWe static frontend and `glowe_*` schema were removed. All branches deploy the KC web export at the site root. Legacy `/glowe/*` URLs redirect to `/` via `web-postbuild.mjs`.
+> **KC-only (D-190):** All branches deploy the KC web export at the site root.
 
 ## Branching rules
 
@@ -206,8 +206,6 @@ Branch protection on `dev` uses the table above; `main` release PRs use [`RELEAS
 | Variable (`supabase-prod`) | `BACKUP_AGE_RECIPIENT` | `age1…` public key the pre-migration prod backup is encrypted to; the owner keeps the private key offline |
 
 The legacy `PROD_WEB_URL` alias is no longer read; delete it.
-
-**Manual follow-up:** Remove obsolete repo variables `GLOWE_PROD_URL`, `GLOWE_STAGING_URL`, and `GLOWE_SEED_PASSWORD` from GitHub Actions if still present.
 
 ## E2E automation (Web, `D-55`)
 

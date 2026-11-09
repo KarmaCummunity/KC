@@ -3,7 +3,7 @@
 // matching local migration file.
 //
 // Why this exists: the repo uses SEQUENTIAL migration files (`NNNN_snake.sql`,
-// e.g. `0212_glowe_event_registration.sql`). The Supabase MCP `apply_migration`
+// e.g. `0243_listings_legacy_sync.sql`). The Supabase MCP `apply_migration`
 // tool, however, records TIMESTAMP-format versions (e.g. `20260701130827`) in
 // `supabase_migrations.schema_migrations`. `supabase db push` refuses to run
 // when the remote history has a version with no matching local file ("Remote
