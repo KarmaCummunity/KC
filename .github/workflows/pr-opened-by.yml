@@ -30,7 +30,7 @@ jobs:
           BODY: ${{ github.event.pull_request.body }}
         run: |
           set -euo pipefail
-          allowed="agent:cursor agent:kc-bot agent:antigravity agent:codex agent:other human"
+          allowed="agent:claude agent:cursor agent:kc-bot agent:antigravity agent:codex agent:other human"
           labels=$(gh pr view "$PR" -R "$REPO" --json labels --jq '.labels[].name')
           found=()
           for l in $allowed; do grep -qxF "$l" <<<"$labels" && found+=("$l"); done

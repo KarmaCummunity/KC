@@ -23,6 +23,8 @@ issue (agent_task form) -> branch from origin/dev -> PR to dev -> CI green
   -> ready (non-draft) PR -> auto-merge (merge queue) -> Deploy (DB, functions, web, smoke) -> verify on kc-dev
 ```
 
+Agents run this flow through the [`kc-issue-to-merge`](../../.claude/skills/kc-issue-to-merge/SKILL.md) skill.
+
 1. **Issue**: use the `Agent task` form. It needs acceptance criteria, and a migration range if it touches SQL.
 2. **Branch**: `<type>/<issue#>-<area>-<slug>`, for example `feat/905-marketplace-map`.
 3. **PR**: base `dev`. The body includes `Closes #N` and `Mapped to spec` (checked by the `hygiene` lane of `CI gate`).
@@ -37,6 +39,7 @@ issue (agent_task form) -> branch from origin/dev -> PR to dev -> CI green
 - `area:*`, `database`: set automatically from paths by [`labeler.yml`](../../.github/labeler.yml).
 - `agent-ready`: the author's or coordinator's signal that the PR is done and may auto-merge.
 - `epic`, `size:*`: set by the coordinator.
+- `found-by-agent` + `needs-triage`: an issue an agent opened from a finding outside its task. Agents never pick a `needs-triage` issue; the PM removes the label to release it to the queue. Process labels are declared in [`sync-agent-labels.yml`](../../.github/workflows/sync-agent-labels.yml).
 
 ## Weekly hygiene
 

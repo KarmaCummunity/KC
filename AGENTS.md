@@ -8,6 +8,7 @@ KC (Karma Community) is built largely by AI agents. **Part A** is the quick entr
 
 | Read | For |
 |---|---|
+| [`.claude/skills/kc-issue-to-merge/SKILL.md`](.claude/skills/kc-issue-to-merge/SKILL.md) | **Working an issue end to end**: pick, de-duplicate, claim, define, test-first, findings, PR, merge. Follow it for every task |
 | [`docs/agents/OPERATING_MODEL.md`](docs/agents/OPERATING_MODEL.md) | Roles, the issue → PR → dev → kc-dev flow, labels, auto-merge |
 | [`docs/agents/ISSUE_CLAIMS.md`](docs/agents/ISSUE_CLAIMS.md) | **Claim an issue before starting it**: skip `in-progress` issues |
 | [`docs/agents/MIGRATION_RANGES.md`](docs/agents/MIGRATION_RANGES.md) | **Claim a migration number range before writing SQL** |
