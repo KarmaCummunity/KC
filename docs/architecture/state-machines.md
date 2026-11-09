@@ -88,7 +88,7 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 - Items get `expires_at = now() + 30 days` (`0612`, `0666`) while D21 says items never expire and no sweep expires them: after 30 days a paused item cannot resume and never expires.
 - Pause / fulfill / delete RPCs (`0666`) count `time` (event) handoffs as active; the trigger (`0665`) excludes them.
 - Two `owner_complete_offer_with_user` overloads coexist (`0658` with `p_mode`, `0666` without) with different handoff and karma behaviour; the app calls the `0658` one.
-- Events never move to `expired` at their date; only food, rides and ride series have expiry writers.
+- ~~Events never moved to `expired`; only food, rides and ride series had expiry writers.~~ ✅ wave 1b-iii (`0685`): `events_expired_sweep` (hourly) expires an open or paused event when its window ends (D128).
 
 **Listings (G1 gap)** — the table is a view over `posts` since `0667`; the items below are history except where marked.
 - `listing_status_for_post` (`0554`) maps `paused → cancelled` and both `closed_delivered` and `deleted_no_recipient → closed`; the reverse direction cannot be reconstructed.
