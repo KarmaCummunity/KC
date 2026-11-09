@@ -3,8 +3,8 @@
 export const commonHe = {
   deletedUser: 'משתמש שנמחק',
   requiredFieldA11y: 'שדה חובה',
-  chipRowExpandA11y: 'הצג את כל האפשרויות',
-  chipRowCollapseA11y: 'צמצם אפשרויות',
+  chipRowExpandA11y: 'הצגת כל האפשרויות',
+  chipRowCollapseA11y: 'כיווץ האפשרויות',
   formKeyboard: {
     next: 'הבא',
     prev: 'הקודם',
