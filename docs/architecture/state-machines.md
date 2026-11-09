@@ -1,6 +1,6 @@
 # State machines — inventory and migration onto the FSM kernel
 
-> **Status:** 2026-11-09. Wave 0 ✅ (kernel + admin-task pilot, `0680`). Wave 1a ✅ (post S1 graph on the kernel, `0681`). Wave 1b-i ✅ (admin restore, `0682`). Wave 1b-ii ✅ (handoff writers, `0683`). Gap `G61`.
+> **Status:** 2026-11-09. Waves 0, 1a, 1b-i … 1b-iv, 1d, 2 and 2b ✅ (`0680`–`0686`, `0694`, `0695`; post S1 and the four handoff machines on the kernel). Next: 1c, 3. Gap `G61`.
 > **Kernel design:** [`docs/superpowers/specs/2026-11-09-fsm-kernel-design.md`](../superpowers/specs/2026-11-09-fsm-kernel-design.md).
 > **Rule:** a lifecycle has **one** graph. It is declared in `@kc/domain` (`app/packages/domain/src/fsm/machines/`), mirrored row-for-row in `fsm_state` / `fsm_edge` (locked by the contract test), and enforced in Postgres by `fsm_assert_transition` from the RPC and from a `before update of status` trigger. No other copy of the move list may exist: not a SQL `case`, not a TS record, not a UI condition.
 
@@ -32,17 +32,17 @@ Per design spec §4.1, one PR per machine (or per tight family), each with code 
 |---|---|---|---|---|---|
 | **Post (S1)** | `posts.status` | open, paused, closed_delivered, deleted_no_recipient, expired, hidden_pending_review, removed_admin | kernel (`postMachine`, `0681`) + SQL check (`0551`); 15+ writer RPCs and sweeps still filter by status; owner action bars | `fsm_assert_transition` in the `posts_status_fsm` trigger | **1a ✅** / 1b |
 | Post admin-removal memory | `posts.status_before_admin_removal` | open, paused, closed_delivered, deleted_no_recipient, expired | SQL check (`0682`) | written by `admin_remove_post` / `admin_remove_listing`, read and cleared by `admin_restore_target` (`0682`) | **1b-i ✅** |
-| **Handoff** (items, food, animals) | `post_handoffs.status` | reserved, confirmed, handed_over, cancelled, no_show | SQL check (`0564`), TS `canTransitionGivingHandoff` (tests only), ~25 writer RPCs and sweeps, the `giving_handoffs` view's `instead of update` trigger (`0667`) | per-RPC filters, no trigger | **2** |
-| **Ride booking** | `post_handoffs.status` (world `rides`) | reserved, confirmed, handed_over, cancelled | TS `isValidRideBookingTransition`, `canReinstateRideBooking`, ride RPCs (`0624`, `0649`, `0655`) | per-RPC filters | **2** |
-| **Housing booking** | `post_handoffs.status` (world `housing`) | reserved, confirmed, handed_over, cancelled, no_show | TS `housingStayRules.ts`, housing RPCs (`0610`, `0622`, `0666`) | per-RPC filters + time windows | **2** |
-| **Event registration** | `post_handoffs.status` (world `time`) | waitlisted, reserved, confirmed, handed_over, cancelled, no_show | TS `EVENT_REGISTRATION_STATUSES`, event RPCs (`0564`) | per-RPC filters | **2** |
-| Knowledge session | `post_handoffs.status` (world `knowledge`) | reserved, confirmed, handed_over, cancelled | knowledge RPCs (`0622`) | per-RPC filters | **2** |
+| **Handoff** (items, food, animals) | `post_handoffs.status` | reserved, confirmed, handed_over, cancelled, no_show | kernel `givingHandoffMachine` (`0694`), SQL check (`0564`), ~25 writer RPCs and sweeps, the `giving_handoffs` view's `instead of update` trigger (`0667`) | `fsm_assert_transition` in the `post_handoffs_status_fsm` trigger (`0694`); RPCs keep their predicates | **2 ✅** |
+| **Ride booking** | `post_handoffs.status` (world `rides`) | reserved, confirmed, handed_over, cancelled | kernel `rideBookingMachine` (`0694`), `canPerformBookingAction` / `rideReinstateBlocker` (2b), ride RPCs (`0624`, `0649`, `0655`) | `fsm_assert_transition` in the `post_handoffs_status_fsm` trigger (`0694`); RPCs keep their predicates | **2 ✅** |
+| **Housing booking** | `post_handoffs.status` (world `housing`) | reserved, confirmed, handed_over, cancelled, no_show | TS `housingStayRules.ts`, housing RPCs (`0610`, `0622`, `0666`) | `fsm_assert_transition` in the `post_handoffs_status_fsm` trigger (`0694`); RPCs keep their predicates | **2 ✅** |
+| **Event registration** | `post_handoffs.status` (world `time`) | waitlisted, reserved, confirmed, handed_over, cancelled, no_show | TS `EVENT_REGISTRATION_STATUSES`, event RPCs (`0564`) | `fsm_assert_transition` in the `post_handoffs_status_fsm` trigger (`0694`); RPCs keep their predicates | **2 ✅** |
+| Knowledge session | `post_handoffs.status` (world `knowledge`) | reserved, confirmed, handed_over, cancelled | knowledge RPCs (`0622`) | `fsm_assert_transition` in the `post_handoffs_status_fsm` trigger (`0694`); RPCs keep their predicates | **2 ✅** |
 | Post availability | `posts.availability_status` | immediate, scheduled, ongoing | SQL check (`0626`); reserve / claim → scheduled, cancel and no-show sweep → immediate (items and food), handed over / pause / owner complete → ongoing (`0666`, `0667`) | no from-guards | 2 (moves with the handoff) |
 | Content moderation | `posts.moderation_status` (the `listings` column is a view column since `0667`) | draft, pending_review, published, rejected | SQL check (`0626`); read by `operator_case_enqueue_for_post` | insert-time default only; no update writer | 4 |
 | Ride series | `ride_series.status` | active, paused, cancelled | SQL check (`0531`), `set_ride_series_status` (`0666`) | none (any move) | 6 |
 | Listing (legacy) | `listings` view over `posts` since `0667` | derived from S1: paused / deleted_no_recipient → cancelled, closed_delivered → closed | the view and its `instead of` trigger (`0667`) | no own state | **retired ✅ (`0667`)** |
 | Handoff (legacy) | `giving_handoffs` view over `post_handoffs` since `0667` | as `post_handoffs` | the view (`0667`) | no own state | **retired ✅ (`0667`)** |
-| Ride listing / participants / templates (legacy) | `ride_listings`, `ride_participants`, `ride_templates` | 6 / 4 / 3 states | SQL checks (`0177`, `0139`, `0148`), TS use cases | five pg_cron jobs still act through the `ride_listings` view (§4, background jobs) | **1d**, then retire (G44) |
+| Ride listing / participants / templates (legacy) | `ride_listings`, `ride_participants`, `ride_templates` | 6 / 4 / 3 states | SQL checks (`0177`, `0139`, `0148`), TS use cases | their pg_cron jobs are retired (`0695`) | **1d ✅**, then retire the tables (G44) |
 
 ### 3.2 People, social, safety
 
@@ -150,7 +150,7 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 - `my-listings.tsx` shows Delete for `closed`, which includes `deleted_no_recipient`; `delete_my_listing` refuses that state.
 
 **Handoffs**
-- Four TS copies disagree: `canTransitionGivingHandoff` forbids `reserved → handed_over`, `isValidRideBookingTransition` allows it; neither has `waitlisted`, `confirmed → no_show`, `no_show → handed_over` (event attendance, `0564`) or `cancelled → reserved` (ride reinstate, `0655`), all of which SQL performs.
+- ~~Four TS copies disagree: `canTransitionGivingHandoff` forbids `reserved → handed_over`, `isValidRideBookingTransition` allows it; neither has `waitlisted`, `confirmed → no_show`, `no_show → handed_over` (event attendance, `0564`) or `cancelled → reserved` (ride reinstate, `0655`), all of which SQL performs.~~ ✅ wave 2 (`0694`): four kernel machines by world; the unused TS copies are deleted.
 - `cancel_giving_handoff` (`0666`) accepts event registrations without promoting the waitlist (`event_promote_waitlist`), and resets `availability_status` for items and food but not animals.
 - Items, animals and knowledge reservations get `confirm_by = +24h`, but only rides and housing sweep on it; a stale reservation never lapses and blocks pause / fulfill / delete.
 - `rides_expired_listings_sweep` (`0624`) expires the ride post but leaves its reserved / confirmed bookings live; the food sweep cancels them.
@@ -178,27 +178,27 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 - Match v1 `listing_matches` (`0303`) accepts on one side's response; v2 `match_candidates` requires both.
 
 **Handoffs — second sweep (wave 2 design inputs)**
-- The `giving_handoffs` view's `instead of update` trigger (`0667`) sets `status` on every update, also when only a time column changes; the wave 2 `before update of status` trigger must accept `old.status = new.status`.
+- ~~The `giving_handoffs` view's `instead of update` trigger (`0667`) sets `status` on every update, also when only a time column changes; the wave 2 `before update of status` trigger must accept `old.status = new.status`.~~ ✅ wave 2 (`0694`): the trigger treats a same-status write as a no-op.
 - Moves leave end states: cancelled → reserved / confirmed (ride reinstate), no_show → handed_over (event attendance correction). Nothing leaves `handed_over`.
 - `cancel_giving_handoff` (`0666`) also cancels event registrations; `mark_giving_handed_over` served rides, housing and events until `0683`.
 - Knowledge has no confirm RPC: its `confirmed` is reachable only through the view.
-- About 12 test fixtures set handoff statuses directly; wave 2 rewrites them through the RPCs.
+- ~~About 12 test fixtures set handoff statuses directly; wave 2 rewrites them through the RPCs.~~ ✅ wave 2: every fixture move is a legal edge; none needed rewriting.
 
 **Background jobs (wave 1d unless noted)**
-- `ride_templates_materialize` (`0148`, daily) inserts through the `ride_listings` view; the unique index that made it idempotent went with the table (`0667`) and the view drops `template_id`, so each active template creates its rides again every night.
-- `ride_listings_expire_check` (`0135`, every 15 minutes) still runs: through the view it expires every ride post 3 hours after departure, requests included, without `ride_post_set_status`, and leaves its bookings live — a fifth expiry writer beside `0624`.
-- `ride_complete_pending_rating_cleanup` (`0177`) and `ride_food_overdue_alert` (`0182`) match no row: the view has no `completed_pending_rating` or `in_transit`, and hard-codes `food_shipping_enabled = false`.
-- `ride_participants_expire_stale_check` (`0151`) joins the view and still writes the retired `ride_participants` table.
-- `food_expired_listings_sweep` (`0666`): the second loop (`legacy_post_id is null`) never matches, and its writes through the views repeat the direct cancel.
+- ~~`ride_templates_materialize` (`0148`, daily) inserts through the `ride_listings` view; the unique index that made it idempotent went with the table (`0667`) and the view drops `template_id`, so each active template creates its rides again every night.~~ ✅ wave 1d (`0695`): unscheduled and dropped; ride series replace templates (FR-RIDE-046).
+- ~~`ride_listings_expire_check` (`0135`, every 15 minutes) still runs: through the view it expires every ride post 3 hours after departure, requests included, without `ride_post_set_status`, and leaves its bookings live — a fifth expiry writer beside `0624`.~~ ✅ wave 1d (`0695`): unscheduled and dropped; requests never expire (D21).
+- ~~`ride_complete_pending_rating_cleanup` (`0177`) and `ride_food_overdue_alert` (`0182`) match no row: the view has no `completed_pending_rating` or `in_transit`, and hard-codes `food_shipping_enabled = false`.~~ ✅ wave 1d (`0695`): unscheduled and dropped.
+- ~~`ride_participants_expire_stale_check` (`0151`) joins the view and still writes the retired `ride_participants` table.~~ ✅ wave 1d (`0695`): unscheduled and dropped.
+- ~~`food_expired_listings_sweep` (`0666`): the second loop (`legacy_post_id is null`) never matches, and its writes through the views repeat the direct cancel.~~ ✅ wave 1d (`0695`): rewritten on `posts` / `post_handoffs` only.
 - `notifications_retry_pending` (`0058`) does not skip when the functions URL is unset (as `0079`, `0080`, `0549` do), and with no in-flight state a minute retry can resend a push (wave 7).
 - An embedding job stuck in `processing` is never reclaimed, and a `failed` one is retried only after a text edit (wave 7).
 
 **Client ↔ server (each fixed in the wave that owns the machine)**
 - Post menu offers Delete in every status (a hard delete, outside the graph); the delete policy (`0053`) allows only `open`, or `closed_delivered` / `deleted_no_recipient` with no recipient. Paused, expired and delivered-with-recipient posts fail with `post_owner_delete_forbidden`.
-- Ride reinstate is offered on the cancel reason alone; the RPC also needs an open post, a ride not departed and a free seat.
-- "Complete trip" shows on every confirmed booking (the row is not given `departsAt`); the RPC refuses more than 1 hour before departure.
-- Approve counts confirmed and handed-over seats; the RPC counts reserved seats too, so Approve can fail with `ride_seats_exhausted`.
-- Owner assign in housing and items is not gated on an open post; the RPC refuses with `closure_wrong_status`.
+- ~~Ride reinstate is offered on the cancel reason alone; the RPC also needs an open post, a ride not departed and a free seat.~~ ✅ wave 2b: `rideReinstateBlocker` applies the RPC's rules and codes.
+- ~~"Complete trip" shows on every confirmed booking (the row is not given `departsAt`); the RPC refuses more than 1 hour before departure.~~ ✅ wave 2b: held, with a hint, until an hour before departure.
+- ~~Approve counts confirmed and handed-over seats; the RPC counts reserved seats too, so Approve can fail with `ride_seats_exhausted`.~~ ✅ wave 2b: other waiting bookings count too.
+- ~~Owner assign in housing and items is not gated on an open post; the RPC refuses with `closure_wrong_status`.~~ ✅ wave 2b: assign shows only on an open listing.
 - Volunteer check-in shows for any registration; the RPC allows it only from 2 hours before the shift to 4 hours after.
 - Onboarding moves are guarded only in TS use cases (read, then write); the column is client-writable with a check constraint only (wave 3).
 - `StartRideUseCase` / `ArriveRideUseCase` are wired but unused; `rpc_ride_start` writes `posts.status = 'in_transit'`, which S1 forbids (retire, wave 1d).
@@ -245,10 +245,13 @@ One PR per row. Each wave starts only after the previous one is merged, so the c
 | 1a ✅ | Post S1 graph on the kernel (`0681`), no roles yet | One graph already agreed in TS and SQL; one trigger to replace; prerequisite for G1 step 6d (drop `listings`) |
 | 1b-i ✅ | Admin remove in any status, restore to the previous status, `status_before_admin_removal` (`0682`) | PM decision D129 |
 | 1b-ii ✅ | Handoff writers close a post only from `open`; the handed-over step serves its four worlds; one `owner_complete_offer_with_user` (`0683`) | Divergences in §4 |
-| 1b-iii | Expiry: full-copy republish, items without TTL (D21), events expire when they end | Behaviour fixes on the agreed graph, each with a regression test |
+| 1b-iii ✅ | Expiry: items without TTL (D21, `0684`), events expire when they end (D128, `0685`), republish through the prefilled create form (D127) | Behaviour fixes on the agreed graph, each with a regression test |
+| 1b-iv ✅ | An organizer pauses, closes or deletes an event with registrations; they are cancelled and every attendee is notified, on any delete path (`0686`) | PM decision 2026-11-09 |
 | 1c | Writer-declared actor role (`owner` / `recipient` / `admin` / `system`) passed to the trigger, then role-restricted S1 edges | Needs a small kernel addendum: the trigger cannot infer the actor (a report's auto-hide runs in the reporter's session) |
-| 1d | Background jobs on the retired ride tables (§4): template materializer, legacy ride expiry, the two no-op crons, the `ride_participants` sweep, the food sweep's dead loop; retire the legacy ride TS types and use cases | A live defect on `dev` since `0667`; lands before the next release |
-| 2 | Handoffs as five machines on one table (`item_handoff`, `ride_booking`, `housing_booking`, `event_registration`, `knowledge_session`), one `before update` trigger choosing the machine by `world_slug`; reservation-expiry sweep | Most writers and most divergences; TS copies collapse to the kernel |
+| 1d ✅ | Background jobs on the retired ride tables (§4): template materializer, legacy ride expiry, the two no-op crons, the `ride_participants` sweep, the food sweep's dead loop; retired in `0695`; the legacy ride TS types and use cases go with G44 | A live defect on `dev` since `0667`; lands before the next release |
+| 2 ✅ | Handoffs as four machines on one table (`giving_handoff` for items, food, animals, knowledge and any other world; `ride_booking`, `housing_booking`, `event_registration`), one `before update of status` trigger choosing the machine by `world_slug` (`0694`) | Most writers and most divergences; TS copies collapse to the kernel |
+| 2b ✅ | Client booking and assign actions follow the machines and the RPC preconditions (reinstate, complete, approve seats, assign) | The UI offers only what the server accepts |
+| 2c | Reservation-expiry sweep for items, animals and knowledge (`confirm_by`) | §4 handoffs |
 | 3 | Account status (+ composite invariant check beside the kernel call), onboarding | Many writers, failing checks, drifted unions |
 | 4 | Reports, follow requests, review-queue family, content moderation, post comments, knowledge topics | Small graphs; replaces hand-written triggers and RLS-only edges |
 | 5 | Volunteer opportunity, shift signup, timesheets | First role-heavy graphs outside giving |
