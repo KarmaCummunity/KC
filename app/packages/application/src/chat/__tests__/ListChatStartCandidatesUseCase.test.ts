@@ -78,7 +78,7 @@ describe('ListChatStartCandidatesUseCase (FR-CHAT-017)', () => {
         mkUser('ok', 'Okay Bo'),
       ],
       found: [
-        mkUser('del', 'Deleted Bo', { accountStatus: 'deleted' }),
+        mkUser('del', 'Leaving Bo', { accountStatus: 'pending_deletion' }),
         mkUser('pend', 'Pending Bo', { accountStatus: 'pending_verification' }),
         mkUser('blk2', 'Blocked Bo Two'),
         mkUser('ok2', 'Okay Bo Two'),

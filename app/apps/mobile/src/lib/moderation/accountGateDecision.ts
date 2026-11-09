@@ -16,7 +16,8 @@ const SUSPENDED_REASONS = new Set(['suspended_admin', 'suspended_for_false_repor
 
 export function accountGateDecision(result: AccountGateResult): AccountGateDecision {
   if (result.allowed) return { action: 'allow' };
-  const reason = (result.reason as string | undefined) ?? 'banned';
+  // No reason means no account row (e.g. a purged account): treated as blocked.
+  const reason = result.reason ?? 'banned';
   if (reason === 'pending_verification') return { action: 'reverify' };
   const until = result.until || null;
   if (reason === 'pending_deletion') return { action: 'restore', purgeAt: until };
