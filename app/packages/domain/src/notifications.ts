@@ -62,7 +62,7 @@ export type NotificationKind =
   | 'housing_booking_superseded'
   | 'housing_booking_cancelled'
   | 'housing_booking_completed'
-  // {{D:event-owner-cancels-registrations}} — the organizer paused, closed or deleted the event
+  // D131 — the organizer paused, closed or deleted the event
   // before it started, so the attendee's registration was cancelled (0686).
   | 'event_registration_cancelled';
 

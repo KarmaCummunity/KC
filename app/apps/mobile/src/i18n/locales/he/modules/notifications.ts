@@ -56,7 +56,7 @@ export const notificationsHe = {
   foodExpiringBody: '{{listingTitle}} — אם כבר נמסר, סמנו אותו כנמסר.',
   foodExpiredTitle: 'פג תוקף האוכל שפרסמת',
   foodExpiredBody: '{{listingTitle}} הוסר מהרשימה כי לא נאסף בזמן.',
-  // {{D:event-owner-cancels-registrations}} — the organizer cancelled the event before it started (0686).
+  // D131 — the organizer cancelled the event before it started (0686).
   eventRegistrationCancelledTitle: 'האירוע בוטל',
   eventRegistrationCancelledBody: '{{eventTitle}} בוטל על ידי המארגנים, וההרשמה שלך בוטלה איתו.',
   // D73 / D96 — ride booking changes, one push to the other side (0511).

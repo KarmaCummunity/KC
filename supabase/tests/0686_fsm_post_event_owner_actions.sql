@@ -1,5 +1,5 @@
 -- supabase/tests/0686_fsm_post_event_owner_actions.sql
--- Wave 1b-iv (#1989), {{D:event-owner-cancels-registrations}}: an organizer may pause or delete
+-- Wave 1b-iv (#1989), D131: an organizer may pause or delete
 -- an event with registrations; before the event starts its open registrations are cancelled and
 -- each attendee is notified. Runs in a rolled-back transaction.
 

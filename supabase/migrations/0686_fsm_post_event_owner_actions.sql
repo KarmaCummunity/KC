@@ -1,6 +1,6 @@
 -- 0686_fsm_post_event_owner_actions — wave 1b-iv of docs/architecture/state-machines.md (#1989).
 --
--- {{D:event-owner-cancels-registrations}} (PM, 2026-11-09): an organizer may pause, close or
+-- D131 (PM, 2026-11-09): an organizer may pause, close or
 -- delete an event post that has registrations; the registrations are cancelled and each
 -- attendee is notified. Before, the copies disagreed: the owner RPCs (0666) refused while a
 -- registration was live, but the post status trigger (0665 / 0681) let the same move through.
@@ -62,7 +62,7 @@ end;
 $$;
 
 comment on function kc_private.event_cancel_open_registrations(uuid) is
-  '{{D:event-owner-cancels-registrations}} (0686): cancels an upcoming event''s open registrations (host_cancelled) and notifies each attendee.';
+  'D131 (0686): cancels an upcoming event''s open registrations (host_cancelled) and notifies each attendee.';
 
 revoke all on function kc_private.event_cancel_open_registrations(uuid) from public, anon, authenticated;
 grant execute on function kc_private.event_cancel_open_registrations(uuid) to service_role;
@@ -109,7 +109,7 @@ end;
 $$;
 
 comment on function public.posts_event_owner_move_cancels_registrations() is
-  '{{D:event-owner-cancels-registrations}} (0686): after an event post leaves open / paused for paused, closed, deleted or removed, its open registrations are cancelled.';
+  'D131 (0686): after an event post leaves open / paused for paused, closed, deleted or removed, its open registrations are cancelled.';
 
 revoke all on function public.posts_event_owner_move_cancels_registrations() from public, anon, authenticated;
 

@@ -56,7 +56,7 @@ export const notificationsEn = {
   foodExpiringBody: '{{listingTitle}} — if it was already handed over, mark it as handed over.',
   foodExpiredTitle: 'Your food offer expired',
   foodExpiredBody: '{{listingTitle}} was taken off the list because no one collected it in time.',
-  // {{D:event-owner-cancels-registrations}} — the organizer cancelled the event before it started (0686).
+  // D131 — the organizer cancelled the event before it started (0686).
   eventRegistrationCancelledTitle: 'Event cancelled',
   eventRegistrationCancelledBody: '{{eventTitle}} was cancelled by its organizer, so your registration was cancelled too.',
   // D73 / D96 — ride booking changes, one push to the other side (0511).

@@ -136,7 +136,7 @@ const KIND_ROUTES: Record<NotificationKind, KindHandler> = {
   giving_handoff_cancelled: (d) => listingRoute(d.params),
   giving_handoff_completed: (d) => listingRoute(d.params),
   // FR-HOUSING-017 — housing booking changes open the stay offer, where both sides act on it.
-  // {{D:event-owner-cancels-registrations}} — a cancelled event registration opens the event post.
+  // D131 — a cancelled event registration opens the event post.
   event_registration_cancelled: (d) => listingRoute(d.params),
   housing_booking_requested: (d) => listingRoute(d.params),
   housing_booking_confirmed: (d) => listingRoute(d.params),
