@@ -19,6 +19,7 @@ export const donations = {
   hubHeroTitle: 'Give. Receive. Donate what you have.',
   hubHeroSubtitle: 'Pick a cause that speaks to you and turn it into action.',
   hubCategoriesSectionTitle: 'Giving worlds',
+  worldLinksNav: 'Community links',
   worldLaunch,
   worldFeed,
   items: { title: 'Items', subtitle: 'Donate and request items' },

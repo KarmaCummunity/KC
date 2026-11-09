@@ -16,6 +16,7 @@ import { eventPost } from './eventPost';
 import { ridePlaces } from './ridePlaces';
 import { dateTimeField, rideFeed, rideRoutes, rideSafety, rideSchedule, rideSeries } from './rideSchedule';
 import { authHe } from './modules/auth';
+import { authVerificationHintHe } from './modules/authVerificationHint';
 import { onboardingHe } from './modules/onboarding';
 import { dateOfBirthHe } from './modules/dateOfBirth';
 import { verificationHe } from './modules/verification';
@@ -57,7 +58,7 @@ const he = {
   config: configHe,
 
   // Auth (FR-AUTH-001..014) — see modules/auth.ts
-  auth: authHe,
+  auth: { ...authHe, ...authVerificationHintHe },
 
   // Onboarding (FR-AUTH-010..012, FR-AUTH-018) — see modules/onboarding.ts
   onboarding: onboardingHe,

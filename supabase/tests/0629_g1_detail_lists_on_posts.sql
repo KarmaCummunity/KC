@@ -63,11 +63,7 @@ begin
 end;
 $$;
 
-/**
- * list_my_listings as of 0413, its rows as one ordered JSON array. The kind join sits inside the
- * paged query, as it does in the function: since 0667 `listings` is a view over `posts`, a post
- * with no kind is a row the join drops, and a limit taken first would return a short page (#2004).
- */
+/** list_my_listings as of 0413, its rows as one ordered JSON array. */
 create function pg_temp.old_my_listings(p_limit int, p_offset int, p_cursor_updated_at timestamptz, p_cursor_id uuid)
 returns jsonb
 language sql
@@ -75,9 +71,12 @@ stable
 as $$
   select coalesce(jsonb_agg(to_jsonb(q) order by q.ord), '[]'::jsonb) from (
     select row_number() over (order by l.updated_at desc, l.listing_id desc) as ord,
-           l.listing_id, l.world_slug, l.kind_slug as slug, l.direction, l.status, l.title,
+           l.listing_id, l.world_slug, l.slug, l.direction, l.status, l.title,
            l.summary, l.urgency_level, l.availability_status, l.updated_at
-      from (select l.*, lk.slug as kind_slug from public.listings l
+      -- The kind join sits inside the page, before limit / offset, as in list_my_listings:
+      -- since 0667 every post is a listings row, and a post without a kind joined after the
+      -- page was cut left the page short, depending on how equal updated_at values tied (#2004).
+      from (select l.*, lk.slug from public.listings l
               join public.listing_kinds lk on lk.kind_id = l.kind_id
              where l.owner_id = auth.uid()
                and l.status <> 'removed_admin'
