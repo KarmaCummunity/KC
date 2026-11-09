@@ -39,8 +39,8 @@ Per design spec §4.1, one PR per machine (or per tight family), each with code 
 | Knowledge session | `post_handoffs.status` (world `knowledge`) | reserved, confirmed, handed_over, cancelled | knowledge RPCs (`0622`) | per-RPC filters | **2** |
 | Content moderation | `posts.moderation_status`, `listings.moderation_status` | draft, pending_review, published, rejected | SQL checks (`0242`, `0626`) | insert-time default only | 4 |
 | Ride series | `ride_series.status` | active, paused, cancelled | SQL check (`0531`), `set_ride_series_status` (`0666`) | none (any move) | 6 |
-| Listing (legacy) | `listings.status` | open, closed, cancelled, expired, removed_admin, hidden_pending_review | SQL check (`0468`), lossy map from S1 (`0554`) | — | **retire with G1** |
-| Handoff (legacy) | `giving_handoffs.status` | as `post_handoffs` minus waitlisted | SQL check (`0380`) | — | **retire with G1** |
+| Listing (legacy) | `listings` view over `posts` since `0667` | derived from S1: paused / deleted_no_recipient → cancelled, closed_delivered → closed | the view and its `instead of` trigger (`0667`) | no own state | **retired ✅ (`0667`)** |
+| Handoff (legacy) | `giving_handoffs` view over `post_handoffs` since `0667` | as `post_handoffs` | the view (`0667`) | no own state | **retired ✅ (`0667`)** |
 | Ride listing / participants / templates (legacy) | `ride_listings`, `ride_participants`, `ride_templates` | 6 / 4 / 3 states | SQL checks (`0177`, `0139`, `0148`), TS use cases | — | **retire (G44)** |
 
 ### 3.2 People, social, safety
@@ -90,7 +90,7 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 - Two `owner_complete_offer_with_user` overloads coexist (`0658` with `p_mode`, `0666` without) with different handoff and karma behaviour; the app calls the `0658` one.
 - Events never move to `expired` at their date; only food, rides and ride series have expiry writers.
 
-**Listings (G1 gap)**
+**Listings (G1 gap)** — the table is a view over `posts` since `0667`; the items below are history except where marked.
 - `listing_status_for_post` (`0554`) maps `paused → cancelled` and both `closed_delivered` and `deleted_no_recipient → closed`; the reverse direction cannot be reconstructed.
 - `owner_offer_set_status` (`0658`) closes the listing but leaves a listing-sourced mirror post `open` since the sync triggers were dropped (`0666`).
 - `my-listings.tsx` shows Delete for `closed`, which includes `deleted_no_recipient`; `delete_my_listing` refuses that state.
@@ -155,7 +155,7 @@ One PR per row. Each wave starts only after the previous one is merged, so the c
 | 5 | Volunteer opportunity, shift signup, timesheets | First role-heavy graphs outside giving |
 | 6 | Money (intent, payment, refund, payout, standing order, KYC), ride series, finance ledger | Before the real payment provider webhook lands |
 | 7 | WhatsApp outbound and session, template review, chat message | Service-only, lowest risk |
-| — | `listings`, `giving_handoffs`, `ride_listings`, `ride_participants`, `ride_templates`, `listing_matches` | Retire with G1 / G44 / matching v2, never port |
+| — | `listings`, `giving_handoffs`, `ride_listings` (retired ✅ `0667`, views over the record); `ride_participants`, `ride_templates`, `listing_matches` | Retire with G44 / matching v2, never port. A writer that updates the `listings` view moves the post through the view's `instead of` trigger; moderation writers act on `posts` directly (`0682`) |
 
 ## 7. Product decisions
 

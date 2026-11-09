@@ -11,8 +11,9 @@
 --    deleted_no_recipient, expired). Full delete + re-insert, per design spec §4.1.
 -- 2. `posts.status_before_admin_removal` accepts every status a post can be removed from,
 --    so `admin_remove_listing` no longer fails on a paused or expired post.
--- 3. `admin_remove_post` removes a post in any status, like `admin_remove_listing`; it no
---    longer silently skips paused and expired posts.
+-- 3. `admin_remove_post` removes a post in any status; it no longer silently skips paused
+--    and expired posts. `admin_remove_listing` writes the post directly and saves its status
+--    (since 0667 `listings` is a view over `posts`, and updating the view lost the status).
 -- 4. `admin_restore_target` restores to the saved status and clears it. It no longer
 --    "restores" a paused post that was never removed, and drops a branch on a
 --    `moderation_status` value the column cannot hold.
@@ -105,6 +106,42 @@ $$;
 revoke all on function public.admin_remove_post(uuid) from public, anon;
 grant execute on function public.admin_remove_post(uuid) to authenticated;
 
+-- ── 3b. admin_remove_listing: save the previous status on the post ─────────────
+-- Since 0667 `listings` is a view over `posts`; the 0666 body updated the view first, which
+-- moved the post to `removed_admin` without saving its status, so a later restore could
+-- not return it. The removal now writes the post directly.
+create or replace function public.admin_remove_listing(p_listing_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_actor uuid := auth.uid();
+begin
+  perform public.admin_assert_role(v_actor, array['super_admin','moderator']);
+
+  update public.posts
+     -- A post hidden for review was open before it was hidden.
+     set status_before_admin_removal = case when status = 'hidden_pending_review' then 'open' else status end,
+         status = 'removed_admin',
+         updated_at = now()
+   where (listing_id = p_listing_id or legacy_listing_id = p_listing_id or post_id = p_listing_id)
+     and status <> 'removed_admin';
+
+  if not found then
+    -- Already removed or missing: a quiet no-op keeps the idempotency contract (no audit row).
+    return;
+  end if;
+
+  insert into public.audit_events (actor_id, action, target_type, target_id, metadata)
+  values (v_actor, 'manual_remove_target', 'listing', p_listing_id, '{}'::jsonb);
+end;
+$$;
+
+revoke all on function public.admin_remove_listing(uuid) from public, anon;
+grant execute on function public.admin_remove_listing(uuid) to authenticated;
+
 -- ── 4. admin_restore_target: back to the status before the removal ─────────────
 -- The status a restored post returns to: its saved pre-removal status, `open` for a post
 -- hidden for review, and `open` for a legacy row removed before 0097 saved the status.
@@ -185,23 +222,14 @@ begin
      where chat_id = p_target_id and removed_at is not null;
     v_changed := found;
   elsif p_target_type = 'listing' then
+    -- Since 0667 `listings` is a view over `posts` (listing_id = post_id), so restoring the
+    -- post restores the listing; legacy mirror posts are matched by their listing columns.
     update public.posts p
        set status = kc_private.post_restore_status(p),
            status_before_admin_removal = null,
            updated_at = now()
      where (p.listing_id = p_target_id or p.legacy_listing_id = p_target_id or p.post_id = p_target_id)
        and p.status in ('removed_admin', 'hidden_pending_review');
-    -- The legacy listing follows its post's restored status (retired with G1).
-    update public.listings l
-       set status = public.listing_status_for_post(coalesce(
-             (select p.status from public.posts p
-               where p.listing_id = l.listing_id or p.legacy_listing_id = l.listing_id or p.post_id = l.listing_id
-               order by p.updated_at desc
-               limit 1),
-             'open')),
-           updated_at = now()
-     where l.listing_id = p_target_id
-       and l.status in ('removed_admin', 'hidden_pending_review');
     v_changed := found;
   end if;
 

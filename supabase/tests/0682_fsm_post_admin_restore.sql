@@ -135,7 +135,8 @@ begin
     'a no-op restore writes no audit row');
 end $$;
 
--- ── 6. Removing the listing of a paused post works (it used to fail on the check) ────
+-- ── 6. Removing the listing of a paused post saves paused and restores it (the 0666 body
+--       failed on the check, and since 0667 updating the view lost the saved status) ──
 do $$
 declare
   p personas;
@@ -145,8 +146,9 @@ begin
   select * into p from personas;
   v_listing := kc_test.create_listing(p.owner, 'time', 'volunteer_shift', 'give', 'Restore listing',
     '{"duration_minutes": 60}'::jsonb);
+  -- Since 0667 a listing is a view row over its post (listing_id = post_id).
   select post_id into v_post from public.posts
-   where listing_id = v_listing or legacy_listing_id = v_listing
+   where post_id = v_listing or listing_id = v_listing or legacy_listing_id = v_listing
    limit 1;
   perform kc_test.assert_true(v_post is not null, 'fixture listing has a post');
   update public.posts set status = 'paused' where post_id = v_post;
@@ -160,6 +162,10 @@ begin
 
   perform public.admin_restore_target('listing', v_listing);
   perform kc_test.assert_eq(pg_temp.status_of(v_post), 'paused', 'listing restore returns the post to paused');
+  perform kc_test.assert_true(exists (
+    select 1 from public.audit_events
+     where action = 'restore_target' and target_type = 'listing' and target_id = v_listing),
+    'the listing restore is audited');
 end $$;
 
 rollback;
