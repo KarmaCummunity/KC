@@ -58,4 +58,9 @@ export const postEditEn = {
   editListing: {
     headerTitle: 'Edit {{category}}',
   },
+  // D127 — an expired listing-world post is republished as a new post (dates cleared).
+  republishListing: {
+    cta: 'Republish',
+    a11y: 'Republish as a new post with new dates',
+  },
 } as const;

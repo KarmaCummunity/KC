@@ -8,6 +8,7 @@ import { Text } from '@kc/ui';
 import type { OrgEventChoice } from '../../hooks/useOrgEventChoice';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { Chip } from '../ui/Chip';
+import { ChipSelectRow } from '../filterKit/ChipSelectRow';
 import { ListingFieldFrame } from './ListingFieldFrame';
 import { OrganizationPicker } from './OrganizationPicker';
 
@@ -23,7 +24,7 @@ export function TimeOfferKindChooser({ choice, disabled = false }: Props) {
     <>
       <View style={styles.section} testID="time-offer-kind">
         <Text style={styles.sectionLabel}>{t('eventPost.create.kindLabel')}</Text>
-        <View style={styles.chipWrap}>
+        <ChipSelectRow testID="time-offer-kind-chips" expandable={false}>
           <Chip
             testID="time-offer-kind-shift"
             label={t('eventPost.create.kindShift')}
@@ -38,7 +39,7 @@ export function TimeOfferKindChooser({ choice, disabled = false }: Props) {
             onPress={() => choice.setWantsOrgEvent(true)}
             disabled={disabled}
           />
-        </View>
+        </ChipSelectRow>
       </View>
       {choice.isOrgEvent ? (
         <ListingFieldFrame field="org">
