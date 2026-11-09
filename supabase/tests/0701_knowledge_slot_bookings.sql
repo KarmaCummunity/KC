@@ -13,7 +13,7 @@ select kc_test.create_knowledge_member('kb_giver') as giver,
 -- Pushes of a kind to a member about one booking.
 create function pg_temp.pushed(p_user uuid, p_kind text, p_handoff uuid)
 returns bigint language sql as $$
-  select count(*) from public.notifications
+  select count(*) from public.notifications_outbox
    where user_id = p_user and kind = p_kind and dedupe_key like p_kind || ':' || p_handoff::text || ':%';
 $$;
 
