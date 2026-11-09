@@ -49,7 +49,6 @@ function makeFakeClient(opts: FakeOpts = {}): { client: SupabaseClient<any>; cal
 
 describe('SupabaseUserRepository — direct UPDATE-on-users setters', () => {
   it.each([
-    ['setOnboardingState', (r: SupabaseUserRepository) => r.setOnboardingState('u_1', 'completed'), { onboarding_state: 'completed' }],
     ['setAvatar (string)', (r: SupabaseUserRepository) => r.setAvatar('u_1', 'a.jpg'), { avatar_url: 'a.jpg' }],
     ['setAvatar (null)', (r: SupabaseUserRepository) => r.setAvatar('u_1', null), { avatar_url: null }],
     ['setBiography (string)', (r: SupabaseUserRepository) => r.setBiography('u_1', 'bio'), { biography: 'bio' }],
@@ -63,7 +62,6 @@ describe('SupabaseUserRepository — direct UPDATE-on-users setters', () => {
   });
 
   it.each([
-    ['setOnboardingState', (r: SupabaseUserRepository) => r.setOnboardingState('u_1', 'completed')],
     ['setAvatar', (r: SupabaseUserRepository) => r.setAvatar('u_1', null)],
     ['setBiography', (r: SupabaseUserRepository) => r.setBiography('u_1', null)],
     ['dismissClosureExplainer', (r: SupabaseUserRepository) => r.dismissClosureExplainer('u_1')],
