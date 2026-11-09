@@ -125,7 +125,7 @@ Last applied on kc-dev when this was written: `0239`.
 | 0677 | #1964 demo post media paths + org_memberships on demo orgs | in review |
 | 0678 | #1964 verification 0..2 mix, OnlyMe posts, storage JPEG fixtures | in review |
 | 0679 | FR-ADMIN-031 admin_demo_data_status ride/org/media KPIs | in review |
-| 0680–0689 | FSM kernel program (`docs/architecture/state-machines.md`): `0680` kernel catalog (`fsm_state` / `fsm_edge` / `fsm_assert_transition`) and the admin-task pilot; `0681` post S1 (wave 1a); `0682+` one machine per migration onto the kernel | in progress |
+| 0680–0689 | FSM kernel program (`docs/architecture/state-machines.md`): `0680` kernel catalog (`fsm_state` / `fsm_edge` / `fsm_assert_transition`) and the admin-task pilot; `0681` post S1 (wave 1a); `0682` admin restore (wave 1b-i); `0683` handoff writers (wave 1b-ii); `0684+` one machine or fix per migration | in progress |
 | 0690 | money sandbox completion behind the `sandbox_payments` server flag; org memberships written by definer functions only | merged (#1983) |
 | 0691 | #1961 reset the public schema comment (retired product cleanup) | in progress |
 | 0692+ | — | free |

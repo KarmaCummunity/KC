@@ -11,7 +11,7 @@ import { defineMachine } from '../machine';
  * - Guards that read other rows (expiry on resume, an active handoff on pause / delete)
  *   stay in the `posts_status_fsm` trigger, before the kernel call.
  *
- * SQL copy: `supabase/migrations/0681_fsm_post_s1.sql`.
+ * SQL copy: `supabase/migrations/0681_fsm_post_s1.sql`, restore edges `0682_fsm_post_admin_restore.sql`.
  */
 export const postMachine = defineMachine({
   id: 'post',
@@ -55,7 +55,12 @@ export const postMachine = defineMachine({
     // Closed without a recipient: owner reopen inside the window, or moderation.
     { from: 'deleted_no_recipient', to: 'open' },
     { from: 'deleted_no_recipient', to: 'removed_admin' },
-    // Removed by an admin: only an admin restore leaves it.
+    // Removed by an admin: only an admin restore leaves it, back to the status saved before
+    // the removal (D129).
     { from: 'removed_admin', to: 'open' },
+    { from: 'removed_admin', to: 'paused' },
+    { from: 'removed_admin', to: 'closed_delivered' },
+    { from: 'removed_admin', to: 'deleted_no_recipient' },
+    { from: 'removed_admin', to: 'expired' },
   ],
 });

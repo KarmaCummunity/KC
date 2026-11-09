@@ -27,7 +27,7 @@ describe('S1 Post Status State Machine (Spec 07 §7.1, D104)', () => {
     // Compile-time: both directions of assignability between the union and the machine.
     expectTypeOf<(typeof postMachine.states)[number]>().toEqualTypeOf<PostStatus>();
     expect(postMachine.id).toBe('post');
-    expect(postMachine.edges).toHaveLength(25);
+    expect(postMachine.edges).toHaveLength(29);
   });
 
   it('has no terminal status: every status can still be moderated or restored', () => {
@@ -110,9 +110,12 @@ describe('S1 Post Status State Machine (Spec 07 §7.1, D104)', () => {
       }
     });
 
-    it('allows admin restore from removed_admin to open', () => {
-      expect(canTransitionPostStatus('removed_admin', 'open')).toBe(true);
-      expect(() => validatePostStatusTransition('removed_admin', 'open')).not.toThrow();
+    it('allows admin restore from removed_admin to the status saved before the removal', () => {
+      const restorable: PostStatus[] = ['open', 'paused', 'closed_delivered', 'deleted_no_recipient', 'expired'];
+      for (const to of restorable) {
+        expect(canTransitionPostStatus('removed_admin', to)).toBe(true);
+        expect(() => validatePostStatusTransition('removed_admin', to)).not.toThrow();
+      }
     });
   });
 
@@ -154,33 +157,26 @@ describe('S1 Post Status State Machine (Spec 07 §7.1, D104)', () => {
       }
     });
 
-    it('rejects illegal transitions from removed_admin', () => {
-      const forbidden: PostStatus[] = [
-        'paused',
-        'closed_delivered',
-        'deleted_no_recipient',
-        'expired',
-        'hidden_pending_review',
-      ];
-      for (const to of forbidden) {
-        expect(canTransitionPostStatus('removed_admin', to)).toBe(false);
-        expect(() => validatePostStatusTransition('removed_admin', to)).toThrow(PostStatusTransitionError);
-      }
+    it('rejects sending a removed post back to review', () => {
+      expect(canTransitionPostStatus('removed_admin', 'hidden_pending_review')).toBe(false);
+      expect(() => validatePostStatusTransition('removed_admin', 'hidden_pending_review')).toThrow(
+        PostStatusTransitionError,
+      );
     });
   });
 
   describe('error shape', () => {
     it('sets proper error properties on PostStatusTransitionError', () => {
       try {
-        validatePostStatusTransition('removed_admin', 'paused');
+        validatePostStatusTransition('removed_admin', 'hidden_pending_review');
         expect.unreachable('should have thrown');
       } catch (err) {
         expect(err).toBeInstanceOf(PostStatusTransitionError);
         const e = err as PostStatusTransitionError;
         expect(e.code).toBe('posts_status_transition_invalid');
         expect(e.from).toBe('removed_admin');
-        expect(e.to).toBe('paused');
-        expect(e.message).toContain('Cannot transition post status from removed_admin to paused');
+        expect(e.to).toBe('hidden_pending_review');
+        expect(e.message).toContain('Cannot transition post status from removed_admin to hidden_pending_review');
       }
     });
   });

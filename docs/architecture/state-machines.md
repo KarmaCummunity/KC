@@ -1,6 +1,6 @@
 # State machines — inventory and migration onto the FSM kernel
 
-> **Status:** 2026-11-09. Wave 0 ✅ (kernel + admin-task pilot, `0680`). Wave 1a ✅ (post S1 graph on the kernel, `0681`). Gap `G61`.
+> **Status:** 2026-11-09. Wave 0 ✅ (kernel + admin-task pilot, `0680`). Wave 1a ✅ (post S1 graph on the kernel, `0681`). Wave 1b-i ✅ (admin restore, `0682`). Wave 1b-ii ✅ (handoff writers, `0683`). Gap `G61`.
 > **Kernel design:** [`docs/superpowers/specs/2026-11-09-fsm-kernel-design.md`](../superpowers/specs/2026-11-09-fsm-kernel-design.md).
 > **Rule:** a lifecycle has **one** graph. It is declared in `@kc/domain` (`app/packages/domain/src/fsm/machines/`), mirrored row-for-row in `fsm_state` / `fsm_edge` (locked by the contract test), and enforced in Postgres by `fsm_assert_transition` from the RPC and from a `before update of status` trigger. No other copy of the move list may exist: not a SQL `case`, not a TS record, not a UI condition.
 
@@ -39,8 +39,8 @@ Per design spec §4.1, one PR per machine (or per tight family), each with code 
 | Knowledge session | `post_handoffs.status` (world `knowledge`) | reserved, confirmed, handed_over, cancelled | knowledge RPCs (`0622`) | per-RPC filters | **2** |
 | Content moderation | `posts.moderation_status`, `listings.moderation_status` | draft, pending_review, published, rejected | SQL checks (`0242`, `0626`) | insert-time default only | 4 |
 | Ride series | `ride_series.status` | active, paused, cancelled | SQL check (`0531`), `set_ride_series_status` (`0666`) | none (any move) | 6 |
-| Listing (legacy) | `listings.status` | open, closed, cancelled, expired, removed_admin, hidden_pending_review | SQL check (`0468`), lossy map from S1 (`0554`) | — | **retire with G1** |
-| Handoff (legacy) | `giving_handoffs.status` | as `post_handoffs` minus waitlisted | SQL check (`0380`) | — | **retire with G1** |
+| Listing (legacy) | `listings` view over `posts` since `0667` | derived from S1: paused / deleted_no_recipient → cancelled, closed_delivered → closed | the view and its `instead of` trigger (`0667`) | no own state | **retired ✅ (`0667`)** |
+| Handoff (legacy) | `giving_handoffs` view over `post_handoffs` since `0667` | as `post_handoffs` | the view (`0667`) | no own state | **retired ✅ (`0667`)** |
 | Ride listing / participants / templates (legacy) | `ride_listings`, `ride_participants`, `ride_templates` | 6 / 4 / 3 states | SQL checks (`0177`, `0139`, `0148`), TS use cases | — | **retire (G44)** |
 
 ### 3.2 People, social, safety
@@ -80,9 +80,9 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 **Post (S1)**
 - ~~TS `POST_STATUS_TRANSITIONS` and the trigger's `case` list were two copies of the graph.~~ ✅ wave 1a: one kernel machine; the TS helper delegates to it.
 - ~~Spec §7.1 listed no `paused` state and reopened from `expired`.~~ ✅ wave 1a: spec reconciled; `expired → open` removed (D127).
-- `admin_remove_post` (`0452`) refuses `paused` and `expired`; the trigger allows both into `removed_admin`.
-- `admin_remove_listing` (`0666`) stores `paused` / `expired` into `status_before_admin_removal`, whose check (`0097`) rejects them, so the call fails on those posts.
-- `admin_restore_target` (`0666`) always restores to `open` (ignores `status_before_admin_removal`) and keeps a branch on `moderation_status = 'held'`, a value the check does not allow.
+- ~~`admin_remove_post` (`0452`) silently skipped `paused` and `expired` posts.~~ ✅ wave 1b-i (`0682`): removes any status; the admin search row offers Remove accordingly.
+- ~~`admin_remove_listing` (`0666`) failed on a paused or expired post (the `0097` check rejected the saved status).~~ ✅ wave 1b-i (`0682`): the check covers every removable status.
+- ~~`admin_restore_target` (`0666`) always restored to `open`, also "restored" never-removed paused posts, and kept a dead `held` branch.~~ ✅ wave 1b-i (`0682`): restores to the saved status (D129).
 - ~~`mark_giving_handed_over` (`0666`) wrote `closed_delivered` without a source-status filter and raised on `expired` / `removed_admin` posts.~~ ✅ wave 1b-ii (`0683`): closes a live post only; the handoff completes either way; a post under review stays hidden. `post_close_from_handoff` (items) no longer writes the `listings` view.
 - The expired screen calls `rpc_republish_post` (`0155`), which clones only the legacy item columns (no `world_slug`, `details`, `kind_id`); D127 requires a full copy (wave 1b).
 - Items get `expires_at = now() + 30 days` (`0612`, `0666`) while D21 says items never expire and no sweep expires them: after 30 days a paused item cannot resume and never expires.
@@ -90,7 +90,7 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 - ~~Two `owner_complete_offer_with_user` overloads coexisted (`0658` with `p_mode`, `0666` without).~~ ✅ wave 1b-ii (`0683`): the unused two-argument overload is dropped.
 - Events never move to `expired` at their date; only food, rides and ride series have expiry writers.
 
-**Listings (G1 gap)**
+**Listings (G1 gap)** — the table is a view over `posts` since `0667`; the items below are history except where marked.
 - `listing_status_for_post` (`0554`) maps `paused → cancelled` and both `closed_delivered` and `deleted_no_recipient → closed`; the reverse direction cannot be reconstructed.
 - `owner_offer_set_status` (`0658`) closes the listing but leaves a listing-sourced mirror post `open` since the sync triggers were dropped (`0666`).
 - `my-listings.tsx` shows Delete for `closed`, which includes `deleted_no_recipient`; `delete_my_listing` refuses that state.
@@ -147,7 +147,9 @@ One PR per row. Each wave starts only after the previous one is merged, so the c
 |---|---|---|
 | 0 ✅ | Kernel, admin task | Infrastructure + a pilot with no product change |
 | 1a ✅ | Post S1 graph on the kernel (`0681`), no roles yet | One graph already agreed in TS and SQL; one trigger to replace; prerequisite for G1 step 6d (drop `listings`) |
-| 1b | S1 writer fixes from §4: admin remove / restore and `status_before_admin_removal`, `mark_giving_handed_over` source filter, owner RPCs' `time` filter, one `owner_complete_offer_with_user`, full-copy republish, items without TTL (D21), events expire when they end | Behaviour fixes on the agreed graph, each with a regression test |
+| 1b-i ✅ | Admin remove in any status, restore to the previous status, `status_before_admin_removal` (`0682`) | PM decision D129 |
+| 1b-ii ✅ | Handoff writers close a post only from `open`; the handed-over step serves its four worlds; one `owner_complete_offer_with_user` (`0683`) | Divergences in §4 |
+| 1b-iii | Expiry: full-copy republish, items without TTL (D21), events expire when they end | Behaviour fixes on the agreed graph, each with a regression test |
 | 1c | Writer-declared actor role (`owner` / `recipient` / `admin` / `system`) passed to the trigger, then role-restricted S1 edges | Needs a small kernel addendum: the trigger cannot infer the actor (a report's auto-hide runs in the reporter's session) |
 | 2 | Handoffs as five machines on one table (`item_handoff`, `ride_booking`, `housing_booking`, `event_registration`, `knowledge_session`), one `before update` trigger choosing the machine by `world_slug`; reservation-expiry sweep | Most writers and most divergences; TS copies collapse to the kernel |
 | 3 | Account status (+ composite invariant check beside the kernel call), onboarding | Many writers, failing checks, drifted unions |
@@ -155,11 +157,12 @@ One PR per row. Each wave starts only after the previous one is merged, so the c
 | 5 | Volunteer opportunity, shift signup, timesheets | First role-heavy graphs outside giving |
 | 6 | Money (intent, payment, refund, payout, standing order, KYC), ride series, finance ledger | Before the real payment provider webhook lands |
 | 7 | WhatsApp outbound and session, template review, chat message | Service-only, lowest risk |
-| — | `listings`, `giving_handoffs`, `ride_listings`, `ride_participants`, `ride_templates`, `listing_matches` | Retire with G1 / G44 / matching v2, never port |
+| — | `listings`, `giving_handoffs`, `ride_listings` (retired ✅ `0667`, views over the record); `ride_participants`, `ride_templates`, `listing_matches` | Retire with G44 / matching v2, never port. A writer that updates the `listings` view moves the post through the view's `instead of` trigger; moderation writers act on `posts` directly (`0682`) |
 
 ## 7. Product decisions
 
 Answered by the PM on 2026-11-09:
+- An admin restore returns a removed post to its previous status (D129; wave 1b-i).
 - Items have no expiry (D21 stands): the 30-day `expires_at` on items goes (wave 1b).
 - An expired post is republished as a new post, never reopened (D127; graph change in wave 1a, full copy in 1b).
 - An event or ticket expires when it ends (D128; wave 1b).

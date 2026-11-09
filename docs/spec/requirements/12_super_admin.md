@@ -50,7 +50,7 @@ When a target reaches the 3-report threshold and is auto-removed, a system messa
 **Acceptance Criteria.**
 - AC1. The message is appended within the same Super Admin channel that received the underlying reports.
 - AC2. Tapping "↩ Restore" reverses the auto-removal:
-   - For `target_type = post`: status returns to `open`; the post is re-listed in feeds and the owner notified.
+   - For `target_type = post`: status returns to the status the post had before the removal (`open`, `paused`, `closed_delivered`, `deleted_no_recipient` or `expired`; a post hidden for review returns to `open`), as saved in `status_before_admin_removal` (D129, `0682`); an open post is re-listed in feeds and the owner notified.
    - For `target_type = user`: `account_status = active`; the user can sign in again.
    - For `target_type = chat`: the chat is unhidden for both parties.
 - AC3. Restore actions are idempotent and audit-logged.
