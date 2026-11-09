@@ -15,5 +15,7 @@ export { rideBookingMachine } from './machines/rideBooking';
 export { housingBookingMachine } from './machines/housingBooking';
 export { eventRegistrationMachine } from './machines/eventRegistration';
 export { onboardingMachine } from './machines/onboarding';
+export { reportMachine } from './machines/report';
+export { followRequestMachine } from './machines/followRequest';
 export { handoffMachineFor } from './machines/handoffMachineFor';
 export { accountStatusMachine } from './machines/accountStatus';

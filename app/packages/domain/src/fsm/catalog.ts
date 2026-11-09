@@ -2,10 +2,12 @@ import type { FsmMachine } from './machine';
 import { accountStatusMachine } from './machines/accountStatus';
 import { adminTaskMachine } from './machines/adminTask';
 import { eventRegistrationMachine } from './machines/eventRegistration';
+import { followRequestMachine } from './machines/followRequest';
 import { givingHandoffMachine } from './machines/givingHandoff';
 import { housingBookingMachine } from './machines/housingBooking';
 import { onboardingMachine } from './machines/onboarding';
 import { postMachine } from './machines/post';
+import { reportMachine } from './machines/report';
 import { rideBookingMachine } from './machines/rideBooking';
 
 /**
@@ -25,4 +27,6 @@ export const FSM_MACHINES: readonly FsmMachine<string, string>[] = [
   eventRegistrationMachine,
   accountStatusMachine,
   onboardingMachine,
+  reportMachine,
+  followRequestMachine,
 ];
