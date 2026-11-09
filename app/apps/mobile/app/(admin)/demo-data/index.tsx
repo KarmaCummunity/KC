@@ -64,10 +64,17 @@ export default function DemoDataScreen() {
   const seed = useMutation({
     mutationFn: (password: string | undefined) =>
       getDemoDataRepository().seed(password, (key) => setSeedProgress(key)),
-    onSuccess: (r) => {
+    onSuccess: async (r) => {
       void queryClient.invalidateQueries();
       void queryClient.invalidateQueries({ queryKey: STATUS_KEY });
-      Alert.alert(t.seedDoneTitle, t.seedDone(r.users, r.posts, r.organizations));
+      const fresh = await queryClient.fetchQuery({
+        queryKey: STATUS_KEY,
+        queryFn: () => getDemoDataRepository().getStatus(),
+      });
+      Alert.alert(
+        t.seedDoneTitle,
+        t.seedDone(r.users, r.posts, r.rides, r.organizations, fresh.demoOrgMemberships),
+      );
     },
     onError: alertRpcError,
     onSettled: () => {
@@ -118,7 +125,17 @@ export default function DemoDataScreen() {
           <View style={styles.kpiRow}>
             <Kpi label={t.users} value={users} />
             <Kpi label={t.organizations} value={orgs} />
+            <Kpi label={t.ridePosts} value={status.data?.demoRidePosts ?? 0} />
+            <Kpi label={t.itemPosts} value={status.data?.demoItemPosts ?? 0} />
+            <Kpi label={t.orgMemberships} value={status.data?.demoOrgMemberships ?? 0} />
+            <Kpi label={t.postMedia} value={status.data?.demoPostMedia ?? 0} />
+            {(status.data?.demoLegacyRideListings ?? 0) > 0 ? (
+              <Kpi label={t.legacyRides} value={status.data?.demoLegacyRideListings ?? 0} warn />
+            ) : null}
           </View>
+          {(status.data?.demoLegacyRideListings ?? 0) > 0 && (status.data?.demoRidePosts ?? 0) < 40 ? (
+            <Text style={styles.legacyHint}>{t.legacyRidesHint}</Text>
+          ) : null}
           <Pressable
             accessibilityRole="button"
             disabled={wipe.isPending}
@@ -148,11 +165,11 @@ export default function DemoDataScreen() {
   );
 }
 
-function Kpi({ label, value }: { label: string; value: number }) {
+function Kpi({ label, value, warn }: { label: string; value: number; warn?: boolean }) {
   const styles = useStyles();
   return (
-    <View style={styles.kpi}>
-      <Text style={styles.kpiValue}>{String(value)}</Text>
+    <View style={[styles.kpi, warn && styles.kpiWarn]}>
+      <Text style={[styles.kpiValue, warn && styles.kpiValueWarn]}>{String(value)}</Text>
       <Text style={styles.kpiLabel}>{label}</Text>
     </View>
   );
@@ -176,6 +193,9 @@ const useStyles = makeUseStyles(({ colors }) => ({
   },
   kpiValue: { fontSize: typography.h3.fontSize, ...typography.extraBold, color: colors.textPrimary, textAlign: textAlignStart() },
   kpiLabel: { fontSize: typography.bodySmall.fontSize, ...typography.semiBold, color: colors.textSecondary, textAlign: textAlignStart() },
+  kpiWarn: { borderColor: colors.warning },
+  kpiValueWarn: { color: colors.warning },
+  legacyHint: { color: colors.warning, fontSize: typography.bodySmall.fontSize, textAlign: textAlignStart() },
   wipeButton: { backgroundColor: colors.error, borderRadius: radius.md, paddingVertical: spacing.md, alignItems: 'center' },
   wipeButtonDisabled: { opacity: 0.5 },
   wipeLabel: { color: colors.textInverse, fontSize: typography.body.fontSize, ...typography.bold },
