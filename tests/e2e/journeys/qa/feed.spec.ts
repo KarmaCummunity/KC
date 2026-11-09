@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gotoApp, trackApiErrors } from '../../lib/app';
+import { gotoApp, passDateOfBirthGate, trackApiErrors } from '../../lib/app';
 import type { Page } from '@playwright/test';
 
 async function pickFromDialog(page: Page, opener: string, query: string) {
@@ -32,6 +32,9 @@ test('create a "request" post (no photo) from the composer', async ({ page }) =>
   await page.getByRole('textbox', { name: 'מס׳' }).fill('10');
   await page.getByText('ספרים', { exact: true }).first().click();
   await page.getByTestId('create-header-publish').click();
+  if (await passDateOfBirthGate(page) && /\/create$/.test(page.url())) {
+    await page.getByTestId('create-header-publish').click();
+  }
   await expect(page).not.toHaveURL(/\/create$/, { timeout: 30_000 });
   const { session } = await sessionFor(USER_A);
   const rows = await rest<{ post_id: string }[]>(
@@ -51,7 +54,7 @@ test('like and comment on a post', async ({ page }) => {
   test.skip(!post, 'no open post from another user on kc-dev');
   await gotoApp(page, `/post/${post!.post_id}`);
   await page.getByRole('button', { name: 'אהבתי' }).first().click();
-  await expect(page.getByText(/[1-9]\d* (רגשות|אהבו)/).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'אהבתי' }).first()).toContainText(/[1-9]/);
 
   const comment = `${runTag()} תודה רבה!`;
   await page.getByPlaceholder('הוסיפו תגובה…').fill(comment);
