@@ -56,6 +56,7 @@ describe('resolvePushRoute', () => {
     'ride_route_match',
     'giving_handoff_claimed',
     'housing_booking_requested',
+    'event_registration_cancelled',
   ] as const)('opens the post of a listing notification (G1 step 4c, 0562): %s', (kind) => {
     const POST = '22222222-2222-4222-8222-222222222222';
     expect(
