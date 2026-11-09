@@ -2,7 +2,7 @@
 
 begin;
 
--- The sandbox completion is gated by a server flag since 0689; on for this transaction only.
+-- The sandbox completion is gated by a server flag since 0690; on for this transaction only.
 update public.app_flags set enabled = true where key = 'sandbox_payments';
 
 create or replace function pg_temp.mk_user(p_id uuid, p_handle text)

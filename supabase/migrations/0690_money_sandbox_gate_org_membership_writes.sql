@@ -1,4 +1,4 @@
--- 0689_money_sandbox_gate_org_membership_writes
+-- 0690_money_sandbox_gate_org_membership_writes
 --
 -- 1. Organization memberships are written by migrations, seeds and SECURITY DEFINER
 --    functions only. No app path inserts them from the client, so the client insert

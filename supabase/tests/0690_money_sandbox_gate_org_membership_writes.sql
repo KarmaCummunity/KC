@@ -1,4 +1,4 @@
--- supabase/tests/0689_money_sandbox_gate_org_membership_writes.sql
+-- supabase/tests/0690_money_sandbox_gate_org_membership_writes.sql
 -- Sandbox completion follows the sandbox_payments flag; org memberships have no client writes.
 
 begin;
@@ -62,4 +62,4 @@ end $$;
 
 rollback;
 
-\echo '✓ 0689_money_sandbox_gate_org_membership_writes.sql passed'
+\echo '✓ 0690_money_sandbox_gate_org_membership_writes.sql passed'
