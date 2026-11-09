@@ -5,6 +5,16 @@ import type { Database } from '../database.types';
 export interface DemoDataStatus {
   readonly demoUsers: number;
   readonly demoOrganizations: number;
+  /** Ride offers/requests on `posts` (rides world) — feed-visible after migration 0676. */
+  readonly demoRidePosts: number;
+  /** Item give/request posts (non-rides). */
+  readonly demoItemPosts: number;
+  /** Leftover `ride_listings` rows; should be 0 after a full restore on current seed. */
+  readonly demoLegacyRideListings: number;
+  /** Staff rows on `[DEMO]` nonprofits (`demo_seed`). */
+  readonly demoOrgMemberships: number;
+  /** `media_assets` paths under `demo/kc-dev/` (storage upload separate). */
+  readonly demoPostMedia: number;
   /** True only on the kc-dev database, where the demo data may be (re)created. */
   readonly canSeed: boolean;
   /** True once a seed password was given, so a restore needs no password. */
@@ -43,6 +53,11 @@ export function mapDemoDataStatus(data: unknown): DemoDataStatus {
   return {
     demoUsers: count(o, 'demo_users'),
     demoOrganizations: count(o, 'demo_organizations'),
+    demoRidePosts: count(o, 'demo_ride_posts'),
+    demoItemPosts: count(o, 'demo_item_posts'),
+    demoLegacyRideListings: count(o, 'demo_legacy_ride_listings'),
+    demoOrgMemberships: count(o, 'demo_org_memberships'),
+    demoPostMedia: count(o, 'demo_post_media'),
     canSeed: o.can_seed === true,
     hasSavedPassword: o.has_saved_password === true,
   };

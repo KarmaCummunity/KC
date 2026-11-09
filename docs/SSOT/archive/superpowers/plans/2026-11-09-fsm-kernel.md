@@ -1,7 +1,7 @@
 # FSM kernel Implementation Plan
 
 > **Archived 2026-11-09 — executed.** This was the step-by-step build script for the FSM kernel. The shipped layout differs in two places; the design spec (`docs/superpowers/specs/2026-11-09-fsm-kernel-design.md` §8) is current:
-> - The migration is `supabase/migrations/0679_fsm_catalog.sql` (not `0667` / `0676`; those numbers were taken).
+> - The migration is `supabase/migrations/0680_fsm_catalog.sql` (not `0667` / `0676` / `0679`; those numbers were taken).
 > - The SQL replay parser and the contract test live in `app/packages/infrastructure-supabase/src/fsm/__tests__/`, not in `@kc/domain`: reading migration files is infrastructure tooling, and the domain stays free of Node types and of a SQL parser in its public API.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

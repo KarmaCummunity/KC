@@ -4,7 +4,7 @@ import { defineMachine } from '../machine';
  * Admin task lifecycle (FR-ADMIN-018). Pilot machine of the FSM kernel.
  * `archived` is terminal. No edge is role-restricted: who may move a task (assignee,
  * creator or super admin) is checked by `admin_task_set_status` before the graph.
- * SQL copy: `supabase/migrations/0679_fsm_catalog.sql`.
+ * SQL copy: `supabase/migrations/0680_fsm_catalog.sql`.
  */
 export const adminTaskMachine = defineMachine({
   id: 'admin_task',

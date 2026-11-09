@@ -1,6 +1,6 @@
 # State machines — inventory and migration onto the FSM kernel
 
-> **Status:** 2026-11-09. Wave 0 shipped (kernel + admin-task pilot, `0679`). Gap `{{G:fsm-kernel-lifecycles}}`.
+> **Status:** 2026-11-09. Wave 0 shipped (kernel + admin-task pilot, `0680`). Gap `{{G:fsm-kernel-lifecycles}}`.
 > **Kernel design:** [`docs/superpowers/specs/2026-11-09-fsm-kernel-design.md`](../superpowers/specs/2026-11-09-fsm-kernel-design.md).
 > **Rule:** a lifecycle has **one** graph. It is declared in `@kc/domain` (`app/packages/domain/src/fsm/machines/`), mirrored row-for-row in `fsm_state` / `fsm_edge` (locked by the contract test), and enforced in Postgres by `fsm_assert_transition` from the RPC and from a `before update of status` trigger. No other copy of the move list may exist: not a SQL `case`, not a TS record, not a UI condition.
 
@@ -16,7 +16,7 @@ Per design spec §4.1, one PR per machine (or per tight family), each with code 
 
 1. Settle the graph with the product book. List every writer (the **latest** `create or replace` of each RPC / trigger / sweep) and every TS / UI copy. Open product questions go to the PM before code.
 2. Declare the machine in `@kc/domain` with roles where callers differ (`owner`, `recipient`, `admin`, `system`), register it in `FSM_MACHINES`.
-3. One migration in the `0679–0688` range (then the next claimed range): catalog `insert` rows; every writer calls `fsm_assert_transition` and maps codes to its existing client codes; a `before update of status` trigger replaces any hand-written transition trigger.
+3. One migration in the `0680–0689` range (then the next claimed range): catalog `insert` rows; every writer calls `fsm_assert_transition` and maps codes to its existing client codes; a `before update of status` trigger replaces any hand-written transition trigger.
 4. Delete every other copy: SQL `case` lists, TS transition records, UI conditions (the UI asks `canTransition`).
 5. Tests: domain graph test, the contract test (automatic), a `supabase/tests/NNNN_*.sql` file covering every writer's legal and illegal moves, and a regression test per divergence fixed.
 

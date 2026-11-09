@@ -1,4 +1,4 @@
--- 0679_fsm_catalog — FSM kernel: the transition catalog, its single reader, and the
+-- 0680_fsm_catalog — FSM kernel: the transition catalog, its single reader, and the
 -- admin-task pilot (FR-ADMIN-018).
 --
 -- Design: docs/superpowers/specs/2026-11-09-fsm-kernel-design.md.
