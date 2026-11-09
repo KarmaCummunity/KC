@@ -2,8 +2,9 @@
 // Renders email-icon header, three actions: open mail, resend (60s cooldown), change email.
 import React, { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
+import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { isAuthError } from '@kc/application';
 import { mapAuthErrorToHebrew } from '../../services/authMessages';
 import {
@@ -18,12 +19,14 @@ const RESEND_COOLDOWN_SECONDS = 60;
 export interface VerificationPendingPanelProps {
   email: string;
   onChangeEmail: () => void;
+  onGoToSignIn?: () => void;
 }
 
 export function VerificationPendingPanel(props: VerificationPendingPanelProps) {
   const styles = useStyles();
   const { t } = useTranslation();
-  const { email, onChangeEmail } = props;
+  const router = useRouter();
+  const { email, onChangeEmail, onGoToSignIn } = props;
   const [cooldown, setCooldown] = useState(0);
   const [resending, setResending] = useState(false);
   const [resendError, setResendError] = useState<string | null>(null);
@@ -98,6 +101,16 @@ export function VerificationPendingPanel(props: VerificationPendingPanelProps) {
       {resendError ? <Text style={styles.helperErr}>{resendError}</Text> : null}
 
       <GhostButton label={t('auth.changeEmail')} size="md" fullWidth onPress={onChangeEmail} />
+
+      <View style={styles.hintBox}>
+        <Text style={styles.hintText}>{t('auth.verifyAlreadyRegisteredHint')}</Text>
+        <GhostButton
+          testID="verification-go-to-sign-in"
+          label={t('auth.goToSignIn')}
+          size="sm"
+          onPress={onGoToSignIn ?? (() => router.replace('/(auth)/sign-in'))}
+        />
+      </View>
     </View>
   );
 }
@@ -110,4 +123,13 @@ const useStyles = makeUseStyles(({ colors }) => ({
   bodyBold: { ...typography.body, ...typography.bold, color: colors.textPrimary },
   helperOk: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' },
   helperErr: { ...typography.caption, color: colors.error, textAlign: 'center' },
+  hintBox: {
+    marginTop: spacing.sm,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    gap: spacing.xs,
+    alignItems: 'center',
+  },
+  hintText: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' },
 }));

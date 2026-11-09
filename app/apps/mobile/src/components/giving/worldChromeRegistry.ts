@@ -1,7 +1,7 @@
 // FR-FEED-020 AC2 — single source for a world's feed route and TopBar sub-screen menu links.
 import type { Href } from 'expo-router';
 import type { WorldSubScreenLink } from './WorldHubHeader';
-import { worldSubScreens } from './worldSubScreens';
+import { worldLinksSubScreenLink, worldSubScreens } from './worldSubScreens';
 
 export const MY_LISTINGS_PATH = '/(tabs)/donations/marketplace/my-listings' as const;
 
@@ -18,17 +18,22 @@ export const WORLD_CHROME_BY_SLUG: Record<string, WorldChromeConfig> = {
   },
   food: {
     feedPath: '/(tabs)/donations/food',
-    subScreens: worldSubScreens('/(tabs)/donations/food/handoffs'),
+    subScreens: worldSubScreens('/(tabs)/donations/food/handoffs', [
+      worldLinksSubScreenLink('food'),
+    ]),
   },
   animals: {
     feedPath: '/(tabs)/donations/animals',
-    subScreens: worldSubScreens('/(tabs)/donations/animals/handoffs'),
+    subScreens: worldSubScreens('/(tabs)/donations/animals/handoffs', [
+      worldLinksSubScreenLink('animals'),
+    ]),
   },
   housing: {
     feedPath: '/(tabs)/donations/housing',
     subScreens: worldSubScreens('/(tabs)/donations/housing/handoffs', [
       { labelKey: 'housingStay.myHosting.nav', path: '/(tabs)/donations/housing/hosting', testID: 'world-hub-housing-hosting' },
       { labelKey: 'housingStay.myStays.nav', path: '/(tabs)/donations/housing/stays', testID: 'world-hub-housing-stays' },
+      worldLinksSubScreenLink('housing'),
     ]),
   },
   time: {
@@ -37,16 +42,20 @@ export const WORLD_CHROME_BY_SLUG: Record<string, WorldChromeConfig> = {
       { labelKey: 'timeVolunteer.myShiftsLink', path: '/(tabs)/donations/time/my-shifts', testID: 'time-my-shifts' },
       { labelKey: 'timeVolunteer.organizerLink', path: '/(tabs)/donations/time/organizer', testID: 'time-organizer' },
       { labelKey: 'timeVolunteer.contactKcLink', path: '/(tabs)/donations/time/support', testID: 'time-contact-kc' },
+      worldLinksSubScreenLink('time'),
     ]),
   },
   knowledge: {
     feedPath: '/(tabs)/donations/knowledge',
-    subScreens: worldSubScreens('/(tabs)/donations/knowledge/handoffs'),
+    subScreens: worldSubScreens('/(tabs)/donations/knowledge/handoffs', [
+      worldLinksSubScreenLink('knowledge'),
+    ]),
   },
   rides: {
     feedPath: '/(tabs)/donations/rides',
     subScreens: worldSubScreens('/(tabs)/donations/rides/handoffs', [
       { labelKey: 'rideSeries.mine', path: '/(tabs)/donations/rides/series', testID: 'world-hub-ride-series' },
+      worldLinksSubScreenLink('rides'),
     ]),
   },
 };

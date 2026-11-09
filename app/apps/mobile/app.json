@@ -251,7 +251,10 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#FFFBF7"
+          "backgroundColor": "#FFFBF7",
+          "android": {
+            "imageWidth": 130
+          }
         }
       ],
       [

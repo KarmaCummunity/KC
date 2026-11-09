@@ -6,7 +6,9 @@ import { act, cleanup, fireEvent } from '@testing-library/react';
 
 const resend = vi.fn();
 const openMail = vi.fn();
+const replace = vi.fn();
 
+vi.mock('expo-router', () => ({ useRouter: () => ({ replace, push: vi.fn(), back: vi.fn() }) }));
 vi.mock('react-native-reanimated', async () => (await import('../../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
 vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogTestKit')).hapticsDouble);
 vi.mock('@expo/vector-icons', async () => (await import('../../ui/__tests__/kitDialogTestKit')).iconsDouble);
@@ -51,5 +53,27 @@ describe('VerificationPendingPanel', () => {
     expect(held.getAttribute('aria-disabled')).toBe('true');
     fireEvent.click(held);
     expect(resend).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders anti-enumeration guidance and routes to sign-in', () => {
+    const onGoToSignIn = vi.fn();
+    const { getByRole, getByText } = renderInTheme(
+      <VerificationPendingPanel
+        email="dana@example.org"
+        onChangeEmail={() => {}}
+        onGoToSignIn={onGoToSignIn}
+      />,
+    );
+    expect(getByText('auth.verifyAlreadyRegisteredHint')).toBeTruthy();
+    fireEvent.click(getByRole('button', { name: 'auth.goToSignIn' }));
+    expect(onGoToSignIn).toHaveBeenCalledTimes(1);
+  });
+
+  it('defaults to router.replace sign-in when onGoToSignIn is omitted', () => {
+    const { getByRole } = renderInTheme(
+      <VerificationPendingPanel email="dana@example.org" onChangeEmail={() => {}} />,
+    );
+    fireEvent.click(getByRole('button', { name: 'auth.goToSignIn' }));
+    expect(replace).toHaveBeenCalledWith('/(auth)/sign-in');
   });
 });
