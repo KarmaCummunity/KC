@@ -243,8 +243,8 @@ importers:
         specifier: ~3.5.0
         version: 3.5.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       react-native-maps:
-        specifier: 1.26.20
-        version: 1.26.20(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+        specifier: 1.29.11
+        version: 1.29.11(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       react-native-markdown-display:
         specifier: ^7.0.2
         version: 7.0.2(react-native@0.81.5(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -5014,8 +5014,8 @@ packages:
       react: '*'
       react-native: '*'
 
-  react-native-maps@1.26.20:
-    resolution: {integrity: sha512-kWibDz6wLLQ0685gOEFz5jdzm4miD7PMeVdtZV7ilgftDcusC2iy7SueBJpHF0LKCoOSa1BEUiKqpx1dBMSNpA==}
+  react-native-maps@1.29.11:
+    resolution: {integrity: sha512-fZNc6AINuPdHS2puudanNPd9ZMPPuerTHfy9HU6LbpOD+kB03SuOZRbOEYIOE2eSuUPYwLHvU8ys1RcSIxLYhA==}
     engines: {node: '>= 20.19.4'}
     peerDependencies:
       react: '>= 18.3.1'
@@ -12147,7 +12147,7 @@ snapshots:
       react: 19.1.0
       react-native: 0.81.5(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.1.17)(react@19.1.0)
 
-  react-native-maps@1.26.20(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0):
+  react-native-maps@1.29.11(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0):
     dependencies:
       '@types/geojson': 7946.0.16
       react: 19.1.0
