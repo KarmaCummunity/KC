@@ -86,7 +86,7 @@
     "react-native-gesture-handler": "~3.5.0",
     "react-native-maps": "1.26.20",
     "react-native-markdown-display": "^7.0.2",
-    "react-native-purchases": "^9",
+    "react-native-purchases": "^11",
     "react-native-reanimated": "~4.1.7",
     "react-native-safe-area-context": "5.6.2",
     "react-native-screens": "~4.16.0",
