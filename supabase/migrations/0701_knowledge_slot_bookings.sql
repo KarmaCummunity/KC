@@ -61,7 +61,10 @@ begin
     ) mine on true
    where s.post_id = v_post.post_id
      and s.status = 'open'
-     and s.ends_at > now()
+     -- Upcoming slots, plus a slot the caller booked for a week after it ends: the learner
+     -- completes and rates the session after it took place.
+     and (s.ends_at > now()
+          or (mine.status in ('reserved', 'confirmed', 'handed_over') and s.ends_at > now() - interval '7 days'))
    order by s.starts_at;
 end;
 $$;

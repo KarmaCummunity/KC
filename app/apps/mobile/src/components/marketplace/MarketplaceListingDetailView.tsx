@@ -8,6 +8,7 @@ import { useSimilarListings } from '../../hooks/useMarketplaceListingDetail';
 import { ReportListingModal } from './ReportListingModal';
 import { GivingHandoffActions } from './GivingHandoffActions';
 import { RideBookingActions } from './rides/RideBookingActions';
+import { KnowledgeBookingActions } from './knowledge/KnowledgeBookingActions';
 import { HousingStayActions } from './housing/HousingStayActions';
 import { EventDetailsCard } from './events/EventDetailsCard';
 import { EventRegistrationActions } from './events/EventRegistrationActions';
@@ -122,6 +123,7 @@ export function MarketplaceListingDetailView({ detail, bottomInset, footer, mode
         <View style={styles.actions}>
           <GivingHandoffActions detail={detail} />
           <RideBookingActions detail={detail} hideOwnerAssign={moderationInHeader} />
+          <KnowledgeBookingActions detail={detail} />
           <HousingStayActions detail={detail} hideOwnerAssign={moderationInHeader} />
           <EventRegistrationActions detail={detail} />
           <ListingDetailActions
