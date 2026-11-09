@@ -8,3 +8,5 @@ export type {
 } from './machine';
 export { FSM_MACHINES } from './catalog';
 export { adminTaskMachine } from './machines/adminTask';
+export { replayFsmSql } from './replaySql';
+export type { FsmCatalogSnapshot, FsmEdgeRow, FsmStateRow } from './replaySql';
