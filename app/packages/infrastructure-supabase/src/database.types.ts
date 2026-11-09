@@ -15367,12 +15367,10 @@ export type Database = {
         Args: { p_message: string; p_shift_id: string }
         Returns: number
       }
-      owner_complete_offer_with_user:
-        | { Args: { p_recipient_id: string; p_target: string }; Returns: Json }
-        | {
-            Args: { p_mode?: string; p_recipient_id?: string; p_target: string }
-            Returns: Json
-          }
+      owner_complete_offer_with_user: {
+        Args: { p_mode?: string; p_recipient_id?: string; p_target: string }
+        Returns: Json
+      }
       owner_offer_set_status: {
         Args: {
           p_listing: Database["public"]["Views"]["listings"]["Row"]
