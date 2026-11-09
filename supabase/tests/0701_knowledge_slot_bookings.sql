@@ -149,7 +149,10 @@ begin
 
   -- Daily cap (D32): 15 earned above plus 60 more on another knowledge booking today leaves 5,
   -- so a two-hour session (four half hours, 20 points) is cut to one half hour (5 points).
-  v_h := kc_test.book_knowledge_seat(p.learner2, kc_test.knowledge_slot(kc_test.create_lesson_offer(p.giver, 1, interval '2 days')));
+  -- The offer is created in its own statement: the stable slot lookup reads the snapshot taken
+  -- when its statement began, so it would not see an offer created inside its own argument.
+  v_post := kc_test.create_lesson_offer(p.giver, 1, interval '2 days');
+  v_h := kc_test.book_knowledge_seat(p.learner2, kc_test.knowledge_slot(v_post));
   insert into public.karma_ledger (user_id, event_type, points_delta, ref_type, ref_id)
   values (p.giver, 'giving_handoff_giver', 60, 'giving_handoff', v_h::text);
   perform kc_test.assert_eq(
