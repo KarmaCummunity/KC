@@ -39,7 +39,7 @@ begin
   perform kc_test.assert_raises(format('select pg_temp.insert_native(%L, %L, %L, %L, %L::jsonb)',
     p.owner, 'items', 'give_item', 'give', '{"item_condition":"Good","colour":"red"}'),
     'listing_details_schema_mismatch', 'a key the schema does not allow is rejected');
-  -- 0699 dropped food_type from give_food's required keys; expires_at is the one left (D28).
+  -- 0700 dropped food_type from give_food's required keys; expires_at is the one left (D28).
   perform kc_test.assert_raises(format('select pg_temp.insert_native(%L, %L, %L, %L, %L::jsonb)',
     p.owner, 'food', 'give_food', 'give', jsonb_build_object('food_type', 'cooked')),
     'listing_details_schema_mismatch', 'a missing required key (expires_at) is rejected');

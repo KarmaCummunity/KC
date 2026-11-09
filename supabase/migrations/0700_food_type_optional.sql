@@ -1,4 +1,4 @@
--- 0699_food_type_optional | KC#1398, {{D:food-type-is-subcategory}}
+-- 0700_food_type_optional | KC#1398, {{D:food-type-is-subcategory}}
 --
 -- A food offer named its type twice: the `food_type` detail field and the food world's
 -- sub-category (cooked-ready, fresh-raw, packaged, frozen, ...). The create form now shows only

@@ -38,7 +38,7 @@ export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[
       delivery_available: { type: 'boolean' },
       pickup_window_start: { type: 'string', format: 'date-time' },
       pickup_window_end: { type: 'string', format: 'date-time' },
-    }, ['expires_at'])), // food_type left `required` in 0699 ({{D:food-type-is-subcategory}}).
+    }, ['expires_at'])), // food_type left `required` in 0700 ({{D:food-type-is-subcategory}}).
     kind('request_food', 'request', obj({ household_size: { type: 'integer' }, dietary_needs: { type: 'string' } })),
   ],
   rides: [
