@@ -59,7 +59,8 @@ begin
     values (v_handoff, v_listing, v_giver, v_taker, 'items', 'handed_over', now());
   end if;
   insert into public.post_handoffs (handoff_id, post_id, owner_id, recipient_id, world_slug, status, handed_over_at)
-  values (v_handoff, coalesce((select legacy_post_id from public.listings where listing_id = v_listing), v_listing), v_giver, v_taker, 'items', 'handed_over', now());
+  values (v_handoff, coalesce((select legacy_post_id from public.listings where listing_id = v_listing), v_listing), v_giver, v_taker, 'items', 'handed_over', now())
+  on conflict (handoff_id) do nothing;
 
   -- T1: the first rating awards the rater 2 karma and the ratee nothing.
   v_before := pg_temp.karma(v_taker);

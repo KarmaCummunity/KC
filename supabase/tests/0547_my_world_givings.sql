@@ -19,16 +19,17 @@ begin
     '{"item_condition":"Good","fulfillment_mode":"owner_approval"}'::jsonb, now() + interval '30 days');
   select coalesce(legacy_post_id, (select post_id from public.posts where listing_id = v_listing limit 1)) into v_post_id
     from public.listings where listing_id = v_listing;
-  if to_regclass('public.giving_handoffs') is not null then
+  if (select relkind from pg_class where relname = 'giving_handoffs' and relnamespace = 'public'::regnamespace) = 'r' then
     insert into public.giving_handoffs (listing_id, owner_id, recipient_id, world_slug, status, confirmed_at, handed_over_at)
     values (v_listing, p_owner, p_recipient, 'items', p_status,
             case when p_status in ('confirmed', 'handed_over') then now() end,
             case when p_status = 'handed_over' then now() end);
+  else
+    insert into public.post_handoffs (post_id, owner_id, recipient_id, world_slug, status, confirmed_at, handed_over_at)
+    values (v_post_id, p_owner, p_recipient, 'items', p_status,
+            case when p_status in ('confirmed', 'handed_over') then now() end,
+            case when p_status = 'handed_over' then now() end);
   end if;
-  insert into public.post_handoffs (post_id, owner_id, recipient_id, world_slug, status, confirmed_at, handed_over_at)
-  values (v_post_id, p_owner, p_recipient, 'items', p_status,
-          case when p_status in ('confirmed', 'handed_over') then now() end,
-          case when p_status = 'handed_over' then now() end);
   return v_listing;
 end $$;
 

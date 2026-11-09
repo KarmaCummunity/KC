@@ -25,7 +25,7 @@ import * as events from './eventRegistrations';
 import * as owner from './listingOwnerActions';
 import * as paging from './marketplacePaging';
 import { mapPinRow } from './mapPinRow';
-import { CARD_POST_EMBED, firstOf, listingDirectionOf, recordPostOf, type CardShapeColumns } from './listingCardSource';
+import { firstOf, listingDirectionOf, recordPostOf, type CardShapeColumns, type ViewClient } from './listingCardSource';
 
 export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
@@ -145,11 +145,9 @@ export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
   listWorldSubcategories = (worldSlug: string) => listWorldSubcategories(this.client, worldSlug);
 
   async getListingCard(listingId: string): Promise<MarketplaceBrowseRow | null> {
-    const { data, error } = await this.client
+    const { data, error } = await (this.client as unknown as ViewClient)
       .from('listings')
-      .select(
-        `listing_id, world_slug, direction, title, summary, urgency_level, availability_status, city_id, kind_id, origin, legacy_post_id, ${CARD_POST_EMBED}`,
-      )
+      .select('listing_id, world_slug, direction, title, summary, urgency_level, availability_status, city_id, kind_id, origin, legacy_post_id')
       .eq('listing_id', listingId)
       .maybeSingle();
     if (error || !data) return null;
@@ -158,13 +156,13 @@ export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
     const post = recordPostOf(row);
     if (post) {
       return {
-        listingId: row.listing_id,
+        listingId: row.listing_id ?? '',
         worldSlug: post.world_slug,
         kindSlug: firstOf(post.kind)?.slug ?? '',
         direction: listingDirectionOf(post.direction),
-        title: row.title,
+        title: row.title ?? '',
         summary: row.summary,
-        urgencyLevel: post.urgency_level ?? row.urgency_level,
+        urgencyLevel: (post.urgency_level ?? row.urgency_level) ?? 2,
         availabilityStatus: post.availability_status,
         cityId: row.city_id,
         distanceKm: null,
@@ -173,17 +171,17 @@ export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
     const { data: kindRow } = await this.client
       .from('listing_kinds')
       .select('slug')
-      .eq('kind_id', row.kind_id)
+      .eq('kind_id', row.kind_id ?? '')
       .maybeSingle();
     return {
-      listingId: row.listing_id,
-      worldSlug: row.world_slug,
+      listingId: row.listing_id ?? '',
+      worldSlug: row.world_slug ?? '',
       kindSlug: kindRow?.slug ?? '',
       direction: row.direction as 'give' | 'request',
-      title: row.title,
+      title: row.title ?? '',
       summary: row.summary,
-      urgencyLevel: row.urgency_level,
-      availabilityStatus: row.availability_status,
+      urgencyLevel: row.urgency_level ?? 2,
+      availabilityStatus: row.availability_status ?? 'ongoing',
       cityId: row.city_id,
       distanceKm: null,
     };

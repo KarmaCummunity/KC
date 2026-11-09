@@ -19,14 +19,24 @@ end $$;
 select pg_temp.mk_user('00000000-0000-0000-0000-000000350001', 'legacy_items');
 
 -- Simulate a legacy image-less items listing (created before 0266 existed).
-alter table public.listings disable trigger listings_enforce_world_rules;
+do $$
+begin
+  if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then
+    execute 'alter table public.listings disable trigger listings_enforce_world_rules';
+  end if;
+end $$;
 insert into public.listings (
   listing_id, owner_id, world_slug, kind_id, direction, title, origin, moderation_status, details
 )
 select '00000000-0000-0000-0000-0000003500a1', '00000000-0000-0000-0000-000000350001',
        'items', kind_id, 'give', 'Legacy chair', 'native', 'published', '{}'::jsonb
   from public.listing_kinds where world_slug = 'items' and slug = 'give_item';
-alter table public.listings enable trigger listings_enforce_world_rules;
+do $$
+begin
+  if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then
+    execute 'alter table public.listings enable trigger listings_enforce_world_rules';
+  end if;
+end $$;
 
 -- 1) Status-only updates (pause → resume → fulfill → admin-remove) succeed.
 do $$

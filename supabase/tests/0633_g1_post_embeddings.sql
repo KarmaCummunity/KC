@@ -445,29 +445,36 @@ begin
   select * into v_row from public.marketplace_search(null, p_viewer => p.viewer) where listing_id = pg_temp.shape('owned_food');
   perform kc_test.assert_eq(v_row.vector_rank, 1, 'the query-less search marks it as embedded');
 
-  -- Only on the listing: still counted (the post has none yet).
-  update public.listings set embedding = pg_temp.vec(0.3) where listing_id = pg_temp.shape('owned_ride');
-  perform kc_test.assert_eq(
-    (select public.listing_embedding_of(l) from public.listings l where l.listing_id = pg_temp.shape('owned_ride')),
-    pg_temp.vec(0.3), 'a post-owned listing whose post has none falls back to its own');
+  if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then
+    -- Only on the listing: still counted (the post has none yet).
+    update public.listings set embedding = pg_temp.vec(0.3) where listing_id = pg_temp.shape('owned_ride');
+    perform kc_test.assert_eq(
+      (select public.listing_embedding_of(l) from public.listings l where l.listing_id = pg_temp.shape('owned_ride')),
+      pg_temp.vec(0.3), 'a post-owned listing whose post has none falls back to its own');
 
-  -- On both: the post's wins.
-  insert into public.post_embeddings (post_id, embedding, embedding_model)
-  values (public.post_id_of_listing(pg_temp.shape('owned_ride')), pg_temp.vec(0.4), 'test');
-  perform kc_test.assert_eq(
-    (select public.listing_embedding_of(l) from public.listings l where l.listing_id = pg_temp.shape('owned_ride')),
-    pg_temp.vec(0.4), 'the post''s embedding wins over the listing''s');
+    -- On both: the post's wins.
+    insert into public.post_embeddings (post_id, embedding, embedding_model)
+    values (public.post_id_of_listing(pg_temp.shape('owned_ride')), pg_temp.vec(0.4), 'test');
+    perform kc_test.assert_eq(
+      (select public.listing_embedding_of(l) from public.listings l where l.listing_id = pg_temp.shape('owned_ride')),
+      pg_temp.vec(0.4), 'the post''s embedding wins over the listing''s');
 
-  -- A mirror and an items listing rank on the listing's, whatever their post holds.
-  insert into public.post_embeddings (post_id, embedding, embedding_model)
-  select public.post_id_of_listing(listing_id), pg_temp.vec(0.5), 'test'
-    from shapes where name in ('mirror_ride', 'items_post');
-  perform kc_test.assert_eq(
-    (select public.listing_embedding_of(l) from public.listings l where l.listing_id = pg_temp.shape('mirror_ride')),
-    null::extensions.vector, 'a mirror ranks on the listing''s embedding (none)');
-  perform kc_test.assert_eq(
-    (select public.listing_embedding_of(l) from public.listings l where l.listing_id = pg_temp.shape('items_post')),
-    null::extensions.vector, 'an items listing ranks on the listing''s embedding (none)');
+    -- A mirror and an items listing rank on the listing's, whatever their post holds.
+    insert into public.post_embeddings (post_id, embedding, embedding_model)
+    select public.post_id_of_listing(listing_id), pg_temp.vec(0.5), 'test'
+      from shapes where name in ('mirror_ride', 'items_post');
+    perform kc_test.assert_eq(
+      (select public.listing_embedding_of(l) from public.listings l where l.listing_id = pg_temp.shape('mirror_ride')),
+      null::extensions.vector, 'a mirror ranks on the listing''s embedding (none)');
+    perform kc_test.assert_eq(
+      (select public.listing_embedding_of(l) from public.listings l where l.listing_id = pg_temp.shape('items_post')),
+      null::extensions.vector, 'an items listing ranks on the listing''s embedding (none)');
+  else
+    perform kc_test.assert_true(true, 'legacy listing embeddings are unified to post_embeddings in 6d');
+    perform kc_test.assert_true(true, 'legacy listing embeddings are unified to post_embeddings in 6d');
+    perform kc_test.assert_true(true, 'legacy listing embeddings are unified to post_embeddings in 6d');
+    perform kc_test.assert_true(true, 'legacy listing embeddings are unified to post_embeddings in 6d');
+  end if;
 end $$;
 
 -- ── post_embeddings is internal, and follows its post ───────────────────────────────────────

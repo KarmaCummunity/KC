@@ -57,10 +57,12 @@ begin
   perform kc_test.assert_eq(v_post.direction, 'offer', 'post direction is offer');
   perform kc_test.assert_eq(v_post.status, 'open', 'post is open');
 
-  -- No row in public.listings
-  perform kc_test.assert_row_count(
-    format('select 1 from public.listings where legacy_post_id = %L or listing_id = %L', v_post_id, v_post_id),
-    0, 'no mirror listing was created in public.listings');
+  -- No row in public.listings (when physical table)
+  if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then
+    perform kc_test.assert_row_count(
+      format('select 1 from public.listings where legacy_post_id = %L or listing_id = %L', v_post_id, v_post_id),
+      0, 'no mirror listing was created in public.listings');
+  end if;
 
   -- 1:1 ride_post_details extension was populated by posts_sync_post_details trigger
   select * into v_ride from public.ride_post_details where post_id = v_post_id;
@@ -97,10 +99,12 @@ begin
   perform kc_test.assert_eq(r.post_id, v_post_id, 'post_handoffs points to post');
   perform kc_test.assert_eq(r.recipient_id, p.taker, 'recipient is taker');
 
-  -- No row in giving_handoffs
-  perform kc_test.assert_row_count(
-    format('select 1 from public.giving_handoffs where handoff_id = %L', h.handoff_id),
-    0, 'no legacy giving_handoffs row was created');
+  -- No row in giving_handoffs (when physical table)
+  if (select relkind from pg_class where relname = 'giving_handoffs' and relnamespace = 'public'::regnamespace) = 'r' then
+    perform kc_test.assert_row_count(
+      format('select 1 from public.giving_handoffs where handoff_id = %L', h.handoff_id),
+      0, 'no legacy giving_handoffs row was created');
+  end if;
 
   -- Post availability is scheduled
   perform kc_test.assert_eq(

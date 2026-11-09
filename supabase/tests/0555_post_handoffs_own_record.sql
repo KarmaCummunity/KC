@@ -214,11 +214,9 @@ begin
 
   -- 0266 write-time guard park (0467)
   update public.posts set expires_at = now() - interval '1 minute' where post_id = public.handoff_target_post_id(v_listing);
-  if exists (select 1 from public.listings where listing_id = v_listing) then
-    alter table public.listings disable trigger listings_food_expiry_block;
-    update public.listings set expires_at = now() - interval '1 minute' where listing_id = v_listing;
-    alter table public.listings enable trigger listings_food_expiry_block;
-  end if;
+  if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then execute 'alter table public.listings disable trigger listings_food_expiry_block'; end if;
+  update public.listings set expires_at = now() - interval '1 minute' where listing_id = v_listing;
+  if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then execute 'alter table public.listings enable trigger listings_food_expiry_block'; end if;
   perform kc_test.act_as(p.cook);
   perform kc_test.assert_eq(kc_test.listing_status(v_listing), 'open', 'the offer is still open when the sweep runs');
   perform kc_test.act_as_anon();
@@ -291,7 +289,7 @@ begin
   perform kc_test.assert_eq((r ->> 'handoff_field_mismatches')::int, 0, 'and both sides agree');
   perform kc_test.assert_row_count(
     'select 1 from public.post_handoffs t where not exists (select 1 from public.giving_handoffs g where g.handoff_id = t.handoff_id)',
-    case when exists (select 1 from pg_trigger where tgname = 'post_handoffs_giving_sync') then 0 else 6 end,
+    case when (select relkind from pg_class where relname = 'giving_handoffs' and relnamespace = 'public'::regnamespace) = 'v' or exists (select 1 from pg_trigger where tgname = 'post_handoffs_giving_sync') then 0 else 6 end,
     'no record is without its derived row while sync is active');
 end $$;
 

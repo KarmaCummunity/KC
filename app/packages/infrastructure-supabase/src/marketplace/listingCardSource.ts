@@ -13,18 +13,20 @@
 // rule the listings policy already applies (is_listing_visible_to, 0628), so a visible card has a
 // visible post. If the post still comes back hidden, the card falls back to the listing's fields.
 
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+export type ViewClient = { from: (table: string) => ReturnType<SupabaseClient['from']> };
+
 /** The owner embed PostgREST returns: an object, or a one-element array. */
 export type PublisherEmbed = { display_name: string | null; avatar_url: string | null };
 
 type OneOf<T> = T | T[] | null | undefined;
 
 /** The listing's owner. RLS on `users` (users_select_active) returns null for a hidden owner. */
-export const LISTING_PUBLISHER_EMBED = 'publisher:users!listings_owner_id_fkey(display_name, avatar_url)';
+export const LISTING_PUBLISHER_EMBED = 'publisher:users!posts_owner_id_fkey(display_name, avatar_url)';
 
-/** The post a listing is derived from, with its kind and its owner. */
-export const CARD_POST_EMBED =
-  'post:posts!listings_legacy_post_id_fkey(world_slug, direction, urgency_level, availability_status, details, ' +
-  'kind:listing_kinds!posts_kind_id_fkey(slug), publisher:users!posts_owner_id_fkey(display_name, avatar_url))';
+/** In G1-S6d, listings is a view over posts; the row already is the post. Kept empty for backwards compatibility. */
+export const CARD_POST_EMBED = '';
 
 export type CardPostEmbed = {
   world_slug: string;

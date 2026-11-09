@@ -41,7 +41,7 @@ begin
    where listing_id = v_listing;
   -- 0565: the funnel dates the cohort by the post, created when the listing was published.
   update public.posts set created_at = now() - make_interval(days => p_days_ago)
-   where listing_id = v_listing;
+   where listing_id = v_listing or post_id = v_listing;
   return v_listing;
 end $$;
 
@@ -54,7 +54,7 @@ declare
   v_published timestamptz := (select published_at from public.listings where listing_id = p_listing);
   v_done timestamptz := v_published + make_interval(hours => coalesce(p_done_after, p_booked_after));
 begin
-  if to_regclass('public.giving_handoffs') is not null then
+  if (select relkind from pg_class where relname = 'giving_handoffs' and relnamespace = 'public'::regnamespace) = 'r' then
     insert into public.giving_handoffs (
       listing_id, owner_id, recipient_id, world_slug, status,
       reserved_at, confirmed_at, handed_over_at, cancelled_at
@@ -66,6 +66,19 @@ begin
            case when p_status = 'cancelled' then v_done end
       from public.listings l
      where l.listing_id = p_listing;
+  else
+    insert into public.post_handoffs (
+      post_id, owner_id, recipient_id, world_slug, status,
+      reserved_at, confirmed_at, handed_over_at, cancelled_at
+    )
+    select coalesce((select post_id from public.posts where listing_id = p_listing), l.legacy_post_id, p_listing), l.owner_id, p_recipient, l.world_slug, p_status,
+           v_published + make_interval(hours => p_booked_after),
+           case when p_status in ('confirmed', 'handed_over') then v_done end,
+           case when p_status = 'handed_over' then v_done end,
+           case when p_status = 'cancelled' then v_done end
+      from public.listings l
+     where l.listing_id = p_listing;
+    return;
   end if;
 
   insert into public.post_handoffs (

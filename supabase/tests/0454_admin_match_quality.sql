@@ -36,18 +36,20 @@ begin
           jsonb_build_object('image_url', 'https://example.test/i.jpg'))
   returning listing_id into v;
 
-  insert into public.posts (
-    owner_id, type, visibility, title, category, city, street, street_number,
-    world_slug, direction, post_type, details, listing_id, listing_world_slug, legacy_listing_id,
-    status, moderation_status, published_at, geo
-  ) values (
-    p_owner, case p_dir when 'request' then 'Request' else 'Give' end, 'Public', p_title, 'Other', 'tel-aviv', 'Marketplace', '1',
-    'items', case p_dir when 'request' then 'request' else 'offer' end, 'standard',
-    jsonb_build_object('image_url', 'https://example.test/i.jpg'),
-    v, 'items', v, 'open', 'published', now(),
-    extensions.st_setsrid(extensions.st_makepoint(34.7818, 32.0853), 4326)::extensions.geography
-  ) returning post_id into p_post;
-  update public.listings set legacy_post_id = p_post where listing_id = v;
+  if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then
+    insert into public.posts (
+      owner_id, type, visibility, title, category, city, street, street_number,
+      world_slug, direction, post_type, details, listing_id, listing_world_slug, legacy_listing_id,
+      status, moderation_status, published_at, geo
+    ) values (
+      p_owner, case p_dir when 'request' then 'Request' else 'Give' end, 'Public', p_title, 'Other', 'tel-aviv', 'Marketplace', '1',
+      'items', case p_dir when 'request' then 'request' else 'offer' end, 'standard',
+      jsonb_build_object('image_url', 'https://example.test/i.jpg'),
+      v, 'items', v, 'open', 'published', now(),
+      extensions.st_setsrid(extensions.st_makepoint(34.7818, 32.0853), 4326)::extensions.geography
+    ) returning post_id into p_post;
+    update public.listings set legacy_post_id = p_post where listing_id = v;
+  end if;
 
   return v;
 end $$;
