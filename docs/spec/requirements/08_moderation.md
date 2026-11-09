@@ -225,7 +225,7 @@ A user who issues many reports that the Super Admin reviews and rejects ("not a 
    - **First trigger**: 7-day suspension.
    - **Second trigger** (after the user returns and accumulates 5 more): 30-day suspension.
    - **Third trigger**: permanent suspension.
-- AC3. Suspensions set `User.account_status = suspended_for_false_reports` and prevent sign-in until the timer elapses (or, in the third case, until an admin restores the account). A sanction never replaces a heavier state — an admin suspension, a ban or a pending deletion — but its level still counts ({{D:false-report-sanction-heavier-states}}, `0696`).
+- AC3. Suspensions set `User.account_status = suspended_for_false_reports` and prevent sign-in until the timer elapses (or, in the third case, until an admin restores the account). A sanction never replaces a heavier state — an admin suspension, a ban or a pending deletion — but its level still counts (D135, `0696`).
 - AC4. A signed-out user under suspension sees a clear screen at sign-in attempt: *"Your account is suspended until [date] due to repeated false reports. You may file an appeal via support."*
 - AC5. Audit events are recorded for every sanction transition.
 
