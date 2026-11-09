@@ -75,3 +75,38 @@ describe('booking error codes', () => {
     expect(mapMarketplaceServerError({ message: 'session_not_started' })).toBe('session_not_started');
   });
 });
+
+// #2034 (0700–0701): a lesson offer or consulting hour lists its slots in `details.slots`.
+describe('knowledge slot lists', () => {
+  const slotAt = (start: string, end: string) => ({ starts_at: start, ends_at: end });
+
+  it('validates details.slots with the server rules when the post has a slot list', () => {
+    expect(validateKnowledgeSlot({ slots: [slotAt('2026-10-18T10:00:00Z', '2026-10-18T11:00:00Z')] }, now)).toBeNull();
+    expect(
+      validateKnowledgeSlot(
+        { slots: [slotAt('2026-10-18T10:00:00Z', '2026-10-18T11:00:00Z'), slotAt('2026-10-18T10:30:00Z', '2026-10-18T11:30:00Z')] },
+        now,
+      ),
+    ).toBe('knowledge_slots_overlap');
+    expect(validateKnowledgeSlot({ slots: [] }, now)).toBe('knowledge_slot_invalid');
+  });
+
+  it('is applied by validateMarketplaceWorldRules for knowledge', () => {
+    expect(
+      validateMarketplaceWorldRules({
+        worldSlug: 'knowledge',
+        direction: 'give',
+        details: { slots: [slotAt('2026-10-17T09:00:00Z', '2026-10-17T11:00:00Z')] },
+        now,
+      }),
+    ).toBe('knowledge_slot_in_past');
+  });
+
+  it('maps the new knowledge server codes', () => {
+    expect(mapMarketplaceServerError({ message: 'consulting_requires_id_verification' })).toBe(
+      'consulting_requires_id_verification',
+    );
+    expect(mapMarketplaceServerError({ message: 'knowledge_slot_has_booking' })).toBe('knowledge_slot_has_booking');
+    expect(mapMarketplaceServerError({ message: 'knowledge_slot_in_past' })).toBe('knowledge_slot_in_past');
+  });
+});

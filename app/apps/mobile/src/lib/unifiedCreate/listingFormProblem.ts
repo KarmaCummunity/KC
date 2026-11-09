@@ -34,8 +34,12 @@ export function fieldForRule(code: MarketplaceRuleErrorCode, details: Readonly<R
       return 'ride:departure';
     case 'food_expiry_required':
       return detailField('expires_at');
+    // A lesson offer or consulting hour edits a slot list (#2034); a legacy post had one slot.
     case 'knowledge_slot_invalid':
-      return detailField('slot_starts_at');
+    case 'knowledge_slot_duration_invalid':
+    case 'knowledge_slot_in_past':
+    case 'knowledge_slots_overlap':
+      return detailField(Array.isArray(details.slots) ? 'slots' : 'slot_starts_at');
     case 'event_window_invalid':
       return detailField('starts_at');
     case 'routed_world_requires_external_body':

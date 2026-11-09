@@ -41,3 +41,30 @@ describe('item / food handoff push copy', () => {
     }
   });
 });
+
+/** The knowledge booking kinds 0701 enqueues (#2034). */
+const KNOWLEDGE_KINDS = [
+  'knowledge_booking_requested',
+  'knowledge_booking_confirmed',
+  'knowledge_booking_declined',
+  'knowledge_booking_expired',
+  'knowledge_booking_cancelled',
+  'knowledge_session_completed',
+] as const satisfies readonly NotificationKind[];
+
+/** `knowledge_booking_requested` → `knowledgeBookingRequested`, as `knowledge_booking_copy_key` derives it. */
+function camelStem(kind: string): string {
+  return kind.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+}
+
+describe('knowledge booking push copy', () => {
+  it.each(KNOWLEDGE_KINDS)('%s has the same Hebrew in the dispatcher and the app, and English', (kind) => {
+    for (const part of ['Title', 'Body']) {
+      const key = `${camelStem(kind)}${part}`;
+      const serverHe = dispatcherCopy[`notifications.${key}`];
+      expect(serverHe, `dispatcher notifications.${key}`).toBeTruthy();
+      expect(notificationsCopy(he)[key]).toBe(serverHe);
+      expect(notificationsCopy(en)[key]).toBeTruthy();
+    }
+  });
+});
