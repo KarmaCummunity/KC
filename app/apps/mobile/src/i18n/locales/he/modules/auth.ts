@@ -28,8 +28,6 @@ export const authHe = {
   verifyTitle: 'בדוק את האימייל שלך',
   verifyBodyBefore: 'שלחנו לינק לאימות אל ',
   verifyBodyAfter: '. לחץ עליו כדי להמשיך.',
-  verifyAlreadyRegisteredHint: 'אם כבר נרשמת בעבר או התחברת באמצעות Google, היכנס ישירות לחשבון או אפס סיסמה.',
-  goToSignIn: 'מעבר להתחברות',
   openMail: 'פתח אימייל',
   resendWithCountdown: 'שלח שוב ({{count}})',
   resendOk: 'נשלח. בדוק את תיבת הדואר.',

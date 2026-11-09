@@ -28,8 +28,6 @@ export const authEn = {
   verifyTitle: 'Check your email',
   verifyBodyBefore: 'We sent a verification link to ',
   verifyBodyAfter: '. Tap it to continue.',
-  verifyAlreadyRegisteredHint: 'If you already have an account or previously signed in with Google, sign in directly or reset your password.',
-  goToSignIn: 'Go to sign in',
   openMail: 'Open email',
   resendWithCountdown: 'Resend ({{count}})',
   resendOk: 'Sent. Check your inbox.',
