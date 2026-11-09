@@ -11,6 +11,8 @@
 -- 2. `posts_event_owner_move_cancels_registrations`: after a post moves from open or paused to
 --    paused, closed_delivered, deleted_no_recipient or removed_admin, an event's open
 --    registrations are cancelled. One trigger covers every writer of the move.
+--    `posts_event_delete_notifies_registrations` does the same before a post row is deleted
+--    (a hard delete takes the registrations with it and runs no status trigger).
 -- 3. `pause_my_listing`, `fulfill_my_listing`, `delete_my_listing` (0666 bodies, verbatim
 --    except one filter): event registrations no longer count as a blocking handoff.
 
@@ -64,6 +66,30 @@ comment on function kc_private.event_cancel_open_registrations(uuid) is
 
 revoke all on function kc_private.event_cancel_open_registrations(uuid) from public, anon, authenticated;
 grant execute on function kc_private.event_cancel_open_registrations(uuid) to service_role;
+
+-- ── 1b. Deleting an event notifies its attendees first ─────────────────────────
+-- A post delete is a hard delete: the registrations go with the post in the cascade and no
+-- status trigger runs. Before the row goes, an upcoming event's open registrations are
+-- cancelled and each attendee is notified, whichever path deletes it (owner RPC or the
+-- client's own delete under RLS).
+create or replace function kc_private.posts_event_delete_notifies_registrations()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  perform kc_private.event_cancel_open_registrations(old.post_id);
+  return old;
+end;
+$$;
+
+revoke all on function kc_private.posts_event_delete_notifies_registrations() from public, anon, authenticated;
+
+drop trigger if exists posts_event_delete_notifies_registrations on public.posts;
+create trigger posts_event_delete_notifies_registrations
+  before delete on public.posts
+  for each row execute function kc_private.posts_event_delete_notifies_registrations();
 
 -- ── 2. Every owner or admin move that takes an event off the air cancels them ──
 create or replace function public.posts_event_owner_move_cancels_registrations()
@@ -211,10 +237,6 @@ begin
     ) then
       raise exception 'listing_has_handoff_history' using errcode = '23514';
     end if;
-
-    -- 0686: the delete is a hard delete, so no status trigger runs and the registrations go with
-    -- the post in the cascade; an upcoming event's attendees are notified first.
-    perform kc_private.event_cancel_open_registrations(v_post.post_id);
 
     v_lid := coalesce(v_post.legacy_listing_id, public.listing_id_of_post(v_post.post_id));
     if v_lid is not null then
