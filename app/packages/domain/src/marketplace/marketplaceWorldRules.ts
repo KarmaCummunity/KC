@@ -21,6 +21,7 @@ export function offerRequiresPhoto(worldSlug: string, direction: 'give' | 'reque
 
 export type MarketplaceRuleErrorCode =
   | 'offer_photo_required'
+  | 'food_subcategory_required'
   | 'food_expiry_required'
   | 'routed_world_requires_external_body'
   | 'ride_route_required'
@@ -31,6 +32,7 @@ export type MarketplaceRuleErrorCode =
 /** Server-raised listing error codes the UI has friendly copy for. */
 export const MARKETPLACE_SERVER_ERROR_CODES = [
   'offer_photo_required',
+  'food_subcategory_required',
   'food_expiry_required',
   'routed_world_requires_external_body',
   'ride_route_required',
@@ -132,6 +134,11 @@ export interface WorldRulesInput {
    * keeps its photos as they are), so the photo rule is skipped there.
    */
   photoCount?: number;
+  /**
+   * The chosen world sub-category, or null when none is chosen. Undefined when the form does not
+   * manage it (a listing edit keeps its sub-category), so the sub-category rule is skipped there.
+   */
+  subcategoryId?: string | null;
   externalBodyId?: string | null;
   now?: Date;
 }
@@ -149,6 +156,8 @@ export function validateMarketplaceWorldRules(input: WorldRulesInput): Marketpla
     const ts = typeof raw === 'string' ? Date.parse(raw) : Number.NaN;
     const now = (input.now ?? new Date()).getTime();
     if (Number.isNaN(ts) || ts <= now) return 'food_expiry_required';
+    // A food offer's type is its world sub-category ({{D:food-type-is-subcategory}}, KC#1398).
+    if (input.subcategoryId === null) return 'food_subcategory_required';
   }
 
   if (worldSlug === 'rides') {
