@@ -1854,3 +1854,13 @@ Owner rules that go with it:
 **Rejected.** A Postgres enum per machine (fixes the state set, not the moves). An XState-style runtime library (a new dependency, and the domain must stay dependency-free). Generating SQL from TS (one more build step; a replayed contract test gives the same guarantee with plain migrations). Predicates and side effects inside the kernel (they read other rows; they stay in the writer).
 
 **Affected.** `app/packages/domain/src/fsm/**`, `app/packages/infrastructure-supabase/src/fsm/__tests__/**`, `supabase/migrations/0680_fsm_catalog.sql`, `supabase/tests/0680_fsm_catalog.sql`, `.github/workflows/ci-backend.yml`, `docs/superpowers/specs/2026-11-09-fsm-kernel-design.md`.
+
+## D-227 — Knowledge listings need a verified user, not moderator approval (2026-11-09)
+
+**Decision.** The owner relaxes R-Knowledge-1 (#1037): a verified user can publish and book knowledge listings with no moderator approval step before booking. Moderators act on reports only. This supersedes the `pending_review` start state mentioned in D-224.
+
+**Why.** The approval step slows every lesson and mentorship offer, and the report path (#1302) already covers abuse.
+
+**Rejected.** Keeping the moderator approval (safer, but slower for a small team of moderators). Removing the verified-user requirement (opens the world to unverified accounts).
+
+**Affected.** Docs only in this entry. Follow-up (not done here): a migration so new knowledge listings start as published instead of `pending_review`, plus updating the R-Knowledge-1 catalog row (`0265`) and `docs/spec/requirements/23_knowledge.md`.
