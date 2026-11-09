@@ -46,15 +46,21 @@ begin
     'rides',
     case when m.mode = 'request' then 'request' else 'offer' end,
     'ride',
-    jsonb_build_object(
-      'origin_place_kind', 'city', 'origin_place_id', o.city_id, 'origin_label', o.name_he,
-      'dest_place_kind', 'city', 'dest_place_id', d.city_id, 'dest_label', d.name_he,
+    jsonb_strip_nulls(jsonb_build_object(
+      'origin_label', o.name_he,
+      'dest_label', d.name_he,
+      'origin_city_id', o.city_id,
       'dest_city_id', d.city_id,
+      'origin_lat', o.lat,
+      'origin_lng', o.lon,
+      'dest_lat', d.lat,
+      'dest_lng', d.lon,
       'departs_at', to_char(dep.v_dep at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
       'seats_available', case when m.mode = 'offer' then 1 + floor(random() * 4)::int end,
       'passengers', case when m.mode = 'request' then 1 end,
-      'reward_model', case when g % 2 = 0 then 'free' else 'expense_share' end
-    ),
+      'reward_model', case when m.mode = 'offer' and g % 2 = 0 then 'free'
+                           when m.mode = 'offer' then 'expense_share' end
+    )),
     case when m.mode = 'request' then v_request_kind else v_offer_kind end,
     'published',
     now(),
@@ -82,7 +88,7 @@ begin
    limit 1
   ) u
   cross join lateral (
-    select c.city_id, c.name_he from public.cities c
+    select c.city_id, c.name_he, c.lat, c.lon from public.cities c
      where c.city_id in (
        '3000','5000','4000','8300','9000','7900','7100','7400','2600','6400','70','8400',
        '8600','6500','6600','6900','1200','7000','9700','2610','8800','7300')
@@ -90,7 +96,7 @@ begin
    limit 1
   ) o
   cross join lateral (
-    select c.city_id, c.name_he from public.cities c
+    select c.city_id, c.name_he, c.lat, c.lon from public.cities c
      where c.city_id in (
        '3000','5000','4000','8300','9000','7900','7100','7400','2600','6400','70','8400',
        '8600','6500','6600','6900','1200','7000','9700','2610','8800','7300')
