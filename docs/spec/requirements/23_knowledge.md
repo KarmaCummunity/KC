@@ -1,6 +1,6 @@
 # 2.23 Knowledge world — give & take, free library, courses, agent retrieval
 
-> **Status:** 🟡 In progress — spec v0.1 (2026-11-03, PM scope decision `D119`; details are KC fills pending approval). FR-KNOW-001 shipped 2026-11-04 (`0570`). Code today: knowledge `listing_kinds` (`course`, `private_lesson`, `mentorship_request`, migrations `0241`, `0395`), slot booking and session completion on `giving_handoffs` (`0396`), four seeded sub-categories (`0535`), hybrid `search_listings` (`0262`) with a placeholder vector lane and a stub `embed-worker` (`TD-269`). **K1** `FR-KNOW-001..012`, **K2** `FR-KNOW-013..020`, **K3** `FR-KNOW-021..024`. Tester (development) builds open the knowledge world as an in-app feed regardless of `world_knowledge_enabled` (#1630); a production build follows the flag. In an active knowledge world the "+" opens the listing form: a course (default offer) or a mentorship request, with topic, level, format and one slot; the private-lesson kind has no chooser yet and, since migration `0613`, a published knowledge listing is listed in the main feed from the moment moderation approves it (`worlds.feed_mirror` is on for knowledge); the owner no longer has to share it.
+> **Status:** 🟡 In progress — spec v0.1 (2026-11-03, PM scope decision `D119`; details are KC fills pending approval). FR-KNOW-001 shipped 2026-11-04 (`0570`). FR-KNOW-003 / FR-KNOW-004 one-off part shipped with #2034 (`0700`, `0701`): the six exchange post types on the one create form, slots as rows, booking a seat per slot with the giver's approval, session completion with the §7.6 karma; the open parts are listed under each FR. Also in code: four seeded sub-categories (`0535`), hybrid `search_listings` (`0262`) with a placeholder vector lane and a stub `embed-worker` (`TD-269`). **K1** `FR-KNOW-001..012`, **K2** `FR-KNOW-013..020`, **K3** `FR-KNOW-021..024`. Tester (development) builds open the knowledge world as an in-app feed regardless of `world_knowledge_enabled` (#1630); a production build follows the flag. Since migration `0613`, a published knowledge post is listed in the main feed from the moment moderation approves it (`worlds.feed_mirror` is on for knowledge).
 
 Prefix: `FR-KNOW-*` · Migration range claimed: `0570–0589` (`docs/agents/MIGRATION_RANGES.md`) · Product spec (binding): [`docs/spec/18_knowledge_world.md`](../18_knowledge_world.md) · Decisions: `D40`, `D100`, `D101`, `D107`, `D119` · Fills: `S63`, `S64`, `S65`, `S66`, `S67`, `S68`, `S69`, `S70`, `S71`, `S72` · Engineering decision: `D-215` (`docs/SSOT/DECISIONS.md`).
 
@@ -87,6 +87,18 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
 - AC5. Rename the UI copy: `knowledge` category chip in the create form, request / offer wording per type, in `apps/mobile/src/i18n/locales/he/`.
 - AC6. Tests: `listingFieldSpecs` unit tests per kind; DB test `0571_knowledge_post_kinds.sql` (schema enforcement, expiry sweep on a one-off lesson, no expiry on a recurring one).
 
+- **Implementation (#2034, `0700`).** Shipped: the six kinds with their schemas, the 30-minute-after-the-last-slot expiry of
+  a lesson offer and a consulting hour (`posts_world_knowledge_rules`, swept hourly by `knowledge_offers_expired_sweep`), the forms
+  (`knowledgeFieldSpecs.ts`) and the copy. Differences from the ACs above:
+  - AC1: `course`, `private_lesson` and `mentorship_request` are deactivated, not renamed; the new kinds are new rows. Open legacy
+    posts move to `lesson_offer` (one slot each, from `slot_starts_at` / `slot_ends_at`) or `mentoring_request`, so bookings and
+    links keep their ids. A legacy post that was not moved keeps the legacy rules.
+  - AC2: every kind also carries `topic` (free text, 2–80) until topics are linked to posts (#2036). A lesson offer and a consulting
+    hour hold their times in `details.slots` (`[{starts_at, ends_at}]`, 1–20, 15 min to 8 h each, no overlap, a new one in the
+    future); `recurring` comes with #2035. A request uses `preferred_modality`; a `question` holds its text in the post title and
+    description, with `topic` and `context_url` in `details`.
+  - AC4 (the `time` world switch) waits for G51. AC6: the DB test is `supabase/tests/0700_knowledge_post_kinds.sql`.
+
 ## FR-KNOW-004 — Slots, booking and session completion
 
 **Acceptance Criteria.**
@@ -96,6 +108,26 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
 - AC4. A learning / mentoring request closes with "found a teacher" (links the booking handoff) or "found it in the library" (links a `resource_id`); both grant the request's closing karma once.
 - AC5. Notifications (`important`): booking requested (giver), approved / declined (learner), 24h reminder (both), slot cancelled (booked learners). Per-slot grouping.
 - AC6. Tests: `0572_knowledge_slots.sql` — concurrency on the last seat, expiry of an unconfirmed booking, series materialization and cancel with a booked slot kept; the knowledge flow on the shared harness (`supabase/tests/flows/knowledge_lifecycle.sql`, closes the open part of G38).
+
+- **Implementation (#2034, `0700`, `0701`).** Shipped the one-off part. Differences from the ACs above:
+  - AC1: `knowledge_slots(slot_id, post_id, starts_at, ends_at, capacity, status in (open, cancelled))`, keyed by the post (one Post
+    model, ADR-006). `details.slots` is what the giver edits; a trigger keeps the rows in step and refuses to remove, move or
+    shrink below its bookings a slot a learner holds (`knowledge_slot_has_booking`, `knowledge_slot_capacity_below_bookings`).
+    There is no `booked_count`: places left are counted from the live bookings (reserved, confirmed, held), so no counter can
+    drift; `full` and `done` are read, not stored. `series_key` and the materialize sweep come with #2035.
+  - AC2: the slot entry point is `book_knowledge_seat(p_slot_id)` (it also refuses `account_not_active`, `slot_not_found` and
+    `listing_not_available`); bookings are `post_handoffs` rows with `knowledge_slot_id`, and `confirm_by` is the earlier of 24 h
+    and the slot start. The giver answers with `confirm_knowledge_booking` / `decline_knowledge_booking`; a booking unanswered at
+    `confirm_by` is cancelled as `expired` by a 10-minute sweep. `book_knowledge_slot(p_listing_id)` stays only for builds
+    released before #2034 and books the soonest slot with a free place (removal: #2050). The learner sees upcoming times and
+    the times they booked in the last 7 days (`list_knowledge_slots`); the giver sees every booking (`list_knowledge_bookings`).
+  - AC3: done, through `karma_award_handoff` (5 per started half hour, the 80-a-day cap counted on the Israel calendar day;
+    learner 5). Either side may mark the session held from 15 minutes before it starts. Volunteering hours wait for G51.
+  - AC4 and the 24 h reminder of AC5: #2039. AC5 otherwise: pushes for a requested, approved, declined, expired or cancelled
+    booking and a held session, one per booking.
+  - A `mentoring_offer` has no join flow yet; it is arranged in chat (#2051).
+  - AC6: `supabase/tests/0701_knowledge_slot_bookings.sql` (including two learners on the last place) and
+    `supabase/tests/flows/knowledge_lifecycle.sql`.
 
 ## FR-KNOW-005 — Question with accepted answer
 
@@ -180,6 +212,7 @@ Two layers on one world (`docs/spec/18_knowledge_world.md` §18.2): **exchange p
 - AC3. Shelf rules of `docs/spec/06_domain_hubs.md` (no missionary content; no divisive heritage content; a source per heritage item) are shown at the contribute step and in the reviewer checklist; the checklist is data (`knowledge_review_checklists(shelf_slug, items jsonb)`), editable by super admins.
 - AC4. "Everything here is free" is shown on the library tab header and on the contribute step; the review `reject` reasons include `paid_content`, `copyright`, `not_free_access`, `advice_binding`, `shelf_rule`, `low_quality`, `duplicate`.
 - AC5. Tests: consulting hour refused without ID verification; shelf notice rendered for `rights_legal_aid`.
+- **Implementation (#2034).** AC1 server gate shipped (`posts_world_knowledge_rules`, `user_verification_level < 2`, tested in `0700`); the form-side check, the disclaimers and AC2 come with #2038.
 
 ---
 

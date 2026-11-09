@@ -49,7 +49,7 @@ One form per post type (D28), on the one create form (D107), knowledge chosen fi
 | **Mentoring request** (מחפש/ת מנטור) | request | topic, goal, cadence | remote or city | none | matched → closed with the offer |
 | **Question** (שאלה) | request | topic, question text ≤ 500, optional context link | none | none; auto-close 30 days after an accepted answer | asker marks an **accepted answer** among comments (7.9); an accepted answer may be proposed to the library as a community answer |
 
-Rules: a lesson offer may also be marked for the **time** world (D101); its completed sessions count as volunteering hours (D32, 7.10). Booking a slot reserves a seat (today's `book_knowledge_slot`, 24h confirm window); the giver approves or the slot is first-come per the giver's choice. A recurring lesson materializes one slot per occurrence like a ride series (D103 pattern). Max open posts per private user (S34) applies.
+Rules: a lesson offer may also be marked for the **time** world (D101); its completed sessions count as volunteering hours (D32, 7.10). Booking a slot reserves a seat on that slot (`book_knowledge_seat`, #2034); the giver approves within 24 h or by the slot start, whichever is earlier, or the booking expires and frees the seat. A first-come option chosen by the giver is not built yet. A recurring lesson materializes one slot per occurrence like a ride series (D103 pattern). Max open posts per private user (S34) applies.
 
 ## 18.5 Library layer — the free knowledge library
 
@@ -129,7 +129,7 @@ Pipeline: contribute → link enrichment (metadata, kind guess, duplicate check)
 - Shelf rules from [06](./06_domain_hubs.md) are shown on the contribute step of that shelf.
 
 ## 18.10 Karma, notifications, KPIs (S72)
-Karma (adds rows to 7.6; estimates, in `KARMA_POINT_VALUES`): lesson / mentoring / consulting session completed — giver 10 per hour (D32, cap 80/day), learner 5; resource approved — 5 (cap 5/day); resource marked helpful by others — 1 per vote received (cap 20/day); course published — 20; course completed — learner 10, author 2 per completion (cap 20/day); accepted answer — 5; question asked — 2 (cap 5/day). Today's code grants 5/3 per knowledge session (`complete_knowledge_session`); it moves to the table values (G56).
+Karma (adds rows to 7.6; estimates, in `KARMA_POINT_VALUES`): lesson / mentoring / consulting session completed — giver 10 per hour (D32, cap 80/day), learner 5; resource approved — 5 (cap 5/day); resource marked helpful by others — 1 per vote received (cap 20/day); course published — 20; course completed — learner 10, author 2 per completion (cap 20/day); accepted answer — 5; question asked — 2 (cap 5/day). Since #2034 (`0701`) a session grants the giver 5 per started half hour within the 80-a-day cap and the learner 5; mentoring meetings have no completion yet (#2051).
 
 Notifications (7.11): resource approved / rejected (`important`); booking requested / approved / declined and a 24h session reminder (`important`, like rides D73); new enrollment and course completion for the author (`social`, grouped); answer accepted (`social`); "new on a topic you follow" (`social`, the saved-filter rule D10: max 3/day); broken link on your resource (`social`).
 
