@@ -160,15 +160,17 @@ begin
   raise notice '✓ T1-T6 listing hidden for review, owner notice, restore, remove, moderation-only states';
 end $$;
 
--- T7: an owner still moves their own listing between ordinary states, and cannot hide it
--- under a review state themselves.
+-- T7: an owner still moves their own listing between ordinary states (through the owner RPCs;
+-- the `listings` view is written by server functions only since 0692), and cannot hide it under
+-- a review state themselves.
 do $$
 declare
   v_owner   uuid := pg_temp.mk_user('h463_owner2');
   v_listing uuid := pg_temp.mk_listing(v_owner, 'Spare chairs');
 begin
-  perform pg_temp.assert(pg_temp.client_write_state(v_owner,
-    format('update public.listings set status = %L where listing_id = %L', 'cancelled', v_listing)) is null,
+  perform pg_temp.act_as(v_owner);
+  perform public.pause_my_listing(v_listing);
+  perform pg_temp.assert((select status from public.posts where post_id = v_listing) = 'paused',
     'the owner could not pause their own listing');
   perform pg_temp.assert(pg_temp.client_write_state(v_owner,
     format('update public.listings set status = %L where listing_id = %L', 'hidden_pending_review', v_listing)) = '42501',
