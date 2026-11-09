@@ -101,10 +101,21 @@ test('create form: five categories, request / offer, human labels (no raw schema
 test.describe.serial('create + reserve', () => {
   let listingTitle = '';
 
-  test('create a food offer WITHOUT a photo', async ({ page }) => {
+  // {{D:offer-photo-required}} (KC#1937): an offer needs a photo; the form refuses and points at the picker.
+  test('a food offer WITHOUT a photo is refused at the photo picker', async ({ page }) => {
     const title = `${runTag()} מגש פסטה ללא תמונה`;
     await fillFoodOfferForm(page, title);
-    await publishAndFind(page, title, 30_000);
+    await publishButton(page).click();
+    if (await passDateOfBirthGate(page) && /\/create/.test(page.url())) await publishButton(page).click();
+    const photoField = page.getByTestId('listing-photos-field');
+    await expect(photoField.getByText('יש להוסיף לפחות תמונה אחת להצעה.')).toBeVisible();
+    await expect(page).toHaveURL(/\/create/);
+    const { session } = await sessionFor(USER_A);
+    const rows = await rest<{ listing_id: string }[]>(
+      session.access_token as string,
+      `marketplace_listing_card?select=listing_id&title=eq.${encodeURIComponent(title)}`,
+    );
+    expect(rows).toEqual([]);
   });
 
   test('create a food offer WITH a photo', async ({ page }) => {

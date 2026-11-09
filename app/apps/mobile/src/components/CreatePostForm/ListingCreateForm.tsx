@@ -5,6 +5,7 @@
 import React, { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { offerRequiresPhoto } from '@kc/domain';
 import { spacing, Text, useTheme } from '@kc/ui';
 import { TextField } from '../ui/TextField';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
@@ -100,13 +101,17 @@ export function ListingCreateForm({
     return () => onPublishActionChange(null, false);
   }, [form.busy, onPublishActionChange]);
 
+  // An offer in a photo world needs one photo ({{D:offer-photo-required}}); an edit keeps its photos.
   const photoPicker = (
-    <ListingFormPhotoPicker
-      photos={form.photos}
-      setPhotos={form.setPhotos}
-      carriedMediaPaths={form.carriedMediaPaths}
-      onRemoveCarried={form.removeCarriedMedia}
-    />
+    <ListingFieldFrame field="photos" testID="listing-photos-field">
+      <ListingFormPhotoPicker
+        photos={form.photos}
+        setPhotos={form.setPhotos}
+        carriedMediaPaths={form.carriedMediaPaths}
+        onRemoveCarried={form.removeCarriedMedia}
+        required={!editListingId && offerRequiresPhoto(worldSlug, direction)}
+      />
+    </ListingFieldFrame>
   );
 
   if (form.editLoading) {

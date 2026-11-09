@@ -12,9 +12,11 @@ interface Props {
   /** Storage paths of the republish source's photos (empty outside a republish). */
   readonly carriedMediaPaths: readonly string[];
   readonly onRemoveCarried: (path: string) => void;
+  /** Marks the picker required: an offer in a photo world ({{D:offer-photo-required}}). */
+  readonly required: boolean;
 }
 
-export function ListingFormPhotoPicker({ photos, setPhotos, carriedMediaPaths, onRemoveCarried }: Props) {
+export function ListingFormPhotoPicker({ photos, setPhotos, carriedMediaPaths, onRemoveCarried, required }: Props) {
   // Carried photos come first, in the source's order; their key is the storage path.
   const carried: PhotoPickerItem[] = carriedMediaPaths.map((path) => ({ path, previewUri: listingImagePublicUrl(path) }));
   const picked: PhotoPickerItem[] = photos.map((p) => ({ path: p.uri, previewUri: p.uri }));
@@ -37,7 +39,7 @@ export function ListingFormPhotoPicker({ photos, setPhotos, carriedMediaPaths, o
       uploads={[...carried, ...picked]}
       isUploading={false}
       uploadingCount={0}
-      required={false}
+      required={required}
       onAdd={() => void addPhotos()}
       onRemove={remove}
     />
