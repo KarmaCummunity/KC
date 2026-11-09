@@ -40,13 +40,7 @@ create or replace view public.listings as
     p.post_id as listing_id,
     p.owner_id,
     coalesce(p.world_slug, 'items') as world_slug,
-    coalesce(
-      p.kind_id,
-      (select kind_id from public.listing_kinds lk
-        where lk.world_slug = coalesce(p.world_slug, 'items')
-          and lk.slug = case when p.direction = 'request' or p.type = 'Request' then 'request_item' else 'give_item' end
-        limit 1)
-    ) as kind_id,
+    p.kind_id as kind_id,
     p.category_id,
     case when p.direction = 'request' or p.type = 'Request' then 'request' else 'give' end as direction,
     case

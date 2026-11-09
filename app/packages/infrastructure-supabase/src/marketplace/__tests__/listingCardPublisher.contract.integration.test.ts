@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // #1412 — a listing card shows its publisher (docs/spec/07 §7.4). Against the local Supabase
 // stack, a guest reading cards gets the owner's display name through the `users` embed: the
 // embed hint names a real foreign key, and `users` RLS lets a guest read an active owner.

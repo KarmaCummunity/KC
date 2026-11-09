@@ -13,6 +13,7 @@ import type { Database } from '../database.types';
 import { mapRideRow } from './mapRideRow';
 
 type RideRow = Parameters<typeof mapRideRow>[0];
+type ViewClient = { from: (table: string) => ReturnType<SupabaseClient['from']> };
 
 const RIDE_SELECT =
   '*, origin_city:cities!ride_listings_origin_city_id_fkey(name_he), dest_city:cities!ride_listings_dest_city_id_fkey(name_he)';
@@ -34,7 +35,7 @@ export class SupabaseRideListingRepository implements IRideListingRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
   async create(input: CreateRideListingRepoInput): Promise<RideListingRow> {
-    const { data, error } = await (this.client as any)
+    const { data, error } = await (this.client as unknown as ViewClient)
       .from('ride_listings')
       .insert({
         owner_id: input.ownerId,
@@ -98,7 +99,7 @@ export class SupabaseRideListingRepository implements IRideListingRepository {
   }
 
   async getById(rideId: string, _viewerId: string): Promise<RideListingRow | null> {
-    const { data, error } = await (this.client as any)
+    const { data, error } = await (this.client as unknown as ViewClient)
       .from('ride_listings')
       .select(RIDE_SELECT)
       .eq('ride_id', rideId)
@@ -141,7 +142,7 @@ export class SupabaseRideListingRepository implements IRideListingRepository {
   }
 
   async close(rideId: string, ownerId: string, status: 'closed' | 'cancelled'): Promise<void> {
-    const { error } = await (this.client as any)
+    const { error } = await (this.client as unknown as ViewClient)
       .from('ride_listings')
       .update({ status })
       .eq('ride_id', rideId)
@@ -190,7 +191,7 @@ export class SupabaseRideListingRepository implements IRideListingRepository {
         ? null
         : (input.since ?? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
 
-    let query = (this.client as any)
+    let query = (this.client as unknown as ViewClient)
       .from('ride_listings')
       .select(RIDE_SELECT)
       .eq('owner_id', input.ownerId)

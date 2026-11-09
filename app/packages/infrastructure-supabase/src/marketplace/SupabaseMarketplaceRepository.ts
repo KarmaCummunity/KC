@@ -25,7 +25,7 @@ import * as events from './eventRegistrations';
 import * as owner from './listingOwnerActions';
 import * as paging from './marketplacePaging';
 import { mapPinRow } from './mapPinRow';
-import { CARD_POST_EMBED, firstOf, listingDirectionOf, recordPostOf, type CardShapeColumns } from './listingCardSource';
+import { firstOf, listingDirectionOf, recordPostOf, type CardShapeColumns, type ViewClient } from './listingCardSource';
 
 export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
@@ -145,11 +145,9 @@ export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
   listWorldSubcategories = (worldSlug: string) => listWorldSubcategories(this.client, worldSlug);
 
   async getListingCard(listingId: string): Promise<MarketplaceBrowseRow | null> {
-    const { data, error } = await (this.client as any)
+    const { data, error } = await (this.client as unknown as ViewClient)
       .from('listings')
-      .select(
-        `listing_id, world_slug, direction, title, summary, urgency_level, availability_status, city_id, kind_id, origin, legacy_post_id, ${CARD_POST_EMBED}`,
-      )
+      .select('listing_id, world_slug, direction, title, summary, urgency_level, availability_status, city_id, kind_id, origin, legacy_post_id')
       .eq('listing_id', listingId)
       .maybeSingle();
     if (error || !data) return null;

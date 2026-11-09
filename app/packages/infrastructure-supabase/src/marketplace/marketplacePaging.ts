@@ -13,12 +13,12 @@ import type {
 import type { ListingCardPublisher, MarketplaceBrowseRow, MyListingRow, RideCardSummary } from '@kc/domain';
 import type { Database } from '../database.types';
 import {
-  CARD_POST_EMBED,
   LISTING_PUBLISHER_EMBED,
   listingDirectionOf,
   recordPostOf,
   type CardShapeColumns,
   type PublisherEmbed,
+  type ViewClient,
 } from './listingCardSource';
 
 type Client = SupabaseClient<Database>;
@@ -159,10 +159,10 @@ export async function fetchListingCards(
   ids: readonly string[],
 ): Promise<MarketplaceBrowseRow[]> {
   if (ids.length === 0) return [];
-  const { data, error } = await (client as any)
+  const { data, error } = await (client as unknown as ViewClient)
     .from('listings')
     .select(
-      `listing_id, world_slug, direction, title, summary, urgency_level, availability_status, city_id, details, origin, legacy_post_id, kind:listing_kinds(slug), ${LISTING_PUBLISHER_EMBED}, ${CARD_POST_EMBED}`,
+      `listing_id, world_slug, direction, title, summary, urgency_level, availability_status, city_id, details, origin, legacy_post_id, kind:listing_kinds(slug), ${LISTING_PUBLISHER_EMBED}`,
     )
     .in('listing_id', [...ids]);
   if (error || !data) return [];
@@ -232,9 +232,9 @@ export async function attachCardExtras(
   if (rows.length === 0) return rows;
   let data: unknown[] | null;
   try {
-    const res = await (client as any)
+    const res = await (client as unknown as ViewClient)
       .from('listings')
-      .select(`listing_id, details, origin, legacy_post_id, ${LISTING_PUBLISHER_EMBED}, ${CARD_POST_EMBED}`)
+      .select(`listing_id, details, origin, legacy_post_id, ${LISTING_PUBLISHER_EMBED}`)
       .in('listing_id', rows.map((r) => r.listingId));
     if (res.error) return rows;
     data = res.data;

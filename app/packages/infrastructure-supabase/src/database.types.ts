@@ -11799,7 +11799,7 @@ export type Database = {
           geo?: unknown
           geo_mode_override?: never
           geo_weight_override?: never
-          kind_id?: never
+          kind_id?: string | null
           legacy_post_id?: string | null
           legacy_ride_id?: never
           listing_id?: string | null
@@ -11835,7 +11835,7 @@ export type Database = {
           geo?: unknown
           geo_mode_override?: never
           geo_weight_override?: never
-          kind_id?: never
+          kind_id?: string | null
           legacy_post_id?: string | null
           legacy_ride_id?: never
           listing_id?: string | null
@@ -11882,6 +11882,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "external_bodies"
             referencedColumns: ["body_id"]
+          },
+          {
+            foreignKeyName: "posts_kind_id_fkey"
+            columns: ["kind_id"]
+            isOneToOne: false
+            referencedRelation: "listing_kinds"
+            referencedColumns: ["kind_id"]
           },
           {
             foreignKeyName: "posts_owner_id_fkey"
