@@ -7,13 +7,16 @@
 --    `sandbox_payments` is on. The flag is on for the kc-dev database (detected by its
 --    seed, as in 0400) and off everywhere else, so a mock payment can never produce a
 --    payment row, a receipt or a raised total outside the test environment.
---    The original body is kept as-is and renamed; a thin guard takes its public name.
+--    The original body is kept as-is and moved to `kc_private` (not exposed by the API);
+--    a thin guard takes its public name.
 
 begin;
 
 -- ── 1. org_memberships: no direct client writes ──────────────────────────────
 drop policy if exists org_memberships_self_insert on public.org_memberships;
-revoke insert, update, delete, truncate on table public.org_memberships from anon, authenticated;
+-- Reads are unchanged (RLS `org_memberships_select`); every write privilege goes.
+revoke all on table public.org_memberships from anon, authenticated;
+grant select on table public.org_memberships to anon, authenticated;
 
 -- ── 2. sandbox_payments server flag ──────────────────────────────────────────
 insert into public.app_flags (key, enabled, description)
@@ -41,11 +44,13 @@ end
 $guard$;
 
 -- ── 3. Guarded sandbox completion ────────────────────────────────────────────
--- Keep the 0362 body untouched under an internal name that clients cannot execute.
-alter function public.complete_sandbox_donation(uuid) rename to complete_sandbox_donation_unchecked;
-revoke all on function public.complete_sandbox_donation_unchecked(uuid) from public, anon, authenticated;
+-- Keep the 0362 body untouched in the private schema, under an internal name that
+-- clients cannot execute. Its `search_path = public` setting moves with it.
+alter function public.complete_sandbox_donation(uuid) set schema kc_private;
+alter function kc_private.complete_sandbox_donation(uuid) rename to complete_sandbox_donation_unchecked;
+revoke all on function kc_private.complete_sandbox_donation_unchecked(uuid) from public, anon, authenticated;
 
-comment on function public.complete_sandbox_donation_unchecked(uuid) is
+comment on function kc_private.complete_sandbox_donation_unchecked(uuid) is
   'Internal (0362 body). Called only by complete_sandbox_donation after the sandbox_payments gate.';
 
 create or replace function public.complete_sandbox_donation(p_intent_id uuid)
@@ -60,7 +65,7 @@ begin
     raise exception 'sandbox_payments_disabled' using errcode = '42501';
   end if;
   -- auth.uid() still resolves inside the internal function: same session, same JWT claims.
-  return public.complete_sandbox_donation_unchecked(p_intent_id);
+  return kc_private.complete_sandbox_donation_unchecked(p_intent_id);
 end;
 $$;
 

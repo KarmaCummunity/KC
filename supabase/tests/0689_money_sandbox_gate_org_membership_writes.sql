@@ -21,7 +21,7 @@ begin
 
   -- The internal body is not callable by clients.
   perform kc_test.assert_true(
-    not has_function_privilege('authenticated', 'public.complete_sandbox_donation_unchecked(uuid)', 'EXECUTE'),
+    not has_function_privilege('authenticated', 'kc_private.complete_sandbox_donation_unchecked(uuid)', 'EXECUTE'),
     'authenticated must not execute complete_sandbox_donation_unchecked');
 end $$;
 
