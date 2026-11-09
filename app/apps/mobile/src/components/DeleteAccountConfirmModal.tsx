@@ -18,7 +18,7 @@ export type AccountStatusForDelete =
   | 'suspended_for_false_reports'
   | 'suspended_admin'
   | 'banned'
-  | 'deleted'
+  | 'pending_deletion'
   | null;
 
 export interface DeleteAccountConfirmModalProps {

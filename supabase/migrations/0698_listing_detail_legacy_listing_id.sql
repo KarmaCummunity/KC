@@ -1,4 +1,4 @@
--- 0697_listing_detail_legacy_listing_id | KC#2032 (FR-POST-014..018, FR-FEED-001, G1 step 6d).
+-- 0698_listing_detail_legacy_listing_id | KC#2032 (FR-POST-014..018, FR-FEED-001, G1 step 6d).
 --
 -- The post screen of a listing-world post opens the detail with `post.listingId`, the id the post's
 -- listing had before step 6d (`posts.listing_id`). Since 0667 `listings` is a view keyed on the post
@@ -23,11 +23,11 @@ set search_path = public
 as $$
   select coalesce(
     (select l.listing_id from public.listings l where l.listing_id = p_id),
-    -- 0697: a post created before step 6d is still addressed by its former listing id.
+    -- 0698: a post created before step 6d is still addressed by its former listing id.
     (select p.post_id from public.posts p where p.listing_id = p_id));
 $$;
 
 comment on function public.handoff_target_listing_id(uuid) is
-  'Resolves a post id or a former listing id (posts.listing_id) to the id the listings view uses (0697).';
+  'Resolves a post id or a former listing id (posts.listing_id) to the id the listings view uses (0698).';
 
 commit;

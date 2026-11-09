@@ -2,6 +2,8 @@
 # open the date sheet of the food offer, so a native picker or slider that crashes the app
 # (TestFlight, 1.6.x) fails here instead of in the store build.
 # Category chips scroll horizontally; use testIDs so Maestro does not depend on them being on screen.
+# The category row sits at the top of the form, and a failed publish scrolls the form down to the
+# first problem field (FR-POST-001 AC6), so every category lookup scrolls UP to reach the row again.
 # Spec: docs/spec/requirements/04_posts.md FR-POST-001 AC6; docs/spec/07_cross_cutting_systems.md §7.2.
 appId: org.karmacommunity.app
 name: Posts — create form categories open on device
@@ -36,12 +38,14 @@ tags: [posts]
     element:
       id: create-category-food
     timeout: 10000
+    direction: UP
 - tapOn:
     id: create-category-food
 - tapOn: "להציע"
-- extendedWaitUntil:
-    visible: "תאריך תפוגה"
-    timeout: 10000
+# The expiry field sits below the photos, title and city, so scroll down to it.
+- scrollUntilVisible:
+    element: "תאריך תפוגה"
+    timeout: 15000
 - tapOn: "בחירת תאריך ושעה"
 # Android opens the system date dialog; iOS opens the app's bottom sheet.
 - runFlow:
@@ -59,6 +63,7 @@ tags: [posts]
     element:
       id: create-category-housing
     timeout: 10000
+    direction: UP
 - tapOn:
     id: create-category-housing
 - assertVisible:
@@ -67,6 +72,7 @@ tags: [posts]
     element:
       id: create-category-time
     timeout: 10000
+    direction: UP
 - tapOn:
     id: create-category-time
 - assertVisible:
@@ -75,6 +81,7 @@ tags: [posts]
     element:
       id: create-category-items
     timeout: 10000
+    direction: UP
 - tapOn:
     id: create-category-items
 - assertVisible:
