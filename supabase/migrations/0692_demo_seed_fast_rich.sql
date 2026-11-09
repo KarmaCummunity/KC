@@ -57,38 +57,33 @@ begin
     when 'match_listing_state' then
       with doomed as (
         select mls.ctid from public.match_listing_state mls
-          join public.listings l on l.listing_id = mls.listing_id
-         where l.owner_id = any (p_ids)
-         limit p_limit for update skip locked)
+          join public.posts p on p.post_id = mls.listing_id
+         where p.owner_id = any (p_ids)
+         limit p_limit for update of mls skip locked)
       delete from public.match_listing_state mls using doomed d where mls.ctid = d.ctid;
       get diagnostics v_n = row_count;
       if v_n < p_limit then
         select exists (select 1 from public.match_listing_state mls
-          join public.listings l on l.listing_id = mls.listing_id
-         where l.owner_id = any (p_ids)) into v_left;
+          join public.posts p on p.post_id = mls.listing_id
+         where p.owner_id = any (p_ids)) into v_left;
       end if;
     when 'giving_handoffs' then
       with doomed as (
-        select gh.ctid from public.giving_handoffs gh
-         where gh.owner_id = any (p_ids) or gh.recipient_id = any (p_ids)
-            or gh.listing_id in (select l.listing_id from public.listings l where l.owner_id = any (p_ids))
+        select ph.ctid from public.post_handoffs ph
+         where ph.owner_id = any (p_ids) or ph.recipient_id = any (p_ids)
+            or ph.post_id in (select p.post_id from public.posts p where p.owner_id = any (p_ids))
          limit p_limit for update skip locked)
-      delete from public.giving_handoffs gh using doomed d where gh.ctid = d.ctid;
+      delete from public.post_handoffs ph using doomed d where ph.ctid = d.ctid;
       get diagnostics v_n = row_count;
       if v_n < p_limit then
-        select exists (select 1 from public.giving_handoffs gh
-          where gh.owner_id = any (p_ids) or gh.recipient_id = any (p_ids)
-             or gh.listing_id in (select l.listing_id from public.listings l where l.owner_id = any (p_ids))) into v_left;
+        select exists (select 1 from public.post_handoffs ph
+          where ph.owner_id = any (p_ids) or ph.recipient_id = any (p_ids)
+             or ph.post_id in (select p.post_id from public.posts p where p.owner_id = any (p_ids))) into v_left;
       end if;
     when 'listings' then
-      with doomed as (
-        select l.ctid from public.listings l where l.owner_id = any (p_ids)
-         limit p_limit for update skip locked)
-      delete from public.listings l using doomed d where l.ctid = d.ctid;
-      get diagnostics v_n = row_count;
-      if v_n < p_limit then
-        select exists (select 1 from public.listings l where l.owner_id = any (p_ids)) into v_left;
-      end if;
+      -- Compatibility view over posts: deletions are handled in the 'posts' step.
+      v_n := 0;
+      v_left := false;
     when 'challenge_progress' then
       with doomed as (
         select cpe.ctid from public.challenge_progress_entries cpe
@@ -135,12 +130,16 @@ begin
       end if;
     when 'rides' then
       with doomed as (
-        select rl.ctid from public.ride_listings rl where rl.owner_id = any (p_ids)
-         limit p_limit for update skip locked)
-      delete from public.ride_listings rl using doomed d where rl.ctid = d.ctid;
+        select r.ctid from public.ride_post_details r
+          join public.posts p on p.post_id = r.post_id
+         where p.owner_id = any (p_ids)
+         limit p_limit for update of r skip locked)
+      delete from public.ride_post_details r using doomed d where r.ctid = d.ctid;
       get diagnostics v_n = row_count;
       if v_n < p_limit then
-        select exists (select 1 from public.ride_listings rl where rl.owner_id = any (p_ids)) into v_left;
+        select exists (select 1 from public.ride_post_details r
+          join public.posts p on p.post_id = r.post_id
+         where p.owner_id = any (p_ids)) into v_left;
       end if;
     when 'messages' then
       with doomed as (
