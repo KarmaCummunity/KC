@@ -12348,7 +12348,12 @@ export type Database = {
         Returns: number
       }
       fsm_assert_transition: {
-        Args: { p_from: string; p_machine: string; p_role?: string; p_to: string }
+        Args: {
+          p_from: string
+          p_machine: string
+          p_role?: string
+          p_to: string
+        }
         Returns: undefined
       }
       fulfill_my_listing: { Args: { p_listing_id: string }; Returns: undefined }
