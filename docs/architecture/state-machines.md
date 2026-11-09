@@ -84,7 +84,7 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 - ~~`admin_remove_listing` (`0666`) failed on a paused or expired post (the `0097` check rejected the saved status).~~ ✅ wave 1b-i (`0682`): the check covers every removable status.
 - ~~`admin_restore_target` (`0666`) always restored to `open`, also "restored" never-removed paused posts, and kept a dead `held` branch.~~ ✅ wave 1b-i (`0682`): restores to the saved status (D129).
 - `mark_giving_handed_over` (`0666`) writes `closed_delivered` without a source-status filter and raises on `expired` / `removed_admin` posts.
-- The expired screen calls `rpc_republish_post` (`0155`), which clones only the legacy item columns (no `world_slug`, `details`, `kind_id`); D127 requires a full copy (wave 1b).
+- ~~The expired screen called `rpc_republish_post` (`0155`), which cloned only the legacy item columns.~~ ✅ wave 1b-iii: "Republish" on an expired listing-world post opens the create form prefilled from it, dates cleared ({{D:republish-prefilled-form}}). Not yet carried: sub-category and additional worlds (the listing detail does not return them) and a ride's private house numbers. `rpc_republish_post` and its items-only screen stay until a cleanup PR (items no longer expire).
 - Items get `expires_at = now() + 30 days` (`0612`, `0666`) while D21 says items never expire and no sweep expires them: after 30 days a paused item cannot resume and never expires.
 - Pause / fulfill / delete RPCs (`0666`) count `time` (event) handoffs as active; the trigger (`0665`) excludes them.
 - Two `owner_complete_offer_with_user` overloads coexist (`0658` with `p_mode`, `0666` without) with different handoff and karma behaviour; the app calls the `0658` one.

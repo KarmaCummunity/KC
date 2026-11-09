@@ -38,7 +38,7 @@ vi.mock('../SearchablePicker/SearchablePicker', () => ({
   },
 }));
 
-import { CityPicker } from '../CityPicker';
+import { CityPicker, withCityName } from '../CityPicker';
 
 afterEach(() => {
   cleanup();
@@ -101,5 +101,15 @@ describe('CityPicker', () => {
     expect(typeof onRetry).toBe('function');
     onRetry();
     expect(refetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the name of a city known only by its id (a loaded listing, D127 republish)', () => {
+    const cities: City[] = [{ cityId: '3000', nameHe: 'חיפה', nameEn: 'Haifa' }];
+    expect(withCityName({ id: '3000', name: '' }, cities)).toEqual({ id: '3000', name: 'חיפה' });
+    // A named value, an unknown id, no value and an unloaded list stay as they are.
+    expect(withCityName({ id: '3000', name: 'Haifa' }, cities)).toEqual({ id: '3000', name: 'Haifa' });
+    expect(withCityName({ id: '1', name: '' }, cities)).toEqual({ id: '1', name: '' });
+    expect(withCityName(null, cities)).toBeNull();
+    expect(withCityName({ id: '3000', name: '' }, undefined)).toEqual({ id: '3000', name: '' });
   });
 });
