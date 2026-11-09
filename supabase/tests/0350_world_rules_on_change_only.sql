@@ -58,8 +58,8 @@ end $$;
 update public.listings set details = '{"item_condition":"Good"}'::jsonb
  where listing_id = '00000000-0000-0000-0000-0000003500a1';
 
--- 3) A new items listing without an image succeeds on INSERT (0357) and still gets the
---    items default expiry from listings_enforce_world_rules.
+-- 3) A new items listing without an image succeeds on INSERT (0357) and gets no expiry:
+--    D21, items never expire (the 30-day default was removed in 0684).
 do $$
 declare
   v_exp timestamptz;
@@ -71,8 +71,8 @@ begin
          'native', 'published', '{}'::jsonb
     from public.listing_kinds where world_slug = 'items' and slug = 'give_item'
   returning expires_at into v_exp;
-  if v_exp is null then
-    raise exception 'ASSERT FAILED: items insert should get a default expiry';
+  if v_exp is not null then
+    raise exception 'ASSERT FAILED: items insert must not get an expiry (D21)';
   end if;
 end $$;
 
