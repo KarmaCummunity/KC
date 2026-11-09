@@ -30,12 +30,16 @@ This skill is the order of work. It cites those rules, not repeats them.
 ## Phase 1: Pick and de-duplicate
 
 - **Given an issue number:** take it.
-- **Otherwise:** take the oldest issue at the highest priority (`priority:launch` > `P0` > … > `P3`, AGENTS.md §13). An issue without a `priority:*` label is untriaged, so it is not in the queue. The project board's Agent queue mirrors these labels; reading the board needs a token with project scope, labels do not.
+- **Otherwise:** take the oldest issue at the highest priority (`priority:launch` > `P0` > … > `P3`, AGENTS.md §13). Two kinds of issue are not in the queue:
+  - **Untriaged:** an issue without a `priority:*` label.
+  - **Reserved for a person:** `human`, `maintainer-only` or an `owner:*` label (store consoles, credentials, releases).
+
+  The project board's Agent queue mirrors these labels; reading the board needs a token with project scope, labels do not.
 
   ```bash
   for p in launch P0 P1 P2 P3; do
     out=$(gh api -X GET search/issues -f sort=created -f order=asc -f per_page=5 --jq '.items[] | "#\(.number) \(.title)"' \
-      -f q="repo:KarmaCummunity/KC is:issue is:open label:priority:$p -label:in-progress -label:blocked -label:needs-triage -label:ops-alert -label:epic")
+      -f q="repo:KarmaCummunity/KC is:issue is:open label:priority:$p -label:in-progress -label:blocked -label:needs-triage -label:ops-alert -label:epic -label:human -label:maintainer-only -label:owner:nave")
     if [ -n "$out" ]; then echo "priority:$p"; echo "$out"; break; fi
   done
   ```
@@ -78,7 +82,9 @@ Read [`references/define-and-label.md`](references/define-and-label.md).
 1. **Read** the issue (`gh api $R/issues/<N> --jq '{title, body, labels: [.labels[].name]}'`), its spec ref and the cited spec section (`node scripts/spec.mjs <domain|FR-ID>`). Run `node scripts/spec.mjs --changed` once: if a file you rely on moved on `dev`, merge `origin/dev` first.
 2. **Run the spec validation gate** (AGENTS.md §2) and sort every gap into one of two classes:
    - **Technical gap: fill it.** Missing acceptance criteria derivable from the spec, a test plan, likely files, missing labels. Add a `### Filled in by agent:<you>` section to the issue body, so the PM sees what was added.
-   - **Product question: stop.** The task contradicts the spec, the spec is silent on behavior a user will see, or two reasonable readings give users different behavior. Follow "Blocked" in the reference, then return to Phase 1 for another issue.
+   - **Product question: stop.** The task contradicts the spec, the spec is silent on behavior a user will see, or two reasonable readings give users different behavior.
+     - **The PM is in your conversation:** ask now, in Hebrew, in the AGENTS.md §2 format, with options and a recommendation. Continue on the answer, and write it into the spec (AGENTS.md working rule 7).
+     - **Nobody to ask (autonomous run):** follow "Blocked" in the reference, then return to Phase 1 for another issue.
 3. **Label** the issue to the taxonomy in the reference: one type, at least one `area:*`, one `priority:*` and one `size:*`.
 
 ## Phase 4: Plan and test matrix
@@ -92,12 +98,12 @@ Read [`references/testing-matrix.md`](references/testing-matrix.md).
    git fetch origin dev && git switch -c <type>/<N>-<area>-<slug> origin/dev
    ```
 
-   If your runtime assigns a branch name, use that name, still based on `origin/dev`.
+   If your runtime assigns a branch name, use that name, still based on `origin/dev`. If that branch already carried a PR that merged, recreate it from `origin/dev` (`git checkout -B <branch> origin/dev`); never stack new work on merged history.
 3. **Migrations.** Writing SQL? Claim a migration range first ([MIGRATION_RANGES](../../../docs/agents/MIGRATION_RANGES.md)).
 
 ## Phase 5: Implement test-first
 
-- **Order.** Write the failing test, watch it fail for the right reason, implement, watch it pass.
+- **Order.** Write the failing test, watch it fail for the right reason, implement, watch it pass. If the code came first, prove the test anyway: `git stash push <implementation files>`, run the test and see it fail, then `git stash pop`.
 - **Layers.** Keep the Clean Architecture invariants and the hard caps (AGENTS.md §5): files ≤ 300 lines, nesting ≤ 3 levels, typed domain errors, no speculative abstractions.
 - **Names.** Use product language from `docs/spec/94_glossary_and_naming.md`. Never a bare `categories`.
 - **Copy.** User-visible strings go in the locale files, never inline.
@@ -150,12 +156,12 @@ gh api -X POST $R/issues/<PR>/labels -f 'labels[]=agent:<you>' --jq 'map(.name)'
   ```
 
 - **Red `CI gate`.** Read only the failed lane's log, reproduce it locally, fix the cause and push. Up to 3 attempts per cause. After that, repair CI itself if CI is what's broken (AGENTS.md §13, step 7). After 2 more failures, take the blocker path.
-- **Conflict or dequeue.** Rebase on `origin/dev` (never force-push a shared branch you did not open), re-run the gates, push, and confirm auto-merge is armed.
+- **Conflict or dequeue.** Merge `origin/dev` into the branch (a merge commit; never rebase a pushed branch, since that needs a force push). Resolve each conflict so both sides' behavior survives, and add a test where the two meet. Re-run the gates, push, and re-arm auto-merge: a dequeue disarms it.
 - **Human review.** Answer or fix every review comment.
 - **Merged** (`gh api $R/pulls/<PR> --jq .merged`):
-  1. Confirm the issue closed and the claim labels are gone. `close-issues-on-dev-merge.yml` and `issue-claims.yml` do this; if they did not, do it yourself.
-  2. Delete the local branch.
-  3. Report.
+  1. **The PR said `Closes #<N>`:** confirm the issue closed and the claim labels are gone. `close-issues-on-dev-merge.yml` and `issue-claims.yml` do this; if they did not, do it yourself.
+  2. **The PR said `Refs #<N>`:** the workflows leave the issue open and claimed. Remove `in-progress` and `agent:<you>` yourself, and comment what shipped plus a checklist of what still blocks closing.
+  3. Delete the local branch, or reset it to `origin/dev`, and report.
 
 ## Final report (one block, then stop)
 

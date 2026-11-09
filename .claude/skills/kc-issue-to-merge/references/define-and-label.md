@@ -32,12 +32,14 @@ gh api -X PATCH $R/issues/<N> -F body=@"$f" --jq .html_url
 - A test plan, likely files, an out-of-scope list.
 - Missing labels.
 
-**Product question: stop, mark blocked, take another issue.**
+**Product question: stop.** It is a product question when:
 
 - The task contradicts `docs/spec/` (or the legacy requirements file).
 - The spec is silent on behavior a user will see: copy, flow, permissions, pricing, who sees what.
 - Two reasonable readings give users different behavior.
 - The change needs a credential, a contract or a production action.
+
+**The PM is in your conversation:** ask there and continue on the answer (SKILL.md, Phase 3). **Otherwise:** mark the issue blocked (below) and take another one.
 
 ### Blocked
 
@@ -53,7 +55,9 @@ The comment (English) has exactly three parts:
 - **Options:** two or three, each with its user-visible effect.
 - **Recommendation:** one, with the reason.
 
-Tell the PM the same question in the conversation, in Hebrew. If your token can write the board, set Status = Blocked.
+If your token can write the board, set Status = Blocked.
+
+**In any GitHub text** (issue bodies, comments), describe a decision in words and name its file. Placeholders such as `{{KEY:slug}}` are numbered only inside repo files, so on GitHub they stay unresolved forever.
 
 ## Label taxonomy
 
@@ -74,7 +78,7 @@ Do not invent labels. Before using a new one, add it to `.github/workflows/sync-
 ## Size XL means split
 
 An `XL` issue becomes an epic:
-1. Open one child issue per independently mergeable step, each fully defined and labeled.
+1. Open one child issue per independently mergeable step, each fully defined and labeled. A child inherits the parent's priority labels and never gets `needs-triage`: it is part of approved work, not a finding.
 2. Link the children from the parent.
 3. Label the parent `epic`.
 4. Take the first child.

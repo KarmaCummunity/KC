@@ -123,6 +123,11 @@ jobs:
         if: ${{ !cancelled() }}
         run: node scripts/check-conflict-markers.mjs
 
+      # The Maestro job is advisory, so a flow that no longer parses would go unnoticed (KC#1619).
+      - name: Maestro flows parse and assert something
+        if: ${{ !cancelled() }}
+        run: node scripts/check-maestro-flows.mjs
+
       - name: Architecture (file size, layers, typed domain errors)
         if: ${{ !cancelled() }}
         run: node app/scripts/check-architecture.mjs
