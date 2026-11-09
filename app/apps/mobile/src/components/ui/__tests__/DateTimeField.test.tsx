@@ -20,7 +20,14 @@ vi.mock('@react-native-community/datetimepicker', () => ({
   DateTimePickerAndroid: { open: vi.fn() },
 }));
 
-import { DateTimeField, fromWebInputValue, fromWebLocalValue, toWebInputValue, toWebLocalValue } from '../DateTimeField';
+import {
+  applyAndroidClock,
+  DateTimeField,
+  fromWebInputValue,
+  fromWebLocalValue,
+  toWebInputValue,
+  toWebLocalValue,
+} from '../DateTimeField';
 
 function renderField(value: Date | null, onChange = vi.fn(), theme: ThemeMode = 'light') {
   render(
@@ -97,6 +104,12 @@ describe('DateTimeField', () => {
     fireEvent.change(input, { target: { value: '2031-05-04' } });
     fireEvent.click(screen.getByTestId('day-done'));
     expect(onChange).toHaveBeenCalledWith(new Date(2031, 4, 4));
+  });
+
+  it('keeps the chosen day when Android returns a clock on today', () => {
+    const day = new Date(2031, 4, 4, 8, 0, 30, 0);
+    const clockFromToday = new Date(2026, 10, 9, 18, 45, 12, 0);
+    expect(applyAndroidClock(day, clockFromToday)).toEqual(new Date(2031, 4, 4, 18, 45, 0, 0));
   });
 
   it('formats and reads the day and time inputs', () => {

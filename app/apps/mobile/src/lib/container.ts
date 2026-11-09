@@ -118,8 +118,12 @@ import {
   SubmitPublicResearchResponseUseCase,
 } from '@kc/application';
 import { createFinanceUseCases } from './financeContainer';
+import { isSupabaseConfigured } from './supabasePublicConfig';
+import { bindSupabaseClient } from './bindSupabaseClient';
 
-export const supabase = getSupabaseClient({ storage: pickAuthStorage() });
+export const supabase = bindSupabaseClient(isSupabaseConfigured(), () =>
+  getSupabaseClient({ storage: pickAuthStorage() }),
+);
 
 const userRepo = new SupabaseUserRepository(supabase);
 const chatRepo = new SupabaseChatRepository(supabase);
