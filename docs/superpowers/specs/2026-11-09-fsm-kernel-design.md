@@ -1,6 +1,6 @@
 # FSM kernel — design
 
-> **Status:** Draft, 2026-11-09. Awaiting review. No implementation until this file is accepted.
+> **Status:** Accepted 2026-11-09. Implementation follows `docs/superpowers/plans/2026-11-09-fsm-kernel.md`.
 > **Mapped to spec:** FR-ADMIN-018 (pilot preserves the admin-task graph). Later content moves follow S1 in `docs/spec/07_cross_cutting_systems.md` §7.1 and are out of this spec.
 > **Decision:** One pure graph in `@kc/domain`, one row catalog in Postgres, one assert function, one contract test that fails when the two catalogs differ. Migrations of the other machines are later issues.
 
@@ -159,7 +159,7 @@ The contract test is what makes step 2 mechanical. A wrong tuple fails CI.
 
 ### 4.2 Statements the contract test understands
 
-The test reads `supabase/migrations/*.sql` in filename order. Inside a recognised statement it strips `--` line comments and `/* */` block comments, then ignores whitespace. Any other statement whose text mentions `public.fsm_state` or `public.fsm_edge` fails the test. State inserts for a machine come before its edge inserts, so the foreign keys hold on a fresh database. The pilot migration is insert-only. A later change to an existing machine is a `delete` of that `machine_id` from both tables, then a full re-insert.
+The test reads `supabase/migrations/*.sql` in filename order. It strips `--` line comments and `/* */` block comments, then looks only for `insert` and `delete` statements whose target is `public.fsm_state` or `public.fsm_edge`. `create table`, grants, comments, and `fsm_assert_transition` itself mention those tables and are ignored, because they are not catalog rows. An `insert` or `delete` that is not one of the four shapes below fails the test. State inserts for a machine come before its edge inserts, so the foreign keys hold on a fresh database. The pilot migration is insert-only. A later change to an existing machine is a `delete` of that `machine_id` from both tables, then a full re-insert.
 
 - `insert into public.fsm_state (machine_id, status) values` … tuples `('id', 'status')` … `;`
 - `insert into public.fsm_edge (machine_id, from_status, to_status, role) values` … tuples `('id', 'from', 'to', 'role')` … `;`
