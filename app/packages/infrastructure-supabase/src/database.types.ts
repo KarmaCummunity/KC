@@ -12395,6 +12395,10 @@ export type Database = {
         }
         Returns: Json
       }
+      account_purge_media_paths: {
+        Args: { p_user_id: string }
+        Returns: string[]
+      }
       accounts_due_for_purge: {
         Args: { p_limit?: number }
         Returns: {

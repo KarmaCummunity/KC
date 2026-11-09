@@ -121,12 +121,17 @@ begin
 
   v_result := public.delete_account_data_for(p.owner);
   perform kc_test.assert_true(v_result ? 'media_paths', 'the purge returns the media paths');
-  perform kc_test.assert_true(
-    not exists (select 1 from public.users where user_id = p.owner), 'the users row is deleted');
-  -- Idempotent: a retry after a partial purge returns an empty result.
+  -- 0699: the users row stays pending_deletion until the auth identity delete cascades it.
+  perform kc_test.assert_eq(
+    (select account_status from public.users where user_id = p.owner), 'pending_deletion',
+    'the users row waits for the identity delete');
+  -- Idempotent: a retry after a partial purge deletes nothing more.
   perform kc_test.assert_eq(
     (public.delete_account_data_for(p.owner) -> 'counts' ->> 'posts')::int, 0,
     'a retry is a no-op');
+  delete from auth.users where id = p.owner;
+  perform kc_test.assert_true(
+    not exists (select 1 from public.users where user_id = p.owner), 'the identity delete removes the users row');
 
   raise notice '✓ purge';
 end $$;
