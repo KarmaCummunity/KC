@@ -83,11 +83,11 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 - `admin_remove_post` (`0452`) refuses `paused` and `expired`; the trigger allows both into `removed_admin`.
 - `admin_remove_listing` (`0666`) stores `paused` / `expired` into `status_before_admin_removal`, whose check (`0097`) rejects them, so the call fails on those posts.
 - `admin_restore_target` (`0666`) always restores to `open` (ignores `status_before_admin_removal`) and keeps a branch on `moderation_status = 'held'`, a value the check does not allow.
-- `mark_giving_handed_over` (`0666`) writes `closed_delivered` without a source-status filter and raises on `expired` / `removed_admin` posts.
+- ~~`mark_giving_handed_over` (`0666`) wrote `closed_delivered` without a source-status filter and raised on `expired` / `removed_admin` posts.~~ ✅ wave 1b-ii (`0683`): closes a live post only; the handoff completes either way; a post under review stays hidden. `post_close_from_handoff` (items) no longer writes the `listings` view.
 - The expired screen calls `rpc_republish_post` (`0155`), which clones only the legacy item columns (no `world_slug`, `details`, `kind_id`); D127 requires a full copy (wave 1b).
 - Items get `expires_at = now() + 30 days` (`0612`, `0666`) while D21 says items never expire and no sweep expires them: after 30 days a paused item cannot resume and never expires.
 - Pause / fulfill / delete RPCs (`0666`) count `time` (event) handoffs as active; the trigger (`0665`) excludes them.
-- Two `owner_complete_offer_with_user` overloads coexist (`0658` with `p_mode`, `0666` without) with different handoff and karma behaviour; the app calls the `0658` one.
+- ~~Two `owner_complete_offer_with_user` overloads coexisted (`0658` with `p_mode`, `0666` without).~~ ✅ wave 1b-ii (`0683`): the unused two-argument overload is dropped.
 - Events never move to `expired` at their date; only food, rides and ride series have expiry writers.
 
 **Listings (G1 gap)**
@@ -100,6 +100,7 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 - `cancel_giving_handoff` (`0666`) accepts event registrations without promoting the waitlist (`event_promote_waitlist`), and resets `availability_status` for items and food but not animals.
 - Items, animals and knowledge reservations get `confirm_by = +24h`, but only rides and housing sweep on it; a stale reservation never lapses and blocks pause / fulfill / delete.
 - `rides_expired_listings_sweep` (`0624`) expires the ride post but leaves its reserved / confirmed bookings live; the food sweep cancels them.
+- ✅ wave 1b-ii (`0683`): the generic handed-over step (`mark_giving_handed_over`) serves the four worlds whose screen offers it (items, food, knowledge, animals); rides, housing and events complete through their own RPCs and windows.
 
 **Account and onboarding**
 - `pending_deletion` exists in SQL (`0549`) and is missing from TS `AccountStatus`, `AccountGateRejectionReason`, the admin user filter and its locale labels; `AccountGateReason` lacks `pending_verification` and `deleted`.
