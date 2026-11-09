@@ -12,7 +12,7 @@ import { defineMachine } from '../machine';
  * - Every outcome is final; a new request is a new row (after the 14-day cooldown of a
  *   rejection).
  *
- * SQL copy: `supabase/migrations/0700_fsm_reports_follow_requests.sql`.
+ * SQL copy: `supabase/migrations/0701_fsm_reports_follow_requests.sql`.
  */
 export const followRequestMachine = defineMachine({
   id: 'follow_request',

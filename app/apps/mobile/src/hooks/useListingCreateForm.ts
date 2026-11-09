@@ -149,8 +149,9 @@ export function useListingCreateForm({
     }
     if (eventChoice.isOrgEvent && !eventChoice.orgId) return { message: t('eventPost.create.orgRequired'), field: 'org' };
     if (!isRides && !city) return { message: t('post.unifiedCreate.errors.cityRequired'), field: 'city' };
-    // An edit keeps the listing's photos untouched, so it passes no count and skips the photo rule.
-    const rule = marketplaceRuleFieldError({ worldSlug, direction, details: submitted, photoCount: editListingId ? undefined : photoCount });
+    // An edit keeps the listing's photos and sub-category, so it passes neither and skips those rules.
+    const creating = editListingId ? {} : { photoCount, subcategoryId: showSubcategory ? subcategoryId : undefined };
+    const rule = marketplaceRuleFieldError({ worldSlug, direction, details: submitted, ...creating });
     if (rule) return { message: t(rule.key), field: fieldForRule(rule.code, submitted) };
     if (isRides && recurrence && recurrence.weekdays.length === 0) {
       return { message: t('rideSeries.errors.weekdaysRequired'), field: 'ride:recurrence' };

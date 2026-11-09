@@ -1,4 +1,4 @@
--- 0700_fsm_reports_follow_requests | Wave 4a of the FSM kernel program (#1989, G61)
+-- 0701_fsm_reports_follow_requests | Wave 4a of the FSM kernel program (#1989, G61)
 --
 -- Two small lifecycles move onto the kernel (0680), with unchanged behavior:
 --
@@ -72,7 +72,7 @@ end;
 $$;
 
 comment on function public.reports_on_status_change() is
-  'FSM wave 4a (0700): reports.status moves follow machine `report`; stamps resolved_at / resolved_by. Raises invalid_report_status_transition | invalid_report_status_target (23514).';
+  'FSM wave 4a (0701): reports.status moves follow machine `report`; stamps resolved_at / resolved_by. Raises invalid_report_status_transition | invalid_report_status_target (23514).';
 
 -- ── 3. Follow requests: every writer follows the graph ─────────────────────────
 create or replace function kc_private.follow_requests_enforce_fsm()
@@ -104,7 +104,7 @@ end;
 $$;
 
 comment on function kc_private.follow_requests_enforce_fsm() is
-  'FSM wave 4a (0700): follow_requests.status moves follow machine `follow_request` in fsm_edge; raises follow_request_transition_invalid (23514) otherwise.';
+  'FSM wave 4a (0701): follow_requests.status moves follow machine `follow_request` in fsm_edge; raises follow_request_transition_invalid (23514) otherwise.';
 
 revoke all on function kc_private.follow_requests_enforce_fsm() from public, anon, authenticated;
 

@@ -44,7 +44,8 @@ describe('listing field specs — per kind', () => {
   });
 
   it('renders the purpose-built fields of each category (docs/spec/07 §7.2)', () => {
-    expect(keysOf('give_food')).toEqual(['food_type', 'expires_at', 'allergens', 'kosher', 'pickup_mode']);
+    // The food type is the world sub-category picker, not a detail field ({{D:food-type-is-subcategory}}, KC#1398).
+    expect(keysOf('give_food')).toEqual(['expires_at', 'allergens', 'kosher', 'pickup_mode']);
     expect(keysOf('request_food')).toEqual(['household_size', 'dietary_needs']);
     // Route, departure, estimated end and seats are rendered by RideCreateSection (D71, D75).
     expect(keysOf('ride_offer')).toEqual(['reward_model', 'cost_share_ils']);
@@ -77,9 +78,10 @@ describe('listing field specs — per kind', () => {
   });
 
   it('narrows options to the server enum', () => {
-    const narrowed = { ...KINDS_BY_WORLD.food![0]!, detailSchema: { properties: { food_type: { enum: ['cooked'] } } } };
-    const [spec] = fieldsForKind(narrowed);
-    expect(spec?.type === 'choice' && spec.options).toEqual(['cooked']);
+    // Food type left the form ({{D:food-type-is-subcategory}}); kosher is the food offer's choice field.
+    const narrowed = { ...KINDS_BY_WORLD.food![0]!, detailSchema: { properties: { kosher: { enum: ['yes'] } } } };
+    const spec = fieldsForKind(narrowed).find((s) => s.key === 'kosher');
+    expect(spec?.type === 'choice' && spec.options).toEqual(['yes']);
   });
 
   it('an unknown kind or an empty schema renders no curated fields', () => {
@@ -114,9 +116,8 @@ describe('listing field specs — values', () => {
   });
 
   it('reports the first missing required field, in render order', () => {
-    expect(firstMissingRequiredField(foodOffer, {})?.key).toBe('food_type');
-    expect(firstMissingRequiredField(foodOffer, { food_type: 'cooked' })?.key).toBe('expires_at');
-    expect(firstMissingRequiredField(foodOffer, { food_type: 'cooked', expires_at: '2030-01-01T10:00:00.000Z' })).toBeNull();
+    expect(firstMissingRequiredField(foodOffer, {})?.key).toBe('expires_at');
+    expect(firstMissingRequiredField(foodOffer, { expires_at: '2030-01-01T10:00:00.000Z' })).toBeNull();
   });
 
   it('drops hidden and empty values on submit but keeps the ride route', () => {
@@ -135,7 +136,6 @@ describe('listing field specs — values', () => {
   it('a filled food offer validates against the server schema', () => {
     const details = detailsForSubmit(foodOffer, {
       ...initialDetailsFor(foodOffer),
-      food_type: 'cooked',
       expires_at: '2030-01-01T10:00:00.000Z',
       allergens: ['milk'],
       kosher: 'yes',

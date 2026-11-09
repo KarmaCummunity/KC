@@ -183,3 +183,30 @@ describe('validateMarketplaceWorldRules — offer photo', () => {
     expect(mapMarketplaceServerError({ message: 'offer_photo_required' })).toBe('offer_photo_required');
   });
 });
+
+// {{D:food-type-is-subcategory}} (KC#1398): a food offer's type is its world sub-category.
+describe('validateMarketplaceWorldRules — food sub-category', () => {
+  const future = { expires_at: '2026-10-18T12:00:00Z' };
+  it('refuses a food offer with no sub-category', () => {
+    expect(
+      validateMarketplaceWorldRules({ worldSlug: 'food', direction: 'give', details: future, photoCount: 1, subcategoryId: null, now }),
+    ).toBe('food_subcategory_required');
+  });
+  it('passes a food offer with a sub-category', () => {
+    expect(
+      validateMarketplaceWorldRules({ worldSlug: 'food', direction: 'give', details: future, photoCount: 1, subcategoryId: 'cat-1', now }),
+    ).toBeNull();
+  });
+  it('never asks a food request or another world for a sub-category', () => {
+    expect(validateMarketplaceWorldRules({ worldSlug: 'food', direction: 'request', details: {}, subcategoryId: null, now })).toBeNull();
+    expect(validateMarketplaceWorldRules({ worldSlug: 'items', direction: 'give', details: {}, photoCount: 1, subcategoryId: null, now })).toBeNull();
+  });
+  it('skips the rule when the caller passes no sub-category (a listing edit)', () => {
+    expect(validateMarketplaceWorldRules({ worldSlug: 'food', direction: 'give', details: future, photoCount: 1, now })).toBeNull();
+  });
+  it('reports the missing expiry before the missing sub-category', () => {
+    expect(
+      validateMarketplaceWorldRules({ worldSlug: 'food', direction: 'give', details: {}, photoCount: 1, subcategoryId: null, now }),
+    ).toBe('food_expiry_required');
+  });
+});

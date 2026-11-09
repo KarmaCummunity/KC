@@ -9,7 +9,7 @@ import { defineMachine } from '../machine';
  * - Both outcomes are final. A dismissal is what counts against the reporter (FR-MOD-010),
  *   so it is never reopened or turned into a confirmation.
  *
- * SQL copy: `supabase/migrations/0700_fsm_reports_follow_requests.sql`.
+ * SQL copy: `supabase/migrations/0701_fsm_reports_follow_requests.sql`.
  */
 export const reportMachine = defineMachine({
   id: 'report',

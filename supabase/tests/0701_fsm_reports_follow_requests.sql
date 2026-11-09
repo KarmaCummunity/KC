@@ -1,4 +1,4 @@
--- supabase/tests/0700_fsm_reports_follow_requests.sql
+-- supabase/tests/0701_fsm_reports_follow_requests.sql
 -- Wave 4a (#1989): reports and follow requests follow the kernel machines `report` and
 -- `follow_request`. A report resolves once; a follow request resolves once, by its parties or by
 -- the server (block cleanup, auto-accept on going public). Runs in a rolled-back transaction.
@@ -82,4 +82,4 @@ end $$;
 
 rollback;
 
-\echo '✓ 0700_fsm_reports_follow_requests.sql passed'
+\echo '✓ 0701_fsm_reports_follow_requests.sql passed'
