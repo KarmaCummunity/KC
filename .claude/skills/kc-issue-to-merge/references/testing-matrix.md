@@ -27,8 +27,16 @@ A change touching several rows needs every row's tests. One behavior is tested o
 2. **Every acceptance criterion maps to at least one test.** List the mapping in the PR's Tests section.
 3. **Happy path + at least one boundary or error case** per new unit (AGENTS.md §5).
 4. **Never weaken a test to pass.** No `.skip`, `.only`, loosened assertion or deleted case. The test-integrity judge in `CI gate` rejects it.
-5. **No real data or secrets in tests.** Seed users and fixtures only.
-6. **Flaky test found?** Do not retry it until green. Open a finding (`references/findings.md`) with the seed and the failure log line.
+5. **A decision that reverses behavior.** Old assertions that encode the old behavior are updated to the new expectation, never deleted. List each one in the PR's Tests section, with the decision that changed it.
+6. **No real data or secrets in tests.** Seed users and fixtures only.
+7. **Flaky test found?** Do not retry it until green. Open a finding (`references/findings.md`) with the seed and the failure log line.
+
+## No local stack
+
+Without Docker there is no local Supabase. In that case:
+- **DB tests run only in CI** (the `backend` lane of `CI gate`). Write them anyway.
+- **Say so in the PR's Tests section** ("DB: written, run by CI only"), and never mark them as run locally.
+- **If a change needs dozens of existing DB suites updated,** split the server half into a child issue rather than push it blind.
 
 ## Levels CI runs for you
 
