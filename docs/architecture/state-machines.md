@@ -54,8 +54,8 @@ Per design spec §4.1, one PR per machine (or per tight family), each with code 
 | **Report** | `reports.status` | open, confirmed_violation, dismissed_no_violation | SQL check + trigger (`0005`), TS `value-objects.ts`, `ReportCaseDetail.ts` | hand-written trigger | **4** |
 | **Follow request** | `follow_requests.status` | pending, accepted, rejected, cancelled | SQL check (`0003`), TS `value-objects.ts`, infra `followRequestMethods.ts` | RLS policies only | **4** |
 | Chat message | `messages.status` | pending, delivered, read | SQL check + trigger (`0004`), TS `value-objects.ts` | hand-written trigger | 7 |
-| Post comment | `post_comments.status` | active, deleted | SQL check (`0250`), `rpc_delete_post_comment` (`0251`) | RPC; no restore, no admin path | 4 |
-| Knowledge topic | `knowledge_topics.status` (+ `merged_into_id`) | proposed, active, merged | SQL check (`0570`), propose / review / merge RPCs (`0570`) | RPCs; approve has no from-guard; `merged` ⇔ `merged_into_id` set | 4 |
+| Post comment | `post_comments.status` | active, deleted | SQL check (`0250`), `rpc_delete_post_comment` (`0251`) | `fsm_assert_transition` (trigger `post_comments_status_fsm`, `0702`); writes only through the definer RPCs; no restore, no admin path | **4b ✅** |
+| Knowledge topic | `knowledge_topics.status` (+ `merged_into_id`) | proposed, active, merged | SQL check (`0570`), propose / review / merge RPCs (`0570`) | `fsm_assert_transition` (trigger `knowledge_topics_status_fsm`, `0702`); approving an active topic is a no-op; `merged` ⇔ `merged_into_id` set | **4b ✅** |
 
 ### 3.3 Organizations, volunteering, money, automation
 
@@ -208,7 +208,7 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 - Operator cases: only `open` is ever written; `assigned_operator_id` is never set (§7 question 5).
 - Ingestion runs are inserted as `completed`; `running` and `failed` are never written.
 - Entity resolution: `merged` is unreachable and `dismissed` has no writer; `undo_merge` stamps `undone_at` without restoring the merged actor.
-- Knowledge topics: approve has no from-guard (active → active).
+- ~~Knowledge topics: approve has no from-guard (active → active).~~ ✅ wave 4b (`0702`): a no-op that keeps `approved_by`.
 - Match v1: a `find_matches` re-run moves accepted / dismissed back to suggested; the last WhatsApp response wins.
 - Ride emergencies: `resolved_at` has no writer.
 - WhatsApp consent: the admin block moves to `opted_out` without stamping `consent_updated_at`; only a keyword returns to `opted_in`.
