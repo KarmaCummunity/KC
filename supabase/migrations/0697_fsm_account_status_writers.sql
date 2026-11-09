@@ -9,7 +9,8 @@
 -- The body is the 0452 one, verbatim except the two places marked `0697`.
 --
 -- `admin_search_users` (0149) filters by the graph's states: `pending_deletion` instead of `deleted`,
--- so the admin status chip for accounts under deletion works.
+-- so the admin status chip for accounts under deletion works. It also reads `last_seen_at` from
+-- `devices`: 0149 read a `users` column that does not exist, so every admin user search failed.
 
 CREATE OR REPLACE FUNCTION public.reports_after_insert_apply_effects()
  RETURNS trigger
@@ -231,7 +232,7 @@ begin
 end;
 $function$;
 
--- ── admin_search_users (0149): the graph's states ─────────────────────────────
+-- ── admin_search_users (0149): the graph's states, and a working last_seen_at ─
 create or replace function public.admin_search_users(
   p_query  text default null,
   p_status text default null,
@@ -282,14 +283,19 @@ begin
     u.account_status,
     u.city_name,
     u.created_at,
-    u.last_seen_at,
+    seen.last_seen_at,
     v_total as total_count
   from public.users u
+  -- last_seen_at lives on public.devices (the most recent device touch), not on users; 0149
+  -- read a users column that does not exist, so every search failed (same fix as 0173).
+  cross join lateral (
+    select max(d.last_seen_at) as last_seen_at from public.devices d where d.user_id = u.user_id
+  ) seen
   where (v_q       is null or u.display_name ilike '%' || v_q || '%' or u.share_handle ilike '%' || v_q || '%')
     and (p_status  is null or u.account_status = p_status)
   order by
     case u.account_status when 'active' then 0 when 'pending_verification' then 1 else 2 end,
-    u.last_seen_at desc nulls last,
+    seen.last_seen_at desc nulls last,
     u.created_at desc
   limit v_lim offset v_off;
 end;
