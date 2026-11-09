@@ -18,11 +18,13 @@ begin
     end if;
   end loop;
 
-  -- No policy on a hot table keeps a bare auth.uid() call.
+  -- No policy on a hot table keeps a bare auth.uid() call, except the one the migration skips
+  -- (its recipients check recurses once the policy holds a sublink).
   select string_agg(tablename || '.' || policyname, ', ') into v_bare
   from pg_policies
   where schemaname = 'public'
     and tablename in ('posts', 'chats', 'messages', 'users', 'follow_edges', 'saved_posts')
+    and policyname <> 'posts_delete_self_unlinked'
     and concat_ws(' ', qual, with_check) ~* '(?<!select )auth\.uid\(\)(?! as uid)';
   if v_bare is not null then
     raise exception 'policies with a bare auth.uid(): %', v_bare;

@@ -11,6 +11,10 @@ declare
   -- Tables whose policies are on the feed / chat / profile hot paths.
   c_hot_tables constant text[] :=
     array['posts', 'chats', 'messages', 'users', 'follow_edges', 'saved_posts'];
+  -- Left untouched on purpose: its `not exists (select ... from recipients ...)` check recurses
+  -- through the RLS policies of posts once the policy also holds an auth.uid() sublink
+  -- (infinite recursion on DELETE). Fixing it needs a security-definer helper; tracked apart.
+  c_skipped_policies constant text[] := array['posts_delete_self_unlinked'];
   -- A call that is NOT already the deparsed initplan form `( SELECT auth.uid() AS uid)`.
   c_bare_call constant text := '(?<!select )auth\.uid\(\)(?! as uid)';
   v_policy record;
@@ -21,6 +25,7 @@ begin
     from pg_policies
     where schemaname = 'public'
       and tablename = any (c_hot_tables)
+      and policyname <> all (c_skipped_policies)
       and concat_ws(' ', qual, with_check) ~* c_bare_call
   loop
     v_sql := format('alter policy %I on public.%I', v_policy.policyname, v_policy.tablename);
