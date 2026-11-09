@@ -6,11 +6,15 @@ begin;
 
 do $$
 begin
-  -- The catalog holds the S1 graph: 7 states, 25 edges, none role-restricted.
+  -- The catalog holds the S1 states, none of its edges role-restricted. The exact edge set
+  -- is locked against `postMachine` by the catalog contract test, so no count is pinned here
+  -- (later waves add edges, e.g. 0682's restore edges).
   perform kc_test.assert_eq(
     (select count(*) from public.fsm_state where machine_id = 'post'), 7::bigint, 'post has 7 states');
-  perform kc_test.assert_eq(
-    (select count(*) from public.fsm_edge where machine_id = 'post'), 25::bigint, 'post has 25 edges');
+  perform kc_test.assert_true(exists (
+    select 1 from public.fsm_edge
+     where machine_id = 'post' and from_status = 'open' and to_status = 'paused'),
+    'post has the open -> paused edge');
   perform kc_test.assert_eq(
     (select count(*) from public.fsm_edge where machine_id = 'post' and role <> ''), 0::bigint,
     'post edges are not role-restricted yet');
