@@ -5,6 +5,7 @@ import { RADIUS_OPTIONS_KM, type LocationFilter } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { CityPicker } from '../CityPicker';
 import { Chip } from '../ui/Chip';
+import { ChipSelectRow } from '../filterKit/ChipSelectRow';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 interface LocationFilterSectionProps {
@@ -53,7 +54,7 @@ export function LocationFilterSection({ value, onChange }: LocationFilterSection
       {value && (
         <>
           <Text style={styles.subLabel}>{t('filters.radius')}</Text>
-          <View style={styles.row}>
+          <ChipSelectRow testID="location-radius-chips">
             {RADIUS_OPTIONS_KM.map((km) => (
               <Chip
                 size="sm"
@@ -63,7 +64,7 @@ export function LocationFilterSection({ value, onChange }: LocationFilterSection
                 onPress={() => handleRadius(km)}
               />
             ))}
-          </View>
+          </ChipSelectRow>
         </>
       )}
     </View>
@@ -76,5 +77,4 @@ const useLocationFilterSectionStyles = makeUseStyles(({ colors }) => ({
   title: { ...typography.label, color: colors.textPrimary, textAlign: rtlTextAlignStart },
   subLabel: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
   clearText: { ...typography.caption, ...typography.medium, color: colors.primary },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'flex-end' },
 }));
