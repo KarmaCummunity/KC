@@ -1,6 +1,9 @@
 // A seat booking on a ride offer (rides world on the generic handoff stage).
 // Spec: docs/spec/05_giving_worlds.md §5.3 step 3 — the driver sees every booking and
 // approves or declines each (D73); unapproved bookings expire (D96). Gap G47.
+// Status moves follow the `ride_booking` kernel machine (fsm/machines/rideBooking.ts, 0694).
+import { canTransition } from '../fsm/machine';
+import { rideBookingMachine } from '../fsm/machines/rideBooking';
 
 /** Active booking states on a ride offer. */
 export const RIDE_BOOKING_STATUSES = ['reserved', 'confirmed', 'handed_over'] as const;
@@ -51,11 +54,58 @@ export function isRideBookingListStatus(value: string): value is RideBookingList
 
 const REINSTATE_CANCEL_REASONS = new Set(['declined', 'driver_cancelled']);
 
-/** True when the driver may call `reinstate_ride_booking` for this list row. */
+/**
+ * True when this cancelled row is one the driver may bring back: they declined it or cancelled
+ * it themselves. Whether the ride can take it back now is `rideReinstateBlocker`.
+ */
 export function canReinstateRideBooking(booking: RideBooking): boolean {
   return booking.status === RIDE_BOOKING_CANCELLED_STATUS
     && booking.cancelReason != null
     && REINSTATE_CANCEL_REASONS.has(booking.cancelReason);
+}
+
+/** The ride a driver's booking list belongs to, as the reinstate and completion rules read it. */
+export interface RideBookingRideContext {
+  /** The ride post's listing status (`open`, `closed`, …). */
+  readonly listingStatus: string;
+  /** Departure (ISO), or null when the ride has none. */
+  readonly departsAt: string | null;
+  /** Seats the driver offered. */
+  readonly capacity: number;
+  /** Every booking on the ride, the target included. */
+  readonly bookings: readonly RideBooking[];
+}
+
+/** Why `reinstate_ride_booking` would refuse; the codes are the RPC's own (0667). */
+export type RideReinstateBlocker =
+  | 'listing_not_available'
+  | 'invalid_status'
+  | 'already_booked'
+  | 'ride_departed'
+  | 'ride_seats_exhausted';
+
+/**
+ * The first reason `reinstate_ride_booking` would refuse this row, in the RPC's order, or null
+ * when the driver can reinstate it now: the ride is open, the row was declined or driver-cancelled,
+ * the passenger holds no other live booking on it, the ride has not departed, and the seats fit.
+ */
+export function rideReinstateBlocker(
+  booking: RideBooking,
+  ride: RideBookingRideContext,
+  now: Date = new Date(),
+): RideReinstateBlocker | null {
+  if (ride.listingStatus !== 'open') return 'listing_not_available';
+  if (!canReinstateRideBooking(booking)) return 'invalid_status';
+  const otherLiveBooking = ride.bookings.some((b) =>
+    b.handoffId !== booking.handoffId
+    && b.recipientId === booking.recipientId
+    && (b.status === 'reserved' || b.status === 'confirmed'));
+  if (otherLiveBooking) return 'already_booked';
+  const departs = ride.departsAt ? Date.parse(ride.departsAt) : Number.NaN;
+  if (Number.isFinite(departs) && departs <= now.getTime()) return 'ride_departed';
+  // A cancelled row holds no seats, so the summary's free seats are what it would take.
+  if (booking.seats > summarizeRideSeats(ride.capacity, ride.bookings).free) return 'ride_seats_exhausted';
+  return null;
 }
 
 /** True when `seats` is a whole number a single booking may request. */
@@ -84,19 +134,10 @@ export function summarizeRideSeats(capacity: number, bookings: readonly RideBook
 }
 
 /**
- * Seats not yet committed to confirmed or completed bookings.
- * A driver cannot approve a waiting booking whose requested seats exceed this value.
- */
-export function getRideRemainingCapacity(capacity: number, bookings: readonly RideBooking[]): number {
-  const committed = bookings
-    .filter((b) => b.status === 'confirmed' || b.status === 'handed_over')
-    .reduce((sum, b) => sum + b.seats, 0);
-  return Math.max(0, Math.max(0, capacity) - committed);
-}
-
-/**
- * True when the target booking is waiting (reserved) and its requested seats do not
- * exceed remaining ride capacity (prevents accepting beyond capacity).
+ * True when the target booking is waiting (reserved) and its seats fit beside every other
+ * booking that holds seats — reserved, confirmed or completed — as `confirm_ride_booking`
+ * counts them (`post_handoff_seats_taken`, 0558). Waiting bookings can outnumber the seats
+ * after the driver lowers them.
  */
 export function canApproveRideBooking(
   capacity: number,
@@ -107,7 +148,8 @@ export function canApproveRideBooking(
     ? bookings.find((b) => b.handoffId === targetOrId)
     : targetOrId;
   if (!target || target.status !== 'reserved') return false;
-  return target.seats <= getRideRemainingCapacity(capacity, bookings);
+  const others = bookings.filter((b) => b.handoffId !== target.handoffId);
+  return target.seats <= summarizeRideSeats(capacity, others).free;
 }
 
 /**
@@ -127,26 +169,37 @@ export function canBookRideSeats(
 export type RideBookingAction = 'approve' | 'decline' | 'cancel' | 'complete' | 'rate';
 
 /**
- * Whether the action is permitted on a booking in this status.
+ * The status each driver action moves a booking to. Two actions share a target, so they also
+ * name their only source: approving is the waiting booking's move to confirmed (a cancelled one
+ * comes back through reinstate), and declining is the waiting booking's cancel.
+ */
+const ACTION_MOVES: Readonly<Record<Exclude<RideBookingAction, 'rate'>, {
+  readonly to: RideBookingListStatus;
+  readonly onlyFrom?: RideBookingListStatus;
+}>> = {
+  approve: { to: 'confirmed', onlyFrom: 'reserved' },
+  decline: { to: 'cancelled', onlyFrom: 'reserved' },
+  cancel: { to: 'cancelled' },
+  complete: { to: 'handed_over' },
+};
+
+/**
+ * Whether the action is permitted on a booking in this status: its move must be an edge of the
+ * `ride_booking` machine (a same-status write is not an action). Rating is not a move: a
+ * completed booking is rated once.
  */
 export function canPerformBookingAction(
-  status: RideBookingStatus | 'cancelled',
+  status: RideBookingListStatus,
   action: RideBookingAction,
   ratedByMe = false,
 ): boolean {
-  switch (action) {
-    case 'approve':
-    case 'decline':
-      return status === 'reserved';
-    case 'cancel':
-      return status === 'reserved' || status === 'confirmed';
-    case 'complete':
-      return status === 'confirmed' || status === 'reserved';
-    case 'rate':
-      return status === 'handed_over' && !ratedByMe;
-    default:
-      return false;
-  }
+  if (action === 'rate') return status === 'handed_over' && !ratedByMe;
+  const move = ACTION_MOVES[action];
+  // An action outside the union (an untyped caller) is never permitted.
+  if (move === undefined) return false;
+  if (move.onlyFrom !== undefined && status !== move.onlyFrom) return false;
+  const answer = canTransition(rideBookingMachine, status, move.to);
+  return answer.ok && answer.changed;
 }
 
 /**
@@ -161,4 +214,13 @@ export function isRideTripCompletable(
   if (Number.isNaN(departsAt)) return true;
   const oneHourBefore = departsAt - 60 * 60 * 1000;
   return now.getTime() >= oneHourBefore;
+}
+
+/** True when the driver can complete this booking's trip now (`complete_ride_trip`, 0667). */
+export function canCompleteRideBooking(
+  booking: RideBooking,
+  departsAtIso: string | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  return canPerformBookingAction(booking.status, 'complete') && isRideTripCompletable(departsAtIso, now);
 }

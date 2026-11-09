@@ -110,7 +110,8 @@ export function GivingHandoffActions({ detail }: Props) {
         </Text>
       ) : null}
 
-      {isOwner && !h && !detail.feedPostId ? (
+      {/* `owner_complete_offer_with_user` refuses a post that is not open (0658). */}
+      {isOwner && !h && !detail.feedPostId && detail.listingStatus === 'open' ? (
         <OwnerAssignUserButton targetId={detail.feedPostId ?? detail.listingId} worldSlug={detail.worldSlug} />
       ) : null}
 

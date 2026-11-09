@@ -33,6 +33,7 @@ export const rideBooking = {
   cancelBooking: 'ביטול ההזמנה',
   loadError: 'לא הצלחנו לטעון את ההזמנות. הקישו כדי לנסות שוב.',
   exceedsCapacity: 'אי אפשר לאשר: חורג ממספר המקומות הפנויים',
+  completeFromHourBefore: 'אפשר לסיים את הנסיעה משעה לפני היציאה',
   departed: 'הנסיעה כבר יצאה לדרך',
   full: 'לא נשארו מקומות פנויים בנסיעה זו',
   chat: 'הודעה',
