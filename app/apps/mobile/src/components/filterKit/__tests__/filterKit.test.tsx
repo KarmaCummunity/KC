@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FilterButton } from '../FilterButton';
 import { FilterSearchBar } from '../FilterSearchBar';
+import { ChipSelectRow } from '../ChipSelectRow';
 import { FilterChipRow } from '../FilterChipRow';
 import { FilterSection } from '../FilterSection';
 import { SortSection } from '../SortSection';
@@ -105,13 +106,29 @@ describe('filterKit — FilterSearchBar', () => {
   });
 });
 
+describe('filterKit — ChipSelectRow', () => {
+  it('expands into a wrapped layout when the expand control is pressed', () => {
+    render(
+      <ChipSelectRow testID="chip-select">
+        <span data-testid="chip-a">A</span>
+        <span data-testid="chip-b">B</span>
+      </ChipSelectRow>,
+    );
+    expect(screen.getByTestId('chip-select-expand')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('chip-select-expand'));
+    expect(screen.getByTestId('chip-select-collapse')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('chip-select-collapse'));
+    expect(screen.getByTestId('chip-select-expand')).toBeTruthy();
+  });
+});
+
 describe('filterKit — FilterChipRow', () => {
   const options = [
     { value: 'opt1', label: 'Option 1' },
     { value: 'opt2', label: 'Option 2' },
   ];
 
-  it('renders inline wrapping row and handles selection', () => {
+  it('renders compact row with expand and handles selection', () => {
     const onChange = vi.fn();
     render(
       <FilterChipRow

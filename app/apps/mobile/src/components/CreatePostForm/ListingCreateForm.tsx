@@ -5,12 +5,10 @@
 import React, { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { MAX_MEDIA_ASSETS } from '@kc/domain';
 import { spacing, Text, useTheme } from '@kc/ui';
 import { TextField } from '../ui/TextField';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
-import { pickListingImages } from '../../services/listingImageUpload';
 import type { CreateDirection } from '../../lib/unifiedCreate/createCategories';
 import { useListingCreateForm } from '../../hooks/useListingCreateForm';
 import { useScrollToListingProblem } from '../../hooks/useScrollToListingProblem';
@@ -22,7 +20,7 @@ import { WorldSubcategoryPicker } from '../marketplace/WorldSubcategoryPicker';
 import { AdditionalWorldsPicker } from './AdditionalWorldsPicker';
 import { ListingDetailFields } from './ListingDetailFields';
 import { ListingFieldFrame, ListingFieldProblemContext } from './ListingFieldFrame';
-import { PhotoPicker } from './PhotoPicker';
+import { ListingFormPhotoPicker } from './ListingFormPhotoPicker';
 import { ListingKindChooser } from './ListingKindChooser';
 import { KindGate } from './ListingKindGate';
 import { TimeOfferKindChooser } from './TimeOfferKindChooser';
@@ -45,6 +43,8 @@ interface Props {
   readonly onPublishActionChange: (action: (() => void) | null, loading: boolean) => void;
   readonly editListingId?: string | null;
   readonly onSaved?: () => void;
+  /** Republish (D127): start from this listing minus its dates and publish a new listing. */
+  readonly republishFromListingId?: string | null;
 }
 
 export function ListingCreateForm({
@@ -59,6 +59,7 @@ export function ListingCreateForm({
   onPublishActionChange,
   editListingId = null,
   onSaved,
+  republishFromListingId = null,
 }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -72,6 +73,7 @@ export function ListingCreateForm({
     onPublished,
     editListingId,
     onSaved,
+    republishFromListingId,
   });
   const publishRef = useRef(form.publish);
   publishRef.current = form.publish;
@@ -98,19 +100,12 @@ export function ListingCreateForm({
     return () => onPublishActionChange(null, false);
   }, [form.busy, onPublishActionChange]);
 
-  const addPhotos = async () => {
-    const next = await pickListingImages(form.photos.length);
-    if (next.length > 0) form.setPhotos((prev) => [...prev, ...next].slice(0, MAX_MEDIA_ASSETS));
-  };
-
   const photoPicker = (
-    <PhotoPicker
-      uploads={form.photos.map((p) => ({ path: p.uri, previewUri: p.uri }))}
-      isUploading={false}
-      uploadingCount={0}
-      required={false}
-      onAdd={() => void addPhotos()}
-      onRemove={(uri) => form.setPhotos((prev) => prev.filter((p) => p.uri !== uri))}
+    <ListingFormPhotoPicker
+      photos={form.photos}
+      setPhotos={form.setPhotos}
+      carriedMediaPaths={form.carriedMediaPaths}
+      onRemoveCarried={form.removeCarriedMedia}
     />
   );
 

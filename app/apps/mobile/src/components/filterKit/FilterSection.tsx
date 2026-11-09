@@ -32,7 +32,6 @@ export function FilterSection<T extends string | number>(props: FilterSectionPro
         testID={undefined}
         testIDPrefix={testID}
         showAllChip={showAllChip}
-        style={styles.row}
       />
     </View>
   );
@@ -41,5 +40,4 @@ export function FilterSection<T extends string | number>(props: FilterSectionPro
 const useFilterSectionStyles = makeUseStyles(({ colors }) => ({
   section: { gap: spacing.xs, marginBottom: spacing.md },
   title: { ...typography.label, color: colors.textPrimary, textAlign: rtlTextAlignStart },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'flex-end' },
 }));

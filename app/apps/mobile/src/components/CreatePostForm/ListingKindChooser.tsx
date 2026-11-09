@@ -7,6 +7,7 @@ import { Text } from '@kc/ui';
 import type { ListingKindOption } from '@kc/domain';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { Chip } from '../ui/Chip';
+import { ChipSelectRow } from '../filterKit/ChipSelectRow';
 
 interface Props {
   readonly choices: readonly ListingKindOption[];
@@ -23,7 +24,7 @@ export function ListingKindChooser({ choices, selectedKindId, onChoose, disabled
   return (
     <View style={styles.section} testID="listing-kind-chooser">
       <Text style={styles.sectionLabel}>{t('post.unifiedCreate.kindLabel')}</Text>
-      <View style={styles.chipWrap}>
+      <ChipSelectRow testID="listing-kind-chooser-chips">
         {choices.map((k) => (
           <Chip
             key={k.kindId}
@@ -34,7 +35,7 @@ export function ListingKindChooser({ choices, selectedKindId, onChoose, disabled
             disabled={disabled}
           />
         ))}
-      </View>
+      </ChipSelectRow>
     </View>
   );
 }

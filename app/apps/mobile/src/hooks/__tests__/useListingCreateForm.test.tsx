@@ -5,7 +5,7 @@ import type { ListingKindOption } from '@kc/domain';
 import type { PropsWithChildren } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const { repo, auth, upload, track, activation, remember } = vi.hoisted(() => ({
-  repo: { listKindsForWorld: vi.fn(), createListing: vi.fn() },
+  repo: { listKindsForWorld: vi.fn(), createListing: vi.fn(), getListingDetail: vi.fn(), updateMyListing: vi.fn() },
   auth: { current: 'u1' as string | null }, upload: vi.fn(), track: vi.fn(), activation: vi.fn(), remember: vi.fn(),
 }));
 vi.hoisted(() => { (globalThis as { __DEV__?: boolean }).__DEV__ = false; });
@@ -67,6 +67,50 @@ describe('useListingCreateForm', () => {
     expect(result.current.canPublish).toBe(false);
     await act(() => result.current.publish());
     expect(repo.createListing).not.toHaveBeenCalled();
+  });
+});
+
+describe('republish an expired listing (D127)', () => {
+  const source = {
+    listingId: 'old-1', ownerId: 'u1', worldSlug: 'food', kindSlug: 'give_food', direction: 'give', cityId: 'city-1',
+    details: { food_type: 'cooked', expires_at: '2026-11-01T10:00:00Z' },
+    media: [{ storagePath: 'u1/b/1.jpg', sortOrder: 1 }, { storagePath: 'u1/b/0.jpg', sortOrder: 0 }],
+  };
+  beforeEach(() => {
+    vi.clearAllMocks();
+    auth.current = 'u1';
+    repo.listKindsForWorld.mockResolvedValue([kind]);
+    repo.createListing.mockResolvedValue('new-1');
+    repo.getListingDetail.mockResolvedValue(source);
+  });
+
+  it('starts from the source minus its dates and publishes a NEW listing with its photos', async () => {
+    const onPublished = vi.fn();
+    const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'food', direction: 'give', title: 'Soup', summary: '', onPublished, republishFromListingId: 'old-1' }), { wrapper });
+    await waitFor(() => expect(result.current.details).toEqual({ food_type: 'cooked' }));
+    expect(result.current.city?.id).toBe('city-1');
+    expect(result.current.carriedMediaPaths).toEqual(['u1/b/0.jpg', 'u1/b/1.jpg']);
+    act(() => result.current.setDetail('expires_at', '2099-11-20T10:00:00Z'));
+    await act(() => result.current.publish());
+    expect(repo.updateMyListing).not.toHaveBeenCalled();
+    const payload = repo.createListing.mock.calls[0]![0];
+    expect(payload.details).toEqual({ food_type: 'cooked', expires_at: '2099-11-20T10:00:00Z' });
+    expect(payload.mediaPaths).toEqual(['u1/b/0.jpg', 'u1/b/1.jpg']);
+    expect(onPublished).toHaveBeenCalledWith('new-1');
+  });
+
+  it('keeps edit mode on the source with its dates and saves through updateMyListing', async () => {
+    const onSaved = vi.fn();
+    // An open listing being edited: its expiry is still ahead.
+    const open = { ...source, details: { food_type: 'cooked', expires_at: '2099-01-01T10:00:00Z' } };
+    repo.getListingDetail.mockResolvedValue(open);
+    const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'food', direction: 'give', title: 'Soup', summary: '', onPublished: vi.fn(), editListingId: 'old-1', onSaved }), { wrapper });
+    await waitFor(() => expect(result.current.details).toEqual(open.details));
+    expect(result.current.carriedMediaPaths).toEqual([]);
+    await act(() => result.current.publish());
+    expect(repo.createListing).not.toHaveBeenCalled();
+    expect(repo.updateMyListing).toHaveBeenCalledWith('old-1', expect.objectContaining({ details: open.details }));
+    expect(onSaved).toHaveBeenCalled();
   });
 });
 
