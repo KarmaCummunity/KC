@@ -79,11 +79,10 @@ async function publishAs(user: Credentials, journey: WorldJourney): Promise<{ li
 /** The handoff row as `user` sees it (participant-only RLS); `null` when none exists. */
 async function handoffAs(user: Credentials, listingId: string): Promise<HandoffRow | null> {
   const { token } = await tokenFor(user);
-  const rows = await rest<HandoffRow[]>(
-    token,
-    `giving_handoffs?select=handoff_id,status,owner_id,recipient_id&listing_id=eq.${listingId}&order=reserved_at.desc&limit=1`,
-  );
-  return rows[0] ?? null;
+  // The handoff record lives on the post since G1 (post_handoffs, 0620; giving_handoffs is no
+  // longer written after 0666), so read it through the RPC the app itself uses.
+  const row = await rest<HandoffRow | null>(token, 'rpc/get_listing_handoff', { method: 'POST', body: { p_listing_id: listingId } });
+  return row ?? null;
 }
 
 async function openAs(browser: Browser, storageState: string): Promise<{ ctx: BrowserContext; page: Page }> {
