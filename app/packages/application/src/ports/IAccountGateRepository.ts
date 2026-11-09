@@ -1,4 +1,6 @@
 export type AccountGateReason =
+  /** The phone or email is not verified yet. */
+  | 'pending_verification'
   | 'banned'
   | 'suspended_admin'
   | 'suspended_for_false_reports'
