@@ -4,15 +4,9 @@
 // the time launch flag is off the world stays a portal (D60).
 import React from 'react';
 import { WorldMarketplaceHub } from '../../../../src/components/giving/WorldMarketplaceHub';
-import { worldSubScreens } from '../../../../src/components/giving/worldSubScreens';
+import { WORLD_CHROME_BY_SLUG } from '../../../../src/components/giving/worldChromeRegistry';
 import { TimeOpportunitiesSection } from '../../../../src/components/giving/time/TimeOpportunitiesSection';
 import { WorldLaunchGateByFlag } from '../../../../src/components/worlds/WorldLaunchGate';
-
-const TIME_SUB_SCREENS = worldSubScreens('/(tabs)/donations/time/handoffs', [
-  { labelKey: 'timeVolunteer.myShiftsLink', path: '/(tabs)/donations/time/my-shifts', testID: 'time-my-shifts' },
-  { labelKey: 'timeVolunteer.organizerLink', path: '/(tabs)/donations/time/organizer', testID: 'time-organizer' },
-  { labelKey: 'timeVolunteer.contactKcLink', path: '/(tabs)/donations/time/support', testID: 'time-contact-kc' },
-]);
 
 export default function TimeWorldScreen() {
   return (
@@ -22,7 +16,7 @@ export default function TimeWorldScreen() {
         icon="time-outline"
         introKey="timeVolunteer.hubIntro"
         linksCategory="time"
-        subScreens={TIME_SUB_SCREENS}
+        subScreens={WORLD_CHROME_BY_SLUG.time.subScreens}
         headerExtra={<TimeOpportunitiesSection />}
       />
     </WorldLaunchGateByFlag>
