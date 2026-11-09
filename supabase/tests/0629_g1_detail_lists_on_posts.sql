@@ -7,7 +7,8 @@ begin;
 create temp table personas as
 select kc_test.create_user('dl_owner')    as owner,
        kc_test.create_user('dl_viewer')   as viewer,
-       kc_test.create_user('dl_mentor')   as mentor;
+       kc_test.create_user('dl_mentor')   as mentor,
+       kc_test.create_user('dl_pager')    as pager;
 
 -- Knowledge publishes only for a verified identity (worlds.requires_verification).
 update public.users set verified_at = now() where user_id = (select mentor from personas);
@@ -62,7 +63,11 @@ begin
 end;
 $$;
 
-/** list_my_listings as of 0413, its rows as one ordered JSON array. */
+/**
+ * list_my_listings as of 0413, its rows as one ordered JSON array. The kind join sits inside the
+ * paged query, as it does in the function: since 0667 `listings` is a view over `posts`, a post
+ * with no kind is a row the join drops, and a limit taken first would return a short page (#2004).
+ */
 create function pg_temp.old_my_listings(p_limit int, p_offset int, p_cursor_updated_at timestamptz, p_cursor_id uuid)
 returns jsonb
 language sql
@@ -70,16 +75,16 @@ stable
 as $$
   select coalesce(jsonb_agg(to_jsonb(q) order by q.ord), '[]'::jsonb) from (
     select row_number() over (order by l.updated_at desc, l.listing_id desc) as ord,
-           l.listing_id, l.world_slug, lk.slug, l.direction, l.status, l.title,
+           l.listing_id, l.world_slug, l.kind_slug as slug, l.direction, l.status, l.title,
            l.summary, l.urgency_level, l.availability_status, l.updated_at
-      from (select l.* from public.listings l
+      from (select l.*, lk.slug as kind_slug from public.listings l
+              join public.listing_kinds lk on lk.kind_id = l.kind_id
              where l.owner_id = auth.uid()
                and l.status <> 'removed_admin'
                and (p_cursor_id is null or (l.updated_at, l.listing_id) < (p_cursor_updated_at, p_cursor_id))
              order by l.updated_at desc, l.listing_id desc
              limit least(greatest(coalesce(p_limit, 50), 1), 100)
              offset case when p_cursor_id is null then greatest(coalesce(p_offset, 0), 0) else 0 end) l
-      join public.listing_kinds lk on lk.kind_id = l.kind_id
   ) q;
 $$;
 
@@ -292,6 +297,40 @@ begin
   perform public.fulfill_my_listing(v_ride);
   perform public.resume_my_listing(v_direct);
   perform pg_temp.assert_same('fulfilled');
+end $$;
+
+-- ── T2 #2004: a post with no kind sits inside the keyset page, every run ────────────────────────
+-- Fixed listing ids make the order deterministic; all five share one updated_at (one transaction).
+do $$
+declare
+  p personas;
+  v_kind public.listing_kinds.kind_id%type := kc_test.listing_kind_id('items', 'give_item');
+  v_ids uuid[] := array['00000000-0000-4000-8000-000000002005', '00000000-0000-4000-8000-000000002004',
+                        '00000000-0000-4000-8000-000000002003', '00000000-0000-4000-8000-000000002002',
+                        '00000000-0000-4000-8000-000000002001']::uuid[];
+  v_first jsonb;
+  v_cursor_at timestamptz;
+  v_cursor_id uuid;
+begin
+  select * into p from personas;
+  perform kc_test.act_as(p.pager);
+  insert into public.posts (post_id, owner_id, type, title, description, category, city, street, street_number, item_condition, urgency_level, kind_id)
+  select t.id, p.pager, 'Give', 'item ' || t.ord, 'solid oak', 'Furniture', 'tel-aviv', 'Herzl', '1', 'Good', 1::smallint,
+         case when t.ord = 3 then null else v_kind end
+    from unnest(v_ids) with ordinality as t(id, ord);
+
+  v_first := pg_temp.old_my_listings(2, 0, null, null);
+  perform kc_test.assert_eq(jsonb_array_length(v_first), 2, 'T2: the first page is full');
+  v_cursor_at := (v_first -> 1 ->> 'updated_at')::timestamptz;
+  v_cursor_id := (v_first -> 1 ->> 'listing_id')::uuid;
+  perform kc_test.assert_eq(v_cursor_id, v_ids[2], 'T2: the cursor is the second listing');
+
+  perform kc_test.assert_eq(array(select r.listing_id from public.list_my_listings(2, 0, v_cursor_at, v_cursor_id) r)::text,
+    array[v_ids[4], v_ids[5]]::text, 'T2: the keyset page skips the kind-less post and stays full');
+  perform kc_test.assert_eq(pg_temp.new_my_listings(2, 0, v_cursor_at, v_cursor_id)::text,
+    pg_temp.old_my_listings(2, 0, v_cursor_at, v_cursor_id)::text, 'T2: keyset page equals the oracle');
+  perform kc_test.assert_eq(pg_temp.new_my_listings(2, 2, null, null)::text,
+    pg_temp.old_my_listings(2, 2, null, null)::text, 'T2: offset page equals the oracle');
 end $$;
 
 rollback;
