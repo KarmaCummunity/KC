@@ -1855,7 +1855,7 @@ Owner rules that go with it:
 
 **Affected.** `app/packages/domain/src/fsm/**`, `app/packages/infrastructure-supabase/src/fsm/__tests__/**`, `supabase/migrations/0680_fsm_catalog.sql`, `supabase/tests/0680_fsm_catalog.sql`, `.github/workflows/ci-backend.yml`, `docs/superpowers/specs/2026-11-09-fsm-kernel-design.md`.
 
-## {{ENG:issue-to-merge-skill}} — One agent-agnostic skill takes an issue from claim to merge (2026-11-09)
+## D-227 — One agent-agnostic skill takes an issue from claim to merge (2026-11-09)
 
 **Decision.** Every agent (Claude Code, Cursor, Codex, Antigravity, the KC bot) works an issue through one skill, [`.claude/skills/kc-issue-to-merge/`](../../.claude/skills/kc-issue-to-merge/SKILL.md): pick (the issue given, else the oldest issue at the highest `priority:*` label that is not claimed, blocked or awaiting triage), de-duplicate, claim, define and label, plan a test matrix, implement test-first, open findings outside the scope as issues, open a ready PR, and drive it until it merges into `dev`. One run takes one issue. Technical gaps in an issue (acceptance criteria derivable from the spec, test plan, labels) are filled by the agent in a visible `Filled in by agent:<x>` section; product questions (a spec contradiction, unspecified user-visible behavior) block the issue with one question and a recommendation for the PM. Findings carry `found-by-agent` + `needs-triage` and stay out of the agent queue until the PM removes `needs-triage`. All GitHub calls are `gh api` REST, so the skill runs where GraphQL is blocked. The process labels it relies on are declared in `sync-agent-labels.yml`, and `agent:claude` joins the claim and opened-by label sets.
 
