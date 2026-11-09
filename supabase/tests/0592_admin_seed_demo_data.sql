@@ -1,6 +1,6 @@
 -- supabase/tests/0592_admin_seed_demo_data.sql | 0592 (FR-ADMIN-031): restore demo data from the portal.
 -- Access control (super admin only), the dev-marker guard, password rules, the seeded shape
--- (200 flagged users, content, 3 demo nonprofits, usable login hash), the saved password hash,
+-- (200 flagged users, content, 5 demo nonprofits, usable login hash), the saved password hash,
 -- the audit row, and that the seed does not trip on the caller's JWT. Rolled back at the end.
 -- The seed uses temp tables that drop on commit, so it runs once per transaction here.
 
@@ -68,7 +68,7 @@ begin
   perform kc_test.assert_eq((r->>'users')::int, 200, 'two hundred demo users');
   perform kc_test.assert_true((r->>'posts')::int > 0, 'demo posts were created');
   perform kc_test.assert_true((r->>'rides')::int > 0, 'demo rides were created');
-  perform kc_test.assert_eq((r->>'organizations')::int, 3, 'three demo nonprofits');
+  perform kc_test.assert_eq((r->>'organizations')::int, 5, 'five demo nonprofits');
 
   perform kc_test.assert_eq(
     (select count(*)::int from auth.users

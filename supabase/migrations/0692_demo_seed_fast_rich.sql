@@ -327,6 +327,8 @@ declare
   v_resolver uuid;
   v_now timestamptz := now();
 begin
+  alter table public.reports disable trigger reports_rate_limit;
+
   select u.user_id into v_resolver
     from public.users u
    where not public.is_demo_seed_user(u.user_id)
@@ -423,6 +425,8 @@ begin
         offset 35 limit 15
      );
   end if;
+
+  alter table public.reports enable trigger reports_rate_limit;
 end;
 $$;
 
