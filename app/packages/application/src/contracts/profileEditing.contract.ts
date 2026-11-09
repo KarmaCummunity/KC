@@ -12,7 +12,7 @@
 
 import type { IUserRepository } from '../ports/IUserRepository';
 import type { ContractCase } from './types';
-import { assertEqual, assertRejects, assertTrue } from './assert';
+import { assertEqual, assertRejects } from './assert';
 import { onboardingProgressCases } from './onboardingProgress.contract';
 
 /** The Edit Profile and onboarding methods of IUserRepository. */

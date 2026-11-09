@@ -50,7 +50,7 @@ Per design spec §4.1, one PR per machine (or per tight family), each with code 
 |---|---|---|---|---|---|
 | **Admin task** | `admin_tasks.status` | open, in_progress, blocked, done, archived | kernel only | `fsm_assert_transition` (RPC + trigger) | **0 ✅** |
 | **Account status** | `users.account_status` (+ `account_status_until`, `deletion_purge_at`, `status_before_deletion`) | pending_verification, active, suspended_for_false_reports, suspended_admin, banned, pending_deletion, deleted | SQL check (`0549`), TS `AccountStatus` (`value-objects.ts`), `AccountGateReason`, `AccountGateRejectionReason`, 3 mobile lists, 9 definer writers + 2 crons | per-writer filters | **3** |
-| **Onboarding** | `users.onboarding_state` | pending_basic_info, pending_avatar, completed | SQL check (`0001`), TS `value-objects.ts`, 3 use cases, `AuthGate.tsx` | TS use cases only | **3** |
+| **Onboarding** | `users.onboarding_state` | pending_basic_info, pending_avatar, completed | SQL check (`0001`), TS `value-objects.ts`, 3 use cases (pre-checks), `AuthGate.tsx` | `fsm_assert_transition` (trigger `users_onboarding_state_fsm`); the member writes only through `rpc_set_onboarding_state`, the dev reset through `rpc_dev_reset_onboarding` (`0698`) | **3b ✅** |
 | **Report** | `reports.status` | open, confirmed_violation, dismissed_no_violation | SQL check + trigger (`0005`), TS `value-objects.ts`, `ReportCaseDetail.ts` | hand-written trigger | **4** |
 | **Follow request** | `follow_requests.status` | pending, accepted, rejected, cancelled | SQL check (`0003`), TS `value-objects.ts`, infra `followRequestMethods.ts` | RLS policies only | **4** |
 | Chat message | `messages.status` | pending, delivered, read | SQL check + trigger (`0004`), TS `value-objects.ts` | hand-written trigger | 7 |
@@ -163,7 +163,7 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 - No RPC moves `banned → active`; spec `12_super_admin.md` assumes a manual unban.
 - `admin_dismiss_report` (`0118`) lifts a suspension when fewer than 3 reports are open; auto-suspension uses 5. Neither restore nor auto-suspend resets `account_status_until`.
 - `handle_user_verified` (`0068`) acts only from `pending_verification`; restoring a user who verified while `pending_deletion` returns them to `pending_verification`.
-- `CompleteOnboardingUseCase` rejects `pending_basic_info → completed`; `ReconcileDeferredBasicInfoUseCase` performs it.
+- `CompleteOnboardingUseCase` rejects `pending_basic_info → completed`; `ReconcileDeferredBasicInfoUseCase` performs it. By design since wave 3b: the edge is the deferred path (FR-AUTH-015), the server allows it once step-1 fields are on file, and the wizard's finish never starts from step 1.
 
 **Social and moderation**
 - `messages.status = 'delivered'` is never written; `rpc_chat_mark_read` (`0055`) goes straight to `read`.
@@ -200,7 +200,7 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 - ~~Approve counts confirmed and handed-over seats; the RPC counts reserved seats too, so Approve can fail with `ride_seats_exhausted`.~~ ✅ wave 2b: other waiting bookings count too.
 - ~~Owner assign in housing and items is not gated on an open post; the RPC refuses with `closure_wrong_status`.~~ ✅ wave 2b: assign shows only on an open listing.
 - Volunteer check-in shows for any registration; the RPC allows it only from 2 hours before the shift to 4 hours after.
-- Onboarding moves are guarded only in TS use cases (read, then write); the column is client-writable with a check constraint only (wave 3).
+- ~~Onboarding moves are guarded only in TS use cases (read, then write); the column is client-writable with a check constraint only.~~ ✅ wave 3b (`0698`): the client grant is revoked; the server holds the graph and the step-1 rule.
 - `StartRideUseCase` / `ArriveRideUseCase` are wired but unused; `rpc_ride_start` writes `posts.status = 'in_transit'`, which S1 forbids (retire, wave 1d).
 - The client chat renders `pending` and `delivered` alike and cannot show `delivered`; donations model only `paid`, so failed and cancelled intents cannot show.
 
