@@ -125,13 +125,14 @@ Last applied on kc-dev when this was written: `0239`.
 | 0677 | #1964 demo post media paths + org_memberships on demo orgs | in review |
 | 0678 | #1964 verification 0..2 mix, OnlyMe posts, storage JPEG fixtures | in review |
 | 0679 | FR-ADMIN-031 admin_demo_data_status ride/org/media KPIs | in review |
-| 0680–0684 | — | free |
-| 0685 | #1961 reset the public schema comment (retired product cleanup) | in progress |
-| 0686+ | — | free |
+| 0680–0689 | FSM kernel program (`docs/architecture/state-machines.md`): `0680` kernel catalog (`fsm_state` / `fsm_edge` / `fsm_assert_transition`) and the admin-task pilot; `0681+` one machine per migration onto the kernel | in progress |
+| 0690 | money sandbox completion behind the `sandbox_payments` server flag; org memberships written by definer functions only | in review |
+| 0691 | #1961 reset the public schema comment (retired product cleanup) | in progress |
+| 0692+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0680–0684`, `0686+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0692+`.
 
 ## How to claim
 
