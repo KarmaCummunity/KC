@@ -6,9 +6,10 @@
 
 begin;
 
+-- The owner publishes in every world, housing included, so it is a verified housing member.
 create temp table personas as
-select kc_test.create_user('w2_owner')     as owner,
-       kc_test.create_user('w2_recipient') as recipient;
+select kc_test.create_housing_member('w2_owner') as owner,
+       kc_test.create_user('w2_recipient')       as recipient;
 
 -- One post per machine; a handoff's machine follows its own `world_slug`.
 create temp table world_posts as
