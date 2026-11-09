@@ -1,5 +1,5 @@
 // Mapped to spec: docs/spec/requirements/23_knowledge.md FR-KNOW-003 AC2 (#2034) · binding schemas in
-// migration 0700. Curated create-form field sets of the six knowledge exchange kinds, keyed by
+// migration 0701. Curated create-form field sets of the six knowledge exchange kinds, keyed by
 // `listing_kinds.slug`. `fieldsForKind` drops any key the kind's schema does not list, so a field
 // here can never reach the server unknown. Legacy kinds (course, private_lesson, mentorship_request)
 // are no longer offered and have no form.

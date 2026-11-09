@@ -124,7 +124,7 @@ const KIND_ROUTES: Record<NotificationKind, KindHandler> = {
   ride_booking_declined: (d) => listingRoute(d.params),
   ride_booking_expired: (d) => listingRoute(d.params),
   ride_booking_cancelled: (d) => listingRoute(d.params),
-  // FR-KNOW-004 AC5 (0701, #2034) — knowledge slot bookings open the lesson.
+  // FR-KNOW-004 AC5 (0702, #2034) — knowledge slot bookings open the lesson.
   knowledge_booking_requested: (d) => listingRoute(d.params),
   knowledge_booking_confirmed: (d) => listingRoute(d.params),
   knowledge_booking_declined: (d) => listingRoute(d.params),

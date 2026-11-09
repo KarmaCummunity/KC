@@ -1,5 +1,5 @@
 // Listing kinds of the four listing create worlds, with the detail schemas the dev database
-// holds (migrations 0241, 0321, 0381, 0391, 0563, 0700). Shared by the field-spec and form tests.
+// holds (migrations 0241, 0321, 0381, 0391, 0563, 0700, 0701). Shared by the field-spec and form tests.
 import type { ListingKindOption } from '@kc/domain';
 
 const obj = (properties: Record<string, unknown>, required: string[] = []) => ({
@@ -38,7 +38,7 @@ export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[
       delivery_available: { type: 'boolean' },
       pickup_window_start: { type: 'string', format: 'date-time' },
       pickup_window_end: { type: 'string', format: 'date-time' },
-    }, ['expires_at', 'food_type'])),
+    }, ['expires_at'])), // food_type left `required` in 0700 ({{D:food-type-is-subcategory}}).
     kind('request_food', 'request', obj({ household_size: { type: 'integer' }, dietary_needs: { type: 'string' } })),
   ],
   rides: [
@@ -123,7 +123,7 @@ export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[
     }, ['species', 'care_mode'])),
   ],
   knowledge: [
-    // The six exchange kinds of migration 0700 (#2034), trimmed to the keys and enums the form uses.
+    // The six exchange kinds of migration 0701 (#2034), trimmed to the keys and enums the form uses.
     kind('lesson_offer', 'give', obj({
       topic: { type: 'string', minLength: 2, maxLength: 80 },
       level: { enum: ['beginner', 'intermediate', 'advanced'] },

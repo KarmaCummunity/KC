@@ -54,7 +54,7 @@ export type NotificationKind =
   | 'giving_handoff_declined'
   | 'giving_handoff_cancelled'
   | 'giving_handoff_completed'
-  // FR-KNOW-004 AC5 (0701, #2034) — knowledge slot bookings: every change reaches the other side.
+  // FR-KNOW-004 AC5 (0702, #2034) — knowledge slot bookings: every change reaches the other side.
   | 'knowledge_booking_requested'
   | 'knowledge_booking_confirmed'
   | 'knowledge_booking_declined'

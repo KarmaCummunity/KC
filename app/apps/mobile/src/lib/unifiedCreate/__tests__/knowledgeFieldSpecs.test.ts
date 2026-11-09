@@ -1,5 +1,5 @@
 // FR-KNOW-003 AC2 (#2034) — the knowledge create form: six exchange kinds, curated fields that
-// cover every key the binding schema of migration 0700 requires, and the slot list of a lesson.
+// cover every key the binding schema of migration 0701 requires, and the slot list of a lesson.
 // Split from listingFieldSpecs.test.ts (300-line cap).
 import { describe, expect, it } from 'vitest';
 import { fieldsForKind, firstMissingRequiredField, kindChoices, kindForDirection } from '../listingFieldSpecs';

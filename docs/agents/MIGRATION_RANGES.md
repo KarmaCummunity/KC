@@ -130,12 +130,13 @@ Last applied on kc-dev when this was written: `0239`.
 | 0691 | #1961 reset the public schema comment (retired product cleanup) | in progress |
 | 0692 | G1 compatibility views (`listings`, `giving_handoffs`, `ride_listings`) follow the base tables' access rules | merged (#2017) |
 | 0693 | composer items posts get their listing kind on insert (regression from 0666) | in progress |
-| 0700–0711 | knowledge exchange posts, epic #1687 (KNOW-K1-B): `0700` six kinds, slots as rows, slot rules and sync (#2034), `0701` slot bookings, sweeps, pushes (#2034), `0702–0711` children #2035–#2039 | in progress |
-| 0712+ | — | free |
+| 0700 | #1398 `give_food` no longer requires `food_type` (the food type is the world sub-category) | in progress |
+| 0701–0712 | knowledge exchange posts, epic #1687 (KNOW-K1-B): `0701` six kinds, slots as rows, slot rules and sync (#2034), `0702` slot bookings, sweeps, pushes (#2034), `0703–0712` children #2035–#2039 | in progress |
+| 0713+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0712+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0713+`.
 
 ## How to claim
 

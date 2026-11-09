@@ -1,4 +1,4 @@
-// Composition root for knowledge slot bookings (FR-KNOW-004, #2034; RPCs of migration 0701).
+// Composition root for knowledge slot bookings (FR-KNOW-004, #2034; RPCs of migration 0702).
 import {
   BookKnowledgeSeatUseCase,
   CompleteKnowledgeSessionUseCase,

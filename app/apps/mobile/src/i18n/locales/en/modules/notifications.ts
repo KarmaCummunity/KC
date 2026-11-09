@@ -101,7 +101,7 @@ export const notificationsEn = {
   givingHandoffCancelledBody: 'The handoff of "{{listingTitle}}" was cancelled.',
   givingHandoffCompletedTitle: 'Handoff complete',
   givingHandoffCompletedBody: 'How was it with {{name}}? Rate the handoff of "{{listingTitle}}".',
-  // FR-KNOW-004 AC5 (0701, #2034) — knowledge slot bookings; mirrored in dispatch-notification/i18n.json.
+  // FR-KNOW-004 AC5 (0702, #2034) — knowledge slot bookings; mirrored in dispatch-notification/i18n.json.
   knowledgeBookingRequestedTitle: 'New booking for "{{listingTitle}}"',
   knowledgeBookingRequestedBody: '{{name}} wants to join on {{startsAt}}. Approve or decline.',
   knowledgeBookingConfirmedTitle: 'Your booking is confirmed',

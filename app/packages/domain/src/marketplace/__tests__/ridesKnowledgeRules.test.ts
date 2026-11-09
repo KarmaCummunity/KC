@@ -76,7 +76,7 @@ describe('booking error codes', () => {
   });
 });
 
-// #2034 (0700–0701): a lesson offer or consulting hour lists its slots in `details.slots`.
+// #2034 (0701–0702): a lesson offer or consulting hour lists its slots in `details.slots`.
 describe('knowledge slot lists', () => {
   const slotAt = (start: string, end: string) => ({ starts_at: start, ends_at: end });
 

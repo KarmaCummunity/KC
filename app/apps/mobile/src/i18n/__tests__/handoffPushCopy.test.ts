@@ -42,7 +42,7 @@ describe('item / food handoff push copy', () => {
   });
 });
 
-/** The knowledge booking kinds 0701 enqueues (#2034). */
+/** The knowledge booking kinds 0702 enqueues (#2034). */
 const KNOWLEDGE_KINDS = [
   'knowledge_booking_requested',
   'knowledge_booking_confirmed',
