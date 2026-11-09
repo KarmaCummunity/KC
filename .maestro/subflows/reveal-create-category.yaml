@@ -1,0 +1,29 @@
+# Swipes the create form's category row (create-category-row) until chip
+# create-category-${CATEGORY} is on screen. The row scrolls sideways and its
+# direction follows RTL, so it tries a rightward swipe first and a leftward one if that did not
+# reveal the chip. Each repeat stops as soon as the chip is visible.
+# Env: CATEGORY (chip to reveal).
+appId: org.karmacommunity.app
+---
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: create-category-${CATEGORY}
+    commands:
+      - swipe:
+          from:
+            id: create-category-row
+          direction: RIGHT
+- repeat:
+    times: 8
+    while:
+      notVisible:
+        id: create-category-${CATEGORY}
+    commands:
+      - swipe:
+          from:
+            id: create-category-row
+          direction: LEFT
+- assertVisible:
+    id: create-category-${CATEGORY}

@@ -80,8 +80,10 @@ export function UnifiedCreateHeader({
   return (
     <View style={header.wrap} testID="unified-create-header">
       <Text style={styles.sectionLabel}>{t('post.unifiedCreate.categoryLabel')}</Text>
+      {/* testID: Maestro swipes this row to reach chips beyond the screen edge (flow 13). */}
       <ScrollView
         ref={scrollRef}
+        testID="create-category-row"
         horizontal
         showsHorizontalScrollIndicator={false}
         onLayout={(e) => setViewportWidth(e.nativeEvent.layout.width)}
