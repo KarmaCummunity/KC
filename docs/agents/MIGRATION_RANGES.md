@@ -6,7 +6,7 @@ Last applied on kc-dev when this was written: `0239`.
 
 | Range | Owner / issue | Status |
 |---|---|---|
-| 0238–0239 | #852 (GloWe removal, translation) | merged |
+| 0238–0239 | #852 (retired product removal, translation) | merged |
 | 0240–0247 | #860 (unified schema) | merged |
 | 0248–0249 | — | free |
 | 0250–0259 | social (#885, #887) | merged |
