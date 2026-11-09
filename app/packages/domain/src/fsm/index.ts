@@ -6,3 +6,5 @@ export {
 export type {
   FsmEdge, FsmMachine, TransitionAnswer, TransitionFail, TransitionOk,
 } from './machine';
+export { FSM_MACHINES } from './catalog';
+export { adminTaskMachine } from './machines/adminTask';
