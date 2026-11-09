@@ -82,7 +82,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-i18next": "^15.1.0",
-    "react-native": "0.81.5",
+    "react-native": "0.88.1",
     "react-native-gesture-handler": "~3.5.0",
     "react-native-maps": "1.29.11",
     "react-native-markdown-display": "^7.0.2",
