@@ -123,7 +123,8 @@ Last applied on kc-dev when this was written: `0239`.
 | 0665–0675 | G1 one Post model steps 6b–6d (ADR-006, D-214, #1671): `0665` step 6b one S1 state machine (merged #1932), `0666` step 6c drop sync triggers, `0667` step 6d drop `listings` / `giving_handoffs` | in progress |
 | 0676 | #1964 demo rides on posts + wipe/restore ride coverage test | in review |
 | 0677 | #1964 demo post media paths + org_memberships on demo orgs | in review |
-| 0678+ | — | free |
+| 0678 | #1964 verification 0..2 mix, OnlyMe posts, storage JPEG fixtures | in review |
+| 0679+ | — | free |
 
 ## Next free ranges
 
