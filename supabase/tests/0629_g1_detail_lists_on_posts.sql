@@ -70,16 +70,19 @@ stable
 as $$
   select coalesce(jsonb_agg(to_jsonb(q) order by q.ord), '[]'::jsonb) from (
     select row_number() over (order by l.updated_at desc, l.listing_id desc) as ord,
-           l.listing_id, l.world_slug, lk.slug, l.direction, l.status, l.title,
+           l.listing_id, l.world_slug, l.slug, l.direction, l.status, l.title,
            l.summary, l.urgency_level, l.availability_status, l.updated_at
-      from (select l.* from public.listings l
+      -- The kind join sits inside the page, before limit / offset, as in list_my_listings:
+      -- since 0667 every post is a listings row, and a post without a kind joined after the
+      -- page was cut left the page short, depending on how equal updated_at values tied (#2004).
+      from (select l.*, lk.slug from public.listings l
+              join public.listing_kinds lk on lk.kind_id = l.kind_id
              where l.owner_id = auth.uid()
                and l.status <> 'removed_admin'
                and (p_cursor_id is null or (l.updated_at, l.listing_id) < (p_cursor_updated_at, p_cursor_id))
              order by l.updated_at desc, l.listing_id desc
              limit least(greatest(coalesce(p_limit, 50), 1), 100)
              offset case when p_cursor_id is null then greatest(coalesce(p_offset, 0), 0) else 0 end) l
-      join public.listing_kinds lk on lk.kind_id = l.kind_id
   ) q;
 $$;
 
