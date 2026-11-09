@@ -82,6 +82,7 @@ export function ListingCreateForm({
     isRides: form.isRides,
     isOrgEvent: form.eventChoice.isOrgEvent,
     detailKeys: visibleDetailSpecs(form.specs, form.details).map((s) => s.key),
+    showSubcategory: form.showSubcategory,
   });
   const invalidField = inlineProblemField(form.error, rendered);
   const { scrollRef, contentRef, register, onScroll } = useScrollToListingProblem(form.error, invalidField);
@@ -198,12 +199,14 @@ export function ListingCreateForm({
           ) : null}
 
           {form.showSubcategory ? (
-            <WorldSubcategoryPicker
-              worldSlug={worldSlug}
-              value={form.subcategoryId}
-              onChange={form.setSubcategoryId}
-              disabled={form.busy}
-            />
+            <ListingFieldFrame field="subcategory" testID="listing-subcategory-field">
+              <WorldSubcategoryPicker
+                worldSlug={worldSlug}
+                value={form.subcategoryId}
+                onChange={form.setSubcategoryId}
+                disabled={form.busy}
+              />
+            </ListingFieldFrame>
           ) : null}
 
           <AdditionalWorldsPicker

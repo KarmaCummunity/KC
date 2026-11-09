@@ -1,4 +1,4 @@
--- supabase/tests/0700_listing_detail_legacy_listing_id.sql | 0700 (KC#2032, FR-POST-014..018,
+-- supabase/tests/0702_listing_detail_legacy_listing_id.sql | 0702 (KC#2032, FR-POST-014..018,
 -- FR-FEED-001): a feed card opens its post. Posts created before G1 step 6d keep the id their
 -- listing had in `posts.listing_id`; the app opens the detail with that id, so the detail reader
 -- must resolve it to the post, exactly as it resolves the post id.
@@ -40,4 +40,4 @@ end $$;
 
 rollback;
 
-\echo '✓ 0700_listing_detail_legacy_listing_id.sql passed'
+\echo '✓ 0702_listing_detail_legacy_listing_id.sql passed'
