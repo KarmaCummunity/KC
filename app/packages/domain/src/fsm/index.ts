@@ -10,3 +10,8 @@ export type {
 export { FSM_MACHINES } from './catalog';
 export { adminTaskMachine } from './machines/adminTask';
 export { postMachine } from './machines/post';
+export { givingHandoffMachine } from './machines/givingHandoff';
+export { rideBookingMachine } from './machines/rideBooking';
+export { housingBookingMachine } from './machines/housingBooking';
+export { eventRegistrationMachine } from './machines/eventRegistration';
+export { handoffMachineFor } from './machines/handoffMachineFor';
