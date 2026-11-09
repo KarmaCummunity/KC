@@ -147,8 +147,8 @@ begin
   select s.reason into v_reason
     from public.listings o, public.listings q, lateral public.match_score_pair(o, q) s
    where o.listing_id = (select id from t where k = 'offer_a') and q.listing_id = (select id from t where k = 'req_e');
-  if v_reason is distinct from 'not_visible' then
-    raise exception 'ASSERT FAILED: blocked pair should be not_visible, got %', v_reason;
+  if v_reason is distinct from 'blocked' then
+    raise exception 'ASSERT FAILED: blocked pair should be blocked, got %', v_reason;
   end if;
 
   if exists (select 1 from public.match_candidates
