@@ -15993,13 +15993,11 @@ export type Database = {
       }
       ride_booking_copy_key: { Args: { p_kind: string }; Returns: string }
       ride_bookings_expire_sweep: { Args: never; Returns: number }
-      ride_complete_pending_rating_cleanup: { Args: never; Returns: undefined }
       ride_cost_share_cap: { Args: { p_details: Json }; Returns: number }
       ride_details_with_place: {
         Args: { p_details: Json; p_end: string }
         Returns: Json
       }
-      ride_food_overdue_alert: { Args: never; Returns: undefined }
       ride_listing_emergency: {
         Args: { p_listing_id: string; p_note?: string }
         Returns: {
@@ -16022,7 +16020,6 @@ export type Database = {
         Args: { p_listing_id: string }
         Returns: string[]
       }
-      ride_listings_expire_check: { Args: never; Returns: number }
       ride_listings_find_matches: {
         Args: { p_limit?: number; p_ride_id: string; p_window_hours?: number }
         Returns: {
@@ -16155,7 +16152,6 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      ride_participants_expire_stale_check: { Args: never; Returns: number }
       ride_place_lookup: {
         Args: { p_id: string; p_kind: string }
         Returns: {
@@ -16260,7 +16256,6 @@ export type Database = {
         Returns: number
       }
       ride_series_sweep: { Args: never; Returns: number }
-      ride_templates_materialize: { Args: never; Returns: number }
       rides_expired_listings_sweep: { Args: never; Returns: number }
       role_rank: { Args: { p_role: string }; Returns: number }
       rpc_chat_hide_for_viewer: {
