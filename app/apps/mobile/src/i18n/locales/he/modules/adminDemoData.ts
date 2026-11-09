@@ -7,6 +7,13 @@ export const adminDemoDataHe = {
   error: 'לא הצלחנו לטעון את המצב. למשוך לרענון.',
   users: 'משתמשי דמה',
   organizations: 'עמותות דמה',
+  ridePosts: 'טרמפים (פוסטים)',
+  itemPosts: 'פוסטי פריטים',
+  orgMemberships: 'תפקידים בעמותות דמה',
+  postMedia: 'תמונות דמה (DB)',
+  legacyRides: 'טרמפים ישנים (ride_listings)',
+  legacyRidesHint:
+    'יש טרמפים בטבלה הישנה ואין (מספיק) בפוסטים — כנראה שחזור לפני מיגרציה 0676. הריצו שחזור נתוני דמה אחרי deploy.',
   noneTitle: 'אין נתוני דמה במערכת',
   noneHintRestore: 'אפשר להחזיר אותם בלחיצה אחת.',
   noneHintNoRestore: 'שחזור זמין רק בסביבת הפיתוח.',
@@ -27,7 +34,8 @@ export const adminDemoDataHe = {
   passwordLabel: 'סיסמה למשתמשי הדמה',
   passwordHint: 'נדרשת פעם אחת, לפחות 8 תווים. היא נשמרת מוצפנת.',
   seedDoneTitle: 'נתוני הדמה שוחזרו',
-  seedDone: (users: number, posts: number, orgs: number) => `נוצרו ${users} משתמשים, ${posts} פוסטים ו-${orgs} עמותות.`,
+  seedDone: (users: number, posts: number, rides: number, orgs: number, orgMembers: number) =>
+    `נוצרו ${users} משתמשים, ${posts} פוסטים (${rides} טרמפים), ${orgs} עמותות ו-${orgMembers} שיוכי צוות.`,
   seedFailed: 'השחזור נכשל. יש לנסות שוב.',
   wipeButton: 'מחיקת נתוני הדמה',
   wiping: 'מוחק...',

@@ -37,7 +37,12 @@ describe('useListingCreateForm', () => {
     // Editing the form clears the previous problem.
     expect(validTitle.result.current.error).toBeNull();
     await act(() => validTitle.result.current.publish());
-    expect(validTitle.result.current.error).toEqual({ message: 'post.unifiedCreate.errors.cityRequired', field: 'city' });
+    await waitFor(() =>
+      expect(validTitle.result.current.error).toEqual({
+        message: 'post.unifiedCreate.errors.cityRequired',
+        field: 'city',
+      }),
+    );
     expect(repo.createListing).not.toHaveBeenCalled();
   });
   it('publishes valid details and maps repository errors while releasing busy lock', async () => {

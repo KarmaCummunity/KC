@@ -31,20 +31,17 @@ export function useFormFieldFocus(fieldCount: number) {
   );
 
   const focusNext = useCallback(() => {
-    const start = activeIndex ?? -1;
-    for (let i = start + 1; i < fieldCount; i++) {
-      focusIndex(i);
+    const next = (activeIndex ?? -1) + 1;
+    if (next < fieldCount) {
+      focusIndex(next);
       return;
     }
     Keyboard.dismiss();
   }, [activeIndex, fieldCount, focusIndex]);
 
   const focusPrev = useCallback(() => {
-    const start = activeIndex ?? fieldCount;
-    for (let i = start - 1; i >= 0; i--) {
-      focusIndex(i);
-      return;
-    }
+    const prev = (activeIndex ?? fieldCount) - 1;
+    if (prev >= 0) focusIndex(prev);
   }, [activeIndex, fieldCount, focusIndex]);
 
   const dismiss = useCallback(() => {
