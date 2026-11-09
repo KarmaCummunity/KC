@@ -85,7 +85,7 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 - ~~`admin_restore_target` (`0666`) always restored to `open`, also "restored" never-removed paused posts, and kept a dead `held` branch.~~ ✅ wave 1b-i (`0682`): restores to the saved status (D129).
 - ~~`mark_giving_handed_over` (`0666`) wrote `closed_delivered` without a source-status filter and raised on `expired` / `removed_admin` posts.~~ ✅ wave 1b-ii (`0683`): closes a live post only; the handoff completes either way; a post under review stays hidden. `post_close_from_handoff` (items) no longer writes the `listings` view.
 - The expired screen calls `rpc_republish_post` (`0155`), which clones only the legacy item columns (no `world_slug`, `details`, `kind_id`); D127 requires a full copy (wave 1b).
-- Items get `expires_at = now() + 30 days` (`0612`, `0666`) while D21 says items never expire and no sweep expires them: after 30 days a paused item cannot resume and never expires.
+- ~~Items got `expires_at = now() + 30 days` (`0612`, `0666`) although D21 says items never expire; matching v2 skipped them after 30 days and a paused item could not resume.~~ ✅ wave 1b-iii (`0684`): no item expiry; existing defaulted dates cleared.
 - Pause / fulfill / delete RPCs (`0666`) count `time` (event) handoffs as active; the trigger (`0665`) excludes them.
 - ~~Two `owner_complete_offer_with_user` overloads coexisted (`0658` with `p_mode`, `0666` without).~~ ✅ wave 1b-ii (`0683`): the unused two-argument overload is dropped.
 - Events never move to `expired` at their date; only food, rides and ride series have expiry writers.
