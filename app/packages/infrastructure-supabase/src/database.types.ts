@@ -16624,6 +16624,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      rpc_dev_reset_onboarding: { Args: never; Returns: undefined }
       rpc_feed_add_mute_filter: {
         Args: { p_filter_kind: string; p_filter_value: string }
         Returns: {
@@ -17149,6 +17150,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      rpc_set_onboarding_state: {
+        Args: { p_state: string }
+        Returns: undefined
       }
       rpc_set_post_comment_like: {
         Args: { p_comment_id: string; p_liked: boolean }

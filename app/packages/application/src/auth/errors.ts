@@ -69,7 +69,9 @@ export function isDeleteAccountError(value: unknown): value is DeleteAccountErro
 // ─────────────────────────────────────────────
 
 export type OnboardingErrorCode =
-  | 'illegal_transition';
+  | 'illegal_transition'
+  /** Leaving step 1 without display name, city and date of birth on file. */
+  | 'basic_info_missing';
 
 export class OnboardingError extends Error {
   readonly code: OnboardingErrorCode;
