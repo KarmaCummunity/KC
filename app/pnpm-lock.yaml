@@ -310,8 +310,8 @@ importers:
   apps/mobile/web-server:
     dependencies:
       '@hono/node-server':
-        specifier: ^2.1.5
-        version: 2.1.5(hono@4.13.14)
+        specifier: ^2.1.6
+        version: 2.1.6(hono@4.13.14)
       hono:
         specifier: '>=4.13.14'
         version: 4.13.14
@@ -1523,8 +1523,8 @@ packages:
     resolution: {integrity: sha512-EbxYllZ7/ozONVZd425cm4XnolfW+AmSFT5aP7Jdno6oc3WrYQcHz2CO20z/2rwWwYgztmV2PXvYH+BQ8YFjqg==}
     hasBin: true
 
-  '@hono/node-server@2.1.5':
-    resolution: {integrity: sha512-MgP/I06GdvsilDspMk/qmRzpk8LOUStP6jFAbSRi40W09DhoyUn+Mj7eyKICPqeYKybOjVFLVIAQzvu1bfIa7Q==}
+  '@hono/node-server@2.1.6':
+    resolution: {integrity: sha512-p/KH9MnfNcsm3sR6x4lNgm5j+QN4Et8srKredl9DZfXiyZ1UQ3aQ2YVpFLbqktYN5JI+DB+VZFKM2PqE5hLKjQ==}
     engines: {node: '>=20'}
     peerDependencies:
       hono: '>=4.13.14'
@@ -5995,6 +5995,18 @@ packages:
       utf-8-validate:
         optional: true
 
+  ws@8.22.2:
+    resolution: {integrity: sha512-/rEZ2ejown2N5gxVTHUu9bVVC7ttu0/Tgzf5hbTOixR3Fs7mbbXgn2DbdbcKgJOmpQMtrIUWivtYuVMnp/W/yA==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   xcode@4.0.0:
     resolution: {integrity: sha512-dDaoWzc9EP2fp9FS9PVZUkyvFxY4y1TOV9pcKaKLk++Ei/qb97XDFEVP7GnW7Osii/TzVABJ0jq2F+9/lq0TVA==}
     engines: {node: '>=14.17.0'}
@@ -7873,7 +7885,7 @@ snapshots:
       chalk: 4.1.2
       js-yaml: 5.5.0
 
-  '@hono/node-server@2.1.5(hono@4.13.14)':
+  '@hono/node-server@2.1.6(hono@4.13.14)':
     dependencies:
       hono: 4.13.14
 
@@ -11752,7 +11764,7 @@ snapshots:
       serialize-error: 2.1.0
       source-map: 0.5.7
       throat: 5.0.0
-      ws: 8.22.1
+      ws: 8.22.2
       yargs: 17.7.3
     transitivePeerDependencies:
       - bufferutil
@@ -13271,6 +13283,9 @@ snapshots:
   ws@8.22.0: {}
 
   ws@8.22.1: {}
+
+  ws@8.22.2:
+    optional: true
 
   xcode@4.0.0:
     dependencies:
