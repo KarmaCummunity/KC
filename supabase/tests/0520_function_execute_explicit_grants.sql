@@ -84,8 +84,7 @@ insert into internal_helpers values
   ('public.food_expired_listings_sweep()'),
   ('public.giving_handoff_no_show_sweep()'),
   ('public.giving_handoff_row_of(uuid)'),
-  ('public.karma_recompute_nightly()'),
-  ('public.ride_complete_pending_rating_cleanup()');
+  ('public.karma_recompute_nightly()');
 
 select pg_temp.assert_none($q$
   select fn from internal_helpers
