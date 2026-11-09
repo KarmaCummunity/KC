@@ -128,6 +128,9 @@ export default function DemoDataScreen() {
             <Kpi label={t.ridePosts} value={status.data?.demoRidePosts ?? 0} />
             <Kpi label={t.itemPosts} value={status.data?.demoItemPosts ?? 0} />
             <Kpi label={t.orgMemberships} value={status.data?.demoOrgMemberships ?? 0} />
+            <Kpi label={t.chats} value={status.data?.demoChats ?? 0} />
+            <Kpi label={t.reports} value={status.data?.demoReports ?? 0} />
+            <Kpi label={t.openReports} value={status.data?.demoOpenReports ?? 0} />
             <Kpi label={t.postMedia} value={status.data?.demoPostMedia ?? 0} />
             {(status.data?.demoLegacyRideListings ?? 0) > 0 ? (
               <Kpi label={t.legacyRides} value={status.data?.demoLegacyRideListings ?? 0} warn />

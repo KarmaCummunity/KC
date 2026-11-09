@@ -15,6 +15,11 @@ export interface DemoDataStatus {
   readonly demoOrgMemberships: number;
   /** `media_assets` paths under `demo/kc-dev/` (storage upload separate). */
   readonly demoPostMedia: number;
+  /** Chats where at least one participant is a seed user. */
+  readonly demoChats: number;
+  /** Moderation reports filed by or against seed users (demo inbox). */
+  readonly demoReports: number;
+  readonly demoOpenReports: number;
   /** True only on the kc-dev database, where the demo data may be (re)created. */
   readonly canSeed: boolean;
   /** True once a seed password was given, so a restore needs no password. */
@@ -58,6 +63,9 @@ export function mapDemoDataStatus(data: unknown): DemoDataStatus {
     demoLegacyRideListings: count(o, 'demo_legacy_ride_listings'),
     demoOrgMemberships: count(o, 'demo_org_memberships'),
     demoPostMedia: count(o, 'demo_post_media'),
+    demoChats: count(o, 'demo_chats'),
+    demoReports: count(o, 'demo_reports'),
+    demoOpenReports: count(o, 'demo_open_reports'),
     canSeed: o.can_seed === true,
     hasSavedPassword: o.has_saved_password === true,
   };
@@ -98,15 +106,6 @@ export function mapDemoDataSeedStep(data: unknown): DemoDataOperationStep<DemoDa
   return { done, progressKey, retry: o.retry === true, result };
 }
 
-const WIPE_STEP_GUARD = 80;
-const SEED_STEP_GUARD = 120;
-
-function pause(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
 export class SupabaseDemoDataRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
@@ -119,18 +118,10 @@ export class SupabaseDemoDataRepository {
 
   /** Super admin only: deletes the demo users (with their content) and demo nonprofits. */
   async wipe(onProgress?: (progressKey: string) => void): Promise<DemoDataWipeResult> {
-    let step: DemoDataOperationStep<DemoDataWipeResult> = { done: false };
-    let guard = 0;
-    while (!step.done && guard < WIPE_STEP_GUARD) {
-      guard += 1;
-      step = await this.wipeStep();
-      if (step.progressKey) onProgress?.(step.progressKey);
-      if (!step.done && step.retry) await pause(300);
-    }
-    if (!step.done || !step.result) {
-      throw new Error('wipeDemoData: incomplete stepped wipe');
-    }
-    return step.result;
+    onProgress?.('running');
+    const { data, error } = await this.client.rpc('admin_wipe_demo_data');
+    if (error) throw new Error(`wipeDemoData: ${error.message}`);
+    return mapDemoDataWipeResult(data);
   }
 
   async wipeStep(): Promise<DemoDataOperationStep<DemoDataWipeResult>> {
@@ -144,20 +135,12 @@ export class SupabaseDemoDataRepository {
    * seed users' login password; it is needed once and saved server-side as a hash.
    */
   async seed(password?: string, onProgress?: (progressKey: string) => void): Promise<DemoDataSeedResult> {
-    let step: DemoDataOperationStep<DemoDataSeedResult> = { done: false };
-    let sentPassword = false;
-    let guard = 0;
-    while (!step.done && guard < SEED_STEP_GUARD) {
-      guard += 1;
-      step = await this.seedStep(!sentPassword ? password : undefined);
-      sentPassword = true;
-      if (step.progressKey) onProgress?.(step.progressKey);
-      if (!step.done && step.retry) await pause(300);
-    }
-    if (!step.done || !step.result) {
-      throw new Error('seedDemoData: incomplete stepped seed');
-    }
-    return step.result;
+    onProgress?.('running');
+    const { data, error } = await this.client.rpc('admin_seed_demo_data', {
+      p_password: password ?? undefined,
+    });
+    if (error) throw new Error(`seedDemoData: ${error.message}`);
+    return mapDemoDataSeedResult(data);
   }
 
   async seedStep(password?: string): Promise<DemoDataOperationStep<DemoDataSeedResult>> {

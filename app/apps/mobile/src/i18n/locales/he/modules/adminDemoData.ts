@@ -10,6 +10,9 @@ export const adminDemoDataHe = {
   ridePosts: 'טרמפים (פוסטים)',
   itemPosts: 'פוסטי פריטים',
   orgMemberships: 'תפקידים בעמותות דמה',
+  chats: 'שיחות דמה',
+  reports: 'דיווחים (מודרציה)',
+  openReports: 'דיווחים פתוחים',
   postMedia: 'תמונות דמה (DB)',
   legacyRides: 'טרמפים ישנים (ride_listings)',
   legacyRidesHint:
@@ -21,16 +24,9 @@ export const adminDemoDataHe = {
   seedWhileDemoExistsHint: 'משחזר מחדש את כל נתוני הדמה (מוחק קודם את הקיימים, כמו בלחיצה על מחיקה ואז שחזור).',
   seeding: 'משחזר...',
   seedProgress: (step: string) =>
-    ({
-      wipe: 'משחזר: מנקה דמה ישנה…',
-      users: 'משחזר: יוצר משתמשים…',
-      items: 'משחזר: פוסטים וטרמפים…',
-      worlds: 'משחזר: עולמות נתינה…',
-      social: 'משחזר: מעקבים וצ׳אטים…',
-      matches: 'משחזר: התאמות…',
-      orgs: 'משחזר: עמותות דמה…',
-      done: 'משחזר: מסיים…',
-    })[step] ?? 'משחזר…',
+    step === 'running'
+      ? 'משחזר נתוני דמה (כדקה–שתיים, אל תסגרו את המסך)…'
+      : 'משחזר…',
   passwordLabel: 'סיסמה למשתמשי הדמה',
   passwordHint: 'נדרשת פעם אחת, לפחות 8 תווים. היא נשמרת מוצפנת.',
   seedDoneTitle: 'נתוני הדמה שוחזרו',
@@ -40,8 +36,7 @@ export const adminDemoDataHe = {
   wipeButton: 'מחיקת נתוני הדמה',
   wiping: 'מוחק...',
   wipeProgress: (step: string) =>
-    ({ content: 'מוחק: תוכן דמה…', accounts: 'מוחק: משתמשים ועמותות…', done: 'מוחק: מסיים…' })[step] ??
-    'מוחק…',
+    step === 'running' ? 'מוחק נתוני דמה (כדקה–שתיים)…' : 'מוחק…',
   confirmTitle: 'למחוק את כל נתוני הדמה?',
   confirmBody: (users: number, orgs: number) =>
     `יימחקו ${users} משתמשי דמה עם כל התוכן שלהם (פוסטים, טרמפים, צ׳אטים, מעקבים) ו-${orgs} עמותות דמה. משתמשים אמיתיים לא ייפגעו. הפעולה אינה הפיכה מהפורטל.`,

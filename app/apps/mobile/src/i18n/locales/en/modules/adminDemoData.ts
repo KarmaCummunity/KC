@@ -10,6 +10,9 @@ export const adminDemoDataEn = {
   ridePosts: 'Rides (posts)',
   itemPosts: 'Item posts',
   orgMemberships: 'Roles on demo nonprofits',
+  chats: 'Demo chats',
+  reports: 'Reports (moderation)',
+  openReports: 'Open reports',
   postMedia: 'Demo photos (DB)',
   legacyRides: 'Legacy rides (ride_listings)',
   legacyRidesHint:
@@ -21,16 +24,9 @@ export const adminDemoDataEn = {
   seedWhileDemoExistsHint: 'Rebuilds all demo data from scratch (wipes existing demo rows first, same as delete then restore).',
   seeding: 'Restoring...',
   seedProgress: (step: string) =>
-    ({
-      wipe: 'Restore: clearing old demo…',
-      users: 'Restore: creating users…',
-      items: 'Restore: posts and rides…',
-      worlds: 'Restore: giving worlds…',
-      social: 'Restore: follows and chats…',
-      matches: 'Restore: matches…',
-      orgs: 'Restore: demo nonprofits…',
-      done: 'Restore: finishing…',
-    })[step] ?? 'Restoring…',
+    step === 'running'
+      ? 'Restoring demo data (about 1–2 minutes; keep this screen open)…'
+      : 'Restoring…',
   passwordLabel: 'Password for the demo users',
   passwordHint: 'Needed once, at least 8 characters. It is stored hashed.',
   seedDoneTitle: 'Demo data restored',
@@ -40,9 +36,7 @@ export const adminDemoDataEn = {
   wipeButton: 'Delete all demo data',
   wiping: 'Deleting...',
   wipeProgress: (step: string) =>
-    ({ content: 'Delete: demo content…', accounts: 'Delete: users and nonprofits…', done: 'Delete: finishing…' })[
-      step
-    ] ?? 'Deleting…',
+    step === 'running' ? 'Deleting demo data (about 1–2 minutes)…' : 'Deleting…',
   confirmTitle: 'Delete all demo data?',
   confirmBody: (users: number, orgs: number) =>
     `This deletes ${users} demo users with all their content (posts, rides, chats, follows) and ${orgs} demo nonprofits. Real users are not affected. It cannot be undone from the portal.`,

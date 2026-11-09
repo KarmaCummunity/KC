@@ -15,22 +15,28 @@ describe('demo data mappers', () => {
   it('maps status counts and defaults missing keys to 0', () => {
     expect(mapDemoDataStatus({
       demo_users: 200,
-      demo_organizations: 3,
+      demo_organizations: 5,
       demo_ride_posts: 120,
       demo_item_posts: 480,
       demo_legacy_ride_listings: 0,
-      demo_org_memberships: 15,
+      demo_org_memberships: 25,
       demo_post_media: 60,
+      demo_chats: 150,
+      demo_reports: 90,
+      demo_open_reports: 55,
       can_seed: true,
       has_saved_password: true,
     })).toEqual({
       demoUsers: 200,
-      demoOrganizations: 3,
+      demoOrganizations: 5,
       demoRidePosts: 120,
       demoItemPosts: 480,
       demoLegacyRideListings: 0,
-      demoOrgMemberships: 15,
+      demoOrgMemberships: 25,
       demoPostMedia: 60,
+      demoChats: 150,
+      demoReports: 90,
+      demoOpenReports: 55,
       canSeed: true,
       hasSavedPassword: true,
     });
@@ -42,6 +48,9 @@ describe('demo data mappers', () => {
       demoLegacyRideListings: 0,
       demoOrgMemberships: 0,
       demoPostMedia: 0,
+      demoChats: 0,
+      demoReports: 0,
+      demoOpenReports: 0,
       canSeed: false,
       hasSavedPassword: false,
     });
@@ -73,64 +82,35 @@ describe('SupabaseDemoDataRepository', () => {
       demoLegacyRideListings: 0,
       demoOrgMemberships: 0,
       demoPostMedia: 0,
+      demoChats: 0,
+      demoReports: 0,
+      demoOpenReports: 0,
       canSeed: true,
       hasSavedPassword: false,
     });
     expect(rpc).toHaveBeenCalledWith('admin_demo_data_status');
   });
 
-  it('wipe loops admin_wipe_demo_data_step until done', async () => {
-    const rpc = vi
-      .fn()
-      .mockResolvedValueOnce({ data: { done: false, progress_key: 'content' }, error: null })
-      .mockResolvedValueOnce({
-        data: {
-          done: true,
-          progress_key: 'done',
-          result: { users_deleted: 5, organizations_deleted: 1, organizations_kept: 0 },
-        },
-        error: null,
-      });
-    const r = new SupabaseDemoDataRepository({ rpc } as unknown as SupabaseClient<any>);
-    await expect(r.wipe()).resolves.toMatchObject({ usersDeleted: 5 });
-    expect(rpc).toHaveBeenCalledWith('admin_wipe_demo_data_step');
-    expect(rpc).toHaveBeenCalledTimes(2);
-  });
-
-  it('wipe keeps calling steps past a short batch count', async () => {
-    const rpc = vi.fn();
-    for (let i = 0; i < 24; i += 1) {
-      rpc.mockResolvedValueOnce({ data: { done: false, progress_key: 'content', retry: false }, error: null });
-    }
-    rpc.mockResolvedValueOnce({
-      data: {
-        done: true,
-        progress_key: 'done',
-        result: { users_deleted: 2, organizations_deleted: 1, organizations_kept: 0 },
-      },
+  it('wipe calls admin_wipe_demo_data once', async () => {
+    const rpc = vi.fn().mockResolvedValueOnce({
+      data: { users_deleted: 5, organizations_deleted: 1, organizations_kept: 0 },
       error: null,
     });
     const r = new SupabaseDemoDataRepository({ rpc } as unknown as SupabaseClient<any>);
-    await expect(r.wipe()).resolves.toMatchObject({ usersDeleted: 2 });
-    expect(rpc).toHaveBeenCalledTimes(25);
+    await expect(r.wipe()).resolves.toMatchObject({ usersDeleted: 5 });
+    expect(rpc).toHaveBeenCalledWith('admin_wipe_demo_data');
+    expect(rpc).toHaveBeenCalledTimes(1);
   });
 
-  it('seed loops admin_seed_demo_data_step until done', async () => {
-    const rpc = vi
-      .fn()
-      .mockResolvedValueOnce({ data: { done: false, progress_key: 'wipe' }, error: null })
-      .mockResolvedValueOnce({
-        data: {
-          done: true,
-          progress_key: 'done',
-          result: { users: 200, posts: 1, rides: 1, organizations: 3 },
-        },
-        error: null,
-      });
+  it('seed calls admin_seed_demo_data once', async () => {
+    const rpc = vi.fn().mockResolvedValueOnce({
+      data: { users: 200, posts: 1, rides: 1, organizations: 5 },
+      error: null,
+    });
     const r = new SupabaseDemoDataRepository({ rpc } as unknown as SupabaseClient<any>);
     await expect(r.seed('SeedPass-2026')).resolves.toMatchObject({ users: 200 });
-    expect(rpc).toHaveBeenNthCalledWith(1, 'admin_seed_demo_data_step', { p_password: 'SeedPass-2026' });
-    expect(rpc).toHaveBeenNthCalledWith(2, 'admin_seed_demo_data_step', { p_password: undefined });
+    expect(rpc).toHaveBeenCalledWith('admin_seed_demo_data', { p_password: 'SeedPass-2026' });
+    expect(rpc).toHaveBeenCalledTimes(1);
   });
 
   it('surfaces RPC errors', async () => {

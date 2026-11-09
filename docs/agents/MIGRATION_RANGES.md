@@ -128,11 +128,12 @@ Last applied on kc-dev when this was written: `0239`.
 | 0680–0689 | FSM kernel program (`docs/architecture/state-machines.md`): `0680` kernel catalog (`fsm_state` / `fsm_edge` / `fsm_assert_transition`) and the admin-task pilot; `0681` post S1 (wave 1a); `0682` admin restore (wave 1b-i); `0683+` one machine or fix per migration | in progress |
 | 0690 | money sandbox completion behind the `sandbox_payments` server flag; org memberships written by definer functions only | merged (#1983) |
 | 0691 | #1961 reset the public schema comment (retired product cleanup) | in progress |
-| 0692+ | — | free |
+| 0692 | #1964 demo: bulk admin wipe/seed, +2 orgs, moderation reports, KPIs | in progress |
+| 0693+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0692+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0693+`.
 
 ## How to claim
 
