@@ -16883,7 +16883,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      rpc_set_onboarding_state: { Args: { p_state: string }; Returns: undefined }
+      rpc_set_onboarding_state: {
+        Args: { p_state: string }
+        Returns: undefined
+      }
       rpc_set_post_comment_like: {
         Args: { p_comment_id: string; p_liked: boolean }
         Returns: boolean
