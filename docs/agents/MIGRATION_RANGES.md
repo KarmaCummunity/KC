@@ -124,11 +124,13 @@ Last applied on kc-dev when this was written: `0239`.
 | 0676 | #1964 demo rides on posts + wipe/restore ride coverage test | in review |
 | 0677 | #1964 demo post media paths + org_memberships on demo orgs | in review |
 | 0678 | #1964 verification 0..2 mix, OnlyMe posts, storage JPEG fixtures | in review |
-| 0679+ | — | free |
+| 0679–0688 | FSM kernel program (`docs/architecture/state-machines.md`): `0679` kernel catalog (`fsm_state` / `fsm_edge` / `fsm_assert_transition`) and the admin-task pilot; `0680+` one machine per migration onto the kernel | in progress |
+| 0689 | money sandbox completion behind the `sandbox_payments` server flag; org memberships written by definer functions only | in review |
+| 0690+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0678+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0690+`.
 
 ## How to claim
 
