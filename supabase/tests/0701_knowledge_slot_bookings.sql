@@ -148,12 +148,12 @@ begin
     'invalid_status', 'a session is completed once');
 
   -- Daily cap (D32): 15 earned above plus 60 more on another knowledge booking today leaves 5,
-  -- so a two-hour session (20 points) is cut to 5.
+  -- so a two-hour session (four half hours, 20 points) is cut to one half hour (5 points).
   v_h := kc_test.book_knowledge_seat(p.learner2, kc_test.knowledge_slot(kc_test.create_lesson_offer(p.giver, 1, interval '2 days')));
   insert into public.karma_ledger (user_id, event_type, points_delta, ref_type, ref_id)
   values (p.giver, 'giving_handoff_giver', 60, 'giving_handoff', v_h::text);
   perform kc_test.assert_eq(
-    public.knowledge_session_giver_points(p.giver, now() - interval '3 hours', now() - interval '1 hour'), 5,
+    public.knowledge_session_giver_units(p.giver, now() - interval '3 hours', now() - interval '1 hour'), 1,
     'the giver earns at most 80 a day from knowledge sessions');
 end $$;
 

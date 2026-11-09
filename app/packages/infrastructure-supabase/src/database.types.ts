@@ -14841,7 +14841,7 @@ export type Database = {
       }
       knowledge_normalize_text: { Args: { p: string }; Returns: string }
       knowledge_offers_expired_sweep: { Args: never; Returns: number }
-      knowledge_session_giver_points: {
+      knowledge_session_giver_units: {
         Args: { p_ends_at: string; p_giver: string; p_starts_at: string }
         Returns: number
       }

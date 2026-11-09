@@ -129,7 +129,8 @@ begin
           and p.proname in ('reserve_item_giving', 'confirm_item_handoff', 'claim_food_giving',
                             'mark_giving_handed_over', 'book_ride_seat', 'confirm_ride_booking',
                             'decline_ride_booking', 'cancel_ride_booking', 'complete_ride_trip',
-                            'book_knowledge_slot', 'complete_knowledge_session',
+                            'book_knowledge_slot', 'book_knowledge_seat', 'confirm_knowledge_booking',
+                            'decline_knowledge_booking', 'complete_knowledge_session',
                             'request_housing_booking', 'decide_housing_booking', 'cancel_housing_booking',
                             'complete_housing_booking', 'mark_housing_no_show', 'delete_my_listing')
           and p.prosrc ~* 'from\s+public\.giving_handoffs'$q$,
@@ -140,12 +141,18 @@ begin
           and p.proname in ('reserve_item_giving', 'confirm_item_handoff', 'claim_food_giving',
                             'mark_giving_handed_over', 'book_ride_seat', 'confirm_ride_booking',
                             'decline_ride_booking', 'cancel_ride_booking', 'complete_ride_trip',
-                            'book_knowledge_slot', 'complete_knowledge_session',
+                            'book_knowledge_seat', 'confirm_knowledge_booking', 'decline_knowledge_booking',
+                            'complete_knowledge_session',
                             'request_housing_booking', 'decide_housing_booking', 'cancel_housing_booking',
                             'complete_housing_booking', 'mark_housing_no_show')
           and p.prorettype = 'public.giving_handoffs'::regtype
           and p.prosrc ~ 'giving_handoff_row_of'$q$,
-    16, 'the sixteen writers still return giving_handoffs, built by the helper');
+    18, 'the eighteen writers still return giving_handoffs, built by the helper');
+  -- The pre-slot entry point (0701) delegates to book_knowledge_seat, which builds the row.
+  perform kc_test.assert_true(
+    (select prosrc ~ 'book_knowledge_seat' and prorettype = 'public.giving_handoffs'::regtype
+       from pg_proc where oid = 'public.book_knowledge_slot(uuid)'::regprocedure),
+    'book_knowledge_slot returns the seat booking''s row');
 end $$;
 
 -- ── 1. items: reserve, confirm, hand over ─────────────────────────────────────────────────────

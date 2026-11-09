@@ -247,9 +247,10 @@ end;
 $$;
 
 -- ── 4. Completion and karma ───────────────────────────────────────────────────────────────────
--- Giver karma for a session: 5 a started half hour (10 an hour), never more than what is left of
--- the 80-a-day cap of knowledge sessions (D32), counted on the Israeli calendar day.
-create or replace function public.knowledge_session_giver_points(
+-- Giver karma units of a session: one a started half hour, each worth the knowledge giver value
+-- of karma_handoff_points (5, so 10 an hour), never more units than what is left of the 80-a-day
+-- cap of knowledge sessions (D32), counted on the Israeli calendar day.
+create or replace function public.knowledge_session_giver_units(
   p_giver uuid, p_starts_at timestamptz, p_ends_at timestamptz
 )
 returns integer
@@ -267,12 +268,12 @@ as $$
        and h.world_slug = 'knowledge'
        and (l.created_at at time zone 'Asia/Jerusalem')::date = (now() at time zone 'Asia/Jerusalem')::date
   )
-  -- A booking without times (published before slots existed) counts as one half hour.
+  -- A booking without times (published before slots existed) counts as one half hour. Integer
+  -- division floors what is left of the cap to whole units.
   select greatest(0, least(
-           public.karma_handoff_points('knowledge', 'giver')
-             * greatest(1, ceil(extract(epoch from coalesce(p_ends_at - p_starts_at, interval '30 minutes'))
-                                / 1800.0)::integer),
-           80 - earned_today.points))
+           greatest(1, ceil(extract(epoch from coalesce(p_ends_at - p_starts_at, interval '30 minutes'))
+                            / 1800.0)::integer),
+           (80 - earned_today.points) / public.karma_handoff_points('knowledge', 'giver')))
     from earned_today;
 $$;
 
@@ -285,7 +286,7 @@ as $$
 declare
   v_uid uuid := auth.uid();
   v_h public.post_handoffs;
-  v_points integer;
+  v_units integer;
 begin
   if v_uid is null then raise exception 'auth_required' using errcode = '42501'; end if;
   select * into v_h from public.post_handoffs
@@ -304,13 +305,15 @@ begin
      set status = 'handed_over', handed_over_at = now(), confirmed_at = coalesce(confirmed_at, now())
    where handoff_id = p_handoff_id;
 
-  v_points := public.knowledge_session_giver_points(v_h.owner_id, v_h.slot_starts_at, v_h.slot_ends_at);
-  if v_points > 0 then
-    perform public.karma_grant_once(v_h.owner_id, 'giving_handoff_giver', 'giving_handoff',
-                                    p_handoff_id::text, v_points);
+  -- Karma goes through the one config (0453): the giver per half hour, the learner once.
+  v_units := public.knowledge_session_giver_units(v_h.owner_id, v_h.slot_starts_at, v_h.slot_ends_at);
+  if v_units > 0 then
+    perform public.karma_award_handoff(v_h.owner_id, v_h.recipient_id, 'knowledge', p_handoff_id, v_units);
+  else
+    -- The giver reached today's cap; the learner still earns their share.
+    perform public.karma_grant_once(v_h.recipient_id, 'giving_handoff_receiver', 'giving_handoff',
+                                    p_handoff_id::text, public.karma_handoff_points('knowledge', 'receiver'));
   end if;
-  perform public.karma_grant_once(v_h.recipient_id, 'giving_handoff_receiver', 'giving_handoff',
-                                  p_handoff_id::text, public.karma_handoff_points('knowledge', 'receiver'));
   return public.giving_handoff_row_of(p_handoff_id);
 end;
 $$;
@@ -464,7 +467,7 @@ revoke all on function public.complete_knowledge_session(uuid) from public, anon
 grant execute on function public.complete_knowledge_session(uuid) to authenticated;
 -- Internal: RPCs, triggers and pg_cron only.
 revoke all on function public.knowledge_lock_waiting_booking(uuid) from public, anon, authenticated;
-revoke all on function public.knowledge_session_giver_points(uuid, timestamptz, timestamptz) from public, anon, authenticated;
+revoke all on function public.knowledge_session_giver_units(uuid, timestamptz, timestamptz) from public, anon, authenticated;
 revoke all on function public.knowledge_bookings_expire_sweep() from public, anon, authenticated;
 revoke all on function public.knowledge_offers_expired_sweep() from public, anon, authenticated;
 revoke all on function public.knowledge_booking_notify() from public, anon, authenticated;

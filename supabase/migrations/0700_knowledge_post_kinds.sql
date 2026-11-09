@@ -422,8 +422,8 @@ as $$
     when 'rides'     then case p_role when 'giver' then 25 else 10 end
     -- Hosting: per night for the host, once for the guest (§7.6 "host 30 / night; guest 10").
     when 'housing'   then case p_role when 'giver' then 30 else 10 end
-    -- Knowledge: per started half hour for the giver, once for the learner (0700).
-    when 'knowledge' then case p_role when 'giver' then 5 else 5 end
+    -- Knowledge: 5 for the giver per started half hour, 5 once for the learner (0700).
+    when 'knowledge' then 5
     else case p_role when 'giver' then 5 else 3 end
   end;
 $$;
