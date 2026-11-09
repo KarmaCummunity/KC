@@ -315,9 +315,10 @@ begin
   select * into p from personas;
   perform kc_test.act_as(p.pager);
   insert into public.posts (post_id, owner_id, type, title, description, category, city, street, street_number, item_condition, urgency_level, kind_id)
-  select t.id, p.pager, 'Give', 'item ' || t.ord, 'solid oak', 'Furniture', 'tel-aviv', 'Herzl', '1', 'Good', 1::smallint,
-         case when t.ord = 3 then null else v_kind end
+  select t.id, p.pager, 'Give', 'item ' || t.ord, 'solid oak', 'Furniture', 'tel-aviv', 'Herzl', '1', 'Good', 1::smallint, v_kind
     from unnest(v_ids) with ordinality as t(id, ord);
+  -- Only an insert derives a kind (0693), so a kind-less row is made by clearing it.
+  update public.posts set kind_id = null where post_id = v_ids[3];
 
   v_first := pg_temp.old_my_listings(2, 0, null, null);
   perform kc_test.assert_eq(jsonb_array_length(v_first), 2, 'T2: the first page is full');
