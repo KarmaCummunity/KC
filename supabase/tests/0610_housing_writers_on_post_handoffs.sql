@@ -211,7 +211,7 @@ begin
   perform kc_test.assert_eq((r ->> 'handoff_field_mismatches')::int, 0, 'and both sides agree');
   perform kc_test.assert_row_count(
     'select 1 from public.post_handoffs t where not exists (select 1 from public.giving_handoffs g where g.handoff_id = t.handoff_id)',
-    case when exists (select 1 from pg_trigger where tgname = 'post_handoffs_giving_sync') then 0 else 9 end,
+    case when (select relkind from pg_class where relname = 'giving_handoffs' and relnamespace = 'public'::regnamespace) = 'v' or exists (select 1 from pg_trigger where tgname = 'post_handoffs_giving_sync') then 0 else 9 end,
     'no record is without its derived row while sync is active');
 end $$;
 

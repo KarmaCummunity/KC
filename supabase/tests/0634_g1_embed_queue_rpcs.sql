@@ -101,16 +101,26 @@ begin
     'and not on the listing');
   perform kc_test.assert_eq((pg_temp.job_of(v_owned)).status, 'done', 'the job is done');
 
-  perform public.embedding_job_store((pg_temp.job_of(v_direct)).job_id, pg_temp.vec(0.2), 'm2');
-  perform kc_test.assert_eq((select embedding_model from public.listings where listing_id = v_direct), 'm2',
-    'a listing-sourced listing''s embedding is stored on the listing');
-  perform kc_test.assert_row_count(
-    format('select 1 from public.post_embeddings where post_id = %L', public.post_id_of_listing(v_direct)), 0,
-    'and not on its mirror post');
+  if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then
+    perform public.embedding_job_store((pg_temp.job_of(v_direct)).job_id, pg_temp.vec(0.2), 'm2');
+    perform kc_test.assert_eq((select embedding_model from public.listings where listing_id = v_direct), 'm2',
+      'a listing-sourced listing''s embedding is stored on the listing');
+    perform kc_test.assert_row_count(
+      format('select 1 from public.post_embeddings where post_id = %L', public.post_id_of_listing(v_direct)), 0,
+      'and not on its mirror post');
 
-  perform public.embedding_job_store((pg_temp.job_of(v_items)).job_id, pg_temp.vec(0.3), 'm3');
-  perform kc_test.assert_eq((select embedding_model from public.listings where listing_id = v_items), 'm3',
-    'an items listing''s embedding is stored on the listing');
+    perform public.embedding_job_store((pg_temp.job_of(v_items)).job_id, pg_temp.vec(0.3), 'm3');
+    perform kc_test.assert_eq((select embedding_model from public.listings where listing_id = v_items), 'm3',
+      'an items listing''s embedding is stored on the listing');
+  else
+    perform public.embedding_job_store((pg_temp.job_of(v_direct)).job_id, pg_temp.vec(0.2), 'm2');
+    perform kc_test.assert_eq((select embedding_model from public.post_embeddings where post_id = public.post_id_of_listing(v_direct)), 'm2',
+      'a listing-sourced listing''s embedding is stored on post_embeddings in 6d');
+    perform public.embedding_job_store((pg_temp.job_of(v_items)).job_id, pg_temp.vec(0.3), 'm3');
+    perform kc_test.assert_eq((select embedding_model from public.post_embeddings where post_id = public.post_id_of_listing(v_items)), 'm3',
+      'an items listing''s embedding is stored on post_embeddings in 6d');
+    perform kc_test.assert_true(true, 'listings is a view');
+  end if;
   perform kc_test.assert_eq(
     (select public.listing_embedding_of(l) from public.listings l where l.listing_id = v_owned), pg_temp.vec(0.1),
     'the post-owned listing ranks on what was stored (0633)');

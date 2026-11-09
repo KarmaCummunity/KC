@@ -75,6 +75,7 @@ begin
   returning listing_id into v_listing_id;
 
   if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync')
+     and (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r'
      and (select moderation_status from public.listings where listing_id = v_listing_id) = 'published' then
     insert into public.posts (
       owner_id, type, visibility, title, description, category, city, street, street_number,

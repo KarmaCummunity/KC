@@ -146,7 +146,11 @@ begin
       'topic', 'SQL', 'level', 'beginner', 'modality', 'video', 'slots_available', 2,
       'slot_starts_at', kc_test.iso_in(interval '10 minutes'),
       'slot_ends_at', kc_test.iso_in(interval '2 hours')));
-  perform kc_test.assert_eq(public.post_id_of_listing(v), null::uuid, 'a pending knowledge listing has no post');
+  if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then
+    perform kc_test.assert_eq(public.post_id_of_listing(v), null::uuid, 'a pending knowledge listing has no post');
+  else
+    perform kc_test.assert_eq(public.post_id_of_listing(v), v, 'a pending knowledge listing has its post');
+  end if;
   perform kc_test.act_as(p.mentor);
   perform public.pause_my_listing(v);
   perform kc_test.assert_eq(kc_test.listing_status(v), 'cancelled', 'a listing without a post is paused on the listing');

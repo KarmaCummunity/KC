@@ -36,17 +36,19 @@ begin
     from public.listing_kinds where world_slug = 'food' and slug = 'give_food'
   returning listing_id into v_id;
 
-  insert into public.posts (
-    owner_id, type, visibility, title, category, city, street, street_number,
-    world_slug, direction, post_type, details, listing_id, listing_world_slug, legacy_listing_id,
-    status, moderation_status, published_at, expires_at
-  )
-  select p_owner, 'Give', 'Public', p_title, 'Other', 'tel-aviv', 'Marketplace', '1',
-         'food', 'offer', 'standard',
-         jsonb_build_object('food_type', 'cooked', 'expires_at', to_char(p_expires_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')),
-         v_id, 'food', v_id, 'open', 'published', now(), p_expires_at
-  returning post_id into p_post;
-  update public.listings set legacy_post_id = p_post where listing_id = v_id;
+  if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then
+    insert into public.posts (
+      owner_id, type, visibility, title, category, city, street, street_number,
+      world_slug, direction, post_type, details, listing_id, listing_world_slug, legacy_listing_id,
+      status, moderation_status, published_at, expires_at
+    )
+    select p_owner, 'Give', 'Public', p_title, 'Other', 'tel-aviv', 'Marketplace', '1',
+           'food', 'offer', 'standard',
+           jsonb_build_object('food_type', 'cooked', 'expires_at', to_char(p_expires_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')),
+           v_id, 'food', v_id, 'open', 'published', now(), p_expires_at
+    returning post_id into p_post;
+    update public.listings set legacy_post_id = p_post where listing_id = v_id;
+  end if;
 
   return v_id;
 end $$;
@@ -87,13 +89,17 @@ begin
   insert into public.giving_handoffs (listing_id, owner_id, recipient_id, world_slug, status)
   values (v_stale, v_giver, v_taker, 'food', 'reserved')
   returning handoff_id into v_handoff;
-  alter table public.listings disable trigger listings_food_expiry_block;
+  if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then
+    execute 'alter table public.listings disable trigger listings_food_expiry_block';
+  end if;
   if exists (select 1 from pg_trigger where tgname = 'posts_before_write_world_rules') then
     alter table public.posts disable trigger posts_before_write_world_rules;
   end if;
   update public.listings set expires_at = now() - interval '1 minute' where listing_id = v_stale;
   update public.posts set expires_at = now() - interval '1 minute' where listing_id = v_stale;
-  alter table public.listings enable trigger listings_food_expiry_block;
+  if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then
+    execute 'alter table public.listings enable trigger listings_food_expiry_block';
+  end if;
   if exists (select 1 from pg_trigger where tgname = 'posts_before_write_world_rules') then
     alter table public.posts enable trigger posts_before_write_world_rules;
   end if;

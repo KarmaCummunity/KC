@@ -110,7 +110,7 @@ begin
   perform kc_test.assert_row_count(
     $q$select tgname from pg_trigger
         where tgrelid = 'public.giving_handoffs'::regclass and not tgisinternal
-          and tgname not in ('giving_handoffs_rate_limit', 'giving_handoffs_post_handoffs_sync')$q$,
+          and tgname not in ('giving_handoffs_rate_limit', 'giving_handoffs_post_handoffs_sync', 'trg_giving_handoffs_view_insert', 'trg_giving_handoffs_view_update', 'trg_giving_handoffs_view_delete')$q$,
     0, 'giving_handoffs keeps only its write cap and its sync to the record');
   perform kc_test.assert_row_count(
     $q$select 1 from pg_trigger t
@@ -335,9 +335,9 @@ begin
   v_handoff := (public.claim_food_giving(v_listing)).handoff_id;
 
   -- The expiry block trigger is paused so the offer can pass its expiry inside this transaction (0467).
-  alter table public.listings disable trigger listings_food_expiry_block;
+  if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then execute 'alter table public.listings disable trigger listings_food_expiry_block'; end if;
   update public.listings set expires_at = now() - interval '1 minute' where listing_id = v_listing;
-  alter table public.listings enable trigger listings_food_expiry_block;
+  if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then execute 'alter table public.listings enable trigger listings_food_expiry_block'; end if;
   update public.posts set expires_at = now() - interval '1 minute' where listing_id = v_listing;
 
   perform set_config('request.jwt.claims', '', true);

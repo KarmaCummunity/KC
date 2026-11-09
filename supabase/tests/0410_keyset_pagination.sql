@@ -20,11 +20,13 @@ end $$;
 do $$
 declare
   v_owner uuid := '00000000-0000-0000-0000-000000410001';
+  v_feed_user uuid := '00000000-0000-0000-0000-000000410002';
   v_kind uuid;
   v_city text;
   i int;
 begin
   perform pg_temp.mk_user(v_owner, 'keyset_owner');
+  perform pg_temp.mk_user(v_feed_user, 'keyset_feed_user');
   select kind_id into v_kind from public.listing_kinds where world_slug = 'items' and slug = 'give_item';
   select city_id into v_city from public.cities limit 1;
 
@@ -46,7 +48,7 @@ begin
   values (v_owner, 'items', v_kind, 'give', 'keysetlisting hidden', 'native', 'pending_review', '{}'::jsonb);
 
   -- 20 posts inserted in one transaction share created_at = now().
-  perform public.seed_feed_performance_posts(v_owner, v_city, 20);
+  perform public.seed_feed_performance_posts(v_feed_user, v_city, 20);
   perform public.refresh_feed_open_posts_mv(false);
 end $$;
 
@@ -154,7 +156,7 @@ end $$;
 -- ── feed_ranked_ids: 20 posts with identical created_at ─────────────────────
 do $$
 declare
-  v_owner uuid := '00000000-0000-0000-0000-000000410001';
+  v_feed_user uuid := '00000000-0000-0000-0000-000000410002';
   v_sort text;
   v_seen uuid[];
   r record;
@@ -169,7 +171,7 @@ begin
       for r in
         select f.*, p.created_at as p_created
           from public.feed_ranked_ids(
-            p_viewer_id => v_owner, p_sort_order => v_sort, p_page_limit => 6,
+            p_viewer_id => v_feed_user, p_sort_order => v_sort, p_page_limit => 6,
             p_cursor_created_at => c_at, p_cursor_post_id => c_id, p_cursor_rank_score => c_score) f
           join public.posts p on p.post_id = f.post_id
       loop
@@ -184,7 +186,7 @@ begin
       v_guard := v_guard + 1;
       if v_guard > 50 then raise exception 'ASSERT FAILED: feed paging (%) did not terminate', v_sort; end if;
     end loop;
-    if (select count(*) from public.posts where owner_id = v_owner and status = 'open'
+    if (select count(*) from public.posts where owner_id = v_feed_user and status = 'open'
           and post_id <> all(v_seen)) > 0 then
       raise exception 'ASSERT FAILED: feed_ranked_ids(%) skipped posts sharing created_at (saw %)', v_sort, cardinality(v_seen);
     end if;

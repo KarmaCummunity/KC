@@ -33,7 +33,7 @@ end $$;
 -- The listing's feed mirror (D-206), or null when the listing has none.
 create function pg_temp.mirror_status(p_listing uuid)
 returns text language sql as $$
-  select status::text from public.posts where listing_id = p_listing
+  select status::text from public.posts where listing_id = p_listing or post_id = p_listing limit 1
 $$;
 
 -- 1) Publishing: an offer carries the giver's expiry (D28); a request has none (D21).
@@ -163,7 +163,9 @@ begin
 
   -- Simulate the hour passing: writing a past expiry would fire the write-time block (0266)
   -- instead of leaving the rows for the hourly sweep, so that trigger is off for the backdate.
-  alter table public.listings disable trigger listings_food_expiry_block;
+  if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then
+    execute 'alter table public.listings disable trigger listings_food_expiry_block';
+  end if;
   if exists (select 1 from pg_trigger where tgname = 'posts_before_write_world_rules') then
     alter table public.posts disable trigger posts_before_write_world_rules;
   end if;
@@ -171,9 +173,11 @@ begin
    where listing_id in (v_unclaimed, v_claimed);
   if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
     update public.posts set expires_at = now() - interval '1 minute'
-     where listing_id in (v_unclaimed, v_claimed);
+     where listing_id in (v_unclaimed, v_claimed) or post_id in (v_unclaimed, v_claimed);
   end if;
-  alter table public.listings enable trigger listings_food_expiry_block;
+  if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then
+    execute 'alter table public.listings enable trigger listings_food_expiry_block';
+  end if;
   if exists (select 1 from pg_trigger where tgname = 'posts_before_write_world_rules') then
     alter table public.posts enable trigger posts_before_write_world_rules;
   end if;
