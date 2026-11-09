@@ -16,3 +16,4 @@ export { housingBookingMachine } from './machines/housingBooking';
 export { eventRegistrationMachine } from './machines/eventRegistration';
 export { onboardingMachine } from './machines/onboarding';
 export { handoffMachineFor } from './machines/handoffMachineFor';
+export { accountStatusMachine } from './machines/accountStatus';
