@@ -1,4 +1,4 @@
--- supabase/tests/0701_fsm_comments_knowledge_topics.sql
+-- supabase/tests/0702_fsm_comments_knowledge_topics.sql
 -- Wave 4b (#1989): post comments and knowledge topics follow the kernel machines `post_comment`
 -- and `knowledge_topic`. Comments are written only through their RPCs, and approving an active
 -- topic keeps its original reviewer. Runs in a rolled-back transaction.
@@ -87,4 +87,4 @@ end $$;
 
 rollback;
 
-\echo '✓ 0701_fsm_comments_knowledge_topics.sql passed'
+\echo '✓ 0702_fsm_comments_knowledge_topics.sql passed'

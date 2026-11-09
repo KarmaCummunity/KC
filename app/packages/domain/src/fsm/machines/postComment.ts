@@ -8,7 +8,7 @@ import { defineMachine } from '../machine';
  *   there is no restore and no admin path.
  * - Edits keep the status (`rpc_update_post_comment`), so they are not transitions.
  *
- * SQL copy: `supabase/migrations/0701_fsm_comments_knowledge_topics.sql`.
+ * SQL copy: `supabase/migrations/0702_fsm_comments_knowledge_topics.sql`.
  */
 export const postCommentMachine = defineMachine({
   id: 'post_comment',

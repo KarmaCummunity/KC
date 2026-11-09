@@ -52,7 +52,7 @@ const DURATIONS_MIN: readonly number[] = [30, 60, 120, 180, 240];
 /** Field sets keyed by listing kind slug (`listing_kinds.slug`). Order = render order. */
 const SPECS_BY_KIND: Readonly<Record<string, readonly ListingFieldSpec[]>> = {
   give_food: [
-    { key: 'food_type', type: 'choice', required: true, options: ['cooked', 'packaged', 'fresh', 'frozen', 'dry', 'beverage'] },
+    // No `food_type`: the food world's sub-category picker is the food type (D137, KC#1398).
     { key: 'expires_at', type: 'dateTime', required: true },
     { key: 'allergens', type: 'multiChoice', options: ['gluten', 'milk', 'eggs', 'nuts', 'peanuts', 'soy', 'fish', 'sesame'] },
     { key: 'kosher', type: 'choice', options: ['yes', 'no'] },

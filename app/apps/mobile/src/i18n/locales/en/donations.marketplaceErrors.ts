@@ -4,6 +4,7 @@
 
 export const marketplaceErrors = {
   offer_photo_required: 'Please add at least one photo to your offer.',
+  food_subcategory_required: 'Please choose the type of food.',
   food_expiry_required: 'Please enter a future expiry date and time for the food.',
   routed_world_requires_external_body: 'Please choose a verified organisation before publishing in this world.',
   ride_route_required: 'Choose where the ride starts and where it ends.',

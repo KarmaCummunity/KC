@@ -22,6 +22,8 @@ describe('fieldForRule', () => {
     expect(fieldForRule('routed_world_requires_external_body', {})).toBe('org');
     // D132 (KC#1937): a missing offer photo outlines the photo picker.
     expect(fieldForRule('offer_photo_required', {})).toBe('photos');
+    // D137 (KC#1398): a missing food type outlines the sub-category picker.
+    expect(fieldForRule('food_subcategory_required', {})).toBe('subcategory');
   });
 });
 
@@ -41,6 +43,11 @@ describe('renderedListingFields', () => {
   it('other worlds show title, city, the visible details and the organization of an event', () => {
     const fields = renderedListingFields({ isRides: false, isOrgEvent: true, detailKeys: ['starts_at'] });
     expect([...fields]).toEqual(['title', 'city', 'photos', 'org', 'detail:starts_at']);
+  });
+
+  it('includes the sub-category picker in the worlds that show it', () => {
+    const fields = renderedListingFields({ isRides: false, isOrgEvent: false, detailKeys: [], showSubcategory: true });
+    expect(fields.has('subcategory')).toBe(true);
   });
 });
 

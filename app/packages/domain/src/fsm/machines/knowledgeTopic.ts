@@ -9,7 +9,7 @@ import { defineMachine } from '../machine';
  * - `merged` is final. Rejecting a proposal deletes the row, so it is not a state.
  * - Approving an active topic is a same-status no-op: it keeps the original `approved_by`.
  *
- * SQL copy: `supabase/migrations/0701_fsm_comments_knowledge_topics.sql`.
+ * SQL copy: `supabase/migrations/0702_fsm_comments_knowledge_topics.sql`.
  */
 export const knowledgeTopicMachine = defineMachine({
   id: 'knowledge_topic',

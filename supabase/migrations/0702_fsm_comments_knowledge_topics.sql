@@ -1,4 +1,4 @@
--- 0701_fsm_comments_knowledge_topics | Wave 4b of the FSM kernel program (#1989, G61)
+-- 0702_fsm_comments_knowledge_topics | Wave 4b of the FSM kernel program (#1989, G61)
 --
 -- 1. `post_comments.status` (machine `post_comment`): active → deleted, final (FR-POST-014..018,
 --    0250 / 0251). A before-update trigger guards every writer. Comments are written only through
@@ -58,7 +58,7 @@ end;
 $$;
 
 comment on function kc_private.post_comments_enforce_fsm() is
-  'FSM wave 4b (0701): post_comments.status moves follow machine `post_comment`; raises post_comment_transition_invalid (23514) otherwise.';
+  'FSM wave 4b (0702): post_comments.status moves follow machine `post_comment`; raises post_comment_transition_invalid (23514) otherwise.';
 
 revoke all on function kc_private.post_comments_enforce_fsm() from public, anon, authenticated;
 
@@ -96,7 +96,7 @@ end;
 $$;
 
 comment on function kc_private.knowledge_topics_enforce_fsm() is
-  'FSM wave 4b (0701): knowledge_topics.status moves follow machine `knowledge_topic`; raises knowledge_topic_transition_invalid (23514) otherwise.';
+  'FSM wave 4b (0702): knowledge_topics.status moves follow machine `knowledge_topic`; raises knowledge_topic_transition_invalid (23514) otherwise.';
 
 revoke all on function kc_private.knowledge_topics_enforce_fsm() from public, anon, authenticated;
 
@@ -211,7 +211,7 @@ begin
   end if;
 
   if p_action = 'approve' then
-    -- 0701: approving an active topic is a no-op; it no longer overwrites approved_by.
+    -- 0702: approving an active topic is a no-op; it no longer overwrites approved_by.
     if v_row.status = 'proposed' then
       update knowledge_topics set status = 'active', approved_by = v_uid
        where topic_id = p_topic_id returning * into v_row;
