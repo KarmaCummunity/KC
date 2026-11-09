@@ -27,7 +27,7 @@ begin
     post_id, owner_id, type, status, visibility, title, description, category, city,
     street, street_number, location_display_level, world_slug, direction, post_type,
     details, kind_id, moderation_status, published_at, expires_at, availability_status, geo,
-    listing_world_slug, source_language
+    source_language
   )
   select
     gen_random_uuid(),
@@ -61,7 +61,6 @@ begin
     dep.v_dep + interval '72 hours',
     'ongoing',
     public.listing_geo_from_city(o.city_id),
-    'rides',
     'he'
   from generate_series(1, 120) g
   cross join lateral (
