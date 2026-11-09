@@ -89,7 +89,7 @@ While signed in as the Super Admin, the user-profile screen exposes a "Ban user"
 **Acceptance Criteria.**
 - AC1. The action is hidden for non-admin sessions (`User.is_super_admin = false`).
 - AC2. Tapping it shows a modal asking for a reason (`spam`, `harassment`, `policy_violation`, `other` + free text); on confirm the target's `account_status = banned`.
-- AC3. Ban is **permanent** in MVP (no scheduled unban). The user can appeal via the support thread; the admin manually flips status if accepted.
+- AC3. Ban is **permanent** in MVP (no scheduled unban). The user can appeal via the support thread; if the appeal is accepted, a **super admin** lifts the ban through the user restore action (`admin_restore_target`, audited; {{D:unban-super-admin}}). An account under deletion cannot be banned (`account_pending_deletion`).
 - AC4. Audit event recorded.
 
 **Related.** Domain: `User`, `AuditEvent`.
