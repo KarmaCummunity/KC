@@ -7,7 +7,7 @@ export const RIDE_FIELDS = ['ride:origin', 'ride:dest', 'ride:departure', 'ride:
 export type RideFormField = (typeof RIDE_FIELDS)[number];
 
 /** A field of the listing form; `detail:<key>` is one category-specific field. */
-export type ListingFormField = 'title' | 'city' | 'org' | RideFormField | `detail:${string}`;
+export type ListingFormField = 'title' | 'city' | 'org' | 'photos' | RideFormField | `detail:${string}`;
 
 export interface ListingFormProblem {
   readonly message: string;
@@ -26,6 +26,8 @@ function hasCoords(details: Readonly<Record<string, unknown>>, end: 'origin' | '
 /** The field a client-side world-rule failure points at. */
 export function fieldForRule(code: MarketplaceRuleErrorCode, details: Readonly<Record<string, unknown>>): ListingFormField {
   switch (code) {
+    case 'offer_photo_required':
+      return 'photos';
     case 'ride_route_required':
       return hasCoords(details, 'origin') ? 'ride:dest' : 'ride:origin';
     case 'ride_departure_past':
@@ -55,6 +57,8 @@ export interface RenderedFieldsInput {
 /** The fields the listing form currently shows (rides: route + schedule instead of title + city). */
 export function renderedListingFields({ isRides, isOrgEvent, detailKeys }: RenderedFieldsInput): Set<ListingFormField> {
   const fields = new Set<ListingFormField>(isRides ? RIDE_FIELDS : ['title', 'city']);
+  // Every listing form shows the photo picker (rides place it last).
+  fields.add('photos');
   if (isOrgEvent) fields.add('org');
   for (const key of detailKeys) fields.add(detailField(key));
   return fields;

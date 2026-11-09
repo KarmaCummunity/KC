@@ -3,6 +3,7 @@
 // Keys mirror MARKETPLACE_SERVER_ERROR_CODES in @kc/domain (marketplaceWorldRules.ts).
 
 export const marketplaceErrors = {
+  offer_photo_required: 'יש להוסיף לפחות תמונה אחת להצעה.',
   food_expiry_required: 'יש להזין תאריך ושעת תפוגה עתידיים למזון.',
   routed_world_requires_external_body: 'יש לבחור ארגון מאומת לפני הפרסום בעולם זה.',
   ride_route_required: 'בחרו מאיפה הנסיעה יוצאת ולאן היא מגיעה.',

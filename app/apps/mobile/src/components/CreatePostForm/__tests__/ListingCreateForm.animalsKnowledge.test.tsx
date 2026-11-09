@@ -16,6 +16,8 @@ const mocks = vi.hoisted(() => ({
   listKindsForWorld: vi.fn(),
   createListing: vi.fn(),
   nativeDatePicker: vi.fn(() => null),
+  pickListingImages: vi.fn(async () => [] as { uri: string }[]),
+  uploadListingImages: vi.fn(async () => [] as string[]),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -40,7 +42,10 @@ vi.mock('../../giving/RideCreateSection', () => ({
   RIDE_CREATE_DETAIL_KEYS: [],
   RideCreateSection: () => null,
 }));
-vi.mock('../../../services/listingImageUpload', () => ({ pickListingImages: vi.fn(async () => []), uploadListingImages: vi.fn() }));
+vi.mock('../../../services/listingImageUpload', () => ({
+  pickListingImages: mocks.pickListingImages,
+  uploadListingImages: mocks.uploadListingImages,
+}));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn(), trackActivationIfFirst: vi.fn() }));
 vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticLightTap: () => {} }));
 vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarScrollInset: () => 0 }));
@@ -125,6 +130,17 @@ describe('ListingCreateForm — knowledge & animals (#1630, #1625)', () => {
   it('publishes an adoption offer with default species and city', async () => {
     const { onPublished } = renderForm('animals', 'give', 'כלבלב מתוק');
     fireEvent.click(await screen.findByTestId('city-picker'));
+    // An animal offer needs a photo ({{D:offer-photo-required}}, KC#1937): refused at the photo picker first.
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('listing-publish'));
+    });
+    expect(await screen.findByText('marketplace.errors.offer_photo_required')).toBeTruthy();
+    expect(mocks.createListing).not.toHaveBeenCalled();
+    mocks.pickListingImages.mockResolvedValueOnce([{ uri: 'file://puppy.jpg' }]);
+    mocks.uploadListingImages.mockResolvedValueOnce(['u1/puppy.jpg']);
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('post.addPhoto'));
+    });
     await act(async () => {
       fireEvent.click(screen.getByTestId('listing-publish'));
     });
@@ -135,6 +151,7 @@ describe('ListingCreateForm — knowledge & animals (#1630, #1625)', () => {
         title: 'כלבלב מתוק',
         details: expect.objectContaining({ species: 'dog' }),
         cityId: '7000',
+        mediaPaths: ['u1/puppy.jpg'],
       }),
     );
   });

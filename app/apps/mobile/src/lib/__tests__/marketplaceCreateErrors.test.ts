@@ -17,9 +17,16 @@ describe('marketplaceServerErrorKey', () => {
 });
 
 describe('marketplaceRuleFieldError', () => {
-  it('items without photos → no error (photos are optional)', () => {
-    expect(marketplaceRuleFieldError({ worldSlug: 'items', direction: 'give', details: {}, photoCount: 0 })).toBeNull();
+  it('an items offer without photos → inline photo error ({{D:offer-photo-required}}, KC#1937)', () => {
+    expect(marketplaceRuleFieldError({ worldSlug: 'items', direction: 'give', details: {}, photoCount: 0 })).toEqual({
+      code: 'offer_photo_required',
+      field: 'photos',
+      key: 'marketplace.errors.offer_photo_required',
+    });
     expect(marketplaceRuleFieldError({ worldSlug: 'items', direction: 'give', details: {}, photoCount: 2 })).toBeNull();
+  });
+  it('a listing edit passes no photo count → no photo error', () => {
+    expect(marketplaceRuleFieldError({ worldSlug: 'animals', direction: 'give', details: {} })).toBeNull();
   });
   it('food offer without expiry → inline details error', () => {
     expect(marketplaceRuleFieldError({ worldSlug: 'food', direction: 'give', details: {}, photoCount: 0 })?.field).toBe('details');
