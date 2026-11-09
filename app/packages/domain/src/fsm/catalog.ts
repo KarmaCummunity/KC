@@ -3,6 +3,7 @@ import { adminTaskMachine } from './machines/adminTask';
 import { eventRegistrationMachine } from './machines/eventRegistration';
 import { givingHandoffMachine } from './machines/givingHandoff';
 import { housingBookingMachine } from './machines/housingBooking';
+import { onboardingMachine } from './machines/onboarding';
 import { postMachine } from './machines/post';
 import { rideBookingMachine } from './machines/rideBooking';
 
@@ -21,4 +22,5 @@ export const FSM_MACHINES: readonly FsmMachine<string, string>[] = [
   rideBookingMachine,
   housingBookingMachine,
   eventRegistrationMachine,
+  onboardingMachine,
 ];

@@ -25,7 +25,7 @@ export class ReconcileDeferredBasicInfoUseCase {
     if (!user || user.dateOfBirth === null || !isProfileComplete(user)) return null;
 
     // `isProfileComplete` requires avatar (FR-VERIFY-012), so onboarding can jump to completed.
-    await this.users.setOnboardingState(input.userId, 'completed');
+    await this.users.setOnboardingState('completed');
     return 'completed';
   }
 }
