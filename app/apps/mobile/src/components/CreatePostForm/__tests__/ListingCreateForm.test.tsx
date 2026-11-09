@@ -162,7 +162,7 @@ describe('ListingCreateForm — renders every category', () => {
   it('shows the category-specific fields of the chosen direction', async () => {
     const { rerender } = renderForm('food', 'give');
     expect(await screen.findByTestId('listing-field-expires_at')).toBeTruthy();
-    // The food type is the sub-category picker, not a detail field ({{D:food-type-is-subcategory}}, KC#1398).
+    // The food type is the sub-category picker, not a detail field (D137, KC#1398).
     expect(screen.getByTestId('listing-subcategory-field')).toBeTruthy();
     expect(screen.queryByTestId('listing-field-food_type')).toBeNull();
     rerender('request');

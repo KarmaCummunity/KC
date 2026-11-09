@@ -184,7 +184,7 @@ describe('validateMarketplaceWorldRules — offer photo', () => {
   });
 });
 
-// {{D:food-type-is-subcategory}} (KC#1398): a food offer's type is its world sub-category.
+// D137 (KC#1398): a food offer's type is its world sub-category.
 describe('validateMarketplaceWorldRules — food sub-category', () => {
   const future = { expires_at: '2026-10-18T12:00:00Z' };
   it('refuses a food offer with no sub-category', () => {
