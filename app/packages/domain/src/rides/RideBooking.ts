@@ -124,24 +124,6 @@ export function canBookRideSeats(
   return summary.free > 0 && requestedSeats <= summary.free;
 }
 
-/**
- * Valid state transitions for a ride booking:
- * - reserved -> confirmed (driver approves)
- * - reserved -> handed_over (trip completed)
- * - reserved -> cancelled (declined, expired, cancelled)
- * - confirmed -> handed_over (trip completed)
- * - confirmed -> cancelled (cancelled by passenger or driver)
- * - handed_over & cancelled are terminal.
- */
-export function isValidRideBookingTransition(
-  from: RideBookingStatus,
-  to: RideBookingStatus | 'cancelled',
-): boolean {
-  if (from === 'reserved') return to === 'confirmed' || to === 'handed_over' || to === 'cancelled';
-  if (from === 'confirmed') return to === 'handed_over' || to === 'cancelled';
-  return false;
-}
-
 export type RideBookingAction = 'approve' | 'decline' | 'cancel' | 'complete' | 'rate';
 
 /**

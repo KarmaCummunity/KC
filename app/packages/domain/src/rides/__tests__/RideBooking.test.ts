@@ -8,10 +8,8 @@ import {
   isRideBookingStatus,
   isRideTripCompletable,
   isValidRideBookingSeats,
-  isValidRideBookingTransition,
   summarizeRideSeats,
   type RideBooking,
-  type RideBookingStatus,
 } from '../RideBooking';
 
 function booking(status: RideBooking['status'], seats: number): RideBooking {
@@ -116,28 +114,6 @@ describe('canBookRideSeats — passenger seat counting', () => {
   it('rejects invalid seats', () => {
     expect(canBookRideSeats(4, [], 0)).toBe(false);
     expect(canBookRideSeats(4, [], 9)).toBe(false);
-  });
-});
-
-describe('isValidRideBookingTransition', () => {
-  it.each([
-    ['reserved', 'confirmed'],
-    ['reserved', 'handed_over'],
-    ['reserved', 'cancelled'],
-    ['confirmed', 'handed_over'],
-    ['confirmed', 'cancelled'],
-  ] as const)('permits valid transition from %s to %s', (from, to) => {
-    expect(isValidRideBookingTransition(from, to)).toBe(true);
-  });
-
-  it.each([
-    ['confirmed', 'reserved'],
-    ['handed_over', 'confirmed'],
-    ['handed_over', 'cancelled'],
-    ['cancelled', 'reserved'],
-    ['cancelled', 'confirmed'],
-  ] as const)('rejects invalid transition from %s to %s', (from, to) => {
-    expect(isValidRideBookingTransition(from as unknown as RideBookingStatus, to as unknown as RideBookingStatus)).toBe(false);
   });
 });
 
