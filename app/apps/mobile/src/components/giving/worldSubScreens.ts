@@ -15,3 +15,12 @@ export function worldSubScreens(
     ...extra,
   ];
 }
+
+/** Link to the world's dedicated links-only sub-screen (#1963). */
+export function worldLinksSubScreenLink(worldSlug: string): WorldSubScreenLink {
+  return {
+    labelKey: 'donations.worldLinksNav',
+    path: `/(tabs)/donations/${worldSlug}/links` as WorldSubScreenLink['path'],
+    testID: `world-hub-${worldSlug}-links`,
+  };
+}
