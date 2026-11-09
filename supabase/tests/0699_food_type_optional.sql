@@ -1,4 +1,4 @@
--- 0697 | KC#1398: a food offer's type is its world sub-category, so `give_food` no longer
+-- 0699 | KC#1398: a food offer's type is its world sub-category, so `give_food` no longer
 -- requires `food_type`. Offers from older app builds that still send it keep working, and the
 -- expiry stays required (D28). Runs in a rolled-back transaction.
 
@@ -48,4 +48,4 @@ end $$;
 
 rollback;
 
-\echo '✓ 0697_food_type_optional.sql passed'
+\echo '✓ 0699_food_type_optional.sql passed'

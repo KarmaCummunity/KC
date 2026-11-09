@@ -25,7 +25,7 @@ import {
   type IStreetRepository,
   type IUserRepository,
 } from '@kc/application';
-import type { City, OnboardingState, Street } from '@kc/domain';
+import type { City, Street } from '@kc/domain';
 import { getAuthService } from './authComposition';
 import { CachedCityRepository, CachedStreetRepository } from './cityStreetCache';
 import { pickAuthStorage } from './authSecureStorage';
@@ -133,15 +133,9 @@ export function markBasicInfoSkipped(userId: string): Promise<void> {
   return getUserRepo().markBasicInfoSkipped(userId);
 }
 
-/** Direct setter used by the dev reset button (Settings). No validation — dev tool. */
-export async function setOnboardingStateDirect(
-  userId: string,
-  state: OnboardingState,
-): Promise<void> {
-  await getUserRepo().setOnboardingState(userId, state);
-  if (state === 'pending_basic_info') {
-    await getUserRepo().clearBasicInfoSkipped(userId);
-  }
+/** Settings developer tool: back to onboarding step 1 with the skip flag cleared (dev database only). */
+export function resetOnboardingForDev(): Promise<void> {
+  return getUserRepo().resetOnboardingForDev();
 }
 
 /** Lists every Israeli city from `public.cities` ordered by Hebrew name. */

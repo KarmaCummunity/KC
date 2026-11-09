@@ -9,12 +9,15 @@
 // - users_update_self, under which a write to another member's row matches no
 //   row and resolves without effect;
 // - users_get_self_private_fields, which returns the phone and address only to
-//   their owner.
+//   their owner;
+// - rpc_set_onboarding_state (0698), which moves the actor's onboarding along
+//   `onboardingMachine` and leaves step 1 only with name, city and date of birth.
 // Every write validates the whole next row before storing it, so a refused write
 // changes nothing, like the single UPDATE statement it stands for.
 
-import { STREET_NUMBER_PATTERN, type OnboardingState } from '@kc/domain';
+import { STREET_NUMBER_PATTERN, canTransition, onboardingMachine, type OnboardingState } from '@kc/domain';
 import { PROFILE_FIELD_LIMITS, type ProfileCity, type ProfileEditing } from '../../contracts';
+import { OnboardingError } from '../errors';
 
 type EditableProfile = Awaited<ReturnType<ProfileEditing['getEditableProfile']>>;
 type ProfilePatch = Parameters<ProfileEditing['updateEditableProfile']>[1];
@@ -22,6 +25,12 @@ type ProfilePatch = Parameters<ProfileEditing['updateEditableProfile']>[1];
 interface ProfileRow extends EditableProfile {
   onboardingState: OnboardingState;
   basicInfoSkipped: boolean;
+  dateOfBirth: string | null;
+}
+
+/** The step-1 fields `rpc_set_onboarding_state` requires before a member leaves step 1. */
+function hasBasicInfo(row: ProfileRow): boolean {
+  return Boolean(row.displayName?.trim()) && Boolean(row.city?.trim()) && row.dateOfBirth !== null;
 }
 
 /** users_biography_no_url_check (0073); `\p{L}` stands in for Postgres's Unicode `\w`. */
@@ -76,6 +85,7 @@ export class InMemoryProfileStore {
       avatarUrl: null,
       onboardingState: 'pending_basic_info',
       basicInfoSkipped: false,
+      dateOfBirth: null,
     });
     return { userId };
   }
@@ -159,7 +169,22 @@ export class InMemoryProfileEditing implements ProfileEditing {
     this.update(userId, { ...params, basicInfoSkipped: false });
   }
 
-  async setOnboardingState(userId: string, onboardingState: OnboardingState): Promise<void> {
-    this.update(userId, { onboardingState });
+  /** rpc_set_date_of_birth acts on the actor; its 18+ rule is pinned by SetDateOfBirthUseCase tests. */
+  async setDateOfBirth(isoDate: string): Promise<void> {
+    this.update(this.actorId, { dateOfBirth: isoDate });
+  }
+
+  /** rpc_set_onboarding_state: the step-1 rule first, then the graph, as the RPC and its trigger. */
+  async setOnboardingState(onboardingState: OnboardingState): Promise<void> {
+    const row = this.store.rows.get(this.actorId);
+    if (!row) throw new Error('rpc_set_onboarding_state: user_not_found');
+    const from = row.onboardingState;
+    if (from === 'pending_basic_info' && onboardingState !== from && !hasBasicInfo(row)) {
+      throw new OnboardingError('basic_info_missing', 'onboarding_basic_info_missing');
+    }
+    if (!canTransition(onboardingMachine, from, onboardingState).ok) {
+      throw new OnboardingError('illegal_transition', `onboarding_transition_invalid: ${from} -> ${onboardingState}`);
+    }
+    this.update(this.actorId, { onboardingState });
   }
 }

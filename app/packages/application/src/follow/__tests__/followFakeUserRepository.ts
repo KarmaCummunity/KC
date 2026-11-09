@@ -131,6 +131,7 @@ export class FollowFakeUserRepository implements IUserRepository {
   clearBasicInfoSkipped = N('clearBasicInfoSkipped') as IUserRepository['clearBasicInfoSkipped'];
   setBasicInfo = N('setBasicInfo') as IUserRepository['setBasicInfo'];
   setOnboardingState = N('setOnboardingState') as IUserRepository['setOnboardingState'];
+  resetOnboardingForDev = N('resetOnboardingForDev') as IUserRepository['resetOnboardingForDev'];
   setAvatar = N('setAvatar') as IUserRepository['setAvatar'];
   setBiography = N('setBiography') as IUserRepository['setBiography'];
   setProfileAddressLines = N('setProfileAddressLines') as IUserRepository['setProfileAddressLines'];

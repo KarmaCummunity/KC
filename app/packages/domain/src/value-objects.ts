@@ -22,7 +22,8 @@ export type AccountStatus =
   | 'suspended_for_false_reports'
   | 'suspended_admin'
   | 'banned'
-  | 'deleted';
+  /** FR-AUTH-016: deletion requested, restorable until the purge (the row is then removed). */
+  | 'pending_deletion';
 
 export type OnboardingState =
   | 'pending_basic_info'

@@ -12,7 +12,8 @@
 
 import type { IUserRepository } from '../ports/IUserRepository';
 import type { ContractCase } from './types';
-import { assertEqual, assertRejects, assertTrue } from './assert';
+import { assertEqual, assertRejects } from './assert';
+import { onboardingProgressCases } from './onboardingProgress.contract';
 
 /** The Edit Profile and onboarding methods of IUserRepository. */
 export type ProfileEditing = Pick<
@@ -28,6 +29,7 @@ export type ProfileEditing = Pick<
   | 'clearBasicInfoSkipped'
   | 'setBasicInfo'
   | 'setOnboardingState'
+  | 'setDateOfBirth'
 >;
 
 type EditableProfile = Awaited<ReturnType<ProfileEditing['getEditableProfile']>>;
@@ -253,29 +255,6 @@ const unknownProfileThrows: ContractCase<Ctx> = {
   },
 };
 
-const onboardingRoundTrip: ContractCase<Ctx> = {
-  name: 'onboarding: skip, basic info and state read back through the bootstrap (FR-AUTH-007 AC2, FR-AUTH-010 AC3)',
-  async run(ctx) {
-    const me = await ctx.newActor();
-    await me.users.markBasicInfoSkipped(me.userId);
-    assertEqual((await me.users.getOnboardingBootstrap(me.userId)).basicInfoSkipped, true, 'skip flag after skipping');
-    await me.users.clearBasicInfoSkipped(me.userId);
-    assertEqual((await me.users.getOnboardingBootstrap(me.userId)).basicInfoSkipped, false, 'skip flag after clearing');
-    await me.users.markBasicInfoSkipped(me.userId);
-    const [, city] = ctx.cities;
-    await me.users.setBasicInfo(me.userId, { displayName: 'basic info', city: city.id, cityName: city.name });
-    const bootstrap = await me.users.getOnboardingBootstrap(me.userId);
-    assertEqual(bootstrap.basicInfoSkipped, false, 'saving basic info clears the skip flag');
-    const profile = await me.users.getEditableProfile(me.userId);
-    assertTrue(profile.displayName === 'basic info' && profile.city === city.id, 'basic info is stored');
-    assertEqual(profile.cityName, city.name, 'city name is stored');
-    await me.users.setOnboardingState(me.userId, 'pending_avatar');
-    assertEqual((await me.users.getOnboardingBootstrap(me.userId)).state, 'pending_avatar', 'state after step 1');
-    await me.users.setOnboardingState(me.userId, 'completed');
-    assertEqual((await me.users.getOnboardingBootstrap(me.userId)).state, 'completed', 'state after the wizard');
-  },
-};
-
 /** The profile-editing cases, in a stable order. */
 export function profileEditingContract(): ReadonlyArray<ContractCase<Ctx>> {
   return [
@@ -289,6 +268,6 @@ export function profileEditingContract(): ReadonlyArray<ContractCase<Ctx>> {
     othersProfileIsReadOnly,
     othersPrivateFieldsHidden,
     unknownProfileThrows,
-    onboardingRoundTrip,
+    ...onboardingProgressCases(),
   ];
 }
