@@ -3,11 +3,12 @@
 import {
   canApproveRideBooking,
   canPerformBookingAction,
-  canReinstateRideBooking,
   isRideTripCompletable,
   isValidRideBookingSeats,
+  rideReinstateBlocker,
   RideError,
   type RideBooking,
+  type RideBookingRideContext,
   type RideBookingStatus,
 } from '@kc/domain';
 import type { IRideBookingRepository } from '../ports/IRideBookingRepository';
@@ -143,15 +144,20 @@ export class CompleteRideListingUseCase {
 }
 
 export interface ReinstateRideBookingContext {
-  readonly bookings?: readonly RideBooking[];
+  /** The ride the booking belongs to; when given, the RPC's preconditions are checked first. */
+  readonly ride?: RideBookingRideContext;
+  readonly now?: Date;
 }
 
 export class ReinstateRideBookingUseCase {
   constructor(private readonly repo: IRideBookingRepository) {}
+  /** Rejects with the RPC's own code when the ride cannot take the booking back now. */
   execute(handoffId: string, context?: ReinstateRideBookingContext): Promise<void> {
-    const target = context?.bookings?.find((b) => b.handoffId === handoffId);
-    if (target && !canReinstateRideBooking(target)) {
-      return Promise.reject(new RideError('invalid_status', 'only a recently declined or cancelled booking can be reinstated'));
+    const ride = context?.ride;
+    const target = ride?.bookings.find((b) => b.handoffId === handoffId);
+    const blocker = ride && target ? rideReinstateBlocker(target, ride, context?.now) : null;
+    if (blocker) {
+      return Promise.reject(new RideError(blocker, `booking cannot be reinstated: ${blocker}`));
     }
     return this.repo.reinstate(handoffId);
   }

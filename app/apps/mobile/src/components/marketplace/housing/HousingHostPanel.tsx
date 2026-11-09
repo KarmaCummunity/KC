@@ -24,10 +24,12 @@ import { OwnerAssignUserButton } from '../../closure/OwnerAssignUserButton';
 interface Props {
   readonly listingId: string;
   readonly cityId: string | null;
+  /** The offer's listing status; a guest is assigned only while it is open. */
+  readonly listingStatus: string;
   readonly hideOwnerAssign?: boolean;
 }
 
-export function HousingHostPanel({ listingId, cityId, hideOwnerAssign = false }: Props) {
+export function HousingHostPanel({ listingId, cityId, listingStatus, hideOwnerAssign = false }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
   const styles = useRideBookingStyles();
@@ -84,7 +86,10 @@ export function HousingHostPanel({ listingId, cityId, hideOwnerAssign = false }:
       {bookings.isSuccess && list.length === 0 ? (
         <Text style={styles.caption} testID="housing-bookings-empty">{t('housingStay.empty')}</Text>
       ) : null}
-      {!hideOwnerAssign ? <OwnerAssignUserButton targetId={listingId} worldSlug="housing" /> : null}
+      {/* `owner_complete_offer_with_user` refuses an offer that is not open (0658). */}
+      {listingStatus === 'open' && !hideOwnerAssign ? (
+        <OwnerAssignUserButton targetId={listingId} worldSlug="housing" />
+      ) : null}
       {list.map((booking) => (
         <HousingHostBookingRow key={booking.handoffId} booking={booking} busy={busy} actions={actions} />
       ))}

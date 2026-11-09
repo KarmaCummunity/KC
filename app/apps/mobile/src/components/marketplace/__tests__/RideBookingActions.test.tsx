@@ -158,6 +158,43 @@ describe('RideBookingActions — driver', () => {
     await waitFor(() => expect(reinstate).toHaveBeenCalledWith('h2', expect.anything()));
   });
 
+  it.each([
+    ['the ride is closed', { ...DETAIL, listingStatus: 'closed' }],
+    ['the ride has departed', { ...DETAIL, details: { seats_available: 3, departs_at: new Date(Date.now() - 60_000).toISOString() } }],
+    ['no seat is free', { ...DETAIL, details: { seats_available: 1 } }],
+  ] as const)('offers no reinstate when %s (reinstate_ride_booking would refuse)', async (_case, detail) => {
+    listForRide.mockResolvedValue([
+      booking('h1', 'confirmed'),
+      { ...booking('h2', 'cancelled'), cancelReason: 'driver_cancelled' },
+    ]);
+    const view = renderActions(detail as MarketplaceListingDetail);
+    await waitFor(() => expect(view.queryByTestId('ride-booking-h2')).not.toBeNull());
+    expect(view.queryByTestId('ride-booking-reinstate-h2')).toBeNull();
+    expect(view.queryByTestId('ride-bookings-reinstate-hint')).toBeNull();
+  });
+
+  it('holds "complete trip" until an hour before departure (complete_ride_trip refuses earlier)', async () => {
+    const later = { ...DETAIL, details: { seats_available: 3, departs_at: new Date(Date.now() + 2 * 60 * 60_000).toISOString() } };
+    listForRide.mockResolvedValue([booking('h1', 'confirmed')]);
+    const view = renderActions(later as MarketplaceListingDetail);
+    await waitFor(() => expect(view.queryByTestId('ride-booking-complete-h1')).not.toBeNull());
+    expect(view.getByTestId('ride-booking-complete-h1').getAttribute('aria-disabled')).toBe('true');
+    expect(view.queryByTestId('ride-booking-complete-later-h1')).not.toBeNull();
+    fireEvent.click(view.getByTestId('ride-booking-complete-h1'));
+    expect(complete).not.toHaveBeenCalled();
+  });
+
+  it('completes the trip from an hour before departure', async () => {
+    const soon = { ...DETAIL, details: { seats_available: 3, departs_at: new Date(Date.now() + 30 * 60_000).toISOString() } };
+    listForRide.mockResolvedValue([booking('h1', 'confirmed')]);
+    complete.mockResolvedValue(undefined);
+    const view = renderActions(soon as MarketplaceListingDetail);
+    await waitFor(() => expect(view.queryByTestId('ride-booking-complete-h1')).not.toBeNull());
+    expect(view.queryByTestId('ride-booking-complete-later-h1')).toBeNull();
+    fireEvent.click(view.getByTestId('ride-booking-complete-h1'));
+    await waitFor(() => expect(complete).toHaveBeenCalledWith('h1', expect.objectContaining({ departsAt: soon.details.departs_at })));
+  });
+
   it('lets the driver finish the ride listing', async () => {
     const detail = { ...DETAIL, details: { seats_available: 3, departs_at: new Date(Date.now() + 30 * 60_000).toISOString() } } as MarketplaceListingDetail;
     listForRide.mockResolvedValue([booking('h1', 'confirmed')]);
