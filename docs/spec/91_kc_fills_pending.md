@@ -22,7 +22,7 @@ Gaps filled by context. **Status of every row: pending approval.** Use as the wo
 | S16 | Housing: before hosting both see verification level, completed stays, seniority; at-risk youth & minors only via an org; at-risk track offered only by orgs and hosts they approved. | 05.6 |
 | S17 | Medical: regular users don't publish; blood calls only from a medical body. | 06 |
 | S18 | Hub content written by KC team; orgs propose updates for approval. | 04 |
-| S19 | Photo on item offer: recommended, not required (per D28; old FR-POST-002 superseded). | 07.2 |
+| S19 | ❌ Superseded by {{D:offer-photo-required}} — an item offer needs at least one photo. | 07.2 |
 | S20 | All karma values in 07.6; undoing closing/removal reverses points; daily caps. | 07.6 |
 | S21 | WhatsApp import consent: only with admin approval and announcement; no phones/names/private chats; imported post anonymous 'from group X' until claimed via phone verification; unclaimed deleted after 72h; removal on request. | 13 |
 | S22 | Import channels: manual paste (MVP), chat-export by admin (next), live bot added by admin (phase 2, permitted interface only). Auto-classify type/world/city; low confidence → review queue. | 13 |
