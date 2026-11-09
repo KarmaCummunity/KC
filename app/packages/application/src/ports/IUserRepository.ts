@@ -68,7 +68,7 @@ export interface IUserRepository {
   /** FR-AUTH-010 AC3: user skipped step 1 — persist so the full wizard does not reopen on relaunch. */
   markBasicInfoSkipped(userId: string): Promise<void>;
 
-  /** Clear the skip flag (e.g. dev reset onboarding, or after saving real basic info in setBasicInfo). */
+  /** Clear the skip flag (e.g. after saving real basic info in setBasicInfo). */
   clearBasicInfoSkipped(userId: string): Promise<void>;
 
   /** FR-AUTH-010: persist step-1 fields. `cityName` must mirror the matching `cities.name_he` row. */
@@ -77,8 +77,19 @@ export interface IUserRepository {
     params: { displayName: string; city: string; cityName: string },
   ): Promise<void>;
 
-  /** FR-AUTH-010 AC3 / FR-AUTH-012 AC3: advance the onboarding state machine. */
-  setOnboardingState(userId: string, state: OnboardingState): Promise<void>;
+  /**
+   * FR-AUTH-010 AC3 / FR-AUTH-012 AC3 / FR-AUTH-015: moves the signed-in member's onboarding
+   * forward (`rpc_set_onboarding_state`). The server holds the graph (`onboardingMachine`) and
+   * refuses to leave step 1 without display name, city and date of birth on file.
+   * Throws `OnboardingError` `illegal_transition` | `basic_info_missing`.
+   */
+  setOnboardingState(state: OnboardingState): Promise<void>;
+
+  /**
+   * Settings developer tool: sends the signed-in member back to onboarding step 1 and clears the
+   * skip flag (`rpc_dev_reset_onboarding`). Refused outside a dev database.
+   */
+  resetOnboardingForDev(): Promise<void>;
 
   /**
    * FR-AUTH-011 AC4 + AC5: persist the user's profile photo URL.

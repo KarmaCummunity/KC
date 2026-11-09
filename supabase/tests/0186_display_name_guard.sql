@@ -39,8 +39,9 @@ begin
   end;
   perform pg_temp.assert(v_hit, 'completed user was able to null display_name');
 
-  -- a pending_basic_info user may still have a null display_name
-  update public.users set onboarding_state = 'pending_basic_info' where user_id = v_user;
+  -- a pending_basic_info user may still have a null display_name (a new member: the stage
+  -- graph, 0698, has no move back to step 1 outside the developer reset)
+  v_user := pg_temp.mk_user('dn_' || substr(gen_random_uuid()::text, 1, 8));
   update public.users set display_name = null where user_id = v_user;
 
   raise notice '✓ display_name null only permitted during pending_basic_info (TD-90)';

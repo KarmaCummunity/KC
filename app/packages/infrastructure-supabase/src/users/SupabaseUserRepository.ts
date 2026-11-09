@@ -13,8 +13,10 @@ import {
   supabaseClearBasicInfoSkipped,
   supabaseGetOnboardingBootstrap,
   supabaseMarkBasicInfoSkipped,
+  supabaseResetOnboardingForDev,
   supabaseSetBasicInfo,
   supabaseSetDateOfBirth,
+  supabaseSetOnboardingState,
 } from './onboardingSupabase';
 import {
   supabaseGetEditableProfile,
@@ -76,12 +78,12 @@ export class SupabaseUserRepository implements IUserRepository {
     return supabaseSetBasicInfo(this.client, userId, params);
   }
 
-  async setOnboardingState(userId: string, state: OnboardingState): Promise<void> {
-    const { error } = await this.client
-      .from('users')
-      .update({ onboarding_state: state })
-      .eq('user_id', userId);
-    if (error) throw new Error(`setOnboardingState: ${error.message}`);
+  setOnboardingState(state: OnboardingState): Promise<void> {
+    return supabaseSetOnboardingState(this.client, state);
+  }
+
+  resetOnboardingForDev(): Promise<void> {
+    return supabaseResetOnboardingForDev(this.client);
   }
 
   async setAvatar(userId: string, avatarUrl: string | null): Promise<void> {
