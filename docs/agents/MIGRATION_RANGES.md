@@ -121,11 +121,14 @@ Last applied on kc-dev when this was written: `0239`.
 | 0640–0659 | — (superseded by 0665–0675 after 0660 merged) | free |
 | 0660–0664 | multi-world posts: `listing_worlds`, multi-world feeds, search, matching (#1475) | merged |
 | 0665–0675 | G1 one Post model steps 6b–6d (ADR-006, D-214, #1671): `0665` step 6b one S1 state machine (merged #1932), `0666` step 6c drop sync triggers, `0667` step 6d drop `listings` / `giving_handoffs` | in progress |
-| 0676+ | — | free |
+| 0676 | #1964 demo rides on posts + wipe/restore ride coverage test | in review |
+| 0677 | #1964 demo post media paths + org_memberships on demo orgs | in review |
+| 0678 | #1964 verification 0..2 mix, OnlyMe posts, storage JPEG fixtures | in review |
+| 0679+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0676+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0678+`.
 
 ## How to claim
 
