@@ -15,7 +15,7 @@ begin
     (select count(*) from public.fsm_edge where machine_id = 'post' and role <> ''), 0::bigint,
     'post edges are not role-restricted yet');
 
-  -- {{D:expired-post-republish}}: an expired post is never reopened.
+  -- D127: an expired post is never reopened.
   perform kc_test.assert_raises(
     $q$select public.fsm_assert_transition('post', 'expired', 'open', null)$q$,
     'illegal_transition', 'kernel refuses expired -> open');

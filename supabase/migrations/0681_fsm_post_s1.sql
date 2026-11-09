@@ -6,7 +6,7 @@
 -- 2. `posts_enforce_status_fsm` asks `fsm_assert_transition` instead of its hard-coded
 --    `case` list (0665). The owner guards that read other rows stay here, before the
 --    kernel call, unchanged. Clients keep the same error codes.
--- 3. Graph change ({{D:expired-post-republish}}): `expired → open` is gone. An expired
+-- 3. Graph change (D127): `expired → open` is gone. An expired
 --    post comes back only as a new post (republish); no writer performed this move.
 
 begin;

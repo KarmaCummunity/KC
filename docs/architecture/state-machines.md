@@ -1,6 +1,6 @@
 # State machines — inventory and migration onto the FSM kernel
 
-> **Status:** 2026-11-09. Wave 0 ✅ (kernel + admin-task pilot, `0680`). Wave 1a ✅ (post S1 graph on the kernel, `0681`). Gap `{{G:fsm-kernel-lifecycles}}`.
+> **Status:** 2026-11-09. Wave 0 ✅ (kernel + admin-task pilot, `0680`). Wave 1a ✅ (post S1 graph on the kernel, `0681`). Gap `G61`.
 > **Kernel design:** [`docs/superpowers/specs/2026-11-09-fsm-kernel-design.md`](../superpowers/specs/2026-11-09-fsm-kernel-design.md).
 > **Rule:** a lifecycle has **one** graph. It is declared in `@kc/domain` (`app/packages/domain/src/fsm/machines/`), mirrored row-for-row in `fsm_state` / `fsm_edge` (locked by the contract test), and enforced in Postgres by `fsm_assert_transition` from the RPC and from a `before update of status` trigger. No other copy of the move list may exist: not a SQL `case`, not a TS record, not a UI condition.
 
@@ -79,12 +79,12 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 
 **Post (S1)**
 - ~~TS `POST_STATUS_TRANSITIONS` and the trigger's `case` list were two copies of the graph.~~ ✅ wave 1a: one kernel machine; the TS helper delegates to it.
-- ~~Spec §7.1 listed no `paused` state and reopened from `expired`.~~ ✅ wave 1a: spec reconciled; `expired → open` removed ({{D:expired-post-republish}}).
+- ~~Spec §7.1 listed no `paused` state and reopened from `expired`.~~ ✅ wave 1a: spec reconciled; `expired → open` removed (D127).
 - `admin_remove_post` (`0452`) refuses `paused` and `expired`; the trigger allows both into `removed_admin`.
 - `admin_remove_listing` (`0666`) stores `paused` / `expired` into `status_before_admin_removal`, whose check (`0097`) rejects them, so the call fails on those posts.
 - `admin_restore_target` (`0666`) always restores to `open` (ignores `status_before_admin_removal`) and keeps a branch on `moderation_status = 'held'`, a value the check does not allow.
 - `mark_giving_handed_over` (`0666`) writes `closed_delivered` without a source-status filter and raises on `expired` / `removed_admin` posts.
-- The expired screen calls `rpc_republish_post` (`0155`), which clones only the legacy item columns (no `world_slug`, `details`, `kind_id`); {{D:expired-post-republish}} requires a full copy (wave 1b).
+- The expired screen calls `rpc_republish_post` (`0155`), which clones only the legacy item columns (no `world_slug`, `details`, `kind_id`); D127 requires a full copy (wave 1b).
 - Items get `expires_at = now() + 30 days` (`0612`, `0666`) while D21 says items never expire and no sweep expires them: after 30 days a paused item cannot resume and never expires.
 - Pause / fulfill / delete RPCs (`0666`) count `time` (event) handoffs as active; the trigger (`0665`) excludes them.
 - Two `owner_complete_offer_with_user` overloads coexist (`0658` with `p_mode`, `0666` without) with different handoff and karma behaviour; the app calls the `0658` one.
@@ -160,8 +160,8 @@ One PR per row. Each wave starts only after the previous one is merged, so the c
 
 Answered by the PM on 2026-11-09:
 - Items have no expiry (D21 stands): the 30-day `expires_at` on items goes (wave 1b).
-- An expired post is republished as a new post, never reopened ({{D:expired-post-republish}}; graph change in wave 1a, full copy in 1b).
-- An event or ticket expires when it ends ({{D:event-expires-at-end}}; wave 1b).
+- An expired post is republished as a new post, never reopened (D127; graph change in wave 1a, full copy in 1b).
+- An event or ticket expires when it ends (D128; wave 1b).
 
 Open, block the wave that owns them:
 1. **Unban (wave 3).** Is `banned → active` an admin edge, and who may take it?

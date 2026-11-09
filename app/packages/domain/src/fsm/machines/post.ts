@@ -4,7 +4,7 @@ import { defineMachine } from '../machine';
  * Post lifecycle S1 (spec `docs/spec/07_cross_cutting_systems.md` §7.1, D104).
  * One machine for every post of every world; listings are retired with G1, not ported.
  *
- * - `expired` reopens only by republishing a new post ({{D:expired-post-republish}}),
+ * - `expired` reopens only by republishing a new post (D127),
  *   so no edge leads from `expired` back to `open`.
  * - Edges carry no roles yet: who may move a post (owner, recipient, admin, a sweep) is
  *   still checked by each writer RPC before the move.
