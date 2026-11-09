@@ -34,6 +34,16 @@ const renderCity = (c: City) => ({
   name: c?.nameHe ?? c?.nameEn ?? '',
 });
 
+/** A value known only by its id (a loaded listing) shows the city's name once the list has it. */
+export function withCityName(
+  value: Props['value'],
+  cities: readonly City[] | undefined,
+): Props['value'] {
+  if (!value || value.name || !Array.isArray(cities)) return value;
+  const city = cities.find((c) => c?.cityId === value.id);
+  return city ? { ...value, name: renderCity(city).name } : value;
+}
+
 export function CityPicker({ value, onChange, disabled }: Props) {
   const { t } = useTranslation();
   const { data, isLoading, error, refetch } = useQuery<City[]>({
@@ -46,7 +56,7 @@ export function CityPicker({ value, onChange, disabled }: Props) {
     <SearchablePicker<City>
       title={t('profile.cityPickerTitle')}
       placeholder={t('profile.cityPickerSearchPlaceholder')}
-      value={value}
+      value={withCityName(value, data)}
       items={Array.isArray(data) ? data : null}
       isLoading={isLoading}
       error={error}
