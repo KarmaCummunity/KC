@@ -25,7 +25,7 @@ A change touching several rows needs every row's tests. One behavior is tested o
 
 1. **Bug = regression test first.** At the lowest level that reproduces the bug. Commit or show it failing before the fix; name it after the behavior, not the issue number.
 2. **Every acceptance criterion maps to at least one test.** List the mapping in the PR's Tests section.
-3. **Happy path + at least one boundary or error case** per new unit (CLAUDE.md §5).
+3. **Happy path + at least one boundary or error case** per new unit (AGENTS.md §5).
 4. **Never weaken a test to pass.** No `.skip`, `.only`, loosened assertion or deleted case. The test-integrity judge in `CI gate` rejects it.
 5. **No real data or secrets in tests.** Seed users and fixtures only.
 6. **Flaky test found?** Do not retry it until green. Open a finding (`references/findings.md`) with the seed and the failure log line.

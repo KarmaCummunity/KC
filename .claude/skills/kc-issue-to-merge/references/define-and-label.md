@@ -64,8 +64,9 @@ Every task issue carries exactly one label from each required group.
 | Type (required) | `bug`, `enhancement`, `tech-debt`, `documentation`, `performance` | What the change is. |
 | Area (required, 1+) | `area:mobile`, `area:worlds`, `area:social`, `area:moderation`, `area:security`, `area:i18n`, `area:a11y`, `area:design-system`, `area:architecture`, `area:observability`, `area:ci`, `area:docs`, `area:release`, `area:whatsapp-bot`, `database` | Every area the change touches. `database` for `supabase/**` SQL. |
 | Priority (required) | `priority:P0` … `priority:P3` | Keep the PM's value. Set one only on an unprioritized issue you were explicitly given. |
+| Launch flag | `priority:launch` | Required for the upcoming launch; ranks above P0 in the queue. Only the PM sets it. |
 | Size (required) | `size:XS`, `size:S`, `size:M`, `size:L`, `size:XL` | Your estimate: XS < 1h, S < ½ day, M ≈ 1 day, L 2-3 days, XL needs splitting. |
-| Flags | `priority:launch`, `epic`, `blocked`, `possible-duplicate`, `needs-triage`, `found-by-agent` | Only when true. |
+| Flags | `epic`, `blocked`, `possible-duplicate`, `needs-triage`, `found-by-agent` | Only when true. |
 | Claim | `in-progress` + `agent:<you>` | Set in Phase 2, removed on merge or release. |
 
 Do not invent labels. Before using a new one, add it to `.github/workflows/sync-agent-labels.yml` in a PR.

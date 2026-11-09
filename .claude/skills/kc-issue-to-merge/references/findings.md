@@ -1,7 +1,7 @@
 # Findings outside the scope
 
 Read at Phase 6. A finding is real work you noticed but the current issue does not cover.
-Fix nothing outside the scope inline (CLAUDE.md §5, "Propose and Proceed"). Record it, then continue the task.
+Fix nothing outside the scope inline (AGENTS.md §5, "Propose and Proceed"). Record it, then continue the task.
 
 ## Is it a finding?
 
@@ -33,7 +33,7 @@ Fix nothing outside the scope inline (CLAUDE.md §5, "Propose and Proceed"). Rec
    ```
 
    The priority you set is a suggestion; `needs-triage` keeps the issue out of the agent queue until the PM removes it.
-4. **Tech debt** also gets a row in `docs/SSOT/TECH_DEBT.md` (Active, right lane) with a `{{TD:slug}}` placeholder in this PR. Cite the placeholder in the issue.
+4. **Tech debt** is an issue like any other, with the `tech-debt` type label; its issue number is its ID (AGENTS.md §4). There is no tech-debt doc to update.
 5. **Record** every finding in the PR body: `Findings opened: #a, #b`.
 
 ## Issue body
@@ -72,5 +72,5 @@ none
 ## Security findings
 
 - **Public text (issue, PR, commit, comment):** a generic title such as `[security] Hardening needed in <area>` and the body `Details shared privately with the PM.` Labels: `area:security`, `found-by-agent`, `needs-triage`. Never the vulnerable path, payload or reproduction.
-- **The details** (where, how to reproduce, impact) go only to the PM, in your conversation with them (CLAUDE.md §7).
+- **The details** (where, how to reproduce, impact) go only to the PM, in your conversation with them (AGENTS.md §7).
 - **If the current task makes the hole worse,** stop and treat it as a product question (Phase 3, "Blocked").

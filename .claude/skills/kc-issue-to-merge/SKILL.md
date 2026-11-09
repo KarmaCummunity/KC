@@ -7,7 +7,7 @@ description: Take one GitHub issue of KarmaCummunity/KC from claim to a squash-m
 
 One run = one issue = one PR to `dev`, driven until it merges. Then report and stop.
 
-`CLAUDE.md` holds the repo rules (spec gate, architecture, prohibitions) and wins on any conflict.
+`AGENTS.md` holds the repo rules (spec gate, architecture, prohibitions) and wins on any conflict.
 This skill is the order of work. It cites those rules, not repeats them.
 
 **Conventions used below:**
@@ -18,7 +18,7 @@ This skill is the order of work. It cites those rules, not repeats them.
 ## Token rules (apply in every phase)
 
 1. **Find, then read.** `rg`/glob for the symbol, then read the matching line range. Never read a whole large file, a lockfile, generated types or a migration you do not change.
-2. **Spec by section.** Open `docs/spec/README.md` only for the index, then the one cited section. Never the whole book.
+2. **Spec by section, from `dev`.** Read through `node scripts/spec.mjs <domain|FR-ID>` (it reads `dev`, not your stale tree). Open `docs/spec/README.md` only for the index, then the one cited section. Never the whole book.
 3. **Narrow output.** Every `gh api` call ends in a `--jq` that keeps only the fields you need. Never dump an issue's full timeline.
 4. **Tail long output.** Pipe test and build output through `tail -n 80` or `grep -E "FAIL|Error|✗"`. For CI use `gh run view <id> --log-failed | tail -n 150`.
 5. **Targeted before full.** Run the tests for the package or file you touched while iterating; run the full gates once, before the push.
@@ -30,10 +30,10 @@ This skill is the order of work. It cites those rules, not repeats them.
 ## Phase 1: Pick and de-duplicate
 
 - **Given an issue number:** take it.
-- **Otherwise:** take the oldest issue at the highest priority. An issue without a `priority:*` label is untriaged, so it is not in the queue. The project board's Agent queue mirrors these labels; reading the board needs a token with project scope, labels do not.
+- **Otherwise:** take the oldest issue at the highest priority (`priority:launch` > `P0` > … > `P3`, AGENTS.md §13). An issue without a `priority:*` label is untriaged, so it is not in the queue. The project board's Agent queue mirrors these labels; reading the board needs a token with project scope, labels do not.
 
   ```bash
-  for p in P0 P1 P2 P3; do
+  for p in launch P0 P1 P2 P3; do
     out=$(gh api -X GET search/issues -f sort=created -f order=asc -f per_page=5 --jq '.items[] | "#\(.number) \(.title)"' \
       -f q="repo:KarmaCummunity/KC is:issue is:open label:priority:$p -label:in-progress -label:blocked -label:needs-triage -label:ops-alert -label:epic")
     if [ -n "$out" ]; then echo "priority:$p"; echo "$out"; break; fi
@@ -75,8 +75,8 @@ gh api $R/issues/<N>/comments --jq '[.[] | select(.body | startswith("claimed by
 
 Read [`references/define-and-label.md`](references/define-and-label.md).
 
-1. **Read** the issue (`gh api $R/issues/<N> --jq '{title, body, labels: [.labels[].name]}'`), its spec ref and the cited spec section.
-2. **Run the spec validation gate** (CLAUDE.md §2) and sort every gap into one of two classes:
+1. **Read** the issue (`gh api $R/issues/<N> --jq '{title, body, labels: [.labels[].name]}'`), its spec ref and the cited spec section (`node scripts/spec.mjs <domain|FR-ID>`). Run `node scripts/spec.mjs --changed` once: if a file you rely on moved on `dev`, merge `origin/dev` first.
+2. **Run the spec validation gate** (AGENTS.md §2) and sort every gap into one of two classes:
    - **Technical gap: fill it.** Missing acceptance criteria derivable from the spec, a test plan, likely files, missing labels. Add a `### Filled in by agent:<you>` section to the issue body, so the PM sees what was added.
    - **Product question: stop.** The task contradicts the spec, the spec is silent on behavior a user will see, or two reasonable readings give users different behavior. Follow "Blocked" in the reference, then return to Phase 1 for another issue.
 3. **Label** the issue to the taxonomy in the reference: one type, at least one `area:*`, one `priority:*` and one `size:*`.
@@ -98,12 +98,12 @@ Read [`references/testing-matrix.md`](references/testing-matrix.md).
 ## Phase 5: Implement test-first
 
 - **Order.** Write the failing test, watch it fail for the right reason, implement, watch it pass.
-- **Layers.** Keep the Clean Architecture invariants and the hard caps (CLAUDE.md §5): files ≤ 300 lines, nesting ≤ 3 levels, typed domain errors, no speculative abstractions.
+- **Layers.** Keep the Clean Architecture invariants and the hard caps (AGENTS.md §5): files ≤ 300 lines, nesting ≤ 3 levels, typed domain errors, no speculative abstractions.
 - **Names.** Use product language from `docs/spec/94_glossary_and_naming.md`. Never a bare `categories`.
 - **Copy.** User-visible strings go in the locale files, never inline.
 - **Comments.** Add English comments on every new feature, exported function and complex line. Say why, not what.
-- **Commits.** Small atomic Conventional Commits (CLAUDE.md §6), each referencing `#<N>`.
-- **Docs.** Update the spec and SSOT in the same change (CLAUDE.md §4): `docs/spec/**`, `docs/spec/requirements/**`, `docs/SSOT/BACKLOG.md`, `docs/SSOT/TECH_DEBT.md`. New registry rows use `{{KEY:slug}}` placeholders, never a number.
+- **Commits.** Small atomic Conventional Commits (AGENTS.md §6), each referencing `#<N>`.
+- **Docs.** Update the spec in the same change (AGENTS.md §4): `docs/spec/**` and the status header of `docs/spec/requirements/<domain>.md`. Decisions go to `docs/SSOT/DECISIONS.md`. New registry entries use `{{KEY:slug}}` placeholders, never a number. Tech debt is a `tech-debt` issue, never a doc row.
 
 ## Phase 6: Findings outside the scope
 
@@ -149,7 +149,7 @@ gh api -X POST $R/issues/<PR>/labels -f 'labels[]=agent:<you>' --jq 'map(.name)'
   gh api "$R/commits/$(git rev-parse HEAD)/check-runs?per_page=100" --jq '.check_runs[] | select(.name=="CI gate") | "\(.status) \(.conclusion)"'
   ```
 
-- **Red `CI gate`.** Read only the failed lane's log, reproduce it locally, fix the cause and push. Up to 3 attempts per cause. After that, repair CI itself if CI is what's broken (CLAUDE.md §13, step 7). After 2 more failures, take the blocker path.
+- **Red `CI gate`.** Read only the failed lane's log, reproduce it locally, fix the cause and push. Up to 3 attempts per cause. After that, repair CI itself if CI is what's broken (AGENTS.md §13, step 7). After 2 more failures, take the blocker path.
 - **Conflict or dequeue.** Rebase on `origin/dev` (never force-push a shared branch you did not open), re-run the gates, push, and confirm auto-merge is armed.
 - **Human review.** Answer or fix every review comment.
 - **Merged** (`gh api $R/pulls/<PR> --jq .merged`):
