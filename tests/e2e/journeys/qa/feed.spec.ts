@@ -25,13 +25,13 @@ test('create a "request" post (no photo) from the composer', async ({ page }) =>
   const title = `${runTag()} מחפש/ת מדף ספרים`;
   await gotoApp(page, '/create');
   await expect(page.getByTestId('create-post-screen')).toBeVisible();
-  await page.getByText('לבקש חפץ', { exact: true }).click();
+  await page.getByTestId('create-direction-request').click();
   await page.getByTestId('create-post-title').fill(title);
-  await pickFromDialog(page, 'בחר עיר', 'תל אביב');
+  await pickFromDialog(page, 'לבחור עיר', 'תל אביב');
   await pickFromDialog(page, 'בחרו רחוב', 'דיזנגוף');
   await page.getByRole('textbox', { name: 'מס׳' }).fill('10');
   await page.getByText('ספרים', { exact: true }).first().click();
-  await page.getByText('פרסם', { exact: true }).last().click();
+  await page.getByTestId('create-header-publish').click();
   await expect(page).not.toHaveURL(/\/create$/, { timeout: 30_000 });
   const { session } = await sessionFor(USER_A);
   const rows = await rest<{ post_id: string }[]>(
@@ -46,16 +46,16 @@ test('like and comment on a post', async ({ page }) => {
   const me = (session.user as { id: string }).id;
   const [post] = await rest<{ post_id: string }[]>(
     session.access_token as string,
-    `posts?select=post_id&status=eq.open&owner_id=neq.${me}&order=created_at.desc&limit=1`,
+    `posts?select=post_id&status=eq.open&world_slug=eq.items&owner_id=neq.${me}&order=created_at.desc&limit=1`,
   );
   test.skip(!post, 'no open post from another user on kc-dev');
   await gotoApp(page, `/post/${post!.post_id}`);
-  await page.getByText('אהבתי', { exact: true }).first().click();
-  await expect(page.getByText(/[1-9]\d* רגשות/)).toBeVisible();
+  await page.getByRole('button', { name: 'אהבתי' }).first().click();
+  await expect(page.getByText(/[1-9]\d* (רגשות|אהבו)/).first()).toBeVisible();
 
   const comment = `${runTag()} תודה רבה!`;
-  await page.getByPlaceholder('כתוב תגובה…').fill(comment);
-  await page.getByText('פרסם תגובה', { exact: true }).click();
+  await page.getByPlaceholder('הוסיפו תגובה…').fill(comment);
+  await page.getByRole('button', { name: 'פרסום' }).click();
   await expect(page.getByText(comment)).toBeVisible();
 });
 
