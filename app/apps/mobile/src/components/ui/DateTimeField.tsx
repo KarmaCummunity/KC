@@ -178,6 +178,16 @@ export function DateTimeField({ label, mode = 'datetime', value, onChange, place
   );
 }
 
+/**
+ * Android's time dialog returns a Date whose calendar day is "today", not the day
+ * the user already picked. Keep that day and take only the clock.
+ */
+export function applyAndroidClock(day: Date, clock: Date): Date {
+  const next = new Date(day);
+  next.setHours(clock.getHours(), clock.getMinutes(), 0, 0);
+  return next;
+}
+
 /** Android: the time dialog on a given day; dismissing it cancels. */
 function openAndroidTimePicker(day: Date, onChange: (next: Date) => void) {
   DateTimePickerAndroid.open({
@@ -185,7 +195,7 @@ function openAndroidTimePicker(day: Date, onChange: (next: Date) => void) {
     mode: 'time',
     is24Hour: true,
     onChange: (timeEvent, time) => {
-      if (timeEvent.type === 'set' && time) onChange(time);
+      if (timeEvent.type === 'set' && time) onChange(applyAndroidClock(day, time));
     },
   });
 }
