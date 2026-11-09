@@ -1,4 +1,5 @@
 export * from './errors';
+export * from './fsm';
 export * from './language';
 export * from './survey/SurveyTypes';
 export * from './survey/PmfSurvey';

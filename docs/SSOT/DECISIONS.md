@@ -1844,3 +1844,13 @@ Owner rules that go with it:
 **Rejected.** Leaving it to the owner's "share to feed" button (members did not know to use it, and the PM asked for the listings to arrive). A per-kind switch (a private lesson is as feed-worthy as a course).
 
 **Affected.** `supabase/migrations/0613_knowledge_world_in_feed.sql`; tests `0557`, `0560` (a later ride occurrence is now the hidden example), `0522`; `docs/spec/requirements/23_knowledge.md`.
+
+## {{ENG:fsm-kernel-one-graph}} — One graph per status lifecycle, on the FSM kernel (2026-11-09)
+
+**Decision.** Every status lifecycle has exactly one transition graph. It is declared in `@kc/domain` (`fsm/machines/`, registered in `FSM_MACHINES`), mirrored row for row in `public.fsm_state` / `public.fsm_edge` by migrations, and enforced in Postgres by `fsm_assert_transition` from each writer RPC and from a `before update of status` trigger. A contract test in `@kc/infrastructure-supabase` replays `supabase/migrations` and fails CI when the two copies differ. Machines move onto the kernel one PR at a time in the wave order of [`docs/architecture/state-machines.md`](../architecture/state-machines.md); the admin-task pilot is first (`0680`).
+
+**Why.** The inventory found ~35 lifecycles whose moves were written in two to five places (SQL checks, hand-written triggers, per-RPC filters, TS records, UI conditions), and those copies disagree in nearly every machine with more than one writer (gap `{{G:fsm-kernel-lifecycles}}`). A table-driven catalog makes the graph data, gives the database the final word for every writer, and lets the UI ask the same graph which actions to show.
+
+**Rejected.** A Postgres enum per machine (fixes the state set, not the moves). An XState-style runtime library (a new dependency, and the domain must stay dependency-free). Generating SQL from TS (one more build step; a replayed contract test gives the same guarantee with plain migrations). Predicates and side effects inside the kernel (they read other rows; they stay in the writer).
+
+**Affected.** `app/packages/domain/src/fsm/**`, `app/packages/infrastructure-supabase/src/fsm/__tests__/**`, `supabase/migrations/0680_fsm_catalog.sql`, `supabase/tests/0680_fsm_catalog.sql`, `.github/workflows/ci-backend.yml`, `docs/superpowers/specs/2026-11-09-fsm-kernel-design.md`.

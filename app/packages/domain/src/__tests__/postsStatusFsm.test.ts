@@ -1,12 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, expectTypeOf } from 'vitest';
 import {
   canTransitionPostStatus,
   validatePostStatusTransition,
   PostStatusTransitionError,
   POST_STATUSES,
-  POST_STATUS_TRANSITIONS,
   type PostStatus,
 } from '../posts';
+import { postMachine } from '../fsm/machines/post';
+import { isTerminal } from '../fsm/machine';
 
 describe('S1 Post Status State Machine (Spec 07 §7.1, D104)', () => {
   it('defines all 7 post statuses', () => {
@@ -20,7 +21,17 @@ describe('S1 Post Status State Machine (Spec 07 §7.1, D104)', () => {
       'hidden_pending_review',
       'paused',
     ]);
-    expect(Object.keys(POST_STATUS_TRANSITIONS)).toHaveLength(7);
+  });
+
+  it('declares exactly the PostStatus union in the kernel machine', () => {
+    // Compile-time: both directions of assignability between the union and the machine.
+    expectTypeOf<(typeof postMachine.states)[number]>().toEqualTypeOf<PostStatus>();
+    expect(postMachine.id).toBe('post');
+    expect(postMachine.edges).toHaveLength(25);
+  });
+
+  it('has no terminal status: every status can still be moderated or restored', () => {
+    for (const status of POST_STATUSES) expect(isTerminal(postMachine, status)).toBe(false);
   });
 
   describe('valid transitions', () => {
@@ -66,9 +77,8 @@ describe('S1 Post Status State Machine (Spec 07 §7.1, D104)', () => {
       }
     });
 
-    it('allows reopening and deleting from expired', () => {
+    it('allows deleting and moderating an expired post', () => {
       const allowed: PostStatus[] = [
-        'open',
         'deleted_no_recipient',
         'removed_admin',
         'hidden_pending_review',
@@ -123,6 +133,11 @@ describe('S1 Post Status State Machine (Spec 07 §7.1, D104)', () => {
       expect(canTransitionPostStatus('closed_delivered', 'paused')).toBe(false);
       expect(canTransitionPostStatus('closed_delivered', 'expired')).toBe(false);
       expect(() => validatePostStatusTransition('closed_delivered', 'paused')).toThrow(PostStatusTransitionError);
+    });
+
+    it('rejects reopening an expired post: it is republished as a new post', () => {
+      expect(canTransitionPostStatus('expired', 'open')).toBe(false);
+      expect(() => validatePostStatusTransition('expired', 'open')).toThrow(PostStatusTransitionError);
     });
 
     it('rejects illegal transitions from expired', () => {

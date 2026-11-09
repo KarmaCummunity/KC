@@ -2767,6 +2767,57 @@ export type Database = {
           },
         ]
       }
+      fsm_edge: {
+        Row: {
+          from_status: string
+          machine_id: string
+          role: string
+          to_status: string
+        }
+        Insert: {
+          from_status: string
+          machine_id: string
+          role?: string
+          to_status: string
+        }
+        Update: {
+          from_status?: string
+          machine_id?: string
+          role?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fsm_edge_machine_id_from_status_fkey"
+            columns: ["machine_id", "from_status"]
+            isOneToOne: false
+            referencedRelation: "fsm_state"
+            referencedColumns: ["machine_id", "status"]
+          },
+          {
+            foreignKeyName: "fsm_edge_machine_id_to_status_fkey"
+            columns: ["machine_id", "to_status"]
+            isOneToOne: false
+            referencedRelation: "fsm_state"
+            referencedColumns: ["machine_id", "status"]
+          },
+        ]
+      }
+      fsm_state: {
+        Row: {
+          machine_id: string
+          status: string
+        }
+        Insert: {
+          machine_id: string
+          status: string
+        }
+        Update: {
+          machine_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       giving_handoff_ratings: {
         Row: {
           comment: string | null
@@ -12295,6 +12346,15 @@ export type Database = {
       food_listing_urgency_level: {
         Args: { p_expires_at: string }
         Returns: number
+      }
+      fsm_assert_transition: {
+        Args: {
+          p_from: string
+          p_machine: string
+          p_role?: string
+          p_to: string
+        }
+        Returns: undefined
       }
       fulfill_my_listing: { Args: { p_listing_id: string }; Returns: undefined }
       get_challenge: {
