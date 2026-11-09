@@ -1,5 +1,5 @@
 -- supabase/tests/0682_fsm_post_admin_restore.sql
--- Wave 1b-i (#1989, {{D:admin-restore-previous-status}}): an admin removes a post in any
+-- Wave 1b-i (#1989, D129): an admin removes a post in any
 -- status and a restore returns it to the status it had before the removal.
 -- Each block is a regression for one bug that 0682 fixes. Runs in a rolled-back transaction.
 

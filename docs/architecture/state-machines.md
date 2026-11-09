@@ -82,7 +82,7 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 - ~~Spec §7.1 listed no `paused` state and reopened from `expired`.~~ ✅ wave 1a: spec reconciled; `expired → open` removed (D127).
 - ~~`admin_remove_post` (`0452`) silently skipped `paused` and `expired` posts.~~ ✅ wave 1b-i (`0682`): removes any status; the admin search row offers Remove accordingly.
 - ~~`admin_remove_listing` (`0666`) failed on a paused or expired post (the `0097` check rejected the saved status).~~ ✅ wave 1b-i (`0682`): the check covers every removable status.
-- ~~`admin_restore_target` (`0666`) always restored to `open`, also "restored" never-removed paused posts, and kept a dead `held` branch.~~ ✅ wave 1b-i (`0682`): restores to the saved status ({{D:admin-restore-previous-status}}).
+- ~~`admin_restore_target` (`0666`) always restored to `open`, also "restored" never-removed paused posts, and kept a dead `held` branch.~~ ✅ wave 1b-i (`0682`): restores to the saved status (D129).
 - `mark_giving_handed_over` (`0666`) writes `closed_delivered` without a source-status filter and raises on `expired` / `removed_admin` posts.
 - The expired screen calls `rpc_republish_post` (`0155`), which clones only the legacy item columns (no `world_slug`, `details`, `kind_id`); D127 requires a full copy (wave 1b).
 - Items get `expires_at = now() + 30 days` (`0612`, `0666`) while D21 says items never expire and no sweep expires them: after 30 days a paused item cannot resume and never expires.
@@ -146,7 +146,7 @@ One PR per row. Each wave starts only after the previous one is merged, so the c
 |---|---|---|
 | 0 ✅ | Kernel, admin task | Infrastructure + a pilot with no product change |
 | 1a ✅ | Post S1 graph on the kernel (`0681`), no roles yet | One graph already agreed in TS and SQL; one trigger to replace; prerequisite for G1 step 6d (drop `listings`) |
-| 1b-i ✅ | Admin remove in any status, restore to the previous status, `status_before_admin_removal` (`0682`) | PM decision {{D:admin-restore-previous-status}} |
+| 1b-i ✅ | Admin remove in any status, restore to the previous status, `status_before_admin_removal` (`0682`) | PM decision D129 |
 | 1b-ii / 1b-iii | S1 writer fixes from §4: `mark_giving_handed_over` source filter, owner RPCs' `time` filter, one `owner_complete_offer_with_user`, full-copy republish, items without TTL (D21), events expire when they end | Behaviour fixes on the agreed graph, each with a regression test |
 | 1c | Writer-declared actor role (`owner` / `recipient` / `admin` / `system`) passed to the trigger, then role-restricted S1 edges | Needs a small kernel addendum: the trigger cannot infer the actor (a report's auto-hide runs in the reporter's session) |
 | 2 | Handoffs as five machines on one table (`item_handoff`, `ride_booking`, `housing_booking`, `event_registration`, `knowledge_session`), one `before update` trigger choosing the machine by `world_slug`; reservation-expiry sweep | Most writers and most divergences; TS copies collapse to the kernel |
@@ -160,7 +160,7 @@ One PR per row. Each wave starts only after the previous one is merged, so the c
 ## 7. Product decisions
 
 Answered by the PM on 2026-11-09:
-- An admin restore returns a removed post to its previous status ({{D:admin-restore-previous-status}}; wave 1b-i).
+- An admin restore returns a removed post to its previous status (D129; wave 1b-i).
 - Items have no expiry (D21 stands): the 30-day `expires_at` on items goes (wave 1b).
 - An expired post is republished as a new post, never reopened (D127; graph change in wave 1a, full copy in 1b).
 - An event or ticket expires when it ends (D128; wave 1b).

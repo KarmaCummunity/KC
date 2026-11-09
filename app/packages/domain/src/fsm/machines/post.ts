@@ -56,7 +56,7 @@ export const postMachine = defineMachine({
     { from: 'deleted_no_recipient', to: 'open' },
     { from: 'deleted_no_recipient', to: 'removed_admin' },
     // Removed by an admin: only an admin restore leaves it, back to the status saved before
-    // the removal ({{D:admin-restore-previous-status}}).
+    // the removal (D129).
     { from: 'removed_admin', to: 'open' },
     { from: 'removed_admin', to: 'paused' },
     { from: 'removed_admin', to: 'closed_delivered' },

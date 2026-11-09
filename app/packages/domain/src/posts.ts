@@ -45,7 +45,7 @@ export interface Post {
   readonly ownerId: string;
   readonly type: PostType;
   status: PostStatus;
-  /** The status an admin restore returns to ({{D:admin-restore-previous-status}}); null unless removed. */
+  /** The status an admin restore returns to (D129); null unless removed. */
   readonly statusBeforeAdminRemoval: PostStatusBeforeAdminRemoval | null;
   visibility: PostVisibility;
   title: string;

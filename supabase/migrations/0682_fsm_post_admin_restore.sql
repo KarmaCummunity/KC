@@ -1,7 +1,7 @@
 -- 0682_fsm_post_admin_restore — wave 1b-i of docs/architecture/state-machines.md (#1989):
 -- moderation removal and restore of a post follow one rule.
 --
--- {{D:admin-restore-previous-status}} (PM, 2026-11-09): an admin restore returns a removed
+-- D129 (PM, 2026-11-09): an admin restore returns a removed
 -- post to the status it had before the removal (open, paused, delivered, closed without
 -- recipient, or expired), not always to `open`. A post hidden for review was always `open`
 -- before it was hidden (both auto-hide writers filter on `status = 'open'`), so it returns
@@ -157,7 +157,7 @@ as $$
 $$;
 
 comment on function kc_private.post_restore_status(public.posts) is
-  'The status admin_restore_target returns a removed or hidden post to ({{D:admin-restore-previous-status}}).';
+  'The status admin_restore_target returns a removed or hidden post to (D129).';
 
 revoke all on function kc_private.post_restore_status(public.posts) from public, anon, authenticated;
 grant execute on function kc_private.post_restore_status(public.posts) to service_role;
