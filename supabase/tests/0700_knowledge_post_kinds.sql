@@ -110,20 +110,22 @@ begin
 end $$;
 
 -- ── Expiry of the other kinds ─────────────────────────────────────────────────────────────────
+-- Each post is created before it is read: a volatile helper inside the WHERE clause would run
+-- once per scanned row and never match the row it is compared with.
 do $$
 declare
   p personas;
+  v_question uuid;
+  v_mentoring uuid;
 begin
   select * into p from personas;
+  v_question := kc_test.create_knowledge_post(p.learner, 'question', '{"topic":"Chess"}', 'How do I start?');
+  v_mentoring := kc_test.create_knowledge_post(p.giver, 'mentoring_offer',
+    '{"cadence":"weekly","seats":2,"modality":"video"}', 'Career mentoring');
   perform kc_test.assert_true(
-    (select expires_at is null from public.posts
-      where post_id = kc_test.create_knowledge_post(p.learner, 'question', '{"topic":"Chess"}', 'How do I start?')),
-    'a question never expires');
+    (select expires_at is null from public.posts where post_id = v_question), 'a question never expires');
   perform kc_test.assert_true(
-    (select expires_at is null from public.posts
-      where post_id = kc_test.create_knowledge_post(p.giver, 'mentoring_offer',
-              '{"cadence":"weekly","seats":2,"modality":"video"}', 'Career mentoring')),
-    'a mentoring offer never expires');
+    (select expires_at is null from public.posts where post_id = v_mentoring), 'a mentoring offer never expires');
 end $$;
 
 -- ── Consulting hour: identity verification required (FR-KNOW-012 AC1) ────────────────────────
