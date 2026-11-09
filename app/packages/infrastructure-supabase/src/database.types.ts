@@ -14035,6 +14035,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      events_expired_sweep: { Args: never; Returns: number }
       feed_cache_enqueue: { Args: { p_user_id: string }; Returns: number }
       feed_cache_enqueue_active_users: {
         Args: { p_limit?: number }
@@ -15367,12 +15368,10 @@ export type Database = {
         Args: { p_message: string; p_shift_id: string }
         Returns: number
       }
-      owner_complete_offer_with_user:
-        | { Args: { p_recipient_id: string; p_target: string }; Returns: Json }
-        | {
-            Args: { p_mode?: string; p_recipient_id?: string; p_target: string }
-            Returns: Json
-          }
+      owner_complete_offer_with_user: {
+        Args: { p_mode?: string; p_recipient_id?: string; p_target: string }
+        Returns: Json
+      }
       owner_offer_set_status: {
         Args: {
           p_listing: Database["public"]["Views"]["listings"]["Row"]
