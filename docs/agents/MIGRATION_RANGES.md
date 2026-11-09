@@ -125,18 +125,17 @@ Last applied on kc-dev when this was written: `0239`.
 | 0677 | #1964 demo post media paths + org_memberships on demo orgs | in review |
 | 0678 | #1964 verification 0..2 mix, OnlyMe posts, storage JPEG fixtures | in review |
 | 0679 | FR-ADMIN-031 admin_demo_data_status ride/org/media KPIs | in review |
-| 0680–0689, 0694–0698 | FSM kernel program (`docs/architecture/state-machines.md`): `0680` kernel catalog (`fsm_state` / `fsm_edge` / `fsm_assert_transition`) and the admin-task pilot; `0681` post S1 (wave 1a); `0682` admin restore (wave 1b-i); `0683` handoff writers (1b-ii); `0684` items without expiry and `0685` events expire (1b-iii); `0686` event owner actions (1b-iv); `0694` handoff machines (wave 2); `0695` legacy ride jobs retired (wave 1d); `0696` account status (wave 3a); `0697` account status writers (3a-2); `0698` onboarding (3b); `0692` and `0693` are other work | in progress |
+| 0680–0689, 0694–0699 | FSM kernel program (`docs/architecture/state-machines.md`): `0680` kernel catalog (`fsm_state` / `fsm_edge` / `fsm_assert_transition`) and the admin-task pilot; `0681` post S1 (wave 1a); `0682` admin restore (wave 1b-i); `0683` handoff writers (1b-ii); `0684` items without expiry and `0685` events expire (1b-iii); `0686` event owner actions (1b-iv); `0694` handoff machines (wave 2); `0695` legacy ride jobs retired (wave 1d); `0696` account status (wave 3a); `0697` account status writers (3a-2); `0698` onboarding (3b); `0699` retryable account purge (3c); `0692` and `0693` are other work | in progress |
 | 0690 | money sandbox completion behind the `sandbox_payments` server flag; org memberships written by definer functions only | merged (#1983) |
 | 0691 | #1961 reset the public schema comment (retired product cleanup) | in progress |
 | 0692 | G1 compatibility views (`listings`, `giving_handoffs`, `ride_listings`) follow the base tables' access rules | merged (#2017) |
 | 0693 | composer items posts get their listing kind on insert (regression from 0666) | in progress |
-| 0699 | — | free (next number of the FSM kernel program) |
 | 0700 | #2032 the listing detail resolves a former listing id (`posts.listing_id`) to its post | in progress |
 | 0701+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0699`, `0701+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0701+`.
 
 ## How to claim
 
