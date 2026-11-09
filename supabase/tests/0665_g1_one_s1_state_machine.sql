@@ -145,6 +145,8 @@ begin
   );
 
   -- deleted_no_recipient -> paused is illegal
+  -- The post is expired here; since 0681 it returns to open only through review.
+  update public.posts set status = 'hidden_pending_review' where post_id = v;
   update public.posts set status = 'open' where post_id = v;
   update public.posts set status = 'deleted_no_recipient' where post_id = v;
   perform kc_test.assert_raises(
