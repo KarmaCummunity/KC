@@ -212,6 +212,10 @@ begin
       raise exception 'listing_has_handoff_history' using errcode = '23514';
     end if;
 
+    -- 0686: the delete is a hard delete, so no status trigger runs and the registrations go with
+    -- the post in the cascade; an upcoming event's attendees are notified first.
+    perform kc_private.event_cancel_open_registrations(v_post.post_id);
+
     v_lid := coalesce(v_post.legacy_listing_id, public.listing_id_of_post(v_post.post_id));
     if v_lid is not null then
       delete from public.listing_media where listing_id = v_lid;

@@ -83,7 +83,8 @@ begin
     2::bigint, 'each attendee is notified once');
 end $$;
 
--- ── 2. Delete with registrations: allowed; the registration is cancelled ──────────
+-- ── 2. Delete with registrations: allowed; the attendee is notified ──────────────
+-- The delete is a hard delete: the registration goes with the post (cascade).
 do $$
 declare
   p personas;
@@ -96,7 +97,13 @@ begin
 
   perform kc_test.act_as(p.organizer);
   perform public.delete_my_listing(e.deleted_one);
-  perform kc_test.assert_eq(pg_temp.status_of(h), 'cancelled', 'deleting the event cancels the registration');
+  perform kc_test.assert_true(not exists (select 1 from public.posts where post_id = e.deleted_one),
+    'the organizer deletes an event with a registration');
+  perform kc_test.assert_eq(
+    (select count(*) from public.notifications_outbox
+      where kind = 'event_registration_cancelled' and user_id = p.guest_a
+        and dedupe_key = 'event_registration_cancelled:' || h::text),
+    1::bigint, 'the attendee is notified of the deletion');
 end $$;
 
 -- ── 3. After the event started, registrations stay for attendance marking ─────────
