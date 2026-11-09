@@ -12705,6 +12705,10 @@ export type Database = {
         Returns: Json
       }
       kc_dev_seed_demo_match_candidates: { Args: never; Returns: number }
+      kc_dev_seed_demo_post_media: { Args: never; Returns: undefined }
+      kc_dev_seed_demo_rides: { Args: never; Returns: undefined }
+      kc_dev_seed_demo_user_profiles: { Args: never; Returns: undefined }
+      kc_dev_seed_demo_verification_mix: { Args: never; Returns: undefined }
       kc_dev_seed_demo_world_content: { Args: never; Returns: Json }
       kc_dev_seed_phase_items: { Args: never; Returns: undefined }
       kc_dev_seed_phase_orgs: { Args: never; Returns: undefined }
