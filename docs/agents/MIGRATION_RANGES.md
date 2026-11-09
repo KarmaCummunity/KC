@@ -130,7 +130,8 @@ Last applied on kc-dev when this was written: `0239`.
 | 0691 | #1961 reset the public schema comment (retired product cleanup) | in progress |
 | 0692 | G1 compatibility views (`listings`, `giving_handoffs`, `ride_listings`) follow the base tables' access rules | merged (#2017) |
 | 0693 | composer items posts get their listing kind on insert (regression from 0666) | in progress |
-| 0697+ | — | free |
+| 0697 | #2032 the listing detail resolves a former listing id (`posts.listing_id`) to its post | in progress |
+| 0698+ | — | free |
 
 ## Next free ranges
 
