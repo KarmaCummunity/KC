@@ -1,8 +1,7 @@
 # Native regression for the create-form crash: open every category in both directions and
 # open the date sheet of the food offer, so a native picker or slider that crashes the app
 # (TestFlight, 1.6.x) fails here instead of in the store build.
-# Category tiles and the request / offer toggle are tapped by their Hebrew labels (the
-# product's own words, FR-POST-001 AC6); their testIDs are built per category.
+# Category chips scroll horizontally; use testIDs so Maestro does not depend on them being on screen.
 # Spec: docs/spec/requirements/04_posts.md FR-POST-001 AC6; docs/spec/07_cross_cutting_systems.md §7.2.
 appId: org.karmacommunity.app
 name: Posts — create form categories open on device
@@ -15,7 +14,12 @@ tags: [posts]
     visible:
       id: unified-create-header
     timeout: 15000
-- tapOn: "טרמפים"
+- scrollUntilVisible:
+    element:
+      id: create-category-rides
+    timeout: 10000
+- tapOn:
+    id: create-category-rides
 - tapOn: "להציע"
 - extendedWaitUntil:
     visible:
@@ -28,7 +32,12 @@ tags: [posts]
 - tapOn: "לבקש"
 - assertVisible:
     id: ride-departs-at
-- tapOn: "אוכל"
+- scrollUntilVisible:
+    element:
+      id: create-category-food
+    timeout: 10000
+- tapOn:
+    id: create-category-food
 - tapOn: "להציע"
 - extendedWaitUntil:
     visible: "תאריך תפוגה"
@@ -46,12 +55,27 @@ tags: [posts]
     commands:
       - tapOn:
           text: "ביטול"
-- tapOn: "דיור"
+- scrollUntilVisible:
+    element:
+      id: create-category-housing
+    timeout: 10000
+- tapOn:
+    id: create-category-housing
 - assertVisible:
     id: listing-create-form
-- tapOn: "זמן"
+- scrollUntilVisible:
+    element:
+      id: create-category-time
+    timeout: 10000
+- tapOn:
+    id: create-category-time
 - assertVisible:
     id: listing-create-form
-- tapOn: "חפצים"
+- scrollUntilVisible:
+    element:
+      id: create-category-items
+    timeout: 10000
+- tapOn:
+    id: create-category-items
 - assertVisible:
     id: create-post-screen

@@ -1,5 +1,5 @@
 // Mapped to spec: FR-FEED-004 / FR-FEED-020 (shared horizontal/wrapping filter chip row)
-import React from 'react';
+import React, { Children } from 'react';
 import { type StyleProp, type ViewStyle } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Chip } from '../ui/Chip';
@@ -114,13 +114,17 @@ export function FilterChipRow<T extends string | number>(props: FilterChipRowPro
     </>
   );
 
+  const chipCount = options.length + (showAllChip ? 1 : 0) + Children.count(props.children);
+  // Short rows (e.g. world feed direction) stay scroll-only — no expand control stealing width (Maestro / narrow phones).
+  const expandable = !scrollable && chipCount > 4;
+
   return (
     <ChipSelectRow
       style={style}
       contentContainerStyle={contentContainerStyle}
       testID={testID}
       accessibilityLabel={accessibilityLabel}
-      expandable={!scrollable}
+      expandable={expandable}
     >
       {chips}
     </ChipSelectRow>
