@@ -1,4 +1,4 @@
--- supabase/tests/0693_fsm_retire_legacy_ride_jobs.sql
+-- supabase/tests/0695_fsm_retire_legacy_ride_jobs.sql
 -- Wave 1d (#1989): the jobs written for the legacy ride tables are gone, ride requests never
 -- expire (D21), and the food expiry sweep works on the post record alone. Runs in a
 -- rolled-back transaction.
@@ -95,4 +95,4 @@ end $$;
 
 rollback;
 
-\echo '✓ 0693_fsm_retire_legacy_ride_jobs.sql passed'
+\echo '✓ 0695_fsm_retire_legacy_ride_jobs.sql passed'

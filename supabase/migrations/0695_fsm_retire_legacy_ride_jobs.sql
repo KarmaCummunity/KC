@@ -1,4 +1,4 @@
--- 0693_fsm_retire_legacy_ride_jobs | Wave 1d of the FSM kernel program (#1989, G61)
+-- 0695_fsm_retire_legacy_ride_jobs | Wave 1d of the FSM kernel program (#1989, G61)
 --
 -- Background jobs written for the legacy ride tables kept running after `ride_listings`
 -- became a view over `posts` (0667, ADR-006). Each now moves posts outside the post graph's
@@ -100,7 +100,7 @@ end;
 $$;
 
 comment on function public.food_expired_listings_sweep() is
-  'Hourly: open food posts past their expiry cancel their open handoffs, expire and notify the owner (D21, S4; 0693 on posts only).';
+  'Hourly: open food posts past their expiry cancel their open handoffs, expire and notify the owner (D21, S4; 0695 on posts only).';
 
 revoke all on function public.food_expired_listings_sweep() from public, anon, authenticated;
 grant execute on function public.food_expired_listings_sweep() to service_role;
