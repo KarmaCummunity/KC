@@ -1,13 +1,26 @@
 // Client-side mirror of the server world rules (0266 listings_enforce_world_rules) and a
 // mapper from server error codes to stable codes the UI can translate.
-// Items photos are optional (product decision; 0357 dropped the 0351 items image check).
+// An offer in a photo world needs at least one photo ({{D:offer-photo-required}}, KC#1937; it
+// reverses the items-only removal of 0357). Server parity: KC#2020.
 // Keep in sync with supabase/migrations/0266, 0357, 0539 (food expiry binds offers only),
 // 0563 (an organization's event ends after it starts) and 0612 (animals are no longer routed).
 
 // Animals left this list in 0612: members give and take directly there (PM 2026-11-04).
 export const ROUTED_WORLDS = ['medical', 'environment'] as const;
 
+/**
+ * Worlds whose offers (`give`) must carry at least one photo ({{D:offer-photo-required}}).
+ * Requests stay photo-optional everywhere, and so do rides (a ride is not a thing to look at).
+ */
+export const OFFER_PHOTO_WORLDS = ['items', 'food', 'housing', 'animals'] as const;
+
+/** True when publishing this side of this world needs at least one photo. */
+export function offerRequiresPhoto(worldSlug: string, direction: 'give' | 'request'): boolean {
+  return direction === 'give' && (OFFER_PHOTO_WORLDS as readonly string[]).includes(worldSlug);
+}
+
 export type MarketplaceRuleErrorCode =
+  | 'offer_photo_required'
   | 'food_expiry_required'
   | 'routed_world_requires_external_body'
   | 'ride_route_required'
@@ -17,6 +30,7 @@ export type MarketplaceRuleErrorCode =
 
 /** Server-raised listing error codes the UI has friendly copy for. */
 export const MARKETPLACE_SERVER_ERROR_CODES = [
+  'offer_photo_required',
   'food_expiry_required',
   'routed_world_requires_external_body',
   'ride_route_required',
@@ -113,8 +127,11 @@ export interface WorldRulesInput {
   /** Offer (`give`) or request: some rules bind one side only (food expiry, D21 / D28). */
   direction: 'give' | 'request';
   details: Record<string, unknown>;
-  /** Number of attached photos. Informational only: photos are optional in every world. */
-  photoCount: number;
+  /**
+   * Number of attached photos. Undefined when the form does not manage photos (a listing edit
+   * keeps its photos as they are), so the photo rule is skipped there.
+   */
+  photoCount?: number;
   externalBodyId?: string | null;
   now?: Date;
 }
@@ -154,7 +171,16 @@ export function validateMarketplaceWorldRules(input: WorldRulesInput): Marketpla
     return 'routed_world_requires_external_body';
   }
 
+  // Checked last, so a form with several problems still reports the field-specific ones first.
+  if (lacksRequiredPhoto(input)) return 'offer_photo_required';
+
   return null;
+}
+
+/** An offer in a photo world with neither an attached photo nor a legacy details image (0351). */
+function lacksRequiredPhoto(input: WorldRulesInput): boolean {
+  if (input.photoCount === undefined || !offerRequiresPhoto(input.worldSlug, input.direction)) return false;
+  return input.photoCount === 0 && !nonEmptyString(input.details.image_url);
 }
 
 function finiteNumber(v: unknown): boolean {
