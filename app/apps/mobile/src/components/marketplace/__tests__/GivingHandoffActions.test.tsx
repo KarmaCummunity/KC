@@ -218,10 +218,19 @@ describe('GivingHandoffActions', () => {
 
   it('shows handed over status and hides reserve buttons if listing is ongoing/closed', async () => {
     getForListing.mockResolvedValue(null);
-    const ongoing = { ...ITEM, availabilityStatus: 'ongoing' } as MarketplaceListingDetail;
+    const ongoing = { ...ITEM, availabilityStatus: 'ongoing', listingStatus: 'closed' } as MarketplaceListingDetail;
     const { findByTestId, queryByTestId } = renderInProviders(<GivingHandoffActions detail={ongoing} />);
 
     expect(await findByTestId('giving-handoff-status')).toBeTruthy();
     expect(queryByTestId('giving-handoff-reserve')).toBeNull();
+  });
+
+  it('an open listing with the default "ongoing" availability can still be reserved (not handed over)', async () => {
+    getForListing.mockResolvedValue(null);
+    const fresh = { ...ITEM, availabilityStatus: 'ongoing', listingStatus: 'open' } as MarketplaceListingDetail;
+    const { findByTestId, queryByTestId } = renderInProviders(<GivingHandoffActions detail={fresh} />);
+
+    expect(await findByTestId('giving-handoff-reserve')).toBeTruthy();
+    expect(queryByTestId('giving-handoff-status')).toBeNull();
   });
 });
