@@ -1,9 +1,9 @@
 // Mapped to spec: FR-FEED-004 / FR-FEED-020 (shared horizontal/wrapping filter chip row)
 import React from 'react';
-import { ScrollView, View, type StyleProp, type ViewStyle } from 'react-native';
+import { type StyleProp, type ViewStyle } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing } from '@kc/ui';
 import { Chip } from '../ui/Chip';
+import { ChipSelectRow } from './ChipSelectRow';
 
 export interface FilterOption<T> {
   readonly value: T;
@@ -16,6 +16,7 @@ interface BaseFilterChipRowProps<T> {
   readonly options: readonly FilterOption<T>[];
   readonly allLabel?: string;
   readonly showAllChip?: boolean;
+  /** When true, a single horizontal row only (no expand). Default: compact row + expand. */
   readonly scrollable?: boolean;
   readonly chipSize?: 'sm' | 'md';
   readonly testID?: string;
@@ -46,7 +47,6 @@ function toggleInArray<T>(arr: readonly T[], value: T): T[] {
 
 export function FilterChipRow<T extends string | number>(props: FilterChipRowProps<T>) {
   const { t } = useTranslation();
-  const styles = useFilterChipRowStyles();
   const {
     options,
     allLabel,
@@ -114,34 +114,15 @@ export function FilterChipRow<T extends string | number>(props: FilterChipRowPro
     </>
   );
 
-  if (scrollable) {
-    return (
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={[styles.scroll, style]}
-        contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
-        testID={testID}
-        accessibilityLabel={accessibilityLabel}
-      >
-        {chips}
-      </ScrollView>
-    );
-  }
-
   return (
-    <View
-      style={[styles.wrapRow, style]}
+    <ChipSelectRow
+      style={style}
+      contentContainerStyle={contentContainerStyle}
       testID={testID}
       accessibilityLabel={accessibilityLabel}
+      expandable={!scrollable}
     >
       {chips}
-    </View>
+    </ChipSelectRow>
   );
 }
-
-const useFilterChipRowStyles = makeUseStyles(() => ({
-  scroll: { flexGrow: 0, flexShrink: 0 },
-  scrollContent: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.sm },
-  wrapRow: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: spacing.sm },
-}));

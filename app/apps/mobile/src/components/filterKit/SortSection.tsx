@@ -3,6 +3,7 @@ import React, { type ReactNode } from 'react';
 import { View } from 'react-native';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { Chip } from '../ui/Chip';
+import { ChipSelectRow } from './ChipSelectRow';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 export interface SortOption<T> {
@@ -33,7 +34,7 @@ export function SortSection<T extends string>({
   return (
     <View style={styles.section} testID={testID}>
       {title ? <Text style={styles.title}>{title}</Text> : null}
-      <View style={styles.row}>
+      <ChipSelectRow testID={testID}>
         {options.map((opt) => (
           <Chip
             size="sm"
@@ -44,7 +45,7 @@ export function SortSection<T extends string>({
             onPress={() => onChange(opt.value)}
           />
         ))}
-      </View>
+      </ChipSelectRow>
       {children}
     </View>
   );
@@ -53,5 +54,4 @@ export function SortSection<T extends string>({
 const useSortSectionStyles = makeUseStyles(({ colors }) => ({
   section: { gap: spacing.xs, marginBottom: spacing.md },
   title: { ...typography.label, color: colors.textPrimary, textAlign: rtlTextAlignStart },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'flex-end' },
 }));

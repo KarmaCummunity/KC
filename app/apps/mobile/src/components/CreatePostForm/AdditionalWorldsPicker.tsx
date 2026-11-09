@@ -7,6 +7,7 @@ import { GIVING_WORLD_SLUGS, type GivingWorldSlug } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { useListingChipStyles } from '../marketplace/listingChipStyles';
+import { ChipSelectRow } from '../filterKit/ChipSelectRow';
 
 interface Props {
   readonly primaryWorldSlug: string;
@@ -34,7 +35,7 @@ export function AdditionalWorldsPicker({
     <View style={styles.root} testID="additional-worlds-picker">
       <Text style={styles.label}>{t('post.unifiedCreate.additionalWorldsLabel')}</Text>
       <Text style={styles.hint}>{t('post.unifiedCreate.additionalWorldsHint')}</Text>
-      <View style={chipStyles.chipRow}>
+      <ChipSelectRow testID="additional-worlds-chips">
         {candidates.map((slug) => {
           const selected = selectedWorlds.includes(slug);
           return (
@@ -53,7 +54,7 @@ export function AdditionalWorldsPicker({
             </Pressable>
           );
         })}
-      </View>
+      </ChipSelectRow>
     </View>
   );
 }
