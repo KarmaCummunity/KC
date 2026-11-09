@@ -84,7 +84,10 @@ export function GivingHandoffActions({ detail }: Props) {
   const h = handoff.data;
   const isOwner = userId === detail.ownerId;
   const isRecipient = h != null && userId === h.recipientId;
-  const isAvailableForRequest = detail.availabilityStatus !== 'scheduled' && detail.availabilityStatus !== 'ongoing';
+  // 'ongoing' is also the default availability of every new listing (create_marketplace_listing),
+  // so it means "handed over" only once the listing has left the open state (0555 closes it).
+  const isHandedOver = detail.availabilityStatus === 'ongoing' && detail.listingStatus !== 'open';
+  const isAvailableForRequest = detail.availabilityStatus !== 'scheduled' && !isHandedOver;
 
   return (
     <View style={styles.box} testID="giving-handoff">
@@ -101,7 +104,7 @@ export function GivingHandoffActions({ detail }: Props) {
         </Text>
       ) : null}
 
-      {!h && detail.availabilityStatus === 'ongoing' ? (
+      {!h && isHandedOver ? (
         <Text style={styles.status} testID="giving-handoff-status">
           {t('givingHandoff.status', { status: t('givingHandoff.statusLabel.handed_over', { defaultValue: 'Handed over' }) })}
         </Text>

@@ -22,7 +22,7 @@ KC (Karma Community) is built largely by AI agents. **Part A** is the quick entr
 
 - **Mobile / web export:** `app/apps/mobile/**` (Expo, Hebrew RTL)
 - **Backend:** `supabase/**` + `app/packages/infrastructure-supabase/**`
-- GloWe was removed in `0238_drop_glowe_product.sql`. Do not reintroduce it.
+- KC is the only product in this repo (D-190). Do not add a second product tree or namespaced schema for one.
 
 ## Branch naming
 

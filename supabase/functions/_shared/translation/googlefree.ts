@@ -7,7 +7,7 @@
 // language, which the same-language short-circuit in the callers relies on.
 // Trade-off: it is an undocumented endpoint (ToS-gray, may change without
 // notice); revisit for an official/DPA provider before GA (D-63/D-65, TD-75).
-// Shared by the KC `translate` and GLOWE `glowe-translate` Edge Functions.
+// Used by the KC `translate` Edge Function.
 //
 // When Google returns 429 / transient failure, fall back once to MyMemory's
 // keyless API so local/dev bursts still produce translations instead of a

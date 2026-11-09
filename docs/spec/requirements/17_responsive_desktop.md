@@ -1,7 +1,5 @@
 # 14 — Responsive Desktop (FR-RESP-*)
 
-> **KC mobile UI — paused.** Backend/shared contracts may still apply to GLOWE. Active GLOWE spec: [`17_glowe_frontend.md`](../../SSOT/spec/17_glowe_frontend.md). Paused backlog: [`../archive/BACKLOG-kc-mobile-paused.md`](../../SSOT/archive/BACKLOG-kc-mobile-paused.md).
-
 **Status:** 🟡 In progress
 **Owner:** Autonomous loop
 **Design doc:** `docs/SSOT/archive/superpowers/specs/2026-05-22-responsive-desktop-design.md`

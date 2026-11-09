@@ -7,12 +7,6 @@
       "runtimeArgs": ["--filter", "@kc/mobile", "exec", "expo", "start", "--web", "--port", "8085"],
       "port": 8085,
       "autoPort": false
-    },
-    {
-      "name": "glowe-web",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["--yes", "serve", "app/apps/glowe-web", "--listen", "4321"],
-      "port": 4321
     }
   ]
 }

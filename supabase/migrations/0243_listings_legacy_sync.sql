@@ -1,6 +1,6 @@
 -- 0243_listings_legacy_sync | Issue #826
 -- Sync posts → items listings, ride_listings → rides listings (backfill + triggers).
--- GloWe opportunities omitted (product removed in 0238).
+-- Opportunities of the retired product omitted (removed, D-190).
 
 begin;
 
