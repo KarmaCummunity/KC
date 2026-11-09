@@ -42,6 +42,11 @@ function stripComments(sql: string): string {
   return out;
 }
 
+function dollarTagAt(sql: string, index: number): string | null {
+  if (sql[index] !== '$' || /[a-z0-9_$]/i.test(sql[index - 1] ?? '')) return null;
+  return /^\$(?:[a-z_][a-z0-9_]*)?\$/i.exec(sql.slice(index, index + 64))?.[0] ?? null;
+}
+
 function statements(sql: string): string[] {
   const parts: string[] = [];
   let current = '';
@@ -58,6 +63,14 @@ function statements(sql: string): string[] {
       }
       continue;
     }
+    const tag = dollarTagAt(sql, i);
+    if (tag) {
+      const end = sql.indexOf(tag, i + tag.length);
+      const stop = end === -1 ? sql.length : end + tag.length;
+      current += sql.slice(i, stop);
+      i = stop;
+      continue;
+    }
     if (sql[i] === ';') { parts.push(current); current = ''; i += 1; continue; }
     current += sql[i];
     i += 1;
@@ -70,23 +83,59 @@ function unquote(raw: string): string {
   return raw.replace(/''/g, "'");
 }
 
+const LITERAL = "'(?:''|[^'])*'";
+const TUPLE = `\\(\\s*${LITERAL}(?:\\s*,\\s*${LITERAL})*\\s*\\)`;
+const VALUES_BODY = new RegExp(`^\\s*${TUPLE}(?:\\s*,\\s*${TUPLE})*\\s*$`);
+
 function tuples(body: string, width: number): string[][] {
+  if (!VALUES_BODY.test(body)) {
+    throw new ValidationError('catalog insert values must be quoted literal tuples only', 'sql');
+  }
   const rows: string[][] = [];
-  const re = /\(\s*((?:'(?:''|[^'])*'\s*,\s*)*(?:'(?:''|[^'])*'))\s*\)/g;
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(body))) {
-    const cells = [...match[1].matchAll(/'((?:''|[^'])*)'/g)].map((cell) => unquote(cell[1]));
+  for (const tuple of body.matchAll(new RegExp(TUPLE, 'g'))) {
+    const cells = [...tuple[0].matchAll(new RegExp(LITERAL, 'g'))].map((cell) =>
+      unquote(cell[0].slice(1, -1)),
+    );
     if (cells.length !== width) throw new ValidationError(`catalog tuple width ${cells.length}`, 'sql');
     rows.push(cells);
   }
-  if (rows.length === 0) throw new ValidationError('catalog insert has no tuples', 'sql');
   return rows;
+}
+
+function group(match: RegExpExecArray, index: number): string {
+  const value = match[index];
+  if (value === undefined) throw new ValidationError(`missing sql group ${index}`, 'sql');
+  return value;
+}
+
+function cell(row: readonly string[], index: number): string {
+  const value = row[index];
+  if (value === undefined) throw new ValidationError(`missing catalog cell ${index}`, 'sql');
+  return value;
 }
 
 const STATE_INSERT = /^insert\s+into\s+public\.fsm_state\s*\(\s*machine_id\s*,\s*status\s*\)\s*values\b([\s\S]*)$/i;
 const EDGE_INSERT = /^insert\s+into\s+public\.fsm_edge\s*\(\s*machine_id\s*,\s*from_status\s*,\s*to_status\s*,\s*role\s*\)\s*values\b([\s\S]*)$/i;
 const STATE_DELETE = /^delete\s+from\s+public\.fsm_state\s+where\s+machine_id\s*=\s*'((?:''|[^'])*)'\s*$/i;
 const EDGE_DELETE = /^delete\s+from\s+public\.fsm_edge\s+where\s+machine_id\s*=\s*'((?:''|[^'])*)'\s*$/i;
+
+const CATALOG_NAME = /(?:^|[^a-z0-9_$])(?:"?[a-z_][a-z0-9_]*"?\s*\.\s*)?"?fsm_(?:state|edge)"?(?![a-z0-9_$"])/i;
+const DATA_CHANGING = new Set(['insert', 'delete', 'update', 'truncate', 'copy', 'merge', 'with', 'do']);
+
+function blankLiterals(statement: string): string {
+  return statement.replace(new RegExp(LITERAL, 'g'), "''");
+}
+
+function namesCatalog(keyword: string, statement: string): boolean {
+  const scanned = keyword === 'do' ? statement : blankLiterals(statement);
+  return CATALOG_NAME.test(scanned);
+}
+
+function removeMachine<T extends { readonly machineId: string }>(rows: T[], machineId: string): void {
+  for (let index = rows.length - 1; index >= 0; index -= 1) {
+    if (rows[index]?.machineId === machineId) rows.splice(index, 1);
+  }
+}
 
 export function replayFsmSql(
   files: readonly { readonly name: string; readonly sql: string }[],
@@ -99,34 +148,29 @@ export function replayFsmSql(
       const trimmed = statement.trim();
       if (!trimmed) continue;
       const keyword = /^\s*([a-z]+)/i.exec(trimmed)?.[1]?.toLowerCase() ?? '';
-      const catalog = /public\.fsm_(state|edge)\b/i.test(trimmed);
-      if (!catalog || (keyword !== 'insert' && keyword !== 'delete' && keyword !== 'update')) continue;
+      if (!DATA_CHANGING.has(keyword) || !namesCatalog(keyword, trimmed)) continue;
       const stateInsert = STATE_INSERT.exec(trimmed);
       if (stateInsert) {
-        for (const [machineId, status] of tuples(stateInsert[1], 2)) states.push({ machineId, status });
+        for (const row of tuples(group(stateInsert, 1), 2)) {
+          states.push({ machineId: cell(row, 0), status: cell(row, 1) });
+        }
         continue;
       }
       const edgeInsert = EDGE_INSERT.exec(trimmed);
       if (edgeInsert) {
-        for (const [machineId, from, to, role] of tuples(edgeInsert[1], 4)) {
-          edges.push({ machineId, from, to, role });
+        for (const row of tuples(group(edgeInsert, 1), 4)) {
+          edges.push({ machineId: cell(row, 0), from: cell(row, 1), to: cell(row, 2), role: cell(row, 3) });
         }
         continue;
       }
       const stateDelete = STATE_DELETE.exec(trimmed);
       if (stateDelete) {
-        const id = unquote(stateDelete[1]);
-        for (let index = states.length - 1; index >= 0; index -= 1) {
-          if (states[index].machineId === id) states.splice(index, 1);
-        }
+        removeMachine(states, unquote(group(stateDelete, 1)));
         continue;
       }
       const edgeDelete = EDGE_DELETE.exec(trimmed);
       if (edgeDelete) {
-        const id = unquote(edgeDelete[1]);
-        for (let index = edges.length - 1; index >= 0; index -= 1) {
-          if (edges[index].machineId === id) edges.splice(index, 1);
-        }
+        removeMachine(edges, unquote(group(edgeDelete, 1)));
         continue;
       }
       throw new ValidationError(`unrecognised fsm catalog statement: ${trimmed.slice(0, 80)}`, 'sql');

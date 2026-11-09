@@ -86,6 +86,12 @@ jobs:
           TURBO_TELEMETRY_DISABLED: '1'
         run: pnpm install --frozen-lockfile
 
+      # Runs vitest directly, not through turbo: a cached @kc/domain test task would skip
+      # this contract when only supabase/migrations changed.
+      - name: FSM catalog contract (migrations vs FSM_MACHINES)
+        working-directory: app
+        run: pnpm --filter @kc/domain exec vitest run src/fsm/__tests__/catalogMatchesSql.test.ts
+
       # The port contract suites (G39) sign in through the anon key, so the three
       # credentials come from the running stack — no CLI demo key is written in
       # the repo. Local-only values; GITHUB_ENV scopes them to this job.

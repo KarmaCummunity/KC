@@ -41,6 +41,7 @@ export function defineMachine<S extends string, R extends string>(
     if (edge.roles.length === 0) throw new ValidationError('omit roles instead of an empty list', 'roles');
     const roles = new Set<string>();
     for (const role of edge.roles) {
+      if (role === '') throw new ValidationError('role must not be an empty string', 'roles');
       if (roles.has(role)) throw new ValidationError(`duplicate role ${role}`, 'roles');
       roles.add(role);
     }

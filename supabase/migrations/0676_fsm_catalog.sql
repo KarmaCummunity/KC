@@ -22,6 +22,18 @@ create table public.fsm_edge (
 alter table public.fsm_state enable row level security;
 alter table public.fsm_edge enable row level security;
 
+-- Explicit deny-all policies: the RLS lint wants every RLS table to carry one. Clients never
+-- read the catalog; only SECURITY DEFINER functions (and the service role) do.
+drop policy if exists fsm_state_deny_all on public.fsm_state;
+create policy fsm_state_deny_all on public.fsm_state
+  for all to anon, authenticated
+  using (false) with check (false);
+
+drop policy if exists fsm_edge_deny_all on public.fsm_edge;
+create policy fsm_edge_deny_all on public.fsm_edge
+  for all to anon, authenticated
+  using (false) with check (false);
+
 revoke all on table public.fsm_state from public, anon, authenticated;
 revoke all on table public.fsm_edge from public, anon, authenticated;
 

@@ -121,7 +121,7 @@ Last applied on kc-dev when this was written: `0239`.
 | 0640–0659 | — (superseded by 0665–0675 after 0660 merged) | free |
 | 0660–0664 | multi-world posts: `listing_worlds`, multi-world feeds, search, matching (#1475) | merged |
 | 0665–0675 | G1 one Post model steps 6b–6d (ADR-006, D-214, #1671): `0665` step 6b one S1 state machine (merged #1932), `0666` step 6c drop sync triggers, `0667` step 6d drop `listings` / `giving_handoffs` | in progress |
-| 0676–0680 | FSM kernel catalog and admin-task enforcement | in progress |
+| 0676–0680 | FSM kernel catalog and admin-task enforcement. If `0676` reaches production before reserved `0667`, `0667` must be renumbered above `0680`, because prod `db push` does not use `--include-all`. | in progress |
 
 ## Next free ranges
 

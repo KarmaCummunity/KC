@@ -32,6 +32,12 @@ describe('defineMachine', () => {
       id: 'ok', states: ['a', 'b'], edges: [{ from: 'a', to: 'b', roles: ['owner', 'owner'] }],
     })).toThrow(ValidationError);
   });
+
+  it('rejects an empty-string role, which the sql catalog reserves for unrestricted edges', () => {
+    expect(() => defineMachine({
+      id: 'ok', states: ['a', 'b'], edges: [{ from: 'a', to: 'b', roles: ['' as string] }],
+    })).toThrow(ValidationError);
+  });
 });
 
 describe('canTransition', () => {

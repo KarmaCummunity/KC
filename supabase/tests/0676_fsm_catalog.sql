@@ -31,21 +31,24 @@ select kc_test.assert_raises(
   'missing role');
 
 do $$
+declare
+  v_role text;
+  v_table text;
+  v_priv text;
 begin
-  begin
-    execute 'set local role authenticated';
-    perform 1 from public.fsm_state;
-    perform kc_test.fail('authenticated read fsm_state');
-  exception when insufficient_privilege then
-    null;
-  end;
-  begin
-    execute 'set local role authenticated';
-    perform 1 from public.fsm_edge;
-    perform kc_test.fail('authenticated read fsm_edge');
-  exception when insufficient_privilege then
-    null;
-  end;
+  foreach v_role in array array['anon', 'authenticated'] loop
+    foreach v_table in array array['public.fsm_state', 'public.fsm_edge'] loop
+      foreach v_priv in array array['SELECT', 'INSERT', 'UPDATE', 'DELETE'] loop
+        perform kc_test.assert_true(
+          not has_table_privilege(v_role, v_table, v_priv),
+          format('%s must not have %s on %s', v_role, v_priv, v_table));
+      end loop;
+    end loop;
+    perform kc_test.assert_true(
+      not has_function_privilege(
+        v_role, 'public.fsm_assert_transition(text, text, text, text)', 'EXECUTE'),
+      format('%s must not execute fsm_assert_transition', v_role));
+  end loop;
 end $$;
 
 do $$
@@ -54,6 +57,9 @@ declare
   v_task uuid;
   v_changes bigint;
 begin
+  -- Only one super_admin may be active; the revoke is rolled back with the rest.
+  update public.admin_role_grants set revoked_at = now()
+   where role = 'super_admin' and revoked_at is null;
   insert into public.admin_role_grants (user_id, role) values (v_admin, 'super_admin');
   insert into public.admin_tasks (title, created_by)
   values ('fsm pilot', v_admin)
@@ -73,6 +79,20 @@ begin
     format('select public.admin_task_set_status(%L, %L)', v_task, 'archived'),
     'invalid_transition',
     'in_progress cannot jump to archived');
+
+  perform kc_test.assert_raises(
+    format('update public.admin_tasks set status = %L where task_id = %L', 'archived', v_task),
+    'illegal_transition',
+    'trigger rejects a direct in_progress to archived update');
+  perform kc_test.assert_eq(
+    (select status from public.admin_tasks where task_id = v_task),
+    'in_progress',
+    'rejected direct update leaves the status unchanged');
+  update public.admin_tasks set status = 'blocked' where task_id = v_task;
+  perform kc_test.assert_eq(
+    (select status from public.admin_tasks where task_id = v_task),
+    'blocked',
+    'trigger allows a direct legal in_progress to blocked update');
 end $$;
 
 rollback;

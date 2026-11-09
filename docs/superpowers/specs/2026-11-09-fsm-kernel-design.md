@@ -135,7 +135,7 @@ create table public.fsm_edge (
 
 `role = ''` means the edge is not role-restricted. A pair that has a `''` row has no other rows. A role-restricted pair has one row per role and no `''` row. The contract test rejects any other combination.
 
-RLS is enabled. There are no policies. `anon` and `authenticated` receive no privileges. Clients never read or write the catalog. Only migrations change rows.
+RLS is enabled. Each table has an explicit deny-all policy (`for all to anon, authenticated using (false) with check (false)`) because the RLS lint requires every RLS table to carry a policy. `anon` and `authenticated` also receive no privileges, so clients still have no access. Clients never read or write the catalog. Only migrations change rows.
 
 `public.fsm_assert_transition(p_machine text, p_from text, p_to text, p_role text default null)`:
 
