@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ValidationError } from '../../errors';
-import { replayFsmSql } from '../replaySql';
+import { ValidationError } from '@kc/domain';
+import { replayFsmSql } from './support/replayFsmSql';
 
 const clean = `
   create table public.fsm_state (machine_id text, status text);
@@ -88,5 +88,19 @@ describe('replayFsmSql', () => {
     const body = `create function public.f() returns void language plpgsql as $$
       begin delete from public.fsm_edge where machine_id = 'x'; select 1 from fsm_state; end $$;`;
     expect(replayFsmSql([{ name: '1.sql', sql: body }])).toEqual({ states: [], edges: [] });
+  });
+
+  it('keeps named dollar-quoted bodies and commented-out writes out of the replay', () => {
+    const sql = `
+      -- insert into public.fsm_state (machine_id, status) values ('ghost', 'a');
+      /* delete from public.fsm_edge where machine_id = 'ghost'; */
+      create function public.g() returns void language plpgsql as $fn$
+        begin insert into public.fsm_state (machine_id, status) values ('ghost', 'b'); end $fn$;
+      insert into public.fsm_state (machine_id, status) values ('it''s', 'a;b');
+    `;
+    expect(replayFsmSql([{ name: '1.sql', sql }])).toEqual({
+      states: [{ machineId: "it's", status: 'a;b' }],
+      edges: [],
+    });
   });
 });

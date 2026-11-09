@@ -97,4 +97,4 @@ end $$;
 
 rollback;
 
-\echo '✓ 0676_fsm_catalog.sql passed'
+\echo '✓ 0679_fsm_catalog.sql passed'

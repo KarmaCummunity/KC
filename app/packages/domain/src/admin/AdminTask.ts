@@ -49,6 +49,11 @@ export interface AdminTask {
   readonly commentCount: number;
 }
 
+/**
+ * True when an admin task may move `from → to` (same status counts as a legal no-op).
+ * Delegates to the FSM kernel so the graph has one TypeScript copy (`adminTaskMachine`),
+ * which the SQL catalog mirrors.
+ */
 export function isStatusTransitionAllowed(
   from: AdminTaskStatus,
   to: AdminTaskStatus,

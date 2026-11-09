@@ -1,6 +1,6 @@
 # FSM kernel — design
 
-> **Status:** Accepted 2026-11-09. Implementation follows `docs/superpowers/plans/2026-11-09-fsm-kernel.md`.
+> **Status:** Accepted 2026-11-09; implemented (migration `0679_fsm_catalog.sql`). The executed build plan is archived at `docs/SSOT/archive/superpowers/plans/2026-11-09-fsm-kernel.md`; §8 records where the shipped layout differs from it. Inventory of every lifecycle and the migration order: [`docs/architecture/state-machines.md`](../../architecture/state-machines.md).
 > **Mapped to spec:** FR-ADMIN-018 (pilot preserves the admin-task graph). Later content moves follow S1 in `docs/spec/07_cross_cutting_systems.md` §7.1 and are out of this spec.
 > **Decision:** One pure graph in `@kc/domain`, one row catalog in Postgres, one assert function, one contract test that fails when the two catalogs differ. Migrations of the other machines are later issues.
 
@@ -214,7 +214,7 @@ Domain unit tests, beside the module:
 - `isTerminal` is true for `archived` and false for `done`.
 - Existing `AdminTask` tests pass without changed expectations.
 
-Contract test `catalogMatchesSql.test.ts` under the fsm tests. It replays the migration statements in §4.2 and compares them to `FSM_MACHINES`. The migrations directory is six levels above that test file (`../../../../../../supabase/migrations`). `FSM_MACHINES` is typed as `readonly FsmMachine<string, string>[]` so the test can walk every machine without a per-machine generic.
+Contract test `app/packages/infrastructure-supabase/src/fsm/__tests__/catalogMatchesSql.test.ts`. It replays the migration statements in §4.2 (parser: `__tests__/support/replayFsmSql.ts`) and compares them to `FSM_MACHINES`. The migrations directory is six levels above that test file (`../../../../../../supabase/migrations`). `FSM_MACHINES` is typed as `readonly FsmMachine<string, string>[]` so the test can walk every machine without a per-machine generic.
 
 SQL test, new file under `supabase/tests/`. Calls to `fsm_assert_transition`:
 
@@ -226,10 +226,17 @@ SQL test, new file under `supabase/tests/`. Calls to `fsm_assert_transition`:
 - `authenticated` has no privilege on `fsm_state` or `fsm_edge`.
 - `admin_task_set_status` still raises `invalid_transition` for `open → done`, and still returns without an activity row when the status is unchanged.
 
-`pnpm --filter @kc/domain test` is the gate for the catalog lock. No new npm dependency. No generator.
+`pnpm --filter @kc/infrastructure-supabase test` is the gate for the catalog lock; `ci-backend.yml` also runs the contract file directly so a migration-only change cannot hit a cached turbo result. No new npm dependency. No generator.
 
 ## 7. Later issues
 
 Open these only after this spec is implemented. Each issue cites this file and migrates one row from §2. None of them change the kernel's answer function. A machine that needs a predicate or a composite state gets its own spec first, and the kernel stays a graph.
 
 The implementation plan for this spec covers §3–§6 only.
+
+## 8. Implementation notes (as shipped)
+
+- **Migration number.** `supabase/migrations/0679_fsm_catalog.sql`, SQL test `supabase/tests/0679_fsm_catalog.sql`, range `0679–0688` in `docs/agents/MIGRATION_RANGES.md`. `0676`–`0678` were taken by demo seeds.
+- **Replay parser layer.** The parser that reads `supabase/migrations` is infrastructure tooling, not domain logic. It lives in `@kc/infrastructure-supabase` test support, so `@kc/domain` keeps zero runtime dependencies, needs no `@types/node`, and does not export a SQL parser.
+- **`fsm_assert_transition` is `stable`.** It only reads the catalog.
+- **Migration order of the remaining machines** is set by `docs/architecture/state-machines.md` (supersedes the unordered list in §2 "Out").

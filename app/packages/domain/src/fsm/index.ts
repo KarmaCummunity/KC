@@ -1,5 +1,6 @@
+// Public surface of the FSM kernel. SQL replay tooling lives in infrastructure tests, not here.
 export { TransitionError } from './TransitionError';
-export type { TransitionErrorCode } from './TransitionError';
+export type { TransitionErrorCode, TransitionErrorDetails } from './TransitionError';
 export {
   assertTransition, canTransition, defineMachine, isTerminal,
 } from './machine';
@@ -8,5 +9,3 @@ export type {
 } from './machine';
 export { FSM_MACHINES } from './catalog';
 export { adminTaskMachine } from './machines/adminTask';
-export { replayFsmSql } from './replaySql';
-export type { FsmCatalogSnapshot, FsmEdgeRow, FsmStateRow } from './replaySql';
