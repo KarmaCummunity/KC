@@ -45,6 +45,16 @@ select '00000000-0000-0000-0000-0000003910b1', '00000000-0000-0000-0000-00000039
 -- Knowledge listings start in pending_review (0266); simulate moderator approval.
 update public.listings set moderation_status = 'published'
  where listing_id = '00000000-0000-0000-0000-0000003910b1';
+insert into public.posts (
+  post_id, owner_id, type, visibility, title, category, city, street, street_number,
+  world_slug, direction, post_type, details, listing_id, listing_world_slug, legacy_listing_id,
+  status, moderation_status, published_at
+)
+select '00000000-0000-0000-0000-0000003910b1', '00000000-0000-0000-0000-000000391001', 'Give', 'Public', 'Intro to Python', 'Other', 'tel-aviv', 'Herzl', '1',
+       'knowledge', 'offer', 'standard', details, listing_id, world_slug, listing_id,
+       'open', 'published', now()
+  from public.listings where listing_id = '00000000-0000-0000-0000-0000003910b1'
+on conflict (post_id) do update set status = 'open', moderation_status = 'published';
 
 do $$
 declare

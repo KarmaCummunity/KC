@@ -164,9 +164,19 @@ begin
   -- Simulate the hour passing: writing a past expiry would fire the write-time block (0266)
   -- instead of leaving the rows for the hourly sweep, so that trigger is off for the backdate.
   alter table public.listings disable trigger listings_food_expiry_block;
+  if exists (select 1 from pg_trigger where tgname = 'posts_before_write_world_rules') then
+    alter table public.posts disable trigger posts_before_write_world_rules;
+  end if;
   update public.listings set expires_at = now() - interval '1 minute'
    where listing_id in (v_unclaimed, v_claimed);
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    update public.posts set expires_at = now() - interval '1 minute'
+     where listing_id in (v_unclaimed, v_claimed);
+  end if;
   alter table public.listings enable trigger listings_food_expiry_block;
+  if exists (select 1 from pg_trigger where tgname = 'posts_before_write_world_rules') then
+    alter table public.posts enable trigger posts_before_write_world_rules;
+  end if;
 
   perform kc_test.assert_eq(public.food_expired_listings_sweep(), 2, 'the sweep expires both offers');
   perform kc_test.assert_eq(kc_test.listing_status(v_unclaimed), 'expired', 'unclaimed offer is expired, not closed');

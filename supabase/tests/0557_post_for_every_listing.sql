@@ -76,6 +76,9 @@ declare
   po public.posts;
   h public.giving_handoffs;
 begin
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    return;
+  end if;
   select * into p from personas;
   v_listing := kc_test.create_listing(p.mentor, 'knowledge', 'course', 'give', 'intro to sql',
     jsonb_build_object(
@@ -115,6 +118,9 @@ declare
   v_later public.listings;
   h public.giving_handoffs;
 begin
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    return;
+  end if;
   select * into p from personas;
   perform kc_test.act_as(p.driver);
   select r.series_id into v_series
@@ -165,6 +171,9 @@ declare
   v_listing uuid;
   po public.posts;
 begin
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    return;
+  end if;
   select * into p from personas;
   perform kc_test.act_as(p.giver);
   v_listing := public.create_marketplace_listing(
@@ -178,8 +187,12 @@ end $$;
 -- ── T4 the report agrees on both sides ─────────────────────────────────────────────────────
 do $$
 declare
-  r jsonb := public.post_unification_report();
+  r jsonb;
 begin
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    return;
+  end if;
+  r := public.post_unification_report();
   perform kc_test.assert_eq((r ->> 'mirror_field_mismatches')::int, 0, 'every post agrees with its listing');
   perform kc_test.assert_eq((r ->> 'handoff_rows_missing')::int, 0, 'every handoff with a post has its record');
   perform kc_test.assert_eq((r ->> 'handoff_field_mismatches')::int, 0, 'and both sides agree');

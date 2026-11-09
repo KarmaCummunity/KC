@@ -51,23 +51,40 @@ describe('listing card publisher (local stack)', () => {
     if (listingError || !listing) throw new Error(`listing insert failed (${listingError?.message})`);
     listingId = listing.listing_id;
 
-    // A post-owned listing (G1, 0554): the post is written, its listing is derived from it.
+    const { data: foodKind, error: foodKindErr } = await admin
+      .from('listing_kinds')
+      .select('kind_id')
+      .eq('slug', 'request_food')
+      .single();
+    if (foodKindErr || !foodKind) throw new Error(`no request_food kind (${foodKindErr?.message})`);
+
+    // A post-owned listing (G1, 0554, 0666): post is written, and listing points to it via legacy_post_id.
     const { data: post, error: postError } = await admin
       .from('posts')
       .insert({
         owner_id: ownerId, type: 'Request', title: 'Card publisher soup', category: 'Other', city: 'tel-aviv',
         street: 'Marketplace', street_number: '1', location_display_level: 'CityOnly', world_slug: 'food', direction: 'request',
+        kind_id: foodKind.kind_id,
       })
       .select('post_id')
       .single();
     if (postError || !post) throw new Error(`post insert failed (${postError?.message})`);
-    const { data: derived, error: derivedError } = await admin
+
+    const { data: ownedListing, error: ownedListingError } = await admin
       .from('listings')
+      .insert({
+        owner_id: ownerId,
+        world_slug: 'food',
+        kind_id: foodKind.kind_id,
+        direction: 'request',
+        title: 'Card publisher soup',
+        city_id: 'tel-aviv',
+        legacy_post_id: post.post_id,
+      })
       .select('listing_id')
-      .eq('legacy_post_id', post.post_id)
       .single();
-    if (derivedError || !derived) throw new Error(`no derived listing (${derivedError?.message})`);
-    ownedListingId = derived.listing_id;
+    if (ownedListingError || !ownedListing) throw new Error(`owned listing insert failed (${ownedListingError?.message})`);
+    ownedListingId = ownedListing.listing_id;
   }, CASE_TIMEOUT_MS);
 
   afterAll(async () => {

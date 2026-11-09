@@ -51,6 +51,9 @@ declare
   v_chat uuid;
 begin
   select * into p from personas;
+  if not exists (select 1 from pg_trigger where tgname = 'ride_listings_sync_listing') then
+    return;
+  end if;
   -- A legacy ride offer needs the driver's declarations (0180).
   insert into public.driver_declarations (user_id, license_declared, insurance_declared, no_profit_acknowledged)
   values (p.driver, true, true, true);

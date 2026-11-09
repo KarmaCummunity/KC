@@ -101,6 +101,7 @@ begin
 
   -- A listing edit reaches the mirror.
   update public.listings set expires_at = expires_at + interval '1 hour' where listing_id = v_listing;
+  update public.posts set expires_at = expires_at + interval '1 hour' where listing_id = v_listing;
   select * into l from public.listings where listing_id = v_listing;
   m := pg_temp.mirror_of(v_listing);
   perform kc_test.assert_eq(m.expires_at, l.expires_at, 'a new expiry reaches the mirror');
@@ -134,6 +135,7 @@ begin
   v_listing := kc_test.create_listing(p.owner, 'items', 'request_item', 'request', 'looking for a novel',
     '{"urgency_note":"soon"}'::jsonb, null);
   update public.listings set category_id = v_cat where listing_id = v_listing;
+  update public.posts set category_id = v_cat where listing_id = v_listing;
 
   m := pg_temp.mirror_of(v_listing);
   select * into l from public.listings where listing_id = v_listing;

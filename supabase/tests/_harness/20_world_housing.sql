@@ -75,10 +75,13 @@ end;
 $$;
 
 -- Moves a booking's check-in / check-out instants by p_shift (to test time windows without waiting).
-create function kc_test.shift_stay(p_handoff_id uuid, p_shift interval)
+create or replace function kc_test.shift_stay(p_handoff_id uuid, p_shift interval)
 returns void
 language sql
 as $$
+  update public.post_handoffs
+     set slot_starts_at = slot_starts_at + p_shift, slot_ends_at = slot_ends_at + p_shift
+   where handoff_id = p_handoff_id;
   update public.giving_handoffs
      set slot_starts_at = slot_starts_at + p_shift, slot_ends_at = slot_ends_at + p_shift
    where handoff_id = p_handoff_id;

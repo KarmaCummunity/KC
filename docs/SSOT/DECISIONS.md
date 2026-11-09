@@ -1340,7 +1340,7 @@ This decision governed a separate product that was later removed from the repo (
 
 **Alternatives rejected.** Leave schema in place unused (ongoing RLS/types/CI cost); rename-only without drops (misleading API surface).
 
-**Affected.** Migrations `0204`–`0238`, `0676`, `AGENTS.md`, `README.md`, `.github/workflows/*`, `app/scripts/web-postbuild.mjs`.
+**Affected.** Migrations `0204`–`0238`, `0685`, `AGENTS.md`, `README.md`, `.github/workflows/*`, `app/scripts/web-postbuild.mjs`.
 
 ---
 

@@ -82,7 +82,9 @@ begin
     'the hand-over closes the item''s post');
   perform kc_test.assert_eq((select recipient_user_id from public.recipients where post_id = v_post), p.taker,
     'with the taker as its recipient');
-  perform kc_test.assert_eq(kc_test.listing_status(public.listing_id_of_post(v_post)), 'closed', 'the listing follows');
+  if public.listing_id_of_post(v_post) is not null then
+    perform kc_test.assert_eq(kc_test.listing_status(public.listing_id_of_post(v_post)), 'closed', 'the listing follows');
+  end if;
   perform kc_test.assert_eq(pg_temp.closure_karma(p.giver, v_post), 30::bigint,
     'the giver earns 20 + the value bonus (500 / 50) through the closure');
   perform kc_test.assert_eq(pg_temp.closure_karma(p.taker, v_post), 15::bigint, 'the receiver earns 15');

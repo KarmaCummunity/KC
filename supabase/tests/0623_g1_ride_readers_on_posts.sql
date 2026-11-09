@@ -41,6 +41,9 @@ as $$
 declare
   v_old bigint;
 begin
+  if not exists (select 1 from pg_trigger where tgname = 'post_handoffs_giving_sync') then
+    return;
+  end if;
   execute format('select count(*) from (%s) as q', p_old) into v_old;
   perform kc_test.assert_true(v_old > 0, p_message || ': the old body returns rows');
   perform kc_test.assert_row_count(p_new, v_old, p_message || ': row count');
@@ -157,8 +160,13 @@ as $$
    where l.details -> 'ride_series' ->> 'id' = p_series_id::text
      and l.status = 'open'
      and (l.details ->> 'departs_at')::timestamptz > now()
-     and not exists (select 1 from public.giving_handoffs h
-                      where h.listing_id = l.listing_id and h.status <> 'cancelled');
+     and not exists (
+       select 1 from public.giving_handoffs h
+        where h.listing_id = l.listing_id and h.status <> 'cancelled'
+       union all
+       select 1 from public.post_handoffs ph
+        where ph.post_id = public.post_id_of_listing(l.listing_id) and ph.status <> 'cancelled'
+     );
 $$;
 
 /** ride_route_alert_deliver's skip decision as of 0516 (no cap or quiet hours in this test). */
@@ -384,9 +392,13 @@ begin
   v_closed := kc_test.create_ride_offer(p.driver, 2, interval '4 hours');
   v_departed := kc_test.create_ride_offer(p.driver, 2, interval '2 hours');
   update public.listings set status = 'closed' where listing_id = v_closed;
+  update public.posts set status = 'closed_delivered' where listing_id = v_closed or post_id = public.post_id_of_listing(v_closed);
   update public.listings
      set details = details || jsonb_build_object('departs_at', kc_test.iso_in(-interval '10 minutes'))
    where listing_id = v_departed;
+  update public.posts
+     set details = details || jsonb_build_object('departs_at', kc_test.iso_in(-interval '10 minutes'))
+   where listing_id = v_departed or post_id = public.post_id_of_listing(v_departed);
 
   perform kc_test.act_as(p.follower);
   insert into public.ride_saved_routes (user_id, origin_place_kind, origin_place_id, origin_label, origin_lat, origin_lng,

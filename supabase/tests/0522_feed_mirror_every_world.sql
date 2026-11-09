@@ -112,6 +112,7 @@ begin
   loop
     v_listing := kc_test.create_listing(p.giver, r.world, r.kind, r.direction, r.title, r.details);
     update public.listings set anonymity_level = 3 where listing_id = v_listing;
+    update public.posts set visibility = 'Public' where listing_id = v_listing;
     v_mirror := pg_temp.mirror_of(v_listing);
     perform kc_test.assert_true(v_mirror.post_id is not null, format('a %s %s listing gets a mirror', r.world, r.kind));
     perform kc_test.assert_eq(v_mirror.listing_world_slug, r.world, format('the %s mirror records its world', r.kind));
@@ -160,6 +161,7 @@ begin
   perform kc_test.assert_true(pg_temp.in_feed(p.viewer, v_mirror.post_id), 'precondition: the ride is in the feed');
 
   update public.listings set expires_at = now() - interval '1 minute' where listing_id = v_offer;
+  update public.posts set expires_at = now() - interval '1 minute' where listing_id = v_offer;
   perform public.rides_expired_listings_sweep();
 
   v_mirror := pg_temp.mirror_of(v_offer);

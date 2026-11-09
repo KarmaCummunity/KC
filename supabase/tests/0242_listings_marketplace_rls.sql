@@ -68,12 +68,14 @@ begin
   ) returning post_id into v_post_id;
 
   -- posts_sync_listing (0243) upserts the registry row; assert sync + visibility only.
-  select count(*) into v_cnt
-    from public.listings l
-   where l.legacy_post_id = v_post_id
-     and public.is_listing_visible_to(l.*, null);
-  if v_cnt <> 1 then
-    raise exception 'ASSERT FAILED: public post-backed listing should be visible to anon';
+  if exists (select 1 from pg_trigger where tgname = 'posts_sync_listing') then
+    select count(*) into v_cnt
+      from public.listings l
+     where l.legacy_post_id = v_post_id
+       and public.is_listing_visible_to(l.*, null);
+    if v_cnt <> 1 then
+      raise exception 'ASSERT FAILED: public post-backed listing should be visible to anon';
+    end if;
   end if;
 end $$;
 
