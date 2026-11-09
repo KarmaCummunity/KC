@@ -2,6 +2,8 @@
 // Extracted from entities.ts to keep that file under the size cap (TD-29).
 
 import { DomainError } from './errors';
+import { canTransition } from './fsm/machine';
+import { postMachine } from './fsm/machines/post';
 import type {
   Address,
   Category,
@@ -91,67 +93,21 @@ export interface ProfileClosedPostsItem {
 }
 
 // ── S1 State Machine (Spec 07 §7.1, D104) ───────────────────────────
+// The graph lives once, in the FSM kernel (`fsm/machines/post.ts`), mirrored in the
+// Postgres catalog and enforced by the `posts_status_fsm` trigger. These helpers keep
+// the post-specific API for callers.
 
-export const POST_STATUSES = [
-  'open',
-  'closed_delivered',
-  'deleted_no_recipient',
-  'expired',
-  'removed_admin',
-  'hidden_pending_review',
-  'paused',
-] as const;
-
-export const POST_STATUS_TRANSITIONS: Readonly<Record<PostStatus, readonly PostStatus[]>> = {
-  open: [
-    'paused',
-    'closed_delivered',
-    'deleted_no_recipient',
-    'expired',
-    'removed_admin',
-    'hidden_pending_review',
-  ],
-  paused: [
-    'open',
-    'deleted_no_recipient',
-    'expired',
-    'removed_admin',
-    'hidden_pending_review',
-  ],
-  closed_delivered: [
-    'open',
-    'deleted_no_recipient',
-    'removed_admin',
-    'hidden_pending_review',
-  ],
-  expired: [
-    'open',
-    'deleted_no_recipient',
-    'removed_admin',
-    'hidden_pending_review',
-  ],
-  hidden_pending_review: [
-    'open',
-    'closed_delivered',
-    'deleted_no_recipient',
-    'removed_admin',
-  ],
-  deleted_no_recipient: [
-    'open',
-    'removed_admin',
-  ],
-  removed_admin: [
-    'open',
-  ],
-};
+/** Every S1 status, in the kernel's declaration order. */
+export const POST_STATUSES: readonly PostStatus[] = postMachine.states;
 
 /**
- * Checks whether an S1 state machine transition is permitted for a Post (spec 07 §7.1, D104).
- * Same-status transitions return false (no-op).
+ * True when `from → to` is a real S1 transition (spec 07 §7.1, D104).
+ * A same-status write is not a transition and returns false; the database treats it as
+ * a no-op.
  */
 export function canTransitionPostStatus(from: PostStatus, to: PostStatus): boolean {
-  if (from === to) return false;
-  return POST_STATUS_TRANSITIONS[from]?.includes(to) ?? false;
+  const answer = canTransition(postMachine, from, to);
+  return answer.ok && answer.changed;
 }
 
 export class PostStatusTransitionError extends DomainError {

@@ -1,5 +1,6 @@
 import type { FsmMachine } from './machine';
 import { adminTaskMachine } from './machines/adminTask';
+import { postMachine } from './machines/post';
 
 /**
  * The only registry of kernel machines. Every machine listed here must have the same
@@ -9,4 +10,4 @@ import { adminTaskMachine } from './machines/adminTask';
  * To register a machine: add its module under `machines/`, list it here, and ship the
  * matching catalog insert in a migration (design spec §4.1).
  */
-export const FSM_MACHINES: readonly FsmMachine<string, string>[] = [adminTaskMachine];
+export const FSM_MACHINES: readonly FsmMachine<string, string>[] = [adminTaskMachine, postMachine];
