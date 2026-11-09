@@ -14035,6 +14035,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      events_expired_sweep: { Args: never; Returns: number }
       feed_cache_enqueue: { Args: { p_user_id: string }; Returns: number }
       feed_cache_enqueue_active_users: {
         Args: { p_limit?: number }
