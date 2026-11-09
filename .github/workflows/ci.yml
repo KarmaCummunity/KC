@@ -148,6 +148,9 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/ci-release.yml
+    # The P0 journeys sign in as the kc-dev seed users; a called workflow gets no secret unless passed.
+    secrets:
+      E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
 
   frontend:
     name: frontend
