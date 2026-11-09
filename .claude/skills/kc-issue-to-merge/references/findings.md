@@ -32,7 +32,7 @@ Fix nothing outside the scope inline (AGENTS.md §5, "Propose and Proceed"). Rec
      -f 'labels[]=<priority:Px>' -f 'labels[]=<size:*>' --jq .html_url
    ```
 
-   The priority you set is a suggestion; `needs-triage` keeps the issue out of the agent queue until the PM removes it.
+   The priority you set is a suggestion; `needs-triage` keeps the issue out of the agent queue until the PM removes it. Write decisions in words, not as `{{KEY:slug}}` placeholders: GitHub text is never renumbered.
 4. **Tech debt** is an issue like any other, with the `tech-debt` type label; its issue number is its ID (AGENTS.md §4). There is no tech-debt doc to update.
 5. **Record** every finding in the PR body: `Findings opened: #a, #b`.
 

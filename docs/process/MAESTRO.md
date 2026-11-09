@@ -22,6 +22,7 @@ Tracking issue: KC#1235. Workflow: [`ci-maestro-android.yml`](../../.github/work
 | `13-create-form-categories` | every create category opens in both directions | FR-POST-001 AC6 |
 | `14-world-feed` | food world: request / offer, search and direction filter; "request" opens the food request form | FR-FEED-020 AC2 |
 | `18-org-event-create-and-register` | time offer form: an organization member's event choice and fields, the unchanged shift form otherwise (no seeded membership or event yet, see the flow header) | `docs/spec/08` Events, FR-POST-001 AC6 |
+| `19-edit-profile-keyboard-toolbar` | edit profile (deep link): focusing the phone field keeps the sticky save button on screen, with the keyboard open and after it closes | FR-RESP-006 AC5 |
 
 `.maestro/subflows/` holds the shared steps (`sign-in`, `open-email-sign-in`, `dismiss-gates`); `config.yaml` runs only `flows/`.
 
@@ -53,6 +54,8 @@ The check is **not required** for merge yet. Make it required (issue AC6) after 
 - Wait with `extendedWaitUntil` (kc-dev latency), not fixed sleeps.
 - Wait for an id the screen itself renders (e.g. its root `testID`), not one on a shared component the screen may not use: `post-detail-header` lives on a card component the post screen does not render, so flow 06 waits for `post-detail-screen`.
 - Reach rows below the fold with `scrollUntilVisible` (settings rows sit under the donation card on a phone screen).
+- Give `scrollUntilVisible` a `direction: UP` when the target is above the viewport. `scrollUntilVisible` scrolls down by default. A failed publish scrolls the create form down to its first problem field (FR-POST-001 AC6), so flow 13 looks for the category row upward.
+- Mark a step `optional` only when the screen may legitimately lack it. A bare command (`back`, `hideKeyboard`) takes no options. `node scripts/check-maestro-flows.mjs` (static lane of `CI gate`) fails on a flow that does not parse or whose every step is optional.
 
 ## Running locally
 
