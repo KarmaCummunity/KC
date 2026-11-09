@@ -6,6 +6,7 @@ import type {
   MediaAsset,
   Post,
   PostStatus,
+  PostStatusBeforeAdminRemoval,
   PostType,
   PostVisibility,
 } from '@kc/domain';
@@ -73,7 +74,7 @@ export function mapPostRow(row: PostJoinedRow): Post {
     type: row.type as PostType,
     status: row.status as PostStatus,
     statusBeforeAdminRemoval:
-      (row.status_before_admin_removal as 'open' | 'closed_delivered' | 'deleted_no_recipient' | null) ?? null,
+      (row.status_before_admin_removal as PostStatusBeforeAdminRemoval | null) ?? null,
     visibility: row.visibility as PostVisibility,
     title: row.title,
     description: row.description,

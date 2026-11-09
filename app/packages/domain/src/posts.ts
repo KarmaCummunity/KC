@@ -33,12 +33,20 @@ export interface Recipient {
   readonly markedAt: string;
 }
 
+/**
+ * A status a post can be removed from by an admin and later restored to. A post hidden for
+ * review is saved as `open` (it is only ever hidden from `open`), so neither moderation
+ * status appears here. Mirrors `posts_status_before_admin_removal_check` (0682).
+ */
+export type PostStatusBeforeAdminRemoval = Exclude<PostStatus, 'removed_admin' | 'hidden_pending_review'>;
+
 export interface Post {
   readonly postId: string;
   readonly ownerId: string;
   readonly type: PostType;
   status: PostStatus;
-  readonly statusBeforeAdminRemoval: 'open' | 'closed_delivered' | 'deleted_no_recipient' | null;
+  /** The status an admin restore returns to ({{D:admin-restore-previous-status}}); null unless removed. */
+  readonly statusBeforeAdminRemoval: PostStatusBeforeAdminRemoval | null;
   visibility: PostVisibility;
   title: string;
   description: string | null;

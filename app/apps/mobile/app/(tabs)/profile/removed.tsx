@@ -17,7 +17,7 @@ import { getMyPostsUseCase } from '../../../src/services/postsComposition';
 import { useMyProfilePostOwner } from '../../../src/hooks/useProfilePostOwner';
 import { rowDirectionStart } from '../../../src/lib/rtlLayout';
 import { rtlTextAlignStart } from '../../../src/lib/rtlTextAlignStart';
-import { OWNER_MODERATED_POST_STATUSES } from '../../../src/lib/moderation/postModeration';
+import { OWNER_MODERATED_POST_STATUSES, removedPostLane } from '../../../src/lib/moderation/postModeration';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
@@ -43,16 +43,10 @@ export default function MyProfileRemovedScreen() {
 
   const { openLane, closedLane } = useMemo(() => {
     const all = removedPostsQuery.data?.posts ?? [];
-    // Legacy rows (NULL prior status) default to the open lane (D-35).
+    // Lanes by the status before removal; legacy rows (null) default to open (D-35).
     return {
-      openLane: all.filter(
-        (p) => p.statusBeforeAdminRemoval === 'open' || p.statusBeforeAdminRemoval === null,
-      ),
-      closedLane: all.filter(
-        (p) =>
-          p.statusBeforeAdminRemoval === 'closed_delivered' ||
-          p.statusBeforeAdminRemoval === 'deleted_no_recipient',
-      ),
+      openLane: all.filter((p) => removedPostLane(p.statusBeforeAdminRemoval) === 'open'),
+      closedLane: all.filter((p) => removedPostLane(p.statusBeforeAdminRemoval) === 'closed'),
     };
   }, [removedPostsQuery.data?.posts]);
 

@@ -154,12 +154,13 @@ begin
     'posts_status_transition_invalid', 'deleted_no_recipient -> paused is invalid'
   );
 
-  -- removed_admin -> paused is illegal
+  -- removed_admin -> hidden_pending_review is illegal (since 0682 a removed post may be
+  -- restored to its previous status, but never sent back to review)
   update public.posts set status = 'open' where post_id = v;
   update public.posts set status = 'removed_admin' where post_id = v;
   perform kc_test.assert_raises(
-    format('update public.posts set status = %L where post_id = %L', 'paused', v),
-    'posts_status_transition_invalid', 'removed_admin -> paused is invalid'
+    format('update public.posts set status = %L where post_id = %L', 'hidden_pending_review', v),
+    'posts_status_transition_invalid', 'removed_admin -> hidden_pending_review is invalid'
   );
 end $$;
 
