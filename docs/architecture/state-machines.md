@@ -86,7 +86,7 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 - `mark_giving_handed_over` (`0666`) writes `closed_delivered` without a source-status filter and raises on `expired` / `removed_admin` posts.
 - The expired screen calls `rpc_republish_post` (`0155`), which clones only the legacy item columns (no `world_slug`, `details`, `kind_id`); D127 requires a full copy (wave 1b).
 - Items get `expires_at = now() + 30 days` (`0612`, `0666`) while D21 says items never expire and no sweep expires them: after 30 days a paused item cannot resume and never expires.
-- Pause / fulfill / delete RPCs (`0666`) count `time` (event) handoffs as active; the trigger (`0665`) excludes them.
+- ~~Pause / fulfill / delete RPCs (`0666`) counted event registrations as active; the trigger (`0665`) did not.~~ ✅ wave 1b-iv (`0686`): registrations never block; an upcoming event's open registrations are cancelled and attendees notified ({{D:event-owner-cancels-registrations}}).
 - Two `owner_complete_offer_with_user` overloads coexist (`0658` with `p_mode`, `0666` without) with different handoff and karma behaviour; the app calls the `0658` one.
 - Events never move to `expired` at their date; only food, rides and ride series have expiry writers.
 

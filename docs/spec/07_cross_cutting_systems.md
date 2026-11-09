@@ -15,6 +15,7 @@ Statuses: `open`, `paused` (D104), `closed_delivered`, `deleted_no_recipient`, `
   - **paused** — hidden from everyone but the owner: feeds, world screens, search, map, profile and a shared link. The owner may edit, resume (not after the post's own expiry), delete and add photos.
   - **closed (delivered)** — the hard fields are locked (title, description, details, city, radius, urgency, direction, world). The owner may only **add** photos, up to 10 in all (for example a handoff or thank-you photo); existing photos are never replaced or removed. Video ("reels") joins when post media supports video (G53).
   - **An active reservation or booking** (reserved or confirmed handoff) blocks pause, mark delivered and delete: the handoff is finished or cancelled first, so a taker is never left stranded and karma is never granted twice.
+  - **An event's registrations do not block** ({{D:event-owner-cancels-registrations}}): the organizer may pause, close or delete an event that has registrations. Before the event starts, its reserved, confirmed and waitlisted registrations are cancelled and each attendee is notified; after it starts they stay, for the organizer to mark attendance.
   - **A delivered post with a completed handoff cannot be deleted**: it is the other side's record too (their rating and karma), as FR-POST-010 already rules for posts with a recipient.
   - A refusal tells the owner why (wrong status, active handoff, handoff history, expired, photo limit).
 
