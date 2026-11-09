@@ -50,7 +50,7 @@ describe('useListingCreateForm', () => {
     const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'food', direction: 'give', title: ' Bread ', summary: ' fresh ', onPublished }), { wrapper });
     await waitFor(() => expect(result.current.kind).toBeTruthy());
     act(() => { result.current.setDetail('food_type', 'fresh'); result.current.setDetail('expires_at', '2030-01-01'); result.current.setCity({ id: 'city-1', name: 'Town' }); });
-    // A food offer without a photo is refused at the photo picker ({{D:offer-photo-required}}, KC#1937).
+    // A food offer without a photo is refused at the photo picker (D132, KC#1937).
     await act(() => result.current.publish());
     expect(result.current.error).toEqual({ message: 'marketplace.errors.offer_photo_required', field: 'photos' });
     expect(repo.createListing).not.toHaveBeenCalled();
@@ -106,7 +106,7 @@ describe('republish an expired listing (D127)', () => {
     expect(onPublished).toHaveBeenCalledWith('new-1');
   });
 
-  it('refuses a republished offer once every carried photo is removed ({{D:offer-photo-required}})', async () => {
+  it('refuses a republished offer once every carried photo is removed (D132)', async () => {
     const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'food', direction: 'give', title: 'Soup', summary: '', onPublished: vi.fn(), republishFromListingId: 'old-1' }), { wrapper });
     await waitFor(() => expect(result.current.carriedMediaPaths).toHaveLength(2));
     act(() => { result.current.setDetail('expires_at', '2099-11-20T10:00:00Z'); result.current.removeCarriedMedia('u1/b/0.jpg'); result.current.removeCarriedMedia('u1/b/1.jpg'); });

@@ -9,7 +9,7 @@ import {
 const now = new Date('2026-10-17T00:00:00Z');
 
 describe('validateMarketplaceWorldRules — items', () => {
-  it('requires a photo on an offer ({{D:offer-photo-required}}, KC#1937)', () => {
+  it('requires a photo on an offer (D132, KC#1937)', () => {
     expect(validateMarketplaceWorldRules({ worldSlug: 'items', direction: 'give', details: {}, photoCount: 0 })).toBe(
       'offer_photo_required',
     );
@@ -154,7 +154,7 @@ describe('mapMarketplaceServerError', () => {
   });
 });
 
-// {{D:offer-photo-required}} (KC#1937): an offer in items, food, housing or animals needs a photo.
+// D132 (KC#1937): an offer in items, food, housing or animals needs a photo.
 describe('validateMarketplaceWorldRules — offer photo', () => {
   const future = { expires_at: '2026-10-18T12:00:00Z' };
   it.each(['items', 'food', 'housing', 'animals'])('a %s offer without a photo is refused', (worldSlug) => {

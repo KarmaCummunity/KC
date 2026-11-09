@@ -101,7 +101,7 @@ test('create form: five categories, request / offer, human labels (no raw schema
 test.describe.serial('create + reserve', () => {
   let listingTitle = '';
 
-  // {{D:offer-photo-required}} (KC#1937): an offer needs a photo; the form refuses and points at the picker.
+  // D132 (KC#1937): an offer needs a photo; the form refuses and points at the picker.
   test('a food offer WITHOUT a photo is refused at the photo picker', async ({ page }) => {
     const title = `${runTag()} מגש פסטה ללא תמונה`;
     await fillFoodOfferForm(page, title);

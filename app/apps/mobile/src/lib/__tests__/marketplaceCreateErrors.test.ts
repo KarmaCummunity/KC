@@ -17,7 +17,7 @@ describe('marketplaceServerErrorKey', () => {
 });
 
 describe('marketplaceRuleFieldError', () => {
-  it('an items offer without photos → inline photo error ({{D:offer-photo-required}}, KC#1937)', () => {
+  it('an items offer without photos → inline photo error (D132, KC#1937)', () => {
     expect(marketplaceRuleFieldError({ worldSlug: 'items', direction: 'give', details: {}, photoCount: 0 })).toEqual({
       code: 'offer_photo_required',
       field: 'photos',

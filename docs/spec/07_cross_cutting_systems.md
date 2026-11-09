@@ -26,9 +26,9 @@ One form creates a Post: giving world first, then the world's sub-category where
 
 | Post type | Photo | Location | Expiry | Unique fields |
 |---|---|---|---|---|
-| Food offer | required ({{D:offer-photo-required}}) | address | expiry date | type, allergens, quantity |
+| Food offer | required (D132) | address | expiry date | type, allergens, quantity |
 | Food request | no | city | none | quantity, urgency |
-| Item offer | required ({{D:offer-photo-required}}) | address | none | item subcategory, condition |
+| Item offer | required (D132) | address | none | item subcategory, condition |
 | Item request | no | city | none | item subcategory, urgency |
 | Ride | no (D28) | origin, destination, ≤ 3 meeting points — official places only (D71) | offer: +30 min | departure, est. end, seats |
 | Time / elderly / consulting | no | city or "remote" | none | estimated duration (D32) |
@@ -37,14 +37,14 @@ One form creates a Post: giving world first, then the world's sub-category where
 | Knowledge learning / mentoring request | no | city | none | topic, level or goal, modality, cadence |
 | Knowledge question | no | none | 30 days after an accepted answer | topic, question ≤ 500, context link; answers are comments, one accepted |
 | Event (org) | no | address | date | capacity, registration policy (D31) |
-| Housing stay || offer: required ({{D:offer-photo-required}}); request: no | city + neighborhood; exact after approval | stay dates | place type, capacity, nights, house rules (D30) |
-| Event & gathering space || offer: required ({{D:offer-photo-required}}); request: no | city + neighborhood; exact after approval | event date | capacity, hours, quiet hour, event types (`S55`) |
-| Storage space || offer: required ({{D:offer-photo-required}}); request: no | city + neighborhood; exact after approval | end of availability / request start + 7 d | m³, period, access, goods accepted (`S56`) |
+| Housing stay || offer: required (D132); request: no | city + neighborhood; exact after approval | stay dates | place type, capacity, nights, house rules (D30) |
+| Event & gathering space || offer: required (D132); request: no | city + neighborhood; exact after approval | event date | capacity, hours, quiet hour, event types (`S55`) |
+| Storage space || offer: required (D132); request: no | city + neighborhood; exact after approval | end of availability / request start + 7 d | m³, period, access, goods accepted (`S56`) |
 | Shelter request (assisted) | no | district / city | closed by the organization | urgency, people, needs — never public (`S57`) |
 | Job (org) | no | city or remote | closing date | scope, field, link (D41) |
 | Experience | no | venue | date | type, date, seats (D45) |
 
-Animals (adoption / foster) follow the same photo rule: an offer needs at least one photo, a request does not ({{D:offer-photo-required}}). The form outlines the photo picker when a photo is missing; a listing edit keeps its photos.
+Animals (adoption / foster) follow the same photo rule: an offer needs at least one photo, a request does not (D132). The form outlines the photo picker when a photo is missing; a listing edit keeps its photos.
 
 Tech: · FR-POST-002–007, 011, 020 · unified form #1227; since 2026-11-01 (FR-POST-001 AC6) five categories — items (post engine), rides, food, housing, time — with the last choice remembered, request / offer under the picker and curated per-type fields; no "general" chip; money / knowledge / medical / animals / environment have no form yet · G14 · multi-world posts (D101, G51, KC#1475): optional additional worlds picker in unified create form; persisted via `listing_worlds` table and `create_marketplace_listing(..., p_additional_world_slugs)` (`0660`)
 

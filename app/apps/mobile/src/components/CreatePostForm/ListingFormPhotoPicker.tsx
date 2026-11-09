@@ -12,7 +12,7 @@ interface Props {
   /** Storage paths of the republish source's photos (empty outside a republish). */
   readonly carriedMediaPaths: readonly string[];
   readonly onRemoveCarried: (path: string) => void;
-  /** Marks the picker required: an offer in a photo world ({{D:offer-photo-required}}). */
+  /** Marks the picker required: an offer in a photo world (D132). */
   readonly required: boolean;
 }
 

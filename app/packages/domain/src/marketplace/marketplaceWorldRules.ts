@@ -1,6 +1,6 @@
 // Client-side mirror of the server world rules (0266 listings_enforce_world_rules) and a
 // mapper from server error codes to stable codes the UI can translate.
-// An offer in a photo world needs at least one photo ({{D:offer-photo-required}}, KC#1937; it
+// An offer in a photo world needs at least one photo (D132, KC#1937; it
 // reverses the items-only removal of 0357). Server parity: KC#2020.
 // Keep in sync with supabase/migrations/0266, 0357, 0539 (food expiry binds offers only),
 // 0563 (an organization's event ends after it starts) and 0612 (animals are no longer routed).
@@ -9,7 +9,7 @@
 export const ROUTED_WORLDS = ['medical', 'environment'] as const;
 
 /**
- * Worlds whose offers (`give`) must carry at least one photo ({{D:offer-photo-required}}).
+ * Worlds whose offers (`give`) must carry at least one photo (D132).
  * Requests stay photo-optional everywhere, and so do rides (a ride is not a thing to look at).
  */
 export const OFFER_PHOTO_WORLDS = ['items', 'food', 'housing', 'animals'] as const;

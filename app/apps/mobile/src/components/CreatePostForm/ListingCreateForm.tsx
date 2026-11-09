@@ -101,7 +101,7 @@ export function ListingCreateForm({
     return () => onPublishActionChange(null, false);
   }, [form.busy, onPublishActionChange]);
 
-  // An offer in a photo world needs one photo ({{D:offer-photo-required}}); an edit keeps its photos.
+  // An offer in a photo world needs one photo (D132); an edit keeps its photos.
   const photoPicker = (
     <ListingFieldFrame field="photos" testID="listing-photos-field">
       <ListingFormPhotoPicker

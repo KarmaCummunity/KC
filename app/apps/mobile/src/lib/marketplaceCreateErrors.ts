@@ -38,7 +38,7 @@ export function handoffErrorKey(err: unknown): MarketplaceErrorKey | null {
   return code ? `marketplace.errors.${code}` : null;
 }
 
-/** Client-side world-rule check for the create form (mirrors 0266; offers need a photo, {{D:offer-photo-required}}). */
+/** Client-side world-rule check for the create form (mirrors 0266; offers need a photo, D132). */
 export function marketplaceRuleFieldError(input: WorldRulesInput): MarketplaceRuleFieldError | null {
   const code = validateMarketplaceWorldRules(input);
   if (!code) return null;

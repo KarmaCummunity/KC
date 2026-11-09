@@ -20,7 +20,7 @@ describe('fieldForRule', () => {
     expect(fieldForRule('knowledge_slot_invalid', {})).toBe('detail:slot_starts_at');
     expect(fieldForRule('event_window_invalid', {})).toBe('detail:starts_at');
     expect(fieldForRule('routed_world_requires_external_body', {})).toBe('org');
-    // {{D:offer-photo-required}} (KC#1937): a missing offer photo outlines the photo picker.
+    // D132 (KC#1937): a missing offer photo outlines the photo picker.
     expect(fieldForRule('offer_photo_required', {})).toBe('photos');
   });
 });

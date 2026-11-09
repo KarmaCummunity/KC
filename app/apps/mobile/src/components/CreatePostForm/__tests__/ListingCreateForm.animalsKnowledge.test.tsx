@@ -130,7 +130,7 @@ describe('ListingCreateForm — knowledge & animals (#1630, #1625)', () => {
   it('publishes an adoption offer with default species and city', async () => {
     const { onPublished } = renderForm('animals', 'give', 'כלבלב מתוק');
     fireEvent.click(await screen.findByTestId('city-picker'));
-    // An animal offer needs a photo ({{D:offer-photo-required}}, KC#1937): refused at the photo picker first.
+    // An animal offer needs a photo (D132, KC#1937): refused at the photo picker first.
     await act(async () => {
       fireEvent.click(screen.getByTestId('listing-publish'));
     });
