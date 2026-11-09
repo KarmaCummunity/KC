@@ -60,8 +60,10 @@ begin
   perform kc_test.assert_true(p_row.listing_id is not null, p_message || ': a listing id');
   perform kc_test.assert_eq(p_row.listing_id, public.listing_id_of_post(r.post_id),
     p_message || ': the listing of the record''s post');
-  -- requested_meeting_point (0649) lives on the record only; giving_handoffs has no such column.
-  perform kc_test.assert_eq(to_jsonb(p_row) - 'listing_id', to_jsonb(r) - 'post_id' - 'requested_meeting_point',
+  -- requested_meeting_point (0649) and knowledge_slot_id (0700) live on the record only;
+  -- giving_handoffs has no such columns.
+  perform kc_test.assert_eq(to_jsonb(p_row) - 'listing_id',
+    to_jsonb(r) - 'post_id' - 'requested_meeting_point' - 'knowledge_slot_id',
     p_message || ': every other column is the record''s (ids, seats, timestamps, reason)');
 
   if exists (select 1 from pg_trigger where tgname = 'post_handoffs_giving_sync') then
