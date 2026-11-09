@@ -54,6 +54,7 @@ export class SupabaseHousingRepository implements IHousingRepository {
       p_minors_guardian_ack: input.minorsGuardianAck,
     });
     if (error) throw new Error(error.message);
+    if (!data?.handoff_id) throw new Error('Failed to request stay');
     return data.handoff_id;
   }
 

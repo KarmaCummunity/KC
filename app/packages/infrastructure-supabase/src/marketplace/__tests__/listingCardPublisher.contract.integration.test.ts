@@ -43,13 +43,13 @@ describe('listing card publisher (local stack)', () => {
       .eq('slug', 'give_item')
       .single();
     if (kindError || !kind) throw new Error(`no give_item kind (${kindError?.message})`);
-    const { data: listing, error: listingError } = await admin
+    const { data: listing, error: listingError } = await (admin as any)
       .from('listings')
       .insert({ owner_id: ownerId, world_slug: 'items', kind_id: kind.kind_id, direction: 'give', title: 'Card publisher chair' })
       .select('listing_id')
       .single();
     if (listingError || !listing) throw new Error(`listing insert failed (${listingError?.message})`);
-    listingId = listing.listing_id;
+    listingId = listing.listing_id!;
 
     const { data: foodKind, error: foodKindErr } = await admin
       .from('listing_kinds')
@@ -70,7 +70,7 @@ describe('listing card publisher (local stack)', () => {
       .single();
     if (postError || !post) throw new Error(`post insert failed (${postError?.message})`);
 
-    const { data: ownedListing, error: ownedListingError } = await admin
+    const { data: ownedListing, error: ownedListingError } = await (admin as any)
       .from('listings')
       .insert({
         owner_id: ownerId,

@@ -31,6 +31,7 @@ export class SupabaseRideBookingRepository implements IRideBookingRepository {
       p_requested_meeting_point: (requestedMeetingPoint ?? undefined) as never,
     });
     if (error) throw new Error(error.message);
+    if (!data?.handoff_id) throw new Error('Failed to book seat');
     return data.handoff_id;
   }
 

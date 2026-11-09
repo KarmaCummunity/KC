@@ -5,21 +5,21 @@ import type { Database } from '../database.types';
 // Items/food handoff RPCs, split out of SupabaseMarketplaceRepository to keep
 // that file under the 300-line architecture cap.
 type Client = SupabaseClient<Database>;
-type HandoffRow = Database['public']['Tables']['giving_handoffs']['Row'];
+type HandoffRow = Database['public']['Views']['giving_handoffs']['Row'];
 
 export function mapHandoffRow(row: HandoffRow): GivingHandoffSnapshot {
   return {
-    handoffId: row.handoff_id,
-    listingId: row.listing_id,
-    ownerId: row.owner_id,
-    recipientId: row.recipient_id,
-    worldSlug: row.world_slug,
-    status: row.status,
-    pickupMode: row.pickup_mode,
+    handoffId: row.handoff_id ?? '',
+    listingId: row.listing_id ?? '',
+    ownerId: row.owner_id ?? '',
+    recipientId: row.recipient_id ?? '',
+    worldSlug: row.world_slug ?? '',
+    status: row.status ?? '',
+    pickupMode: row.pickup_mode ?? 'pickup',
     pickupWindowStart: row.pickup_window_start,
     pickupWindowEnd: row.pickup_window_end,
     confirmBy: row.confirm_by,
-    reservedAt: row.reserved_at,
+    reservedAt: row.reserved_at ?? '',
     confirmedAt: row.confirmed_at,
   };
 }

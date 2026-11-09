@@ -3236,6 +3236,134 @@ grant execute on function public.rpc_ride_start(uuid) to authenticated, service_
 grant execute on function public.rpc_ride_arrive(uuid, text) to authenticated, service_role;
 grant execute on function public.rpc_ride_update_visibility(uuid, text) to authenticated, service_role;
 
+create or replace function public.ride_listings_search(
+  p_query text default null,
+  p_origin_city_id text default null,
+  p_dest_city_id text default null,
+  p_mode text default null,
+  p_depart_from timestamptz default null,
+  p_depart_to timestamptz default null,
+  p_limit int default 30,
+  p_cursor timestamptz default null
+)
+returns setof public.ride_listings
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_uid    uuid := auth.uid();
+  v_query  text;
+  v_limit  int;
+begin
+  if p_depart_from is not null and p_depart_to is not null
+     and p_depart_from > p_depart_to then
+    raise exception 'ride_listings_search: depart_from > depart_to'
+      using errcode = '22023';
+  end if;
+
+  if p_mode is not null and p_mode not in ('offer','request') then
+    raise exception 'ride_listings_search: invalid mode %', p_mode
+      using errcode = '22023';
+  end if;
+
+  v_query := nullif(trim(coalesce(p_query, '')), '');
+  if v_query is not null and char_length(v_query) < 2 then
+    v_query := null;
+  end if;
+  if v_query is not null and char_length(v_query) > 80 then
+    v_query := substr(v_query, 1, 80);
+  end if;
+
+  v_limit := least(greatest(coalesce(p_limit, 30), 1), 50);
+
+  return query
+  select r.*
+    from public.ride_listings r
+    left join public.cities oc on oc.city_id = r.origin_city_id
+    left join public.cities dc on dc.city_id = r.dest_city_id
+   where r.status = 'open'
+     and (
+       r.visibility = 'Public'
+       or (r.visibility = 'FollowersOnly' and public.is_following(v_uid, r.owner_id))
+       or r.owner_id = v_uid
+     )
+     and (p_mode is null or r.mode = p_mode)
+     and (p_origin_city_id is null or r.origin_city_id = p_origin_city_id)
+     and (p_dest_city_id is null or r.dest_city_id = p_dest_city_id)
+     and (p_depart_from is null or r.departs_at >= p_depart_from)
+     and (p_depart_to is null or r.departs_at <= p_depart_to)
+     and (p_cursor is null or r.departs_at > p_cursor)
+     and (
+       v_query is null
+       or r.title ilike '%' || replace(replace(v_query, '%', '\%'), '_', '\_') || '%'
+       or r.description ilike '%' || replace(replace(v_query, '%', '\%'), '_', '\_') || '%'
+       or oc.name_he ilike '%' || replace(replace(v_query, '%', '\%'), '_', '\_') || '%'
+       or dc.name_he ilike '%' || replace(replace(v_query, '%', '\%'), '_', '\_') || '%'
+       or r.origin_street ilike '%' || replace(replace(v_query, '%', '\%'), '_', '\_') || '%'
+       or r.dest_street ilike '%' || replace(replace(v_query, '%', '\%'), '_', '\_') || '%'
+     )
+   order by r.departs_at asc
+   limit v_limit;
+end;
+$$;
+
+grant execute on function public.ride_listings_search(text, text, text, text, timestamptz, timestamptz, int, timestamptz) to authenticated, anon;
+
+create or replace function public.ride_listings_find_matches(
+  p_ride_id      uuid,
+  p_window_hours int default 12,
+  p_limit        int default 20
+)
+returns setof public.ride_listings
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_uid    uuid := auth.uid();
+  v_src    public.ride_listings;
+  v_window interval;
+  v_limit  int;
+begin
+  if v_uid is null then
+    raise exception 'auth_required' using errcode = 'P0001';
+  end if;
+
+  select * into v_src
+    from public.ride_listings
+   where ride_id = p_ride_id;
+  if v_src.ride_id is null then
+    raise exception 'ride_not_found' using errcode = 'P0001';
+  end if;
+  if v_src.owner_id <> v_uid then
+    raise exception 'not_ride_owner' using errcode = 'P0001';
+  end if;
+
+  v_window := make_interval(hours => least(greatest(coalesce(p_window_hours, 12), 1), 72));
+  v_limit  := least(greatest(coalesce(p_limit, 20), 1), 50);
+
+  return query
+  select r.*
+    from public.ride_listings r
+   where r.ride_id        <> v_src.ride_id
+     and r.status         = 'open'
+     and r.visibility     = 'Public'
+     and r.mode           <> v_src.mode
+     and r.origin_city_id = v_src.origin_city_id
+     and r.dest_city_id   = v_src.dest_city_id
+     and r.departs_at between v_src.departs_at - v_window
+                          and v_src.departs_at + v_window
+   order by abs(extract(epoch from (r.departs_at - v_src.departs_at))) asc,
+            r.created_at desc
+   limit v_limit;
+end;
+$$;
+
+grant execute on function public.ride_listings_find_matches(uuid, int, int) to authenticated;
+
 create or replace function public.create_marketplace_listing(
   p_kind_id uuid,
   p_title text,

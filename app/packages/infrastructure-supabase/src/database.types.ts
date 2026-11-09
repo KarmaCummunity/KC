@@ -536,6 +536,20 @@ export type Database = {
             foreignKeyName: "bot_admin_review_items_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "bot_admin_review_items_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "bot_admin_review_items_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -544,7 +558,35 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "bot_admin_review_items_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "bot_admin_review_items_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "bot_admin_review_items_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "bot_admin_review_items_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "bot_admin_review_items_reviewer_id_fkey"
@@ -622,6 +664,20 @@ export type Database = {
             foreignKeyName: "bot_conversation_sessions_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "bot_conversation_sessions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "bot_conversation_sessions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -630,7 +686,35 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "bot_conversation_sessions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "bot_conversation_sessions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "bot_conversation_sessions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "bot_conversation_sessions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "bot_conversation_sessions_record_id_fkey"
@@ -1064,8 +1148,50 @@ export type Database = {
             foreignKeyName: "challenges_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "challenges_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "challenges_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "challenges_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "challenges_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "challenges_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "challenges_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
         ]
       }
@@ -1117,6 +1243,20 @@ export type Database = {
             foreignKeyName: "chats_anchor_listing_id_fkey"
             columns: ["anchor_listing_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "chats_anchor_listing_id_fkey"
+            columns: ["anchor_listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "chats_anchor_listing_id_fkey"
+            columns: ["anchor_listing_id"]
+            isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -1125,7 +1265,35 @@ export type Database = {
             columns: ["anchor_listing_id"]
             isOneToOne: false
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "chats_anchor_listing_id_fkey"
+            columns: ["anchor_listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "chats_anchor_listing_id_fkey"
+            columns: ["anchor_listing_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "chats_anchor_listing_id_fkey"
+            columns: ["anchor_listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "chats_anchor_listing_id_fkey"
+            columns: ["anchor_listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "chats_anchor_post_id_fkey"
@@ -1138,8 +1306,99 @@ export type Database = {
             foreignKeyName: "chats_anchor_post_id_fkey"
             columns: ["anchor_post_id"]
             isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "chats_anchor_post_id_fkey"
+            columns: ["anchor_post_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "chats_anchor_post_id_fkey"
+            columns: ["anchor_post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "chats_anchor_post_id_fkey"
+            columns: ["anchor_post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "chats_anchor_post_id_fkey"
+            columns: ["anchor_post_id"]
+            isOneToOne: false
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "chats_anchor_post_id_fkey"
+            columns: ["anchor_post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "chats_anchor_post_id_fkey"
+            columns: ["anchor_post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
+          },
+          {
+            foreignKeyName: "chats_anchor_ride_id_fkey"
+            columns: ["anchor_ride_id"]
+            isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "chats_anchor_ride_id_fkey"
+            columns: ["anchor_ride_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "chats_anchor_ride_id_fkey"
+            columns: ["anchor_ride_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "chats_anchor_ride_id_fkey"
+            columns: ["anchor_ride_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "chats_anchor_ride_id_fkey"
+            columns: ["anchor_ride_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "chats_anchor_ride_id_fkey"
+            columns: ["anchor_ride_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "chats_anchor_ride_id_fkey"
+            columns: ["anchor_ride_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
           },
           {
             foreignKeyName: "chats_anchor_ride_id_fkey"
@@ -1249,6 +1508,20 @@ export type Database = {
             foreignKeyName: "claim_requests_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "claim_requests_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "claim_requests_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -1257,7 +1530,35 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "claim_requests_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "claim_requests_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "claim_requests_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "claim_requests_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "claim_requests_requester_id_fkey"
@@ -1557,6 +1858,20 @@ export type Database = {
             foreignKeyName: "donation_intents_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "donation_intents_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "donation_intents_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -1565,7 +1880,35 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "donation_intents_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "donation_intents_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "donation_intents_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "donation_intents_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "donation_intents_org_id_fkey"
@@ -1817,6 +2160,20 @@ export type Database = {
             foreignKeyName: "embedding_jobs_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: true
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "embedding_jobs_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "embedding_jobs_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -1825,7 +2182,35 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: true
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "embedding_jobs_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "embedding_jobs_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "embedding_jobs_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "embedding_jobs_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
         ]
       }
@@ -2046,8 +2431,50 @@ export type Database = {
             foreignKeyName: "event_post_details_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "event_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "event_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "event_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "event_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "event_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "event_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
         ]
       }
@@ -2137,6 +2564,20 @@ export type Database = {
             foreignKeyName: "extractions_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "extractions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "extractions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -2145,7 +2586,35 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "extractions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "extractions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "extractions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "extractions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "extractions_record_id_fkey"
@@ -2194,8 +2663,50 @@ export type Database = {
             foreignKeyName: "feed_impressions_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "feed_impressions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "feed_impressions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "feed_impressions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "feed_impressions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "feed_impressions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "feed_impressions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "feed_impressions_user_id_fkey"
@@ -2339,8 +2850,50 @@ export type Database = {
             foreignKeyName: "feed_post_hides_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "feed_post_hides_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "feed_post_hides_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "feed_post_hides_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "feed_post_hides_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "feed_post_hides_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "feed_post_hides_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "feed_post_hides_user_id_fkey"
@@ -2413,6 +2966,20 @@ export type Database = {
             foreignKeyName: "field_provenance_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "field_provenance_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "field_provenance_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -2421,7 +2988,35 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "field_provenance_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "field_provenance_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "field_provenance_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "field_provenance_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "field_provenance_record_id_fkey"
@@ -2800,6 +3395,13 @@ export type Database = {
             foreignKeyName: "giving_handoff_ratings_post_handoff_fkey"
             columns: ["handoff_id"]
             isOneToOne: false
+            referencedRelation: "giving_handoffs"
+            referencedColumns: ["handoff_id"]
+          },
+          {
+            foreignKeyName: "giving_handoff_ratings_post_handoff_fkey"
+            columns: ["handoff_id"]
+            isOneToOne: false
             referencedRelation: "post_handoffs"
             referencedColumns: ["handoff_id"]
           },
@@ -2847,129 +3449,6 @@ export type Database = {
           },
         ]
       }
-      giving_handoffs: {
-        Row: {
-          cancel_reason: string | null
-          cancelled_at: string | null
-          confirm_by: string | null
-          confirmed_at: string | null
-          handed_over_at: string | null
-          handoff_id: string
-          listing_id: string
-          no_show_at: string | null
-          owner_id: string
-          pickup_mode: string
-          pickup_window_end: string | null
-          pickup_window_start: string | null
-          recipient_id: string
-          reserved_at: string
-          seats: number
-          slot_ends_at: string | null
-          slot_starts_at: string | null
-          status: string
-          world_slug: string
-        }
-        Insert: {
-          cancel_reason?: string | null
-          cancelled_at?: string | null
-          confirm_by?: string | null
-          confirmed_at?: string | null
-          handed_over_at?: string | null
-          handoff_id?: string
-          listing_id: string
-          no_show_at?: string | null
-          owner_id: string
-          pickup_mode?: string
-          pickup_window_end?: string | null
-          pickup_window_start?: string | null
-          recipient_id: string
-          reserved_at?: string
-          seats?: number
-          slot_ends_at?: string | null
-          slot_starts_at?: string | null
-          status?: string
-          world_slug: string
-        }
-        Update: {
-          cancel_reason?: string | null
-          cancelled_at?: string | null
-          confirm_by?: string | null
-          confirmed_at?: string | null
-          handed_over_at?: string | null
-          handoff_id?: string
-          listing_id?: string
-          no_show_at?: string | null
-          owner_id?: string
-          pickup_mode?: string
-          pickup_window_end?: string | null
-          pickup_window_start?: string | null
-          recipient_id?: string
-          reserved_at?: string
-          seats?: number
-          slot_ends_at?: string | null
-          slot_starts_at?: string | null
-          status?: string
-          world_slug?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "giving_handoffs_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "listings"
-            referencedColumns: ["listing_id"]
-          },
-          {
-            foreignKeyName: "giving_handoffs_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "marketplace_listing_card"
-            referencedColumns: ["listing_id"]
-          },
-          {
-            foreignKeyName: "giving_handoffs_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "giving_user_trust_score"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "giving_handoffs_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "giving_handoffs_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "users_public"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "giving_handoffs_recipient_id_fkey"
-            columns: ["recipient_id"]
-            isOneToOne: false
-            referencedRelation: "giving_user_trust_score"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "giving_handoffs_recipient_id_fkey"
-            columns: ["recipient_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "giving_handoffs_recipient_id_fkey"
-            columns: ["recipient_id"]
-            isOneToOne: false
-            referencedRelation: "users_public"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
       housing_booking_details: {
         Row: {
           adults: number
@@ -3011,6 +3490,13 @@ export type Database = {
           minors_guardian_ack?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "housing_booking_details_post_handoff_fkey"
+            columns: ["handoff_id"]
+            isOneToOne: true
+            referencedRelation: "giving_handoffs"
+            referencedColumns: ["handoff_id"]
+          },
           {
             foreignKeyName: "housing_booking_details_post_handoff_fkey"
             columns: ["handoff_id"]
@@ -3109,6 +3595,20 @@ export type Database = {
             foreignKeyName: "housing_private_details_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: true
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "housing_private_details_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "housing_private_details_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -3117,7 +3617,35 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: true
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "housing_private_details_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "housing_private_details_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "housing_private_details_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "housing_private_details_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "housing_private_details_street_fk"
@@ -3683,6 +4211,20 @@ export type Database = {
             foreignKeyName: "listing_feed_posts_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: true
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "listing_feed_posts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "listing_feed_posts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -3691,7 +4233,35 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: true
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "listing_feed_posts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "listing_feed_posts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "listing_feed_posts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "listing_feed_posts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "listing_feed_posts_post_id_fkey"
@@ -3704,8 +4274,50 @@ export type Database = {
             foreignKeyName: "listing_feed_posts_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "listing_feed_posts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "listing_feed_posts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "listing_feed_posts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "listing_feed_posts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "listing_feed_posts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "listing_feed_posts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
         ]
       }
@@ -3792,8 +4404,29 @@ export type Database = {
             foreignKeyName: "listing_matches_candidate_listing_id_fkey"
             columns: ["candidate_listing_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "listing_matches_candidate_listing_id_fkey"
+            columns: ["candidate_listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "listing_matches_candidate_listing_id_fkey"
+            columns: ["candidate_listing_id"]
+            isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "listing_matches_candidate_listing_id_fkey"
+            columns: ["candidate_listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
           },
           {
             foreignKeyName: "listing_matches_candidate_listing_id_fkey"
@@ -3803,6 +4436,41 @@ export type Database = {
             referencedColumns: ["listing_id"]
           },
           {
+            foreignKeyName: "listing_matches_candidate_listing_id_fkey"
+            columns: ["candidate_listing_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "listing_matches_candidate_listing_id_fkey"
+            columns: ["candidate_listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "listing_matches_candidate_listing_id_fkey"
+            columns: ["candidate_listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
+          },
+          {
+            foreignKeyName: "listing_matches_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "listing_matches_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
             foreignKeyName: "listing_matches_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
@@ -3814,7 +4482,35 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "listing_matches_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "listing_matches_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "listing_matches_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "listing_matches_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "listing_matches_run_id_fkey"
@@ -3852,6 +4548,20 @@ export type Database = {
             foreignKeyName: "listing_media_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "listing_media_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "listing_media_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -3860,7 +4570,35 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "listing_media_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "listing_media_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "listing_media_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "listing_media_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
         ]
       }
@@ -3894,6 +4632,20 @@ export type Database = {
             foreignKeyName: "listing_user_signals_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "listing_user_signals_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "listing_user_signals_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -3902,7 +4654,35 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "listing_user_signals_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "listing_user_signals_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "listing_user_signals_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "listing_user_signals_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "listing_user_signals_user_id_fkey"
@@ -3948,8 +4728,29 @@ export type Database = {
             foreignKeyName: "listing_worlds_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "listing_worlds_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "listing_worlds_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "listing_worlds_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
           },
           {
             foreignKeyName: "listing_worlds_listing_id_fkey"
@@ -3959,210 +4760,28 @@ export type Database = {
             referencedColumns: ["listing_id"]
           },
           {
-            foreignKeyName: "listing_worlds_world_slug_fkey"
-            columns: ["world_slug"]
-            isOneToOne: false
-            referencedRelation: "worlds"
-            referencedColumns: ["slug"]
-          },
-        ]
-      }
-      listings: {
-        Row: {
-          anonymity_level: number
-          availability_status: string
-          beneficiary_org_id: string | null
-          canonical_id: string | null
-          category_id: string | null
-          city_id: string | null
-          created_at: string
-          details: Json
-          direction: string
-          embedding: string | null
-          embedding_model: string | null
-          expires_at: string | null
-          external_body_id: string | null
-          geo: unknown
-          geo_mode_override: string | null
-          geo_weight_override: number | null
-          kind_id: string
-          legacy_post_id: string | null
-          legacy_ride_id: string | null
-          listing_id: string
-          max_radius_km_override: number | null
-          moderation_status: string
-          origin: string
-          owner_id: string
-          published_at: string | null
-          search_vector: unknown
-          status: string
-          summary: string | null
-          time_window: unknown
-          title: string
-          updated_at: string
-          urgency_level: number
-          visibility: string
-          world_slug: string
-        }
-        Insert: {
-          anonymity_level?: number
-          availability_status?: string
-          beneficiary_org_id?: string | null
-          canonical_id?: string | null
-          category_id?: string | null
-          city_id?: string | null
-          created_at?: string
-          details?: Json
-          direction: string
-          embedding?: string | null
-          embedding_model?: string | null
-          expires_at?: string | null
-          external_body_id?: string | null
-          geo?: unknown
-          geo_mode_override?: string | null
-          geo_weight_override?: number | null
-          kind_id: string
-          legacy_post_id?: string | null
-          legacy_ride_id?: string | null
-          listing_id?: string
-          max_radius_km_override?: number | null
-          moderation_status?: string
-          origin?: string
-          owner_id: string
-          published_at?: string | null
-          search_vector?: unknown
-          status?: string
-          summary?: string | null
-          time_window?: unknown
-          title: string
-          updated_at?: string
-          urgency_level?: number
-          visibility?: string
-          world_slug: string
-        }
-        Update: {
-          anonymity_level?: number
-          availability_status?: string
-          beneficiary_org_id?: string | null
-          canonical_id?: string | null
-          category_id?: string | null
-          city_id?: string | null
-          created_at?: string
-          details?: Json
-          direction?: string
-          embedding?: string | null
-          embedding_model?: string | null
-          expires_at?: string | null
-          external_body_id?: string | null
-          geo?: unknown
-          geo_mode_override?: string | null
-          geo_weight_override?: number | null
-          kind_id?: string
-          legacy_post_id?: string | null
-          legacy_ride_id?: string | null
-          listing_id?: string
-          max_radius_km_override?: number | null
-          moderation_status?: string
-          origin?: string
-          owner_id?: string
-          published_at?: string | null
-          search_vector?: unknown
-          status?: string
-          summary?: string | null
-          time_window?: unknown
-          title?: string
-          updated_at?: string
-          urgency_level?: number
-          visibility?: string
-          world_slug?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "listings_beneficiary_org_id_fkey"
-            columns: ["beneficiary_org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["org_id"]
-          },
-          {
-            foreignKeyName: "listings_canonical_id_fkey"
-            columns: ["canonical_id"]
-            isOneToOne: false
-            referencedRelation: "listings"
-            referencedColumns: ["listing_id"]
-          },
-          {
-            foreignKeyName: "listings_canonical_id_fkey"
-            columns: ["canonical_id"]
-            isOneToOne: false
-            referencedRelation: "marketplace_listing_card"
-            referencedColumns: ["listing_id"]
-          },
-          {
-            foreignKeyName: "listings_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["category_id"]
-          },
-          {
-            foreignKeyName: "listings_city_id_fkey"
-            columns: ["city_id"]
-            isOneToOne: false
-            referencedRelation: "cities"
-            referencedColumns: ["city_id"]
-          },
-          {
-            foreignKeyName: "listings_external_body_id_fkey"
-            columns: ["external_body_id"]
-            isOneToOne: false
-            referencedRelation: "external_bodies"
-            referencedColumns: ["body_id"]
-          },
-          {
-            foreignKeyName: "listings_kind_id_fkey"
-            columns: ["kind_id"]
-            isOneToOne: false
-            referencedRelation: "listing_kinds"
-            referencedColumns: ["kind_id"]
-          },
-          {
-            foreignKeyName: "listings_legacy_post_id_fkey"
-            columns: ["legacy_post_id"]
-            isOneToOne: false
-            referencedRelation: "feed_visible_posts"
-            referencedColumns: ["post_id"]
-          },
-          {
-            foreignKeyName: "listings_legacy_post_id_fkey"
-            columns: ["legacy_post_id"]
+            foreignKeyName: "listing_worlds_listing_id_fkey"
+            columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
           },
           {
-            foreignKeyName: "listings_owner_id_fkey"
-            columns: ["owner_id"]
+            foreignKeyName: "listing_worlds_listing_id_fkey"
+            columns: ["listing_id"]
             isOneToOne: false
-            referencedRelation: "giving_user_trust_score"
-            referencedColumns: ["user_id"]
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
           },
           {
-            foreignKeyName: "listings_owner_id_fkey"
-            columns: ["owner_id"]
+            foreignKeyName: "listing_worlds_listing_id_fkey"
+            columns: ["listing_id"]
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
-            foreignKeyName: "listings_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "users_public"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "listings_world_slug_fkey"
+            foreignKeyName: "listing_worlds_world_slug_fkey"
             columns: ["world_slug"]
             isOneToOne: false
             referencedRelation: "worlds"
@@ -4200,6 +4819,20 @@ export type Database = {
             foreignKeyName: "marketplace_actors_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "marketplace_actors_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "marketplace_actors_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -4208,7 +4841,35 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "marketplace_actors_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "marketplace_actors_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "marketplace_actors_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "marketplace_actors_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "marketplace_actors_user_id_fkey"
@@ -4441,6 +5102,20 @@ export type Database = {
             foreignKeyName: "match_candidates_offer_listing_id_fkey"
             columns: ["offer_listing_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "match_candidates_offer_listing_id_fkey"
+            columns: ["offer_listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "match_candidates_offer_listing_id_fkey"
+            columns: ["offer_listing_id"]
+            isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -4449,7 +5124,35 @@ export type Database = {
             columns: ["offer_listing_id"]
             isOneToOne: false
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "match_candidates_offer_listing_id_fkey"
+            columns: ["offer_listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "match_candidates_offer_listing_id_fkey"
+            columns: ["offer_listing_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "match_candidates_offer_listing_id_fkey"
+            columns: ["offer_listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "match_candidates_offer_listing_id_fkey"
+            columns: ["offer_listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "match_candidates_offer_owner_id_fkey"
@@ -4476,6 +5179,20 @@ export type Database = {
             foreignKeyName: "match_candidates_request_listing_id_fkey"
             columns: ["request_listing_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "match_candidates_request_listing_id_fkey"
+            columns: ["request_listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "match_candidates_request_listing_id_fkey"
+            columns: ["request_listing_id"]
+            isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -4484,7 +5201,35 @@ export type Database = {
             columns: ["request_listing_id"]
             isOneToOne: false
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "match_candidates_request_listing_id_fkey"
+            columns: ["request_listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "match_candidates_request_listing_id_fkey"
+            columns: ["request_listing_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "match_candidates_request_listing_id_fkey"
+            columns: ["request_listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "match_candidates_request_listing_id_fkey"
+            columns: ["request_listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "match_candidates_request_owner_id_fkey"
@@ -4596,6 +5341,20 @@ export type Database = {
             foreignKeyName: "match_listing_state_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: true
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "match_listing_state_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "match_listing_state_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -4604,7 +5363,35 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: true
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "match_listing_state_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "match_listing_state_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "match_listing_state_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "match_listing_state_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
         ]
       }
@@ -4638,6 +5425,20 @@ export type Database = {
             foreignKeyName: "match_runs_source_listing_id_fkey"
             columns: ["source_listing_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "match_runs_source_listing_id_fkey"
+            columns: ["source_listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "match_runs_source_listing_id_fkey"
+            columns: ["source_listing_id"]
+            isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -4646,7 +5447,35 @@ export type Database = {
             columns: ["source_listing_id"]
             isOneToOne: false
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "match_runs_source_listing_id_fkey"
+            columns: ["source_listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "match_runs_source_listing_id_fkey"
+            columns: ["source_listing_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "match_runs_source_listing_id_fkey"
+            columns: ["source_listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "match_runs_source_listing_id_fkey"
+            columns: ["source_listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "match_runs_triggered_by_fkey"
@@ -4845,8 +5674,50 @@ export type Database = {
             foreignKeyName: "media_assets_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "media_assets_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "media_assets_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "media_assets_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "media_assets_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "media_assets_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "media_assets_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
         ]
       }
@@ -5307,6 +6178,20 @@ export type Database = {
             foreignKeyName: "operator_cases_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: true
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "operator_cases_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "operator_cases_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -5315,7 +6200,35 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: true
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "operator_cases_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "operator_cases_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "operator_cases_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "operator_cases_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
         ]
       }
@@ -5937,8 +6850,50 @@ export type Database = {
             foreignKeyName: "post_actor_identity_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "post_actor_identity_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "post_actor_identity_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "post_actor_identity_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "post_actor_identity_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "post_actor_identity_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "post_actor_identity_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "post_actor_identity_user_id_fkey"
@@ -6087,8 +7042,50 @@ export type Database = {
             foreignKeyName: "post_comments_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
         ]
       }
@@ -6123,8 +7120,50 @@ export type Database = {
             foreignKeyName: "post_embeddings_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "post_embeddings_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "post_embeddings_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "post_embeddings_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "post_embeddings_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "post_embeddings_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "post_embeddings_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
         ]
       }
@@ -6228,8 +7267,50 @@ export type Database = {
             foreignKeyName: "post_handoffs_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "post_handoffs_recipient_id_fkey"
@@ -6295,8 +7376,50 @@ export type Database = {
             foreignKeyName: "post_reactions_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "post_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "post_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "post_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "post_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "post_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "post_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "post_reactions_user_id_fkey"
@@ -6361,8 +7484,50 @@ export type Database = {
             foreignKeyName: "post_shares_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "post_shares_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "post_shares_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "post_shares_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "post_shares_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "post_shares_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "post_shares_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "post_shares_repost_post_id_fkey"
@@ -6375,8 +7540,50 @@ export type Database = {
             foreignKeyName: "post_shares_repost_post_id_fkey"
             columns: ["repost_post_id"]
             isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "post_shares_repost_post_id_fkey"
+            columns: ["repost_post_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "post_shares_repost_post_id_fkey"
+            columns: ["repost_post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "post_shares_repost_post_id_fkey"
+            columns: ["repost_post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "post_shares_repost_post_id_fkey"
+            columns: ["repost_post_id"]
+            isOneToOne: false
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "post_shares_repost_post_id_fkey"
+            columns: ["repost_post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "post_shares_repost_post_id_fkey"
+            columns: ["repost_post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "post_shares_user_id_fkey"
@@ -6435,8 +7642,50 @@ export type Database = {
             foreignKeyName: "post_stats_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "post_stats_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "post_stats_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "post_stats_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "post_stats_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "post_stats_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "post_stats_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
         ]
       }
@@ -6871,8 +8120,50 @@ export type Database = {
             foreignKeyName: "recipients_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "recipients_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "recipients_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "recipients_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "recipients_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "recipients_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "recipients_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "recipients_recipient_user_id_fkey"
@@ -7103,6 +8394,55 @@ export type Database = {
             foreignKeyName: "ride_emergency_events_ride_id_fkey"
             columns: ["ride_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "ride_emergency_events_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "ride_emergency_events_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "ride_emergency_events_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "ride_emergency_events_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "ride_emergency_events_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "ride_emergency_events_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "ride_emergency_events_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
             referencedRelation: "ride_listings"
             referencedColumns: ["ride_id"]
           },
@@ -7162,6 +8502,20 @@ export type Database = {
             foreignKeyName: "ride_listing_emergencies_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "ride_listing_emergencies_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "ride_listing_emergencies_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -7170,7 +8524,35 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "ride_listing_emergencies_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "ride_listing_emergencies_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "ride_listing_emergencies_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "ride_listing_emergencies_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "ride_listing_emergencies_resolved_by_fkey"
@@ -7240,6 +8622,20 @@ export type Database = {
             foreignKeyName: "ride_listing_house_numbers_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "ride_listing_house_numbers_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "ride_listing_house_numbers_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -7248,181 +8644,35 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "ride_listing_house_numbers_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
           },
-        ]
-      }
-      ride_listings: {
-        Row: {
-          arrive_reason: string | null
-          arrived_at: string | null
-          cargo_allowed_types: string[] | null
-          cargo_enabled: boolean
-          cargo_max_volume_l: number | null
-          cargo_max_weight_kg: number | null
-          created_at: string
-          departs_at: string
-          description: string | null
-          dest_city_id: string
-          dest_street: string
-          dest_street_number: string | null
-          food_chilled: boolean | null
-          food_handover_to_org: boolean
-          food_max_kg: number | null
-          food_shipping_enabled: boolean
-          linked_post_id: string | null
-          mode: string
-          origin_city_id: string
-          origin_street: string
-          origin_street_number: string | null
-          owner_id: string
-          payment_amount_ils: number | null
-          payment_model: string
-          req_gender: string
-          req_pets_allowed: boolean
-          req_smoking_allowed: boolean
-          req_verified_only: boolean
-          ride_id: string
-          seats_available: number | null
-          started_at: string | null
-          status: string
-          template_id: string | null
-          title: string
-          updated_at: string
-          visibility: string
-        }
-        Insert: {
-          arrive_reason?: string | null
-          arrived_at?: string | null
-          cargo_allowed_types?: string[] | null
-          cargo_enabled?: boolean
-          cargo_max_volume_l?: number | null
-          cargo_max_weight_kg?: number | null
-          created_at?: string
-          departs_at: string
-          description?: string | null
-          dest_city_id: string
-          dest_street: string
-          dest_street_number?: string | null
-          food_chilled?: boolean | null
-          food_handover_to_org?: boolean
-          food_max_kg?: number | null
-          food_shipping_enabled?: boolean
-          linked_post_id?: string | null
-          mode: string
-          origin_city_id: string
-          origin_street: string
-          origin_street_number?: string | null
-          owner_id: string
-          payment_amount_ils?: number | null
-          payment_model?: string
-          req_gender?: string
-          req_pets_allowed?: boolean
-          req_smoking_allowed?: boolean
-          req_verified_only?: boolean
-          ride_id?: string
-          seats_available?: number | null
-          started_at?: string | null
-          status?: string
-          template_id?: string | null
-          title: string
-          updated_at?: string
-          visibility?: string
-        }
-        Update: {
-          arrive_reason?: string | null
-          arrived_at?: string | null
-          cargo_allowed_types?: string[] | null
-          cargo_enabled?: boolean
-          cargo_max_volume_l?: number | null
-          cargo_max_weight_kg?: number | null
-          created_at?: string
-          departs_at?: string
-          description?: string | null
-          dest_city_id?: string
-          dest_street?: string
-          dest_street_number?: string | null
-          food_chilled?: boolean | null
-          food_handover_to_org?: boolean
-          food_max_kg?: number | null
-          food_shipping_enabled?: boolean
-          linked_post_id?: string | null
-          mode?: string
-          origin_city_id?: string
-          origin_street?: string
-          origin_street_number?: string | null
-          owner_id?: string
-          payment_amount_ils?: number | null
-          payment_model?: string
-          req_gender?: string
-          req_pets_allowed?: boolean
-          req_smoking_allowed?: boolean
-          req_verified_only?: boolean
-          ride_id?: string
-          seats_available?: number | null
-          started_at?: string | null
-          status?: string
-          template_id?: string | null
-          title?: string
-          updated_at?: string
-          visibility?: string
-        }
-        Relationships: [
           {
-            foreignKeyName: "ride_listings_dest_city_id_fkey"
-            columns: ["dest_city_id"]
-            isOneToOne: false
-            referencedRelation: "cities"
-            referencedColumns: ["city_id"]
-          },
-          {
-            foreignKeyName: "ride_listings_linked_post_id_fkey"
-            columns: ["linked_post_id"]
-            isOneToOne: false
-            referencedRelation: "feed_visible_posts"
-            referencedColumns: ["post_id"]
-          },
-          {
-            foreignKeyName: "ride_listings_linked_post_id_fkey"
-            columns: ["linked_post_id"]
+            foreignKeyName: "ride_listing_house_numbers_listing_id_fkey"
+            columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
           },
           {
-            foreignKeyName: "ride_listings_origin_city_id_fkey"
-            columns: ["origin_city_id"]
+            foreignKeyName: "ride_listing_house_numbers_listing_id_fkey"
+            columns: ["listing_id"]
             isOneToOne: false
-            referencedRelation: "cities"
-            referencedColumns: ["city_id"]
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
           },
           {
-            foreignKeyName: "ride_listings_owner_id_fkey"
-            columns: ["owner_id"]
+            foreignKeyName: "ride_listing_house_numbers_listing_id_fkey"
+            columns: ["listing_id"]
             isOneToOne: false
-            referencedRelation: "giving_user_trust_score"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "ride_listings_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "ride_listings_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "users_public"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "ride_listings_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "ride_templates"
-            referencedColumns: ["template_id"]
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
         ]
       }
@@ -7481,6 +8731,55 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users_public"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ride_participants_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "ride_participants_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "ride_participants_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "ride_participants_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "ride_participants_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "ride_participants_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "ride_participants_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
           },
           {
             foreignKeyName: "ride_participants_ride_id_fkey"
@@ -7632,8 +8931,50 @@ export type Database = {
             foreignKeyName: "ride_post_details_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "ride_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "ride_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "ride_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "ride_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "ride_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "ride_post_details_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "ride_post_details_series_id_fkey"
@@ -7722,6 +9063,55 @@ export type Database = {
             foreignKeyName: "ride_ratings_ride_id_fkey"
             columns: ["ride_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "ride_ratings_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "ride_ratings_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "ride_ratings_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "ride_ratings_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "ride_ratings_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "ride_ratings_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "ride_ratings_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
             referencedRelation: "ride_listings"
             referencedColumns: ["ride_id"]
           },
@@ -7757,6 +9147,20 @@ export type Database = {
             foreignKeyName: "ride_route_alerts_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "ride_route_alerts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "ride_route_alerts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["listing_id"]
           },
@@ -7765,7 +9169,35 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "ride_route_alerts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
             referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "ride_route_alerts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "ride_route_alerts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "ride_route_alerts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "ride_route_alerts_route_id_fkey"
@@ -8005,6 +9437,55 @@ export type Database = {
             foreignKeyName: "ride_stops_ride_id_fkey"
             columns: ["ride_id"]
             isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "ride_stops_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "ride_stops_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "ride_stops_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "ride_stops_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "ride_stops_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "ride_stops_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "ride_stops_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
             referencedRelation: "ride_listings"
             referencedColumns: ["ride_id"]
           },
@@ -8170,8 +9651,50 @@ export type Database = {
             foreignKeyName: "saved_posts_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "saved_posts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "saved_posts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "saved_posts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "saved_posts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
             referencedRelation: "posts"
             referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "saved_posts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "saved_posts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
           },
           {
             foreignKeyName: "saved_posts_user_id_fkey"
@@ -10068,6 +11591,122 @@ export type Database = {
           },
         ]
       }
+      giving_handoffs: {
+        Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string | null
+          listing_id: string | null
+          no_show_at: string | null
+          owner_id: string | null
+          pickup_mode: string | null
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string | null
+          world_slug: string | null
+        }
+        Insert: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          confirm_by?: string | null
+          confirmed_at?: string | null
+          handed_over_at?: string | null
+          handoff_id?: string | null
+          listing_id?: never
+          no_show_at?: string | null
+          owner_id?: string | null
+          pickup_mode?: string | null
+          pickup_window_end?: string | null
+          pickup_window_start?: string | null
+          recipient_id?: string | null
+          reserved_at?: string | null
+          seats?: number | null
+          slot_ends_at?: string | null
+          slot_starts_at?: string | null
+          status?: string | null
+          world_slug?: string | null
+        }
+        Update: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          confirm_by?: string | null
+          confirmed_at?: string | null
+          handed_over_at?: string | null
+          handoff_id?: string | null
+          listing_id?: never
+          no_show_at?: string | null
+          owner_id?: string | null
+          pickup_mode?: string | null
+          pickup_window_end?: string | null
+          pickup_window_start?: string | null
+          recipient_id?: string | null
+          reserved_at?: string | null
+          seats?: number | null
+          slot_ends_at?: string | null
+          slot_starts_at?: string | null
+          status?: string | null
+          world_slug?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_handoffs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_handoffs_world_slug_fkey"
+            columns: ["world_slug"]
+            isOneToOne: false
+            referencedRelation: "worlds"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       giving_user_trust_score: {
         Row: {
           combined_trust_score: number | null
@@ -10084,22 +11723,183 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "listings_owner_id_fkey"
+            foreignKeyName: "posts_owner_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "giving_user_trust_score"
             referencedColumns: ["user_id"]
           },
           {
-            foreignKeyName: "listings_owner_id_fkey"
+            foreignKeyName: "posts_owner_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
           },
           {
-            foreignKeyName: "listings_owner_id_fkey"
+            foreignKeyName: "posts_owner_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      listings: {
+        Row: {
+          anonymity_level: number | null
+          availability_status: string | null
+          beneficiary_org_id: string | null
+          canonical_id: string | null
+          category_id: string | null
+          city_id: string | null
+          created_at: string | null
+          details: Json | null
+          direction: string | null
+          embedding: string | null
+          embedding_model: string | null
+          expires_at: string | null
+          external_body_id: string | null
+          geo: unknown
+          geo_mode_override: string | null
+          geo_weight_override: number | null
+          kind_id: string | null
+          legacy_post_id: string | null
+          legacy_ride_id: string | null
+          listing_id: string | null
+          max_radius_km_override: number | null
+          moderation_status: string | null
+          origin: string | null
+          owner_id: string | null
+          published_at: string | null
+          search_vector: unknown
+          status: string | null
+          summary: string | null
+          time_window: unknown
+          title: string | null
+          updated_at: string | null
+          urgency_level: number | null
+          visibility: string | null
+          world_slug: string | null
+        }
+        Insert: {
+          anonymity_level?: never
+          availability_status?: never
+          beneficiary_org_id?: string | null
+          canonical_id?: never
+          category_id?: string | null
+          city_id?: string | null
+          created_at?: string | null
+          details?: never
+          direction?: never
+          embedding?: never
+          embedding_model?: never
+          expires_at?: string | null
+          external_body_id?: string | null
+          geo?: unknown
+          geo_mode_override?: never
+          geo_weight_override?: never
+          kind_id?: never
+          legacy_post_id?: string | null
+          legacy_ride_id?: never
+          listing_id?: string | null
+          max_radius_km_override?: number | null
+          moderation_status?: never
+          origin?: never
+          owner_id?: string | null
+          published_at?: never
+          search_vector?: unknown
+          status?: never
+          summary?: never
+          time_window?: unknown
+          title?: string | null
+          updated_at?: string | null
+          urgency_level?: never
+          visibility?: string | null
+          world_slug?: never
+        }
+        Update: {
+          anonymity_level?: never
+          availability_status?: never
+          beneficiary_org_id?: string | null
+          canonical_id?: never
+          category_id?: string | null
+          city_id?: string | null
+          created_at?: string | null
+          details?: never
+          direction?: never
+          embedding?: never
+          embedding_model?: never
+          expires_at?: string | null
+          external_body_id?: string | null
+          geo?: unknown
+          geo_mode_override?: never
+          geo_weight_override?: never
+          kind_id?: never
+          legacy_post_id?: string | null
+          legacy_ride_id?: never
+          listing_id?: string | null
+          max_radius_km_override?: number | null
+          moderation_status?: never
+          origin?: never
+          owner_id?: string | null
+          published_at?: never
+          search_vector?: unknown
+          status?: never
+          summary?: never
+          time_window?: unknown
+          title?: string | null
+          updated_at?: string | null
+          urgency_level?: never
+          visibility?: string | null
+          world_slug?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_beneficiary_org_id_fkey"
+            columns: ["beneficiary_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["org_id"]
+          },
+          {
+            foreignKeyName: "posts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "posts_city_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "posts_external_body_id_fkey"
+            columns: ["external_body_id"]
+            isOneToOne: false
+            referencedRelation: "external_bodies"
+            referencedColumns: ["body_id"]
+          },
+          {
+            foreignKeyName: "posts_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "posts_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "posts_owner_id_fkey"
+            columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "users_public"
             referencedColumns: ["user_id"]
@@ -10140,67 +11940,130 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "listings_category_id_fkey"
+            foreignKeyName: "posts_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["category_id"]
           },
           {
-            foreignKeyName: "listings_city_id_fkey"
+            foreignKeyName: "posts_city_fkey"
             columns: ["city_id"]
             isOneToOne: false
             referencedRelation: "cities"
             referencedColumns: ["city_id"]
           },
           {
-            foreignKeyName: "listings_kind_id_fkey"
+            foreignKeyName: "posts_kind_id_fkey"
             columns: ["kind_id"]
             isOneToOne: false
             referencedRelation: "listing_kinds"
             referencedColumns: ["kind_id"]
           },
           {
-            foreignKeyName: "listings_legacy_post_id_fkey"
-            columns: ["legacy_post_id"]
-            isOneToOne: false
-            referencedRelation: "feed_visible_posts"
-            referencedColumns: ["post_id"]
-          },
-          {
-            foreignKeyName: "listings_legacy_post_id_fkey"
-            columns: ["legacy_post_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
-            referencedColumns: ["post_id"]
-          },
-          {
-            foreignKeyName: "listings_owner_id_fkey"
+            foreignKeyName: "posts_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "giving_user_trust_score"
             referencedColumns: ["user_id"]
           },
           {
-            foreignKeyName: "listings_owner_id_fkey"
+            foreignKeyName: "posts_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
           },
           {
-            foreignKeyName: "listings_owner_id_fkey"
+            foreignKeyName: "posts_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "users_public"
             referencedColumns: ["user_id"]
           },
           {
-            foreignKeyName: "listings_world_slug_fkey"
+            foreignKeyName: "posts_world_slug_fkey"
             columns: ["world_slug"]
             isOneToOne: false
             referencedRelation: "worlds"
             referencedColumns: ["slug"]
+          },
+        ]
+      }
+      ride_listings: {
+        Row: {
+          arrive_reason: string | null
+          arrived_at: string | null
+          cargo_allowed_types: string[] | null
+          cargo_enabled: boolean | null
+          cargo_max_volume_l: number | null
+          cargo_max_weight_kg: number | null
+          created_at: string | null
+          departs_at: string | null
+          description: string | null
+          dest_city_id: string | null
+          dest_street: string | null
+          dest_street_number: string | null
+          food_chilled: boolean | null
+          food_handover_to_org: boolean | null
+          food_max_kg: number | null
+          food_shipping_enabled: boolean | null
+          linked_post_id: string | null
+          mode: string | null
+          origin_city_id: string | null
+          origin_street: string | null
+          origin_street_number: string | null
+          owner_id: string | null
+          payment_amount_ils: number | null
+          payment_model: string | null
+          req_gender: string | null
+          req_pets_allowed: boolean | null
+          req_smoking_allowed: boolean | null
+          req_verified_only: boolean | null
+          ride_id: string | null
+          seats_available: number | null
+          started_at: string | null
+          status: string | null
+          template_id: string | null
+          title: string | null
+          updated_at: string | null
+          visibility: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "posts_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "posts_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ride_post_details_dest_city_id_fkey"
+            columns: ["dest_city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "ride_post_details_origin_city_id_fkey"
+            columns: ["origin_city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["city_id"]
           },
         ]
       }
@@ -11207,20 +13070,20 @@ export type Database = {
           confirm_by: string | null
           confirmed_at: string | null
           handed_over_at: string | null
-          handoff_id: string
-          listing_id: string
+          handoff_id: string | null
+          listing_id: string | null
           no_show_at: string | null
-          owner_id: string
-          pickup_mode: string
+          owner_id: string | null
+          pickup_mode: string | null
           pickup_window_end: string | null
           pickup_window_start: string | null
-          recipient_id: string
-          reserved_at: string
-          seats: number
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
           slot_ends_at: string | null
           slot_starts_at: string | null
-          status: string
-          world_slug: string
+          status: string | null
+          world_slug: string | null
         }
         SetofOptions: {
           from: "*"
@@ -11241,20 +13104,20 @@ export type Database = {
           confirm_by: string | null
           confirmed_at: string | null
           handed_over_at: string | null
-          handoff_id: string
-          listing_id: string
+          handoff_id: string | null
+          listing_id: string | null
           no_show_at: string | null
-          owner_id: string
-          pickup_mode: string
+          owner_id: string | null
+          pickup_mode: string | null
           pickup_window_end: string | null
           pickup_window_start: string | null
-          recipient_id: string
-          reserved_at: string
-          seats: number
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
           slot_ends_at: string | null
           slot_starts_at: string | null
-          status: string
-          world_slug: string
+          status: string | null
+          world_slug: string | null
         }
         SetofOptions: {
           from: "*"
@@ -11354,20 +13217,20 @@ export type Database = {
           confirm_by: string | null
           confirmed_at: string | null
           handed_over_at: string | null
-          handoff_id: string
-          listing_id: string
+          handoff_id: string | null
+          listing_id: string | null
           no_show_at: string | null
-          owner_id: string
-          pickup_mode: string
+          owner_id: string | null
+          pickup_mode: string | null
           pickup_window_end: string | null
           pickup_window_start: string | null
-          recipient_id: string
-          reserved_at: string
-          seats: number
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
           slot_ends_at: string | null
           slot_starts_at: string | null
-          status: string
-          world_slug: string
+          status: string | null
+          world_slug: string | null
         }
         SetofOptions: {
           from: "*"
@@ -11384,20 +13247,20 @@ export type Database = {
           confirm_by: string | null
           confirmed_at: string | null
           handed_over_at: string | null
-          handoff_id: string
-          listing_id: string
+          handoff_id: string | null
+          listing_id: string | null
           no_show_at: string | null
-          owner_id: string
-          pickup_mode: string
+          owner_id: string | null
+          pickup_mode: string | null
           pickup_window_end: string | null
           pickup_window_start: string | null
-          recipient_id: string
-          reserved_at: string
-          seats: number
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
           slot_ends_at: string | null
           slot_starts_at: string | null
-          status: string
-          world_slug: string
+          status: string | null
+          world_slug: string | null
         }
         SetofOptions: {
           from: "*"
@@ -11521,20 +13384,20 @@ export type Database = {
           confirm_by: string | null
           confirmed_at: string | null
           handed_over_at: string | null
-          handoff_id: string
-          listing_id: string
+          handoff_id: string | null
+          listing_id: string | null
           no_show_at: string | null
-          owner_id: string
-          pickup_mode: string
+          owner_id: string | null
+          pickup_mode: string | null
           pickup_window_end: string | null
           pickup_window_start: string | null
-          recipient_id: string
-          reserved_at: string
-          seats: number
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
           slot_ends_at: string | null
           slot_starts_at: string | null
-          status: string
-          world_slug: string
+          status: string | null
+          world_slug: string | null
         }
         SetofOptions: {
           from: "*"
@@ -11612,20 +13475,20 @@ export type Database = {
           confirm_by: string | null
           confirmed_at: string | null
           handed_over_at: string | null
-          handoff_id: string
-          listing_id: string
+          handoff_id: string | null
+          listing_id: string | null
           no_show_at: string | null
-          owner_id: string
-          pickup_mode: string
+          owner_id: string | null
+          pickup_mode: string | null
           pickup_window_end: string | null
           pickup_window_start: string | null
-          recipient_id: string
-          reserved_at: string
-          seats: number
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
           slot_ends_at: string | null
           slot_starts_at: string | null
-          status: string
-          world_slug: string
+          status: string | null
+          world_slug: string | null
         }
         SetofOptions: {
           from: "*"
@@ -11642,20 +13505,20 @@ export type Database = {
           confirm_by: string | null
           confirmed_at: string | null
           handed_over_at: string | null
-          handoff_id: string
-          listing_id: string
+          handoff_id: string | null
+          listing_id: string | null
           no_show_at: string | null
-          owner_id: string
-          pickup_mode: string
+          owner_id: string | null
+          pickup_mode: string | null
           pickup_window_end: string | null
           pickup_window_start: string | null
-          recipient_id: string
-          reserved_at: string
-          seats: number
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
           slot_ends_at: string | null
           slot_starts_at: string | null
-          status: string
-          world_slug: string
+          status: string | null
+          world_slug: string | null
         }
         SetofOptions: {
           from: "*"
@@ -11673,20 +13536,20 @@ export type Database = {
           confirm_by: string | null
           confirmed_at: string | null
           handed_over_at: string | null
-          handoff_id: string
-          listing_id: string
+          handoff_id: string | null
+          listing_id: string | null
           no_show_at: string | null
-          owner_id: string
-          pickup_mode: string
+          owner_id: string | null
+          pickup_mode: string | null
           pickup_window_end: string | null
           pickup_window_start: string | null
-          recipient_id: string
-          reserved_at: string
-          seats: number
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
           slot_ends_at: string | null
           slot_starts_at: string | null
-          status: string
-          world_slug: string
+          status: string | null
+          world_slug: string | null
         }
         SetofOptions: {
           from: "*"
@@ -11707,20 +13570,20 @@ export type Database = {
           confirm_by: string | null
           confirmed_at: string | null
           handed_over_at: string | null
-          handoff_id: string
-          listing_id: string
+          handoff_id: string | null
+          listing_id: string | null
           no_show_at: string | null
-          owner_id: string
-          pickup_mode: string
+          owner_id: string | null
+          pickup_mode: string | null
           pickup_window_end: string | null
           pickup_window_start: string | null
-          recipient_id: string
-          reserved_at: string
-          seats: number
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
           slot_ends_at: string | null
           slot_starts_at: string | null
-          status: string
-          world_slug: string
+          status: string | null
+          world_slug: string | null
         }
         SetofOptions: {
           from: "*"
@@ -11737,20 +13600,20 @@ export type Database = {
           confirm_by: string | null
           confirmed_at: string | null
           handed_over_at: string | null
-          handoff_id: string
-          listing_id: string
+          handoff_id: string | null
+          listing_id: string | null
           no_show_at: string | null
-          owner_id: string
-          pickup_mode: string
+          owner_id: string | null
+          pickup_mode: string | null
           pickup_window_end: string | null
           pickup_window_start: string | null
-          recipient_id: string
-          reserved_at: string
-          seats: number
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
           slot_ends_at: string | null
           slot_starts_at: string | null
-          status: string
-          world_slug: string
+          status: string | null
+          world_slug: string | null
         }
         SetofOptions: {
           from: "*"
@@ -11963,20 +13826,20 @@ export type Database = {
           confirm_by: string | null
           confirmed_at: string | null
           handed_over_at: string | null
-          handoff_id: string
-          listing_id: string
+          handoff_id: string | null
+          listing_id: string | null
           no_show_at: string | null
-          owner_id: string
-          pickup_mode: string
+          owner_id: string | null
+          pickup_mode: string | null
           pickup_window_end: string | null
           pickup_window_start: string | null
-          recipient_id: string
-          reserved_at: string
-          seats: number
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
           slot_ends_at: string | null
           slot_starts_at: string | null
-          status: string
-          world_slug: string
+          status: string | null
+          world_slug: string | null
         }
         SetofOptions: {
           from: "*"
@@ -11993,20 +13856,20 @@ export type Database = {
           confirm_by: string | null
           confirmed_at: string | null
           handed_over_at: string | null
-          handoff_id: string
-          listing_id: string
+          handoff_id: string | null
+          listing_id: string | null
           no_show_at: string | null
-          owner_id: string
-          pickup_mode: string
+          owner_id: string | null
+          pickup_mode: string | null
           pickup_window_end: string | null
           pickup_window_start: string | null
-          recipient_id: string
-          reserved_at: string
-          seats: number
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
           slot_ends_at: string | null
           slot_starts_at: string | null
-          status: string
-          world_slug: string
+          status: string | null
+          world_slug: string | null
         }
         SetofOptions: {
           from: "*"
@@ -12026,7 +13889,7 @@ export type Database = {
       }
       effective_geo: {
         Args: {
-          p_listing: Database["public"]["Tables"]["listings"]["Row"]
+          p_listing: Database["public"]["Views"]["listings"]["Row"]
           p_viewer?: string
         }
         Returns: {
@@ -12389,20 +14252,20 @@ export type Database = {
           confirm_by: string | null
           confirmed_at: string | null
           handed_over_at: string | null
-          handoff_id: string
-          listing_id: string
+          handoff_id: string | null
+          listing_id: string | null
           no_show_at: string | null
-          owner_id: string
-          pickup_mode: string
+          owner_id: string | null
+          pickup_mode: string | null
           pickup_window_end: string | null
           pickup_window_start: string | null
-          recipient_id: string
-          reserved_at: string
-          seats: number
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
           slot_ends_at: string | null
           slot_starts_at: string | null
-          status: string
-          world_slug: string
+          status: string | null
+          world_slug: string | null
         }
         SetofOptions: {
           from: "*"
@@ -12450,16 +14313,6 @@ export type Database = {
               p_exclude: string
               p_id: string
               p_in: string
-              p_out: string
-              p_party: number
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              p_exclude: string
-              p_in: string
-              p_listing: Database["public"]["Tables"]["listings"]["Row"]
               p_out: string
               p_party: number
             }
@@ -12566,7 +14419,7 @@ export type Database = {
       is_listing_operator: { Args: { p_viewer: string }; Returns: boolean }
       is_listing_visible_to: {
         Args: {
-          p_listing: Database["public"]["Tables"]["listings"]["Row"]
+          p_listing: Database["public"]["Views"]["listings"]["Row"]
           p_viewer: string
         }
         Returns: boolean
@@ -13022,16 +14875,12 @@ export type Database = {
       }
       listing_details_expires_at: { Args: { p_details: Json }; Returns: string }
       listing_embedding_of: {
-        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
+        Args: { p_listing: Database["public"]["Views"]["listings"]["Row"] }
         Returns: string
       }
       listing_feed_hidden: {
-        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
+        Args: { p_listing: Database["public"]["Views"]["listings"]["Row"] }
         Returns: boolean
-      }
-      listing_feed_mirror_status: {
-        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
-        Returns: string
       }
       listing_feed_mirror_sync_media: {
         Args: { p_listing_id: string; p_post_id: string }
@@ -13040,9 +14889,9 @@ export type Database = {
       listing_feed_mirror_upsert: {
         Args: {
           p_feed_hidden?: boolean
-          p_listing: Database["public"]["Tables"]["listings"]["Row"]
+          p_listing: Database["public"]["Views"]["listings"]["Row"]
         }
-        Returns: string
+        Returns: undefined
       }
       listing_geo_from_city: { Args: { p_city_id: string }; Returns: unknown }
       listing_has_active_handoff: {
@@ -13055,17 +14904,17 @@ export type Database = {
         Returns: string
       }
       listing_lock_own: {
-        Args: { p_listing_id: string }
+        Args: { p_target: string }
         Returns: {
-          anonymity_level: number
-          availability_status: string
+          anonymity_level: number | null
+          availability_status: string | null
           beneficiary_org_id: string | null
           canonical_id: string | null
           category_id: string | null
           city_id: string | null
-          created_at: string
-          details: Json
-          direction: string
+          created_at: string | null
+          details: Json | null
+          direction: string | null
           embedding: string | null
           embedding_model: string | null
           expires_at: string | null
@@ -13073,24 +14922,24 @@ export type Database = {
           geo: unknown
           geo_mode_override: string | null
           geo_weight_override: number | null
-          kind_id: string
+          kind_id: string | null
           legacy_post_id: string | null
           legacy_ride_id: string | null
-          listing_id: string
+          listing_id: string | null
           max_radius_km_override: number | null
-          moderation_status: string
-          origin: string
-          owner_id: string
+          moderation_status: string | null
+          origin: string | null
+          owner_id: string | null
           published_at: string | null
           search_vector: unknown
-          status: string
+          status: string | null
           summary: string | null
           time_window: unknown
-          title: string
-          updated_at: string
-          urgency_level: number
-          visibility: string
-          world_slug: string
+          title: string | null
+          updated_at: string | null
+          urgency_level: number | null
+          visibility: string | null
+          world_slug: string | null
         }
         SetofOptions: {
           from: "*"
@@ -13100,17 +14949,17 @@ export type Database = {
         }
       }
       listing_record_of: {
-        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
+        Args: { p_listing: Database["public"]["Views"]["listings"]["Row"] }
         Returns: {
-          anonymity_level: number
-          availability_status: string
+          anonymity_level: number | null
+          availability_status: string | null
           beneficiary_org_id: string | null
           canonical_id: string | null
           category_id: string | null
           city_id: string | null
-          created_at: string
-          details: Json
-          direction: string
+          created_at: string | null
+          details: Json | null
+          direction: string | null
           embedding: string | null
           embedding_model: string | null
           expires_at: string | null
@@ -13118,24 +14967,24 @@ export type Database = {
           geo: unknown
           geo_mode_override: string | null
           geo_weight_override: number | null
-          kind_id: string
+          kind_id: string | null
           legacy_post_id: string | null
           legacy_ride_id: string | null
-          listing_id: string
+          listing_id: string | null
           max_radius_km_override: number | null
-          moderation_status: string
-          origin: string
-          owner_id: string
+          moderation_status: string | null
+          origin: string | null
+          owner_id: string | null
           published_at: string | null
           search_vector: unknown
-          status: string
+          status: string | null
           summary: string | null
           time_window: unknown
-          title: string
-          updated_at: string
-          urgency_level: number
-          visibility: string
-          world_slug: string
+          title: string | null
+          updated_at: string | null
+          urgency_level: number | null
+          visibility: string | null
+          world_slug: string | null
         }[]
         SetofOptions: {
           from: "listings"
@@ -13144,20 +14993,13 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      listing_set_post_status: {
-        Args: {
-          p_listing: Database["public"]["Tables"]["listings"]["Row"]
-          p_status: string
-        }
-        Returns: boolean
-      }
       listing_status_for_post: { Args: { p_status: string }; Returns: string }
       listing_upsert_from_post: {
         Args: { p_post: Database["public"]["Tables"]["posts"]["Row"] }
         Returns: undefined
       }
       listing_upsert_from_ride: {
-        Args: { p_ride: Database["public"]["Tables"]["ride_listings"]["Row"] }
+        Args: { p_ride: Database["public"]["Views"]["ride_listings"]["Row"] }
         Returns: undefined
       }
       map_listing_clusters: {
@@ -13244,20 +15086,20 @@ export type Database = {
           confirm_by: string | null
           confirmed_at: string | null
           handed_over_at: string | null
-          handoff_id: string
-          listing_id: string
+          handoff_id: string | null
+          listing_id: string | null
           no_show_at: string | null
-          owner_id: string
-          pickup_mode: string
+          owner_id: string | null
+          pickup_mode: string | null
           pickup_window_end: string | null
           pickup_window_start: string | null
-          recipient_id: string
-          reserved_at: string
-          seats: number
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
           slot_ends_at: string | null
           slot_starts_at: string | null
-          status: string
-          world_slug: string
+          status: string | null
+          world_slug: string | null
         }
         SetofOptions: {
           from: "*"
@@ -13274,20 +15116,20 @@ export type Database = {
           confirm_by: string | null
           confirmed_at: string | null
           handed_over_at: string | null
-          handoff_id: string
-          listing_id: string
+          handoff_id: string | null
+          listing_id: string | null
           no_show_at: string | null
-          owner_id: string
-          pickup_mode: string
+          owner_id: string | null
+          pickup_mode: string | null
           pickup_window_end: string | null
           pickup_window_start: string | null
-          recipient_id: string
-          reserved_at: string
-          seats: number
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
           slot_ends_at: string | null
           slot_starts_at: string | null
-          status: string
-          world_slug: string
+          status: string | null
+          world_slug: string | null
         }
         SetofOptions: {
           from: "*"
@@ -13331,15 +15173,15 @@ export type Database = {
         Returns: boolean
       }
       match_listing_anchor: {
-        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
+        Args: { p_listing: Database["public"]["Views"]["listings"]["Row"] }
         Returns: unknown
       }
       match_listing_dest: {
-        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
+        Args: { p_listing: Database["public"]["Views"]["listings"]["Row"] }
         Returns: unknown
       }
       match_listing_window: {
-        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
+        Args: { p_listing: Database["public"]["Views"]["listings"]["Row"] }
         Returns: unknown
       }
       match_owners_declined: {
@@ -13349,8 +15191,8 @@ export type Database = {
       match_run_sweep: { Args: { p_batch?: number }; Returns: Json }
       match_score_pair: {
         Args: {
-          p_offer: Database["public"]["Tables"]["listings"]["Row"]
-          p_request: Database["public"]["Tables"]["listings"]["Row"]
+          p_offer: Database["public"]["Views"]["listings"]["Row"]
+          p_request: Database["public"]["Views"]["listings"]["Row"]
         }
         Returns: {
           components: Json
@@ -13384,7 +15226,7 @@ export type Database = {
       }
       match_user_mutes_listing: {
         Args: {
-          p_listing: Database["public"]["Tables"]["listings"]["Row"]
+          p_listing: Database["public"]["Views"]["listings"]["Row"]
           p_user: string
         }
         Returns: boolean
@@ -13462,7 +15304,7 @@ export type Database = {
           }
       owner_offer_set_status: {
         Args: {
-          p_listing: Database["public"]["Tables"]["listings"]["Row"]
+          p_listing: Database["public"]["Views"]["listings"]["Row"]
           p_post: Database["public"]["Tables"]["posts"]["Row"]
           p_status: string
         }
@@ -13514,10 +15356,6 @@ export type Database = {
       }
       post_handoffs_sync_listing: {
         Args: { p_listing_id: string }
-        Returns: undefined
-      }
-      post_handoffs_upsert_from_giving: {
-        Args: { p_h: Database["public"]["Tables"]["giving_handoffs"]["Row"] }
         Returns: undefined
       }
       post_id_of_listing: { Args: { p_listing_id: string }; Returns: string }
@@ -13612,10 +15450,6 @@ export type Database = {
           p_reaction_delta?: number
           p_share_delta?: number
         }
-        Returns: undefined
-      }
-      post_sync_from_listing: {
-        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
         Returns: undefined
       }
       post_unification_report: { Args: never; Returns: Json }
@@ -13783,20 +15617,20 @@ export type Database = {
           confirm_by: string | null
           confirmed_at: string | null
           handed_over_at: string | null
-          handoff_id: string
-          listing_id: string
+          handoff_id: string | null
+          listing_id: string | null
           no_show_at: string | null
-          owner_id: string
-          pickup_mode: string
+          owner_id: string | null
+          pickup_mode: string | null
           pickup_window_end: string | null
           pickup_window_start: string | null
-          recipient_id: string
-          reserved_at: string
-          seats: number
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
           slot_ends_at: string | null
           slot_starts_at: string | null
-          status: string
-          world_slug: string
+          status: string | null
+          world_slug: string | null
         }
         SetofOptions: {
           from: "*"
@@ -13956,20 +15790,20 @@ export type Database = {
           confirm_by: string | null
           confirmed_at: string | null
           handed_over_at: string | null
-          handoff_id: string
-          listing_id: string
+          handoff_id: string | null
+          listing_id: string | null
           no_show_at: string | null
-          owner_id: string
-          pickup_mode: string
+          owner_id: string | null
+          pickup_mode: string | null
           pickup_window_end: string | null
           pickup_window_start: string | null
-          recipient_id: string
-          reserved_at: string
-          seats: number
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
           slot_ends_at: string | null
           slot_starts_at: string | null
-          status: string
-          world_slug: string
+          status: string | null
+          world_slug: string | null
         }
         SetofOptions: {
           from: "*"
@@ -13991,20 +15825,20 @@ export type Database = {
           confirm_by: string | null
           confirmed_at: string | null
           handed_over_at: string | null
-          handoff_id: string
-          listing_id: string
+          handoff_id: string | null
+          listing_id: string | null
           no_show_at: string | null
-          owner_id: string
-          pickup_mode: string
+          owner_id: string | null
+          pickup_mode: string | null
           pickup_window_end: string | null
           pickup_window_start: string | null
-          recipient_id: string
-          reserved_at: string
-          seats: number
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
           slot_ends_at: string | null
           slot_starts_at: string | null
-          status: string
-          world_slug: string
+          status: string | null
+          world_slug: string | null
         }
         SetofOptions: {
           from: "*"
@@ -14125,39 +15959,39 @@ export type Database = {
           arrive_reason: string | null
           arrived_at: string | null
           cargo_allowed_types: string[] | null
-          cargo_enabled: boolean
+          cargo_enabled: boolean | null
           cargo_max_volume_l: number | null
           cargo_max_weight_kg: number | null
-          created_at: string
-          departs_at: string
+          created_at: string | null
+          departs_at: string | null
           description: string | null
-          dest_city_id: string
-          dest_street: string
+          dest_city_id: string | null
+          dest_street: string | null
           dest_street_number: string | null
           food_chilled: boolean | null
-          food_handover_to_org: boolean
+          food_handover_to_org: boolean | null
           food_max_kg: number | null
-          food_shipping_enabled: boolean
+          food_shipping_enabled: boolean | null
           linked_post_id: string | null
-          mode: string
-          origin_city_id: string
-          origin_street: string
+          mode: string | null
+          origin_city_id: string | null
+          origin_street: string | null
           origin_street_number: string | null
-          owner_id: string
+          owner_id: string | null
           payment_amount_ils: number | null
-          payment_model: string
-          req_gender: string
-          req_pets_allowed: boolean
-          req_smoking_allowed: boolean
-          req_verified_only: boolean
-          ride_id: string
+          payment_model: string | null
+          req_gender: string | null
+          req_pets_allowed: boolean | null
+          req_smoking_allowed: boolean | null
+          req_verified_only: boolean | null
+          ride_id: string | null
           seats_available: number | null
           started_at: string | null
-          status: string
+          status: string | null
           template_id: string | null
-          title: string
-          updated_at: string
-          visibility: string
+          title: string | null
+          updated_at: string | null
+          visibility: string | null
         }[]
         SetofOptions: {
           from: "*"
@@ -14181,39 +16015,39 @@ export type Database = {
           arrive_reason: string | null
           arrived_at: string | null
           cargo_allowed_types: string[] | null
-          cargo_enabled: boolean
+          cargo_enabled: boolean | null
           cargo_max_volume_l: number | null
           cargo_max_weight_kg: number | null
-          created_at: string
-          departs_at: string
+          created_at: string | null
+          departs_at: string | null
           description: string | null
-          dest_city_id: string
-          dest_street: string
+          dest_city_id: string | null
+          dest_street: string | null
           dest_street_number: string | null
           food_chilled: boolean | null
-          food_handover_to_org: boolean
+          food_handover_to_org: boolean | null
           food_max_kg: number | null
-          food_shipping_enabled: boolean
+          food_shipping_enabled: boolean | null
           linked_post_id: string | null
-          mode: string
-          origin_city_id: string
-          origin_street: string
+          mode: string | null
+          origin_city_id: string | null
+          origin_street: string | null
           origin_street_number: string | null
-          owner_id: string
+          owner_id: string | null
           payment_amount_ils: number | null
-          payment_model: string
-          req_gender: string
-          req_pets_allowed: boolean
-          req_smoking_allowed: boolean
-          req_verified_only: boolean
-          ride_id: string
+          payment_model: string | null
+          req_gender: string | null
+          req_pets_allowed: boolean | null
+          req_smoking_allowed: boolean | null
+          req_verified_only: boolean | null
+          ride_id: string | null
           seats_available: number | null
           started_at: string | null
-          status: string
+          status: string | null
           template_id: string | null
-          title: string
-          updated_at: string
-          visibility: string
+          title: string | null
+          updated_at: string | null
+          visibility: string | null
         }[]
         SetofOptions: {
           from: "*"
@@ -14223,7 +16057,7 @@ export type Database = {
         }
       }
       ride_matching_routes: {
-        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
+        Args: { p_listing: Database["public"]["Views"]["listings"]["Row"] }
         Returns: {
           created_at: string
           dest_label: string
@@ -14308,7 +16142,7 @@ export type Database = {
         Returns: number
       }
       ride_series_feed_waits: {
-        Args: { p_listing: Database["public"]["Tables"]["listings"]["Row"] }
+        Args: { p_listing: Database["public"]["Views"]["listings"]["Row"] }
         Returns: boolean
       }
       ride_series_for_update: {
@@ -14693,39 +16527,39 @@ export type Database = {
           arrive_reason: string | null
           arrived_at: string | null
           cargo_allowed_types: string[] | null
-          cargo_enabled: boolean
+          cargo_enabled: boolean | null
           cargo_max_volume_l: number | null
           cargo_max_weight_kg: number | null
-          created_at: string
-          departs_at: string
+          created_at: string | null
+          departs_at: string | null
           description: string | null
-          dest_city_id: string
-          dest_street: string
+          dest_city_id: string | null
+          dest_street: string | null
           dest_street_number: string | null
           food_chilled: boolean | null
-          food_handover_to_org: boolean
+          food_handover_to_org: boolean | null
           food_max_kg: number | null
-          food_shipping_enabled: boolean
+          food_shipping_enabled: boolean | null
           linked_post_id: string | null
-          mode: string
-          origin_city_id: string
-          origin_street: string
+          mode: string | null
+          origin_city_id: string | null
+          origin_street: string | null
           origin_street_number: string | null
-          owner_id: string
+          owner_id: string | null
           payment_amount_ils: number | null
-          payment_model: string
-          req_gender: string
-          req_pets_allowed: boolean
-          req_smoking_allowed: boolean
-          req_verified_only: boolean
-          ride_id: string
+          payment_model: string | null
+          req_gender: string | null
+          req_pets_allowed: boolean | null
+          req_smoking_allowed: boolean | null
+          req_verified_only: boolean | null
+          ride_id: string | null
           seats_available: number | null
           started_at: string | null
-          status: string
+          status: string | null
           template_id: string | null
-          title: string
-          updated_at: string
-          visibility: string
+          title: string | null
+          updated_at: string | null
+          visibility: string | null
         }
         SetofOptions: {
           from: "*"
@@ -14850,39 +16684,39 @@ export type Database = {
           arrive_reason: string | null
           arrived_at: string | null
           cargo_allowed_types: string[] | null
-          cargo_enabled: boolean
+          cargo_enabled: boolean | null
           cargo_max_volume_l: number | null
           cargo_max_weight_kg: number | null
-          created_at: string
-          departs_at: string
+          created_at: string | null
+          departs_at: string | null
           description: string | null
-          dest_city_id: string
-          dest_street: string
+          dest_city_id: string | null
+          dest_street: string | null
           dest_street_number: string | null
           food_chilled: boolean | null
-          food_handover_to_org: boolean
+          food_handover_to_org: boolean | null
           food_max_kg: number | null
-          food_shipping_enabled: boolean
+          food_shipping_enabled: boolean | null
           linked_post_id: string | null
-          mode: string
-          origin_city_id: string
-          origin_street: string
+          mode: string | null
+          origin_city_id: string | null
+          origin_street: string | null
           origin_street_number: string | null
-          owner_id: string
+          owner_id: string | null
           payment_amount_ils: number | null
-          payment_model: string
-          req_gender: string
-          req_pets_allowed: boolean
-          req_smoking_allowed: boolean
-          req_verified_only: boolean
-          ride_id: string
+          payment_model: string | null
+          req_gender: string | null
+          req_pets_allowed: boolean | null
+          req_smoking_allowed: boolean | null
+          req_verified_only: boolean | null
+          ride_id: string | null
           seats_available: number | null
           started_at: string | null
-          status: string
+          status: string | null
           template_id: string | null
-          title: string
-          updated_at: string
-          visibility: string
+          title: string | null
+          updated_at: string | null
+          visibility: string | null
         }
         SetofOptions: {
           from: "*"
@@ -14897,39 +16731,39 @@ export type Database = {
           arrive_reason: string | null
           arrived_at: string | null
           cargo_allowed_types: string[] | null
-          cargo_enabled: boolean
+          cargo_enabled: boolean | null
           cargo_max_volume_l: number | null
           cargo_max_weight_kg: number | null
-          created_at: string
-          departs_at: string
+          created_at: string | null
+          departs_at: string | null
           description: string | null
-          dest_city_id: string
-          dest_street: string
+          dest_city_id: string | null
+          dest_street: string | null
           dest_street_number: string | null
           food_chilled: boolean | null
-          food_handover_to_org: boolean
+          food_handover_to_org: boolean | null
           food_max_kg: number | null
-          food_shipping_enabled: boolean
+          food_shipping_enabled: boolean | null
           linked_post_id: string | null
-          mode: string
-          origin_city_id: string
-          origin_street: string
+          mode: string | null
+          origin_city_id: string | null
+          origin_street: string | null
           origin_street_number: string | null
-          owner_id: string
+          owner_id: string | null
           payment_amount_ils: number | null
-          payment_model: string
-          req_gender: string
-          req_pets_allowed: boolean
-          req_smoking_allowed: boolean
-          req_verified_only: boolean
-          ride_id: string
+          payment_model: string | null
+          req_gender: string | null
+          req_pets_allowed: boolean | null
+          req_smoking_allowed: boolean | null
+          req_verified_only: boolean | null
+          ride_id: string | null
           seats_available: number | null
           started_at: string | null
-          status: string
+          status: string | null
           template_id: string | null
-          title: string
-          updated_at: string
-          visibility: string
+          title: string | null
+          updated_at: string | null
+          visibility: string | null
         }
         SetofOptions: {
           from: "*"

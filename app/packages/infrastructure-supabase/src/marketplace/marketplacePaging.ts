@@ -159,7 +159,7 @@ export async function fetchListingCards(
   ids: readonly string[],
 ): Promise<MarketplaceBrowseRow[]> {
   if (ids.length === 0) return [];
-  const { data, error } = await client
+  const { data, error } = await (client as any)
     .from('listings')
     .select(
       `listing_id, world_slug, direction, title, summary, urgency_level, availability_status, city_id, details, origin, legacy_post_id, kind:listing_kinds(slug), ${LISTING_PUBLISHER_EMBED}, ${CARD_POST_EMBED}`,
@@ -232,7 +232,7 @@ export async function attachCardExtras(
   if (rows.length === 0) return rows;
   let data: unknown[] | null;
   try {
-    const res = await client
+    const res = await (client as any)
       .from('listings')
       .select(`listing_id, details, origin, legacy_post_id, ${LISTING_PUBLISHER_EMBED}, ${CARD_POST_EMBED}`)
       .in('listing_id', rows.map((r) => r.listingId));
