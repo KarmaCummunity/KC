@@ -2677,3 +2677,1499 @@ comment on function kc_private.posts_sync_user_stats() is
 create trigger posts_sync_user_stats
   after insert or delete or update of status, visibility on public.posts
   for each row execute function kc_private.posts_sync_user_stats();
+
+-- >>> supabase/schemas/25_handoffs/010_post_handoffs.sql
+-- Handoffs · post_handoffs (the closing stage of every post, D19)
+--
+-- One row per member who takes part in closing a post: the member who reserved an item, the
+-- passenger of a ride, the guest of a stay, the attendee of an event, the learner of a
+-- session. It replaces the former `recipients` table as well: the member an owner names when
+-- closing a post is a handoff that is created already handed over.
+--
+-- Four machines share the table; the post type picks the one that rules a row:
+--   giving_handoff      every post type without its own machine (items, food, animals, knowledge)
+--   ride_booking        post type `ride`
+--   housing_booking     post type `housing_stay`
+--   event_registration  post type `event`
+-- Each edge names who may take it: the post `owner`, the `recipient` (the other member), or
+-- `system` (sweeps and the consequences of a post leaving the air).
+
+-- The machine that rules the handoffs of a post of this type.
+create function kc_private.handoff_machine_of(p_post_type text)
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  select case p_post_type
+    when 'ride' then 'ride_booking'
+    when 'housing_stay' then 'housing_booking'
+    when 'event' then 'event_registration'
+    else 'giving_handoff'
+  end;
+$$;
+comment on function kc_private.handoff_machine_of(text) is
+  'Lifecycle machine of the handoffs of a post, by post type.';
+
+insert into kc_private.fsm_state (machine_id, status)
+select m.machine_id, s.status
+  from (values
+    ('giving_handoff', array['reserved', 'confirmed', 'handed_over', 'cancelled', 'no_show']),
+    ('ride_booking', array['reserved', 'confirmed', 'handed_over', 'cancelled']),
+    ('housing_booking', array['reserved', 'confirmed', 'handed_over', 'cancelled', 'no_show']),
+    ('event_registration',
+     array['waitlisted', 'reserved', 'confirmed', 'handed_over', 'cancelled', 'no_show'])
+  ) as m (machine_id, statuses), unnest(m.statuses) as s (status);
+
+insert into kc_private.fsm_edge (machine_id, from_status, to_status, role)
+select e.machine_id, e.from_status, e.to_status, r.role
+  from (values
+    -- Items, food, animals, knowledge: request → approval → handed over.
+    ('giving_handoff', 'reserved', 'confirmed', array['owner']),
+    -- The owner names a member who was still waiting as the one who received it.
+    ('giving_handoff', 'reserved', 'handed_over', array['owner']),
+    ('giving_handoff', 'reserved', 'cancelled', array['owner', 'recipient', 'system']),
+    ('giving_handoff', 'confirmed', 'handed_over', array['owner', 'recipient']),
+    ('giving_handoff', 'confirmed', 'cancelled', array['owner', 'recipient', 'system']),
+    ('giving_handoff', 'confirmed', 'no_show', array['system']),
+    -- The delivery is taken back: the owner reopens the post (FR-CLOSURE-005) or the
+    -- recipient removes their own mark (FR-CLOSURE-007).
+    ('giving_handoff', 'handed_over', 'cancelled', array['owner', 'recipient']),
+    -- Rides: the driver approves, either side completes the trip, the driver may reinstate a
+    -- booking they declined or cancelled.
+    ('ride_booking', 'reserved', 'confirmed', array['owner']),
+    ('ride_booking', 'reserved', 'handed_over', array['owner']),
+    ('ride_booking', 'reserved', 'cancelled', array['owner', 'recipient', 'system']),
+    ('ride_booking', 'confirmed', 'handed_over', array['owner', 'recipient']),
+    ('ride_booking', 'confirmed', 'cancelled', array['owner', 'recipient', 'system']),
+    ('ride_booking', 'cancelled', 'reserved', array['owner']),
+    ('ride_booking', 'cancelled', 'confirmed', array['owner']),
+    -- Housing: the host decides, completes the stay or reports a guest who did not arrive.
+    ('housing_booking', 'reserved', 'confirmed', array['owner']),
+    ('housing_booking', 'reserved', 'cancelled', array['owner', 'recipient', 'system']),
+    ('housing_booking', 'confirmed', 'handed_over', array['owner']),
+    ('housing_booking', 'confirmed', 'cancelled', array['owner', 'recipient', 'system']),
+    ('housing_booking', 'confirmed', 'no_show', array['owner']),
+    -- Events: a freed seat promotes the waiting list; the organizer marks attendance and
+    -- may correct a no-show.
+    ('event_registration', 'waitlisted', 'reserved', array['system']),
+    ('event_registration', 'waitlisted', 'confirmed', array['system']),
+    ('event_registration', 'waitlisted', 'cancelled', array['owner', 'recipient', 'system']),
+    ('event_registration', 'reserved', 'confirmed', array['owner', 'system']),
+    ('event_registration', 'reserved', 'cancelled', array['owner', 'recipient', 'system']),
+    ('event_registration', 'confirmed', 'handed_over', array['owner']),
+    ('event_registration', 'confirmed', 'cancelled', array['owner', 'recipient', 'system']),
+    ('event_registration', 'confirmed', 'no_show', array['owner']),
+    ('event_registration', 'no_show', 'handed_over', array['owner'])
+  ) as e (machine_id, from_status, to_status, roles), unnest(e.roles) as r (role);
+
+create table public.post_handoffs (
+  id                      uuid primary key default gen_random_uuid(),
+  post_id                 uuid not null references public.posts (id) on delete cascade,
+  -- Owner of the post, copied on insert so that access is decided on this row alone.
+  owner_id                uuid not null references public.users (id) on delete cascade,
+  -- The other member: who reserves, books, registers, or is named by the owner.
+  recipient_id            uuid not null references public.users (id) on delete cascade,
+  -- Machine that rules `status`, derived from the post type on insert.
+  machine_id              text not null,
+  status                  text not null default 'reserved',
+  -- Why a cancelled handoff ended. Present exactly while the status is `cancelled`.
+  cancel_reason           text check (cancel_reason in (
+                            'declined', 'expired', 'owner_cancelled', 'recipient_cancelled',
+                            'passenger_cancelled', 'driver_cancelled', 'guest_cancelled', 'host_cancelled',
+                            'not_completed', 'superseded', 'system', 'post_deleted', 'reopened', 'unmarked')),
+  pickup_mode             text not null default 'pickup' check (pickup_mode in ('pickup', 'delivery')),
+  -- When the item is collected; a confirmed pickup long past its window is a no-show.
+  pickup_window_start     timestamptz,
+  pickup_window_end       timestamptz,
+  -- The booked time: a lesson slot, a stay from check-in to check-out, an event.
+  slot_starts_at          timestamptz,
+  slot_ends_at            timestamptz,
+  -- Seats of a ride, guests of a stay; 1 everywhere else.
+  seats                   integer not null default 1 check (seats between 1 and 8),
+  -- A reservation the owner has not answered by this time lapses.
+  confirm_by              timestamptz,
+  -- Meeting place a passenger asked for when booking (FR-RIDE-030).
+  requested_meeting_point jsonb check (
+                            jsonb_typeof(requested_meeting_point) = 'object'
+                            and requested_meeting_point ?& array['kind', 'id', 'label']),
+  created_at              timestamptz not null default now(),
+  confirmed_at            timestamptz,
+  handed_over_at          timestamptz,
+  cancelled_at            timestamptz,
+  no_show_at              timestamptz,
+  updated_at              timestamptz not null default now(),
+  constraint post_handoffs_distinct_members_chk check (owner_id <> recipient_id),
+  constraint post_handoffs_pickup_window_chk check (pickup_window_end >= pickup_window_start),
+  constraint post_handoffs_slot_chk check (slot_ends_at > slot_starts_at),
+  constraint post_handoffs_cancel_reason_chk check ((status = 'cancelled') = (cancel_reason is not null))
+);
+comment on table public.post_handoffs is
+  'Closing stage of every post: who takes it, when, how many seats, and how it ended. Written only by server code.';
+
+-- A member holds at most one live handoff on a post.
+create unique index post_handoffs_live_member_key on public.post_handoffs (post_id, recipient_id)
+  where status in ('waitlisted', 'reserved', 'confirmed');
+-- Seat arithmetic, the "has a live handoff" guards and the roster of a post; covers post_id.
+create index post_handoffs_post_status_idx on public.post_handoffs (post_id, status);
+-- "My requests and bookings", newest first; covers recipient_id.
+create index post_handoffs_recipient_recent_idx on public.post_handoffs (recipient_id, created_at desc, id desc);
+-- Requests waiting on the owner and their history, newest first; covers owner_id.
+create index post_handoffs_owner_recent_idx on public.post_handoffs (owner_id, created_at desc, id desc);
+-- Expiry sweep: unanswered reservations past their deadline.
+create index post_handoffs_confirm_due_idx on public.post_handoffs (confirm_by) where status = 'reserved';
+-- No-show sweep: confirmed pickups past their window.
+create index post_handoffs_pickup_due_idx on public.post_handoffs (pickup_window_end)
+  where status = 'confirmed' and machine_id = 'giving_handoff';
+
+-- Guards every write of a handoff.
+--   insert   copies the owner and the machine from the post; the status must be a state of
+--            that machine
+--   status   the move must be an edge of the row's machine for the role stated in the
+--            transaction-local setting `kc.fsm_role`
+-- and stamps the time of each state, so no writer can forget it.
+create function kc_private.post_handoffs_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_from constant text := case tg_op when 'UPDATE' then old.status end;
+begin
+  if tg_op = 'INSERT' then
+    select p.owner_id, kc_private.handoff_machine_of(p.post_type)
+      into strict new.owner_id, new.machine_id
+      from public.posts p where p.id = new.post_id;
+    perform kc_private.fsm_assert_transition(new.machine_id, new.status, new.status);
+  elsif new.status is distinct from old.status then
+    perform kc_private.fsm_assert_transition(
+      new.machine_id, old.status, new.status, nullif(current_setting('kc.fsm_role', true), ''));
+  else
+    return new;
+  end if;
+
+  -- A booking brought back from `cancelled`, or a corrected no-show, forgets how it ended.
+  if new.status <> 'cancelled' then
+    new.cancelled_at := null;
+    new.cancel_reason := null;
+  end if;
+  if new.status <> 'no_show' then
+    new.no_show_at := null;
+  end if;
+  case new.status
+    when 'confirmed' then new.confirmed_at := now();
+    when 'handed_over' then new.handed_over_at := now();
+    when 'cancelled' then new.cancelled_at := now(); new.handed_over_at := null;
+    when 'no_show' then new.no_show_at := now();
+    else null;
+  end case;
+  if v_from = 'cancelled' and new.status = 'reserved' then
+    new.confirmed_at := null;
+  end if;
+  return new;
+end;
+$$;
+comment on function kc_private.post_handoffs_guard() is
+  'BEFORE INSERT OR UPDATE OF status on post_handoffs: owner and machine from the post, legal move for the acting role, state timestamps.';
+
+create trigger post_handoffs_guard
+  before insert or update of status on public.post_handoffs
+  for each row execute function kc_private.post_handoffs_guard();
+
+create trigger post_handoffs_set_updated_at
+  before update on public.post_handoffs
+  for each row execute function kc_private.set_updated_at();
+
+alter table public.post_handoffs enable row level security;
+alter table public.post_handoffs force row level security;
+
+-- Only the two members of a handoff ever see it. No write policy and no write grant exist:
+-- every change goes through an RPC.
+create policy post_handoffs_select_party on public.post_handoffs
+  for select to authenticated
+  using (owner_id = (select auth.uid()) or recipient_id = (select auth.uid()));
+
+grant select on public.post_handoffs to authenticated;
+
+-- The other member of a handoff reads the post whatever its audience (FR-POST-017): a
+-- follower-only or private post stays readable to the member who reserved or received it.
+-- Status and owner visibility are the same conditions as for every other reader.
+create policy posts_select_handoff_party on public.posts
+  for select to authenticated
+  using (
+    status in ('open', 'closed_delivered')
+    and exists (select 1 from public.post_handoffs h
+                 where h.post_id = posts.id and h.recipient_id = (select auth.uid())
+                   and h.status <> 'cancelled')
+    and exists (select 1 from public.users u where u.id = posts.owner_id));
+
+-- >>> supabase/schemas/25_handoffs/020_handoff_internals.sql
+-- Handoffs · shared internals
+--
+-- Building blocks of every handoff RPC, in this module and in the modules that add the
+-- ride, housing, event and knowledge flows on top of it. None is callable from a device.
+
+-- May the caller manage (publish, pause, close, reopen, delete) this post? Today: the caller
+-- owns it. This is the one place the organizations module (admins of the organization the
+-- post belongs to) and the moderation module (super admin) extend (design §12.1).
+create function kc_private.can_manage_post(p_post_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (select 1 from public.posts p
+                  where p.id = p_post_id and p.owner_id = (select auth.uid()));
+$$;
+comment on function kc_private.can_manage_post(uuid) is
+  'Authorization of every post management action: the caller owns the post.';
+
+-- Locks a post the caller may manage and returns it. One error for "no such post" and
+-- "not yours", so the existence of a post the caller cannot see is not revealed.
+create function kc_private.post_lock_managed(p_post_id uuid)
+returns public.posts
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post public.posts;
+begin
+  perform kc_private.require_active_caller();
+  if not kc_private.can_manage_post(p_post_id) then
+    raise exception 'post_not_found' using errcode = 'P0001';
+  end if;
+  select p.* into strict v_post from public.posts p where p.id = p_post_id for update;
+  return v_post;
+end;
+$$;
+comment on function kc_private.post_lock_managed(uuid) is
+  'Row-locks a post for a management action; raises post_not_found unless the caller may manage it.';
+
+-- Moves a post to a status in the given role, then restores the role that was in force, so
+-- a move made in the middle of another move does not change who the outer one acts as.
+create function kc_private.post_move(p_post_id uuid, p_to text, p_role text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_outer_role constant text := coalesce(current_setting('kc.fsm_role', true), '');
+begin
+  perform set_config('kc.fsm_role', p_role, true);
+  update public.posts p set status = p_to where p.id = p_post_id;
+  perform set_config('kc.fsm_role', v_outer_role, true);
+end;
+$$;
+comment on function kc_private.post_move(uuid, text, text) is 'Moves a post along its machine in the given role.';
+
+-- Moves a handoff to a status in the given role and returns the row.
+create function kc_private.handoff_move(
+  p_handoff_id uuid,
+  p_to text,
+  p_role text,
+  p_cancel_reason text default null
+)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_outer_role constant text := coalesce(current_setting('kc.fsm_role', true), '');
+  v_handoff public.post_handoffs;
+begin
+  perform set_config('kc.fsm_role', p_role, true);
+  update public.post_handoffs h
+     set status = p_to, cancel_reason = p_cancel_reason
+   where h.id = p_handoff_id
+  returning h.* into v_handoff;
+  perform set_config('kc.fsm_role', v_outer_role, true);
+  return v_handoff;
+end;
+$$;
+comment on function kc_private.handoff_move(uuid, text, text, text) is
+  'Moves a handoff along its machine in the given role.';
+
+-- Locks a handoff for a move and returns it. The post row is locked first: every writer
+-- takes the two locks in this order, so a handoff move and a post closure never deadlock.
+create function kc_private.handoff_lock(p_handoff_id uuid)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_handoff public.post_handoffs;
+begin
+  perform 1 from public.posts p
+    where p.id = (select h.post_id from public.post_handoffs h where h.id = p_handoff_id)
+      for update;
+  select h.* into v_handoff from public.post_handoffs h where h.id = p_handoff_id for update;
+  if not found then
+    raise exception 'handoff_not_found' using errcode = 'P0001';
+  end if;
+  return v_handoff;
+end;
+$$;
+comment on function kc_private.handoff_lock(uuid) is 'Row-locks a handoff and its post, post first.';
+
+-- Seats of a post that are held or were used: reserved, confirmed and handed over.
+create function kc_private.handoff_seats_taken(p_post_id uuid)
+returns integer
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(sum(h.seats), 0)::integer
+    from public.post_handoffs h
+   where h.post_id = p_post_id and h.status in ('reserved', 'confirmed', 'handed_over');
+$$;
+comment on function kc_private.handoff_seats_taken(uuid) is 'Seats of a post held by live or completed handoffs.';
+
+-- Does a live handoff stand in the way of pausing or closing the post (D104)? Event
+-- registrations never do: they are cancelled with the event instead (D131).
+create function kc_private.post_has_active_handoff(p_post_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (select 1 from public.post_handoffs h
+                  where h.post_id = p_post_id and h.status in ('reserved', 'confirmed')
+                    and h.machine_id <> 'event_registration');
+$$;
+comment on function kc_private.post_has_active_handoff(uuid) is
+  'A reserved or confirmed handoff exists on the post, event registrations aside.';
+
+-- Could this member open the post as any other member would: it is open and not past its
+-- expiry, its audience includes them, both accounts are active and no block stands between
+-- them. The same rule as the read policy on posts, for a member other than the caller.
+create function kc_private.post_open_to_member(p_post public.posts, p_member_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select p_post.status = 'open'
+     and (p_post.expires_at is null or p_post.expires_at > now())
+     and (p_post.visibility = 'Public'
+          or (p_post.visibility = 'FollowersOnly'
+              and exists (select 1 from public.follows f
+                           where f.follower_id = p_member_id and f.followed_id = p_post.owner_id)))
+     and (select count(*) from public.users u
+           where u.id in (p_member_id, p_post.owner_id) and u.is_active) = 2
+     and not kc_access.is_blocked_between(p_member_id, p_post.owner_id);
+$$;
+comment on function kc_private.post_open_to_member(public.posts, uuid) is
+  'The post is open and visible to the given member, and neither side is blocked or inactive.';
+
+-- Creates a handoff on an open post for a member, in the given starting status.
+--   own_listing            the member owns the post
+--   listing_not_available  the post is not open to that member (closed, hidden, expired,
+--                          outside its audience, or a block between the two)
+--   item_already_reserved  the member already holds a live handoff on the post
+--   p_full_error           the seats asked for do not fit under p_capacity (null = no limit);
+--                          a `waitlisted` row takes no seat and is never refused for capacity
+-- The post row lock serializes competing reservations, so capacity cannot be exceeded.
+create function kc_private.handoff_open(
+  p_post_id uuid,
+  p_recipient_id uuid,
+  p_status text,
+  p_capacity integer,
+  p_seats integer default 1,
+  p_fields jsonb default '{}'::jsonb,
+  p_full_error text default 'seats_exhausted'
+)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post public.posts;
+  v_handoff public.post_handoffs;
+begin
+  select p.* into v_post from public.posts p where p.id = p_post_id for update;
+  if found and v_post.owner_id = p_recipient_id then
+    raise exception 'own_listing' using errcode = 'P0001';
+  end if;
+  if not found or not kc_private.post_open_to_member(v_post, p_recipient_id) then
+    raise exception 'listing_not_available' using errcode = 'P0001';
+  end if;
+  if exists (select 1 from public.post_handoffs h
+              where h.post_id = p_post_id and h.recipient_id = p_recipient_id
+                and h.status in ('waitlisted', 'reserved', 'confirmed')) then
+    raise exception 'item_already_reserved' using errcode = 'P0001';
+  end if;
+  if p_status <> 'waitlisted'
+     and kc_private.handoff_seats_taken(p_post_id) + p_seats > p_capacity then
+    raise exception '%', p_full_error using errcode = 'P0001';
+  end if;
+
+  -- p_fields carries the optional columns by name: pickup_mode, pickup_window_start,
+  -- pickup_window_end, slot_starts_at, slot_ends_at, confirm_by, requested_meeting_point.
+  insert into public.post_handoffs (
+    post_id, recipient_id, status, seats, pickup_mode, pickup_window_start, pickup_window_end,
+    slot_starts_at, slot_ends_at, confirm_by, requested_meeting_point)
+  values (
+    p_post_id, p_recipient_id, p_status, p_seats,
+    coalesce(p_fields ->> 'pickup_mode', 'pickup'),
+    (p_fields ->> 'pickup_window_start')::timestamptz, (p_fields ->> 'pickup_window_end')::timestamptz,
+    (p_fields ->> 'slot_starts_at')::timestamptz, (p_fields ->> 'slot_ends_at')::timestamptz,
+    (p_fields ->> 'confirm_by')::timestamptz, p_fields -> 'requested_meeting_point')
+  returning * into v_handoff;
+  return v_handoff;
+end;
+$$;
+comment on function kc_private.handoff_open(uuid, uuid, text, integer, integer, jsonb, text) is
+  'Creates a handoff on an open post under the post row lock, enforcing visibility, one live handoff per member and capacity.';
+
+-- Promotes the head of an event's waiting list into seats that became free: the oldest
+-- waiting registrations move to p_to_status (`confirmed`, or `reserved` when the organizer
+-- approves by hand) while they fit under p_capacity. Called by the events module, which
+-- knows the capacity and the registration policy, whenever a seat is freed.
+create function kc_private.handoff_promote_waitlist(p_post_id uuid, p_capacity integer, p_to_status text)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_next public.post_handoffs;
+  v_promoted integer := 0;
+begin
+  perform 1 from public.posts p where p.id = p_post_id for update;
+  for v_next in
+    select h.* from public.post_handoffs h
+     where h.post_id = p_post_id and h.status = 'waitlisted'
+     order by h.created_at, h.id
+  loop
+    exit when kc_private.handoff_seats_taken(p_post_id) + v_next.seats > p_capacity;
+    perform kc_private.handoff_move(v_next.id, p_to_status, 'system');
+    v_promoted := v_promoted + 1;
+  end loop;
+  return v_promoted;
+end;
+$$;
+comment on function kc_private.handoff_promote_waitlist(uuid, integer, text) is
+  'Moves waiting event registrations into free seats, oldest first; returns how many were promoted.';
+
+-- >>> supabase/schemas/25_handoffs/030_handoff_effects.sql
+-- Handoffs · consequences of a status change
+--
+-- Whatever RPC or sweep moves a handoff, in whatever world, the same three things follow
+-- from the new status, so they are attached to the table and not repeated in each writer:
+--   1. the counterparty's profile counter (FR-CLOSURE-009 AC2)
+--   2. a `karma` event — karma itself is computed by its own module
+--   3. `notification` events for the member or members who did not make the change
+
+-- Notification kind for a handoff change, or null when nobody is told. Kinds carry the
+-- machine as a prefix (`giving_handoff_confirmed`, `ride_booking_confirmed`, …), except the
+-- two that concern the recipient mark of a closed post (FR-NOTIF-009, FR-NOTIF-010).
+create function kc_private.handoff_notification_kind(
+  p_old public.post_handoffs,
+  p_new public.post_handoffs,
+  p_actor_id uuid
+)
+returns text
+language sql
+stable
+set search_path = ''
+as $$
+  select case
+    when p_old.id is null and p_new.status = 'handed_over' then 'mark_recipient'
+    when p_new.cancel_reason = 'unmarked' then 'unmark_recipient'
+    -- Reopening a delivered post tells nobody (FR-NOTIF-013).
+    when p_new.cancel_reason = 'reopened' then null
+    else p_new.machine_id || '_' || case
+      -- A new handoff: a request waiting for the owner, or a seat taken at once.
+      when p_old.id is null and p_new.status = 'reserved' then 'requested'
+      when p_old.id is null and p_new.status = 'confirmed' and p_actor_id = p_new.recipient_id then 'claimed'
+      when p_old.id is null and p_new.status = 'waitlisted' then null
+      when p_old.status = 'waitlisted' and p_new.status in ('reserved', 'confirmed') then 'waitlist_promoted'
+      when p_old.status = 'cancelled' then 'reinstated'
+      when p_new.status = 'confirmed' then 'confirmed'
+      when p_new.status = 'handed_over' then 'completed'
+      when p_new.status = 'no_show' then 'no_show'
+      when p_new.cancel_reason = 'expired' then 'expired'
+      when p_new.cancel_reason = 'declined' then 'declined'
+      when p_new.status = 'cancelled' then 'cancelled'
+    end
+  end;
+$$;
+comment on function kc_private.handoff_notification_kind(public.post_handoffs, public.post_handoffs, uuid) is
+  'Notification kind of a handoff insert (p_old null) or status change; null = no notification.';
+
+create function kc_private.post_handoffs_apply_effects()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_old public.post_handoffs;
+  -- The member whose call made the change; null for a sweep or other server work.
+  v_actor_id constant uuid := (select auth.uid());
+  -- +1 when the handoff becomes handed over, -1 when a delivery is taken back.
+  v_delta constant integer := (new.status = 'handed_over')::integer
+    - (tg_op = 'UPDATE' and old.status = 'handed_over')::integer;
+  v_post public.posts;
+  v_kind text;
+  v_to uuid;
+begin
+  if tg_op = 'UPDATE' then
+    if new.status = old.status then
+      return null;
+    end if;
+    v_old := old;
+  end if;
+  select p.* into v_post from public.posts p where p.id = new.post_id;
+
+  if v_delta <> 0 then
+    -- On an offer the other member receives; on a request the other member gives.
+    update public.user_stats s
+       set items_received_count = greatest(
+             s.items_received_count + case v_post.direction when 'offer' then v_delta else 0 end, 0),
+           items_given_count = greatest(
+             s.items_given_count + case v_post.direction when 'request' then v_delta else 0 end, 0)
+     where s.user_id = new.recipient_id;
+
+    perform kc_private.outbox_enqueue('karma', jsonb_build_object(
+      'kind', case v_delta when 1 then 'handoff_completed' else 'handoff_reverted' end,
+      'handoff_id', new.id, 'post_id', new.post_id, 'owner_id', new.owner_id,
+      'recipient_id', new.recipient_id, 'world_slug', v_post.world_slug,
+      'post_type', v_post.post_type, 'direction', v_post.direction, 'seats', new.seats));
+  end if;
+
+  v_kind := kc_private.handoff_notification_kind(v_old, new, v_actor_id);
+  if v_kind is null then
+    return null;
+  end if;
+  -- Both members, minus the one who acted (FR-NOTIF-018 AC5): a request reaches the owner,
+  -- a mark reaches the member who was marked, a sweep's change reaches both.
+  foreach v_to in array array[new.owner_id, new.recipient_id] loop
+    continue when v_to is not distinct from v_actor_id;
+    perform kc_private.outbox_enqueue('notification', jsonb_build_object(
+      'kind', v_kind, 'recipient_id', v_to, 'actor_id', v_actor_id,
+      'entity', jsonb_build_object('type', 'post_handoff', 'id', new.id),
+      'data', jsonb_build_object(
+        'post_id', new.post_id, 'world_slug', v_post.world_slug, 'status', new.status,
+        'cancel_reason', new.cancel_reason,
+        -- One delivery per kind, handoff and addressee, however often the event is retried.
+        'dedupe_key', v_kind || ':' || new.id || ':' || v_to)));
+  end loop;
+  return null;
+end;
+$$;
+comment on function kc_private.post_handoffs_apply_effects() is
+  'AFTER INSERT OR UPDATE OF status on post_handoffs: counterparty counter, karma event, notifications.';
+
+create trigger post_handoffs_apply_effects
+  after insert or update of status on public.post_handoffs
+  for each row
+  execute function kc_private.post_handoffs_apply_effects();
+
+-- >>> supabase/schemas/25_handoffs/040_handoff_rpcs.sql
+-- Handoffs · the generic flow (items, food, animals; knowledge for confirm / hand over / cancel)
+--
+-- reserve → (owner confirms) → handed over, or cancelled by either side. Rides, stays and
+-- events have their own RPCs, built on the same internals, in the module that owns their
+-- detail tables. Errors: SQLSTATE P0001 with a stable snake_case message.
+
+-- How a member takes an offer of this world, when one member takes the whole post:
+--   'request'  the owner approves within 24 hours (items; animals for adoption or foster)
+--   'claim'    confirmed at once, first come first served (food)
+--   null       the world has its own flow, or several members take part
+create function kc_private.handoff_flow_of(p_world_slug text, p_kind_id uuid)
+returns text
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select case
+    when p_world_slug = 'items' then 'request'
+    when p_world_slug = 'food' then 'claim'
+    when p_world_slug = 'animals' and exists (
+           select 1 from public.post_kinds k
+            where k.id = p_kind_id and k.slug in ('adoption_offer', 'foster_offer')) then 'request'
+  end;
+$$;
+comment on function kc_private.handoff_flow_of(text, uuid) is
+  'Generic single-taker flow of a world and post kind: request, claim, or null when the world has its own flow.';
+
+-- Shared body of the two entry points below.
+create function kc_private.handoff_take_offer(
+  p_post_id uuid,
+  p_flow text,
+  p_pickup_mode text,
+  p_pickup_window_start timestamptz,
+  p_pickup_window_end timestamptz
+)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_pickup_mode constant text := coalesce(nullif(btrim(p_pickup_mode), ''), 'pickup');
+  v_post public.posts;
+begin
+  if v_pickup_mode not in ('pickup', 'delivery') then
+    raise exception 'invalid_pickup_mode' using errcode = 'P0001';
+  end if;
+  select p.* into v_post from public.posts p where p.id = p_post_id for update;
+  if not found or v_post.direction <> 'offer'
+     or kc_private.handoff_flow_of(v_post.world_slug, v_post.kind_id) is distinct from p_flow then
+    raise exception 'listing_not_available' using errcode = 'P0001';
+  end if;
+
+  return kc_private.handoff_open(
+    p_post_id, v_user_id,
+    case p_flow when 'claim' then 'confirmed' else 'reserved' end,
+    1, 1,
+    jsonb_strip_nulls(jsonb_build_object(
+      'pickup_mode', v_pickup_mode,
+      -- A claim is collected now unless the claimer names a time, and by the post's expiry.
+      'pickup_window_start', coalesce(p_pickup_window_start, case p_flow when 'claim' then now() end),
+      'pickup_window_end', coalesce(p_pickup_window_end,
+        case p_flow when 'claim' then coalesce(v_post.expires_at, now() + interval '4 hours') end),
+      'confirm_by', case p_flow when 'request' then now() + interval '24 hours' end)),
+    case p_flow when 'claim' then 'listing_not_available' else 'item_already_reserved' end);
+end;
+$$;
+comment on function kc_private.handoff_take_offer(uuid, text, text, timestamptz, timestamptz) is
+  'Creates the caller''s handoff on a single-taker offer in the given flow.';
+
+-- Asks for an item (or an animal offered for adoption or foster). The owner has 24 hours
+-- to approve; meanwhile nobody else can ask.
+create function public.reserve_item_giving(
+  p_post_id uuid,
+  p_pickup_mode text default 'pickup',
+  p_pickup_window_start timestamptz default null,
+  p_pickup_window_end timestamptz default null
+)
+returns public.post_handoffs
+language sql
+security definer
+set search_path = ''
+as $$
+  select kc_private.handoff_take_offer(
+    p_post_id, 'request', p_pickup_mode, p_pickup_window_start, p_pickup_window_end);
+$$;
+comment on function public.reserve_item_giving(uuid, text, timestamptz, timestamptz) is
+  'The caller asks for an item or animal offer; the owner approves within 24 hours.';
+grant execute on function public.reserve_item_giving(uuid, text, timestamptz, timestamptz) to authenticated;
+
+-- Claims a food offer: confirmed at once, first come first served.
+create function public.claim_food_giving(
+  p_post_id uuid,
+  p_pickup_window_start timestamptz default null,
+  p_pickup_window_end timestamptz default null
+)
+returns public.post_handoffs
+language sql
+security definer
+set search_path = ''
+as $$
+  select kc_private.handoff_take_offer(p_post_id, 'claim', 'pickup', p_pickup_window_start, p_pickup_window_end);
+$$;
+comment on function public.claim_food_giving(uuid, timestamptz, timestamptz) is
+  'The caller claims a food offer; the claim is confirmed immediately.';
+grant execute on function public.claim_food_giving(uuid, timestamptz, timestamptz) to authenticated;
+
+-- The owner approves a waiting request.
+create function public.confirm_item_handoff(p_handoff_id uuid)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_handoff constant public.post_handoffs := kc_private.handoff_lock(p_handoff_id);
+begin
+  if v_handoff.owner_id <> v_user_id or v_handoff.status <> 'reserved'
+     or v_handoff.machine_id <> 'giving_handoff' then
+    raise exception 'handoff_not_found' using errcode = 'P0001';
+  end if;
+  return kc_private.handoff_move(p_handoff_id, 'confirmed', 'owner');
+end;
+$$;
+comment on function public.confirm_item_handoff(uuid) is 'The post owner approves a waiting request.';
+grant execute on function public.confirm_item_handoff(uuid) to authenticated;
+
+-- Closes a post whose single taker has received it: the post becomes `closed_delivered`.
+-- Only a post that is still open is closed; an expired, removed or under-review post keeps
+-- its status and the handoff stands. Worlds where several members take part are closed by
+-- their own module.
+create function kc_private.post_close_after_handoff(p_handoff public.post_handoffs)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if exists (select 1 from public.posts p
+              where p.id = p_handoff.post_id and p.status = 'open'
+                and kc_private.handoff_flow_of(p.world_slug, p.kind_id) is not null) then
+    perform kc_private.post_move(p_handoff.post_id, 'closed_delivered', 'system');
+  end if;
+end;
+$$;
+comment on function kc_private.post_close_after_handoff(public.post_handoffs) is
+  'Moves an open single-taker post to closed_delivered once its handoff is handed over.';
+
+-- Either member marks a confirmed handoff as handed over.
+create function public.mark_giving_handed_over(p_handoff_id uuid)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_handoff public.post_handoffs := kc_private.handoff_lock(p_handoff_id);
+begin
+  if v_user_id not in (v_handoff.owner_id, v_handoff.recipient_id) then
+    raise exception 'handoff_not_found' using errcode = 'P0001';
+  end if;
+  if v_handoff.machine_id <> 'giving_handoff' then
+    raise exception 'handoff_world_not_supported' using errcode = 'P0001';
+  end if;
+  if v_handoff.status <> 'confirmed' then
+    raise exception 'handoff_not_confirmed' using errcode = 'P0001';
+  end if;
+
+  v_handoff := kc_private.handoff_move(
+    p_handoff_id, 'handed_over', case v_user_id when v_handoff.owner_id then 'owner' else 'recipient' end);
+  perform kc_private.post_close_after_handoff(v_handoff);
+  return v_handoff;
+end;
+$$;
+comment on function public.mark_giving_handed_over(uuid) is
+  'Either member marks a confirmed handoff as handed over; a single-taker post closes as delivered.';
+grant execute on function public.mark_giving_handed_over(uuid) to authenticated;
+
+-- Either member cancels a waiting or confirmed handoff. The reason records who: the owner
+-- declining a request, the owner withdrawing an approval, or the other member backing out.
+-- The seat is free again at once.
+create function public.cancel_giving_handoff(p_handoff_id uuid)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+  v_handoff constant public.post_handoffs := kc_private.handoff_lock(p_handoff_id);
+  v_by_owner constant boolean := v_user_id = v_handoff.owner_id;
+begin
+  if v_user_id not in (v_handoff.owner_id, v_handoff.recipient_id)
+     or v_handoff.status not in ('reserved', 'confirmed') then
+    raise exception 'handoff_not_found' using errcode = 'P0001';
+  end if;
+  -- Rides, stays and events cancel through their own RPCs (late-cancel rules, waiting list).
+  if v_handoff.machine_id <> 'giving_handoff' then
+    raise exception 'handoff_world_not_supported' using errcode = 'P0001';
+  end if;
+
+  return kc_private.handoff_move(
+    p_handoff_id, 'cancelled',
+    case when v_by_owner then 'owner' else 'recipient' end,
+    case when not v_by_owner then 'recipient_cancelled'
+         when v_handoff.status = 'reserved' then 'declined'
+         else 'owner_cancelled' end);
+end;
+$$;
+comment on function public.cancel_giving_handoff(uuid) is
+  'Either member cancels their waiting or confirmed handoff.';
+grant execute on function public.cancel_giving_handoff(uuid) to authenticated;
+
+-- >>> supabase/schemas/25_handoffs/050_post_closures.sql
+-- Handoffs · closure bookkeeping of a post
+--
+-- What a closed post needs beyond its status: whether it counts as a delivery in its
+-- owner's profile counter, when a post closed without a recipient is purged, and how often
+-- it was reopened. A row appears the first time a post is closed or deleted.
+
+create table public.post_closures (
+  post_id       uuid primary key references public.posts (id) on delete cascade,
+  -- The closure was a delivery — "close without marking" after handing the item over, or a
+  -- recipient who removed their mark — as opposed to the owner deleting the post. Decides
+  -- whether a `deleted_no_recipient` post counts in the owner's counter (FR-CLOSURE-009).
+  delivered     boolean not null default false,
+  -- End of the grace period of a `deleted_no_recipient` post (FR-CLOSURE-003 AC6): until
+  -- then the owner may reopen it, afterwards the purge job deletes it (FR-CLOSURE-008).
+  purge_after   timestamptz,
+  -- Successful reopens; five or more flag the post for review (FR-CLOSURE-010).
+  reopen_count  integer not null default 0 check (reopen_count >= 0),
+  updated_at    timestamptz not null default now()
+);
+comment on table public.post_closures is
+  'Closure state of a post: delivery flag, purge deadline, reopen count. Written only by server code.';
+
+-- Purge job: posts whose grace period has ended.
+create index post_closures_purge_due_idx on public.post_closures (purge_after) where purge_after is not null;
+
+create trigger post_closures_set_updated_at
+  before update on public.post_closures
+  for each row execute function kc_private.set_updated_at();
+
+alter table public.post_closures enable row level security;
+alter table public.post_closures force row level security;
+
+-- The owner sees how long a deleted post can still be restored. The subquery runs under
+-- the caller's access to `posts`.
+create policy post_closures_select_owner on public.post_closures
+  for select to authenticated
+  using (exists (select 1 from public.posts p
+                  where p.id = post_closures.post_id and p.owner_id = (select auth.uid())));
+
+-- The reopen count is an internal moderation signal (FR-CLOSURE-010 AC3) and is not readable.
+grant select (post_id, delivered, purge_after) on public.post_closures to authenticated;
+
+-- Follows every status change of a post, whoever makes it (owner RPC, sweep, moderation):
+--   1. owner's counter — a post counts while it is `closed_delivered`, or
+--      `deleted_no_recipient` after a delivery; on an offer the owner gave, on a request
+--      the owner received (FR-CLOSURE-009 AC1)
+--   2. purge deadline — seven days from entering `deleted_no_recipient`, cleared on leaving
+--   3. reopen — counted; from the fifth on, a `moderation` event flags the post
+--   4. chats — a `chat_system_message` event when an open post closes (FR-CLOSURE-001 AC4)
+--   5. handoffs — a post that leaves the air takes its live handoffs with it
+create function kc_private.posts_apply_closure_effects()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_closure public.post_closures;
+  v_delta integer;
+  v_reopened constant boolean :=
+    old.status in ('closed_delivered', 'deleted_no_recipient') and new.status = 'open';
+  v_handoff public.post_handoffs;
+begin
+  if new.status = old.status then
+    return null;
+  end if;
+
+  if new.status = 'deleted_no_recipient' or v_reopened then
+    insert into public.post_closures as c (post_id, delivered, purge_after, reopen_count)
+    values (new.id, old.status = 'closed_delivered',
+            case when not v_reopened then now() + interval '7 days' end, v_reopened::integer)
+    on conflict (post_id) do update
+      set delivered = c.delivered or excluded.delivered,
+          purge_after = excluded.purge_after,
+          reopen_count = c.reopen_count + excluded.reopen_count
+    returning c.* into v_closure;
+  else
+    update public.post_closures c set purge_after = null
+     where c.post_id = new.id returning c.* into v_closure;
+  end if;
+
+  -- 1. Owner's counter.
+  v_delta := (new.status = 'closed_delivered'
+              or (new.status = 'deleted_no_recipient' and coalesce(v_closure.delivered, false)))::integer
+           - (old.status = 'closed_delivered'
+              or (old.status = 'deleted_no_recipient' and coalesce(v_closure.delivered, false)))::integer;
+  if v_delta <> 0 then
+    update public.user_stats s
+       set items_given_count = greatest(
+             s.items_given_count + case new.direction when 'offer' then v_delta else 0 end, 0),
+           items_received_count = greatest(
+             s.items_received_count + case new.direction when 'request' then v_delta else 0 end, 0)
+     where s.user_id = new.owner_id;
+  end if;
+
+  -- 3. A reopened post starts over as not delivered.
+  if v_reopened then
+    update public.post_closures c set delivered = false where c.post_id = new.id;
+    if v_closure.reopen_count >= 5 then
+      perform kc_private.outbox_enqueue('moderation', jsonb_build_object(
+        'kind', 'excessive_reopens', 'post_id', new.id, 'owner_id', new.owner_id,
+        'reopen_count', v_closure.reopen_count));
+    end if;
+  end if;
+
+  -- 4. Chats anchored to the post get a closing line and lose their anchor.
+  if old.status = 'open' and new.status in ('closed_delivered', 'deleted_no_recipient') then
+    perform kc_private.outbox_enqueue('chat_system_message', jsonb_build_object(
+      'kind', 'post_closed', 'post_id', new.id, 'status', new.status, 'owner_id', new.owner_id,
+      'recipient_id', (select h.recipient_id from public.post_handoffs h
+                        where h.post_id = new.id and h.status = 'handed_over'
+                        order by h.handed_over_at desc limit 1)));
+  end if;
+
+  -- 5. Live handoffs end with the post. An event that already started keeps its
+  --    registrations, so that attendance can still be marked (D128, D131). A pause only
+  --    reaches event registrations: any other live handoff refuses the pause (D104).
+  if new.status in ('paused', 'closed_delivered', 'deleted_no_recipient', 'expired', 'removed_admin') then
+    for v_handoff in
+      select h.* from public.post_handoffs h
+       where h.post_id = new.id and h.status in ('waitlisted', 'reserved', 'confirmed')
+         and (h.machine_id <> 'event_registration' or lower(new.time_window) > now()
+              or new.time_window is null)
+         and (new.status <> 'paused' or h.machine_id = 'event_registration')
+    loop
+      perform kc_private.handoff_move(
+        v_handoff.id, 'cancelled', 'system',
+        case when new.status = 'closed_delivered' then 'superseded'
+             when coalesce(current_setting('kc.fsm_role', true), '') = 'owner' then 'host_cancelled'
+             else 'system' end);
+    end loop;
+  end if;
+  return null;
+end;
+$$;
+comment on function kc_private.posts_apply_closure_effects() is
+  'AFTER UPDATE OF status on posts: owner counter, purge deadline, reopen count, chat event, cancellation of live handoffs.';
+
+create trigger posts_apply_closure_effects
+  after update of status on public.posts
+  for each row execute function kc_private.posts_apply_closure_effects();
+
+-- Posts closed without a recipient whose grace period has ended, oldest first, for the
+-- purge job (it removes the media files, then the post).
+create function kc_private.posts_due_for_purge(p_limit integer default 100)
+returns setof uuid
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select c.post_id
+    from public.post_closures c
+    join public.posts p on p.id = c.post_id
+   where c.purge_after <= now() and p.status = 'deleted_no_recipient'
+   order by c.purge_after
+   limit least(greatest(p_limit, 1), 1000);
+$$;
+comment on function kc_private.posts_due_for_purge(integer) is
+  'Ids of deleted_no_recipient posts past their seven-day grace period.';
+
+-- >>> supabase/schemas/25_handoffs/060_post_owner_actions.sql
+-- Handoffs · post management actions (publish, pause, resume, delete)
+--
+-- A device has no UPDATE privilege on posts.status: these are the named moves. Each one
+-- asks kc_private.can_manage_post — today the owner; later also an admin of the post's
+-- organization and the super admin — and then acts in the machine role `owner`.
+-- Errors: SQLSTATE P0001 — post_not_found, listing_wrong_status, listing_has_active_handoff,
+-- and whatever the post machine itself refuses (post_limit_exceeded, post_expired).
+
+-- A delivered post may be deleted by its manager like any other (design §12.1); the
+-- machine of the posts module only had this edge for the recipient un-mark (`system`).
+insert into kc_private.fsm_edge (machine_id, from_status, to_status, role) values
+  ('post', 'closed_delivered', 'deleted_no_recipient', 'owner');
+
+-- Publishes a draft.
+create function public.publish_post(p_post_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post constant public.posts := kc_private.post_lock_managed(p_post_id);
+begin
+  if v_post.status <> 'draft' then
+    raise exception 'listing_wrong_status' using errcode = 'P0001';
+  end if;
+  perform kc_private.post_move(p_post_id, 'open', 'owner');
+end;
+$$;
+comment on function public.publish_post(uuid) is 'Publishes a draft post (draft → open).';
+grant execute on function public.publish_post(uuid) to authenticated;
+
+-- Takes an open post off the air without closing it (D104). A reserved or confirmed
+-- handoff refuses the pause; registrations of an event that has not started are cancelled
+-- and each attendee is notified (D131).
+create function public.pause_post(p_post_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post constant public.posts := kc_private.post_lock_managed(p_post_id);
+begin
+  if v_post.status <> 'open' then
+    raise exception 'listing_wrong_status' using errcode = 'P0001';
+  end if;
+  if kc_private.post_has_active_handoff(p_post_id) then
+    raise exception 'listing_has_active_handoff' using errcode = 'P0001';
+  end if;
+  perform kc_private.post_move(p_post_id, 'paused', 'owner');
+end;
+$$;
+comment on function public.pause_post(uuid) is
+  'Pauses an open post; refused while a handoff is live, event registrations aside.';
+grant execute on function public.pause_post(uuid) to authenticated;
+
+-- Puts a paused post back on the air; refused after its expiry and beyond the open-post limit.
+create function public.resume_post(p_post_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post constant public.posts := kc_private.post_lock_managed(p_post_id);
+begin
+  if v_post.status <> 'paused' then
+    raise exception 'listing_wrong_status' using errcode = 'P0001';
+  end if;
+  perform kc_private.post_move(p_post_id, 'open', 'owner');
+end;
+$$;
+comment on function public.resume_post(uuid) is 'Resumes a paused post (paused → open).';
+grant execute on function public.resume_post(uuid) to authenticated;
+
+-- Deletes a published post in any status (design §12.1), also while members are
+-- registered or a handoff is live: every live handoff is cancelled with the reason
+-- `post_deleted` and its member is notified, then the post becomes `deleted_no_recipient`.
+-- Nothing is destroyed yet: the purge job removes the post after seven days, and until
+-- then public.reopen_post brings it back. A draft is deleted directly (it was never
+-- published); a post removed by moderation is not the owner's to delete.
+create function public.delete_post(p_post_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post constant public.posts := kc_private.post_lock_managed(p_post_id);
+  v_handoff_id uuid;
+begin
+  if v_post.status = 'draft' then
+    delete from public.posts p where p.id = p_post_id;
+    return;
+  end if;
+  if v_post.status in ('removed_admin', 'deleted_no_recipient') then
+    raise exception 'listing_wrong_status' using errcode = 'P0001';
+  end if;
+
+  for v_handoff_id in
+    select h.id from public.post_handoffs h
+     where h.post_id = p_post_id and h.status in ('waitlisted', 'reserved', 'confirmed')
+  loop
+    perform kc_private.handoff_move(v_handoff_id, 'cancelled', 'owner', 'post_deleted');
+  end loop;
+  perform kc_private.post_move(p_post_id, 'deleted_no_recipient', 'owner');
+end;
+$$;
+comment on function public.delete_post(uuid) is
+  'Deletes a post in any status: cancels and notifies its live handoffs, then moves it to deleted_no_recipient until the purge.';
+grant execute on function public.delete_post(uuid) to authenticated;
+
+-- >>> supabase/schemas/25_handoffs/070_post_closure_rpcs.sql
+-- Handoffs · closing and reopening a post (FR-CLOSURE-*)
+--
+-- "Mark as delivered" ends in one of two ways: with a named member (`closed_delivered`) or
+-- without one (`deleted_no_recipient`, purged after seven days). Both can be reopened by
+-- the owner; a named member can remove their own mark. Counters, karma events, chat and
+-- push events follow from the status changes (030, 050); nothing is repeated here.
+-- Errors: SQLSTATE P0001 — post_not_found, closure_wrong_status,
+-- closure_recipient_not_in_chat, world_not_assignable, listing_has_active_handoff,
+-- reopen_window_expired, not_recipient_or_wrong_status.
+
+-- Closes an open post naming the member who received it (or, on a request, who gave):
+-- FR-CLOSURE-003 AC5, FR-CLOSURE-011. A handoff that member already holds is completed;
+-- otherwise one is created already handed over. Anyone else waiting is cancelled as
+-- superseded. For worlds where one member takes the whole post; a ride or a stay assigns
+-- its seats through its own module.
+create function public.close_post_with_recipient(p_post_id uuid, p_recipient_id uuid)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post constant public.posts := kc_private.post_lock_managed(p_post_id);
+  v_handoff public.post_handoffs;
+begin
+  if v_post.status <> 'open' then
+    raise exception 'closure_wrong_status' using errcode = 'P0001';
+  end if;
+  if kc_private.handoff_flow_of(v_post.world_slug, v_post.kind_id) is null then
+    raise exception 'world_not_assignable' using errcode = 'P0001';
+  end if;
+  -- The member must be someone who could have taken the post: not the owner, active, inside
+  -- the post's audience, and not blocked in either direction.
+  if p_recipient_id is null or p_recipient_id = v_post.owner_id
+     or not kc_private.post_open_to_member(v_post, p_recipient_id) then
+    raise exception 'closure_recipient_not_in_chat' using errcode = 'P0001';
+  end if;
+
+  select h.* into v_handoff from public.post_handoffs h
+   where h.post_id = p_post_id and h.recipient_id = p_recipient_id
+     and h.status in ('reserved', 'confirmed')
+     for update;
+  if found then
+    v_handoff := kc_private.handoff_move(v_handoff.id, 'handed_over', 'owner');
+  else
+    insert into public.post_handoffs (post_id, recipient_id, status)
+    values (p_post_id, p_recipient_id, 'handed_over')
+    returning * into v_handoff;
+  end if;
+
+  -- Closing cancels every other live handoff of the post (050).
+  perform kc_private.post_move(p_post_id, 'closed_delivered', 'owner');
+  return v_handoff;
+end;
+$$;
+comment on function public.close_post_with_recipient(uuid, uuid) is
+  'Closes an open post as delivered to the named member and returns their handoff.';
+grant execute on function public.close_post_with_recipient(uuid, uuid) to authenticated;
+
+-- Closes an open post as delivered without naming anyone (FR-CLOSURE-003 AC6): it counts
+-- as given, becomes `deleted_no_recipient` and is purged after seven days unless reopened.
+-- Refused while a handoff is live (D104) — the owner settles it first, or names its member.
+create function public.close_post_without_recipient(p_post_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post constant public.posts := kc_private.post_lock_managed(p_post_id);
+begin
+  if v_post.status <> 'open' then
+    raise exception 'closure_wrong_status' using errcode = 'P0001';
+  end if;
+  if kc_private.post_has_active_handoff(p_post_id) then
+    raise exception 'listing_has_active_handoff' using errcode = 'P0001';
+  end if;
+
+  -- Recorded before the move, which reads it to decide the owner's counter.
+  insert into public.post_closures (post_id, delivered) values (p_post_id, true)
+  on conflict (post_id) do update set delivered = true;
+  perform kc_private.post_move(p_post_id, 'deleted_no_recipient', 'owner');
+end;
+$$;
+comment on function public.close_post_without_recipient(uuid) is
+  'Closes an open post as delivered to nobody in particular; purged after seven days unless reopened.';
+grant execute on function public.close_post_without_recipient(uuid) to authenticated;
+
+-- Reopens a closed or deleted post (FR-CLOSURE-005); also the undo of public.delete_post.
+--   closed_delivered      the recipient mark of a single-taker post is withdrawn (the
+--                         handoff is cancelled as `reopened`; nobody is notified, D-6)
+--   deleted_no_recipient  only inside the seven-day grace period
+-- The open-post limit applies as for any post becoming open (FR-POST-011).
+create function public.reopen_post(p_post_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post constant public.posts := kc_private.post_lock_managed(p_post_id);
+  v_handoff_id uuid;
+begin
+  if v_post.status not in ('closed_delivered', 'deleted_no_recipient') then
+    raise exception 'closure_wrong_status' using errcode = 'P0001';
+  end if;
+  if v_post.status = 'deleted_no_recipient' and exists (
+       select 1 from public.post_closures c where c.post_id = p_post_id and c.purge_after <= now()) then
+    raise exception 'reopen_window_expired' using errcode = 'P0001';
+  end if;
+
+  if kc_private.handoff_flow_of(v_post.world_slug, v_post.kind_id) is not null then
+    for v_handoff_id in
+      select h.id from public.post_handoffs h where h.post_id = p_post_id and h.status = 'handed_over'
+    loop
+      perform kc_private.handoff_move(v_handoff_id, 'cancelled', 'owner', 'reopened');
+    end loop;
+  end if;
+  perform kc_private.post_move(p_post_id, 'open', 'owner');
+end;
+$$;
+comment on function public.reopen_post(uuid) is
+  'Returns a closed_delivered post, or a deleted_no_recipient post inside its grace period, to open.';
+grant execute on function public.reopen_post(uuid) to authenticated;
+
+-- The member named as recipient removes their own mark (FR-CLOSURE-007). The post stays a
+-- delivery in the owner's counter but has no recipient any more, so it moves to
+-- `deleted_no_recipient`: the owner may reopen it, name someone else, or let it be purged.
+-- The owner is notified (FR-NOTIF-010) and the removal is recorded for the audit trail.
+create function public.recipient_unmark_self(p_post_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_handoff_id uuid;
+begin
+  -- Post first, then the handoff: the same lock order as a concurrent reopen by the owner.
+  perform 1 from public.posts p where p.id = p_post_id for update;
+  select h.id into v_handoff_id
+    from public.post_handoffs h
+    join public.posts p on p.id = h.post_id
+   where h.post_id = p_post_id and h.recipient_id = v_user_id and h.status = 'handed_over'
+     and h.machine_id = 'giving_handoff' and p.status = 'closed_delivered'
+     for update of h;
+  if not found then
+    raise exception 'not_recipient_or_wrong_status' using errcode = 'P0001';
+  end if;
+
+  perform kc_private.handoff_move(v_handoff_id, 'cancelled', 'recipient', 'unmarked');
+  perform kc_private.post_move(p_post_id, 'deleted_no_recipient', 'system');
+  perform kc_private.outbox_enqueue('audit', jsonb_build_object(
+    'action', 'recipient_unmarked', 'actor_id', v_user_id,
+    'entity', jsonb_build_object('type', 'post', 'id', p_post_id),
+    'data', jsonb_build_object('handoff_id', v_handoff_id)));
+end;
+$$;
+comment on function public.recipient_unmark_self(uuid) is
+  'The caller removes their recipient mark from a delivered post; the post moves to deleted_no_recipient.';
+grant execute on function public.recipient_unmark_self(uuid) to authenticated;
+
+-- >>> supabase/schemas/25_handoffs/080_handoff_sweeps.sql
+-- Handoffs · sweeps (run by the scheduler as the service role)
+--
+-- Time-driven moves, all in the machine role `system`. Each is safe to run concurrently
+-- with itself and with member actions: rows are claimed with SKIP LOCKED and re-checked by
+-- the machine on the move.
+
+-- A reservation the owner did not answer by `confirm_by` lapses (`expired`), in every
+-- world: the seat is free again and both members are notified (FR-NOTIF-018 AC3b). Before,
+-- only some worlds swept the deadline and a stale request could hold a post indefinitely.
+create function kc_private.handoff_reservation_expiry_sweep(p_limit integer default 500)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_handoff_id uuid;
+  v_count integer := 0;
+begin
+  for v_handoff_id in
+    select h.id from public.post_handoffs h
+     where h.status = 'reserved' and h.confirm_by < now()
+     order by h.confirm_by
+     limit least(greatest(p_limit, 1), 5000)
+       for update skip locked
+  loop
+    perform kc_private.handoff_move(v_handoff_id, 'cancelled', 'system', 'expired');
+    v_count := v_count + 1;
+  end loop;
+  return v_count;
+end;
+$$;
+comment on function kc_private.handoff_reservation_expiry_sweep(integer) is
+  'Cancels reservations left unanswered past confirm_by; returns how many.';
+
+-- A confirmed pickup of the giving machine whose window ended more than two hours ago is a
+-- no-show: the handoff ends and the post, still open, can be taken by someone else. Stays
+-- and events record a no-show by hand; rides have none.
+create function kc_private.handoff_no_show_sweep(p_limit integer default 500)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_handoff_id uuid;
+  v_count integer := 0;
+begin
+  for v_handoff_id in
+    select h.id from public.post_handoffs h
+     where h.status = 'confirmed' and h.machine_id = 'giving_handoff'
+       and h.pickup_window_end < now() - interval '2 hours'
+     order by h.pickup_window_end
+     limit least(greatest(p_limit, 1), 5000)
+       for update skip locked
+  loop
+    perform kc_private.handoff_move(v_handoff_id, 'no_show', 'system');
+    v_count := v_count + 1;
+  end loop;
+  return v_count;
+end;
+$$;
+comment on function kc_private.handoff_no_show_sweep(integer) is
+  'Marks confirmed pickups two hours past their window as no_show; returns how many.';
+
+-- >>> supabase/schemas/25_handoffs/090_handoff_booking_details.sql
+-- Handoffs · handoff_booking_details (the stay behind a housing booking)
+--
+-- 1:1 with a handoff of a housing post: dates, party, the guest's message and the notes
+-- of the decision. Table and access only; the booking RPCs that write it belong to the
+-- housing module.
+
+create table public.handoff_booking_details (
+  handoff_id          uuid primary key references public.post_handoffs (id) on delete cascade,
+  check_in_date       date not null,
+  check_out_date      date not null,
+  adults              smallint not null check (adults between 1 and 8),
+  minors              smallint not null default 0 check (minors between 0 and 7),
+  -- The guest's introduction to the host; required with every request.
+  message             text not null check (char_length(btrim(message)) between 1 and 500),
+  -- The guest confirmed that an adult guardian accompanies the minors.
+  minors_guardian_ack boolean not null default false,
+  -- The guest cancelled inside the late-cancellation window (FR-HOUSING-018).
+  late_cancel         boolean not null default false,
+  decision_note       text check (char_length(decision_note) <= 300),
+  cancel_note         text check (char_length(cancel_note) <= 300),
+  created_at          timestamptz not null default now(),
+  updated_at          timestamptz not null default now(),
+  constraint handoff_booking_details_party_chk check (adults + minors <= 8),
+  -- At least one night and at most thirty.
+  constraint handoff_booking_details_dates_chk
+    check (check_out_date > check_in_date and check_out_date - check_in_date <= 30)
+);
+comment on table public.handoff_booking_details is
+  'Stay dates, party and notes of a housing booking. Written only by server code.';
+
+create trigger handoff_booking_details_set_updated_at
+  before update on public.handoff_booking_details
+  for each row execute function kc_private.set_updated_at();
+
+alter table public.handoff_booking_details enable row level security;
+alter table public.handoff_booking_details force row level security;
+
+-- Visible exactly when the handoff is: the subquery runs under the caller's access to
+-- post_handoffs, so only the host and the guest match.
+create policy handoff_booking_details_select_party on public.handoff_booking_details
+  for select to authenticated
+  using (exists (select 1 from public.post_handoffs h where h.id = handoff_booking_details.handoff_id));
+
+grant select on public.handoff_booking_details to authenticated;
+
+-- >>> supabase/schemas/25_handoffs/100_private_location_release.sql
+-- Handoffs · release of a post's exact address (design §3.9)
+--
+-- The exact address is readable from the table by the post owner only. The other member
+-- of a handoff receives it through this RPC, and only once the handoff is confirmed —
+-- a request that is still waiting, was cancelled or ended as a no-show releases nothing.
+
+-- Returns the exact location of a post to a caller who manages it, or who holds a
+-- confirmed or completed handoff on it; null when the post has no exact address. A release
+-- to the other member is recorded as an `audit` event with ids only, never the address.
+--   post_not_found  the caller is neither (also when the post does not exist)
+create function public.get_post_private_location(p_post_id uuid)
+returns public.post_private_locations
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+  v_handoff_id uuid;
+  v_location public.post_private_locations;
+begin
+  if not kc_private.can_manage_post(p_post_id) then
+    select h.id into v_handoff_id
+      from public.post_handoffs h
+     where h.post_id = p_post_id and h.recipient_id = v_user_id
+       and h.status in ('confirmed', 'handed_over')
+     order by h.created_at desc
+     limit 1;
+    if not found then
+      raise exception 'post_not_found' using errcode = 'P0001';
+    end if;
+    perform kc_private.outbox_enqueue('audit', jsonb_build_object(
+      'action', 'post_private_location_released', 'actor_id', v_user_id,
+      'entity', jsonb_build_object('type', 'post', 'id', p_post_id),
+      'data', jsonb_build_object('handoff_id', v_handoff_id)));
+  end if;
+
+  select l.* into v_location from public.post_private_locations l where l.post_id = p_post_id;
+  return v_location;
+end;
+$$;
+comment on function public.get_post_private_location(uuid) is
+  'Exact address of a post, for its owner and for the member of a confirmed handoff; each release to that member is audited.';
+grant execute on function public.get_post_private_location(uuid) to authenticated;
+
+-- >>> supabase/schemas/25_handoffs/110_post_ratings.sql
+-- Handoffs · post_ratings (one two-sided rating for every post type, D15, D19)
+--
+-- After a handoff each member rates the other, 1 to 5 with an optional note. Members never
+-- see ratings — not the ones about them and not their own (D24): the table has no policy
+-- and no grant for a device, and the moderation module adds the admin read. Ratings feed
+-- the trust engine.
+
+create table public.post_ratings (
+  id         uuid primary key default gen_random_uuid(),
+  -- Kept (as null) when the handoff goes with a deleted post or account, so the rating of
+  -- the remaining member survives (design §4.1).
+  handoff_id uuid references public.post_handoffs (id) on delete set null,
+  -- Null once the rater's account is purged.
+  rater_id   uuid references public.users (id) on delete set null,
+  ratee_id   uuid not null references public.users (id) on delete cascade,
+  stars      smallint not null check (stars between 1 and 5),
+  comment    text check (char_length(comment) between 1 and 500),
+  created_at timestamptz not null default now(),
+  constraint post_ratings_distinct_members_chk check (rater_id <> ratee_id),
+  -- Each member rates a handoff once; also covers the handoff foreign key.
+  constraint post_ratings_once_key unique (handoff_id, rater_id)
+);
+comment on table public.post_ratings is
+  'Ratings between the two members of a handoff. Not readable by members (D24).';
+
+-- A member's ratings for the trust engine and the admin view, newest first; covers ratee_id.
+create index post_ratings_ratee_recent_idx on public.post_ratings (ratee_id, created_at desc, id desc);
+-- Covers the rater foreign key (account purge).
+create index post_ratings_rater_idx on public.post_ratings (rater_id) where rater_id is not null;
+
+alter table public.post_ratings enable row level security;
+alter table public.post_ratings force row level security;
+
+-- Rates the other member of a handoff the caller took part in.
+--   invalid_rating          stars outside 1–5, or a note longer than 500 characters
+--   handoff_not_found       no such handoff, or it was not handed over
+--   not_participant         the caller is not one of its two members
+--   handoff_already_rated   the caller already rated it; a rating is final, since its
+--                           author cannot read it back
+-- The spec sets no time limit for rating. A `karma` event rewards the rater once.
+create function public.rate_handoff(p_handoff_id uuid, p_stars integer, p_comment text default null)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_comment constant text := nullif(btrim(p_comment), '');
+  v_handoff public.post_handoffs;
+begin
+  if p_stars is null or p_stars not between 1 and 5 or char_length(v_comment) > 500 then
+    raise exception 'invalid_rating' using errcode = 'P0001';
+  end if;
+  select h.* into v_handoff from public.post_handoffs h
+   where h.id = p_handoff_id and h.status = 'handed_over';
+  if not found then
+    raise exception 'handoff_not_found' using errcode = 'P0001';
+  end if;
+  if v_user_id not in (v_handoff.owner_id, v_handoff.recipient_id) then
+    raise exception 'not_participant' using errcode = 'P0001';
+  end if;
+
+  insert into public.post_ratings (handoff_id, rater_id, ratee_id, stars, comment)
+  values (p_handoff_id, v_user_id,
+          case v_user_id when v_handoff.owner_id then v_handoff.recipient_id else v_handoff.owner_id end,
+          p_stars, v_comment)
+  on conflict (handoff_id, rater_id) do nothing;
+  if not found then
+    raise exception 'handoff_already_rated' using errcode = 'P0001';
+  end if;
+
+  perform kc_private.outbox_enqueue('karma', jsonb_build_object(
+    'kind', 'rating_given', 'handoff_id', p_handoff_id, 'post_id', v_handoff.post_id,
+    'rater_id', v_user_id));
+end;
+$$;
+comment on function public.rate_handoff(uuid, integer, text) is
+  'The caller rates the other member of a handed-over handoff, once.';
+grant execute on function public.rate_handoff(uuid, integer, text) to authenticated;
