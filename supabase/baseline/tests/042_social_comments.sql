@@ -117,7 +117,8 @@ select throws_ok($$insert into public.post_comments (post_id, author_id, body)
   '23514', null, 'a comment body is stored trimmed and non-empty');
 select is((select string_agg(kind || ':' || right(recipient, 1) || '=' || n, ' ' order by kind)
      from (select payload ->> 'kind' as kind, payload ->> 'recipient_id' as recipient, count(*) as n
-             from kc_private.outbox_events where topic = 'notification' group by 1, 2) e),
+             from kc_private.outbox_events
+            where topic = 'notification' and payload ->> 'kind' like 'post\_%' group by 1, 2) e),
   'post_comment:a=3 post_comment_reply:b=1 post_mention:c=1',
   'a comment notifies the post owner, a reply its parent''s author, a mention the member named: each once, never the author');
 

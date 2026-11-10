@@ -72,7 +72,7 @@ as $$
   update public.user_private set notification_preferences = p_preferences where user_id = pg_temp.id(p_who);
 $$;
 
-select plan(65);
+select plan(66);
 
 -- Alice, Bob, Carol and Dan are active; Eve has not confirmed her email. Dan blocked Bob.
 insert into auth.users (id, email, raw_app_meta_data)
@@ -237,6 +237,13 @@ delete from auth.users where id = pg_temp.id('b');
 select is((select count(*) from public.notifications where user_id = pg_temp.id('b'))
     + (select count(*) from kc_private.notification_dedupe where user_id = pg_temp.id('b')),
   0::bigint, 'removing an account removes its notifications and dedupe keys');
+
+-- Cross-module contract: every kind the engagement module emits is registered, otherwise
+-- delivery would reject its events.
+select is(
+  (select count(*) from kc_private.notification_kinds
+    where kind in ('post_reaction', 'post_comment', 'post_comment_reply', 'post_mention')),
+  4::bigint, 'the engagement kinds emitted by the social module are registered');
 
 select * from finish();
 rollback;

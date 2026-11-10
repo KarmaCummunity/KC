@@ -6932,6 +6932,16 @@ select k.kind, 'critical', m.machine = 'ride_booking',
             || replace(initcap(replace(split_part(m.machine, '_', 2) || '_' || c.change, '_', ' ')), ' ', '')
             as camel) k;
 
+-- Engagement on a post (emitted by 30_social; spec 07 §7.9, §7.11). Social kinds are shown
+-- in the notification centre only; events about one post merge within the hour (S10).
+insert into kc_private.notification_kinds
+  (kind, category, sends_push, group_window, title_key, body_key)
+values
+  ('post_reaction', 'social', false, interval '1 hour', 'notifications.postReactionTitle', 'notifications.postReactionBody'),
+  ('post_comment', 'social', false, interval '1 hour', 'notifications.postCommentTitle', 'notifications.postCommentBody'),
+  ('post_comment_reply', 'social', false, interval '1 hour', 'notifications.postCommentReplyTitle', 'notifications.postCommentReplyBody'),
+  ('post_mention', 'social', false, interval '1 hour', 'notifications.postMentionTitle', 'notifications.postMentionBody');
+
 -- >>> supabase/schemas/50_notifications/020_notifications.sql
 -- Notifications · notifications (the in-app notification centre, D7, D26)
 --
