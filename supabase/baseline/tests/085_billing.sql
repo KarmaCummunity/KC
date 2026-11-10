@@ -389,7 +389,10 @@ select is(pg_temp.act('f', $$select public.finance_account_upsert(&aid, null, 'B
   'the treasurer keeps accounts and entries; balances count cleared entries');
 create temporary table t_entry as
   select (select id from billing.org_finance_entries where kind = 'expense') as manual,
-         (select id from billing.org_finance_entries where source_ref like 'payment:%' order by created_at, id limit 1) as synced;
+         (select e.id from billing.org_finance_entries e
+           where e.source_ref like 'payment:%'
+             and e.org_id = (select o.id from public.organizations o where o.slug = 'aid')
+           order by e.id limit 1) as synced;
 grant select on t_entry to public;
 select is(pg_temp.act('f', $$select public.finance_ledger_mark(&aid, (select manual from t_entry), null, true)$$)
   || '|' || pg_temp.act('f', $$select public.finance_ledger_upsert(&aid, (select manual from t_entry), null, 9999)$$)
