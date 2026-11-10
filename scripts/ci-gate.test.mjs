@@ -1,7 +1,7 @@
 // Unit tests for scripts/ci-gate.mjs. Run: node --test scripts/ci-gate.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { deferralErrors, evaluateGate, mergeReused } from './ci-gate.mjs';
+import { EDIT_LANES, deferralErrors, evaluateGate, mergeReused } from './ci-gate.mjs';
 
 const ok = { result: 'success' };
 const skipped = { result: 'skipped' };
@@ -113,6 +113,16 @@ test('a review on a release PR needs the reused release lane to have passed', ()
 test('mergeReused leaves an optional lane alone when this ci.yml has no such job', () => {
   const { release: _release, ...own } = REVIEW_OWN;
   assert.equal('release' in mergeReused(own, { release: 'success' }), false);
+});
+
+test('an edited event keeps its own hygiene and static results and reuses the rest', () => {
+  const own = { changes: ok, hygiene: ok, static: ok, release: skipped, frontend: skipped, backend: skipped, edge: skipped, bundles: skipped };
+  const reused = { hygiene: 'failure', static: 'failure', release: 'skipped', frontend: 'success', backend: 'skipped', edge: 'skipped', bundles: 'skipped' };
+  const merged = mergeReused(own, reused, EDIT_LANES);
+  assert.deepEqual(merged.hygiene, ok);
+  assert.deepEqual(merged.static, ok);
+  assert.deepEqual(merged.frontend, ok);
+  assert.deepEqual(evaluateGate({ ...PR, event: 'pull_request', baseRef: 'dev', needs: merged, plan: REVIEW_PLAN }), []);
 });
 
 // Heavy lanes (D-195 addendum: PR = fast feedback, merge queue = full gate).
