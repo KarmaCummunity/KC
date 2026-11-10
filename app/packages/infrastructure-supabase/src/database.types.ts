@@ -14784,6 +14784,10 @@ export type Database = {
         Returns: Json
       }
       kc_dev_seed_demo_match_candidates: { Args: never; Returns: number }
+      kc_dev_seed_demo_org_events: {
+        Args: { p_caller: string }
+        Returns: number
+      }
       kc_dev_seed_demo_post_media: { Args: never; Returns: undefined }
       kc_dev_seed_demo_rides: { Args: never; Returns: undefined }
       kc_dev_seed_demo_user_profiles: { Args: never; Returns: undefined }

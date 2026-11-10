@@ -600,6 +600,7 @@ The kc-dev environment carries fake demo data (the `seed/kc-dev` seed). A super 
 - AC7. When no demo data exists, the screen offers "Restore demo data" (`admin_seed_demo_data`): it wipes any leftovers and recreates the demo users, content and nonprofits immediately, with no external workflow. The seed logic lives in the database (`kc_dev_seed_demo_data`, `0592`); `seed/kc-dev/seed.sql` is a thin wrapper over the same function.
 - AC8. Restoring works only on a database carrying the dev marker row in `kc_dev_demo_config` (kc-dev). Anywhere else it fails with `not_dev_environment` and the screen explains that restoring is unavailable.
 - AC9. The demo users' login password is typed once (min 8 characters), stored only as a bcrypt hash, and reused on later restores. Each restore is audit-logged (`admin_seed_demo_data`).
+- AC10. **(2026-11-10, `0732`)** The restore's organizations step also makes the admin who runs it an `org_admin` of each demo nonprofit, and publishes two upcoming events per demo nonprofit through the real create path (an open event with automatic registration, and a small one that needs the organizer's approval), with seed members registered, so the event flow (G18) can be tried at once. The wipe removes them with the nonprofits.
 
 **Related.** `supabase/tests/0591_admin_demo_data_reset.sql` · `supabase/tests/0592_admin_seed_demo_data.sql` · `SupabaseDemoDataRepository` · `supabase/seed/kc-dev/`.
 
