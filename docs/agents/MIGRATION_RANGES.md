@@ -107,7 +107,7 @@ Last applied on kc-dev when this was written: `0239`.
 | 0550 | kc_support payee phone for bit / paybox (#1587; taken while the G1 range was claimed, G1 step 1 moved to `0551–0553`) | merged |
 | 0551–0569 | G1 one Post model (ADR-006): `0551–0553` step 1 additive schema (merged), `0554` step 2 posts own the listing worlds (merged), `0555` step 3a post_handoffs is the handoff record (merged), `0556` step 3b ride / knowledge booking RPCs and readers accept a post id (merged), `0557` step 3b-pre a post for every listing + `posts.feed_hidden` (merged), `0558` step 3b″ ride / knowledge writers on `post_handoffs` (merged), `0559` step 3c one closing system for items, G34 (merged), `0560` step 4a listing detail `feed_hidden` (merged), `0561` step 4b listing detail by post id (merged), `0562` step 4c listing notifications open the post (merged), `0563` step 5 event posts (merged), `0564` step 5c event waitlist and attendance (merged), `0565` step 6a-1 leaf readers on posts (merged #1892), `0566–0569` step 6 (later step 6 files take `0620–0639`) | in progress |
 | 0570 | knowledge topic graph: `knowledge_topics`, aliases, follows, resolve / propose / review RPCs, six shelves (FR-KNOW-001) | in progress |
-| 0571–0589 | knowledge world K1–K2 (`spec/23_knowledge.md` FR-KNOW-002..020) | claimed (spec only, no files yet) |
+| 0571–0589 | — (returned by #2034: knowledge SQL redefines functions of `0667` / `0684` / `0694` and must sort after them) | free |
 | 0590 | users.date_of_birth + rpc_set_date_of_birth (FR-AUTH-010 AC2.d) | in progress |
 | 0591 | admin demo-data status + wipe (FR-ADMIN-031) | in progress |
 | 0592 | admin restore demo data: seed moved into the DB (FR-ADMIN-031) | in progress |
@@ -132,11 +132,12 @@ Last applied on kc-dev when this was written: `0239`.
 | 0692 | G1 compatibility views (`listings`, `giving_handoffs`, `ride_listings`) follow the base tables' access rules | merged (#2017) |
 | 0693 | composer items posts get their listing kind on insert (regression from 0666) | in progress |
 | 0700 | #1398 `give_food` no longer requires `food_type` (the food type is the world sub-category) | in progress |
-| 0703+ | — | free |
+| 0703–0714 | knowledge exchange posts, epic #1687 (KNOW-K1-B): `0703` six kinds, slots as rows, slot rules and sync (#2034), `0704` slot bookings, sweeps, pushes (#2034), `0705–0714` children #2035–#2039 | in progress |
+| 0715+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0703+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0715+`.
 
 ## How to claim
 

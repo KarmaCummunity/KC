@@ -60,8 +60,10 @@ begin
   perform kc_test.assert_true(p_row.listing_id is not null, p_message || ': a listing id');
   perform kc_test.assert_eq(p_row.listing_id, public.listing_id_of_post(r.post_id),
     p_message || ': the listing of the record''s post');
-  -- requested_meeting_point (0649) lives on the record only; giving_handoffs has no such column.
-  perform kc_test.assert_eq(to_jsonb(p_row) - 'listing_id', to_jsonb(r) - 'post_id' - 'requested_meeting_point',
+  -- requested_meeting_point (0649) and knowledge_slot_id (0703) live on the record only;
+  -- giving_handoffs has no such columns.
+  perform kc_test.assert_eq(to_jsonb(p_row) - 'listing_id',
+    to_jsonb(r) - 'post_id' - 'requested_meeting_point' - 'knowledge_slot_id',
     p_message || ': every other column is the record''s (ids, seats, timestamps, reason)');
 
   if exists (select 1 from pg_trigger where tgname = 'post_handoffs_giving_sync') then
@@ -129,7 +131,8 @@ begin
           and p.proname in ('reserve_item_giving', 'confirm_item_handoff', 'claim_food_giving',
                             'mark_giving_handed_over', 'book_ride_seat', 'confirm_ride_booking',
                             'decline_ride_booking', 'cancel_ride_booking', 'complete_ride_trip',
-                            'book_knowledge_slot', 'complete_knowledge_session',
+                            'book_knowledge_slot', 'book_knowledge_seat', 'confirm_knowledge_booking',
+                            'decline_knowledge_booking', 'complete_knowledge_session',
                             'request_housing_booking', 'decide_housing_booking', 'cancel_housing_booking',
                             'complete_housing_booking', 'mark_housing_no_show', 'delete_my_listing')
           and p.prosrc ~* 'from\s+public\.giving_handoffs'$q$,
@@ -140,12 +143,18 @@ begin
           and p.proname in ('reserve_item_giving', 'confirm_item_handoff', 'claim_food_giving',
                             'mark_giving_handed_over', 'book_ride_seat', 'confirm_ride_booking',
                             'decline_ride_booking', 'cancel_ride_booking', 'complete_ride_trip',
-                            'book_knowledge_slot', 'complete_knowledge_session',
+                            'book_knowledge_seat', 'confirm_knowledge_booking', 'decline_knowledge_booking',
+                            'complete_knowledge_session',
                             'request_housing_booking', 'decide_housing_booking', 'cancel_housing_booking',
                             'complete_housing_booking', 'mark_housing_no_show')
           and p.prorettype = 'public.giving_handoffs'::regtype
           and p.prosrc ~ 'giving_handoff_row_of'$q$,
-    16, 'the sixteen writers still return giving_handoffs, built by the helper');
+    18, 'the eighteen writers still return giving_handoffs, built by the helper');
+  -- The pre-slot entry point (0704) delegates to book_knowledge_seat, which builds the row.
+  perform kc_test.assert_true(
+    (select prosrc ~ 'book_knowledge_seat' and prorettype = 'public.giving_handoffs'::regtype
+       from pg_proc where oid = 'public.book_knowledge_slot(uuid)'::regprocedure),
+    'book_knowledge_slot returns the seat booking''s row');
 end $$;
 
 -- ── 1. items: reserve, confirm, hand over ─────────────────────────────────────────────────────
