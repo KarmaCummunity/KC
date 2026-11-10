@@ -57,3 +57,37 @@ grant usage on schema public to anon, authenticated, service_role;
 alter default privileges for role postgres in schema public grant all on tables to anon, authenticated, service_role;
 alter default privileges for role postgres in schema public grant all on sequences to anon, authenticated, service_role;
 alter default privileges for role postgres in schema public grant all on functions to anon, authenticated, service_role;
+
+-- Minimal realtime schema: the table Broadcast authorization policies are written on, the
+-- topic accessor those policies call, and `realtime.send`, which on the platform stores the
+-- event in the same table. Tests read `realtime.messages` to assert what was broadcast.
+create schema if not exists realtime;
+grant usage on schema realtime to authenticated, service_role;
+
+create table if not exists realtime.messages (
+  id uuid not null default gen_random_uuid(),
+  topic text not null,
+  extension text not null,
+  payload jsonb,
+  event text,
+  private boolean default false,
+  inserted_at timestamp not null default now()
+);
+alter table realtime.messages enable row level security;
+grant select, insert on realtime.messages to authenticated;
+
+create or replace function realtime.topic()
+returns text
+language sql
+stable
+as $$
+  select nullif(current_setting('realtime.topic', true), '');
+$$;
+
+create or replace function realtime.send(payload jsonb, event text, topic text, private boolean default true)
+returns void
+language sql
+as $$
+  insert into realtime.messages (payload, event, topic, private, extension)
+  values (payload, event, topic, private, 'broadcast');
+$$;

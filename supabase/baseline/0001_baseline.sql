@@ -1455,6 +1455,12 @@ begin
              'closure_explainer_dismissed', p.closure_explainer_dismissed,
              'first_post_nudge_dismissed', p.first_post_nudge_dismissed,
              'basic_info_skipped', p.basic_info_skipped),
+           -- ↓ Added by the messaging and notifications modules: the two badges of the top bar
+           -- (FR-CHAT-012, spec 07 §7.11). Both functions are created by those modules.
+           'unread', jsonb_build_object(
+             'chats', public.chat_unread_total(),
+             'notifications', public.notifications_unread_count()),
+           -- ↑ End of the messaging and notifications addition.
            'legal', (
              -- Documents in force whose last material version the caller has not accepted.
              -- `modal` blocks the app; `banner` is the 7-day notice of a standard change,
@@ -1491,7 +1497,7 @@ begin
 end;
 $$;
 comment on function public.bootstrap_session() is
-  'Session start in one call: account gate, private profile, legal consent prompt.';
+  'Session start in one call: account gate, private profile, unread badges, legal consent prompt.';
 grant execute on function public.bootstrap_session() to authenticated;
 
 -- >>> supabase/schemas/15_social_graph/010_follows.sql
@@ -5793,3 +5799,1747 @@ begin
     for delete to authenticated
     using (bucket_id = 'post-images' and (storage.foldername(name))[1] = (select auth.uid())::text);
 end $$;
+
+-- >>> supabase/schemas/40_messaging/010_chats.sql
+-- Messaging · chats and their members (docs/db/target-design.md §3.5)
+--
+-- A chat is a conversation; who takes part is a row per member in `chat_members`, which also
+-- holds everything that is personal to that member: how far they have read and whether they
+-- removed the chat from their own inbox. Two kinds exist today:
+--   direct   exactly two members, one chat per pair (D13, D126), optionally pinned to a post
+--   support  a member's thread with the support team (FR-CHAT-007); staff join as members
+-- A group or organizer chat is one more `kind` with any number of member rows: nothing in
+-- this module assumes two members except the columns named `direct_*`.
+
+create table public.chats (
+  id              uuid primary key default gen_random_uuid(),
+  kind            text not null check (kind in ('direct', 'support')),
+  -- The pair of a direct chat, ordered (a < b), so that one unique index guarantees a single
+  -- chat per pair whoever opens it first. A member who leaves the product leaves a null:
+  -- the other member keeps the thread (FR-CHAT-013) and a new account never inherits it.
+  direct_user_a   uuid references public.users (id) on delete set null,
+  direct_user_b   uuid references public.users (id) on delete set null,
+  -- The member a support thread belongs to.
+  support_user_id uuid references public.users (id) on delete set null,
+  -- The post the conversation is about right now (D13, FR-CHAT-014). The last entry from a
+  -- post wins; closing the post clears it (050_chat_system_messages.sql).
+  anchor_post_id  uuid references public.posts (id) on delete set null,
+  -- Time of the newest message; null until the first one. Orders the inbox and is the
+  -- value a member's read marker advances to.
+  last_message_at timestamptz,
+  created_at      timestamptz not null default now(),
+  constraint chats_direct_pair_chk
+    check (kind = 'direct' or (direct_user_a is null and direct_user_b is null)),
+  constraint chats_direct_order_chk check (direct_user_a < direct_user_b),
+  constraint chats_support_user_chk check (kind = 'support' or support_user_id is null),
+  constraint chats_anchor_chk check (kind = 'direct' or anchor_post_id is null)
+);
+comment on table public.chats is 'Conversations. Membership and per-member state live in chat_members.';
+
+-- One direct chat per pair; also the lookup of open_direct_chat and the foreign key on
+-- direct_user_a.
+create unique index chats_direct_pair_uidx on public.chats (direct_user_a, direct_user_b)
+  where kind = 'direct';
+-- Foreign key on direct_user_b (account removal).
+create index chats_direct_user_b_idx on public.chats (direct_user_b) where direct_user_b is not null;
+-- One support thread per member; also the foreign key on support_user_id.
+create unique index chats_support_user_uidx on public.chats (support_user_id) where kind = 'support';
+-- Chats pinned to a post: the closing line written when the post closes; also the foreign key.
+create index chats_anchor_post_idx on public.chats (anchor_post_id) where anchor_post_id is not null;
+
+create table public.chat_members (
+  chat_id      uuid not null references public.chats (id) on delete cascade,
+  user_id      uuid not null references public.users (id) on delete cascade,
+  -- 'support_agent' marks staff in a support thread.
+  role         text not null default 'member' check (role in ('member', 'support_agent')),
+  -- Read marker: every message created after it and not sent by the member is unread.
+  -- There is no per-message read state (state-machines.md §7 Q3).
+  last_read_at timestamptz not null default now(),
+  -- Set when the member removed the chat from their own inbox (FR-CHAT-016); cleared by
+  -- the next message in the chat or when the member opens the chat again.
+  hidden_at    timestamptz,
+  joined_at    timestamptz not null default now(),
+  primary key (chat_id, user_id)
+);
+comment on table public.chat_members is
+  'Members of a chat with their personal state: read marker and inbox hide.';
+
+-- A member's chats: inbox page and unread counters; also the foreign key on user_id.
+create index chat_members_user_idx on public.chat_members (user_id, chat_id);
+
+-- Membership follows the kind of the chat: a direct chat holds only its pair, and the only
+-- plain member of a support thread is the member it belongs to.
+create function kc_private.chat_members_guard()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_chat public.chats;
+begin
+  select c.* into v_chat from public.chats c where c.id = new.chat_id;
+  if (v_chat.kind = 'direct' and new.user_id not in (v_chat.direct_user_a, v_chat.direct_user_b))
+     or (v_chat.kind = 'direct' and new.role <> 'member')
+     or (v_chat.kind = 'support'
+         and (new.role = 'member') <> (new.user_id is not distinct from v_chat.support_user_id)) then
+    raise exception 'chat_member_not_allowed' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+comment on function kc_private.chat_members_guard() is
+  'BEFORE INSERT on chat_members: a direct chat admits only its pair; a support thread one plain member.';
+
+create trigger chat_members_guard
+  before insert on public.chat_members
+  for each row execute function kc_private.chat_members_guard();
+
+-- A chat nobody is a member of any more is removed with its messages: this happens when
+-- the last member's account is purged (design §4.1).
+create function kc_private.chat_members_remove_empty_chats()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  delete from public.chats c
+   where c.id in (select o.chat_id from old_rows o)
+     and not exists (select 1 from public.chat_members cm where cm.chat_id = c.id);
+  return null;
+end;
+$$;
+comment on function kc_private.chat_members_remove_empty_chats() is
+  'AFTER DELETE on chat_members (per statement): deletes chats left without members.';
+
+create trigger chat_members_remove_empty_chats
+  after delete on public.chat_members
+  referencing old table as old_rows
+  for each statement execute function kc_private.chat_members_remove_empty_chats();
+
+-- True when the caller is a member of the chat and may currently use it. A block between
+-- the two members of a direct chat closes it to both, in both directions, for as long as
+-- the block exists (D105); lifting the block brings the thread back (FR-CHAT-009 AC2).
+-- A support thread is never closed by a block (D33). Definer rights: the predicate reads
+-- membership rows and block rows the caller cannot select directly.
+create function kc_access.can_access_chat(p_chat_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+      from public.chat_members cm
+      join public.chats c on c.id = cm.chat_id
+     where cm.chat_id = p_chat_id
+       and cm.user_id = (select auth.uid())
+       and not (c.kind = 'direct' and kc_access.is_blocked_between(c.direct_user_a, c.direct_user_b)));
+$$;
+comment on function kc_access.can_access_chat(uuid) is
+  'Policy predicate: the caller is a member of the chat and no block closes it.';
+grant execute on function kc_access.can_access_chat(uuid) to authenticated;
+
+alter table public.chats enable row level security;
+alter table public.chats force row level security;
+alter table public.chat_members enable row level security;
+alter table public.chat_members force row level security;
+
+-- Members read their chats. Nothing is writable from a device: chats are opened, read and
+-- hidden through the RPCs of 030_chat_rpcs.sql.
+create policy chats_select_member on public.chats
+  for select to authenticated
+  using (kc_access.can_access_chat(id));
+
+-- Members see who else is in the chat and how far each has read (read receipts,
+-- FR-CHAT-002 AC4).
+create policy chat_members_select_member on public.chat_members
+  for select to authenticated
+  using (kc_access.can_access_chat(chat_id));
+
+grant select on public.chats to authenticated;
+-- `hidden_at` is left out: whether a member removed the chat from their inbox is not shown
+-- to the other member (FR-CHAT-016).
+grant select (chat_id, user_id, role, last_read_at, joined_at) on public.chat_members to authenticated;
+
+-- >>> supabase/schemas/40_messaging/020_messages.sql
+-- Messaging · messages and reactions
+--
+-- A message is written once and never changes: there is no edit and no delete from a device
+-- (the spec has neither; removal by a moderator arrives with the moderation module). Rows
+-- are inserted only by server code — `public.send_message` for members,
+-- `kc_private.chat_post_system_message` for the product — so the rules that need a stable
+-- error for the app (blocked pair, inactive account, retry of the same message) live in
+-- one place and a system message can never be forged.
+
+create table public.messages (
+  id              uuid primary key default gen_random_uuid(),
+  chat_id         uuid not null references public.chats (id) on delete cascade,
+  -- Null for a system message, and for a message whose sender's account was removed: the
+  -- other member keeps the text, shown as from a deleted user (FR-CHAT-013, design §4.1).
+  sender_id       uuid references public.users (id) on delete set null,
+  kind            text not null default 'user',
+  body            text,
+  -- System message: `{ "kind": "<snake_case>", … }`. The app renders the text from it, so
+  -- no user-visible wording is stored here.
+  system_payload  jsonb,
+  -- Media message: `{ "type": "image" | "video" | "voice" | "location" | "post_share", … }`.
+  media_payload   jsonb,
+  -- Detected BCP 47 language of the body; written by the translation pipeline.
+  source_language text check (char_length(source_language) between 2 and 35),
+  -- Assigned by trigger, strictly increasing inside a chat (see messages_stamp below).
+  created_at      timestamptz not null default clock_timestamp(),
+  -- The one shape rule: what each kind must and must not carry (FR-CHAT-002 AC5: 2,000).
+  -- `coalesce` makes a missing value fail the rule instead of leaving it undecided.
+  constraint messages_shape_chk check (coalesce(
+    case kind
+      when 'user' then
+        char_length(body) between 1 and 2000 and system_payload is null and media_payload is null
+      when 'media' then
+        coalesce(char_length(body), 1) between 1 and 2000 and system_payload is null
+        and jsonb_typeof(media_payload) = 'object'
+        and media_payload ->> 'type' in ('image', 'video', 'voice', 'location', 'post_share')
+      when 'system' then
+        body is null and media_payload is null and sender_id is null
+        and jsonb_typeof(system_payload) = 'object'
+        and jsonb_typeof(system_payload -> 'kind') = 'string'
+      else false
+    end, false))
+);
+comment on table public.messages is 'Chat messages. Immutable; read state is chat_members.last_read_at.';
+
+-- The one index of the chat screens: a page of a chat (keyset on created_at), the newest
+-- message of a chat for the inbox preview, and the unread count
+-- (`chat_id = … and created_at > last_read_at`). Unique because the stamp trigger makes
+-- created_at strictly increasing inside a chat, which is what lets a single timestamp be
+-- the page cursor and the read marker.
+create unique index messages_chat_created_uidx on public.messages (chat_id, created_at desc);
+-- Foreign key on sender_id (account removal).
+create index messages_sender_idx on public.messages (sender_id) where sender_id is not null;
+
+-- Gives the message its time and moves the chat's `last_message_at` to it. The update takes
+-- the chat's row lock, so writers of one chat queue up and each gets a time later than the
+-- one before it, in commit order. A reader who marks the chat read up to `last_message_at`
+-- therefore never skips a message that commits afterwards.
+create function kc_private.messages_stamp()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  update public.chats c
+     set last_message_at = greatest(clock_timestamp(), c.last_message_at + interval '1 microsecond')
+   where c.id = new.chat_id
+  returning c.last_message_at into new.created_at;
+  return new;
+end;
+$$;
+comment on function kc_private.messages_stamp() is
+  'BEFORE INSERT on messages: assigns a per-chat increasing created_at and advances chats.last_message_at.';
+
+create trigger messages_stamp
+  before insert on public.messages
+  for each row execute function kc_private.messages_stamp();
+
+-- What follows from a new message, of any kind:
+--   1. the chat returns to the inbox of every member who had removed it (FR-CHAT-016 AC5)
+--   2. one `notification` event per other member (FR-NOTIF-001/002/003, FR-CHAT-003 AC4).
+--      A member blocked with the sender gets none. The event carries ids only — the
+--      worker reads the preview text when it builds the push — so no message text is ever
+--      copied into the queue.
+create function kc_private.messages_apply_effects()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_chat public.chats;
+  v_to uuid;
+begin
+  update public.chat_members cm
+     set hidden_at = null
+   where cm.chat_id = new.chat_id and cm.hidden_at is not null;
+
+  select c.* into v_chat from public.chats c where c.id = new.chat_id;
+  for v_to in
+    select cm.user_id
+      from public.chat_members cm
+     where cm.chat_id = new.chat_id
+       and cm.user_id is distinct from new.sender_id
+       and not kc_access.is_blocked_between(cm.user_id, new.sender_id)
+  loop
+    perform kc_private.outbox_enqueue('notification', jsonb_build_object(
+      'kind', case
+                when new.kind = 'system' then 'system_message'
+                -- An answer from the support team to the member the thread belongs to.
+                when v_chat.kind = 'support' and v_to = v_chat.support_user_id then 'support_message'
+                else 'chat_message'
+              end,
+      'recipient_id', v_to,
+      'actor_id', new.sender_id,
+      'entity', jsonb_build_object('type', 'chat', 'id', new.chat_id),
+      'data', jsonb_build_object('message_id', new.id, 'message_kind', new.kind)));
+  end loop;
+  return null;
+end;
+$$;
+comment on function kc_private.messages_apply_effects() is
+  'AFTER INSERT on messages: un-hides the chat for its members and enqueues their notifications.';
+
+create trigger messages_apply_effects
+  after insert on public.messages
+  for each row execute function kc_private.messages_apply_effects();
+
+alter table public.messages enable row level security;
+alter table public.messages force row level security;
+
+-- Members of the chat read its messages; a block that closes the chat closes them too.
+create policy messages_select_member on public.messages
+  for select to authenticated
+  using (kc_access.can_access_chat(chat_id));
+
+grant select on public.messages to authenticated;
+
+-- ── Reactions ───────────────────────────────────────────────────────────────
+-- One reaction per member per message; set and cleared through set_message_reaction.
+create table public.message_reactions (
+  message_id    uuid not null references public.messages (id) on delete cascade,
+  user_id       uuid not null references public.users (id) on delete cascade,
+  reaction_type text not null check (reaction_type in ('like', 'love', 'laugh', 'sad')),
+  created_at    timestamptz not null default now(),
+  primary key (message_id, user_id)
+);
+comment on table public.message_reactions is 'A member''s reaction to a chat message.';
+
+-- Foreign key on user_id (account removal).
+create index message_reactions_user_idx on public.message_reactions (user_id);
+
+alter table public.message_reactions enable row level security;
+alter table public.message_reactions force row level security;
+
+-- Visible exactly when the message is: the subquery runs under the caller's own access to
+-- `messages`.
+create policy message_reactions_select_member on public.message_reactions
+  for select to authenticated
+  using (exists (select 1 from public.messages m where m.id = message_reactions.message_id));
+
+grant select on public.message_reactions to authenticated;
+
+-- >>> supabase/schemas/40_messaging/030_chat_rpcs.sql
+-- Messaging · RPCs that write (open, send, read, hide, react)
+--
+-- Nothing in this module is writable from a device. Errors are raised with SQLSTATE P0001
+-- and a stable snake_case message the app maps to its error types.
+
+-- Opens the caller's conversation with a member: the pair's existing chat, or a new one
+-- (FR-CHAT-006, FR-CHAT-017, D13). Two members opening at the same moment get the same
+-- chat: the unique index on the pair decides, not a lookup. Entering from a post pins the
+-- chat to that post, replacing an earlier pin; entering without one keeps the pin
+-- (FR-CHAT-014 AC6). A chat the caller had removed from their inbox comes back.
+create function public.open_direct_chat(p_user_id uuid, p_anchor_post_id uuid default null)
+returns public.chats
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_chat public.chats;
+begin
+  if p_user_id is null or p_user_id = v_user_id then
+    raise exception 'cannot_chat_self' using errcode = 'P0001';
+  end if;
+  if not exists (select 1 from public.users u where u.id = p_user_id and u.is_active) then
+    raise exception 'user_unavailable' using errcode = 'P0001';
+  end if;
+  if kc_access.is_blocked_between(v_user_id, p_user_id) then
+    raise exception 'blocked_relationship' using errcode = 'P0001';
+  end if;
+  -- The pin must be an open post of one of the two members (FR-CHAT-005).
+  if p_anchor_post_id is not null and not exists (
+       select 1 from public.posts p
+        where p.id = p_anchor_post_id and p.status = 'open'
+          and p.owner_id in (v_user_id, p_user_id)) then
+    raise exception 'post_unavailable' using errcode = 'P0001';
+  end if;
+
+  insert into public.chats as c (kind, direct_user_a, direct_user_b, anchor_post_id)
+  values ('direct', least(v_user_id, p_user_id), greatest(v_user_id, p_user_id), p_anchor_post_id)
+  on conflict (direct_user_a, direct_user_b) where kind = 'direct'
+  do update set anchor_post_id = coalesce(excluded.anchor_post_id, c.anchor_post_id)
+  returning c.* into v_chat;
+
+  insert into public.chat_members (chat_id, user_id)
+  values (v_chat.id, v_user_id), (v_chat.id, p_user_id)
+  on conflict do nothing;
+
+  update public.chat_members cm
+     set hidden_at = null
+   where cm.chat_id = v_chat.id and cm.user_id = v_user_id and cm.hidden_at is not null;
+  return v_chat;
+end;
+$$;
+comment on function public.open_direct_chat(uuid, uuid) is
+  'Returns the caller''s one chat with a member, creating it if needed; optionally pins it to a post.';
+grant execute on function public.open_direct_chat(uuid, uuid) to authenticated;
+
+-- Opens the caller's thread with the support team (FR-CHAT-007): one per member, created on
+-- first use. Open to every signed-in member whatever their account status, so that a
+-- suspended member can still reach support (D33).
+create function public.open_support_thread()
+returns public.chats
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+  v_chat public.chats;
+begin
+  insert into public.chats as c (kind, support_user_id)
+  values ('support', v_user_id)
+  on conflict (support_user_id) where kind = 'support'
+  do update set support_user_id = excluded.support_user_id
+  returning c.* into v_chat;
+
+  insert into public.chat_members (chat_id, user_id)
+  values (v_chat.id, v_user_id)
+  on conflict do nothing;
+  return v_chat;
+end;
+$$;
+comment on function public.open_support_thread() is 'Returns the caller''s support thread, creating it on first use.';
+grant execute on function public.open_support_thread() to authenticated;
+
+-- Sends a message as the caller. A text message has a body; a media message has a payload
+-- and an optional caption. `p_message_id` is the id the app gave the message when it
+-- showed it optimistically: sending the same id again returns the stored message instead
+-- of a second one, so a retry after a lost answer is safe (FR-CHAT-003 AC3).
+-- A message to a member whose account is gone or inactive is stored and simply not
+-- delivered (FR-CHAT-013 AC2).
+create function public.send_message(
+  p_chat_id uuid,
+  p_body text,
+  p_media_payload jsonb default null,
+  p_message_id uuid default null
+)
+returns public.messages
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+  v_body constant text := nullif(btrim(p_body), '');
+  v_chat public.chats;
+  v_message public.messages;
+begin
+  select c.* into v_chat
+    from public.chats c
+    join public.chat_members cm on cm.chat_id = c.id and cm.user_id = v_user_id
+   where c.id = p_chat_id;
+  if not found then
+    raise exception 'chat_not_found' using errcode = 'P0001';
+  end if;
+  -- Only a support thread is open to a member whose account is not active (D33).
+  if v_chat.kind <> 'support' then
+    perform kc_private.require_active_caller();
+  end if;
+  if v_chat.kind = 'direct' and kc_access.is_blocked_between(v_chat.direct_user_a, v_chat.direct_user_b) then
+    raise exception 'blocked_relationship' using errcode = 'P0001';
+  end if;
+
+  select m.* into v_message
+    from public.messages m
+   where m.id = p_message_id and m.chat_id = p_chat_id and m.sender_id = v_user_id;
+  if found then
+    return v_message;
+  end if;
+
+  if p_media_payload is null and (v_body is null or char_length(v_body) > 2000) then
+    raise exception 'message_body_invalid' using errcode = 'P0001';
+  end if;
+  if p_media_payload is not null and (
+       jsonb_typeof(p_media_payload) <> 'object'
+       or coalesce(p_media_payload ->> 'type', '') not in ('image', 'video', 'voice', 'location', 'post_share')
+       or char_length(v_body) > 2000) then
+    raise exception 'invalid_media_payload' using errcode = 'P0001';
+  end if;
+
+  insert into public.messages (id, chat_id, sender_id, kind, body, media_payload)
+  values (
+    coalesce(p_message_id, gen_random_uuid()), p_chat_id, v_user_id,
+    case when p_media_payload is null then 'user' else 'media' end, v_body, p_media_payload)
+  returning * into v_message;
+  return v_message;
+end;
+$$;
+comment on function public.send_message(uuid, text, jsonb, uuid) is
+  'Sends a text or media message to a chat the caller is a member of; idempotent on p_message_id.';
+grant execute on function public.send_message(uuid, text, jsonb, uuid) to authenticated;
+
+-- Marks the chat read for the caller: the read marker moves to the newest message, of any
+-- kind, in one statement (FR-CHAT-011 AC2, AC4). It never moves backwards.
+create function public.mark_chat_read(p_chat_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+begin
+  if not kc_access.can_access_chat(p_chat_id) then
+    raise exception 'chat_not_found' using errcode = 'P0001';
+  end if;
+  update public.chat_members cm
+     set last_read_at = c.last_message_at
+    from public.chats c
+   where c.id = cm.chat_id and cm.chat_id = p_chat_id and cm.user_id = v_user_id
+     and c.last_message_at > cm.last_read_at;
+end;
+$$;
+comment on function public.mark_chat_read(uuid) is 'Advances the caller''s read marker in a chat to its newest message.';
+grant execute on function public.mark_chat_read(uuid) to authenticated;
+
+-- Removes the chat from the caller's own inbox (FR-CHAT-016). The other member is not
+-- affected and is not told. The support thread cannot be hidden (AC1).
+create function public.hide_chat(p_chat_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+  v_kind text;
+begin
+  select c.kind into v_kind
+    from public.chats c
+    join public.chat_members cm on cm.chat_id = c.id and cm.user_id = v_user_id
+   where c.id = p_chat_id;
+  if not found then
+    raise exception 'chat_not_found' using errcode = 'P0001';
+  end if;
+  if v_kind = 'support' then
+    raise exception 'support_thread_not_hideable' using errcode = 'P0001';
+  end if;
+  update public.chat_members cm
+     set hidden_at = now()
+   where cm.chat_id = p_chat_id and cm.user_id = v_user_id and cm.hidden_at is null;
+end;
+$$;
+comment on function public.hide_chat(uuid) is 'Hides a chat from the caller''s inbox until its next message.';
+grant execute on function public.hide_chat(uuid) to authenticated;
+
+-- Sets, changes or (with a null type) clears the caller's reaction to a message.
+create function public.set_message_reaction(p_message_id uuid, p_reaction_type text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+begin
+  if not exists (select 1 from public.messages m
+                  where m.id = p_message_id and kc_access.can_access_chat(m.chat_id)) then
+    raise exception 'message_not_found' using errcode = 'P0001';
+  end if;
+  if p_reaction_type is null then
+    delete from public.message_reactions r
+     where r.message_id = p_message_id and r.user_id = v_user_id;
+    return;
+  end if;
+  if p_reaction_type not in ('like', 'love', 'laugh', 'sad') then
+    raise exception 'invalid_reaction_type' using errcode = 'P0001';
+  end if;
+  insert into public.message_reactions as r (message_id, user_id, reaction_type)
+  values (p_message_id, v_user_id, p_reaction_type)
+  on conflict (message_id, user_id) do update set reaction_type = excluded.reaction_type
+  where r.reaction_type <> excluded.reaction_type;
+end;
+$$;
+comment on function public.set_message_reaction(uuid, text) is
+  'Sets, changes or clears the caller''s reaction to a message of a chat they are in.';
+grant execute on function public.set_message_reaction(uuid, text) to authenticated;
+
+-- True when the two members have exchanged at least one message in a direct chat. Used by
+-- the handoffs module for the "chat partners only" rule of the recipient picker
+-- (FR-CLOSURE-003 AC1).
+create function kc_private.members_share_chat(p_user_a uuid, p_user_b uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.chats c
+     where c.kind = 'direct'
+       and c.direct_user_a = least(p_user_a, p_user_b)
+       and c.direct_user_b = greatest(p_user_a, p_user_b)
+       and c.last_message_at is not null);
+$$;
+comment on function kc_private.members_share_chat(uuid, uuid) is
+  'The two members have a direct chat with at least one message.';
+
+-- >>> supabase/schemas/40_messaging/040_chat_reads.sql
+-- Messaging · RPCs that read (unread counters, inbox page, message page)
+--
+-- Each screen is one round trip. The functions run with definer rights and apply the access
+-- rule once per call (membership of the caller, no closing block) instead of once per row,
+-- which is what the row level policies would do for the same query.
+
+-- Unread messages per chat of one member: messages created after the member's read marker
+-- and not sent by them, counted on messages_chat_created_uidx. Chats the member removed
+-- from their inbox and direct chats closed by a block count nothing (FR-CHAT-012 AC4,
+-- FR-CHAT-009 AC1). A chat whose newest message is already read is skipped without
+-- touching `messages`.
+create function kc_private.chat_unread_counts(p_user_id uuid, p_chat_ids uuid[] default null)
+returns table (chat_id uuid, unread_count bigint)
+language sql
+stable
+set search_path = ''
+as $$
+  select cm.chat_id,
+         (select count(*) from public.messages m
+           where m.chat_id = cm.chat_id
+             and m.created_at > cm.last_read_at
+             and m.sender_id is distinct from p_user_id)
+    from public.chat_members cm
+    join public.chats c on c.id = cm.chat_id
+   where cm.user_id = p_user_id
+     and cm.hidden_at is null
+     and (p_chat_ids is null or cm.chat_id = any (p_chat_ids))
+     and c.last_message_at > cm.last_read_at
+     and not (c.kind = 'direct' and kc_access.is_blocked_between(c.direct_user_a, c.direct_user_b));
+$$;
+comment on function kc_private.chat_unread_counts(uuid, uuid[]) is
+  'Unread message count of each chat of a member that has any; all chats or the listed ones.';
+
+-- Badge on the chat icon: unread messages across all of the caller's chats (FR-CHAT-012).
+create function public.chat_unread_total()
+returns bigint
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(sum(n.unread_count), 0)::bigint
+    from kc_private.chat_unread_counts(kc_private.require_caller()) n;
+$$;
+comment on function public.chat_unread_total() is 'Unread messages across the caller''s chats.';
+grant execute on function public.chat_unread_total() to authenticated;
+
+-- Unread count of each listed chat; a chat with nothing unread is not returned.
+create function public.chat_unread_counts(p_chat_ids uuid[])
+returns table (chat_id uuid, unread_count bigint)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select n.chat_id, n.unread_count
+    from kc_private.chat_unread_counts(kc_private.require_caller(), p_chat_ids) n
+   where n.unread_count > 0;
+$$;
+comment on function public.chat_unread_counts(uuid[]) is 'Unread messages of each listed chat of the caller.';
+grant execute on function public.chat_unread_counts(uuid[]) to authenticated;
+
+-- One page of the caller's inbox, newest conversation first (FR-CHAT-001): the chat, the
+-- other member's display fields, a preview of the newest message and the unread count.
+-- Keyset on (last_message_at, chat_id): pass the last row's values to get the next page.
+-- Left out: chats without a message, chats the caller removed from their inbox, and direct
+-- chats closed by a block. The other member's fields are null when their account is gone
+-- or not active — the app shows the "deleted user" placeholder — and in the member's own
+-- support thread. `p_search` filters by the start of the other member's name (AC3).
+-- The page is cut first and only its rows get the preview and the count.
+create function public.chat_inbox_page(
+  p_limit integer default 30,
+  p_before_last_message_at timestamptz default null,
+  p_before_chat_id uuid default null,
+  p_search text default null
+)
+returns table (
+  chat_id uuid,
+  kind text,
+  anchor_post_id uuid,
+  last_message_at timestamptz,
+  counterpart_id uuid,
+  counterpart_display_name text,
+  counterpart_avatar_url text,
+  counterpart_share_handle text,
+  -- How far the other member has read: drives the read receipt on the caller's messages.
+  counterpart_last_read_at timestamptz,
+  last_message_id uuid,
+  last_message_kind text,
+  last_message_sender_id uuid,
+  last_message_preview text,
+  unread_count bigint
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with me as (select kc_private.require_caller() as id),
+  page as (
+    select c.id, c.kind, c.anchor_post_id, c.last_message_at, cm.last_read_at,
+           u.id as counterpart_id, u.display_name, u.avatar_url, u.share_handle
+      from me
+      join public.chat_members cm on cm.user_id = me.id and cm.hidden_at is null
+      join public.chats c on c.id = cm.chat_id
+      left join public.users u
+        on u.is_active
+       and u.id <> me.id
+       and u.id in (c.direct_user_a, c.direct_user_b, c.support_user_id)
+     where c.last_message_at is not null
+       and not (c.kind = 'direct' and kc_access.is_blocked_between(c.direct_user_a, c.direct_user_b))
+       and (p_before_last_message_at is null
+            or (c.last_message_at, c.id) < (p_before_last_message_at, p_before_chat_id))
+       and (nullif(btrim(p_search), '') is null
+            or u.display_name ilike
+               replace(replace(replace(btrim(p_search), '\', '\\'), '%', '\%'), '_', '\_') || '%')
+     order by c.last_message_at desc, c.id desc
+     limit least(greatest(coalesce(p_limit, 30), 1), 50))
+  select p.id, p.kind, p.anchor_post_id, p.last_message_at,
+         p.counterpart_id, p.display_name, p.avatar_url, p.share_handle,
+         (select om.last_read_at from public.chat_members om
+           where om.chat_id = p.id and om.user_id = p.counterpart_id),
+         lm.id, lm.kind, lm.sender_id, left(lm.body, 140),
+         (select count(*) from public.messages m
+           where m.chat_id = p.id and m.created_at > p.last_read_at
+             and m.sender_id is distinct from (select me.id from me))
+    from page p
+    left join lateral (
+      select m.id, m.kind, m.sender_id, m.body
+        from public.messages m
+       where m.chat_id = p.id
+       order by m.created_at desc
+       limit 1) lm on true
+   order by p.last_message_at desc, p.id desc;
+$$;
+comment on function public.chat_inbox_page(integer, timestamptz, uuid, text) is
+  'One page of the caller''s inbox: chat, other member, newest message preview, unread count.';
+grant execute on function public.chat_inbox_page(integer, timestamptz, uuid, text) to authenticated;
+
+-- Messages of a chat the caller is a member of. Without `p_after`: one page going back in
+-- time, newest first, starting before `p_before` (the conversation screen). With
+-- `p_after`: what arrived after that time, oldest first (catching up after a reconnect).
+-- `created_at` is unique inside a chat, so it is the whole cursor.
+create function public.chat_messages_page(
+  p_chat_id uuid,
+  p_limit integer default 50,
+  p_before timestamptz default null,
+  p_after timestamptz default null
+)
+returns setof public.messages
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_limit constant integer := least(greatest(coalesce(p_limit, 50), 1), 100);
+begin
+  perform kc_private.require_caller();
+  if not kc_access.can_access_chat(p_chat_id) then
+    raise exception 'chat_not_found' using errcode = 'P0001';
+  end if;
+
+  if p_after is not null then
+    return query
+      select m.* from public.messages m
+       where m.chat_id = p_chat_id and m.created_at > p_after
+       order by m.created_at
+       limit v_limit;
+  else
+    return query
+      select m.* from public.messages m
+       where m.chat_id = p_chat_id and (p_before is null or m.created_at < p_before)
+       order by m.created_at desc
+       limit v_limit;
+  end if;
+end;
+$$;
+comment on function public.chat_messages_page(uuid, integer, timestamptz, timestamptz) is
+  'A page of a chat''s messages for a member: backwards from p_before, or forwards from p_after.';
+grant execute on function public.chat_messages_page(uuid, integer, timestamptz, timestamptz) to authenticated;
+
+-- >>> supabase/schemas/40_messaging/050_chat_system_messages.sql
+-- Messaging · system messages and the consumer of outbox topic `chat_system_message`
+--
+-- A system message is a line the product writes into a chat ("the post was delivered").
+-- Its `system_payload` names what happened; the app renders the wording.
+--
+-- Contract of the topic, for every module that emits to it:
+--   { "kind": "<snake_case>",            what happened; becomes system_payload.kind
+--     "chat_id": "<uuid>"                 write into this one chat, or
+--     "post_id": "<uuid>",                write into every chat pinned to this post
+--     "data": { … } }                     optional; copied into system_payload as is
+-- Exactly one of `chat_id` / `post_id` is given. Member ids never go into `data`: a
+-- payload is readable by every member of the chat.
+-- Kind `post_closed` (FR-CHAT-015 AC3–AC7, FR-CLOSURE-001 AC4/AC6) also carries `status`
+-- and `recipient_id`: each pinned chat is told whether the post went to its own other
+-- member, to somebody else, or to nobody — never who — and loses its pin
+-- (FR-CHAT-014 AC6).
+
+-- Writes one system message into a chat and returns its id.
+create function kc_private.chat_post_system_message(p_chat_id uuid, p_system_payload jsonb)
+returns uuid
+language sql
+security definer
+set search_path = ''
+as $$
+  insert into public.messages (chat_id, kind, system_payload)
+  values (p_chat_id, 'system', p_system_payload)
+  returning id;
+$$;
+comment on function kc_private.chat_post_system_message(uuid, jsonb) is
+  'Writes a system message into a chat; members are notified like for any message.';
+
+-- Performs one `chat_system_message` event and returns the number of messages written.
+-- Safe to run twice for the same event: a `post_id` event clears the pin of every chat it
+-- writes to, and a `chat_id` event is recognised by the event id kept in the payload.
+create function kc_private.chat_system_messages_deliver(p_event_id bigint)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_event kc_private.outbox_events;
+  v_payload jsonb;
+  v_chat public.chats;
+  v_written integer := 0;
+begin
+  select e.* into v_event
+    from kc_private.outbox_events e
+   where e.id = p_event_id and e.topic = 'chat_system_message';
+  if not found then
+    raise exception 'outbox_event_not_found' using errcode = 'P0001';
+  end if;
+  if jsonb_typeof(v_event.payload -> 'kind') is distinct from 'string'
+     or ((v_event.payload ->> 'chat_id') is null) = ((v_event.payload ->> 'post_id') is null) then
+    raise exception 'invalid_chat_system_message' using errcode = 'P0001';
+  end if;
+  v_payload := coalesce(v_event.payload -> 'data', '{}'::jsonb)
+    || jsonb_build_object('kind', v_event.payload ->> 'kind', 'event_id', p_event_id);
+
+  for v_chat in
+    select c.*
+      from public.chats c
+     where c.id = (v_event.payload ->> 'chat_id')::uuid
+        or c.anchor_post_id = (v_event.payload ->> 'post_id')::uuid
+       for update
+  loop
+    continue when (v_event.payload ->> 'chat_id') is not null and exists (
+      select 1 from public.messages m
+       where m.chat_id = v_chat.id and m.created_at >= v_event.created_at
+         and m.kind = 'system' and m.system_payload -> 'event_id' = to_jsonb(p_event_id));
+
+    perform kc_private.chat_post_system_message(v_chat.id, case v_event.payload ->> 'kind'
+      when 'post_closed' then v_payload || jsonb_build_object(
+        'post_id', v_event.payload -> 'post_id',
+        'status', v_event.payload -> 'status',
+        'delivered_to_chat_member', coalesce(
+          (v_event.payload ->> 'recipient_id')::uuid in (v_chat.direct_user_a, v_chat.direct_user_b),
+          false))
+      else v_payload
+    end);
+    if (v_event.payload ->> 'kind') = 'post_closed' then
+      update public.chats c set anchor_post_id = null where c.id = v_chat.id;
+    end if;
+    v_written := v_written + 1;
+  end loop;
+  return v_written;
+end;
+$$;
+comment on function kc_private.chat_system_messages_deliver(bigint) is
+  'Consumer of outbox topic chat_system_message: writes the system message of one event.';
+
+-- Worker entry point: claims due events of the topic, performs each and confirms it. A
+-- failing event is released for a retry with its error and does not stop the batch.
+-- Returns the number of events performed. Needs no service outside the database, so it
+-- is run by a scheduled job.
+create function kc_private.chat_system_messages_process(p_limit integer default 100)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_event_id bigint;
+  v_done integer := 0;
+begin
+  for v_event_id in
+    select e.id from kc_private.outbox_claim('chat_system_message', p_limit) e order by e.id
+  loop
+    begin
+      perform kc_private.chat_system_messages_deliver(v_event_id);
+      perform kc_private.outbox_complete(v_event_id);
+      v_done := v_done + 1;
+    exception when others then
+      perform kc_private.outbox_complete(v_event_id, sqlerrm);
+    end;
+  end loop;
+  return v_done;
+end;
+$$;
+comment on function kc_private.chat_system_messages_process(integer) is
+  'Claims and performs a batch of chat_system_message events; run by a scheduled job.';
+
+-- >>> supabase/schemas/40_messaging/060_realtime.sql
+-- Messaging · realtime (docs/db/target-design.md §5 "Realtime", ADR-003)
+--
+-- Broadcast only: triggers send small events to private topics, and row level security on
+-- `realtime.messages` decides who may listen. No table is in a replication publication.
+-- All of the module's realtime wiring is in this file. The `realtime` schema belongs to the
+-- platform; where it is absent the baseline still applies and the triggers send nothing.
+--
+-- Topics (registry: docs/SSOT/social_realtime_conventions.md):
+--   chat:<chat_id>:messages   INSERT (the message row) · read · reaction · chat_updated
+--   chat:<chat_id>:typing     sent by clients (members of the chat)
+--   chat:<chat_id>:presence   sent by clients (members of the chat)
+--   user:<user_id>:chats      chat_updated — ids only: the member's inbox or badge changed
+-- A message body goes only to the chat's own topic, which only members who can read the
+-- message under RLS may join.
+
+-- Sends one event to a private topic. Does nothing where the platform function is absent.
+create function kc_private.broadcast(p_topic text, p_event text, p_payload jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if to_regproc('realtime.send') is not null then
+    perform realtime.send(p_payload, p_event, p_topic, true);
+  end if;
+end;
+$$;
+comment on function kc_private.broadcast(text, text, jsonb) is
+  'Broadcasts an event to a private realtime topic; a no-op without the realtime schema.';
+
+-- The uuid in the second segment of a topic (`chat:<uuid>:…`, `user:<uuid>:…`); null when
+-- the topic has none, so a malformed topic matches no policy instead of raising.
+create function kc_access.realtime_topic_uuid(p_topic text)
+returns uuid
+language sql
+immutable
+set search_path = ''
+as $$
+  select case
+    when split_part(p_topic, ':', 2) ~* '^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$'
+      then split_part(p_topic, ':', 2)::uuid
+  end;
+$$;
+comment on function kc_access.realtime_topic_uuid(text) is 'Policy helper: the uuid segment of a realtime topic.';
+grant execute on function kc_access.realtime_topic_uuid(text) to authenticated;
+
+-- One trigger function for the four tables whose changes members see live.
+create function kc_private.chat_broadcast_changes()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_chat_id uuid;
+  v_user_id uuid;
+begin
+  if tg_table_name = 'messages' then
+    perform kc_private.broadcast(
+      'chat:' || new.chat_id || ':messages', 'INSERT', jsonb_build_object('record', to_jsonb(new)));
+    -- Every member's inbox row and badge changed; the event carries no content.
+    for v_user_id in select cm.user_id from public.chat_members cm where cm.chat_id = new.chat_id loop
+      perform kc_private.broadcast('user:' || v_user_id || ':chats', 'chat_updated',
+        jsonb_build_object('chat_id', new.chat_id, 'last_message_at', new.created_at));
+    end loop;
+
+  elsif tg_table_name = 'chat_members' then
+    -- The other members see the read receipt; the member's other devices see the badge
+    -- and the inbox change. Hiding a chat is told to the member alone.
+    if new.last_read_at is distinct from old.last_read_at then
+      perform kc_private.broadcast('chat:' || new.chat_id || ':messages', 'read',
+        jsonb_build_object('user_id', new.user_id, 'last_read_at', new.last_read_at));
+    end if;
+    perform kc_private.broadcast('user:' || new.user_id || ':chats', 'chat_updated',
+      jsonb_build_object('chat_id', new.chat_id));
+
+  elsif tg_table_name = 'message_reactions' then
+    select m.chat_id into v_chat_id
+      from public.messages m where m.id = coalesce(new.message_id, old.message_id);
+    perform kc_private.broadcast('chat:' || v_chat_id || ':messages', 'reaction', jsonb_build_object(
+      'message_id', coalesce(new.message_id, old.message_id),
+      'user_id', coalesce(new.user_id, old.user_id),
+      'reaction_type', case when tg_op <> 'DELETE' then new.reaction_type end));
+
+  else
+    -- chats: the pinned post changed (FR-CHAT-014 AC6).
+    perform kc_private.broadcast('chat:' || new.id || ':messages', 'chat_updated',
+      jsonb_build_object('chat_id', new.id, 'anchor_post_id', new.anchor_post_id));
+  end if;
+  return null;
+end;
+$$;
+comment on function kc_private.chat_broadcast_changes() is
+  'AFTER trigger on messages, chat_members, message_reactions and chats: broadcasts the change.';
+
+create trigger messages_broadcast
+  after insert on public.messages
+  for each row execute function kc_private.chat_broadcast_changes();
+
+create trigger chat_members_broadcast
+  after update of last_read_at, hidden_at on public.chat_members
+  for each row
+  when (new.last_read_at is distinct from old.last_read_at or new.hidden_at is distinct from old.hidden_at)
+  execute function kc_private.chat_broadcast_changes();
+
+create trigger message_reactions_broadcast
+  after insert or update or delete on public.message_reactions
+  for each row execute function kc_private.chat_broadcast_changes();
+
+create trigger chats_broadcast
+  after update of anchor_post_id on public.chats
+  for each row
+  when (new.anchor_post_id is distinct from old.anchor_post_id)
+  execute function kc_private.chat_broadcast_changes();
+
+-- Who may listen and who may send. The policies exist only where the platform table does.
+do $$
+begin
+  if to_regclass('realtime.messages') is null then
+    return;
+  end if;
+
+  -- Every topic of a chat is open to the members who can currently use that chat.
+  execute $policy$
+    create policy kc_chat_topics_receive on realtime.messages
+      for select to authenticated
+      using ((select realtime.topic()) like 'chat:%'
+             and kc_access.can_access_chat(kc_access.realtime_topic_uuid((select realtime.topic()))))
+  $policy$;
+
+  -- A member's own topics (`user:<their id>:…`): inbox changes here, the notification
+  -- badge in the notifications module.
+  execute $policy$
+    create policy kc_user_topics_receive on realtime.messages
+      for select to authenticated
+      using ((select realtime.topic()) like 'user:%'
+             and kc_access.realtime_topic_uuid((select realtime.topic())) = (select auth.uid()))
+  $policy$;
+
+  -- Clients send only typing and presence, and only into chats they can use. Everything
+  -- else on a chat topic comes from the triggers above.
+  execute $policy$
+    create policy kc_chat_topics_send on realtime.messages
+      for insert to authenticated
+      with check (((select realtime.topic()) like 'chat:%:typing'
+                   or (select realtime.topic()) like 'chat:%:presence')
+                  and kc_access.can_access_chat(kc_access.realtime_topic_uuid((select realtime.topic()))))
+  $policy$;
+end $$;
+
+-- >>> supabase/schemas/50_notifications/010_notification_kinds.sql
+-- Notifications · registry of notification kinds
+--
+-- Modules do not send notifications: they record an outbox event on topic `notification`
+-- naming a kind, and this registry says what that kind is. The rows are vocabulary, like
+-- the edges of a state machine: one per kind the product can emit. A later module adds the
+-- rows of its own kinds next to the code that emits them.
+--
+-- Event payload (kc_private.outbox_enqueue('notification', …)):
+--   { "kind": "<kind>", "recipient_id": "<uuid>", "actor_id": "<uuid|null>",
+--     "entity": { "type": "<text>", "id": "<uuid>" },
+--     "data": { …, "dedupe_key": "<text, optional>" } }
+-- `data.dedupe_key`: a recipient gets at most one notification per key (FR-NOTIF-018 AC5).
+-- `data` is stored on the notification as the arguments of its text, without the key.
+
+create table kc_private.notification_kinds (
+  kind               text primary key check (kind ~ '^[a-z][a-z0-9_]{1,62}$'),
+  -- The two groups a member can switch off as a whole (FR-NOTIF-014, D5). `critical` is
+  -- the group the project book calls "important" (spec 07 §7.11).
+  category           text not null check (category in ('critical', 'social')),
+  -- Whether the kind is on for a member who never touched its own switch (FR-NOTIF-017).
+  default_enabled    boolean not null default true,
+  -- Account and safety notices: delivered whatever the member switched off, also to a
+  -- member whose account is not active and across a block.
+  bypass_preferences boolean not null default false,
+  -- Time-critical kinds are pushed during the member's quiet hours as well (D95).
+  bypass_quiet_hours boolean not null default false,
+  -- False = shown in the notification centre only, never pushed (S10: social).
+  sends_push         boolean not null default true,
+  -- Events of this kind about the same entity merge into one unread notification while
+  -- they arrive within this time of each other ("X and 3 others"); null = never merged.
+  group_window       interval check (group_window > interval '0'),
+  -- Keys of the texts in the app's locale files; the database stores no wording.
+  title_key          text not null,
+  body_key           text not null
+);
+comment on table kc_private.notification_kinds is
+  'Vocabulary of notification kinds: category, preference rules, channels, grouping, text keys.';
+
+alter table kc_private.notification_kinds enable row level security;
+alter table kc_private.notification_kinds force row level security;
+
+-- Messaging, follows, the recipient mark and the kinds of spec requirements/09 that no
+-- module emits yet (post_expiring, message_undeliverable, auto_removed, account_suspended,
+-- match_suggested).
+insert into kc_private.notification_kinds
+  (kind, category, bypass_preferences, sends_push, group_window, title_key, body_key)
+values
+  -- FR-NOTIF-001/002: messages of one chat merge while unread (S10: per entity per hour).
+  ('chat_message', 'critical', false, true, interval '1 hour', 'notifications.chatTitle', 'notifications.chatBody'),
+  ('support_message', 'critical', false, true, interval '1 hour', 'notifications.supportTitle', 'notifications.chatBody'),
+  -- FR-NOTIF-003.
+  ('system_message', 'critical', false, true, null, 'notifications.systemTitle', 'notifications.systemBody'),
+  -- FR-NOTIF-004.
+  ('message_undeliverable', 'critical', false, true, null,
+   'notifications.messageUndeliverableTitle', 'notifications.messageUndeliverableBody'),
+  -- FR-NOTIF-005.
+  ('post_expiring', 'critical', false, true, null, 'notifications.postExpiringTitle', 'notifications.postExpiringBody'),
+  -- FR-NOTIF-006/007/008. New followers merge within the hour (FR-NOTIF-007 AC3).
+  ('follow_request', 'social', false, false, null, 'notifications.followRequestTitle', 'notifications.followRequestBody'),
+  ('follow_started', 'social', false, false, interval '1 hour', 'notifications.followStartedTitle', 'notifications.followStartedBody'),
+  ('follow_approved', 'social', false, false, null, 'notifications.followApprovedTitle', 'notifications.followApprovedBody'),
+  -- FR-NOTIF-009/010.
+  ('mark_recipient', 'critical', false, true, null, 'notifications.markRecipientTitle', 'notifications.markRecipientBody'),
+  ('unmark_recipient', 'critical', false, true, null, 'notifications.unmarkRecipientTitle', 'notifications.unmarkRecipientBody'),
+  -- FR-NOTIF-011 and the suspension notice: the member has a right to know.
+  ('auto_removed', 'critical', true, true, null, 'notifications.autoRemovedTitle', 'notifications.autoRemovedBody'),
+  ('account_suspended', 'critical', true, true, null, 'notifications.accountSuspendedTitle', 'notifications.accountSuspendedBody'),
+  -- FR-NOTIF-017.
+  ('match_suggested', 'critical', false, true, null, 'notifications.matchSuggestedTitle', 'notifications.matchSuggestedBody');
+
+-- Handoff changes (FR-NOTIF-018, D73, D131, D138): one kind per machine and change, named
+-- `<machine>_<change>` by kc_private.handoff_notification_kind. All are critical; ride
+-- bookings are also pushed during quiet hours (D95). Text keys are the kind in camelCase.
+insert into kc_private.notification_kinds (kind, category, bypass_quiet_hours, title_key, body_key)
+select k.kind, 'critical', m.machine = 'ride_booking',
+       'notifications.' || k.camel || 'Title', 'notifications.' || k.camel || 'Body'
+  from unnest(array['giving_handoff', 'ride_booking', 'housing_booking', 'event_registration']) as m (machine)
+ cross join unnest(array[
+         'requested', 'claimed', 'confirmed', 'declined', 'cancelled', 'expired', 'completed',
+         'no_show', 'waitlist_promoted', 'reinstated']) as c (change)
+ cross join lateral (
+   select m.machine || '_' || c.change as kind,
+          split_part(m.machine, '_', 1)
+            || replace(initcap(replace(split_part(m.machine, '_', 2) || '_' || c.change, '_', ' ')), ' ', '')
+            as camel) k;
+
+-- >>> supabase/schemas/50_notifications/020_notifications.sql
+-- Notifications · notifications (the in-app notification centre, D7, D26)
+--
+-- One row per notification a member sees. Rows are written only by the delivery function
+-- (030_notification_delivery.sql) and are append-mostly, so the table is partitioned by
+-- month on `created_at`: retention (180 days) drops whole partitions instead of deleting
+-- rows. Partitions are plain declarative ones, created ahead of time by
+-- kc_private.notifications_ensure_partition; they live in `kc_private`, so only this
+-- parent is part of the API.
+
+create table public.notifications (
+  id          uuid not null default gen_random_uuid(),
+  user_id     uuid not null references public.users (id) on delete cascade,
+  -- A kind of kc_private.notification_kinds; `category` and the text keys are copied from
+  -- it at delivery, so reading the centre never touches the private registry. No foreign
+  -- key: the only writer takes the values from the registry row itself.
+  kind        text not null,
+  category    text not null check (category in ('critical', 'social')),
+  -- Giving world of the entity, for the world filter of the centre; null when none.
+  world_slug  text,
+  -- What the notification is about and where a tap leads (a chat, a post handoff, a member).
+  entity_type text,
+  entity_id   uuid,
+  title_key   text not null,
+  body_key    text not null,
+  -- Arguments of the text and of the tap route, as sent by the emitting module (ids,
+  -- statuses). Display names are not stored: the app resolves them from `actor_ids`.
+  data        jsonb not null default '{}'::jsonb check (jsonb_typeof(data) = 'object'),
+  -- Set for kinds that merge: later events with the same key join this row while it is
+  -- unread and inside the kind's group window.
+  group_key   text,
+  -- Members who caused the notification, newest first, at most five; `group_count` is the
+  -- number of merged events ("X and 3 others").
+  actor_ids   uuid[] not null default '{}',
+  group_count integer not null default 1 check (group_count >= 1),
+  read_at     timestamptz,
+  created_at  timestamptz not null default now(),
+  -- Last merge; equal to created_at for a notification that never merged.
+  updated_at  timestamptz not null default now(),
+  primary key (id, created_at)
+) partition by range (created_at);
+comment on table public.notifications is
+  'In-app notification centre of a member. Written by server code; partitioned by month, kept 180 days.';
+
+-- The centre, newest first: keyset on (created_at, id).
+create index notifications_user_recent_idx on public.notifications (user_id, created_at desc, id desc);
+-- Unread rows of a member: the badge count, "mark all read", and the lookup of the open
+-- group a new event merges into.
+create index notifications_user_unread_idx on public.notifications (user_id, group_key)
+  where read_at is null;
+
+alter table public.notifications enable row level security;
+alter table public.notifications force row level security;
+
+-- A member reads their own notifications. Marking them read goes through RPCs.
+create policy notifications_select_self on public.notifications
+  for select to authenticated
+  using (user_id = (select auth.uid()));
+
+grant select on public.notifications to authenticated;
+
+-- Rows whose month has no partition yet land here, so a missed scheduler run never fails a
+-- delivery; ensure_partition moves them out when it creates the month.
+create table kc_private.notifications_default partition of public.notifications default;
+alter table kc_private.notifications_default enable row level security;
+alter table kc_private.notifications_default force row level security;
+
+-- Creates the partition of the month containing p_day, if it does not exist. Rows of that
+-- month waiting in the default partition are moved into it. Run monthly, one month ahead.
+create function kc_private.notifications_ensure_partition(p_day date)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_from constant date := date_trunc('month', p_day)::date;
+  v_to constant date := (v_from + interval '1 month')::date;
+  v_name constant text := 'notifications_y' || to_char(v_from, 'YYYY"m"MM');
+begin
+  if to_regclass('kc_private.' || v_name) is not null then
+    return;
+  end if;
+  execute format('create table kc_private.%I (like public.notifications including defaults including constraints)', v_name);
+  execute format('alter table kc_private.%I enable row level security', v_name);
+  execute format('alter table kc_private.%I force row level security', v_name);
+  execute format(
+    'with moved as (delete from kc_private.notifications_default d
+                     where d.created_at >= %L and d.created_at < %L returning d.*)
+     insert into kc_private.%I select * from moved', v_from, v_to, v_name);
+  execute format(
+    'alter table public.notifications attach partition kc_private.%I for values from (%L) to (%L)',
+    v_name, v_from, v_to);
+end;
+$$;
+comment on function kc_private.notifications_ensure_partition(date) is
+  'Creates the monthly partition of notifications for the given day, if missing.';
+
+-- The month the baseline is applied in and the one after it.
+do $$
+begin
+  perform kc_private.notifications_ensure_partition(current_date);
+  perform kc_private.notifications_ensure_partition((current_date + interval '1 month')::date);
+end $$;
+
+-- Dedupe ledger: one row per (member, key) that already produced a notification. Kept apart
+-- from the partitioned table because a uniqueness guarantee cannot span partitions.
+create table kc_private.notification_dedupe (
+  user_id    uuid not null references public.users (id) on delete cascade,
+  dedupe_key text not null check (char_length(dedupe_key) between 1 and 200),
+  created_at timestamptz not null default now(),
+  primary key (user_id, dedupe_key)
+);
+comment on table kc_private.notification_dedupe is
+  'Keys that already produced a notification for a member; purged with the notifications.';
+-- Retention purge: keys older than the window.
+create index notification_dedupe_created_idx on kc_private.notification_dedupe (created_at);
+
+alter table kc_private.notification_dedupe enable row level security;
+alter table kc_private.notification_dedupe force row level security;
+
+-- Retention (180 days): drops every monthly partition that lies entirely before the
+-- window, and deletes older rows left in the default partition and in the dedupe ledger.
+-- Returns the number of partitions dropped. Run daily.
+create function kc_private.notifications_purge(p_keep interval default interval '180 days')
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_cutoff constant timestamptz := now() - p_keep;
+  v_partition record;
+  v_dropped integer := 0;
+begin
+  for v_partition in
+    select c.relname
+      from pg_catalog.pg_inherits i
+      join pg_catalog.pg_class c on c.oid = i.inhrelid
+     where i.inhparent = 'public.notifications'::regclass
+       and c.relname ~ '^notifications_y\d{4}m\d{2}$'
+       -- The partition ends where the next month begins.
+       and to_date(substr(c.relname, 16), 'YYYY"m"MM') + interval '1 month' <= v_cutoff
+  loop
+    execute format('drop table kc_private.%I', v_partition.relname);
+    v_dropped := v_dropped + 1;
+  end loop;
+
+  delete from kc_private.notifications_default d where d.created_at < v_cutoff;
+  delete from kc_private.notification_dedupe d where d.created_at < v_cutoff;
+  return v_dropped;
+end;
+$$;
+comment on function kc_private.notifications_purge(interval) is
+  'Retention: drops monthly partitions older than the window and purges the dedupe ledger.';
+
+-- >>> supabase/schemas/50_notifications/030_notification_delivery.sql
+-- Notifications · delivery (the consumer of outbox topic `notification`)
+--
+-- A worker — the `dispatch-notification` Edge Function, running as the service role — asks
+-- for a batch with kc_private.notifications_deliver_batch(). For each event the database
+-- decides everything that needs data: whether the member wants the notification, whether
+-- it merges into an existing one, and whether a push may be sent now. The worker only
+-- renders the text and talks to the push provider.
+--
+-- Result of one event (jsonb):
+--   { "event_id": 1, "status": "delivered" | "skipped", "reason": "<why skipped>",
+--     "notification_id": "<uuid>", "group_count": 1,
+--     "push": null | { "tokens": [{ "token", "platform" }], "title_key", "body_key",
+--                      "args": { …event data, "actor_display_name" },
+--                      "data": { "notification_id", "kind", "category", "entity", "group_count" },
+--                      "collapse_key": "<group key|null>" } }
+-- `push` is null when nothing may be pushed: the kind is centre-only, the member is in
+-- quiet hours, or has no device. For chat kinds `args.message_id` names the message; the
+-- worker reads its preview itself, so message text never passes through the queue.
+-- The event is confirmed in the same transaction as the notification row, so a notification
+-- is written exactly once; a push is sent at most once.
+
+-- Whether a member wants a kind: the switch of its category (FR-NOTIF-014) and the kind's
+-- own switch, which falls back to the kind's default (FR-NOTIF-017). Only an explicit
+-- JSON boolean counts, whatever else a client stored in the preferences.
+create function kc_private.notification_kind_enabled(p_preferences jsonb, p_kind kc_private.notification_kinds)
+returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  select p_preferences -> p_kind.category is distinct from 'false'::jsonb
+     and case p_preferences -> 'kinds' -> p_kind.kind
+           when 'true'::jsonb then true
+           when 'false'::jsonb then false
+           else p_kind.default_enabled
+         end;
+$$;
+comment on function kc_private.notification_kind_enabled(jsonb, kc_private.notification_kinds) is
+  'A member''s preferences allow the kind: category switch and per-kind switch.';
+
+-- Whether p_at falls in the member's quiet hours (spec 07 §7.11): preferences
+-- `quietHours { enabled, start, end, timezone }`, by default 22:00–08:00 Israel time once
+-- enabled. A window may cross midnight. Values a client stored that cannot be read as a
+-- time or a time zone mean "no quiet hours" rather than a failed delivery.
+create function kc_private.notification_in_quiet_hours(p_preferences jsonb, p_at timestamptz default now())
+returns boolean
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  v_quiet constant jsonb := p_preferences -> 'quietHours';
+  v_start time;
+  v_end time;
+  v_local time;
+begin
+  if v_quiet -> 'enabled' is distinct from 'true'::jsonb then
+    return false;
+  end if;
+  v_start := coalesce(v_quiet ->> 'start', '22:00')::time;
+  v_end := coalesce(v_quiet ->> 'end', '08:00')::time;
+  v_local := (p_at at time zone coalesce(v_quiet ->> 'timezone', 'Asia/Jerusalem'))::time;
+  if v_start <= v_end then
+    return v_local >= v_start and v_local < v_end;
+  end if;
+  return v_local >= v_start or v_local < v_end;
+exception when others then
+  return false;
+end;
+$$;
+comment on function kc_private.notification_in_quiet_hours(jsonb, timestamptz) is
+  'The moment falls inside the quiet hours of the given notification preferences.';
+
+-- Turns one outbox event into a notification and returns the result described above.
+create function kc_private.notifications_deliver(p_event_id bigint)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_event kc_private.outbox_events;
+  v_kind kc_private.notification_kinds;
+  v_to uuid;
+  v_actor_id uuid;
+  v_entity jsonb;
+  v_data jsonb;
+  v_dedupe_key text;
+  v_group_key text;
+  v_preferences jsonb;
+  v_is_active boolean;
+  v_reason text;
+  v_notification public.notifications;
+  v_tokens jsonb;
+begin
+  select e.* into v_event
+    from kc_private.outbox_events e
+   where e.id = p_event_id and e.topic = 'notification' and e.processed_at is null
+     for update;
+  if not found then
+    return jsonb_build_object('event_id', p_event_id, 'status', 'skipped', 'reason', 'already_processed');
+  end if;
+
+  select k.* into v_kind from kc_private.notification_kinds k where k.kind = v_event.payload ->> 'kind';
+  if not found then
+    raise exception 'unknown_notification_kind' using errcode = 'P0001', detail = v_event.payload ->> 'kind';
+  end if;
+  v_to := (v_event.payload ->> 'recipient_id')::uuid;
+  v_actor_id := (v_event.payload ->> 'actor_id')::uuid;
+  v_entity := nullif(v_event.payload -> 'entity', 'null'::jsonb);
+  v_data := coalesce(nullif(v_event.payload -> 'data', 'null'::jsonb), '{}'::jsonb);
+  v_dedupe_key := v_data ->> 'dedupe_key';
+  v_data := v_data - 'dedupe_key';
+
+  select u.is_active, p.notification_preferences into v_is_active, v_preferences
+    from public.users u
+    join public.user_private p on p.user_id = u.id
+   where u.id = v_to;
+  v_reason := case
+    when not found then 'recipient_missing'
+    when v_kind.bypass_preferences then null
+    -- FR-NOTIF-011 AC2: a member whose account is not active is not notified.
+    when not v_is_active then 'recipient_inactive'
+    -- D105: nothing one member of a blocked pair does reaches the other.
+    when kc_access.is_blocked_between(v_to, v_actor_id) then 'blocked'
+    when not kc_private.notification_kind_enabled(v_preferences, v_kind) then 'preferences'
+  end;
+
+  if v_reason is null then
+    -- One delivery at a time per member: the dedupe and the merge below read then write.
+    perform pg_advisory_xact_lock(hashtextextended(v_to::text, 0));
+    if v_dedupe_key is not null then
+      insert into kc_private.notification_dedupe (user_id, dedupe_key)
+      values (v_to, v_dedupe_key)
+      on conflict do nothing;
+      if not found then
+        v_reason := 'duplicate';
+      end if;
+    end if;
+  end if;
+  if v_reason is not null then
+    perform kc_private.outbox_complete(p_event_id);
+    return jsonb_build_object('event_id', p_event_id, 'status', 'skipped', 'reason', v_reason);
+  end if;
+
+  -- Merge into the member's unread notification of the same kind and entity when its last
+  -- event is inside the group window; the newest actor moves to the front.
+  if v_kind.group_window is not null and v_entity ->> 'id' is not null then
+    v_group_key := v_kind.kind || ':' || (v_entity ->> 'type') || ':' || (v_entity ->> 'id');
+    update public.notifications n
+       set group_count = n.group_count + 1,
+           actor_ids = (array_remove(v_actor_id || array_remove(n.actor_ids, v_actor_id), null))[1:5],
+           data = v_data,
+           updated_at = now()
+     where (n.id, n.created_at) = (
+             select o.id, o.created_at
+               from public.notifications o
+              where o.user_id = v_to and o.group_key = v_group_key and o.read_at is null
+                and o.updated_at > now() - v_kind.group_window
+              order by o.created_at desc
+              limit 1)
+    returning n.* into v_notification;
+  end if;
+  if v_notification.id is null then
+    insert into public.notifications (
+      user_id, kind, category, world_slug, entity_type, entity_id, title_key, body_key, data,
+      group_key, actor_ids)
+    values (
+      v_to, v_kind.kind, v_kind.category, v_data ->> 'world_slug', v_entity ->> 'type',
+      (v_entity ->> 'id')::uuid, v_kind.title_key, v_kind.body_key, v_data, v_group_key,
+      array_remove(array[v_actor_id], null))
+    returning * into v_notification;
+  end if;
+
+  if v_kind.sends_push and (v_kind.bypass_preferences or v_kind.bypass_quiet_hours
+                            or not kc_private.notification_in_quiet_hours(v_preferences)) then
+    select jsonb_agg(jsonb_build_object('token', d.push_token, 'platform', d.platform))
+      into v_tokens
+      from public.user_devices d where d.user_id = v_to;
+  end if;
+
+  perform kc_private.outbox_complete(p_event_id);
+  return jsonb_build_object(
+    'event_id', p_event_id, 'status', 'delivered',
+    'notification_id', v_notification.id, 'group_count', v_notification.group_count,
+    'push', case when v_tokens is not null then jsonb_build_object(
+      'tokens', v_tokens,
+      'title_key', v_kind.title_key,
+      'body_key', v_kind.body_key,
+      'args', v_data || jsonb_build_object('actor_display_name',
+        (select u.display_name from public.users u where u.id = v_actor_id)),
+      'data', jsonb_build_object(
+        'notification_id', v_notification.id, 'kind', v_kind.kind, 'category', v_kind.category,
+        'entity', v_entity, 'group_count', v_notification.group_count),
+      'collapse_key', v_group_key) end);
+end;
+$$;
+comment on function kc_private.notifications_deliver(bigint) is
+  'Consumer of outbox topic notification: writes or merges the notification and returns the push to send.';
+
+-- Worker entry point: claims due `notification` events, delivers each and returns one
+-- result per event. An event that fails is released for a retry with its error (status
+-- "failed") and does not stop the batch.
+create function kc_private.notifications_deliver_batch(p_limit integer default 50)
+returns setof jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_event_id bigint;
+begin
+  for v_event_id in
+    select e.id from kc_private.outbox_claim('notification', p_limit) e order by e.id
+  loop
+    begin
+      return next kc_private.notifications_deliver(v_event_id);
+    exception when others then
+      perform kc_private.outbox_complete(v_event_id, sqlerrm);
+      return next jsonb_build_object('event_id', v_event_id, 'status', 'failed', 'reason', sqlerrm);
+    end;
+  end loop;
+end;
+$$;
+comment on function kc_private.notifications_deliver_batch(integer) is
+  'Claims a batch of notification events and delivers them; returns one result per event.';
+
+-- >>> supabase/schemas/50_notifications/040_notification_rpcs.sql
+-- Notifications · RPCs of the notification centre
+--
+-- Reading runs with the caller's rights (the row policy limits it to their own rows).
+-- Marking read is the only change a member can make and goes through the two functions
+-- below; the table itself is not writable from a device.
+
+-- One page of the caller's notification centre, newest first, with the display fields of
+-- the newest actor so the screen needs no second request. Keyset on (created_at, id):
+-- pass the last row's values to get the next page. `p_category` filters to one group.
+-- The actor's fields are null when that member is not visible to the caller any more.
+create function public.notifications_page(
+  p_limit integer default 30,
+  p_before_created_at timestamptz default null,
+  p_before_id uuid default null,
+  p_category text default null
+)
+returns table (
+  id uuid,
+  kind text,
+  category text,
+  world_slug text,
+  entity_type text,
+  entity_id uuid,
+  title_key text,
+  body_key text,
+  data jsonb,
+  actor_ids uuid[],
+  group_count integer,
+  read_at timestamptz,
+  created_at timestamptz,
+  updated_at timestamptz,
+  actor_display_name text,
+  actor_avatar_url text
+)
+language sql
+stable
+set search_path = ''
+as $$
+  select n.id, n.kind, n.category, n.world_slug, n.entity_type, n.entity_id, n.title_key,
+         n.body_key, n.data, n.actor_ids, n.group_count, n.read_at, n.created_at, n.updated_at,
+         u.display_name, u.avatar_url
+    from public.notifications n
+    left join public.users u on u.id = n.actor_ids[1]
+   where n.user_id = (select auth.uid())
+     and (p_category is null or n.category = p_category)
+     and (p_before_created_at is null or (n.created_at, n.id) < (p_before_created_at, p_before_id))
+   order by n.created_at desc, n.id desc
+   limit least(greatest(coalesce(p_limit, 30), 1), 50);
+$$;
+comment on function public.notifications_page(integer, timestamptz, uuid, text) is
+  'One page of the caller''s notification centre, newest first, with the newest actor''s display fields.';
+grant execute on function public.notifications_page(integer, timestamptz, uuid, text) to authenticated;
+
+-- Badge of the notification centre: the caller's unread notifications.
+create function public.notifications_unread_count()
+returns integer
+language sql
+stable
+set search_path = ''
+as $$
+  select count(*)::integer
+    from public.notifications n
+   where n.user_id = (select auth.uid()) and n.read_at is null;
+$$;
+comment on function public.notifications_unread_count() is 'Number of the caller''s unread notifications.';
+grant execute on function public.notifications_unread_count() to authenticated;
+
+-- Marks the listed notifications of the caller read; returns how many changed. Ids of
+-- other members' notifications and already read ones are ignored.
+create function public.notifications_mark_read(p_ids uuid[])
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+  v_changed integer;
+begin
+  update public.notifications n
+     set read_at = now()
+   where n.user_id = v_user_id and n.read_at is null and n.id = any (p_ids);
+  get diagnostics v_changed = row_count;
+  return v_changed;
+end;
+$$;
+comment on function public.notifications_mark_read(uuid[]) is 'Marks the listed notifications of the caller read.';
+grant execute on function public.notifications_mark_read(uuid[]) to authenticated;
+
+-- Marks every unread notification of the caller read; returns how many changed.
+create function public.notifications_mark_all_read()
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+  v_changed integer;
+begin
+  update public.notifications n
+     set read_at = now()
+   where n.user_id = v_user_id and n.read_at is null;
+  get diagnostics v_changed = row_count;
+  return v_changed;
+end;
+$$;
+comment on function public.notifications_mark_all_read() is 'Marks all of the caller''s notifications read.';
+grant execute on function public.notifications_mark_all_read() to authenticated;
+
+-- >>> supabase/schemas/50_notifications/050_follow_notifications.sql
+-- Notifications · follow events (FR-NOTIF-006, FR-NOTIF-007, FR-NOTIF-008)
+--
+-- The social graph module writes the rows; these triggers record the `notification` events
+-- that follow from them. Each event carries a dedupe key, so a member is told once:
+--   follow_request   follow_request:<request id>            the target, per request
+--   follow_approved  follow_approved:<request id>           the requester, per request
+--   follow_started   follow_started:<follower>:<followed>   the followed member, once per
+--                    pair for as long as the key is kept — following again after an
+--                    unfollow does not notify a second time
+
+-- A new follower. An edge created by the approval of a request is not announced to the
+-- member who just approved it: the requester gets `follow_approved` instead.
+create function kc_private.follows_enqueue_notification()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  -- The request was resolved in this transaction: its resolution time is this transaction's.
+  if exists (select 1 from public.follow_requests r
+              where r.requester_id = new.follower_id and r.target_id = new.followed_id
+                and r.status = 'accepted' and r.resolved_at = now()) then
+    return null;
+  end if;
+  perform kc_private.outbox_enqueue('notification', jsonb_build_object(
+    'kind', 'follow_started', 'recipient_id', new.followed_id, 'actor_id', new.follower_id,
+    -- The entity is the followed member, so new followers merge into one notification.
+    'entity', jsonb_build_object('type', 'user', 'id', new.followed_id),
+    'data', jsonb_build_object(
+      'dedupe_key', 'follow_started:' || new.follower_id || ':' || new.followed_id)));
+  return null;
+end;
+$$;
+comment on function kc_private.follows_enqueue_notification() is
+  'AFTER INSERT on follows: enqueues follow_started for the followed member.';
+
+create trigger follows_enqueue_notification
+  after insert on public.follows
+  for each row execute function kc_private.follows_enqueue_notification();
+
+-- A new request reaches its target; an accepted one reaches its requester. A rejection and
+-- a withdrawal are silent (FR-FOLLOW-006).
+create function kc_private.follow_requests_enqueue_notification()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_accepted constant boolean := tg_op = 'UPDATE';
+begin
+  perform kc_private.outbox_enqueue('notification', jsonb_build_object(
+    'kind', case when v_accepted then 'follow_approved' else 'follow_request' end,
+    'recipient_id', case when v_accepted then new.requester_id else new.target_id end,
+    'actor_id', case when v_accepted then new.target_id else new.requester_id end,
+    'entity', jsonb_build_object('type', 'follow_request', 'id', new.id),
+    'data', jsonb_build_object('dedupe_key',
+      case when v_accepted then 'follow_approved:' else 'follow_request:' end || new.id)));
+  return null;
+end;
+$$;
+comment on function kc_private.follow_requests_enqueue_notification() is
+  'AFTER INSERT (pending) or UPDATE to accepted on follow_requests: enqueues the notification.';
+
+create trigger follow_requests_enqueue_request_notification
+  after insert on public.follow_requests
+  for each row
+  when (new.status = 'pending')
+  execute function kc_private.follow_requests_enqueue_notification();
+
+create trigger follow_requests_enqueue_approval_notification
+  after update of status on public.follow_requests
+  for each row
+  when (old.status = 'pending' and new.status = 'accepted')
+  execute function kc_private.follow_requests_enqueue_notification();
+
+-- >>> supabase/schemas/50_notifications/060_realtime.sql
+-- Notifications · realtime
+--
+-- Topic `user:<user_id>:notifications`, event `badge`: the member's notification centre
+-- changed; the payload is the new unread count and nothing else. Who may listen is decided
+-- by the policy on the member's own topics in 40_messaging/060_realtime.sql, and the send
+-- is a no-op where the platform's realtime schema is absent (kc_private.broadcast).
+-- Per statement, so that "mark all read" sends one event, not one per row.
+
+create function kc_private.notifications_broadcast_badge()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id uuid;
+begin
+  for v_user_id in select distinct r.user_id from changed_rows r loop
+    perform kc_private.broadcast('user:' || v_user_id || ':notifications', 'badge', jsonb_build_object(
+      'unread_count', (select count(*) from public.notifications n
+                        where n.user_id = v_user_id and n.read_at is null)));
+  end loop;
+  return null;
+end;
+$$;
+comment on function kc_private.notifications_broadcast_badge() is
+  'AFTER INSERT / UPDATE on notifications (per statement): broadcasts each affected member''s unread count.';
+
+create trigger notifications_broadcast_badge_insert
+  after insert on public.notifications
+  referencing new table as changed_rows
+  for each statement execute function kc_private.notifications_broadcast_badge();
+
+create trigger notifications_broadcast_badge_update
+  after update on public.notifications
+  referencing new table as changed_rows
+  for each statement execute function kc_private.notifications_broadcast_badge();

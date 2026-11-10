@@ -36,6 +36,12 @@ begin
              'closure_explainer_dismissed', p.closure_explainer_dismissed,
              'first_post_nudge_dismissed', p.first_post_nudge_dismissed,
              'basic_info_skipped', p.basic_info_skipped),
+           -- ↓ Added by the messaging and notifications modules: the two badges of the top bar
+           -- (FR-CHAT-012, spec 07 §7.11). Both functions are created by those modules.
+           'unread', jsonb_build_object(
+             'chats', public.chat_unread_total(),
+             'notifications', public.notifications_unread_count()),
+           -- ↑ End of the messaging and notifications addition.
            'legal', (
              -- Documents in force whose last material version the caller has not accepted.
              -- `modal` blocks the app; `banner` is the 7-day notice of a standard change,
@@ -72,5 +78,5 @@ begin
 end;
 $$;
 comment on function public.bootstrap_session() is
-  'Session start in one call: account gate, private profile, legal consent prompt.';
+  'Session start in one call: account gate, private profile, unread badges, legal consent prompt.';
 grant execute on function public.bootstrap_session() to authenticated;
