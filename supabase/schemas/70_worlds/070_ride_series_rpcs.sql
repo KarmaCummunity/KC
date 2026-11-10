@@ -22,6 +22,8 @@ begin
                  where r.series_id = p_series.id and r.series_on = p_on) then
     return 0;
   end if;
+  -- The occurrences of a series are one member action, not one post each (95_platform).
+  perform set_config('kc.rate_limit_exempt', 'on', true);
   perform kc_private.post_create(
     p_series.owner_id,
     p_series.post_template || jsonb_build_object('post_type', 'ride'),

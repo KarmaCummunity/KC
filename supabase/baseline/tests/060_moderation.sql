@@ -5,6 +5,9 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
+-- One transaction stands for weeks of reports by the same members: the hourly report
+-- limit (95_platform, covered by 095_platform.sql) is switched off for this file.
+set local kc.rate_limit_exempt = 'on';
 
 -- Test shorthand inside SQL text: @x is the member with hex digit x, #NN a post, ~x/role
 -- the active grant of that role held by member x.

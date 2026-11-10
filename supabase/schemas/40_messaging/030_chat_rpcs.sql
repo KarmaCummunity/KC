@@ -137,6 +137,7 @@ begin
        or char_length(v_body) > 2000) then
     raise exception 'invalid_media_payload' using errcode = 'P0001';
   end if;
+  perform kc_private.rate_limit_enforce('message_send', v_user_id);  -- 95_platform
 
   insert into public.messages (id, chat_id, sender_id, kind, body, media_payload)
   values (

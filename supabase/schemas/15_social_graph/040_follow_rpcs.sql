@@ -41,6 +41,7 @@ begin
   if p_target = v_user_id then
     raise exception 'self_follow_forbidden' using errcode = 'P0001';
   end if;
+  perform kc_private.rate_limit_enforce('follow', v_user_id);  -- 95_platform
 
   -- The share lock makes a concurrent privacy switch of the target wait for this call.
   select u.* into v_target from public.users u where u.id = p_target for share;

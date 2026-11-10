@@ -91,3 +91,34 @@ as $$
   insert into realtime.messages (payload, event, topic, private, extension)
   values (payload, event, topic, private, 'broadcast');
 $$;
+
+-- Minimal storage schema: the bucket registry, the object table storage policies are
+-- written on, and the path helper those policies call. Tests assert the bucket rows and
+-- exercise the policies by writing object rows as a member.
+create schema if not exists storage;
+grant usage on schema storage to authenticated, service_role;
+
+create table if not exists storage.buckets (
+  id text primary key,
+  name text not null,
+  public boolean default false,
+  file_size_limit bigint,
+  allowed_mime_types text[]
+);
+
+create table if not exists storage.objects (
+  id uuid primary key default gen_random_uuid(),
+  bucket_id text references storage.buckets (id),
+  name text,
+  created_at timestamptz default now()
+);
+alter table storage.objects enable row level security;
+grant select, insert, update, delete on storage.objects to authenticated;
+
+create or replace function storage.foldername(name text)
+returns text[]
+language sql
+immutable
+as $$
+  select (string_to_array(name, '/'))[1 : array_length(string_to_array(name, '/'), 1) - 1];
+$$;

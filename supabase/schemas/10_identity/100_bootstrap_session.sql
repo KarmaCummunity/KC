@@ -45,6 +45,9 @@ begin
            -- >>> moderation module: staff roles of the caller (empty for an ordinary member).
            'admin', jsonb_build_object('roles', public.get_my_admin_roles()),
            -- <<< moderation module
+           -- >>> platform module (95_platform): feature flags, `{ "<key>": true|false }`.
+           'flags', (select coalesce(jsonb_object_agg(f.key, f.enabled), '{}'::jsonb) from public.app_flags f),
+           -- <<< platform module
            'legal', (
              -- Documents in force whose last material version the caller has not accepted.
              -- `modal` blocks the app; `banner` is the 7-day notice of a standard change,

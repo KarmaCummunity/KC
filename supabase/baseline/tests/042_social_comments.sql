@@ -184,8 +184,12 @@ select throws_ok($$select pg_temp.as_role('admin', 'update public.post_comments 
 insert into public.post_comments (post_id, author_id, body)
 select '40000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-00000000000c', 'burst ' || n
   from generate_series(1, 19) n;
+-- The limit itself is configuration (95_platform): set it to what Carol already wrote.
+update kc_private.rate_limits set max_count = (
+  select c.hits from kc_private.rate_limit_counters c where c.key = 'comment_create:00000000-0000-4000-8000-00000000000c')
+ where action = 'comment_create';
 select throws_ok($$select pg_temp.run('c', 'insert into public.post_comments (post_id, author_id, body) values (#p1, #c, ''one more'')')$$,
-  'P0001', 'rate_limited', 'a member writes at most 20 comments a minute');
+  'P0001', 'rate_limited', 'a member''s comments are rate limited');
 delete from auth.users where id = '00000000-0000-4000-8000-00000000000c';
 select is(pg_temp.stats(1) || '/' || (select count(*) from public.post_comments where status = 'active'), '0/1/0/1',
   'removing an account removes its comments and lowers the counter');

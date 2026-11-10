@@ -159,6 +159,7 @@ declare
   v_owner_id uuid;
   v_status text;
 begin
+  perform kc_private.rate_limit_enforce('report_create', new.reporter_id);  -- 95_platform
   if new.target_type = 'post' then
     select p.owner_id, p.status into v_owner_id, v_status from public.posts p where p.id = new.target_id;
   elsif new.target_type = 'user' then

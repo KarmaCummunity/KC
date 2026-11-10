@@ -1472,6 +1472,9 @@ begin
            -- >>> moderation module: staff roles of the caller (empty for an ordinary member).
            'admin', jsonb_build_object('roles', public.get_my_admin_roles()),
            -- <<< moderation module
+           -- >>> platform module (95_platform): feature flags, `{ "<key>": true|false }`.
+           'flags', (select coalesce(jsonb_object_agg(f.key, f.enabled), '{}'::jsonb) from public.app_flags f),
+           -- <<< platform module
            'legal', (
              -- Documents in force whose last material version the caller has not accepted.
              -- `modal` blocks the app; `banner` is the 7-day notice of a standard change,
@@ -1831,6 +1834,7 @@ begin
   if p_target = v_user_id then
     raise exception 'self_follow_forbidden' using errcode = 'P0001';
   end if;
+  perform kc_private.rate_limit_enforce('follow', v_user_id);  -- 95_platform
 
   -- The share lock makes a concurrent privacy switch of the target wait for this call.
   select u.* into v_target from public.users u where u.id = p_target for share;
@@ -2377,6 +2381,9 @@ begin
         where k.id = new.kind_id and k.is_active and k.direction in (new.direction, 'either')) then
     raise exception 'post_kind_not_allowed' using errcode = 'P0001',
       detail = 'the post kind is inactive or does not admit this direction';
+  end if;
+  if tg_op = 'INSERT' then
+    perform kc_private.rate_limit_enforce('post_create', new.owner_id);  -- 95_platform
   end if;
 
   if v_from is not distinct from new.status then
@@ -3116,6 +3123,7 @@ declare
   v_post public.posts;
   v_handoff public.post_handoffs;
 begin
+  perform kc_private.rate_limit_enforce('handoff_request', p_recipient_id);  -- 95_platform
   select p.* into v_post from public.posts p where p.id = p_post_id for update;
   if found and v_post.owner_id = p_recipient_id then
     raise exception 'own_listing' using errcode = 'P0001';
@@ -4588,7 +4596,7 @@ create index post_comments_thread_idx on public.post_comments (post_id, parent_c
 -- Replies of a comment, oldest first; covers the parent foreign key.
 create index post_comments_replies_idx on public.post_comments (parent_comment_id, created_at, id)
   where parent_comment_id is not null;
--- Write-rate check and removal of a member's comments; covers the author foreign key.
+-- A member's comments, newest first, and their removal; covers the author foreign key.
 create index post_comments_author_recent_idx on public.post_comments (author_id, created_at desc);
 
 create trigger post_comments_status_fsm
@@ -4630,7 +4638,7 @@ comment on function kc_private.comment_mentions(text, uuid, uuid) is
   'Resolves the @share_handle tokens of a comment body to members who can read the post.';
 
 -- Server-side part of a comment write.
---   insert  at most 20 comments a minute per member; a reply must point at an active
+--   insert  the member's comment rate limit (kc_private.rate_limits); a reply must point at an active
 --           top-level comment of the same post (one thread level, S8); mentions resolved
 --   edit    the body changed: edit stamp and mentions refreshed
 create function kc_private.post_comments_prepare()
@@ -4641,10 +4649,7 @@ set search_path = ''
 as $$
 begin
   if tg_op = 'INSERT' then
-    if (select count(*) from public.post_comments c
-         where c.author_id = new.author_id and c.created_at > now() - interval '1 minute') >= 20 then
-      raise exception 'rate_limited' using errcode = 'P0001', detail = 'at most 20 comments a minute';
-    end if;
+    perform kc_private.rate_limit_enforce('comment_create', new.author_id);  -- 95_platform
     if new.parent_comment_id is not null and not exists (
          select 1 from public.post_comments c
           where c.id = new.parent_comment_id and c.post_id = new.post_id
@@ -6285,6 +6290,7 @@ begin
        or char_length(v_body) > 2000) then
     raise exception 'invalid_media_payload' using errcode = 'P0001';
   end if;
+  perform kc_private.rate_limit_enforce('message_send', v_user_id);  -- 95_platform
 
   insert into public.messages (id, chat_id, sender_id, kind, body, media_payload)
   values (
@@ -8857,6 +8863,7 @@ declare
   v_owner_id uuid;
   v_status text;
 begin
+  perform kc_private.rate_limit_enforce('report_create', new.reporter_id);  -- 95_platform
   if new.target_type = 'post' then
     select p.owner_id, p.status into v_owner_id, v_status from public.posts p where p.id = new.target_id;
   elsif new.target_type = 'user' then
@@ -10857,6 +10864,8 @@ begin
                  where r.series_id = p_series.id and r.series_on = p_on) then
     return 0;
   end if;
+  -- The occurrences of a series are one member action, not one post each (95_platform).
+  perform set_config('kc.rate_limit_exempt', 'on', true);
   perform kc_private.post_create(
     p_series.owner_id,
     p_series.post_template || jsonb_build_object('post_type', 'ride'),
@@ -17393,6 +17402,7 @@ declare
 begin
   select i.* into v_intent from billing.donation_intents i where i.idempotency_key = p_idempotency_key;
   if not found then
+    perform kc_private.rate_limit_enforce('donation_intent', v_user_id);  -- 95_platform
     perform kc_private.billing_assert_can_donate(p_org_id, p_amount_agorot);
     insert into billing.donation_intents (user_id, org_id, post_id, amount_agorot, provider_id, idempotency_key)
     values (v_user_id, p_org_id, p_post_id, p_amount_agorot, kc_private.billing_default_provider(), p_idempotency_key)
@@ -18714,3 +18724,1479 @@ as $$
 $$;
 comment on function public.get_public_research_questions(text) is
   'Questions of the current version of an active survey, for the public research form. Service role only.';
+
+-- >>> supabase/schemas/95_platform/010_ops_tables.sql
+-- Platform · operational telemetry tables (design §6 "Monitoring")
+--
+-- Three small tables in `ops`, written only by server code and read only by the service
+-- role (monitoring and the health checks of this module). No member can address the schema.
+--   ops.job_runs       one row per run of a scheduled job: outcome, duration, error
+--   ops.warnings       conditions an operator must know about that are not a failed run
+--   ops.counter_drift  counters the nightly reconciliation found wrong, and repaired
+
+create table ops.job_runs (
+  id          bigint generated always as identity primary key,
+  job_name    text not null,
+  started_at  timestamptz not null,
+  finished_at timestamptz not null,
+  -- `failed` carries the error; the wrapper never lets a job's error escape.
+  status      text not null check (status in ('succeeded', 'failed')),
+  duration_ms integer not null check (duration_ms >= 0),
+  error       text,
+  constraint job_runs_error_chk check ((status = 'failed') = (error is not null))
+);
+comment on table ops.job_runs is 'Outcome of every scheduled job run; pruned by retention.';
+
+-- Health checks: the latest runs of one job.
+create index job_runs_job_finished_idx on ops.job_runs (job_name, finished_at desc);
+-- Retention: rows older than the window.
+create index job_runs_finished_idx on ops.job_runs (finished_at);
+
+alter table ops.job_runs enable row level security;
+alter table ops.job_runs force row level security;
+revoke insert, update, delete, truncate on ops.job_runs from service_role;
+
+create table ops.warnings (
+  -- Stable identifier of the condition, e.g. 'edge_invocation_unavailable'.
+  key         text primary key check (key ~ '^[a-z][a-z0-9_.:-]{1,120}$'),
+  detail      text not null,
+  first_seen  timestamptz not null default now(),
+  last_seen   timestamptz not null default now(),
+  occurrences bigint not null default 1 check (occurrences > 0)
+);
+comment on table ops.warnings is
+  'Standing operational warnings, one row per condition; a health check reports the recent ones.';
+
+alter table ops.warnings enable row level security;
+alter table ops.warnings force row level security;
+-- An operator acknowledges a warning by deleting its row; nothing else is writable.
+revoke insert, update, truncate on ops.warnings from service_role;
+
+-- Records a warning, or counts one more occurrence of a known one. Never raises: a warning
+-- that cannot be written must not break the work that wanted to report it. A known warning
+-- is refreshed at most once a minute, so a busy path does not queue on its row.
+create function kc_private.ops_warn(p_key text, p_detail text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into ops.warnings as w (key, detail)
+  values (p_key, left(coalesce(p_detail, ''), 500))
+  on conflict (key) do update
+    set detail = excluded.detail, last_seen = now(), occurrences = w.occurrences + 1
+    where w.last_seen < now() - interval '1 minute';
+exception when others then
+  null;
+end;
+$$;
+comment on function kc_private.ops_warn(text, text) is
+  'Records an operational warning (one row per key, occurrences counted); never raises.';
+
+create table ops.counter_drift (
+  id            bigint generated always as identity primary key,
+  detected_at   timestamptz not null default now(),
+  counter_table text not null,
+  counter_name  text not null,
+  -- The member or post whose counter was wrong.
+  subject_id    uuid not null,
+  stored_value  bigint not null,
+  actual_value  bigint not null
+);
+comment on table ops.counter_drift is
+  'Counters found out of step with their source rows by the nightly reconciliation; each was repaired.';
+
+-- Health check and retention: drift of the recent period.
+create index counter_drift_detected_idx on ops.counter_drift (detected_at);
+
+alter table ops.counter_drift enable row level security;
+alter table ops.counter_drift force row level security;
+revoke insert, update, delete, truncate on ops.counter_drift from service_role;
+
+-- >>> supabase/schemas/95_platform/020_rate_limit.sql
+-- Platform · rate limiting (design §4 "Abuse", NFR-SEC-009)
+--
+-- One counter table and one function for every write a member can repeat. A limit is a
+-- row of kc_private.rate_limits (vocabulary, like the state machines): the action, how many
+-- times, in which window. A write path enforces it with one line:
+--
+--   perform kc_private.rate_limit_enforce('<action>', <member id>);
+--
+-- Windows are fixed and start at the first counted write: after `window` has passed the
+-- next write opens a new one. The counter moves in the writing transaction, so a write
+-- that is rolled back is not counted.
+
+create table kc_private.rate_limits (
+  action      text primary key check (action ~ '^[a-z][a-z0-9_]{1,62}$'),
+  max_count   integer not null check (max_count > 0),
+  "window"    interval not null check ("window" > interval '0'),
+  description text not null
+);
+comment on table kc_private.rate_limits is 'Configuration: how often a member may repeat each limited action.';
+alter table kc_private.rate_limits enable row level security;
+alter table kc_private.rate_limits force row level security;
+
+-- One row per key that was counted recently. Unlogged: the counters are worth nothing after
+-- a crash, and a limited write should cost as little as possible.
+create unlogged table kc_private.rate_limit_counters (
+  key          text primary key check (char_length(key) between 1 and 200),
+  window_start timestamptz not null,
+  -- End of the window; the row is dead after it and removed by retention.
+  expires_at   timestamptz not null,
+  hits         integer not null check (hits > 0)
+);
+comment on table kc_private.rate_limit_counters is 'Fixed-window counters of kc_private.rate_limit; expired rows are purged.';
+-- Retention: rows whose window ended.
+create index rate_limit_counters_expires_idx on kc_private.rate_limit_counters (expires_at);
+alter table kc_private.rate_limit_counters enable row level security;
+alter table kc_private.rate_limit_counters force row level security;
+revoke all on kc_private.rate_limit_counters from service_role;
+
+-- Counts one hit of p_key and tells whether it is still within p_max per p_window. One
+-- statement: the row lock of the upsert makes concurrent hits of one key count one after
+-- the other, and different keys never wait for each other.
+create function kc_private.rate_limit(p_key text, p_max integer, p_window interval)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_hits integer;
+begin
+  if p_key is null or p_key = '' or p_max is null or p_max < 1
+     or p_window is null or p_window <= interval '0' then
+    raise exception 'invalid_rate_limit_args' using errcode = '22023';
+  end if;
+  insert into kc_private.rate_limit_counters as c (key, window_start, expires_at, hits)
+  values (p_key, now(), now() + p_window, 1)
+  on conflict (key) do update
+    set hits = case when c.expires_at <= now() then 1 else c.hits + 1 end,
+        window_start = case when c.expires_at <= now() then now() else c.window_start end,
+        expires_at = case when c.expires_at <= now() then now() + p_window else c.expires_at end
+  returning c.hits into v_hits;
+  return v_hits <= p_max;
+end;
+$$;
+comment on function kc_private.rate_limit(text, integer, interval) is
+  'Counts a hit of the key; false once more than p_max hits fall in the current window. Atomic.';
+
+-- Enforces the configured limit of an action for a member; raises rate_limited (P0001, the
+-- action in DETAIL) when it is exceeded. Only a member's own request is counted: work done
+-- by a scheduled job, the service role or staff on a member's behalf passes, and so does a
+-- transaction that declared itself exempt (`kc.rate_limit_exempt`, set by server code
+-- that writes many rows for one member action). An action without a configured row passes
+-- and leaves a warning, so a missing row is visible but never blocks members.
+create function kc_private.rate_limit_enforce(p_action text, p_subject uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_limit kc_private.rate_limits;
+begin
+  if p_subject is null or (select auth.uid()) is distinct from p_subject
+     or coalesce(current_setting('kc.rate_limit_exempt', true), '') = 'on' then
+    return;
+  end if;
+  select l.* into v_limit from kc_private.rate_limits l where l.action = p_action;
+  if not found then
+    perform kc_private.ops_warn('rate_limit_unconfigured:' || p_action, 'no kc_private.rate_limits row');
+    return;
+  end if;
+  if not kc_private.rate_limit(p_action || ':' || p_subject, v_limit.max_count, v_limit."window") then
+    raise exception 'rate_limited' using errcode = 'P0001', detail = p_action;
+  end if;
+end;
+$$;
+comment on function kc_private.rate_limit_enforce(text, uuid) is
+  'Applies the configured limit of an action to a member''s own request; raises rate_limited.';
+
+-- The same, as a BEFORE INSERT row trigger for tables members insert into directly.
+-- Arguments: the action, and the column holding the writing member.
+create function kc_private.rate_limit_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.rate_limit_enforce(tg_argv[0], (to_jsonb(new) ->> tg_argv[1])::uuid);
+  return new;
+end;
+$$;
+comment on function kc_private.rate_limit_guard() is
+  'BEFORE INSERT trigger: rate limit of action tg_argv[0] for the member in column tg_argv[1].';
+
+-- The limits. Where a number comes from the spec or the deployed rules it is named;
+-- adding a limit for a new write path is one row here and one line in that path.
+insert into kc_private.rate_limits (action, max_count, "window", description) values
+  ('post_create',     20,  interval '1 hour',   'New posts, drafts included (deployed rule R-SEC-Listing-Write). Enforced in kc_private.posts_apply_status_rules.'),
+  ('handoff_request', 30,  interval '1 hour',   'Reservations, bookings and registrations (deployed rule R-SEC-Handoff-Write). Enforced in kc_private.handoff_open.'),
+  ('follow',          100, interval '1 hour',   'Follows and follow requests (deployed rule R-SEC-Follow-Write). Enforced in public.follow_user.'),
+  ('message_send',    10,  interval '1 second', 'Chat messages (NFR-SEC-009). Enforced in public.send_message.'),
+  ('comment_create',  20,  interval '1 minute', 'Comments and replies. Enforced in kc_private.post_comments_prepare.'),
+  ('post_reaction',   60,  interval '1 minute', 'Reactions to posts. Enforced by trigger post_reactions_rate_limit.'),
+  ('post_share',      30,  interval '1 hour',   'Shares of posts. Enforced by trigger post_shares_rate_limit.'),
+  ('report_create',   5,   interval '1 hour',   'Reports (NFR-SEC-009). Enforced in kc_private.reports_validate.'),
+  ('donation_intent', 20,  interval '1 hour',   'New donation checkouts. Enforced in public.create_donation_intent.');
+
+-- Tables members insert into directly and that have no row trigger of their own to carry
+-- the one-line call.
+create trigger post_reactions_rate_limit
+  before insert on public.post_reactions
+  for each row execute function kc_private.rate_limit_guard('post_reaction', 'user_id');
+create trigger post_shares_rate_limit
+  before insert on public.post_shares
+  for each row execute function kc_private.rate_limit_guard('post_share', 'user_id');
+
+-- >>> supabase/schemas/95_platform/030_app_flags.sql
+-- Platform · feature flags
+--
+-- A flag switches a product surface on or off without a release: a giving world
+-- (`world_<slug>_enabled`), a feature behind a gradual roll-out. The table is structure;
+-- its rows are configuration, loaded as seed data and changed by the super admin.
+--   read   every signed-in member (the app needs them at start: `flags` in bootstrap_session)
+--   write  the super admin, through public.admin_set_app_flag, which leaves an audit event
+
+create table public.app_flags (
+  key         text primary key check (key ~ '^[a-z][a-z0-9_]{1,62}$'),
+  enabled     boolean not null default false,
+  description text not null default '' check (char_length(description) <= 500),
+  updated_at  timestamptz not null default now(),
+  -- Who switched it last; kept when that member is removed.
+  updated_by  uuid references public.users (id) on delete set null
+);
+comment on table public.app_flags is 'Feature flags: one row per switch, read by every member, written by the super admin.';
+
+-- Covers the foreign key (removal of a staff account).
+create index app_flags_updated_by_idx on public.app_flags (updated_by) where updated_by is not null;
+
+create trigger app_flags_set_updated_at
+  before update on public.app_flags
+  for each row execute function kc_private.set_updated_at();
+
+alter table public.app_flags enable row level security;
+alter table public.app_flags force row level security;
+
+create policy app_flags_select_member on public.app_flags
+  for select to authenticated
+  using (true);
+
+grant select (key, enabled, description, updated_at) on public.app_flags to authenticated;
+
+-- Whether a flag is on. A flag that has no row is off, so code may ask for a flag before
+-- its row is seeded. Runs with the caller's rights (the table is readable by members).
+create function kc_access.flag_enabled(p_key text)
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select coalesce((select f.enabled from public.app_flags f where f.key = p_key), false);
+$$;
+comment on function kc_access.flag_enabled(text) is 'True when the feature flag exists and is on.';
+grant execute on function kc_access.flag_enabled(text) to authenticated;
+
+-- Creates a flag or switches it. Returns the row. The description is kept when omitted.
+-- Errors: forbidden (42501) unless the caller is the super admin; invalid_flag_key (P0001).
+create function public.admin_set_app_flag(p_key text, p_enabled boolean, p_description text default null)
+returns public.app_flags
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_admin_role('super_admin');
+  v_flag public.app_flags;
+begin
+  if p_key is null or p_key !~ '^[a-z][a-z0-9_]{1,62}$' or p_enabled is null then
+    raise exception 'invalid_flag_key' using errcode = 'P0001';
+  end if;
+  insert into public.app_flags as f (key, enabled, description, updated_by)
+  values (p_key, p_enabled, coalesce(btrim(p_description), ''), v_actor)
+  on conflict (key) do update
+    set enabled = excluded.enabled,
+        description = coalesce(nullif(btrim(p_description), ''), f.description),
+        updated_by = excluded.updated_by
+  returning f.* into v_flag;
+  perform kc_private.audit_record('app_flag_set', 'app_flag', null,
+                                  jsonb_build_object('key', p_key, 'enabled', p_enabled));
+  return v_flag;
+end;
+$$;
+comment on function public.admin_set_app_flag(text, boolean, text) is
+  'Super admin: creates a feature flag or switches it on or off; audited.';
+grant execute on function public.admin_set_app_flag(text, boolean, text) to authenticated;
+
+-- >>> supabase/schemas/95_platform/040_job_scheduling.sql
+-- Platform · scheduled jobs (design §6)
+--
+-- Every piece of background work is one row of kc_private.scheduled_jobs: its name, when
+-- it runs and the statement it runs. The rows are the vocabulary of the scheduler (they
+-- live in 900_job_registry.sql); kc_private.jobs_sync() turns them into pg_cron jobs, and
+-- every job runs through kc_private.job_run(), which records the outcome in ops.job_runs.
+-- So a job that fails, or silently stops running, shows up in the health checks instead of
+-- in a log nobody reads.
+--
+-- pg_cron is part of the platform. On a server without it (a plain local PostgreSQL) the
+-- registry and the wrapper still exist and jobs_sync() does nothing.
+
+do $$
+begin
+  if exists (select 1 from pg_catalog.pg_available_extensions e where e.name = 'pg_cron') then
+    begin
+      create extension if not exists pg_cron;
+    exception when others then
+      raise notice 'pg_cron is installed but not loadable in this database: jobs are registered, not scheduled';
+    end;
+  end if;
+end $$;
+
+create table kc_private.scheduled_jobs (
+  name        text primary key check (name ~ '^[a-z][a-z0-9_]{1,62}$'),
+  -- pg_cron schedule: five-field cron expression (UTC) or '<n> seconds'.
+  schedule    text not null check (char_length(schedule) between 1 and 100),
+  -- One SQL statement, run as the owner of the schema.
+  command     text not null check (char_length(command) between 1 and 2000),
+  -- The run is cancelled after this long and recorded as failed.
+  timeout     interval not null default interval '60 seconds'
+              check (timeout between interval '1 second' and interval '1 hour'),
+  -- Health: the job is late when its last successful run is older than this.
+  alert_after interval not null check (alert_after > interval '0'),
+  enabled     boolean not null default true,
+  description text not null check (char_length(description) between 1 and 500),
+  -- A job is not reported late before it had `alert_after` to run for the first time.
+  created_at  timestamptz not null default now()
+);
+comment on table kc_private.scheduled_jobs is 'Registry of background jobs; reconciled into pg_cron by kc_private.jobs_sync().';
+alter table kc_private.scheduled_jobs enable row level security;
+alter table kc_private.scheduled_jobs force row level security;
+revoke insert, update, delete, truncate on kc_private.scheduled_jobs from service_role;
+
+-- Runs one registered job and records the outcome. Returns whether it succeeded. The job's
+-- own error — including the cancellation by its timeout — is caught and stored, never
+-- raised: the scheduler sees a finished run, the health checks see the failure.
+create function kc_private.job_run(p_name text)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_job kc_private.scheduled_jobs;
+  v_started constant timestamptz := clock_timestamp();
+  v_error text;
+begin
+  select j.* into v_job from kc_private.scheduled_jobs j where j.name = p_name;
+  if not found then
+    v_error := 'job is not registered';
+  elsif not v_job.enabled then
+    return false;
+  else
+    begin
+      execute v_job.command;
+    exception
+      when query_canceled then
+        v_error := 'cancelled (timeout ' || v_job.timeout || '): ' || sqlerrm;
+      when others then
+        v_error := sqlstate || ': ' || sqlerrm;
+    end;
+  end if;
+
+  insert into ops.job_runs (job_name, started_at, finished_at, status, duration_ms, error)
+  values (p_name, v_started, clock_timestamp(),
+          case when v_error is null then 'succeeded' else 'failed' end,
+          (extract(epoch from clock_timestamp() - v_started) * 1000)::integer,
+          left(v_error, 1000));
+  return v_error is null;
+end;
+$$;
+comment on function kc_private.job_run(text) is
+  'Runs a registered job and records success or failure in ops.job_runs; never raises the job''s error.';
+
+-- The pg_cron command of a job: its timeout for the session, then the wrapper.
+create function kc_private.job_cron_command(p_job kc_private.scheduled_jobs)
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  select format('set statement_timeout = %s; select kc_private.job_run(%L);',
+                (extract(epoch from p_job.timeout) * 1000)::bigint, p_job.name);
+$$;
+comment on function kc_private.job_cron_command(kc_private.scheduled_jobs) is
+  'The statement pg_cron runs for a registered job.';
+
+-- Makes pg_cron match the registry: schedules enabled jobs that are missing or changed,
+-- unschedules jobs that are disabled or no longer registered. Only jobs that run through
+-- kc_private.job_run are touched, so a job an operator scheduled by hand is left alone.
+-- Idempotent; returns the number of pg_cron jobs it created, changed or removed, and 0 on
+-- a server without pg_cron.
+create function kc_private.jobs_sync()
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_job kc_private.scheduled_jobs;
+  v_stale text;
+  v_changes integer := 0;
+begin
+  if to_regclass('cron.job') is null then
+    return 0;
+  end if;
+
+  for v_job in select j.* from kc_private.scheduled_jobs j where j.enabled order by j.name loop
+    if not exists (select 1 from cron.job c
+                    where c.jobname = v_job.name and c.schedule = v_job.schedule
+                      and c.command = kc_private.job_cron_command(v_job) and c.active) then
+      perform cron.schedule(v_job.name, v_job.schedule, kc_private.job_cron_command(v_job));
+      v_changes := v_changes + 1;
+    end if;
+  end loop;
+
+  for v_stale in
+    select c.jobname from cron.job c
+     where c.command like '%kc_private.job_run(%'
+       and not exists (select 1 from kc_private.scheduled_jobs j where j.name = c.jobname and j.enabled)
+  loop
+    perform cron.unschedule(v_stale);
+    v_changes := v_changes + 1;
+  end loop;
+  return v_changes;
+end;
+$$;
+comment on function kc_private.jobs_sync() is
+  'Reconciles kc_private.scheduled_jobs into pg_cron (create, alter, unschedule); idempotent, no-op without pg_cron.';
+
+-- The registry is the single source: any change to it is applied to the scheduler in the
+-- same transaction.
+create function kc_private.scheduled_jobs_sync()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.jobs_sync();
+  return null;
+end;
+$$;
+
+create trigger scheduled_jobs_sync
+  after insert or update or delete on kc_private.scheduled_jobs
+  for each statement execute function kc_private.scheduled_jobs_sync();
+
+-- >>> supabase/schemas/95_platform/050_edge_invocation.sql
+-- Platform · calling Edge Functions from the database (design §4 "Secrets", §7)
+--
+-- Four workers are Edge Functions the database starts: the push dispatcher, the account
+-- purge, the storage orphan reconciliation and the EXIF strip. The call is an asynchronous
+-- HTTP request (pg_net: queued in the transaction, sent by a background worker after
+-- commit) authorised with the service-role key, which is read from Supabase Vault at call
+-- time. The key is referenced by NAME only; it is never stored in a table, a setting or
+-- this file.
+--
+-- Vault secrets (names):  kc_project_url        e.g. https://<project-ref>.supabase.co
+--                         kc_service_role_key   the service-role key of the project
+--
+-- pg_net and Vault are platform extensions. Where either is absent (a plain PostgreSQL
+-- server) or a secret is missing, the call is a no-op that leaves a row in ops.warnings.
+
+-- Whether this database can call out at all.
+create function kc_private.edge_invocation_ready()
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select to_regproc('net.http_post') is not null and to_regclass('vault.decrypted_secrets') is not null;
+$$;
+comment on function kc_private.edge_invocation_ready() is 'True when pg_net and Vault are both installed.';
+
+-- Queues a POST to an Edge Function and returns the pg_net request id, or null when
+-- nothing was queued. Never raises: whatever goes wrong becomes a warning, so neither a
+-- scheduled job nor a member's transaction can fail on it. The request leaves after the
+-- calling transaction commits; its response lands in pg_net's response table, which the
+-- health checks read.
+create function kc_private.invoke_edge_function(p_function text, p_body jsonb default '{}'::jsonb)
+returns bigint
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_url text;
+  v_key text;
+  v_request_id bigint;
+begin
+  if p_function is null or p_function !~ '^[a-z][a-z0-9-]{1,62}$' then
+    perform kc_private.ops_warn('edge_invocation_invalid_name', 'not an Edge Function name');
+    return null;
+  end if;
+  if not kc_private.edge_invocation_ready() then
+    perform kc_private.ops_warn('edge_invocation_unavailable',
+      'pg_net or Vault is not installed; ' || p_function || ' was not invoked');
+    return null;
+  end if;
+
+  execute 'select (select s.decrypted_secret from vault.decrypted_secrets s where s.name = $1),
+                  (select s.decrypted_secret from vault.decrypted_secrets s where s.name = $2)'
+     into v_url, v_key
+    using 'kc_project_url', 'kc_service_role_key';
+  if coalesce(v_url, '') = '' or coalesce(v_key, '') = '' then
+    perform kc_private.ops_warn('edge_invocation_unconfigured',
+      'Vault secret kc_project_url or kc_service_role_key is missing; ' || p_function || ' was not invoked');
+    return null;
+  end if;
+
+  execute 'select net.http_post(url := $1, body := $2, headers := $3, timeout_milliseconds := $4)'
+     into v_request_id
+    using rtrim(v_url, '/') || '/functions/v1/' || p_function,
+          coalesce(p_body, '{}'::jsonb),
+          jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer ' || v_key),
+          30000;
+  return v_request_id;
+exception when others then
+  -- The SQLSTATE only: an error text could quote the request.
+  perform kc_private.ops_warn('edge_invocation_failed:' || coalesce(p_function, ''), 'sqlstate ' || sqlstate);
+  return null;
+end;
+$$;
+comment on function kc_private.invoke_edge_function(text, jsonb) is
+  'Queues an HTTP call to an Edge Function with the Vault service key; a recorded no-op when unavailable. Never raises.';
+
+-- ── Immediate start with a debounce ──────────────────────────────────────────
+-- A worker that must start as soon as there is work (push) is "kicked" from the writing
+-- transaction, at most once per `debounce`; the scheduled run stays the safety net.
+create table kc_private.edge_function_kicks (
+  function_name text primary key check (function_name ~ '^[a-z][a-z0-9-]{1,62}$'),
+  debounce      interval not null check (debounce >= interval '0'),
+  last_kick_at  timestamptz not null default '-infinity'
+);
+comment on table kc_private.edge_function_kicks is 'Edge Functions that may be started from a transaction, and when each was last started.';
+alter table kc_private.edge_function_kicks enable row level security;
+alter table kc_private.edge_function_kicks force row level security;
+revoke all on kc_private.edge_function_kicks from service_role;
+
+-- The dispatcher loops until its queues are empty, so one start serves a burst.
+insert into kc_private.edge_function_kicks (function_name, debounce)
+values ('dispatch-notification', interval '2 seconds');
+
+-- Starts the function unless it was started within its debounce period or another
+-- transaction is starting it right now. Returns whether a call was queued. It never waits
+-- (the row is taken with SKIP LOCKED) and never raises.
+create function kc_private.edge_function_kick(p_function text)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not kc_private.edge_invocation_ready() then
+    return false;
+  end if;
+  perform 1 from kc_private.edge_function_kicks k
+    where k.function_name = p_function and k.last_kick_at <= clock_timestamp() - k.debounce
+      for update skip locked;
+  if not found then
+    return false;
+  end if;
+  update kc_private.edge_function_kicks k
+     set last_kick_at = clock_timestamp()
+   where k.function_name = p_function;
+  return kc_private.invoke_edge_function(p_function) is not null;
+exception when others then
+  return false;
+end;
+$$;
+comment on function kc_private.edge_function_kick(text) is
+  'Debounced, non-blocking start of an Edge Function from a transaction; never waits or raises.';
+
+-- Push latency (FR-NOTIF-001, chat): a notification event starts the dispatcher at once
+-- instead of waiting for the next scheduled minute. Statement-level, so a statement that
+-- enqueues a hundred events asks once.
+create function kc_private.outbox_events_kick_dispatcher()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if exists (select 1 from inserted i where i.topic = 'notification' and i.available_at <= now()) then
+    perform kc_private.edge_function_kick('dispatch-notification');
+  end if;
+  return null;
+exception when others then
+  return null;
+end;
+$$;
+comment on function kc_private.outbox_events_kick_dispatcher() is
+  'AFTER INSERT (statement) on the outbox: starts the push dispatcher for new notification events; cannot fail the insert.';
+
+create trigger outbox_events_kick_dispatcher
+  after insert on kc_private.outbox_events
+  referencing new table as inserted
+  for each statement execute function kc_private.outbox_events_kick_dispatcher();
+
+-- The scheduled safety net of the dispatcher: starts it when a push queue has due work.
+-- Returns whether a call was queued.
+create function kc_private.push_dispatch_tick()
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not exists (select 1 from kc_private.outbox_events e
+                  where e.topic in ('notification', 'notification_push', 'notification_push_receipt')
+                    and e.processed_at is null and e.available_at <= now()) then
+    return false;
+  end if;
+  return kc_private.invoke_edge_function('dispatch-notification') is not null;
+end;
+$$;
+comment on function kc_private.push_dispatch_tick() is
+  'Scheduled every minute: starts the push dispatcher when a notification queue has due events.';
+
+-- >>> supabase/schemas/95_platform/060_retention.sql
+-- Platform · retention (design §4.1, §5 "Partitioning")
+--
+-- Every rule about how long data is kept is one row of kc_private.retention_rules. A rule
+-- with `runnable` is enforced by kc_private.retention_run(<name>), which reads the period
+-- from the row — changing the period is an update of that row. The other rows document a
+-- period that is fixed where the deadline is stamped (the row names that place) and the
+-- job that acts on the deadline.
+
+create table kc_private.retention_rules (
+  name        text primary key check (name ~ '^[a-z][a-z0-9_]{1,62}$'),
+  -- How long rows are kept; null = kept until a decision is taken (see description).
+  keep        interval check (keep > interval '0'),
+  -- True when kc_private.retention_run(name) enforces the rule with `keep`.
+  runnable    boolean not null,
+  enforced_by text not null,
+  description text not null
+);
+comment on table kc_private.retention_rules is 'The one list of retention periods and the function that enforces each.';
+alter table kc_private.retention_rules enable row level security;
+alter table kc_private.retention_rules force row level security;
+revoke insert, update, delete, truncate on kc_private.retention_rules from service_role;
+
+insert into kc_private.retention_rules (name, keep, runnable, enforced_by, description) values
+  ('outbox_processed', interval '7 days', true, 'kc_private.outbox_purge',
+   'Outbox events that were processed. Unprocessed events are never purged: they stay visible to the health checks.'),
+  ('notifications', interval '180 days', true, 'kc_private.notifications_purge',
+   'Notification centre rows and the dedupe ledger; whole monthly partitions are dropped.'),
+  ('feed_impressions', interval '90 days', true, 'kc_private.feed_impressions_purge',
+   'Feed impression log (design §3.4); whole monthly partitions are dropped.'),
+  ('audit_events', interval '24 months', true, 'kc_private.audit_drop_partitions_before',
+   'Audit trail (FR-MOD-012 AC3: at least 24 months); whole monthly partitions are dropped.'),
+  ('job_runs', interval '30 days', true, 'kc_private.ops_purge',
+   'ops.job_runs rows.'),
+  ('ops_warnings', interval '30 days', true, 'kc_private.ops_purge',
+   'ops.warnings rows not seen again for this long.'),
+  ('counter_drift', interval '90 days', true, 'kc_private.ops_purge',
+   'ops.counter_drift rows.'),
+  ('rate_limit_counters', interval '1 hour', true, 'kc_private.rate_limit_purge',
+   'Rate-limit counters, this long after their window ended.'),
+  ('cron_run_history', interval '7 days', true, 'kc_private.cron_history_purge',
+   'pg_cron''s own log of runs (cron.job_run_details); ops.job_runs is the record that is kept longer.'),
+  ('posts_deleted', interval '7 days', false, 'kc_private.posts_purge',
+   'Posts deleted without a recipient. The deadline is stamped on post_closures.purge_after when the post is deleted (25_handoffs); the purge removes posts past it.'),
+  ('accounts_pending_deletion', interval '30 days', false, 'Edge Function purge-deleted-accounts',
+   'Accounts in their deletion grace period. The deadline is stamped on user_account.deletion_purge_at by request_account_deletion (10_identity).'),
+  ('billing_after_account_deletion', null, false, 'none',
+   'Money records of purged accounts: kept, no automatic purge, until the legal period is decided (design §12 Q5); the period then lives in billing.settings.');
+
+-- Processed outbox events older than p_keep. Returns the number removed.
+create function kc_private.outbox_purge(p_keep interval)
+returns bigint
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_rows bigint;
+begin
+  delete from kc_private.outbox_events e
+   where e.processed_at is not null and e.processed_at < now() - p_keep;
+  get diagnostics v_rows = row_count;
+  return v_rows;
+end;
+$$;
+comment on function kc_private.outbox_purge(interval) is 'Retention: deletes processed outbox events older than the period.';
+
+-- Drops the monthly partitions of feed_impressions that lie entirely before the period and
+-- deletes older rows left in the default partition. Returns the number of partitions dropped.
+create function kc_private.feed_impressions_purge(p_keep interval)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_cutoff constant timestamptz := now() - p_keep;
+  v_partition text;
+  v_dropped integer := 0;
+begin
+  for v_partition in
+    select c.relname
+      from pg_catalog.pg_inherits i
+      join pg_catalog.pg_class c on c.oid = i.inhrelid
+     where i.inhparent = 'public.feed_impressions'::regclass
+       and c.relname ~ '^feed_impressions_[0-9]{4}_[0-9]{2}$'
+       and (to_date(right(c.relname, 7), 'YYYY_MM') + interval '1 month')::timestamp at time zone 'UTC' <= v_cutoff
+  loop
+    execute format('drop table public.%I', v_partition);
+    v_dropped := v_dropped + 1;
+  end loop;
+  delete from public.feed_impressions_default d where d.seen_at < v_cutoff;
+  return v_dropped;
+end;
+$$;
+comment on function kc_private.feed_impressions_purge(interval) is
+  'Retention: drops feed_impressions partitions older than the period.';
+
+-- Operational telemetry past its periods. Returns the number of rows removed.
+create function kc_private.ops_purge(p_job_runs interval, p_warnings interval, p_counter_drift interval)
+returns bigint
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_rows bigint;
+  v_total bigint := 0;
+begin
+  delete from ops.job_runs r where r.finished_at < now() - p_job_runs;
+  get diagnostics v_rows = row_count;
+  v_total := v_total + v_rows;
+  delete from ops.warnings w where w.last_seen < now() - p_warnings;
+  get diagnostics v_rows = row_count;
+  v_total := v_total + v_rows;
+  delete from ops.counter_drift d where d.detected_at < now() - p_counter_drift;
+  get diagnostics v_rows = row_count;
+  return v_total + v_rows;
+end;
+$$;
+comment on function kc_private.ops_purge(interval, interval, interval) is
+  'Retention: deletes old job runs, warnings and counter drift rows.';
+
+-- Rate-limit counters whose window ended more than p_keep ago.
+create function kc_private.rate_limit_purge(p_keep interval)
+returns bigint
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_rows bigint;
+begin
+  delete from kc_private.rate_limit_counters c where c.expires_at < now() - p_keep;
+  get diagnostics v_rows = row_count;
+  return v_rows;
+end;
+$$;
+comment on function kc_private.rate_limit_purge(interval) is 'Retention: deletes expired rate-limit counters.';
+
+-- pg_cron's run log older than p_keep; nothing to do on a server without pg_cron.
+create function kc_private.cron_history_purge(p_keep interval)
+returns bigint
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_rows bigint := 0;
+begin
+  if to_regclass('cron.job_run_details') is not null then
+    execute 'delete from cron.job_run_details d where d.end_time < now() - $1' using p_keep;
+    get diagnostics v_rows = row_count;
+  end if;
+  return v_rows;
+end;
+$$;
+comment on function kc_private.cron_history_purge(interval) is 'Retention: trims pg_cron''s run log.';
+
+-- Hard delete of posts deleted without a recipient whose grace period ended (design §4.1.5).
+-- Everything that hangs on the post goes with it by cascade; its files are then no longer
+-- referenced and are removed from storage by the orphan reconciliation. Returns the number
+-- of posts removed.
+create function kc_private.posts_purge(p_limit integer default 500)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_rows integer;
+begin
+  delete from public.posts p
+   where p.id in (select d from kc_private.posts_due_for_purge(p_limit) d);
+  get diagnostics v_rows = row_count;
+  return v_rows;
+end;
+$$;
+comment on function kc_private.posts_purge(integer) is
+  'Deletes deleted_no_recipient posts past their grace period; storage files follow through the orphan job.';
+
+-- Enforces one runnable rule with the period of its row. Returns what the enforcing
+-- function reports (rows or partitions removed).
+create function kc_private.retention_run(p_rule text)
+returns bigint
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_rule kc_private.retention_rules;
+begin
+  select r.* into v_rule from kc_private.retention_rules r where r.name = p_rule;
+  if not found or not v_rule.runnable or v_rule.keep is null then
+    raise exception 'retention_rule_not_runnable' using errcode = 'P0001', detail = p_rule;
+  end if;
+  case p_rule
+    when 'outbox_processed' then return kc_private.outbox_purge(v_rule.keep);
+    when 'notifications' then return kc_private.notifications_purge(v_rule.keep);
+    when 'feed_impressions' then return kc_private.feed_impressions_purge(v_rule.keep);
+    when 'audit_events' then
+      return kc_private.audit_drop_partitions_before((now() - v_rule.keep)::date);
+    when 'job_runs', 'ops_warnings', 'counter_drift' then
+      return kc_private.ops_purge(
+        (select r.keep from kc_private.retention_rules r where r.name = 'job_runs'),
+        (select r.keep from kc_private.retention_rules r where r.name = 'ops_warnings'),
+        (select r.keep from kc_private.retention_rules r where r.name = 'counter_drift'));
+    when 'rate_limit_counters' then return kc_private.rate_limit_purge(v_rule.keep);
+    when 'cron_run_history' then return kc_private.cron_history_purge(v_rule.keep);
+    else
+      raise exception 'retention_rule_not_runnable' using errcode = 'P0001', detail = p_rule;
+  end case;
+end;
+$$;
+comment on function kc_private.retention_run(text) is
+  'Enforces a retention rule of kc_private.retention_rules with the period stored on its row.';
+
+-- ── Partition maintenance ────────────────────────────────────────────────────
+-- Creates the partitions of the current and the next month for the three partitioned logs.
+-- Run daily, so a month is prepared weeks ahead and a missed run is repaired by the next.
+create function kc_private.partitions_ensure()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_month date;
+begin
+  foreach v_month in array array[
+    date_trunc('month', now() at time zone 'UTC')::date,
+    (date_trunc('month', now() at time zone 'UTC') + interval '1 month')::date]
+  loop
+    perform kc_private.feed_impressions_ensure_partition(v_month);
+    perform kc_private.notifications_ensure_partition(v_month);
+    perform kc_private.audit_ensure_partition(v_month);
+  end loop;
+end;
+$$;
+comment on function kc_private.partitions_ensure() is
+  'Creates this month''s and next month''s partitions of feed_impressions, notifications and audit.events.';
+
+-- feed_impressions starts with its default partition only; give it its first two months.
+do $$ begin perform kc_private.partitions_ensure(); end $$;
+
+-- >>> supabase/schemas/95_platform/070_counter_reconciliation.sql
+-- Platform · counter reconciliation (design §5 "Counters")
+--
+-- user_stats and post_stats are kept by triggers. Once a night each counter that can be
+-- recomputed from rows that still exist is recomputed; a difference is written to
+-- ops.counter_drift and the counter is repaired. Drift means a trigger missed a case, so
+-- every row there is a bug report.
+--
+-- Reconciled:      user_stats  followers_count, following_count, open_posts_public,
+--                              open_posts_followers_only, open_posts_only_me
+--                  post_stats  reactions_count, comments_count, shares_count
+-- Not reconciled:  user_stats  items_given_count, items_received_count, posts_created_total,
+--                              volunteer_hours_total, karma_points — running totals whose
+--                              source rows are purged (deleted posts) or owned by a ledger.
+--
+-- A candidate is found by one set-based comparison, then confirmed under the counter row's
+-- lock: the triggers take the same lock, so a write in flight is either fully counted or
+-- not seen at all, never half.
+
+-- Writes one drift row per counter that differs between the two objects; returns how many.
+create function kc_private.counter_drift_record(
+  p_table text, p_subject_id uuid, p_stored jsonb, p_actual jsonb)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_rows integer;
+begin
+  insert into ops.counter_drift (counter_table, counter_name, subject_id, stored_value, actual_value)
+  select p_table, a.key, p_subject_id, coalesce((p_stored ->> a.key)::bigint, 0), a.value::bigint
+    from jsonb_each_text(p_actual) a
+   where coalesce((p_stored ->> a.key)::bigint, 0) <> a.value::bigint;
+  get diagnostics v_rows = row_count;
+  return v_rows;
+end;
+$$;
+comment on function kc_private.counter_drift_record(text, uuid, jsonb, jsonb) is
+  'Records the counters that differ between a stored and a recomputed set; returns their number.';
+
+-- The recomputable counters of one member, from the source rows.
+create function kc_private.user_stats_actual(p_user_id uuid)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'followers_count', (select count(*) from public.follows f where f.followed_id = p_user_id),
+    'following_count', (select count(*) from public.follows f where f.follower_id = p_user_id),
+    'open_posts_public', count(*) filter (where p.visibility = 'Public'),
+    'open_posts_followers_only', count(*) filter (where p.visibility = 'FollowersOnly'),
+    'open_posts_only_me', count(*) filter (where p.visibility = 'OnlyMe'))
+    from public.posts p
+   where p.owner_id = p_user_id and p.status = 'open';
+$$;
+
+-- Recomputes the recomputable member counters; returns the number of counters repaired.
+create function kc_private.user_stats_reconcile()
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id uuid;
+  v_stored jsonb;
+  v_actual jsonb;
+  v_fixed integer := 0;
+  v_drifted integer;
+begin
+  for v_user_id in
+    with followers as (select f.followed_id as user_id, count(*) as n from public.follows f group by 1),
+         following as (select f.follower_id as user_id, count(*) as n from public.follows f group by 1),
+         open_posts as (
+           select p.owner_id as user_id,
+                  count(*) filter (where p.visibility = 'Public') as n_public,
+                  count(*) filter (where p.visibility = 'FollowersOnly') as n_followers,
+                  count(*) filter (where p.visibility = 'OnlyMe') as n_only_me
+             from public.posts p where p.status = 'open' group by 1)
+    select s.user_id
+      from public.user_stats s
+      left join followers a on a.user_id = s.user_id
+      left join following b on b.user_id = s.user_id
+      left join open_posts o on o.user_id = s.user_id
+     where (s.followers_count, s.following_count, s.open_posts_public,
+            s.open_posts_followers_only, s.open_posts_only_me)
+           is distinct from
+           (coalesce(a.n, 0)::integer, coalesce(b.n, 0)::integer, coalesce(o.n_public, 0)::integer,
+            coalesce(o.n_followers, 0)::integer, coalesce(o.n_only_me, 0)::integer)
+  loop
+    select to_jsonb(s) into v_stored from public.user_stats s where s.user_id = v_user_id for update;
+    continue when v_stored is null;
+    v_actual := kc_private.user_stats_actual(v_user_id);
+    v_drifted := kc_private.counter_drift_record('user_stats', v_user_id, v_stored, v_actual);
+    if v_drifted > 0 then
+      update public.user_stats s
+         set followers_count = (v_actual ->> 'followers_count')::integer,
+             following_count = (v_actual ->> 'following_count')::integer,
+             open_posts_public = (v_actual ->> 'open_posts_public')::integer,
+             open_posts_followers_only = (v_actual ->> 'open_posts_followers_only')::integer,
+             open_posts_only_me = (v_actual ->> 'open_posts_only_me')::integer
+       where s.user_id = v_user_id;
+      v_fixed := v_fixed + v_drifted;
+    end if;
+  end loop;
+  return v_fixed;
+end;
+$$;
+comment on function kc_private.user_stats_reconcile() is
+  'Nightly: recomputes follower, following and open-post counters, records drift in ops.counter_drift and repairs it.';
+
+-- The engagement counters of one post, from the source rows.
+create function kc_private.post_stats_actual(p_post_id uuid)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'reactions_count', (select count(*) from public.post_reactions r where r.post_id = p_post_id),
+    'comments_count', (select count(*) from public.post_comments c
+                        where c.post_id = p_post_id and c.status = 'active'),
+    'shares_count', (select count(*) from public.post_shares s where s.post_id = p_post_id));
+$$;
+
+-- Recomputes the engagement counters of every post; a post that has engagement but no
+-- counter row gets one. Returns the number of counters repaired.
+create function kc_private.post_stats_reconcile()
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post_id uuid;
+  v_stored jsonb;
+  v_actual jsonb;
+  v_fixed integer := 0;
+  v_drifted integer;
+begin
+  for v_post_id in
+    with actual as (
+      select x.post_id, sum(x.r)::integer as r, sum(x.c)::integer as c, sum(x.s)::integer as s
+        from (select pr.post_id, count(*) as r, 0 as c, 0 as s from public.post_reactions pr group by 1
+              union all
+              select pc.post_id, 0, count(*), 0 from public.post_comments pc where pc.status = 'active' group by 1
+              union all
+              select ps.post_id, 0, 0, count(*) from public.post_shares ps group by 1) x
+       group by x.post_id)
+    select coalesce(s.post_id, a.post_id)
+      from public.post_stats s
+      full join actual a on a.post_id = s.post_id
+     where (coalesce(s.reactions_count, 0), coalesce(s.comments_count, 0), coalesce(s.shares_count, 0))
+           is distinct from (coalesce(a.r, 0), coalesce(a.c, 0), coalesce(a.s, 0))
+  loop
+    -- The post row is the lock when no counter row exists yet.
+    perform 1 from public.posts p where p.id = v_post_id for share;
+    continue when not found;
+    insert into public.post_stats (post_id) values (v_post_id) on conflict (post_id) do nothing;
+    select to_jsonb(s) into v_stored from public.post_stats s where s.post_id = v_post_id for update;
+    v_actual := kc_private.post_stats_actual(v_post_id);
+    v_drifted := kc_private.counter_drift_record('post_stats', v_post_id, v_stored, v_actual);
+    if v_drifted > 0 then
+      update public.post_stats s
+         set reactions_count = (v_actual ->> 'reactions_count')::integer,
+             comments_count = (v_actual ->> 'comments_count')::integer,
+             shares_count = (v_actual ->> 'shares_count')::integer
+       where s.post_id = v_post_id;
+      v_fixed := v_fixed + v_drifted;
+    end if;
+  end loop;
+  return v_fixed;
+end;
+$$;
+comment on function kc_private.post_stats_reconcile() is
+  'Nightly: recomputes reaction, comment and share counters, records drift in ops.counter_drift and repairs it.';
+
+-- >>> supabase/schemas/95_platform/080_health_checks.sql
+-- Platform · health checks (design §6 "Monitoring")
+--
+-- `select * from ops.run_health_checks()` answers "is the background machinery working?"
+-- with one row per check: ok, failing, or skipped (the thing it measures is not installed
+-- on this server). A monitor calls it every few minutes with the service role and alerts on
+-- any `failing` row. The checks are rows of ops.health_checks: what is measured, how much
+-- of it is tolerated, and what a failure means for the operator.
+
+create table ops.health_checks (
+  name          text primary key check (name ~ '^[a-z][a-z0-9_]{1,62}$'),
+  description   text not null,
+  -- The check fails when the measured number is above this.
+  max_allowed   bigint not null default 0 check (max_allowed >= 0),
+  -- Age or look-back period the measurement uses, where it has one.
+  period        interval check (period > interval '0'),
+  failure_means text not null
+);
+comment on table ops.health_checks is 'Definition of each health check: tolerance, period and the meaning of a failure.';
+alter table ops.health_checks enable row level security;
+alter table ops.health_checks force row level security;
+revoke insert, delete, truncate on ops.health_checks from service_role;
+
+insert into ops.health_checks (name, description, max_allowed, period, failure_means) values
+  ('outbox_backlog', 'Topics whose oldest due event has waited longer than the period.', 0, interval '5 minutes',
+   'A consumer is not running or cannot keep up: side effects of that topic (push, system messages, audit) are delayed.'),
+  ('outbox_exhausted', 'Unprocessed events that were attempted five times or more.', 0, null,
+   'Events a consumer keeps failing on. Read last_error, fix the cause, then release or remove them.'),
+  ('outbox_stale_claims', 'Events claimed longer ago than the period and never confirmed.', 0, interval '15 minutes',
+   'A worker died or timed out mid-batch; the events are retried, but a growing number means the worker keeps dying.'),
+  ('jobs_failing', 'Enabled jobs whose latest run failed.', 0, null,
+   'A scheduled job raises or times out. ops.job_runs.error has the reason.'),
+  ('jobs_late', 'Enabled jobs without a successful run within their alert_after.', 0, null,
+   'A job stopped running or never succeeds: the scheduler is down, the job is unscheduled, or it always fails.'),
+  ('jobs_unscheduled', 'Enabled jobs of the registry that are missing from pg_cron.', 0, null,
+   'pg_cron is out of step with kc_private.scheduled_jobs. Run select kc_private.jobs_sync().'),
+  ('partitions_next_month', 'Partitioned logs without a partition for next month.', 0, null,
+   'partitions_ensure is not running; at the turn of the month rows start landing in the default partition.'),
+  ('default_partition_rows', 'Rows sitting in a default partition.', 0, null,
+   'A month had no partition when its rows arrived. They stay readable; that month cannot be dropped by retention as one partition.'),
+  ('push_retries', 'Pushes still waiting after three delivery attempts.', 20, null,
+   'The push provider keeps refusing pushes: provider outage, expired credentials or many dead devices.'),
+  ('counter_drift', 'Counters repaired by the reconciliation within the period.', 0, interval '24 hours',
+   'A counter trigger missed a case. Each ops.counter_drift row is a defect to investigate.'),
+  ('warnings', 'Operational warnings seen within the period.', 0, interval '24 hours',
+   'See ops.warnings: typically Edge Function invocation is unavailable or unconfigured, or a rate limit has no row.'),
+  ('edge_function_responses', 'Edge Function calls that failed or answered 4xx/5xx within the period.', 0, interval '1 hour',
+   'A worker started from the database is failing or rejects the service key (rotate the Vault secret).');
+
+-- The number each check measures, with a short detail. A check whose subject is not
+-- installed on this server returns no row.
+create function ops.health_measurements()
+returns table (check_name text, measured bigint, detail text)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_next constant date := (date_trunc('month', now() at time zone 'UTC') + interval '1 month')::date;
+begin
+  return query
+    select 'outbox_backlog', count(*), string_agg(format('%s: %s due, oldest %s', t.topic, t.due, t.oldest), '; ')
+      from (select e.topic, count(*) as due, date_trunc('second', now() - min(e.available_at)) as oldest
+              from kc_private.outbox_events e
+             where e.processed_at is null and e.available_at <= now()
+             group by e.topic) t
+     where t.oldest > (select c.period from ops.health_checks c where c.name = 'outbox_backlog');
+  return query
+    select 'outbox_exhausted', coalesce(sum(t.n), 0)::bigint, string_agg(format('%s: %s', t.topic, t.n), '; ')
+      from (select e.topic, count(*) as n from kc_private.outbox_events e
+             where e.processed_at is null and e.attempts >= 5 group by e.topic) t;
+  return query
+    select 'outbox_stale_claims', coalesce(sum(t.n), 0)::bigint, string_agg(format('%s: %s', t.topic, t.n), '; ')
+      from (select e.topic, count(*) as n from kc_private.outbox_events e
+             where e.processed_at is null
+               and e.claimed_at < now() - (select c.period from ops.health_checks c where c.name = 'outbox_stale_claims')
+             group by e.topic) t;
+  return query
+    select 'jobs_failing', count(*), string_agg(j.name || ': ' || left(l.error, 120), '; ')
+      from kc_private.scheduled_jobs j
+     cross join lateral (select r.status, r.error from ops.job_runs r
+                          where r.job_name = j.name order by r.finished_at desc limit 1) l
+     where j.enabled and l.status = 'failed';
+  return query
+    select 'jobs_late', count(*), string_agg(j.name, ', ')
+      from kc_private.scheduled_jobs j
+     where j.enabled and j.created_at <= now() - j.alert_after
+       and not exists (select 1 from ops.job_runs r
+                        where r.job_name = j.name and r.status = 'succeeded'
+                          and r.finished_at > now() - j.alert_after);
+  if to_regclass('cron.job') is not null then
+    return query execute
+      $q$select 'jobs_unscheduled', count(*), string_agg(j.name, ', ')
+           from kc_private.scheduled_jobs j
+          where j.enabled
+            and not exists (select 1 from cron.job c where c.jobname = j.name and c.active)$q$;
+  end if;
+  return query
+    select 'partitions_next_month', count(*), string_agg(p.name, ', ')
+      from (values ('public.feed_impressions_' || to_char(v_next, 'YYYY_MM')),
+                   ('kc_private.notifications_y' || to_char(v_next, 'YYYY"m"MM')),
+                   ('audit.events_y' || to_char(v_next, 'YYYY"m"MM'))) p (name)
+     where to_regclass(p.name) is null;
+  return query
+    select 'default_partition_rows', sum(d.n)::bigint,
+           string_agg(d.name || ': ' || d.n, '; ') filter (where d.n > 0)
+      from (select 'feed_impressions' as name, count(*) as n from public.feed_impressions_default
+            union all select 'notifications', count(*) from kc_private.notifications_default
+            union all select 'audit.events', count(*) from audit.events_default) d;
+  return query
+    select 'push_retries', count(*), null::text
+      from kc_private.outbox_events e
+     where e.topic = 'notification_push' and e.processed_at is null and e.attempts >= 3;
+  return query
+    select 'counter_drift', count(*), string_agg(distinct d.counter_table || '.' || d.counter_name, ', ')
+      from ops.counter_drift d
+     where d.detected_at > now() - (select c.period from ops.health_checks c where c.name = 'counter_drift');
+  return query
+    select 'warnings', count(*), string_agg(w.key, ', ')
+      from ops.warnings w
+     where w.last_seen > now() - (select c.period from ops.health_checks c where c.name = 'warnings');
+  if to_regclass('net._http_response') is not null then
+    return query execute
+      $q$select 'edge_function_responses', count(*), string_agg(distinct coalesce(r.status_code::text, 'no response'), ', ')
+           from net._http_response r
+          where r.created > now() - $1 and (r.status_code is null or r.status_code >= 400)$q$
+      using (select c.period from ops.health_checks c where c.name = 'edge_function_responses');
+  end if;
+end;
+$$;
+comment on function ops.health_measurements() is 'Measures every health check; internal to ops.run_health_checks().';
+
+-- One row per check. Service role only (the `ops` schema is closed to members).
+create function ops.run_health_checks()
+returns table (check_name text, status text, measured bigint, max_allowed bigint, detail text, failure_means text)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select c.name,
+         case when m.check_name is null then 'skipped'
+              when m.measured > c.max_allowed then 'failing'
+              else 'ok' end,
+         m.measured, c.max_allowed, m.detail, c.failure_means
+    from ops.health_checks c
+    left join ops.health_measurements() m on m.check_name = c.name
+   order by c.name;
+$$;
+comment on function ops.run_health_checks() is
+  'Runs every health check: one row each with status ok, failing or skipped, the measured value and the meaning of a failure.';
+
+-- Queue depth per topic at a glance.
+create view ops.outbox_stats with (security_invoker = true) as
+  select e.topic,
+         count(*) filter (where e.processed_at is null) as pending,
+         count(*) filter (where e.processed_at is null and e.available_at <= now()) as due,
+         now() - min(e.available_at) filter (where e.processed_at is null and e.available_at <= now()) as oldest_due_age,
+         count(*) filter (where e.processed_at is null and e.claimed_at is not null) as claimed,
+         count(*) filter (where e.processed_at is null and e.attempts >= 5) as exhausted,
+         count(*) filter (where e.processed_at > now() - interval '1 hour') as processed_last_hour
+    from kc_private.outbox_events e
+   group by e.topic;
+comment on view ops.outbox_stats is 'Per-topic depth of the outbox: pending, due, oldest due age, claimed, exhausted, processed in the last hour.';
+
+-- >>> supabase/schemas/95_platform/090_storage.sql
+-- Platform · storage buckets and policies (design §4 "Storage", §5.3)
+--
+-- Every media surface has a bucket with a size limit and a MIME allow-list, and every
+-- object lives under a folder named by the member who uploaded it (`<user_id>/…`), so the
+-- account purge can remove a member's files bucket by bucket.
+--
+--   avatars      public    512 KB  JPEG            <user_id>/avatar.jpg (FR-AUTH-011, FR-PROFILE-007)
+--   post-images  public    8 MB    JPEG, PNG       declared in 30_social/900_storage.sql
+--   chat-media   private   5 MB    JPEG, PNG, WebP <user_id>/<chat_id>/<file>, read through
+--                                                  signed URLs by the members of that chat
+--
+-- No bucket is declared for organization logos or identity documents: no table of the
+-- baseline stores such a file yet. A bucket is added here together with the feature.
+--
+-- The `storage` schema belongs to the platform; without it this file does nothing.
+
+-- The uuid in folder p_position (1-based) of an object path; null when that folder is
+-- missing or not a uuid, so a malformed path matches no policy instead of raising.
+create function kc_access.storage_path_uuid(p_name text, p_position integer)
+returns uuid
+language sql
+immutable
+set search_path = ''
+as $$
+  select case
+    when split_part(p_name, '/', p_position) ~* '^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$'
+      then split_part(p_name, '/', p_position)::uuid
+  end;
+$$;
+comment on function kc_access.storage_path_uuid(text, integer) is
+  'Policy helper: the uuid naming a folder of a storage object path.';
+grant execute on function kc_access.storage_path_uuid(text, integer) to authenticated;
+
+do $$
+begin
+  if to_regclass('storage.buckets') is null or to_regclass('storage.objects') is null then
+    return;
+  end if;
+
+  insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+  values ('avatars', 'avatars', true, 524288, array['image/jpeg']),
+         ('chat-media', 'chat-media', false, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
+  on conflict (id) do update
+    set public = excluded.public,
+        file_size_limit = excluded.file_size_limit,
+        allowed_mime_types = excluded.allowed_mime_types;
+
+  -- Avatars: a member writes, replaces and removes files in their own folder. Replacing
+  -- (upsert) needs to see the existing object; everyone else reads through the public URL.
+  create policy avatars_select_own_folder on storage.objects
+    for select to authenticated
+    using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
+  create policy avatars_insert_own_folder on storage.objects
+    for insert to authenticated
+    with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
+  create policy avatars_update_own_folder on storage.objects
+    for update to authenticated
+    using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text)
+    with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
+  create policy avatars_delete_own_folder on storage.objects
+    for delete to authenticated
+    using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+  -- Chat media: readable — and therefore signable — by exactly the members who can read
+  -- the chat named by the second folder; the chat decides (kc_access.can_access_chat).
+  create policy chat_media_select_chat_member on storage.objects
+    for select to authenticated
+    using (bucket_id = 'chat-media'
+           and (select kc_access.can_access_chat(kc_access.storage_path_uuid(name, 2))));
+  -- A member uploads under their own folder, into a chat they take part in.
+  create policy chat_media_insert_own_folder on storage.objects
+    for insert to authenticated
+    with check (bucket_id = 'chat-media'
+                and (storage.foldername(name))[1] = (select auth.uid())::text
+                and (select kc_access.can_access_chat(kc_access.storage_path_uuid(name, 2))));
+  create policy chat_media_delete_own_folder on storage.objects
+    for delete to authenticated
+    using (bucket_id = 'chat-media' and (storage.foldername(name))[1] = (select auth.uid())::text);
+end $$;
+
+-- >>> supabase/schemas/95_platform/100_purge_contract.sql
+-- Platform · database side of the two storage workers (design §4.1, §5.3 "Cleanup")
+--
+-- purge-deleted-accounts (Edge Function, daily). For each account past its 30-day grace
+-- period (kc_private.accounts_due_for_purge), in this order:
+--   1. kc_private.account_purge_prepare  tombstone + money records detached
+--   2. the worker deletes the member's folder `<user_id>/` in every storage bucket
+--   3. kc_private.account_purge_finish   the auth identity is deleted; every member row
+--                                        goes with it by cascade
+-- Each step can be repeated, and an account stays listed as due until step 3 succeeded,
+-- so a run that fails half-way is finished by the next one.
+--
+-- reconcile-storage-orphans (Edge Function, daily). Lists the objects of a bucket and asks
+-- kc_private.storage_orphan_keys which of them no row references any more.
+
+-- Raises unless the account exists and its grace period has ended. Locks the account row,
+-- so a purge and a late restore cannot interleave.
+create function kc_private.account_purge_require_due(p_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform 1 from public.user_account a
+    where a.user_id = p_user_id and a.deletion_purge_at <= now()
+      for update;
+  if not found then
+    raise exception 'account_not_due_for_purge' using errcode = 'P0001';
+  end if;
+end;
+$$;
+comment on function kc_private.account_purge_require_due(uuid) is
+  'Purge guard: the account is pending deletion and past its purge date.';
+
+-- Step 1. Leaves the deletion tombstone (audit) and replaces the member's reference in the
+-- money records by it (billing). Both parts are idempotent.
+create function kc_private.account_purge_prepare(p_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.account_purge_require_due(p_user_id);
+  perform kc_private.audit_record_deletion(p_user_id);
+  perform kc_private.billing_detach_user(p_user_id);
+end;
+$$;
+comment on function kc_private.account_purge_prepare(uuid) is
+  'Account purge, step 1: deletion tombstone and detachment of money records; repeatable.';
+
+-- Step 3. Deletes the auth identity; the member's rows follow by cascade. Returns false
+-- when the account is already gone, so repeating a finished purge is not an error.
+create function kc_private.account_purge_finish(p_user_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not exists (select 1 from auth.users au where au.id = p_user_id) then
+    return false;
+  end if;
+  perform kc_private.account_purge_require_due(p_user_id);
+  delete from auth.users au where au.id = p_user_id;
+  return true;
+end;
+$$;
+comment on function kc_private.account_purge_finish(uuid) is
+  'Account purge, step 3: removes the auth identity and, by cascade, every row of the member.';
+
+-- Of the object keys p_keys in bucket p_bucket, those no row references. Only buckets whose
+-- objects are recorded row by row can be judged: for any other bucket nothing is returned,
+-- so the worker never deletes a file it cannot prove unreferenced.
+--   post-images  referenced by post_media (storage_bucket, storage_key)
+create function kc_private.storage_orphan_keys(p_bucket text, p_keys text[])
+returns setof text
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select k.key
+    from unnest(p_keys) as k (key)
+   where p_bucket = 'post-images'
+     and not exists (select 1 from public.post_media m
+                      where m.storage_bucket = p_bucket and m.storage_key = k.key);
+$$;
+comment on function kc_private.storage_orphan_keys(text, text[]) is
+  'Storage reconciliation: the listed object keys of a bucket that no row references.';
+
+-- >>> supabase/schemas/95_platform/900_job_registry.sql
+-- Platform · the job registry (vocabulary of the scheduler)
+--
+-- Every background job of the product, one row each. A module that adds a sweep, a queue
+-- consumer or a retention function adds its row here; the insert reconciles pg_cron in
+-- the same transaction (trigger scheduled_jobs_sync). Schedules are UTC.
+--
+-- `alert_after` is the longest the job may go without a successful run before the health
+-- check `jobs_late` fails — about three periods for frequent jobs, a day and a half for
+-- daily ones.
+
+insert into kc_private.scheduled_jobs (name, schedule, command, timeout, alert_after, description) values
+  -- Queue consumers (outbox topics handled inside the database).
+  ('chat_system_messages', '10 seconds', 'select kc_private.chat_system_messages_process()',
+   interval '30 seconds', interval '5 minutes', 'Outbox topic chat_system_message: writes system lines into chats.'),
+  ('audit_consume', '* * * * *', 'select kc_private.audit_consume_outbox()',
+   interval '50 seconds', interval '10 minutes', 'Outbox topic audit: writes audit.events.'),
+  ('moderation_consume', '* * * * *', 'select kc_private.moderation_consume_outbox()',
+   interval '50 seconds', interval '10 minutes', 'Outbox topic moderation: fills the moderation queue.'),
+
+  -- Edge Function workers started from the database.
+  ('push_dispatch', '* * * * *', 'select kc_private.push_dispatch_tick()',
+   interval '20 seconds', interval '10 minutes',
+   'Safety net of the push dispatcher (dispatch-notification); new events also start it at once.'),
+  ('account_purge', '30 3 * * *', $$select kc_private.invoke_edge_function('purge-deleted-accounts')$$,
+   interval '20 seconds', interval '36 hours', 'Starts purge-deleted-accounts: accounts past their 30-day grace period.'),
+  ('storage_orphans', '0 5 * * *', $$select kc_private.invoke_edge_function('reconcile-storage-orphans')$$,
+   interval '20 seconds', interval '36 hours', 'Starts reconcile-storage-orphans: files no row references.'),
+  ('exif_strip', '30 2 * * *', $$select kc_private.invoke_edge_function('strip-exif')$$,
+   interval '20 seconds', interval '36 hours', 'Starts strip-exif: second pass over recently uploaded post images.'),
+  ('standing_orders_charge', '10 * * * *', $$select kc_private.invoke_edge_function('subscriptions-charger')$$,
+   interval '20 seconds', interval '4 hours', 'Starts subscriptions-charger: standing orders whose charge is due.'),
+
+  -- Time-driven state moves.
+  ('handoff_reservation_expiry', '*/10 * * * *', 'select kc_private.handoff_reservation_expiry_sweep()',
+   interval '2 minutes', interval '40 minutes', 'Reservations and booking requests nobody confirmed in time.'),
+  ('handoff_no_show', '45 * * * *', 'select kc_private.handoff_no_show_sweep()',
+   interval '2 minutes', interval '4 hours', 'Confirmed item handoffs whose pickup time passed.'),
+  ('post_expiry', '*/15 * * * *', 'select kc_private.post_expiry_sweep()',
+   interval '3 minutes', interval '1 hour', 'Open and paused posts whose time has come, in every world.'),
+  ('housing_not_completed', '*/30 * * * *', 'select kc_private.housing_not_completed_sweep()',
+   interval '2 minutes', interval '2 hours', 'Stays nobody closed after check-out.'),
+  ('food_expiry_alert', '5 * * * *', 'select kc_private.food_expiry_alert_sweep()',
+   interval '2 minutes', interval '4 hours', 'Food offers about to expire: urgency and owner alert.'),
+  ('ride_series_materialize', '0 2 * * *', 'select kc_private.ride_series_materialize()',
+   interval '10 minutes', interval '36 hours', 'Publishes the missing occurrences of recurring rides, 30 days ahead.'),
+  ('lift_expired_suspensions', '*/15 * * * *', 'select kc_private.lift_expired_suspensions()',
+   interval '2 minutes', interval '1 hour', 'Ends suspensions whose period is over.'),
+  ('posts_purge', '0 4 * * *', 'select kc_private.posts_purge()',
+   interval '10 minutes', interval '36 hours', 'Hard delete of posts deleted without a recipient, past their grace period.'),
+
+  -- Partitions, retention, reconciliation.
+  ('partitions_ensure', '5 3 * * *', 'select kc_private.partitions_ensure()',
+   interval '2 minutes', interval '36 hours', 'This and next month''s partitions of feed_impressions, notifications, audit.events.'),
+  ('retention_outbox', '20 * * * *', $$select kc_private.retention_run('outbox_processed')$$,
+   interval '5 minutes', interval '4 hours', 'Removes processed outbox events past their retention.'),
+  ('retention_rate_limits', '*/15 * * * *', $$select kc_private.retention_run('rate_limit_counters')$$,
+   interval '1 minute', interval '1 hour', 'Removes expired rate-limit counters.'),
+  ('retention_notifications', '0 4 * * *', $$select kc_private.retention_run('notifications')$$,
+   interval '10 minutes', interval '36 hours', 'Drops notification partitions and dedupe keys past 180 days.'),
+  ('retention_feed_impressions', '10 4 * * *', $$select kc_private.retention_run('feed_impressions')$$,
+   interval '10 minutes', interval '36 hours', 'Drops feed impression partitions past 90 days.'),
+  ('retention_audit', '20 4 * * *', $$select kc_private.retention_run('audit_events')$$,
+   interval '10 minutes', interval '36 hours', 'Drops audit partitions past 24 months.'),
+  ('retention_ops', '30 4 * * *', $$select kc_private.retention_run('job_runs')$$,
+   interval '5 minutes', interval '36 hours', 'Trims ops.job_runs, ops.warnings and ops.counter_drift.'),
+  ('retention_cron_history', '40 4 * * *', $$select kc_private.retention_run('cron_run_history')$$,
+   interval '5 minutes', interval '36 hours', 'Trims pg_cron''s own run log.'),
+  ('user_stats_reconcile', '15 1 * * *', 'select kc_private.user_stats_reconcile()',
+   interval '15 minutes', interval '36 hours', 'Recomputes member counters; drift goes to ops.counter_drift.'),
+  ('post_stats_reconcile', '45 1 * * *', 'select kc_private.post_stats_reconcile()',
+   interval '15 minutes', interval '36 hours', 'Recomputes post engagement counters; drift goes to ops.counter_drift.');

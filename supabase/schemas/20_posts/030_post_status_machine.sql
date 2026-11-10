@@ -94,6 +94,9 @@ begin
     raise exception 'post_kind_not_allowed' using errcode = 'P0001',
       detail = 'the post kind is inactive or does not admit this direction';
   end if;
+  if tg_op = 'INSERT' then
+    perform kc_private.rate_limit_enforce('post_create', new.owner_id);  -- 95_platform
+  end if;
 
   if v_from is not distinct from new.status then
     return new;

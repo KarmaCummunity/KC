@@ -189,6 +189,7 @@ declare
   v_post public.posts;
   v_handoff public.post_handoffs;
 begin
+  perform kc_private.rate_limit_enforce('handoff_request', p_recipient_id);  -- 95_platform
   select p.* into v_post from public.posts p where p.id = p_post_id for update;
   if found and v_post.owner_id = p_recipient_id then
     raise exception 'own_listing' using errcode = 'P0001';

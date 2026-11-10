@@ -46,6 +46,7 @@ declare
 begin
   select i.* into v_intent from billing.donation_intents i where i.idempotency_key = p_idempotency_key;
   if not found then
+    perform kc_private.rate_limit_enforce('donation_intent', v_user_id);  -- 95_platform
     perform kc_private.billing_assert_can_donate(p_org_id, p_amount_agorot);
     insert into billing.donation_intents (user_id, org_id, post_id, amount_agorot, provider_id, idempotency_key)
     values (v_user_id, p_org_id, p_post_id, p_amount_agorot, kc_private.billing_default_provider(), p_idempotency_key)

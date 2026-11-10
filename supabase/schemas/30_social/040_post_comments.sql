@@ -38,7 +38,7 @@ create index post_comments_thread_idx on public.post_comments (post_id, parent_c
 -- Replies of a comment, oldest first; covers the parent foreign key.
 create index post_comments_replies_idx on public.post_comments (parent_comment_id, created_at, id)
   where parent_comment_id is not null;
--- Write-rate check and removal of a member's comments; covers the author foreign key.
+-- A member's comments, newest first, and their removal; covers the author foreign key.
 create index post_comments_author_recent_idx on public.post_comments (author_id, created_at desc);
 
 create trigger post_comments_status_fsm
@@ -80,7 +80,7 @@ comment on function kc_private.comment_mentions(text, uuid, uuid) is
   'Resolves the @share_handle tokens of a comment body to members who can read the post.';
 
 -- Server-side part of a comment write.
---   insert  at most 20 comments a minute per member; a reply must point at an active
+--   insert  the member's comment rate limit (kc_private.rate_limits); a reply must point at an active
 --           top-level comment of the same post (one thread level, S8); mentions resolved
 --   edit    the body changed: edit stamp and mentions refreshed
 create function kc_private.post_comments_prepare()
@@ -91,10 +91,7 @@ set search_path = ''
 as $$
 begin
   if tg_op = 'INSERT' then
-    if (select count(*) from public.post_comments c
-         where c.author_id = new.author_id and c.created_at > now() - interval '1 minute') >= 20 then
-      raise exception 'rate_limited' using errcode = 'P0001', detail = 'at most 20 comments a minute';
-    end if;
+    perform kc_private.rate_limit_enforce('comment_create', new.author_id);  -- 95_platform
     if new.parent_comment_id is not null and not exists (
          select 1 from public.post_comments c
           where c.id = new.parent_comment_id and c.post_id = new.post_id
