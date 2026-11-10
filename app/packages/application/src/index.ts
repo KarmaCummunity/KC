@@ -292,6 +292,7 @@ export { LoadPublicResearchBundleUseCase } from './research/LoadPublicResearchBu
 export { SubmitPublicResearchResponseUseCase } from './research/SubmitPublicResearchResponseUseCase';
 export * from './payments';
 export * from './volunteering';
+export * from './organizations';
 export * from './giving';
 export * from './housing';
 export * from './admin/whatsapp';
