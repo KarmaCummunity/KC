@@ -209,9 +209,12 @@ comment on function kc_private.fsm_assert_transition(text, text, text, text) is
 -- On insert the status must belong to the machine; on update the move must be a legal edge.
 -- The acting role is read from the transaction-local setting `kc.fsm_role`, which the RPC
 -- performing a role-restricted move sets before it writes.
+-- Definer rights: a table a member inserts into directly (a post) runs this trigger as that
+-- member, who can neither resolve names in this schema nor read the kernel tables.
 create function kc_private.fsm_guard_status()
 returns trigger
 language plpgsql
+security definer
 set search_path = ''
 as $$
 declare
@@ -962,3 +965,628 @@ create policy users_hide_blocked on public.users
   as restrictive
   for select to authenticated
   using (not kc_access.is_blocked_between((select auth.uid()), id));
+
+-- >>> supabase/schemas/20_posts/010_catalog.sql
+-- Posts · catalog (giving worlds, post kinds, item subcategories)
+--
+-- Configuration that decides what a post may be. Rows are loaded by the seed scripts and
+-- changed only by migrations or server code: a device can read the catalog, never write it.
+-- One list of giving worlds, with no second "domain" layer (D100).
+
+-- A giving world (D100) and its per-world behaviour.
+create table public.worlds (
+  slug                    text primary key check (slug ~ '^[a-z][a-z0-9_]{1,30}$'),
+  label_he                text not null,
+  label_en                text not null,
+  -- How careful the product is with this world's content (review, exposure).
+  sensitivity             text not null default 'standard'
+                            check (sensitivity in ('standard', 'elevated', 'restricted')),
+  -- Publishing in this world requires a verified identity (for example housing, D30).
+  requires_verification   boolean not null default false,
+  -- Default audience of the poster's identity: 1 operators only · 2 followers · 3 everyone.
+  default_anonymity_level smallint not null default 3 check (default_anonymity_level between 1 and 3),
+  -- Default lifetime of a post; null = posts of this world do not expire (D21).
+  default_ttl_hours       integer check (default_ttl_hours > 0),
+  -- Whether distance matters: nearby, same region, or not at all (online).
+  geo_mode                text not null default 'local' check (geo_mode in ('local', 'regional', 'remote')),
+  default_radius_km       numeric(8, 2) not null default 25 check (default_radius_km > 0),
+  -- Share of distance in ranking and matching for this world, 0 to 1.
+  geo_weight              numeric(4, 3) not null default 1 check (geo_weight between 0 and 1),
+  -- Posts of this world also appear in the main feed, not only on the world's own screen.
+  shows_in_main_feed      boolean not null default false,
+  -- An inactive world is kept for its existing posts but accepts no new ones.
+  is_active               boolean not null default true,
+  sort_order              integer not null default 0,
+  created_at              timestamptz not null default now()
+);
+comment on table public.worlds is 'Giving worlds (D100) and their per-world configuration.';
+
+-- What can be posted in a world: "ride offer", "lesson request", "item". Each kind owns the
+-- JSON Schema of the type-specific fields stored in posts.details.
+create table public.post_kinds (
+  id                uuid primary key default gen_random_uuid(),
+  world_slug        text not null references public.worlds (slug) on update cascade on delete cascade,
+  slug              text not null check (slug ~ '^[a-z][a-z0-9_]{1,40}$'),
+  label_he          text not null,
+  label_en          text not null,
+  -- Which side may use this kind; posts.direction must agree.
+  direction         text not null check (direction in ('offer', 'request', 'either')),
+  -- JSON Schema for posts.details of this kind.
+  detail_schema     jsonb not null default '{"type":"object"}'::jsonb
+                      check (jsonb_typeof(detail_schema) = 'object'),
+  -- Overrides the world's default lifetime; null = follow the world.
+  default_ttl_hours integer check (default_ttl_hours > 0),
+  is_active         boolean not null default true,
+  sort_order        integer not null default 0,
+  created_at        timestamptz not null default now(),
+  constraint post_kinds_world_slug_key unique (world_slug, slug),
+  -- Target of the composite foreign key that keeps a post's kind inside the post's world.
+  constraint post_kinds_id_world_key unique (id, world_slug)
+);
+comment on table public.post_kinds is 'Kinds of post per giving world; detail_schema describes posts.details.';
+
+-- Kind picker of a world's create form (also covers the world_slug foreign key).
+create index post_kinds_world_order_idx on public.post_kinds (world_slug, sort_order);
+
+-- Sub-categories of a giving world, as a tree (item subcategory, food type, knowledge shelf).
+-- Replaces the fixed item list that used to be a check constraint on posts.
+create table public.item_subcategories (
+  id         uuid primary key default gen_random_uuid(),
+  world_slug text not null references public.worlds (slug) on update cascade on delete cascade,
+  parent_id  uuid,
+  slug       text not null check (slug ~ '^[a-z][a-z0-9_]{1,40}$'),
+  label_he   text not null,
+  label_en   text not null,
+  is_active  boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  constraint item_subcategories_world_slug_key unique (world_slug, slug),
+  constraint item_subcategories_id_world_key unique (id, world_slug),
+  constraint item_subcategories_not_own_parent_chk check (parent_id <> id),
+  -- A child always belongs to its parent's world.
+  constraint item_subcategories_parent_fk foreign key (parent_id, world_slug)
+    references public.item_subcategories (id, world_slug) on update cascade on delete cascade
+);
+comment on table public.item_subcategories is 'Per-world sub-category tree; a post points at one node of its own world.';
+
+-- Children of a node in display order: the subcategory picker and browse filters.
+create index item_subcategories_tree_idx on public.item_subcategories (world_slug, parent_id, sort_order);
+-- Covers the parent foreign key (cascade on removing a node).
+create index item_subcategories_parent_idx on public.item_subcategories (parent_id) where parent_id is not null;
+
+alter table public.worlds enable row level security;
+alter table public.worlds force row level security;
+alter table public.post_kinds enable row level security;
+alter table public.post_kinds force row level security;
+alter table public.item_subcategories enable row level security;
+alter table public.item_subcategories force row level security;
+
+-- Read-only configuration for signed-in members. No insert, update or delete policy and no
+-- write grant exist, so the catalog cannot be changed from a device.
+create policy worlds_select_member on public.worlds
+  for select to authenticated
+  using (true);
+create policy post_kinds_select_member on public.post_kinds
+  for select to authenticated
+  using (true);
+create policy item_subcategories_select_member on public.item_subcategories
+  for select to authenticated
+  using (true);
+
+grant select on public.worlds to authenticated;
+grant select on public.post_kinds to authenticated;
+grant select on public.item_subcategories to authenticated;
+
+-- >>> supabase/schemas/20_posts/020_posts.sql
+-- Posts · posts (the one content table of every giving world)
+--
+-- Everything published in the product is one post (D2, D19): a primary giving world, a kind, a
+-- direction, a lifecycle status and an audience. Fields that only some worlds have live in
+-- `details` (validated against post_kinds.detail_schema) or in a 1:1 detail table added by
+-- that world's module. The exact address is never stored here (post_private_locations).
+
+create table public.posts (
+  id                     uuid primary key default gen_random_uuid(),
+  owner_id               uuid not null references public.users (id) on delete cascade,
+  -- Organization the post is published for. The foreign key is added by the organizations
+  -- module, which creates the referenced table.
+  beneficiary_org_id     uuid,
+  world_slug             text not null references public.worlds (slug) on update cascade,
+  kind_id                uuid not null,
+  -- Which 1:1 detail table, if any, extends the post.
+  post_type              text not null default 'standard'
+                           check (post_type in ('standard', 'ride', 'event', 'housing_stay', 'job', 'challenge')),
+  direction              text not null check (direction in ('offer', 'request')),
+  -- Lifecycle, machine `post` (030_post_status_machine.sql). Never written by a device.
+  status                 text not null default 'open',
+  -- Status held when an admin removed the post; a restore returns to it (D129).
+  status_before_removal  text check (status_before_removal in
+                           ('open', 'paused', 'closed_delivered', 'deleted_no_recipient', 'expired')),
+  -- Audience chosen by the owner; may change freely after publishing (FR-POST-009).
+  visibility             text not null default 'Public'
+                           check (visibility in ('Public', 'FollowersOnly', 'OnlyMe')),
+  title                  text not null check (char_length(title) between 1 and 80),
+  description            text check (char_length(description) <= 500),
+  item_subcategory_id    uuid,
+  -- Type-specific fields. Only the shape is checked here; validation against the kind's
+  -- JSON Schema is added with the module that enables the schema validator.
+  details                jsonb not null default '{}'::jsonb check (jsonb_typeof(details) = 'object'),
+  city_id                text not null references public.cities (city_id),
+  -- How precisely the location is shown to others (FR-POST-003 AC3).
+  location_display_level text not null default 'CityAndStreet'
+                           check (location_display_level in ('CityOnly', 'CityAndStreet', 'FullAddress')),
+  -- The only location other members, the map and matching ever read. Derived by trigger
+  -- (050_post_private_locations.sql); never the exact address.
+  geo_approx             extensions.geography(Point, 4326),
+  -- When the offer or need applies (event time, availability window).
+  time_window            tstzrange check (not isempty(time_window)),
+  -- 1 low · 2 medium · 3 high.
+  urgency_level          smallint check (urgency_level between 1 and 3),
+  -- When the post closes by itself; null = never (D21). Set by server code per post kind.
+  expires_at             timestamptz,
+  -- 'imported' marks a post brought in from an external channel until it is claimed.
+  source                 text not null default 'native' check (source in ('native', 'imported')),
+  -- Detected BCP 47 language of title and description; written by the translation pipeline.
+  source_language        text check (char_length(source_language) between 2 and 35),
+  -- Search document; `simple` keeps Hebrew tokens unstemmed.
+  search_vector          tsvector generated always as (
+                           to_tsvector('simple', title || ' ' || coalesce(description, ''))) stored,
+  -- First time the post became open; the feed sorts on it. Null while a draft.
+  published_at           timestamptz,
+  created_at             timestamptz not null default now(),
+  updated_at             timestamptz not null default now(),
+  -- The kind and the subcategory must belong to the post's own world.
+  constraint posts_kind_fk foreign key (kind_id, world_slug)
+    references public.post_kinds (id, world_slug) on update cascade,
+  constraint posts_item_subcategory_fk foreign key (item_subcategory_id, world_slug)
+    references public.item_subcategories (id, world_slug) on update cascade,
+  -- The saved status exists exactly while the post is removed.
+  constraint posts_removal_memory_chk
+    check ((status = 'removed_admin') = (status_before_removal is not null)),
+  -- A draft has never been published; every other status has.
+  constraint posts_published_chk check ((status = 'draft') = (published_at is null))
+);
+comment on table public.posts is 'Every post of every giving world. Status moves only through server code.';
+
+-- Main feed: open public posts, newest first (keyset on published_at, id).
+create index posts_feed_recent_idx on public.posts (published_at desc, id desc)
+  where status = 'open' and visibility = 'Public';
+-- A profile's posts and "my posts" in any status, newest first; covers the owner foreign key.
+create index posts_owner_recent_idx on public.posts (owner_id, created_at desc, id desc);
+-- Browse a world by status, newest first; covers the world foreign key.
+create index posts_world_status_recent_idx on public.posts (world_slug, status, published_at desc, id desc);
+-- Feed and browse filtered by city; covers the city foreign key.
+create index posts_city_recent_idx on public.posts (city_id, published_at desc, id desc) where status = 'open';
+-- Expiry sweep: live posts whose time has come.
+create index posts_expiry_due_idx on public.posts (expires_at)
+  where expires_at is not null and status in ('open', 'paused');
+-- Whole-word search over open posts.
+create index posts_search_gin_idx on public.posts using gin (search_vector) where status = 'open';
+-- Substring search over open posts (Hebrew has no useful stemming). A query must use the
+-- same expression: (title || ' ' || coalesce(description, '')) ilike '%…%'.
+create index posts_text_trgm_idx on public.posts
+  using gin ((title || ' ' || coalesce(description, '')) extensions.gin_trgm_ops) where status = 'open';
+-- Radius search, map pins and matching over open posts.
+create index posts_geo_approx_gist_idx on public.posts using gist (geo_approx) where status = 'open';
+-- Foreign keys to the catalog (a kind or subcategory being retired or renamed).
+create index posts_kind_idx on public.posts (kind_id);
+create index posts_item_subcategory_idx on public.posts (item_subcategory_id)
+  where item_subcategory_id is not null;
+
+create trigger posts_set_updated_at
+  before update on public.posts
+  for each row execute function kc_private.set_updated_at();
+
+-- >>> supabase/schemas/20_posts/030_post_status_machine.sql
+-- Posts · lifecycle (machine `post`: spec state machine S1 plus `draft`)
+--
+--   draft ─► open ◄─► paused
+--             ├─► closed_delivered ─► open            (reopen, owner only)
+--             ├─► deleted_no_recipient ─► open        (reopen, owner only)
+--             └─► expired                             (never reopened: republish is a new post, D127)
+--   live ─► hidden_pending_review ─► open | removed_admin
+--   any published ─► removed_admin ─► the status held before the removal (D129)
+--
+-- Each edge names who may take it. The RPC performing a move states its role in the
+-- transaction-local setting `kc.fsm_role`; a write without a role (or with the wrong one)
+-- is refused, and a device has no UPDATE privilege on the column at all.
+--   owner   the member who owns the post (D104)
+--   admin   a moderator acting on the post
+--   system  sweeps and automatic moderation (expiry D21 / D128, review hide D33, handoff completion)
+
+insert into kc_private.fsm_state (machine_id, status) values
+  ('post', 'draft'),
+  ('post', 'open'),
+  ('post', 'paused'),
+  ('post', 'closed_delivered'),
+  ('post', 'deleted_no_recipient'),
+  ('post', 'expired'),
+  ('post', 'hidden_pending_review'),
+  ('post', 'removed_admin');
+
+insert into kc_private.fsm_edge (machine_id, from_status, to_status, role) values
+  -- Owner management (D104).
+  ('post', 'draft', 'open', 'owner'),
+  ('post', 'open', 'paused', 'owner'),
+  ('post', 'paused', 'open', 'owner'),
+  ('post', 'open', 'closed_delivered', 'owner'),
+  ('post', 'open', 'deleted_no_recipient', 'owner'),
+  ('post', 'paused', 'deleted_no_recipient', 'owner'),
+  ('post', 'expired', 'deleted_no_recipient', 'owner'),
+  ('post', 'hidden_pending_review', 'deleted_no_recipient', 'owner'),
+  ('post', 'closed_delivered', 'open', 'owner'),
+  ('post', 'deleted_no_recipient', 'open', 'owner'),
+  -- A handoff completed by the other side closes the post; a recipient who removes their
+  -- mark turns a delivered post into one closed without a recipient (FR-CLOSURE-007).
+  ('post', 'open', 'closed_delivered', 'system'),
+  ('post', 'hidden_pending_review', 'closed_delivered', 'system'),
+  ('post', 'closed_delivered', 'deleted_no_recipient', 'system'),
+  -- Expiry sweeps.
+  ('post', 'open', 'expired', 'system'),
+  ('post', 'paused', 'expired', 'system'),
+  -- Automatic hide while reports are reviewed, and its automatic lift.
+  ('post', 'open', 'hidden_pending_review', 'system'),
+  ('post', 'paused', 'hidden_pending_review', 'system'),
+  ('post', 'closed_delivered', 'hidden_pending_review', 'system'),
+  ('post', 'expired', 'hidden_pending_review', 'system'),
+  ('post', 'hidden_pending_review', 'open', 'system'),
+  -- Moderation: a review outcome, a removal from any published status, and its restore.
+  ('post', 'hidden_pending_review', 'open', 'admin'),
+  ('post', 'open', 'removed_admin', 'admin'),
+  ('post', 'paused', 'removed_admin', 'admin'),
+  ('post', 'closed_delivered', 'removed_admin', 'admin'),
+  ('post', 'deleted_no_recipient', 'removed_admin', 'admin'),
+  ('post', 'expired', 'removed_admin', 'admin'),
+  ('post', 'hidden_pending_review', 'removed_admin', 'admin'),
+  ('post', 'removed_admin', 'open', 'admin'),
+  ('post', 'removed_admin', 'paused', 'admin'),
+  ('post', 'removed_admin', 'closed_delivered', 'admin'),
+  ('post', 'removed_admin', 'deleted_no_recipient', 'admin'),
+  ('post', 'removed_admin', 'expired', 'admin');
+
+create trigger posts_status_fsm
+  before insert or update of status on public.posts
+  for each row execute function kc_private.fsm_guard_status('post', 'status');
+
+-- Rules of a status write that the graph alone cannot express. Fires after posts_status_fsm
+-- (triggers run in name order), so the move itself is already known to be legal.
+--   insert   the kind must be active and admit the post's direction
+--   publish  stamps the first time the post leaves draft
+--   → open   an owner may hold at most 20 open posts (FR-POST-011); a paused post is not
+--            resumed after its own expiry (D104)
+--   removal  remembers the status the post is removed from, and a restore may only return
+--            to it (D129); a post hidden for review counts as open
+-- Definer rights: it reads the catalog and locks the owner's counter row, which a member
+-- may not write.
+create function kc_private.posts_apply_status_rules()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_from constant text := case tg_op when 'UPDATE' then old.status end;
+  v_open_limit constant integer := 20;
+begin
+  if tg_op = 'INSERT' and not exists (
+       select 1 from public.post_kinds k
+        where k.id = new.kind_id and k.is_active and k.direction in (new.direction, 'either')) then
+    raise exception 'post_kind_not_allowed' using errcode = 'P0001',
+      detail = 'the post kind is inactive or does not admit this direction';
+  end if;
+
+  if v_from is not distinct from new.status then
+    return new;
+  end if;
+
+  -- Leaving draft (or being created past it, as an imported post is) is the publish moment.
+  if new.status <> 'draft' then
+    new.published_at := coalesce(new.published_at, now());
+  end if;
+
+  if new.status = 'open' then
+    if v_from = 'paused' and new.expires_at <= now() then
+      raise exception 'post_expired' using errcode = 'P0001', detail = 'a post is not resumed after its expiry';
+    end if;
+    -- Moderation and sweeps return a post to open regardless of the owner's quota.
+    if coalesce(current_setting('kc.fsm_role', true), '') not in ('admin', 'system') then
+      -- The counter row is the per-owner lock: two concurrent publishes cannot both pass.
+      perform 1 from public.user_stats s where s.user_id = new.owner_id for update;
+      if (select count(*) from public.posts p where p.owner_id = new.owner_id and p.status = 'open')
+         >= v_open_limit then
+        raise exception 'post_limit_exceeded' using errcode = 'P0001',
+          detail = format('at most %s open posts per member', v_open_limit);
+      end if;
+    end if;
+  end if;
+
+  if new.status = 'removed_admin' then
+    new.status_before_removal := case v_from when 'hidden_pending_review' then 'open' else v_from end;
+  elsif v_from = 'removed_admin' then
+    if new.status is distinct from old.status_before_removal then
+      raise exception 'illegal_transition' using errcode = 'P0001',
+        detail = format('post: a removed post is restored to %s', old.status_before_removal);
+    end if;
+    new.status_before_removal := null;
+  end if;
+
+  return new;
+end;
+$$;
+comment on function kc_private.posts_apply_status_rules() is
+  'BEFORE INSERT OR UPDATE OF status on posts: kind check, publish time, open-post quota, removal memory.';
+
+create trigger posts_status_rules
+  before insert or update of status on public.posts
+  for each row execute function kc_private.posts_apply_status_rules();
+
+-- >>> supabase/schemas/20_posts/040_post_access.sql
+-- Posts · who may read and write a post
+--
+-- Visibility is decided by indexed columns and one lookup on `follows`; no function is
+-- evaluated over the row. Nothing is granted to signed-out callers.
+
+alter table public.posts enable row level security;
+alter table public.posts force row level security;
+
+-- The owner sees their own posts in every status, whatever their account state.
+create policy posts_select_owner on public.posts
+  for select to authenticated
+  using (owner_id = (select auth.uid()));
+
+-- Another member sees a post when all three hold:
+--   1. status — only `open` and `closed_delivered`. A delivered post stays on the giver's
+--      profile as their record of giving (FR-PROFILE-001 closed tab, FR-POST-021). Drafts,
+--      paused posts (D104), posts closed without a recipient, expired posts and posts hidden
+--      or removed by moderation are the owner's alone.
+--   2. audience — `Public`, or `FollowersOnly` when the viewer follows the owner. `OnlyMe`
+--      never matches.
+--   3. owner — the owner's profile is visible to the viewer. The subquery runs under the
+--      viewer's own access to `users`, so it inherits that table's rules: the owner's
+--      account is active and no block exists between the two, in either direction.
+-- Extension points (later modules add policies; this one does not change): moderators read
+-- every post; the counterparty of a handoff reads the post whatever its audience; a
+-- member's own report hides the post from them (restrictive policy).
+create policy posts_select_visible on public.posts
+  for select to authenticated
+  using (
+    status in ('open', 'closed_delivered')
+    and (visibility = 'Public'
+         or (visibility = 'FollowersOnly'
+             and exists (select 1 from public.follows f
+                          where f.follower_id = (select auth.uid()) and f.followed_id = posts.owner_id)))
+    and exists (select 1 from public.users u where u.id = posts.owner_id));
+
+-- A member creates their own post, as a draft or already open, written in the product
+-- (never 'imported'). A member whose account is not active cannot post (spec 7.1, S2).
+create policy posts_insert_owner on public.posts
+  for insert to authenticated
+  with check (
+    owner_id = (select auth.uid())
+    and status in ('draft', 'open')
+    and exists (select 1 from public.users u where u.id = (select auth.uid()) and u.is_active));
+
+-- The owner edits content while the post is a draft, open or paused; once closed, expired
+-- or under moderation the content is locked (D104). Which columns is decided by the grant.
+create policy posts_update_owner on public.posts
+  for update to authenticated
+  using (
+    owner_id = (select auth.uid())
+    and status in ('draft', 'open', 'paused')
+    and exists (select 1 from public.users u where u.id = (select auth.uid()) and u.is_active))
+  with check (owner_id = (select auth.uid()));
+
+-- Only a draft is ever deleted from a device: it was never published, so nobody else holds
+-- a record of it. Removing a published post is a status move (`deleted_no_recipient`) made
+-- by an RPC, and the row is purged by a server job after its grace period (design §4.1).
+create policy posts_delete_owner_draft on public.posts
+  for delete to authenticated
+  using (owner_id = (select auth.uid()) and status = 'draft');
+
+grant select, delete on public.posts to authenticated;
+
+-- Insert: everything the create form sets. Status is limited to draft / open by the policy.
+-- Not insertable: beneficiary_org_id, expires_at, source, source_language, geo_approx,
+-- status_before_removal, published_at, timestamps — all server-written.
+grant insert (
+  id, owner_id, world_slug, kind_id, post_type, direction, status, visibility, title, description,
+  item_subcategory_id, details, city_id, location_display_level, time_window, urgency_level
+) on public.posts to authenticated;
+
+-- Update: content only. The owner, world, kind, post type and direction are fixed at
+-- creation (FR-POST-008 AC2); status moves through RPCs; derived columns are never writable.
+grant update (
+  visibility, title, description, item_subcategory_id, details, city_id, location_display_level,
+  time_window, urgency_level
+) on public.posts to authenticated;
+
+-- >>> supabase/schemas/20_posts/050_post_private_locations.sql
+-- Posts · exact address and the approximate location shown to others (design §3.9)
+--
+-- The exact point of a post lives only in `post_private_locations`, readable by its owner.
+-- Everyone else — feed, map, distance search, matching — reads `posts.geo_approx`, which is
+-- derived here and can never be written directly. Releasing the exact address to the
+-- counterparty of a confirmed handoff is an audited RPC of the handoffs module.
+
+create table public.post_private_locations (
+  post_id       uuid primary key references public.posts (id) on delete cascade,
+  -- Geocoded position of the address; null until the address has been resolved.
+  exact_point   extensions.geography(Point, 4326),
+  street        text check (char_length(btrim(street)) between 1 and 80),
+  -- Digits with an optional entrance letter, Latin or Hebrew (U+05D0–U+05EA).
+  street_number text check (street_number ~ '^[0-9]+[A-Za-z\u05D0-\u05EA]?$'),
+  -- Free text for the person arriving: floor, entrance code, where to leave things.
+  access_notes  text check (char_length(access_notes) <= 300),
+  updated_at    timestamptz not null default now(),
+  -- A house number only makes sense with a street.
+  constraint post_private_locations_number_needs_street_chk
+    check (street_number is null or street is not null)
+);
+comment on table public.post_private_locations is 'Exact address of a post. Readable and writable by the post owner only.';
+
+create trigger post_private_locations_set_updated_at
+  before update on public.post_private_locations
+  for each row execute function kc_private.set_updated_at();
+
+-- Approximate location of a post for the given display level.
+--   CityOnly        the city centre
+--   CityAndStreet   the city centre for now; the geo-reference module, which brings the
+--                   street list, replaces this branch with the street centroid
+--   FullAddress     the exact point snapped to a grid of 0.003° (about 300 m), then moved by
+--                   an offset of up to half a cell that is fixed per post. The offset is
+--                   taken from a hash of the post id, so it never changes between
+--                   derivations, and any exact point inside the same cell yields the same
+--                   result. Without an exact point the city centre is used.
+create function kc_private.post_geo_approx(
+  p_post_id uuid,
+  p_city_id text,
+  p_display_level text,
+  p_exact_point extensions.geography
+)
+returns extensions.geography
+language sql
+stable
+set search_path = ''
+as $$
+  with cell as (select 0.003::double precision as size),
+       hash as (select md5(p_post_id::text) as hex)
+  select case
+    when p_display_level = 'FullAddress' and p_exact_point is not null then
+      extensions.st_translate(
+        extensions.st_snaptogrid(p_exact_point::extensions.geometry, cell.size),
+        -- Two independent values in [-0.5, 0.5) of a cell, from separate parts of the hash.
+        (('x' || substr(hash.hex, 1, 8))::bit(32)::bigint / 4294967296.0 - 0.5) * cell.size,
+        (('x' || substr(hash.hex, 9, 8))::bit(32)::bigint / 4294967296.0 - 0.5) * cell.size
+      )::extensions.geography
+    else (select c.location from public.cities c where c.city_id = p_city_id)
+  end
+  from cell, hash;
+$$;
+comment on function kc_private.post_geo_approx(uuid, text, text, extensions.geography) is
+  'Approximate public location of a post: city centre, or the exact point coarsened to about 300 m.';
+
+-- Keeps posts.geo_approx derived on every write that could change it. On insert the private
+-- location does not exist yet, so the post starts at the city centre and is refined by the
+-- trigger on post_private_locations below. Definer rights: the derivation is internal.
+create function kc_private.posts_set_geo_approx()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  new.geo_approx := kc_private.post_geo_approx(
+    new.id, new.city_id, new.location_display_level,
+    (select l.exact_point from public.post_private_locations l where l.post_id = new.id));
+  return new;
+end;
+$$;
+
+-- `geo_approx` is in the column list so that a server-side write to it is overwritten too.
+create trigger posts_set_geo_approx
+  before insert or update of city_id, location_display_level, geo_approx on public.posts
+  for each row execute function kc_private.posts_set_geo_approx();
+
+-- Re-derives the post's approximate location when its exact point is set, moved or removed.
+-- Definer rights: the owner has no UPDATE privilege on posts.geo_approx.
+create function kc_private.post_private_locations_refresh_geo()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post_id constant uuid := case tg_op when 'DELETE' then old.post_id else new.post_id end;
+begin
+  -- Writing the column fires posts_set_geo_approx, which computes the value.
+  update public.posts p set geo_approx = null where p.id = v_post_id;
+  return null;
+end;
+$$;
+
+create trigger post_private_locations_refresh_geo
+  after insert or delete or update of exact_point on public.post_private_locations
+  for each row execute function kc_private.post_private_locations_refresh_geo();
+
+alter table public.post_private_locations enable row level security;
+alter table public.post_private_locations force row level security;
+
+-- Every policy asks the same question: is the caller the owner of the post? The subquery
+-- runs under the caller's access to `posts` and is a primary-key lookup.
+create policy post_private_locations_select_owner on public.post_private_locations
+  for select to authenticated
+  using (exists (select 1 from public.posts p
+                  where p.id = post_private_locations.post_id and p.owner_id = (select auth.uid())));
+
+create policy post_private_locations_insert_owner on public.post_private_locations
+  for insert to authenticated
+  with check (exists (select 1 from public.posts p
+                       where p.id = post_private_locations.post_id and p.owner_id = (select auth.uid())));
+
+-- The address is editable exactly while the post's content is (draft, open, paused; D104).
+create policy post_private_locations_update_owner on public.post_private_locations
+  for update to authenticated
+  using (exists (select 1 from public.posts p
+                  where p.id = post_private_locations.post_id and p.owner_id = (select auth.uid())
+                    and p.status in ('draft', 'open', 'paused')))
+  with check (exists (select 1 from public.posts p
+                       where p.id = post_private_locations.post_id and p.owner_id = (select auth.uid())));
+
+grant select on public.post_private_locations to authenticated;
+grant insert (post_id, exact_point, street, street_number, access_notes)
+  on public.post_private_locations to authenticated;
+-- The row cannot be moved to another post.
+grant update (exact_point, street, street_number, access_notes)
+  on public.post_private_locations to authenticated;
+
+-- >>> supabase/schemas/20_posts/060_post_counters.sql
+-- Posts · profile counters
+--
+-- user_stats holds, per member, the number of open posts in each audience and the number of
+-- posts ever published. A viewer is shown the sum of the audiences they may see
+-- (FR-PROFILE-013), so the three open counters are kept apart.
+
+-- Applies the effect of one post write to its owner's counters, in the same transaction.
+-- A post counts as open only in status `open`; it counts as created the moment it is first
+-- published, and stays counted when it is later closed or deleted. Definer rights: counters
+-- are not writable by members. When the owner's account is being removed the counter row
+-- is already gone and the update matches nothing.
+create function kc_private.posts_sync_user_stats()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  -- Audience the post was counted under before / is counted under after; null = not open.
+  v_old constant text := case when tg_op <> 'INSERT' and old.status = 'open' then old.visibility end;
+  v_new constant text := case when tg_op <> 'DELETE' and new.status = 'open' then new.visibility end;
+  v_published constant integer := case
+    when tg_op = 'INSERT' and new.published_at is not null then 1
+    when tg_op = 'UPDATE' and old.published_at is null and new.published_at is not null then 1
+    else 0 end;
+  v_owner_id constant uuid := case tg_op when 'DELETE' then old.owner_id else new.owner_id end;
+begin
+  if v_old is not distinct from v_new and v_published = 0 then
+    return null;
+  end if;
+
+  update public.user_stats s
+     set open_posts_public = greatest(s.open_posts_public
+           + (v_new is not distinct from 'Public')::integer - (v_old is not distinct from 'Public')::integer, 0),
+         open_posts_followers_only = greatest(s.open_posts_followers_only
+           + (v_new is not distinct from 'FollowersOnly')::integer
+           - (v_old is not distinct from 'FollowersOnly')::integer, 0),
+         open_posts_only_me = greatest(s.open_posts_only_me
+           + (v_new is not distinct from 'OnlyMe')::integer - (v_old is not distinct from 'OnlyMe')::integer, 0),
+         posts_created_total = s.posts_created_total + v_published
+   where s.user_id = v_owner_id;
+  return null;
+end;
+$$;
+comment on function kc_private.posts_sync_user_stats() is
+  'AFTER trigger on posts: keeps the owner''s open-post and created-post counters in step.';
+
+create trigger posts_sync_user_stats
+  after insert or delete or update of status, visibility on public.posts
+  for each row execute function kc_private.posts_sync_user_stats();
