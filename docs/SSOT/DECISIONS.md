@@ -1866,7 +1866,7 @@ Owner rules that go with it:
 **Affected.** `.claude/skills/kc-issue-to-merge/**`, `.github/workflows/sync-agent-labels.yml`, `.github/workflows/pr-opened-by.yml`, `.github/PULL_REQUEST_TEMPLATE.md`, `docs/agents/ISSUE_CLAIMS.md`, `docs/agents/OPERATING_MODEL.md`, `AGENTS.md`, `.cursor/rules/git-workflow.mdc`.
 
 
-## {{ENG:production-db-baseline}} — Production database is rebuilt as one baseline (2026-11-10)
+## D-228 — Production database is rebuilt as one baseline (2026-11-10)
 
 **Decision.** kc-prod is built from a single baseline migration assembled from per-module source files (`supabase/schemas/`), replacing the 543 incremental migrations, which are archived. Layout: `public` holds only the client contract (RLS tables and client-called RPCs); `kc_private`, `billing`, `audit`, `integrations` and `ops` are not exposed through the API. `users` is split into public profile, private data, account state and counters. `posts` stays the single content table with 1:1 detail tables for structured worlds and schema-validated JSONB for the rest; the post machine keeps the S1 states and gains `draft`. Volunteering shifts become event posts. Exact locations live in a private table and every search reads an approximate point. Realtime is Broadcast only. kc-dev is rebuilt from the same baseline at cut-over. Full design: [`docs/db/target-design.md`](../db/target-design.md).
 

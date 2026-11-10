@@ -357,4 +357,4 @@ Validation order for every step: local / branch database → kc-dev → kc-prod.
 | Q7 | Non-KC schema in kc-dev | **Approved to remove.** Not yet executed: it is still being written to and one of its functions is callable by the auth service, so removal waits for the confirmation step in `AGENTS.md` §7 |
 | Q8 | Video provider and maximum clip length | Decided when video is specified; `post_media` already supports it |
 
-Recorded as `{{ENG:production-db-baseline}}` in [`docs/SSOT/DECISIONS.md`](../SSOT/DECISIONS.md). Phase 3 starts with step (1) of §10.
+Recorded as `D-228` in [`docs/SSOT/DECISIONS.md`](../SSOT/DECISIONS.md). Phase 3 starts with step (1) of §10.
