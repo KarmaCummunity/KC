@@ -196,6 +196,47 @@ Enforcement, the same for every machine (post, handoff per world, account, onboa
 | Connections | Clients through PostgREST; Edge Functions through the transaction pooler |
 | Targets (to be verified by k6 on the baseline) | feed page p95 < 150 ms, post create p95 < 250 ms, chat send p95 < 100 ms at 5,000 concurrent users |
 
+### 5.1 Speed layers (what makes the app feel fast)
+
+Perceived speed is decided before a request reaches Postgres. The layers, outermost first:
+
+| Layer | What it does | Status |
+| --- | --- | --- |
+| 1. Device cache | React Query with a persisted cache (already in the app): screens paint from the last known data, then refresh. Optimistic writes for reactions, saves, follows, chat send | Exists; the baseline keeps response shapes stable so the cache stays valid |
+| 2. CDN | Images, thumbnails and video segments never touch the database or an Edge Function; immutable file names + long cache headers | Storage CDN now; see §5.2 |
+| 3. Edge cache for public reads | Public, identical-for-everyone responses (landing statistics, nonprofit pages, reference lists, world configuration) served with `Cache-Control` and revalidated in the background | New |
+| 4. One round trip per screen | A screen is one RPC returning everything it shows (feed page with author, counters, viewer state; `bootstrap_session`) — no per-row follow-up calls | New rule, enforced by perf budgets |
+| 5. Indexed, keyset queries | §5 above | New |
+| 6. Async everything else | Notifications, matching, embeddings, karma, media processing run from queues after the response is sent | New |
+| 7. Read scaling | Supabase read replica for feed / search / map reads; primary for writes | Added when primary CPU stays above ~60 % |
+
+### 5.2 Redis — where it fits and where it does not
+
+**Not in the first baseline; a defined slot for it later.** A cache hides slow queries, it does not fix them, and every cached value that depends on the viewer (visibility, blocks, follows, anonymity) is a privacy bug waiting to happen when it goes stale.
+
+| Need | First answer | Redis (Upstash, called from Edge Functions) when |
+| --- | --- | --- |
+| Feed page | Keyset query on partial indexes + device cache | p95 above 150 ms at real load — then cache **candidate post ids per world / city**, never per-viewer rows |
+| Counters (reactions, unread) | Counter rows + Broadcast | Write contention on hot posts (viral post, live event) |
+| Rate limiting | `kc_private.rate_limit` | Limits must hold before the request reaches the database (login, public endpoints under attack) |
+| Presence, typing | Realtime Presence | — |
+| Sessions | Supabase Auth JWT (stateless) | — |
+| Public reads | Edge cache (layer 3) | — |
+
+The outbox and the "one RPC per screen" rule are what make this pluggable: a cache can be put in front of any read RPC without a schema change.
+
+### 5.3 Media (images now, video later)
+
+| Topic | Decision |
+| --- | --- |
+| Storage of files | Never in Postgres. The database holds one `post_media` row per file: owner, kind, storage key, width, height, duration, blurhash, processing status |
+| Upload | Direct from the device to storage with a signed, resumable upload (TUS); the API only issues the permission and records the row. Client compresses and resizes before upload |
+| Images | Fixed variants (thumbnail, feed, full) generated once on upload, immutable names, served from the CDN; `blurhash` in the row so the feed never jumps while loading |
+| Video | **Not through Supabase Storage.** A dedicated video service (Cloudflare Stream or Mux) transcodes to adaptive HLS and serves from its own CDN; the database stores the provider asset id and status. Chosen when video is specified (§12 Q8) |
+| Safety | EXIF stripped before a file is public; MIME and size limits per bucket; private media served by short-lived signed URLs; a moderation hook on `processing_status` before a file becomes visible |
+| Cleanup | Orphan reconciliation job; account purge deletes files first (§4.1) |
+| Growth | Media bytes scale in object storage and CDN, independent of the database — the database row is ~200 bytes whether the file is 50 KB or 500 MB |
+
 ## 6. Operations
 
 - **Backups**: PITR on kc-prod (7-day window minimum), daily logical dump to private storage before every deploy (existing Deploy step), a restore drill into a scratch project each quarter.
@@ -214,10 +255,12 @@ Enforcement, the same for every machine (post, handoff per world, account, onboa
 | Push / WhatsApp delivery | Edge Functions consuming `pgmq` | Sustained backlog over one minute |
 | Embeddings and LLM rerank | Edge Functions; vectors in `pgvector` | Over ~5 M vectors or recall problems |
 | Search | Postgres FTS + trigram | Typo tolerance or ranking needs exceed FTS; then a search engine fed from the outbox |
-| Media | Supabase Storage + image transformation | Video at scale → dedicated media pipeline |
+| Images | Supabase Storage + CDN, variants generated on upload (§5.3) | CDN egress cost → move the bucket to R2 behind the same keys |
 | Analytics | PostHog (already integrated); no analytics tables in the product database | — |
 | Payments | Provider-hosted checkout; database holds the ledger only | — |
 | Feed ranking | SQL function | Model-based ranking → a ranking worker writing scores back |
+| Cache (Redis) | Not at launch; slot defined in §5.2 | A measured p95 or contention trigger in §5.2 |
+| Video | External video service from day one of the feature (§5.3) | — |
 
 The outbox is the seam: any of these can leave Postgres later without touching the write path.
 
@@ -312,5 +355,6 @@ Validation order for every step: local / branch database → kc-dev → kc-prod.
 | Q5 | Retention period for billing records and receipts after account deletion | Needs legal input |
 | Q6 | Rebuild kc-dev from the baseline at cut-over (test data is recreated from seed) | Yes |
 | Q7 | Remove the non-KC schema from kc-dev before cut-over | Yes, by its owner |
+| Q8 | Video provider (Cloudflare Stream or Mux) and maximum clip length | Decide when video is specified; the `post_media` shape already supports it |
 
 On approval, the answers are recorded in `docs/spec/90_decisions_log.md` and `docs/SSOT/DECISIONS.md`, and Phase 3 starts with step (1) of §10.
