@@ -39,7 +39,7 @@ Per design spec §4.1, one PR per machine (or per tight family), each with code 
 | Knowledge session | `post_handoffs.status` (world `knowledge`) | reserved, confirmed, handed_over, cancelled | knowledge RPCs (`0622`) | `fsm_assert_transition` in the `post_handoffs_status_fsm` trigger (`0694`); RPCs keep their predicates | **2 ✅** |
 | Post availability | `posts.availability_status` | immediate, scheduled, ongoing | SQL check (`0626`); reserve / claim → scheduled, cancel and no-show sweep → immediate (items and food), handed over / pause / owner complete → ongoing (`0666`, `0667`) | no from-guards | 2 (moves with the handoff) |
 | Content moderation | `posts.moderation_status` (the `listings` column is a view column since `0667`) | draft, pending_review, published, rejected | SQL check (`0626`); read by `operator_case_enqueue_for_post` | insert-time default only; no update writer | 4 (no moves to hold until a writer exists) |
-| Ride series | `ride_series.status` | active, paused, cancelled | SQL check (`0531`), `set_ride_series_status` (`0666`) | none (any move) | 6 |
+| Ride series | `ride_series.status` | active, paused, cancelled | kernel `rideSeriesMachine` (`0719`), SQL check (`0531`), `set_ride_series_status` (`0666`) | the RPC refuses a cancelled series (`ride_series_for_update`, `0531`); `fsm_assert_transition` through `kc_private.enforce_status_fsm` (`0719`) | **6a ✅** |
 | Listing (legacy) | `listings` view over `posts` since `0667` | derived from S1: paused / deleted_no_recipient → cancelled, closed_delivered → closed | the view and its `instead of` trigger (`0667`) | no own state | **retired ✅ (`0667`)** |
 | Handoff (legacy) | `giving_handoffs` view over `post_handoffs` since `0667` | as `post_handoffs` | the view (`0667`) | no own state | **retired ✅ (`0667`)** |
 | Ride listing / participants / templates (legacy) | `ride_listings`, `ride_participants`, `ride_templates` | 6 / 4 / 3 states | SQL checks (`0177`, `0139`, `0148`), TS use cases | their pg_cron jobs are retired (`0695`) | **1d ✅**, then retire the tables (G44) |
@@ -65,11 +65,11 @@ Per design spec §4.1, one PR per machine (or per tight family), each with code 
 | **Volunteer opportunity** | `volunteer_opportunities.status` | draft, open, closed, cancelled | SQL check (`0370`), RPCs (`0371`, `0379`) | RPC filters; organizer RLS writes any status | retire (#2072): no client creates an opportunity since the time world moved to posts and events (G1 step 5b); kc-dev holds no rows |
 | **Shift signup** | `volunteer_shift_signups.status` | registered, waitlisted, checked_in, cancelled, no_show | SQL check (`0370`), RPCs (`0373`, `0374`) | RPC filters | retire with the opportunity (#2072) |
 | **Timesheet entry** | `timesheet_entries.status` | draft, submitted, approved, rejected | kernel `timesheetMachine` (`0718`), SQL check + RPCs (`0171`), TS `TimesheetEntry.ts`; the card's actions come from `timesheetActions` | RPC author / approver checks; `fsm_assert_transition` through `kc_private.enforce_status_fsm` (`0718`) | **5 ✅** |
-| **Donation intent** | `donation_intents.status` | created, checkout, paid, failed, cancelled | SQL check (`0268`), `complete_sandbox_donation` (`0690`, behind the `sandbox_payments` flag, wrapping the `0362` body), TS `PaymentTypes.ts` | RPC filters | **6** |
-| **Payment / refund / payout** | `payments`, `payment_refunds`, `payment_payouts` | pending, succeeded, failed, refunded / pending, succeeded, failed / pending, paid, failed | SQL checks (`0268`, `0269`) | upsert only | **6** |
-| **Standing order** | `standing_orders.status` | active, paused, cancelled | SQL check (`0269`), RPCs (`0363`, `0365`); the `subscriptions-charger` worker reads due orders and writes nothing (stub, no schedule) | RPC filters | **6** |
-| KYC profiles | `payer_kyc_profiles`, `payment_recipients_kyc` | none, pending, approved, rejected | SQL checks (`0267`) | no writer yet | 6 |
-| Finance ledger entry | `finance_ledger_entries.status` | pending, cleared, canceled | SQL check (`0170`), TS `FinanceLedger.ts` | none (any move) | 6, with FR-FIN reconcile |
+| **Donation intent** | `donation_intents.status` | created, checkout, paid, failed, cancelled | SQL check (`0268`), `complete_sandbox_donation` (`0690`, behind the `sandbox_payments` flag, wrapping the `0362` body), TS `PaymentTypes.ts` | RPC filters | 6c, with the provider webhook (G8) |
+| **Payment / refund / payout** | `payments`, `payment_refunds`, `payment_payouts` | pending, succeeded, failed, refunded / pending, succeeded, failed / pending, paid, failed | SQL checks (`0268`, `0269`) | upsert only | 6c, with the provider webhook (G8) |
+| **Standing order** | `standing_orders.status` | active, paused, cancelled | kernel `standingOrderMachine` (`0719`), SQL check (`0269`), RPCs (`0363`, `0365`, `0719`); the `subscriptions-charger` worker reads due orders and writes nothing (stub, no schedule); the list's actions come from `standingOrderActions` | RPC filters; `fsm_assert_transition` through `kc_private.enforce_status_fsm` (`0719`) | **6a ✅** |
+| KYC profiles | `payer_kyc_profiles`, `payment_recipients_kyc` | none, pending, approved, rejected | SQL checks (`0267`) | no writer yet | 6c, with the provider webhook (G8) |
+| Finance ledger entry | `finance_ledger_entries.status` | pending, cleared, canceled | SQL check (`0170`), TS `FinanceLedger.ts` | none (any move) | 6b, with FR-FIN Phase 1: reconciled and voided become flags (`reconciled_at`, `voided_at`, `19_org_finance.md` data model) beside a pending / cleared status |
 | Webhook event | `provider_webhook_events.status` | pending, processed, failed | SQL check (`0270`), `payments-webhook` | insert → processed; `failed` has no writer | 6 |
 | **WhatsApp outbound** | `bot_outbound_messages.status` | queued, sending, sent, failed, skipped_* (6) | SQL check (`0306`), worker RPCs (`0306`, `0307`), admin RPCs (`0308`), admin screen filter; the `whatsapp-sender` worker has no schedule in the repo | RPC filters | **7** |
 | **WhatsApp bot session** | `bot_conversation_sessions.state` | collecting, confirm, published, idle | SQL check + RPCs (`0302`) | partial RPC filters | **7** |
@@ -118,7 +118,8 @@ Client state that encodes a server machine is a copy (§1 rule): it goes when it
 | Housing booking actions | `housingStayRules.ts` | Housing booking | in sync, time windows included |
 | Event roster actions | `lib/eventPost.ts` (`rosterActionsFor`) | Event registration | in sync |
 | Volunteer signup | `my-shifts.tsx` | Shift signup | no check-in window; retire (#2072) |
-| Ride series, standing order | `MyRideSeriesList.tsx`, `standing-orders.tsx` | Ride series, standing order | inline |
+| Ride series | `MyRideSeriesList.tsx` | Ride series | in sync: the list hides cancelled series; pause, resume and cancel match the RPC |
+| Standing order actions | `standing-orders.tsx` through `standingOrderActions` (`@kc/domain`) | Standing order | in sync (wave 6a) |
 | Timesheet actions | `TimesheetEntryCard.tsx` through `timesheetActions` (`@kc/domain`) | Timesheet entry | in sync (wave 5) |
 | Onboarding routing | `AuthGate.tsx`, three use cases | Onboarding | the only guards (§4) |
 | Account gate, delete-account modal | `accountGateDecision.ts`, `DeleteAccountConfirmModal.tsx` | Account status | classification; drifted union (§4) |
@@ -174,8 +175,8 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 **Organizations, volunteering, money, automation**
 - ~~Timesheets: the UI offers delete only for `draft`; the RPC (`0171`) also deletes `rejected`.~~ ✅ wave 5: the card's actions follow `timesheetMachine`, so a rejected entry can be deleted too.
 - `close_volunteer_opportunity` (`0379`) has no from-guard; the UI shows Close in every status. `cancelled` and shift `no_show` have no writer; the my-shifts screen labels unknown statuses as "registered". Moot: the subsystem is to be retired (#2072).
-- Money vocabularies split: the intent says `paid`, the payment `succeeded`; the ledger spells `canceled`, every other table `cancelled`. `created` (intent) is accepted but never written. Refund, payout and KYC statuses have no writer. `cancel_standing_order` re-stamps an already cancelled order.
-- The finance ledger upsert (`0470`) allows any move, including out of `cleared`; spec `19_org_finance.md` says reconciled entries are frozen.
+- Money vocabularies split: the intent says `paid`, the payment `succeeded`; the ledger spells `canceled`, every other table `cancelled`. `created` (intent) is accepted but never written. Refund, payout and KYC statuses have no writer. ~~`cancel_standing_order` re-stamps an already cancelled order.~~ ✅ wave 6a (`0719`): a second cancel returns the order unchanged.
+- ~~The finance ledger upsert (`0470`) allows any move, including out of `cleared`; spec `19_org_finance.md` says reconciled entries are frozen.~~ Corrected in wave 6a: `cleared` is not "reconciled". Spec 19 freezes an entry once it is reconciled (`reconciled_at`, FR-FIN-013, Phase 2), a flag the ledger does not have yet, and lets an edit move between `pending` and `cleared` (FR-FIN-002 AC1). The freeze lands with FR-FIN-013.
 - WhatsApp: the admin screen offers Resend for every `skipped_*`; the RPC (`0308`) accepts three of six. The bot session re-enters `confirm` from `published` (`0302`), and `idle` has no writer. Template sends read `is_approved` and never `meta_status`.
 - Match v1 `listing_matches` (`0303`) accepts on one side's response; v2 `match_candidates` requires both.
 
@@ -257,7 +258,9 @@ One PR per row. Each wave starts only after the previous one is merged, so the c
 | 3 | Account status (+ composite invariant check beside the kernel call), onboarding | Many writers, failing checks, drifted unions |
 | 4 | Reports, follow requests, review-queue family, content moderation, post comments, knowledge topics | Small graphs; replaces hand-written triggers and RLS-only edges |
 | 5 ✅ | Timesheets (`0718`): the kernel holds the graph, the RPCs keep the author / approver checks, the card's actions follow the machine. Volunteer opportunity and shift signup are retired instead (#2072) | The legacy volunteer subsystem has had no writer since G1 step 5b |
-| 6 | Money (intent, payment, refund, payout, standing order, KYC), ride series, finance ledger | Before the real payment provider webhook lands |
+| 6a ✅ | Ride series and standing order (`0719`): pause / resume, a final cancel; a second standing-order cancel changes nothing; the standing-order list's actions follow the machine | The two recurring lifecycles with live writers |
+| 6b | Finance ledger, with FR-FIN Phase 1 (`reconciled_at`, `voided_at`) | The spec replaces `canceled` with a void flag; a graph now would encode the shape being retired |
+| 6c | Money (intent, payment, refund, payout, KYC), with the provider webhook (G8) | The only writers today are the sandbox flow behind a feature flag; the webhook sets the real moves |
 | 7 | WhatsApp outbound and session, template review, chat message; background machines (embedding job, ride route alert, ingestion run, entity-resolution candidate, operator case), notification outbox in-flight state, worker schedules (§3.4) | Service-only, lowest risk |
 | — | `listings`, `giving_handoffs`, `ride_listings` (retired ✅ `0667`, views over the record); `ride_participants`, `ride_templates`, `listing_matches` | Retire with G44 / matching v2, never port. A writer that updates the `listings` view moves the post through the view's `instead of` trigger; moderation writers act on `posts` directly (`0682`) |
 
@@ -273,7 +276,7 @@ Open, block the wave that owns them:
 1. **Unban (wave 3).** Is `banned → active` an admin edge, and who may take it?
 2. **Suspension lift threshold (wave 3).** One number for suspend and lift (5 distinct reporters?).
 3. **`delivered` chat state (wave 7).** Write it from the client receipt, or drop it?
-4. **Money vocabulary (wave 6).** One word for a completed payment (`paid` or `succeeded`) and `cancelled` everywhere.
+4. **Money vocabulary (wave 6c).** One word for a completed payment (`paid` or `succeeded`) and `cancelled` everywhere. Deferred to the provider webhook (G8): the words follow its event mapping, and kc-dev holds no money rows to migrate.
 5. **Operator cases (wave 7).** Three of four states have no writer: build the operator flow (assign, resolve, cancel) or retire `operator_cases`?
 6. **Recurring rides (wave 1d).** Ride templates (`0148`) and ride series (`0531`) both repeat a ride; retire templates in favour of series?
 7. **Account deletion (wave 3).** The purge deletes the row, so `deleted` is never written: keep a tombstone row in `deleted`, or drop `deleted` from the graph?
