@@ -73,7 +73,19 @@ export type NotificationKind =
   | 'housing_booking_completed'
   // D131 — the organizer paused, closed or deleted the event
   // before it started, so the attendee's registration was cancelled (0686).
-  | 'event_registration_cancelled';
+  | 'event_registration_cancelled'
+  // FR-FEED engagement (0252 / 0255) — a reaction, a comment, a mention on the member's post.
+  | 'post_reaction'
+  | 'post_comment'
+  | 'post_mention'
+  // FR-MOD (0150, 0136, 0611) — the member's account was suspended; a chat was removed after
+  // reports; a report waits past its 12-hour mark (to admins).
+  | 'account_suspended'
+  | 'chat_auto_removed'
+  | 'report_sla_warning'
+  // Match v1 (0261) and listing subscriptions (0667) — a listing that fits the member's.
+  | 'listing_match_found'
+  | 'listing_subscription_hit';
 
 /** Payload attached to every Expo push under `data`. The client reads this on tap. */
 export interface PushData {
@@ -86,6 +98,8 @@ export interface PushData {
   params?: Record<string, string>;
   /** Convenience field used by the foreground handler to detect chat-active state. */
   chat_id?: string;
+  /** The listing a match or listing-subscription notice is about (0261, 0667 write it at top level). */
+  listing_id?: string;
 }
 
 export interface DeviceRegistration {
