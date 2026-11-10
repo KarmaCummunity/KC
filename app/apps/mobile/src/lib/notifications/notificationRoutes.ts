@@ -71,6 +71,9 @@ export const NOTIFICATION_ROUTES: Record<NotificationKind, RouteBuilder> = {
   account_suspended: screen('/account-blocked'),
   // FR-NOTIF-017.
   match_suggested: screen('/matches'),
+  // Answers to a suggested match (MATCHING_V2).
+  match_interest: screen('/matches'),
+  match_accepted: screen('/matches'),
   // FR-NOTIF-018 — every handoff change opens the post, where both sides act on it.
   giving_handoff_requested: post,
   giving_handoff_claimed: post,

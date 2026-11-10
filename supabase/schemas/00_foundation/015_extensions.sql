@@ -22,3 +22,7 @@ create extension if not exists btree_gin with schema extensions;
 -- Lets a GiST exclusion constraint combine a plain equality column with a range, so two
 -- time ranges of one parent row can never overlap (bookable slots of a post).
 create extension if not exists btree_gist with schema extensions;
+
+-- Vector type and approximate nearest-neighbour (HNSW) indexes for post embeddings:
+-- matching, similar posts and recommendations (design §3.10).
+create extension if not exists vector with schema extensions;

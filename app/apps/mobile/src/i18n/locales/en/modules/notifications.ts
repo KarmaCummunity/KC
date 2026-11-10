@@ -162,9 +162,9 @@ export const notificationsEn = {
   matchSuggestedTitle: 'We found a match for you',
   matchSuggestedBody: 'We found a post that may suit you. Take a look.',
   matchInterestTitle: 'Someone is interested',
-  matchInterestBody: '{{partnerName}} accepted the match for "{{listingTitle}}"',
+  matchInterestBody: '{{actorName}} accepted the match we suggested to you',
   matchAcceptedTitle: "It's a match!",
-  matchAcceptedBody: '{{partnerName}} also accepted — coordinate "{{listingTitle}}" in chat',
+  matchAcceptedBody: '{{actorName}} also accepted the match. You can coordinate in chat.',
   // Texts of the notification kinds added with the production baseline. Every kind of
   // kc_private.notification_kinds needs its title and body here; the generator
   // (scripts/generate-notification-kinds.mjs) names what is missing.

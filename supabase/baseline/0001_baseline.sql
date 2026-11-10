@@ -61,6 +61,10 @@ create extension if not exists btree_gin with schema extensions;
 -- time ranges of one parent row can never overlap (bookable slots of a post).
 create extension if not exists btree_gist with schema extensions;
 
+-- Vector type and approximate nearest-neighbour (HNSW) indexes for post embeddings:
+-- matching, similar posts and recommendations (design §3.10).
+create extension if not exists vector with schema extensions;
+
 -- >>> supabase/schemas/00_foundation/020_default_privileges.sql
 -- Foundation · privileges
 --
@@ -12536,6 +12540,2561 @@ values
   ('post_expired', 'critical', false, false,
    'notifications.postExpiredTitle', 'notifications.postExpiredBody');
 
+-- >>> supabase/schemas/72_karma/010_karma_values.sql
+-- Karma · point values (spec 07 §7.6, D12, D29)
+--
+-- Every number of the karma system is configuration, not code: one row per rewarded event,
+-- optionally per context (a giving world, a post type, a challenge scope). The consumer of
+-- outbox topic `karma` (030_karma_consumer.sql) looks the value up when it performs an
+-- event, so a value is tuned by changing a row. An event with no row earns nothing.
+
+create table kc_private.karma_values (
+  event_type text not null check (event_type ~ '^[a-z][a-z0-9_]{1,40}$'),
+  -- What the value depends on; '' = the same value everywhere.
+  --   handoff_*            post type for rides, stays and events, else the giving world
+  --   challenge_*          personal | community | community_large (50+ participants)
+  context    text not null default '',
+  -- Points per unit. Negative values are penalties.
+  points     integer not null check (points <> 0),
+  -- What one unit is. `once` pays the points one time; the others multiply them by a
+  -- quantity the emitter measured: nights of a stay, started half hours of a session,
+  -- started 50 ILS of an item's estimated value (FR-KARMA-003), full 10 ILS of a donation.
+  unit       text not null default 'once'
+               check (unit in ('once', 'night', 'half_hour', 'value_50_ils', 'ils_10')),
+  -- Cap on the quantity of one award ("7 nights", "up to 20 bonus points").
+  max_units  integer not null default 1 check (max_units >= 1),
+  -- At most this many awards of the event type per member per Israel calendar day.
+  daily_cap  integer check (daily_cap > 0),
+  updated_at timestamptz not null default now(),
+  primary key (event_type, context),
+  constraint karma_values_units_chk check (unit <> 'once' or max_units = 1)
+);
+comment on table kc_private.karma_values is
+  'Configuration of karma: points per rewarded event and context, unit, caps. Changed by server code only.';
+
+create trigger karma_values_set_updated_at
+  before update on kc_private.karma_values
+  for each row execute function kc_private.set_updated_at();
+
+alter table kc_private.karma_values enable row level security;
+alter table kc_private.karma_values force row level security;
+
+-- Values of the events this baseline emits, as approved in spec 07 §7.6. Like the edges of
+-- a state machine these rows are vocabulary: without them the consumer has nothing to pay.
+insert into kc_private.karma_values (event_type, context, points, unit, max_units, daily_cap) values
+  -- A completed handoff: the member who gave and the member who received.
+  ('handoff_giver', 'items', 20, 'once', 1, null),
+  ('handoff_receiver', 'items', 15, 'once', 1, null),
+  ('item_value_bonus', 'items', 1, 'value_50_ils', 20, null),
+  ('handoff_giver', 'food', 20, 'once', 1, null),
+  ('handoff_receiver', 'food', 10, 'once', 1, null),
+  ('handoff_giver', 'ride', 25, 'once', 1, null),
+  ('handoff_receiver', 'ride', 10, 'once', 1, null),
+  ('handoff_giver', 'housing_stay', 30, 'night', 7, null),
+  ('handoff_receiver', 'housing_stay', 10, 'once', 1, null),
+  -- Attending an event; organizing one earns nothing by itself.
+  ('handoff_receiver', 'event', 10, 'once', 1, null),
+  -- A knowledge session: 10 an hour for the giver, at most 8 hours (D32, S72).
+  ('handoff_giver', 'knowledge', 5, 'half_hour', 16, null),
+  ('handoff_receiver', 'knowledge', 5, 'once', 1, null),
+  ('rating_given', '', 2, 'once', 1, null),
+  -- Challenges (D52). The daily cap of an event type is counted across its contexts.
+  ('challenge_opened', 'personal', 2, 'once', 1, 2),
+  ('challenge_opened', 'community', 3, 'once', 1, 2),
+  ('challenge_report', 'personal', 1, 'once', 1, null),
+  ('challenge_report', 'community', 2, 'once', 1, null),
+  ('challenge_report', 'community_large', 3, 'once', 1, null),
+  ('challenge_completed', 'personal', 10, 'once', 1, null),
+  ('challenge_completed', 'community', 15, 'once', 1, null),
+  ('challenge_completed', 'community_large', 20, 'once', 1, null),
+  -- Donations to the community: 1 point per full 10 ILS, at most 100 per donation, and 10
+  -- per month of a standing order. Emitted by the billing module as `award` events:
+  --   { kind: award, event_type: donation, user_id, subject: 'donation:<payment id>',
+  --     quantity: { ils_10: <amount in agorot / 1000, rounded down> } }
+  --   { kind: award, event_type: standing_order_month, user_id,
+  --     subject: 'standing_order:<id>:<YYYY-MM>' }
+  -- and, for a refund, { kind: revoke, user_id, subject_prefix: 'donation:<payment id>' }.
+  ('donation', '', 1, 'ils_10', 100, null),
+  ('standing_order_month', '', 10, 'once', 1, null);
+
+-- The value of an event in a context: the row of that context, else the row of every
+-- context; no row = the event is not rewarded.
+create function kc_private.karma_value(p_event_type text, p_context text)
+returns kc_private.karma_values
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select v.*
+    from kc_private.karma_values v
+   where v.event_type = p_event_type and v.context in (coalesce(p_context, ''), '')
+   order by (v.context <> '') desc
+   limit 1;
+$$;
+comment on function kc_private.karma_value(text, text) is
+  'Configured value of a karma event in a context, falling back to the context-free row.';
+
+-- >>> supabase/schemas/72_karma/020_karma_ledger.sql
+-- Karma · ledger (FR-KARMA-001, spec 07 §7.6)
+--
+-- Every point a member holds is a row here: the ledger is append-only and
+-- `user_stats.karma_points` is its running sum, never below zero. A row names what the
+-- points are for (`subject`) and the event that wrote it (`reference`); the pair is unique
+-- per member, so performing the same event twice writes nothing. Undoing an award (a handoff
+-- taken back, a challenge left) appends a negative row for the same subject (S20).
+
+create table public.karma_ledger (
+  id         bigint generated always as identity primary key,
+  user_id    uuid not null references public.users (id) on delete cascade,
+  -- The rewarded event (a karma_values.event_type), or `reversal`.
+  event_type text not null check (event_type ~ '^[a-z][a-z0-9_]{1,40}$'),
+  points     integer not null check (points <> 0),
+  -- What the points are for, e.g. `handoff:<id>:giver`, `challenge:<id>:report:2026-11-08`.
+  subject    text not null check (char_length(subject) between 1 and 200),
+  -- The event that wrote the row, e.g. `event:<outbox id>`.
+  reference  text not null check (char_length(reference) between 1 and 100),
+  created_at timestamptz not null default now(),
+  -- Idempotency of the consumer, and the lookup of what a subject currently holds.
+  constraint karma_ledger_once_key unique (user_id, subject, reference)
+);
+comment on table public.karma_ledger is
+  'Append-only karma entries; user_stats.karma_points is their sum. Written only by server code.';
+
+-- "My karma history" newest first (keyset on created_at, id) and the daily-cap count of an
+-- event type; covers the member foreign key.
+create index karma_ledger_user_recent_idx on public.karma_ledger (user_id, created_at desc, id desc);
+
+-- No update at all; a delete only as part of removing the member (the cascade runs after
+-- the profile row is gone, a direct delete does not).
+create function kc_private.karma_ledger_append_only()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if tg_op = 'DELETE' and not exists (select 1 from public.users u where u.id = old.user_id) then
+    return old;
+  end if;
+  raise exception 'append_only' using errcode = 'P0001', detail = 'karma_ledger';
+end;
+$$;
+
+create trigger karma_ledger_append_only
+  before update or delete on public.karma_ledger
+  for each row execute function kc_private.karma_ledger_append_only();
+
+alter table public.karma_ledger enable row level security;
+alter table public.karma_ledger force row level security;
+
+-- Karma is private: a member reads only their own entries (FR-KARMA-008, D29).
+create policy karma_ledger_select_own on public.karma_ledger
+  for select to authenticated
+  using (user_id = (select auth.uid()));
+-- The main admin sees everyone's karma (D29).
+create policy karma_ledger_select_super_admin on public.karma_ledger
+  for select to authenticated
+  using ((select kc_access.has_admin_role('super_admin')));
+
+grant select on public.karma_ledger to authenticated;
+
+-- The karma total is its owner's alone (FR-KARMA-008 AC1): the identity module's column
+-- grant on user_stats let every member read it on any visible profile. It is withdrawn here
+-- and the owner reads the total through my_karma_points().
+revoke select (karma_points) on public.user_stats from authenticated;
+
+create function public.my_karma_points()
+returns integer
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select s.karma_points from public.user_stats s where s.user_id = (select auth.uid());
+$$;
+comment on function public.my_karma_points() is 'The caller''s karma total (FR-KARMA-007).';
+grant execute on function public.my_karma_points() to authenticated;
+
+-- Appends one entry and moves the member's total. The counter row is the per-member lock.
+-- A penalty never takes the total below zero: the entry records what was actually taken.
+-- Returns the points applied; 0 when the same subject and reference were already written,
+-- or when the member no longer exists.
+create function kc_private.karma_apply(
+  p_user_id uuid, p_event_type text, p_points integer, p_subject text, p_reference text)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_total integer;
+  v_points integer;
+begin
+  select s.karma_points into v_total from public.user_stats s where s.user_id = p_user_id for update;
+  if not found then
+    return 0;
+  end if;
+  v_points := greatest(p_points, -v_total);
+  if v_points = 0 then
+    return 0;
+  end if;
+
+  insert into public.karma_ledger (user_id, event_type, points, subject, reference)
+  values (p_user_id, p_event_type, v_points, p_subject, p_reference)
+  on conflict on constraint karma_ledger_once_key do nothing;
+  if not found then
+    return 0;
+  end if;
+  update public.user_stats s set karma_points = s.karma_points + v_points where s.user_id = p_user_id;
+  return v_points;
+end;
+$$;
+comment on function kc_private.karma_apply(uuid, text, integer, text, text) is
+  'Appends a karma entry once per (member, subject, reference) and updates the member''s total.';
+
+-- Awards an event at its configured value. Nothing is paid when the event has no value, the
+-- subject already holds points, or the member reached the event's daily cap.
+--   p_quantity   what the emitter measured, by unit: { "night": 3 } — the value's own unit
+--                picks the number, capped at max_units; a value of unit `once` ignores it
+create function kc_private.karma_award(
+  p_user_id uuid, p_event_type text, p_context text, p_subject text, p_reference text,
+  p_quantity jsonb default '{}'::jsonb)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_value constant kc_private.karma_values := kc_private.karma_value(p_event_type, p_context);
+  v_units integer := 1;
+  -- Start of the current Israel calendar day.
+  v_day_start constant timestamptz :=
+    date_trunc('day', now() at time zone 'Asia/Jerusalem') at time zone 'Asia/Jerusalem';
+begin
+  if v_value.points is null or p_user_id is null then
+    return 0;
+  end if;
+  if v_value.unit <> 'once' then
+    v_units := least(coalesce((p_quantity ->> v_value.unit)::integer, 0), v_value.max_units);
+    if v_units < 1 then
+      return 0;
+    end if;
+  end if;
+
+  -- Serialises the checks below with every other award of this member.
+  perform 1 from public.user_stats s where s.user_id = p_user_id for update;
+  if (select coalesce(sum(l.points), 0) from public.karma_ledger l
+       where l.user_id = p_user_id and l.subject = p_subject) > 0 then
+    return 0;
+  end if;
+  if v_value.daily_cap is not null
+     and (select count(*) from public.karma_ledger l
+           where l.user_id = p_user_id and l.created_at >= v_day_start
+             and l.event_type = p_event_type and l.points > 0) >= v_value.daily_cap then
+    return 0;
+  end if;
+  return kc_private.karma_apply(p_user_id, p_event_type, v_value.points * v_units, p_subject, p_reference);
+end;
+$$;
+comment on function kc_private.karma_award(uuid, text, text, text, text, jsonb) is
+  'Awards a karma event at its configured value, once per subject and within the daily cap.';
+
+-- Takes back whatever the member still holds for every subject starting with the prefix
+-- (S20: undo reverses the points). Returns the points taken, as a negative number.
+create function kc_private.karma_revoke(p_user_id uuid, p_subject_prefix text, p_reference text)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_held record;
+  v_taken integer := 0;
+begin
+  perform 1 from public.user_stats s where s.user_id = p_user_id for update;
+  for v_held in
+    select l.subject, sum(l.points)::integer as points
+      from public.karma_ledger l
+     where l.user_id = p_user_id and starts_with(l.subject, p_subject_prefix)
+     group by l.subject
+    having sum(l.points) > 0
+  loop
+    v_taken := v_taken + kc_private.karma_apply(
+      p_user_id, 'reversal', -v_held.points, v_held.subject, p_reference);
+  end loop;
+  return v_taken;
+end;
+$$;
+comment on function kc_private.karma_revoke(uuid, text, text) is
+  'Reverses the points a member holds for the subjects under a prefix.';
+
+-- >>> supabase/schemas/72_karma/030_karma_consumer.sql
+-- Karma · consumer of outbox topic `karma`
+--
+-- No write path computes karma. A module records what happened on topic `karma` and this
+-- consumer turns it into ledger entries, so a member's request never waits for it and a
+-- failed award never rolls back a handoff. Events (payload.kind):
+--   handoff_completed   { handoff_id, post_id, owner_id, recipient_id, world_slug, post_type,
+--                         direction, seats }                       (25_handoffs/030)
+--   handoff_reverted    the same payload: the delivery was taken back
+--   rating_given        { handoff_id, post_id, rater_id }         (25_handoffs/110)
+--   award               { event_type, context?, user_id, subject, quantity? } — any module:
+--                       pays karma_values(event_type, context) once for the subject
+--   revoke              { user_id, subject_prefix } — reverses what the member holds
+-- Performing an event twice changes nothing: every entry carries the event's id as its
+-- reference, and an award is skipped while its subject still holds points.
+
+-- Performs one event. Returns the net points written (negative for a reversal).
+create function kc_private.karma_deliver(p_event_id bigint)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_payload jsonb;
+  v_reference constant text := 'event:' || p_event_id;
+  v_subject text;
+  v_context text;
+  v_giver_id uuid;
+  v_receiver_id uuid;
+  v_quantity jsonb;
+begin
+  select e.payload into v_payload
+    from kc_private.outbox_events e
+   where e.id = p_event_id and e.topic = 'karma';
+  if not found then
+    raise exception 'outbox_event_not_found' using errcode = 'P0001';
+  end if;
+
+  case v_payload ->> 'kind'
+  when 'handoff_completed' then
+    v_subject := 'handoff:' || (v_payload ->> 'handoff_id') || ':';
+    v_context := case when v_payload ->> 'post_type' in ('ride', 'housing_stay', 'event')
+                      then v_payload ->> 'post_type' else v_payload ->> 'world_slug' end;
+    -- On an offer the owner gives and the other member receives; on a request the reverse.
+    if v_payload ->> 'direction' = 'offer' then
+      v_giver_id := (v_payload ->> 'owner_id')::uuid;
+      v_receiver_id := (v_payload ->> 'recipient_id')::uuid;
+    else
+      v_giver_id := (v_payload ->> 'recipient_id')::uuid;
+      v_receiver_id := (v_payload ->> 'owner_id')::uuid;
+    end if;
+    -- What was given, in every unit a value may be configured in. The estimated value of
+    -- an item is a field of the post's details (FR-KARMA-004), capped at 1,000 ILS.
+    select jsonb_strip_nulls(jsonb_build_object(
+             'night', ceil(extract(epoch from h.slot_ends_at - h.slot_starts_at) / 86400),
+             'half_hour', ceil(extract(epoch from h.slot_ends_at - h.slot_starts_at) / 1800),
+             'value_50_ils', case when p.details ->> 'estimated_value' ~ '^\d{1,6}$'
+               then round(least((p.details ->> 'estimated_value')::integer, 1000) / 50.0) end))
+      into v_quantity
+      from public.post_handoffs h
+      join public.posts p on p.id = h.post_id
+     where h.id = (v_payload ->> 'handoff_id')::uuid;
+
+    return kc_private.karma_award(
+             v_giver_id, 'handoff_giver', v_context, v_subject || 'giver', v_reference, v_quantity)
+         + kc_private.karma_award(
+             v_giver_id, 'item_value_bonus', v_context, v_subject || 'value_bonus', v_reference, v_quantity)
+         + kc_private.karma_award(
+             v_receiver_id, 'handoff_receiver', v_context, v_subject || 'receiver', v_reference, v_quantity);
+
+  when 'handoff_reverted' then
+    v_subject := 'handoff:' || (v_payload ->> 'handoff_id') || ':';
+    return kc_private.karma_revoke((v_payload ->> 'owner_id')::uuid, v_subject, v_reference)
+         + kc_private.karma_revoke((v_payload ->> 'recipient_id')::uuid, v_subject, v_reference);
+
+  when 'rating_given' then
+    return kc_private.karma_award(
+      (v_payload ->> 'rater_id')::uuid, 'rating_given', '',
+      'rating:' || (v_payload ->> 'handoff_id'), v_reference);
+
+  when 'award' then
+    return kc_private.karma_award(
+      (v_payload ->> 'user_id')::uuid, v_payload ->> 'event_type', v_payload ->> 'context',
+      v_payload ->> 'subject', v_reference, coalesce(v_payload -> 'quantity', '{}'::jsonb));
+
+  when 'revoke' then
+    return kc_private.karma_revoke(
+      (v_payload ->> 'user_id')::uuid, v_payload ->> 'subject_prefix', v_reference);
+
+  else
+    raise exception 'invalid_karma_event' using errcode = 'P0001';
+  end case;
+end;
+$$;
+comment on function kc_private.karma_deliver(bigint) is
+  'Consumer of outbox topic karma: writes the ledger entries of one event; safe to repeat.';
+
+-- Worker entry point: claims due events of the topic, performs each and confirms it. A
+-- failing event is released for a retry with its error and does not stop the batch.
+-- Returns the number of events performed. Needs no service outside the database, so it is
+-- run by a scheduled job.
+create function kc_private.karma_process(p_limit integer default 200)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_event_id bigint;
+  v_done integer := 0;
+begin
+  for v_event_id in
+    select e.id from kc_private.outbox_claim('karma', p_limit) e order by e.id
+  loop
+    begin
+      perform kc_private.karma_deliver(v_event_id);
+      perform kc_private.outbox_complete(v_event_id);
+      v_done := v_done + 1;
+    exception when others then
+      perform kc_private.outbox_complete(v_event_id, sqlerrm);
+    end;
+  end loop;
+  return v_done;
+end;
+$$;
+comment on function kc_private.karma_process(integer) is
+  'Claims and performs a batch of karma events; run by a scheduled job.';
+
+-- ── Nightly reconciliation (FR-KARMA-001 AC3, design §5 "Counters") ─────────────────────
+
+-- One row per total that did not match its ledger. Ids only; kept for diagnosis.
+create table ops.karma_drift (
+  id          bigint generated always as identity primary key,
+  user_id     uuid not null,
+  stored      integer not null,
+  computed    integer not null,
+  detected_at timestamptz not null default now()
+);
+comment on table ops.karma_drift is 'Karma totals that differed from the ledger sum when the nightly job corrected them.';
+
+alter table ops.karma_drift enable row level security;
+alter table ops.karma_drift force row level security;
+
+-- Sets every member's total to the sum of their ledger (never below zero) and records each
+-- total it had to correct. Returns the number of corrections.
+create function kc_private.karma_reconcile()
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_fixed integer;
+begin
+  with ledger as (
+    select l.user_id, greatest(sum(l.points), 0)::integer as points
+      from public.karma_ledger l
+     group by l.user_id
+  ), fixed as (
+    update public.user_stats s
+       set karma_points = coalesce(g.points, 0)
+      from public.user_stats c
+      left join ledger g on g.user_id = c.user_id
+     where s.user_id = c.user_id and s.karma_points <> coalesce(g.points, 0)
+    returning s.user_id, c.karma_points as stored, s.karma_points as computed
+  )
+  insert into ops.karma_drift (user_id, stored, computed)
+  select f.user_id, f.stored, f.computed from fixed f;
+  get diagnostics v_fixed = row_count;
+  return v_fixed;
+end;
+$$;
+comment on function kc_private.karma_reconcile() is
+  'Nightly: corrects karma totals from the ledger and records every drift in ops.karma_drift.';
+
+-- >>> supabase/schemas/74_challenges/010_challenges.sql
+-- Challenges · tables (spec 10_challenges, D43, D46, D52, D100)
+--
+-- A challenge is a post of `post_type = 'challenge'` in the `challenges` giving world plus
+-- the row here: opening one is "giving" in that world, joining is "taking". The post carries
+-- what every post has (title, description, audience, feed, comments, reports, moderation);
+-- this module adds the rules of the challenge, who takes part and their reports. Writes
+-- happen only through the RPCs of this module.
+
+-- Lifecycle, machine `challenge`: active ─► ended. Ending is final.
+--   manager   whoever may manage the challenge's post (its owner; design §12.1)
+--   admin     a moderator
+insert into kc_private.fsm_state (machine_id, status) values
+  ('challenge', 'active'),
+  ('challenge', 'ended');
+insert into kc_private.fsm_edge (machine_id, from_status, to_status, role) values
+  ('challenge', 'active', 'ended', 'manager'),
+  ('challenge', 'active', 'ended', 'admin');
+
+create table public.challenges (
+  id                 uuid primary key default gen_random_uuid(),
+  -- The challenge's post; removing the post removes the challenge.
+  post_id            uuid not null unique references public.posts (id) on delete cascade,
+  creator_id         uuid not null references public.users (id) on delete cascade,
+  -- personal: only the creator sees and joins it; community: anyone may join. The
+  -- invite-only `group` scope of the spec is not built.
+  scope              text not null check (scope in ('personal', 'community')),
+  measurement        text not null check (measurement in ('yes_no', 'count', 'duration_minutes')),
+  -- weekly = Sunday-to-Saturday Israel week; flexible keeps no streak.
+  cadence            text not null check (cadence in ('daily', 'weekly', 'flexible')),
+  goal_value         numeric(10, 2) check (goal_value >= 0),
+  goal_direction     text check (goal_direction in ('at_least', 'at_most')),
+  difficulty         text check (difficulty in ('easy', 'medium', 'hard', 'expert')),
+  -- Free-text subject of the challenge; not a giving world and not a post type.
+  topic_label        text check (char_length(topic_label) between 1 and 50),
+  -- Deadline; a challenge past it reads as ended and takes no more reports.
+  ends_at            timestamptz,
+  -- Successful cycles that complete the challenge for a participant.
+  target_cycles      integer check (target_cycles between 1 and 366),
+  -- Lifecycle, machine `challenge`. Never written by a device.
+  status             text not null default 'active',
+  participants_count integer not null default 0 check (participants_count >= 0),
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now(),
+  -- A yes/no challenge has no numeric goal; a numeric goal is a value with a direction.
+  constraint challenges_goal_shape_chk check (
+    (measurement = 'yes_no' and goal_value is null and goal_direction is null)
+    or (measurement <> 'yes_no' and (goal_value is null) = (goal_direction is null)))
+);
+comment on table public.challenges is 'Rules and state of a challenge; its title and audience live on its post.';
+
+-- Discover list: open community challenges, most joined first (keyset on the three columns).
+create index challenges_discover_idx on public.challenges (participants_count desc, created_at desc, id desc)
+  where scope = 'community' and status = 'active';
+-- "Challenges I opened", newest first; covers the creator foreign key.
+create index challenges_creator_recent_idx on public.challenges (creator_id, created_at desc, id desc);
+
+create trigger challenges_status_fsm
+  before insert or update of status on public.challenges
+  for each row execute function kc_private.fsm_guard_status('challenge', 'status');
+create trigger challenges_set_updated_at
+  before update on public.challenges
+  for each row execute function kc_private.set_updated_at();
+
+create table public.challenge_participations (
+  challenge_id       uuid not null references public.challenges (id) on delete cascade,
+  user_id            uuid not null references public.users (id) on delete cascade,
+  joined_at          timestamptz not null default now(),
+  -- Streak as of `last_success_cycle`; readers apply challenge_live_streak() for today.
+  current_streak     integer not null default 0 check (current_streak >= 0),
+  best_streak        integer not null default 0 check (best_streak >= 0),
+  successful_cycles  integer not null default 0 check (successful_cycles >= 0),
+  last_success_cycle date,
+  -- Set when the successful cycles reach the challenge's target.
+  completed_at       timestamptz,
+  primary key (challenge_id, user_id)
+);
+comment on table public.challenge_participations is 'Who takes part in a challenge, with their streak and progress.';
+
+-- "Challenges I joined", newest first; covers the member foreign key.
+create index challenge_participations_user_recent_idx
+  on public.challenge_participations (user_id, joined_at desc, challenge_id desc);
+
+create table public.challenge_progress_entries (
+  challenge_id uuid not null,
+  user_id      uuid not null,
+  -- First day of the reported cycle: the day itself, or the Sunday that opened its week.
+  cycle_start  date not null,
+  value        numeric(10, 2) not null check (value >= 0),
+  note         text check (char_length(note) between 1 and 500),
+  goal_met     boolean not null,
+  reported_at  timestamptz not null default now(),
+  -- One report per participant per cycle; filing again overwrites it.
+  primary key (challenge_id, user_id, cycle_start),
+  -- Leaving a challenge withdraws the member's reports.
+  constraint challenge_progress_entries_participation_fk foreign key (challenge_id, user_id)
+    references public.challenge_participations (challenge_id, user_id) on delete cascade
+);
+comment on table public.challenge_progress_entries is 'One self-report per participant per cycle of a challenge.';
+
+alter table public.challenges enable row level security;
+alter table public.challenges force row level security;
+alter table public.challenge_participations enable row level security;
+alter table public.challenge_participations force row level security;
+alter table public.challenge_progress_entries enable row level security;
+alter table public.challenge_progress_entries force row level security;
+
+-- A community challenge is readable exactly when its post is: the subquery runs under the
+-- caller's own access to `posts` (audience, blocks, moderation). A creator always reads
+-- their own. Participants of a challenge that left the feed read it through get_challenge.
+create policy challenges_select_visible on public.challenges
+  for select to authenticated
+  using (creator_id = (select auth.uid())
+         or exists (select 1 from public.posts p where p.id = challenges.post_id));
+-- Progress is personal: a member reads their own participation and reports; standings of
+-- others come from the leaderboard RPC only.
+create policy challenge_participations_select_own on public.challenge_participations
+  for select to authenticated
+  using (user_id = (select auth.uid()));
+create policy challenge_progress_entries_select_own on public.challenge_progress_entries
+  for select to authenticated
+  using (user_id = (select auth.uid()));
+
+grant select on public.challenges to authenticated;
+grant select on public.challenge_participations to authenticated;
+grant select on public.challenge_progress_entries to authenticated;
+
+-- Keeps challenges.participants_count in step with the participation rows.
+create function kc_private.challenge_participations_sync_count()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  update public.challenges c
+     set participants_count = greatest(c.participants_count + case tg_op when 'INSERT' then 1 else -1 end, 0)
+   where c.id = case tg_op when 'INSERT' then new.challenge_id else old.challenge_id end;
+  return null;
+end;
+$$;
+comment on function kc_private.challenge_participations_sync_count() is
+  'AFTER INSERT OR DELETE on challenge_participations: maintains the participant counter.';
+
+create trigger challenge_participations_sync_count
+  after insert or delete on public.challenge_participations
+  for each row execute function kc_private.challenge_participations_sync_count();
+
+-- A challenge post never exists without its challenge. Checked at commit, so the RPC can
+-- write the two in either order; a bare insert of such a post from a device fails.
+create function kc_private.posts_require_challenge()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if exists (select 1 from public.posts p where p.id = new.id)
+     and not exists (select 1 from public.challenges c where c.post_id = new.id) then
+    raise exception 'post_details_required' using errcode = 'P0001';
+  end if;
+  return null;
+end;
+$$;
+comment on function kc_private.posts_require_challenge() is
+  'Deferred check: a challenge post has its challenge row when the transaction commits.';
+
+create constraint trigger posts_require_challenge
+  after insert on public.posts
+  deferrable initially deferred
+  for each row
+  when (new.post_type = 'challenge')
+  execute function kc_private.posts_require_challenge();
+
+-- >>> supabase/schemas/74_challenges/020_challenge_cycles.sql
+-- Challenges · cycles, goals and streaks (mirrored by challengeCycles.ts in @kc/domain)
+--
+-- A report belongs to a cycle: a day, or a Sunday-to-Saturday week. All dates are Israel
+-- calendar dates decided by the server, whatever the device or session time zone says.
+
+-- Today in Israel.
+create function kc_private.challenge_today()
+returns date
+language sql
+stable
+set search_path = ''
+as $$
+  select (now() at time zone 'Asia/Jerusalem')::date;
+$$;
+comment on function kc_private.challenge_today() is 'The current Israel calendar date.';
+
+-- First day of the cycle a date belongs to: itself, or the Sunday that opened its week.
+create function kc_private.challenge_cycle_start(p_date date, p_cadence text)
+returns date
+language sql
+immutable
+set search_path = ''
+as $$
+  select case p_cadence when 'weekly' then p_date - extract(dow from p_date)::integer else p_date end;
+$$;
+comment on function kc_private.challenge_cycle_start(date, text) is
+  'First day of the cycle of a date: the day, or the Sunday of its week for a weekly challenge.';
+
+-- Whether one reported value is a success for its cycle. Yes/no: 1 = done. A numeric
+-- challenge without a goal succeeds by being reported.
+create function kc_private.challenge_goal_met(p_challenge public.challenges, p_value numeric)
+returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  select case
+    when p_challenge.measurement = 'yes_no' then p_value >= 1
+    when p_challenge.goal_value is null then true
+    when p_challenge.goal_direction = 'at_least' then p_value >= p_challenge.goal_value
+    else p_value <= p_challenge.goal_value
+  end;
+$$;
+comment on function kc_private.challenge_goal_met(public.challenges, numeric) is
+  'A reported value meets the goal of the challenge.';
+
+-- The streak a member still holds today: the stored one while the last success is in the
+-- current or the previous cycle, zero once a full cycle was skipped. Flexible challenges
+-- keep no streak.
+create function kc_private.challenge_live_streak(p_streak integer, p_last_success date, p_cadence text)
+returns integer
+language sql
+stable
+set search_path = ''
+as $$
+  select case
+    when p_cadence = 'flexible' or p_last_success is null then 0
+    when p_last_success >= kc_private.challenge_cycle_start(kc_private.challenge_today(), p_cadence)
+                           - case p_cadence when 'weekly' then 7 else 1 end then p_streak
+    else 0
+  end;
+$$;
+comment on function kc_private.challenge_live_streak(integer, date, text) is
+  'The streak as it stands today: the stored streak, or zero after a skipped cycle.';
+
+-- Streaks of one participant from their stored reports. Successful cycles are grouped into
+-- runs of consecutive cycles (gaps and islands over the cycle index, counted from a
+-- Sunday); the current streak is the run that holds the latest success.
+create function kc_private.challenge_compute_streaks(p_challenge public.challenges, p_user_id uuid)
+returns table (current_streak integer, best_streak integer, successful_cycles integer, last_success_cycle date)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with wins as (
+    select e.cycle_start,
+           (e.cycle_start - date '2000-01-02') / case p_challenge.cadence when 'weekly' then 7 else 1 end as idx
+      from public.challenge_progress_entries e
+     where e.challenge_id = p_challenge.id and e.user_id = p_user_id and e.goal_met
+  ),
+  runs as (
+    select count(*)::integer as len, max(i.cycle_start) as last_cycle
+      from (select w.cycle_start, w.idx - row_number() over (order by w.idx) as grp from wins w) i
+     group by i.grp
+  )
+  select case p_challenge.cadence when 'flexible' then 0
+           else coalesce((select r.len from runs r order by r.last_cycle desc limit 1), 0) end,
+         case p_challenge.cadence when 'flexible' then 0
+           else coalesce((select max(r.len) from runs r), 0) end,
+         (select count(*)::integer from wins),
+         (select max(w.cycle_start) from wins w);
+$$;
+comment on function kc_private.challenge_compute_streaks(public.challenges, uuid) is
+  'Current and best streak, successful cycles and last success of a participant, from their reports.';
+
+-- May the member see the challenge? Its creator always; anyone else only while the creator
+-- is an active member not in a blocked pair with them, and then a participant always and
+-- everyone else while the challenge is a community one whose post is on the air.
+create function kc_private.challenge_visible_to(p_challenge public.challenges, p_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select p_challenge.creator_id = p_user_id
+      or (exists (select 1 from public.users u where u.id = p_challenge.creator_id and u.is_active)
+          and not kc_access.is_blocked_between(p_user_id, p_challenge.creator_id)
+          and (exists (select 1 from public.challenge_participations cp
+                        where cp.challenge_id = p_challenge.id and cp.user_id = p_user_id)
+               or (p_challenge.scope = 'community'
+                   and exists (select 1 from public.posts p
+                                where p.id = p_challenge.post_id and p.status = 'open'))));
+$$;
+comment on function kc_private.challenge_visible_to(public.challenges, uuid) is
+  'Visibility of a challenge to a member inside the definer RPCs of this module.';
+
+-- >>> supabase/schemas/74_challenges/030_challenge_rpcs.sql
+-- Challenges · write RPCs (spec 10_challenges "Behaviour")
+--
+-- Every action runs as the signed-in caller; no function takes a member id. Karma is never
+-- computed here: each rewarded step records an `award` event on outbox topic `karma`
+-- (72_karma/030), whose values and caps are configuration (spec 07 §7.6, D52).
+
+-- Records the karma event of a challenge step for the caller's subject under the challenge.
+create function kc_private.challenge_award(
+  p_user_id uuid, p_event_type text, p_challenge public.challenges, p_subject_suffix text)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  select kc_private.outbox_enqueue('karma', jsonb_build_object(
+    'kind', 'award', 'event_type', p_event_type, 'user_id', p_user_id,
+    -- "Large" is 50 participants or more.
+    'context', case when p_challenge.scope = 'personal' then 'personal'
+                    when p_challenge.participants_count >= 50 then 'community_large'
+                    else 'community' end,
+    'subject', 'challenge:' || p_challenge.id || ':' || p_subject_suffix));
+$$;
+comment on function kc_private.challenge_award(uuid, text, public.challenges, text) is
+  'Enqueues the karma award of a challenge step (opened, report, completed).';
+
+-- Opens a challenge: its post in the challenges world (Public for a community challenge,
+-- OnlyMe for a personal one), the challenge row, and the creator as first participant.
+--   invalid_input                    title outside 3–80 characters, or a deadline in the past
+--   city_required                    no city given and none on the caller's profile
+--   challenge_world_not_configured   the catalog has no active post kind for challenges
+-- plus what the post and the challenge tables refuse (post_limit_exceeded, SQLSTATE 23514).
+create function public.create_challenge(
+  p_title text, p_scope text, p_measurement text, p_cadence text,
+  p_description text default null, p_goal_value numeric default null, p_goal_direction text default null,
+  p_difficulty text default null, p_topic_label text default null, p_ends_at timestamptz default null,
+  p_target_cycles integer default null, p_city_id text default null)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_id constant uuid := gen_random_uuid();
+  v_kind_id uuid;
+  v_city_id text;
+  v_post_id uuid;
+  v_challenge public.challenges;
+begin
+  if char_length(btrim(coalesce(p_title, ''))) not between 3 and 80 or p_ends_at <= now() then
+    raise exception 'invalid_input' using errcode = 'P0001';
+  end if;
+  select k.id into v_kind_id
+    from public.post_kinds k
+   where k.world_slug = 'challenges' and k.is_active and k.direction in ('offer', 'either')
+   order by k.sort_order, k.id
+   limit 1;
+  if not found then
+    raise exception 'challenge_world_not_configured' using errcode = 'P0001';
+  end if;
+  v_city_id := coalesce(p_city_id, (select u.city_id from public.users u where u.id = v_user_id));
+  if v_city_id is null then
+    raise exception 'city_required' using errcode = 'P0001';
+  end if;
+
+  -- The rules a card shows are copied into the post's details; they never change.
+  insert into public.posts (
+    owner_id, world_slug, kind_id, post_type, direction, status, visibility, title, description,
+    details, city_id, location_display_level, expires_at)
+  values (
+    v_user_id, 'challenges', v_kind_id, 'challenge', 'offer', 'draft',
+    case p_scope when 'personal' then 'OnlyMe' else 'Public' end,
+    btrim(p_title), nullif(btrim(p_description), ''),
+    jsonb_build_object('challenge_id', v_id, 'scope', p_scope, 'measurement', p_measurement,
+                       'cadence', p_cadence),
+    v_city_id, 'CityOnly', p_ends_at)
+  returning id into v_post_id;
+
+  insert into public.challenges (
+    id, post_id, creator_id, scope, measurement, cadence, goal_value, goal_direction, difficulty,
+    topic_label, ends_at, target_cycles)
+  values (
+    v_id, v_post_id, v_user_id, p_scope, p_measurement, p_cadence, p_goal_value, p_goal_direction,
+    p_difficulty, nullif(btrim(p_topic_label), ''), p_ends_at, p_target_cycles)
+  returning * into v_challenge;
+  insert into public.challenge_participations (challenge_id, user_id) values (v_id, v_user_id);
+
+  perform kc_private.post_move(v_post_id, 'open', 'owner');
+  perform kc_private.challenge_award(v_user_id, 'challenge_opened', v_challenge, 'opened');
+  return v_id;
+end;
+$$;
+comment on function public.create_challenge(text, text, text, text, text, numeric, text, text, text, timestamptz, integer, text) is
+  'Opens a personal or community challenge with its post and joins the caller to it.';
+grant execute on function public.create_challenge(text, text, text, text, text, numeric, text, text, text, timestamptz, integer, text) to authenticated;
+
+-- Joins a community challenge.
+--   challenge_not_found    no such challenge, a personal one, or one the caller cannot see
+--   challenge_not_active   ended, or past its deadline
+--   already_joined
+create function public.join_challenge(p_challenge_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_challenge public.challenges;
+begin
+  select c.* into v_challenge from public.challenges c where c.id = p_challenge_id;
+  if not found or v_challenge.scope <> 'community'
+     or not kc_private.challenge_visible_to(v_challenge, v_user_id) then
+    raise exception 'challenge_not_found' using errcode = 'P0001';
+  end if;
+  if v_challenge.status <> 'active' or v_challenge.ends_at <= now() then
+    raise exception 'challenge_not_active' using errcode = 'P0001';
+  end if;
+  insert into public.challenge_participations (challenge_id, user_id)
+  values (p_challenge_id, v_user_id)
+  on conflict do nothing;
+  if not found then
+    raise exception 'already_joined' using errcode = 'P0001';
+  end if;
+end;
+$$;
+comment on function public.join_challenge(uuid) is 'The caller joins a community challenge.';
+grant execute on function public.join_challenge(uuid) to authenticated;
+
+-- Leaves a challenge: the caller's reports go with the participation and the karma they
+-- earned in it is reversed (S20). The creator ends the challenge instead.
+--   challenge_not_found · creator_cannot_leave · not_participant
+create function public.leave_challenge(p_challenge_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+  v_creator_id uuid;
+begin
+  select c.creator_id into v_creator_id from public.challenges c where c.id = p_challenge_id;
+  if not found then
+    raise exception 'challenge_not_found' using errcode = 'P0001';
+  end if;
+  if v_creator_id = v_user_id then
+    raise exception 'creator_cannot_leave' using errcode = 'P0001';
+  end if;
+  delete from public.challenge_participations cp
+   where cp.challenge_id = p_challenge_id and cp.user_id = v_user_id;
+  if not found then
+    raise exception 'not_participant' using errcode = 'P0001';
+  end if;
+  perform kc_private.outbox_enqueue('karma', jsonb_build_object(
+    'kind', 'revoke', 'user_id', v_user_id, 'subject_prefix', 'challenge:' || p_challenge_id || ':'));
+end;
+$$;
+comment on function public.leave_challenge(uuid) is 'The caller leaves a challenge; their reports and its karma are withdrawn.';
+grant execute on function public.leave_challenge(uuid) to authenticated;
+
+-- Ends a challenge: no more joins or reports; participants keep their history. Its post is
+-- paused, so it leaves the feed. Allowed to whoever may manage the post. Repeating is a no-op.
+--   challenge_not_found   no such challenge, or not the caller's to manage
+create function public.end_challenge(p_challenge_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_challenge public.challenges;
+begin
+  perform kc_private.require_active_caller();
+  select c.* into v_challenge from public.challenges c where c.id = p_challenge_id for update;
+  if not found or not kc_private.can_manage_post(v_challenge.post_id) then
+    raise exception 'challenge_not_found' using errcode = 'P0001';
+  end if;
+  perform set_config('kc.fsm_role', 'manager', true);
+  update public.challenges c set status = 'ended' where c.id = p_challenge_id;
+  perform set_config('kc.fsm_role', '', true);
+  if exists (select 1 from public.posts p where p.id = v_challenge.post_id and p.status = 'open') then
+    perform kc_private.post_move(v_challenge.post_id, 'paused', 'owner');
+  end if;
+end;
+$$;
+comment on function public.end_challenge(uuid) is 'Ends a challenge and pauses its post.';
+grant execute on function public.end_challenge(uuid) to authenticated;
+
+-- Files, or overwrites, the caller's report for the cycle of p_report_date (default today;
+-- at most two days back, never ahead). Recomputes the streak; the first report of a cycle
+-- and reaching the target number of successful cycles are rewarded.
+--   challenge_not_found · not_participant · challenge_not_active (ended, past its deadline,
+--   or its post off the air) · report_date_out_of_window · invalid_input (value)
+-- Returns { cycle_start, goal_met, current_streak, best_streak, successful_cycles, completed }.
+create function public.report_challenge_progress(
+  p_challenge_id uuid, p_value numeric, p_note text default null, p_report_date date default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_today constant date := kc_private.challenge_today();
+  v_date constant date := coalesce(p_report_date, v_today);
+  v_challenge public.challenges;
+  v_participation public.challenge_participations;
+  v_cycle date;
+  v_goal_met boolean;
+  v_is_new boolean;
+  v_streaks record;
+  v_completed boolean;
+begin
+  select c.* into v_challenge from public.challenges c where c.id = p_challenge_id;
+  if not found then
+    raise exception 'challenge_not_found' using errcode = 'P0001';
+  end if;
+  -- The participation row lock serialises this member's reports.
+  select cp.* into v_participation from public.challenge_participations cp
+   where cp.challenge_id = p_challenge_id and cp.user_id = v_user_id for update;
+  if not found then
+    raise exception 'not_participant' using errcode = 'P0001';
+  end if;
+  if v_challenge.status <> 'active' or v_challenge.ends_at <= now()
+     or not exists (select 1 from public.posts p where p.id = v_challenge.post_id and p.status = 'open') then
+    raise exception 'challenge_not_active' using errcode = 'P0001';
+  end if;
+  if v_date > v_today or v_date < v_today - 2 then
+    raise exception 'report_date_out_of_window' using errcode = 'P0001';
+  end if;
+  if p_value is null or p_value < 0 or p_value > 99999999.99
+     or (v_challenge.measurement = 'yes_no' and p_value not in (0, 1)) then
+    raise exception 'invalid_input' using errcode = 'P0001';
+  end if;
+
+  v_cycle := kc_private.challenge_cycle_start(v_date, v_challenge.cadence);
+  v_goal_met := kc_private.challenge_goal_met(v_challenge, p_value);
+  insert into public.challenge_progress_entries as e (challenge_id, user_id, cycle_start, value, note, goal_met)
+  values (p_challenge_id, v_user_id, v_cycle, p_value, nullif(btrim(p_note), ''), v_goal_met)
+  on conflict (challenge_id, user_id, cycle_start) do update
+    set value = excluded.value, note = excluded.note, goal_met = excluded.goal_met, reported_at = now()
+  returning (e.xmax = 0) into v_is_new;
+
+  select s.* into v_streaks from kc_private.challenge_compute_streaks(v_challenge, v_user_id) s;
+  v_completed := v_challenge.target_cycles is not null
+    and v_streaks.successful_cycles >= v_challenge.target_cycles;
+  update public.challenge_participations cp
+     set current_streak = v_streaks.current_streak,
+         best_streak = greatest(cp.best_streak, v_streaks.best_streak),
+         successful_cycles = v_streaks.successful_cycles,
+         last_success_cycle = v_streaks.last_success_cycle,
+         completed_at = case when v_completed then coalesce(cp.completed_at, now()) end
+   where cp.challenge_id = p_challenge_id and cp.user_id = v_user_id;
+
+  if v_is_new then
+    perform kc_private.challenge_award(v_user_id, 'challenge_report', v_challenge, 'report:' || v_cycle);
+  end if;
+  if v_completed and v_participation.completed_at is null then
+    -- Paid once even when a corrected report completes the challenge a second time: the
+    -- karma consumer skips a subject that already holds points.
+    perform kc_private.challenge_award(v_user_id, 'challenge_completed', v_challenge, 'completed');
+  end if;
+
+  return jsonb_build_object(
+    'cycle_start', v_cycle, 'goal_met', v_goal_met,
+    'current_streak', kc_private.challenge_live_streak(
+      v_streaks.current_streak, v_streaks.last_success_cycle, v_challenge.cadence),
+    'best_streak', greatest(v_participation.best_streak, v_streaks.best_streak),
+    'successful_cycles', v_streaks.successful_cycles, 'completed', v_completed);
+end;
+$$;
+comment on function public.report_challenge_progress(uuid, numeric, text, date) is
+  'Files the caller''s report for a cycle of a challenge and returns their updated progress.';
+grant execute on function public.report_challenge_progress(uuid, numeric, text, date) to authenticated;
+
+-- >>> supabase/schemas/74_challenges/040_challenge_reads.sql
+-- Challenges · read RPCs
+--
+-- One row shape for every challenge screen: the challenge, its title from its post, and the
+-- caller's own progress. These run with definer rights because a participant keeps reading
+-- a challenge after its post left the feed (ended = paused post), which the post's own
+-- policy cannot express; each function applies kc_private.challenge_visible_to itself.
+-- A member's own reports are read from challenge_progress_entries directly, under RLS.
+
+create type public.challenge_summary as (
+  id                   uuid,
+  post_id              uuid,
+  creator_id           uuid,
+  creator_display_name text,
+  title                text,
+  description          text,
+  scope                text,
+  measurement          text,
+  cadence              text,
+  goal_value           numeric,
+  goal_direction       text,
+  difficulty           text,
+  topic_label          text,
+  ends_at              timestamptz,
+  target_cycles        integer,
+  -- `ended` also once the deadline passed, without waiting for anyone to end it.
+  status               text,
+  participants_count   integer,
+  created_at           timestamptz,
+  joined               boolean,
+  my_current_streak    integer,
+  my_best_streak       integer,
+  my_successful_cycles integer,
+  my_completed         boolean
+);
+comment on type public.challenge_summary is 'A challenge with the caller''s own progress, as every challenge screen shows it.';
+
+-- The summary of one challenge for a viewer. Visibility is the caller's business.
+create function kc_private.challenge_summary_of(p_challenge public.challenges, p_viewer_id uuid)
+returns public.challenge_summary
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select row(
+    p_challenge.id, p_challenge.post_id, p_challenge.creator_id, u.display_name, p.title, p.description,
+    p_challenge.scope, p_challenge.measurement, p_challenge.cadence, p_challenge.goal_value,
+    p_challenge.goal_direction, p_challenge.difficulty, p_challenge.topic_label, p_challenge.ends_at,
+    p_challenge.target_cycles,
+    case when p_challenge.ends_at <= now() then 'ended' else p_challenge.status end,
+    p_challenge.participants_count, p_challenge.created_at,
+    cp.user_id is not null,
+    coalesce(kc_private.challenge_live_streak(cp.current_streak, cp.last_success_cycle, p_challenge.cadence), 0),
+    coalesce(cp.best_streak, 0), coalesce(cp.successful_cycles, 0),
+    cp.completed_at is not null)::public.challenge_summary
+    from public.posts p
+    join public.users u on u.id = p_challenge.creator_id
+    left join public.challenge_participations cp
+      on cp.challenge_id = p_challenge.id and cp.user_id = p_viewer_id
+   where p.id = p_challenge.post_id;
+$$;
+comment on function kc_private.challenge_summary_of(public.challenges, uuid) is
+  'Builds the summary row of a challenge for a viewer.';
+
+-- One challenge, or no row when it does not exist or the caller may not see it.
+create function public.get_challenge(p_challenge_id uuid)
+returns setof public.challenge_summary
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select (kc_private.challenge_summary_of(c, kc_private.require_caller())).*
+    from public.challenges c
+   where c.id = p_challenge_id
+     and kc_private.challenge_visible_to(c, kc_private.require_caller());
+$$;
+comment on function public.get_challenge(uuid) is 'A challenge with the caller''s progress, when the caller may see it.';
+grant execute on function public.get_challenge(uuid) to authenticated;
+
+-- One keyset page of challenges. Pass the last row's next_cursor to continue.
+--   discover   open community challenges, most joined first (challenges_discover_idx)
+--   joined     the caller's participations, newest first
+--   created    the challenges the caller opened, newest first
+create function public.list_challenges(
+  p_view text default 'discover', p_cursor jsonb default null, p_limit integer default 20)
+returns table (challenge public.challenge_summary, next_cursor jsonb)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+  v_limit constant integer := least(greatest(coalesce(p_limit, 20), 1), 50);
+  v_t constant timestamptz := (p_cursor ->> 't')::timestamptz;
+  v_id constant uuid := (p_cursor ->> 'id')::uuid;
+begin
+  if p_view = 'discover' then
+    return query
+    select kc_private.challenge_summary_of(c, v_user_id),
+           jsonb_build_object('n', c.participants_count, 't', c.created_at, 'id', c.id)
+      from public.challenges c
+     where c.scope = 'community' and c.status = 'active' and (c.ends_at is null or c.ends_at > now())
+       and kc_private.challenge_visible_to(c, v_user_id)
+       and exists (select 1 from public.posts p where p.id = c.post_id and p.status = 'open')
+       and (p_cursor is null
+            or (c.participants_count, c.created_at, c.id) < ((p_cursor ->> 'n')::integer, v_t, v_id))
+     order by c.participants_count desc, c.created_at desc, c.id desc
+     limit v_limit;
+  elsif p_view = 'joined' then
+    return query
+    select kc_private.challenge_summary_of(c, v_user_id),
+           jsonb_build_object('t', cp.joined_at, 'id', c.id)
+      from public.challenge_participations cp
+      join public.challenges c on c.id = cp.challenge_id
+     where cp.user_id = v_user_id
+       and kc_private.challenge_visible_to(c, v_user_id)
+       and (p_cursor is null or (cp.joined_at, cp.challenge_id) < (v_t, v_id))
+     order by cp.joined_at desc, cp.challenge_id desc
+     limit v_limit;
+  elsif p_view = 'created' then
+    return query
+    select kc_private.challenge_summary_of(c, v_user_id),
+           jsonb_build_object('t', c.created_at, 'id', c.id)
+      from public.challenges c
+     where c.creator_id = v_user_id
+       and (p_cursor is null or (c.created_at, c.id) < (v_t, v_id))
+     order by c.created_at desc, c.id desc
+     limit v_limit;
+  else
+    raise exception 'invalid_input' using errcode = 'P0001';
+  end if;
+end;
+$$;
+comment on function public.list_challenges(text, jsonb, integer) is
+  'One keyset page of challenges to discover, joined by the caller, or opened by the caller.';
+grant execute on function public.list_challenges(text, jsonb, integer) to authenticated;
+
+-- Standing of a challenge, for its participants only: streaks and successful cycles, never
+-- karma (spec 10). Members in a blocked pair with the caller, and members whose account is
+-- not active, are left out. Bounded: the top p_limit (at most 100).
+create function public.list_challenge_leaderboard(p_challenge_id uuid, p_limit integer default 20)
+returns table (
+  user_id uuid, display_name text, avatar_url text, current_streak integer, best_streak integer,
+  successful_cycles integer, completed boolean, is_me boolean)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select cp.user_id, u.display_name, u.avatar_url,
+         kc_private.challenge_live_streak(cp.current_streak, cp.last_success_cycle, c.cadence),
+         cp.best_streak, cp.successful_cycles, cp.completed_at is not null,
+         cp.user_id = (select auth.uid())
+    from public.challenges c
+    join public.challenge_participations cp on cp.challenge_id = c.id
+    join public.users u on u.id = cp.user_id and u.is_active
+   where c.id = p_challenge_id
+     and exists (select 1 from public.challenge_participations me
+                  where me.challenge_id = c.id and me.user_id = (select auth.uid()))
+     and not kc_access.is_blocked_between((select auth.uid()), cp.user_id)
+   order by 4 desc, cp.successful_cycles desc, cp.joined_at, cp.user_id
+   limit least(greatest(coalesce(p_limit, 20), 1), 100);
+$$;
+comment on function public.list_challenge_leaderboard(uuid, integer) is
+  'Top participants of a challenge by streak, visible to its participants only.';
+grant execute on function public.list_challenge_leaderboard(uuid, integer) to authenticated;
+
+-- >>> supabase/schemas/76_matching/010_matching_config.sql
+-- Matching · configuration (docs/SSOT/MATCHING_V2.md "Tuning", design §3.10)
+--
+-- The knobs of the matching engine and the weights of its score. Both are read by server
+-- code only and tuned by changing a row; nothing here is reachable from a device.
+
+-- Engine settings: exactly one row.
+create table kc_private.matching_settings (
+  id                      boolean primary key default true check (id),
+  -- Off = no new pairs are computed and none are announced.
+  enabled                 boolean not null default true,
+  -- A pair below this score is not kept.
+  min_score               numeric(5, 4) not null default 0.4500 check (min_score between 0 and 1),
+  -- A pair is announced to its two owners from this score up (spec 07 §7.3).
+  notify_min_score        numeric(5, 4) not null default 0.6000 check (notify_min_score between 0 and 1),
+  max_candidates_per_post integer not null default 10 check (max_candidates_per_post between 1 and 50),
+  -- How many of the newest opposite posts of the world one run looks at.
+  scan_limit              integer not null default 500 check (scan_limit between 10 and 5000),
+  -- At most this many match announcements per member per Israel day (spec 07 §7.11).
+  max_notify_per_user_day integer not null default 3 check (max_notify_per_user_day between 0 and 50),
+  -- A pair older than this is no longer announced.
+  notify_max_age_hours    integer not null default 72 check (notify_max_age_hours > 0),
+  -- Optional language-model second opinion (Edge Function `match-rerank`).
+  llm_rerank_enabled      boolean not null default false,
+  llm_weight              numeric(4, 3) not null default 0.300 check (llm_weight between 0 and 1),
+  updated_at              timestamptz not null default now()
+);
+comment on table kc_private.matching_settings is 'Settings of the matching engine (one row).';
+
+create trigger matching_settings_set_updated_at
+  before update on kc_private.matching_settings
+  for each row execute function kc_private.set_updated_at();
+
+-- Share of each component in the score of a pair, per giving world; '' = every world
+-- without a row of its own. A component that cannot be measured for a pair (no embedding
+-- yet, no time window) is left out and the rest is re-normalised.
+create table kc_private.match_weights (
+  world_slug text primary key,
+  -- Same item subcategory.
+  w_category numeric(4, 3) not null default 0.150 check (w_category between 0 and 1),
+  -- Words in common (full-text tokens and trigram similarity of the titles).
+  w_text     numeric(4, 3) not null default 0.300 check (w_text between 0 and 1),
+  -- Meaning in common (cosine similarity of the post embeddings).
+  w_vector   numeric(4, 3) not null default 0.250 check (w_vector between 0 and 1),
+  -- Closeness, within the world's radius.
+  w_geo      numeric(4, 3) not null default 0.200 check (w_geo between 0 and 1),
+  -- Overlapping time windows.
+  w_time     numeric(4, 3) not null default 0.100 check (w_time between 0 and 1),
+  -- Two posts are paired only when their words or their meaning agree at least this much:
+  -- being close by is never enough on its own (MATCHING_V2 "text gate").
+  min_relevance numeric(4, 3) not null default 0.300 check (min_relevance between 0 and 1),
+  updated_at timestamptz not null default now(),
+  constraint match_weights_sum_chk check (w_category + w_text + w_vector + w_geo + w_time = 1)
+);
+comment on table kc_private.match_weights is 'Weights of the match score per giving world; the row with an empty slug is the default.';
+
+create trigger match_weights_set_updated_at
+  before update on kc_private.match_weights
+  for each row execute function kc_private.set_updated_at();
+
+alter table kc_private.matching_settings enable row level security;
+alter table kc_private.matching_settings force row level security;
+alter table kc_private.match_weights enable row level security;
+alter table kc_private.match_weights force row level security;
+
+-- The engine's defaults. Configuration, not data: the engine reads exactly these two rows
+-- until an operator tunes them or adds a world's own weights.
+insert into kc_private.matching_settings default values;
+insert into kc_private.match_weights (world_slug) values ('');
+
+-- A pair's score as shown and ranked: the engine's score, blended with the language
+-- model's opinion when that is switched on and has been given.
+create function kc_private.match_effective_score(p_score numeric, p_llm_score numeric)
+returns numeric
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select case when s.llm_rerank_enabled and p_llm_score is not null
+              then round((1 - s.llm_weight) * p_score + s.llm_weight * p_llm_score, 4)
+              else p_score end
+    from kc_private.matching_settings s;
+$$;
+comment on function kc_private.match_effective_score(numeric, numeric) is
+  'Score of a pair after the optional language-model blend.';
+
+-- >>> supabase/schemas/76_matching/020_post_embeddings.sql
+-- Matching · post embeddings and their job queue (design §3.10)
+--
+-- An embedding is the meaning of a post's text as a vector; matching, similar posts and
+-- recommendations compare posts by it. The vector is computed outside the database: a post
+-- that needs one records an outbox event on topic `embedding` (050_match_processing.sql),
+-- the `embed-worker` Edge Function claims jobs, calls the model and stores the result.
+-- One job per post however often it was edited, with attempts and the last error.
+
+create table public.post_embeddings (
+  post_id         uuid primary key references public.posts (id) on delete cascade,
+  embedding       extensions.vector(1536) not null,
+  embedding_model text not null check (char_length(embedding_model) between 1 and 100),
+  updated_at      timestamptz not null default now()
+);
+comment on table public.post_embeddings is
+  'Embedding of a post''s text. Readable by nobody from a device; used by server code only.';
+
+-- Nearest posts by cosine distance: match candidates, similar posts, recommendations.
+create index post_embeddings_hnsw_idx on public.post_embeddings
+  using hnsw (embedding extensions.vector_cosine_ops);
+
+create trigger post_embeddings_set_updated_at
+  before update on public.post_embeddings
+  for each row execute function kc_private.set_updated_at();
+
+-- No policy and no grant: a vector reveals the text it was made from.
+alter table public.post_embeddings enable row level security;
+alter table public.post_embeddings force row level security;
+
+create table kc_private.embedding_jobs (
+  post_id      uuid primary key references public.posts (id) on delete cascade,
+  status       text not null default 'pending' check (status in ('pending', 'processing', 'done', 'failed')),
+  model        text not null default 'text-embedding-3-small' check (char_length(model) between 1 and 100),
+  attempts     integer not null default 0 check (attempts >= 0),
+  -- When the post last asked for a fresh embedding; the queue is served oldest first.
+  requested_at timestamptz not null default now(),
+  -- Set while a worker holds the job; a claim older than ten minutes is taken over.
+  claimed_at   timestamptz,
+  last_error   text
+);
+comment on table kc_private.embedding_jobs is 'One embedding job per post: queue state, attempts, last error.';
+
+-- Claim query: waiting jobs, and jobs whose worker went silent, oldest request first.
+create index embedding_jobs_due_idx on kc_private.embedding_jobs (requested_at)
+  where status in ('pending', 'processing');
+
+alter table kc_private.embedding_jobs enable row level security;
+alter table kc_private.embedding_jobs force row level security;
+
+-- Worker call 1 of 3. Turns the waiting `embedding` outbox events into jobs (a post edited
+-- five times is one job), then hands the worker up to p_limit jobs with the text to embed.
+-- Concurrent workers never receive the same job (SKIP LOCKED); a job whose worker died is
+-- handed out again after ten minutes, at most five times.
+create function public.embedding_jobs_claim(p_limit integer default 20)
+returns table (job_id uuid, post_id uuid, model text, title text, summary text, details jsonb)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_event record;
+begin
+  for v_event in
+    select e.id, (e.payload ->> 'post_id')::uuid as post_id from kc_private.outbox_claim('embedding', 500) e
+  loop
+    insert into kc_private.embedding_jobs as j (post_id)
+    select p.id from public.posts p where p.id = v_event.post_id
+    on conflict on constraint embedding_jobs_pkey do update
+      set status = 'pending', attempts = 0, requested_at = now(), claimed_at = null, last_error = null;
+    perform kc_private.outbox_complete(v_event.id);
+  end loop;
+
+  return query
+  with claimed as (
+    update kc_private.embedding_jobs j
+       set status = 'processing', attempts = j.attempts + 1, claimed_at = now()
+     where j.post_id in (
+             select c.post_id
+               from kc_private.embedding_jobs c
+              where (c.status = 'pending'
+                     or (c.status = 'processing' and c.claimed_at <= now() - interval '10 minutes'))
+                and c.attempts < 5
+              order by c.requested_at
+              limit least(greatest(coalesce(p_limit, 20), 1), 50)
+                for update skip locked)
+    returning j.post_id, j.model, j.requested_at
+  )
+  select c.post_id, c.post_id, c.model, p.title, p.description, p.details
+    from claimed c
+    join public.posts p on p.id = c.post_id
+   order by c.requested_at, c.post_id;
+end;
+$$;
+comment on function public.embedding_jobs_claim(integer) is
+  'embed-worker: claims embedding jobs and returns the post text to embed. Service role only.';
+
+-- Worker call 2 of 3. Stores the embedding of a claimed job and closes the job — unless the
+-- post asked for a fresh embedding since the claim, in which case the job stays waiting.
+-- The post is queued for matching again, now that its meaning can be compared.
+-- Returns whether the job was closed.
+create function public.embedding_job_store(p_job_id uuid, p_embedding extensions.vector, p_model text)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_closed integer;
+begin
+  if not exists (select 1 from kc_private.embedding_jobs j where j.post_id = p_job_id) then
+    raise exception 'embedding_job_not_found' using errcode = 'P0001';
+  end if;
+  insert into public.post_embeddings as e (post_id, embedding, embedding_model)
+  values (p_job_id, p_embedding, p_model)
+  on conflict (post_id) do update
+    set embedding = excluded.embedding, embedding_model = excluded.embedding_model;
+
+  update kc_private.embedding_jobs j
+     set status = 'done', claimed_at = null, last_error = null
+   where j.post_id = p_job_id and j.status = 'processing';
+  get diagnostics v_closed = row_count;
+  perform kc_private.outbox_enqueue('match', jsonb_build_object('post_id', p_job_id));
+  return v_closed > 0;
+end;
+$$;
+comment on function public.embedding_job_store(uuid, extensions.vector, text) is
+  'embed-worker: stores a post''s embedding and closes its job. Service role only.';
+
+-- Worker call 3 of 3. Marks a claimed job failed with its error; a job re-queued since the
+-- claim stays waiting.
+create function public.embedding_job_fail(p_job_id uuid, p_error text)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  update kc_private.embedding_jobs j
+     set status = 'failed', claimed_at = null, last_error = left(p_error, 1000)
+   where j.post_id = p_job_id and j.status = 'processing';
+$$;
+comment on function public.embedding_job_fail(uuid, text) is
+  'embed-worker: records the failure of a claimed embedding job. Service role only.';
+
+-- >>> supabase/schemas/76_matching/030_match_candidates.sql
+-- Matching · pairs (docs/SSOT/MATCHING_V2.md, design §3.10)
+--
+-- A pair is an open offer and an open request of the same giving world that the engine
+-- scored as fitting each other. Both owners are told (above a score threshold), each
+-- answers, and a decline closes the pair for good. Pairs are internal: a member reads
+-- their own through my_matches() and answers through match_respond().
+
+-- Lifecycle, machine `match`:
+--   suggested ─► accepted    both owners accepted            (member)
+--   suggested ─► declined    either owner declined            (member)
+--   suggested ◄─► expired    a post went off the air or the pair no longer scores, and
+--                            back when it does again          (system)
+insert into kc_private.fsm_state (machine_id, status) values
+  ('match', 'suggested'),
+  ('match', 'accepted'),
+  ('match', 'declined'),
+  ('match', 'expired');
+insert into kc_private.fsm_edge (machine_id, from_status, to_status, role) values
+  ('match', 'suggested', 'accepted', 'member'),
+  ('match', 'suggested', 'declined', 'member'),
+  ('match', 'suggested', 'expired', 'system'),
+  ('match', 'expired', 'suggested', 'system');
+
+create table kc_private.match_candidates (
+  id                   uuid primary key default gen_random_uuid(),
+  offer_post_id        uuid not null references public.posts (id) on delete cascade,
+  request_post_id      uuid not null references public.posts (id) on delete cascade,
+  -- Owners copied from the posts, so "my matches" never joins to find them.
+  offer_owner_id       uuid not null references public.users (id) on delete cascade,
+  request_owner_id     uuid not null references public.users (id) on delete cascade,
+  world_slug           text not null references public.worlds (slug) on update cascade,
+  score                numeric(5, 4) not null check (score between 0 and 1),
+  -- The measured components, each 0..1: category, text, vector, geo, time.
+  components           jsonb not null default '{}'::jsonb check (jsonb_typeof(components) = 'object'),
+  distance_km          numeric(9, 2) check (distance_km >= 0),
+  -- Lifecycle, machine `match`.
+  status               text not null default 'suggested',
+  offer_response       text check (offer_response in ('accepted', 'declined')),
+  request_response     text check (request_response in ('accepted', 'declined')),
+  offer_responded_at   timestamptz,
+  request_responded_at timestamptz,
+  -- When each owner was told about the pair; null = not yet.
+  notified_offer_at    timestamptz,
+  notified_request_at  timestamptz,
+  -- The language model's opinion (Edge Function `match-rerank`).
+  llm_score            numeric(5, 4) check (llm_score between 0 and 1),
+  llm_reason           text check (char_length(llm_reason) <= 280),
+  llm_scored_at        timestamptz,
+  -- Last time the engine scored the pair.
+  computed_at          timestamptz not null default now(),
+  created_at           timestamptz not null default now(),
+  -- One pair per two posts; also covers the offer post foreign key.
+  constraint match_candidates_pair_key unique (offer_post_id, request_post_id),
+  constraint match_candidates_distinct_owners_chk check (offer_owner_id <> request_owner_id)
+);
+comment on table kc_private.match_candidates is 'Scored offer and request pairs with each owner''s answer. Written only by the matching engine.';
+
+-- Pairs of a request post (recompute, expiry); covers its foreign key.
+create index match_candidates_request_post_idx on kc_private.match_candidates (request_post_id);
+-- "My matches", the daily announcement cap and "these two owners declined before", from
+-- either side; cover the owner foreign keys.
+create index match_candidates_offer_owner_idx on kc_private.match_candidates (offer_owner_id, status);
+create index match_candidates_request_owner_idx on kc_private.match_candidates (request_owner_id, status);
+-- Announcement run: live pairs with an owner still to be told, best first.
+create index match_candidates_unannounced_idx on kc_private.match_candidates (score desc)
+  where status = 'suggested' and (notified_offer_at is null or notified_request_at is null);
+-- Language-model run: live pairs without an opinion yet, newest first.
+create index match_candidates_llm_pending_idx on kc_private.match_candidates (computed_at desc)
+  where status = 'suggested' and llm_scored_at is null;
+-- Covers the world foreign key (a world being renamed).
+create index match_candidates_world_idx on kc_private.match_candidates (world_slug);
+
+create trigger match_candidates_status_fsm
+  before insert or update of status on kc_private.match_candidates
+  for each row execute function kc_private.fsm_guard_status('match', 'status');
+
+-- When the engine last looked at a post, and what came of it.
+create table kc_private.match_state (
+  post_id     uuid primary key references public.posts (id) on delete cascade,
+  computed_at timestamptz not null default now(),
+  -- Live pairs kept by the last run.
+  candidates  integer not null default 0 check (candidates >= 0),
+  last_error  text
+);
+comment on table kc_private.match_state is 'Per post: last matching run, pairs kept, last error.';
+
+alter table kc_private.match_candidates enable row level security;
+alter table kc_private.match_candidates force row level security;
+alter table kc_private.match_state enable row level security;
+alter table kc_private.match_state force row level security;
+
+-- >>> supabase/schemas/76_matching/040_match_scoring.sql
+-- Matching · scoring a pair and computing the pairs of a post (docs/SSOT/MATCHING_V2.md)
+--
+-- All of it is SQL over indexes that already exist: recent posts of the world, full-text
+-- tokens, PostGIS distance and the embedding index. Only plain (`standard`) posts are
+-- paired here: rides are matched along saved routes by the worlds module (D74), and events,
+-- stays, jobs and challenges are joined, not paired.
+
+-- The words of a title as an OR query for the full-text index; null without any word.
+create function kc_private.title_tsquery(p_title text)
+returns tsquery
+language sql
+immutable
+set search_path = ''
+as $$
+  select to_tsquery('simple', string_agg(quote_literal(l.lexeme), ' | '))
+    from unnest(tsvector_to_array(to_tsvector('simple', coalesce(p_title, '')))) as l (lexeme);
+$$;
+comment on function kc_private.title_tsquery(text) is 'Full-text query matching any word of the title.';
+
+-- How far apart two posts of a world may be to be paired: twice the world's radius, and at
+-- least 30 km. Null for a world where distance does not matter.
+create function kc_private.match_distance_limit_m(p_world public.worlds)
+returns double precision
+language sql
+immutable
+set search_path = ''
+as $$
+  select case when p_world.geo_mode <> 'remote'
+              then greatest(p_world.default_radius_km * 2, 30)::double precision * 1000 end;
+$$;
+comment on function kc_private.match_distance_limit_m(public.worlds) is
+  'Largest distance in metres at which two posts of the world are paired; null = any.';
+
+-- Scores an offer against a request. Null when the two must never be paired:
+--   the same owner · an owner whose account is not active · a block between the owners ·
+--   either post not shown to the other owner (not open, "only me", or followers-only
+--   without the follow) · the owners declined a pair before · too far apart · neither
+--   their words nor their meaning agree (match_weights.min_relevance)
+-- Otherwise { score, distance_km, components }: each measurable component is 0..1 and the
+-- score is their weighted mean over the components that could be measured.
+create function kc_private.match_score_pair(
+  p_offer public.posts, p_request public.posts, p_weights kc_private.match_weights, p_world public.worlds)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_limit_m constant double precision := kc_private.match_distance_limit_m(p_world);
+  v_tokens constant text[] := tsvector_to_array(to_tsvector('simple', p_request.title));
+  v_distance_m double precision;
+  v_text numeric;
+  v_vector numeric;
+  v_geo numeric;
+  v_score numeric;
+begin
+  if p_offer.owner_id = p_request.owner_id
+     or p_offer.status <> 'open' or p_request.status <> 'open'
+     or (select count(*) from public.users u
+          where u.id in (p_offer.owner_id, p_request.owner_id) and u.is_active) < 2
+     or kc_access.is_blocked_between(p_offer.owner_id, p_request.owner_id)
+     or not (p_offer.visibility = 'Public' or (p_offer.visibility = 'FollowersOnly' and exists (
+               select 1 from public.follows f
+                where f.follower_id = p_request.owner_id and f.followed_id = p_offer.owner_id)))
+     or not (p_request.visibility = 'Public' or (p_request.visibility = 'FollowersOnly' and exists (
+               select 1 from public.follows f
+                where f.follower_id = p_offer.owner_id and f.followed_id = p_request.owner_id)))
+     or exists (select 1 from kc_private.match_candidates m
+                 where m.status = 'declined'
+                   and ((m.offer_owner_id = p_offer.owner_id and m.request_owner_id = p_request.owner_id)
+                     or (m.offer_owner_id = p_request.owner_id and m.request_owner_id = p_offer.owner_id))) then
+    return null;
+  end if;
+
+  if p_offer.geo_approx is not null and p_request.geo_approx is not null then
+    v_distance_m := extensions.st_distance(p_offer.geo_approx, p_request.geo_approx);
+  end if;
+  if v_limit_m is null then
+    v_geo := 1;
+  elsif v_distance_m > v_limit_m then
+    return null;
+  else
+    v_geo := 1 - v_distance_m / v_limit_m;
+  end if;
+
+  -- Words: the closer of "the titles look alike" and "the offer mentions what is asked for".
+  v_text := greatest(
+    extensions.similarity(lower(p_offer.title), lower(p_request.title))::numeric,
+    case when cardinality(v_tokens) > 0 then
+      (select count(*) from unnest(v_tokens) as t (lexeme)
+        where t.lexeme = any (tsvector_to_array(p_offer.search_vector)))::numeric / cardinality(v_tokens)
+    else 0 end);
+  -- Meaning: cosine similarity, when both posts have their embedding.
+  select least(greatest(1 - (o.embedding operator(extensions.<=>) r.embedding), 0), 1)::numeric
+    into v_vector
+    from public.post_embeddings o, public.post_embeddings r
+   where o.post_id = p_offer.id and r.post_id = p_request.id;
+  if greatest(v_text, coalesce(v_vector, 0)) < p_weights.min_relevance then
+    return null;
+  end if;
+
+  select sum(c.weight * c.value) / nullif(sum(c.weight), 0) into v_score
+    from (values
+      (p_weights.w_category, (p_offer.item_subcategory_id = p_request.item_subcategory_id)::integer::numeric),
+      (p_weights.w_text, v_text),
+      (p_weights.w_vector, v_vector),
+      (p_weights.w_geo, v_geo),
+      (p_weights.w_time, (p_offer.time_window && p_request.time_window)::integer::numeric)
+    ) as c (weight, value)
+   where c.value is not null;
+
+  return jsonb_build_object(
+    'score', round(coalesce(v_score, 0), 4),
+    'distance_km', round((v_distance_m / 1000)::numeric, 2),
+    'components', jsonb_strip_nulls(jsonb_build_object(
+      'category', (p_offer.item_subcategory_id = p_request.item_subcategory_id)::integer,
+      'text', round(v_text, 4), 'vector', round(v_vector, 4), 'geo', round(v_geo, 4),
+      'time', (p_offer.time_window && p_request.time_window)::integer)));
+end;
+$$;
+comment on function kc_private.match_score_pair(public.posts, public.posts, kc_private.match_weights, public.worlds) is
+  'Score and components of an offer and request pair, or null when they must not be paired.';
+
+-- Recomputes the pairs of one post and returns how many it holds afterwards.
+--   candidates   the newest opposite posts of the world within reach, posts sharing a word
+--                with the title, and the posts nearest in meaning — then scored and the
+--                best kept (settings: scan_limit, min_score, max_candidates_per_post)
+--   upsert       a pair nobody answered is re-scored; an answered pair is never touched
+--   expiry       unanswered pairs the run did not keep, and every open pair of a post
+--                that is no longer on the air, become `expired`
+-- Safe to repeat: the same input gives the same rows.
+create function kc_private.match_compute_for_post(p_post_id uuid)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_outer_role constant text := coalesce(current_setting('kc.fsm_role', true), '');
+  v_run_at constant timestamptz := clock_timestamp();
+  v_settings kc_private.matching_settings;
+  v_post public.posts;
+  v_weights kc_private.match_weights;
+  v_world public.worlds;
+  v_embedding extensions.vector;
+  v_is_offer boolean;
+  v_live boolean;
+  v_kept integer := 0;
+begin
+  select s.* into v_settings from kc_private.matching_settings s;
+  select p.* into v_post from public.posts p where p.id = p_post_id;
+  if not found or not v_settings.enabled then
+    return 0;
+  end if;
+  v_live := v_post.status = 'open' and v_post.post_type = 'standard';
+  v_is_offer := v_post.direction = 'offer';
+  perform set_config('kc.fsm_role', 'system', true);
+
+  if v_live then
+    select w.* into v_weights from kc_private.match_weights w
+     where w.world_slug in (v_post.world_slug, '') order by (w.world_slug <> '') desc limit 1;
+    select w.* into v_world from public.worlds w where w.slug = v_post.world_slug;
+    select e.embedding into v_embedding from public.post_embeddings e where e.post_id = p_post_id;
+
+    with pool as (
+      (select c.id from public.posts c
+        where c.status = 'open' and c.world_slug = v_post.world_slug
+          and (v_post.geo_approx is null or kc_private.match_distance_limit_m(v_world) is null
+               or extensions.st_dwithin(c.geo_approx, v_post.geo_approx, kc_private.match_distance_limit_m(v_world)))
+        order by c.published_at desc
+        limit v_settings.scan_limit)
+      union
+      (select c.id from public.posts c
+        where c.status = 'open' and c.search_vector @@ kc_private.title_tsquery(v_post.title)
+        order by c.published_at desc
+        limit 100)
+      union
+      (select e.post_id from public.post_embeddings e
+        where v_embedding is not null
+        order by e.embedding operator(extensions.<=>) v_embedding
+        limit 100)
+    ), scored as (
+      select c.id as other_post_id, c.owner_id as other_owner_id, s.pair
+        from pool
+        join public.posts c on c.id = pool.id
+       cross join lateral (
+         select case when v_is_offer then kc_private.match_score_pair(v_post, c, v_weights, v_world)
+                     else kc_private.match_score_pair(c, v_post, v_weights, v_world) end as pair) s
+       where c.world_slug = v_post.world_slug and c.post_type = 'standard'
+         and c.direction <> v_post.direction
+         and (s.pair ->> 'score')::numeric >= v_settings.min_score
+       order by (s.pair ->> 'score')::numeric desc, c.id
+       limit v_settings.max_candidates_per_post
+    )
+    insert into kc_private.match_candidates as m (
+      offer_post_id, request_post_id, offer_owner_id, request_owner_id, world_slug,
+      score, components, distance_km, computed_at)
+    select case when v_is_offer then v_post.id else s.other_post_id end,
+           case when v_is_offer then s.other_post_id else v_post.id end,
+           case when v_is_offer then v_post.owner_id else s.other_owner_id end,
+           case when v_is_offer then s.other_owner_id else v_post.owner_id end,
+           v_post.world_slug, (s.pair ->> 'score')::numeric, s.pair -> 'components',
+           (s.pair ->> 'distance_km')::numeric, v_run_at
+      from scored s
+    on conflict on constraint match_candidates_pair_key do update
+      set score = excluded.score, components = excluded.components,
+          distance_km = excluded.distance_km, computed_at = excluded.computed_at, status = 'suggested'
+      where m.status in ('suggested', 'expired')
+        and m.offer_response is null and m.request_response is null;
+    get diagnostics v_kept = row_count;
+  end if;
+
+  update kc_private.match_candidates m
+     set status = 'expired'
+   where (m.offer_post_id = p_post_id or m.request_post_id = p_post_id)
+     and m.status = 'suggested'
+     and (not v_live
+          or (m.offer_response is null and m.request_response is null and m.computed_at < v_run_at));
+  perform set_config('kc.fsm_role', v_outer_role, true);
+
+  insert into kc_private.match_state as s (post_id, computed_at, candidates)
+  values (p_post_id, v_run_at, v_kept)
+  on conflict (post_id) do update
+    set computed_at = excluded.computed_at, candidates = excluded.candidates, last_error = null;
+  return v_kept;
+end;
+$$;
+comment on function kc_private.match_compute_for_post(uuid) is
+  'Recomputes the matching pairs of one post; returns the number of live pairs it holds.';
+
+-- >>> supabase/schemas/76_matching/050_match_processing.sql
+-- Matching · triggering, the consumer of outbox topic `match`, announcements, re-rank
+--
+-- Nothing is matched or embedded while a member waits: a post write only records what has
+-- to happen (design §5 "Trigger budget") and the work is done here, by a scheduled job, and
+-- by the embed and re-rank Edge Functions.
+
+-- Records the follow-up work of a post write:
+--   topic `embedding`  { post_id }  the published text is new or changed
+--   topic `match`      { post_id }  the post went on or off the air, or a field the score
+--                                   reads changed while it is on the air
+-- Two inserts at most, and none for a write that changes nothing either consumer reads.
+create function kc_private.posts_enqueue_indexing()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_was_open constant boolean := tg_op = 'UPDATE' and old.status = 'open';
+  v_text_changed constant boolean := tg_op = 'INSERT' or old.status = 'draft'
+    or new.title is distinct from old.title or new.description is distinct from old.description;
+begin
+  if new.status <> 'draft' and v_text_changed then
+    perform kc_private.outbox_enqueue('embedding', jsonb_build_object('post_id', new.id));
+  end if;
+  if new.post_type = 'standard'
+     and ((new.status = 'open') <> v_was_open
+          or (v_was_open and (v_text_changed
+               or row(new.item_subcategory_id, new.time_window, new.visibility, new.geo_approx::text)
+                  is distinct from
+                  row(old.item_subcategory_id, old.time_window, old.visibility, old.geo_approx::text)))) then
+    perform kc_private.outbox_enqueue('match', jsonb_build_object('post_id', new.id));
+  end if;
+  return null;
+end;
+$$;
+comment on function kc_private.posts_enqueue_indexing() is
+  'AFTER trigger on posts: enqueues the embedding refresh and the matching run a write calls for.';
+
+create trigger posts_enqueue_indexing
+  after insert or update of status, title, description, item_subcategory_id, time_window, visibility,
+    city_id, location_display_level, geo_approx
+  on public.posts
+  for each row execute function kc_private.posts_enqueue_indexing();
+
+-- Tells the owners of fresh, good pairs about them: one `match_suggested` notification per
+-- owner per pair, best pairs first, at most `max_notify_per_user_day` per member per Israel
+-- day (spec 07 §7.11). An owner who already answered is not told. Quiet hours and the
+-- member's own switch for this kind are the notification module's business. Returns the
+-- number of notifications recorded.
+create function kc_private.match_announce(p_limit integer default 200)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_settings kc_private.matching_settings;
+  v_day_start constant timestamptz :=
+    date_trunc('day', now() at time zone 'Asia/Jerusalem') at time zone 'Asia/Jerusalem';
+  v_pair kc_private.match_candidates;
+  v_side record;
+  v_sent integer := 0;
+begin
+  select s.* into v_settings from kc_private.matching_settings s;
+  if not v_settings.enabled then
+    return 0;
+  end if;
+  for v_pair in
+    select m.* from kc_private.match_candidates m
+     where m.status = 'suggested' and (m.notified_offer_at is null or m.notified_request_at is null)
+       and m.computed_at > now() - make_interval(hours => v_settings.notify_max_age_hours)
+       and kc_private.match_effective_score(m.score, m.llm_score) >= v_settings.notify_min_score
+     order by m.score desc
+     limit least(greatest(p_limit, 1), 1000)
+       for update skip locked
+  loop
+    for v_side in
+      select * from (values
+        ('offer', v_pair.offer_owner_id, v_pair.request_post_id,
+         v_pair.notified_offer_at is null and v_pair.offer_response is null),
+        ('request', v_pair.request_owner_id, v_pair.offer_post_id,
+         v_pair.notified_request_at is null and v_pair.request_response is null)
+      ) as s (side, owner_id, other_post_id, due)
+    loop
+      continue when not v_side.due
+        or (select count(*) from kc_private.match_candidates x
+             where (x.offer_owner_id = v_side.owner_id and x.notified_offer_at >= v_day_start)
+                or (x.request_owner_id = v_side.owner_id and x.notified_request_at >= v_day_start))
+           >= v_settings.max_notify_per_user_day;
+      perform kc_private.outbox_enqueue('notification', jsonb_build_object(
+        'kind', 'match_suggested', 'recipient_id', v_side.owner_id, 'actor_id', null,
+        'entity', jsonb_build_object('type', 'match', 'id', v_pair.id),
+        'data', jsonb_build_object('post_id', v_side.other_post_id, 'world_slug', v_pair.world_slug,
+                                   'dedupe_key', 'match_suggested:' || v_pair.id || ':' || v_side.side)));
+      update kc_private.match_candidates m
+         set notified_offer_at = case v_side.side when 'offer' then now() else m.notified_offer_at end,
+             notified_request_at = case v_side.side when 'request' then now() else m.notified_request_at end
+       where m.id = v_pair.id;
+      v_sent := v_sent + 1;
+    end loop;
+  end loop;
+  return v_sent;
+end;
+$$;
+comment on function kc_private.match_announce(integer) is
+  'Enqueues match_suggested notifications for unannounced pairs above the announce score, within the daily cap.';
+
+-- Worker entry point: claims due `match` events, recomputes each named post once, confirms
+-- the events, then announces. A failing post is released for a retry with its error and
+-- does not stop the batch. Returns the number of events performed. Needs no service
+-- outside the database, so it is run by a scheduled job.
+create function kc_private.match_process(p_limit integer default 100)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_event record;
+  v_seen uuid[] := '{}';
+  v_done integer := 0;
+begin
+  for v_event in
+    select e.id, (e.payload ->> 'post_id')::uuid as post_id
+      from kc_private.outbox_claim('match', p_limit) e order by e.id
+  loop
+    begin
+      if v_event.post_id <> all (v_seen) then
+        perform kc_private.match_compute_for_post(v_event.post_id);
+        v_seen := v_seen || v_event.post_id;
+      end if;
+      perform kc_private.outbox_complete(v_event.id);
+      v_done := v_done + 1;
+    exception when others then
+      perform kc_private.outbox_complete(v_event.id, sqlerrm);
+      update kc_private.match_state s set last_error = sqlerrm where s.post_id = v_event.post_id;
+    end;
+  end loop;
+  perform kc_private.match_announce();
+  return v_done;
+end;
+$$;
+comment on function kc_private.match_process(integer) is
+  'Claims and performs a batch of match events, then announces new pairs; run by a scheduled job.';
+
+-- ── Language-model re-rank (Edge Function `match-rerank`) ───────────────────────────────
+
+-- Pairs waiting for an opinion, newest first; empty while the re-rank is switched off.
+create function public.api_match_llm_pending(p_limit integer default 20)
+returns table (
+  candidate_id uuid, world_slug text, score numeric,
+  offer_title text, offer_summary text, request_title text, request_summary text)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select m.id, m.world_slug, m.score, o.title, o.description, r.title, r.description
+    from kc_private.match_candidates m
+    join public.posts o on o.id = m.offer_post_id
+    join public.posts r on r.id = m.request_post_id
+   where m.status = 'suggested' and m.llm_scored_at is null
+     and (select s.llm_rerank_enabled from kc_private.matching_settings s)
+   order by m.computed_at desc
+   limit least(greatest(coalesce(p_limit, 20), 1), 50);
+$$;
+comment on function public.api_match_llm_pending(integer) is
+  'match-rerank: pairs without a language-model opinion. Service role only.';
+
+-- Stores the opinion of a pair: a score 0..1 and a short reason.
+--   invalid_input · match_not_found
+create function public.api_match_llm_store(p_candidate_id uuid, p_score numeric, p_reason text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if p_score is null or p_score not between 0 and 1 then
+    raise exception 'invalid_input' using errcode = 'P0001';
+  end if;
+  update kc_private.match_candidates m
+     set llm_score = p_score, llm_reason = left(nullif(btrim(p_reason), ''), 280), llm_scored_at = now()
+   where m.id = p_candidate_id;
+  if not found then
+    raise exception 'match_not_found' using errcode = 'P0001';
+  end if;
+end;
+$$;
+comment on function public.api_match_llm_store(uuid, numeric, text) is
+  'match-rerank: stores the language-model score and reason of a pair. Service role only.';
+
+-- >>> supabase/schemas/76_matching/060_match_rpcs.sql
+-- Matching · member RPCs: my matches, answering, similar posts, recommendations
+--
+-- The lists run with the caller's rights and return post cards, so RLS on `posts` decides
+-- what comes back. Pairs and embeddings are not readable by a member, and a nearest-vector
+-- search cannot run under RLS as an index scan (30_social/075), so three helpers in
+-- `kc_access` resolve ids with definer rights; the caller then re-reads the posts under
+-- RLS. A device cannot address `kc_access`, so unfiltered ids never leave the database.
+
+-- The caller's live pairs: the ones they did not decline, mutual accepts first, then by
+-- score. At most 50.
+create function kc_access.my_match_rows(p_limit integer)
+returns table (
+  match_id uuid, status text, score numeric, distance_km numeric, world_slug text, my_role text,
+  my_post_id uuid, other_post_id uuid, my_response text, other_response text, llm_reason text,
+  created_at timestamptz)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select m.id, m.status, kc_private.match_effective_score(m.score, m.llm_score), m.distance_km,
+         m.world_slug, s.my_role,
+         case s.my_role when 'offer' then m.offer_post_id else m.request_post_id end,
+         case s.my_role when 'offer' then m.request_post_id else m.offer_post_id end,
+         case s.my_role when 'offer' then m.offer_response else m.request_response end,
+         case s.my_role when 'offer' then m.request_response else m.offer_response end,
+         m.llm_reason, m.created_at
+    from kc_private.match_candidates m
+   cross join lateral (
+     select case when m.offer_owner_id = (select auth.uid()) then 'offer' else 'request' end as my_role) s
+   where m.status in ('suggested', 'accepted')
+     and (m.offer_owner_id = (select auth.uid()) or m.request_owner_id = (select auth.uid()))
+   order by (m.status = 'accepted') desc, 3 desc, m.id
+   limit least(greatest(coalesce(p_limit, 20), 1), 50);
+$$;
+comment on function kc_access.my_match_rows(integer) is
+  'The caller''s own matching pairs. The caller re-reads the posts under RLS.';
+grant execute on function kc_access.my_match_rows(integer) to authenticated;
+
+-- The caller's matches with the other member's post as a card. A pair whose other post
+-- the caller can no longer read (closed, hidden, blocked) is left out; a pair both accepted
+-- stays as long as the post is readable.
+create function public.my_matches(p_limit integer default 20)
+returns table (
+  match_id uuid, status text, score numeric, distance_km numeric, world_slug text, my_role text,
+  my_post_id uuid, my_post_title text, my_response text, other_response text, llm_reason text,
+  created_at timestamptz, other_post public.post_card)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  with mine as materialized (select r.* from kc_access.my_match_rows(p_limit) r)
+  select m.match_id, m.status, m.score, m.distance_km, m.world_slug, m.my_role, m.my_post_id, p.title,
+         m.my_response, m.other_response, m.llm_reason, m.created_at, c
+    from mine m
+    join public.posts p on p.id = m.my_post_id
+    join public.post_cards((select array_agg(x.other_post_id) from mine x)) c on c.id = m.other_post_id
+   where m.status = 'accepted' or (p.status = 'open' and c.status = 'open')
+   order by (m.status = 'accepted') desc, m.score desc, m.match_id;
+$$;
+comment on function public.my_matches(integer) is
+  'The caller''s matching pairs, best first, each with the other member''s post as a card.';
+grant execute on function public.my_matches(integer) to authenticated;
+
+-- The caller answers a pair. A decline closes it for good and the two owners are not
+-- paired again; an accept tells the other owner (`match_interest`), and the second accept
+-- makes the pair `accepted` (`match_accepted`). Returns the pair's status.
+--   match_not_found   no such pair, or not the caller's
+--   match_not_open    the pair is already accepted, declined or expired
+create function public.match_respond(p_match_id uuid, p_accept boolean)
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_pair kc_private.match_candidates;
+  v_is_offer boolean;
+  v_other_id uuid;
+  v_status text;
+begin
+  select m.* into v_pair from kc_private.match_candidates m
+   where m.id = p_match_id and v_user_id in (m.offer_owner_id, m.request_owner_id)
+     for update;
+  if not found then
+    raise exception 'match_not_found' using errcode = 'P0001';
+  end if;
+  if v_pair.status <> 'suggested' or p_accept is null then
+    raise exception 'match_not_open' using errcode = 'P0001';
+  end if;
+  v_is_offer := v_user_id = v_pair.offer_owner_id;
+  v_other_id := case when v_is_offer then v_pair.request_owner_id else v_pair.offer_owner_id end;
+  v_status := case
+    when not p_accept then 'declined'
+    when (case when v_is_offer then v_pair.request_response else v_pair.offer_response end) = 'accepted'
+      then 'accepted'
+    else 'suggested' end;
+
+  perform set_config('kc.fsm_role', 'member', true);
+  update kc_private.match_candidates m
+     set status = v_status,
+         offer_response = case when v_is_offer then
+           case when p_accept then 'accepted' else 'declined' end else m.offer_response end,
+         offer_responded_at = case when v_is_offer then now() else m.offer_responded_at end,
+         request_response = case when v_is_offer then m.request_response else
+           case when p_accept then 'accepted' else 'declined' end end,
+         request_responded_at = case when v_is_offer then m.request_responded_at else now() end
+   where m.id = p_match_id;
+  perform set_config('kc.fsm_role', '', true);
+
+  if p_accept then
+    perform kc_private.outbox_enqueue('notification', jsonb_build_object(
+      'kind', case v_status when 'accepted' then 'match_accepted' else 'match_interest' end,
+      'recipient_id', v_other_id, 'actor_id', v_user_id,
+      'entity', jsonb_build_object('type', 'match', 'id', p_match_id),
+      'data', jsonb_build_object(
+        'post_id', case when v_is_offer then v_pair.offer_post_id else v_pair.request_post_id end,
+        'dedupe_key', 'match_response:' || p_match_id || ':' || v_user_id)));
+  end if;
+  return v_status;
+end;
+$$;
+comment on function public.match_respond(uuid, boolean) is
+  'The caller accepts or declines one of their matching pairs; returns the pair''s status.';
+grant execute on function public.match_respond(uuid, boolean) to authenticated;
+
+-- Open posts of the same giving world nearest in meaning to the post, nearest first; when
+-- the post has no embedding yet, the newest ones sharing a word with its title.
+create function kc_access.similar_post_ids(p_post_id uuid, p_limit integer)
+returns uuid[]
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_post public.posts;
+  v_embedding extensions.vector;
+  v_limit constant integer := least(greatest(coalesce(p_limit, 10), 1), 30);
+begin
+  select p.* into v_post from public.posts p where p.id = p_post_id;
+  select e.embedding into v_embedding from public.post_embeddings e where e.post_id = p_post_id;
+  if v_embedding is null then
+    return array(
+      select c.id from public.posts c
+       where c.status = 'open' and c.world_slug = v_post.world_slug and c.id <> p_post_id
+         and c.search_vector @@ kc_private.title_tsquery(v_post.title)
+       order by c.published_at desc
+       limit v_limit);
+  end if;
+  return array(
+    select n.post_id
+      from (select e.post_id, e.embedding operator(extensions.<=>) v_embedding as distance
+              from public.post_embeddings e
+             order by e.embedding operator(extensions.<=>) v_embedding
+             limit 200) n
+      join public.posts c on c.id = n.post_id
+     where c.status = 'open' and c.world_slug = v_post.world_slug and c.id <> p_post_id
+     order by n.distance
+     limit v_limit);
+end;
+$$;
+comment on function kc_access.similar_post_ids(uuid, integer) is
+  'Candidate ids of posts similar to a post. The caller re-reads them under RLS.';
+grant execute on function kc_access.similar_post_ids(uuid, integer) to authenticated;
+
+-- "More like this" under a post: up to p_limit (at most 30) cards, most similar first.
+-- Nothing is returned for a post the caller cannot read.
+create function public.similar_posts(p_post_id uuid, p_limit integer default 10)
+returns setof public.post_card
+language plpgsql
+stable
+security invoker
+set search_path = ''
+as $$
+declare
+  v_post_ids uuid[];
+begin
+  if not exists (select 1 from public.posts p where p.id = p_post_id) then
+    return;
+  end if;
+  v_post_ids := kc_access.similar_post_ids(p_post_id, p_limit);
+  return query
+  select c.* from public.post_cards(v_post_ids) c order by array_position(v_post_ids, c.id);
+end;
+$$;
+comment on function public.similar_posts(uuid, integer) is 'Posts similar to a post the caller can read, as cards.';
+grant execute on function public.similar_posts(uuid, integer) to authenticated;
+
+-- Open public posts nearest in meaning to what the caller recently saved or reacted to
+-- (their last 20 of each), leaving out their own posts and the ones already saved or
+-- reacted to. Empty until the caller has engaged with a post that has an embedding.
+create function kc_access.recommended_post_ids(p_limit integer)
+returns uuid[]
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := (select auth.uid());
+  v_taste extensions.vector;
+begin
+  select extensions.avg(e.embedding) into v_taste
+    from ((select s.post_id from public.saved_posts s
+            where s.user_id = v_user_id order by s.saved_at desc limit 20)
+          union
+          (select r.post_id from public.post_reactions r
+            where r.user_id = v_user_id order by r.created_at desc limit 20)) liked
+    join public.post_embeddings e on e.post_id = liked.post_id;
+  if v_taste is null then
+    return '{}';
+  end if;
+  return array(
+    select n.post_id
+      from (select e.post_id, e.embedding operator(extensions.<=>) v_taste as distance
+              from public.post_embeddings e
+             order by e.embedding operator(extensions.<=>) v_taste
+             limit 200) n
+      join public.posts c on c.id = n.post_id
+     where c.status = 'open' and c.visibility = 'Public' and c.owner_id <> v_user_id
+       and not exists (select 1 from public.saved_posts s where s.user_id = v_user_id and s.post_id = c.id)
+       and not exists (select 1 from public.post_reactions r where r.user_id = v_user_id and r.post_id = c.id)
+     order by n.distance
+     limit least(greatest(coalesce(p_limit, 10), 1), 30));
+end;
+$$;
+comment on function kc_access.recommended_post_ids(integer) is
+  'Candidate ids of posts recommended to the caller. The caller re-reads them under RLS.';
+grant execute on function kc_access.recommended_post_ids(integer) to authenticated;
+
+-- "Recommended for you": up to p_limit (at most 30) cards, closest to the caller's taste first.
+create function public.recommended_posts(p_limit integer default 10)
+returns setof public.post_card
+language plpgsql
+stable
+security invoker
+set search_path = ''
+as $$
+declare
+  v_post_ids constant uuid[] := kc_access.recommended_post_ids(p_limit);
+begin
+  return query
+  select c.* from public.post_cards(v_post_ids) c order by array_position(v_post_ids, c.id);
+end;
+$$;
+comment on function public.recommended_posts(integer) is 'Posts recommended to the caller from what they saved and reacted to, as cards.';
+grant execute on function public.recommended_posts(integer) to authenticated;
+
+-- >>> supabase/schemas/76_matching/900_match_notification_kinds.sql
+-- Matching · notification kinds emitted by this module
+--
+-- `match_suggested` (a new pair, kc_private.match_announce) is registered with the
+-- registry itself (50_notifications/010). These are the two kinds of an answer
+-- (public.match_respond): the other owner is interested, and both owners accepted. Both
+-- are "important" like the suggestion itself (docs/SSOT/MATCHING_V2.md "Client").
+
+insert into kc_private.notification_kinds (kind, category, title_key, body_key)
+values
+  ('match_interest', 'critical', 'notifications.matchInterestTitle', 'notifications.matchInterestBody'),
+  ('match_accepted', 'critical', 'notifications.matchAcceptedTitle', 'notifications.matchAcceptedBody');
+
+-- >>> supabase/schemas/78_translation/010_content_translations.sql
+-- Translation · cache of translated user content (FR-TRANSLATE-002/003, docs/SSOT/UGC_TRANSLATION.md)
+--
+-- A text is translated only when a reader asks for it in a language, by the `translate`
+-- Edge Function, and the result is kept here: one row per content, field and target
+-- language. The function writes with the service role; a concurrent second writer of the
+-- same key loses on the primary key (single flight). The cache never outlives its source:
+-- an edit or a removal of the source row purges its translations.
+
+create table public.content_translations (
+  -- What was translated. The id is the source row's id; there is no foreign key because
+  -- the source is one of four tables — the triggers below keep the cache in step.
+  content_type    text not null check (content_type in ('post', 'comment', 'message', 'user')),
+  content_id      uuid not null,
+  field           text not null check (field in ('title', 'description', 'body', 'biography')),
+  -- BCP 47 tag the text was translated into.
+  target_language text not null check (char_length(target_language) between 2 and 35),
+  source_language text check (char_length(source_language) between 2 and 35),
+  translated_text text not null check (char_length(translated_text) between 1 and 8000),
+  -- Provider model that produced the text.
+  model           text check (char_length(model) between 1 and 100),
+  confidence      real check (confidence between 0 and 1),
+  created_at      timestamptz not null default now(),
+  -- The cache key; its prefix serves the purge of one source row and the batched read.
+  primary key (content_type, content_id, field, target_language),
+  -- Each kind of content has its own translatable fields.
+  constraint content_translations_field_chk check (case content_type
+    when 'post' then field in ('title', 'description')
+    when 'user' then field = 'biography'
+    else field = 'body' end)
+);
+comment on table public.content_translations is
+  'Demand-driven cache of translated posts, comments, messages and biographies. Written by the service role.';
+
+alter table public.content_translations enable row level security;
+alter table public.content_translations force row level security;
+
+-- A translation is readable exactly when its source row is: each subquery runs under the
+-- caller's own access to the source table (audience, blocks, moderation). One policy per
+-- kind of content. Message translations have no policy: chat translation is opt-in per
+-- sender and not released yet (FR-TRANSLATE-004), so they are readable by nobody.
+create policy content_translations_select_post on public.content_translations
+  for select to authenticated
+  using (content_type = 'post'
+         and exists (select 1 from public.posts p where p.id = content_translations.content_id));
+create policy content_translations_select_comment on public.content_translations
+  for select to authenticated
+  using (content_type = 'comment'
+         and exists (select 1 from public.post_comments c
+                      where c.id = content_translations.content_id and c.status = 'active'));
+create policy content_translations_select_user on public.content_translations
+  for select to authenticated
+  using (content_type = 'user'
+         and exists (select 1 from public.users u where u.id = content_translations.content_id));
+
+grant select on public.content_translations to authenticated;
+-- The translate function reads, inserts and (to replace a bad row) deletes.
+grant select, insert, delete on public.content_translations to service_role;
+
+-- Removes the cached translations of the source row. The content type is the trigger's
+-- argument; the row's id is `id` in all four source tables.
+create function kc_private.content_translations_purge()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  delete from public.content_translations t
+   where t.content_type = tg_argv[0] and t.content_id = old.id;
+  return null;
+end;
+$$;
+comment on function kc_private.content_translations_purge() is
+  'AFTER trigger on a source table: drops the cached translations of an edited or removed row.';
+
+-- Posts: an edit of the text (FR-TRANSLATE-003 AC10), a removal by moderation and the
+-- deletion of the row (FR-TRANSLATE-002 AC3). The condition keeps ordinary writes free.
+create trigger posts_purge_translations_on_edit
+  after update of title, description, status on public.posts
+  for each row
+  when (new.title is distinct from old.title or new.description is distinct from old.description
+        or (new.status = 'removed_admin' and old.status <> 'removed_admin'))
+  execute function kc_private.content_translations_purge('post');
+create trigger posts_purge_translations_on_delete
+  after delete on public.posts
+  for each row execute function kc_private.content_translations_purge('post');
+
+-- Comments: an edit of the body, any move out of `active`, and the deletion of the row.
+create trigger post_comments_purge_translations_on_edit
+  after update of body, status on public.post_comments
+  for each row
+  when (new.body is distinct from old.body or (new.status <> 'active' and old.status = 'active'))
+  execute function kc_private.content_translations_purge('comment');
+create trigger post_comments_purge_translations_on_delete
+  after delete on public.post_comments
+  for each row execute function kc_private.content_translations_purge('comment');
+
+-- Messages are immutable, so only their deletion purges.
+create trigger messages_purge_translations_on_delete
+  after delete on public.messages
+  for each row execute function kc_private.content_translations_purge('message');
+
+-- Biographies: an edit, and the removal of the member.
+create trigger users_purge_translations_on_edit
+  after update of biography on public.users
+  for each row
+  when (new.biography is distinct from old.biography)
+  execute function kc_private.content_translations_purge('user');
+create trigger users_purge_translations_on_delete
+  after delete on public.users
+  for each row execute function kc_private.content_translations_purge('user');
+
+-- Cached translations of the listed posts in one language, in one round trip (cache hits
+-- only; a missing row means "not translated yet"). Runs with the caller's rights: the
+-- policy above leaves out every post the caller cannot read. At most 100 posts.
+create function public.get_post_translations(p_post_ids uuid[], p_target_language text)
+returns table (
+  post_id uuid, field text, translated_text text, source_language text, confidence real)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select t.content_id, t.field, t.translated_text, t.source_language, t.confidence
+    from public.content_translations t
+   where t.content_type = 'post'
+     and t.content_id = any (p_post_ids[1:100])
+     and t.target_language = p_target_language;
+$$;
+comment on function public.get_post_translations(uuid[], text) is
+  'Cached translations of posts the caller can read, for one target language.';
+grant execute on function public.get_post_translations(uuid[], text) to authenticated;
+
+-- >>> supabase/schemas/79_activity_stats/010_user_active_days.sql
+-- Activity · active days (FR-SETTINGS-016 AC10)
+--
+-- One row per member per Israel calendar day on which they opened the app signed in. It
+-- feeds survey prompt eligibility ("active on 2 of the last 14 days") and retention
+-- reports; nothing reads it from a device, so it lives outside the API schema.
+--
+-- Recording is its own call, not part of bootstrap_session(): the app marks the day on
+-- every return to the foreground, long after the session started, and bootstrap_session
+-- stays a read-only (STABLE) function that is safe to retry and to serve from a replica.
+
+create table kc_private.user_active_days (
+  user_id   uuid not null references public.users (id) on delete cascade,
+  active_on date not null,
+  -- Also the range read "days of a member in the last 14".
+  primary key (user_id, active_on)
+);
+comment on table kc_private.user_active_days is
+  'Israel calendar days on which a member opened the app while signed in.';
+
+-- Retention job: rows older than the retention window.
+create index user_active_days_day_idx on kc_private.user_active_days (active_on);
+
+alter table kc_private.user_active_days enable row level security;
+alter table kc_private.user_active_days force row level security;
+
+-- Marks the caller active today. Called on app open and on every return to the
+-- foreground; repeating it within the day writes nothing.
+create function public.record_active_day()
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  insert into kc_private.user_active_days (user_id, active_on)
+  select u.id, (now() at time zone 'Asia/Jerusalem')::date
+    from public.users u
+   where u.id = kc_private.require_caller()
+  on conflict do nothing;
+$$;
+comment on function public.record_active_day() is 'Marks the caller active on the current Israel calendar day.';
+grant execute on function public.record_active_day() to authenticated;
+
+-- Distinct active days of a member in the 14 days ending today (Israel time).
+create function kc_private.user_active_days_14d(p_user_id uuid)
+returns integer
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select count(*)::integer
+    from kc_private.user_active_days d
+   where d.user_id = p_user_id
+     and d.active_on > (now() at time zone 'Asia/Jerusalem')::date - 14;
+$$;
+comment on function kc_private.user_active_days_14d(uuid) is
+  'Number of days a member was active in the last 14 Israel calendar days.';
+
+-- Deletes rows older than 400 days; returns how many. Run by a scheduled job.
+create function kc_private.user_active_days_purge()
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_deleted integer;
+begin
+  delete from kc_private.user_active_days d
+   where d.active_on < (now() at time zone 'Asia/Jerusalem')::date - 400;
+  get diagnostics v_deleted = row_count;
+  return v_deleted;
+end;
+$$;
+comment on function kc_private.user_active_days_purge() is 'Retention of active days: removes rows older than 400 days.';
+
+-- >>> supabase/schemas/79_activity_stats/020_activity_and_community.sql
+-- Activity · personal timeline and community numbers (FR-STATS-003, FR-STATS-004)
+
+-- ── Personal activity timeline ───────────────────────────────────────────────────────────
+-- The caller's recent activity, newest first (FR-STATS-003: up to 30 entries). It is read
+-- from the rows that already record what happened — the caller's posts and the handoffs
+-- they received — instead of a second log table: a log would repeat that state, need one
+-- more trigger on every post write (design §5 "Trigger budget") and its own purge on
+-- deletion. The price: each post shows its history as it stands — a closure that was later
+-- reopened is no longer listed, and there is no separate "reopened" entry.
+--   post_created               the caller published the post
+--   post_closed_delivered      … closed it as delivered
+--   post_closed_no_recipient   … closed it without a recipient
+--   post_expired · post_removed_admin
+--   marked_as_recipient        the owner (actor) handed the post over to the caller
+--   unmarked_as_recipient      the caller removed their recipient mark
+-- Runs with the caller's rights: every row is one the caller may already read. A handoff
+-- whose post the caller can no longer read is listed without a title.
+create function public.my_activity_timeline(p_limit integer default 30)
+returns table (
+  kind text, post_id uuid, post_title text, actor_id uuid, actor_display_name text,
+  occurred_at timestamptz)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  with me as (select (select auth.uid()) as id, least(greatest(coalesce(p_limit, 30), 1), 100) as n),
+  entries as (
+    (select 'post_created' as kind, p.id as post_id, null::uuid as actor_id, p.published_at as occurred_at
+       from public.posts p, me
+      where p.owner_id = me.id and p.published_at is not null
+      order by p.published_at desc
+      limit (select n from me))
+    union all
+    -- A closed, expired or removed post is locked, so its last update is the status move;
+    -- a post closed without a recipient carries the exact time in its purge deadline.
+    (select case p.status when 'closed_delivered' then 'post_closed_delivered'
+                          when 'deleted_no_recipient' then 'post_closed_no_recipient'
+                          when 'expired' then 'post_expired'
+                          else 'post_removed_admin' end,
+            p.id, null::uuid, coalesce(c.purge_after - interval '7 days', p.updated_at)
+       from public.posts p
+       cross join me
+       left join public.post_closures c on c.post_id = p.id and p.status = 'deleted_no_recipient'
+      where p.owner_id = me.id
+        and p.status in ('closed_delivered', 'deleted_no_recipient', 'expired', 'removed_admin')
+      order by p.updated_at desc
+      limit (select n from me))
+    union all
+    (select case h.status when 'handed_over' then 'marked_as_recipient' else 'unmarked_as_recipient' end,
+            h.post_id, case h.status when 'handed_over' then h.owner_id end,
+            coalesce(h.handed_over_at, h.cancelled_at)
+       from public.post_handoffs h, me
+      where h.recipient_id = me.id
+        and (h.status = 'handed_over' or (h.status = 'cancelled' and h.cancel_reason = 'unmarked'))
+      order by h.created_at desc
+      limit (select n from me))
+  )
+  select e.kind, e.post_id, p.title, e.actor_id, u.display_name, e.occurred_at
+    from entries e
+    left join public.posts p on p.id = e.post_id
+    left join public.users u on u.id = e.actor_id
+   order by e.occurred_at desc, e.post_id
+   limit (select n from me);
+$$;
+comment on function public.my_activity_timeline(integer) is
+  'The caller''s recent activity (posts published and closed, handoffs received), newest first.';
+grant execute on function public.my_activity_timeline(integer) to authenticated;
+
+-- ── Community numbers ────────────────────────────────────────────────────────────────────
+-- Three numbers for the whole community (FR-STATS-004 AC1). Counting them is a job's work,
+-- once a minute, not a reader's: every reader gets the one stored row.
+create table kc_private.community_stats (
+  id                   boolean primary key default true check (id),
+  -- Members with an active account.
+  registered_users     bigint not null default 0 check (registered_users >= 0),
+  -- Open posts shown to everyone.
+  open_public_posts    bigint not null default 0 check (open_public_posts >= 0),
+  -- Posts closed as delivered, all time.
+  delivered_posts      bigint not null default 0 check (delivered_posts >= 0),
+  refreshed_at         timestamptz not null default now()
+);
+comment on table kc_private.community_stats is 'Community-wide counters (one row), refreshed by a scheduled job.';
+
+alter table kc_private.community_stats enable row level security;
+alter table kc_private.community_stats force row level security;
+
+-- Recounts the three numbers. The first two are index-only counts over partial indexes
+-- (users_city_idx, posts_feed_recent_idx). Run by a scheduled job.
+create function kc_private.community_stats_refresh()
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  insert into kc_private.community_stats as s (id, registered_users, open_public_posts, delivered_posts)
+  values (
+    true,
+    (select count(*) from public.users u where u.is_active),
+    (select count(*) from public.posts p where p.status = 'open' and p.visibility = 'Public'),
+    (select count(*) from public.posts p where p.status = 'closed_delivered'))
+  on conflict (id) do update
+    set registered_users = excluded.registered_users, open_public_posts = excluded.open_public_posts,
+        delivered_posts = excluded.delivered_posts, refreshed_at = now();
+$$;
+comment on function kc_private.community_stats_refresh() is 'Recounts the community counters into their single row.';
+
+-- The community numbers for any signed-in member: counts only, nobody is identified
+-- (FR-STATS-006 AC2). Zeros with a null `refreshed_at` until the first refresh.
+create function public.community_stats()
+returns table (registered_users bigint, open_public_posts bigint, delivered_posts bigint, refreshed_at timestamptz)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(s.registered_users, 0), coalesce(s.open_public_posts, 0),
+         coalesce(s.delivered_posts, 0), s.refreshed_at
+    from (select kc_private.require_caller()) caller
+    left join kc_private.community_stats s on true;
+$$;
+comment on function public.community_stats() is 'Community-wide counters: active members, open public posts, delivered posts.';
+grant execute on function public.community_stats() to authenticated;
+
 -- >>> supabase/schemas/80_organizations/010_organizations.sql
 -- Organizations · organizations (spec 08, requirements/20 FR-ORG-001, requirements/19 FR-FIN-007/022)
 --
@@ -15667,3 +18226,491 @@ $$;
 comment on function public.rpc_org_transparency(text) is
   'Live public finance numbers of an organization, limited to the blocks it switched on. Totals only.';
 grant execute on function public.rpc_org_transparency(text) to authenticated;
+
+-- >>> supabase/schemas/90_research/010_surveys.sql
+-- Research · in-app surveys (FR-SETTINGS-015, FR-SETTINGS-016)
+--
+-- Surveys are server-driven: the app renders whatever the current version of a survey
+-- holds, so wording changes without an app release. Publishing creates a new immutable
+-- version with its questions; answers belong to a question, hence to one version, and a
+-- new version starts every member over. Members read the catalog and their own answers
+-- under RLS; they write answers only through upsert_survey_answers().
+
+create table public.surveys (
+  id              uuid primary key default gen_random_uuid(),
+  slug            text not null unique check (slug ~ '^[a-z0-9][a-z0-9-]{1,60}$'),
+  title_he        text not null check (char_length(title_he) between 1 and 200),
+  description_he  text check (char_length(description_he) <= 1000),
+  is_active       boolean not null default true,
+  -- 0 until the first version is published.
+  current_version integer not null default 0 check (current_version >= 0),
+  -- When the prompt banner is offered (FR-SETTINGS-016 AC6, AC10):
+  --   { "min_sessions": 3, "min_active_days_14d": 2, "require_closure": true,
+  --     "require_profile_complete": true }
+  prompt_rules    jsonb not null default '{}'::jsonb check (jsonb_typeof(prompt_rules) = 'object'),
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+comment on table public.surveys is 'Catalog of server-driven surveys; current_version advances on each publish.';
+
+create trigger surveys_set_updated_at
+  before update on public.surveys
+  for each row execute function kc_private.set_updated_at();
+
+create table public.survey_versions (
+  id           uuid primary key default gen_random_uuid(),
+  survey_id    uuid not null references public.surveys (id) on delete cascade,
+  version      integer not null check (version >= 1),
+  -- The admin who published it; kept as null once their account is removed.
+  published_by uuid references public.users (id) on delete set null,
+  published_at timestamptz not null default now(),
+  -- Also the lookup of a survey's current version; covers the survey foreign key.
+  constraint survey_versions_survey_version_key unique (survey_id, version)
+);
+comment on table public.survey_versions is 'One immutable row per published version of a survey.';
+
+-- Covers the publisher foreign key (account removal).
+create index survey_versions_published_by_idx on public.survey_versions (published_by)
+  where published_by is not null;
+
+create table public.survey_questions (
+  id                    uuid primary key default gen_random_uuid(),
+  survey_version_id     uuid not null references public.survey_versions (id) on delete cascade,
+  sort_order            integer not null,
+  -- A 1–7 rating, or exactly one of `choice_options`; both take an optional text.
+  question_type         text not null default 'rating_1_7_with_optional_text' check (question_type in
+                          ('rating_1_7_with_optional_text', 'single_choice_with_optional_text')),
+  short_label_he        text not null,
+  prompt_he             text not null,
+  context_he            text not null default '',
+  text_placeholder_he   text not null default '',
+  -- Labels of the two ends of the rating scale.
+  rating_anchor_low_he  text not null default '',
+  rating_anchor_high_he text not null default '',
+  -- Single-choice questions only: ordered [{ "key", "label_he" }], two to six options.
+  choice_options        jsonb,
+  -- Questions of a version in display order; covers the version foreign key.
+  constraint survey_questions_version_order_key unique (survey_version_id, sort_order),
+  constraint survey_questions_choice_options_chk check (case question_type
+    when 'single_choice_with_optional_text' then
+      jsonb_typeof(choice_options) = 'array' and jsonb_array_length(choice_options) between 2 and 6
+    else choice_options is null end)
+);
+comment on table public.survey_questions is 'Ordered questions of one survey version.';
+
+create table public.survey_answers (
+  user_id     uuid not null references public.users (id) on delete cascade,
+  question_id uuid not null references public.survey_questions (id) on delete cascade,
+  rating      integer check (rating between 1 and 7),
+  choice_key  text check (char_length(choice_key) between 1 and 64),
+  answer_text text check (char_length(answer_text) between 1 and 500),
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  -- One answer per member per question; editable while the version is current.
+  primary key (user_id, question_id),
+  -- An answer is a rating or a chosen option, never both (FR-SETTINGS-016 AC9).
+  constraint survey_answers_one_value_chk check (num_nonnulls(rating, choice_key) = 1)
+);
+comment on table public.survey_answers is 'A member''s answer to one survey question. Written through upsert_survey_answers().';
+
+-- Results of a question; covers the question foreign key.
+create index survey_answers_question_idx on public.survey_answers (question_id);
+
+create trigger survey_answers_set_updated_at
+  before update on public.survey_answers
+  for each row execute function kc_private.set_updated_at();
+
+alter table public.surveys enable row level security;
+alter table public.surveys force row level security;
+alter table public.survey_versions enable row level security;
+alter table public.survey_versions force row level security;
+alter table public.survey_questions enable row level security;
+alter table public.survey_questions force row level security;
+alter table public.survey_answers enable row level security;
+alter table public.survey_answers force row level security;
+
+-- Members read surveys that are active and published, with their versions and questions.
+-- The version and question subqueries run under the caller's access to the parent table.
+create policy surveys_select_published on public.surveys
+  for select to authenticated
+  using (is_active and current_version > 0);
+create policy survey_versions_select_member on public.survey_versions
+  for select to authenticated
+  using (exists (select 1 from public.surveys s where s.id = survey_versions.survey_id));
+create policy survey_questions_select_member on public.survey_questions
+  for select to authenticated
+  using (exists (select 1 from public.survey_versions v where v.id = survey_questions.survey_version_id));
+-- A member reads only their own answers.
+create policy survey_answers_select_own on public.survey_answers
+  for select to authenticated
+  using (user_id = (select auth.uid()));
+-- The super admin reads every survey (retired ones too) and every answer, for the results
+-- screens (FR-ADMIN, survey reports).
+create policy surveys_select_super_admin on public.surveys
+  for select to authenticated
+  using ((select kc_access.has_admin_role('super_admin')));
+create policy survey_answers_select_super_admin on public.survey_answers
+  for select to authenticated
+  using ((select kc_access.has_admin_role('super_admin')));
+
+grant select on public.surveys to authenticated;
+grant select on public.survey_versions to authenticated;
+grant select on public.survey_questions to authenticated;
+grant select on public.survey_answers to authenticated;
+
+-- >>> supabase/schemas/90_research/020_survey_rpcs.sql
+-- Research · survey RPCs (FR-SETTINGS-016)
+--
+-- Reading a survey needs no RPC: the app selects `surveys` with its current version, the
+-- questions and the caller's own answers under RLS. These are the writes and the prompt rule.
+
+-- Saves the caller's answers to questions of the survey's current version; an answer given
+-- before is replaced (FR-SETTINGS-016 AC4).
+--   p_answers   [{ "question_id", "rating" | "choice_key", "answer_text"? }], at most 50
+--   survey_not_found   no active, published survey with this slug
+--   invalid_input      not an array, a question of another version, a rating on a choice
+--                      question (or the reverse), or a key that is not one of its options
+create function public.upsert_survey_answers(p_slug text, p_answers jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_version_id uuid;
+  v_written integer;
+begin
+  select v.id into v_version_id
+    from public.surveys s
+    join public.survey_versions v on v.survey_id = s.id and v.version = s.current_version
+   where s.slug = p_slug and s.is_active;
+  if not found then
+    raise exception 'survey_not_found' using errcode = 'P0001';
+  end if;
+  if jsonb_typeof(p_answers) is distinct from 'array' or jsonb_array_length(p_answers) > 50 then
+    raise exception 'invalid_input' using errcode = 'P0001';
+  end if;
+
+  insert into public.survey_answers as sa (user_id, question_id, rating, choice_key, answer_text)
+  select v_user_id, q.id, a.rating, a.choice_key, nullif(btrim(a.answer_text), '')
+    from jsonb_to_recordset(p_answers)
+           as a (question_id uuid, rating integer, choice_key text, answer_text text)
+    join public.survey_questions q on q.id = a.question_id and q.survey_version_id = v_version_id
+   where case q.question_type
+           when 'single_choice_with_optional_text' then
+             a.rating is null
+             and q.choice_options @> jsonb_build_array(jsonb_build_object('key', a.choice_key))
+           else a.choice_key is null and a.rating is not null end
+  on conflict (user_id, question_id) do update
+    set rating = excluded.rating, choice_key = excluded.choice_key, answer_text = excluded.answer_text;
+  get diagnostics v_written = row_count;
+  -- All or nothing: one answer that does not fit its question refuses the call.
+  if v_written <> jsonb_array_length(p_answers) then
+    raise exception 'invalid_input' using errcode = 'P0001';
+  end if;
+end;
+$$;
+comment on function public.upsert_survey_answers(text, jsonb) is
+  'Saves the caller''s answers to the current version of a survey.';
+grant execute on function public.upsert_survey_answers(text, jsonb) to authenticated;
+
+-- Whether the survey's prompt banner should be offered to the caller now
+-- (FR-SETTINGS-016 AC6, AC10): { "show": bool, "reasons": [text] }. The session count is
+-- the device's own number; active days are counted on the server.
+create function public.check_survey_prompt_eligibility(p_slug text, p_session_count integer)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+  v_survey public.surveys;
+  v_reasons text[] := '{}';
+begin
+  select s.* into v_survey from public.surveys s
+   where s.slug = p_slug and s.is_active and s.current_version > 0;
+  if not found then
+    return jsonb_build_object('show', false, 'reasons', array['survey_inactive_or_not_found']);
+  end if;
+
+  -- Every question of the current version already has the caller's answer.
+  if not exists (
+       select 1
+         from public.survey_versions v
+         join public.survey_questions q on q.survey_version_id = v.id
+        where v.survey_id = v_survey.id and v.version = v_survey.current_version
+          and not exists (select 1 from public.survey_answers a
+                           where a.user_id = v_user_id and a.question_id = q.id)) then
+    v_reasons := array_append(v_reasons, 'already_completed');
+  end if;
+  if coalesce(p_session_count, 0) < (v_survey.prompt_rules ->> 'min_sessions')::integer then
+    v_reasons := array_append(v_reasons, 'session_count_below_threshold');
+  end if;
+  if kc_private.user_active_days_14d(v_user_id) < (v_survey.prompt_rules ->> 'min_active_days_14d')::integer then
+    v_reasons := array_append(v_reasons, 'active_days_below_threshold');
+  end if;
+  if (v_survey.prompt_rules ->> 'require_closure')::boolean and not exists (
+       select 1 from public.posts p where p.owner_id = v_user_id and p.status = 'closed_delivered') then
+    v_reasons := array_append(v_reasons, 'no_closed_delivered_post');
+  end if;
+  if (v_survey.prompt_rules ->> 'require_profile_complete')::boolean then
+    if not exists (select 1 from public.users u where u.id = v_user_id and u.display_name is not null) then
+      v_reasons := array_append(v_reasons, 'profile_incomplete_display_name');
+    end if;
+    if not exists (select 1 from public.user_stats s where s.user_id = v_user_id and s.posts_created_total > 0) then
+      v_reasons := array_append(v_reasons, 'profile_incomplete_no_post');
+    end if;
+  end if;
+
+  return jsonb_build_object(
+    'show', cardinality(v_reasons) = 0,
+    'reasons', case when cardinality(v_reasons) = 0 then array['eligible'] else v_reasons end);
+end;
+$$;
+comment on function public.check_survey_prompt_eligibility(text, integer) is
+  'Whether the caller should be offered a survey''s prompt banner, with the reasons.';
+grant execute on function public.check_survey_prompt_eligibility(text, integer) to authenticated;
+
+-- Publishes a new version of a survey, creating the survey on first use
+-- (FR-SETTINGS-016 AC5, AC7). Super admin only. Returns the new version number.
+--   p_questions   [{ "question_type"?, "short_label_he", "prompt_he", "context_he"?,
+--                    "text_placeholder_he"?, "rating_anchor_low_he"?, "rating_anchor_high_he"?,
+--                    "choice_options"? }] in display order, 1 to 50
+--   forbidden (42501) · invalid_input
+create function public.publish_survey_version(
+  p_slug text, p_title_he text, p_description_he text, p_is_active boolean, p_prompt_rules jsonb,
+  p_questions jsonb)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_admin_id constant uuid := kc_private.require_admin_role('super_admin');
+  v_survey public.surveys;
+  v_version_id uuid;
+begin
+  if jsonb_typeof(p_questions) is distinct from 'array'
+     or jsonb_array_length(p_questions) not between 1 and 50 then
+    raise exception 'invalid_input' using errcode = 'P0001';
+  end if;
+
+  insert into public.surveys as s (slug, title_he, description_he, is_active, prompt_rules, current_version)
+  values (p_slug, p_title_he, p_description_he, coalesce(p_is_active, true),
+          coalesce(p_prompt_rules, '{}'::jsonb), 1)
+  on conflict (slug) do update
+    set title_he = excluded.title_he, description_he = excluded.description_he,
+        is_active = excluded.is_active, prompt_rules = excluded.prompt_rules,
+        current_version = s.current_version + 1
+  returning s.* into v_survey;
+
+  insert into public.survey_versions (survey_id, version, published_by)
+  values (v_survey.id, v_survey.current_version, v_admin_id)
+  returning id into v_version_id;
+
+  insert into public.survey_questions (
+    survey_version_id, sort_order, question_type, short_label_he, prompt_he, context_he,
+    text_placeholder_he, rating_anchor_low_he, rating_anchor_high_he, choice_options)
+  select v_version_id, q.ordinality::integer,
+         coalesce(q.item ->> 'question_type', 'rating_1_7_with_optional_text'),
+         q.item ->> 'short_label_he', q.item ->> 'prompt_he', coalesce(q.item ->> 'context_he', ''),
+         coalesce(q.item ->> 'text_placeholder_he', ''), coalesce(q.item ->> 'rating_anchor_low_he', ''),
+         coalesce(q.item ->> 'rating_anchor_high_he', ''), q.item -> 'choice_options'
+    from jsonb_array_elements(p_questions) with ordinality as q (item, ordinality);
+
+  perform kc_private.audit_record(
+    'survey_version_published', 'survey', v_survey.id,
+    jsonb_build_object('slug', p_slug, 'version', v_survey.current_version));
+  return v_survey.current_version;
+end;
+$$;
+comment on function public.publish_survey_version(text, text, text, boolean, jsonb, jsonb) is
+  'Super admin: publishes a new version of a survey with its questions.';
+grant execute on function public.publish_survey_version(text, text, text, boolean, jsonb, jsonb) to authenticated;
+
+-- >>> supabase/schemas/90_research/030_public_research.sql
+-- Research · public research form (FR-RESEARCH-001..003)
+--
+-- A survey of `public.surveys` can also be answered by people without an account, on a web
+-- page. Their answers never touch the API schema: the page calls the `public-research-submit`
+-- Edge Function, which checks the origin, hashes the visitor's address with a salt that
+-- changes every day, and calls the one function below with the service role. The raw
+-- address never reaches the database, and the three tables are reachable by no client role.
+
+create table kc_private.research_responses (
+  id              uuid primary key default gen_random_uuid(),
+  -- Slug and version as answered; no foreign key, so answers outlive a retired survey.
+  survey_slug     text not null,
+  version         integer not null check (version >= 1),
+  -- Campaign the visitor came from (`?src=`); FR-RESEARCH-001 AC4.
+  source          text not null default 'direct' check (source ~ '^[a-z0-9_-]{1,32}$'),
+  -- SHA-256 of the visitor's address / user agent with the day's salt, hex. Never raw.
+  ip_hash         text not null check (ip_hash ~ '^[0-9a-f]{64}$'),
+  user_agent_hash text check (user_agent_hash ~ '^[0-9a-f]{64}$'),
+  -- { "<question id>": { "rating": int, "answer_text": text|null } }
+  answers         jsonb not null check (jsonb_typeof(answers) = 'object'),
+  created_at      timestamptz not null default now()
+);
+comment on table kc_private.research_responses is 'Anonymous answers to a public research survey. Written by submit_public_research_response().';
+
+-- Per-visitor rate limits: answers of one address hash in the last minute, hour and day.
+create index research_responses_ip_recent_idx on kc_private.research_responses (ip_hash, created_at desc);
+-- Circuit breaker: all answers of the last minute.
+create index research_responses_created_idx on kc_private.research_responses (created_at desc);
+
+-- A visitor who asked to be contacted. Kept apart from the answers so either can be
+-- deleted without the other (FR-RESEARCH-003 AC2).
+create table kc_private.research_contact_requests (
+  id             uuid primary key default gen_random_uuid(),
+  response_id    uuid not null references kc_private.research_responses (id) on delete cascade,
+  contact_email  text not null check (contact_email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$' and char_length(contact_email) <= 254),
+  -- When the visitor prefers to be contacted, in their own words.
+  contact_window text check (char_length(contact_window) between 1 and 200),
+  consent_at     timestamptz not null default now()
+);
+comment on table kc_private.research_contact_requests is 'Contact details a research respondent chose to leave.';
+
+-- Covers the response foreign key.
+create index research_contact_requests_response_idx on kc_private.research_contact_requests (response_id);
+
+-- The rotating salt (`daily_research_salt`). A value is created on first use, so no secret
+-- is ever written into a migration.
+create table kc_private.research_secrets (
+  key        text primary key check (key = 'daily_research_salt'),
+  value      text not null check (char_length(value) >= 32),
+  rotated_at timestamptz not null default now()
+);
+comment on table kc_private.research_secrets is 'Rotating salt for hashing research visitors. Service role only.';
+
+alter table kc_private.research_responses enable row level security;
+alter table kc_private.research_responses force row level security;
+alter table kc_private.research_contact_requests enable row level security;
+alter table kc_private.research_contact_requests force row level security;
+alter table kc_private.research_secrets enable row level security;
+alter table kc_private.research_secrets force row level security;
+
+-- Sets a fresh random salt and returns when. Called daily through the
+-- `rotate-research-salt` Edge Function; after it, yesterday's hashes can no longer be
+-- linked to today's visitors.
+create function public.rotate_research_salt()
+returns timestamptz
+language sql
+security definer
+set search_path = ''
+as $$
+  insert into kc_private.research_secrets as s (key, value)
+  values ('daily_research_salt', replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''))
+  on conflict (key) do update set value = excluded.value, rotated_at = now()
+  returning s.rotated_at;
+$$;
+comment on function public.rotate_research_salt() is 'Replaces the research salt with a new random value. Service role only.';
+
+-- The current salt, for the Edge Function that hashes the visitor's address; creates the
+-- first one when none exists yet.
+create function public.get_research_salt()
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_value text;
+begin
+  select s.value into v_value from kc_private.research_secrets s where s.key = 'daily_research_salt';
+  if not found then
+    perform public.rotate_research_salt();
+    select s.value into v_value from kc_private.research_secrets s where s.key = 'daily_research_salt';
+  end if;
+  return v_value;
+end;
+$$;
+comment on function public.get_research_salt() is 'The current research salt. Service role only.';
+
+-- Stores one anonymous response and, when given, the contact request. Returns the
+-- response id.
+--   honeypot    a filled hidden field returns a random id and stores nothing (AC1)
+--   survey_not_found_or_version_mismatch   the slug is not an active survey at this version
+--   rate_limited_minute | _hour | _day     more than 5 / 30 / 100 from one address hash (AC3)
+--   research_circuit_open                  more than 500 responses in the last minute (AC4)
+--   invalid_input                          answers are not an object
+create function public.submit_public_research_response(
+  p_slug text, p_version integer, p_source text, p_ip_hash text, p_user_agent_hash text,
+  p_answers jsonb, p_honeypot text, p_contact_email text default null,
+  p_contact_window_he text default null)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_response_id uuid;
+  v_recent record;
+begin
+  if nullif(btrim(p_honeypot), '') is not null then
+    return gen_random_uuid();
+  end if;
+  if not exists (select 1 from public.surveys s
+                  where s.slug = p_slug and s.is_active and s.current_version = p_version) then
+    raise exception 'survey_not_found_or_version_mismatch' using errcode = 'P0001';
+  end if;
+  if jsonb_typeof(p_answers) is distinct from 'object' then
+    raise exception 'invalid_input' using errcode = 'P0001';
+  end if;
+
+  select count(*) filter (where r.created_at > now() - interval '1 minute') as last_minute,
+         count(*) filter (where r.created_at > now() - interval '1 hour') as last_hour,
+         count(*) as last_day
+    into v_recent
+    from kc_private.research_responses r
+   where r.ip_hash = p_ip_hash and r.created_at > now() - interval '1 day';
+  if v_recent.last_minute >= 5 then
+    raise exception 'rate_limited_minute' using errcode = 'P0001';
+  elsif v_recent.last_hour >= 30 then
+    raise exception 'rate_limited_hour' using errcode = 'P0001';
+  elsif v_recent.last_day >= 100 then
+    raise exception 'rate_limited_day' using errcode = 'P0001';
+  end if;
+  if (select count(*) from kc_private.research_responses r
+       where r.created_at > now() - interval '1 minute') > 500 then
+    raise exception 'research_circuit_open' using errcode = 'P0001';
+  end if;
+
+  insert into kc_private.research_responses (survey_slug, version, source, ip_hash, user_agent_hash, answers)
+  values (p_slug, p_version, coalesce(nullif(btrim(p_source), ''), 'direct'), p_ip_hash,
+          p_user_agent_hash, p_answers)
+  returning id into v_response_id;
+  if nullif(btrim(p_contact_email), '') is not null then
+    insert into kc_private.research_contact_requests (response_id, contact_email, contact_window)
+    values (v_response_id, btrim(p_contact_email), nullif(btrim(p_contact_window_he), ''));
+  end if;
+  return v_response_id;
+end;
+$$;
+comment on function public.submit_public_research_response(text, integer, text, text, text, jsonb, text, text, text) is
+  'public-research-submit: stores one anonymous research response after the abuse checks. Service role only.';
+
+-- The questions of a survey's current version, for the public form:
+-- { slug, title_he, description_he, version, questions: [...] }, or null when the survey is
+-- not active. Read by the service role on behalf of the page.
+create function public.get_public_research_questions(p_slug text)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object(
+           'slug', s.slug, 'title_he', s.title_he, 'description_he', s.description_he,
+           'version', s.current_version,
+           'questions', coalesce((
+             select jsonb_agg(to_jsonb(q) - 'survey_version_id' order by q.sort_order)
+               from public.survey_questions q where q.survey_version_id = v.id), '[]'::jsonb))
+    from public.surveys s
+    join public.survey_versions v on v.survey_id = s.id and v.version = s.current_version
+   where s.slug = p_slug and s.is_active;
+$$;
+comment on function public.get_public_research_questions(text) is
+  'Questions of the current version of an active survey, for the public research form. Service role only.';
