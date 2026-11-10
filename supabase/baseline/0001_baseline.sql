@@ -330,7 +330,9 @@ create table public.user_private (
   date_of_birth               date,
   -- Default pickup address, prefilled into new posts. Both parts or neither.
   profile_street              text check (char_length(profile_street) between 1 and 80),
-  profile_street_number       text check (profile_street_number ~ '^[0-9]+[A-Za-zא-ת]?$'),
+  -- Digits with an optional entrance letter, Latin or Hebrew (U+05D0–U+05EA, written as
+  -- escapes because Hebrew text is allowed only in locale files).
+  profile_street_number       text check (profile_street_number ~ '^[0-9]+[A-Za-z\u05D0-\u05EA]?$'),
   -- Per-category push settings and quiet hours.
   notification_preferences    jsonb not null default '{}'::jsonb
                                 check (jsonb_typeof(notification_preferences) = 'object'),

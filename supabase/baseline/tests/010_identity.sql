@@ -24,7 +24,7 @@ begin
 end;
 $$;
 
-select plan(30);
+select plan(32);
 
 -- Three sign-ups: confirmed email, unconfirmed email, Google.
 insert into auth.users (id, email, email_confirmed_at, raw_app_meta_data, raw_user_meta_data) values
@@ -102,6 +102,13 @@ select throws_ok(
 select throws_ok(
   $$select pg_temp.rows_as('authenticated', '00000000-0000-4000-8000-00000000000a', 'update public.users set biography = ''see www.example.test''')$$,
   '23514', null, 'a biography with a link is rejected');
+
+select is(pg_temp.rows_as('authenticated', '00000000-0000-4000-8000-00000000000a',
+    $$update public.user_private set profile_street = 'Herzl', profile_street_number = '12' || chr(1488)$$),
+  1::bigint, 'a house number may end with a Hebrew entrance letter');
+select throws_ok(
+  $$select pg_temp.rows_as('authenticated', '00000000-0000-4000-8000-00000000000a', 'update public.user_private set profile_street_number = ''12-14''')$$,
+  '23514', null, 'a malformed house number is rejected');
 
 -- ── Account status machine ──────────────────────────────────────────────────
 select throws_ok(
