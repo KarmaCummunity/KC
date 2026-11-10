@@ -68,6 +68,7 @@ describe('resolvePushRoute', () => {
     'event_registration_approved',
     'event_registration_promoted',
     'event_registration_declined',
+    'event_registration_expired',
     'event_reminder',
     'event_mark_attendance',
   ] as const)('opens the post of a listing notification (G1 step 4c, 0562): %s', (kind) => {

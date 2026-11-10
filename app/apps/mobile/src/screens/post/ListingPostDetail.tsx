@@ -42,7 +42,7 @@ export function ListingPostDetail({ post, listingId, viewerId, bottomInset }: Pr
   // D127: an expired post is never reopened; its owner republishes it as a new post instead.
   const canRepublish = canRepublishListingPost(post, viewerId);
   const ownerSlot = ownerCloseId ? (
-    <ListingOwnerClosureBar post={post} ownerId={ownerCloseId} embedded />
+    <ListingOwnerClosureBar post={post} listingId={listingId} ownerId={ownerCloseId} embedded />
   ) : canRepublish ? (
     <ListingRepublishBar listingId={listingId} />
   ) : undefined;

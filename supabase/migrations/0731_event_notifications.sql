@@ -9,7 +9,9 @@
 --      a waitlisted member moves up into a request;
 --    - approval, to the registrant (`event_registration_approved`);
 --    - moving up from the waitlist, to the registrant (`event_registration_promoted`);
---    - a decline or a removal by the organizer, to the registrant (`event_registration_declined`).
+--    - a decline or a removal by the organizer, to the registrant (`event_registration_declined`);
+--    - the event ending while the member still waited, to the registrant
+--      (`event_registration_expired`, 0736).
 --    The organizer's whole-event cancel (`host_cancelled`) keeps its own push (0686).
 -- 2. `event_reminder_sweep()`, hourly: every confirmed attendee hears once, within 24 hours of
 --    the start, that the event is tomorrow (`event_reminder`).
@@ -60,6 +62,8 @@ begin
     when v_old = 'waitlisted' and new.status in ('confirmed', 'reserved') then 'promoted'
     when new.status = 'cancelled' and new.cancel_reason = 'declined' then
       case when v_old = 'confirmed' then 'removed' else 'declined' end
+    -- 0736: the event ended while the member was still waiting (a request or the waitlist).
+    when new.status = 'cancelled' and new.cancel_reason = 'expired' then 'expired'
   end;
   if v_kind is null then
     return null;
@@ -73,6 +77,7 @@ begin
       when 'approved' then 'notifications.eventRegistrationApprovedTitle'
       when 'promoted' then 'notifications.eventRegistrationPromotedTitle'
       when 'declined' then 'notifications.eventRegistrationDeclinedTitle'
+      when 'expired' then 'notifications.eventRegistrationExpiredTitle'
       else 'notifications.eventRegistrationRemovedTitle' end,
     case
       when v_kind = 'approved' then 'notifications.eventRegistrationApprovedBody'
@@ -80,6 +85,8 @@ begin
       when v_kind = 'promoted' and new.status = 'reserved' then 'notifications.eventRegistrationPromotedPendingBody'
       when v_kind = 'promoted' then 'notifications.eventRegistrationPromotedBody'
       when v_kind = 'declined' then 'notifications.eventRegistrationDeclinedBody'
+      when v_kind = 'expired' and v_old = 'waitlisted' then 'notifications.eventRegistrationExpiredWaitlistBody'
+      when v_kind = 'expired' then 'notifications.eventRegistrationExpiredBody'
       else 'notifications.eventRegistrationRemovedBody' end,
     jsonb_build_object('eventTitle', v_title),
     v_route, 'event_registration_' || v_kind || ':' || new.handoff_id::text, false);

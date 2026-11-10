@@ -30,6 +30,15 @@ export const eventPost = {
     leaveWaitlist: 'Leave the waitlist',
     started: 'Registration is closed: the event has started.',
   },
+  ownerClose: {
+    cta: 'End the event',
+    confirmTitle: 'End the event?',
+    beforeStart: 'The event has not started yet. Ending it now cancels every registration, and each attendee is notified.',
+    afterStart: 'Registrations stay, and you can still mark who came after the event ends. Only marked attendance earns karma.',
+    neutral: 'Before the event starts, ending it cancels the registrations and each attendee is notified. Once it has started, registrations stay and you can mark who came.',
+    confirm: 'End the event',
+    done: 'The event has ended.',
+  },
   roster: {
     title: 'Registrations',
     summary: '{{confirmed}} confirmed · {{waiting}} waiting for approval · {{waitlisted}} on the waitlist',

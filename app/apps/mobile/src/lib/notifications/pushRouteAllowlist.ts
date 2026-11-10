@@ -151,6 +151,7 @@ const KIND_ROUTES: Record<NotificationKind, KindHandler> = {
   event_registration_approved: (d) => listingRoute(d.params),
   event_registration_promoted: (d) => listingRoute(d.params),
   event_registration_declined: (d) => listingRoute(d.params),
+  event_registration_expired: (d) => listingRoute(d.params),
   event_reminder: (d) => listingRoute(d.params),
   event_mark_attendance: (d) => listingRoute(d.params),
   // FR-ORG-002 (0730) — organization notices open "My organizations"; no params to trust.

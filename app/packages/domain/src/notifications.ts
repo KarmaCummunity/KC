@@ -80,6 +80,8 @@ export type NotificationKind =
   | 'event_registration_approved'
   | 'event_registration_promoted'
   | 'event_registration_declined'
+  // 0736 — the event ended while the member still waited (a request or the waitlist).
+  | 'event_registration_expired'
   | 'event_reminder'
   | 'event_mark_attendance'
   // FR-ORG-002 (0730) — an organization application's decision, and being added to one.
