@@ -100,6 +100,21 @@ test('read-only monitor: ci-prod-ledger.yml may resolve its matrix to supabase-p
   );
 });
 
+test('read-only monitor: prod-store-build.yml ledger job may use supabase-prod on workflow_run', () => {
+  assert.deepEqual(
+    checkWorkflow(
+      'prod-store-build.yml',
+      monitorYaml({
+        envs: ['supabase-prod'],
+        job: 'ledger',
+        on: '  workflow_run:\n    workflows: [Deploy]\n    types: [completed]\n  workflow_dispatch:',
+        run: 'node scripts/check-prod-store-ready.mjs',
+      }),
+    ),
+    [],
+  );
+});
+
 test('read-only monitor: any other file, job, env, trigger or deploy command is refused', () => {
   const refused = (file, opts) => checkWorkflow(file, monitorYaml(opts)).length > 0;
   assert.ok(refused('other-monitor.yml', {}), 'unlisted workflow');
