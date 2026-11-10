@@ -92,7 +92,7 @@ Workers that move a machine without a user action. A row names the trigger; the 
 |---|---|---|---|
 | Post expiry | crons: food (`0666`), ride offers and ride-series requests (`0624`), events (`0685`), legacy `ride_listings_expire_check` (`0135`) | S1 open → expired | the legacy cron writes through the `ride_listings` view (§4, background jobs) |
 | Post purge | cron `closure_cleanup_daily` (`0016`) | deletes a `deleted_no_recipient` row once `delete_after` (7 days) passes | not an S1 edge: the row leaves the table |
-| Handoff sweeps | crons (`0558`, `0610`, `0666`) | reserved → cancelled (`confirm_by`: rides, housing, and items / animals since `0704`); confirmed → no_show (`pickup_window_end`); housing confirmed → cancelled (`not_completed`); food expiry cancels open handoffs | the no-show sweep has no world filter |
+| Handoff sweeps | crons (`0558`, `0610`, `0666`) | reserved → cancelled (`confirm_by`: rides, housing, knowledge (`0704`), and items / animals since `0716`); confirmed → no_show (`pickup_window_end`); housing confirmed → cancelled (`not_completed`); food expiry cancels open handoffs | the no-show sweep has no world filter |
 | Account suspension and purge | crons (`0076`, `0549`), `pg_net` → `purge-deleted-accounts` | suspended_for_false_reports → active; pending_deletion → row deleted | ✅ wave 3c (`0699`): the row stays `pending_deletion` until the identity delete cascades it, so every failed step is retried |
 | Notification outbox | database webhook (not in migrations), cron `notifications_retry_pending` every minute (`0058`) | pending → dispatched; dead after 3 attempts or 1 hour; deleted after 7 days | no in-flight state; `dispatched_at` is also stamped on a suppressed or failed send |
 | Matching v2 | cron `matching_v2_sweep` every 10 minutes (`0635`), posts trigger (`0667`) | match candidate suggested → expired; delivery timestamps | |
@@ -152,7 +152,7 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 **Handoffs**
 - ~~Four TS copies disagree: `canTransitionGivingHandoff` forbids `reserved → handed_over`, `isValidRideBookingTransition` allows it; neither has `waitlisted`, `confirmed → no_show`, `no_show → handed_over` (event attendance, `0564`) or `cancelled → reserved` (ride reinstate, `0655`), all of which SQL performs.~~ ✅ wave 2 (`0694`): four kernel machines by world; the unused TS copies are deleted.
 - `cancel_giving_handoff` (`0666`) accepts event registrations without promoting the waitlist (`event_promote_waitlist`), and resets `availability_status` for items and food but not animals.
-- ~~Items, animals and knowledge reservations get `confirm_by = +24h`, but only rides and housing sweep on it; a stale reservation never lapses and blocks pause / fulfill / delete.~~ ✅ wave 2c (`0704`): items and animals lapse as `expired` and both sides are pushed. Knowledge is not swept until it has a confirm action (next line).
+- ~~Items, animals and knowledge reservations get `confirm_by = +24h`, but only rides and housing sweep on it; a stale reservation never lapses and blocks pause / fulfill / delete.~~ ✅ wave 2c (`0716`): items and animals lapse as `expired` and both sides are pushed; knowledge bookings have their own confirm action and sweep since `0704` (#2034).
 - The giving handoff push trigger covers items and food only (`0621`): animals reservations push nobody.
 - `rides_expired_listings_sweep` (`0624`) expires the ride post but leaves its reserved / confirmed bookings live; the food sweep cancels them.
 - ✅ wave 1b-ii (`0683`): the generic handed-over step (`mark_giving_handed_over`) serves the four worlds whose screen offers it (items, food, knowledge, animals); rides, housing and events complete through their own RPCs and windows.
@@ -182,7 +182,7 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 - ~~The `giving_handoffs` view's `instead of update` trigger (`0667`) sets `status` on every update, also when only a time column changes; the wave 2 `before update of status` trigger must accept `old.status = new.status`.~~ ✅ wave 2 (`0694`): the trigger treats a same-status write as a no-op.
 - Moves leave end states: cancelled → reserved / confirmed (ride reinstate), no_show → handed_over (event attendance correction). Nothing leaves `handed_over`.
 - `cancel_giving_handoff` (`0666`) also cancels event registrations; `mark_giving_handed_over` served rides, housing and events until `0683`.
-- Knowledge has no confirm RPC: its `confirmed` is reachable only through the view.
+- ~~Knowledge has no confirm RPC: its `confirmed` is reachable only through the view.~~ ✅ `0704` (#2034): `confirm_knowledge_booking` / `decline_knowledge_booking`.
 - ~~About 12 test fixtures set handoff statuses directly; wave 2 rewrites them through the RPCs.~~ ✅ wave 2: every fixture move is a legal edge; none needed rewriting.
 
 **Background jobs (wave 1d unless noted)**
@@ -252,7 +252,7 @@ One PR per row. Each wave starts only after the previous one is merged, so the c
 | 1d ✅ | Background jobs on the retired ride tables (§4): template materializer, legacy ride expiry, the two no-op crons, the `ride_participants` sweep, the food sweep's dead loop; retired in `0695`; the legacy ride TS types and use cases go with G44 | A live defect on `dev` since `0667`; lands before the next release |
 | 2 ✅ | Handoffs as four machines on one table (`giving_handoff` for items, food, animals, knowledge and any other world; `ride_booking`, `housing_booking`, `event_registration`), one `before update of status` trigger choosing the machine by `world_slug` (`0694`) | Most writers and most divergences; TS copies collapse to the kernel |
 | 2b ✅ | Client booking and assign actions follow the machines and the RPC preconditions (reinstate, complete, approve seats, assign) | The UI offers only what the server accepts |
-| 2c ✅ | Reservation-expiry sweep for items and animals (`confirm_by`, `0704`); knowledge waits for a confirm action | §4 handoffs |
+| 2c ✅ | Reservation-expiry sweep for items and animals (`confirm_by`, `0716`); knowledge sweeps its own bookings (`0704`) | §4 handoffs |
 | 3 | Account status (+ composite invariant check beside the kernel call), onboarding | Many writers, failing checks, drifted unions |
 | 4 | Reports, follow requests, review-queue family, content moderation, post comments, knowledge topics | Small graphs; replaces hand-written triggers and RLS-only edges |
 | 5 | Volunteer opportunity, shift signup, timesheets | First role-heavy graphs outside giving |

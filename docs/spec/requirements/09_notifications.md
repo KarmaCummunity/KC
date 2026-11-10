@@ -309,7 +309,7 @@ Every change to an item or food handoff (`giving_handoffs`) pushes the other sid
 - AC1. A new item request (`reserved`) pushes the giver (`giving_handoff_requested`). A food quick claim, which is confirmed at once, pushes the giver (`giving_handoff_claimed`).
 - AC2. The giver approving a request (`confirmed`) pushes the requester (`giving_handoff_confirmed`).
 - AC3. The giver cancelling a waiting request pushes the requester as a decline (`giving_handoff_declined`). Any other cancellation pushes the side that did not cancel, and a system cancel pushes both sides (`giving_handoff_cancelled`).
-- AC3b. A request the giver did not answer within its 24 h confirm window lapses; both sides are pushed `giving_handoff_expired` ({{D:giving-reservation-expires}}, `0704`).
+- AC3b. A request the giver did not answer within its 24 h confirm window lapses; both sides are pushed `giving_handoff_expired` ({{D:giving-reservation-expires}}, `0716`).
 - AC4. Marking the handoff handed over pushes the other side to rate it (`giving_handoff_completed`).
 - AC5. The side that acted is never pushed about its own action. Each recipient gets each change once (dedupe per kind, handoff and recipient).
 - AC6. The push names the other side and the listing, in Hebrew. Tapping it opens the listing's post — the one detail screen (G1 step 4c, `0562`; the same holds for every notification about a listing: food expiry, ride bookings and routes, housing stays).

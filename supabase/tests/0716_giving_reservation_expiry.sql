@@ -1,4 +1,4 @@
--- supabase/tests/0704_giving_reservation_expiry.sql
+-- supabase/tests/0716_giving_reservation_expiry.sql
 -- Wave 2c (#1989): an item request the giver does not answer within its confirm window lapses.
 -- The sweep cancels it as expired, frees the post for a new request, and pushes both sides
 -- `giving_handoff_expired`; a request still in its window and an approved one are untouched.
@@ -83,4 +83,4 @@ end $$;
 
 rollback;
 
-\echo '✓ 0704_giving_reservation_expiry.sql passed'
+\echo '✓ 0716_giving_reservation_expiry.sql passed'

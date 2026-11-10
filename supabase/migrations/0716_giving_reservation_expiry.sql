@@ -1,4 +1,4 @@
--- 0704_giving_reservation_expiry | Wave 2c of the FSM kernel program (#1989, G61)
+-- 0716_giving_reservation_expiry | Wave 2c of the FSM kernel program (#1989, G61)
 --
 -- An item or animal reservation waits for the giver's approval until `confirm_by` (24 h after the
 -- request, `reserve_item_giving`). Only rides and housing swept that deadline, so an unanswered
@@ -8,7 +8,7 @@
 -- 1. `giving_reservation_expiry_sweep()` (every 10 minutes): an items / animals reservation still
 --    `reserved` after `confirm_by` is cancelled with `cancel_reason = 'expired'`
 --    (`reserved → cancelled`, machine `giving_handoff`), and its open post is available again.
---    Knowledge sessions are not swept: they have no confirm action yet (inventory, wave 2c).
+--    Knowledge bookings have their own confirm action and sweep (`knowledge_bookings_expire_sweep`, 0704).
 -- 2. `giving_handoff_notify` (the 0621 body): an expiry pushes both sides
 --    `giving_handoff_expired` instead of a cancellation by someone (FR-NOTIF-018).
 
@@ -49,7 +49,7 @@ end;
 $$;
 
 comment on function public.giving_reservation_expiry_sweep() is
-  'Wave 2c (0704): items / animals reservations unanswered past confirm_by are cancelled as expired and the post is available again. pg_cron every 10 minutes.';
+  'Wave 2c (0716): items / animals reservations unanswered past confirm_by are cancelled as expired and the post is available again. pg_cron every 10 minutes.';
 
 revoke all on function public.giving_reservation_expiry_sweep() from public, anon, authenticated;
 
@@ -84,7 +84,7 @@ begin
         v_recipients := array[new.recipient_id];
       when 'cancelled' then
         if new.cancel_reason = 'expired' then
-          -- 0704: the giver did not answer within the confirm window; tell both sides.
+          -- 0716: the giver did not answer within the confirm window; tell both sides.
           v_kind := 'giving_handoff_expired';
         elsif old.status = 'reserved' and v_actor = new.owner_id then
           v_kind := 'giving_handoff_declined';

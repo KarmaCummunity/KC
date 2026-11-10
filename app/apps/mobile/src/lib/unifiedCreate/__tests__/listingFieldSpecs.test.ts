@@ -58,11 +58,18 @@ describe('listing field specs — per kind', () => {
     expect(keysOf('stay_request')).toEqual([
       'stay_purpose', 'check_in_date', 'check_out_date', 'flexible_days', 'adults', 'minors', 'near_trail', 'gear', 'needs',
     ]);
-    expect(keysOf('course')).toEqual(['topic', 'level', 'modality', 'slot_starts_at', 'slot_ends_at', 'slots_available']);
-    expect(keysOf('private_lesson')).toEqual([
-      'topic', 'level', 'modality', 'slot_starts_at', 'slot_ends_at', 'slots_available', 'availability_note',
+    expect(keysOf('lesson_offer')).toEqual([
+      'topic', 'level', 'modality', 'slots', 'capacity_per_slot', 'language', 'availability_note',
     ]);
-    expect(keysOf('mentorship_request')).toEqual(['topic', 'level', 'preferred_modality']);
+    expect(keysOf('mentoring_offer')).toEqual([
+      'topic', 'audience', 'cadence', 'modality', 'seats', 'language', 'availability_note',
+    ]);
+    expect(keysOf('consulting_hour')).toEqual([
+      'profession', 'topic', 'modality', 'slots', 'capacity_per_slot', 'language', 'availability_note', 'disclaimer_accepted',
+    ]);
+    expect(keysOf('learning_request')).toEqual(['topic', 'level', 'preferred_modality', 'language', 'availability_note']);
+    expect(keysOf('mentoring_request')).toEqual(['topic', 'goal', 'cadence', 'level', 'preferred_modality', 'language']);
+    expect(keysOf('question')).toEqual(['topic', 'context_url']);
     expect(keysOf('adoption_offer')).toEqual(['species', 'age_group', 'sex', 'size', 'vaccinated', 'neutered', 'good_with']);
     expect(keysOf('adoption_request')).toEqual(['species', 'age_group', 'size']);
     expect(keysOf('foster_offer')).toEqual(['species', 'care_mode', 'location_mode', 'duration_days']);
@@ -231,30 +238,6 @@ describe('clampWholeNumber', () => {
   });
 });
 
-describe('listing field specs — knowledge (#1630)', () => {
-  const kinds = KINDS_BY_WORLD.knowledge!;
-  it('covers every key the server schema requires: asked for, or filled by a default', () => {
-    for (const k of kinds) {
-      const schema = k.detailSchema as { required: string[] };
-      const specs = fieldsForKind(k);
-      for (const key of schema.required) {
-        const spec = specs.find((s) => s.key === key)!;
-        expect(spec.required === true || ('defaultValue' in spec && spec.defaultValue !== undefined)).toBe(true);
-      }
-    }
-  });
-
-  it('offers a course to give and a mentorship request to ask for', () => {
-    expect(kindForDirection(kinds, 'give')?.slug).toBe('course');
-    expect(kindForDirection(kinds, 'request')?.slug).toBe('mentorship_request');
-  });
-
-  it('defaults to a single available slot', () => {
-    const slots = fieldsForKind(kinds[0]!).find((s) => s.key === 'slots_available');
-    expect(slots).toMatchObject({ type: 'count', min: 1, defaultValue: 1 });
-  });
-});
-
 describe('listing field specs — animals (#1625)', () => {
   const kinds = KINDS_BY_WORLD.animals!;
 
@@ -284,11 +267,6 @@ describe('listing field specs — animals (#1625)', () => {
     expect(detailsForSubmit(specs, initialDetailsFor(specs))).toEqual({
       species: 'dog', care_mode: 'part_time', location_mode: 'either',
     });
-  });
-
-  it('a knowledge course and a private lesson are both offered to give', () => {
-    expect(kindChoices(KINDS_BY_WORLD.knowledge!, 'give').map((k) => k.slug)).toEqual(['course', 'private_lesson']);
-    expect(kindChoices(KINDS_BY_WORLD.knowledge!, 'request').map((k) => k.slug)).toEqual(['mentorship_request']);
   });
 
   it('keeps an organization event out of the choices', () => {

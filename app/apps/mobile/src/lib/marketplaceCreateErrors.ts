@@ -30,6 +30,9 @@ const FIELD_BY_CODE: Record<MarketplaceRuleErrorCode, MarketplaceRuleFieldError[
   ride_route_required: 'details',
   ride_departure_past: 'details',
   knowledge_slot_invalid: 'details',
+  knowledge_slot_duration_invalid: 'details',
+  knowledge_slot_in_past: 'details',
+  knowledge_slots_overlap: 'details',
   event_window_invalid: 'details',
 };
 
