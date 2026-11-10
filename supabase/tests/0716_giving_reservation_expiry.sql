@@ -41,6 +41,9 @@ begin
   -- The stale request's window ended an hour ago; the fresh one is still open.
   update public.post_handoffs set confirm_by = now() - interval '1 hour' where handoff_id = v_stale;
 
+  -- The sweep runs from pg_cron with no signed-in member, so nobody is the acting side.
+  perform kc_test.act_as_anon();
+
   perform kc_test.assert_eq(public.giving_reservation_expiry_sweep(), 1, 'one request lapsed');
   perform kc_test.assert_eq(
     (select status || '/' || cancel_reason from public.post_handoffs where handoff_id = v_stale),
@@ -68,6 +71,7 @@ begin
   perform kc_test.act_as(p.giver);
   perform public.confirm_item_handoff(v_fresh);
   update public.post_handoffs set confirm_by = now() - interval '1 hour' where handoff_id = v_fresh;
+  perform kc_test.act_as_anon();
   perform kc_test.assert_eq(public.giving_reservation_expiry_sweep(), 0, 'nothing else lapses');
   perform kc_test.assert_eq(
     (select status from public.post_handoffs where handoff_id = v_fresh), 'confirmed',
