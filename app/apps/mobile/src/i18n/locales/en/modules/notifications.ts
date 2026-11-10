@@ -235,4 +235,15 @@ export const notificationsEn = {
   eventOrganizerMessageBody: '{{actorName}} sent a message to the registrants.',
   postExpiredTitle: 'Your post expired',
   postExpiredBody: 'Your post is no longer shown. You can publish it again.',
+  // Organizations and donations (80_organizations, 85_billing).
+  orgApplicationDecidedTitle: 'Your organization application was reviewed',
+  orgApplicationDecidedBody: 'A decision was made on your organization application. See the notification centre.',
+  donationReceiptReadyTitle: 'Your receipt is ready',
+  donationReceiptReadyBody: 'You can view the donation receipt in your donation history.',
+  donationSucceededTitle: 'Donation received',
+  donationSucceededBody: 'Thank you! Your donation went through.',
+  donationRefundedTitle: 'Donation refunded',
+  donationRefundedBody: 'Your donation was refunded.',
+  standingOrderChargeFailedTitle: 'Monthly charge failed',
+  standingOrderChargeFailedBody: 'We could not charge your standing order. Please check your payment method.',
 } as const;

@@ -235,4 +235,15 @@ export const notificationsHe = {
   eventOrganizerMessageBody: '{{actorName}} שלח/ה הודעה לנרשמים.',
   postExpiredTitle: 'תוקף הפוסט הסתיים',
   postExpiredBody: 'הפוסט שלך כבר לא מוצג. אפשר לפרסם אותו מחדש.',
+  // Organizations and donations (80_organizations, 85_billing).
+  orgApplicationDecidedTitle: 'בקשת הארגון נבדקה',
+  orgApplicationDecidedBody: 'התקבלה החלטה על הבקשה לרישום הארגון. הפרטים במרכז ההתראות.',
+  donationReceiptReadyTitle: 'הקבלה שלך מוכנה',
+  donationReceiptReadyBody: 'אפשר לצפות בקבלה על התרומה בהיסטוריית התרומות.',
+  donationSucceededTitle: 'התרומה התקבלה',
+  donationSucceededBody: 'תודה! התרומה שלך הועברה בהצלחה.',
+  donationRefundedTitle: 'התרומה הוחזרה',
+  donationRefundedBody: 'בוצע החזר על התרומה שלך.',
+  standingOrderChargeFailedTitle: 'החיוב החודשי נכשל',
+  standingOrderChargeFailedBody: 'לא הצלחנו לחייב את הוראת הקבע. כדאי לבדוק את אמצעי התשלום.',
 } as const;

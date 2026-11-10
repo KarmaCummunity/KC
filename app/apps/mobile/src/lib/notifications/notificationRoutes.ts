@@ -127,6 +127,12 @@ export const NOTIFICATION_ROUTES: Record<NotificationKind, RouteBuilder> = {
   post_emergency: post,
   event_organizer_message: post,
   post_expired: post,
+  // Organizations and donations: no dedicated screen takes an id yet, so they open the centre.
+  org_application_decided: inbox,
+  donation_receipt_ready: inbox,
+  donation_succeeded: inbox,
+  donation_refunded: inbox,
+  standing_order_charge_failed: inbox,
 };
 
 /**
