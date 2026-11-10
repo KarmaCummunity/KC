@@ -93,6 +93,12 @@ export default function SettingsScreen() {
               onPress={() => router.push('/identity-verification')}
             />
           ) : null}
+          <SettingsScreenRow
+            testID="settings-row-organizations"
+            label={t('organizations.settingsRow')}
+            icon="people-outline"
+            onPress={() => router.push('/settings/organizations')}
+          />
         </View>
 
         <Text style={styles.sectionTitle}>{t('settings.appearance')}</Text>
