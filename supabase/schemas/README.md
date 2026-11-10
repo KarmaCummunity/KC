@@ -22,7 +22,7 @@ module or an earlier file of its own.
 3. No data. Reference data and demo data live in `supabase/seed/`.
 4. Every table enables and forces row level security in the file that creates it.
 5. Nothing is granted to `anon` or `authenticated` implicitly: each grant is written next to the object it opens.
-6. A function belongs in `public` only when a client or an Edge Function calls it by name; everything else goes to `kc_private`.
+6. A function belongs in `public` only when a client or an Edge Function calls it by name. A predicate used inside a policy goes to `kc_access` with an explicit `grant execute … to authenticated`; everything else goes to `kc_private`.
 7. Every `security definer` function sets `search_path = ''` and schema-qualifies every name.
 
 ## Commands

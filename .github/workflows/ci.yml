@@ -17,8 +17,11 @@ name: CI
 on:
   pull_request:
     branches: [dev, main]
-    # `edited` re-runs the gate when the title, body or base branch change, so
-    # PR hygiene and the lane plan always match the current PR.
+    # `edited` re-runs hygiene and the gate when the title, body or base
+    # branch change, so PR hygiene and the lane plan always match the current
+    # PR. A title/body edit does not re-run the heavy lanes or cancel a full
+    # run in flight (see concurrency / run-name below); a base change does
+    # re-run every planned lane.
     types: [opened, synchronize, reopened, ready_for_review, edited]
   # An owner approval (or its dismissal) re-judges the gate: the test-integrity
   # guard and the ci.yml check accept a gate-weakening change only with an
@@ -40,15 +43,17 @@ on:
     branches: [dev, main]
   workflow_dispatch:
 
-# A PR's `pull_request` runs share one group, so a new push or edit cancels
-# the superseded run. Review runs get their own per-PR group, so a queued
-# review run can never replace (and drop) a pending `pull_request` run; a newer
-# review (e.g. the dismissal of an approval) cancels the one in flight, and a
-# review run waits for a running `pull_request` run before reusing it. Every
-# other event is grouped by commit, so each dev/main push keeps its own result
-# (a shared branch group would drop queued runs).
+# A PR's `synchronize` / open runs share one group, so a new push cancels the
+# superseded full run. `edited` runs get their own per-PR group (`ci-edit-<PR>`),
+# so a body/title edit never cancels a full run in flight; they are marked
+# `CI (edit)` (`run-name` / `display_title`) so reuse can skip them. Review
+# runs keep their own `review-` group. A newer edit or review cancels the one
+# of its kind in flight, and a reuse waits for a running full `pull_request`
+# run. Every other event is grouped by commit, so each dev/main push keeps its
+# own result (a shared branch group would drop queued runs).
+run-name: ${{ github.event_name == 'pull_request' && github.event.action == 'edited' && 'CI (edit)' || github.event.pull_request.title || github.event.head_commit.message || github.workflow }}
 concurrency:
-  group: ci-${{ github.event_name == 'pull_request_review' && 'review-' || '' }}${{ github.event.pull_request.number || github.sha }}
+  group: ci-${{ github.event_name == 'pull_request_review' && 'review-' || (github.event_name == 'pull_request' && github.event.action == 'edited' && 'edit-') || '' }}${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_review' }}
 
 permissions: {}

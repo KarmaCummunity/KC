@@ -88,6 +88,16 @@ describe('social sign-in block', () => {
   });
 });
 
+describe('social sign-in spacing', () => {
+  it('separates the Apple and Google buttons with a gap', () => {
+    Platform.OS = 'ios';
+    const { getByText } = renderInTheme(<AuthSocialSignInBlock />);
+    const stack = getByText('auth.continueWithApple').parentElement?.parentElement as HTMLElement;
+    expect(getByText('auth.continueWithGoogle').parentElement?.parentElement).toBe(stack);
+    expect(getComputedStyle(stack).gap).toMatch(/^[1-9]\d*px/);
+  });
+});
+
 describe.each([
   ['sign-in', SignInScreen, 'auth.signInScreenTitle'],
   ['sign-up', SignUpScreen, 'auth.signUp'],

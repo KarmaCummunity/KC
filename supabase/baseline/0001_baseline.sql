@@ -29,6 +29,12 @@ comment on schema integrations is 'External channel integrations. Service role o
 create schema ops;
 comment on schema ops is 'Operational telemetry. Service role only.';
 
+-- Predicates called from row level security policies. A policy runs as the calling role, so
+-- that role needs USAGE here and EXECUTE on each predicate; the schema is still not exposed
+-- through the API, so none of them can be called from a device.
+create schema kc_access;
+comment on schema kc_access is 'Policy predicates. Usable by signed-in members inside policies; not exposed through the API.';
+
 -- >>> supabase/schemas/00_foundation/020_default_privileges.sql
 -- Foundation · privileges
 --
@@ -70,6 +76,12 @@ end $$;
 
 -- `public` functions stay callable by the service role without a per-function grant.
 alter default privileges for role postgres in schema public grant execute on functions to service_role;
+
+-- Policy predicates: signed-in members may resolve names in `kc_access`; each predicate is
+-- granted individually by the file that creates it.
+revoke all on schema kc_access from public, anon;
+grant usage on schema kc_access to authenticated, service_role;
+alter default privileges for role postgres in schema kc_access grant execute on functions to service_role;
 
 -- >>> supabase/schemas/00_foundation/030_shared_functions.sql
 -- Foundation · shared trigger functions
@@ -638,3 +650,148 @@ comment on function kc_private.handle_auth_user_verified() is
 create trigger on_auth_user_verified
   after update of email_confirmed_at, phone_confirmed_at on auth.users
   for each row execute function kc_private.handle_auth_user_verified();
+
+-- >>> supabase/schemas/15_social_graph/010_follows.sql
+-- Social graph · follows
+--
+-- One row per "follower follows followed". A private profile is followed through an approved
+-- request, so an edge is created only by server code; removing an edge (unfollow, or removing
+-- a follower) is a plain delete by either party (FR-FOLLOW-002, FR-FOLLOW-009).
+
+create table public.follows (
+  follower_id uuid not null references public.users (id) on delete cascade,
+  followed_id uuid not null references public.users (id) on delete cascade,
+  created_at  timestamptz not null default now(),
+  primary key (follower_id, followed_id),
+  constraint follows_not_self_chk check (follower_id <> followed_id)
+);
+comment on table public.follows is 'Follow edges. Created by server code, deleted by either party.';
+
+-- Followers list of a profile, newest first (keyset on created_at, follower_id).
+create index follows_followed_recent_idx on public.follows (followed_id, created_at desc, follower_id);
+-- Following list of a profile, newest first; also serves the feed's "people I follow" lookup.
+create index follows_follower_recent_idx on public.follows (follower_id, created_at desc, followed_id);
+
+-- Keeps the two profile counters in step with the edge, in the same transaction
+-- (FR-FOLLOW-001 AC2). Runs with definer rights because counters are not client-writable.
+create function kc_private.follows_sync_counters()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_delta constant integer := case tg_op when 'INSERT' then 1 else -1 end;
+  v_edge constant public.follows := case tg_op when 'INSERT' then new else old end;
+begin
+  update public.user_stats s
+     set followers_count = greatest(s.followers_count + v_delta, 0)
+   where s.user_id = v_edge.followed_id;
+  update public.user_stats s
+     set following_count = greatest(s.following_count + v_delta, 0)
+   where s.user_id = v_edge.follower_id;
+  return null;
+end;
+$$;
+
+create trigger follows_sync_counters
+  after insert or delete on public.follows
+  for each row execute function kc_private.follows_sync_counters();
+
+alter table public.follows enable row level security;
+alter table public.follows force row level security;
+
+-- Followers and following lists of any member are visible to every signed-in member,
+-- whatever the privacy mode (FR-PROFILE-010 AC1). A profile hidden from the viewer drops out
+-- when the list is joined to `users`.
+create policy follows_select_member on public.follows
+  for select to authenticated
+  using (true);
+
+-- Unfollow, or remove one of my followers.
+create policy follows_delete_party on public.follows
+  for delete to authenticated
+  using ((select auth.uid()) in (follower_id, followed_id));
+
+grant select, delete on public.follows to authenticated;
+
+-- >>> supabase/schemas/15_social_graph/020_blocks.sql
+-- Social graph · blocks
+--
+-- A block hides two members from each other in both directions. Only the blocker can see or
+-- remove the row: the blocked member is never told who blocked them.
+
+create table public.blocks (
+  blocker_id uuid not null references public.users (id) on delete cascade,
+  blocked_id uuid not null references public.users (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (blocker_id, blocked_id),
+  constraint blocks_not_self_chk check (blocker_id <> blocked_id)
+);
+comment on table public.blocks is 'Blocks between members. Visible to the blocker only; effective in both directions.';
+
+-- Reverse lookup: "has this member blocked me?" in the bilateral predicate below.
+create index blocks_blocked_idx on public.blocks (blocked_id, blocker_id);
+
+-- True when either member has blocked the other. Definer rights are required because a
+-- member cannot read the other side's block row. Used by policies on every table that must
+-- hide blocked counterparts.
+create function kc_access.is_blocked_between(p_user_a uuid, p_user_b uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+      from public.blocks b
+     where (b.blocker_id = p_user_a and b.blocked_id = p_user_b)
+        or (b.blocker_id = p_user_b and b.blocked_id = p_user_a));
+$$;
+comment on function kc_access.is_blocked_between(uuid, uuid) is
+  'Policy predicate: a block exists between the two members, in either direction.';
+grant execute on function kc_access.is_blocked_between(uuid, uuid) to authenticated;
+
+-- Blocking ends any follow relation between the two members, in both directions.
+create function kc_private.blocks_remove_follows()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  delete from public.follows f
+   where (f.follower_id = new.blocker_id and f.followed_id = new.blocked_id)
+      or (f.follower_id = new.blocked_id and f.followed_id = new.blocker_id);
+  return null;
+end;
+$$;
+
+create trigger blocks_remove_follows
+  after insert on public.blocks
+  for each row execute function kc_private.blocks_remove_follows();
+
+alter table public.blocks enable row level security;
+alter table public.blocks force row level security;
+
+create policy blocks_select_own on public.blocks
+  for select to authenticated
+  using (blocker_id = (select auth.uid()));
+
+create policy blocks_insert_own on public.blocks
+  for insert to authenticated
+  with check (blocker_id = (select auth.uid()));
+
+create policy blocks_delete_own on public.blocks
+  for delete to authenticated
+  using (blocker_id = (select auth.uid()));
+
+grant select, insert, delete on public.blocks to authenticated;
+
+-- Blocked counterparts disappear from each other. Restrictive, so it narrows whatever the
+-- permissive profile policies allow; a member's own row is never affected (no self-block).
+create policy users_hide_blocked on public.users
+  as restrictive
+  for select to authenticated
+  using (not kc_access.is_blocked_between((select auth.uid()), id));

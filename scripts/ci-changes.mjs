@@ -19,6 +19,11 @@
 // REVIEW_LANES; scripts/ci-gate.mjs takes every other lane's result from the
 // PR's latest completed `pull_request` run for the same head SHA.
 //
+// A `pull_request` `edited` event (title/body change, no base change) keeps
+// that full `plan` but runs only hygiene and REVIEW_LANES, and reuses the
+// rest the same way. A base-branch change still runs every planned lane.
+// The action is read from the event payload (`GITHUB_EVENT_PATH`).
+//
 // Inputs (env): EVENT_NAME, DRAFT, ACTOR, REF, BASE_REF (PR / merge-group
 // target branch), BASE_SHA, HEAD_SHA.
 // Outputs ($GITHUB_OUTPUT): draft, one true/false flag per lane job and per
@@ -28,7 +33,7 @@
 // optional lane is named only when it is needed.
 
 import { execFileSync } from 'node:child_process';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 // CI plumbing and the Node pin can break any lane, so they trigger all of them.
@@ -117,10 +122,11 @@ export const REVIEW_LANES = ['static'];
  * Build the CI plan. `files` is null when the diff could not be computed;
  * that (like a merge group, a push or a manual dispatch) runs every lane.
  * `plan` is what the change needs; `run` is what this workflow run executes
- * (they differ only on review events, which run REVIEW_LANES and reuse the
- * rest).
+ * (they differ on review events, which run REVIEW_LANES and reuse the rest,
+ * and on `edited` events without a base change, which also re-run hygiene).
+ * `action` and `baseChanged` come from the GitHub event payload.
  */
-export function plan({ event, draft, actor, ref, baseRef, files }) {
+export function plan({ event, draft, actor, ref, baseRef, files, action, baseChanged }) {
   const isPr = PR_EVENTS.has(event);
   if (isPr && draft) {
     const none = Object.fromEntries(LANE_JOBS.map((j) => [j, false]));
@@ -144,6 +150,12 @@ export function plan({ event, draft, actor, ref, baseRef, files }) {
   if (event === 'pull_request_review') {
     const jobs = [...LANE_JOBS, ...OPTIONAL_LANES];
     const run = Object.fromEntries(jobs.map((j) => [j, needed[j] === true && REVIEW_LANES.includes(j)]));
+    return { draft: false, sonar: false, plan: needed, run };
+  }
+  if (event === 'pull_request' && action === 'edited' && !baseChanged) {
+    const keep = new Set(['hygiene', ...REVIEW_LANES]);
+    const jobs = [...LANE_JOBS, ...OPTIONAL_LANES];
+    const run = Object.fromEntries(jobs.map((j) => [j, needed[j] === true && keep.has(j)]));
     return { draft: false, sonar: false, plan: needed, run };
   }
   return { draft: false, sonar: lanes.frontend && sonarTarget, plan: needed, run: needed };
@@ -172,9 +184,25 @@ export function changedFiles(base, head, cwd = process.cwd()) {
   }
 }
 
+/**
+ * Action and base-branch change from a GitHub event payload (`GITHUB_EVENT_PATH`).
+ * Missing or unreadable payloads yield no action, so the plan runs every needed
+ * lane (fail closed: an `edited` run without a payload must not skip lanes).
+ */
+export function readPrAction(eventPath) {
+  if (!eventPath) return { action: undefined, baseChanged: false };
+  try {
+    const event = JSON.parse(readFileSync(eventPath, 'utf8'));
+    return { action: event.action, baseChanged: Boolean(event.changes?.base) };
+  } catch {
+    return { action: undefined, baseChanged: false };
+  }
+}
+
 function main() {
   const env = process.env;
   const files = DIFF_EVENTS.has(env.EVENT_NAME) ? changedFiles(env.BASE_SHA, env.HEAD_SHA) : null;
+  const { action, baseChanged } = readPrAction(env.GITHUB_EVENT_PATH);
   const result = plan({
     event: env.EVENT_NAME,
     draft: env.DRAFT === 'true',
@@ -182,6 +210,8 @@ function main() {
     ref: env.REF,
     baseRef: env.BASE_REF,
     files,
+    action,
+    baseChanged,
   });
   const lines = [
     `draft=${result.draft}`,
