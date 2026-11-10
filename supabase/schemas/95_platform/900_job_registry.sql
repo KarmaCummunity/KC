@@ -69,3 +69,22 @@ insert into kc_private.scheduled_jobs (name, schedule, command, timeout, alert_a
    interval '15 minutes', interval '36 hours', 'Recomputes member counters; drift goes to ops.counter_drift.'),
   ('post_stats_reconcile', '45 1 * * *', 'select kc_private.post_stats_reconcile()',
    interval '15 minutes', interval '36 hours', 'Recomputes post engagement counters; drift goes to ops.counter_drift.');
+
+-- Jobs of the karma, matching, activity and research modules.
+insert into kc_private.scheduled_jobs (name, schedule, command, timeout, alert_after, description) values
+  ('karma_consume', '* * * * *', 'select kc_private.karma_process()',
+   interval '50 seconds', interval '10 minutes', 'Outbox topic karma: writes the karma ledger and the member totals.'),
+  ('karma_reconcile', '30 1 * * *', 'select kc_private.karma_reconcile()',
+   interval '10 minutes', interval '36 hours', 'Recomputes karma totals from the ledger and records drift.'),
+  ('match_process', '*/2 * * * *', 'select kc_private.match_process()',
+   interval '100 seconds', interval '15 minutes', 'Outbox topic match: computes candidates for new and edited posts and announces them.'),
+  ('community_stats_refresh', '* * * * *', 'select kc_private.community_stats_refresh()',
+   interval '30 seconds', interval '10 minutes', 'Refreshes the one-row community counters shown on the home screen.'),
+  ('user_active_days_purge', '50 4 * * *', 'select kc_private.user_active_days_purge()',
+   interval '5 minutes', interval '36 hours', 'Removes active-day rows older than the retention window.'),
+  ('embed_worker', '*/2 * * * *', $$select kc_private.invoke_edge_function('embed-worker')$$,
+   interval '20 seconds', interval '15 minutes', 'Starts embed-worker: embeddings for new and edited posts.'),
+  ('match_rerank', '*/5 * * * *', $$select kc_private.invoke_edge_function('match-rerank')$$,
+   interval '20 seconds', interval '30 minutes', 'Starts match-rerank: language-model scoring of fresh match candidates.'),
+  ('research_salt_rotate', '15 0 * * *', $$select kc_private.invoke_edge_function('rotate-research-salt')$$,
+   interval '20 seconds', interval '36 hours', 'Starts rotate-research-salt: daily rotation of the public research hashing salt.');
