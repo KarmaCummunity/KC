@@ -44,7 +44,8 @@ describe('listing field specs — per kind', () => {
   });
 
   it('renders the purpose-built fields of each category (docs/spec/07 §7.2)', () => {
-    expect(keysOf('give_food')).toEqual(['food_type', 'expires_at', 'allergens', 'kosher', 'pickup_mode']);
+    // The food type is the world sub-category picker, not a detail field (D137, KC#1398).
+    expect(keysOf('give_food')).toEqual(['expires_at', 'allergens', 'kosher', 'pickup_mode']);
     expect(keysOf('request_food')).toEqual(['household_size', 'dietary_needs']);
     // Route, departure, estimated end and seats are rendered by RideCreateSection (D71, D75).
     expect(keysOf('ride_offer')).toEqual(['reward_model', 'cost_share_ils']);
@@ -57,11 +58,18 @@ describe('listing field specs — per kind', () => {
     expect(keysOf('stay_request')).toEqual([
       'stay_purpose', 'check_in_date', 'check_out_date', 'flexible_days', 'adults', 'minors', 'near_trail', 'gear', 'needs',
     ]);
-    expect(keysOf('course')).toEqual(['topic', 'level', 'modality', 'slot_starts_at', 'slot_ends_at', 'slots_available']);
-    expect(keysOf('private_lesson')).toEqual([
-      'topic', 'level', 'modality', 'slot_starts_at', 'slot_ends_at', 'slots_available', 'availability_note',
+    expect(keysOf('lesson_offer')).toEqual([
+      'topic', 'level', 'modality', 'slots', 'capacity_per_slot', 'language', 'availability_note',
     ]);
-    expect(keysOf('mentorship_request')).toEqual(['topic', 'level', 'preferred_modality']);
+    expect(keysOf('mentoring_offer')).toEqual([
+      'topic', 'audience', 'cadence', 'modality', 'seats', 'language', 'availability_note',
+    ]);
+    expect(keysOf('consulting_hour')).toEqual([
+      'profession', 'topic', 'modality', 'slots', 'capacity_per_slot', 'language', 'availability_note', 'disclaimer_accepted',
+    ]);
+    expect(keysOf('learning_request')).toEqual(['topic', 'level', 'preferred_modality', 'language', 'availability_note']);
+    expect(keysOf('mentoring_request')).toEqual(['topic', 'goal', 'cadence', 'level', 'preferred_modality', 'language']);
+    expect(keysOf('question')).toEqual(['topic', 'context_url']);
     expect(keysOf('adoption_offer')).toEqual(['species', 'age_group', 'sex', 'size', 'vaccinated', 'neutered', 'good_with']);
     expect(keysOf('adoption_request')).toEqual(['species', 'age_group', 'size']);
     expect(keysOf('foster_offer')).toEqual(['species', 'care_mode', 'location_mode', 'duration_days']);
@@ -77,9 +85,10 @@ describe('listing field specs — per kind', () => {
   });
 
   it('narrows options to the server enum', () => {
-    const narrowed = { ...KINDS_BY_WORLD.food![0]!, detailSchema: { properties: { food_type: { enum: ['cooked'] } } } };
-    const [spec] = fieldsForKind(narrowed);
-    expect(spec?.type === 'choice' && spec.options).toEqual(['cooked']);
+    // Food type left the form (D137); kosher is the food offer's choice field.
+    const narrowed = { ...KINDS_BY_WORLD.food![0]!, detailSchema: { properties: { kosher: { enum: ['yes'] } } } };
+    const spec = fieldsForKind(narrowed).find((s) => s.key === 'kosher');
+    expect(spec?.type === 'choice' && spec.options).toEqual(['yes']);
   });
 
   it('an unknown kind or an empty schema renders no curated fields', () => {
@@ -114,9 +123,8 @@ describe('listing field specs — values', () => {
   });
 
   it('reports the first missing required field, in render order', () => {
-    expect(firstMissingRequiredField(foodOffer, {})?.key).toBe('food_type');
-    expect(firstMissingRequiredField(foodOffer, { food_type: 'cooked' })?.key).toBe('expires_at');
-    expect(firstMissingRequiredField(foodOffer, { food_type: 'cooked', expires_at: '2030-01-01T10:00:00.000Z' })).toBeNull();
+    expect(firstMissingRequiredField(foodOffer, {})?.key).toBe('expires_at');
+    expect(firstMissingRequiredField(foodOffer, { expires_at: '2030-01-01T10:00:00.000Z' })).toBeNull();
   });
 
   it('drops hidden and empty values on submit but keeps the ride route', () => {
@@ -135,7 +143,6 @@ describe('listing field specs — values', () => {
   it('a filled food offer validates against the server schema', () => {
     const details = detailsForSubmit(foodOffer, {
       ...initialDetailsFor(foodOffer),
-      food_type: 'cooked',
       expires_at: '2030-01-01T10:00:00.000Z',
       allergens: ['milk'],
       kosher: 'yes',
@@ -231,30 +238,6 @@ describe('clampWholeNumber', () => {
   });
 });
 
-describe('listing field specs — knowledge (#1630)', () => {
-  const kinds = KINDS_BY_WORLD.knowledge!;
-  it('covers every key the server schema requires: asked for, or filled by a default', () => {
-    for (const k of kinds) {
-      const schema = k.detailSchema as { required: string[] };
-      const specs = fieldsForKind(k);
-      for (const key of schema.required) {
-        const spec = specs.find((s) => s.key === key)!;
-        expect(spec.required === true || ('defaultValue' in spec && spec.defaultValue !== undefined)).toBe(true);
-      }
-    }
-  });
-
-  it('offers a course to give and a mentorship request to ask for', () => {
-    expect(kindForDirection(kinds, 'give')?.slug).toBe('course');
-    expect(kindForDirection(kinds, 'request')?.slug).toBe('mentorship_request');
-  });
-
-  it('defaults to a single available slot', () => {
-    const slots = fieldsForKind(kinds[0]!).find((s) => s.key === 'slots_available');
-    expect(slots).toMatchObject({ type: 'count', min: 1, defaultValue: 1 });
-  });
-});
-
 describe('listing field specs — animals (#1625)', () => {
   const kinds = KINDS_BY_WORLD.animals!;
 
@@ -284,11 +267,6 @@ describe('listing field specs — animals (#1625)', () => {
     expect(detailsForSubmit(specs, initialDetailsFor(specs))).toEqual({
       species: 'dog', care_mode: 'part_time', location_mode: 'either',
     });
-  });
-
-  it('a knowledge course and a private lesson are both offered to give', () => {
-    expect(kindChoices(KINDS_BY_WORLD.knowledge!, 'give').map((k) => k.slug)).toEqual(['course', 'private_lesson']);
-    expect(kindChoices(KINDS_BY_WORLD.knowledge!, 'request').map((k) => k.slug)).toEqual(['mentorship_request']);
   });
 
   it('keeps an organization event out of the choices', () => {

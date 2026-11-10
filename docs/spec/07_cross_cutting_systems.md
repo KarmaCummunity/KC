@@ -26,7 +26,7 @@ One form creates a Post: giving world first, then the world's sub-category where
 
 | Post type | Photo | Location | Expiry | Unique fields |
 |---|---|---|---|---|
-| Food offer | required (D132) | address | expiry date | type, allergens, quantity |
+| Food offer | required (D132) | address | expiry date | type = the food sub-category, required (D137); allergens, quantity |
 | Food request | no | city | none | quantity, urgency |
 | Item offer | required (D132) | address | none | item subcategory, condition |
 | Item request | no | city | none | item subcategory, urgency |

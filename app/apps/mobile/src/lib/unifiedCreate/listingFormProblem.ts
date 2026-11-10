@@ -7,7 +7,7 @@ export const RIDE_FIELDS = ['ride:origin', 'ride:dest', 'ride:departure', 'ride:
 export type RideFormField = (typeof RIDE_FIELDS)[number];
 
 /** A field of the listing form; `detail:<key>` is one category-specific field. */
-export type ListingFormField = 'title' | 'city' | 'org' | 'photos' | RideFormField | `detail:${string}`;
+export type ListingFormField = 'title' | 'city' | 'org' | 'photos' | 'subcategory' | RideFormField | `detail:${string}`;
 
 export interface ListingFormProblem {
   readonly message: string;
@@ -28,14 +28,20 @@ export function fieldForRule(code: MarketplaceRuleErrorCode, details: Readonly<R
   switch (code) {
     case 'offer_photo_required':
       return 'photos';
+    case 'food_subcategory_required':
+      return 'subcategory';
     case 'ride_route_required':
       return hasCoords(details, 'origin') ? 'ride:dest' : 'ride:origin';
     case 'ride_departure_past':
       return 'ride:departure';
     case 'food_expiry_required':
       return detailField('expires_at');
+    // A lesson offer or consulting hour edits a slot list (#2034); a legacy post had one slot.
     case 'knowledge_slot_invalid':
-      return detailField('slot_starts_at');
+    case 'knowledge_slot_duration_invalid':
+    case 'knowledge_slot_in_past':
+    case 'knowledge_slots_overlap':
+      return detailField(Array.isArray(details.slots) ? 'slots' : 'slot_starts_at');
     case 'event_window_invalid':
       return detailField('starts_at');
     case 'routed_world_requires_external_body':
@@ -52,13 +58,16 @@ export interface RenderedFieldsInput {
   readonly isRides: boolean;
   readonly isOrgEvent: boolean;
   readonly detailKeys: readonly string[];
+  /** True in worlds whose form shows the sub-category picker (items, food, knowledge). */
+  readonly showSubcategory?: boolean;
 }
 
 /** The fields the listing form currently shows (rides: route + schedule instead of title + city). */
-export function renderedListingFields({ isRides, isOrgEvent, detailKeys }: RenderedFieldsInput): Set<ListingFormField> {
+export function renderedListingFields({ isRides, isOrgEvent, detailKeys, showSubcategory = false }: RenderedFieldsInput): Set<ListingFormField> {
   const fields = new Set<ListingFormField>(isRides ? RIDE_FIELDS : ['title', 'city']);
   // Every listing form shows the photo picker (rides place it last).
   fields.add('photos');
+  if (showSubcategory) fields.add('subcategory');
   if (isOrgEvent) fields.add('org');
   for (const key of detailKeys) fields.add(detailField(key));
   return fields;

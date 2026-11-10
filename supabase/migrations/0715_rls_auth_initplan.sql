@@ -1,4 +1,4 @@
--- 0699_rls_auth_initplan | Evaluate auth.uid() once per query in the hot-table RLS policies (all but posts).
+-- 0715_rls_auth_initplan | Evaluate auth.uid() once per query in the hot-table RLS policies (all but posts).
 -- Supersedes the closed PR #1546 (its policy definitions were a stale snapshot).
 --
 -- A bare `auth.uid()` inside a policy is re-evaluated for every row; `(select auth.uid())`

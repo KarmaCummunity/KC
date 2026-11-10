@@ -54,6 +54,13 @@ export type NotificationKind =
   | 'giving_handoff_declined'
   | 'giving_handoff_cancelled'
   | 'giving_handoff_completed'
+  // FR-KNOW-004 AC5 (0704, #2034) — knowledge slot bookings: every change reaches the other side.
+  | 'knowledge_booking_requested'
+  | 'knowledge_booking_confirmed'
+  | 'knowledge_booking_declined'
+  | 'knowledge_booking_expired'
+  | 'knowledge_booking_cancelled'
+  | 'knowledge_session_completed'
   // FR-HOUSING-017 (0602–0603) — housing stay bookings: every change reaches the other side.
   | 'housing_booking_requested'
   | 'housing_booking_confirmed'

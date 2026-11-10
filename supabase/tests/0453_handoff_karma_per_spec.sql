@@ -16,7 +16,8 @@ begin
   perform pg_temp.assert(public.karma_handoff_points('food', 'giver') = 20 and public.karma_handoff_points('food', 'receiver') = 10, 'food 20/10');
   perform pg_temp.assert(public.karma_handoff_points('rides', 'giver') = 25 and public.karma_handoff_points('rides', 'receiver') = 10, 'rides 25/10');
   perform pg_temp.assert(public.karma_handoff_points('housing', 'giver') = 30 and public.karma_handoff_points('housing', 'receiver') = 10, 'housing 30 per night / 10 (0603)');
-  perform pg_temp.assert(public.karma_handoff_points('knowledge', 'giver') = 5 and public.karma_handoff_points('knowledge', 'receiver') = 3, 'unpriced world keeps 5/3');
+  perform pg_temp.assert(public.karma_handoff_points('knowledge', 'giver') = 5 and public.karma_handoff_points('knowledge', 'receiver') = 5, 'knowledge 5/5 (0703)');
+  perform pg_temp.assert(public.karma_handoff_points('animals', 'giver') = 5 and public.karma_handoff_points('animals', 'receiver') = 3, 'unpriced world keeps 5/3');
   raise notice '✓ T1 karma config per world';
 end $$;
 

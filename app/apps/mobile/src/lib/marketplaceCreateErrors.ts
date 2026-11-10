@@ -18,17 +18,21 @@ export function marketplaceServerErrorKey(err: unknown): MarketplaceErrorKey {
 export interface MarketplaceRuleFieldError {
   code: MarketplaceRuleErrorCode;
   /** Which form section renders the inline message. */
-  field: 'details' | 'org' | 'photos';
+  field: 'details' | 'org' | 'photos' | 'subcategory';
   key: MarketplaceErrorKey;
 }
 
 const FIELD_BY_CODE: Record<MarketplaceRuleErrorCode, MarketplaceRuleFieldError['field']> = {
   offer_photo_required: 'photos',
+  food_subcategory_required: 'subcategory',
   food_expiry_required: 'details',
   routed_world_requires_external_body: 'org',
   ride_route_required: 'details',
   ride_departure_past: 'details',
   knowledge_slot_invalid: 'details',
+  knowledge_slot_duration_invalid: 'details',
+  knowledge_slot_in_past: 'details',
+  knowledge_slots_overlap: 'details',
   event_window_invalid: 'details',
 };
 

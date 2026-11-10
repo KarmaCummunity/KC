@@ -44,6 +44,8 @@ export type ListingFieldSpec =
   | (BaseSpec & { readonly type: 'integer'; readonly min: number; readonly max: number })
   | (BaseSpec & { readonly type: 'text'; readonly multiline?: boolean; readonly maxLength: number })
   | (BaseSpec & { readonly type: 'toggle'; readonly defaultValue?: boolean })
+  // Bookable time slots of a knowledge lesson or consulting hour (#2034): `[{starts_at, ends_at}]`.
+  | (BaseSpec & { readonly type: 'slotList'; readonly maxSlots: number })
   // A detail the form sets without a control (no editor for it yet); seeded from `defaultValue`.
   | (BaseSpec & { readonly type: 'fixed'; readonly defaultValue: unknown });
 
@@ -52,7 +54,7 @@ const DURATIONS_MIN: readonly number[] = [30, 60, 120, 180, 240];
 /** Field sets keyed by listing kind slug (`listing_kinds.slug`). Order = render order. */
 const SPECS_BY_KIND: Readonly<Record<string, readonly ListingFieldSpec[]>> = {
   give_food: [
-    { key: 'food_type', type: 'choice', required: true, options: ['cooked', 'packaged', 'fresh', 'frozen', 'dry', 'beverage'] },
+    // No `food_type`: the food world's sub-category picker is the food type (D137, KC#1398).
     { key: 'expires_at', type: 'dateTime', required: true },
     { key: 'allergens', type: 'multiChoice', options: ['gluten', 'milk', 'eggs', 'nuts', 'peanuts', 'soy', 'fish', 'sesame'] },
     { key: 'kosher', type: 'choice', options: ['yes', 'no'] },
@@ -177,12 +179,17 @@ function isEmptyValue(v: unknown): boolean {
   return v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
 }
 
+/** A required toggle is a confirmation: only "on" fills it (the knowledge disclaimer, #2034). */
+function isMissing(spec: ListingFieldSpec, value: unknown): boolean {
+  return spec.type === 'toggle' ? value !== true : isEmptyValue(value);
+}
+
 /** First visible required field without a value, or null when every one is filled. */
 export function firstMissingRequiredField(
   specs: readonly ListingFieldSpec[],
   details: Readonly<Record<string, unknown>>,
 ): ListingFieldSpec | null {
-  return specs.find((s) => s.required && isFieldVisible(s, details) && isEmptyValue(details[s.key])) ?? null;
+  return specs.find((s) => s.required && isFieldVisible(s, details) && isMissing(s, details[s.key])) ?? null;
 }
 
 /**

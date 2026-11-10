@@ -11,6 +11,7 @@ import { supportKc } from './donations.supportKc';
 import { challenges } from './challenges';
 import { givingHandoff } from './givingHandoff';
 import { rideBooking } from './rideBooking';
+import { knowledgeBooking } from './knowledgeBooking';
 import { housingStay } from './housingStay';
 import { eventPost } from './eventPost';
 import { ridePlaces } from './ridePlaces';
@@ -142,6 +143,7 @@ const he = {
   givingHandoff,
   // Ride seat bookings (D73) — see rideBooking.ts
   rideBooking,
+  knowledgeBooking,
   // Housing stays (FR-HOUSING-003, 012, 015–021) — see housingStay.ts
   housingStay,
   // Organization events (G1 step 5) — see eventPost.ts

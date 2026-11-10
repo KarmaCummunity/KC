@@ -1,4 +1,4 @@
--- 0699 | RLS auth initplan: no hot-table policy calls auth.uid() once per row.
+-- 0715 | RLS auth initplan: no hot-table policy calls auth.uid() once per row.
 \set ON_ERROR_STOP on
 begin;
 

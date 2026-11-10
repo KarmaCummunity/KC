@@ -104,3 +104,4 @@ export { SupabaseChallengeRepository } from './challenges/SupabaseChallengeRepos
 export * from './admin/SupabaseWhatsAppAdminRepository';
 export { SupabaseKnowledgeTopicRepository } from './knowledge/SupabaseKnowledgeTopicRepository';
 export { mapKnowledgeTopic, mapKnowledgeTopicMatch } from './knowledge/mapKnowledgeTopic';
+export { SupabaseKnowledgeBookingRepository } from './knowledge/SupabaseKnowledgeBookingRepository';
