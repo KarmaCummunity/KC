@@ -616,7 +616,7 @@ create table public.user_private (
   user_id                     uuid primary key references public.users (id) on delete cascade,
   -- Contact number shown to a counterparty only through a dedicated RPC.
   contact_phone               text check (char_length(btrim(contact_phone)) between 1 and 20),
-  -- Used for age-restricted worlds; written once through an RPC, never directly.
+  -- Used for the 18+ rule and age-restricted worlds; written only through set_date_of_birth.
   date_of_birth               date,
   -- Default pickup address, prefilled into new posts. Both parts or neither.
   profile_street              text check (char_length(profile_street) between 1 and 80),
@@ -656,7 +656,7 @@ create policy user_private_update_self on public.user_private
   with check (user_id = (select auth.uid()));
 
 grant select on public.user_private to authenticated;
--- date_of_birth is excluded: it is set through an RPC that validates it and forbids changes.
+-- date_of_birth is excluded: it is written only by set_date_of_birth, which enforces 18+.
 grant update (
   contact_phone, profile_street, profile_street_number, notification_preferences,
   show_active_status, closure_explainer_dismissed, first_post_nudge_dismissed, basic_info_skipped
@@ -929,6 +929,569 @@ create trigger on_auth_user_verified
   after update of email_confirmed_at, phone_confirmed_at on auth.users
   for each row execute function kc_private.handle_auth_user_verified();
 
+-- >>> supabase/schemas/10_identity/060_user_devices.sql
+-- Identity · user_devices (push tokens, FR-NOTIF-015)
+--
+-- One row per device a member receives push notifications on. The member registers the
+-- token at sign-in, refreshes `last_seen_at` on every app start and deletes the row at
+-- sign-out; server code deletes it when the push provider reports the token as dead, when
+-- the account is deactivated (FR-SETTINGS-012 AC2) and after 90 days without use.
+
+create table public.user_devices (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null references public.users (id) on delete cascade,
+  platform     text not null check (platform in ('ios', 'android', 'web')),
+  -- Provider token. Unique: one physical device delivers to one member at a time.
+  push_token   text not null unique check (char_length(push_token) between 1 and 4096),
+  -- Last app start on this device; drives the 90-day prune (FR-NOTIF-015 AC4).
+  last_seen_at timestamptz not null default now(),
+  created_at   timestamptz not null default now()
+);
+comment on table public.user_devices is 'Push tokens of a member''s devices. Owner-only.';
+
+-- Notification dispatch: every token of the recipient.
+create index user_devices_user_idx on public.user_devices (user_id);
+-- Daily prune job: tokens not seen for 90 days.
+create index user_devices_last_seen_idx on public.user_devices (last_seen_at);
+
+alter table public.user_devices enable row level security;
+alter table public.user_devices force row level security;
+
+create policy user_devices_select_self on public.user_devices
+  for select to authenticated
+  using (user_id = (select auth.uid()));
+
+create policy user_devices_insert_self on public.user_devices
+  for insert to authenticated
+  with check (user_id = (select auth.uid()));
+
+-- Refreshing a registration (upsert on the token) may only touch the caller's own row.
+create policy user_devices_update_self on public.user_devices
+  for update to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+create policy user_devices_delete_self on public.user_devices
+  for delete to authenticated
+  using (user_id = (select auth.uid()));
+
+grant select, insert, delete on public.user_devices to authenticated;
+-- The columns an upsert on `push_token` rewrites; `id` and `created_at` never change.
+grant update (user_id, platform, push_token, last_seen_at) on public.user_devices to authenticated;
+
+-- >>> supabase/schemas/10_identity/070_legal_documents.sql
+-- Identity · legal documents (FR-SETTINGS-010)
+--
+-- Terms of service and privacy policy are published from the server. `legal_documents` is
+-- the current pointer of each document; `legal_document_versions` is the immutable history
+-- a member's consent refers to. Both are written only by the admin publishing RPC.
+
+create table public.legal_documents (
+  id                     uuid primary key default gen_random_uuid(),
+  doc_type               text not null unique check (doc_type in ('terms', 'privacy')),
+  -- 0 until the first version is published.
+  current_version        integer not null default 0 check (current_version >= 0),
+  current_effective_date timestamptz not null,
+  -- Newest version a member must have accepted: minor edits do not raise it.
+  last_material_version  integer not null default 0,
+  last_material_severity text check (last_material_severity in ('standard', 'critical')),
+  updated_at             timestamptz not null default now(),
+  constraint legal_documents_material_version_chk
+    check (last_material_version between 0 and current_version)
+);
+comment on table public.legal_documents is 'Current version pointer of each legal document.';
+
+create trigger legal_documents_set_updated_at
+  before update on public.legal_documents
+  for each row execute function kc_private.set_updated_at();
+
+create table public.legal_document_versions (
+  id             uuid primary key default gen_random_uuid(),
+  doc_type       text not null references public.legal_documents (doc_type),
+  version        integer not null check (version >= 1),
+  -- BCP 47 tag of the text.
+  language       text not null default 'he' check (char_length(language) between 2 and 35),
+  -- A version published ahead of time is shown, but asks for consent only from this date.
+  effective_date timestamptz not null,
+  body_md        text not null check (char_length(body_md) > 0),
+  -- SHA-256 of body_md, set by trigger: proves which text a consent referred to.
+  content_hash   text not null,
+  -- minor: no consent needed · standard: 7 days of notice · critical: blocks at once.
+  severity       text not null check (severity in ('minor', 'standard', 'critical')),
+  change_summary text,
+  -- The publishing admin; null once that account has been removed.
+  published_by   uuid references public.users (id) on delete set null,
+  published_at   timestamptz not null default now(),
+  -- Also serves the foreign key on doc_type and "newest version of a document".
+  constraint legal_document_versions_doc_version_key unique (doc_type, version),
+  constraint legal_document_versions_summary_chk
+    check (severity = 'minor' or char_length(btrim(change_summary)) > 0)
+);
+comment on table public.legal_document_versions is 'Immutable history of published legal texts.';
+
+-- Foreign key lookup when a publisher's account is removed.
+create index legal_document_versions_published_by_idx
+  on public.legal_document_versions (published_by) where published_by is not null;
+
+-- Stamps the content hash, so it never depends on what the publisher sent.
+create function kc_private.legal_document_versions_set_hash()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.content_hash := encode(sha256(convert_to(new.body_md, 'UTF8')), 'hex');
+  return new;
+end;
+$$;
+
+create trigger legal_document_versions_set_hash
+  before insert on public.legal_document_versions
+  for each row execute function kc_private.legal_document_versions_set_hash();
+
+-- A published version never changes and is never removed. The single exception is the
+-- foreign key clearing `published_by` when the publisher's account is removed.
+create function kc_private.legal_document_versions_immutable()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if tg_op = 'UPDATE' and new.published_by is null
+     and to_jsonb(new) - 'published_by' = to_jsonb(old) - 'published_by' then
+    return new;
+  end if;
+  raise exception 'append_only' using errcode = 'P0001', detail = 'legal_document_versions';
+end;
+$$;
+
+create trigger legal_document_versions_immutable
+  before update or delete on public.legal_document_versions
+  for each row execute function kc_private.legal_document_versions_immutable();
+
+alter table public.legal_documents enable row level security;
+alter table public.legal_documents force row level security;
+alter table public.legal_document_versions enable row level security;
+alter table public.legal_document_versions force row level security;
+
+-- Every signed-in member may read the documents, including earlier versions.
+create policy legal_documents_select_member on public.legal_documents
+  for select to authenticated
+  using (true);
+
+create policy legal_document_versions_select_member on public.legal_document_versions
+  for select to authenticated
+  using (true);
+
+grant select on public.legal_documents to authenticated;
+grant select on public.legal_document_versions to authenticated;
+
+-- >>> supabase/schemas/10_identity/080_user_consents.sql
+-- Identity · user_consents
+--
+-- One append-only record of everything a member agreed to: the legal documents, the driver
+-- declaration of the rides world and the code of conduct of the housing world. A row is the
+-- evidence of a consent, so it is never changed and leaves only together with its member.
+
+create table public.user_consents (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null references public.users (id) on delete cascade,
+  -- terms / privacy refer to legal_document_versions; the two world consents are versioned
+  -- by the module that asks for them.
+  consent_kind text not null
+                 check (consent_kind in ('terms', 'privacy', 'driver_declaration', 'housing_conduct')),
+  version      integer not null check (version >= 1),
+  accepted_at  timestamptz not null default now(),
+  -- Evidence of the circumstances of the consent; all three may be unknown.
+  locale       text check (char_length(locale) between 2 and 35),
+  ip_address   inet,
+  user_agent   text check (char_length(user_agent) <= 500),
+  -- A version is accepted once. Also serves "newest accepted version of a kind" for a
+  -- member (session start, world gates) and the foreign key on user_id.
+  constraint user_consents_user_kind_version_key unique (user_id, consent_kind, version)
+);
+comment on table public.user_consents is 'Append-only record of a member''s consents. Written only by server code.';
+
+-- No update at all; a delete only as part of removing the member (the cascade runs after
+-- the profile row is gone, a direct delete does not).
+create function kc_private.user_consents_append_only()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if tg_op = 'DELETE' and not exists (select 1 from public.users u where u.id = old.user_id) then
+    return old;
+  end if;
+  raise exception 'append_only' using errcode = 'P0001', detail = 'user_consents';
+end;
+$$;
+
+create trigger user_consents_append_only
+  before update or delete on public.user_consents
+  for each row execute function kc_private.user_consents_append_only();
+
+alter table public.user_consents enable row level security;
+alter table public.user_consents force row level security;
+
+create policy user_consents_select_self on public.user_consents
+  for select to authenticated
+  using (user_id = (select auth.uid()));
+
+grant select on public.user_consents to authenticated;
+
+-- The signed-in caller, for RPCs that act on the caller's own data.
+create function kc_private.require_caller()
+returns uuid
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := (select auth.uid());
+begin
+  if v_user_id is null then
+    raise exception 'unauthenticated' using errcode = '42501';
+  end if;
+  return v_user_id;
+end;
+$$;
+comment on function kc_private.require_caller() is 'Returns auth.uid(); raises unauthenticated without a session.';
+
+-- Records one consent with its evidence and returns the stored row. Recording the same
+-- version again keeps the first row. The world modules call this from their own RPCs after
+-- checking the version they require.
+create function kc_private.record_consent(
+  p_user_id uuid, p_kind text, p_version integer, p_locale text, p_user_agent text)
+returns public.user_consents
+language plpgsql
+set search_path = ''
+as $$
+declare
+  -- The API gateway forwards the device address as the first hop of this header.
+  v_forwarded constant text := btrim(split_part(
+    nullif(current_setting('request.headers', true), '')::jsonb ->> 'x-forwarded-for', ',', 1));
+  v_ip inet;
+  v_row public.user_consents;
+begin
+  begin
+    v_ip := coalesce(nullif(v_forwarded, '')::inet, inet_client_addr());
+  exception when invalid_text_representation then
+    v_ip := null;
+  end;
+
+  insert into public.user_consents (user_id, consent_kind, version, locale, ip_address, user_agent)
+  values (p_user_id, p_kind, p_version, nullif(btrim(p_locale), ''), v_ip, left(p_user_agent, 500))
+  on conflict (user_id, consent_kind, version) do nothing;
+
+  select c.* into strict v_row
+    from public.user_consents c
+   where c.user_id = p_user_id and c.consent_kind = p_kind and c.version = p_version;
+  return v_row;
+end;
+$$;
+
+-- The caller accepts a published version of a legal document (FR-AUTH-002 AC5,
+-- FR-SETTINGS-010 AC3/AC4). Only a version that satisfies the consent gate is accepted:
+-- from the last material version up to the current one.
+create function public.accept_legal_document(
+  p_doc_type text, p_version integer, p_locale text default null, p_user_agent text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+  v_document public.legal_documents;
+  v_consent public.user_consents;
+begin
+  select d.* into v_document from public.legal_documents d where d.doc_type = p_doc_type;
+  if not found then
+    raise exception 'unknown_legal_document' using errcode = 'P0001';
+  end if;
+  if p_version is null or p_version < greatest(v_document.last_material_version, 1)
+     or p_version > v_document.current_version then
+    raise exception 'legal_version_out_of_range' using errcode = 'P0001';
+  end if;
+
+  v_consent := kc_private.record_consent(v_user_id, p_doc_type, p_version, p_locale, p_user_agent);
+  return jsonb_build_object('acceptance_id', v_consent.id, 'accepted_at', v_consent.accepted_at);
+end;
+$$;
+comment on function public.accept_legal_document(text, integer, text, text) is
+  'Records the caller''s consent to a published legal document version.';
+grant execute on function public.accept_legal_document(text, integer, text, text) to authenticated;
+
+-- >>> supabase/schemas/10_identity/090_account_rpcs.sql
+-- Identity · account RPCs (onboarding, date of birth, account deletion)
+--
+-- `user_account` and `user_private.date_of_birth` are not writable from a device. These are
+-- the named moves a member may make on their own account. Errors are raised with SQLSTATE
+-- P0001 and a stable snake_case message the app maps to its error types.
+
+-- ── Onboarding (FR-AUTH-010 AC5, FR-AUTH-015) ───────────────────────────────
+-- Moves the caller's onboarding forward. Leaving step 1 requires a display name, a city and
+-- a date of birth on file, so a modified client cannot skip the step.
+create function public.set_onboarding_state(p_state text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+  v_current text;
+begin
+  select a.onboarding_state into v_current
+    from public.user_account a where a.user_id = v_user_id for update;
+  if not found then
+    raise exception 'user_not_found' using errcode = 'P0001';
+  end if;
+
+  if v_current = 'pending_basic_info' and p_state is distinct from v_current and not exists (
+       select 1
+         from public.users u
+         join public.user_private p on p.user_id = u.id
+        where u.id = v_user_id
+          and nullif(btrim(u.display_name), '') is not null
+          and u.city_id is not null
+          and p.date_of_birth is not null) then
+    raise exception 'onboarding_basic_info_missing' using errcode = 'P0001';
+  end if;
+
+  begin
+    update public.user_account a set onboarding_state = p_state where a.user_id = v_user_id;
+  exception when sqlstate 'P0001' then
+    -- The machine refused the move (backwards, or not a state): one error for the app.
+    raise exception 'onboarding_transition_invalid' using errcode = 'P0001', detail = sqlerrm;
+  end;
+end;
+$$;
+comment on function public.set_onboarding_state(text) is
+  'Moves the caller''s onboarding along its machine; step 1 needs name, city and date of birth.';
+grant execute on function public.set_onboarding_state(text) to authenticated;
+
+-- ── Date of birth (FR-AUTH-010 AC2.d, FR-PROFILE-007 AC7, D109) ─────────────
+-- Stores the caller's date of birth. The member must be at least 18 on the day of the call;
+-- a later correction is held to the same rule.
+create function public.set_date_of_birth(p_date date)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+begin
+  if p_date is null or p_date > current_date or p_date < date '1900-01-01' then
+    raise exception 'invalid_date_of_birth' using errcode = 'P0001';
+  end if;
+  if p_date > (current_date - interval '18 years')::date then
+    raise exception 'underage' using errcode = 'P0001';
+  end if;
+
+  update public.user_private p set date_of_birth = p_date where p.user_id = v_user_id;
+  if not found then
+    raise exception 'user_not_found' using errcode = 'P0001';
+  end if;
+end;
+$$;
+comment on function public.set_date_of_birth(date) is 'Stores the caller''s date of birth; rejects anyone under 18.';
+grant execute on function public.set_date_of_birth(date) to authenticated;
+
+-- ── Account deletion: 30 days of grace (D108, FR-SETTINGS-012, FR-AUTH-016) ─
+-- Whatever moves an account out of pending_deletion (a restore, or any later server move),
+-- the deletion fields are cleared here, in one place, so no writer can leave them behind.
+create function kc_private.user_account_leave_pending_deletion()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.deletion_requested_at := null;
+  new.deletion_purge_at := null;
+  new.status_before_deletion := null;
+  return new;
+end;
+$$;
+
+create trigger user_account_leave_pending_deletion
+  before update of status on public.user_account
+  for each row
+  when (old.status = 'pending_deletion' and new.status <> 'pending_deletion')
+  execute function kc_private.user_account_leave_pending_deletion();
+
+-- Deactivates the caller's account and returns the purge date. The profile disappears for
+-- everyone else at once (users.is_active), push stops, and nothing else is removed, so a
+-- restore is complete. Calling it again returns the same date. A suspended or banned
+-- member cannot use it to step out of a sanction.
+create function public.request_account_deletion()
+returns timestamptz
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+  v_account public.user_account;
+  v_purge_at constant timestamptz := now() + interval '30 days';
+begin
+  select a.* into v_account from public.user_account a where a.user_id = v_user_id for update;
+  if not found then
+    raise exception 'user_not_found' using errcode = 'P0001';
+  end if;
+  if v_account.status = 'pending_deletion' then
+    return v_account.deletion_purge_at;
+  end if;
+  if v_account.status not in ('active', 'pending_verification') then
+    raise exception 'suspended' using errcode = 'P0001';
+  end if;
+
+  update public.user_account a
+     set status = 'pending_deletion',
+         status_before_deletion = v_account.status,
+         deletion_requested_at = now(),
+         deletion_purge_at = v_purge_at
+   where a.user_id = v_user_id;
+
+  delete from public.user_devices d where d.user_id = v_user_id;
+  return v_purge_at;
+end;
+$$;
+comment on function public.request_account_deletion() is
+  'Deactivates the caller''s account for 30 days and returns the purge date.';
+grant execute on function public.request_account_deletion() to authenticated;
+
+-- Restores the caller's account while the grace period is running. The account returns to
+-- the status it had before, except that a member whose contact channel was confirmed in the
+-- meantime returns as active.
+create function public.restore_account()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+  v_account public.user_account;
+begin
+  select a.* into v_account from public.user_account a where a.user_id = v_user_id for update;
+  if not found or v_account.status <> 'pending_deletion' then
+    raise exception 'not_pending_deletion' using errcode = 'P0001';
+  end if;
+  if v_account.deletion_purge_at <= now() then
+    raise exception 'grace_expired' using errcode = 'P0001';
+  end if;
+
+  update public.user_account a
+     set status = case
+           when exists (select 1 from auth.users au
+                         where au.id = v_user_id and kc_private.auth_user_is_verified(au)) then 'active'
+           else v_account.status_before_deletion
+         end
+   where a.user_id = v_user_id;
+end;
+$$;
+comment on function public.restore_account() is 'Restores the caller''s account during the deletion grace period.';
+grant execute on function public.restore_account() to authenticated;
+
+-- Accounts whose grace period has ended, oldest first, for the daily purge job. An account
+-- stays listed until its auth identity is gone, so a failed purge is retried the next day.
+create function kc_private.accounts_due_for_purge(p_limit integer default 100)
+returns table (user_id uuid, deletion_purge_at timestamptz)
+language sql
+stable
+set search_path = ''
+as $$
+  select a.user_id, a.deletion_purge_at
+    from public.user_account a
+   where a.deletion_purge_at <= now()
+   order by a.deletion_purge_at
+   limit p_limit;
+$$;
+comment on function kc_private.accounts_due_for_purge(integer) is
+  'Service role only: accounts past their purge date, oldest first.';
+
+-- >>> supabase/schemas/10_identity/100_bootstrap_session.sql
+-- Identity · bootstrap_session (docs/db/target-design.md §5 "Session start")
+--
+-- Everything the app needs to decide what to show after sign-in, in one round trip: the
+-- account gate, the caller's private profile and the legal consent prompt. Each later module
+-- adds its own top-level key (unread counts, admin roles, survey prompts); existing keys
+-- never change shape.
+--
+-- It runs with the caller's rights: every row it reads is one the caller may already select.
+
+create function public.bootstrap_session()
+returns jsonb
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := (select auth.uid());
+  v_result jsonb;
+begin
+  select jsonb_build_object(
+           'user_id', a.user_id,
+           -- Account gate: `status` other than active sends the app to the matching screen.
+           'account', jsonb_build_object(
+             'status', a.status,
+             'status_until', a.status_until,
+             'onboarding_state', a.onboarding_state,
+             'deletion_requested_at', a.deletion_requested_at,
+             'deletion_purge_at', a.deletion_purge_at),
+           'private_profile', jsonb_build_object(
+             'contact_phone', p.contact_phone,
+             'date_of_birth', p.date_of_birth,
+             'profile_street', p.profile_street,
+             'profile_street_number', p.profile_street_number,
+             'notification_preferences', p.notification_preferences,
+             'show_active_status', p.show_active_status,
+             'closure_explainer_dismissed', p.closure_explainer_dismissed,
+             'first_post_nudge_dismissed', p.first_post_nudge_dismissed,
+             'basic_info_skipped', p.basic_info_skipped),
+           'legal', (
+             -- Documents in force whose last material version the caller has not accepted.
+             -- `modal` blocks the app; `banner` is the 7-day notice of a standard change,
+             -- measured on the database clock (FR-SETTINGS-010 AC3, AC5).
+             select jsonb_build_object(
+                      'needs_reacknowledgement', count(*) > 0,
+                      'blocking', coalesce(bool_or(o.block_mode = 'modal'), false),
+                      'documents', coalesce(jsonb_agg(to_jsonb(o) order by o.doc_type), '[]'::jsonb))
+               from (
+                 select d.doc_type, d.current_version, d.current_effective_date,
+                        d.last_material_version, d.last_material_severity,
+                        coalesce(c.version, 0) as last_accepted_version,
+                        case
+                          when d.last_material_severity = 'critical'
+                            or now() - d.current_effective_date >= interval '7 days' then 'modal'
+                          else 'banner'
+                        end as block_mode
+                   from public.legal_documents d
+                   left join lateral (
+                     select max(uc.version) as version
+                       from public.user_consents uc
+                      where uc.user_id = a.user_id and uc.consent_kind = d.doc_type) c on true
+                  where d.current_effective_date <= now()
+                    and coalesce(c.version, 0) < d.last_material_version) o))
+    into v_result
+    from public.user_account a
+    join public.user_private p on p.user_id = a.user_id
+   where a.user_id = v_user_id;
+
+  if v_result is null then
+    raise exception 'unauthenticated' using errcode = '42501';
+  end if;
+  return v_result;
+end;
+$$;
+comment on function public.bootstrap_session() is
+  'Session start in one call: account gate, private profile, legal consent prompt.';
+grant execute on function public.bootstrap_session() to authenticated;
+
 -- >>> supabase/schemas/15_social_graph/010_follows.sql
 -- Social graph · follows
 --
@@ -1073,6 +1636,420 @@ create policy users_hide_blocked on public.users
   as restrictive
   for select to authenticated
   using (not kc_access.is_blocked_between((select auth.uid()), id));
+
+-- >>> supabase/schemas/15_social_graph/030_follow_requests.sql
+-- Social graph · follow_requests (FR-FOLLOW-003 … FR-FOLLOW-008)
+--
+-- Following a private profile needs its owner's approval. A request is pending until the
+-- target accepts or rejects it or the requester cancels it; resolved rows are kept as
+-- history. A rejection is silent and starts a 14-day cooldown for the same pair.
+
+insert into kc_private.fsm_state (machine_id, status) values
+  ('follow_request', 'pending'),
+  ('follow_request', 'accepted'),
+  ('follow_request', 'rejected'),
+  ('follow_request', 'cancelled');
+
+-- Who may make each move is part of the edge: the RPC states its role before it writes.
+insert into kc_private.fsm_edge (machine_id, from_status, to_status, role) values
+  ('follow_request', 'pending', 'accepted', 'target'),
+  ('follow_request', 'pending', 'rejected', 'target'),
+  ('follow_request', 'pending', 'cancelled', 'requester'),
+  -- A block between the two members withdraws the request (FR-MOD-003 AC4).
+  ('follow_request', 'pending', 'cancelled', 'system');
+
+create table public.follow_requests (
+  id             uuid primary key default gen_random_uuid(),
+  requester_id   uuid not null references public.users (id) on delete cascade,
+  target_id      uuid not null references public.users (id) on delete cascade,
+  status         text not null default 'pending',
+  -- Set on rejection: the requester may ask again from this time (FR-FOLLOW-006 AC1).
+  cooldown_until timestamptz,
+  created_at     timestamptz not null default now(),
+  resolved_at    timestamptz,
+  constraint follow_requests_not_self_chk check (requester_id <> target_id),
+  constraint follow_requests_cooldown_chk check ((cooldown_until is not null) = (status = 'rejected')),
+  constraint follow_requests_resolved_chk check ((resolved_at is null) = (status = 'pending'))
+);
+comment on table public.follow_requests is
+  'Requests to follow a private profile. Visible to the two members; moved only by RPCs.';
+
+-- At most one live request per ordered pair.
+create unique index follow_requests_one_pending_idx
+  on public.follow_requests (requester_id, target_id) where status = 'pending';
+-- Follow button state and the cooldown check: the newest request of a pair. Also the
+-- foreign key on requester_id.
+create index follow_requests_pair_recent_idx
+  on public.follow_requests (requester_id, target_id, created_at desc);
+-- Follow Requests screen: pending requests of a target, newest first, keyset on
+-- (created_at, id) (FR-FOLLOW-007 AC1). Also the foreign key on target_id.
+create index follow_requests_target_status_idx
+  on public.follow_requests (target_id, status, created_at desc, id desc);
+
+create trigger follow_requests_status_fsm
+  before insert or update of status on public.follow_requests
+  for each row execute function kc_private.fsm_guard_status('follow_request', 'status');
+
+-- Stamps the resolution time, and the cooldown when the request was rejected.
+create function kc_private.follow_requests_stamp_resolution()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.resolved_at := now();
+  new.cooldown_until := case when new.status = 'rejected' then now() + interval '14 days' end;
+  return new;
+end;
+$$;
+
+create trigger follow_requests_stamp_resolution
+  before update of status on public.follow_requests
+  for each row
+  when (old.status = 'pending' and new.status <> 'pending')
+  execute function kc_private.follow_requests_stamp_resolution();
+
+-- An accepted request becomes a follow edge in the same transaction (FR-FOLLOW-005 AC1).
+create function kc_private.follow_requests_create_edge()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into public.follows (follower_id, followed_id)
+  values (new.requester_id, new.target_id)
+  on conflict do nothing;
+  return null;
+end;
+$$;
+
+create trigger follow_requests_create_edge
+  after update of status on public.follow_requests
+  for each row
+  when (old.status = 'pending' and new.status = 'accepted')
+  execute function kc_private.follow_requests_create_edge();
+
+-- Blocking withdraws pending requests between the two members, in both directions, so a
+-- request can never be approved across a block.
+create function kc_private.blocks_cancel_follow_requests()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  -- A block may be inserted by code that acts under a role of its own: put it back after.
+  v_outer_role constant text := coalesce(current_setting('kc.fsm_role', true), '');
+begin
+  perform set_config('kc.fsm_role', 'system', true);
+  update public.follow_requests r
+     set status = 'cancelled'
+   where r.status = 'pending'
+     and ((r.requester_id = new.blocker_id and r.target_id = new.blocked_id)
+       or (r.requester_id = new.blocked_id and r.target_id = new.blocker_id));
+  perform set_config('kc.fsm_role', v_outer_role, true);
+  return null;
+end;
+$$;
+
+create trigger blocks_cancel_follow_requests
+  after insert on public.blocks
+  for each row execute function kc_private.blocks_cancel_follow_requests();
+
+alter table public.follow_requests enable row level security;
+alter table public.follow_requests force row level security;
+
+-- The requester sees their own requests (button state, cooldown end); the target sees the
+-- requests addressed to them. Nobody else sees a request.
+create policy follow_requests_select_party on public.follow_requests
+  for select to authenticated
+  using ((select auth.uid()) in (requester_id, target_id));
+
+grant select on public.follow_requests to authenticated;
+
+-- >>> supabase/schemas/15_social_graph/040_follow_rpcs.sql
+-- Social graph · follow RPCs and the privacy mode switch
+--
+-- A follow edge and a follow request are never inserted from a device: these functions
+-- decide which of the two a "follow" becomes and who may resolve a request. Errors are
+-- raised with SQLSTATE P0001 and a stable snake_case message.
+
+-- The signed-in caller, who must hold an active account: a member waiting for verification,
+-- under a sanction or pending deletion cannot act on the social graph.
+create function kc_private.require_active_caller()
+returns uuid
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+begin
+  if not exists (select 1 from public.users u where u.id = v_user_id and u.is_active) then
+    raise exception 'account_not_active' using errcode = 'P0001';
+  end if;
+  return v_user_id;
+end;
+$$;
+comment on function kc_private.require_active_caller() is
+  'Returns auth.uid(); raises unless the caller is signed in with an active account.';
+
+-- Follows a member: an edge at once on a public profile (FR-FOLLOW-001), a pending request
+-- on a private one (FR-FOLLOW-003). Returns 'following' or 'requested'; repeating the call
+-- returns the same answer without a second row.
+create function public.follow_user(p_target uuid)
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_target public.users;
+  v_cooldown_until timestamptz;
+begin
+  if p_target = v_user_id then
+    raise exception 'self_follow_forbidden' using errcode = 'P0001';
+  end if;
+
+  -- The share lock makes a concurrent privacy switch of the target wait for this call.
+  select u.* into v_target from public.users u where u.id = p_target for share;
+  if not found or not v_target.is_active then
+    raise exception 'user_unavailable' using errcode = 'P0001';
+  end if;
+  if kc_access.is_blocked_between(v_user_id, p_target) then
+    raise exception 'blocked_relationship' using errcode = 'P0001';
+  end if;
+
+  if exists (select 1 from public.follows f
+              where f.follower_id = v_user_id and f.followed_id = p_target) then
+    return 'following';
+  end if;
+  if v_target.privacy_mode = 'Public' then
+    insert into public.follows (follower_id, followed_id) values (v_user_id, p_target)
+    on conflict do nothing;
+    return 'following';
+  end if;
+
+  if exists (select 1 from public.follow_requests r
+              where r.requester_id = v_user_id and r.target_id = p_target and r.status = 'pending') then
+    return 'requested';
+  end if;
+
+  -- 14 days after a rejection the requester may ask again (FR-FOLLOW-008); the detail
+  -- carries the end of the cooldown for the "try again in N days" hint.
+  select max(r.cooldown_until) into v_cooldown_until
+    from public.follow_requests r
+   where r.requester_id = v_user_id and r.target_id = p_target
+     and r.status = 'rejected' and r.cooldown_until > now();
+  if v_cooldown_until is not null then
+    raise exception 'follow_request_cooldown_active' using
+      errcode = 'P0001',
+      detail = 'cooldown_until='
+        || to_char(v_cooldown_until at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"');
+  end if;
+
+  insert into public.follow_requests (requester_id, target_id) values (v_user_id, p_target)
+  on conflict (requester_id, target_id) where status = 'pending' do nothing;
+  return 'requested';
+end;
+$$;
+comment on function public.follow_user(uuid) is
+  'Follows a member: an edge on a public profile, a pending request on a private one.';
+grant execute on function public.follow_user(uuid) to authenticated;
+
+-- The target accepts or silently rejects a pending request (FR-FOLLOW-005, FR-FOLLOW-006).
+create function public.follow_request_decide(p_requester uuid, p_accept boolean)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_moved boolean;
+begin
+  if p_accept is null then
+    raise exception 'invalid_decision' using errcode = 'P0001';
+  end if;
+
+  perform set_config('kc.fsm_role', 'target', true);
+  update public.follow_requests r
+     set status = case when p_accept then 'accepted' else 'rejected' end
+   where r.requester_id = p_requester and r.target_id = v_user_id and r.status = 'pending';
+  v_moved := found;
+  perform set_config('kc.fsm_role', '', true);
+
+  if not v_moved then
+    raise exception 'follow_request_not_pending' using errcode = 'P0001';
+  end if;
+end;
+$$;
+comment on function public.follow_request_decide(uuid, boolean) is
+  'The caller accepts or rejects a pending follow request addressed to them.';
+grant execute on function public.follow_request_decide(uuid, boolean) to authenticated;
+
+-- The requester withdraws their own pending request; no cooldown follows (FR-FOLLOW-004).
+create function public.follow_request_cancel(p_target uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+  v_moved boolean;
+begin
+  perform set_config('kc.fsm_role', 'requester', true);
+  update public.follow_requests r
+     set status = 'cancelled'
+   where r.requester_id = v_user_id and r.target_id = p_target and r.status = 'pending';
+  v_moved := found;
+  perform set_config('kc.fsm_role', '', true);
+
+  if not v_moved then
+    raise exception 'follow_request_not_pending' using errcode = 'P0001';
+  end if;
+end;
+$$;
+comment on function public.follow_request_cancel(uuid) is 'The caller withdraws their pending follow request.';
+grant execute on function public.follow_request_cancel(uuid) to authenticated;
+
+-- Switches the caller's profile between 'Public' and 'Private' (FR-PROFILE-005/006).
+-- The switch is not retroactive for posts or existing followers. Going public accepts every
+-- pending request in the same transaction; none of them can be from a blocked member,
+-- because a block withdraws the requests between its two members.
+create function public.set_privacy_mode(p_mode text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+begin
+  if p_mode is null or p_mode not in ('Public', 'Private') then
+    raise exception 'invalid_privacy_mode' using errcode = 'P0001';
+  end if;
+
+  update public.users u
+     set privacy_mode = p_mode, privacy_changed_at = now()
+   where u.id = v_user_id and u.privacy_mode <> p_mode;
+  if not found or p_mode = 'Private' then
+    return;
+  end if;
+
+  perform set_config('kc.fsm_role', 'target', true);
+  update public.follow_requests r
+     set status = 'accepted'
+   where r.target_id = v_user_id and r.status = 'pending';
+  perform set_config('kc.fsm_role', '', true);
+end;
+$$;
+comment on function public.set_privacy_mode(text) is
+  'Sets the caller''s privacy mode; going public accepts all pending follow requests.';
+grant execute on function public.set_privacy_mode(text) to authenticated;
+
+-- >>> supabase/schemas/15_social_graph/050_user_profile_fields.sql
+-- Social graph · user_profile_fields (D109, D110, FR-PROFILE-007 AC8/AC9)
+--
+-- Optional profile fields, one row per member and field, each with its own visibility.
+-- The table belongs to the profile, but lives in this module because who may read a field
+-- depends on the follow graph.
+
+create table public.user_profile_fields (
+  user_id           uuid not null references public.users (id) on delete cascade,
+  -- interests: giving worlds and item subcategories the member cares about
+  -- help_tags: what the member can help with (giving-world tags)
+  -- affiliated_org: a self-declared affiliation; a label only, it grants no role
+  field_key         text not null check (field_key in ('interests', 'help_tags', 'affiliated_org')),
+  -- Who may read the field. Left empty on insert, it follows the owner's privacy mode at
+  -- that moment: everyone on a public profile, followers on a private one.
+  visibility        text not null check (visibility in ('everyone', 'followers', 'only_me')),
+  -- Value of the two tag fields: 1 to 50 slugs.
+  tags              text[] check (
+                      cardinality(tags) between 1 and 50
+                      and array_to_string(tags, ' ', '') ~ '^[a-z0-9_.:-]{1,64}( [a-z0-9_.:-]{1,64})*$'),
+  -- Value of affiliated_org. The organizations module adds the foreign key and restricts
+  -- it to verified organizations.
+  affiliated_org_id uuid,
+  updated_at        timestamptz not null default now(),
+  primary key (user_id, field_key),
+  constraint user_profile_fields_value_chk check (
+    case when field_key = 'affiliated_org'
+      then affiliated_org_id is not null and tags is null
+      else tags is not null and affiliated_org_id is null
+    end)
+);
+comment on table public.user_profile_fields is
+  'Optional profile fields with per-field visibility. A missing row means the field is not filled in.';
+
+-- Members affiliated with an organization (organization page; future foreign key).
+create index user_profile_fields_affiliated_org_idx
+  on public.user_profile_fields (affiliated_org_id) where affiliated_org_id is not null;
+
+-- Applies the default visibility. Runs with the caller's rights: the owner can always read
+-- their own profile row.
+create function kc_private.user_profile_fields_default_visibility()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  select case u.privacy_mode when 'Private' then 'followers' else 'everyone' end
+    into new.visibility
+    from public.users u where u.id = new.user_id;
+  return new;
+end;
+$$;
+
+create trigger user_profile_fields_default_visibility
+  before insert on public.user_profile_fields
+  for each row
+  when (new.visibility is null)
+  execute function kc_private.user_profile_fields_default_visibility();
+
+create trigger user_profile_fields_set_updated_at
+  before update on public.user_profile_fields
+  for each row execute function kc_private.set_updated_at();
+
+alter table public.user_profile_fields enable row level security;
+alter table public.user_profile_fields force row level security;
+
+-- The owner reads every field. Anyone else reads a field only when the owner's profile is
+-- visible to them (so never across a block, and never for an inactive account) and the
+-- field is open to everyone, or open to followers and the reader follows the owner.
+create policy user_profile_fields_select_visible on public.user_profile_fields
+  for select to authenticated
+  using (
+    user_id = (select auth.uid())
+    or (visibility <> 'only_me'
+        and exists (
+          select 1
+            from public.users u
+           where u.id = user_profile_fields.user_id
+             and (user_profile_fields.visibility = 'everyone'
+                  or exists (select 1 from public.follows f
+                              where f.follower_id = (select auth.uid())
+                                and f.followed_id = u.id)))));
+
+create policy user_profile_fields_insert_self on public.user_profile_fields
+  for insert to authenticated
+  with check (user_id = (select auth.uid()));
+
+create policy user_profile_fields_update_self on public.user_profile_fields
+  for update to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+-- Clearing a field is deleting its row.
+create policy user_profile_fields_delete_self on public.user_profile_fields
+  for delete to authenticated
+  using (user_id = (select auth.uid()));
+
+grant select, insert, delete on public.user_profile_fields to authenticated;
+grant update (visibility, tags, affiliated_org_id) on public.user_profile_fields to authenticated;
 
 -- >>> supabase/schemas/20_posts/010_catalog.sql
 -- Posts · catalog (giving worlds, post kinds, item subcategories)
