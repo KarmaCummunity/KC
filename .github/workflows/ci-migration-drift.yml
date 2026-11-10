@@ -72,7 +72,12 @@ jobs:
           # until the next dev -> main promotion; checking out the triggering
           # ref made every scheduled run report the not-yet-promoted dev
           # migrations (0232-0427, 143 versions) as "remote with no local file".
-          ref: dev
+          # Use refs/heads/dev (not the short name `dev`) and skip tags: a
+          # short ref makes actions/checkout also fetch refs/tags/dev*, which
+          # the D-195 tag ruleset forbids, and the 2026-11-10 scheduled run
+          # 42837710018 failed at this fetch with exit code 1.
+          ref: refs/heads/dev
+          fetch-tags: false
 
       - name: Install Supabase CLI (version pinned in the composite action)
         uses: ./.github/actions/setup-supabase-cli

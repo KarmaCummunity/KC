@@ -1,7 +1,7 @@
 // Unit tests for scripts/ci-run-reuse.mjs. Run: node --test scripts/ci-run-reuse.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { latestPullRequestRun, reusedLaneResults } from './ci-run-reuse.mjs';
+import { EDIT_RUN_NAME, isEditCiRun, latestPullRequestRun, reusedLaneResults } from './ci-run-reuse.mjs';
 
 const REPO = 'Org/KC';
 const HEAD = 'h'.repeat(40);
@@ -82,4 +82,34 @@ test('latestPullRequestRun picks the newest pull_request run listed for the same
   assert.equal(latestPullRequestRun(runs, 7, 'dev').id, 2);
   assert.equal(latestPullRequestRun(runs, 7, 'main'), null);
   assert.equal(latestPullRequestRun([{ ...r(6, '2026-10-30T10:00:00Z'), pull_requests: [] }], 7, 'dev'), null);
+});
+
+test('isEditCiRun requires the exact CI (edit) display_title (fail closed)', () => {
+  assert.equal(isEditCiRun({ display_title: EDIT_RUN_NAME }), true);
+  assert.equal(isEditCiRun({ display_title: 'CI' }), false);
+  assert.equal(isEditCiRun({ display_title: 'fix login spacing' }), false);
+  assert.equal(isEditCiRun({ display_title: 'CI (edit) and more' }), false);
+  assert.equal(isEditCiRun({}), false);
+});
+
+test('latestPullRequestRun skips the current run and edited runs', () => {
+  const r = (id, created, extra = {}) => ({
+    id,
+    created_at: created,
+    event: 'pull_request',
+    pull_requests: [{ number: 7, base: { ref: 'dev' } }],
+    ...extra,
+  });
+  const runs = [
+    r(1, '2026-10-30T10:00:00Z'),
+    r(2, '2026-10-30T11:00:00Z', { display_title: EDIT_RUN_NAME }),
+    r(3, '2026-10-30T12:00:00Z'),
+  ];
+  // Newest is 3; skip it as the current (edit or review) run and skip the
+  // older edit (2), so the full run (1) is reused. Misclassifying 3 as a
+  // full run would pick an incomplete edit; misclassifying 1 as an edit
+  // would leave nothing to reuse — both fail closed.
+  assert.equal(latestPullRequestRun(runs, 7, 'dev', { currentRunId: 3 }).id, 1);
+  assert.equal(latestPullRequestRun(runs, 7, 'dev').id, 3);
+  assert.equal(latestPullRequestRun([r(2, '2026-10-30T11:00:00Z', { display_title: EDIT_RUN_NAME })], 7, 'dev'), null);
 });
