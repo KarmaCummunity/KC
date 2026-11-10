@@ -1,4 +1,4 @@
--- supabase/tests/0715_fsm_review_queues.sql
+-- supabase/tests/0717_fsm_review_queues.sql
 -- Wave 4c (#1989): the review queues follow the kernel machines `review_decision` and
 -- `donation_link_review` through the generic status trigger. Runs in a rolled-back transaction.
 
@@ -70,4 +70,4 @@ end $$;
 
 rollback;
 
-\echo '✓ 0715_fsm_review_queues.sql passed'
+\echo '✓ 0717_fsm_review_queues.sql passed'
