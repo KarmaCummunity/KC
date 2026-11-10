@@ -71,7 +71,7 @@ export const notificationsEn = {
   rideBookingCancelledBody: 'The ride booking was cancelled. Details are on the ride page.',
   // D74 — a new ride on a route the user follows (0516).
   rideRouteMatchTitle: 'A new ride on your route',
-  rideRouteMatchBody: '{{origin}} → {{dest}} · {{when}}',
+  rideRouteMatchBody: 'A ride matching a route you saved was published.',
   // FR-HOUSING-017 (0602–0603) — housing booking changes; the push worker renders the same text (strings.he.generated.json).
   housingBookingRequestedTitle: 'New stay request',
   housingBookingRequestedBody: '{{actorName}} asks to stay with you. Approve or decline.',
@@ -220,4 +220,19 @@ export const notificationsEn = {
   eventRegistrationWaitlistPromotedBody: 'You moved up from the waitlist. Details are on the event page.',
   eventRegistrationReinstatedTitle: 'Registration is back on',
   eventRegistrationReinstatedBody: 'The cancelled registration was reinstated. Details are on the event page.',
+  // Moderation and world notices (60_moderation, 70_worlds).
+  postHiddenForReviewTitle: 'Your post is hidden for review',
+  postHiddenForReviewBody: 'The post was reported. It stays hidden until the review ends.',
+  postRemovedTitle: 'Your post was removed',
+  postRemovedBody: 'The community team removed the post after a review.',
+  postRestoredTitle: 'Your post is back',
+  postRestoredBody: 'The review ended and the post is shown again.',
+  moderationReviewNeededTitle: 'Content review needed',
+  moderationReviewNeededBody: 'A new item is waiting in the review queue.',
+  postEmergencyTitle: 'Emergency report',
+  postEmergencyBody: '{{actorName}} reported an emergency. Open the post for details.',
+  eventOrganizerMessageTitle: 'Message from the event organizer',
+  eventOrganizerMessageBody: '{{actorName}} sent a message to the registrants.',
+  postExpiredTitle: 'Your post expired',
+  postExpiredBody: 'Your post is no longer shown. You can publish it again.',
 } as const;

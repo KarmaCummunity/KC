@@ -71,7 +71,7 @@ export const notificationsHe = {
   rideBookingCancelledBody: 'ההזמנה לנסיעה בוטלה. הפרטים בעמוד הנסיעה.',
   // D74 — a new ride on a route the user follows (0516).
   rideRouteMatchTitle: 'נסיעה חדשה במסלול שלך',
-  rideRouteMatchBody: '{{origin}} ← {{dest}} · {{when}}',
+  rideRouteMatchBody: 'פורסמה נסיעה שמתאימה למסלול ששמרת.',
   // FR-HOUSING-017 (0602–0603) — housing booking changes; the push worker renders the same text (strings.he.generated.json).
   housingBookingRequestedTitle: 'בקשת אירוח חדשה',
   housingBookingRequestedBody: '{{actorName}} מבקש/ת להתארח אצלך. אשרו או דחו.',
@@ -220,4 +220,19 @@ export const notificationsHe = {
   eventRegistrationWaitlistPromotedBody: 'עברת מרשימת ההמתנה. הפרטים בעמוד האירוע.',
   eventRegistrationReinstatedTitle: 'ההרשמה חזרה לתוקף',
   eventRegistrationReinstatedBody: 'ההרשמה שבוטלה הוחזרה. הפרטים בעמוד האירוע.',
+  // Moderation and world notices (60_moderation, 70_worlds).
+  postHiddenForReviewTitle: 'הפוסט שלך הוסתר לבדיקה',
+  postHiddenForReviewBody: 'התקבלו דיווחים על הפוסט. הוא מוסתר עד לסיום הבדיקה.',
+  postRemovedTitle: 'הפוסט שלך הוסר',
+  postRemovedBody: 'צוות הקהילה הסיר את הפוסט לאחר בדיקה.',
+  postRestoredTitle: 'הפוסט שלך חזר',
+  postRestoredBody: 'הבדיקה הסתיימה והפוסט מוצג שוב.',
+  moderationReviewNeededTitle: 'נדרשת בדיקת תוכן',
+  moderationReviewNeededBody: 'פריט חדש ממתין בתור הבדיקה.',
+  postEmergencyTitle: 'דיווח חירום',
+  postEmergencyBody: '{{actorName}} דיווח/ה על מצב חירום. פתחו את הפוסט לפרטים.',
+  eventOrganizerMessageTitle: 'הודעה ממארגן האירוע',
+  eventOrganizerMessageBody: '{{actorName}} שלח/ה הודעה לנרשמים.',
+  postExpiredTitle: 'תוקף הפוסט הסתיים',
+  postExpiredBody: 'הפוסט שלך כבר לא מוצג. אפשר לפרסם אותו מחדש.',
 } as const;

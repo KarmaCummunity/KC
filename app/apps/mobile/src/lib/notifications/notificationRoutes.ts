@@ -117,6 +117,16 @@ export const NOTIFICATION_ROUTES: Record<NotificationKind, RouteBuilder> = {
   post_comment: post,
   post_comment_reply: post,
   post_mention: post,
+  // Moderation notices to the post owner; the review queue notice opens the centre.
+  post_hidden_for_review: post,
+  post_removed: post,
+  post_restored: post,
+  moderation_review_needed: inbox,
+  // World notices (70_worlds).
+  ride_route_match: post,
+  post_emergency: post,
+  event_organizer_message: post,
+  post_expired: post,
 };
 
 /**
