@@ -1,6 +1,6 @@
 # Database — target design (production baseline)
 
-> Phase 2 of the production-database rebuild. **Status: proposal, awaiting PM approval.** Nothing here is implemented.
+> Phase 2 of the production-database rebuild. **Status: approved by the PM on 2026-11-10 (§12); implementation has not started.**
 > Evidence: [`current-state.md`](./current-state.md). Product source of truth: [`docs/spec/`](../spec/README.md); where this document needs a product call it says so in §12.
 
 ## 1. Goals and constraints
@@ -344,17 +344,17 @@ Validation order for every step: local / branch database → kc-dev → kc-prod.
 | kc-dev rebuild wipes test data | It is test data; seed scripts recreate demo content; done once, with PM approval |
 | Design assumptions about load are wrong | k6 against the baseline before the kc-prod apply |
 
-## 12. Decisions needed from the PM
+## 12. Decisions (PM, 2026-11-10)
 
-| # | Question | Recommendation |
+| # | Question | Decision |
 | --- | --- | --- |
-| Q1 | Post states: keep S1 names (`open`, `closed_delivered`, …) and add `draft`, or rename to `active` / `closed` / `removed`? | Keep S1 + `draft` — approved days ago, zero product churn |
-| Q2 | Physical schemas as in §2.1 (contract in `public`, private schemas for internals, billing, audit, integrations)? | Yes |
-| Q3 | Fold `volunteer_*` into event posts now (G18) or carry the three tables over unchanged? | Fold now — no data exists yet |
-| Q4 | Carry the WhatsApp bot / ingestion module into the first production baseline, or add it later as its own migration? | Later — it is empty and unused in the launch scope |
-| Q5 | Retention period for billing records and receipts after account deletion | Needs legal input |
-| Q6 | Rebuild kc-dev from the baseline at cut-over (test data is recreated from seed) | Yes |
-| Q7 | Remove the non-KC schema from kc-dev before cut-over | Yes, by its owner |
-| Q8 | Video provider (Cloudflare Stream or Mux) and maximum clip length | Decide when video is specified; the `post_media` shape already supports it |
+| Q1 | Post state names | Left to engineering: **keep the S1 names and add `draft`** (§3.3) — no spec or app churn |
+| Q2 | Physical schemas as in §2.1 | **Approved** |
+| Q3 | Volunteering | **Approved**: folded into event posts (G18); the `volunteer_*` tables are not carried over |
+| Q4 | WhatsApp bot and ingestion | Not in the launch baseline, **but designed for now**: the `integrations` schema, `posts.source = 'imported'`, the outbox and the service-role `api_*` contract are part of the baseline, so the module lands later as one additive migration with no change to existing tables |
+| Q5 | Retention of billing records and receipts after account deletion | **Open — needs legal advice.** Until answered the baseline keeps these rows with a tombstone reference and no automatic purge; the period becomes a single setting in `billing` |
+| Q6 | Rebuild kc-dev from the baseline at cut-over | **Approved** |
+| Q7 | Non-KC schema in kc-dev | **Approved to remove.** Not yet executed: it is still being written to and one of its functions is callable by the auth service, so removal waits for the confirmation step in `AGENTS.md` §7 |
+| Q8 | Video provider and maximum clip length | Decided when video is specified; `post_media` already supports it |
 
-On approval, the answers are recorded in `docs/spec/90_decisions_log.md` and `docs/SSOT/DECISIONS.md`, and Phase 3 starts with step (1) of §10.
+Recorded as `{{ENG:production-db-baseline}}` in [`docs/SSOT/DECISIONS.md`](../SSOT/DECISIONS.md). Phase 3 starts with step (1) of §10.

@@ -1864,3 +1864,16 @@ Owner rules that go with it:
 **Rejected.** Agents deciding product questions on their own and logging a decision (merges into `dev` are automatic, so product behavior would change without PM review). Findings entering the agent queue directly (agents would set their own priorities). One skill run working issues back to back (context grows with every issue; a continuous loop stays the job of `/loop` or CLAUDE.md §13). Board-only task selection (reading the project needs a project-scoped token that most agents lack; labels mirror it).
 
 **Affected.** `.claude/skills/kc-issue-to-merge/**`, `.github/workflows/sync-agent-labels.yml`, `.github/workflows/pr-opened-by.yml`, `.github/PULL_REQUEST_TEMPLATE.md`, `docs/agents/ISSUE_CLAIMS.md`, `docs/agents/OPERATING_MODEL.md`, `AGENTS.md`, `.cursor/rules/git-workflow.mdc`.
+
+
+## {{ENG:production-db-baseline}} — Production database is rebuilt as one baseline (2026-11-10)
+
+**Decision.** kc-prod is built from a single baseline migration assembled from per-module source files (`supabase/schemas/`), replacing the 543 incremental migrations, which are archived. Layout: `public` holds only the client contract (RLS tables and client-called RPCs); `kc_private`, `billing`, `audit`, `integrations` and `ops` are not exposed through the API. `users` is split into public profile, private data, account state and counters. `posts` stays the single content table with 1:1 detail tables for structured worlds and schema-validated JSONB for the rest; the post machine keeps the S1 states and gains `draft`. Volunteering shifts become event posts. Exact locations live in a private table and every search reads an approximate point. Realtime is Broadcast only. kc-dev is rebuilt from the same baseline at cut-over. Full design: [`docs/db/target-design.md`](../db/target-design.md).
+
+**Why.** kc-prod is empty, so there is no data to migrate, and the live contract (53 tables and about 313 functions referenced by code) is far narrower than the schema on kc-dev (164 tables, 730 functions). Replaying 153 k lines of superseded SQL into production would carry over dead objects, two generations of `posts` columns and broad default grants ([`docs/db/current-state.md`](../db/current-state.md)).
+
+**Rejected.** Squashing the existing chain as-is (keeps the legacy objects and grants). One Postgres schema per domain for every table (renames every client query for no security gain; the boundary that matters is exposed vs. not exposed). Redis and a separate search or feed service at launch (no measured need; the outbox and one-RPC-per-screen rule leave the slot open). Postgres enums for lifecycles (D-226 stands).
+
+**Open.** Retention period for billing records after account deletion (legal advice pending). Video provider.
+
+**Affected.** `docs/db/**`; later `supabase/schemas/**`, `supabase/migrations/**`, `supabase/tests/**`, `app/packages/infrastructure-supabase/**`, `supabase/functions/**`, CI workflows.
