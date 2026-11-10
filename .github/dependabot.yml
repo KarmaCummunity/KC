@@ -57,3 +57,4 @@ updates:
       github-actions:
         patterns: ["*"]
     open-pull-requests-limit: 5
+# (no behavior change; keeps the file ending on a comment line.)
