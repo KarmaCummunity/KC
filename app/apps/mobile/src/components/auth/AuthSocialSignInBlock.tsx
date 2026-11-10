@@ -76,36 +76,38 @@ export function AuthSocialSignInBlock() {
 
   return (
     <>
-      {Platform.OS === 'ios' ? (
+      <View style={styles.socialButtons}>
+        {Platform.OS === 'ios' ? (
+          <TouchableOpacity
+            style={[styles.authBtn, styles.appleBtn, appleLoading && styles.authBtnDisabled]}
+            onPress={handleApple}
+            disabled={appleLoading || googleLoading}
+          >
+            {appleLoading ? (
+              <ActivityIndicator color={appleInk} />
+            ) : (
+              <>
+                <Text style={[styles.authBtnText, styles.appleBtnText]}>{t('auth.continueWithApple')}</Text>
+                <Ionicons name="logo-apple" size={iconSize.lg} color={appleInk} />
+              </>
+            )}
+          </TouchableOpacity>
+        ) : null}
         <TouchableOpacity
-          style={[styles.authBtn, styles.appleBtn, appleLoading && styles.authBtnDisabled]}
-          onPress={handleApple}
-          disabled={appleLoading || googleLoading}
+          style={[styles.authBtn, styles.googleBtn, googleLoading && styles.authBtnDisabled]}
+          onPress={handleGoogle}
+          disabled={googleLoading || appleLoading}
         >
-          {appleLoading ? (
-            <ActivityIndicator color={appleInk} />
+          {googleLoading ? (
+            <ActivityIndicator color={colors.textPrimary} />
           ) : (
             <>
-              <Text style={[styles.authBtnText, styles.appleBtnText]}>{t('auth.continueWithApple')}</Text>
-              <Ionicons name="logo-apple" size={iconSize.lg} color={appleInk} />
+              <Text style={[styles.authBtnText, styles.googleBtnText]}>{t('auth.continueWithGoogle')}</Text>
+              <Text style={styles.googleGLetter}>G</Text>
             </>
           )}
         </TouchableOpacity>
-      ) : null}
-      <TouchableOpacity
-        style={[styles.authBtn, styles.googleBtn, googleLoading && styles.authBtnDisabled]}
-        onPress={handleGoogle}
-        disabled={googleLoading || appleLoading}
-      >
-        {googleLoading ? (
-          <ActivityIndicator color={colors.textPrimary} />
-        ) : (
-          <>
-            <Text style={[styles.authBtnText, styles.googleBtnText]}>{t('auth.continueWithGoogle')}</Text>
-            <Text style={styles.googleGLetter}>G</Text>
-          </>
-        )}
-      </TouchableOpacity>
+      </View>
       {/* After the social buttons: "or" leads into the e-mail form below the block (FR-AUTH-007 AC7). */}
       <View style={styles.oauthDividerRow}>
         <View style={styles.oauthDividerLine} />
