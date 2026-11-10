@@ -14209,6 +14209,7 @@ export type Database = {
         Returns: string
       }
       escape_ilike: { Args: { p: string }; Returns: string }
+      event_attendance_prompt_sweep: { Args: never; Returns: number }
       event_promote_waitlist: {
         Args: { p_post_id: string }
         Returns: undefined
@@ -14245,6 +14246,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      event_reminder_sweep: { Args: never; Returns: number }
       events_expired_sweep: { Args: never; Returns: number }
       feed_cache_enqueue: { Args: { p_user_id: string }; Returns: number }
       feed_cache_enqueue_active_users: {

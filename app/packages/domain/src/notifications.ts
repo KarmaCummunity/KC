@@ -73,7 +73,18 @@ export type NotificationKind =
   | 'housing_booking_completed'
   // D131 — the organizer paused, closed or deleted the event
   // before it started, so the attendee's registration was cancelled (0686).
-  | 'event_registration_cancelled';
+  | 'event_registration_cancelled'
+  // G18 (0731) — an event registration's moves, the day-before reminder and the organizer's
+  // attendance prompt.
+  | 'event_join_request'
+  | 'event_registration_approved'
+  | 'event_registration_promoted'
+  | 'event_registration_declined'
+  | 'event_reminder'
+  | 'event_mark_attendance'
+  // FR-ORG-002 (0730) — an organization application's decision, and being added to one.
+  | 'org_registration_decided'
+  | 'org_member_added';
 
 /** Payload attached to every Expo push under `data`. The client reads this on tap. */
 export interface PushData {

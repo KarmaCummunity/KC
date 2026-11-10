@@ -64,6 +64,12 @@ describe('resolvePushRoute', () => {
     'giving_handoff_claimed',
     'housing_booking_requested',
     'event_registration_cancelled',
+    'event_join_request',
+    'event_registration_approved',
+    'event_registration_promoted',
+    'event_registration_declined',
+    'event_reminder',
+    'event_mark_attendance',
   ] as const)('opens the post of a listing notification (G1 step 4c, 0562): %s', (kind) => {
     const POST = '22222222-2222-4222-8222-222222222222';
     expect(
@@ -83,6 +89,15 @@ describe('resolvePushRoute', () => {
       resolvePushRoute({ category: 'critical', kind: 'post_relevance_check', notification_id: 'n10', params: { id: 'nope' } }),
     ).toBeNull();
   });
+
+  it.each(['org_registration_decided', 'org_member_added'] as const)(
+    'opens My organizations for %s (FR-ORG-002), whatever the payload says',
+    (kind) => {
+      expect(
+        resolvePushRoute({ category: 'critical', kind, notification_id: 'n13', params: { id: 'anything' } }),
+      ).toEqual({ pathname: '/settings/organizations', params: {} });
+    },
+  );
 
   it('rejects an unknown kind', () => {
     expect(

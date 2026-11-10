@@ -22,7 +22,11 @@ afterEach(() => {
 });
 
 const renderCard = (props: React.ComponentProps<typeof OrgAddMemberCard>) =>
-  render(<ThemeProvider><OrgAddMemberCard {...props} /></ThemeProvider>);
+  render(
+    <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
+      <OrgAddMemberCard {...props} />
+    </ThemeProvider>,
+  );
 
 describe('OrgAddMemberCard', () => {
   it('offers an admin every role and a manager only staff and volunteer roles', () => {
