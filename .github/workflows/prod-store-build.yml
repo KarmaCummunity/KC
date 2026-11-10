@@ -1,0 +1,129 @@
+# Automatic PROD store build: TestFlight + Play internal, wired to kc-prod.
+#
+# Runs after a successful tagged PROD Deploy on main (workflow_run of Deploy
+# whose "tag release" job succeeded), or on workflow_dispatch of a tagged
+# main SHA. Builds with the EAS `production` profile and submits only to
+# TestFlight and the Play internal track (never production/store rollout).
+#
+# Fail-closed gates, all of which must pass before a build starts:
+#   - repo variable KC_PROD_STORE_BUILD_ENABLED must be exactly "true"
+#     (unset / any other value = block; this workflow never sets it)
+#   - read-only check that the kc-prod ledger is non-empty and exactly
+#     matches supabase/baseline/prod-allowed-migrations.txt, and that
+#     KC_PROD_SCHEMA_MODE is "baseline" (this workflow never sets that
+#     variable either)
+#   - the bundle pin/verify (scripts/mobile-store-config.mjs) requires the
+#     kc-prod ref and rejects the kc-dev ref enbqriuxvvuontiwslun
+#
+# Uses the `mobile-store` environment for the reusable TestFlight / Play
+# jobs. The ledger job is a listed read-only monitor of `supabase-prod`.
+# This workflow must not use the `production` approval environment.
+#
+# workflow_run always executes the copy of this file on the default branch
+# (main). Until this workflow is promoted, dispatch against dev can prove
+# the default-off gate without publishing anything.
+name: PROD store build
+
+on:
+  workflow_run:
+    workflows: [Deploy]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 40-character SHA of a tagged PROD release on main
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  gate:
+    name: Gate the PROD store build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      proceed: ${{ steps.gate.outputs.proceed }}
+      sha: ${{ steps.gate.outputs.sha }}
+      tag: ${{ steps.gate.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+      - name: Evaluate the store-build gate
+        id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          WORKFLOW_RUN_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          WORKFLOW_RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          INPUT_SHA: ${{ inputs.sha }}
+          KC_PROD_STORE_BUILD_ENABLED: ${{ vars.KC_PROD_STORE_BUILD_ENABLED }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/prod-store-build-gate.mjs
+
+  ledger:
+    name: Confirm kc-prod ledger matches the baseline
+    needs: gate
+    if: needs.gate.outputs.proceed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        target:
+          - { env: prod, environment: supabase-prod }
+    environment: ${{ matrix.target.environment }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.gate.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+      - name: Read-only ledger vs baseline allowlist
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: kdqtbdbzwvlugkhonexg
+          KC_PROD_STORE_BUILD_ENABLED: ${{ vars.KC_PROD_STORE_BUILD_ENABLED }}
+          KC_PROD_SCHEMA_MODE: ${{ vars.KC_PROD_SCHEMA_MODE }}
+        run: node scripts/check-prod-store-ready.mjs
+
+  ios:
+    name: TestFlight (PROD)
+    needs: [gate, ledger]
+    if: needs.gate.outputs.proceed == 'true'
+    uses: ./.github/workflows/testflight-ios.yml
+    with:
+      ref: ${{ needs.gate.outputs.sha }}
+      backend: prod
+    secrets: inherit
+    permissions:
+      contents: read
+      actions: read
+
+  android:
+    name: Play Internal (PROD)
+    needs: [gate, ledger]
+    if: needs.gate.outputs.proceed == 'true'
+    uses: ./.github/workflows/play-internal.yml
+    with:
+      ref: ${{ needs.gate.outputs.sha }}
+      backend: prod
+    secrets: inherit
+    permissions:
+      contents: read
+      actions: read

@@ -36,6 +36,7 @@
 /scripts/testflight-*                        @navesarussi
 /scripts/release-version.mjs                @navesarussi
 /scripts/resolve-green-dev-sha.mjs           @navesarussi
+/scripts/prod-store-build-gate.mjs           @navesarussi
 /scripts/edge-functions.mjs                 @navesarussi
 /scripts/cloudflare-pages.mjs               @navesarussi
 /scripts/extract-hebrew-text.mjs            @navesarussi

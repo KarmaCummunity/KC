@@ -110,6 +110,9 @@ export const notificationsEn = {
   rideBookingExpiredBody: 'Your seat on "{{rideTitle}}" wasn\'t approved in time. Try another ride.',
   rideBookingCancelledTitle: 'A ride booking was cancelled',
   rideBookingCancelledBody: '{{name}} cancelled the booking on "{{rideTitle}}".',
+  // 0734 — a confirmed seat on a ride that expired without leaving.
+  rideBookingLapsedTitle: 'The ride did not run',
+  rideBookingLapsedBody: 'The ride "{{rideTitle}}" never set off and has ended, so your booking was cancelled. You can look for another ride.',
   // D74 — a new ride on a route the user follows (0516).
   rideRouteMatchTitle: 'A new ride on your route',
   rideRouteMatchBody: '{{origin}} → {{dest}} · {{when}}',

@@ -85,7 +85,10 @@ begin
   perform kc_test.assert_eq(pg_temp.pushes(p.guest_b, 'event_registration_declined'), 1::bigint,
     'a declined member is told');
 
+  -- The place is free again, so C's registration is a third request.
   v_c := pg_temp.register(p.guest_c, v_post);
+  perform kc_test.assert_eq(pg_temp.pushes(p.organizer, 'event_join_request'), 3::bigint,
+    'a registration into a free place of a manual event is a request');
   perform kc_test.act_as(p.organizer);
   perform public.decide_event_registration(v_c, true);
   perform kc_test.assert_eq(pg_temp.pushes(p.guest_c, 'event_registration_approved'), 1::bigint,
@@ -110,7 +113,8 @@ begin
   select * into p from personas;
   v_a := pg_temp.register(p.guest_a, v_post);   -- confirmed at once
   perform pg_temp.register(p.guest_b, v_post);  -- waitlisted
-  perform kc_test.assert_eq(pg_temp.pushes(p.organizer, 'event_join_request'), 2::bigint,
+  -- Still the three requests of section 1.
+  perform kc_test.assert_eq(pg_temp.pushes(p.organizer, 'event_join_request'), 3::bigint,
     'an automatic event raises no requests');
   perform kc_test.act_as(p.guest_a);
   perform public.cancel_event_registration(v_a);

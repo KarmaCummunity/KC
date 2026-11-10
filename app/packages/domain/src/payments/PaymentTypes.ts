@@ -45,6 +45,10 @@ export interface CompletedDonation {
   readonly status: 'paid';
 }
 
+/** `standing_orders.status` (0269); the moves between them are `standingOrderMachine`. */
+export const STANDING_ORDER_STATUSES = ['active', 'paused', 'cancelled'] as const;
+export type StandingOrderStatus = (typeof STANDING_ORDER_STATUSES)[number];
+
 export interface StandingOrderRow {
   readonly orderId: string;
   readonly orgId: string;
