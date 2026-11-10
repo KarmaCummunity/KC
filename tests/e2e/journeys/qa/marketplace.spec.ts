@@ -26,7 +26,7 @@ async function fillFoodOfferForm(page: Page, title: string) {
   await gotoApp(page, '/create?category=food');
   await page.getByTestId('create-direction-give').click();
   await page.getByTestId('listing-title').fill(title);
-  // The food type is the world sub-category ({{D:food-type-is-subcategory}}, KC#1398).
+  // The food type is the world sub-category (D137, KC#1398).
   await page.getByTestId('world-subcategory-cooked-ready').click();
   await page.getByTestId('listing-date-expires_at').click();
   await page.locator('input[type="datetime-local"]').fill('2030-01-01T12:00');

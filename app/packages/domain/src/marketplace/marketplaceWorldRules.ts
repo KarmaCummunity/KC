@@ -156,7 +156,7 @@ export function validateMarketplaceWorldRules(input: WorldRulesInput): Marketpla
     const ts = typeof raw === 'string' ? Date.parse(raw) : Number.NaN;
     const now = (input.now ?? new Date()).getTime();
     if (Number.isNaN(ts) || ts <= now) return 'food_expiry_required';
-    // A food offer's type is its world sub-category ({{D:food-type-is-subcategory}}, KC#1398).
+    // A food offer's type is its world sub-category (D137, KC#1398).
     if (input.subcategoryId === null) return 'food_subcategory_required';
   }
 
