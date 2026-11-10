@@ -94,6 +94,19 @@ begin
     case when v_intent.standing_order_id is null then 'individual_donations' else 'standing_orders' end);
   perform kc_private.billing_notify('donation_succeeded', v_intent.user_id, 'payment', v_payment_id,
     jsonb_build_object('org_id', v_intent.org_id, 'amount_agorot', v_intent.amount_agorot));
+  -- Karma for a donation (spec 07 §7.6; payload contract in 72_karma/010_karma_values.sql).
+  -- Only a member earns it: a donor whose account is gone has no user id.
+  if v_intent.user_id is not null then
+    perform kc_private.outbox_enqueue('karma', case
+      when v_intent.standing_order_id is null then jsonb_build_object(
+        'kind', 'award', 'event_type', 'donation', 'user_id', v_intent.user_id,
+        'subject', 'donation:' || v_payment_id,
+        'quantity', jsonb_build_object('ils_10', v_intent.amount_agorot / 1000))
+      else jsonb_build_object(
+        'kind', 'award', 'event_type', 'standing_order_month', 'user_id', v_intent.user_id,
+        'subject', 'standing_order:' || v_intent.standing_order_id || ':' || to_char(now(), 'YYYY-MM'))
+      end);
+  end if;
   return v_payment_id;
 end;
 $$;
@@ -149,6 +162,11 @@ begin
   perform kc_private.billing_notify('donation_refunded', v_payment.user_id, 'payment', v_payment.id,
     jsonb_build_object('org_id', v_payment.org_id, 'amount_agorot', v_refund.amount_agorot,
                        'refund_id', p_refund_id));
+  -- A full refund takes back the karma the donation earned.
+  if v_payment.user_id is not null and v_payment.refunded_agorot + v_refund.amount_agorot = v_payment.amount_agorot then
+    perform kc_private.outbox_enqueue('karma', jsonb_build_object(
+      'kind', 'revoke', 'user_id', v_payment.user_id, 'subject_prefix', 'donation:' || v_payment.id));
+  end if;
 end;
 $$;
 comment on function kc_private.billing_refund_settle(uuid, boolean, text) is

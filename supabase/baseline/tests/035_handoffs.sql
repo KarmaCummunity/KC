@@ -120,7 +120,7 @@ as $$
              = '00000000-0000-4000-8000-00000000000' || p_who);
 $$;
 
-select plan(158);
+select plan(159);
 
 -- Alice owns the posts. Bob, Carol and Eve take them. Dan and Alice are blocked.
 insert into auth.users (id, email, raw_app_meta_data)
@@ -321,6 +321,11 @@ select is(pg_temp.act('a', 'select public.close_post_with_recipient(#01, @d)'), 
   'a blocked member cannot be named');
 select is(pg_temp.act('a', 'select public.close_post_with_recipient(#07, @b)'), 'world_not_assignable',
   'a world with its own flow is not closed with one recipient');
+-- Naming a member who never asked needs a conversation with them (FR-CLOSURE-003 AC1).
+select is(pg_temp.act('a', 'select public.close_post_with_recipient(#01, @b)'), 'closure_recipient_not_in_chat',
+  'a member the owner never talked to cannot be named');
+insert into public.chats (kind, direct_user_a, direct_user_b, last_message_at)
+values ('direct', '00000000-0000-4000-8000-00000000000a', '00000000-0000-4000-8000-00000000000b', now());
 select is(pg_temp.act('a', 'select public.close_post_with_recipient(#01, @b)'), 'ok', 'the owner closes naming a member');
 select is(pg_temp.val($$select string_agg(status || coalesce(':' || cancel_reason, ''), ' ' order by status)
     from public.post_handoffs where post_id = #01 and recipient_id in (@b, @c) and cancel_reason is distinct from 'reopened'$$),

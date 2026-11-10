@@ -131,7 +131,7 @@ as $$
   select count(*) from audit.events e where e.action = p_action;
 $$;
 
-select plan(60);
+select plan(62);
 
 -- a platform admin · b moderator · c accountant of `aid` · d, e donors · f treasurer of
 -- `aid` · 1 a member with no role.
@@ -473,6 +473,18 @@ update billing.detached_parties set detached_at = now() - interval '8 years';
 update billing.settings set retention_after_account_deletion = interval '7 years';
 select is((select count(*) from kc_private.billing_detached_past_retention()) || '|' || (select count(*) from billing.payments where user_tombstone is not null),
   '1|3', 'once a period is set, a detached member past it is listed; nothing is erased automatically');
+
+-- Karma for money: a settled donation records one award event per payment (spec 07 §7.6),
+-- and the amount is counted in whole tens of shekels.
+select ok(exists (select 1 from kc_private.outbox_events e
+                   where e.topic = 'karma' and e.payload ->> 'event_type' = 'donation'
+                     and (e.payload -> 'quantity' ->> 'ils_10')::integer >= 0
+                     and e.payload ->> 'subject' like 'donation:%'),
+  'a settled donation records a karma award');
+select is((select count(*) - count(distinct e.payload ->> 'subject')
+             from kc_private.outbox_events e
+            where e.topic = 'karma' and e.payload ->> 'event_type' = 'donation'),
+          0::bigint, 'never more than one award per payment');
 
 select * from finish();
 rollback;

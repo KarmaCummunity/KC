@@ -43,6 +43,10 @@ begin
   if found then
     v_handoff := kc_private.handoff_move(v_handoff.id, 'handed_over', 'owner');
   else
+    -- Naming a member who never asked: only someone the owner has talked to (FR-CLOSURE-003 AC1).
+    if not kc_private.members_share_chat(v_post.owner_id, p_recipient_id) then
+      raise exception 'closure_recipient_not_in_chat' using errcode = 'P0001';
+    end if;
     insert into public.post_handoffs (post_id, recipient_id, status)
     values (p_post_id, p_recipient_id, 'handed_over')
     returning * into v_handoff;

@@ -12,6 +12,8 @@ insert into kc_private.scheduled_jobs (name, schedule, command, timeout, alert_a
   -- Queue consumers (outbox topics handled inside the database).
   ('chat_system_messages', '10 seconds', 'select kc_private.chat_system_messages_process()',
    interval '30 seconds', interval '5 minutes', 'Outbox topic chat_system_message: writes system lines into chats.'),
+  ('chat_moderation', '* * * * *', 'select kc_private.chat_moderation_process()',
+   interval '50 seconds', interval '10 minutes', 'Outbox topic moderation_target: hides and restores chats under review.'),
   ('audit_consume', '* * * * *', 'select kc_private.audit_consume_outbox()',
    interval '50 seconds', interval '10 minutes', 'Outbox topic audit: writes audit.events.'),
   ('moderation_consume', '* * * * *', 'select kc_private.moderation_consume_outbox()',

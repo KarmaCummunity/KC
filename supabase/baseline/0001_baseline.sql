@@ -3844,6 +3844,10 @@ begin
   if found then
     v_handoff := kc_private.handoff_move(v_handoff.id, 'handed_over', 'owner');
   else
+    -- Naming a member who never asked: only someone the owner has talked to (FR-CLOSURE-003 AC1).
+    if not kc_private.members_share_chat(v_post.owner_id, p_recipient_id) then
+      raise exception 'closure_recipient_not_in_chat' using errcode = 'P0001';
+    end if;
     insert into public.post_handoffs (post_id, recipient_id, status)
     values (p_post_id, p_recipient_id, 'handed_over')
     returning * into v_handoff;
@@ -6867,6 +6871,116 @@ begin
                   and kc_access.can_access_chat(kc_access.realtime_topic_uuid((select realtime.topic()))))
   $policy$;
 end $$;
+
+-- >>> supabase/schemas/40_messaging/070_chat_moderation.sql
+-- Messaging · moderation hooks
+--
+-- The moderation module decides; this file performs. A chat that reached the report
+-- threshold is hidden from its members until a moderator reviews it, and a moderator may
+-- delete a single message. Both leave an audit trail (written by the moderation module).
+
+-- Set while the chat is hidden pending review (D33, FR-MOD); null otherwise.
+alter table public.chats add column moderation_hidden_at timestamptz;
+comment on column public.chats.moderation_hidden_at is 'Hidden from its members while a moderator reviews a report; null = visible.';
+
+-- The access predicate learns about the hidden state: a hidden chat is unreadable and
+-- unwritable for its members, so every policy and RPC that goes through it follows.
+create or replace function kc_access.can_access_chat(p_chat_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+      from public.chat_members cm
+      join public.chats c on c.id = cm.chat_id
+     where cm.chat_id = p_chat_id
+       and cm.user_id = (select auth.uid())
+       and c.moderation_hidden_at is null
+       and not (c.kind = 'direct' and kc_access.is_blocked_between(c.direct_user_a, c.direct_user_b)))
+$$;
+
+-- Performs one `moderation_target` event for a chat (payload: kind hide | restore,
+-- target_type 'chat', target_id). Other target types are the moderation module's own and
+-- are left alone: the event is completed without effect.
+create function kc_private.chat_moderation_deliver(p_event_id bigint)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_payload jsonb;
+begin
+  select e.payload into v_payload
+    from kc_private.outbox_events e
+   where e.id = p_event_id and e.topic = 'moderation_target';
+  if not found then
+    raise exception 'outbox_event_not_found' using errcode = 'P0001';
+  end if;
+  if v_payload ->> 'target_type' is distinct from 'chat' then
+    return;
+  end if;
+  update public.chats c
+     set moderation_hidden_at = case v_payload ->> 'kind' when 'hide' then coalesce(c.moderation_hidden_at, now()) end
+   where c.id = (v_payload ->> 'target_id')::uuid
+     and v_payload ->> 'kind' in ('hide', 'restore');
+end;
+$$;
+
+-- Claims and performs a batch; run by a scheduled job.
+create function kc_private.chat_moderation_process(p_limit integer default 100)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_event_id bigint;
+  v_done integer := 0;
+begin
+  for v_event_id in
+    select e.id from kc_private.outbox_claim('moderation_target', p_limit) e order by e.id
+  loop
+    begin
+      perform kc_private.chat_moderation_deliver(v_event_id);
+      perform kc_private.outbox_complete(v_event_id);
+      v_done := v_done + 1;
+    exception when others then
+      perform kc_private.outbox_complete(v_event_id, sqlerrm);
+    end;
+  end loop;
+  return v_done;
+end;
+$$;
+comment on function kc_private.chat_moderation_process(integer) is
+  'Claims and performs a batch of moderation_target events for chats; run by a scheduled job.';
+
+-- A moderator deletes one message (FR-ADMIN). The role check and the audit row belong to the
+-- moderation module's hook; the row is removed together with its reactions. Returns nothing:
+-- a message that does not exist is an error, not a silent success.
+create function public.admin_delete_message(p_message_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_chat_id uuid;
+begin
+  select m.chat_id into v_chat_id from public.messages m where m.id = p_message_id;
+  if not found then
+    raise exception 'message_not_found' using errcode = 'P0001';
+  end if;
+  perform kc_private.moderation_authorize_message_delete(p_message_id, v_chat_id);
+  delete from public.messages m where m.id = p_message_id;
+end;
+$$;
+comment on function public.admin_delete_message(uuid) is
+  'Moderator deletes a chat message; audited. Errors: 42501 forbidden, P0001 message_not_found.';
+grant execute on function public.admin_delete_message(uuid) to authenticated;
 
 -- >>> supabase/schemas/50_notifications/010_notification_kinds.sql
 -- Notifications · registry of notification kinds
@@ -16993,6 +17107,19 @@ begin
     case when v_intent.standing_order_id is null then 'individual_donations' else 'standing_orders' end);
   perform kc_private.billing_notify('donation_succeeded', v_intent.user_id, 'payment', v_payment_id,
     jsonb_build_object('org_id', v_intent.org_id, 'amount_agorot', v_intent.amount_agorot));
+  -- Karma for a donation (spec 07 §7.6; payload contract in 72_karma/010_karma_values.sql).
+  -- Only a member earns it: a donor whose account is gone has no user id.
+  if v_intent.user_id is not null then
+    perform kc_private.outbox_enqueue('karma', case
+      when v_intent.standing_order_id is null then jsonb_build_object(
+        'kind', 'award', 'event_type', 'donation', 'user_id', v_intent.user_id,
+        'subject', 'donation:' || v_payment_id,
+        'quantity', jsonb_build_object('ils_10', v_intent.amount_agorot / 1000))
+      else jsonb_build_object(
+        'kind', 'award', 'event_type', 'standing_order_month', 'user_id', v_intent.user_id,
+        'subject', 'standing_order:' || v_intent.standing_order_id || ':' || to_char(now(), 'YYYY-MM'))
+      end);
+  end if;
   return v_payment_id;
 end;
 $$;
@@ -17048,6 +17175,11 @@ begin
   perform kc_private.billing_notify('donation_refunded', v_payment.user_id, 'payment', v_payment.id,
     jsonb_build_object('org_id', v_payment.org_id, 'amount_agorot', v_refund.amount_agorot,
                        'refund_id', p_refund_id));
+  -- A full refund takes back the karma the donation earned.
+  if v_payment.user_id is not null and v_payment.refunded_agorot + v_refund.amount_agorot = v_payment.amount_agorot then
+    perform kc_private.outbox_enqueue('karma', jsonb_build_object(
+      'kind', 'revoke', 'user_id', v_payment.user_id, 'subject_prefix', 'donation:' || v_payment.id));
+  end if;
 end;
 $$;
 comment on function kc_private.billing_refund_settle(uuid, boolean, text) is
@@ -20143,6 +20275,8 @@ insert into kc_private.scheduled_jobs (name, schedule, command, timeout, alert_a
   -- Queue consumers (outbox topics handled inside the database).
   ('chat_system_messages', '10 seconds', 'select kc_private.chat_system_messages_process()',
    interval '30 seconds', interval '5 minutes', 'Outbox topic chat_system_message: writes system lines into chats.'),
+  ('chat_moderation', '* * * * *', 'select kc_private.chat_moderation_process()',
+   interval '50 seconds', interval '10 minutes', 'Outbox topic moderation_target: hides and restores chats under review.'),
   ('audit_consume', '* * * * *', 'select kc_private.audit_consume_outbox()',
    interval '50 seconds', interval '10 minutes', 'Outbox topic audit: writes audit.events.'),
   ('moderation_consume', '* * * * *', 'select kc_private.moderation_consume_outbox()',
