@@ -67,6 +67,7 @@ export * from './launch/launchWorlds';
 export * from './worlds/givingWorlds';
 export * from './worlds/worldAffinity';
 export * from './payments/PaymentTypes';
+export * from './payments/standingOrderActions';
 export * from './payments/KcSupportChannel';
 export * from './volunteering';
 export * from './challenges';
