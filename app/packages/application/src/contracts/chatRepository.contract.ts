@@ -46,7 +46,7 @@ const onePairOneThread: ContractCase<Ctx> = {
     const chat = await a.chats.findOrCreateChat(a.userId, b.userId);
     assertEqual((await b.chats.findOrCreateChat(b.userId, a.userId)).chatId, chat.chatId, 'chat opened by the other side');
     assertEqual((await a.chats.findOrCreateChat(a.userId, b.userId)).chatId, chat.chatId, 'chat reopened by the opener');
-    assertSameList([...chat.participantIds].sort(), [a.userId, b.userId].sort(), 'participants');
+    assertSameList([...chat.participantIds].sort((a, b) => a.localeCompare(b)), [a.userId, b.userId].sort((a, b) => a.localeCompare(b)), 'participants');
     assertEqual(chat.isSupportThread, false, 'a member-to-member chat is not the support thread');
     assertEqual(chat.anchorPostId, null, 'a chat opened without an anchor has no post anchor');
   },
