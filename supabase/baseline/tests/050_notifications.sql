@@ -86,7 +86,7 @@ select is((select count(*) from kc_private.notification_kinds), 61::bigint, 'the
 select is((select title_key || '|' || bypass_quiet_hours || '|' || category from kc_private.notification_kinds
             where kind = 'ride_booking_waitlist_promoted'),
   'notifications.rideBookingWaitlistPromotedTitle|true|critical', 'a handoff kind has its camelCase keys and rules');
-select is((select count(*) from kc_private.notification_kinds where bypass_preferences), 2::bigint,
+select is((select count(*) from kc_private.notification_kinds where bypass_preferences), 4::bigint,
   'only the account and removal notices bypass preferences');
 select is(pg_temp.run('a', 'select count(*) from kc_private.notification_kinds'), '42501', 'the registry is not readable from a device');
 

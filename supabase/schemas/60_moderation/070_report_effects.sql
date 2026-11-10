@@ -125,12 +125,12 @@ create trigger reports_apply_effects
   for each row execute function kc_private.reports_apply_effects();
 
 -- Notification kinds this module emits, registered so delivery accepts them
--- (kc_private.notification_kinds, 50_notifications). The owner notices bypass preferences:
--- a member must learn that their post was hidden, removed or restored (FR-MOD-005).
+-- (kc_private.notification_kinds, 50_notifications). Hidden and removed notices bypass
+-- preferences: a member must learn that their post is no longer shown (FR-MOD-005).
 insert into kc_private.notification_kinds
   (kind, category, bypass_preferences, title_key, body_key)
 values
   ('post_hidden_for_review', 'critical', true, 'notifications.postHiddenForReviewTitle', 'notifications.postHiddenForReviewBody'),
   ('post_removed', 'critical', true, 'notifications.postRemovedTitle', 'notifications.postRemovedBody'),
-  ('post_restored', 'critical', true, 'notifications.postRestoredTitle', 'notifications.postRestoredBody'),
+  ('post_restored', 'critical', false, 'notifications.postRestoredTitle', 'notifications.postRestoredBody'),
   ('moderation_review_needed', 'critical', false, 'notifications.moderationReviewNeededTitle', 'notifications.moderationReviewNeededBody');
