@@ -13,7 +13,8 @@ select kc_test.create_user('org_applicant') as applicant,
        kc_test.create_user('org_outsider')  as outsider,
        kc_test.create_user('org_reviewer')  as reviewer;
 
-insert into public.admin_role_grants (user_id, role) select reviewer, 'super_admin' from personas;
+-- A moderator decides applications (0168); only one super admin may exist, so the test uses one.
+insert into public.admin_role_grants (user_id, role) select reviewer, 'moderator' from personas;
 
 create temp table app_ids (application_id uuid, org_id uuid);
 
