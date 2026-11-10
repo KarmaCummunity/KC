@@ -83,6 +83,7 @@ begin
   perform kc_test.assert_row_count(format(
     'select 1 from public.recipients where post_id = %L and recipient_user_id = %L', v_post, p.receiver), 1,
     'a food hand-over records the recipient (0740)');
+  perform kc_test.act_as(p.receiver);
   perform kc_test.assert_row_count(format(
     'select 1 from public.profile_closed_posts(%L, %L) where post_id = %L and identity_role = %L',
     p.receiver, p.receiver, v_post, 'respondent'), 1, 'the delivered food reaches the recipient''s closed-posts tab');
