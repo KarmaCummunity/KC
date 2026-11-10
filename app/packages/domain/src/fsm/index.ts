@@ -17,5 +17,7 @@ export { eventRegistrationMachine } from './machines/eventRegistration';
 export { onboardingMachine } from './machines/onboarding';
 export { postCommentMachine } from './machines/postComment';
 export { knowledgeTopicMachine } from './machines/knowledgeTopic';
+export { reportMachine } from './machines/report';
+export { followRequestMachine } from './machines/followRequest';
 export { handoffMachineFor } from './machines/handoffMachineFor';
 export { accountStatusMachine } from './machines/accountStatus';

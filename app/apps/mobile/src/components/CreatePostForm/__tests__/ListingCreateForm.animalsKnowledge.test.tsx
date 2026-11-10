@@ -99,17 +99,21 @@ describe('ListingCreateForm — knowledge & animals (#1630, #1625)', () => {
   it('knowledge: shows kind chooser for give direction and required knowledge fields', async () => {
     const { rerender } = renderForm('knowledge', 'give');
     expect(await screen.findByTestId('listing-kind-chooser')).toBeTruthy();
-    expect(screen.getByTestId('listing-kind-course')).toBeTruthy();
-    expect(screen.getByTestId('listing-kind-private_lesson')).toBeTruthy();
+    // #2034: a lesson, mentoring or a consulting hour to give; a lesson offers its times.
+    expect(screen.getByTestId('listing-kind-lesson_offer')).toBeTruthy();
+    expect(screen.getByTestId('listing-kind-mentoring_offer')).toBeTruthy();
+    expect(screen.getByTestId('listing-kind-consulting_hour')).toBeTruthy();
     expect(screen.getByTestId('listing-field-topic')).toBeTruthy();
     expect(screen.getByTestId('listing-field-modality')).toBeTruthy();
-    expect(screen.getByTestId('listing-field-slot_starts_at')).toBeTruthy();
-    expect(screen.getByTestId('listing-field-slot_ends_at')).toBeTruthy();
-    expect(screen.getByTestId('listing-field-slots_available')).toBeTruthy();
+    expect(screen.getByTestId('listing-field-slots')).toBeTruthy();
+    expect(screen.getByTestId('listing-field-capacity_per_slot')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('knowledge-slot-add'));
+    expect(await screen.findByTestId('knowledge-slot-0')).toBeTruthy();
     rerender('request');
-    expect(await screen.findByTestId('listing-field-topic')).toBeTruthy();
+    expect(await screen.findByTestId('listing-kind-chooser')).toBeTruthy();
+    expect(screen.getByTestId('listing-kind-learning_request')).toBeTruthy();
+    expect(screen.getByTestId('listing-kind-question')).toBeTruthy();
     expect(screen.getByTestId('listing-field-preferred_modality')).toBeTruthy();
-    expect(screen.queryByTestId('listing-kind-chooser')).toBeNull();
   });
 
   it('animals: shows kind chooser in both directions with curated animal fields', async () => {

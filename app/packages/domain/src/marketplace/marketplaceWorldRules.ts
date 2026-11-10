@@ -5,6 +5,8 @@
 // Keep in sync with supabase/migrations/0266, 0357, 0539 (food expiry binds offers only),
 // 0563 (an organization's event ends after it starts) and 0612 (animals are no longer routed).
 
+import { knowledgeSlotsFromDetails, knowledgeSlotsProblem } from '../knowledge/knowledgeSlots';
+
 // Animals left this list in 0612: members give and take directly there (PM 2026-11-04).
 export const ROUTED_WORLDS = ['medical', 'environment'] as const;
 
@@ -27,6 +29,10 @@ export type MarketplaceRuleErrorCode =
   | 'ride_route_required'
   | 'ride_departure_past'
   | 'knowledge_slot_invalid'
+  // #2034 (0703): the slot list of a lesson offer or consulting hour.
+  | 'knowledge_slot_duration_invalid'
+  | 'knowledge_slot_in_past'
+  | 'knowledge_slots_overlap'
   | 'event_window_invalid';
 
 /** Server-raised listing error codes the UI has friendly copy for. */
@@ -39,6 +45,16 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'ride_departure_past',
   'knowledge_slot_invalid',
   'event_window_invalid',
+  // #2034 (0703–0704) — knowledge slots, bookings and the consulting-hour identity gate.
+  'knowledge_slot_duration_invalid',
+  'knowledge_slot_in_past',
+  'knowledge_slots_overlap',
+  'knowledge_slot_has_booking',
+  'knowledge_slot_capacity_below_bookings',
+  'consulting_requires_id_verification',
+  'slot_not_found',
+  'booking_expired',
+  'account_not_active',
   'seats_exhausted',
   'ride_seats_exhausted',
   'slots_exhausted',
@@ -212,11 +228,16 @@ export function validateRideDetails(
   return null;
 }
 
-/** Knowledge offers with a slot need a future start and an end after the start. */
+/**
+ * Knowledge offers with slots: the slot list of a lesson offer or consulting hour (#2034) follows
+ * `knowledgeSlotsProblem`; a legacy one-slot post needs a future start and an end after it.
+ */
 export function validateKnowledgeSlot(
   details: Record<string, unknown>,
   now: Date = new Date(),
 ): MarketplaceRuleErrorCode | null {
+  const slots = knowledgeSlotsFromDetails(details);
+  if (slots) return knowledgeSlotsProblem(slots, now);
   if (details.slot_starts_at === undefined && details.slot_ends_at === undefined) return null;
   const start = parseTime(details.slot_starts_at);
   const end = parseTime(details.slot_ends_at);

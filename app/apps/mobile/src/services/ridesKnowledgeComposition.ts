@@ -27,18 +27,4 @@ export const ridesKnowledgeRpcs = {
     if (error) throw error;
     return (data ?? []);
   },
-  async bookKnowledgeSlot(listingId: string) {
-    const { data, error } = await getMarketplaceSupabaseClient().rpc('book_knowledge_slot', {
-      p_listing_id: listingId,
-    });
-    if (error) throw error;
-    return data;
-  },
-  async completeKnowledgeSession(handoffId: string) {
-    const { data, error } = await getMarketplaceSupabaseClient().rpc('complete_knowledge_session', {
-      p_handoff_id: handoffId,
-    });
-    if (error) throw error;
-    return data;
-  },
 };
