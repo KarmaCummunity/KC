@@ -15697,6 +15697,10 @@ export type Database = {
         Args: { p_h: Database["public"]["Tables"]["post_handoffs"]["Row"] }
         Returns: undefined
       }
+      post_delivery_recipients: {
+        Args: { p_post_id: string }
+        Returns: string[]
+      }
       post_handoff_seats_taken: {
         Args: { p_exclude?: string; p_post_id: string }
         Returns: number
