@@ -33,6 +33,8 @@
   "notifications.givingHandoffDeclinedBody": "{{name}} לא יכול/ה למסור לך את \"{{listingTitle}}\". אפשר לחפש משהו אחר.",
   "notifications.givingHandoffCancelledTitle": "המסירה בוטלה",
   "notifications.givingHandoffCancelledBody": "המסירה של \"{{listingTitle}}\" בוטלה.",
+  "notifications.givingHandoffExpiredTitle": "הבקשה פגה",
+  "notifications.givingHandoffExpiredBody": "הבקשה ל\"{{listingTitle}}\" לא אושרה בזמן ופגה.",
   "notifications.givingHandoffCompletedTitle": "המסירה הושלמה",
   "notifications.givingHandoffCompletedBody": "איך היה עם {{name}}? דרגו את המסירה של \"{{listingTitle}}\".",
   "notifications.markRecipientTitle": "{{ownerName}}",

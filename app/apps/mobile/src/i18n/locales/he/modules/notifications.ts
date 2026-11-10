@@ -99,6 +99,8 @@ export const notificationsHe = {
   givingHandoffDeclinedBody: '{{name}} לא יכול/ה למסור לך את "{{listingTitle}}". אפשר לחפש משהו אחר.',
   givingHandoffCancelledTitle: 'המסירה בוטלה',
   givingHandoffCancelledBody: 'המסירה של "{{listingTitle}}" בוטלה.',
+  givingHandoffExpiredTitle: 'הבקשה פגה',
+  givingHandoffExpiredBody: 'הבקשה ל"{{listingTitle}}" לא אושרה בזמן ופגה.',
   givingHandoffCompletedTitle: 'המסירה הושלמה',
   givingHandoffCompletedBody: 'איך היה עם {{name}}? דרגו את המסירה של "{{listingTitle}}".',
   markRecipientTitle: '{{ownerName}}',

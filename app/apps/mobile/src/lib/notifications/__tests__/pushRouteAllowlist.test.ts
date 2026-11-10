@@ -40,6 +40,7 @@ describe('resolvePushRoute', () => {
     'giving_handoff_confirmed',
     'giving_handoff_declined',
     'giving_handoff_cancelled',
+    'giving_handoff_expired',
     'giving_handoff_completed',
   ] as const)('routes %s to the listing (KC#1316, D70, D73, D74, FR-NOTIF-018)', (kind) => {
     expect(

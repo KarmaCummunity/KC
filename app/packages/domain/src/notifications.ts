@@ -53,6 +53,8 @@ export type NotificationKind =
   | 'giving_handoff_confirmed'
   | 'giving_handoff_declined'
   | 'giving_handoff_cancelled'
+  // Wave 2c (0704) — a request the giver did not answer within its confirm window lapsed.
+  | 'giving_handoff_expired'
   | 'giving_handoff_completed'
   // FR-HOUSING-017 (0602–0603) — housing stay bookings: every change reaches the other side.
   | 'housing_booking_requested'

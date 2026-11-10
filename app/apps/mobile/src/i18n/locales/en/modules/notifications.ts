@@ -99,6 +99,8 @@ export const notificationsEn = {
   givingHandoffDeclinedBody: '{{name}} can\'t give you "{{listingTitle}}". Try something else.',
   givingHandoffCancelledTitle: 'The handoff was cancelled',
   givingHandoffCancelledBody: 'The handoff of "{{listingTitle}}" was cancelled.',
+  givingHandoffExpiredTitle: 'The request expired',
+  givingHandoffExpiredBody: 'The request for "{{listingTitle}}" was not approved in time and expired.',
   givingHandoffCompletedTitle: 'Handoff complete',
   givingHandoffCompletedBody: 'How was it with {{name}}? Rate the handoff of "{{listingTitle}}".',
   markRecipientTitle: '{{ownerName}}',
