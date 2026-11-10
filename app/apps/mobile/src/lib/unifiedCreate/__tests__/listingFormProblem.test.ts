@@ -22,7 +22,7 @@ describe('fieldForRule', () => {
     expect(fieldForRule('routed_world_requires_external_body', {})).toBe('org');
     // D132 (KC#1937): a missing offer photo outlines the photo picker.
     expect(fieldForRule('offer_photo_required', {})).toBe('photos');
-    // {{D:food-type-is-subcategory}} (KC#1398): a missing food type outlines the sub-category picker.
+    // D137 (KC#1398): a missing food type outlines the sub-category picker.
     expect(fieldForRule('food_subcategory_required', {})).toBe('subcategory');
   });
 });

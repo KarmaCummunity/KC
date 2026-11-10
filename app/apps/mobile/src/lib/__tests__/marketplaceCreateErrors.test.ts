@@ -31,7 +31,7 @@ describe('marketplaceRuleFieldError', () => {
   it('food offer without expiry → inline details error', () => {
     expect(marketplaceRuleFieldError({ worldSlug: 'food', direction: 'give', details: {}, photoCount: 0 })?.field).toBe('details');
   });
-  it('a food offer with no sub-category → inline sub-category error ({{D:food-type-is-subcategory}}, KC#1398)', () => {
+  it('a food offer with no sub-category → inline sub-category error (D137, KC#1398)', () => {
     const details = { expires_at: '2099-01-01T10:00:00Z' };
     expect(marketplaceRuleFieldError({ worldSlug: 'food', direction: 'give', details, photoCount: 1, subcategoryId: null })).toEqual({
       code: 'food_subcategory_required',

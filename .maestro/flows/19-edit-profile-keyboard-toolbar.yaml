@@ -12,6 +12,11 @@ tags: [profile, keyboard]
     visible:
       id: edit-profile-save
     timeout: 20000
+# The phone field sits below the avatar, name, city and street fields.
+- scrollUntilVisible:
+    element:
+      id: edit-profile-phone
+    timeout: 15000
 - tapOn:
     id: edit-profile-phone
 - assertVisible:

@@ -59,15 +59,9 @@ tags: [posts]
     commands:
       - tapOn:
           text: "ביטול"
-- scrollUntilVisible:
-    element:
-      id: create-category-housing
-    timeout: 10000
-    direction: UP
-- tapOn:
-    id: create-category-housing
-- assertVisible:
-    id: listing-create-form
+# The category row also scrolls sideways and centers the chosen chip, so visit the chips in row
+# order (food, time, housing, items) and swipe the row itself until the next chip is on screen. The
+# swipe direction depends on RTL, so each search tries one direction, then the other.
 - scrollUntilVisible:
     element:
       id: create-category-time
@@ -77,11 +71,18 @@ tags: [posts]
     id: create-category-time
 - assertVisible:
     id: listing-create-form
-- scrollUntilVisible:
-    element:
-      id: create-category-items
-    timeout: 10000
-    direction: UP
+- runFlow:
+    file: ../subflows/reveal-create-category.yaml
+    env:
+      CATEGORY: housing
+- tapOn:
+    id: create-category-housing
+- assertVisible:
+    id: listing-create-form
+- runFlow:
+    file: ../subflows/reveal-create-category.yaml
+    env:
+      CATEGORY: items
 - tapOn:
     id: create-category-items
 - assertVisible:
