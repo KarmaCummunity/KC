@@ -14,7 +14,7 @@ Hub: food-safety knowledge; food banks; distribution points & community fridges;
 Huge market already exists in WhatsApp/Facebook/Yad2 "giveaway" without trust or tracking; KC brings it home (D38).
 1. Post — item subcategory, condition, recommended photo (S19), address at chosen display level.
 2. Requests via chat/comments (D25); poster chooses.
-3. Handoff — "mark delivered" + recipient (D17, D19). An item offer has one active reservation; a later reservation attempt returns `item_already_reserved`. A request the giver does not answer within 24 h lapses: both sides are told and the item can be requested again ({{D:giving-reservation-expires}}). Large items → rides for transport.
+3. Handoff — "mark delivered" + recipient (D17, D19). An item offer has one active reservation; a later reservation attempt returns `item_already_reserved`. A request the giver does not answer within 24 h lapses: both sides are told and the item can be requested again (D138). Large items → rides for transport.
 4. No expiry; relevance reminder after 14 days (D21, S3).
 Item subcategories (D18): furniture, kitchen, clothing, books, toys, baby, sport, electronics, tools, other. Baby-product safety warning.
 
