@@ -34,7 +34,14 @@ jobs:
       - name: Checkout dev
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: dev
+          # Fully-qualified branch ref + no tags. A short `ref: dev` makes
+          # actions/checkout fetch both refs/heads/dev* and refs/tags/dev*; the
+          # D-195 tag ruleset forbids tags named `dev`, and after the #1600
+          # squash, checkout then failed with "A branch or tag with the name
+          # 'dev' could not be found" (run 42826047381) even though
+          # refs/heads/dev existed.
+          ref: refs/heads/dev
+          fetch-tags: false
           fetch-depth: 0
 
       - name: Open ancestry-only sync PR
