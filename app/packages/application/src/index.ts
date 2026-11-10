@@ -136,6 +136,7 @@ export { CheckAccountGateUseCase } from './moderation/CheckAccountGateUseCase';
 export type { CheckAccountGateInput } from './moderation/CheckAccountGateUseCase';
 export { RestoreAccountUseCase } from './moderation/RestoreAccountUseCase';
 export type { IDeviceRepository } from './notifications/IDeviceRepository';
+export type * from './notifications/INotificationInboxRepository';
 export { RegisterDeviceUseCase } from './notifications/RegisterDeviceUseCase';
 export { DeactivateDeviceUseCase } from './notifications/DeactivateDeviceUseCase';
 export { UpdateNotificationPreferencesUseCase } from './notifications/UpdateNotificationPreferencesUseCase';

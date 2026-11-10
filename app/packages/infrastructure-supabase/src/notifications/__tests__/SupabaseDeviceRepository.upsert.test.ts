@@ -40,30 +40,29 @@ function makeUpsertClient(opts: {
 }
 
 const FAKE_ROW = {
-  device_id: 'd_1',
+  id: 'd_1',
   user_id: 'u_1',
   push_token: 'tok_abc',
   platform: 'ios',
   last_seen_at: '2026-05-16T12:00:00.000Z',
-  active: true,
 };
 
 describe('SupabaseDeviceRepository — upsert', () => {
-  it('targets devices table and upserts the snake_case row with onConflict=push_token', async () => {
+  it('targets the user_devices table and upserts the snake_case row with onConflict=push_token', async () => {
     const { client, calls } = makeUpsertClient({ data: FAKE_ROW });
     const repo = new SupabaseDeviceRepository(client);
 
     await repo.upsert({ userId: 'u_1', pushToken: 'tok_abc', platform: 'ios' });
 
     expect(calls).toHaveLength(1);
-    expect(calls[0]?.table).toBe('devices');
+    expect(calls[0]?.table).toBe('user_devices');
     expect(calls[0]?.row).toMatchObject({
       user_id: 'u_1',
       push_token: 'tok_abc',
       platform: 'ios',
     });
     expect(calls[0]?.options).toEqual({ onConflict: 'push_token' });
-    expect(calls[0]?.selected).toContain('device_id');
+    expect(calls[0]?.selected).toContain('id');
     expect(calls[0]?.selected).toContain('push_token');
     expect(calls[0]?.selected).not.toBe('*');
     expect(calls[0]?.singled).toBe(true);

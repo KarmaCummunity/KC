@@ -57,12 +57,11 @@ function makeListClient(opts: {
 }
 
 const FAKE_ROW = {
-  device_id: 'd_1',
+  id: 'd_1',
   user_id: 'u_1',
   push_token: 'tok_abc',
   platform: 'ios',
   last_seen_at: '2026-05-16T12:00:00.000Z',
-  active: true,
 };
 
 describe('SupabaseDeviceRepository — deactivate', () => {
@@ -73,7 +72,7 @@ describe('SupabaseDeviceRepository — deactivate', () => {
     await repo.deactivate('tok_abc');
 
     expect(calls).toHaveLength(1);
-    expect(calls[0]).toEqual({ table: 'devices', eqCol: 'push_token', eqVal: 'tok_abc' });
+    expect(calls[0]).toEqual({ table: 'user_devices', eqCol: 'push_token', eqVal: 'tok_abc' });
   });
 
   it('returns void on success', async () => {
@@ -108,8 +107,8 @@ describe('SupabaseDeviceRepository — listForUser', () => {
     await repo.listForUser('u_1');
 
     expect(calls).toHaveLength(1);
-    expect(calls[0]?.table).toBe('devices');
-    expect(calls[0]?.selected).toContain('device_id');
+    expect(calls[0]?.table).toBe('user_devices');
+    expect(calls[0]?.selected).toContain('id');
     expect(calls[0]?.selected).toContain('push_token');
     expect(calls[0]?.selected).not.toBe('*');
     expect(calls[0]?.eqCol).toBe('user_id');
@@ -120,7 +119,7 @@ describe('SupabaseDeviceRepository — listForUser', () => {
     const { client } = makeListClient({
       data: [
         FAKE_ROW,
-        { ...FAKE_ROW, device_id: 'd_2', push_token: 'tok_2', platform: 'web', active: false },
+        { ...FAKE_ROW, id: 'd_2', push_token: 'tok_2', platform: 'web' },
       ],
     });
     const repo = new SupabaseDeviceRepository(client);
@@ -133,7 +132,7 @@ describe('SupabaseDeviceRepository — listForUser', () => {
       deviceId: 'd_2',
       pushToken: 'tok_2',
       platform: 'web',
-      active: false,
+      active: true,
     });
   });
 

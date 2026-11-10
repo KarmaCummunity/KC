@@ -9,15 +9,12 @@
 -- Result of one event (jsonb):
 --   { "event_id": 1, "status": "delivered" | "skipped", "reason": "<why skipped>",
 --     "notification_id": "<uuid>", "group_count": 1,
---     "push": null | { "tokens": [{ "token", "platform" }], "title_key", "body_key",
---                      "args": { …event data, "actor_display_name" },
---                      "data": { "notification_id", "kind", "category", "entity", "group_count" },
---                      "collapse_key": "<group key|null>" } }
+--     "push": null | <the push of kc_private.notification_push, 025_notification_push.sql> }
 -- `push` is null when nothing may be pushed: the kind is centre-only, the member is in
--- quiet hours, or has no device. For chat kinds `args.message_id` names the message; the
--- worker reads its preview itself, so message text never passes through the queue.
+-- quiet hours, or has no device.
 -- The event is confirmed in the same transaction as the notification row, so a notification
--- is written exactly once; a push is sent at most once.
+-- is written exactly once. A push the provider could not take is retried from its own
+-- queue (070_push_retry.sql), never by delivering the event again.
 
 -- Whether a member wants a kind: the switch of its category (FR-NOTIF-014) and the kind's
 -- own switch, which falls back to the kind's default (FR-NOTIF-017). Only an explicit
@@ -37,39 +34,6 @@ as $$
 $$;
 comment on function kc_private.notification_kind_enabled(jsonb, kc_private.notification_kinds) is
   'A member''s preferences allow the kind: category switch and per-kind switch.';
-
--- Whether p_at falls in the member's quiet hours (spec 07 §7.11): preferences
--- `quietHours { enabled, start, end, timezone }`, by default 22:00–08:00 Israel time once
--- enabled. A window may cross midnight. Values a client stored that cannot be read as a
--- time or a time zone mean "no quiet hours" rather than a failed delivery.
-create function kc_private.notification_in_quiet_hours(p_preferences jsonb, p_at timestamptz default now())
-returns boolean
-language plpgsql
-stable
-set search_path = ''
-as $$
-declare
-  v_quiet constant jsonb := p_preferences -> 'quietHours';
-  v_start time;
-  v_end time;
-  v_local time;
-begin
-  if v_quiet -> 'enabled' is distinct from 'true'::jsonb then
-    return false;
-  end if;
-  v_start := coalesce(v_quiet ->> 'start', '22:00')::time;
-  v_end := coalesce(v_quiet ->> 'end', '08:00')::time;
-  v_local := (p_at at time zone coalesce(v_quiet ->> 'timezone', 'Asia/Jerusalem'))::time;
-  if v_start <= v_end then
-    return v_local >= v_start and v_local < v_end;
-  end if;
-  return v_local >= v_start or v_local < v_end;
-exception when others then
-  return false;
-end;
-$$;
-comment on function kc_private.notification_in_quiet_hours(jsonb, timestamptz) is
-  'The moment falls inside the quiet hours of the given notification preferences.';
 
 -- Turns one outbox event into a notification and returns the result described above.
 create function kc_private.notifications_deliver(p_event_id bigint)
@@ -91,7 +55,6 @@ declare
   v_is_active boolean;
   v_reason text;
   v_notification public.notifications;
-  v_tokens jsonb;
 begin
   select e.* into v_event
     from kc_private.outbox_events e
@@ -172,27 +135,11 @@ begin
     returning * into v_notification;
   end if;
 
-  if v_kind.sends_push and (v_kind.bypass_preferences or v_kind.bypass_quiet_hours
-                            or not kc_private.notification_in_quiet_hours(v_preferences)) then
-    select jsonb_agg(jsonb_build_object('token', d.push_token, 'platform', d.platform))
-      into v_tokens
-      from public.user_devices d where d.user_id = v_to;
-  end if;
-
   perform kc_private.outbox_complete(p_event_id);
   return jsonb_build_object(
     'event_id', p_event_id, 'status', 'delivered',
     'notification_id', v_notification.id, 'group_count', v_notification.group_count,
-    'push', case when v_tokens is not null then jsonb_build_object(
-      'tokens', v_tokens,
-      'title_key', v_kind.title_key,
-      'body_key', v_kind.body_key,
-      'args', v_data || jsonb_build_object('actor_display_name',
-        (select u.display_name from public.users u where u.id = v_actor_id)),
-      'data', jsonb_build_object(
-        'notification_id', v_notification.id, 'kind', v_kind.kind, 'category', v_kind.category,
-        'entity', v_entity, 'group_count', v_notification.group_count),
-      'collapse_key', v_group_key) end);
+    'push', kc_private.notification_push(v_notification));
 end;
 $$;
 comment on function kc_private.notifications_deliver(bigint) is

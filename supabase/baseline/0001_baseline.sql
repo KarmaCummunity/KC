@@ -6932,18 +6932,51 @@ values
 -- Handoff changes (FR-NOTIF-018, D73, D131, D138): one kind per machine and change, named
 -- `<machine>_<change>` by kc_private.handoff_notification_kind. All are critical; ride
 -- bookings are also pushed during quiet hours (D95). Text keys are the kind in camelCase.
+-- The rows are written out, like every row of this registry: the generator of the kind
+-- list shared with the app and the push worker (scripts/generate-notification-kinds.mjs)
+-- reads literal `values` rows only, so the list can be checked without a database.
 insert into kc_private.notification_kinds (kind, category, bypass_quiet_hours, title_key, body_key)
-select k.kind, 'critical', m.machine = 'ride_booking',
-       'notifications.' || k.camel || 'Title', 'notifications.' || k.camel || 'Body'
-  from unnest(array['giving_handoff', 'ride_booking', 'housing_booking', 'event_registration']) as m (machine)
- cross join unnest(array[
-         'requested', 'claimed', 'confirmed', 'declined', 'cancelled', 'expired', 'completed',
-         'no_show', 'waitlist_promoted', 'reinstated']) as c (change)
- cross join lateral (
-   select m.machine || '_' || c.change as kind,
-          split_part(m.machine, '_', 1)
-            || replace(initcap(replace(split_part(m.machine, '_', 2) || '_' || c.change, '_', ' ')), ' ', '')
-            as camel) k;
+values
+  ('giving_handoff_requested', 'critical', false, 'notifications.givingHandoffRequestedTitle', 'notifications.givingHandoffRequestedBody'),
+  ('giving_handoff_claimed', 'critical', false, 'notifications.givingHandoffClaimedTitle', 'notifications.givingHandoffClaimedBody'),
+  ('giving_handoff_confirmed', 'critical', false, 'notifications.givingHandoffConfirmedTitle', 'notifications.givingHandoffConfirmedBody'),
+  ('giving_handoff_declined', 'critical', false, 'notifications.givingHandoffDeclinedTitle', 'notifications.givingHandoffDeclinedBody'),
+  ('giving_handoff_cancelled', 'critical', false, 'notifications.givingHandoffCancelledTitle', 'notifications.givingHandoffCancelledBody'),
+  ('giving_handoff_expired', 'critical', false, 'notifications.givingHandoffExpiredTitle', 'notifications.givingHandoffExpiredBody'),
+  ('giving_handoff_completed', 'critical', false, 'notifications.givingHandoffCompletedTitle', 'notifications.givingHandoffCompletedBody'),
+  ('giving_handoff_no_show', 'critical', false, 'notifications.givingHandoffNoShowTitle', 'notifications.givingHandoffNoShowBody'),
+  ('giving_handoff_waitlist_promoted', 'critical', false, 'notifications.givingHandoffWaitlistPromotedTitle', 'notifications.givingHandoffWaitlistPromotedBody'),
+  ('giving_handoff_reinstated', 'critical', false, 'notifications.givingHandoffReinstatedTitle', 'notifications.givingHandoffReinstatedBody'),
+  ('ride_booking_requested', 'critical', true, 'notifications.rideBookingRequestedTitle', 'notifications.rideBookingRequestedBody'),
+  ('ride_booking_claimed', 'critical', true, 'notifications.rideBookingClaimedTitle', 'notifications.rideBookingClaimedBody'),
+  ('ride_booking_confirmed', 'critical', true, 'notifications.rideBookingConfirmedTitle', 'notifications.rideBookingConfirmedBody'),
+  ('ride_booking_declined', 'critical', true, 'notifications.rideBookingDeclinedTitle', 'notifications.rideBookingDeclinedBody'),
+  ('ride_booking_cancelled', 'critical', true, 'notifications.rideBookingCancelledTitle', 'notifications.rideBookingCancelledBody'),
+  ('ride_booking_expired', 'critical', true, 'notifications.rideBookingExpiredTitle', 'notifications.rideBookingExpiredBody'),
+  ('ride_booking_completed', 'critical', true, 'notifications.rideBookingCompletedTitle', 'notifications.rideBookingCompletedBody'),
+  ('ride_booking_no_show', 'critical', true, 'notifications.rideBookingNoShowTitle', 'notifications.rideBookingNoShowBody'),
+  ('ride_booking_waitlist_promoted', 'critical', true, 'notifications.rideBookingWaitlistPromotedTitle', 'notifications.rideBookingWaitlistPromotedBody'),
+  ('ride_booking_reinstated', 'critical', true, 'notifications.rideBookingReinstatedTitle', 'notifications.rideBookingReinstatedBody'),
+  ('housing_booking_requested', 'critical', false, 'notifications.housingBookingRequestedTitle', 'notifications.housingBookingRequestedBody'),
+  ('housing_booking_claimed', 'critical', false, 'notifications.housingBookingClaimedTitle', 'notifications.housingBookingClaimedBody'),
+  ('housing_booking_confirmed', 'critical', false, 'notifications.housingBookingConfirmedTitle', 'notifications.housingBookingConfirmedBody'),
+  ('housing_booking_declined', 'critical', false, 'notifications.housingBookingDeclinedTitle', 'notifications.housingBookingDeclinedBody'),
+  ('housing_booking_cancelled', 'critical', false, 'notifications.housingBookingCancelledTitle', 'notifications.housingBookingCancelledBody'),
+  ('housing_booking_expired', 'critical', false, 'notifications.housingBookingExpiredTitle', 'notifications.housingBookingExpiredBody'),
+  ('housing_booking_completed', 'critical', false, 'notifications.housingBookingCompletedTitle', 'notifications.housingBookingCompletedBody'),
+  ('housing_booking_no_show', 'critical', false, 'notifications.housingBookingNoShowTitle', 'notifications.housingBookingNoShowBody'),
+  ('housing_booking_waitlist_promoted', 'critical', false, 'notifications.housingBookingWaitlistPromotedTitle', 'notifications.housingBookingWaitlistPromotedBody'),
+  ('housing_booking_reinstated', 'critical', false, 'notifications.housingBookingReinstatedTitle', 'notifications.housingBookingReinstatedBody'),
+  ('event_registration_requested', 'critical', false, 'notifications.eventRegistrationRequestedTitle', 'notifications.eventRegistrationRequestedBody'),
+  ('event_registration_claimed', 'critical', false, 'notifications.eventRegistrationClaimedTitle', 'notifications.eventRegistrationClaimedBody'),
+  ('event_registration_confirmed', 'critical', false, 'notifications.eventRegistrationConfirmedTitle', 'notifications.eventRegistrationConfirmedBody'),
+  ('event_registration_declined', 'critical', false, 'notifications.eventRegistrationDeclinedTitle', 'notifications.eventRegistrationDeclinedBody'),
+  ('event_registration_cancelled', 'critical', false, 'notifications.eventRegistrationCancelledTitle', 'notifications.eventRegistrationCancelledBody'),
+  ('event_registration_expired', 'critical', false, 'notifications.eventRegistrationExpiredTitle', 'notifications.eventRegistrationExpiredBody'),
+  ('event_registration_completed', 'critical', false, 'notifications.eventRegistrationCompletedTitle', 'notifications.eventRegistrationCompletedBody'),
+  ('event_registration_no_show', 'critical', false, 'notifications.eventRegistrationNoShowTitle', 'notifications.eventRegistrationNoShowBody'),
+  ('event_registration_waitlist_promoted', 'critical', false, 'notifications.eventRegistrationWaitlistPromotedTitle', 'notifications.eventRegistrationWaitlistPromotedBody'),
+  ('event_registration_reinstated', 'critical', false, 'notifications.eventRegistrationReinstatedTitle', 'notifications.eventRegistrationReinstatedBody');
 
 -- Engagement on a post (emitted by 30_social; spec 07 §7.9, §7.11). Social kinds are shown
 -- in the notification centre only; events about one post merge within the hour (S10).
@@ -7111,46 +7144,27 @@ $$;
 comment on function kc_private.notifications_purge(interval) is
   'Retention: drops monthly partitions older than the window and purges the dedupe ledger.';
 
--- >>> supabase/schemas/50_notifications/030_notification_delivery.sql
--- Notifications · delivery (the consumer of outbox topic `notification`)
+-- >>> supabase/schemas/50_notifications/025_notification_push.sql
+-- Notifications · the push of a notification
 --
--- A worker — the `dispatch-notification` Edge Function, running as the service role — asks
--- for a batch with kc_private.notifications_deliver_batch(). For each event the database
--- decides everything that needs data: whether the member wants the notification, whether
--- it merges into an existing one, and whether a push may be sent now. The worker only
--- renders the text and talks to the push provider.
+-- What the push worker (`dispatch-notification` Edge Function) needs to send one
+-- notification to the member's devices, built from the notification row at the moment it is
+-- asked for — at delivery (030_notification_delivery.sql) and again at a retry
+-- (070_push_retry.sql) — so device tokens, quiet hours and the badge are always current and
+-- nothing but ids waits in a queue.
 --
--- Result of one event (jsonb):
---   { "event_id": 1, "status": "delivered" | "skipped", "reason": "<why skipped>",
---     "notification_id": "<uuid>", "group_count": 1,
---     "push": null | { "tokens": [{ "token", "platform" }], "title_key", "body_key",
---                      "args": { …event data, "actor_display_name" },
---                      "data": { "notification_id", "kind", "category", "entity", "group_count" },
---                      "collapse_key": "<group key|null>" } }
--- `push` is null when nothing may be pushed: the kind is centre-only, the member is in
--- quiet hours, or has no device. For chat kinds `args.message_id` names the message; the
--- worker reads its preview itself, so message text never passes through the queue.
--- The event is confirmed in the same transaction as the notification row, so a notification
--- is written exactly once; a push is sent at most once.
-
--- Whether a member wants a kind: the switch of its category (FR-NOTIF-014) and the kind's
--- own switch, which falls back to the kind's default (FR-NOTIF-017). Only an explicit
--- JSON boolean counts, whatever else a client stored in the preferences.
-create function kc_private.notification_kind_enabled(p_preferences jsonb, p_kind kc_private.notification_kinds)
-returns boolean
-language sql
-immutable
-set search_path = ''
-as $$
-  select p_preferences -> p_kind.category is distinct from 'false'::jsonb
-     and case p_preferences -> 'kinds' -> p_kind.kind
-           when 'true'::jsonb then true
-           when 'false'::jsonb then false
-           else p_kind.default_enabled
-         end;
-$$;
-comment on function kc_private.notification_kind_enabled(jsonb, kc_private.notification_kinds) is
-  'A member''s preferences allow the kind: category switch and per-kind switch.';
+-- The push (jsonb):
+--   { "tokens": [{ "device_id", "token", "platform" }],
+--     "title_key", "body_key",
+--     "args": { …the notification's data, "actor_display_name" },
+--     "data": { "notification_id", "kind", "category", "entity": { "type", "id" } | null,
+--               "group_count" },
+--     "collapse_key": "<group key|null>",
+--     "badge": <the member's unread notifications> }
+-- The worker renders the text from the keys and chooses the platform fields from the kind's
+-- row of the registry. For chat kinds `args.message_id` names the message; the worker reads
+-- its preview itself (kc_private.notification_message_previews), so message text never
+-- passes through a queue.
 
 -- Whether p_at falls in the member's quiet hours (spec 07 §7.11): preferences
 -- `quietHours { enabled, start, end, timezone }`, by default 22:00–08:00 Israel time once
@@ -7185,6 +7199,104 @@ $$;
 comment on function kc_private.notification_in_quiet_hours(jsonb, timestamptz) is
   'The moment falls inside the quiet hours of the given notification preferences.';
 
+-- The push of one notification, or null when nothing may be pushed now: the kind is shown
+-- in the centre only (S10), the member is in quiet hours and the kind does not pass them
+-- (D95), or no device is registered. `p_device_ids` narrows the push to those devices — a
+-- retry reaches only the devices the first attempt missed.
+create function kc_private.notification_push(p_notification public.notifications, p_device_ids uuid[] default null)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_kind kc_private.notification_kinds;
+  v_preferences jsonb;
+  v_tokens jsonb;
+begin
+  select k.* into v_kind from kc_private.notification_kinds k where k.kind = p_notification.kind;
+  if not found or not v_kind.sends_push then
+    return null;
+  end if;
+  if not (v_kind.bypass_preferences or v_kind.bypass_quiet_hours) then
+    select p.notification_preferences into v_preferences
+      from public.user_private p where p.user_id = p_notification.user_id;
+    if kc_private.notification_in_quiet_hours(v_preferences) then
+      return null;
+    end if;
+  end if;
+
+  -- Oldest registration first, so the order of the tokens is stable between attempts.
+  select jsonb_agg(jsonb_build_object('device_id', d.id, 'token', d.push_token, 'platform', d.platform)
+                   order by d.created_at, d.id)
+    into v_tokens
+    from public.user_devices d
+   where d.user_id = p_notification.user_id
+     and (p_device_ids is null or d.id = any (p_device_ids));
+  if v_tokens is null then
+    return null;
+  end if;
+
+  return jsonb_build_object(
+    'tokens', v_tokens,
+    'title_key', p_notification.title_key,
+    'body_key', p_notification.body_key,
+    'args', p_notification.data || jsonb_build_object('actor_display_name',
+      (select u.display_name from public.users u where u.id = p_notification.actor_ids[1])),
+    'data', jsonb_build_object(
+      'notification_id', p_notification.id, 'kind', p_notification.kind,
+      'category', p_notification.category,
+      'entity', case when p_notification.entity_id is not null then jsonb_build_object(
+        'type', p_notification.entity_type, 'id', p_notification.entity_id) end,
+      'group_count', p_notification.group_count),
+    'collapse_key', p_notification.group_key,
+    -- The number on the app icon: everything the member has not read, this one included.
+    'badge', (select count(*) from public.notifications n
+               where n.user_id = p_notification.user_id and n.read_at is null));
+end;
+$$;
+comment on function kc_private.notification_push(public.notifications, uuid[]) is
+  'What the push worker sends for a notification (tokens, text keys, arguments, badge), or null when it may not be pushed now.';
+
+-- >>> supabase/schemas/50_notifications/030_notification_delivery.sql
+-- Notifications · delivery (the consumer of outbox topic `notification`)
+--
+-- A worker — the `dispatch-notification` Edge Function, running as the service role — asks
+-- for a batch with kc_private.notifications_deliver_batch(). For each event the database
+-- decides everything that needs data: whether the member wants the notification, whether
+-- it merges into an existing one, and whether a push may be sent now. The worker only
+-- renders the text and talks to the push provider.
+--
+-- Result of one event (jsonb):
+--   { "event_id": 1, "status": "delivered" | "skipped", "reason": "<why skipped>",
+--     "notification_id": "<uuid>", "group_count": 1,
+--     "push": null | <the push of kc_private.notification_push, 025_notification_push.sql> }
+-- `push` is null when nothing may be pushed: the kind is centre-only, the member is in
+-- quiet hours, or has no device.
+-- The event is confirmed in the same transaction as the notification row, so a notification
+-- is written exactly once. A push the provider could not take is retried from its own
+-- queue (070_push_retry.sql), never by delivering the event again.
+
+-- Whether a member wants a kind: the switch of its category (FR-NOTIF-014) and the kind's
+-- own switch, which falls back to the kind's default (FR-NOTIF-017). Only an explicit
+-- JSON boolean counts, whatever else a client stored in the preferences.
+create function kc_private.notification_kind_enabled(p_preferences jsonb, p_kind kc_private.notification_kinds)
+returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  select p_preferences -> p_kind.category is distinct from 'false'::jsonb
+     and case p_preferences -> 'kinds' -> p_kind.kind
+           when 'true'::jsonb then true
+           when 'false'::jsonb then false
+           else p_kind.default_enabled
+         end;
+$$;
+comment on function kc_private.notification_kind_enabled(jsonb, kc_private.notification_kinds) is
+  'A member''s preferences allow the kind: category switch and per-kind switch.';
+
 -- Turns one outbox event into a notification and returns the result described above.
 create function kc_private.notifications_deliver(p_event_id bigint)
 returns jsonb
@@ -7205,7 +7317,6 @@ declare
   v_is_active boolean;
   v_reason text;
   v_notification public.notifications;
-  v_tokens jsonb;
 begin
   select e.* into v_event
     from kc_private.outbox_events e
@@ -7286,27 +7397,11 @@ begin
     returning * into v_notification;
   end if;
 
-  if v_kind.sends_push and (v_kind.bypass_preferences or v_kind.bypass_quiet_hours
-                            or not kc_private.notification_in_quiet_hours(v_preferences)) then
-    select jsonb_agg(jsonb_build_object('token', d.push_token, 'platform', d.platform))
-      into v_tokens
-      from public.user_devices d where d.user_id = v_to;
-  end if;
-
   perform kc_private.outbox_complete(p_event_id);
   return jsonb_build_object(
     'event_id', p_event_id, 'status', 'delivered',
     'notification_id', v_notification.id, 'group_count', v_notification.group_count,
-    'push', case when v_tokens is not null then jsonb_build_object(
-      'tokens', v_tokens,
-      'title_key', v_kind.title_key,
-      'body_key', v_kind.body_key,
-      'args', v_data || jsonb_build_object('actor_display_name',
-        (select u.display_name from public.users u where u.id = v_actor_id)),
-      'data', jsonb_build_object(
-        'notification_id', v_notification.id, 'kind', v_kind.kind, 'category', v_kind.category,
-        'entity', v_entity, 'group_count', v_notification.group_count),
-      'collapse_key', v_group_key) end);
+    'push', kc_private.notification_push(v_notification));
 end;
 $$;
 comment on function kc_private.notifications_deliver(bigint) is
@@ -7566,6 +7661,145 @@ create trigger notifications_broadcast_badge_update
   after update on public.notifications
   referencing new table as changed_rows
   for each statement execute function kc_private.notifications_broadcast_badge();
+
+-- >>> supabase/schemas/50_notifications/070_push_retry.sql
+-- Notifications · push worker queues (retries and provider receipts)
+--
+-- The inbox row of a notification is written exactly once by the delivery function. What
+-- can fail afterwards is the hand-over to the push provider, and that has its own two
+-- outbox topics, so that a retry never touches the inbox again:
+--   notification_push          { "notification_id", "device_ids": [uuid] }
+--       a push the provider did not take (rate limit, outage); retried with back-off for
+--       the listed devices only, rebuilt from the notification at that time.
+--   notification_push_receipt  { "tickets": [{ "id", "device_id" }] }
+--       tickets the provider accepted; a while later the worker asks for their receipts
+--       and forgets the devices the provider reports as gone (FR-NOTIF-015 AC3).
+-- Neither payload carries a token or any text. The worker (`dispatch-notification`) calls
+-- only the functions of this file, kc_private.notifications_deliver_batch and
+-- kc_private.outbox_claim — one round trip each per run.
+
+-- Previews of chat messages for the push of chat kinds: the first 80 characters of the
+-- text (FR-NOTIF-001 AC1); null for a message without text (media, system).
+create function kc_private.notification_message_previews(p_message_ids uuid[])
+returns table (message_id uuid, preview text)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select m.id, left(m.body, 80)
+    from public.messages m
+   where m.id = any (p_message_ids);
+$$;
+comment on function kc_private.notification_message_previews(uuid[]) is
+  'First 80 characters of the listed chat messages, read by the push worker at send time.';
+
+-- Claims due `notification_push` events and returns, per event, the push to send again:
+--   { "event_id", "status": "retry", "attempts", "notification_id", "push": {…} }
+-- The event stays claimed until the worker settles it. An event whose notification is
+-- gone, was read meanwhile, or may not be pushed now is confirmed here and reported as
+--   { "event_id", "status": "skipped" }.
+create function kc_private.notification_push_retry_batch(p_limit integer default 50)
+returns setof jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_event kc_private.outbox_events;
+  v_notification public.notifications;
+  v_push jsonb;
+begin
+  for v_event in
+    select e.* from kc_private.outbox_claim('notification_push', p_limit) e order by e.id
+  loop
+    begin
+      v_push := null;
+      select n.* into v_notification
+        from public.notifications n
+       where n.id = (v_event.payload ->> 'notification_id')::uuid and n.read_at is null;
+      if found then
+        v_push := kc_private.notification_push(v_notification,
+          array(select jsonb_array_elements_text(v_event.payload -> 'device_ids'))::uuid[]);
+      end if;
+      if v_push is null then
+        perform kc_private.outbox_complete(v_event.id);
+        return next jsonb_build_object('event_id', v_event.id, 'status', 'skipped');
+      else
+        return next jsonb_build_object(
+          'event_id', v_event.id, 'status', 'retry', 'attempts', v_event.attempts,
+          'notification_id', v_notification.id, 'push', v_push);
+      end if;
+    exception when others then
+      -- An unreadable event must not spin: it waits an hour with its error recorded.
+      perform kc_private.outbox_complete(v_event.id, sqlerrm, interval '1 hour');
+      return next jsonb_build_object('event_id', v_event.id, 'status', 'skipped');
+    end;
+  end loop;
+end;
+$$;
+comment on function kc_private.notification_push_retry_batch(integer) is
+  'Claims due push retries and returns the push of each, rebuilt from its notification.';
+
+-- Records everything one worker run learned, in one call:
+--   { "forget_devices": [uuid],            devices the provider reports as gone
+--     "defer":   [{ "notification_id", "device_ids", "retry_in_seconds" }],
+--                                          first attempts that failed for now
+--     "retry":   [{ "event_id", "device_ids", "error", "retry_in_seconds" }],
+--                                          claimed events to try again later; `device_ids`
+--                                          (optional) narrows the event to what still failed
+--     "done":    [event_id],               claimed events that are finished
+--     "receipts": [[{ "id", "device_id" }]],   accepted tickets, one event per inner list
+--     "receipt_delay_seconds": 900 }
+-- `retry` and `done` only ever touch events of the two topics of this file.
+create function kc_private.notification_push_settle(p_outcome jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_retry record;
+begin
+  delete from public.user_devices d
+   where d.id in (select x::uuid from jsonb_array_elements_text(p_outcome -> 'forget_devices') x);
+
+  perform kc_private.outbox_enqueue('notification_push',
+            jsonb_build_object('notification_id', x.notification_id, 'device_ids', x.device_ids),
+            now() + make_interval(secs => coalesce(x.retry_in_seconds, 30)))
+     from jsonb_to_recordset(p_outcome -> 'defer')
+            as x (notification_id uuid, device_ids jsonb, retry_in_seconds integer);
+
+  for v_retry in
+    select x.*
+      from jsonb_to_recordset(p_outcome -> 'retry')
+             as x (event_id bigint, device_ids jsonb, error text, retry_in_seconds integer)
+      join kc_private.outbox_events e on e.id = x.event_id
+     where e.topic in ('notification_push', 'notification_push_receipt')
+  loop
+    if v_retry.device_ids is not null then
+      update kc_private.outbox_events e
+         set payload = e.payload || jsonb_build_object('device_ids', v_retry.device_ids)
+       where e.id = v_retry.event_id and e.processed_at is null;
+    end if;
+    perform kc_private.outbox_complete(v_retry.event_id, coalesce(v_retry.error, 'retry'),
+              make_interval(secs => coalesce(v_retry.retry_in_seconds, 60)));
+  end loop;
+
+  perform kc_private.outbox_complete(e.id)
+     from kc_private.outbox_events e
+    where e.id in (select x::bigint from jsonb_array_elements_text(p_outcome -> 'done') x)
+      and e.topic in ('notification_push', 'notification_push_receipt');
+
+  perform kc_private.outbox_enqueue('notification_push_receipt',
+            jsonb_build_object('tickets', x.tickets),
+            now() + make_interval(secs => coalesce((p_outcome ->> 'receipt_delay_seconds')::integer, 900)))
+     from jsonb_array_elements(p_outcome -> 'receipts') as x (tickets)
+    where jsonb_array_length(x.tickets) > 0;
+end;
+$$;
+comment on function kc_private.notification_push_settle(jsonb) is
+  'Push worker: forgets dead devices, schedules retries, confirms finished events and queues receipt checks.';
 
 -- >>> supabase/schemas/58_audit/010_events.sql
 -- Audit · events (append-only trail of privileged and sensitive actions)
