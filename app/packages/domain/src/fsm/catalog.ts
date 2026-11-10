@@ -1,6 +1,7 @@
 import type { FsmMachine } from './machine';
 import { accountStatusMachine } from './machines/accountStatus';
 import { adminTaskMachine } from './machines/adminTask';
+import { donationLinkReviewMachine } from './machines/donationLinkReview';
 import { eventRegistrationMachine } from './machines/eventRegistration';
 import { followRequestMachine } from './machines/followRequest';
 import { givingHandoffMachine } from './machines/givingHandoff';
@@ -10,6 +11,7 @@ import { onboardingMachine } from './machines/onboarding';
 import { postMachine } from './machines/post';
 import { postCommentMachine } from './machines/postComment';
 import { reportMachine } from './machines/report';
+import { reviewDecisionMachine } from './machines/reviewDecision';
 import { rideBookingMachine } from './machines/rideBooking';
 
 /**
@@ -33,4 +35,6 @@ export const FSM_MACHINES: readonly FsmMachine<string, string>[] = [
   knowledgeTopicMachine,
   reportMachine,
   followRequestMachine,
+  reviewDecisionMachine,
+  donationLinkReviewMachine,
 ];
