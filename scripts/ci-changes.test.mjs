@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { HEAVY_LANES, LANE_JOBS, OPTIONAL_LANES, REVIEW_LANES, changedFiles, classify, plan } from './ci-changes.mjs';
+import { HEAVY_LANES, LANE_JOBS, OPTIONAL_LANES, REVIEW_LANES, changedFiles, classify, plan, readPrAction } from './ci-changes.mjs';
 
 const PR = { event: 'pull_request', draft: false, actor: 'agent', ref: 'refs/pull/1/merge', baseRef: 'dev' };
 const ALL = { hygiene: true, static: true, frontend: true, backend: true, edge: true, bundles: true };
@@ -152,6 +152,47 @@ test('a review on a draft PR plans and runs nothing', () => {
   const review = plan({ ...PR, event: 'pull_request_review', draft: true, files: ['app/a.ts'] });
   assert.equal(review.draft, true);
   assert.ok(Object.values(review.run).every((runs) => runs === false));
+});
+
+test('an edited event without a base change keeps the full plan but runs only hygiene and review lanes', () => {
+  const files = ['app/apps/mobile/src/lib/x.ts'];
+  const edited = plan({ ...PR, action: 'edited', baseChanged: false, files });
+  assert.deepEqual(edited.plan, plan({ ...PR, files }).plan);
+  assert.deepEqual(edited.run, { hygiene: true, static: true, release: false, bundles: false, frontend: false, backend: false, edge: false });
+  assert.equal(edited.sonar, false);
+});
+
+test('an edited event that changes the base still runs every planned lane', () => {
+  const files = ['app/apps/mobile/src/lib/x.ts'];
+  const edited = plan({ ...PR, action: 'edited', baseChanged: true, files });
+  assert.deepEqual(edited.run, edited.plan);
+  assert.deepEqual(edited.plan, plan({ ...PR, files }).plan);
+});
+
+test('an edited event into main plans the release lane but does not re-run it unless the base changed', () => {
+  const noBase = plan({ ...PR, baseRef: 'main', action: 'edited', baseChanged: false, files: [] });
+  assert.equal(noBase.plan.release, true);
+  assert.equal(noBase.run.release, false);
+  assert.equal(noBase.run.hygiene, true);
+  assert.equal(noBase.run.static, true);
+  const withBase = plan({ ...PR, baseRef: 'main', action: 'edited', baseChanged: true, files: [] });
+  assert.equal(withBase.run.release, true);
+});
+
+test('readPrAction reads the action and a base change from the event payload', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ci-event-'));
+  try {
+    const path = join(dir, 'event.json');
+    writeFileSync(path, JSON.stringify({ action: 'edited', changes: { body: { from: 'old' } } }));
+    assert.deepEqual(readPrAction(path), { action: 'edited', baseChanged: false });
+    writeFileSync(path, JSON.stringify({ action: 'edited', changes: { base: { ref: { from: 'dev' } } } }));
+    assert.deepEqual(readPrAction(path), { action: 'edited', baseChanged: true });
+    writeFileSync(path, 'not-json');
+    assert.deepEqual(readPrAction(path), { action: undefined, baseChanged: false });
+    assert.deepEqual(readPrAction(''), { action: undefined, baseChanged: false });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('every non-review event runs exactly what it plans', () => {
