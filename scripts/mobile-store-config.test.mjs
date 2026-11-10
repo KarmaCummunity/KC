@@ -1,7 +1,7 @@
 // Unit tests for scripts/mobile-store-config.mjs. Run: node --test scripts/mobile-store-config.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEV_REF, DEV_URL, PROD_REF, checkAnonKey, checkBundle, checkPin, injectProfileEnv } from './mobile-store-config.mjs';
+import { DEV_REF, DEV_URL, PROD_REF, checkAnonKey, checkBundle, checkPin, injectProfileEnv, sentryVars } from './mobile-store-config.mjs';
 
 /** Build an unsigned JWT with the given payload (only the payload is inspected). */
 const jwt = (payload) =>
@@ -61,4 +61,12 @@ test('injectProfileEnv merges into one profile and keeps the rest untouched', ()
 
 test('injectProfileEnv fails on an unknown profile', () => {
   assert.throws(() => injectProfileEnv({ build: {} }, 'nightly', {}), /no build profile "nightly"/);
+});
+
+test('sentryVars keeps only the non-secret Sentry settings that are set', () => {
+  assert.deepEqual(
+    sentryVars({ EXPO_PUBLIC_SENTRY_DSN: ' https://k@o1.ingest.sentry.io/1 ', SENTRY_ORG: 'org', SENTRY_URL: '', SENTRY_AUTH_TOKEN: 'secret', OTHER: 'x' }),
+    { EXPO_PUBLIC_SENTRY_DSN: 'https://k@o1.ingest.sentry.io/1', SENTRY_ORG: 'org' },
+  );
+  assert.deepEqual(sentryVars({}), {});
 });

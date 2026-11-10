@@ -17,7 +17,12 @@
 //          contains the kc-dev project URL and no prod project URL. Hermes
 //          bytecode stores string literals verbatim, so a byte search works.
 //
-// Inputs (env): SOURCE_BRANCH, MOBILE_SUPABASE_ANON_KEY (pin);
+// `pin` also writes the non-secret Sentry settings (EXPO_PUBLIC_SENTRY_DSN, SENTRY_ORG,
+// SENTRY_PROJECT, SENTRY_URL, from the `mobile-store` environment variables) into the same
+// profile env, so iOS and Android builds read Sentry from one place. SENTRY_AUTH_TOKEN
+// stays a secret (runner env for iOS, EAS server environment for Android).
+//
+// Inputs (env): SOURCE_BRANCH, MOBILE_SUPABASE_ANON_KEY, optional Sentry vars (pin);
 // EAS_JSON (default app/apps/mobile/eas.json), EAS_PROFILE (default nightly).
 
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
@@ -73,6 +78,19 @@ export function checkBundle(bundle) {
   return errors;
 }
 
+/** Non-secret Sentry settings pinned into the build profile, so iOS (local build) and Android (cloud build) share one source. */
+export const SENTRY_PIN_KEYS = ['EXPO_PUBLIC_SENTRY_DSN', 'SENTRY_ORG', 'SENTRY_PROJECT', 'SENTRY_URL'];
+
+/** The Sentry settings set in `env` (trimmed, empty ones dropped). SENTRY_AUTH_TOKEN is a secret and is never pinned. */
+export function sentryVars(env) {
+  const out = {};
+  for (const k of SENTRY_PIN_KEYS) {
+    const v = env[k]?.trim();
+    if (v) out[k] = v;
+  }
+  return out;
+}
+
 /** Return a copy of eas.json with `vars` merged into build.<profile>.env. */
 export function injectProfileEnv(easJson, profile, vars) {
   const build = easJson.build?.[profile];
@@ -98,6 +116,7 @@ function pin(env) {
   const next = injectProfileEnv(easJson, profile, {
     EXPO_PUBLIC_SUPABASE_URL: DEV_URL,
     EXPO_PUBLIC_SUPABASE_ANON_KEY: anonKey,
+    ...sentryVars(env),
   });
   writeFileSync(easPath, `${JSON.stringify(next, null, 2)}\n`);
   const line = `Store build backend: Supabase **kc-dev** (\`${DEV_REF}\`), eas.json profile "${profile}".`;

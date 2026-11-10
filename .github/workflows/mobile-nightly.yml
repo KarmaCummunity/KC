@@ -98,7 +98,7 @@ jobs:
     uses: ./.github/workflows/testflight-ios.yml
     with:
       ref: ${{ needs.resolve.outputs.sha }}
-    # Repo-level store credentials; the mobile-store environment's are read in the called job.
+    # The store credentials live in the mobile-store environment and are read in the called job.
     secrets: inherit
 
   android:

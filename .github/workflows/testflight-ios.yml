@@ -137,13 +137,17 @@ jobs:
           cache: pnpm
           cache-dependency-path: app/pnpm-lock.yaml
 
-      # Writes the kc-dev backend into the eas.json `nightly` profile env (runner
+      # Writes the kc-dev backend and the Sentry vars into the eas.json `nightly` profile env (runner
       # only); fails for a main commit or a key of another project.
       - name: Pin the Supabase backend
         working-directory: .
         env:
           SOURCE_BRANCH: ${{ steps.target.outputs.branch }}
           MOBILE_SUPABASE_ANON_KEY: ${{ secrets.MOBILE_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_URL: ${{ vars.SENTRY_URL }}
         run: node scripts/mobile-store-config.mjs pin
 
       - name: Install dependencies
