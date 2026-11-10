@@ -155,7 +155,9 @@ export function defineWorldJourney(journey: WorldJourney): void {
       const { token, userId: aId } = await tokenFor(USER_A);
       expect((await handoffAs(USER_A, listingId))?.status).toBe('handed_over');
       const [card] = await rest<{ status: string }[]>(token, `marketplace_listing_card?select=status&listing_id=eq.${listingId}`);
-      expect(card?.status).toBe('closed');
+      // The card view exposes the post FSM state (posts.status, FSM kernel epic #1989): a delivered handoff
+      // is `closed_delivered`. The legacy `closed` label only exists on the `listings` compatibility view.
+      expect(card?.status).toBe('closed_delivered');
       const karma = await rest<{ points_delta: number }[]>(
         token,
         `karma_ledger?select=points_delta&user_id=eq.${aId}&ref_id=eq.${handoffId}&event_type=eq.giving_handoff_giver`,
