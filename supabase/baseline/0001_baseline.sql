@@ -4173,3 +4173,1623 @@ $$;
 comment on function public.rate_handoff(uuid, integer, text) is
   'The caller rates the other member of a handed-over handoff, once.';
 grant execute on function public.rate_handoff(uuid, integer, text) to authenticated;
+
+-- >>> supabase/schemas/30_social/010_post_media.sql
+-- Social · post_media (one row per file attached to a post)
+--
+-- The file itself lives in object storage; the database holds what a card needs to lay the
+-- media out before it loads (size, blurhash) and where to fetch it (design §5.3). A device
+-- uploads straight to storage under its own folder and then records the row as `pending`;
+-- the media pipeline strips EXIF, builds the fixed variants and marks the row `ready`
+-- (FR-POST-005 AC3, AC4). Other members only ever see `ready` media.
+
+insert into kc_private.fsm_state (machine_id, status) values
+  ('post_media', 'pending'),
+  ('post_media', 'ready'),
+  ('post_media', 'failed');
+
+-- Only the media pipeline (role `system`) moves a file out of `pending`.
+insert into kc_private.fsm_edge (machine_id, from_status, to_status, role) values
+  ('post_media', 'pending', 'ready', 'system'),
+  ('post_media', 'pending', 'failed', 'system');
+
+create table public.post_media (
+  id                uuid primary key default gen_random_uuid(),
+  post_id           uuid not null references public.posts (id) on delete cascade,
+  -- Always the post's owner; kept on the row so the storage folder rule and the purge of a
+  -- member's files need no join.
+  owner_id          uuid not null references public.users (id) on delete cascade,
+  kind              text not null default 'image' check (kind in ('image', 'video')),
+  storage_bucket    text not null default 'post-images' check (storage_bucket ~ '^[a-z0-9][a-z0-9-]{1,62}$'),
+  -- Object path inside the bucket; for video, the provider's asset id (design §5.3).
+  storage_key       text not null check (char_length(storage_key) between 1 and 512),
+  -- Position in the post's gallery, 0 first. The range is the cap: five files per post
+  -- (FR-POST-005 AC2).
+  ordinal           smallint not null check (ordinal between 0 and 4),
+  mime_type         text not null,
+  size_bytes        bigint not null check (size_bytes > 0),
+  width             integer check (width > 0),
+  height            integer check (height > 0),
+  duration_ms       integer check (duration_ms > 0),
+  -- Compact placeholder painted while the file loads.
+  blurhash          text check (char_length(blurhash) between 6 and 64),
+  -- Lifecycle, machine `post_media`. Never written by a device.
+  processing_status text not null default 'pending',
+  created_at        timestamptz not null default now(),
+  constraint post_media_post_ordinal_key unique (post_id, ordinal),
+  constraint post_media_storage_object_key unique (storage_bucket, storage_key),
+  -- A member's files live under a folder named by their id (design §4 "Storage").
+  constraint post_media_owner_folder_chk check (starts_with(storage_key, owner_id::text || '/')),
+  -- Images: JPEG or PNG, at most 8 MB after the client-side resize (FR-POST-005 AC1, AC2).
+  constraint post_media_image_chk check (
+    kind <> 'image' or (mime_type in ('image/jpeg', 'image/png') and size_bytes <= 8388608 and duration_ms is null)),
+  constraint post_media_video_chk check (kind <> 'video' or mime_type like 'video/%')
+);
+comment on table public.post_media is 'Files attached to a post: location in storage, layout hints and processing status.';
+
+-- Gallery of a post in order and the cover of a card are served by post_media_post_ordinal_key.
+-- Files of a member: the account purge deletes them from storage first; covers the foreign key.
+create index post_media_owner_idx on public.post_media (owner_id);
+
+create trigger post_media_status_fsm
+  before insert or update of processing_status on public.post_media
+  for each row execute function kc_private.fsm_guard_status('post_media', 'processing_status');
+
+alter table public.post_media enable row level security;
+alter table public.post_media force row level security;
+
+-- The owner sees every file of theirs. Anyone else sees processed files of a post they can
+-- read: the subquery runs under the caller's own access to `posts`, so the post decides.
+create policy post_media_select_visible on public.post_media
+  for select to authenticated
+  using (
+    owner_id = (select auth.uid())
+    or (processing_status = 'ready'
+        and exists (select 1 from public.posts p where p.id = post_media.post_id)));
+
+-- The owner attaches a file to a post of theirs while its content is editable (draft, open
+-- or paused, D104). The row always starts `pending`.
+create policy post_media_insert_owner on public.post_media
+  for insert to authenticated
+  with check (
+    owner_id = (select auth.uid())
+    and processing_status = 'pending'
+    and exists (select 1 from public.posts p
+                 where p.id = post_media.post_id and p.owner_id = (select auth.uid())
+                   and p.status in ('draft', 'open', 'paused'))
+    and exists (select 1 from public.users u where u.id = (select auth.uid()) and u.is_active));
+
+-- The owner removes a file under the same condition. The object itself is removed by the
+-- orphan reconciliation job (design §5.3).
+create policy post_media_delete_owner on public.post_media
+  for delete to authenticated
+  using (
+    owner_id = (select auth.uid())
+    and exists (select 1 from public.posts p
+                 where p.id = post_media.post_id and p.status in ('draft', 'open', 'paused')));
+
+grant select, delete on public.post_media to authenticated;
+-- Not insertable: processing_status (starts `pending`) and created_at.
+grant insert (
+  id, post_id, owner_id, kind, storage_bucket, storage_key, ordinal, mime_type, size_bytes,
+  width, height, duration_ms, blurhash
+) on public.post_media to authenticated;
+
+-- >>> supabase/schemas/30_social/020_post_stats.sql
+-- Social · post_stats (engagement counters of a post)
+--
+-- One row per post that has ever been reacted to, commented on or shared; a post without a
+-- row has all counters at zero. Counters live apart from `posts` so that a reaction never
+-- rewrites the post row, and no trigger is added to `posts` (design §5 trigger budget).
+-- Maintained by statement-level triggers on the engagement tables; a nightly job recomputes
+-- them and records any drift.
+
+create table public.post_stats (
+  post_id         uuid primary key references public.posts (id) on delete cascade,
+  reactions_count integer not null default 0 check (reactions_count >= 0),
+  -- Active comments, replies included.
+  comments_count  integer not null default 0 check (comments_count >= 0),
+  shares_count    integer not null default 0 check (shares_count >= 0),
+  updated_at      timestamptz not null default now()
+);
+comment on table public.post_stats is 'Engagement counters per post, maintained by triggers and reconciled nightly.';
+
+create trigger post_stats_set_updated_at
+  before update on public.post_stats
+  for each row execute function kc_private.set_updated_at();
+
+alter table public.post_stats enable row level security;
+alter table public.post_stats force row level security;
+
+-- Counters are visible exactly when the post is: the subquery runs under the caller's own
+-- access to `posts`.
+create policy post_stats_select_visible_post on public.post_stats
+  for select to authenticated
+  using (exists (select 1 from public.posts p where p.id = post_stats.post_id));
+
+grant select on public.post_stats to authenticated;
+
+-- Adds (p_sign = 1) or subtracts (p_sign = -1) one unit of a counter for every element of
+-- p_post_ids; a post listed n times moves by n. Called once per statement by the engagement
+-- triggers. Adding creates the row on first use. Subtracting only updates: when the post
+-- itself is being removed its counter row is already gone and nothing is written, and a
+-- counter never drops below zero. Posts are touched in id order so two statements cannot
+-- deadlock on each other.
+create function kc_private.post_stats_add(p_counter text, p_sign integer, p_post_ids uuid[])
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if p_sign > 0 then
+    insert into public.post_stats as s (post_id, reactions_count, comments_count, shares_count)
+    select d.post_id,
+           d.n * (p_counter = 'reactions')::integer,
+           d.n * (p_counter = 'comments')::integer,
+           d.n * (p_counter = 'shares')::integer
+      from (select u.post_id, count(*)::integer as n
+              from unnest(p_post_ids) as u (post_id)
+             group by u.post_id
+             order by u.post_id) d
+    on conflict (post_id) do update
+      set reactions_count = s.reactions_count + excluded.reactions_count,
+          comments_count = s.comments_count + excluded.comments_count,
+          shares_count = s.shares_count + excluded.shares_count;
+    return;
+  end if;
+
+  update public.post_stats s
+     set reactions_count = greatest(s.reactions_count - d.n * (p_counter = 'reactions')::integer, 0),
+         comments_count = greatest(s.comments_count - d.n * (p_counter = 'comments')::integer, 0),
+         shares_count = greatest(s.shares_count - d.n * (p_counter = 'shares')::integer, 0)
+    from (select u.post_id, count(*)::integer as n
+            from unnest(p_post_ids) as u (post_id)
+           group by u.post_id
+           order by u.post_id) d
+   where s.post_id = d.post_id;
+end;
+$$;
+comment on function kc_private.post_stats_add(text, integer, uuid[]) is
+  'Moves one engagement counter of the listed posts up or down; used by the engagement triggers.';
+
+-- Records an engagement notification for the notifications module to deliver. Nothing is
+-- recorded when the recipient is the actor, no longer exists, or is in a blocked pair with
+-- the actor. `group_key` lets the consumer fold events of one kind on one post within the
+-- same hour into a single notification (S10).
+create function kc_private.notify_engagement(
+  p_kind text,
+  p_recipient_id uuid,
+  p_actor_id uuid,
+  p_post_id uuid,
+  p_entity_type text,
+  p_entity_id uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if p_recipient_id is null or p_recipient_id = p_actor_id
+     or kc_access.is_blocked_between(p_recipient_id, p_actor_id) then
+    return;
+  end if;
+  perform kc_private.outbox_enqueue('notification', jsonb_build_object(
+    'kind', p_kind,
+    'recipient_id', p_recipient_id,
+    'actor_id', p_actor_id,
+    'entity', jsonb_build_object('type', p_entity_type, 'id', p_entity_id),
+    'data', jsonb_build_object(
+      'post_id', p_post_id,
+      'group_key', p_kind || ':' || p_post_id || ':' || to_char(now() at time zone 'UTC', 'YYYYMMDDHH24'))));
+end;
+$$;
+comment on function kc_private.notify_engagement(text, uuid, uuid, uuid, text, uuid) is
+  'Enqueues one engagement notification event, skipping self-notifications and blocked pairs.';
+
+-- >>> supabase/schemas/30_social/030_post_reactions.sql
+-- Social · post_reactions (a member's reaction to a post, D25)
+--
+-- At most one reaction per member per post. Adding and removing are plain row writes under
+-- RLS; switching the type of an existing reaction goes through set_post_reaction below.
+
+create table public.post_reactions (
+  post_id       uuid not null references public.posts (id) on delete cascade,
+  user_id       uuid not null references public.users (id) on delete cascade,
+  reaction_type text not null default 'like' check (reaction_type in ('like', 'support', 'thanks')),
+  created_at    timestamptz not null default now(),
+  primary key (post_id, user_id)
+);
+comment on table public.post_reactions is 'One reaction per member per post.';
+
+-- Removal of a member's reactions with their account; covers the user foreign key.
+create index post_reactions_user_idx on public.post_reactions (user_id, created_at desc);
+
+-- Keeps post_stats.reactions_count in step, once per statement.
+create function kc_private.post_reactions_sync_stats()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.post_stats_add(
+    'reactions', case tg_op when 'INSERT' then 1 else -1 end, array(select c.post_id from changed c));
+  return null;
+end;
+$$;
+
+create trigger post_reactions_count_insert
+  after insert on public.post_reactions
+  referencing new table as changed
+  for each statement execute function kc_private.post_reactions_sync_stats();
+create trigger post_reactions_count_delete
+  after delete on public.post_reactions
+  referencing old table as changed
+  for each statement execute function kc_private.post_reactions_sync_stats();
+
+-- A new reaction notifies the post's owner (kind `post_reaction`). A type switch does not.
+create function kc_private.post_reactions_notify()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.notify_engagement(
+    'post_reaction', (select p.owner_id from public.posts p where p.id = new.post_id),
+    new.user_id, new.post_id, 'post', new.post_id);
+  return null;
+end;
+$$;
+
+create trigger post_reactions_notify
+  after insert on public.post_reactions
+  for each row execute function kc_private.post_reactions_notify();
+
+alter table public.post_reactions enable row level security;
+alter table public.post_reactions force row level security;
+
+-- A reaction is visible when its post is and its author is: both subqueries run under the
+-- caller's own access, so a post the caller cannot read shows no reactions, and members in
+-- a blocked pair (or with an inactive account) never see each other's.
+create policy post_reactions_select_visible on public.post_reactions
+  for select to authenticated
+  using (
+    exists (select 1 from public.posts p where p.id = post_reactions.post_id)
+    and exists (select 1 from public.users u where u.id = post_reactions.user_id));
+
+-- A member with an active account reacts, as themselves, to a published post they can read.
+create policy post_reactions_insert_self on public.post_reactions
+  for insert to authenticated
+  with check (
+    user_id = (select auth.uid())
+    and exists (select 1 from public.users u where u.id = (select auth.uid()) and u.is_active)
+    and exists (select 1 from public.posts p
+                 where p.id = post_reactions.post_id and p.status in ('open', 'closed_delivered')));
+
+-- Only the type of one's own reaction changes; which column is decided by the grant.
+create policy post_reactions_update_self on public.post_reactions
+  for update to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+create policy post_reactions_delete_self on public.post_reactions
+  for delete to authenticated
+  using (user_id = (select auth.uid()));
+
+grant select, insert, delete on public.post_reactions to authenticated;
+grant update (reaction_type) on public.post_reactions to authenticated;
+
+-- Sets the caller's reaction on a post: a type adds the reaction or switches its type, null
+-- removes it. Returns the type now held. An RPC because "insert, or change the type of the
+-- one I have" is an upsert, which the REST layer can only express with update rights on the
+-- key columns. Runs with the caller's rights: every rule is enforced by the policies above.
+create function public.set_post_reaction(p_post_id uuid, p_reaction_type text)
+returns text
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := (select auth.uid());
+begin
+  if v_user_id is null then
+    raise exception 'unauthenticated' using errcode = '42501';
+  end if;
+  if p_reaction_type is null then
+    delete from public.post_reactions r where r.post_id = p_post_id and r.user_id = v_user_id;
+    return null;
+  end if;
+  if p_reaction_type not in ('like', 'support', 'thanks') then
+    raise exception 'invalid_reaction_type' using errcode = 'P0001';
+  end if;
+  if not exists (select 1 from public.users u where u.id = v_user_id and u.is_active) then
+    raise exception 'account_not_active' using errcode = 'P0001';
+  end if;
+  if not exists (select 1 from public.posts p
+                  where p.id = p_post_id and p.status in ('open', 'closed_delivered')) then
+    raise exception 'post_not_found' using errcode = 'P0001';
+  end if;
+
+  insert into public.post_reactions as r (post_id, user_id, reaction_type)
+  values (p_post_id, v_user_id, p_reaction_type)
+  on conflict (post_id, user_id) do update set reaction_type = excluded.reaction_type
+    where r.reaction_type <> excluded.reaction_type;
+  return p_reaction_type;
+end;
+$$;
+comment on function public.set_post_reaction(uuid, text) is
+  'Adds, switches or (with null) removes the caller''s reaction on a post; returns the type now held.';
+grant execute on function public.set_post_reaction(uuid, text) to authenticated;
+
+-- >>> supabase/schemas/30_social/040_post_comments.sql
+-- Social · post_comments (comments and one level of replies, D25, S8)
+--
+-- A comment is written and edited as a plain row under RLS; triggers supply everything a
+-- device must not decide (thread rule, write rate, mentions, edit stamp, notifications).
+-- Deleting is a status move (machine `post_comment`) made by delete_post_comment, so the
+-- row stays as evidence for moderation while nobody can read it any more.
+
+insert into kc_private.fsm_state (machine_id, status) values
+  ('post_comment', 'active'),
+  ('post_comment', 'deleted');
+
+-- Who may delete a comment (S9). `deleted` is final.
+insert into kc_private.fsm_edge (machine_id, from_status, to_status, role) values
+  ('post_comment', 'active', 'deleted', 'author'),
+  ('post_comment', 'active', 'deleted', 'post_owner'),
+  ('post_comment', 'active', 'deleted', 'admin');
+
+create table public.post_comments (
+  id                uuid primary key default gen_random_uuid(),
+  post_id           uuid not null references public.posts (id) on delete cascade,
+  author_id         uuid not null references public.users (id) on delete cascade,
+  -- Null for a comment on the post; a reply points at a top-level comment of the same post.
+  parent_comment_id uuid references public.post_comments (id) on delete cascade,
+  body              text not null check (char_length(body) between 1 and 2000 and body = btrim(body)),
+  -- Lifecycle, machine `post_comment`. Never written by a device.
+  status            text not null default 'active',
+  -- Members named in the body as @share_handle who can read the post; derived by trigger.
+  mention_user_ids  uuid[] not null default '{}',
+  edited_at         timestamptz,
+  created_at        timestamptz not null default now(),
+  updated_at        timestamptz not null default now()
+);
+comment on table public.post_comments is 'Comments on a post, with one level of replies. Removal is a status move.';
+
+-- Comments of a post, oldest first: top-level list (parent is null) and, by prefix, the
+-- removal of a post's comments; covers the post foreign key.
+create index post_comments_thread_idx on public.post_comments (post_id, parent_comment_id, created_at, id);
+-- Replies of a comment, oldest first; covers the parent foreign key.
+create index post_comments_replies_idx on public.post_comments (parent_comment_id, created_at, id)
+  where parent_comment_id is not null;
+-- Write-rate check and removal of a member's comments; covers the author foreign key.
+create index post_comments_author_recent_idx on public.post_comments (author_id, created_at desc);
+
+create trigger post_comments_status_fsm
+  before insert or update of status on public.post_comments
+  for each row execute function kc_private.fsm_guard_status('post_comment', 'status');
+create trigger post_comments_set_updated_at
+  before update on public.post_comments
+  for each row execute function kc_private.set_updated_at();
+
+-- Members named in a comment body as @share_handle, at most ten, who are active, are not in
+-- a blocked pair with the author and can read the post. The audience test repeats the post
+-- policy for another member, because a policy only ever answers for the caller.
+create function kc_private.comment_mentions(p_body text, p_author_id uuid, p_post_id uuid)
+returns uuid[]
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(array_agg(m.id), '{}')
+    from (select u.id
+            from public.posts p
+            join public.users u
+              on u.share_handle in (select lower(t[1]) from regexp_matches(p_body, '@([A-Za-z0-9_]{3,30})', 'g') t)
+           where p.id = p_post_id
+             and u.is_active
+             and u.id <> p_author_id
+             and not kc_access.is_blocked_between(u.id, p_author_id)
+             and not kc_access.is_blocked_between(u.id, p.owner_id)
+             and (u.id = p.owner_id
+                  or p.visibility = 'Public'
+                  or (p.visibility = 'FollowersOnly'
+                      and exists (select 1 from public.follows f
+                                   where f.follower_id = u.id and f.followed_id = p.owner_id)))
+           order by u.share_handle
+           limit 10) m;
+$$;
+comment on function kc_private.comment_mentions(text, uuid, uuid) is
+  'Resolves the @share_handle tokens of a comment body to members who can read the post.';
+
+-- Server-side part of a comment write.
+--   insert  at most 20 comments a minute per member; a reply must point at an active
+--           top-level comment of the same post (one thread level, S8); mentions resolved
+--   edit    the body changed: edit stamp and mentions refreshed
+create function kc_private.post_comments_prepare()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if tg_op = 'INSERT' then
+    if (select count(*) from public.post_comments c
+         where c.author_id = new.author_id and c.created_at > now() - interval '1 minute') >= 20 then
+      raise exception 'rate_limited' using errcode = 'P0001', detail = 'at most 20 comments a minute';
+    end if;
+    if new.parent_comment_id is not null and not exists (
+         select 1 from public.post_comments c
+          where c.id = new.parent_comment_id and c.post_id = new.post_id
+            and c.parent_comment_id is null and c.status = 'active') then
+      raise exception 'comment_parent_invalid' using errcode = 'P0001';
+    end if;
+  else
+    new.edited_at := now();
+  end if;
+  new.mention_user_ids := kc_private.comment_mentions(new.body, new.author_id, new.post_id);
+  return new;
+end;
+$$;
+
+create trigger post_comments_prepare_insert
+  before insert on public.post_comments
+  for each row execute function kc_private.post_comments_prepare();
+create trigger post_comments_prepare_edit
+  before update of body on public.post_comments
+  for each row when (old.body is distinct from new.body)
+  execute function kc_private.post_comments_prepare();
+
+-- Keeps post_stats.comments_count (active comments) in step, once per statement: a new
+-- comment counts, a comment that leaves `active` or is removed while active stops counting.
+create function kc_private.post_comments_sync_stats()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if tg_op = 'INSERT' then
+    perform kc_private.post_stats_add(
+      'comments', 1, array(select c.post_id from changed c where c.status = 'active'));
+  elsif tg_op = 'DELETE' then
+    perform kc_private.post_stats_add(
+      'comments', -1, array(select c.post_id from changed c where c.status = 'active'));
+  else
+    perform kc_private.post_stats_add(
+      'comments', -1,
+      array(select o.post_id from changed o join changed_new n on n.id = o.id
+             where o.status = 'active' and n.status <> 'active'));
+  end if;
+  return null;
+end;
+$$;
+
+create trigger post_comments_count_insert
+  after insert on public.post_comments
+  referencing new table as changed
+  for each statement execute function kc_private.post_comments_sync_stats();
+create trigger post_comments_count_delete
+  after delete on public.post_comments
+  referencing old table as changed
+  for each statement execute function kc_private.post_comments_sync_stats();
+create trigger post_comments_count_status
+  after update on public.post_comments
+  referencing old table as changed new table as changed_new
+  for each statement execute function kc_private.post_comments_sync_stats();
+
+-- A new comment notifies, each member at most once and never the author:
+--   post_comment_reply   the author of the comment replied to
+--   post_comment         the post's owner
+--   post_mention         every member named in the body
+create function kc_private.post_comments_notify()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_parent_author_id constant uuid :=
+    (select c.author_id from public.post_comments c where c.id = new.parent_comment_id);
+  v_owner_id constant uuid := (select p.owner_id from public.posts p where p.id = new.post_id);
+  v_mentioned_id uuid;
+begin
+  perform kc_private.notify_engagement(
+    'post_comment_reply', v_parent_author_id, new.author_id, new.post_id, 'post_comment', new.id);
+  if v_owner_id is distinct from v_parent_author_id then
+    perform kc_private.notify_engagement(
+      'post_comment', v_owner_id, new.author_id, new.post_id, 'post_comment', new.id);
+  end if;
+  foreach v_mentioned_id in array new.mention_user_ids loop
+    if v_mentioned_id is distinct from v_owner_id and v_mentioned_id is distinct from v_parent_author_id then
+      perform kc_private.notify_engagement(
+        'post_mention', v_mentioned_id, new.author_id, new.post_id, 'post_comment', new.id);
+    end if;
+  end loop;
+  return null;
+end;
+$$;
+
+create trigger post_comments_notify
+  after insert on public.post_comments
+  for each row execute function kc_private.post_comments_notify();
+
+alter table public.post_comments enable row level security;
+alter table public.post_comments force row level security;
+
+-- An active comment is visible when its post is and its author is (both under the caller's
+-- own access): comments on a post the caller cannot read do not exist for them, and members
+-- in a blocked pair never see each other's comments. A deleted comment is visible to nobody.
+create policy post_comments_select_visible on public.post_comments
+  for select to authenticated
+  using (
+    status = 'active'
+    and exists (select 1 from public.posts p where p.id = post_comments.post_id)
+    and exists (select 1 from public.users u where u.id = post_comments.author_id));
+
+-- A member with an active account comments, as themselves, on a published post they can read.
+create policy post_comments_insert_self on public.post_comments
+  for insert to authenticated
+  with check (
+    author_id = (select auth.uid())
+    and status = 'active'
+    and exists (select 1 from public.users u where u.id = (select auth.uid()) and u.is_active)
+    and exists (select 1 from public.posts p
+                 where p.id = post_comments.post_id and p.status in ('open', 'closed_delivered')));
+
+-- The author edits the body of their own active comment; which column is decided by the grant.
+create policy post_comments_update_author on public.post_comments
+  for update to authenticated
+  using (author_id = (select auth.uid()) and status = 'active')
+  with check (author_id = (select auth.uid()));
+
+grant select on public.post_comments to authenticated;
+-- Not insertable: status, mention_user_ids, edited_at, timestamps — all server-written.
+grant insert (id, post_id, author_id, parent_comment_id, body) on public.post_comments to authenticated;
+grant update (body) on public.post_comments to authenticated;
+
+-- Deletes a comment: its author or the owner of the post may (S9; moderators act through
+-- the moderation module). The replies under a top-level comment go with it, so no reply is
+-- left without its thread. An RPC because the status column is not writable by a device and
+-- the move names the role it is made in. Idempotent on an already deleted comment.
+create function public.delete_post_comment(p_comment_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+  v_comment public.post_comments;
+  v_role text;
+begin
+  select c.* into v_comment from public.post_comments c where c.id = p_comment_id for update;
+  v_role := case
+    when v_comment.author_id = v_user_id then 'author'
+    when exists (select 1 from public.posts p where p.id = v_comment.post_id and p.owner_id = v_user_id)
+      then 'post_owner' end;
+  -- One answer for "no such comment" and "not yours to delete".
+  if v_role is null then
+    raise exception 'comment_not_found' using errcode = 'P0001';
+  end if;
+
+  perform set_config('kc.fsm_role', v_role, true);
+  update public.post_comments c
+     set status = 'deleted'
+   where (c.id = p_comment_id or c.parent_comment_id = p_comment_id) and c.status = 'active';
+  perform set_config('kc.fsm_role', '', true);
+end;
+$$;
+comment on function public.delete_post_comment(uuid) is
+  'Deletes a comment and its replies; allowed to its author and to the owner of the post.';
+grant execute on function public.delete_post_comment(uuid) to authenticated;
+
+-- >>> supabase/schemas/30_social/050_comment_reactions_shares_saves.sql
+-- Social · post_comment_reactions, post_shares, saved_posts
+--
+-- Three small member-owned tables. All of them are written as plain rows under RLS: each
+-- rule is "my own row, on something I can read", which a policy expresses in full.
+
+-- ── Likes on comments (D25) ──────────────────────────────────────────────────
+create table public.post_comment_reactions (
+  comment_id uuid not null references public.post_comments (id) on delete cascade,
+  user_id    uuid not null references public.users (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (comment_id, user_id)
+);
+comment on table public.post_comment_reactions is 'One like per member per comment.';
+
+-- Removal of a member's likes with their account; covers the user foreign key.
+create index post_comment_reactions_user_idx on public.post_comment_reactions (user_id);
+
+alter table public.post_comment_reactions enable row level security;
+alter table public.post_comment_reactions force row level security;
+
+-- Visible when the comment is (which in turn requires its post) and the member who liked
+-- is; both subqueries run under the caller's own access.
+create policy post_comment_reactions_select_visible on public.post_comment_reactions
+  for select to authenticated
+  using (
+    exists (select 1 from public.post_comments c where c.id = post_comment_reactions.comment_id)
+    and exists (select 1 from public.users u where u.id = post_comment_reactions.user_id));
+
+create policy post_comment_reactions_insert_self on public.post_comment_reactions
+  for insert to authenticated
+  with check (
+    user_id = (select auth.uid())
+    and exists (select 1 from public.users u where u.id = (select auth.uid()) and u.is_active)
+    and exists (select 1 from public.post_comments c where c.id = post_comment_reactions.comment_id));
+
+create policy post_comment_reactions_delete_self on public.post_comment_reactions
+  for delete to authenticated
+  using (user_id = (select auth.uid()));
+
+grant select, insert, delete on public.post_comment_reactions to authenticated;
+
+-- ── Shares (FR-POST-023) ─────────────────────────────────────────────────────
+-- A log of "this member shared this post", kept for the share counter. Append-only.
+create table public.post_shares (
+  id               uuid primary key default gen_random_uuid(),
+  post_id          uuid not null references public.posts (id) on delete cascade,
+  user_id          uuid not null references public.users (id) on delete cascade,
+  -- 'in_app' to another member inside the product; 'external' through the device share sheet.
+  share_kind       text not null check (share_kind in ('in_app', 'external')),
+  -- Where an external share went, as the share sheet reports it (for example 'whatsapp').
+  external_channel text check (char_length(external_channel) between 1 and 64),
+  created_at       timestamptz not null default now(),
+  constraint post_shares_channel_chk check ((share_kind = 'external') = (external_channel is not null))
+);
+comment on table public.post_shares is 'Append-only log of post shares; feeds post_stats.shares_count.';
+
+-- Removal with the post, and with the member; cover the two foreign keys.
+create index post_shares_post_idx on public.post_shares (post_id);
+create index post_shares_user_idx on public.post_shares (user_id, created_at desc);
+
+-- Keeps post_stats.shares_count in step, once per statement.
+create function kc_private.post_shares_sync_stats()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.post_stats_add(
+    'shares', case tg_op when 'INSERT' then 1 else -1 end, array(select c.post_id from changed c));
+  return null;
+end;
+$$;
+
+create trigger post_shares_count_insert
+  after insert on public.post_shares
+  referencing new table as changed
+  for each statement execute function kc_private.post_shares_sync_stats();
+create trigger post_shares_count_delete
+  after delete on public.post_shares
+  referencing old table as changed
+  for each statement execute function kc_private.post_shares_sync_stats();
+
+alter table public.post_shares enable row level security;
+alter table public.post_shares force row level security;
+
+-- Who shared what is the sharer's own business; everyone else sees only the counter.
+create policy post_shares_select_own on public.post_shares
+  for select to authenticated
+  using (user_id = (select auth.uid()));
+
+-- A member with an active account logs a share of a published post they can read that is
+-- public, or their own (FR-POST-023 AC1).
+create policy post_shares_insert_self on public.post_shares
+  for insert to authenticated
+  with check (
+    user_id = (select auth.uid())
+    and exists (select 1 from public.users u where u.id = (select auth.uid()) and u.is_active)
+    and exists (select 1 from public.posts p
+                 where p.id = post_shares.post_id and p.status in ('open', 'closed_delivered')
+                   and (p.visibility = 'Public' or p.owner_id = (select auth.uid()))));
+
+grant select on public.post_shares to authenticated;
+grant insert (id, post_id, user_id, share_kind, external_channel) on public.post_shares to authenticated;
+
+-- ── Saved posts (FR-POST-022) ────────────────────────────────────────────────
+create table public.saved_posts (
+  user_id  uuid not null references public.users (id) on delete cascade,
+  post_id  uuid not null references public.posts (id) on delete cascade,
+  saved_at timestamptz not null default now(),
+  primary key (user_id, post_id)
+);
+comment on table public.saved_posts is 'A member''s private bookmarks.';
+
+-- "My saved posts", newest first (keyset on saved_at, post_id) (FR-PROFILE-016).
+create index saved_posts_user_recent_idx on public.saved_posts (user_id, saved_at desc, post_id);
+-- Removal with the post; covers the post foreign key.
+create index saved_posts_post_idx on public.saved_posts (post_id);
+
+alter table public.saved_posts enable row level security;
+alter table public.saved_posts force row level security;
+
+create policy saved_posts_select_own on public.saved_posts
+  for select to authenticated
+  using (user_id = (select auth.uid()));
+
+-- A member saves any post they can read at that moment (FR-POST-022 AC2). A bookmark of a
+-- post that later leaves the member's sight stays, and simply resolves to nothing.
+create policy saved_posts_insert_self on public.saved_posts
+  for insert to authenticated
+  with check (
+    user_id = (select auth.uid())
+    and exists (select 1 from public.posts p where p.id = saved_posts.post_id));
+
+create policy saved_posts_delete_own on public.saved_posts
+  for delete to authenticated
+  using (user_id = (select auth.uid()));
+
+grant select, delete on public.saved_posts to authenticated;
+grant insert (user_id, post_id) on public.saved_posts to authenticated;
+
+-- >>> supabase/schemas/30_social/060_feed_personalisation.sql
+-- Social · feed personalisation (hides, mute filters, ranking configuration, impressions)
+--
+-- What a member has asked not to see, the weights of the recommended sort, and the log of
+-- what the feed has shown. The member-owned tables are written as plain rows under RLS.
+
+-- ── Posts a member hid from their feed ───────────────────────────────────────
+create table public.feed_hides (
+  user_id   uuid not null references public.users (id) on delete cascade,
+  post_id   uuid not null references public.posts (id) on delete cascade,
+  hidden_at timestamptz not null default now(),
+  primary key (user_id, post_id)
+);
+comment on table public.feed_hides is 'Posts a member removed from their own feed. The post stays reachable elsewhere.';
+
+-- Removal with the post; covers the post foreign key.
+create index feed_hides_post_idx on public.feed_hides (post_id);
+
+alter table public.feed_hides enable row level security;
+alter table public.feed_hides force row level security;
+
+create policy feed_hides_own on public.feed_hides
+  for all to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+grant select, delete on public.feed_hides to authenticated;
+grant insert (user_id, post_id) on public.feed_hides to authenticated;
+
+-- ── Things a member muted in their feed ──────────────────────────────────────
+-- One row per muted member, giving world or keyword; exactly the column of its kind is set.
+create table public.feed_mute_filters (
+  id            uuid primary key default gen_random_uuid(),
+  user_id       uuid not null references public.users (id) on delete cascade,
+  filter_kind   text not null check (filter_kind in ('user', 'world', 'keyword')),
+  muted_user_id uuid references public.users (id) on delete cascade,
+  world_slug    text references public.worlds (slug) on update cascade on delete cascade,
+  -- Matched as a substring of the post's title and description; stored lower-case.
+  keyword       text check (char_length(keyword) between 2 and 60 and keyword = lower(btrim(keyword))),
+  created_at    timestamptz not null default now(),
+  constraint feed_mute_filters_kind_chk check (
+    (filter_kind = 'user') = (muted_user_id is not null)
+    and (filter_kind = 'world') = (world_slug is not null)
+    and (filter_kind = 'keyword') = (keyword is not null)),
+  constraint feed_mute_filters_not_self_chk check (muted_user_id <> user_id),
+  -- One row per muted thing; together the three constraints also serve "my mute filters",
+  -- which the feed reads on every page, and cover the member foreign key.
+  constraint feed_mute_filters_user_key unique (user_id, muted_user_id),
+  constraint feed_mute_filters_world_key unique (user_id, world_slug),
+  constraint feed_mute_filters_keyword_key unique (user_id, keyword)
+);
+comment on table public.feed_mute_filters is 'Members, giving worlds and keywords a member muted in their feed.';
+
+-- Removal with the muted member or world; cover those two foreign keys.
+create index feed_mute_filters_muted_user_idx on public.feed_mute_filters (muted_user_id)
+  where muted_user_id is not null;
+create index feed_mute_filters_world_idx on public.feed_mute_filters (world_slug)
+  where world_slug is not null;
+
+alter table public.feed_mute_filters enable row level security;
+alter table public.feed_mute_filters force row level security;
+
+create policy feed_mute_filters_own on public.feed_mute_filters
+  for all to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+grant select, delete on public.feed_mute_filters to authenticated;
+grant insert (id, user_id, filter_kind, muted_user_id, world_slug, keyword)
+  on public.feed_mute_filters to authenticated;
+
+-- ── Weights of the recommended sort (S33) ────────────────────────────────────
+-- One row per setting that differs from the default written in feed_page; an empty table
+-- means every default applies. Changed by operators through server code, never by a device.
+--   window_hours     width of a ranking window: newer windows always come first, and the
+--                    signals below order the posts inside one window (default 24)
+--   follow_affinity  the viewer follows the owner (default 1)
+--   active_world     the viewer has published in the post's giving world (default 0.5)
+--   distance         closeness to the viewer's city, scaled by the world's geo_weight (default 1)
+--   urgency          urgency level, or expiry within 48 hours (default 0.75)
+--   no_response      nobody has commented yet (default 0.25)
+create table public.feed_ranking_config (
+  config_key text primary key check (config_key in
+               ('window_hours', 'follow_affinity', 'active_world', 'distance', 'urgency', 'no_response')),
+  value      numeric(8, 3) not null check (value >= 0),
+  updated_at timestamptz not null default now(),
+  constraint feed_ranking_config_window_chk check (config_key <> 'window_hours' or value between 1 and 720)
+);
+comment on table public.feed_ranking_config is 'Overrides of the recommended-sort weights; defaults live in feed_page.';
+
+create trigger feed_ranking_config_set_updated_at
+  before update on public.feed_ranking_config
+  for each row execute function kc_private.set_updated_at();
+
+alter table public.feed_ranking_config enable row level security;
+alter table public.feed_ranking_config force row level security;
+
+-- Readable by members: the feed query runs with the caller's rights.
+create policy feed_ranking_config_select_member on public.feed_ranking_config
+  for select to authenticated
+  using (true);
+
+grant select on public.feed_ranking_config to authenticated;
+
+-- ── Impressions (what the feed showed to whom) ───────────────────────────────
+-- Append-only log, partitioned by month so that retention (90 days, design §3.4) is a
+-- partition drop. post_id deliberately has no foreign key: a removed post's impressions are
+-- harmless, expire with their partition, and a cascade would have to search every partition.
+create table public.feed_impressions (
+  user_id uuid not null default auth.uid() references public.users (id) on delete cascade,
+  post_id uuid not null,
+  seen_at timestamptz not null default now()
+) partition by range (seen_at);
+comment on table public.feed_impressions is 'Append-only log of posts shown in a member''s feed; monthly partitions.';
+
+-- A member's recent impressions, and their removal with the account; covers the foreign key.
+create index feed_impressions_user_seen_idx on public.feed_impressions (user_id, seen_at desc);
+
+-- Catches rows of a month whose partition the maintenance job has not created yet.
+create table public.feed_impressions_default partition of public.feed_impressions default;
+
+alter table public.feed_impressions enable row level security;
+alter table public.feed_impressions force row level security;
+alter table public.feed_impressions_default enable row level security;
+alter table public.feed_impressions_default force row level security;
+
+-- A member logs their own impressions and reads nothing back. Partitions carry no policy
+-- and no grant: they are reached only through the parent.
+create policy feed_impressions_insert_self on public.feed_impressions
+  for insert to authenticated
+  with check (user_id = (select auth.uid()));
+
+-- The device sends post ids only; the member and the time are filled by the defaults.
+grant insert (post_id) on public.feed_impressions to authenticated;
+
+-- Creates the partition holding the month of p_month, if it is missing. Called ahead of
+-- time by the scheduled maintenance job (the month must not yet have rows in the default
+-- partition); the same job drops partitions older than the retention period.
+create function kc_private.feed_impressions_ensure_partition(p_month date)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  -- Month boundaries in UTC, whatever the time zone of the calling session.
+  v_from constant timestamptz := date_trunc('month', p_month)::timestamp at time zone 'UTC';
+  v_to constant timestamptz := (date_trunc('month', p_month) + interval '1 month')::timestamp at time zone 'UTC';
+  v_name constant text := 'feed_impressions_' || to_char(p_month, 'YYYY_MM');
+begin
+  if to_regclass('public.' || v_name) is not null then
+    return;
+  end if;
+  execute format(
+    'create table public.%I partition of public.feed_impressions for values from (%L) to (%L)',
+    v_name, v_from, v_to);
+  execute format('alter table public.%I enable row level security', v_name);
+  execute format('alter table public.%I force row level security', v_name);
+end;
+$$;
+comment on function kc_private.feed_impressions_ensure_partition(date) is
+  'Creates the monthly partition of feed_impressions for the given month when it is missing.';
+
+-- >>> supabase/schemas/30_social/070_post_cards.sql
+-- Social · the post card and the post detail screen (design §5.1, layer 4)
+--
+-- A screen is one call. `post_card` is everything a card shows about a post — the post, its
+-- owner, its location name, the cover, the counters and the viewer's own state — and every
+-- list in the product (feed, world feed, profile tabs, search, saved posts) returns it.
+-- All functions here run with the caller's rights: RLS on `posts` and on each joined table
+-- decides what comes back, so a post the caller cannot read is simply absent.
+
+create type public.post_card as (
+  id                       uuid,
+  owner_id                 uuid,
+  world_slug               text,
+  kind_id                  uuid,
+  post_type                text,
+  direction                text,
+  status                   text,
+  visibility               text,
+  title                    text,
+  description              text,
+  item_subcategory_id      uuid,
+  details                  jsonb,
+  city_id                  text,
+  city_name_he             text,
+  city_name_en             text,
+  location_display_level   text,
+  time_window              tstzrange,
+  urgency_level            smallint,
+  expires_at               timestamptz,
+  published_at             timestamptz,
+  created_at               timestamptz,
+  owner_display_name       text,
+  owner_share_handle       text,
+  owner_avatar_url         text,
+  owner_verification_level smallint,
+  -- First processed file: { id, kind, storage_bucket, storage_key, width, height, blurhash }.
+  cover_media              jsonb,
+  media_count              integer,
+  reactions_count          integer,
+  comments_count           integer,
+  shares_count             integer,
+  -- The viewer's own state: their reaction type (null = none), bookmark, follow of the owner.
+  viewer_reaction          text,
+  viewer_saved             boolean,
+  viewer_follows_owner     boolean
+);
+comment on type public.post_card is 'Everything a post card shows, as returned by every post list.';
+
+-- What a client needs to fetch and lay out one file.
+create function kc_access.post_media_json(p_media public.post_media)
+returns jsonb
+language sql
+immutable
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'id', p_media.id, 'kind', p_media.kind, 'storage_bucket', p_media.storage_bucket,
+    'storage_key', p_media.storage_key, 'width', p_media.width, 'height', p_media.height,
+    'duration_ms', p_media.duration_ms, 'blurhash', p_media.blurhash);
+$$;
+comment on function kc_access.post_media_json(public.post_media) is 'JSON form of a media row inside a card or a detail payload.';
+grant execute on function kc_access.post_media_json(public.post_media) to authenticated;
+
+-- Cards of the given posts (at most 100 ids are read), in no particular order. Also the way
+-- to hydrate ids held elsewhere — saved posts, a notification, a map pin.
+create function public.post_cards(p_post_ids uuid[])
+returns setof public.post_card
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select p.id, p.owner_id, p.world_slug, p.kind_id, p.post_type, p.direction, p.status, p.visibility,
+         p.title, p.description, p.item_subcategory_id, p.details,
+         p.city_id, c.name_he, c.name_en, p.location_display_level, p.time_window, p.urgency_level,
+         p.expires_at, p.published_at, p.created_at,
+         u.display_name, u.share_handle, u.avatar_url, u.verification_level,
+         media.cover, coalesce(media.n, 0),
+         coalesce(s.reactions_count, 0), coalesce(s.comments_count, 0), coalesce(s.shares_count, 0),
+         (select r.reaction_type from public.post_reactions r
+           where r.post_id = p.id and r.user_id = (select auth.uid())),
+         exists (select 1 from public.saved_posts sp
+                  where sp.user_id = (select auth.uid()) and sp.post_id = p.id),
+         exists (select 1 from public.follows f
+                  where f.follower_id = (select auth.uid()) and f.followed_id = p.owner_id)
+    from public.posts p
+    join public.users u on u.id = p.owner_id
+    join public.cities c on c.city_id = p.city_id
+    left join public.post_stats s on s.post_id = p.id
+    left join lateral (
+      select count(*)::integer as n,
+             (array_agg(kc_access.post_media_json(m) order by m.ordinal))[1] as cover
+        from public.post_media m
+       where m.post_id = p.id and m.processing_status = 'ready') media on true
+   where p.id = any (p_post_ids[1:100]);
+$$;
+comment on function public.post_cards(uuid[]) is 'Cards of the listed posts that the caller can read.';
+grant execute on function public.post_cards(uuid[]) to authenticated;
+
+-- One page of the comments of a post (p_parent_comment_id null) or of the replies to a
+-- comment, oldest first, each with its author, like count, reply count and whether the
+-- caller liked it. Keyset on (created_at, id): pass the last row's next_cursor to continue.
+create function public.post_comments_page(
+  p_post_id uuid,
+  p_parent_comment_id uuid default null,
+  p_cursor jsonb default null,
+  p_limit integer default 20
+)
+returns table (
+  id uuid,
+  post_id uuid,
+  parent_comment_id uuid,
+  author_id uuid,
+  author_display_name text,
+  author_share_handle text,
+  author_avatar_url text,
+  body text,
+  mention_user_ids uuid[],
+  created_at timestamptz,
+  edited_at timestamptz,
+  reactions_count integer,
+  replies_count integer,
+  viewer_reacted boolean,
+  next_cursor jsonb
+)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select c.id, c.post_id, c.parent_comment_id, c.author_id, u.display_name, u.share_handle, u.avatar_url,
+         c.body, c.mention_user_ids, c.created_at, c.edited_at,
+         (select count(*)::integer from public.post_comment_reactions r where r.comment_id = c.id),
+         (select count(*)::integer from public.post_comments reply where reply.parent_comment_id = c.id),
+         exists (select 1 from public.post_comment_reactions r
+                  where r.comment_id = c.id and r.user_id = (select auth.uid())),
+         jsonb_build_object('t', c.created_at, 'id', c.id)
+    from public.post_comments c
+    join public.users u on u.id = c.author_id
+   where c.post_id = p_post_id
+     and c.parent_comment_id is not distinct from p_parent_comment_id
+     and (p_cursor is null
+          or (c.created_at, c.id) > ((p_cursor ->> 't')::timestamptz, (p_cursor ->> 'id')::uuid))
+   order by c.created_at, c.id
+   limit least(greatest(coalesce(p_limit, 20), 1), 50);
+$$;
+comment on function public.post_comments_page(uuid, uuid, jsonb, integer) is
+  'One keyset page of a post''s comments, or of a comment''s replies, oldest first.';
+grant execute on function public.post_comments_page(uuid, uuid, jsonb, integer) to authenticated;
+
+-- The whole post detail screen in one call: the card, every processed file in gallery
+-- order and the first page of comments. Null when the caller cannot read the post.
+create function public.post_detail(p_post_id uuid)
+returns jsonb
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'post', to_jsonb(card),
+    'media', (select coalesce(jsonb_agg(kc_access.post_media_json(m) order by m.ordinal), '[]'::jsonb)
+                from public.post_media m
+               where m.post_id = card.id and m.processing_status = 'ready'),
+    'comments', (select coalesce(jsonb_agg(to_jsonb(k)), '[]'::jsonb)
+                   from public.post_comments_page(card.id) k))
+    from public.post_cards(array[p_post_id]) card;
+$$;
+comment on function public.post_detail(uuid) is
+  'Post detail payload: card, media gallery and first page of comments; null when not readable.';
+grant execute on function public.post_detail(uuid) to authenticated;
+
+-- >>> supabase/schemas/30_social/075_text_candidates.sql
+-- Social · text-match candidates for search
+--
+-- The read functions of this module run with the caller's rights, so that RLS decides what
+-- is visible. Under RLS the planner may only push leak-proof conditions into an index scan,
+-- and text matching (ILIKE, @@) is not leak-proof: asked directly, a text search would
+-- check the visibility of every row before it could use the trigram or full-text index.
+--
+-- These two functions do the index part with definer rights and return candidate ids only:
+-- the newest (or most followed) matches, capped. The caller then reads those ids through
+-- its own access, so visibility is still decided by RLS and by nothing else. They live in
+-- `kc_access`, which a device cannot address, so the ids never leave the database unfiltered.
+
+-- The text as an ILIKE pattern that matches it literally anywhere.
+create function kc_private.contains_pattern(p_text text)
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  select '%' || replace(replace(replace(p_text, '\', '\\'), '%', '\%'), '_', '\_') || '%';
+$$;
+comment on function kc_private.contains_pattern(text) is 'ILIKE pattern matching the given text literally, anywhere.';
+
+-- Up to 500 newest open posts whose title or description contains the text (served by
+-- posts_text_trgm_idx from three characters up), and, when asked, up to 500 newest
+-- delivered posts likewise.
+create function kc_access.post_ids_matching_text(p_query text, p_include_closed boolean default false)
+returns uuid[]
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select array(
+    (select p.id from public.posts p
+      where p.status = 'open'
+        and (p.title || ' ' || coalesce(p.description, '')) ilike kc_private.contains_pattern(p_query)
+      order by p.published_at desc
+      limit 500)
+    union all
+    (select p.id from public.posts p
+      where p_include_closed and p.status = 'closed_delivered'
+        and (p.title || ' ' || coalesce(p.description, '')) ilike kc_private.contains_pattern(p_query)
+      order by p.published_at desc
+      limit 500));
+$$;
+comment on function kc_access.post_ids_matching_text(text, boolean) is
+  'Candidate ids for post search: newest posts containing the text. The caller re-reads them under RLS.';
+grant execute on function kc_access.post_ids_matching_text(text, boolean) to authenticated;
+
+-- Up to 500 most followed active members whose display name contains the text
+-- (users_display_name_trgm_idx) or whose name or handle has it as a whole word
+-- (users_search_gin_idx).
+create function kc_access.user_ids_matching_text(p_query text)
+returns uuid[]
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select array(
+    select u.id
+      from public.users u
+      join public.user_stats s on s.user_id = u.id
+     where u.is_active
+       and (u.display_name ilike kc_private.contains_pattern(p_query)
+            or u.search_vector @@ plainto_tsquery('simple', p_query))
+     order by s.followers_count desc, u.id desc
+     limit 500);
+$$;
+comment on function kc_access.user_ids_matching_text(text) is
+  'Candidate ids for member search: most followed active members matching the text. The caller re-reads them under RLS.';
+grant execute on function kc_access.user_ids_matching_text(text) to authenticated;
+
+-- >>> supabase/schemas/30_social/080_feed_page.sql
+-- Social · feed_page (the one feed query path, design §3.4 and §5.1)
+--
+-- Main feed, world feed and post search are the same query: candidates come straight from
+-- partial indexes on `posts`, are ranked in SQL and returned as cards in one round trip.
+-- No cache, no queue, no materialized view.
+--
+-- p_filters (every key optional):
+--   sort                  'recommended' (default, D27) | 'newest' | 'oldest' | 'nearest'
+--   world                 giving world slug: that world's feed (D5, D36). Without it, the
+--                         main feed: worlds flagged shows_in_main_feed, minus muted worlds
+--   direction             'offer' | 'request'
+--   item_subcategory_ids  array of item subcategory ids
+--   status                'open' (default) | 'closed' | 'all'
+--   audience              'everyone' (default) | 'following' (D34, S6)
+--   city_id, radius_km    posts of that city, or of every city whose centre lies within the
+--                         radius of that city's centre (FR-FEED-004 AC1)
+--   near_city_id          centre of the 'nearest' sort and of the distance signal;
+--                         default the viewer's own city (FR-FEED-006 AC2)
+--   q                     text contained in title or description, 2+ characters (FR-FEED-003)
+--   scope                 'feed' (default) | 'search': search covers every world and ignores
+--                         the viewer's hides and mute filters
+--
+-- Order and paging. Every sort orders by the same tuple (k1, k2, published_at, id), all
+-- descending, and the cursor is that tuple of the last row plus `as_of`, the time of the
+-- first page: later pages never see newer posts and time-based signals stay fixed, so
+-- pages neither repeat nor skip a post.
+--   recommended  k1 = ranking window of the publish time, k2 = score. Newer windows always
+--                come first (freshness); inside a window the S33 signals order the posts.
+--   newest       k1 = k2 = 0.            oldest   k2 = -publish time.
+--   nearest      k2 = -distance in metres between the centre and the post's city
+--                (FR-FEED-006 AC1).
+-- Candidates of 'recommended' and 'nearest' are read by range (whole windows back in time,
+-- a radius around the centre); the range is widened until it holds a full page, and a full
+-- range ranks exactly, because everything outside it sorts after everything inside.
+--
+-- Index use under RLS. The planner pushes only leak-proof conditions into an index scan of
+-- a table with row security, so every candidate condition here is an equality or a range
+-- on an indexed column. Distance and text are not leak-proof; they are resolved first, to
+-- city ids (a radius is a set of cities) and to post ids (075_text_candidates.sql).
+
+-- Followers-only posts of the people the viewer follows: the second candidate stream.
+create index posts_feed_followers_only_idx on public.posts (owner_id, published_at desc, id desc)
+  where visibility = 'FollowersOnly' and status in ('open', 'closed_delivered');
+-- Public delivered posts, newest first: the feed's "closed" and "all" status filters.
+create index posts_feed_closed_idx on public.posts (published_at desc, id desc)
+  where status = 'closed_delivered' and visibility = 'Public';
+
+create function public.feed_page(
+  p_cursor jsonb default null,
+  p_limit integer default 20,
+  p_filters jsonb default '{}'::jsonb
+)
+returns table (card public.post_card, next_cursor jsonb, distance_m integer)
+language plpgsql
+stable
+security invoker
+set search_path = ''
+as $$
+declare
+  v_viewer constant uuid := (select auth.uid());
+  v_f constant jsonb := coalesce(p_filters, '{}'::jsonb);
+  v_limit constant integer := least(greatest(coalesce(p_limit, 20), 1), 50);
+  v_search constant boolean := coalesce(v_f ->> 'scope', 'feed') = 'search';
+  v_status constant text := coalesce(v_f ->> 'status', 'open');
+  v_q constant text := btrim(coalesce(v_f ->> 'q', ''));
+  v_as_of constant timestamptz := coalesce((p_cursor ->> 'as_of')::timestamptz, now());
+  v_c_k1 constant bigint := (p_cursor ->> 'k1')::bigint;
+  v_c_k2 constant bigint := (p_cursor ->> 'k2')::bigint;
+  v_c_t constant timestamptz := (p_cursor ->> 't')::timestamptz;
+  v_c_id constant uuid := (p_cursor ->> 'id')::uuid;
+  v_sort text := coalesce(p_cursor ->> 'sort', v_f ->> 'sort', 'recommended');
+  v_followed uuid[];
+  v_worlds text[];
+  v_active_worlds text[];
+  v_muted_users uuid[] := '{}';
+  v_muted_words text[] := '{}';
+  v_origin extensions.geography;
+  v_center extensions.geography;
+  v_filter_cities text[];
+  v_near_cities text[];
+  v_match_ids uuid[];
+  v_cfg jsonb;
+  v_window bigint;
+  v_lo timestamptz;
+  v_hi timestamptz := 'infinity';
+  v_radius double precision := 5000;
+  v_span interval;
+  v_where text;
+  v_branch text;
+  v_from text := '';
+  v_k1 text := '0';
+  v_k2 text := '0';
+  v_extra text := '';
+  v_sql text;
+  v_page jsonb;
+begin
+  if v_viewer is null then
+    raise exception 'unauthenticated' using errcode = '42501';
+  end if;
+  if v_sort not in ('recommended', 'newest', 'oldest', 'nearest')
+     or v_status not in ('open', 'closed', 'all') then
+    raise exception 'invalid_input' using errcode = 'P0001';
+  end if;
+
+  -- The viewer's side of the query, read once.
+  v_followed := array(select f.followed_id from public.follows f where f.follower_id = v_viewer);
+  select c.location into v_origin from public.cities c
+   where c.city_id = coalesce(v_f ->> 'near_city_id',
+                              (select u.city_id from public.users u where u.id = v_viewer));
+  select c.location into v_center from public.cities c where c.city_id = v_f ->> 'city_id';
+  if v_sort = 'nearest' and v_origin is null then
+    v_sort := 'newest';
+  end if;
+  if not v_search then
+    v_muted_users := array(select m.muted_user_id from public.feed_mute_filters m
+                            where m.user_id = v_viewer and m.filter_kind = 'user');
+    v_muted_words := array(select m.keyword from public.feed_mute_filters m
+                            where m.user_id = v_viewer and m.filter_kind = 'keyword');
+  end if;
+  v_worlds := case
+    when v_f ->> 'world' is not null then array[v_f ->> 'world']
+    when v_search then null
+    else array(select w.slug from public.worlds w
+                where w.shows_in_main_feed
+                  and not exists (select 1 from public.feed_mute_filters m
+                                   where m.user_id = v_viewer and m.world_slug = w.slug)) end;
+
+  -- Filters, each added only when asked for, so the plan fits the request. Values travel
+  -- as parameters ($n below); the text is assembled from the fixed fragments in this
+  -- function only.
+  v_where := ' and p.published_at <= $1';
+  if v_worlds is not null then
+    v_where := v_where || ' and p.world_slug = any ($2)';
+  end if;
+  if not v_search then
+    v_where := v_where || ' and not exists (select 1 from public.feed_hides h'
+                       || ' where h.user_id = $3 and h.post_id = p.id)';
+  end if;
+  if v_f ->> 'direction' is not null then
+    v_where := v_where || ' and p.direction = $4';
+  end if;
+  if jsonb_typeof(v_f -> 'item_subcategory_ids') = 'array' then
+    v_where := v_where || ' and p.item_subcategory_id = any ($5)';
+  end if;
+  if v_center is not null and v_f ->> 'radius_km' is not null then
+    v_filter_cities := array(
+      select c.city_id from public.cities c
+       where extensions.st_dwithin(c.location, v_center, (v_f ->> 'radius_km')::double precision * 1000));
+    v_where := v_where || ' and p.city_id = any ($6)';
+  elsif v_f ->> 'city_id' is not null then
+    v_where := v_where || ' and p.city_id = $8';
+  end if;
+  if char_length(v_q) >= 2 then
+    v_match_ids := kc_access.post_ids_matching_text(v_q, v_status <> 'open');
+    v_where := v_where || ' and p.id = any ($9)';
+  end if;
+  if v_f ->> 'audience' = 'following' then
+    v_where := v_where || ' and p.owner_id = any ($10)';
+  end if;
+  if cardinality(v_muted_users) > 0 then
+    v_where := v_where || ' and p.owner_id <> all ($11)';
+  end if;
+  if cardinality(v_muted_words) > 0 then
+    v_where := v_where || ' and not exists (select 1 from unnest($12) w (word) where position(w.word'
+                       || ' in lower(p.title || '' '' || coalesce(p.description, ''''))) > 0)';
+  end if;
+
+  -- Sort-specific parts: the range that bounds the candidates, and the two leading keys.
+  if v_sort = 'recommended' then
+    select coalesce(jsonb_object_agg(c.config_key, c.value), '{}'::jsonb) into v_cfg
+      from public.feed_ranking_config c;
+    v_window := (coalesce((v_cfg ->> 'window_hours')::numeric, 24) * 3600)::bigint;
+    v_active_worlds := array(select distinct p.world_slug from public.posts p where p.owner_id = v_viewer);
+    v_span := make_interval(secs => v_window);
+    -- First page: the window holding as_of. Later pages: from the cursor's window down.
+    v_lo := to_timestamp(coalesce(v_c_k1, floor(extract(epoch from v_as_of) / v_window)::bigint) * v_window);
+    v_hi := to_timestamp((v_c_k1 + 1) * v_window);
+    v_where := v_where || ' and p.published_at >= $13 and p.published_at < coalesce($14, ''infinity'')';
+    v_k1 := 'floor(extract(epoch from p.published_at) / $16)::bigint';
+    v_k2 := 'round(100 * ($17 * (p.owner_id = any ($10))::integer'
+         || ' + $18 * (p.world_slug = any ($19))::integer'
+         || ' + $20 * coalesce(w.geo_weight / (1 + extensions.st_distance(p.geo_approx, $21) / 25000), 0)'
+         || ' + $22 * greatest(coalesce(p.urgency_level, 0) / 3.0,'
+         || '                  (p.expires_at <= $1 + interval ''48 hours'')::integer)'
+         || ' + $23 * (coalesce(s.comments_count, 0) = 0)::integer))::bigint';
+    v_from := ' join public.worlds w on w.slug = p.world_slug'
+           || ' left join public.post_stats s on s.post_id = p.id';
+  elsif v_sort = 'nearest' then
+    v_radius := greatest(v_radius, -coalesce(v_c_k2, 0) + 1);
+    v_where := v_where || ' and p.city_id = any ($15)';
+    v_k2 := '-floor(extensions.st_distance(pc.location, $21))::bigint';
+    v_from := ' join public.cities pc on pc.city_id = p.city_id';
+    -- Only rows strictly inside the radius are ranked: a tie group is never split by it.
+    v_extra := ' and -c.k2 < $7';
+  elsif v_sort = 'newest' then
+    if p_cursor is not null then
+      v_where := v_where || ' and (p.published_at, p.id) < ($26, $27)';
+    end if;
+    v_extra := ' order by p.published_at desc, p.id desc limit $28';
+  else
+    v_k2 := '-(extract(epoch from p.published_at) * 1000000)::bigint';
+    if p_cursor is not null then
+      v_where := v_where || ' and (p.published_at > $26 or (p.published_at = $26 and p.id < $27))';
+    end if;
+    v_extra := ' order by p.published_at, p.id desc limit $28';
+  end if;
+
+  -- Candidate streams, one per partial index: public open posts, public delivered posts,
+  -- and followers-only posts of the viewer and of the people they follow.
+  v_branch := '(select p.* from public.posts p where /*audience*/' || v_where
+           || case when v_sort in ('newest', 'oldest') then v_extra else '' end || ')';
+  v_sql := concat_ws(' union all ',
+    case when v_status <> 'closed' then
+      replace(v_branch, '/*audience*/', 'p.status = ''open'' and p.visibility = ''Public''') end,
+    case when v_status <> 'open' then
+      replace(v_branch, '/*audience*/', 'p.status = ''closed_delivered'' and p.visibility = ''Public''') end,
+    replace(v_branch, '/*audience*/', 'p.visibility = ''FollowersOnly'' and p.owner_id = any ($10 || $3) and '
+      || case v_status when 'open' then 'p.status = ''open'''
+                       when 'closed' then 'p.status = ''closed_delivered'''
+                       else 'p.status in (''open'', ''closed_delivered'')' end));
+  v_sql := 'select coalesce(jsonb_agg(to_jsonb(r)), ''[]''::jsonb) from ('
+        || 'select c.id, c.t, c.k1, c.k2 from ('
+        || 'select p.id, p.published_at as t, ' || v_k1 || ' as k1, ' || v_k2 || ' as k2'
+        || ' from (' || v_sql || ') p' || v_from || ') c'
+        || ' where ($27 is null or (c.k1, c.k2, c.t, c.id) < ($24, $25, $26, $27))'
+        || case when v_sort = 'nearest' then v_extra else '' end
+        || ' order by c.k1 desc, c.k2 desc, c.t desc, c.id desc limit $28) r';
+
+  loop
+    if v_sort = 'nearest' then
+      v_near_cities := array(select c.city_id from public.cities c
+                              where extensions.st_dwithin(c.location, v_origin, v_radius));
+    end if;
+    execute v_sql into v_page using
+      v_as_of, v_worlds, v_viewer, v_f ->> 'direction',                                   -- $1-$4
+      array(select jsonb_array_elements_text(v_f -> 'item_subcategory_ids'))::uuid[],     -- $5
+      v_filter_cities, v_radius, v_f ->> 'city_id', v_match_ids,                          -- $6-$9
+      v_followed, v_muted_users, v_muted_words, v_lo, v_hi, v_near_cities, v_window,      -- $10-$16
+      coalesce((v_cfg ->> 'follow_affinity')::numeric, 1),                                -- $17
+      coalesce((v_cfg ->> 'active_world')::numeric, 0.5), v_active_worlds,                -- $18-$19
+      coalesce((v_cfg ->> 'distance')::numeric, 1), v_origin,                             -- $20-$21
+      coalesce((v_cfg ->> 'urgency')::numeric, 0.75),                                     -- $22
+      coalesce((v_cfg ->> 'no_response')::numeric, 0.25),                                 -- $23
+      v_c_k1, v_c_k2, v_c_t, v_c_id, v_limit;                                             -- $24-$28
+    -- A full page is final. Otherwise widen the range fourfold, down to the first post
+    -- ever published / out to the whole globe, and rank again.
+    exit when jsonb_array_length(v_page) >= v_limit
+      or v_sort in ('newest', 'oldest')
+      or (v_sort = 'recommended' and v_lo < timestamptz '2020-01-01')
+      or (v_sort = 'nearest' and v_radius > 2.1e7);
+    v_span := v_span * 4;
+    v_lo := v_lo - v_span;
+    v_radius := v_radius * 4;
+  end loop;
+
+  return query
+  select c,
+         jsonb_build_object('sort', v_sort, 'as_of', v_as_of, 'k1', r.k1, 'k2', r.k2, 't', r.t, 'id', r.id),
+         case when v_sort = 'nearest' then (-r.k2)::integer end
+    from jsonb_to_recordset(v_page) as r (id uuid, t timestamptz, k1 bigint, k2 bigint)
+    join public.post_cards(array(select (e ->> 'id')::uuid from jsonb_array_elements(v_page) e)) c
+      on c.id = r.id
+   order by r.k1 desc, r.k2 desc, r.t desc, r.id desc;
+end;
+$$;
+comment on function public.feed_page(jsonb, integer, jsonb) is
+  'One page of the main feed, a world feed or post search, as cards, with keyset paging.';
+grant execute on function public.feed_page(jsonb, integer, jsonb) to authenticated;
+
+-- >>> supabase/schemas/30_social/090_profile_and_search.sql
+-- Social · profile post tabs and search
+--
+-- The remaining post lists and the member search. All run with the caller's rights, return
+-- cards (or member rows) in one round trip and page by keyset.
+
+-- One tab of a profile's posts, newest first (FR-PROFILE-001 AC4, FR-PROFILE-002):
+--   open     open posts shown on the profile (never "only me")
+--   closed   delivered posts; on one's own profile also posts deleted without a recipient,
+--            which can still be reopened
+--   hidden   the owner's "only me" posts — RLS returns them to nobody else
+-- RLS narrows every tab to what the caller may read of that member. Keyset on
+-- (created_at, id), served by posts_owner_recent_idx.
+create function public.profile_posts_page(
+  p_user_id uuid,
+  p_cursor jsonb default null,
+  p_limit integer default 20,
+  p_tab text default 'open'
+)
+returns table (card public.post_card, next_cursor jsonb)
+language plpgsql
+stable
+security invoker
+set search_path = ''
+as $$
+declare
+  v_post_ids uuid[];
+begin
+  if p_tab is null or p_tab not in ('open', 'closed', 'hidden') then
+    raise exception 'invalid_input' using errcode = 'P0001';
+  end if;
+
+  v_post_ids := array(
+    select p.id
+      from public.posts p
+     where p.owner_id = p_user_id
+       and case p_tab
+             when 'open' then p.status = 'open' and p.visibility <> 'OnlyMe'
+             when 'closed' then p.status in ('closed_delivered', 'deleted_no_recipient')
+                                and p.visibility <> 'OnlyMe'
+             else p.status in ('open', 'closed_delivered') and p.visibility = 'OnlyMe' end
+       and (p_cursor is null
+            or (p.created_at, p.id) < ((p_cursor ->> 't')::timestamptz, (p_cursor ->> 'id')::uuid))
+     order by p.created_at desc, p.id desc
+     limit least(greatest(coalesce(p_limit, 20), 1), 50));
+
+  return query
+  select c, jsonb_build_object('t', c.created_at, 'id', c.id)
+    from public.post_cards(v_post_ids) c
+   order by c.created_at desc, c.id desc;
+end;
+$$;
+comment on function public.profile_posts_page(uuid, jsonb, integer, text) is
+  'One keyset page of a tab of a member''s posts (open, closed, hidden), as cards.';
+grant execute on function public.profile_posts_page(uuid, jsonb, integer, text) to authenticated;
+
+-- Post search: posts whose title or description contains the text (FR-FEED-016), newest
+-- first unless p_filters names another sort. It is the feed query in search scope, so the
+-- filters, the visibility rules and the paging are the feed's. Fewer than two characters
+-- return nothing.
+create function public.search_posts_page(
+  p_query text,
+  p_cursor jsonb default null,
+  p_limit integer default 20,
+  p_filters jsonb default '{}'::jsonb
+)
+returns table (card public.post_card, next_cursor jsonb, distance_m integer)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select f.card, f.next_cursor, f.distance_m
+    from public.feed_page(
+           p_cursor, p_limit,
+           '{"sort": "newest"}'::jsonb || coalesce(p_filters, '{}'::jsonb)
+             || jsonb_build_object('scope', 'search', 'q', btrim(p_query))) f
+   where char_length(btrim(p_query)) >= 2;
+$$;
+comment on function public.search_posts_page(text, jsonb, integer, jsonb) is
+  'One keyset page of posts matching a text, as cards; accepts the feed filters.';
+grant execute on function public.search_posts_page(text, jsonb, integer, jsonb) to authenticated;
+
+-- Member search: active members whose display name contains the text or whose name or
+-- handle has it as a whole word, most followed first. The matching ids come from the two
+-- text indexes on `users` (075_text_candidates.sql) and are read here under RLS. Keyset on
+-- (followers_count, id). p_filters: city_id, min_followers.
+create function public.search_users_page(
+  p_query text,
+  p_cursor jsonb default null,
+  p_limit integer default 20,
+  p_filters jsonb default '{}'::jsonb
+)
+returns table (
+  id uuid,
+  share_handle text,
+  display_name text,
+  avatar_url text,
+  city_id text,
+  privacy_mode text,
+  verification_level smallint,
+  followers_count integer,
+  viewer_follows boolean,
+  next_cursor jsonb
+)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select u.id, u.share_handle, u.display_name, u.avatar_url, u.city_id, u.privacy_mode,
+         u.verification_level, s.followers_count,
+         exists (select 1 from public.follows f
+                  where f.follower_id = (select auth.uid()) and f.followed_id = u.id),
+         jsonb_build_object('n', s.followers_count, 'id', u.id)
+    from public.users u
+    join public.user_stats s on s.user_id = u.id
+   where char_length(btrim(p_query)) >= 2
+     and u.id = any (kc_access.user_ids_matching_text(btrim(p_query)))
+     and (p_filters ->> 'city_id' is null or u.city_id = p_filters ->> 'city_id')
+     and s.followers_count >= coalesce((p_filters ->> 'min_followers')::integer, 0)
+     and (p_cursor is null
+          or (s.followers_count, u.id) < ((p_cursor ->> 'n')::integer, (p_cursor ->> 'id')::uuid))
+   order by s.followers_count desc, u.id desc
+   limit least(greatest(coalesce(p_limit, 20), 1), 50);
+$$;
+comment on function public.search_users_page(text, jsonb, integer, jsonb) is
+  'One keyset page of active members matching a text, most followed first.';
+grant execute on function public.search_users_page(text, jsonb, integer, jsonb) to authenticated;
+
+-- The search screen's first paint: the top posts and the top members for a text in one
+-- call (FR-FEED-016 AC2, AC3). Each section is expanded with its own paged function.
+create function public.search_all(p_query text, p_limit integer default 5)
+returns jsonb
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'posts', (select coalesce(jsonb_agg(to_jsonb(p)), '[]'::jsonb)
+                from public.search_posts_page(p_query, null, least(coalesce(p_limit, 5), 10)) p),
+    'users', (select coalesce(jsonb_agg(to_jsonb(u)), '[]'::jsonb)
+                from public.search_users_page(p_query, null, least(coalesce(p_limit, 5), 10)) u));
+$$;
+comment on function public.search_all(text, integer) is
+  'Search preview: the first posts and the first members matching a text.';
+grant execute on function public.search_all(text, integer) to authenticated;
+
+-- >>> supabase/schemas/30_social/900_storage.sql
+-- Social · storage bucket for post images (design §4 "Storage", §5.3)
+--
+-- The `storage` schema belongs to the Supabase platform. It is absent on a plain PostgreSQL
+-- server, where this file does nothing, so the baseline builds everywhere. On a Supabase
+-- project it declares the bucket post_media.storage_bucket points at by default, with its
+-- size and type limits, and who may write objects in it.
+--   read    public: files are served by the CDN under unguessable, immutable names
+--   write   a signed-in member, only under the folder named by their own id
+--   limits  8 MB per file; JPEG and PNG only (FR-POST-005 AC1, AC2)
+
+do $$
+begin
+  if to_regclass('storage.buckets') is null or to_regclass('storage.objects') is null then
+    return;
+  end if;
+
+  insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+  values ('post-images', 'post-images', true, 8388608, array['image/jpeg', 'image/png'])
+  on conflict (id) do update
+    set public = excluded.public,
+        file_size_limit = excluded.file_size_limit,
+        allowed_mime_types = excluded.allowed_mime_types;
+
+  -- A member uploads into their own folder only.
+  create policy post_images_insert_own_folder on storage.objects
+    for insert to authenticated
+    with check (bucket_id = 'post-images' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+  -- A member removes their own files (the account purge and the orphan job use the service role).
+  create policy post_images_delete_own_folder on storage.objects
+    for delete to authenticated
+    using (bucket_id = 'post-images' and (storage.foldername(name))[1] = (select auth.uid())::text);
+end $$;
