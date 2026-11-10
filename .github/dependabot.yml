@@ -1,4 +1,10 @@
 version: 2
+# Version updates target `dev` (see target-branch below). Dependabot
+# security updates always open against the repository default branch
+# (`main`) and ignore target-branch; GitHub does not allow pointing
+# security-update PRs at a non-default branch. Vulnerable glob / minimatch
+# copies are pinned on dev via pnpm.overrides and will reach main with
+# the next release PR.
 updates:
   - package-ecosystem: "npm"
     directory: "/app"
