@@ -18,7 +18,7 @@ This skill is the order of work. It cites those rules, not repeats them.
 ## Token rules (apply in every phase)
 
 1. **Find, then read.** `rg`/glob for the symbol, then read the matching line range. Never read a whole large file, a lockfile, generated types or a migration you do not change.
-2. **Spec by section, from `dev`.** Read through `node scripts/spec.mjs <domain|FR-ID>` (it reads `dev`, not your stale tree). Open `docs/spec/README.md` only for the index, then the one cited section. Never the whole book.
+2. **Spec by section, from `dev`.** Read through `node scripts/spec.mjs <domain|FR-ID>` (it reads `dev`, not your stale tree). Open `docs/spec/README.md` only for the index, then the one cited section. Never the whole book. For an FR-ID, check that the printed file has its `## FR-…` heading. If not, the reader picked a file that only mentions it (KC#2033), so read the domain file by name instead.
 3. **Narrow output.** Every `gh api` call ends in a `--jq` that keeps only the fields you need. Never dump an issue's full timeline.
 4. **Tail long output.** Pipe test and build output through `tail -n 80` or `grep -E "FAIL|Error|✗"`. For CI use `gh run view <id> --log-failed | tail -n 150`.
 5. **Targeted before full.** Run the tests for the package or file you touched while iterating; run the full gates once, before the push.
@@ -33,18 +33,21 @@ This skill is the order of work. It cites those rules, not repeats them.
 - **Otherwise:** take the oldest issue at the highest priority (`priority:launch` > `P0` > … > `P3`, AGENTS.md §13). Two kinds of issue are not in the queue:
   - **Untriaged:** an issue without a `priority:*` label.
   - **Reserved for a person:** `human`, `maintainer-only` or an `owner:*` label (store consoles, credentials, releases).
+  - **Flagged as done or duplicate:** `possible-duplicate`, until the PM decides.
 
   The project board's Agent queue mirrors these labels; reading the board needs a token with project scope, labels do not.
 
   ```bash
   for p in launch P0 P1 P2 P3; do
     out=$(gh api -X GET search/issues -f sort=created -f order=asc -f per_page=5 --jq '.items[] | "#\(.number) \(.title)"' \
-      -f q="repo:KarmaCummunity/KC is:issue is:open label:priority:$p -label:in-progress -label:blocked -label:needs-triage -label:ops-alert -label:epic -label:human -label:maintainer-only -label:owner:nave")
+      -f q="repo:KarmaCummunity/KC is:issue is:open label:priority:$p -label:in-progress -label:blocked -label:needs-triage -label:ops-alert -label:epic -label:human -label:maintainer-only -label:owner:nave -label:possible-duplicate")
     if [ -n "$out" ]; then echo "priority:$p"; echo "$out"; break; fi
   done
   ```
 
-Before claiming, the issue must pass three checks. Any failure: skip it and take the next row.
+Before claiming, the issue must pass four checks. Any failure: skip it and take the next row.
+
+0. **You can finish it here.** Acceptance criteria that only a person can verify (a physical device, TestFlight or Play internal, a store console, a credential, a contract) are not agent work. Add `human` and a one-line comment naming what needs a person (`gh api -X POST $R/issues/<N>/labels -f 'labels[]=human'`). The queue then skips the issue for every agent.
 
 1. **Not claimed.** It has no `in-progress` label, or the claim is stale ([ISSUE_CLAIMS](../../../docs/agents/ISSUE_CLAIMS.md)).
 2. **No open PR.**
@@ -157,10 +160,13 @@ gh api -X POST $R/issues/<PR>/labels -f 'labels[]=agent:<you>' --jq 'map(.name)'
 
 - **Red `CI gate`.** Read only the failed lane's log, reproduce it locally, fix the cause and push. Up to 3 attempts per cause. After that, repair CI itself if CI is what's broken (AGENTS.md §13, step 7). After 2 more failures, take the blocker path.
 - **Conflict or dequeue.** Merge `origin/dev` into the branch (a merge commit; never rebase a pushed branch, since that needs a force push). Resolve each conflict so both sides' behavior survives, and add a test where the two meet. Re-run the gates, push, and re-arm auto-merge: a dequeue disarms it.
+- **Advisory checks that are the point of the PR.** Merging does not wait for advisory jobs such as `maestro · android emulator`. When the PR exists to fix or add what such a job runs (a Maestro flow), the work is done only when that job shows it passing on the PR's head; until then the issue stays claimed, even after the merge.
 - **Human review.** Answer or fix every review comment.
 - **Merged** (`gh api $R/pulls/<PR> --jq .merged`):
   1. **The PR said `Closes #<N>`:** confirm the issue closed and the claim labels are gone. `close-issues-on-dev-merge.yml` and `issue-claims.yml` do this; if they did not, do it yourself.
   2. **The PR said `Refs #<N>`:** the workflows leave the issue open and claimed. Remove `in-progress` and `agent:<you>` yourself, and comment what shipped plus a checklist of what still blocks closing.
+     - **Every remaining item waits on another issue or on a person:** also add `blocked`, and name the blocker in the comment ("blocked on #2020"). The queue then skips the issue until whoever clears the blocker removes the label.
+     - **Agent work is left in the issue itself:** leave it unblocked for the next agent.
   3. Delete the local branch, or reset it to `origin/dev`, and report.
 
 ## Final report (one block, then stop)
