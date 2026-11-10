@@ -23,3 +23,9 @@ comment on schema integrations is 'External channel integrations. Service role o
 -- Health checks and job telemetry.
 create schema ops;
 comment on schema ops is 'Operational telemetry. Service role only.';
+
+-- Predicates called from row level security policies. A policy runs as the calling role, so
+-- that role needs USAGE here and EXECUTE on each predicate; the schema is still not exposed
+-- through the API, so none of them can be called from a device.
+create schema kc_access;
+comment on schema kc_access is 'Policy predicates. Usable by signed-in members inside policies; not exposed through the API.';

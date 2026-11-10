@@ -38,3 +38,9 @@ end $$;
 
 -- `public` functions stay callable by the service role without a per-function grant.
 alter default privileges for role postgres in schema public grant execute on functions to service_role;
+
+-- Policy predicates: signed-in members may resolve names in `kc_access`; each predicate is
+-- granted individually by the file that creates it.
+revoke all on schema kc_access from public, anon;
+grant usage on schema kc_access to authenticated, service_role;
+alter default privileges for role postgres in schema kc_access grant execute on functions to service_role;
