@@ -136,6 +136,10 @@ values ('10000000-0000-4000-8000-000000000003', '00000000-0000-4000-8000-0000000
 insert into public.post_comments (id, post_id, author_id, body) values
   ('50000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000010', '00000000-0000-4000-8000-000000000007', 'a comment');
 
+-- Organizations the organization-scoped grants refer to.
+insert into public.organizations (id, slug, name) values
+  ('60000000-0000-4000-8000-000000000001', 'org-one', 'Org One'), ('60000000-0000-4000-8000-000000000002', 'org-two', 'Org Two');
+
 -- ── Staff roles ─────────────────────────────────────────────────────────────
 insert into public.admin_role_grants (user_id, role) values ('00000000-0000-4000-8000-00000000000a', 'super_admin');
 select throws_ok($$insert into public.admin_role_grants (user_id, role) values ('00000000-0000-4000-8000-00000000000b', 'super_admin')$$,
@@ -411,7 +415,7 @@ select throws_ok($$update public.moderation_queue set status = 'open', resolved_
 select is(
   (select string_agg(distinct action, ' ' order by action) from audit.events),
   'account_status_changed admin_role_grant admin_role_revoke admin_role_set_manager assign_queue_entry auto_remove_target '
-  || 'ban_user confirm_report dismiss_report false_report_sanction_applied manual_remove_target post_status_moderated '
+  || 'ban_user confirm_report dismiss_report false_report_sanction_applied manual_remove_target org_create post_status_moderated '
   || 'report_target resolve_queue_entry restore_target suspend_user unban_user unsuspend_user',
   'every privileged action and automatic rule left its audit row');
 select is(pg_temp.val($$select (actor_id = @a) || '/' || (metadata ->> 'reason') || '/' || (metadata ? 'note')

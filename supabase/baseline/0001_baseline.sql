@@ -12535,3 +12535,3135 @@ values
   -- The member's own post expired (S4: "and at expiry").
   ('post_expired', 'critical', false, false,
    'notifications.postExpiredTitle', 'notifications.postExpiredBody');
+
+-- >>> supabase/schemas/80_organizations/010_organizations.sql
+-- Organizations · organizations (spec 08, requirements/20 FR-ORG-001, requirements/19 FR-FIN-007/022)
+--
+-- One row per organization; Karma Community itself is the platform organization (D76).
+-- The row is the public profile: nothing on it is private, so every signed-in member may
+-- read an active organization. Three independent facts live here and are written only by
+-- server code: the lifecycle status, the verification (D53) and the Section 46(a) approval
+-- the organization holds (D77 — recorded, never decided by the product).
+-- Not part of this baseline (FR-ORG phase 1–3, not built): organization sign-in accounts,
+-- acting as an organization, following organizations, claiming catalog entries.
+
+insert into kc_private.fsm_state (machine_id, status) values
+  ('organization', 'active'), ('organization', 'suspended');
+-- Only platform staff suspend and reinstate an organization (FR-ORG roles).
+insert into kc_private.fsm_edge (machine_id, from_status, to_status, role) values
+  ('organization', 'active', 'suspended', 'admin'),
+  ('organization', 'suspended', 'active', 'admin');
+
+create table public.organizations (
+  id                    uuid primary key default gen_random_uuid(),
+  -- Stable identifier of the public page link.
+  slug                  text not null unique check (slug ~ '^[a-z0-9]+(-[a-z0-9]+){0,9}$' and char_length(slug) <= 60),
+  name                  text not null check (char_length(btrim(name)) between 2 and 120),
+  -- The organization that runs the product; exactly one row.
+  is_platform           boolean not null default false,
+  -- D57 / D89: a private person may register; the registration number is optional.
+  org_type              text check (org_type in ('nonprofit_association', 'public_benefit_company', 'public_body',
+                                                 'informal_initiative', 'private_venture')),
+  registration_number   text check (registration_number ~ '^[0-9]{5,12}$'),
+  -- Lifecycle, machine `organization`. A suspended organization is hidden from members.
+  status                text not null default 'active',
+  -- D53: 1 basic (the registration condition) … 5 effectiveness. Set by platform staff.
+  verification_level    smallint not null default 1 check (verification_level between 1 and 5),
+  verification_method   text check (verification_method in ('manual', 'document', 'registrar')),
+  verified_at           timestamptz,
+  verified_by           uuid references public.users (id) on delete set null,
+  -- A verified nonprofit may receive donations through the product (D4, D20).
+  is_verified_nonprofit boolean not null default false,
+  -- Public profile texts, Hebrew and English.
+  public_tagline_he     text check (char_length(public_tagline_he) <= 160),
+  public_tagline_en     text check (char_length(public_tagline_en) <= 160),
+  public_about_he       text check (char_length(public_about_he) <= 4000),
+  public_about_en       text check (char_length(public_about_en) <= 4000),
+  website_url           text check (website_url ~* '^https://' and char_length(website_url) <= 2000),
+  contact_email         text check (char_length(contact_email) <= 320),
+  city_id               text references public.cities (city_id),
+  -- Section 46(a) approval held by the organization (FR-FIN-007). `active` needs the
+  -- approval number and both dates; a receipt is tax-eligible only inside the validity.
+  sec46_status          text not null default 'none'
+                          check (sec46_status in ('none', 'pending', 'active', 'expired', 'revoked')),
+  sec46_approval_number text check (char_length(sec46_approval_number) between 1 and 40),
+  sec46_valid_from      date,
+  sec46_valid_until     date,
+  -- Which live finance blocks the public page shows (FR-FIN-022, D111). All off by default.
+  show_totals             boolean not null default false,
+  show_donations_count    boolean not null default false,
+  show_program_ratio      boolean not null default false,
+  show_category_breakdown boolean not null default false,
+  show_monthly_trend      boolean not null default false,
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now(),
+  constraint organizations_sec46_active_chk check (
+    sec46_status <> 'active'
+    or (sec46_approval_number is not null and sec46_valid_from is not null
+        and sec46_valid_until >= sec46_valid_from)),
+  constraint organizations_verified_chk check ((verified_at is null) = (verification_method is null))
+);
+comment on table public.organizations is
+  'Organizations and their public profile, verification and Section 46(a) record. Karma Community is the platform organization.';
+
+-- There is one platform organization.
+create unique index organizations_single_platform_key on public.organizations (is_platform) where is_platform;
+-- FR-ORG-002 AC3: a registration number belongs to one organization.
+create unique index organizations_registration_number_key on public.organizations (registration_number)
+  where registration_number is not null;
+-- Money hub list of verified nonprofits, by name (keyset on name, id).
+create index organizations_verified_nonprofit_idx on public.organizations (name, id)
+  where is_verified_nonprofit and status = 'active';
+-- Organization search by name (substring match).
+create index organizations_name_trgm_idx on public.organizations using gin (name extensions.gin_trgm_ops);
+-- Foreign keys.
+create index organizations_city_idx on public.organizations (city_id) where city_id is not null;
+create index organizations_verified_by_idx on public.organizations (verified_by) where verified_by is not null;
+
+create trigger organizations_set_updated_at
+  before update on public.organizations
+  for each row execute function kc_private.set_updated_at();
+create trigger organizations_status_fsm
+  before insert or update of status on public.organizations
+  for each row execute function kc_private.fsm_guard_status('organization', 'status');
+
+alter table public.organizations enable row level security;
+alter table public.organizations force row level security;
+
+-- Every signed-in member reads active organizations. Members of a suspended organization
+-- and platform staff read it too (policies in 020_org_memberships.sql). Nothing for
+-- signed-out callers (design §12.1).
+create policy organizations_select_active on public.organizations
+  for select to authenticated
+  using (status = 'active');
+
+grant select on public.organizations to authenticated;
+-- Profile texts only; who may edit them is decided by the policy of the memberships file.
+-- Name, slug, type, status, verification, Section 46(a) and the finance switches change
+-- through RPCs.
+grant update (public_tagline_he, public_tagline_en, public_about_he, public_about_en, website_url,
+              contact_email, city_id)
+  on public.organizations to authenticated;
+
+-- The privileged facts of an organization are audited whoever writes them: its creation,
+-- status, verification and Section 46(a) record.
+create function kc_private.audit_organization()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.audit_record(
+    case when tg_op = 'INSERT' then 'org_create'
+         when old.status <> new.status then 'org_status_changed'
+         when old.sec46_status <> new.sec46_status then 'finance_sec46_set'
+         else 'org_verification_set' end,
+    'organization', new.id,
+    jsonb_build_object('status', new.status, 'verification_level', new.verification_level,
+                       'is_verified_nonprofit', new.is_verified_nonprofit, 'sec46_status', new.sec46_status));
+  return null;
+end;
+$$;
+
+create trigger organizations_audit_insert
+  after insert on public.organizations
+  for each row execute function kc_private.audit_organization();
+create trigger organizations_audit_update
+  after update of status, verification_level, is_verified_nonprofit, sec46_status, sec46_valid_until
+  on public.organizations
+  for each row
+  when ((old.status, old.verification_level, old.is_verified_nonprofit, old.sec46_status, old.sec46_valid_until)
+        is distinct from
+        (new.status, new.verification_level, new.is_verified_nonprofit, new.sec46_status, new.sec46_valid_until))
+  execute function kc_private.audit_organization();
+
+-- >>> supabase/schemas/80_organizations/020_org_memberships.sql
+-- Organizations · memberships and the organization predicates
+--
+-- Who belongs to which organization, and in which roles. The roles themselves have one
+-- writer: the organization-scoped grants of public.admin_role_grants (hierarchy, granting
+-- rules and audit live there — FR-ADMIN-016, D85, D86). This table is their projection,
+-- one row per member and organization, kept by trigger: it is what policies and RPCs read,
+-- and it carries the one membership setting that is not a role (`can_post`).
+--
+-- Roles and what they allow (requirements/20 § Roles, requirements/19 § Roles):
+--   manage the organization — edit its profile, edit and delete its posts (design §12.1):
+--       org_admin, org_manager
+--   publish in its name: org_admin, org_manager, org_employee, volunteer_manager, and an
+--       org_volunteer whose `can_post` is on
+--   finance: org_admin and org_treasurer keep the books, org_accountant reads them
+
+-- Finance roles of an organization (FR-FIN-002). A holder grants only roles below their
+-- own rank (FR-ADMIN-027), so a treasurer grants accountants, not other treasurers.
+insert into kc_private.admin_roles (role, rank, is_platform, grantable_roles) values
+  ('org_treasurer', 60, false, array['org_accountant']),
+  ('org_accountant', 35, false, '{}');
+update kc_private.admin_roles
+   set grantable_roles = grantable_roles || array['org_treasurer', 'org_accountant']
+ where role in ('super_admin', 'admin', 'org_admin');
+
+-- The open foreign key of the grants table (see 60_moderation/010_admin_roles.sql; its
+-- index is admin_role_grants_scope_idx). A grant has no meaning without its organization.
+alter table public.admin_role_grants
+  add constraint admin_role_grants_scope_org_fk
+  foreign key (scope_org_id) references public.organizations (id) on delete cascade;
+
+create table public.org_memberships (
+  org_id     uuid not null references public.organizations (id) on delete cascade,
+  user_id    uuid not null references public.users (id) on delete cascade,
+  -- Active organization roles of the member, most senior first. Written by trigger only.
+  roles      text[] not null check (cardinality(roles) >= 1),
+  -- Lets a volunteer publish in the organization's name (FR-ORG roles table).
+  can_post   boolean not null default false,
+  joined_at  timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (org_id, user_id)
+);
+comment on table public.org_memberships is
+  'Members of an organization with their active roles; a projection of the organization-scoped role grants.';
+
+-- "My organizations" and every predicate below; covers the member foreign key.
+create index org_memberships_user_idx on public.org_memberships (user_id);
+
+create trigger org_memberships_set_updated_at
+  before update on public.org_memberships
+  for each row execute function kc_private.set_updated_at();
+
+-- Rebuilds the membership of one member in one organization from their active grants.
+create function kc_private.org_membership_sync()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_grant constant public.admin_role_grants := case when tg_op = 'DELETE' then old else new end;
+  v_roles text[];
+begin
+  select array_agg(g.role order by r.rank desc, g.role) into v_roles
+    from public.admin_role_grants g
+    join kc_private.admin_roles r on r.role = g.role
+   where g.user_id = v_grant.user_id and g.scope_org_id = v_grant.scope_org_id and g.revoked_at is null;
+
+  if v_roles is null then
+    delete from public.org_memberships m where m.org_id = v_grant.scope_org_id and m.user_id = v_grant.user_id;
+  -- A cascade from a removed organization or member must not re-create the row.
+  elsif exists (select 1 from public.organizations o where o.id = v_grant.scope_org_id)
+        and exists (select 1 from public.users u where u.id = v_grant.user_id) then
+    insert into public.org_memberships (org_id, user_id, roles)
+    values (v_grant.scope_org_id, v_grant.user_id, v_roles)
+    on conflict (org_id, user_id) do update set roles = excluded.roles;
+  end if;
+  return null;
+end;
+$$;
+
+create trigger admin_role_grants_sync_membership
+  after insert or delete or update of revoked_at on public.admin_role_grants
+  for each row execute function kc_private.org_membership_sync();
+
+-- ── Predicates ──────────────────────────────────────────────────────────────
+-- Each returns the caller's organizations as an array, so a policy compares a column with
+-- one value computed once per statement. Definer rights: they are evaluated inside
+-- policies of tables the caller cannot read freely. An inactive account holds nothing.
+
+create function kc_access.member_org_ids()
+returns uuid[]
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(array_agg(m.org_id), '{}')
+    from public.org_memberships m
+    join public.users u on u.id = m.user_id and u.is_active
+   where m.user_id = (select auth.uid());
+$$;
+comment on function kc_access.member_org_ids() is 'Policy predicate: organizations the caller is a member of.';
+grant execute on function kc_access.member_org_ids() to authenticated;
+
+create function kc_access.managed_org_ids()
+returns uuid[]
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(array_agg(m.org_id), '{}')
+    from public.org_memberships m
+    join public.users u on u.id = m.user_id and u.is_active
+   where m.user_id = (select auth.uid())
+     and m.roles && array['org_admin', 'org_manager'];
+$$;
+comment on function kc_access.managed_org_ids() is
+  'Policy predicate: organizations the caller administers (org_admin or org_manager).';
+grant execute on function kc_access.managed_org_ids() to authenticated;
+
+-- May the caller publish in the organization's name (`org.act_as`)? The organization must
+-- be active.
+create function kc_private.can_act_as_org(p_org_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+      from public.org_memberships m
+      join public.users u on u.id = m.user_id and u.is_active
+      join public.organizations o on o.id = m.org_id and o.status = 'active'
+     where m.org_id = p_org_id and m.user_id = (select auth.uid())
+       and (m.roles && array['org_admin', 'org_manager', 'org_employee', 'volunteer_manager']
+            or (m.can_post and 'org_volunteer' = any (m.roles))));
+$$;
+comment on function kc_private.can_act_as_org(uuid) is
+  'The caller may publish in the name of this active organization.';
+
+-- ── Access ──────────────────────────────────────────────────────────────────
+alter table public.org_memberships enable row level security;
+alter table public.org_memberships force row level security;
+
+-- A member reads their own memberships; the administrators of an organization and
+-- platform staff read its roster. Other members never see who belongs to an organization.
+create policy org_memberships_select_own on public.org_memberships
+  for select to authenticated
+  using (user_id = (select auth.uid()));
+create policy org_memberships_select_managers on public.org_memberships
+  for select to authenticated
+  using (org_id = any ((select kc_access.managed_org_ids())::uuid[]) or (select kc_access.is_admin()));
+-- The administrators switch a volunteer's publishing right; the column grant allows nothing else.
+create policy org_memberships_update_managers on public.org_memberships
+  for update to authenticated
+  using (org_id = any ((select kc_access.managed_org_ids())::uuid[]))
+  with check (org_id = any ((select kc_access.managed_org_ids())::uuid[]));
+
+grant select on public.org_memberships to authenticated;
+grant update (can_post) on public.org_memberships to authenticated;
+
+-- Organizations: members and platform staff also read a suspended organization; the
+-- administrators and platform admins edit the profile texts (`org.profile.edit`).
+create policy organizations_select_member_or_staff on public.organizations
+  for select to authenticated
+  using (id = any ((select kc_access.member_org_ids())::uuid[]) or (select kc_access.is_admin()));
+create policy organizations_update_managers on public.organizations
+  for update to authenticated
+  using (id = any ((select kc_access.managed_org_ids())::uuid[]) or (select kc_access.has_admin_role('admin')))
+  with check (id = any ((select kc_access.managed_org_ids())::uuid[]) or (select kc_access.has_admin_role('admin')));
+
+-- >>> supabase/schemas/80_organizations/030_org_applications.sql
+-- Organizations · registration applications and their review (FR-ORG-002, D53, D57, D89)
+--
+-- A member applies to register an organization; platform staff approve or reject. The
+-- approval creates the organization (verified at level 1, D53) and makes the applicant its
+-- first org_admin, in one transaction. A decision is final; after a rejection the member
+-- may file a new application.
+
+insert into kc_private.fsm_state (machine_id, status) values
+  ('org_application', 'pending'), ('org_application', 'approved'), ('org_application', 'rejected');
+insert into kc_private.fsm_edge (machine_id, from_status, to_status, role) values
+  ('org_application', 'pending', 'approved', 'admin'),
+  ('org_application', 'pending', 'rejected', 'admin');
+
+create table public.org_applications (
+  id                  uuid primary key default gen_random_uuid(),
+  applicant_id        uuid not null references public.users (id) on delete cascade,
+  org_name            text not null check (char_length(btrim(org_name)) between 2 and 120),
+  org_type            text not null check (org_type in ('nonprofit_association', 'public_benefit_company',
+                                                        'public_body', 'informal_initiative', 'private_venture')),
+  -- Optional (D89): any non-profit organization may register.
+  registration_number text check (registration_number ~ '^[0-9]{5,12}$'),
+  org_description     text check (char_length(org_description) <= 4000),
+  contact_email       text check (char_length(contact_email) <= 320),
+  contact_phone       text check (char_length(contact_phone) <= 20),
+  website_url         text check (website_url ~* '^https://' and char_length(website_url) <= 2000),
+  -- FR-ORG-002 AC2: the applicant declares that the organization is not for profit.
+  declared_nonprofit  boolean not null check (declared_nonprofit),
+  -- Lifecycle, machine `org_application`. Never written by a device.
+  status              text not null default 'pending',
+  reviewed_by         uuid references public.users (id) on delete set null,
+  reviewed_at         timestamptz,
+  -- Shown to the applicant as written (requirements/20 O4).
+  review_note         text check (char_length(review_note) <= 2000),
+  -- The organization an approval created.
+  organization_id     uuid references public.organizations (id) on delete set null,
+  created_at          timestamptz not null default now(),
+  constraint org_applications_decision_chk check ((status = 'pending') = (reviewed_at is null))
+);
+comment on table public.org_applications is 'Applications to register an organization and their review.';
+
+-- A member has one application waiting at a time; also "my applications".
+create unique index org_applications_one_pending_key on public.org_applications (applicant_id)
+  where status = 'pending';
+create index org_applications_applicant_idx on public.org_applications (applicant_id, created_at desc);
+-- Staff review queue: by status, oldest first (keyset on created_at, id).
+create index org_applications_queue_idx on public.org_applications (status, created_at, id);
+-- Foreign keys.
+create index org_applications_reviewed_by_idx on public.org_applications (reviewed_by) where reviewed_by is not null;
+create index org_applications_organization_idx on public.org_applications (organization_id)
+  where organization_id is not null;
+
+create trigger org_applications_status_fsm
+  before insert or update of status on public.org_applications
+  for each row execute function kc_private.fsm_guard_status('org_application', 'status');
+
+alter table public.org_applications enable row level security;
+alter table public.org_applications force row level security;
+
+-- The applicant reads their own applications; platform admins read the queue.
+create policy org_applications_select_own on public.org_applications
+  for select to authenticated
+  using (applicant_id = (select auth.uid()));
+create policy org_applications_select_reviewers on public.org_applications
+  for select to authenticated
+  using ((select kc_access.has_admin_role('admin')));
+-- A member with an active account files their own application; the column grant leaves the
+-- status and the review fields to the server.
+create policy org_applications_insert_own on public.org_applications
+  for insert to authenticated
+  with check (applicant_id = (select auth.uid())
+              and exists (select 1 from public.users u where u.id = (select auth.uid()) and u.is_active));
+
+grant select on public.org_applications to authenticated;
+grant insert (id, applicant_id, org_name, org_type, registration_number, org_description, contact_email,
+              contact_phone, website_url, declared_nonprofit)
+  on public.org_applications to authenticated;
+
+insert into kc_private.notification_kinds (kind, category, title_key, body_key) values
+  -- requirements/20 § Data model: the applicant learns the decision.
+  ('org_application_decided', 'critical', 'notifications.orgApplicationDecidedTitle',
+   'notifications.orgApplicationDecidedBody');
+
+-- Decides a pending application as a platform admin (`org.review_applications`: super
+-- admin and admin). Approving needs the slug of the new organization's page. Returns the
+-- new organization's id, or null for a rejection.
+-- Errors: forbidden (42501); P0001 application_not_found, application_already_decided,
+-- slug_required, slug_taken, org_registration_number_taken.
+create function kc_private.org_application_decide(p_application_id uuid, p_approve boolean, p_slug text, p_note text)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_admin_role('admin');
+  v_application public.org_applications;
+  v_org_id uuid;
+begin
+  select a.* into v_application from public.org_applications a where a.id = p_application_id for update;
+  if not found then
+    raise exception 'application_not_found' using errcode = 'P0001';
+  elsif v_application.status <> 'pending' then
+    raise exception 'application_already_decided' using errcode = 'P0001';
+  end if;
+
+  if p_approve then
+    if nullif(btrim(p_slug), '') is null then
+      raise exception 'slug_required' using errcode = 'P0001';
+    end if;
+    begin
+      insert into public.organizations (slug, name, org_type, registration_number, public_about_he, website_url,
+                                        contact_email, verification_method, verified_at, verified_by)
+      values (btrim(p_slug), btrim(v_application.org_name), v_application.org_type,
+              v_application.registration_number, v_application.org_description, v_application.website_url,
+              v_application.contact_email, 'manual', now(), v_actor)
+      returning id into v_org_id;
+    exception when unique_violation then
+      raise exception '%', case when exists (select 1 from public.organizations o where o.slug = btrim(p_slug))
+                                then 'slug_taken' else 'org_registration_number_taken' end
+        using errcode = 'P0001';
+    end;
+    -- The applicant administers the new organization; the membership row follows the grant.
+    insert into public.admin_role_grants (user_id, role, scope_org_id, granted_by, manager_grant_id)
+    values (v_application.applicant_id, 'org_admin', v_org_id, v_actor,
+            kc_private.admin_granting_grant(v_actor, 'org_admin', v_org_id));
+  end if;
+
+  perform set_config('kc.fsm_role', 'admin', true);
+  update public.org_applications a
+     set status = case when p_approve then 'approved' else 'rejected' end,
+         reviewed_by = v_actor, reviewed_at = now(), review_note = nullif(btrim(p_note), ''),
+         organization_id = v_org_id
+   where a.id = p_application_id;
+  perform set_config('kc.fsm_role', '', true);
+
+  perform kc_private.audit_record(
+    case when p_approve then 'org_application_approve' else 'org_application_reject' end,
+    'org_application', p_application_id,
+    jsonb_build_object('applicant_id', v_application.applicant_id, 'organization_id', v_org_id));
+  perform kc_private.outbox_enqueue('notification', jsonb_build_object(
+    'kind', 'org_application_decided', 'recipient_id', v_application.applicant_id, 'actor_id', null,
+    'entity', jsonb_build_object('type', 'org_application', 'id', p_application_id),
+    'data', jsonb_build_object('approved', p_approve, 'organization_id', v_org_id,
+                               'dedupe_key', 'org_application_decided:' || p_application_id)));
+  return v_org_id;
+end;
+$$;
+
+create function public.admin_org_application_approve(p_application_id uuid, p_slug text, p_note text default null)
+returns uuid
+language sql
+security definer
+set search_path = ''
+as $$
+  select kc_private.org_application_decide(p_application_id, true, p_slug, p_note);
+$$;
+comment on function public.admin_org_application_approve(uuid, text, text) is
+  'Platform admin: approves an application, creating the organization and its first org_admin; returns the organization id.';
+grant execute on function public.admin_org_application_approve(uuid, text, text) to authenticated;
+
+create function public.admin_org_application_reject(p_application_id uuid, p_note text default null)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  select kc_private.org_application_decide(p_application_id, false, null, p_note);
+$$;
+comment on function public.admin_org_application_reject(uuid, text) is
+  'Platform admin: rejects an application; the note is shown to the applicant.';
+grant execute on function public.admin_org_application_reject(uuid, text) to authenticated;
+
+-- Sets the verification of an organization (FR-ORG-019: levels are set by platform admins)
+-- and whether it is a verified nonprofit that may receive donations.
+-- Errors: forbidden (42501); P0001 org_not_found; 23514 for a level outside 1–5.
+create function public.admin_set_org_verification(
+  p_org_id uuid,
+  p_level smallint,
+  p_is_verified_nonprofit boolean,
+  p_method text default 'manual'
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_admin_role('admin');
+begin
+  update public.organizations o
+     set verification_level = p_level, is_verified_nonprofit = p_is_verified_nonprofit,
+         verification_method = p_method, verified_at = now(), verified_by = v_actor
+   where o.id = p_org_id;
+  if not found then
+    raise exception 'org_not_found' using errcode = 'P0001';
+  end if;
+end;
+$$;
+comment on function public.admin_set_org_verification(uuid, smallint, boolean, text) is
+  'Platform admin: sets the verification level and the verified-nonprofit mark of an organization.';
+grant execute on function public.admin_set_org_verification(uuid, smallint, boolean, text) to authenticated;
+
+-- Suspends or reinstates an organization (FR-ORG roles: platform admins).
+-- Errors: forbidden (42501); P0001 org_not_found, unknown_state, illegal_transition.
+create function public.admin_set_org_status(p_org_id uuid, p_status text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.require_admin_role('admin');
+  perform set_config('kc.fsm_role', 'admin', true);
+  update public.organizations o set status = p_status where o.id = p_org_id;
+  if not found then
+    raise exception 'org_not_found' using errcode = 'P0001';
+  end if;
+  perform set_config('kc.fsm_role', '', true);
+end;
+$$;
+comment on function public.admin_set_org_status(uuid, text) is 'Platform admin: suspends or reinstates an organization.';
+grant execute on function public.admin_set_org_status(uuid, text) to authenticated;
+
+-- >>> supabase/schemas/80_organizations/040_org_posts.sql
+-- Organizations · posts of an organization (FR-ORG-007, D22, D31, D91; design §12.1)
+--
+-- `posts.beneficiary_org_id` names the organization a post is published for. This file
+-- closes the foreign keys earlier modules left open, decides who may publish for an
+-- organization, and gives the administrators of an organization (org_admin, org_manager)
+-- the right to edit and delete its posts. The owner's and the super admin's rights are
+-- unchanged.
+
+-- Removing an organization releases its posts to their owners.
+alter table public.posts
+  add constraint posts_beneficiary_org_fk
+  foreign key (beneficiary_org_id) references public.organizations (id) on delete set null;
+-- Posts of an organization, newest first: its page, its administrators' list, the foreign key.
+create index posts_beneficiary_org_idx on public.posts (beneficiary_org_id, created_at desc, id desc)
+  where beneficiary_org_id is not null;
+
+-- A self-declared affiliation (D110) names a registered organization; every registered
+-- organization is verified (D53). The row has no meaning without its organization. Index:
+-- user_profile_fields_affiliated_org_idx (social graph module).
+alter table public.user_profile_fields
+  add constraint user_profile_fields_affiliated_org_fk
+  foreign key (affiliated_org_id) references public.organizations (id) on delete cascade;
+
+-- ── Publishing for an organization ──────────────────────────────────────────
+-- Whoever writes the column — a plain insert, a world's create RPC, the RPC below — a
+-- signed-in caller may name only an organization they may publish for (`org.act_as`).
+-- Server code without a member session (imports, jobs) is not restricted.
+create function kc_private.posts_guard_beneficiary_org()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if (select auth.uid()) is not null and not kc_private.can_act_as_org(new.beneficiary_org_id) then
+    raise exception 'forbidden' using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger posts_guard_beneficiary_org_insert
+  before insert on public.posts
+  for each row when (new.beneficiary_org_id is not null)
+  execute function kc_private.posts_guard_beneficiary_org();
+create trigger posts_guard_beneficiary_org_update
+  before update of beneficiary_org_id on public.posts
+  for each row when (new.beneficiary_org_id is not null and new.beneficiary_org_id is distinct from old.beneficiary_org_id)
+  execute function kc_private.posts_guard_beneficiary_org();
+
+-- A member may create a post directly in an organization's name; the trigger decides.
+grant insert (beneficiary_org_id) on public.posts to authenticated;
+
+-- Replaces the authorization of every post management action (publish, pause, resume,
+-- delete, close, reopen): the owner, the super admin, or an administrator of the post's
+-- organization (design §12.1).
+create or replace function kc_private.can_manage_post(p_post_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+      from public.posts p
+     where p.id = p_post_id
+       and (p.owner_id = (select auth.uid())
+            or kc_access.has_admin_role('super_admin')
+            or p.beneficiary_org_id = any (kc_access.managed_org_ids())));
+$$;
+comment on function kc_private.can_manage_post(uuid) is
+  'Authorization of every post management action: the owner, the super admin, or an administrator of the post''s organization.';
+
+-- Attaches a post to an organization, or detaches it with null. The caller must manage
+-- the post and, to attach, may publish for the organization.
+-- Errors: post_not_found (P0001), forbidden (42501).
+create function public.set_post_organization(p_post_id uuid, p_org_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.post_lock_managed(p_post_id);
+  update public.posts p set beneficiary_org_id = p_org_id where p.id = p_post_id;
+end;
+$$;
+comment on function public.set_post_organization(uuid, uuid) is
+  'Publishes an existing post in the name of an organization the caller may act for, or detaches it.';
+grant execute on function public.set_post_organization(uuid, uuid) to authenticated;
+
+-- ── Editing ─────────────────────────────────────────────────────────────────
+-- May the caller edit the content of a post that is not their own? The super admin: every
+-- post, in any status. An administrator of the post's organization: while the content is
+-- editable (draft, open, paused — the owner's own rule, D104). One predicate for `posts`
+-- and every detail table. Definer rights: it must see the post whatever its audience.
+create function kc_access.can_edit_post(p_post_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+      from public.posts p
+     where p.id = p_post_id
+       and (kc_access.has_admin_role('super_admin')
+            or (p.status in ('draft', 'open', 'paused')
+                and p.beneficiary_org_id = any (kc_access.managed_org_ids()))));
+$$;
+comment on function kc_access.can_edit_post(uuid) is
+  'Policy predicate: the caller edits this post as super admin or as an administrator of its organization.';
+grant execute on function kc_access.can_edit_post(uuid) to authenticated;
+
+-- The administrators read every post of their organization, whatever its status or audience.
+create policy posts_select_org_admin on public.posts
+  for select to authenticated
+  using (beneficiary_org_id = any ((select kc_access.managed_org_ids())::uuid[]));
+-- Which columns is decided by the grants of each table; status still moves through RPCs.
+create policy posts_update_editor on public.posts
+  for update to authenticated
+  using (kc_access.can_edit_post(id)) with check (kc_access.can_edit_post(id));
+create policy post_ride_details_update_editor on public.post_ride_details
+  for update to authenticated
+  using (kc_access.can_edit_post(post_id)) with check (kc_access.can_edit_post(post_id));
+create policy post_housing_details_update_editor on public.post_housing_details
+  for update to authenticated
+  using (kc_access.can_edit_post(post_id)) with check (kc_access.can_edit_post(post_id));
+create policy post_event_details_update_editor on public.post_event_details
+  for update to authenticated
+  using (kc_access.can_edit_post(post_id)) with check (kc_access.can_edit_post(post_id));
+create policy post_food_details_update_editor on public.post_food_details
+  for update to authenticated
+  using (kc_access.can_edit_post(post_id)) with check (kc_access.can_edit_post(post_id));
+-- Bookable times of a knowledge post: an editor adds, changes and removes them like the giver.
+create policy post_knowledge_slots_insert_editor on public.post_knowledge_slots
+  for insert to authenticated
+  with check (kc_access.can_edit_post(post_id));
+create policy post_knowledge_slots_update_editor on public.post_knowledge_slots
+  for update to authenticated
+  using (kc_access.can_edit_post(post_id)) with check (kc_access.can_edit_post(post_id));
+create policy post_knowledge_slots_delete_editor on public.post_knowledge_slots
+  for delete to authenticated
+  using (kc_access.can_edit_post(post_id));
+
+-- ── Directory of verified nonprofits (money hub; FR-ORG-010 AC2) ────────────
+-- Active verified nonprofits by name, for signed-in members; the platform organization is
+-- not listed. Keyset: pass the name and id of the last row. Runs with the caller's rights.
+create function public.list_verified_nonprofits(
+  p_limit integer default 50,
+  p_after_name text default null,
+  p_after_id uuid default null
+)
+returns table (id uuid, slug text, name text, tagline_he text, tagline_en text, verification_level smallint)
+language sql
+stable
+set search_path = ''
+as $$
+  select o.id, o.slug, o.name, o.public_tagline_he, o.public_tagline_en, o.verification_level
+    from public.organizations o
+   where o.is_verified_nonprofit and o.status = 'active' and not o.is_platform
+     and (p_after_name is null or (o.name, o.id) > (p_after_name, p_after_id))
+   order by o.name, o.id
+   limit least(greatest(coalesce(p_limit, 50), 1), 100);
+$$;
+comment on function public.list_verified_nonprofits(integer, text, uuid) is
+  'Verified nonprofits that may receive donations, by name (keyset).';
+grant execute on function public.list_verified_nonprofits(integer, text, uuid) to authenticated;
+
+-- >>> supabase/schemas/80_organizations/050_donation_links.sql
+-- Organizations · community donation links (FR-DONATE-007/009, D9, D36)
+--
+-- Any member may suggest a link to an organization's own donation or volunteering page;
+-- it goes live after a moderator approves it (D9). Rows are written by the
+-- `validate-donation-link` Edge Function (service role) after it checked that the address
+-- is reachable; a device only reads, reports and deletes. Editing the content of a link
+-- sends it back to review.
+
+-- The lists a link can belong to (one per giving world that shows links). Reference data:
+-- the rows are loaded from supabase/seed, labels live in the app's locale files.
+create table public.donation_link_categories (
+  slug       text primary key check (slug ~ '^[a-z][a-z0-9_]{1,30}$'),
+  icon_name  text not null,
+  sort_order integer not null,
+  is_active  boolean not null default true
+);
+comment on table public.donation_link_categories is 'Lists of community donation links, one per giving world.';
+
+alter table public.donation_link_categories enable row level security;
+alter table public.donation_link_categories force row level security;
+create policy donation_link_categories_select on public.donation_link_categories
+  for select to authenticated
+  using (true);
+grant select on public.donation_link_categories to authenticated;
+
+insert into kc_private.fsm_state (machine_id, status) values
+  ('donation_link_review', 'pending'), ('donation_link_review', 'approved'), ('donation_link_review', 'rejected');
+insert into kc_private.fsm_edge (machine_id, from_status, to_status, role) values
+  ('donation_link_review', 'pending', 'approved', 'reviewer'),
+  ('donation_link_review', 'pending', 'rejected', 'reviewer'),
+  -- An edited link returns to the queue, whoever edits it.
+  ('donation_link_review', 'approved', 'pending', ''),
+  ('donation_link_review', 'rejected', 'pending', '');
+
+create table public.donation_links (
+  id            uuid primary key default gen_random_uuid(),
+  category_slug text not null references public.donation_link_categories (slug) on update cascade,
+  url           text not null check (url ~* '^https?://' and char_length(url) <= 2000),
+  display_name  text not null check (char_length(display_name) between 2 and 80),
+  description   text check (char_length(description) <= 280),
+  submitted_by  uuid not null references public.users (id) on delete cascade,
+  -- When the Edge Function last confirmed that the address answers.
+  validated_at  timestamptz not null,
+  -- Review, machine `donation_link_review`.
+  review_status text not null default 'pending',
+  reviewed_by   uuid references public.users (id) on delete set null,
+  reviewed_at   timestamptz,
+  -- Why the link was not approved; shown to its submitter.
+  review_note   text check (char_length(review_note) <= 280),
+  -- Search document; `simple` keeps Hebrew tokens unstemmed.
+  search_vector tsvector generated always as (
+                  to_tsvector('simple', display_name || ' ' || coalesce(description, ''))) stored,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+comment on table public.donation_links is 'Community-suggested links to organizations; visible to others once approved.';
+
+-- The list of one giving world: approved links, newest first.
+create index donation_links_category_idx on public.donation_links (category_slug, created_at desc, id desc)
+  where review_status = 'approved';
+-- "My links" and the hourly submission limit of the Edge Function; covers the submitter foreign key.
+create index donation_links_submitted_by_idx on public.donation_links (submitted_by, created_at desc);
+-- Review queue: by status, oldest first.
+create index donation_links_review_queue_idx on public.donation_links (review_status, created_at, id)
+  where review_status <> 'approved';
+-- Universal search over approved links.
+create index donation_links_search_gin_idx on public.donation_links using gin (search_vector)
+  where review_status = 'approved';
+create index donation_links_reviewed_by_idx on public.donation_links (reviewed_by) where reviewed_by is not null;
+
+-- A new link always starts in the queue, and a change of its content returns it there
+-- with the previous decision cleared. Runs before the machine guard (trigger name order).
+create function kc_private.donation_links_requeue()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if tg_op = 'INSERT'
+     or (new.url, new.display_name, new.description, new.category_slug)
+        is distinct from (old.url, old.display_name, old.description, old.category_slug) then
+    new.review_status := 'pending';
+    new.reviewed_by := null;
+    new.reviewed_at := null;
+    new.review_note := null;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger donation_links_a_requeue
+  before insert or update on public.donation_links
+  for each row execute function kc_private.donation_links_requeue();
+create trigger donation_links_review_fsm
+  before insert or update on public.donation_links
+  for each row execute function kc_private.fsm_guard_status('donation_link_review', 'review_status');
+create trigger donation_links_set_updated_at
+  before update on public.donation_links
+  for each row execute function kc_private.set_updated_at();
+
+alter table public.donation_links enable row level security;
+alter table public.donation_links force row level security;
+
+-- Members see approved links; the submitter also sees their own with its status
+-- (FR-DONATE-007 AC1); moderators see the queue.
+create policy donation_links_select on public.donation_links
+  for select to authenticated
+  using (review_status = 'approved'
+         or submitted_by = (select auth.uid())
+         or (select kc_access.has_admin_role('moderator')));
+-- The submitter or the super admin removes a link for good (FR-DONATE-009 AC4/AC5).
+create policy donation_links_delete on public.donation_links
+  for delete to authenticated
+  using (submitted_by = (select auth.uid()) or (select kc_access.has_admin_role('super_admin')));
+
+grant select, delete on public.donation_links to authenticated;
+-- The Edge Function adds and edits links after validating the address.
+grant select, insert, update on public.donation_links to service_role;
+
+-- Approves or rejects a link waiting in the queue (D9: super admin, admin or moderator).
+-- Returns the new status. Errors: forbidden (42501); P0001 donation_link_not_pending.
+create function public.admin_review_donation_link(p_link_id uuid, p_approve boolean, p_note text default null)
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_admin_role('moderator');
+  v_status constant text := case when p_approve then 'approved' else 'rejected' end;
+begin
+  perform set_config('kc.fsm_role', 'reviewer', true);
+  update public.donation_links l
+     set review_status = v_status, reviewed_by = v_actor, reviewed_at = now(),
+         review_note = case when p_approve then null else nullif(btrim(p_note), '') end
+   where l.id = p_link_id and l.review_status = 'pending';
+  if not found then
+    raise exception 'donation_link_not_pending' using errcode = 'P0001';
+  end if;
+  perform set_config('kc.fsm_role', '', true);
+  perform kc_private.audit_record('donation_link_review', 'donation_link', p_link_id,
+                                  jsonb_build_object('decision', v_status));
+  return v_status;
+end;
+$$;
+comment on function public.admin_review_donation_link(uuid, boolean, text) is
+  'Moderator: approves or rejects a pending donation link.';
+grant execute on function public.admin_review_donation_link(uuid, boolean, text) to authenticated;
+
+-- Reports a link to the support team (FR-DONATE-009 AC2): a system line in the caller's
+-- support thread naming the link. Errors: unauthenticated (42501); P0001 donation_link_not_found.
+create function public.report_donation_link(p_link_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+  v_url text;
+begin
+  select l.url into v_url
+    from public.donation_links l
+   where l.id = p_link_id and (l.review_status = 'approved' or l.submitted_by = v_user_id);
+  if not found then
+    raise exception 'donation_link_not_found' using errcode = 'P0001';
+  end if;
+  perform kc_private.chat_post_system_message(
+    (public.open_support_thread()).id,
+    jsonb_build_object('kind', 'donation_link_reported', 'donation_link_id', p_link_id, 'url', v_url));
+end;
+$$;
+comment on function public.report_donation_link(uuid) is
+  'Reports a donation link: writes a system message into the caller''s support thread.';
+grant execute on function public.report_donation_link(uuid) to authenticated;
+
+-- >>> supabase/schemas/85_billing/010_settings_and_providers.sql
+-- Billing · settings, payment providers, payment methods
+--
+-- Everything about money lives in the schema `billing`, which the API does not expose: a
+-- device reaches it only through the `public` RPCs of this module, each of which checks
+-- the caller and returns the caller's own data; provider webhooks and jobs reach it through
+-- service-role functions (design §2.1, §3.8). No client role holds any privilege here, and
+-- the service role only reads: every write goes through a function, so a money move and
+-- its ledger lines are always one transaction.
+--
+-- Conventions of the module:
+--   amounts      integer agorot (`bigint`) with a currency code; shekels only for now (D78)
+--   statuses     one vocabulary on the FSM kernel: a completed money move is `succeeded`,
+--                a withdrawn one `cancelled` (state-machines §7 Q4)
+--   idempotency  every table that a retried request or webhook can write has its own
+--                unique idempotency key
+--   members      a money row names its member as `user_id`, or — after the account was
+--                purged — as `user_tombstone`, the salted hash of audit.deletion_tombstones
+--                (design §4.1.4). The rows themselves are never removed with the account.
+--   service RPCs `public.api_*` and `public.provider_webhook_apply` are executable by the
+--                service role only (no grant to a client role).
+
+-- One row of module-wide settings.
+create table billing.settings (
+  singleton boolean primary key default true check (singleton),
+  -- How long money records of a purged account are kept before they may be erased.
+  -- Null = indefinitely: the period is an open legal question (design §12 Q5), and
+  -- nothing is purged automatically until it is answered.
+  retention_after_account_deletion interval check (retention_after_account_deletion > interval '0'),
+  -- Smallest donation, in agorot (5 shekels).
+  min_donation_agorot bigint not null default 500 check (min_donation_agorot > 0),
+  updated_at timestamptz not null default now()
+);
+comment on table billing.settings is 'Module-wide billing settings; exactly one row.';
+alter table billing.settings enable row level security;
+alter table billing.settings force row level security;
+-- Operations change a setting; the row itself is permanent.
+revoke insert, delete, truncate on billing.settings from service_role;
+-- The row is structure, not data: the functions of the module read it.
+insert into billing.settings default values;
+
+create trigger settings_set_updated_at
+  before update on billing.settings
+  for each row execute function kc_private.set_updated_at();
+
+-- Payment providers the product can clear through. Swappable without code (D20): the
+-- default active provider takes new donations. Rows are configuration, loaded per environment.
+create table billing.payment_providers (
+  id            uuid primary key default gen_random_uuid(),
+  slug          text not null unique check (slug ~ '^[a-z][a-z0-9_]{1,30}$'),
+  display_name  text not null check (char_length(display_name) between 1 and 80),
+  is_active     boolean not null default true,
+  is_default    boolean not null default false,
+  -- Settings the app may see (hosted-fields flags and the like). Never a credential:
+  -- provider secrets belong to the Edge Functions' environment.
+  config_public jsonb not null default '{}'::jsonb check (jsonb_typeof(config_public) = 'object'),
+  created_at    timestamptz not null default now(),
+  constraint payment_providers_default_active_chk check (is_active or not is_default)
+);
+comment on table billing.payment_providers is 'Payment providers; the default active one receives new donations.';
+create unique index payment_providers_single_default_key on billing.payment_providers (is_default) where is_default;
+alter table billing.payment_providers enable row level security;
+alter table billing.payment_providers force row level security;
+
+-- A member's saved way to pay, as the provider's token. Card data is never stored: at most
+-- the last four digits and the brand the provider reports for display.
+create table billing.payment_methods (
+  id             uuid primary key default gen_random_uuid(),
+  -- A token is the member's own and leaves with the account.
+  user_id        uuid not null references public.users (id) on delete cascade,
+  provider_id    uuid not null references billing.payment_providers (id),
+  provider_token text not null check (char_length(provider_token) between 1 and 500),
+  last4          text check (last4 ~ '^[0-9]{4}$'),
+  brand          text check (char_length(brand) <= 30),
+  is_default     boolean not null default false,
+  created_at     timestamptz not null default now(),
+  unique (provider_id, provider_token)
+);
+comment on table billing.payment_methods is 'Provider tokens of a member''s saved payment methods. No card data.';
+-- A member's methods; one default per member.
+create index payment_methods_user_idx on billing.payment_methods (user_id);
+create unique index payment_methods_single_default_key on billing.payment_methods (user_id) where is_default;
+alter table billing.payment_methods enable row level security;
+alter table billing.payment_methods force row level security;
+revoke insert, update, delete, truncate on billing.payment_methods from service_role;
+
+-- The provider that takes a new donation; raises when clearing is not available.
+create function kc_private.billing_default_provider()
+returns uuid
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_id uuid;
+begin
+  select p.id into v_id from billing.payment_providers p where p.is_default and p.is_active;
+  if not found then
+    raise exception 'payments_unavailable' using errcode = 'P0001';
+  end if;
+  return v_id;
+end;
+$$;
+comment on function kc_private.billing_default_provider() is
+  'The default active payment provider; raises payments_unavailable when there is none.';
+
+-- Stores the token of a payment method the provider created for a member at a hosted
+-- checkout and returns its id; repeating the call returns the same row. A member's first
+-- method becomes their default.
+create function public.api_payment_method_save(
+  p_user_id uuid,
+  p_provider_slug text,
+  p_provider_token text,
+  p_last4 text default null,
+  p_brand text default null
+)
+returns uuid
+language sql
+security definer
+set search_path = ''
+as $$
+  insert into billing.payment_methods (user_id, provider_id, provider_token, last4, brand, is_default)
+  select p_user_id, p.id, p_provider_token, p_last4, p_brand,
+         not exists (select 1 from billing.payment_methods m where m.user_id = p_user_id)
+    from billing.payment_providers p
+   where p.slug = p_provider_slug
+  on conflict (provider_id, provider_token) do update set last4 = excluded.last4, brand = excluded.brand
+  returning id;
+$$;
+comment on function public.api_payment_method_save(uuid, text, text, text, text) is
+  'Service role: stores the provider token of a member''s payment method.';
+
+-- >>> supabase/schemas/85_billing/020_donations.sql
+-- Billing · standing orders, donation intents, payments (D4, D20; spec 08 "Money and donations")
+--
+-- Money moves only from a member to an organization, never between members (D4).
+--   standing order   the member's mandate for a recurring donation
+--   donation intent  one wish to donate an amount: created by the member (or by the charger
+--                    for a standing order), sent to the provider's checkout, then settled
+--                    by a provider event
+--   payment          what the provider actually did with an intent; created only from a
+--                    provider event, together with its ledger lines
+
+insert into kc_private.fsm_state (machine_id, status) values
+  ('standing_order', 'pending'), ('standing_order', 'active'), ('standing_order', 'paused'),
+  ('standing_order', 'cancelled'),
+  ('donation_intent', 'created'), ('donation_intent', 'checkout'), ('donation_intent', 'succeeded'),
+  ('donation_intent', 'failed'), ('donation_intent', 'cancelled'),
+  ('payment', 'succeeded'), ('payment', 'failed'), ('payment', 'refunded');
+insert into kc_private.fsm_edge (machine_id, from_status, to_status, role) values
+  -- A mandate is live once the provider confirmed it; the member pauses, resumes and cancels.
+  ('standing_order', 'pending', 'active', 'provider'),
+  ('standing_order', 'pending', 'cancelled', ''),
+  ('standing_order', 'active', 'paused', ''),
+  ('standing_order', 'paused', 'active', ''),
+  ('standing_order', 'active', 'cancelled', ''),
+  ('standing_order', 'paused', 'cancelled', ''),
+  ('donation_intent', 'created', 'checkout', ''),
+  ('donation_intent', 'created', 'cancelled', ''),
+  ('donation_intent', 'checkout', 'cancelled', ''),
+  ('donation_intent', 'checkout', 'succeeded', 'provider'),
+  ('donation_intent', 'checkout', 'failed', 'provider'),
+  -- The donor tried again on the same checkout page and the charge went through.
+  ('donation_intent', 'failed', 'succeeded', 'provider'),
+  -- Fully refunded; a partial refund keeps the payment `succeeded`.
+  ('payment', 'succeeded', 'refunded', 'provider');
+
+create table billing.standing_orders (
+  id              uuid primary key default gen_random_uuid(),
+  user_id         uuid references public.users (id) on delete set null,
+  user_tombstone  bytea check (octet_length(user_tombstone) = 32),
+  org_id          uuid not null references public.organizations (id) on delete restrict,
+  amount_agorot   bigint not null check (amount_agorot > 0),
+  currency        text not null default 'ILS' check (currency = 'ILS'),
+  cadence         text not null default 'monthly' check (cadence in ('monthly', 'quarterly', 'yearly')),
+  -- Lifecycle, machine `standing_order`.
+  status          text not null default 'pending',
+  provider_id     uuid not null references billing.payment_providers (id),
+  -- The provider's reference of the mandate, once confirmed.
+  provider_ref    text,
+  method_id       uuid references billing.payment_methods (id) on delete set null,
+  idempotency_key text not null unique check (char_length(idempotency_key) between 8 and 200),
+  -- When the next charge is opened; null unless the order is active.
+  next_charge_at  timestamptz,
+  cancelled_at    timestamptz,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now(),
+  constraint standing_orders_party_chk check (num_nonnulls(user_id, user_tombstone) = 1),
+  constraint standing_orders_next_charge_chk check ((status = 'active') = (next_charge_at is not null))
+);
+comment on table billing.standing_orders is 'Recurring donation mandates of members to organizations.';
+
+-- "My standing orders", newest first; covers the member foreign key.
+create index standing_orders_user_idx on billing.standing_orders (user_id, created_at desc) where user_id is not null;
+-- Charger: active orders that are due, oldest first.
+create index standing_orders_due_idx on billing.standing_orders (next_charge_at) where status = 'active';
+-- Foreign keys.
+create index standing_orders_org_idx on billing.standing_orders (org_id);
+create index standing_orders_provider_idx on billing.standing_orders (provider_id);
+create index standing_orders_method_idx on billing.standing_orders (method_id) where method_id is not null;
+
+create table billing.donation_intents (
+  id                uuid primary key default gen_random_uuid(),
+  user_id           uuid references public.users (id) on delete set null,
+  user_tombstone    bytea check (octet_length(user_tombstone) = 32),
+  org_id            uuid not null references public.organizations (id) on delete restrict,
+  -- The campaign post the donation was made on, if any.
+  post_id           uuid references public.posts (id) on delete set null,
+  -- Set when the intent is one charge of a standing order.
+  standing_order_id uuid references billing.standing_orders (id) on delete restrict,
+  amount_agorot     bigint not null check (amount_agorot > 0),
+  currency          text not null default 'ILS' check (currency = 'ILS'),
+  -- Lifecycle, machine `donation_intent`.
+  status            text not null default 'created',
+  provider_id       uuid not null references billing.payment_providers (id),
+  -- The provider's checkout session: its reference and the page the donor is sent to.
+  provider_ref      text,
+  checkout_url      text check (checkout_url ~* '^https://'),
+  idempotency_key   text not null unique check (char_length(idempotency_key) between 8 and 200),
+  created_at        timestamptz not null default now(),
+  updated_at        timestamptz not null default now(),
+  constraint donation_intents_party_chk check (num_nonnulls(user_id, user_tombstone) = 1)
+);
+comment on table billing.donation_intents is 'One wish to donate an amount to an organization, from creation to settlement.';
+
+-- A member's intents, newest first; covers the member foreign key.
+create index donation_intents_user_idx on billing.donation_intents (user_id, created_at desc) where user_id is not null;
+-- Money raised by a campaign post.
+create index donation_intents_post_idx on billing.donation_intents (post_id) where post_id is not null;
+-- Charges of a standing order (history, failed-charge handling).
+create index donation_intents_standing_order_idx on billing.donation_intents (standing_order_id, created_at desc)
+  where standing_order_id is not null;
+-- Foreign keys.
+create index donation_intents_org_idx on billing.donation_intents (org_id);
+create index donation_intents_provider_idx on billing.donation_intents (provider_id);
+
+create table billing.payments (
+  id              uuid primary key default gen_random_uuid(),
+  intent_id       uuid not null references billing.donation_intents (id) on delete restrict,
+  user_id         uuid references public.users (id) on delete set null,
+  user_tombstone  bytea check (octet_length(user_tombstone) = 32),
+  org_id          uuid not null references public.organizations (id) on delete restrict,
+  amount_agorot   bigint not null check (amount_agorot > 0),
+  currency        text not null default 'ILS' check (currency = 'ILS'),
+  -- Outcome, machine `payment`.
+  status          text not null,
+  -- Sum of the settled refunds of this payment.
+  refunded_agorot bigint not null default 0 check (refunded_agorot >= 0),
+  provider_id     uuid not null references billing.payment_providers (id),
+  provider_ref    text,
+  method_id       uuid references billing.payment_methods (id) on delete set null,
+  -- The provider event that reported the payment.
+  idempotency_key text not null unique check (char_length(idempotency_key) between 8 and 200),
+  created_at      timestamptz not null default now(),
+  constraint payments_party_chk check (num_nonnulls(user_id, user_tombstone) = 1),
+  constraint payments_refunded_chk check (
+    refunded_agorot <= amount_agorot and (status = 'refunded') = (refunded_agorot = amount_agorot))
+);
+comment on table billing.payments is 'Payments reported by the provider; written only together with their ledger lines.';
+
+-- An intent is paid once.
+create unique index payments_one_settled_per_intent_key on billing.payments (intent_id)
+  where status in ('succeeded', 'refunded');
+-- Failed attempts of an intent; covers the intent foreign key.
+create index payments_intent_idx on billing.payments (intent_id);
+-- "My donations", newest first (keyset on created_at, id); covers the member foreign key.
+create index payments_user_idx on billing.payments (user_id, created_at desc, id desc) where user_id is not null;
+-- Money raised by an organization; covers the organization foreign key.
+create index payments_org_idx on billing.payments (org_id, created_at desc) where status = 'succeeded';
+-- A provider reference names one payment (refund and dispute lookups).
+create unique index payments_provider_ref_key on billing.payments (provider_id, provider_ref)
+  where provider_ref is not null;
+create index payments_method_idx on billing.payments (method_id) where method_id is not null;
+
+create trigger standing_orders_status_fsm
+  before insert or update of status on billing.standing_orders
+  for each row execute function kc_private.fsm_guard_status('standing_order', 'status');
+create trigger standing_orders_set_updated_at
+  before update on billing.standing_orders
+  for each row execute function kc_private.set_updated_at();
+create trigger donation_intents_status_fsm
+  before insert or update of status on billing.donation_intents
+  for each row execute function kc_private.fsm_guard_status('donation_intent', 'status');
+create trigger donation_intents_set_updated_at
+  before update on billing.donation_intents
+  for each row execute function kc_private.set_updated_at();
+create trigger payments_status_fsm
+  before insert or update of status on billing.payments
+  for each row execute function kc_private.fsm_guard_status('payment', 'status');
+
+alter table billing.standing_orders enable row level security;
+alter table billing.standing_orders force row level security;
+alter table billing.donation_intents enable row level security;
+alter table billing.donation_intents force row level security;
+alter table billing.payments enable row level security;
+alter table billing.payments force row level security;
+-- The service role reads; it writes only through the functions of this module.
+revoke insert, update, delete, truncate on billing.standing_orders, billing.donation_intents, billing.payments
+  from service_role;
+
+-- >>> supabase/schemas/85_billing/030_refunds_payouts_kyc_webhooks.sql
+-- Billing · refunds, payouts, KYC profiles, provider webhook events
+
+insert into kc_private.fsm_state (machine_id, status) values
+  ('refund', 'pending'), ('refund', 'succeeded'), ('refund', 'failed'),
+  ('payout', 'pending'), ('payout', 'succeeded'), ('payout', 'failed'),
+  ('kyc', 'pending'), ('kyc', 'approved'), ('kyc', 'rejected'),
+  ('webhook_event', 'pending'), ('webhook_event', 'processed'), ('webhook_event', 'failed');
+insert into kc_private.fsm_edge (machine_id, from_status, to_status, role) values
+  -- Only the provider's word settles a refund or a payout.
+  ('refund', 'pending', 'succeeded', 'provider'),
+  ('refund', 'pending', 'failed', 'provider'),
+  ('payout', 'pending', 'succeeded', 'provider'),
+  ('payout', 'pending', 'failed', 'provider'),
+  -- The provider may revise its verdict at any time: a rejected party is checked again,
+  -- an approved one is re-verified periodically.
+  ('kyc', 'pending', 'approved', 'provider'),
+  ('kyc', 'pending', 'rejected', 'provider'),
+  ('kyc', 'rejected', 'pending', 'provider'),
+  ('kyc', 'approved', 'pending', 'provider'),
+  ('kyc', 'approved', 'rejected', 'provider'),
+  ('kyc', 'rejected', 'approved', 'provider'),
+  -- A failed event is applied again when the provider resends it.
+  ('webhook_event', 'pending', 'processed', ''),
+  ('webhook_event', 'pending', 'failed', ''),
+  ('webhook_event', 'failed', 'processed', '');
+
+-- Money returned to a donor. Opened by a platform admin, settled by a provider event.
+create table billing.refunds (
+  id              uuid primary key default gen_random_uuid(),
+  payment_id      uuid not null references billing.payments (id) on delete restrict,
+  amount_agorot   bigint not null check (amount_agorot > 0),
+  -- Stable reason code; free text never enters the money tables.
+  reason          text not null check (reason in ('donor_request', 'duplicate', 'fraud', 'error')),
+  -- Lifecycle, machine `refund`.
+  status          text not null default 'pending',
+  provider_ref    text,
+  idempotency_key text not null unique check (char_length(idempotency_key) between 8 and 200),
+  opened_by       uuid references public.users (id) on delete set null,
+  created_at      timestamptz not null default now(),
+  settled_at      timestamptz,
+  constraint refunds_settled_chk check ((status = 'pending') = (settled_at is null))
+);
+comment on table billing.refunds is 'Refunds of payments; the ledger is posted when the provider confirms.';
+-- Refunds of a payment (remaining refundable amount); covers the payment foreign key.
+create index refunds_payment_idx on billing.refunds (payment_id);
+create index refunds_opened_by_idx on billing.refunds (opened_by) where opened_by is not null;
+
+-- Money the provider transfers to an organization's bank account.
+create table billing.payouts (
+  id              uuid primary key default gen_random_uuid(),
+  org_id          uuid not null references public.organizations (id) on delete restrict,
+  amount_agorot   bigint not null check (amount_agorot > 0),
+  currency        text not null default 'ILS' check (currency = 'ILS'),
+  -- Lifecycle, machine `payout`.
+  status          text not null default 'pending',
+  provider_ref    text,
+  idempotency_key text not null unique check (char_length(idempotency_key) between 8 and 200),
+  created_at      timestamptz not null default now(),
+  settled_at      timestamptz,
+  constraint payouts_settled_chk check ((status = 'pending') = (settled_at is null))
+);
+comment on table billing.payouts is 'Payouts to organizations; the ledger is posted when the provider confirms.';
+-- Payouts of an organization, newest first (finance screen, open payouts in the balance check).
+create index payouts_org_idx on billing.payouts (org_id, created_at desc);
+
+-- "Know your customer" state of a payer (a member) or a recipient (an organization), as
+-- reported by the provider. Only the state and the provider's reference: documents stay
+-- with the provider. A payer's profile leaves with the account.
+create table billing.kyc_profiles (
+  id           uuid primary key default gen_random_uuid(),
+  party_type   text not null check (party_type in ('payer', 'recipient')),
+  user_id      uuid unique references public.users (id) on delete cascade,
+  org_id       uuid unique references public.organizations (id) on delete cascade,
+  -- State, machine `kyc`.
+  status       text not null default 'pending',
+  provider_ref text,
+  verified_at  timestamptz,
+  updated_at   timestamptz not null default now(),
+  constraint kyc_profiles_party_chk check (
+    case party_type when 'payer' then user_id is not null and org_id is null
+                    else org_id is not null and user_id is null end)
+);
+comment on table billing.kyc_profiles is 'KYC state of payers and recipient organizations, as reported by the provider.';
+
+-- Every event a provider sent, once: (provider, event id) is the idempotency key of the
+-- whole webhook path.
+create table billing.webhook_events (
+  id                uuid primary key default gen_random_uuid(),
+  provider_slug     text not null,
+  provider_event_id text not null check (char_length(provider_event_id) between 1 and 200),
+  event_type        text,
+  payload           jsonb not null check (jsonb_typeof(payload) = 'object'),
+  -- Processing state, machine `webhook_event`.
+  status            text not null default 'pending',
+  processed_at      timestamptz,
+  -- Stable error code of the last failed attempt.
+  error_code        text,
+  created_at        timestamptz not null default now(),
+  unique (provider_slug, provider_event_id)
+);
+comment on table billing.webhook_events is 'Provider events, each stored and applied once.';
+-- Operations: events that failed, oldest first.
+create index webhook_events_failed_idx on billing.webhook_events (created_at) where status = 'failed';
+
+create trigger refunds_status_fsm
+  before insert or update of status on billing.refunds
+  for each row execute function kc_private.fsm_guard_status('refund', 'status');
+create trigger payouts_status_fsm
+  before insert or update of status on billing.payouts
+  for each row execute function kc_private.fsm_guard_status('payout', 'status');
+create trigger kyc_profiles_status_fsm
+  before insert or update of status on billing.kyc_profiles
+  for each row execute function kc_private.fsm_guard_status('kyc', 'status');
+create trigger kyc_profiles_set_updated_at
+  before update on billing.kyc_profiles
+  for each row execute function kc_private.set_updated_at();
+create trigger webhook_events_status_fsm
+  before insert or update of status on billing.webhook_events
+  for each row execute function kc_private.fsm_guard_status('webhook_event', 'status');
+
+alter table billing.refunds enable row level security;
+alter table billing.refunds force row level security;
+alter table billing.payouts enable row level security;
+alter table billing.payouts force row level security;
+alter table billing.kyc_profiles enable row level security;
+alter table billing.kyc_profiles force row level security;
+alter table billing.webhook_events enable row level security;
+alter table billing.webhook_events force row level security;
+revoke insert, update, delete, truncate
+  on billing.refunds, billing.payouts, billing.kyc_profiles, billing.webhook_events from service_role;
+
+-- >>> supabase/schemas/85_billing/040_ledger.sql
+-- Billing · ledger (double entry, append-only)
+--
+-- Every money move is recorded as one ledger transaction: lines that share a `txn_id` and
+-- whose debits equal their credits. The balance is checked when the database transaction
+-- commits, so no path — a function of this module, a migration, a manual fix — can leave
+-- an unbalanced transaction behind. A line is never changed or removed by any role; a
+-- mistake is corrected by a new, opposite transaction.
+--
+-- Accounts:
+--   provider_clearing  money held for us by the payment provider (asset)
+--   org_payable        money owed to an organization (liability; `org_id` says to which)
+-- Moves:  payment  debit provider_clearing / credit org_payable
+--         refund   debit org_payable / credit provider_clearing
+--         payout   debit org_payable / credit provider_clearing
+
+create table billing.ledger_entries (
+  id            bigint generated always as identity primary key,
+  txn_id        uuid not null,
+  account       text not null check (account in ('provider_clearing', 'org_payable')),
+  -- The organization whose money the move is about.
+  org_id        uuid not null references public.organizations (id) on delete restrict,
+  debit_agorot  bigint not null default 0 check (debit_agorot >= 0),
+  credit_agorot bigint not null default 0 check (credit_agorot >= 0),
+  currency      text not null default 'ILS' check (currency = 'ILS'),
+  -- The business record the transaction belongs to. No foreign key: one column refers to
+  -- three tables, and those rows can never be deleted (restrict from their own children).
+  ref_type      text not null check (ref_type in ('payment', 'refund', 'payout')),
+  ref_id        uuid not null,
+  created_at    timestamptz not null default now(),
+  -- A line is one-sided.
+  constraint ledger_entries_one_side_chk check ((debit_agorot > 0) <> (credit_agorot > 0)),
+  -- Idempotency: a business record is posted once.
+  unique (ref_type, ref_id, account)
+);
+comment on table billing.ledger_entries is
+  'Double-entry ledger in agorot. Balanced per transaction at commit; append-only for every role.';
+
+-- Lines of a transaction (the balance check).
+create index ledger_entries_txn_idx on billing.ledger_entries (txn_id);
+-- Balance and statement of an organization per account; covers the organization foreign key.
+create index ledger_entries_org_account_idx on billing.ledger_entries (org_id, account, id);
+
+alter table billing.ledger_entries enable row level security;
+alter table billing.ledger_entries force row level security;
+revoke insert, update, delete, truncate on billing.ledger_entries from service_role;
+
+-- No change and no removal, for any role (the table owner included).
+create trigger ledger_entries_append_only
+  before update or delete on billing.ledger_entries
+  for each row execute function kc_private.audit_reject_change();
+create trigger ledger_entries_no_truncate
+  before truncate on billing.ledger_entries
+  for each statement execute function kc_private.audit_reject_change();
+
+-- Raises unless the transaction of the inserted line balances, per currency.
+create function kc_private.ledger_assert_balanced()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if exists (select 1
+               from billing.ledger_entries e
+              where e.txn_id = new.txn_id
+              group by e.currency
+             having sum(e.debit_agorot) <> sum(e.credit_agorot)) then
+    raise exception 'ledger_unbalanced' using errcode = 'P0001', detail = format('txn %s', new.txn_id);
+  end if;
+  return null;
+end;
+$$;
+comment on function kc_private.ledger_assert_balanced() is
+  'Deferred constraint trigger: a ledger transaction must balance when the database transaction commits.';
+
+create constraint trigger ledger_entries_balanced
+  after insert on billing.ledger_entries
+  deferrable initially deferred
+  for each row execute function kc_private.ledger_assert_balanced();
+
+-- Posts one balanced transaction of two lines for a business record. Posting the same
+-- record again is a no-op, so a replayed provider event cannot double-count.
+create function kc_private.ledger_post(
+  p_ref_type text,
+  p_ref_id uuid,
+  p_org_id uuid,
+  p_debit_account text,
+  p_credit_account text,
+  p_amount_agorot bigint
+)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  with txn as (select gen_random_uuid() as id)
+  insert into billing.ledger_entries (txn_id, account, org_id, debit_agorot, credit_agorot, ref_type, ref_id)
+  select txn.id, l.account, p_org_id, l.debit, l.credit, p_ref_type, p_ref_id
+    from txn, (values (p_debit_account, p_amount_agorot, 0::bigint),
+                      (p_credit_account, 0::bigint, p_amount_agorot)) as l (account, debit, credit)
+  on conflict (ref_type, ref_id, account) do nothing;
+$$;
+comment on function kc_private.ledger_post(text, uuid, uuid, text, text, bigint) is
+  'Posts the two balanced lines of a payment, refund or payout; idempotent per business record.';
+
+-- What the product still owes an organization: collected, minus refunded and paid out.
+create function kc_private.billing_org_balance(p_org_id uuid)
+returns bigint
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(sum(e.credit_agorot - e.debit_agorot), 0)::bigint
+    from billing.ledger_entries e
+   where e.org_id = p_org_id and e.account = 'org_payable';
+$$;
+comment on function kc_private.billing_org_balance(uuid) is 'Balance owed to an organization, in agorot, from the ledger.';
+
+-- >>> supabase/schemas/85_billing/050_receipts.sql
+-- Billing · donation receipts (D20, D77; FR-FIN-007 AC4, FR-FIN-008, FR-FIN-021)
+--
+-- One receipt record per succeeded payment, numbered per organization without gaps: the
+-- serial comes from a counter row that the issuing transaction locks, so two receipts
+-- issued at the same moment queue up, and a transaction that fails gives its number back.
+-- The record carries whether the donation is eligible under Section 46(a) — true only
+-- while the organization's approval is active on the day of the payment; the product
+-- records that fact and never decides it (D77). The official document itself is produced
+-- by the organization's own tools from this record.
+
+-- Last serial issued per organization.
+create table billing.receipt_counters (
+  org_id      uuid primary key references public.organizations (id) on delete restrict,
+  last_serial bigint not null default 0 check (last_serial >= 0)
+);
+comment on table billing.receipt_counters is 'Per-organization receipt counter; locked by the issuing transaction.';
+alter table billing.receipt_counters enable row level security;
+alter table billing.receipt_counters force row level security;
+
+create table billing.receipts (
+  id                    uuid primary key default gen_random_uuid(),
+  org_id                uuid not null references public.organizations (id) on delete restrict,
+  -- Gapless within the organization, starting at 1.
+  serial                bigint not null check (serial > 0),
+  payment_id            uuid not null unique references billing.payments (id) on delete restrict,
+  user_id               uuid references public.users (id) on delete set null,
+  user_tombstone        bytea check (octet_length(user_tombstone) = 32),
+  amount_agorot         bigint not null check (amount_agorot > 0),
+  currency              text not null default 'ILS' check (currency = 'ILS'),
+  -- Section 46(a) eligibility on the payment date, with the approval number it rests on.
+  sec46_eligible        boolean not null default false,
+  sec46_approval_number text,
+  issued_at             timestamptz not null default now(),
+  unique (org_id, serial),
+  constraint receipts_party_chk check (num_nonnulls(user_id, user_tombstone) = 1),
+  constraint receipts_sec46_chk check (sec46_eligible = (sec46_approval_number is not null))
+);
+comment on table billing.receipts is 'Receipt record of each succeeded donation, with a gapless serial per organization.';
+-- "My receipts"; covers the member foreign key.
+create index receipts_user_idx on billing.receipts (user_id, issued_at desc) where user_id is not null;
+
+alter table billing.receipts enable row level security;
+alter table billing.receipts force row level security;
+revoke insert, update, delete, truncate on billing.receipts, billing.receipt_counters from service_role;
+
+-- A receipt is never removed and never rewritten. The one permitted change replaces the
+-- member reference by the tombstone when the account is purged.
+create function kc_private.receipts_guard()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if tg_op <> 'UPDATE'
+     or (to_jsonb(new) - 'user_id' - 'user_tombstone') <> (to_jsonb(old) - 'user_id' - 'user_tombstone') then
+    raise exception 'append_only' using errcode = 'P0001',
+      detail = format('%s on %s.%s', tg_op, tg_table_schema, tg_table_name);
+  end if;
+  return new;
+end;
+$$;
+
+create trigger receipts_immutable
+  before update or delete on billing.receipts
+  for each row execute function kc_private.receipts_guard();
+create trigger receipts_no_truncate
+  before truncate on billing.receipts
+  for each statement execute function kc_private.receipts_guard();
+
+insert into kc_private.notification_kinds (kind, category, title_key, body_key) values
+  -- FR-FIN-021 AC4: the donor learns that a receipt exists; a member may switch it off.
+  ('donation_receipt_ready', 'social', 'notifications.donationReceiptReadyTitle',
+   'notifications.donationReceiptReadyBody');
+
+-- Issues the receipt of a succeeded payment and returns it; a payment that already has
+-- one gets the same receipt back. Runs inside the transaction that settles the payment.
+-- Errors: P0001 payment_not_found (no such succeeded payment).
+create function kc_private.billing_receipt_issue(p_payment_id uuid)
+returns billing.receipts
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_payment billing.payments;
+  v_receipt billing.receipts;
+  v_approval text;
+  v_serial bigint;
+begin
+  -- The payment row serialises two issues of the same payment.
+  select p.* into v_payment from billing.payments p
+   where p.id = p_payment_id and p.status = 'succeeded' for update;
+  if not found then
+    raise exception 'payment_not_found' using errcode = 'P0001';
+  end if;
+  select r.* into v_receipt from billing.receipts r where r.payment_id = p_payment_id;
+  if found then
+    return v_receipt;
+  end if;
+
+  select o.sec46_approval_number into v_approval
+    from public.organizations o
+   where o.id = v_payment.org_id and o.sec46_status = 'active'
+     and v_payment.created_at::date between o.sec46_valid_from and o.sec46_valid_until;
+
+  -- The counter row is locked until this transaction ends: serials are handed out in
+  -- commit order and a rollback returns the number.
+  insert into billing.receipt_counters (org_id) values (v_payment.org_id) on conflict (org_id) do nothing;
+  update billing.receipt_counters c set last_serial = c.last_serial + 1
+   where c.org_id = v_payment.org_id
+  returning c.last_serial into v_serial;
+
+  insert into billing.receipts (org_id, serial, payment_id, user_id, user_tombstone, amount_agorot, currency,
+                                sec46_eligible, sec46_approval_number)
+  values (v_payment.org_id, v_serial, p_payment_id, v_payment.user_id, v_payment.user_tombstone,
+          v_payment.amount_agorot, v_payment.currency, v_approval is not null, v_approval)
+  returning * into v_receipt;
+
+  perform kc_private.audit_record('receipt_issued', 'payment', p_payment_id,
+    jsonb_build_object('receipt_id', v_receipt.id, 'org_id', v_receipt.org_id, 'serial', v_serial), null);
+  if v_payment.user_id is not null then
+    perform kc_private.outbox_enqueue('notification', jsonb_build_object(
+      'kind', 'donation_receipt_ready', 'recipient_id', v_payment.user_id, 'actor_id', null,
+      'entity', jsonb_build_object('type', 'payment', 'id', p_payment_id),
+      'data', jsonb_build_object('org_id', v_receipt.org_id, 'serial', v_serial,
+                                 'dedupe_key', 'donation_receipt_ready:' || p_payment_id)));
+  end if;
+  return v_receipt;
+end;
+$$;
+comment on function kc_private.billing_receipt_issue(uuid) is
+  'Issues the gapless-numbered receipt of a succeeded payment; idempotent per payment.';
+
+-- >>> supabase/schemas/85_billing/060_org_finance.sql
+-- Billing · organization bookkeeping (requirements/19: FR-FIN-001/002/003/005/009/013, D76, D78)
+--
+-- Every organization — Karma Community included — keeps simple single-entry books:
+-- accounts (where the money sits) and entries (what came in and went out). Entries are
+-- typed by hand or mirrored from in-app payments. This is the organization's own record
+-- and is separate from the double-entry ledger of 040_ledger.sql, which is the product's
+-- record of the money it holds.
+-- Not part of this baseline (FR-FIN phases not built): category tree and rules,
+-- attachments, receipt tracking of manual entries, imports, budgets, documents, snapshots.
+
+insert into kc_private.fsm_state (machine_id, status) values
+  ('org_finance_entry', 'pending'), ('org_finance_entry', 'cleared'), ('org_finance_entry', 'cancelled');
+insert into kc_private.fsm_edge (machine_id, from_status, to_status, role) values
+  ('org_finance_entry', 'pending', 'cleared', ''),
+  ('org_finance_entry', 'cleared', 'pending', ''),
+  -- Void replaces delete (FR-FIN-005 AC2); a voided entry is final.
+  ('org_finance_entry', 'pending', 'cancelled', ''),
+  ('org_finance_entry', 'cleared', 'cancelled', '');
+
+create table billing.org_finance_accounts (
+  id                     uuid primary key default gen_random_uuid(),
+  org_id                 uuid not null references public.organizations (id) on delete restrict,
+  name                   text not null check (char_length(btrim(name)) between 1 and 80),
+  kind                   text not null check (kind in ('bank', 'cash', 'bit', 'paybox', 'payment_provider', 'other')),
+  last4                  text check (last4 ~ '^[0-9]{4}$'),
+  opening_balance_agorot bigint not null default 0,
+  opening_balance_at     date,
+  -- An account with entries is deactivated, never deleted (FR-FIN-003 AC2).
+  is_active              boolean not null default true,
+  sort_order             integer not null default 0,
+  created_by             uuid references public.users (id) on delete set null,
+  created_at             timestamptz not null default now(),
+  updated_at             timestamptz not null default now(),
+  unique (org_id, name)
+);
+comment on table billing.org_finance_accounts is 'Financial accounts of an organization: bank, cash box, payment apps, the payment provider.';
+create index org_finance_accounts_created_by_idx on billing.org_finance_accounts (created_by) where created_by is not null;
+
+create table billing.org_finance_entries (
+  id              uuid primary key default gen_random_uuid(),
+  org_id          uuid not null references public.organizations (id) on delete restrict,
+  account_id      uuid references billing.org_finance_accounts (id) on delete restrict,
+  kind            text not null check (kind in ('donation_in', 'grant_in', 'other_in', 'expense', 'refund_out',
+                                                'other_out', 'transfer')),
+  -- Derived from the kind; a transfer between own accounts has none.
+  direction       text generated always as (
+                    case when kind in ('donation_in', 'grant_in', 'other_in') then 'in'
+                         when kind in ('expense', 'refund_out', 'other_out') then 'out' end) stored,
+  amount_agorot   bigint not null check (amount_agorot > 0),
+  currency        text not null default 'ILS' check (currency = 'ILS'),
+  occurred_at     timestamptz not null,
+  counterparty    text check (char_length(counterparty) <= 200),
+  -- Category key from the app's list (FR-FIN-004 default keys), or the organization's own text.
+  category        text check (char_length(category) <= 60),
+  description     text check (char_length(description) <= 2000),
+  -- Lifecycle, machine `org_finance_entry`. `cancelled` = voided, with the reason.
+  status          text not null default 'pending',
+  void_reason     text check (char_length(void_reason) between 3 and 500),
+  -- False keeps the entry out of the public transparency numbers (FR-FIN-022 AC4).
+  is_public       boolean not null default true,
+  -- `payment_sync` entries mirror an in-app payment or refund; `source_ref` names it.
+  source          text not null default 'manual' check (source in ('manual', 'payment_sync')),
+  source_ref      text unique,
+  -- The donor of a mirrored donation; never shown publicly (FR-FIN-019 AC6).
+  donor_user_id   uuid references public.users (id) on delete set null,
+  donor_tombstone bytea check (octet_length(donor_tombstone) = 32),
+  -- Matched to a bank or provider statement; freezes the entry (FR-FIN-013).
+  reconciled_at   timestamptz,
+  reconciled_by   uuid references public.users (id) on delete set null,
+  created_by      uuid references public.users (id) on delete set null,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now(),
+  constraint org_finance_entries_void_chk check ((status = 'cancelled') = (void_reason is not null)),
+  constraint org_finance_entries_source_chk check ((source = 'manual') = (source_ref is null)),
+  constraint org_finance_entries_donor_chk check (num_nonnulls(donor_user_id, donor_tombstone) <= 1)
+);
+comment on table billing.org_finance_entries is 'Single-entry books of an organization: manual entries and mirrored in-app payments.';
+
+-- The books of an organization, newest first (keyset on occurred_at, id), and its public totals.
+create index org_finance_entries_org_idx on billing.org_finance_entries (org_id, occurred_at desc, id desc);
+-- Balance of an account; covers the account foreign key.
+create index org_finance_entries_account_idx on billing.org_finance_entries (account_id) where account_id is not null;
+-- Foreign keys to members.
+create index org_finance_entries_donor_idx on billing.org_finance_entries (donor_user_id) where donor_user_id is not null;
+create index org_finance_entries_reconciled_by_idx on billing.org_finance_entries (reconciled_by)
+  where reconciled_by is not null;
+create index org_finance_entries_created_by_idx on billing.org_finance_entries (created_by) where created_by is not null;
+
+-- What may still change on an entry (FR-FIN-005 AC2/AC3, FR-FIN-013 AC3):
+--   entry_voided            a voided entry never changes
+--   entry_reconciled        a reconciled entry keeps its kind, amount, date, account and status
+--   entry_locked_by_source  a mirrored entry keeps its kind, amount, date, account and counterparty
+create function kc_private.org_finance_entries_guard()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  -- The member references are not content: the purge of an account replaces them even
+  -- on a voided entry. `direction` is generated and not yet computed in a BEFORE trigger.
+  v_ignored constant text[] := array['donor_user_id', 'donor_tombstone', 'created_by', 'reconciled_by', 'direction'];
+begin
+  if (to_jsonb(new) - v_ignored) = (to_jsonb(old) - v_ignored) then
+    return new;
+  elsif old.status = 'cancelled' then
+    raise exception 'entry_voided' using errcode = 'P0001';
+  elsif old.reconciled_at is not null and new.reconciled_at is not null
+        and (new.kind, new.amount_agorot, new.occurred_at, new.account_id, new.status)
+            is distinct from (old.kind, old.amount_agorot, old.occurred_at, old.account_id, old.status) then
+    raise exception 'entry_reconciled' using errcode = 'P0001';
+  elsif old.source = 'payment_sync'
+        and (new.kind, new.amount_agorot, new.occurred_at, new.account_id, new.counterparty, new.source_ref)
+            is distinct from (old.kind, old.amount_agorot, old.occurred_at, old.account_id, old.counterparty, old.source_ref) then
+    raise exception 'entry_locked_by_source' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger org_finance_entries_guard
+  before update on billing.org_finance_entries
+  for each row execute function kc_private.org_finance_entries_guard();
+create trigger org_finance_entries_status_fsm
+  before insert or update of status on billing.org_finance_entries
+  for each row execute function kc_private.fsm_guard_status('org_finance_entry', 'status');
+create trigger org_finance_entries_set_updated_at
+  before update on billing.org_finance_entries
+  for each row execute function kc_private.set_updated_at();
+create trigger org_finance_accounts_set_updated_at
+  before update on billing.org_finance_accounts
+  for each row execute function kc_private.set_updated_at();
+
+alter table billing.org_finance_accounts enable row level security;
+alter table billing.org_finance_accounts force row level security;
+alter table billing.org_finance_entries enable row level security;
+alter table billing.org_finance_entries force row level security;
+revoke insert, update, delete, truncate on billing.org_finance_accounts, billing.org_finance_entries from service_role;
+
+-- The signed-in caller, who must hold a finance permission on the organization
+-- (requirements/19 § Permissions):
+--   view          platform admins; org_admin, org_treasurer, org_accountant of the
+--                 organization; moderators for the platform organization only
+--   manage        platform admins; org_admin, org_treasurer
+--   transparency  platform admins; org_admin
+-- Raises forbidden (42501) otherwise.
+create function kc_private.finance_assert(p_org_id uuid, p_permission text)
+returns uuid
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_roles constant text[] := (select m.roles from public.org_memberships m
+                               where m.org_id = p_org_id and m.user_id = v_user_id);
+begin
+  if kc_access.has_admin_role('admin')
+     or v_roles && (case p_permission
+                      when 'view' then array['org_admin', 'org_treasurer', 'org_accountant']
+                      when 'manage' then array['org_admin', 'org_treasurer']
+                      when 'transparency' then array['org_admin'] end)
+     or (p_permission = 'view' and kc_access.has_admin_role('moderator')
+         and exists (select 1 from public.organizations o where o.id = p_org_id and o.is_platform)) then
+    return v_user_id;
+  end if;
+  raise exception 'forbidden' using errcode = '42501';
+end;
+$$;
+comment on function kc_private.finance_assert(uuid, text) is
+  'Returns auth.uid(); raises forbidden unless the caller holds the finance permission on the organization.';
+
+-- Mirrors a settled in-app payment or refund into the organization's books (FR-FIN-009):
+-- a cleared entry on the organization's payment-provider account, created on first use.
+-- Idempotent per source record. A failure is audited and never fails the money move
+-- (AC6); the entry can be added by hand.
+create function kc_private.org_finance_mirror(
+  p_org_id uuid,
+  p_kind text,
+  p_amount_agorot bigint,
+  p_occurred_at timestamptz,
+  p_source_ref text,
+  p_provider_id uuid,
+  p_donor_user_id uuid,
+  p_donor_tombstone bytea,
+  p_category text
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_provider_name constant text := (select p.display_name from billing.payment_providers p where p.id = p_provider_id);
+  v_account_id uuid;
+begin
+  select a.id into v_account_id from billing.org_finance_accounts a
+   where a.org_id = p_org_id and a.kind = 'payment_provider' order by a.created_at limit 1;
+  if not found then
+    insert into billing.org_finance_accounts (org_id, name, kind) values (p_org_id, v_provider_name, 'payment_provider')
+    returning id into v_account_id;
+  end if;
+  insert into billing.org_finance_entries (org_id, account_id, kind, amount_agorot, occurred_at, counterparty,
+                                           category, status, source, source_ref, donor_user_id, donor_tombstone)
+  values (p_org_id, v_account_id, p_kind, p_amount_agorot, p_occurred_at, v_provider_name, p_category, 'cleared',
+          'payment_sync', p_source_ref, p_donor_user_id, p_donor_tombstone)
+  on conflict (source_ref) do nothing;
+exception when others then
+  perform kc_private.audit_record('finance_sync_failed', 'organization', p_org_id,
+                                  jsonb_build_object('source_ref', p_source_ref, 'sqlstate', sqlstate), null);
+end;
+$$;
+comment on function kc_private.org_finance_mirror(uuid, text, bigint, timestamptz, text, uuid, uuid, bytea, text) is
+  'Mirrors a settled payment or refund into the organization''s books; never fails the caller.';
+
+-- >>> supabase/schemas/85_billing/070_money_moves.sql
+-- Billing · settling money moves
+--
+-- The functions that turn a provider's word into records. Each one is a single
+-- transaction step: the business row, its ledger lines, the receipt, the organization's
+-- books, the audit event and the notification are written together or not at all. Each
+-- one is safe to repeat: a second call for the same record changes nothing.
+
+insert into kc_private.notification_kinds (kind, category, title_key, body_key) values
+  -- D20: the donor receives a confirmation.
+  ('donation_succeeded', 'critical', 'notifications.donationSucceededTitle', 'notifications.donationSucceededBody'),
+  ('donation_refunded', 'critical', 'notifications.donationRefundedTitle', 'notifications.donationRefundedBody'),
+  -- A charge of a standing order did not go through (D80 lists it as a tracked event).
+  ('standing_order_charge_failed', 'critical', 'notifications.standingOrderChargeFailedTitle',
+   'notifications.standingOrderChargeFailedBody');
+
+-- Tells a member about a money event of theirs; nothing for a purged account.
+create function kc_private.billing_notify(p_kind text, p_user_id uuid, p_entity_type text, p_entity_id uuid, p_data jsonb)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  select kc_private.outbox_enqueue('notification', jsonb_build_object(
+    'kind', p_kind, 'recipient_id', p_user_id, 'actor_id', null,
+    'entity', jsonb_build_object('type', p_entity_type, 'id', p_entity_id),
+    'data', p_data || jsonb_build_object('dedupe_key', p_kind || ':' || p_entity_id)))
+   where p_user_id is not null;
+$$;
+
+-- The provider reports the outcome of an intent's charge. Success: the payment, its
+-- ledger transaction, the receipt and the mirrored book entry. Failure: a failed payment
+-- row, and a notice when it was a standing-order charge. Returns the payment id, or null
+-- when the intent was already settled that way.
+-- Errors: P0001 intent_not_found, intent_not_payable, amount_mismatch.
+create function kc_private.billing_payment_settle(
+  p_intent_id uuid,
+  p_succeeded boolean,
+  p_event_key text,
+  p_provider_ref text,
+  p_amount_agorot bigint default null
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_intent billing.donation_intents;
+  v_payment_id uuid;
+begin
+  select i.* into v_intent from billing.donation_intents i where i.id = p_intent_id for update;
+  if not found then
+    raise exception 'intent_not_found' using errcode = 'P0001';
+  elsif v_intent.status = 'succeeded' or (v_intent.status = 'failed' and not p_succeeded) then
+    return null;
+  elsif v_intent.status not in ('checkout', 'failed') then
+    raise exception 'intent_not_payable' using errcode = 'P0001';
+  elsif p_amount_agorot is distinct from v_intent.amount_agorot and p_amount_agorot is not null then
+    raise exception 'amount_mismatch' using errcode = 'P0001';
+  end if;
+
+  insert into billing.payments (intent_id, user_id, user_tombstone, org_id, amount_agorot, currency, status,
+                                provider_id, provider_ref, idempotency_key)
+  values (p_intent_id, v_intent.user_id, v_intent.user_tombstone, v_intent.org_id, v_intent.amount_agorot,
+          v_intent.currency, case when p_succeeded then 'succeeded' else 'failed' end,
+          v_intent.provider_id, p_provider_ref, p_event_key)
+  returning id into v_payment_id;
+
+  perform set_config('kc.fsm_role', 'provider', true);
+  update billing.donation_intents i
+     set status = case when p_succeeded then 'succeeded' else 'failed' end
+   where i.id = p_intent_id;
+  perform set_config('kc.fsm_role', '', true);
+
+  perform kc_private.audit_record(
+    case when p_succeeded then 'payment_succeeded' else 'payment_failed' end, 'payment', v_payment_id,
+    jsonb_build_object('intent_id', p_intent_id, 'org_id', v_intent.org_id, 'amount_agorot', v_intent.amount_agorot,
+                       'standing_order_id', v_intent.standing_order_id), null);
+
+  if not p_succeeded then
+    if v_intent.standing_order_id is not null then
+      perform kc_private.billing_notify('standing_order_charge_failed', v_intent.user_id, 'standing_order',
+        v_intent.standing_order_id, jsonb_build_object('org_id', v_intent.org_id, 'intent_id', p_intent_id));
+    end if;
+    return v_payment_id;
+  end if;
+
+  perform kc_private.ledger_post('payment', v_payment_id, v_intent.org_id, 'provider_clearing', 'org_payable',
+                                 v_intent.amount_agorot);
+  perform kc_private.billing_receipt_issue(v_payment_id);
+  perform kc_private.org_finance_mirror(
+    v_intent.org_id, 'donation_in', v_intent.amount_agorot, now(), 'payment:' || v_payment_id,
+    v_intent.provider_id, v_intent.user_id, v_intent.user_tombstone,
+    case when v_intent.standing_order_id is null then 'individual_donations' else 'standing_orders' end);
+  perform kc_private.billing_notify('donation_succeeded', v_intent.user_id, 'payment', v_payment_id,
+    jsonb_build_object('org_id', v_intent.org_id, 'amount_agorot', v_intent.amount_agorot));
+  return v_payment_id;
+end;
+$$;
+comment on function kc_private.billing_payment_settle(uuid, boolean, text, text, bigint) is
+  'Applies the provider''s outcome of a donation intent: payment, ledger, receipt, books, audit, notice — atomically.';
+
+-- The provider reports the outcome of a refund. Success posts the ledger, adds the amount
+-- to the payment's refunded total (a full refund marks the payment `refunded`) and
+-- mirrors it into the books. Errors: P0001 refund_not_found.
+create function kc_private.billing_refund_settle(p_refund_id uuid, p_succeeded boolean, p_provider_ref text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_refund billing.refunds;
+  v_payment billing.payments;
+begin
+  select r.* into v_refund from billing.refunds r where r.id = p_refund_id for update;
+  if not found then
+    raise exception 'refund_not_found' using errcode = 'P0001';
+  elsif v_refund.status <> 'pending' then
+    return;
+  end if;
+  select p.* into strict v_payment from billing.payments p where p.id = v_refund.payment_id for update;
+
+  perform set_config('kc.fsm_role', 'provider', true);
+  update billing.refunds r
+     set status = case when p_succeeded then 'succeeded' else 'failed' end,
+         provider_ref = coalesce(p_provider_ref, r.provider_ref), settled_at = now()
+   where r.id = p_refund_id;
+  if p_succeeded then
+    update billing.payments p
+       set refunded_agorot = p.refunded_agorot + v_refund.amount_agorot,
+           status = case when p.refunded_agorot + v_refund.amount_agorot = p.amount_agorot
+                         then 'refunded' else p.status end
+     where p.id = v_payment.id;
+  end if;
+  perform set_config('kc.fsm_role', '', true);
+
+  perform kc_private.audit_record('refund_settled', 'refund', p_refund_id,
+    jsonb_build_object('payment_id', v_payment.id, 'org_id', v_payment.org_id, 'succeeded', p_succeeded,
+                       'amount_agorot', v_refund.amount_agorot), null);
+  if not p_succeeded then
+    return;
+  end if;
+  perform kc_private.ledger_post('refund', p_refund_id, v_payment.org_id, 'org_payable', 'provider_clearing',
+                                 v_refund.amount_agorot);
+  perform kc_private.org_finance_mirror(
+    v_payment.org_id, 'refund_out', v_refund.amount_agorot, now(), 'refund:' || p_refund_id,
+    v_payment.provider_id, v_payment.user_id, v_payment.user_tombstone, 'donor_refunds');
+  perform kc_private.billing_notify('donation_refunded', v_payment.user_id, 'payment', v_payment.id,
+    jsonb_build_object('org_id', v_payment.org_id, 'amount_agorot', v_refund.amount_agorot,
+                       'refund_id', p_refund_id));
+end;
+$$;
+comment on function kc_private.billing_refund_settle(uuid, boolean, text) is
+  'Applies the provider''s outcome of a refund, with its ledger transaction and book entry.';
+
+-- The provider reports the outcome of a payout. Errors: P0001 payout_not_found.
+create function kc_private.billing_payout_settle(p_payout_id uuid, p_succeeded boolean, p_provider_ref text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_payout billing.payouts;
+begin
+  select p.* into v_payout from billing.payouts p where p.id = p_payout_id for update;
+  if not found then
+    raise exception 'payout_not_found' using errcode = 'P0001';
+  elsif v_payout.status <> 'pending' then
+    return;
+  end if;
+  perform set_config('kc.fsm_role', 'provider', true);
+  update billing.payouts p
+     set status = case when p_succeeded then 'succeeded' else 'failed' end,
+         provider_ref = coalesce(p_provider_ref, p.provider_ref), settled_at = now()
+   where p.id = p_payout_id;
+  perform set_config('kc.fsm_role', '', true);
+  if p_succeeded then
+    perform kc_private.ledger_post('payout', p_payout_id, v_payout.org_id, 'org_payable', 'provider_clearing',
+                                   v_payout.amount_agorot);
+  end if;
+  perform kc_private.audit_record('payout_settled', 'payout', p_payout_id,
+    jsonb_build_object('org_id', v_payout.org_id, 'succeeded', p_succeeded,
+                       'amount_agorot', v_payout.amount_agorot), null);
+end;
+$$;
+comment on function kc_private.billing_payout_settle(uuid, boolean, text) is
+  'Applies the provider''s outcome of a payout, with its ledger transaction.';
+
+-- The provider confirmed a standing-order mandate: the order becomes active and its first
+-- charge is due at once. Repeating the event changes nothing.
+create function kc_private.billing_standing_order_activate(p_order_id uuid, p_provider_ref text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform set_config('kc.fsm_role', 'provider', true);
+  update billing.standing_orders o
+     set status = 'active', provider_ref = p_provider_ref, next_charge_at = now()
+   where o.id = p_order_id and o.status = 'pending';
+  perform set_config('kc.fsm_role', '', true);
+end;
+$$;
+
+-- The provider reports the KYC state of a payer (member) or a recipient (organization).
+create function kc_private.billing_kyc_set(p_party_type text, p_party_id uuid, p_status text, p_provider_ref text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform set_config('kc.fsm_role', 'provider', true);
+  insert into billing.kyc_profiles (party_type, user_id, org_id, provider_ref)
+  values (p_party_type, case p_party_type when 'payer' then p_party_id end,
+          case p_party_type when 'recipient' then p_party_id end, p_provider_ref)
+  on conflict do nothing;
+  update billing.kyc_profiles k
+     set status = p_status, provider_ref = coalesce(p_provider_ref, k.provider_ref),
+         verified_at = case when p_status = 'approved' then now() else k.verified_at end
+   where k.party_type = p_party_type and p_party_id in (k.user_id, k.org_id);
+  perform set_config('kc.fsm_role', '', true);
+end;
+$$;
+comment on function kc_private.billing_kyc_set(text, uuid, text, text) is
+  'Records the KYC state the provider reports for a payer or a recipient organization.';
+
+-- >>> supabase/schemas/85_billing/080_provider_events.sql
+-- Billing · provider events and the service-role entry points
+--
+-- The Edge Functions (`payments-webhook`, `subscriptions-charger`) run as the service role
+-- and call the functions of this file by name; no client role may execute them. The
+-- webhook function verifies the provider's signature and hands over a normalized event:
+--   { "type": "payment.succeeded" | "payment.failed",   "intent_id", "provider_ref", "amount_agorot"? }
+--   { "type": "refund.succeeded" | "refund.failed",     "refund_id", "provider_ref"? }
+--   { "type": "payout.succeeded" | "payout.failed",     "payout_id", "provider_ref"? }
+--   { "type": "standing_order.activated",               "standing_order_id", "provider_ref" }
+--   { "type": "kyc.updated", "party_type": "payer" | "recipient", "party_id", "status", "provider_ref"? }
+
+-- Stores a provider event and applies it, once. A repeated event returns the stored id
+-- and does nothing; an event that cannot be applied is kept as `failed` with its error
+-- code, changes nothing else, and is applied again when the provider resends it.
+create function public.provider_webhook_apply(p_provider_slug text, p_event_id text, p_payload jsonb)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_event billing.webhook_events;
+  v_type constant text := p_payload ->> 'type';
+  v_ok constant boolean := v_type like '%.succeeded';
+  v_ref constant text := p_payload ->> 'provider_ref';
+  v_error text;
+begin
+  insert into billing.webhook_events (provider_slug, provider_event_id, event_type, payload)
+  values (p_provider_slug, p_event_id, v_type, p_payload)
+  on conflict (provider_slug, provider_event_id) do nothing
+  returning * into v_event;
+  if not found then
+    select e.* into strict v_event from billing.webhook_events e
+     where e.provider_slug = p_provider_slug and e.provider_event_id = p_event_id for update;
+    if v_event.status = 'processed' then
+      return v_event.id;
+    end if;
+  end if;
+
+  begin
+    case
+      when v_type in ('payment.succeeded', 'payment.failed') then
+        -- A provider settles only the intents that were sent to it.
+        if not exists (select 1 from billing.donation_intents i
+                         join billing.payment_providers p on p.id = i.provider_id
+                        where i.id = (p_payload ->> 'intent_id')::uuid and p.slug = p_provider_slug) then
+          raise exception 'intent_not_found' using errcode = 'P0001';
+        end if;
+        perform kc_private.billing_payment_settle(
+          (p_payload ->> 'intent_id')::uuid, v_ok, p_provider_slug || ':' || p_event_id, v_ref,
+          (p_payload ->> 'amount_agorot')::bigint);
+      when v_type in ('refund.succeeded', 'refund.failed') then
+        perform kc_private.billing_refund_settle((p_payload ->> 'refund_id')::uuid, v_ok, v_ref);
+      when v_type in ('payout.succeeded', 'payout.failed') then
+        perform kc_private.billing_payout_settle((p_payload ->> 'payout_id')::uuid, v_ok, v_ref);
+      when v_type = 'standing_order.activated' then
+        perform kc_private.billing_standing_order_activate((p_payload ->> 'standing_order_id')::uuid, v_ref);
+      when v_type = 'kyc.updated' then
+        perform kc_private.billing_kyc_set(p_payload ->> 'party_type', (p_payload ->> 'party_id')::uuid,
+                                           p_payload ->> 'status', v_ref);
+      else
+        raise exception 'unknown_event_type' using errcode = 'P0001';
+    end case;
+  exception when others then
+    -- Everything the event did is rolled back; only its failure is recorded.
+    v_error := case sqlstate when 'P0001' then sqlerrm else sqlstate end;
+  end;
+
+  update billing.webhook_events e
+     set status = case when v_error is null then 'processed' else 'failed' end,
+         processed_at = case when v_error is null then now() end,
+         error_code = v_error
+   where e.id = v_event.id;
+  return v_event.id;
+end;
+$$;
+comment on function public.provider_webhook_apply(text, text, jsonb) is
+  'Service role: stores and applies a provider event exactly once; returns the stored event id.';
+
+-- The checkout session the provider opened for an intent: the donor is sent to its page.
+-- Errors: P0001 intent_not_found (no such intent waiting for a checkout).
+create function public.api_donation_intent_set_checkout(p_intent_id uuid, p_provider_ref text, p_checkout_url text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  update billing.donation_intents i
+     set status = 'checkout', provider_ref = p_provider_ref, checkout_url = p_checkout_url
+   where i.id = p_intent_id and i.status = 'created';
+  if not found then
+    raise exception 'intent_not_found' using errcode = 'P0001';
+  end if;
+end;
+$$;
+comment on function public.api_donation_intent_set_checkout(uuid, text, text) is
+  'Service role: records the provider checkout session of a donation intent.';
+
+-- Opens the charge of every active standing order that is due and moves each order to
+-- its next date. Returns the intents to charge at the provider; the outcome of each
+-- arrives as a provider event. Concurrent runs never take the same order, and an order's
+-- period is charged once (the intent's idempotency key names the order and the due date).
+create function public.api_standing_orders_charge_due(p_limit integer default 20)
+returns table (intent_id uuid, standing_order_id uuid, amount_agorot bigint, mandate_ref text)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_order billing.standing_orders;
+begin
+  for v_order in
+    select o.* from billing.standing_orders o
+     where o.status = 'active' and o.next_charge_at <= now()
+     order by o.next_charge_at
+     limit least(greatest(coalesce(p_limit, 20), 1), 200)
+       for update skip locked
+  loop
+    insert into billing.donation_intents as i (user_id, user_tombstone, org_id, standing_order_id, amount_agorot,
+                                               currency, status, provider_id, idempotency_key)
+    values (v_order.user_id, v_order.user_tombstone, v_order.org_id, v_order.id, v_order.amount_agorot,
+            v_order.currency, 'checkout', v_order.provider_id,
+            'standing_order:' || v_order.id || ':' || to_char(v_order.next_charge_at at time zone 'UTC', 'YYYY-MM-DD'))
+    on conflict (idempotency_key) do nothing
+    returning i.id into intent_id;
+    update billing.standing_orders o
+       set next_charge_at = o.next_charge_at + case o.cadence when 'monthly' then interval '1 month'
+                                                               when 'quarterly' then interval '3 months'
+                                                               else interval '1 year' end
+     where o.id = v_order.id;
+    if intent_id is not null then
+      standing_order_id := v_order.id;
+      amount_agorot := v_order.amount_agorot;
+      mandate_ref := v_order.provider_ref;
+      return next;
+    end if;
+  end loop;
+end;
+$$;
+comment on function public.api_standing_orders_charge_due(integer) is
+  'Service role: opens the due charges of active standing orders and returns them for the provider.';
+
+-- Opens a payout of what the product holds for an organization. The amount may not
+-- exceed the organization's ledger balance less its payouts already on the way. The same
+-- idempotency key returns the same payout.
+-- Errors: P0001 insufficient_balance.
+create function public.api_payout_open(p_org_id uuid, p_amount_agorot bigint, p_idempotency_key text)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_payout_id uuid;
+begin
+  -- One payout decision per organization at a time.
+  perform pg_advisory_xact_lock(hashtextextended('billing.payout:' || p_org_id, 0));
+  select p.id into v_payout_id from billing.payouts p where p.idempotency_key = p_idempotency_key;
+  if found then
+    return v_payout_id;
+  end if;
+  if p_amount_agorot > kc_private.billing_org_balance(p_org_id)
+       - coalesce((select sum(p.amount_agorot) from billing.payouts p
+                    where p.org_id = p_org_id and p.status = 'pending'), 0) then
+    raise exception 'insufficient_balance' using errcode = 'P0001';
+  end if;
+  insert into billing.payouts (org_id, amount_agorot, idempotency_key)
+  values (p_org_id, p_amount_agorot, p_idempotency_key)
+  returning id into v_payout_id;
+  perform kc_private.audit_record('payout_opened', 'payout', v_payout_id,
+    jsonb_build_object('org_id', p_org_id, 'amount_agorot', p_amount_agorot), null);
+  return v_payout_id;
+end;
+$$;
+comment on function public.api_payout_open(uuid, bigint, text) is
+  'Service role: opens a payout to an organization within its ledger balance.';
+
+-- A platform admin opens a refund of a succeeded payment, in full or in part; the
+-- provider's confirmation settles it. The same idempotency key returns the same refund.
+-- Errors: forbidden (42501); P0001 payment_not_refundable, refund_exceeds_payment; 23514
+-- for an unknown reason code.
+create function public.admin_refund_payment(
+  p_payment_id uuid,
+  p_amount_agorot bigint,
+  p_reason text,
+  p_idempotency_key text
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_admin_role('admin');
+  v_payment billing.payments;
+  v_refund_id uuid;
+begin
+  select p.* into v_payment from billing.payments p
+   where p.id = p_payment_id and p.status = 'succeeded' for update;
+  if not found then
+    raise exception 'payment_not_refundable' using errcode = 'P0001';
+  end if;
+  select r.id into v_refund_id from billing.refunds r where r.idempotency_key = p_idempotency_key;
+  if found then
+    return v_refund_id;
+  end if;
+  if p_amount_agorot > v_payment.amount_agorot - v_payment.refunded_agorot
+       - coalesce((select sum(r.amount_agorot) from billing.refunds r
+                    where r.payment_id = p_payment_id and r.status = 'pending'), 0) then
+    raise exception 'refund_exceeds_payment' using errcode = 'P0001';
+  end if;
+  insert into billing.refunds (payment_id, amount_agorot, reason, idempotency_key, opened_by)
+  values (p_payment_id, p_amount_agorot, p_reason, p_idempotency_key, v_actor)
+  returning id into v_refund_id;
+  perform kc_private.audit_record('refund_opened', 'refund', v_refund_id,
+    jsonb_build_object('payment_id', p_payment_id, 'org_id', v_payment.org_id,
+                       'amount_agorot', p_amount_agorot, 'reason', p_reason));
+  return v_refund_id;
+end;
+$$;
+comment on function public.admin_refund_payment(uuid, bigint, text, text) is
+  'Platform admin: opens a full or partial refund of a succeeded payment.';
+grant execute on function public.admin_refund_payment(uuid, bigint, text, text) to authenticated;
+
+-- >>> supabase/schemas/85_billing/090_donor_rpcs.sql
+-- Billing · what a donor calls (D4, D20; FR-DONATE-011, FR-FIN-021)
+--
+-- Every function identifies the caller, reads or writes `billing` with definer rights and
+-- returns only the caller's own data. Amounts are agorot.
+-- Errors, SQLSTATE P0001 unless noted: unauthenticated (42501), account_not_active,
+-- money_min_amount, verified_org_required, payments_unavailable, idempotency_key_conflict,
+-- cadence_not_supported, order_not_found, illegal_transition.
+
+-- An organization may receive donations when it is active and either a verified nonprofit
+-- or the platform organization itself (D20: donations to KC).
+create function kc_private.billing_assert_can_donate(p_org_id uuid, p_amount_agorot bigint)
+returns void
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if p_amount_agorot is null or p_amount_agorot < (select s.min_donation_agorot from billing.settings s) then
+    raise exception 'money_min_amount' using errcode = 'P0001';
+  end if;
+  if not exists (select 1 from public.organizations o
+                  where o.id = p_org_id and o.status = 'active' and (o.is_verified_nonprofit or o.is_platform)) then
+    raise exception 'verified_org_required' using errcode = 'P0001';
+  end if;
+end;
+$$;
+
+-- Starts a one-time donation and returns the intent. The app then asks the payments Edge
+-- Function for the provider's checkout page. Repeating the call with the same key returns
+-- the same intent; a key that belongs to another donation is refused.
+create function public.create_donation_intent(
+  p_org_id uuid,
+  p_amount_agorot bigint,
+  p_idempotency_key text,
+  p_post_id uuid default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_intent billing.donation_intents;
+begin
+  select i.* into v_intent from billing.donation_intents i where i.idempotency_key = p_idempotency_key;
+  if not found then
+    perform kc_private.billing_assert_can_donate(p_org_id, p_amount_agorot);
+    insert into billing.donation_intents (user_id, org_id, post_id, amount_agorot, provider_id, idempotency_key)
+    values (v_user_id, p_org_id, p_post_id, p_amount_agorot, kc_private.billing_default_provider(), p_idempotency_key)
+    on conflict (idempotency_key) do nothing
+    returning * into v_intent;
+    if not found then
+      select i.* into strict v_intent from billing.donation_intents i where i.idempotency_key = p_idempotency_key;
+    end if;
+  end if;
+  if (v_intent.user_id, v_intent.org_id, v_intent.amount_agorot) is distinct from (v_user_id, p_org_id, p_amount_agorot) then
+    raise exception 'idempotency_key_conflict' using errcode = 'P0001';
+  end if;
+  return jsonb_build_object('intent_id', v_intent.id, 'status', v_intent.status, 'org_id', v_intent.org_id,
+                            'amount_agorot', v_intent.amount_agorot, 'currency', v_intent.currency,
+                            'checkout_url', v_intent.checkout_url);
+end;
+$$;
+comment on function public.create_donation_intent(uuid, bigint, text, uuid) is
+  'Starts a one-time donation of the caller to an organization; idempotent on the key.';
+grant execute on function public.create_donation_intent(uuid, bigint, text, uuid) to authenticated;
+
+-- The caller's donations that went through, newest first, each with its receipt.
+-- Keyset: pass paid_at and payment_id of the last row.
+create function public.list_my_donation_history(
+  p_limit integer default 50,
+  p_after_paid_at timestamptz default null,
+  p_after_id uuid default null
+)
+returns table (payment_id uuid, org_id uuid, org_name text, amount_agorot bigint, refunded_agorot bigint,
+               currency text, status text, paid_at timestamptz, standing_order_id uuid,
+               receipt_serial bigint, sec46_eligible boolean)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select p.id, p.org_id, o.name, p.amount_agorot, p.refunded_agorot, p.currency, p.status, p.created_at,
+         i.standing_order_id, r.serial, r.sec46_eligible
+    from billing.payments p
+    join billing.donation_intents i on i.id = p.intent_id
+    join public.organizations o on o.id = p.org_id
+    left join billing.receipts r on r.payment_id = p.id
+   where p.user_id = (select auth.uid())
+     and p.status in ('succeeded', 'refunded')
+     and (p_after_paid_at is null or (p.created_at, p.id) < (p_after_paid_at, p_after_id))
+   order by p.created_at desc, p.id desc
+   limit least(greatest(coalesce(p_limit, 50), 1), 100);
+$$;
+comment on function public.list_my_donation_history(integer, timestamptz, uuid) is
+  'The caller''s settled donations with their receipts, newest first (keyset).';
+grant execute on function public.list_my_donation_history(integer, timestamptz, uuid) to authenticated;
+
+-- The receipt of one of the caller's donations; null when the payment is not theirs or
+-- has no receipt.
+create function public.get_donation_receipt(p_payment_id uuid)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object(
+           'receipt_id', r.id, 'serial', r.serial, 'issued_at', r.issued_at, 'payment_id', r.payment_id,
+           'amount_agorot', r.amount_agorot, 'currency', r.currency, 'sec46_eligible', r.sec46_eligible,
+           'sec46_approval_number', r.sec46_approval_number,
+           'org_id', o.id, 'org_name', o.name, 'org_slug', o.slug)
+    from billing.receipts r
+    join public.organizations o on o.id = r.org_id
+   where r.payment_id = p_payment_id and r.user_id = (select auth.uid());
+$$;
+comment on function public.get_donation_receipt(uuid) is 'The receipt record of one of the caller''s donations.';
+grant execute on function public.get_donation_receipt(uuid) to authenticated;
+
+-- What the app shows of a standing order.
+create function kc_private.standing_order_json(p_order billing.standing_orders)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'order_id', p_order.id, 'org_id', p_order.org_id,
+    'org_name', (select o.name from public.organizations o where o.id = p_order.org_id),
+    'amount_agorot', p_order.amount_agorot, 'currency', p_order.currency, 'cadence', p_order.cadence,
+    'status', p_order.status, 'next_charge_at', p_order.next_charge_at, 'cancelled_at', p_order.cancelled_at,
+    'created_at', p_order.created_at);
+$$;
+
+-- Starts a monthly standing order (FR-DONATE-011). It waits as `pending` until the
+-- provider confirms the mandate. Idempotent on the key, like a one-time donation.
+create function public.create_standing_order(
+  p_org_id uuid,
+  p_amount_agorot bigint,
+  p_idempotency_key text,
+  p_cadence text default 'monthly'
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_order billing.standing_orders;
+begin
+  select o.* into v_order from billing.standing_orders o where o.idempotency_key = p_idempotency_key;
+  if not found then
+    if p_cadence is distinct from 'monthly' then
+      raise exception 'cadence_not_supported' using errcode = 'P0001';
+    end if;
+    perform kc_private.billing_assert_can_donate(p_org_id, p_amount_agorot);
+    insert into billing.standing_orders (user_id, org_id, amount_agorot, cadence, provider_id, idempotency_key)
+    values (v_user_id, p_org_id, p_amount_agorot, p_cadence, kc_private.billing_default_provider(), p_idempotency_key)
+    returning * into v_order;
+  end if;
+  if (v_order.user_id, v_order.org_id, v_order.amount_agorot) is distinct from (v_user_id, p_org_id, p_amount_agorot) then
+    raise exception 'idempotency_key_conflict' using errcode = 'P0001';
+  end if;
+  return kc_private.standing_order_json(v_order);
+end;
+$$;
+comment on function public.create_standing_order(uuid, bigint, text, text) is
+  'Starts a recurring donation of the caller to an organization; idempotent on the key.';
+grant execute on function public.create_standing_order(uuid, bigint, text, text) to authenticated;
+
+-- Moves one of the caller's standing orders: `paused`, `active` (resume) or `cancelled`.
+-- A resumed order is charged again from now; repeating a move is a no-op.
+create function kc_private.standing_order_move(p_order_id uuid, p_to text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+  v_order billing.standing_orders;
+begin
+  select o.* into v_order from billing.standing_orders o
+   where o.id = p_order_id and o.user_id = v_user_id for update;
+  if not found then
+    raise exception 'order_not_found' using errcode = 'P0001';
+  end if;
+  if v_order.status <> p_to then
+    update billing.standing_orders o
+       set status = p_to,
+           next_charge_at = case when p_to = 'active' then now() end,
+           cancelled_at = case when p_to = 'cancelled' then now() end
+     where o.id = p_order_id
+    returning * into v_order;
+    perform kc_private.audit_record('standing_order_' || p_to, 'standing_order', p_order_id,
+                                    jsonb_build_object('org_id', v_order.org_id));
+  end if;
+  return kc_private.standing_order_json(v_order);
+end;
+$$;
+
+create function public.pause_standing_order(p_order_id uuid)
+returns jsonb
+language sql
+security definer
+set search_path = ''
+as $$
+  select kc_private.standing_order_move(p_order_id, 'paused');
+$$;
+comment on function public.pause_standing_order(uuid) is 'Pauses the caller''s active standing order.';
+grant execute on function public.pause_standing_order(uuid) to authenticated;
+
+create function public.resume_standing_order(p_order_id uuid)
+returns jsonb
+language sql
+security definer
+set search_path = ''
+as $$
+  select kc_private.standing_order_move(p_order_id, 'active');
+$$;
+comment on function public.resume_standing_order(uuid) is 'Resumes the caller''s paused standing order.';
+grant execute on function public.resume_standing_order(uuid) to authenticated;
+
+create function public.cancel_standing_order(p_order_id uuid)
+returns jsonb
+language sql
+security definer
+set search_path = ''
+as $$
+  select kc_private.standing_order_move(p_order_id, 'cancelled');
+$$;
+comment on function public.cancel_standing_order(uuid) is 'Cancels the caller''s standing order for good.';
+grant execute on function public.cancel_standing_order(uuid) to authenticated;
+
+-- The caller's standing orders, newest first (a member has a handful at most).
+create function public.list_my_standing_orders()
+returns setof jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select kc_private.standing_order_json(o)
+    from billing.standing_orders o
+   where o.user_id = (select auth.uid())
+   order by o.created_at desc
+   limit 100;
+$$;
+comment on function public.list_my_standing_orders() is 'The caller''s standing orders, newest first.';
+grant execute on function public.list_my_standing_orders() to authenticated;
+
+-- >>> supabase/schemas/85_billing/100_org_finance_rpcs.sql
+-- Billing · the organization's finance screens (requirements/19; Admin Portal finance sub-tree)
+--
+-- Every function takes the organization and starts with kc_private.finance_assert, so a
+-- finance role of one organization never reaches the books of another (FR-FIN-001 AC2).
+-- Every write is audited with ids only.
+-- Errors: forbidden (42501); P0001 — account_not_found, entry_not_found, invalid_date,
+-- invalid_settings, entry_voided, entry_reconciled, entry_locked_by_source,
+-- illegal_transition; SQLSTATE 23xxx for a value a column refuses.
+
+-- Accounts of an organization with their balance: opening balance plus cleared income
+-- minus cleared expenses (FR-FIN-003 AC1).
+create function public.finance_accounts_list(p_org_id uuid)
+returns table (id uuid, name text, kind text, last4 text, opening_balance_agorot bigint, opening_balance_at date,
+               is_active boolean, sort_order integer, balance_agorot bigint)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.finance_assert(p_org_id, 'view');
+  return query
+  select a.id, a.name, a.kind, a.last4, a.opening_balance_agorot, a.opening_balance_at, a.is_active, a.sort_order,
+         (a.opening_balance_agorot + coalesce((
+            select sum(case e.direction when 'in' then e.amount_agorot when 'out' then -e.amount_agorot else 0 end)
+              from billing.org_finance_entries e
+             where e.account_id = a.id and e.status = 'cleared'), 0))::bigint
+    from billing.org_finance_accounts a
+   where a.org_id = p_org_id
+   order by a.is_active desc, a.sort_order, a.name;
+end;
+$$;
+comment on function public.finance_accounts_list(uuid) is 'Finance roles: the accounts of an organization with their balances.';
+grant execute on function public.finance_accounts_list(uuid) to authenticated;
+
+-- Creates an account (p_account_id null) or changes one; null leaves a field as it is.
+create function public.finance_account_upsert(
+  p_org_id uuid,
+  p_account_id uuid default null,
+  p_name text default null,
+  p_kind text default null,
+  p_last4 text default null,
+  p_opening_balance_agorot bigint default null,
+  p_opening_balance_at date default null,
+  p_is_active boolean default null
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.finance_assert(p_org_id, 'manage');
+  v_id uuid;
+begin
+  if p_account_id is null then
+    insert into billing.org_finance_accounts (org_id, name, kind, last4, opening_balance_agorot, opening_balance_at,
+                                              is_active, created_by)
+    values (p_org_id, btrim(p_name), p_kind, p_last4, coalesce(p_opening_balance_agorot, 0), p_opening_balance_at,
+            coalesce(p_is_active, true), v_actor)
+    returning id into v_id;
+  else
+    update billing.org_finance_accounts a
+       set name = coalesce(btrim(p_name), a.name), kind = coalesce(p_kind, a.kind), last4 = coalesce(p_last4, a.last4),
+           opening_balance_agorot = coalesce(p_opening_balance_agorot, a.opening_balance_agorot),
+           opening_balance_at = coalesce(p_opening_balance_at, a.opening_balance_at),
+           is_active = coalesce(p_is_active, a.is_active)
+     where a.id = p_account_id and a.org_id = p_org_id
+    returning a.id into v_id;
+    if not found then
+      raise exception 'account_not_found' using errcode = 'P0001';
+    end if;
+  end if;
+  perform kc_private.audit_record('finance_account_upsert', 'organization', p_org_id,
+                                  jsonb_build_object('account_id', v_id));
+  return v_id;
+end;
+$$;
+comment on function public.finance_account_upsert(uuid, uuid, text, text, text, bigint, date, boolean) is
+  'Finance managers: creates or changes a financial account of an organization.';
+grant execute on function public.finance_account_upsert(uuid, uuid, text, text, text, bigint, date, boolean) to authenticated;
+
+-- The books of an organization, newest first. Voided entries are listed only when asked
+-- for by status. Keyset: pass occurred_at and id of the last row.
+create function public.finance_ledger_list(
+  p_org_id uuid,
+  p_direction text default null,
+  p_status text default null,
+  p_from timestamptz default null,
+  p_to timestamptz default null,
+  p_limit integer default 100,
+  p_after_occurred_at timestamptz default null,
+  p_after_id uuid default null
+)
+returns table (id uuid, kind text, direction text, amount_agorot bigint, currency text, occurred_at timestamptz,
+               account_id uuid, counterparty text, category text, description text, status text,
+               void_reason text, is_public boolean, source text, reconciled_at timestamptz,
+               created_at timestamptz, updated_at timestamptz)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.finance_assert(p_org_id, 'view');
+  return query
+  select e.id, e.kind, e.direction, e.amount_agorot, e.currency, e.occurred_at, e.account_id, e.counterparty,
+         e.category, e.description, e.status, e.void_reason, e.is_public, e.source, e.reconciled_at,
+         e.created_at, e.updated_at
+    from billing.org_finance_entries e
+   where e.org_id = p_org_id
+     and e.status = coalesce(p_status, case e.status when 'cancelled' then null else e.status end)
+     and (p_direction is null or e.direction = p_direction)
+     and (p_from is null or e.occurred_at >= p_from)
+     and (p_to is null or e.occurred_at <= p_to)
+     and (p_after_occurred_at is null or (e.occurred_at, e.id) < (p_after_occurred_at, p_after_id))
+   order by e.occurred_at desc, e.id desc
+   limit least(greatest(coalesce(p_limit, 100), 1), 500);
+end;
+$$;
+comment on function public.finance_ledger_list(uuid, text, text, timestamptz, timestamptz, integer, timestamptz, uuid) is
+  'Finance roles: the entries of an organization''s books, newest first (keyset).';
+grant execute on function public.finance_ledger_list(uuid, text, text, timestamptz, timestamptz, integer, timestamptz, uuid)
+  to authenticated;
+
+-- Creates an entry (p_entry_id null) or changes one; null leaves a field as it is. The
+-- date may not lie more than a day ahead (FR-FIN-005 AC1); what a reconciled or mirrored
+-- entry may still change is decided by the table's guard.
+create function public.finance_ledger_upsert(
+  p_org_id uuid,
+  p_entry_id uuid default null,
+  p_kind text default null,
+  p_amount_agorot bigint default null,
+  p_occurred_at timestamptz default null,
+  p_account_id uuid default null,
+  p_counterparty text default null,
+  p_category text default null,
+  p_description text default null,
+  p_status text default null,
+  p_is_public boolean default null
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.finance_assert(p_org_id, 'manage');
+  v_id uuid;
+begin
+  if p_occurred_at > now() + interval '1 day' then
+    raise exception 'invalid_date' using errcode = 'P0001';
+  end if;
+  if p_account_id is not null and not exists (
+       select 1 from billing.org_finance_accounts a
+        where a.id = p_account_id and a.org_id = p_org_id and a.is_active) then
+    raise exception 'account_not_found' using errcode = 'P0001';
+  end if;
+  if p_entry_id is null then
+    insert into billing.org_finance_entries (org_id, kind, amount_agorot, occurred_at, account_id, counterparty,
+                                             category, description, status, is_public, created_by)
+    values (p_org_id, p_kind, p_amount_agorot, coalesce(p_occurred_at, now()), p_account_id, p_counterparty,
+            p_category, p_description, coalesce(p_status, 'pending'), coalesce(p_is_public, true), v_actor)
+    returning id into v_id;
+  else
+    update billing.org_finance_entries e
+       set kind = coalesce(p_kind, e.kind), amount_agorot = coalesce(p_amount_agorot, e.amount_agorot),
+           occurred_at = coalesce(p_occurred_at, e.occurred_at), account_id = coalesce(p_account_id, e.account_id),
+           counterparty = coalesce(p_counterparty, e.counterparty), category = coalesce(p_category, e.category),
+           description = coalesce(p_description, e.description), status = coalesce(p_status, e.status),
+           is_public = coalesce(p_is_public, e.is_public)
+     where e.id = p_entry_id and e.org_id = p_org_id
+    returning e.id into v_id;
+    if not found then
+      raise exception 'entry_not_found' using errcode = 'P0001';
+    end if;
+  end if;
+  perform kc_private.audit_record(
+    case when p_entry_id is null then 'finance_entry_create' else 'finance_entry_update' end,
+    'organization', p_org_id, jsonb_build_object('entry_id', v_id));
+  return v_id;
+end;
+$$;
+comment on function public.finance_ledger_upsert(uuid, uuid, text, bigint, timestamptz, uuid, text, text, text, text, boolean) is
+  'Finance managers: creates or changes an entry of an organization''s books.';
+grant execute on function public.finance_ledger_upsert(uuid, uuid, text, bigint, timestamptz, uuid, text, text, text, text, boolean)
+  to authenticated;
+
+-- Voids an entry with a reason (p_reason given), or marks it reconciled / not reconciled
+-- (p_reconciled given). A voided entry stays in the books and counts nowhere.
+create function public.finance_ledger_mark(
+  p_org_id uuid,
+  p_entry_id uuid,
+  p_void_reason text default null,
+  p_reconciled boolean default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.finance_assert(p_org_id, 'manage');
+begin
+  update billing.org_finance_entries e
+     set status = case when p_void_reason is null then e.status else 'cancelled' end,
+         void_reason = coalesce(btrim(p_void_reason), e.void_reason),
+         reconciled_at = case when p_reconciled is null then e.reconciled_at when p_reconciled then now() end,
+         reconciled_by = case when p_reconciled is null then e.reconciled_by when p_reconciled then v_actor end
+   where e.id = p_entry_id and e.org_id = p_org_id;
+  if not found then
+    raise exception 'entry_not_found' using errcode = 'P0001';
+  end if;
+  perform kc_private.audit_record(
+    case when p_void_reason is not null then 'finance_entry_void' else 'finance_reconcile' end,
+    'organization', p_org_id, jsonb_build_object('entry_id', p_entry_id, 'reconciled', p_reconciled));
+end;
+$$;
+comment on function public.finance_ledger_mark(uuid, uuid, text, boolean) is
+  'Finance managers: voids an entry, or sets or clears its reconciliation.';
+grant execute on function public.finance_ledger_mark(uuid, uuid, text, boolean) to authenticated;
+
+-- Switches the public finance blocks of an organization (FR-FIN-022 AC1). p_settings maps
+-- block names to booleans; a block that is not named keeps its state.
+create function public.finance_transparency_settings_set(p_org_id uuid, p_settings jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.finance_assert(p_org_id, 'transparency');
+  if jsonb_typeof(p_settings) is distinct from 'object' or exists (
+       select 1 from jsonb_each(p_settings) s
+        where s.key not in ('show_totals', 'show_donations_count', 'show_program_ratio',
+                            'show_category_breakdown', 'show_monthly_trend')
+           or jsonb_typeof(s.value) <> 'boolean') then
+    raise exception 'invalid_settings' using errcode = 'P0001';
+  end if;
+  update public.organizations o
+     set show_totals = coalesce((p_settings ->> 'show_totals')::boolean, o.show_totals),
+         show_donations_count = coalesce((p_settings ->> 'show_donations_count')::boolean, o.show_donations_count),
+         show_program_ratio = coalesce((p_settings ->> 'show_program_ratio')::boolean, o.show_program_ratio),
+         show_category_breakdown = coalesce((p_settings ->> 'show_category_breakdown')::boolean, o.show_category_breakdown),
+         show_monthly_trend = coalesce((p_settings ->> 'show_monthly_trend')::boolean, o.show_monthly_trend)
+   where o.id = p_org_id;
+  perform kc_private.audit_record('transparency_settings_set', 'organization', p_org_id, p_settings);
+end;
+$$;
+comment on function public.finance_transparency_settings_set(uuid, jsonb) is
+  'Organization admins: choose which live finance blocks the public page shows.';
+grant execute on function public.finance_transparency_settings_set(uuid, jsonb) to authenticated;
+
+-- Records the Section 46(a) approval of an organization (FR-FIN-007 AC2). `none` and
+-- `pending` clear the number and the dates; `active` needs all three (table constraint).
+create function public.finance_sec46_set(
+  p_org_id uuid,
+  p_status text,
+  p_approval_number text default null,
+  p_valid_from date default null,
+  p_valid_until date default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_keep constant boolean := p_status not in ('none', 'pending');
+begin
+  perform kc_private.finance_assert(p_org_id, 'manage');
+  update public.organizations o
+     set sec46_status = p_status,
+         sec46_approval_number = case when v_keep then p_approval_number end,
+         sec46_valid_from = case when v_keep then p_valid_from end,
+         sec46_valid_until = case when v_keep then p_valid_until end
+   where o.id = p_org_id;
+end;
+$$;
+comment on function public.finance_sec46_set(uuid, text, text, date, date) is
+  'Finance managers: records the Section 46(a) approval an organization holds.';
+grant execute on function public.finance_sec46_set(uuid, text, text, date, date) to authenticated;
+
+-- >>> supabase/schemas/85_billing/110_entitlements.sql
+-- Billing · member entitlements (Pro tier)
+--
+-- Whether a member holds the paid tier, and until when. The store purchase itself is
+-- handled by RevenueCat; its webhook (Edge Function `revenuecat-webhook`, service role)
+-- reports the state here. An entitlement granted by hand (support, promotion) is never
+-- overwritten by the store.
+
+create table billing.user_entitlements (
+  user_id    uuid primary key references public.users (id) on delete cascade,
+  tier       text not null default 'pro' check (tier in ('pro')),
+  source     text not null check (source in ('revenuecat', 'admin', 'promo')),
+  active     boolean not null default true,
+  -- Null = no end date.
+  expires_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+comment on table billing.user_entitlements is 'Paid-tier entitlement of a member, as reported by the store or granted by hand.';
+
+create trigger user_entitlements_set_updated_at
+  before update on billing.user_entitlements
+  for each row execute function kc_private.set_updated_at();
+
+alter table billing.user_entitlements enable row level security;
+alter table billing.user_entitlements force row level security;
+revoke insert, update, delete, truncate on billing.user_entitlements from service_role;
+
+-- True while the member's entitlement is switched on and has not run out.
+create function kc_private.is_pro(p_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from billing.user_entitlements e
+     where e.user_id = p_user_id and e.active and (e.expires_at is null or e.expires_at > now()));
+$$;
+comment on function kc_private.is_pro(uuid) is 'The member holds the Pro tier right now.';
+
+-- The caller's own tier.
+create function public.api_my_pro_status()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'is_pro', kc_private.is_pro((select auth.uid())),
+    'expires_at', (select e.expires_at from billing.user_entitlements e where e.user_id = (select auth.uid())),
+    'source', (select e.source from billing.user_entitlements e where e.user_id = (select auth.uid())));
+$$;
+comment on function public.api_my_pro_status() is 'Whether the caller holds the Pro tier, until when and from which source.';
+grant execute on function public.api_my_pro_status() to authenticated;
+
+-- Sets a member's entitlement from a given source and returns what happened:
+--   unknown_user          no such member
+--   skipped_manual_grant  the store may not replace an active entitlement granted by hand
+--   granted | revoked
+create function kc_private.entitlement_set(p_user_id uuid, p_active boolean, p_expires_at timestamptz, p_source text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not exists (select 1 from public.users u where u.id = p_user_id) then
+    return jsonb_build_object('status', 'unknown_user');
+  end if;
+  if p_source = 'revenuecat' and exists (
+       select 1 from billing.user_entitlements e
+        where e.user_id = p_user_id and e.source <> 'revenuecat' and e.active) then
+    return jsonb_build_object('status', 'skipped_manual_grant');
+  end if;
+  insert into billing.user_entitlements (user_id, source, active, expires_at)
+  values (p_user_id, p_source, coalesce(p_active, false), p_expires_at)
+  on conflict (user_id) do update
+    set source = excluded.source, active = excluded.active, expires_at = excluded.expires_at;
+  return jsonb_build_object('status', case when p_active then 'granted' else 'revoked' end);
+end;
+$$;
+
+create function public.api_revenuecat_set_pro(p_user_id uuid, p_active boolean, p_expires_at timestamptz)
+returns jsonb
+language sql
+security definer
+set search_path = ''
+as $$
+  select kc_private.entitlement_set(p_user_id, p_active, p_expires_at, 'revenuecat');
+$$;
+comment on function public.api_revenuecat_set_pro(uuid, boolean, timestamptz) is
+  'Service role (RevenueCat webhook): reports a member''s store subscription state.';
+
+create function public.api_set_pro_entitlement(
+  p_user_id uuid,
+  p_active boolean,
+  p_expires_at timestamptz default null,
+  p_source text default 'admin'
+)
+returns jsonb
+language sql
+security definer
+set search_path = ''
+as $$
+  select kc_private.entitlement_set(p_user_id, p_active, p_expires_at, p_source);
+$$;
+comment on function public.api_set_pro_entitlement(uuid, boolean, timestamptz, text) is
+  'Service role (operations): grants or revokes the Pro tier by hand.';
+
+-- >>> supabase/schemas/85_billing/120_account_purge.sql
+-- Billing · money records of a purged account (design §4.1.4, §12 Q5)
+--
+-- When an account is purged its money records stay: payments, receipts, donation intents,
+-- standing orders and the organizations' book entries are statutory records. What goes is
+-- the link to the person — `user_id` is replaced by the account's deletion tombstone (the
+-- salted hash of audit.deletion_tombstones), so the rows of one former member still
+-- belong together and can be matched to a tombstone, but name nobody.
+--
+-- How long they are then kept is one setting (billing.settings.retention_after_account_deletion).
+-- It is empty until the legal question is answered, and while it is empty nothing is due.
+-- This baseline erases nothing: the function at the end only lists what a future purge
+-- may take.
+
+-- One row per purged member who left money records behind.
+create table billing.detached_parties (
+  user_tombstone bytea primary key check (octet_length(user_tombstone) = 32),
+  detached_at    timestamptz not null default now()
+);
+comment on table billing.detached_parties is 'Tombstones of purged members with money records, and when they were detached.';
+alter table billing.detached_parties enable row level security;
+alter table billing.detached_parties force row level security;
+revoke insert, update, delete, truncate on billing.detached_parties from service_role;
+
+-- Detaches a member's money records from their account. The purge job calls it for each
+-- account before it removes the auth identity; calling it again, or for a member without
+-- money records, changes nothing. Open standing orders and unpaid intents are cancelled:
+-- nobody is left to charge.
+create function kc_private.billing_detach_user(p_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_hash constant bytea := kc_private.audit_tombstone_hash(p_user_id);
+  v_rows bigint := 0;
+  v_step bigint;
+begin
+  update billing.standing_orders o
+     set user_id = null, user_tombstone = v_hash,
+         status = 'cancelled', next_charge_at = null,
+         cancelled_at = coalesce(o.cancelled_at, now())
+   where o.user_id = p_user_id;
+  get diagnostics v_rows = row_count;
+  update billing.donation_intents i
+     set user_id = null, user_tombstone = v_hash,
+         status = case when i.status in ('created', 'checkout') then 'cancelled' else i.status end
+   where i.user_id = p_user_id;
+  get diagnostics v_step = row_count;
+  v_rows := v_rows + v_step;
+  update billing.payments p set user_id = null, user_tombstone = v_hash where p.user_id = p_user_id;
+  update billing.receipts r set user_id = null, user_tombstone = v_hash where r.user_id = p_user_id;
+  update billing.org_finance_entries e set donor_user_id = null, donor_tombstone = v_hash
+   where e.donor_user_id = p_user_id;
+  get diagnostics v_step = row_count;
+  v_rows := v_rows + v_step;
+
+  if v_rows > 0 then
+    insert into billing.detached_parties (user_tombstone) values (v_hash) on conflict do nothing;
+    perform kc_private.audit_record('billing_user_detached', 'user', null,
+                                    jsonb_build_object('tombstone', encode(v_hash, 'hex')), null);
+  end if;
+end;
+$$;
+comment on function kc_private.billing_detach_user(uuid) is
+  'Purge job: replaces a member''s reference in the money records by their deletion tombstone.';
+
+-- Safety net: the same detachment runs whenever a member row is deleted, so an account
+-- removal can neither fail on a money record nor take one with it, whichever path deletes
+-- the account. The foreign keys (`on delete set null`) then find nothing left to clear.
+create function kc_private.users_detach_billing()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.billing_detach_user(old.id);
+  return old;
+end;
+$$;
+
+create trigger users_detach_billing
+  before delete on public.users
+  for each row execute function kc_private.users_detach_billing();
+
+-- Tombstones whose retention period has ended. Empty while the period is not set.
+create function kc_private.billing_detached_past_retention()
+returns setof bytea
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select d.user_tombstone
+    from billing.detached_parties d
+   cross join billing.settings s
+   where d.detached_at <= now() - s.retention_after_account_deletion;
+$$;
+comment on function kc_private.billing_detached_past_retention() is
+  'Tombstones of purged members whose money records are past the retention period; none while the period is unset.';
+
+-- >>> supabase/schemas/85_billing/130_public_pages.sql
+-- Billing · what every signed-in member may see of an organization's money
+--
+-- Two read-only pages, for signed-in members only (design §12.1: nothing for signed-out
+-- callers). Both return totals, never a donor, a counterparty, an account or an entry
+-- (FR-FIN-019 AC6, FR-FIN-022 AC3).
+
+-- The donations page of a verified nonprofit (FR-ORG-010): its profile texts, the total
+-- raised through the product and its campaign posts with what each raised. Null for an
+-- unknown, suspended or unverified organization.
+create function public.get_nonprofit_public_page(p_org_slug text)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'org_id', o.id, 'slug', o.slug, 'name', o.name,
+    'tagline_he', o.public_tagline_he, 'tagline_en', o.public_tagline_en,
+    'about_he', o.public_about_he, 'about_en', o.public_about_en,
+    'is_verified_nonprofit', o.is_verified_nonprofit, 'verification_level', o.verification_level,
+    'sec46_active', o.sec46_status = 'active' and current_date between o.sec46_valid_from and o.sec46_valid_until,
+    'total_raised_agorot', (
+      select coalesce(sum(p.amount_agorot - p.refunded_agorot), 0)
+        from billing.payments p
+       where p.org_id = o.id and p.status = 'succeeded'),
+    'campaigns', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'post_id', c.id, 'title', c.title, 'status', c.status, 'published_at', c.published_at,
+               'raised_agorot', (
+                 select coalesce(sum(p.amount_agorot - p.refunded_agorot), 0)
+                   from billing.donation_intents i
+                   join billing.payments p on p.intent_id = i.id and p.status = 'succeeded'
+                  where i.post_id = c.id))
+             order by c.published_at desc)
+        from public.posts c
+       where c.beneficiary_org_id = o.id and c.world_slug = 'money' and c.visibility = 'Public'
+         and c.status in ('open', 'closed_delivered')), '[]'::jsonb))
+    from public.organizations o
+   where o.slug = p_org_slug and o.is_verified_nonprofit and o.status = 'active'
+     and (select auth.uid()) is not null;
+$$;
+comment on function public.get_nonprofit_public_page(text) is
+  'Donations page of a verified nonprofit: profile texts, total raised and campaigns. Totals only.';
+grant execute on function public.get_nonprofit_public_page(text) to authenticated;
+
+-- Live public finance numbers of an organization (FR-FIN-022, D111); p_slug null = the
+-- platform organization. Only the blocks the organization switched on are returned, computed
+-- over cleared public entries, transfers aside; `{"enabled": false}` when the organization
+-- is unknown or shows nothing. Expense categories outside the app's list fold into
+-- `other_out` (the list mirrors FINANCE_EXPENSE_CATEGORIES of @kc/domain).
+create function public.rpc_org_transparency(p_slug text default null)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_org public.organizations;
+  v_income bigint;
+  v_expense bigint;
+  v_program bigint;
+  v_count bigint;
+  v_last timestamptz;
+  v_result jsonb;
+begin
+  perform kc_private.require_caller();
+  select o.* into v_org from public.organizations o
+   where o.status = 'active' and case when p_slug is null then o.is_platform else o.slug = p_slug end;
+  if not found or not (v_org.show_totals or v_org.show_donations_count or v_org.show_program_ratio
+                       or v_org.show_category_breakdown or v_org.show_monthly_trend) then
+    return jsonb_build_object('enabled', false);
+  end if;
+
+  select coalesce(sum(e.amount_agorot) filter (where e.direction = 'in'), 0),
+         coalesce(sum(e.amount_agorot) filter (where e.direction = 'out'), 0),
+         coalesce(sum(e.amount_agorot) filter (where e.direction = 'out' and e.category = 'program'), 0),
+         count(*) filter (where e.kind in ('donation_in', 'grant_in')),
+         max(e.occurred_at)
+    into v_income, v_expense, v_program, v_count, v_last
+    from billing.org_finance_entries e
+   where e.org_id = v_org.id and e.status = 'cleared' and e.is_public and e.direction is not null;
+
+  v_result := jsonb_build_object('enabled', true, 'currency', 'ILS', 'last_entry_at', v_last);
+  if v_org.show_totals then
+    v_result := v_result || jsonb_build_object(
+      'income_agorot', v_income, 'expense_agorot', v_expense, 'net_agorot', v_income - v_expense);
+  end if;
+  if v_org.show_donations_count then
+    v_result := v_result || jsonb_build_object('donations_count', v_count);
+  end if;
+  if v_org.show_program_ratio and v_expense > 0 then
+    v_result := v_result || jsonb_build_object('program_ratio', round(v_program::numeric / v_expense, 4));
+  end if;
+  if v_org.show_category_breakdown then
+    v_result := v_result || jsonb_build_object('by_category', coalesce((
+      select jsonb_agg(jsonb_build_object('key', c.key, 'agorot', c.agorot) order by c.agorot desc)
+        from (select case when e.category in ('program', 'payroll', 'rent_ops', 'marketing_fundraising',
+                                              'admin_general', 'fees', 'donor_refunds')
+                          then e.category else 'other_out' end as key,
+                     sum(e.amount_agorot)::bigint as agorot
+                from billing.org_finance_entries e
+               where e.org_id = v_org.id and e.status = 'cleared' and e.is_public and e.direction = 'out'
+               group by 1) c), '[]'::jsonb));
+  end if;
+  if v_org.show_monthly_trend then
+    -- The last twelve calendar months, empty ones included.
+    v_result := v_result || jsonb_build_object('monthly', (
+      select jsonb_agg(jsonb_build_object('month', to_char(s.month, 'YYYY-MM'), 'income_agorot', s.income,
+                                          'expense_agorot', s.expense) order by s.month)
+        from (select m.month,
+                     coalesce(sum(e.amount_agorot) filter (where e.direction = 'in'), 0)::bigint as income,
+                     coalesce(sum(e.amount_agorot) filter (where e.direction = 'out'), 0)::bigint as expense
+                from generate_series(date_trunc('month', now()) - interval '11 months',
+                                     date_trunc('month', now()), interval '1 month') as m (month)
+                left join billing.org_finance_entries e
+                  on e.org_id = v_org.id and e.status = 'cleared' and e.is_public and e.direction is not null
+                 and date_trunc('month', e.occurred_at) = m.month
+               group by m.month) s));
+  end if;
+  return v_result;
+end;
+$$;
+comment on function public.rpc_org_transparency(text) is
+  'Live public finance numbers of an organization, limited to the blocks it switched on. Totals only.';
+grant execute on function public.rpc_org_transparency(text) to authenticated;

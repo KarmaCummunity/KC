@@ -127,10 +127,11 @@ select throws_ok($$select pg_temp.run('a', 'select public.follow_request_decide(
 select is(pg_temp.run('b', 'select public.follow_user(@a)'), 'following', 'an existing follower gets no new request');
 
 -- ── Per-field profile visibility: owner a · follower b · stranger d · blocked e ──
+insert into public.organizations (id, slug, name) values ('60000000-0000-4000-8000-000000000001', 'org-one', 'Org One');
 select lives_ok($$select pg_temp.run('a', 'insert into public.user_profile_fields (user_id, field_key, visibility, tags, affiliated_org_id) values
     (@a, ''interests'', null, array[''items'', ''food:bread''], null),
     (@a, ''help_tags'', ''everyone'', array[''rides''], null),
-    (@a, ''affiliated_org'', ''only_me'', null, gen_random_uuid())')$$, 'a member fills in the optional fields');
+    (@a, ''affiliated_org'', ''only_me'', null, ''60000000-0000-4000-8000-000000000001'')')$$, 'a member fills in the optional fields');
 select is((select visibility from public.user_profile_fields where user_id = pg_temp.id('a') and field_key = 'interests'),
   'followers', 'on a private profile the default visibility is followers');
 select lives_ok($$select pg_temp.run('c', 'insert into public.user_profile_fields (user_id, field_key, tags) values (@c, ''interests'', array[''items''])')$$,
