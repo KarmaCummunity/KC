@@ -182,12 +182,9 @@ jobs:
           if [ -z "$GH_TOKEN" ]; then
             echo "::error::Proof requested, but kc-agent-bot credentials are missing."; exit 1
           fi
-          login=$(gh api user --jq .login)
-          echo "Authenticated as $login"
-          case "$login" in
-            *kc-agent-bot*) ;;
-            *) echo "::error::Expected kc-agent-bot, got $login"; exit 1 ;;
-          esac
+          # Installation tokens cannot call GET /user (HTTP 403 "Resource not
+          # accessible by integration"). Identify the actor from the PR author
+          # after create, which is the actual capability we need to prove.
           branch="sync/pr-create-proof-$RUN_ID"
           git init -q
           git config user.name "kc-agent-bot[bot]"
@@ -206,4 +203,10 @@ jobs:
 
           Opened by: agent:cursor")
           echo "Opened proof PR: $PR_URL"
+          author=$(gh pr view "$PR_URL" --repo "$REPO" --json author --jq .author.login)
+          echo "Proof PR author: $author"
+          case "$author" in
+            *kc-agent-bot*) ;;
+            *) echo "::error::Expected kc-agent-bot as the PR author, got $author"; exit 1 ;;
+          esac
           # trap closes and deletes the branch
