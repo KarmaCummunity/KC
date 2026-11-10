@@ -15,6 +15,10 @@ select org_id, 'Generic cancel test org', 'generic-cancel-test-org' from persona
 insert into public.org_memberships (org_id, user_id, role)
 select org_id, giver, 'org_admin' from personas;
 
+-- Publishing in the animals world needs a verified identity (`worlds.requires_verification`, 0612).
+update public.users set account_status = 'active', verified_at = now()
+ where user_id in (select giver from personas union all select adopter from personas);
+
 create function pg_temp.adoption_offer(p_owner uuid, p_title text) returns uuid
 language plpgsql as $$
 declare v_kind uuid;
