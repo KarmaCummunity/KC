@@ -13,6 +13,7 @@ import { DateTimeField } from '../ui/DateTimeField';
 import { clampWholeNumber, visibleDetailSpecs, type ListingFieldSpec } from '../../lib/unifiedCreate/listingFieldSpecs';
 import { detailField } from '../../lib/unifiedCreate/listingFormProblem';
 import { CountStepper } from './CountStepper';
+import { KnowledgeSlotListField } from './KnowledgeSlotListField';
 import { ListingFieldFrame, useListingFieldProblem } from './ListingFieldFrame';
 import { Chip } from '../ui/Chip';
 import { ChipSelectRow } from '../filterKit/ChipSelectRow';
@@ -201,6 +202,10 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
           maxLength={spec.maxLength}
           editable={!disabled}
         />
+      );
+    case 'slotList':
+      return (
+        <KnowledgeSlotListField value={value} onChange={set} maxSlots={spec.maxSlots} disabled={disabled} />
       );
     case 'toggle':
       return <Switch value={value === true} onValueChange={set} disabled={disabled} />;

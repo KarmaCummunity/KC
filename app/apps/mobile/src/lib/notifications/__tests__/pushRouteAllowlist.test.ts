@@ -41,7 +41,13 @@ describe('resolvePushRoute', () => {
     'giving_handoff_declined',
     'giving_handoff_cancelled',
     'giving_handoff_completed',
-  ] as const)('routes %s to the listing (KC#1316, D70, D73, D74, FR-NOTIF-018)', (kind) => {
+    'knowledge_booking_requested',
+    'knowledge_booking_confirmed',
+    'knowledge_booking_declined',
+    'knowledge_booking_expired',
+    'knowledge_booking_cancelled',
+    'knowledge_session_completed',
+  ] as const)('routes %s to the listing (KC#1316, D70, D73, D74, FR-NOTIF-018, FR-KNOW-004)', (kind) => {
     expect(
       resolvePushRoute({ category: 'critical', kind, notification_id: 'n9', params: { listingId: UUID } }),
     ).toEqual({ pathname: '/listing/[listingId]', params: { listingId: UUID } });

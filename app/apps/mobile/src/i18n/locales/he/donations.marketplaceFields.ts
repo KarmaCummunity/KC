@@ -67,6 +67,17 @@ export const marketplaceFieldLabels = {
   ends_at: 'מסתיים',
   registration_policy: 'הרשמה',
   address: 'כתובת',
+  // Knowledge exchange kinds (#2034, migration 0703).
+  capacity_per_slot: 'מקומות בכל מועד',
+  slots: 'מועדים',
+  audience: 'למי זה מתאים',
+  cadence: 'תדירות המפגשים',
+  seats: 'מספר חניכים',
+  profession: 'תחום מקצועי',
+  disclaimer_accepted: 'אני מאשר/ת שזה מידע כללי ולא ייעוץ מחייב',
+  language: 'שפות',
+  goal: 'מה המטרה',
+  context_url: 'קישור להקשר',
 } as const;
 
 export const marketplaceOptionLabels = {
@@ -122,6 +133,30 @@ export const marketplaceOptionLabels = {
   automatic: 'אוטומטית',
   manual: 'באישור המארגנים',
   verified_only: 'מאומתים בלבד',
+  // Knowledge exchange kinds (#2034, migration 0703).
+  weekly: 'כל שבוע',
+  biweekly: 'כל שבועיים',
+  flexible: 'גמיש',
+  career_change: 'הסבה מקצועית',
+  students: 'סטודנטים',
+  new_immigrants: 'עולים חדשים',
+  youth_18plus: 'צעירים (18+)',
+  seniors: 'גיל הזהב',
+  lawyer: 'עורך/ת דין',
+  accountant: 'רואה/ת חשבון',
+  tax_advisor: 'יועץ/ת מס',
+  social_worker: 'עובד/ת סוציאלי/ת',
+  employment_rights: 'זכויות עובדים',
+  housing_rights: 'זכויות דיור',
+  consumer_rights: 'זכויות צרכנים',
+  he: 'עברית',
+  en: 'אנגלית',
+  ar: 'ערבית',
+  ru: 'רוסית',
+  am: 'אמהרית',
+  fr: 'צרפתית',
+  es: 'ספרדית',
+  other: 'אחר',
 } as const;
 
 export const marketplaceAvailabilityLabels = {

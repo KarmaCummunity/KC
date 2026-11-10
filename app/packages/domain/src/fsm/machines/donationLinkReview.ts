@@ -9,7 +9,7 @@ import { defineMachine } from '../machine';
  * - Editing the link's content (URL, name, description, category) sends it back to `pending`
  *   for a new review, from either decision (`donation_links_review_guard`).
  *
- * SQL copy: `supabase/migrations/0703_fsm_review_queues.sql`.
+ * SQL copy: `supabase/migrations/0715_fsm_review_queues.sql`.
  */
 export const donationLinkReviewMachine = defineMachine({
   id: 'donation_link_review',

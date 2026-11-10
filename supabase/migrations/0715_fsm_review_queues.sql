@@ -1,4 +1,4 @@
--- 0703_fsm_review_queues | Wave 4c of the FSM kernel program (#1989, G61)
+-- 0715_fsm_review_queues | Wave 4c of the FSM kernel program (#1989, G61)
 --
 -- The operator review queues share one shape (pending → approved | rejected). Their writers each
 -- check `pending` before deciding; the kernel now holds the graph for every writer.
@@ -71,7 +71,7 @@ end;
 $$;
 
 comment on function kc_private.enforce_status_fsm() is
-  'FSM kernel (0703): generic status trigger. Args: machine id, status column, error code; raises that code (23514) for a move outside the machine in fsm_edge.';
+  'FSM kernel (0715): generic status trigger. Args: machine id, status column, error code; raises that code (23514) for a move outside the machine in fsm_edge.';
 
 revoke all on function kc_private.enforce_status_fsm() from public, anon, authenticated;
 

@@ -11,7 +11,7 @@ import { defineMachine } from '../machine';
  *   `claim_requests.status` (no reviewer RPC yet).
  * - Both decisions are final; a new request is a new row.
  *
- * SQL copy: `supabase/migrations/0703_fsm_review_queues.sql`.
+ * SQL copy: `supabase/migrations/0715_fsm_review_queues.sql`.
  */
 export const reviewDecisionMachine = defineMachine({
   id: 'review_decision',
