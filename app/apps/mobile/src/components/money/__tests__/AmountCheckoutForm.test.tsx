@@ -2,6 +2,7 @@
 // Donation / standing-order amount form on the kit (spec 17 §4.1.1, TD-243): presets fill the
 // amount, the confirm waits for a valid amount, and it shows a spinner while the payment runs.
 import { afterEach, describe, expect, it, vi } from 'vitest';
+vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarVisibility: () => false, shellTabBarHeightPx: () => 0, useShellTabBarScrollInset: () => 0 }));
 import React from 'react';
 import { act, cleanup, fireEvent } from '@testing-library/react';
 
@@ -10,6 +11,11 @@ vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogT
 vi.mock('@expo/vector-icons', async () => (await import('../../ui/__tests__/kitDialogTestKit')).iconsDouble);
 vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 vi.mock('../../ui/Screen', () => ({ Screen: ({ children }: { children: React.ReactNode }) => children }));
+vi.mock('@react-navigation/elements', () => ({ useHeaderHeight: () => 44 }));
+vi.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
 const payments = vi.hoisted(() => ({ external: false, openExternal: vi.fn() }));
 vi.mock('../../../hooks/useExternalDonations', () => ({ useExternalDonations: () => payments }));
 

@@ -1,6 +1,8 @@
 // English — ride quick publish: departure, estimated end and seats (spec 05 §5.3 step 1, D75, S46).
 export const rideSchedule = {
   departure: 'Departure',
+  leaveNow: 'Leave now',
+  leaveNowHint: 'The ride leaves a few minutes after you publish.',
   arrival: 'Estimated end',
   arrivalPlaceholder: 'Suggested from the route',
   arrivalHint: 'Suggested from the distance — you can change it.',
@@ -30,6 +32,13 @@ export const rideFeed = {
   meetingPoints: 'Pickup points: {{count}}',
   empty: 'No upcoming rides right now. You can publish a ride or a request.',
   error: "We couldn't load the rides. Pull down to try again.",
+  // #1626 — empty-feed calls to action (neutral phrasing, spec 17 §7.2).
+  publishCta: 'Post a ride',
+  clearFilters: 'Clear filters',
+  // #1626 — the route search is a collapsed filter on top of the rides feed.
+  routeFilterTitle: 'Filter by route',
+  routeFilterActive: '{{from}} → {{to}}',
+  routeFilterClear: 'Clear route',
 } as const;
 
 // Saved routes (D74): follow a route and hear about new rides on it.

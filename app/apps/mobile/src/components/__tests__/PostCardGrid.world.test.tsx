@@ -15,6 +15,7 @@ vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => k
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 // Native image modules: the card has no photo here, so only the placeholder icon renders.
 vi.mock('../ui/KCImage', () => ({ KCImage: () => null }));
+vi.mock('expo-image', () => ({ Image: { prefetch: vi.fn(() => Promise.resolve()) } }));
 vi.mock('../AvatarInitials', () => ({ AvatarInitials: () => null }));
 vi.mock('../../lib/imageUrl', () => ({ getSupabasePublicImageUrl: () => null, getSupabaseFeedImageUrl: () => null }));
 // The overflow menu has its own tests (PostMenuSheet.test.tsx).

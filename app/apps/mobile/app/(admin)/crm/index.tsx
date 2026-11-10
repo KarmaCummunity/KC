@@ -2,22 +2,23 @@
 // V2-ADMIN-CRM-8 — V2 §13.9 Admin CRM (minimal contacts tracker).
 // List + search + status filter + per-row edit / delete / "mark contacted".
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, Platform, Pressable, RefreshControl, View } from 'react-native';
+import { Alert, Platform, RefreshControl, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   CRM_CONTACT_STATUSES, hasPermission, isCrmContactError,
   type AdminPermission, type AdminRole,
   type CrmContact, type CrmContactStatus,
 } from '@kc/domain';
-import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { container } from '../../../src/lib/container';
 import { ContactCard } from '../../../src/components/admin/crm/ContactCard';
 import { ContactFormModal } from '../../../src/components/admin/crm/ContactFormModal';
 import { useLocaleBundle, type LocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
-import { FilterSearchBar } from '../../../src/components/filterKit/FilterSearchBar';
-import { FilterChipRow } from '../../../src/components/filterKit/FilterChipRow';
+import { AdminSearchFilterToolbar } from '../../../src/components/admin/AdminSearchFilterToolbar';
+import { FilterSection } from '../../../src/components/filterKit/FilterSection';
+import { PrimaryButton } from '../../../src/components/ui/Buttons';
 
 type StatusFilter = CrmContactStatus | 'all';
 
@@ -76,6 +77,7 @@ export default function CrmScreen() {
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [query, setQuery] = useState('');
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<CrmContact | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -139,6 +141,19 @@ export default function CrmScreen() {
     [handleDelete, handleEdit, handleMarkContacted],
   );
 
+  const statusOptions = useMemo(
+    () => (['all', ...CRM_CONTACT_STATUSES] as readonly StatusFilter[]).map((s) => ({
+      value: s,
+      label: t.statusFilters[s],
+    })),
+    [t.statusFilters],
+  );
+
+  const portalTitle = useMemo(() => {
+    if (statusFilter === 'all') return t.title;
+    return `${t.title} · ${t.statusFilters[statusFilter]}`;
+  }, [statusFilter, t.statusFilters, t.title]);
+
   if (rolesLoading) {
     return <View style={styles.center}><Text>{t.loading}</Text></View>;
   }
@@ -150,31 +165,30 @@ export default function CrmScreen() {
 
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t.title}</Text>
-        <Pressable accessibilityRole="button" onPress={() => setCreating(true)} style={styles.newBtn}>
-          <Text style={styles.newBtnText}>{t.newBtn}</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.searchWrap}>
-        <FilterSearchBar
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t.searchPlaceholder}
-          testID="crm-search-bar"
-        />
-      </View>
-
-      <FilterChipRow<StatusFilter>
-        scrollable
-        options={(['all', ...CRM_CONTACT_STATUSES] as readonly StatusFilter[]).map((s) => ({
-          value: s,
-          label: t.statusFilters[s],
-        }))}
-        value={statusFilter}
-        onChange={(s: StatusFilter | null) => setStatusFilter(s ?? 'all')}
-        contentContainerStyle={styles.chips}
+      <AdminSearchFilterToolbar
+        portalTitle={portalTitle}
+        headerRightExtra={
+          <PrimaryButton label={t.newBtn} size="sm" onPress={() => setCreating(true)} testID="admin-crm-new" />
+        }
+        search={{
+          value: query,
+          onChangeText: setQuery,
+          placeholder: t.searchPlaceholder,
+          testID: 'crm-search-bar',
+        }}
+        activeFilterCount={statusFilter === 'all' ? 0 : 1}
+        filterVisible={sheetOpen}
+        onOpenFilters={() => setSheetOpen(true)}
+        onCloseFilters={() => setSheetOpen(false)}
+        onClearFilters={() => setStatusFilter('all')}
+        filterButtonTestID="admin-crm-filter-button"
+        filterSheetContent={(
+          <FilterSection<StatusFilter>
+            options={statusOptions}
+            value={statusFilter}
+            onChange={(s) => setStatusFilter(s ?? 'all')}
+          />
+        )}
       />
       <Text style={styles.totalLabel}>{t.totalCount(list.data?.totalCount ?? 0)}</Text>
 
@@ -215,13 +229,6 @@ const useStyles = makeUseStyles(({ colors }) => ({
   root:        { flex: 1, backgroundColor: colors.background },
   center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   deniedTitle: { ...typography.h3, ...typography.bold },
-  header:      { paddingHorizontal: spacing.base, paddingTop: spacing.base, paddingBottom: spacing.sm,
-                 flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title:       { ...typography.h2, ...typography.bold },
-  newBtn:      { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md, backgroundColor: colors.primary },
-  newBtnText:  { color: colors.textInverse, ...typography.caption, ...typography.bold },
-  searchWrap:  { marginHorizontal: spacing.base, marginBottom: spacing.sm },
-  chips:       { paddingHorizontal: spacing.base, gap: spacing.sm, paddingBottom: spacing.sm },
   totalLabel:  { paddingHorizontal: spacing.base, paddingBottom: spacing.sm, ...typography.caption, opacity: 0.6 },
   empty:       { padding: spacing['2xl'], alignItems: 'center', gap: spacing.sm },
   emptyTitle:  { ...typography.h3, ...typography.semiBold },

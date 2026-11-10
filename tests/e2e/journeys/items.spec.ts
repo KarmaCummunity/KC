@@ -6,5 +6,6 @@ defineWorldJourney({
   kindSlug: 'give_item',
   titleHe: 'כיסא עץ למסירה',
   claim: { testId: 'giving-handoff-reserve', label: 'שריון הפריט', resultsIn: 'reserved' },
-  details: () => ({ pickup_mode: 'pickup' }),
+  // Matches give_item detail_schema (0241); pickup_mode is a handoff column, not listing details.
+  details: () => ({ item_condition: 'Good', fulfillment_mode: 'owner_approval' }),
 });

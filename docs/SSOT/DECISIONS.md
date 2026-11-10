@@ -450,7 +450,7 @@ Web Push parity is deferred — only the adapter changes, the pipeline is shared
 - The Database Webhook is configured via the Supabase dashboard, not SQL — operator step documented in migration 0058's header.
 - Web Push is deferred to a follow-up TD (TD-65).
 
-**Affected docs.** `docs/SSOT/spec/09_notifications.md`, `docs/SSOT/spec/11_settings.md`, `docs/SSOT/archive/superpowers/specs/2026-05-13-push-notifications-design.md`, `docs/SSOT/archive/superpowers/plans/2026-05-13-push-notifications.md`, migrations 0056–0058, 0060, 0062–0066, Edge Function `dispatch-notification`.
+**Affected docs.** `docs/spec/requirements/09_notifications.md`, `docs/spec/requirements/11_settings.md`, `docs/SSOT/archive/superpowers/specs/2026-05-13-push-notifications-design.md`, `docs/SSOT/archive/superpowers/plans/2026-05-13-push-notifications.md`, migrations 0056–0058, 0060, 0062–0066, Edge Function `dispatch-notification`.
 
 ---
 
@@ -577,7 +577,7 @@ Spec: `docs/SSOT/archive/superpowers/specs/2026-05-16-hebrew-to-i18n-design.md` 
 
 **Rationale.** The prior phrasing created cognitive tension with the “open community / transparency” story. Separating *platform transparency* from *personal anonymity choices* keeps trust messaging coherent while still honoring legitimate privacy needs.
 
-**Affected docs.** `docs/SSOT/spec/11_settings.md` (About scope ACs), Hebrew `aboutContent` bundles + FAQ alignment.
+**Affected docs.** `docs/spec/requirements/11_settings.md` (About scope ACs), Hebrew `aboutContent` bundles + FAQ alignment.
 
 ---
 
@@ -669,7 +669,7 @@ Spec: `docs/SSOT/archive/superpowers/specs/2026-05-16-hebrew-to-i18n-design.md` 
 - Same-tab redirect wrapped in a bottom-sheet UI — adds an extra tap with no compensating benefit (the picker is not inside the sheet anyway).
 - Custom Google account-picker UI proxied through our backend — breaks Google's Terms of Service.
 
-**Affected.** `apps/mobile/src/services/authComposition.ts` (`redirectToGoogleSignInWeb`), `apps/mobile/app/(auth)/index.tsx` (`handleGoogle` web branch), `docs/SSOT/spec/01_auth_and_onboarding.md`. Reverts of the previous attempt: PR #311.
+**Affected.** `apps/mobile/src/services/authComposition.ts` (`redirectToGoogleSignInWeb`), `apps/mobile/app/(auth)/index.tsx` (`handleGoogle` web branch), `docs/spec/requirements/01_auth_and_onboarding.md`. Reverts of the previous attempt: PR #311.
 
 ---
 
@@ -968,13 +968,13 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Date.** 2026-05-26
 
-**Decision.** Survey B (anonymous public market research for the "Karma Phrasebook") lives in its own spec file `docs/SSOT/spec/16_public_research.md` (FR-RESEARCH-001..003) rather than in `11_settings.md`, and its Postgres schema ships in a dedicated migration `0131_public_research_responses.sql` separate from Survey A's `0130`. Contact emails collected at the thank-you page opt-in are stored in a separate table `public_research_contact_requests` (FK to `public_research_responses(id) ON DELETE CASCADE`) rather than in the same row as survey answers; RLS on the contact table denies all access to `anon` and `authenticated` roles — only `service_role` (via a super-admin RPC) can read it. The two tables are therefore independently deletable (a GDPR-required property: erasing a contact request must not cascade to the research data, and vice versa).
+**Decision.** Survey B (anonymous public market research for the "Karma Phrasebook") lives in its own spec file `docs/spec/requirements/16_public_research.md` (FR-RESEARCH-001..003) rather than in `11_settings.md`, and its Postgres schema ships in a dedicated migration `0131_public_research_responses.sql` separate from Survey A's `0130`. Contact emails collected at the thank-you page opt-in are stored in a separate table `public_research_contact_requests` (FK to `public_research_responses(id) ON DELETE CASCADE`) rather than in the same row as survey answers; RLS on the contact table denies all access to `anon` and `authenticated` roles — only `service_role` (via a super-admin RPC) can read it. The two tables are therefore independently deletable (a GDPR-required property: erasing a contact request must not cascade to the research data, and vice versa).
 
 **Rationale.** Survey B is not a Settings feature: it is served at a public web URL with no auth shell, targets anonymous users on external platforms (Facebook, WhatsApp, Agora), and has entirely different abuse-mitigation requirements (honeypot, `Origin` allowlist, IP-hash rate limit, global circuit breaker) from any in-app survey. Grouping it under `11_settings.md` would pollute that file's scope and make it harder for future agents to locate the right spec. A dedicated spec file also lets FR-RESEARCH-* IDs track implementation progress independently of FR-SETTINGS-*. The two-table PII isolation pattern mirrors the design already established for legal-documents acceptances (D-42) and is the simplest way to satisfy the independent-deletion requirement without adding nullable columns. A separate migration enforces the security-review separation principle followed throughout this codebase (cf. D-40, D-47). See design spec `docs/SSOT/archive/superpowers/specs/2026-05-25-surveys-and-feedback-design.md` §2, §4, §7.
 
 **Alternatives rejected.** Adding Survey B FRs to `11_settings.md` — conflates two unrelated user surfaces. Storing contact email in the same `public_research_responses` row — makes it impossible to delete PII without deleting the research data. Single migration for both surveys — blurs security review scope.
 
-**Affected docs.** `docs/SSOT/spec/16_public_research.md` (new); `docs/SSOT/BACKLOG.md` P1.7; `CLAUDE.md` §1 spec-files table; design `docs/SSOT/archive/superpowers/specs/2026-05-25-surveys-and-feedback-design.md`; migration `0131_public_research_responses.sql`.
+**Affected docs.** `docs/spec/requirements/16_public_research.md` (new); `docs/SSOT/BACKLOG.md` P1.7; `CLAUDE.md` §1 spec-files table; design `docs/SSOT/archive/superpowers/specs/2026-05-25-surveys-and-feedback-design.md`; migration `0131_public_research_responses.sql`.
 
 ---
 
@@ -988,7 +988,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Revert all rides commits (loses backend that will be reused). Ship V2.0 UI as-is (operator said no). Feature-flag the screen body (extra plumbing for what's effectively a single screen render swap).
 
-**Affected docs.** `apps/mobile/src/features/rides/screens/RidesHubScreen.tsx`; `docs/SSOT/spec/15_rides.md` header (status flipped 🟡 with hide reference); ongoing rides hardening PRs (#414, #416, #417, #419, #420, #421+).
+**Affected docs.** `apps/mobile/src/features/rides/screens/RidesHubScreen.tsx`; `docs/spec/requirements/15_rides.md` header (status flipped 🟡 with hide reference); ongoing rides hardening PRs (#414, #416, #417, #419, #420, #421+).
 
 ## D-52 — Rides participant model uses RPC-only writes with seat enforcement at approve time (2026-05-28)
 
@@ -1000,7 +1000,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** RLS + client retry on conflict — exposes the race to clients and adds latency. Trigger-side validation — same FOR UPDATE locking needed; less testable. SERIALIZABLE isolation per call — heavier than needed; the two locks are sufficient.
 
-**Affected docs.** `docs/SSOT/spec/15_rides.md` FR-RIDE-011 AC2/AC3/AC5; migration `0139_ride_participants.sql`.
+**Affected docs.** `docs/spec/requirements/15_rides.md` FR-RIDE-011 AC2/AC3/AC5; migration `0139_ride_participants.sql`.
 
 ## D-53 — Automated `main` production gates without human deploy approvers (2026-05-28)
 
@@ -1038,7 +1038,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Keep hidden + ship V3.0 entirely backend-only (defeats the purpose; users still see only NGO links). Ship UI without spec expansion (un-scoped scope creep; FR-IDs and ACs must lead implementation). Split V3.0 into 12 separate PRs (overhead vs reviewability tradeoff lands on one focused PR per logical chunk; spec lands first as the contract).
 
-**Affected docs.** `docs/SSOT/spec/15_rides.md` (status flipped 🟡 V3.0 + new FRs); `apps/mobile/src/features/rides/screens/RidesHubScreen.tsx` (un-hide); `docs/SSOT/BACKLOG.md` V2.X line + new V3.X umbrella; migrations `0174`..`0182` (new); PRD `PRD_V2_NOT_FOR_MVP/donation_worlds/06_Rides.md` (existing — drives ACs).
+**Affected docs.** `docs/spec/requirements/15_rides.md` (status flipped 🟡 V3.0 + new FRs); `apps/mobile/src/features/rides/screens/RidesHubScreen.tsx` (un-hide); `docs/SSOT/BACKLOG.md` V2.X line + new V3.X umbrella; migrations `0174`..`0182` (new); PRD `PRD_V2_NOT_FOR_MVP/donation_worlds/06_Rides.md` (existing — drives ACs).
 
 ---
 
@@ -1080,7 +1080,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Operational dependency.** Going live requires the Apple provider configured in Supabase Auth (Service ID + key) and a native rebuild — the capability + config plugin are native, so an OTA update cannot add them. The `TD-24` Apple portion is closed in code; Phone OTP remains deferred.
 
-**Affected docs.** `app/packages/application/src/auth/SignInWithApple.ts`, `app/packages/application/src/ports/IAuthService.ts`, `app/packages/infrastructure-supabase/src/auth/SupabaseAuthService.ts`, `app/apps/mobile/src/services/authComposition.ts`, `app/apps/mobile/app/(auth)/index.tsx`, `app/apps/mobile/app.json`, `docs/SSOT/spec/01_auth_and_onboarding.md` (FR-AUTH-004), `docs/SSOT/TECH_DEBT.md` (TD-24).
+**Affected docs.** `app/packages/application/src/auth/SignInWithApple.ts`, `app/packages/application/src/ports/IAuthService.ts`, `app/packages/infrastructure-supabase/src/auth/SupabaseAuthService.ts`, `app/apps/mobile/src/services/authComposition.ts`, `app/apps/mobile/app/(auth)/index.tsx`, `app/apps/mobile/app.json`, `docs/spec/requirements/01_auth_and_onboarding.md` (FR-AUTH-004), `docs/SSOT/TECH_DEBT.md` (TD-24).
 
 ---
 
@@ -1094,7 +1094,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Repointing `ABOUT_EMAIL_ORG` to the gmail — produces two identical email rows. Registering/operating the `karma.community` domain mailbox — out of scope for MVP and a PM/ops action, not a code change.
 
-**Affected docs.** `app/apps/mobile/src/features/about-landing/aboutExternalLinks.ts`, `AboutContactLinks.tsx`, `app/apps/mobile/src/i18n/locales/he/modules/aboutContentUxRefreshPartB.ts`, `docs/SSOT/spec/11_settings.md` (FR-SETTINGS-009 AC1), `docs/SSOT/TECH_DEBT.md` (TD-99).
+**Affected docs.** `app/apps/mobile/src/features/about-landing/aboutExternalLinks.ts`, `AboutContactLinks.tsx`, `app/apps/mobile/src/i18n/locales/he/modules/aboutContentUxRefreshPartB.ts`, `docs/spec/requirements/11_settings.md` (FR-SETTINGS-009 AC1), `docs/SSOT/TECH_DEBT.md` (TD-99).
 
 ---
 
@@ -1108,41 +1108,23 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Per-user `manager_user_id` — simpler but cannot model multi-org membership and conflicts with org-scoped authority. Inferring hierarchy from role rank alone — ambiguous (many peers at a level) and cannot represent an explicit reporting line.
 
-**Affected docs.** `docs/SSOT/spec/12_super_admin.md` (FR-ADMIN-024/025), migration `0203_admin_org_hierarchy.sql`, `docs/SSOT/BACKLOG.md` (P3.A-Tree.2).
+**Affected docs.** `docs/spec/requirements/12_super_admin.md` (FR-ADMIN-024/025), migration `0203_admin_org_hierarchy.sql`, `docs/SSOT/BACKLOG.md` (P3.A-Tree.2).
 
 ---
 
-## D-61 — GloWe frontend shares KC's Supabase backend; data namespaced `glowe_` (2026-06-25)
+## D-61 — Retired (product removed, D-190)
 
-**Date.** 2026-06-25
-
-**Decision.** The GloWe static frontend is added as an **additional** frontend (`app/apps/glowe-web`, design 1:1, not a replacement for the KC mobile app) wired to the **same** Supabase project as KC. Phase A shares **identity only**: a single Supabase Auth user (`auth.users`) backs both frontends ("log in once, same account in both"). GloWe-owned data lives in `public` under the `glowe_` table prefix (migration `0204`), kept deliberately isolated so it can later be migrated entity-by-entity onto KC's native tables and dropped as the products converge. Long-term intent (per PM): GloWe becomes the primary frontend riding on KC's infrastructure.
-
-**Rationale.** GloWe was already a Supabase-aware static app with a backend adapter + local fallback, so the design ports for almost no work — the real cost is data wiring. Sharing identity first delivers the headline goal immediately with minimal, reversible change and zero risk to KC's native schema. The `glowe_` prefix avoids collision with `public.posts` / `public.users` without a PostgREST exposed-schema config change on the shared project, keeping the blast radius to the GloWe app + one additive migration.
-
-**Alternatives rejected.** (a) Dedicated `glowe` Postgres schema — cleaner namespacing but needs the project's exposed-schemas list changed (shared-config blast radius) for no Phase-A benefit. (b) Rewriting GloWe in React Native inside the KC app — discards the 1:1 design and is weeks of work for the same identity outcome. (c) Mapping GloWe onto KC's native tables now — that is Phase B (shared content); entity models don't map 1:1, so it would block the quick win.
-
-**Phase A follow-ons (2026-06-25, PM calls).**
-- **Auth is Google-only.** Email/password sign-up and sign-in are hidden from the GloWe UI — both modals show a single "Continue with Google" CTA. The static email/password markup in GloWe's original page templates is overwritten at runtime (`upgradeLoginModal()` / `renderRegistrationWizard()` in `js/app.js`) so every page is consistently Google-only. The legacy email/password handlers and multi-step profile wizard remain in code but unrendered; profile completion moves to a post-sign-in step (Phase B).
-- **Hosting: `/glowe` sub-path of the main domain** (not a separate domain). `app/scripts/web-postbuild.mjs` copies `app/apps/glowe-web/**` into `dist/glowe/` during `pnpm build:web`, so the Cloudflare Pages deploy serves GloWe at `<main-domain>/glowe` alongside the KC web app. GloWe uses relative paths, so it works unchanged; Cloudflare serves the real `/glowe/*` static files before the KC SPA catch-all. Same-domain hosting means OAuth `redirectTo` reuses KC's already-allowlisted origins. A dedicated GloWe domain remains possible later.
-
-**Affected docs.** `docs/SSOT/spec/17_glowe_frontend.md` (FR-GLOWE-001), migration `0204_glowe_schema.sql`, `docs/SSOT/BACKLOG.md` (GLOWE.A/B/C), `app/apps/glowe-web/**`, `app/scripts/web-postbuild.mjs`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-62 — GloWe session isolation from KC via dedicated Supabase storageKey + local signOut scope (2026-06-29)
 
-**Date.** 2026-06-29
+## D-62 — Retired (product removed, D-190)
 
-**Decision.** GloWe's Supabase client (`app/apps/glowe-web/js/backend.js`) now initialises with `auth.storageKey: 'glowe-auth-v1'` instead of the Supabase default `sb-<project-ref>-auth-token`. Sign-out uses `scope: 'local'` (clears only GloWe's own localStorage token without revoking the server-side refresh token). `logout()` in `auth.js` immediately calls `refreshPersonalAreaIfVisible()` so the Personal Area card disappears without waiting for the async `onAuthStateChange` cycle.
-
-**Rationale.** GloWe and KC are both served under `karma-community.pages.dev` and connect to the same Supabase project. Without a distinct storage key they share `sb-<ref>-auth-token` in localStorage, meaning (a) a KC sign-in silently signs GloWe in, (b) a GloWe sign-out revokes the server-side token and also logs KC out, and (c) GloWe's Personal Area still displayed the cached profile after logout because the `onAuthStateChange` callback only refreshed it when `gloweUser` was still set at the time it fired (it wasn't, since `logout()` removed it synchronously first). Using `scope:'local'` is correct here: KC retains a fully working session because its refresh token is untouched; GloWe gets a clean sign-out.
-
-**Alternatives rejected.** Global `signOut()` — the current default; revokes the shared Supabase session and silently kills KC. Separate Supabase project for GloWe — overkill for Phase A; sharing identity is intentional (D-61).
-
-**Affected docs.** `app/apps/glowe-web/js/backend.js`, `app/apps/glowe-web/js/auth.js`, `docs/SSOT/spec/17_glowe_frontend.md`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
+
 
 ## D-63 — Cross-language UGC translation: demand-driven cache + zero-retention/DPA LLM-flash provider (2026-06-29)
 
@@ -1154,7 +1136,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Eager translate-all (cost + storage blowup); classic NMT API (lower quality on idiomatic short UGC, higher per-char cost); on-device translation (inconsistent quality, large model download, no shared cache).
 
-**Affected docs.** `docs/SSOT/archive/superpowers/specs/2026-06-29-ugc-translation-design.md`, `docs/SSOT/spec/18_translation.md`, `docs/SSOT/BACKLOG.md` (TRANSLATE epic).
+**Affected docs.** `docs/SSOT/archive/superpowers/specs/2026-06-29-ugc-translation-design.md`, `docs/spec/requirements/18_translation.md`, `docs/SSOT/BACKLOG.md` (TRANSLATE epic).
 
 ---
 
@@ -1168,7 +1150,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Auto-translate chat for everyone (privacy breach + unbounded cost); gate on reader consent (sends the sender's words without their consent); no chat translation at all (fails the full-accessibility goal).
 
-**Affected docs.** `docs/SSOT/archive/superpowers/specs/2026-06-29-ugc-translation-design.md`, `docs/SSOT/spec/18_translation.md`.
+**Affected docs.** `docs/SSOT/archive/superpowers/specs/2026-06-29-ugc-translation-design.md`, `docs/spec/requirements/18_translation.md`.
 
 ---
 
@@ -1182,23 +1164,16 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Client-side `TranslateAndCache` (impossible — can't hold the service role or the API key); LibreTranslate self-hosted from day one (privacy-clean but lower quality and ops overhead before it's even wired in); committing to the paid DPA tier immediately (needless cost while the feature is inert).
 
-**Affected docs.** `docs/SSOT/archive/superpowers/specs/2026-06-29-ugc-translation-design.md`, `docs/SSOT/spec/18_translation.md`, `docs/SSOT/TECH_DEBT.md`.
+**Affected docs.** `docs/SSOT/archive/superpowers/specs/2026-06-29-ugc-translation-design.md`, `docs/spec/requirements/18_translation.md`, `docs/SSOT/TECH_DEBT.md`.
 
 ---
 
-## D-66 — GloWe Events are opportunities-with-a-date; RSVPs are applications (additive, no new tables) (2026-06-29)
+## D-66 — Retired (product removed, D-190)
 
-**Date.** 2026-06-29
-
-**Decision.** The GloWe event-publishing & RSVP feature is built as an **additive extension** of `glowe_opportunities` (FR-GLOWE-007) and `glowe_applications` (FR-GLOWE-012), not as a parallel `glowe_events` / `glowe_event_registrations` schema. An **Event** is an opportunity that carries `start_at` plus event metadata (`event_type`, `event_link`/`link_visibility`/`link_reveal_hours`, `capacity`, `registration_mode`, `status`); an **RSVP** is a `glowe_applications` row with registration columns (`submitted_email`/`phone`/`comment`, `waitlist_position`, `rejection_note`, `decided_at`/`decided_by`). A `BEFORE INSERT/UPDATE` status guard (`glowe_applications_guard_status`) prevents applicants from self-deciding their status; privileged organizer decisions go through `SECURITY DEFINER` RPCs that bypass the guard (mirrors the posts guard, migration `0199`). Schema foundation lands in migration `0211`.
-
-**Rationale.** This honors the convergence direction (D-61): events ride the existing read/write/RLS/translation paths, so home and cards render an event as an opportunity with zero new plumbing, and entity-by-entity migration onto KC-native tables stays simple. It also resolves the conflict between the richer PM brainstorm (gated/open approval, capacity/waitlist, organizer mini-portal) and the member-experience design's thin "Event = validation profile over an opportunity": the rich features are delivered **incrementally as additive columns + RPCs**, never as a separate table.
-
-**Alternatives rejected.** Separate `glowe_events` + `glowe_event_registrations` tables (duplicates the opportunity/application read, RLS, translation, and moderation paths; fights the convergence goal); keeping events a pure client-side validation profile with no schema (cannot express gated approval, capacity, link-reveal timing, or organizer decisions safely).
-
-**Affected docs.** `docs/SSOT/archive/superpowers/specs/2026-06-29-glowe-event-rsvp-org-portal-design.md`, `docs/SSOT/archive/superpowers/specs/2026-06-29-glowe-member-experience-and-create-system-design.md`, `docs/SSOT/spec/17_glowe_frontend.md` (FR-GLOWE-007 AC9, FR-GLOWE-012 AC7).
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
+
 
 ## D-155 — Karma economy: self-only visibility, server-authoritative single-anchor, status-anchored closure
 
@@ -1210,7 +1185,7 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Public karma from day 1 — requires anti-collusion first (see D-156). Global unique key on `karma_ledger` — aborts the parent transaction on race; partial unique index + on-conflict-do-nothing is safe. Anchoring closure to recipients-row — wrong causal signal; the row can precede or outlive the status change.
 
-**Affected docs.** `supabase/migrations/0097–0100`, `packages/domain/src/karma.ts`, `apps/mobile/src/components/profile/KarmaBadge.tsx`, `docs/SSOT/spec/14_karma.md`.
+**Affected docs.** `supabase/migrations/0097–0100`, `packages/domain/src/karma.ts`, `apps/mobile/src/components/profile/KarmaBadge.tsx`, `docs/spec/requirements/14_karma.md`.
 
 ---
 
@@ -1224,23 +1199,16 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Launch public karma without caps — creates an immediately exploitable attack surface once any user discovers the ₪1000 fake-give loop (+35 giver, +15 receiver, repeat). Trust-only model — MVP community is small and trust is feasible today, but does not scale to hundreds of users.
 
-**Affected docs.** `docs/SSOT/spec/14_karma.md` FR-KARMA-008; `docs/SSOT/TECH_DEBT.md` (TD-166 anti-collusion watch item).
+**Affected docs.** `docs/spec/requirements/14_karma.md` FR-KARMA-008; `docs/SSOT/TECH_DEBT.md` (TD-166 anti-collusion watch item).
 
 ---
 
-## D-169 — KC-root-behind-/glowe redirect is dev-only, not shipped to prod (revises the 2026-07-04 GLOWE-only directive for `main`)
+## D-169 — Retired (product removed, D-190)
 
-**Date.** 2026-07-05
-
-**Decision.** `app/scripts/web-postbuild.mjs` previously wrote an **unconditional** Cloudflare `_redirects` rule (`/ → /glowe/ 302`) plus an `index.html` meta-refresh shim, gating the entire KC web root behind GLOWE in every environment. This is now environment-gated: the root-redirect-to-`/glowe` behavior applies **only** when `EXPO_PUBLIC_ENVIRONMENT === 'development'` (the `dev` / `cloudflare-dev` deploy). On every other value — including missing/unknown, fail-safe-closed, same convention as `isDevEnvironment()` — the KC root serves the real KC web app. GLOWE itself is unaffected: it is copied to `dist/glowe/` and reachable at `/glowe` in **every** environment regardless of this gate.
-
-**Rationale.** PM (2026-07-05): dev may keep redirecting straight to GLOWE while building/testing it, but KC production (`main`, the public `karma-community-kc.com` domain) must serve the actual KC app at its root, not force every visitor into GLOWE. This revises the standing 2026-07-04 "GLOWE-only frontend" directive for the `main` branch specifically — that directive still governs day-to-day *development* priority (GLOWE-only work continues on `dev`), but no longer means KC prod's root URL redirects away from KC.
-
-**Alternatives rejected.** Reverting the redirect entirely (undoing D-61-era GLOWE-only work) — throws away the dev-mode gate the team is still using. A separate script/flag disconnected from `EXPO_PUBLIC_ENVIRONMENT` — the env var already differs per Cloudflare Pages environment (`cloudflare-dev` vs `cloudflare-prod`), so reusing it needs zero new deploy config, consistent with `areGloweLinksEnabled()` (D-168) the same day.
-
-**Affected docs.** `app/scripts/web-postbuild.mjs`; `docs/SSOT/spec/17_glowe_frontend.md`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
+
 
 ## D-167 — English UI locale ships opt-in and machine-translated (delivers D-24 slice)
 
@@ -1252,246 +1220,149 @@ Design spec: `docs/SSOT/archive/superpowers/specs/2026-05-24-closed-post-dual-su
 
 **Alternatives rejected.** Human-quality translation first — not compatible with "urgent". Partial (settings-only) English — mixed-language UX. Live language switch without reload — requires converting ~250 module-load direction constants into reactive hooks across 120+ files; out of scope for the deadline. DB-backed preference — needs a migration and excludes signed-out web visitors; can be added later without breaking the local default.
 
-**Affected docs.** `docs/SSOT/spec/11_settings.md` FR-SETTINGS-018; `docs/SSOT/TECH_DEBT.md` (TD-176/177/178); `apps/mobile/src/i18n/**`, `apps/mobile/app/settings/language.tsx`, `apps/mobile/src/lib/{rtlLayout,rtlTextAlignStart,webRtlStyle}.ts`.
+**Affected docs.** `docs/spec/requirements/11_settings.md` FR-SETTINGS-018; `docs/SSOT/TECH_DEBT.md` (TD-176/177/178); `apps/mobile/src/i18n/**`, `apps/mobile/app/settings/language.tsx`, `apps/mobile/src/lib/{rtlLayout,rtlTextAlignStart,webRtlStyle}.ts`.
 
 ---
 
-## D-168 — GLOWE partnership links in KC are environment-gated (dev on, prod off)
+## D-168 — Retired (product removed, D-190)
 
-**Date.** 2026-07-05
-
-**Decision.** The two GLOWE deep-link entry points inside the KC app — the Settings → Support "GLOWE" row and the Donations-hub GLOWE partnership banner — are gated by `areGloweLinksEnabled()` (`apps/mobile/src/config/environment.ts`). They render in the development build and are **hidden in production**. The gate follows the existing per-environment `EXPO_PUBLIC_ENVIRONMENT` (fail-safe to production when unset/unknown), so no new per-environment deploy config is needed; an explicit `EXPO_PUBLIC_GLOWE_LINKS` override ('1'/'0') exists for local testing.
-
-**Rationale.** GLOWE is still a development-only product surface (dev.karma-community.pages.dev/glowe). KC production should not promote or redirect users to an unlaunched product. Reusing `EXPO_PUBLIC_ENVIRONMENT` keeps the condition automatic across the `cloudflare-dev` and `cloudflare-prod` builds (the value already differs) and prod-safe by default (fail-safe hides the links). When GLOWE launches, flip the gate (or point it at a launch flag) rather than editing each call site.
-
-**Alternatives rejected.** A dedicated required env var configured in both GitHub environments — more moving parts, and a missing value would fail open (show GLOWE on prod). Hardcoding removal on `main` — diverges the branches and breaks the single-codebase promotion flow.
-
-**Affected docs.** `apps/mobile/src/config/environment.ts`; `apps/mobile/app/settings.tsx`; `apps/mobile/app/(tabs)/donations/index.tsx`; `docs/SSOT/spec/17_glowe_frontend.md`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-67 — GloWe community-post share keeps social buttons and adds copy-link
 
-> **Superseded by `D-177` (2026-07-15).** GloWe posts now share via one native Web Share button with a silent clipboard+toast desktop fallback; the social buttons and standalone copy-link described below were removed.
+## D-67 — Retired (product removed, D-190)
 
-**Date.** 2026-07-04
-
-**Decision.** FR-GLOWE-008 AC5 ("share a community post") is satisfied by **both** the existing social-network share buttons (Facebook / LinkedIn / X / WhatsApp) **and** a new "Copy link" control that writes the post's canonical URL to the clipboard via `navigator.clipboard.writeText` and confirms with a success toast. The canonical URL is derived by a pure helper `GlowePosts.postCanonicalUrl(postId, origin)` → `<origin>/glowe/pages/community.html?post=<id>`, so the shared link is stable, keyed on the post id (not the mutable title), and testable in isolation.
-
-**Rationale.** Social buttons open a share dialog on a third-party network, which is friction when the user just wants the link to paste into a DM, WhatsApp status, or their own notes. Copy-link is the lowest-friction, platform-agnostic share and is what most users reach for. Keeping both costs one small button and satisfies AC5's intent (make a post shareable) without removing a working path. Keying the URL on `postId` (previously the share path used `encodeURIComponent(post.title)`) fixes a latent bug where two posts with the same title collided and edited titles broke old links.
-
-**Alternatives rejected.** Replace social buttons with copy-link only — drops a working feature some users prefer and is a scope regression. Copy-link only via the native Web Share API (`navigator.share`) — unavailable on desktop browsers where GloWe is primarily used; clipboard copy works everywhere with a graceful `showSuccessModal` fallback when the Clipboard API is blocked.
-
-**Affected docs.** `docs/SSOT/spec/17_glowe_frontend.md` (FR-GLOWE-008 AC5); `app/apps/glowe-web/js/glowe-posts.js`, `app/apps/glowe-web/js/app.js`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-68 — GloWe guest conversion ships Mode A (instant contextual prompt); Mode B is PM-gated
 
-**Date.** 2026-07-04
+## D-68 — Retired (product removed, D-190)
 
-**Decision.** Guest → member conversion (FR-GLOWE-023) ships **Mode A**: the moment a guest triggers an identity-required action, an action-tailored join modal opens immediately (single **Continue with Google** CTA), the intent is remembered, and the action resumes after sign-in. **Mode B** — progressive disclosure, where the guest may open and fill the action's form and is only walled at the final submit (with their typed input preserved and auto-submitted after sign-in) — is a deferred optimization that must **not** be implemented without an explicit PM instruction.
-
-**Rationale.** Mode A is the lower-risk baseline: it is simple, consistent across every action, and does not require preserving/replaying arbitrary form state across an OAuth redirect. Mode B typically converts better (sunk-cost + the guest sees the value before the wall) but is a measured optimization best run once we can compare conversion data — and it is materially more work per action. PM (2026-07-04) explicitly chose "A now, B later, only on my explicit instruction."
-
-**Alternatives rejected.** Ship Mode B directly — more surface area and per-action input-preservation complexity for an unproven conversion delta. A blocking login wall on entry — rejected earlier in the brainstorm: kills deep-link/SEO discovery for a global NGO-discovery product (web has no entry gate; guest is the default).
-
-**Affected docs.** `docs/SSOT/spec/17_glowe_frontend.md` (FR-GLOWE-023); `docs/SSOT/archive/superpowers/specs/2026-07-04-glowe-guest-mode-contextual-join-design.md`; `app/apps/glowe-web/js/glowe-guest.js`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-69 — GloWe messaging rides KC chats directly; offers surface on the Wishing Well; dev seeded with persona fixtures
 
-**Date.** 2026-07-05
+## D-69 — Retired (product removed, D-190)
 
-**Decision.** Three launch-hardening calls made under autonomous CTO authority:
-
-1. **Messaging (FR-GLOWE-014 supersession).** GloWe direct messaging is implemented straight on KC's shared `public.chats` / `public.messages` from the static web client (canonical-pair insert + RLS; `rpc_chat_mark_read`, `rpc_unread_counts_for_chats`, `rpc_chat_unread_total`), skipping the planned outreach-post stub entirely. A fresh Google user is `account_status='active'`, so no schema or RLS change was needed. Realtime push into an open thread is deferred (thread refreshes on send/open).
-2. **Volunteer offers (FR-GLOWE-016).** An individual's standing "Volunteer Offer" persists as `glowe_posts.post_type='offer'` (CHECK widened in migration `0227`) and surfaces on the Wishing Well board alongside needs with a "Volunteer Offer" tag — no new surface, one discriminator (`GloweCreate.isOpenOffer`).
-3. **Dev seed personas.** The dev DB is populated by `scripts/seed-glowe-dev.mjs` (dev-only, idempotent, prod-ref-guarded) via a manual `Seed GloWe dev data` workflow: 6 realistic Israeli orgs (incl. a permanently-pending review fixture that reseeds back to pending) + 12 volunteers with a **committed default fixture password** (overridable via the `GLOWE_SEED_PASSWORD` secret). These are regular, non-privileged accounts on a non-production project; the E2E suite signs in as them by password grant.
-
-**Rationale.** (1) The stub would have produced throwaway UX and a second messaging model to migrate off; riding KC chats now means Phase C convergence is already done for messaging, and recipients get KC push notifications for free. (2) A dedicated offers surface is speculative (YAGNI) — the needs board is where helpers and askers already meet. (3) Deterministic personas make the full-flow E2E reproducible and give the PM a realistic demo environment; a committed default password for throwaway dev fixtures is the standard trade-off (same class as the local `seed.sql` fixtures), while the CI super-admin credential stays a secret.
-
-**Affected docs.** `spec/17_glowe_frontend.md` (FR-GLOWE-013/014/015/016 statuses); `docs/SSOT/TESTING.md` (GloWe suite); migration `0227_glowe_reports.sql`; `scripts/seed-glowe-dev.mjs`; `.github/workflows/seed-glowe-dev.yml`, `.github/workflows/ci-e2e-dev.yml`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-177 — GloWe posts share via one native Share button (supersedes D-67); design-fixes UX pass
 
-**Date.** 2026-07-15
+## D-177 — Retired (product removed, D-190)
 
-**Decision.** Every GloWe post-type card (community post, wish, opportunity, forum thread) exposes **one** Share icon button that calls the platform's native share sheet through the Web Share API (`navigator.share`), exactly like every consumer app. The per-network buttons (Facebook/LinkedIn/X/WhatsApp) and the standalone "Copy link" control are **removed**. On desktop browsers lacking `navigator.share`, the button falls back **silently** to copying the resolved absolute URL to the clipboard and confirming with a lightweight toast (`showToast`; `showSuccessModal` if the Clipboard API is blocked). This **supersedes `D-67`**, which had retained the social buttons + copy-link and rejected `navigator.share` over desktop support — the silent clipboard+toast fallback resolves that concern, and the PM (2026-07-15) explicitly asked for "a normal share mechanism like every app — no other-app tags, no copy link."
-
-Shipped in the same change-set: a GloWe design-fixes pass addressing nine reviewed UX defects (pure CSS/template polish, no `FR-*` AC change beyond AC5 above): (1) RTL alignment of the `...` action menu + its panel; (2) explicit empty state for opportunity requirements/responsibilities; (3) grouping Location/Duration/Commitment into one proximate meta block; (4) de-buttoning the static "What happens next" steps (numbered list, not ghost buttons); (5) collapsing the long Wishing Well filter lists into `<details>` accordions + capping the sticky sidebar height to end the scroll conflict; (6) anchoring grid-card action rows to a single bottom baseline; (7) single-line metadata badges (nowrap + ellipsis + title tooltip); (8) icons + a count on the Comment/Send actions and a localized, RTL comment summary; and the "Show original" translation toggle re-anchored adjacent to its post content.
-
-**Rationale.** A single familiar Share affordance is lower cognitive load than a row of network buttons (Progressive Disclosure), routes to whatever apps the user actually has, and drops the unstyled "Copy link" that broke visual consistency. The native sheet is the mechanism users already know (Jakob's Law); the clipboard+toast fallback keeps desktop parity without reintroducing per-network clutter.
-
-**Alternatives rejected.** Keep D-67's dual paths — the PM explicitly rejected the network buttons and copy-link. A desktop popover menu of copy/options — more surface for no real gain over a quiet copy+toast (the PM chose the silent fallback).
-
-**Affected docs.** `docs/SSOT/spec/17_glowe_frontend.md` (FR-GLOWE-008 AC5); `app/apps/glowe-web/js/app.js`, `js/glowe-translate.js`, `css/styles.css`, `pages/wishing-well.html`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-178 — Personal Area gate replaced hard redirect with the FR-GLOWE-023 contextual join modal
 
-**Date.** 2026-07-16
+## D-178 — Retired (product removed, D-190)
 
-**Decision.** `requireGloweMember()` (a hard `window.location.href` redirect back to the guest home) is removed. The bottom-nav "Profile" tab and the header's "Personal Area" link both point at `my-applications.html` unconditionally; `initMyApplicationsPage()` now renders an in-page sign-in prompt on `personal-area-content` for anonymous visitors (the same pattern already used by `settings`/`messages`) and immediately opens the `open-personal-area` contextual join modal via `GloweGuest.requireMemberForAction` (already registered in `GLOWE_JOIN_ACTIONS` but previously unwired). Google sign-in reloads the page and the personal area renders normally.
-
-**Rationale.** PM report: tapping the "Profile" tab while signed out visibly flashed and bounced back to the marketing home, reading as a broken tab rather than an auth gate. `requireGloweMember()`'s silent-redirect design (FR-GLOWE-016 AC1, as originally written) predates FR-GLOWE-023's contextual-join pattern, which every other identity-gated action (create, apply, RSVP, message, save, report) already uses. Aligning the last remaining hard-redirect gate onto the existing pattern is a bug fix, not a new feature.
-
-**Alternatives rejected.** A dedicated `/login` page — the app is Google-only auth via modal (`D-33`); a full page would duplicate `showJoinPrompt()`'s UI for no gain. Keeping the redirect but adding a toast — still a dead-end tap; the contextual modal already solves this everywhere else.
-
-**Affected docs.** `spec/17_glowe_frontend.md` (`FR-GLOWE-016` AC1); `app/apps/glowe-web/js/{app.js,auth.js}`; `app/apps/glowe-web/css/styles.css` (header auth button now inline instead of a stretched mobile banner, moved next to `.lang-toggle`).
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-179 — GloWe bilingual display names stored as columns, not via UGC translation (2026-07-17)
 
-**Decision.** Person and organization display names on GloWe are bilingual via dedicated DB columns (`display_name_en`, `org_name_en`, plus content snapshots `author_name_en` / `organization_en`). English variants are user-editable and auto-generated on onboarding when the source name is non-Latin (`glowe-generate-name-en`). They are **not** translated on-demand through `glowe-translate` / `glowe_content_translations`. KC `public.users.display_name` is unchanged.
+## D-179 — Retired (product removed, D-190)
 
-**Rationale.** FR-TRANSLATE-005 AC4 deliberately excludes proper names from the UGC cache (no user edit of a cached translation; names are identity, not prose). Readers on the EN interface still need Latin names for Hebrew/Arabic/etc. registrants. Storing an editable `_en` column mirrors the cities `name_he`/`name_en` pattern and lets the owner correct auto-transliterations.
-
-**Alternatives rejected.** *Route names through `glowe-translate`* — violates AC4 and produces non-editable cached strings. *Add `display_name_en` on KC `users` in the same change* — out of GloWe MVP scope (PM: GloWe only). *Deterministic transliteration table only* — poor quality for org legal names; LLM transliteration with user override is better.
-
-**Affected.** Migration `0230_glowe_bilingual_names.sql`; Edge Function `glowe-generate-name-en`; `app/apps/glowe-web/js/{backend.js,app.js,glowe-localized-name.js,glowe-posts.js,glowe-opportunities.js,glowe-create.js,glowe-wishes.js}`; `spec/17_glowe_frontend.md` FR-GLOWE-024; `spec/18_translation.md` note.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-180 — GloWe translation toggle slot + card action grid convention (2026-07-19)
 
-**Decision.** Every translated UGC card reserves a `.tr-slot` under the header/author row for the "Show original" / "Show translation" control. `glowe-translate.js` injects into that slot first. Shared helpers live in `js/glowe-ui-conventions.js`. Organization card footers use `.card-actions--consistent` (CSS grid) with short Save/Saved labels so saved vs unsaved cards share one layout. Meta chips (location/scope, type/impact) are deduped before render.
+## D-180 — Retired (product removed, D-190)
 
-**Rationale.** PM reported inconsistent toggle placement and org-card footers that reflow when the save label length changes. A single convention file prevents per-card drift.
-
-**Affected.** `glowe-ui-conventions.js`, `glowe-translate.js`, `app.js` card renderers, `styles.css`; FR-TRANSLATE-005 AC7; migration `0231` (comments + tags).
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
+
 
 ## D-181 — App-wide semver (`app/VERSION`) with auto patch on every `dev` push (2026-07-19)
 
-**Decision.** Product version is app-wide semver in `app/VERSION`. **PATCH is bumped in every PR into `dev` by the authoring agent** (org policy blocks GitHub Actions from creating PRs, so push-triggered auto-bump cannot land). Optional `workflow_dispatch` on `Bump app version` only prepares a `chore/version-bump-*` branch. **MAJOR/MINOR** are manual for breaking / significant feature sets. GloWe footer shows `vX.Y.Z` from `glowe-version.js`; `web-postbuild` re-stamps from `app/VERSION` on deploy. KC mobile UI display deferred.
+**Decision.** Product version is app-wide semver in `app/VERSION`. **PATCH is bumped in every PR into `dev` by the authoring agent** (org policy blocks GitHub Actions from creating PRs, so push-triggered auto-bump cannot land). Optional `workflow_dispatch` on `Bump app version` only prepares a `chore/version-bump-*` branch. **MAJOR/MINOR** are manual for breaking / significant feature sets. KC mobile UI display deferred.
 
 **Rationale.** PM needs a normal `x.x.x` marker on the live `dev` site to verify deploys; the version applies to the whole app. Auto-PR bump was attempted and blocked at the org Actions permission layer (same family as TD-182 / GH006). Agent-owned PATCH bumps keep the counter honest without requiring an org policy change.
 
-**Affected.** `app/VERSION`, `scripts/bump-app-version.mjs`, `.github/workflows/bump-app-version.yml`, `glowe-version.js`, `ensureGlobalFooter`, `web-postbuild.mjs`; FR-GLOWE-025; bold rule in `CLAUDE.md`.
+**Affected.** `app/VERSION`, `scripts/bump-app-version.mjs`, `.github/workflows/bump-app-version.yml`, `web-postbuild.mjs`; bold rule in `CLAUDE.md`.
 
 ---
 
-## D-182 — GloWe production synthetics + admin health panel (2026-07-22)
+## D-182 — Retired (product removed, D-190)
 
-**Decision.** Store automated GloWe live-site probe results in `glowe_health_checks` (migration `0233`) and surface them in the GloWe admin portal. Probes are **read-only Playwright** journeys (`prod-health` project) run from `glowe-prod-smoke.yml` after `dev` deploy and on a 15-minute cron. **GloWe production** (`https://dev.karma-community.pages.dev/glowe`) is a **separate live URL** from **KC production** (`https://karma-community-kc.com`); ingest targets the **dev** Supabase project (GloWe's backend today). KC HTTP smoke stays in `prod-smoke.yml` on `main` only.
-
-**Rationale.** HTTP-200 smoke cannot catch broken feeds, auth wiring, or Supabase client failures. Admins need in-product visibility without opening GitHub Actions. Reuses existing Playwright infra and GloWe admin RBAC (`is_glowe_admin`).
-
-**Alternatives rejected.** Third-party-only monitoring (Checkly) without admin portal integration — rejected for MVP (add later as redundant channel). Write probes in prod — deferred (canary user in a follow-up). Polling-only checks without browser — insufficient for JS/runtime failures.
-
-**Mapped to:** `INFRA-QA-W7`, FR-GLOWE-018 extension.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-183 — GloWe follow system rides KC `follow_edges` (2026-07-22)
 
-**Decision.** GloWe follow/unfollow uses KC's existing `follow_edges` graph via thin `backend.js` adapters (`kcFollow`, `kcUnfollow`, `kcGetFollowState`, `kcListFollowers`, `kcListFollowing`, `kcPublicCounts`) plus pure helpers in `glowe-follow.js` — the same pattern as the GloWe chat Realtime slice. MVP is public follow/unfollow only; private accounts hide the Follow button and show an approval-required note (no follow-request flow). No shared TypeScript package import from GloWe, no new RPCs, no DB migrations.
+## D-183 — Retired (product removed, D-190)
 
-**Rationale.** KC already owns the follow domain in `@kc/application` / `infrastructure-supabase`; GloWe is vanilla JS with no bundler. Reusing `follow_edges` + RLS keeps one graph for KC mobile and GloWe without duplicating schema or business rules.
-
-**Alternatives rejected.** *New GloWe-only follow table* — violates D-61 shared identity. *Import `@kc/application` from GloWe* — no bundler, out of scope. *New batch follow-state RPC* — deferred; sequential per-id hydration is acceptable for MVP org directory size.
-
-**Affected.** `app/apps/glowe-web/js/{glowe-follow.js,glowe-follow-ui.js,backend.js,app.js,glowe-guest.js}`; `pages/{profile,organizations,my-applications,connections}.html`; `styles.css`; FR-GLOWE-026; FR-FOLLOW-001/002/011 (MVP subset); design `docs/superpowers/specs/2026-07-22-glowe-follow-system-design.md`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-184 — GloWe Home is a unified discovery feed (2026-07-27)
 
-**Decision.** Signed-in Home is feed-only: one unified card chrome for posts, opportunities, events, wishes, volunteer offers, forum groups, and forum threads (org profiles excluded). Ranking is client-side hot(score) = recency + comments + saves, then a diversity pass; progressive paging is 10 then +8. Guests see a 10-item peek + join CTA on the marketing home. A server RPC may replace the client merge later without changing card renderers.
+## D-184 — Retired (product removed, D-190)
 
-**Rationale.** PM asked for one coherent discovery surface instead of mismatched card layouts and a desktop 6-item "See all" gate. Client merge reuses existing `listAll` loaders for MVP speed (hybrid Phase 1).
-
-**Alternatives rejected.** Keep capped posts+opportunities strip; include org directory cards on Home; dump the full catalog without progressive load.
-
-**Affected.** `app/apps/glowe-web/js/glowe-home-feed*.js`, `app.js`, `index.html`, `styles.css`; FR-GLOWE-016 AC2; design/plan under `docs/SSOT/archive/superpowers/{specs,plans}/2026-07-27-glowe-unified-home-feed*`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-185 — GloWe publishing rules and profile privacy are enforced in Postgres (2026-07-27)
 
-**Decision.** The GloWe capability matrix (who may publish which content kind) lives in `public.glowe_can_create()` and is applied by `BEFORE INSERT` triggers on `glowe_posts` and `glowe_opportunities`. The browser keeps a mirror in `canCreate()` (`glowe-create.js`) purely to render the create menu without a round trip; the database is the enforcement point. `glowe_profiles` moves to the migration-0163 pattern used by `public.users`: a row policy that hides unapproved organization applications, column-scoped `SELECT` grants that exclude PII, a `glowe_public_profiles` projection view, and an owner-only `glowe_get_self_private_fields()` RPC. Content creation is rate limited via the existing `enforce_rate_limit()` (30 posts / 15 opportunities / 40 applications per hour), exempting non-client JWT roles.
+## D-185 — Retired (product removed, D-190)
 
-**Rationale.** Pre-launch review found all three rules existed only as client-side JavaScript: any signed-in user could POST directly at PostgREST to publish as an unapproved organization or create an event as a private individual, and `anon` could read every pending/rejected organization application together with the reviewer's private `org_review_note`, org contact details and the `raw_profile` PII blob.
-
-**Consequence (deliberate).** An organization's contact email is no longer rendered on its public profile page; the page falls back to "Contact through GloWe messages". Applicant emails still reach opportunity owners, which flows through the `SECURITY DEFINER` RPC in migration 0220.
-
-**Alternatives rejected.** Keep the checks client-side and accept the risk; use a `SECURITY DEFINER` view instead of column grants (diverges from the existing `users_public` pattern); enforce the rules in Edge Functions (leaves the direct PostgREST path open).
-
-**Affected.** `supabase/migrations/0236_glowe_publish_guards_and_profile_privacy.sql`, `supabase/tests/0236_glowe_publish_guards.sql`, `app/apps/glowe-web/js/{backend.js,glowe-create.js}`; FR-GLOWE-003, FR-GLOWE-016; supersedes the blanket read policy in migration 0204.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-186 — GloWe has one registration path for opportunities and events (2026-07-27)
 
-**Decision.** Volunteering opportunities and events share a single apply/RSVP entry point, `public.glowe_apply_to_opportunity()` (migration `0237`), which reads `registration_mode` and `capacity` off the listing and returns the resolved status: `open` → `Accepted`, `open` at capacity → `Waitlisted` with a position, `gated` → `Pending`. Seat allocation lives in one place, `public.glowe_next_waitlist_position()`, shared by the apply RPC and both decision RPCs. `glowe_register_for_event()` survives as a thin event-only wrapper (it still asserts the target is an event) so existing callers and the 0212–0214 regression tests are untouched. The browser never assumes an outcome: it renders whatever status the server returns.
+## D-186 — Retired (product removed, D-190)
 
-**Rationale.** The two halves of FR-GLOWE-012 had drifted. Events went through an RPC that honoured `registration_mode`; plain opportunities were a direct `INSERT` from `app.js` with a hardcoded `'Pending'`, so an organization literally could not offer an opportunity on "everyone can join" terms even though the column existed. Capacity was worse: only checked when an organizer accepted an event registration by hand, so open-mode events could be filled past their stated capacity and plain opportunities could always be overfilled. The PM requirement — the post owner chooses between approving one by one and letting everyone in — was only half implemented.
-
-**Consequence (deliberate).** Accepting an applicant into a full listing now returns `Waitlisted` instead of overfilling, for both decision RPCs; the owner is told. An applicant already holding a waitlist place keeps that place when such an accept fails, rather than being sent to the back of the queue. `glowe_list_applications_for_opportunity()` gained a `waitlist_position` column (a `DROP`/`CREATE`, since a `RETURNS TABLE` change is not replaceable in place) and orders the waitlist group by it.
-
-**Alternatives rejected.** Give plain opportunities their own capacity RPC (two rules to keep in sync — the exact drift being fixed); enforce capacity only at decision time (leaves open mode overfillable); make the browser compute the outcome and write the status (the client is not a trustworthy enforcement point — see D-185).
-
-**Affected.** `supabase/migrations/0237_glowe_unified_registration.sql`, `supabase/tests/0237_glowe_unified_registration.sql`, `app/apps/glowe-web/js/{app.js,backend.js,glowe-opportunities.js,glowe-organizations.js}`, `pages/opportunity.html`; FR-GLOWE-012 AC5–AC8, FR-GLOWE-007-C.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-189 — GloWe staging branch + dual URLs + Playwright visual gate (2026-07-27)
 
-**Decision.** GloWe gets two live URLs on Cloudflare Pages branch aliases:
+## D-189 — Retired (product removed, D-190)
 
-| URL | Branch | Role |
-| --- | --- | --- |
-| `https://dev.karma-community.pages.dev/glowe/` | `dev` | **Production** — stable front door for users (unchanged from D-182) |
-| `https://staging.karma-community.pages.dev/glowe/` | `staging` | **Integration** — ongoing feature work before release |
-
-Feature PRs target `staging`; release PRs are `staging` → `dev`. `CI — GloWe E2E (dev + staging)` runs Playwright journeys + `toHaveScreenshot()` visual regression on every PR/push to either branch (`GLOWE_STAGING_URL` / `GLOWE_PROD_URL`). KC production (`main` → `karma-community-kc.com/glowe`) remains a separate, slower-moving bundle until a `dev` → `main` release promotes it.
-
-**Rationale.** PM wants automated E2E every dev version and a clear prod vs integration split without renaming the stable `dev` branch that already acts as GloWe's production line. A dedicated `staging` branch + Cloudflare branch alias is simpler than PR-preview URLs (no per-PR secret wiring) and keeps `dev` deploys user-visible only after an explicit promotion.
-
-**Alternatives rejected.** Treat `karma-community-kc.com/glowe` as GloWe prod (currently lags `dev`); run E2E only on `dev` → `main` release PRs (too late in the cycle); Maestro for web (Playwright suite already exists).
-
-**Affected.** `.github/workflows/{ci-e2e-glowe,deploy-web}.yml`, `tests/e2e/journeys/glowe-visual.spec.ts`, `docs/SSOT/{ENVIRONMENTS,TESTING}.md`, GitHub vars `GLOWE_STAGING_URL`.
+This decision governed a separate product that was later removed from the repo (D-190). Kept only so the ID is not reused.
 
 ---
 
-## D-190 — GloWe product removed; KC-only repo (2026-10-16)
 
-**Decision.** Remove the GloWe static frontend (`app/apps/glowe-web`), GloWe CI/deploy/smoke workflows, Edge Functions `glowe-translate` / `glowe-generate-name-en`, and all `glowe_*` database objects via forward migration `0238_drop_glowe_product.sql`. KC mobile/web export and shared Supabase core remain the sole product surface.
+## D-190 — Second product removed; KC-only repo (2026-10-16)
 
-**Rationale.** Repository renamed to Karma Community (KC); maintaining a parallel GloWe product fork inside the monorepo duplicated backend schema and confused contributors.
+**Decision.** Remove the second static web product that shared KC's Supabase backend: its frontend tree, its CI/deploy/smoke workflows, its Edge Functions and all of its namespaced database objects (forward migration `0238`). KC mobile/web export and the shared Supabase core remain the sole product surface. On 2026-11-08 (#1961) every remaining trace was removed from the repo: its historical migrations became no-ops (version numbers kept for the ledger), and docs, configs and comments were rewritten.
 
-**Alternatives rejected.** Leave schema in place unused (ongoing RLS/types/CI cost); rename-only without drops (misleading `glowe_*` API surface).
+**Rationale.** Repository renamed to Karma Community (KC); maintaining a parallel product fork inside the monorepo duplicated backend schema and confused contributors.
 
-**Affected.** Migration `0238`, `AGENTS.md`, `README.md`, `.github/workflows/*`, `app/scripts/web-postbuild.mjs`, archived spec `docs/SSOT/archive/17_glowe_frontend.md`.
+**Alternatives rejected.** Leave schema in place unused (ongoing RLS/types/CI cost); rename-only without drops (misleading API surface).
 
-**Manual follow-up.** Delete GitHub Actions variables `GLOWE_PROD_URL`, `GLOWE_STAGING_URL`, `GLOWE_SEED_PASSWORD`; disable or remove branch-protection required checks for deleted workflows (`CI — GloWe E2E`, `glowe-prod-smoke`).
+**Affected.** Migrations `0204`–`0238`, `0691`, `AGENTS.md`, `README.md`, `.github/workflows/*`, `app/scripts/web-postbuild.mjs`.
+
+---
+
+
+## D-191 — Smart UGC translation engine lives in KC `translate` (2026-10-16)
+
+**Decision.** Keep one batch-oriented translation engine on KC: shared `kcSource` registry, server-side source reads, cache poison recovery, and `translateMany` fan-out on the `translate` Edge Function writing to `content_translations`. The separate translation function and cache table of the removed product (D-190) are gone. Extend the cache schema for `ride_listing` and `user` biography (migration `0239`).
+
+**Rationale.** Naveh: the smart auto-translation mechanism should power KC UGC (posts today; rides/profiles/chats as registered).
+
+**Alternatives rejected.** A second cache table alongside KC's (duplicate pipelines); client-supplied source text for batch (cache-poisoning risk).
+
+**Affected.** `supabase/functions/translate/**`, `supabase/functions/_shared/translation/kcSource.ts`, migration `0239`, `EdgeFnTranslationService`, `MaterializePostTranslationsUseCase`, `docs/SSOT/UGC_TRANSLATION.md`, `docs/spec/requirements/18_translation.md`.
 
 ---
 
-## D-191 — Port GloWe smart UGC translation to KC `translate` (2026-10-16)
-
-**Decision.** Retire the separate `glowe-translate` function and `glowe_content_translations` table with GloWe sunset, but **keep** the batch-oriented translation engine on KC: shared `kcSource` registry, server-side source reads, cache poison recovery, and `translateMany` fan-out on the existing `translate` Edge Function writing to `content_translations`. Extend the cache schema for `ride_listing` and `user` biography (migration `0239`).
-
-**Rationale.** Naveh: the smart auto-translation mechanism built for GloWe should power KC UGC (posts today; rides/profiles/chats as registered), without reviving GloWe product tables.
-
-**Alternatives rejected.** Reintroduce `glowe_content_translations` alongside KC cache (duplicate pipelines); client-supplied source text for batch (cache-poisoning risk).
-
-**Affected.** `supabase/functions/translate/**`, `supabase/functions/_shared/translation/kcSource.ts`, migration `0239`, `EdgeFnTranslationService`, `MaterializePostTranslationsUseCase`, `docs/SSOT/UGC_TRANSLATION.md`, `docs/SSOT/spec/18_translation.md`.
-
----
 
 ## D-192 — KC mobile store track resumed; EAS + CI (2026-10-16)
 
 **Decision.** Unpause the Expo KC app (`app/apps/mobile`) for App Store / Google Play delivery: document local + EAS workflows and add GitHub Actions for EAS builds with TestFlight / Play **internal** submit (no App Review). Native ids: `org.karmacommunity.app`. Marketing version follows `app/VERSION` via `app.config.ts`; EAS production profile uses remote `autoIncrement` for build numbers.
 
-**Rationale.** Issues #836 / #837; KC mobile shares the Supabase backend and needs store-ready builds after GloWe sunset (D-190).
+**Rationale.** Issues #836 / #837; KC mobile shares the Supabase backend and needs store-ready builds after the second product was removed (D-190).
 
 **Affected.** `app/apps/mobile/{README.md,eas.json,app.config.ts}`, `.github/workflows/kc-mobile-*.yml`, `README.md`, `AGENTS.md`, `CONTRIBUTING.md`.
 
@@ -1685,7 +1556,7 @@ Owner rules that go with it:
 
 **Decision.** Owner decisions for the first store submission (#920, #1088, #1036):
 1. **Store-review URLs use the Cloudflare Pages domain** `karma-community.pages.dev` until a permanent domain is bought (privacy policy: `https://karma-community.pages.dev/privacy`). When the domain is bought, the store listings switch to it.
-2. **KC Pro pricing:** free for the first year after launch. After that, $30/month for a private person (mainly for the WhatsApp bot) and $100/month for an organization (includes the full admin portal).
+2. **KC Pro pricing:** free for the first year after launch. After that, ~~$30/month~~ **$20/month** for a private person (mainly for the WhatsApp bot) and $100/month for an organization (includes the full admin portal). *Updated 2026-11-04 by the owner: the private-person price is $20/month, not $30; the free first year and the organization price stand.*
 3. **Support email:** the single operated KC mailbox of `D-59`, `karmacommunity2.0@gmail.com`, which the app, web pages and store copy already use.
 
 **Why.** Store review needs live, stable policy URLs now; the custom domain is not available yet. Pricing and support contact are owner decisions recorded here so the store listing, paywall and support copy share one source.
@@ -1693,6 +1564,92 @@ Owner rules that go with it:
 **Rejected.** Waiting for a purchased domain before submitting (blocks review with no benefit).
 
 **Affected.** Store listings (#920), KC Pro paywall (#1088), support copy (#1036).
+
+## D-214 — One Post model: reverse the mirror, move one flow at a time, drop `listings` last (2026-11-03)
+
+**Decision.** Gap `G1` (D2, D19) closes in six backward-compatible PRs into `dev` (BACKLOG `G1-S1`…`G1-S6`, plan in [`docs/architecture/adr/ADR-006-one-post-model.md`](../architecture/adr/ADR-006-one-post-model.md)). Step 1 adds to `posts` every column the listing side has and posts lack (`world_slug`, `direction`, `post_type`, `expires_at`, `source`, `details`, `category_id`, `geo`, `time_window`, `urgency_level`, external body / beneficiary) plus the `paused` status of D104, creates `ride_post_details` and `post_handoffs`, backfills them from `listings` / `giving_handoffs` and keeps them in sync by triggers, with a report function whose zero-mismatch result is asserted by SQL tests. Step 2 reverses the `D-206` direction: the create form writes `posts` for every category and `listings` becomes the derived copy for every world (generalising the `0243` items sync), so matching, handoffs and the marketplace screens keep working unchanged. Steps 3–5 move the type-specific flows, the detail screen and events onto posts one PR each; step 6 enforces the single S1 state machine, drops the sync triggers and finally `listings` and its tables, after the report proves the data identical.
+
+**Why.** The two engines (`D-207`) make every feature exist on one side only (likes, comments and closure on posts; booking, handoffs, matching and owner management on listings) and keep three state machines alive. Reversing the mirror keeps the feed, cards, chat anchors and profile reading `posts` as today and lets each flow move with its own tests, which a rename of `listings` to `posts` could not do without stopping the app.
+
+**Rejected.** A union feed over `posts` + `listings` (already rejected in `D-206`). Renaming `listings` to `posts` in one migration (no step-wise verification, every adapter breaks at once). Keeping `listings` as the entity and renaming it in the UI only (contradicts D19: one table, extensions, handoff as the closing stage).
+
+**Affected.** `supabase/migrations/0550–0569`, `posts`, `ride_post_details`, `post_handoffs`, `listing_feed_mirror_upsert`, `@kc/domain` `PostStatus`, later every listing port and adapter, `/listing/*`, the create form and `docs/spec/07` §7.1–7.5.
+
+**Step 6 plan (2026-11-04).** Step 6 (BACKLOG `G1-S6`) first moves every reader off the legacy tables, then removes them: **6a-1** the leaf readers (admin funnel, personal givings, match quality, rides health checks, report previews, the nonprofit page, the feed sub-category filter; `0565`); **6a-2** the handoff readers, the housing RLS and the writers' returned rows from `post_handoffs`; **6a-3** ratings, the handoff triggers and the foreign keys re-pointed to `post_handoffs`, and the food sweep stops writing `giving_handoffs` — after it nothing reads `giving_handoffs`; **6a-4** rides v2 and ride series on `posts` / `ride_post_details`, including the materializer writing posts; **6a-5** `posts` gains the listing columns it still lacks (`moderation_status`, `availability_status`, `kind_id`, `published_at`, `embedding`, …), then the browse / search / map / detail / owner RPCs and the app's direct reads move; **6a-6** matching, the WhatsApp bot and the embed worker; then the v1 `ride_listings` cleanup and the `posts.listing_id ON DELETE CASCADE` fix before 6c; **6b** one S1 state machine; **6c** drop the sync triggers; **6d** drop `listings` / `giving_handoffs` (needs a production verification run and PM approval). Every 6a PR keeps RPC names, arguments and return shapes unchanged and is additive; where a reader moved from a legacy table now also sees rows only the post side holds (time-world event handoffs) it says so in its migration and test. **6a-2** (`0620`, numbered above the housing range because it redefines functions defined there) moved the handoff readers — `get_listing_handoff`, `list_my_giving_handoffs`, `list_ride_bookings`, the housing host / guest lists, night capacity, overlap and address-access helpers, `listing_has_active_handoff`, `ride_listing_participants`, the seats taken in `find_ride_listing_matches` and the `housing_booking_details` RLS policy — to `post_handoffs` / `posts`, with listing ids still returned; the generic readers keep skipping time-world event registrations, and the writers' returned rows move with 6a-3. **6a-3a** (`0621`) moves what reacts to or hangs off `giving_handoffs` to `post_handoffs`: the item / food, ride and housing push triggers and the cancel-reason default (event registrations excluded), the foreign keys of `giving_handoff_ratings` and `housing_booking_details`, `rate_giving_handoff` and the food expiry sweep, with unchanged payloads and signatures except the internal `housing_booking_enqueue`, which now takes the record row; the writer RPCs' returned `giving_handoffs` rows are **6a-3b**. **6a-3b** (`0622`) has the handoff writer RPCs (items, food, rides, knowledge, housing) build the row they return from `post_handoffs` through the internal `giving_handoff_row_of` (service_role only; `listing_id` from the post, every other column 1:1; null for a time-world registration, which has no derived row) instead of reading it back from `giving_handoffs`, with names, arguments and the `giving_handoffs` return type unchanged, and moves `delete_my_listing`'s handed-over guard to the record; after it, only the two-way sync, the write cap still attached to it (`giving_handoffs_rate_limit`), the unification report, the dev demo seed's trigger toggle and the v1 ride-series functions (6a-4) still touch `giving_handoffs`. **6a-4a** (`0623`) moves the ride readers: `list_rides_feed`, `list_ride_series_occurrences`, `ride_series_feed_waits`, the booking check of `ride_series_drop_unbooked`, `ride_listing_emergency`, the owner / status / departure checks of `complete_ride_listing`, `ride_route_alert_deliver` and `ops.check_rides_open_after_departure` read the seats booked from `post_handoffs` and the schedule, route, seats and series from `posts` / `ride_post_details` (a listing open and published is its post open; an occurrence's series is `ride_post_details.series_id`, which agrees with the listing marker for every live occurrence), with names, arguments, return shapes and grants unchanged; the listing keeps its id, the feed's title and direction and `is_listing_visible_to` until 6a-5, and the ride writers that still write `listings` (the series materializer, the drop's delete, the cancel detach, the series sweep, the listing close and lock in `complete_ride_listing`) and the `listings_ride_route_alerts` trigger are **6a-4b** / 6c. After it no ride reader reads `giving_handoffs`. **6a-4b** (`0624`) moves the ride writers: the series materializer publishes each occurrence as a post (`posts` + `ride_post_details`, `feed_hidden` by the `0557` rule) whose listing is derived as a one-off ride's is (`0554`), and its existence check and `create_ride_series`' returned occurrence read `ride_post_details`; `ride_series_drop_unbooked` deletes the unbooked occurrences' posts, the cancel in `set_ride_series_status` detaches them on the post, `ride_series_sweep` expires request occurrences and exposes the next one on the post, `rides_expired_listings_sweep` expires offers on the post, and `book_ride_seat`, `confirm_ride_booking`, `complete_ride_trip` and `complete_ride_listing` lock the ride's post and read its departure and seats from `ride_post_details`. A status change or a delete lands on the ride's record through the internal `ride_post_set_status` (service_role only): the post of a post-owned ride, whose listing follows, or the listing of a listing-sourced one — an occurrence materialized between `0554` and `0624`, a directly inserted ride — whose post follows; both shapes stay readable and writable. Names, arguments, return shapes, error codes and grants are unchanged. Left: `is_listing_visible_to` and the owner management RPCs that still lock the listing first (6a-5), the listing triggers and the listings index that keeps one occurrence per series and day (6c). **6a-5a** (`0625`) moves the hourly listing write cap (`R-SEC-Listing-Write`, `0534`) with the record, as `0555` moved the handoff cap: since `0554` the create RPCs of the listing worlds write the post and derive the listing one trigger deeper, so `posts_rate_limit` counts a listing-world post written by its owner's request (not items posts, which keep the active-posts cap, and not mirrors, which follow their counted listing) under the same rule code and bucket as `listings`; a publication is counted once on either shape. **6a-5b** (`0626`) adds to `posts` the listing columns its readers still take from `listings` — `moderation_status`, `availability_status`, `kind_id`, `published_at`, `max_radius_km_override` and `legacy_listing_id` (the listing derived from or mirrored by the post, set for every shape, items included, with no foreign key; `posts.listing_id` keeps its meaning and stays null on items posts) — backfills them from each post's listing and keeps them in step both ways: a post-owned listing takes availability and radius from its post and gives back kind, publication and moderation (`listing_upsert_from_post`, `post_sync_from_listing`), a mirror takes every column from its listing (`listing_feed_mirror_upsert` and the `listings_feed_mirror_sync` trigger's column list); `post_unification_report` gains `listing_column_mismatches`. Which listings get a post is unchanged; the readers move in the next 6a-5 PRs. **6a-5c** (`0627`) has the owner management RPCs (`pause_my_listing`, `resume_my_listing`, `fulfill_my_listing`, `update_my_listing`, `delete_my_listing`) lock the post first, through the internal `post_lock_own_listing` (service_role only; a listing id or a post id, the same `auth_required` / `listing_not_found` codes, an owned listing without a post yet locked on the listing alone), and only then the listing, the order the ride booking writers use since `0624`, so an owner action and a booking can no longer deadlock; the status is written on the record through the internal `post_record_set_status` (the post when it owns a native listing, else the listing — listing-sourced or items — whose post follows or, for items, keeps its own engine as before), which `ride_post_set_status` now delegates to. The status guards still read the listing, so behaviour is unchanged for both shapes; the RPCs now also accept the post id, and the fulfilment karma stays keyed by the listing id. Names, arguments, return types, error codes and grants are unchanged; `listing_lock_own` and `listing_set_post_status` stay until 6c. **6a-5d** (`0628`) decides who sees a listing on its post: `is_listing_visible_to` keeps its signature (so the listings and `listing_media` RLS, browse, search, matching and the detail RPC follow) and asks the internal `post_listing_visible_to` for a listing-sourced listing that has a post — the listing rules on the post's `status`, `visibility` and `moderation_status` (0626), exact while the two are in step — while a post-owned listing is seen as its post is, as before, and a listing without a post yet (a knowledge listing awaiting moderation) or a v1 ride still answers on its own columns; a reporter of the mirror post no longer sees the listing either. It also fixes #1907: a moderation hold folds a post-owned listing's post to `deleted_no_recipient` (which keeps it out of every surface, since the ride readers of `0623` / `0624` take post status `open` to mean open and published), but `listing_upsert_from_post` no longer pushes that folded status back to the listing as `closed`, so the listing keeps its status during the hold and publishing again restores the post. Listings already closed by the bug are not reopened. The detail RPC and the owner and profile lists move to `posts` in **6a-5e**. **6a-5e**. **6a-5e** (`0629`) has `get_marketplace_listing_detail`, `list_my_listings` and `list_profile_listings` read the post of a post-owned listing (food, rides, housing, time), except its title, summary and city, which stay the listing's for every shape because a listing that `0554`'s backfill made post-owned keeps the mirror-era title and fallback city on its post until the post is next written; the status is the post's in the listing's words except during a moderation hold, when the listing's own is returned, and the owner list keeps the listing's keyset `(updated_at, listing_id)` and still includes listings that have no post. Every other shape still reads the listing, because mirror and items posts do not carry the listing's full content yet — a mirror post's title is cut to 80 characters (the posts title limit, a product constraint that stays), its description and city fall back to the details and the owner's city, and an items post keeps its fields in legacy columns — so the remaining readers of those shapes move once 6b gives posts content parity. Keys, values, order and grants are unchanged, pinned by the pre-0629 bodies as test oracles. **6a-5f** (`0630`, `0631`) does the same for `browse_listings` and `recommend_listings_for_user` (`0630`) and `map_listing_pins` and `list_rides_feed` (`0631`): a post-owned listing is checked with `post_listing_visible_to` and returns the post's world, kind, direction, urgency, availability, geo and ride details, while the candidate scans, filters, order and keysets stay on the listing so browse and the map keep their index paths (plans and timings checked on about 6,500 listings, no new index). Title, summary, city and `created_at` stay the listing's, because a listing made post-owned by the `0554` backfill kept its mirror post's cut title and fallback city until a later write converges the two. `0631` also fixes `map_listing_clusters` (#1911), which never planned (`min()` has no uuid variant): a cell's representative is now its smallest listing id as text, cast back, and the clusters follow the same rule as the pins (tested on their behaviour, as they had no working body). The other readers' output is byte-identical, pinned by the pre-0630 / pre-0631 bodies as test oracles. **6a-5g** (`0632`) does the same for `search_listings`, `marketplace_search` and `similar_listings`: a post-owned listing is checked with `post_listing_visible_to`, the search's geo signal and the similar listings' kind, world and publication order come from its post, while the index-backed text candidates, the filters and the query-less order stay on the listing (moving that order to the post cost the query-less search its index walk, 30 ms → 600 ms on 6,600 listings, so it stays; the values are equal by sync). The searched text (`search_vector`, title) stays the listing's, as title and summary do, so no index changes; the embedding and the vector signal stay on the listing until 6a-6 moves the embed worker. Output is byte-identical, pinned by the pre-0632 bodies as test oracles. **6a-5h** (app, no migration) moves the app's direct listing reads: the batched listing cards and their extras (`fetchListingCards`, `attachCardExtras`) and `getListingCard` embed the post through `listings.legacy_post_id` (`posts!listings_legacy_post_id_fkey`, its kind through `posts_kind_id_fkey` and its publisher through `users!posts_owner_id_fkey`) and, for a post-owned listing, take its world, kind, direction (`offer` → `give`), urgency, availability, ride details and publisher from it, while title, summary and city stay the listing's and every other shape reads the listing; a card page stays one request. The embed runs under the posts RLS policy (`is_post_visible_to`), the rule the listings policy already applies to a post-owned listing since `0628`, so no card the listing shows loses its post, and a card whose post still comes back hidden falls back to the listing (mirrors of OnlyMe listings, which operators see, read the listing anyway). Domain types and use cases are unchanged; `SupabaseRideLegacyLinkRepository` stays for the v1 ride cleanup. This completes 6a-5: every listing reader of the server and the app reads the post where the post is the record; what still reads `listings` is the content mirror and items posts do not carry yet (until 6b gives posts content parity), the searched text and the embedding (6a-6), and the v1 ride links. **6a-6a** (`0633`) starts 6a-6 on the embeddings: a post's embedding lives in the new internal `post_embeddings` (one per post, `vector(1536)` with the model, the HNSW cosine index `listings` carries; RLS on with a deny-all policy, service_role only), backfilled by copying the embedding of every post-owned listing (none on kc-dev, where the embed worker is still a stub, TD-269), and the internal `listing_embedding_of` gives the embedding a listing ranks on — its post's for a post-owned listing when the post has one, else the listing's, and the listing's for every other shape. `search_listings` and `marketplace_search` read their vector signal through it, so their output is unchanged while embeddings sit on listings (pinned by the 0632 bodies as oracles) and a post-owned listing whose post has an embedding counts in the vector lane. The embed worker and the other embedding readers move in the next 6a-6 steps; the listing column stays until 6d. **6a-6b** (`0634`) puts the embed worker on three service-role RPCs while the queue stays keyed by listing (`embedding_jobs`, the `listings_enqueue_embedding` trigger; both until 6c): `embedding_jobs_claim` takes the oldest pending jobs with `FOR UPDATE SKIP LOCKED`, marks them processing and counts the attempt, and returns the listing's title, summary and details (the worker builds the text to embed from them in `embedText`, unchanged, because `JSON.stringify` of the details and the 8,000-unit cut are JavaScript's); `embedding_job_store` writes `post_embeddings` for a post-owned listing and the listing's columns otherwise, and closes the job unless the trigger re-queued it since the claim; `embedding_job_fail` marks it failed with its error. The `embed-worker` Edge Function moves its logic to a Deno-tested `handler.ts` with the same service-role check and 401; the embedder is still the stub (TD-269). **6a-6c** (`0635`) moves matching v2 onto the record: the internal `listing_record_of` returns a listing row as its post says for a post-owned listing (world, kind, direction, category, details, geo, time window, urgency, expiry, availability, moderation, publication, radius, and the status in the listing's words — the listing's own during a moderation hold), keeping title, summary, city, owner, anonymity level and timestamps, and every other shape unchanged; `match_compute_for_listing` reads its source and every scored candidate through it (the candidate scan stays on the listing's indexes), and `match_run_sweep` and `rpc_match_refresh_mine` select on it, while `match_score_pair` is unchanged and receives those rows. Pairs, scores, ranks and states are the same while post and listing are in step, pinned by the pre-0635 bodies as oracles over rolled-back runs. `listing_record_of` is an inlinable SQL set-returning function (no SECURITY DEFINER; its callers are) used as a lateral join, and the sweep writes the same rule as joins on `posts`, so the overlay is set-based: sweep and compute timings stay within noise of the pre-0635 bodies. **6a-6d** (`0636`) moves the match readers that take something the post owns onto the record: `rpc_my_matches` hides a suggested pair whose listings are no longer open on their record (`listing_record_of`) and checks the other listing's visibility on its post when it is post-owned, and `api_bot_my_matches` keeps the other listing when its record is open. `match_deliver_pending`, `rpc_match_respond` and `api_match_llm_pending` read only what stays the listing's (titles, summaries, creation times, ids, owners) and are unchanged. Output is the same while post and listing are in step, pinned by the pre-0636 bodies as oracles.
+
+## D-216 — A post of a listing world owns a derived native listing; the listing-side rules keep running on it (2026-11-03)
+
+**Decision.** G1 step 2 (BACKLOG `G1-S2`, migration `0554`). For food, rides, housing and time the create, edit and owner RPCs (`create_marketplace_listing`, `update_my_listing`, `pause / resume / fulfill / delete_my_listing`) write a `posts` row; `listing_upsert_from_post` derives the listing with `origin = 'native'` and `legacy_post_id = post_id`, and the post links back through `posts.listing_id` like a mirror. Keeping `origin = 'native'` means every listing-side rule (world permission, rate limit, detail schema, official places, ride schedule, cost cap, food expiry, matching, embeddings) still runs on the derived row and a refusal rolls the post back with the same error code. What the listing side computes or changes (expiry, canonical details, urgency, the world's anonymity cap, a status set by a sweep, a handoff or moderation) flows back through `post_sync_from_listing`; both directions compare before writing, so the chain converges. The RPC signatures, the returned ids and the error codes are unchanged, so the app needs no change. Items stay on the post engine with the `origin = 'post'` legacy listing shape (their closing moves with G34); listings of worlds without a create form and directly inserted listings stay listing-sourced with a mirror post. The post-side open-posts cap, karma, counters and closure messages apply to items posts only, which is what the mirror exemption did before. A post title is at most 80 characters (`07` §7.2), enforced by the RPCs (`title_too_long`).
+
+**Why.** Step 2 of ADR-006 had to flip the source of truth without rewriting the twenty-odd listing triggers that carry the rides, food and matching business rules, and without changing the app's write path mid-flight. Deriving a native listing keeps those rules where they are and lets step 3 move them one at a time.
+
+**Rejected.** `origin = 'post'` for the derived rows (every native-only rule and the detail-schema check would have been skipped). Porting the listing rules to `posts` in this step (too wide a change for one PR; step 3 and step 6 own it). Rewriting the app to call new post RPCs now (the ids the detail, chat and handoff screens hold are listing ids until step 4).
+
+**Affected.** `supabase/migrations/0554_posts_own_listing_worlds.sql`, `listing_upsert_from_post`, `listings_feed_mirror_sync`, `post_sync_from_listing`, `posts_enforce_active_cap` and the six post-side karma / counter / closure triggers, the owner RPCs; `docs/spec/07` §7.1, `docs/spec/93` G1.
+
+## D-217 — `post_handoffs` is the handoff record; `giving_handoffs` is derived both ways until step 6 (2026-11-04)
+
+**Decision.** G1 step 3a (BACKLOG `G1-S3`, migration `0555`). The items and food handoff RPCs (`reserve_item_giving`, `claim_food_giving`, `confirm_item_handoff`, `mark_giving_handed_over`, `cancel_giving_handoff`) and the no-show and food-expiry sweeps write `post_handoffs`, keyed by the post the handoff closes. A guarded sync (`giving_handoff_upsert_from_post_handoff`) derives the `giving_handoffs` row under the same `handoff_id`, and the step 1 sync (`0553`) keeps copying the other way for the flows that have not moved yet (rides, knowledge, direct inserts); each direction compares before writing, so a write on either side converges in one hop. The RPCs still return the `giving_handoffs` row, so the app's contract is unchanged, and they accept a post id or a listing id in `p_listing_id`, so the one detail screen (step 4) can pass post ids while the marketplace screens keep passing listing ids. Errors raised on the derived row (the hourly write cap, a constraint) propagate and roll the handoff back, as they did when the RPCs wrote `giving_handoffs` directly.
+
+**Why.** The listing-side triggers on `giving_handoffs` carry behaviour the member sees — the write cap (`0534`), the cancel-reason default (`0511`), the push notifications (`0528`) — and the readers (`get_listing_handoff`, `list_my_giving_handoffs`, ratings) still read it. Deriving the row keeps all of that in place while the record moves, and lets the ride and knowledge bookings move in their own PR. Making `giving_handoffs` a view now would have required moving every writer at once and is destructive, so it waits for step 6 with the other drops.
+
+**Rejected.** Moving every handoff writer in one PR (rides carry capacity, approval and series rules that deserve their own tests). A `source` column deciding the sync direction per row (unnecessary: with identical columns and a compare-before-write guard on both sides, whichever side is written wins and the echo is a no-op). Closing the post from the handoff in this step (the one closing system changes karma for items and is G34's own decision, step 3c).
+
+**Step 3b (2026-11-04, `0556`) — finding and scope.** Moving the ride and knowledge writers to the record failed in CI on a premise this decision took for granted: that every listing of a handoff world has a post. Two kinds do not: a later occurrence of a recurring ride (0531 mirrors only the soonest occurrence into the feed) and a knowledge offer its owner has not shared (`worlds.feed_mirror` is off for knowledge). Both are open and bookable, so a record keyed by `post_id` would refuse them. `worlds.feed_mirror` conflates two things — whether a post exists and whether it shows in the main feed — and the one Post model needs them apart. Step 3b therefore ships only the id contract step 4 needs (`book_ride_seat`, `complete_ride_listing`, `list_ride_bookings`, `book_knowledge_slot`, `get_listing_handoff` accept a post id or a listing id through `handoff_target_listing_id`); the ride, knowledge and housing bookings keep `giving_handoffs` as their record and reach `post_handoffs` through the 0553 sync. Sub-step 3b-pre gives every listing of a handoff world a post while a separate feed-exposure flag keeps the 0531 noise control and the knowledge share-to-feed semantics; the writers move after it.
+
+**Step 3b″ (2026-11-04, `0558`).** With every published listing owning a post (`D-218`), the ride and knowledge booking writers move to the record as first planned; capacity is counted on it (`post_handoff_seats_taken`). A one-off backfill gives a hidden post to any listing that still has a live handoff but no post (an unshared knowledge offer that has since closed), so no live handoff is left without a record. `cancel_giving_handoff` and `karma_award_handoff` are not redefined here: 0603 redefines both and, being numbered later, would replace them on a fresh database. The housing writers move in 3b‴.
+
+**Step 3b‴ (2026-11-04, `0610`).** The housing writers (`request_housing_booking`, `decide_housing_booking` with "first confirmation wins", `cancel_housing_booking`, `complete_housing_booking`, `mark_housing_no_show`, `housing_bookings_sweep`) and the generic `cancel_giving_handoff` move to the record. A request inserts the record first, so the derived row the `housing_booking_details` FK points at exists before the details row. The file is numbered `0610`, after the housing range, because these functions are defined in `0602` / `0603`: a number inside the G1 range would be replaced by them on a fresh database while winning on an existing one. With this step every handoff writer writes `post_handoffs`; `giving_handoffs` is a derived copy until step 6.
+
+**Affected.** `supabase/migrations/0555_post_handoffs_own_record.sql`, `supabase/migrations/0556_ride_knowledge_bookings_on_posts.sql` (`listing_id_of_post`, `handoff_target_post_id`, `giving_handoff_upsert_from_post_handoff`, `post_handoffs_giving_sync`, the five RPCs and two sweeps), `docs/spec/07` §7.1 and §7.5, `docs/spec/93` G1, `docs/architecture/current.md`.
+
+## D-218 — Every published listing has a post; `posts.feed_hidden` says whether the main feed lists it (2026-11-04)
+
+**Decision.** G1 step 3b-pre (BACKLOG `G1-S3`, migration `0557`). A listing's post exists from the moment the listing is published and open, in every world; whether the main feed lists that post is a separate flag, `posts.feed_hidden`. The flag is set when the post is created for a world that does not mirror into the feed (knowledge today) or for a later occurrence of a recurring ride (FR-RIDE-046: only the soonest is listed, 0531), and cleared when the owner shares the listing to the feed or the ride sweep reaches that occurrence; a sync never hides a post that is already exposed. The signed-in feed view, the ranked feed RPC, the new-post realtime broadcast, the personal activity log and the app's simple feed query skip hidden posts; a post exposed later is broadcast as new then. Detail by id, handoffs, chat anchors and the report see every post. Open listings that had no post were backfilled with hidden ones.
+
+**Why.** Step 3b showed the one Post model cannot hang a handoff record on a listing that has no post, and `worlds.feed_mirror` conflated "exists as a post" with "shows in the feed": a later ride occurrence and an unshared knowledge offer are open and bookable without a post. Separating existence from exposure keeps the feed's noise rules (0531) and the knowledge share-to-feed semantics intact while giving every bookable listing the post the record needs.
+
+**Rejected.** Mirroring knowledge and every occurrence into the feed (breaks FR-RIDE-046 and the share-to-feed choice). A nullable `post_handoffs.post_id` with a `listing_id` fallback (two records again). Hiding through `visibility = 'OnlyMe'` (the booker could not open the post).
+
+**Affected.** `supabase/migrations/0557_post_for_every_listing.sql` (`posts.feed_hidden`, `feed_visible_posts`, `listing_feed_mirror_upsert(listings, boolean)`, `listing_feed_hidden`, `listings_feed_mirror_sync`, `ride_series_sweep`, the broadcast / activity triggers, `feed_ranked_ids`), `app/packages/infrastructure-supabase/src/posts/feedQuery.ts`, `docs/spec/07` §7.1 / §7.3, `docs/spec/93` G1.
+
+## D-219 — An item closes through its post; the hand-over no longer pays its own karma (2026-11-04)
+
+**Decision.** G1 step 3c / gap G34 (migration `0559`). For an item made through the post form (the post owns its listing, `posts.listing_id` null), the post's closure is the one closing truth. `mark_giving_handed_over` closes such a post through the post closure — a `recipients` row for the taker, then `closed_delivered` — so `karma_on_post_change` pays giver 20 + the value bonus and receiver 15 once, and a reopen reverses it (S20); the hand-over no longer calls `karma_award_handoff` for these items. Closing such a post by hand (`close_post_with_recipient`) settles its live handoffs: the one to the marked recipient is handed over, any other is cancelled by the system. The 0063 "marked as recipient" notice is skipped on the hand-over path (a transaction-local `kc.closing_from_handoff` flag read in the trigger's `WHEN`), because the hand-over notice (0528) already reaches both sides. Item posts left open by earlier hand-overs were closed once, with the karma, chat-message and notification triggers off for the repair, since the handoff had already paid. An item listing with a mirror post (marketplace RPC, direct inserts) keeps the handoff path: its post follows its listing and only the handoff pays. Food, rides, knowledge and housing keep per-handoff karma (D63).
+
+**Why.** A handed-over item kept an `open` post that the feed still listed as available, and closing that post later paid the item karma a second time — two closing systems for one item (G34). The post closure already carries the §7.6 item values, the value bonus (D12) and the reopen reversal (S20), so routing the hand-over through it fixes both without a new karma rule.
+
+**Rejected.** Adding the value bonus to `karma_award_handoff` and blocking the post closure after a hand-over (two karma paths to keep in sync, and no reopen reversal for handoff karma). Closing the post with handoff karma kept (double pay on the next closure trigger).
+
+**Affected.** `supabase/migrations/0559_items_close_through_the_post.sql` (`post_close_from_handoff`, `mark_giving_handed_over`, `posts_settle_handoffs_on_close`, the `tg_recipients_enqueue_notifications` `WHEN`), `docs/spec/07` §7.5 / §7.6, `docs/spec/93` G34 and G1, `docs/spec/requirements/05_closure_and_reopen.md`.
+
+## D-221 — An organization's event is a time-world post; its registrations are post handoffs (2026-11-04)
+
+**Decision.** G1 step 5a (BACKLOG `G1-S5`, migration `0563`, D31, G18). An event is created like every listing-world post: the time world's new `org_event` kind (date window, optional capacity, registration policy `automatic` / `manual` / `verified_only`, address, and the organization it is for) through `create_marketplace_listing`; its post gets `post_type = 'event'` and the 1:1 `event_post_details`, kept from the listing's details until step 6. Only a member of that organization, in any role, may publish or edit its event (D31: an org, or an affiliated volunteer on its behalf). An event is public: the time world keeps its listings to followers only by default (`worlds.default_anonymity_level = 2`), which would hide an organization's event from everyone it is for (D90: an organization's profile is always public). A registration is a `post_handoffs` row of the time world with one seat: `automatic` and a verified member under `verified_only` are confirmed at once, `manual` waits for the organizer's approve / decline, and either side can cancel; a full event refuses further registrations. Event registrations are not mirrored into `giving_handoffs` — nothing legacy reads them, so `post_handoffs` is their only record from the start.
+
+**Why.** It is the one-model target (ADR-006): an event is a post with an extension and a closing stage like every other type, shown on `/post/[id]`, listed in the time world and the feed, and created from the same form. Reusing the listing path keeps the moderation, visibility, media and edit rules the other worlds already have.
+
+**Rejected.** Moving the existing volunteering tables (`volunteer_opportunities` / shifts / signups, `0370`) under posts in this step: their multi-shift model and self check-in karma differ from D31 / S13, and their organizer screens stay until step 6. A waitlist and an organizer acting for colleagues' events: not needed for a first event; follow-ups. Attendance and its karma wait for S13.
+
+**Step 5b (2026-11-04, app only).** The time world's offer form gives a member of an organization (any role) a choice between a volunteer shift (still the default kind) and the organization's event; a member of no organization sees the form unchanged, and a request never offers it. The event form adds an organization picker (only the member's organizations, preselected when there is one), the window, the registration policy (automatic by default), an optional capacity and an optional address, and goes through the same `buildListingCreatePayload` / `createListing` path with `org_id` in the details; the form refuses an end at or before the start (`event_window_invalid`, the same code the server raises). The post page shows the event's window, address, capacity and policy; a signed-in member who is not the organizer registers (a manual event says "request to join"), sees the pending or confirmed state and can cancel; the organizer sees the roster with approve / decline for a waiting registration and remove for a confirmed one. The calls take the event's post id. The organizer's volunteer-opportunity create screen is retired and its button opens the one create form on the time world's offers; the create / add-shift / publish use cases and adapter methods it alone used are removed, while the organizer's management screens stay until step 6. The organization's name is not shown on the post yet: no cheap read of it exists on the detail path. Rejected: a separate organizer event screen (a second create form, which the route-inventory guard forbids), and showing the event choice to everyone with a server refusal for non-members (a dead end for most members).
+
+**Step 5c (2026-11-04, `0564`).** S13 is approved by the PM (`D124`): an event's karma comes only from attendance its organizer marks. `post_handoffs.status` gains `waitlisted`: when an event with a capacity is full, `register_for_event` waitlists instead of refusing (events no longer raise `slots_exhausted`); when a place frees — a registrant cancels, the organizer declines or removes one — `event_promote_waitlist` moves the earliest waitlisted members up, confirmed or, under the manual policy, waiting for approval, and only before the event starts. A waitlisted member may leave the waitlist through the same cancel. From the start, `mark_event_attendance` lets the organizer mark a confirmed registrant attended (`handed_over`, 10 karma once through `karma_grant_once` with the new once-only `event_attendance` event) or absent (`no_show`); an absence can be corrected to attended, nothing else (`invalid_transition`), and before the start it refuses with `event_not_started`. The app counts a waitlisted registration as registered, shows the member "on the waitlist" with a leave action, and gives the organizer's roster a waitlist group in promotion order with each member's place and, from the start, "attended" / "didn't come" on confirmed rows and "attended" on an absence. Rejected: letting a member check themselves in (the older model's rule, which S13 replaces) and promoting from the waitlist after the start (a late place cannot be used).
+
+**Affected.** `supabase/migrations/0563_event_posts.sql`, `supabase/tests/0563_event_posts.sql`, `database.types.ts`, `docs/spec/08` Events, `docs/spec/93` G1 and G18, `docs/architecture/current.md`. Step 5b: `@kc/domain` `marketplace/eventPost.ts` and `marketplaceWorldRules.ts`, `@kc/application` `IMarketplaceRepository` and `giving/eventRegistrationUseCases.ts`, `@kc/infrastructure-supabase` `marketplace/eventRegistrations.ts`, `apps/mobile` `lib/unifiedCreate/{listingFieldSpecs,orgEventCreate}.ts`, `hooks/{useListingCreateForm,useOrgEventChoice}.ts`, `components/CreatePostForm/{TimeOfferKindChooser,OrganizationPicker,ListingDetailFields}.tsx`, `components/marketplace/events/*`, `app/(tabs)/donations/time/organizer/*`, `.maestro/flows/18-org-event-create-and-register.yaml`. Step 5c: `supabase/migrations/0564_event_attendance_waitlist.sql`, `supabase/tests/0564_event_attendance_waitlist.sql`, `@kc/domain` `eventPost.ts` statuses, `MarkEventAttendanceUseCase`, `eventRegistrations.ts` `markEventAttendance`, `apps/mobile` `lib/eventPost.ts`, `components/marketplace/events/{EventRegistrantPanel,EventRosterPanel,EventRosterRow}.tsx`, `docs/spec/90` / `91` S13.
+
+## D-220 — `/post/[id]` is the detail screen of every post; listing routes forward to it (2026-11-04)
+
+**Decision.** G1 step 4a (BACKLOG `G1-S4`, migration `0560`). Supersedes the redirect half of `D-206`. The post detail no longer sends a listing-world post to the listing screen: it renders the listing's hero, type sections and type actions in place (`ListingPostDetail`, which embeds `MarketplaceListingDetailScreen`) with the post's likes and comments under them while the post is open and the post share link in the header; the listing view keeps its own report action, so the header carries only the share. The two listing routes (`/listing/[listingId]`, the marketplace tab route) forward to `/post/[id]` when the listing has a post (`useListingPostRedirect` inside `MarketplaceListingRoute`); only the routes forward, the embedded screen never does, so the two cannot bounce. A listing without a post — not yet published, or a post-form item (`posts.listing_id` null, its `feed_post_id` is null) — stays on the listing screen; post-form items get their reservation actions on the post screen in 4b, and notifications and share links carry the post id in 4c. The listing detail RPC now returns `feed_hidden`, so "share to feed" stays offered while the post is kept out of the feed (`D-218`), which 3b-pre had hidden for unshared knowledge offers.
+
+**Why.** One screen per post is the D19 / ADR-006 target, and every published listing now has a post (`D-218`). Embedding the listing screen keeps every type action (handoff, booking, stay, owner management) exactly as tested while the URL, the share link, the likes and the comments become the post's.
+
+**Rejected.** Rebuilding each type's sections natively in the post screen in one PR (large, and duplicates working components until step 6). Sending post-form items through the listing view now (their handoff actions would move twice).
+
+**Step 4b (2026-11-04, `0561`).** An item made through the post form keeps its own post page and shows its reservation actions there (`PostItemReservation` renders `GivingHandoffActions` while the post is open, and while delivered so both sides can rate). `get_marketplace_listing_detail` resolves a post id or a listing id and returns the listing's post through `post_id_of_listing`, which for such an item is the post it was made as; so every listing route now forwards to a post. After a reservation step the app refreshes every listing detail query and the post, since a hand-over closes the item's post (G34).
+
+**Step 4c (2026-11-04, `0562`).** A notification about a listing opens the listing's post. One BEFORE INSERT trigger on `notifications_outbox` resolves the post of `params.listingId` and adds `params.postId` plus the `/post/[id]` route (`params.id`), so the push tap allowlist (which prefers `postId`) and the in-app notification center (which follows the stored route) both land on the post; the writers of each kind are untouched, and step 6 writes post ids at the source. `params.listingId` stays, so an older app build opens the listing route, which forwards to the post; rows written before `0562` keep their listing route for the same reason. The listing share link is the post's `/post/<id>` link when the listing has a post (`buildListingShareUrl`). Rejected: rewriting the eight notification writers (several are redefined in the housing range, and all of them go to `post_handoffs` / posts in step 6) and backfilling stored notifications (their listing route already forwards).
+
+**Affected.** `app/apps/mobile/src/screens/post/PostDetailScreen.tsx`, `ListingPostDetail.tsx`, `src/screens/marketplace/MarketplaceListingRoute.tsx`, `MarketplaceListingDetailScreen.tsx`, `MarketplaceListingDetailView.tsx`, `src/hooks/useListingPostRedirect.ts` (replaces `useListingMirrorRedirect`), `ListingDetailActions.tsx`, `src/lib/buildListingShareUrl.ts`, `src/lib/notifications/pushRouteAllowlist.ts`, `@kc/domain` `MarketplaceListingDetail.feedHidden`, `supabase/migrations/0560_listing_detail_feed_hidden.sql`, `0561_listing_detail_by_post.sql`, `0562_listing_notifications_open_the_post.sql`, `docs/spec/07` §7.4, `docs/spec/requirements/04_posts.md`.
 
 ## D-212 — Post and listing detail pages share one hero + content-card frame (2026-11-03)
 
@@ -1702,12 +1659,51 @@ Owner rules that go with it:
 
 **Affected.** `apps/mobile/src/components/marketplace/MarketplaceListingDetailView.tsx`, `ListingMediaGallery.tsx`, `components/post-detail/DetailHeroCard.tsx`, `screens/post/PostDetailScrollContent.tsx`. No `FR-*` AC changes.
 
----
+## D-213 — Live public finance numbers behind organization-controlled toggles; refines `D-196` for the public view (2026-11-03)
+
+**Decision.** The public view of an organization's finances is **live** aggregates, not only frozen snapshots, under three guards: (1) every block (`show_totals`, `show_donations_count`, `show_program_ratio`, `show_category_breakdown`, `show_monthly_trend`) is a boolean in `organizations.transparency_settings`, **default off**, changed only by a super admin through `finance_transparency_settings_set`; (2) each ledger entry carries `is_public` (default true) so a single entry can be excluded; (3) the anon-safe RPC `rpc_org_transparency(p_slug)` returns aggregates only, built from cleared, non-deleted, ILS, public, non-transfer entries, with expense categories folded into the known keys. Its return type has no counterparty, donor, entry or account field. The snapshot flow of `FR-FIN-018..020` stays planned for yearly, reviewed reporting; the two views coexist. A donor's own per-donation choice is deferred to payment mirroring (`FIN-DONOR-PRIVACY`).
+
+**Why.** PM request (2026-11-03): numbers should be live, with the organization deciding what is exposed and, later, donors deciding per donation. Defaulting everything to off keeps the old guarantee that nothing becomes public by accident, and the aggregate-only shape keeps donor privacy structural instead of a convention.
+
+**Affected.** `supabase/migrations/0470_finance_accounts_transparency.sql`, `app/packages/domain/src/admin/FinanceTransparency.ts`, `app/packages/infrastructure-supabase/src/admin/SupabaseOrgTransparencyRepository.ts`, `app/apps/mobile/src/components/finance/**`, `app/apps/mobile/app/(admin)/money/visibility.tsx`. Product decision: D111.
 
 ## Change Log
 
 | Version | Date | Summary |
 | ------- | ---- | ------- |
+| 4.49 | 2026-11-04 | `D-220` step 4b: item reservations on the post page; the listing detail opens by post id (`0561`). |
+| 4.50 | 2026-11-04 | `D-220` step 4c: listing notifications and the listing share link open the post (`0562`). |
+| 4.51 | 2026-11-04 | `D-221`: an organization's event is a time-world post with `event_post_details`; registrations on `post_handoffs` (`0563`). |
+| 4.52 | 2026-11-04 | `D-221` step 5b: a member of an organization publishes its event from the one create form; the post page shows the event, registration and the organizer's roster; the organizer create screen is retired. |
+| 4.53 | 2026-11-04 | `D-221` step 5c: event waitlist with automatic promotion and organizer-marked attendance with its karma (`0564`, S13 approved as `D124`). |
+| 4.54 | 2026-11-04 | `D-214` step 6 plan (6a-1 … 6d); 6a-1: the leaf readers read `posts` / `post_handoffs` with unchanged RPC shapes (`0565`). |
+| 4.55 | 2026-11-04 | `D-214` step 6a-2: the handoff readers and the housing booking-details RLS read `post_handoffs` / `posts` with unchanged RPC shapes (`0620`). |
+| 4.56 | 2026-11-04 | `D-214` step 6a-3a: the handoff push triggers, the cancel-reason default, the ratings and booking-details foreign keys, `rate_giving_handoff` and the food expiry sweep move to `post_handoffs` (`0621`); the writers' returned rows are 6a-3b. |
+| 4.57 | 2026-11-04 | `D-214` step 6a-3b: the handoff writer RPCs build their returned `giving_handoffs` row from `post_handoffs` (`giving_handoff_row_of`), and `delete_my_listing` reads the record (`0622`). |
+| 4.58 | 2026-11-04 | `D-214` step 6a-4a: the ride readers (rides feed, series dates, feed wait, emergency, completion checks, route-alert delivery, the open-after-departure health check) read `post_handoffs` / `posts` / `ride_post_details` with unchanged RPC shapes (`0623`); the ride writers are 6a-4b. |
+| 4.59 | 2026-11-05 | `D-214` step 6a-4b: the ride writers — the series materializer, drop, cancel and sweep, the offer expiry sweep and the booking, confirm and completion RPCs — write and lock `posts` / `ride_post_details`, and the listing follows (`0624`). |
+| 4.60 | 2026-11-05 | `D-214` step 6a-5a: the hourly listing write cap counts the listing-world post a create RPC writes, sharing one budget with directly inserted listings (`0625`). |
+| 4.61 | 2026-11-05 | `D-214` step 6a-5b: `posts` gains the listing columns its readers need (`moderation_status`, `availability_status`, `kind_id`, `published_at`, `max_radius_km_override`, `legacy_listing_id`), backfilled and kept in sync both ways, with a `listing_column_mismatches` count in the unification report (`0626`). |
+| 4.62 | 2026-11-05 | `D-214` step 6a-5c: the owner management RPCs lock the post before the listing and write the status on the record (`post_lock_own_listing`, `post_record_set_status`), removing the owner-action vs booking lock-order inversion (`0627`). |
+| 4.63 | 2026-11-05 | `D-214` step 6a-5d: listing visibility is decided on the post (`post_listing_visible_to`, `is_listing_visible_to` delegating), and a moderation hold no longer closes a post-owned listing (#1907) (`0628`). |
+| 4.64 | 2026-11-05 | `D-214` step 6a-5e: the listing detail and the owner and profile lists read the post of a post-owned listing, with byte-identical results; other shapes wait for content parity in 6b (`0629`). |
+| 4.65 | 2026-11-05 | `D-214` step 6a-5f: browse, recommendations, map pins, map clusters and the rides feed read the post of a post-owned listing, with byte-identical results and unchanged plans; the map clusters plan again (#1911) (`0630`, `0631`). |
+| 4.66 | 2026-11-05 | `D-214` step 6a-5g: search and the similar listings read the post of a post-owned listing, with byte-identical results and unchanged plans; text and embedding stay on the listing (`0632`). |
+| 4.67 | 2026-11-05 | `D-214` step 6a-5h: the app's listing cards read the post of a post-owned listing (one request, posts RLS, listing fallback), completing 6a-5. |
+| 4.68 | 2026-11-05 | `D-214` step 6a-6a: `post_embeddings` holds a post's embedding (copied from post-owned listings), and search ranks a post-owned listing on its post's through `listing_embedding_of` (`0633`). |
+| 4.69 | 2026-11-05 | `D-214` step 6a-6b: the embed worker claims, stores and fails jobs through service-role RPCs (skip-locked claim, store on the post for a post-owned listing, re-queued jobs stay pending) (`0634`). |
+| 4.70 | 2026-11-05 | `D-214` step 6a-6c: matching v2 reads a post-owned listing's record through `listing_record_of` (compute, sweep, refresh), with unchanged pairs and scores (`0635`). |
+| 4.71 | 2026-11-05 | `D-214` step 6a-6d: `rpc_my_matches` and `api_bot_my_matches` read the record of a post-owned listing; the delivery, respond and LLM readers need no change (`0636`). |
+| 4.48 | 2026-11-04 | Added `D-220` (G1 step 4a: `/post/[id]` is the detail screen of every post, listing routes forward to it; supersedes the redirect half of `D-206`; `0560`). |
+| 4.47 | 2026-11-04 | Added `D-219` (G1 step 3c / G34: an item closes through its post; the hand-over no longer pays its own karma; `0559`). |
+| 4.46 | 2026-11-04 | `D-217` step 3b‴: the housing writers and the generic cancel write `post_handoffs`; numbered after the housing range (`0610`). |
+| 4.45 | 2026-11-04 | `D-217` step 3b″: the ride and knowledge booking writers write `post_handoffs`; backfill of hidden posts for live handoffs without one (`0558`). |
+| 4.44 | 2026-11-04 | Added `D-218` (G1 step 3b-pre: every published listing has a post; `posts.feed_hidden` separates existence from feed exposure; `0557`). |
+| 4.43 | 2026-11-04 | `D-217` step 3b: the ride / knowledge booking RPCs and readers accept a post id; finding that recurring-ride occurrences and unshared knowledge offers have no post, so their record stays `giving_handoffs` until 3b-pre (`0556`). |
+| 4.42 | 2026-11-04 | Added `D-217` (G1 step 3a: the items / food handoff RPCs and sweeps write `post_handoffs`; `giving_handoffs` derived both ways; `0555`). |
+| 4.41 | 2026-11-03 | Added `D-216` (G1 step 2: the listing worlds' RPCs write posts and derive a native listing that syncs back; items unchanged; `0554`). |
+| 4.40 | 2026-11-03 | Added `D-214` (G1 plan: reverse the listing mirror, move flows one PR at a time, drop `listings` last; ADR-006). |
+| 4.39 | 2026-11-03 | Added `D-213` (live public finance numbers behind organization-controlled toggles, default off; refines `D-196` for the public view; `FIN-P0`). |
 | 4.38 | 2026-11-03 | Added `D-210` (store review on the Cloudflare Pages domain until a domain is bought; KC Pro free year then $30/$100 monthly; support mailbox). |
 | 4.37 | 2026-11-03 | Added `D-209` (one dependency audit over every lockfile; reviewed exceptions expire within 90 days; gate audits on dependency changes, daily schedule otherwise; #1373). |
 | 4.36 | 2026-11-02 | `D-195` addendum: an owner's approval is required for gate-weakening changes only into `main`; on `dev` the judges pass with warnings and the release PR surfaces the changes to the owner. |
@@ -1726,25 +1722,25 @@ Owner rules that go with it:
 | 4.23 | 2026-10-30 | Added `D-195` (three-tier CI/CD: single required `CI gate` PR check, nightly mobile builds, one owner approval before prod; supersedes parts of `D-53` and `D-193`). |
 | 4.22 | 2026-10-17 | Added `D-193` (CI speed: pnpm/Turbo cache + path-filter skips; single TestFlight/Play workflows; closes #941/#942). |
 | 4.21 | 2026-10-16 | Added `D-192` (KC mobile store track + EAS CI; unpause #836 / #837). |
-| 4.20 | 2026-10-16 | Added `D-191` (GloWe translation engine ported to KC `translate` + `content_translations`). |
-| 4.19 | 2026-10-16 | Added `D-190` (GloWe sunset; KC-only codebase; migration `0238`). |
-| 4.18 | 2026-07-27 | Added `D-189` (GloWe `staging` branch + dual URLs + Playwright visual gate; INFRA-QA-W1/W2). |
-| 4.17 | 2026-07-27 | Added `D-186` (one registration path for GloWe opportunities and events; capacity + registration_mode enforced server-side; FR-GLOWE-012). |
-| 4.16 | 2026-07-27 | Added `D-185` (GloWe publish guards + profile privacy enforced in Postgres; FR-GLOWE-003 / FR-GLOWE-016). |
-| 4.15 | 2026-07-27 | Added `D-184` (GloWe Home unified discovery feed; FR-GLOWE-016 AC2 rewrite). |
-| 4.14 | 2026-07-22 | Added `D-183` (GloWe follow on KC `follow_edges` via `backend.js` + `glowe-follow.js`; public MVP only; FR-GLOWE-026). |
-| 4.13 | 2026-07-22 | Added `D-182` (GloWe prod synthetics → `glowe_health_checks` + admin health panel; `INFRA-QA-W7`). |
-| 4.12 | 2026-07-19 | Added `D-181` (app-wide semver + auto patch on `dev` push; GloWe footer `vX.Y.Z`; FR-GLOWE-025). |
-| 4.11 | 2026-07-19 | Added `D-180` (GloWe `.tr-slot` toggle convention + consistent org card actions; FR-TRANSLATE-005 comments/tags). |
-| 4.10 | 2026-07-16 | Added `D-178` (Personal Area / bottom-nav "Profile" tab gate replaced hard redirect-home with the FR-GLOWE-023 contextual join modal; header auth button moved inline next to the language toggle on mobile). |
-| 4.9 | 2026-07-15 | Added `D-177` (GloWe posts share via one native Web Share button with silent clipboard+toast desktop fallback; removes per-network buttons + copy-link; **supersedes `D-67`**; bundles the nine-item GloWe design-fixes UX pass; `FR-GLOWE-008` AC5). |
-| 4.8 | 2026-07-05 | Added `D-69` (GloWe messaging on KC chats supersedes outreach stub; volunteer offers as `post_type='offer'` on the Wishing Well; dev persona seed + workflow; `FR-GLOWE-013..016`). |
-| 4.7 | 2026-07-04 | Added `D-68` (GloWe guest conversion ships Mode A instant contextual join now; Mode B progressive disclosure is PM-gated; `FR-GLOWE-023`). |
-| 4.6 | 2026-07-04 | Added `D-67` (GloWe community-post share keeps social buttons and adds a copy-link control writing `postCanonicalUrl` to the clipboard; canonical URL keyed on `postId`; `FR-GLOWE-008` AC5). |
-| 4.5 | 2026-06-29 | Added `D-66` (GloWe Events are opportunities-with-a-date and RSVPs are applications — additive columns + status guard in migration `0211`, no `glowe_events`/`glowe_event_registrations` tables; reconciles the rich event brainstorm with the convergence model; `FR-GLOWE-007` AC9, `FR-GLOWE-012` AC7). |
+| 4.20 | 2026-10-16 | Added `D-191` (smart translation engine on KC `translate` + `content_translations`). |
+| 4.19 | 2026-10-16 | Added `D-190` (second product removed; KC-only codebase; migration `0238`). |
+| 4.18 | 2026-07-27 | Added `D-189` (retired since, D-190). |
+| 4.17 | 2026-07-27 | Added `D-186` (retired since, D-190). |
+| 4.16 | 2026-07-27 | Added `D-185` (retired since, D-190). |
+| 4.15 | 2026-07-27 | Added `D-184` (retired since, D-190). |
+| 4.14 | 2026-07-22 | Added `D-183` (retired since, D-190). |
+| 4.13 | 2026-07-22 | Added `D-182` (retired since, D-190). |
+| 4.12 | 2026-07-19 | Added `D-181` (app-wide semver + auto patch on `dev` push). |
+| 4.11 | 2026-07-19 | Added `D-180` (retired since, D-190). |
+| 4.10 | 2026-07-16 | Added `D-178` (retired since, D-190). |
+| 4.9 | 2026-07-15 | Added `D-177` (retired since, D-190). |
+| 4.8 | 2026-07-05 | Added `D-69` (retired since, D-190). |
+| 4.7 | 2026-07-04 | Added `D-68` (retired since, D-190). |
+| 4.6 | 2026-07-04 | Added `D-67` (retired since, D-190). |
+| 4.5 | 2026-06-29 | Added `D-66` (retired since, D-190). |
 | 4.4 | 2026-06-29 | Added `D-65` (UGC translation Phase 1b: free Gemini Flash now + pluggable provider seam → paid DPA Flash before public launch is env-only; `TranslateAndCache`/`ITranslationProvider` realized server-side in the `translate` Edge Function; app depends on new `ITranslationService` port). Recorded alongside `D-63`/`D-64` (translation epic). |
-| 4.3 | 2026-06-29 | Added `D-62` (GloWe session isolation: `storageKey:'glowe-auth-v1'` + `scope:'local'` signOut + immediate Personal Area refresh on logout; fixes profile-still-visible-after-logout bug). |
-| 4.2 | 2026-06-25 | Added `D-61` (GloWe added as an additional frontend on KC's shared Supabase backend; Phase A shares Auth identity only; GloWe data namespaced `glowe_`, migration `0204`; `FR-GLOWE-001`, `spec/17_glowe_frontend.md`). |
+| 4.3 | 2026-06-29 | Added `D-62` (retired since, D-190). |
+| 4.2 | 2026-06-25 | Added `D-61` (retired since, D-190). |
 | 4.1 | 2026-06-08 | Added `D-155` (karma economy: self-only at MVP, single-anchor awards, status-anchored closure, own-row Realtime). Added `D-156` (anti-collusion caps as hard precondition for karma public flip; `FR-KARMA-008`). |
 | 4.0 | 2026-06-04 | Added `D-58` (native Sign in with Apple via `signInWithIdToken` + raw nonce; `FR-AUTH-004` implemented; mirrors `D-33`; Apple portion of `TD-24` closed in code; live flow pends Supabase Apple provider config). |
 | 3.9 | 2026-06-01 | Added `D-57` (reports require an active account — `reports_insert_self` gated on `is_active_member`; migration `0183`; closes `TD-88`). |
@@ -1799,3 +1795,85 @@ Owner rules that go with it:
 
 **Affected.** `app/packages/domain/src/worlds/givingWorlds.ts`, `launch/launchWorlds.ts`, `value-objects.ts`; `app/apps/mobile/src/navigation/donationsHubTiles.ts`, `lib/unifiedCreate/*`, `hooks/useUnifiedCreateCategory.tsx`, `components/CreatePostForm/{LinkCreateForm,UnifiedCreateHeader}.tsx`, `components/{TabBar,DonationLinkFields}.tsx`, `components/giving/*`, `app/(tabs)/donations/index.tsx`; `supabase/migrations/0548_donation_link_world_categories.sql`, `supabase/functions/validate-donation-link`. Spec: `FR-DONATE-001`, `FR-POST-001` AC6, `FR-FEED-020` AC2.
 
+## D-215 — Knowledge library resources are a catalog entity, not posts (2026-11-03)
+
+**Decision.** A knowledge library resource (course, article, link, book, video, document, podcast, tool, dataset) is its own entity, `knowledge_resources`, with its own review state machine, versions, chunks and embeddings. Exchange posts of the knowledge world (lesson offer, mentoring, consulting hour, learning request, mentoring request, question) stay on `listings` / `giving_handoffs` like every other world. Both carry the same three axes (shelf = `public.categories`, subject = `knowledge_topics`, format = kind) and are served by one retrieval call, `knowledge_search`, and by the `api_knowledge_*` service contract. Spec: `docs/spec/18_knowledge_world.md` §18.2, §18.7; `docs/spec/requirements/23_knowledge.md`.
+
+**Why.** A resource has no offer / request direction, no counterpart, no closing and no expiry; it must stay findable for years, and it carries structure (modules, lessons, quizzes, chunk citations) that the one Post model (D2, D19) was never meant to hold. Forcing it onto `listings` would spread knowledge-only columns and states across the shared post triggers, matching and feeds. Community links (`donation_links`, D107) and the organization catalog already set the precedent of non-post catalog entities beside the feed.
+
+**Rejected.** A `resource` listing kind on `listings` (pollutes the post state machine and matching; expiry and direction would be meaningless). Storing resources only as community links (`donation_links` has no topics, kinds, versions, chunks or review beyond approval). A separate search index service (one Postgres hybrid search with RRF already exists; adding lanes keeps one source of truth and RLS).
+
+**Affected.** New `knowledge_*` tables and RPCs (migration range `0570–0589`), `supabase/functions/knowledge-*`, `embed-worker` provider, `packages/{domain,application,infrastructure-supabase}/src/knowledge/`, `apps/mobile` knowledge hub tabs and admin knowledge screens.
+
+## D-225 — The platform org admin manages demo data, scoped by one SQL predicate (2026-11-04)
+
+**Decision.** `admin_demo_data_status`, `admin_wipe_demo_data` and `admin_seed_demo_data` accept the super admin and the `org_admin` whose grant is scoped to the platform organization, through the single predicate `can_manage_demo_data(uid)` (migration `0611`). `demo_data.manage` in the client permission matrix lists `super_admin` and `org_admin`; the server decides the scope.
+
+**Why.** The PM runs the Karma Community org day to day as its org admin while the super admin seat belongs to the project account, and both need the demo-data screen. Only one active super admin may exist (`FR-ADMIN-017`), so a second super admin was not an option.
+
+**Rejected.** Letting every `org_admin` manage demo data (the org admins of the demo organizations could wipe the seed users they belong to). A second super admin (breaks the single-super-admin index, TD-95).
+
+**Affected.** `supabase/migrations/0614_demo_data_platform_admin.sql`, `supabase/tests/0614_demo_data_platform_admin.sql`, `packages/domain/src/admin/AdminPermission.ts`, `(admin)/demo-data`, `FR-ADMIN-031 AC6`. Same pattern as `admins.grant_role`: the client gate is coarse, the RPC re-checks the scope.
+
+## D-222 — Tester builds show the housing and knowledge feeds ahead of the remote flag (2026-11-04)
+
+**Decision.** `withTesterActiveWorlds` (`@kc/domain`) forces `world_housing_enabled` and `world_knowledge_enabled` on in the flags the mobile app reads (`useRemoteAppFlags`) when `EXPO_PUBLIC_ENVIRONMENT=development`. Every consumer (hub tiles, world screens, create form) sees the same flags. A production build, or one with the variable unset, is unchanged and follows `app_flags`.
+
+**Why.** The PM tests TestFlight builds (`development` environment) and wants every world that can be an in-app marketplace feed to be one now (#1624, #1630), but must approve the production flip himself. A migration would flip prod at the next release, and a manual SQL update on the shared dev database needs the PM's confirmation each time and is invisible in review.
+
+**Rejected.** A migration setting both flags true (reaches prod on release). A manual `update public.app_flags` on dev (unreviewed, easy to forget, lost on a database reset).
+
+**Affected.** `app/packages/domain/src/launch/launchWorlds.ts`, `app/apps/mobile/src/hooks/useLaunchWorldFlags.ts`, `docs/SSOT/spec/21_housing.md` (FR-HOUSING-001 AC1), `docs/SSOT/spec/23_knowledge.md`. Remove the override for a world when its production flag flips (housing: with HOUSING-H1 and `TD-245`).
+
+## D-223 — Animals publish directly; the listing form picks a kind (2026-11-04)
+
+**Decision.** Migration `0612` removes animals from the routed worlds of `listings_enforce_world_rules` (medical and environment stay routed), replaces the animals kinds with four binding ones (`adoption_offer`, `adoption_request`, `foster_offer`, `foster_request`; boarding vs pet-sitting is `care_mode`) and turns `worlds.feed_mirror` on for animals. On the client animals is a feed world, but its create form opens as a listing only once the world is launched (`resolveCreateCategory`, shared with knowledge); tester builds launch it (`TESTER_ACTIVE_WORLD_FLAGS`). When a direction has several kinds the listing form shows a kind chooser (`kindChoices`, `ListingKindChooser`), which also gives knowledge its private-lesson kind.
+
+**Why.** The PM wants animals to be real give-and-take between members (handover, boarding, pet-sitting), as `docs/spec/05` §5.9 already said ("everyone may publish and take"); the server rule that demanded an external body contradicted it. The form had one kind per direction, which cannot express handover vs boarding.
+
+**Rejected.** Keeping the external body optional-but-prompted in the UI (no one asked for it). One `animal_care` kind with a mode that also covers handover (adoption and boarding have different fields and different handoff meaning). Mirroring knowledge into the main feed here (its listings wait for moderation and the post tests rely on it staying out).
+
+**Affected.** `supabase/migrations/0612_animals_world_direct.sql`, tests `0612_animals_world_direct.sql`, `0353`, `0522`; `@kc/domain` `ROUTED_WORLDS`, `FEED_WORLD_SLUGS`, `TESTER_ACTIVE_WORLD_FLAGS`; `app/apps/mobile` animals world screens, `animalsFieldSpecs.ts`, `ListingKindChooser`, `createCategories.ts`. Remove the tester override when `world_animals_enabled` is flipped on production.
+
+## D-224 — Knowledge mirrors into the main feed (2026-11-04)
+
+**Decision.** Migration `0613` turns `worlds.feed_mirror` on for knowledge. A published knowledge listing's post is listed in the main feed from the moment moderation publishes it (new listings still start in `pending_review`, R-Knowledge-1); already published open listings were exposed by the migration. This supersedes the knowledge part of D-218: knowledge listings are no longer kept out of the feed until the owner shares them. Later occurrences of a recurring ride stay hidden until they are the soonest (FR-RIDE-046), unchanged.
+
+**Why.** The PM wants every world's listings in the main feed (#1624, #1630). The share-to-feed step was a design choice of D-218, not a requirement: the post already existed, only its exposure was gated.
+
+**Rejected.** Leaving it to the owner's "share to feed" button (members did not know to use it, and the PM asked for the listings to arrive). A per-kind switch (a private lesson is as feed-worthy as a course).
+
+**Affected.** `supabase/migrations/0613_knowledge_world_in_feed.sql`; tests `0557`, `0560` (a later ride occurrence is now the hidden example), `0522`; `docs/spec/requirements/23_knowledge.md`.
+
+## D-226 — One graph per status lifecycle, on the FSM kernel (2026-11-09)
+
+**Decision.** Every status lifecycle has exactly one transition graph. It is declared in `@kc/domain` (`fsm/machines/`, registered in `FSM_MACHINES`), mirrored row for row in `public.fsm_state` / `public.fsm_edge` by migrations, and enforced in Postgres by `fsm_assert_transition` from each writer RPC and from a `before update of status` trigger. A contract test in `@kc/infrastructure-supabase` replays `supabase/migrations` and fails CI when the two copies differ. Machines move onto the kernel one PR at a time in the wave order of [`docs/architecture/state-machines.md`](../architecture/state-machines.md); the admin-task pilot is first (`0680`).
+
+**Why.** The inventory found ~35 lifecycles whose moves were written in two to five places (SQL checks, hand-written triggers, per-RPC filters, TS records, UI conditions), and those copies disagree in nearly every machine with more than one writer (gap `G61`). A table-driven catalog makes the graph data, gives the database the final word for every writer, and lets the UI ask the same graph which actions to show.
+
+**Rejected.** A Postgres enum per machine (fixes the state set, not the moves). An XState-style runtime library (a new dependency, and the domain must stay dependency-free). Generating SQL from TS (one more build step; a replayed contract test gives the same guarantee with plain migrations). Predicates and side effects inside the kernel (they read other rows; they stay in the writer).
+
+**Affected.** `app/packages/domain/src/fsm/**`, `app/packages/infrastructure-supabase/src/fsm/__tests__/**`, `supabase/migrations/0680_fsm_catalog.sql`, `supabase/tests/0680_fsm_catalog.sql`, `.github/workflows/ci-backend.yml`, `docs/superpowers/specs/2026-11-09-fsm-kernel-design.md`.
+
+## D-227 — One agent-agnostic skill takes an issue from claim to merge (2026-11-09)
+
+**Decision.** Every agent (Claude Code, Cursor, Codex, Antigravity, the KC bot) works an issue through one skill, [`.claude/skills/kc-issue-to-merge/`](../../.claude/skills/kc-issue-to-merge/SKILL.md): pick (the issue given, else the oldest issue at the highest `priority:*` label that is not claimed, blocked or awaiting triage), de-duplicate, claim, define and label, plan a test matrix, implement test-first, open findings outside the scope as issues, open a ready PR, and drive it until it merges into `dev`. One run takes one issue. Technical gaps in an issue (acceptance criteria derivable from the spec, test plan, labels) are filled by the agent in a visible `Filled in by agent:<x>` section; product questions (a spec contradiction, unspecified user-visible behavior) block the issue with one question and a recommendation for the PM. Findings carry `found-by-agent` + `needs-triage` and stay out of the agent queue until the PM removes `needs-triage`. All GitHub calls are `gh api` REST, so the skill runs where GraphQL is blocked. The process labels it relies on are declared in `sync-agent-labels.yml`, and `agent:claude` joins the claim and opened-by label sets.
+
+**Why.** The rules already existed (claims, operating model, board, PR template, babysit) but were spread over six files, so each agent re-read them and applied them differently: duplicate issues, unlabeled findings, PRs without tests at the levels the change touched, and long sessions spent reading. One ordered procedure with lazily-read references keeps the context small and the outcome uniform across agents.
+
+**Rejected.** Agents deciding product questions on their own and logging a decision (merges into `dev` are automatic, so product behavior would change without PM review). Findings entering the agent queue directly (agents would set their own priorities). One skill run working issues back to back (context grows with every issue; a continuous loop stays the job of `/loop` or CLAUDE.md §13). Board-only task selection (reading the project needs a project-scoped token that most agents lack; labels mirror it).
+
+**Affected.** `.claude/skills/kc-issue-to-merge/**`, `.github/workflows/sync-agent-labels.yml`, `.github/workflows/pr-opened-by.yml`, `.github/PULL_REQUEST_TEMPLATE.md`, `docs/agents/ISSUE_CLAIMS.md`, `docs/agents/OPERATING_MODEL.md`, `AGENTS.md`, `.cursor/rules/git-workflow.mdc`.
+
+
+## D-228 — Production database is rebuilt as one baseline (2026-11-10)
+
+**Decision.** kc-prod is built from a single baseline migration assembled from per-module source files (`supabase/schemas/`), replacing the 543 incremental migrations, which are archived. Layout: `public` holds only the client contract (RLS tables and client-called RPCs); `kc_private`, `billing`, `audit`, `integrations` and `ops` are not exposed through the API. `users` is split into public profile, private data, account state and counters. `posts` stays the single content table with 1:1 detail tables for structured worlds and schema-validated JSONB for the rest; the post machine keeps the S1 states and gains `draft`. Volunteering shifts become event posts. Exact locations live in a private table and every search reads an approximate point. Realtime is Broadcast only. kc-dev is rebuilt from the same baseline at cut-over. Full design: [`docs/db/target-design.md`](../db/target-design.md).
+
+**Why.** kc-prod is empty, so there is no data to migrate, and the live contract (53 tables and about 313 functions referenced by code) is far narrower than the schema on kc-dev (164 tables, 730 functions). Replaying 153 k lines of superseded SQL into production would carry over dead objects, two generations of `posts` columns and broad default grants ([`docs/db/current-state.md`](../db/current-state.md)).
+
+**Rejected.** Squashing the existing chain as-is (keeps the legacy objects and grants). One Postgres schema per domain for every table (renames every client query for no security gain; the boundary that matters is exposed vs. not exposed). Redis and a separate search or feed service at launch (no measured need; the outbox and one-RPC-per-screen rule leave the slot open). Postgres enums for lifecycles (D-226 stands).
+
+**Open.** Retention period for billing records after account deletion (legal advice pending). Video provider.
+
+**Affected.** `docs/db/**`; later `supabase/schemas/**`, `supabase/migrations/**`, `supabase/tests/**`, `app/packages/infrastructure-supabase/**`, `supabase/functions/**`, CI workflows.

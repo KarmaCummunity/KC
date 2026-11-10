@@ -144,4 +144,14 @@ describe('AdminsLayersView', () => {
     const label = L.admin.admins.layers.personA11y('multi', roles.volunteer_manager, 'Alpha', 1);
     expect(screen.getByRole('button', { name: label })).toBeTruthy();
   });
+
+  it('collapses a layer band and hides its people until expanded again', () => {
+    state.snapshot = SNAPSHOT;
+    renderView();
+    expect(screen.getByText('alice')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('hierarchy-layer-toggle-1'));
+    expect(screen.queryByText('alice')).toBeNull();
+    fireEvent.click(screen.getByTestId('hierarchy-layer-toggle-1'));
+    expect(screen.getByText('alice')).toBeTruthy();
+  });
 });

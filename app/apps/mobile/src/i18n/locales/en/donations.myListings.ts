@@ -24,6 +24,7 @@ export const marketplaceMyListings = {
   myListingsPausedHint: 'Paused: hidden from everyone but you',
   myListingsClosedHint: 'Closed: you can only add photos',
   myListingsErrorTitle: "That didn't work",
+  myListingsErrorNoPost: 'This offer has no post to assign yet.',
   myListingsErrorWrongStatus: "This action isn't available in the listing's current status.",
   myListingsErrorActiveHandoff: 'The listing has an active reservation or booking. Finish or cancel it first.',
   myListingsErrorHandoffHistory: "A listing that was handed over can't be deleted: it is part of the other side's history.",

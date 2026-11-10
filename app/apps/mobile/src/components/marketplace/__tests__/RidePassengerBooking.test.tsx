@@ -2,6 +2,9 @@
 // G47 / D73 — the ride screen: the driver sees every booking and approves or declines each;
 // a passenger books a chosen number of seats and follows their own booking.
 import { afterEach, describe, expect, it, vi } from 'vitest';
+vi.mock('../../giving/RidePlaceField', () => ({ RidePlaceField: () => null }));
+vi.mock('../../../hooks/useRidePlaces', () => ({ useRidePlaces: () => ({ data: [], isLoading: false }) }));
+vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarVisibility: () => false, shellTabBarHeightPx: () => 0, useShellTabBarScrollInset: () => 0 }));
 import React from 'react';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -23,6 +26,8 @@ const openRidePassengerChat = vi.fn();
 let sessionUserId: string | null = 'u_driver';
 
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: routerPush }) }));
+vi.mock('../../closure/OwnerAssignUserButton', () => ({ OwnerAssignUserButton: () => null }));
+vi.mock('../../AvatarInitials', () => ({ AvatarInitials: () => null }));
 // The kit buttons pull in reanimated and haptics; their press feedback is not under test here.
 vi.mock('react-native-reanimated', async () => (await import('../../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
 vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogTestKit')).hapticsDouble);
@@ -57,7 +62,7 @@ vi.mock('../../../services/platformConfirm', () => ({ confirmAction: (...args: u
 vi.mock('../../../lib/analytics', () => ({ track: vi.fn() }));
 vi.mock('../../../services/rideSafetyComposition', () => ({ raiseRideEmergency: vi.fn() }));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn() }));
-vi.mock('../../../lib/haptics', () => ({ hapticSuccess: vi.fn() }));
+vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticSuccess: vi.fn() }));
 // The card module pulls in native image/icon modules; only its time formatter is used here.
 vi.mock('../../cards/ListingCard', () => ({ formatRideTime: (iso: string | null) => iso }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
@@ -105,7 +110,7 @@ describe('RideBookingActions — passenger', () => {
     fireEvent.click(view.getByLabelText('rideBooking.moreSeats'));
     expect(view.getByTestId('ride-booking-seats').textContent).toBe('2');
     fireEvent.click(view.getByTestId('giving-handoff-book-seat'));
-    await waitFor(() => expect(book).toHaveBeenCalledWith('l_ride', 2, { capacity: 3, departsAt: null }));
+    await waitFor(() => expect(book).toHaveBeenCalledWith('l_ride', 2, { capacity: 3, departsAt: null }, { requestedMeetingPoint: null }));
     expect(listForRide).not.toHaveBeenCalled();
   });
 

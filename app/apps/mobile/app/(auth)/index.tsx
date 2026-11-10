@@ -1,7 +1,7 @@
 // Splash + Welcome / Auth-method picker.
 // Mapped to SRS: FR-AUTH-001 (splash), FR-AUTH-002 (auth entry, all methods),
 // FR-AUTH-014 (guest preview entry point).
-// docs/SSOT/spec/01_auth_and_onboarding.md
+// docs/spec/requirements/01_auth_and_onboarding.md
 import React, { useEffect, useState } from 'react';
 import { View, TouchableOpacity, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -30,6 +30,7 @@ import { mapAuthErrorToHebrew } from '../../src/services/authMessages';
 import { NotifyModal } from '../../src/components/NotifyModal';
 import { AmbientBlobs } from '../../src/components/ui/AmbientBlobs';
 import { AuthMiniAboutTeaser } from '../../src/components/auth/AuthMiniAboutTeaser';
+import { AuthLanguageToggle } from '../../src/components/auth/AuthLanguageToggle';
 import { useWelcomeScreenStyles } from '../../src/components/auth/welcomeScreen.styles';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
@@ -168,6 +169,7 @@ export default function WelcomeScreen() {
     <SafeAreaView style={styles.container}>
       <AmbientBlobs density="auth" />
       <ScrollView contentContainerStyle={styles.scroll} bounces={false}>
+        <AuthLanguageToggle style={styles.languageToggle} />
 
         {/* Hero */}
         <Animated.View style={[styles.hero, heroStyle]}>

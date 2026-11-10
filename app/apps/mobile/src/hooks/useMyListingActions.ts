@@ -9,7 +9,10 @@ import { useTranslation } from 'react-i18next';
 import { marketplaceRepository } from '../services/marketplaceComposition';
 import { pickListingImages, uploadListingImages } from '../services/listingImageUpload';
 import { listingOwnerErrorKey } from '../lib/listingOwnerError';
+import type { MyListingRow } from '@kc/domain';
 import { useAuthStore } from '../store/authStore';
+import { useClosureStore } from '../store/closureStore';
+import { listingOfferAllowsCloseWithout } from '../lib/listingOwnerClosure';
 import { useInvalidateMyListings } from './useMyMarketplaceListings';
 
 /** Native confirm dialog (window.confirm on web); resolves true when the owner confirms. */
@@ -39,7 +42,7 @@ export interface MyListingActions {
   readonly busyId: string | null;
   readonly pause: (listingId: string) => void;
   readonly resume: (listingId: string) => void;
-  readonly fulfill: (listingId: string) => void;
+  readonly fulfill: (listing: MyListingRow) => void;
   readonly remove: (listingId: string) => void;
   readonly addPhotos: (listingId: string) => void;
 }
@@ -84,11 +87,29 @@ export function useMyListingActions(refetch: () => Promise<unknown>): MyListingA
     [run],
   );
   const fulfill = useCallback(
-    (listingId: string) =>
-      void confirmThenRun(listingId, 'marketplace.myListingsFulfillTitle', 'marketplace.myListingsFulfillHint', () =>
-        marketplaceRepository().fulfillMyListing(listingId),
-      ),
-    [confirmThenRun],
+    (listing: MyListingRow) => {
+      // Requests keep the listing close. Offers name a recipient on the post.
+      if (listing.direction === 'request') {
+        void confirmThenRun(
+          listing.listingId,
+          'marketplace.myListingsFulfillTitle',
+          'marketplace.myListingsFulfillHint',
+          () => marketplaceRepository().fulfillMyListing(listing.listingId),
+        );
+        return;
+      }
+      if (!listing.feedPostId || !userId) {
+        notify(t('marketplace.myListingsErrorTitle'), t('marketplace.myListingsErrorNoPost'));
+        return;
+      }
+      void useClosureStore.getState().start(listing.feedPostId, userId, 'Give', {
+        initiator: 'my-listings',
+        offerAssign: true,
+        allowCloseWithout: listingOfferAllowsCloseWithout(listing.worldSlug),
+        worldSlug: listing.worldSlug,
+      });
+    },
+    [confirmThenRun, t, userId],
   );
   const remove = useCallback(
     (listingId: string) =>

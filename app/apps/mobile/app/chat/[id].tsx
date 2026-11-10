@@ -1,7 +1,6 @@
 // Chat conversation screen — FR-CHAT-002, 003, 004, 005, 010, 011, 013, 016.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
-import type { ListRenderItem } from 'react-native';
+import { View, TouchableOpacity, KeyboardAvoidingView, Platform, type ListRenderItem } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { MESSAGE_MAX_CHARS } from '@kc/domain';
 import { ChatError } from '@kc/application';
 import { useTheme, Text, TextInput, iconSize } from '@kc/ui';
+import { rtlTextAlignStart } from '../../src/lib/rtlLayout';
 import { useChatStore, type OptimisticMessage } from '../../src/store/chatStore';
 import { useAuthStore } from '../../src/store/authStore';
 import { container } from '../../src/lib/container';
@@ -30,23 +30,20 @@ import { EnablePushModal } from '../../src/components/EnablePushModal';
 import { ChatNotFoundView } from '../../src/components/chat/ChatNotFoundView';
 import { NotifyModal } from '../../src/components/NotifyModal';
 import { ChatConversationHeader } from '../../src/components/chat/ChatConversationHeader';
+import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVerticalOffset';
+import { CHAT_CONVERSATION_HEADER_HEIGHT } from '../../src/lib/platform/formChromeHeights';
 import { useChatTypingIndicator } from '../../src/hooks/useChatTypingIndicator';
 import { useChatMessageReactions } from '../../src/hooks/useChatMessageReactions';
 import { pickChatImage, uploadChatImageAndSend } from '../../src/services/chatMediaUpload';
-import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import type { MessageReactionType } from '@kc/infrastructure-supabase';
 import { webEnterToSend } from '../../src/components/chat/webEnterToSend';
+import { firstParam } from '../../src/lib/postChatPrefillDecision';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 const EMPTY_MESSAGES: OptimisticMessage[] = [];
 const chatThreadKeyExtractor = (row: ChatThreadListRow) =>
   row.rowType === 'message' ? row.message.clientId : row.rowKey;
-
-function routeStringParam(v: string | string[] | undefined): string | undefined {
-  const s = Array.isArray(v) ? v[0] : v;
-  return typeof s === 'string' && s.length > 0 ? s : undefined;
-}
 
 export default function ChatScreen() {
   const { id, prefill } = useLocalSearchParams<{ id: string; prefill?: string | string[] }>();
@@ -56,10 +53,13 @@ export default function ChatScreen() {
   const styles = useChatConversationStyles();
   const { colors } = useTheme();
   const userId = useAuthStore((s) => s.session?.userId)!;
+  const keyboardOffset = useKeyboardVerticalOffset({
+    headerHeight: CHAT_CONVERSATION_HEADER_HEIGHT,
+  });
 
   const messages = useChatStore((s) => s.threads[chatId] ?? EMPTY_MESSAGES);
   const { chat, counterpart, status: chatStatus } = useChatInit(chatId, userId);
-  const prefillText = routeStringParam(prefill);
+  const prefillText = firstParam(prefill);
   const [input, setInput] = useState(() => prefillText ?? '');
   const autoPrefillDedupeRef = useRef<string | undefined>(prefillText);
 
@@ -203,11 +203,12 @@ export default function ChatScreen() {
         shareHandle={counterpart.shareHandle ?? undefined}
         onOpenMenu={() => setMenuOpen(true)}
         peerUserId={counterpart.isDeleted ? null : counterpart.userId}
+        peerVerificationLevel={counterpart.verificationLevel}
       />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
-        keyboardVerticalOffset={88}
+        keyboardVerticalOffset={keyboardOffset}
       >
         {chat?.anchorRideId ? (
           <AnchoredRideCard anchorRideId={chat.anchorRideId} />

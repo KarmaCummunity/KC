@@ -17,6 +17,7 @@ function makeUserRow(overrides: Partial<SearchUserRow> = {}): SearchUserRow {
     city_name: 'Tel Aviv',
     followers_count: 10,
     items_given_count: 4,
+    verification_level: 1,
     ...overrides,
   };
 }
@@ -47,6 +48,7 @@ describe('mapUserSearchResult', () => {
       cityName: 'Tel Aviv',
       followersCount: 10,
       itemsGivenCount: 4,
+      verificationLevel: 1,
     });
   });
 

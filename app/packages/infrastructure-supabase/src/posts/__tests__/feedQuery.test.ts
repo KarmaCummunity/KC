@@ -77,11 +77,21 @@ function findOp<T extends Op['kind']>(ops: Op[], kind: T): Extract<Op, { kind: T
 }
 
 describe('buildFeedQuery — base shape', () => {
-  it('targets the posts table and selects POST_SELECT_OWNER', () => {
+  it('targets the posts table and selects one photo, without the recipient join', () => {
     const { client, ops } = makeFakeClient();
     buildFeedQuery(client, {}, undefined, 10);
+    const cols = findOp(ops, 'select')?.cols ?? '';
     expect(findOp(ops, 'from')?.table).toBe('posts');
-    expect(findOp(ops, 'select')?.cols).toContain('owner:users');
+    expect(cols).toContain('owner:users');
+    expect(cols).toContain('media_assets(');
+    expect(cols).toContain('.limit(1)');
+    expect(cols).not.toContain('recipient:');
+  });
+
+  it('never lists a post hidden from the feed (posts.feed_hidden, 0557)', () => {
+    const { client, ops } = makeFakeClient();
+    buildFeedQuery(client, {}, undefined, 10);
+    expect(ops.find((o) => o.kind === 'eq' && o.col === 'feed_hidden')).toEqual({ kind: 'eq', col: 'feed_hidden', val: false });
   });
 
   it('limits to pageLimit + 1 (next-page sentinel)', () => {

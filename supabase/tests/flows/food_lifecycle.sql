@@ -33,7 +33,7 @@ end $$;
 -- The listing's feed mirror (D-206), or null when the listing has none.
 create function pg_temp.mirror_status(p_listing uuid)
 returns text language sql as $$
-  select status::text from public.posts where listing_id = p_listing
+  select status::text from public.posts where listing_id = p_listing or post_id = p_listing limit 1
 $$;
 
 -- 1) Publishing: an offer carries the giver's expiry (D28); a request has none (D21).
@@ -96,11 +96,11 @@ begin
     'scheduled', 'the claimed offer is scheduled for pickup');
   perform kc_test.assert_eq(kc_test.listing_status(v_listing), 'open', 'the claimed offer stays open until handed over');
 
-  -- The app maps this index to `listing_not_available` (@kc/domain mapMarketplaceServerError).
+  -- The record's one-live-claim index (post_handoffs_active_post_uidx, 0555) surfaces as the
+  -- code the app already shows for it.
   perform kc_test.act_as(p.latecomer);
   perform kc_test.assert_raises(format('select public.claim_food_giving(%L)', v_listing),
-    'duplicate key value violates unique constraint "giving_handoffs_active_listing_uidx"',
-    'a second member cannot claim an offer with a live claim');
+    'listing_not_available', 'a second member cannot claim an offer with a live claim');
 end $$;
 
 -- 3) Hand over and rate: the listing closes, karma follows §7.6, each side rates once.
@@ -163,10 +163,24 @@ begin
 
   -- Simulate the hour passing: writing a past expiry would fire the write-time block (0266)
   -- instead of leaving the rows for the hourly sweep, so that trigger is off for the backdate.
-  alter table public.listings disable trigger listings_food_expiry_block;
+  if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then
+    execute 'alter table public.listings disable trigger listings_food_expiry_block';
+  end if;
+  if exists (select 1 from pg_trigger where tgname = 'posts_before_write_world_rules') then
+    alter table public.posts disable trigger posts_before_write_world_rules;
+  end if;
   update public.listings set expires_at = now() - interval '1 minute'
    where listing_id in (v_unclaimed, v_claimed);
-  alter table public.listings enable trigger listings_food_expiry_block;
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
+    update public.posts set expires_at = now() - interval '1 minute'
+     where listing_id in (v_unclaimed, v_claimed) or post_id in (v_unclaimed, v_claimed);
+  end if;
+  if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then
+    execute 'alter table public.listings enable trigger listings_food_expiry_block';
+  end if;
+  if exists (select 1 from pg_trigger where tgname = 'posts_before_write_world_rules') then
+    alter table public.posts enable trigger posts_before_write_world_rules;
+  end if;
 
   perform kc_test.assert_eq(public.food_expired_listings_sweep(), 2, 'the sweep expires both offers');
   perform kc_test.assert_eq(kc_test.listing_status(v_unclaimed), 'expired', 'unclaimed offer is expired, not closed');

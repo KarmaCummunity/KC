@@ -59,7 +59,7 @@ Add these under **GitHub → Settings → Secrets and variables → Actions** (r
 ### CodeRabbit (GitHub App — no secret in repo)
 
 1. Org admin installs [CodeRabbit](https://github.com/apps/coderabbitai) on `KarmaCummunity/KC`.
-2. `.coderabbit.yaml` is already committed — reviews focus on `app/apps/glowe-web/**`.
+2. `.coderabbit.yaml` is already committed — reviews cover the KC app, backend and scripts.
 3. Open a test PR; verify CodeRabbit posts review comments (non-merging).
 
 ### Promoting Snyk / GitGuardian to required checks
@@ -95,4 +95,4 @@ registry's bulk advisory endpoint (the one `npm audit` uses) which advisories af
   specific package are discussed with the owner privately, never in public issues.
 - **Not covered:** dependencies that the Edge Functions' esm.sh imports pull in (no Deno
   lockfile) and imports pinned to a range (reported as not auditable) — tracked in
-  `TECH_DEBT.md`.
+  the `tech-debt` issues.

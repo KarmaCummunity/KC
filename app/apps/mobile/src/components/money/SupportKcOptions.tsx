@@ -1,5 +1,6 @@
 // FR-DONATE-011 — the payment choices inside the "support KC" card:
-// one-time channels (Bit / PayBox / card page) and the monthly standing order.
+// one-time channels (Bit / PayBox / card page, each Bit / PayBox with its payee
+// phone when the server returns one — AC9) and the monthly standing order.
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +8,7 @@ import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { hasKcSupportOptions, type KcSupportChannel, type KcSupportOptions as Options } from '@kc/domain';
 import { PrimaryButton, SecondaryButton } from '../ui/Buttons';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { SupportKcPayeePhone } from './SupportKcPayeePhone';
 
 interface SupportKcOptionsProps {
   readonly options: Options | undefined;
@@ -16,6 +18,7 @@ interface SupportKcOptionsProps {
 
 const useStyles = makeUseStyles(({ colors }) => ({
   group: { gap: spacing.sm, marginTop: spacing.sm },
+  channel: { gap: spacing.xs },
   heading: { ...typography.h4, color: colors.textPrimary, textAlign: rtlTextAlignStart },
   body: { ...typography.body, color: colors.textSecondary, textAlign: rtlTextAlignStart },
   status: { ...typography.bodySmall, color: colors.textSecondary, textAlign: 'center' as const },
@@ -69,7 +72,12 @@ export function SupportKcOptions({ options, loading, onOpen }: SupportKcOptionsP
         <View style={styles.group}>
           <Text style={styles.heading} accessibilityRole="header">{t('supportKc.oneTimeHeading')}</Text>
           {oneTime.map((channel, index) => (
-            <ChannelButton key={channel.kind} channel={channel} primary={index === 0} onOpen={onOpen} />
+            <View key={channel.kind} style={styles.channel}>
+              <ChannelButton channel={channel} primary={index === 0} onOpen={onOpen} />
+              {channel.payeePhone ? (
+                <SupportKcPayeePhone phone={channel.payeePhone} testID={`support-kc-${channel.kind}-phone`} />
+              ) : null}
+            </View>
           ))}
         </View>
       ) : null}

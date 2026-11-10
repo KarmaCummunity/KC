@@ -23,7 +23,7 @@ export const adminContentEn = {
     banned:            'Banned',
     suspendedAdmin:    'Suspended by Admin',
     suspendedFalse:    'Suspended (False Reports)',
-    deleted:           'Deleted',
+    pendingDeletion:   'Pending Deletion',
   },
   userStatus: {
     active:                       'Active',
@@ -31,7 +31,7 @@ export const adminContentEn = {
     banned:                       'Banned',
     suspended_admin:              'Suspended',
     suspended_for_false_reports:  'Suspended (False Reports)',
-    deleted:                      'Deleted',
+    pending_deletion:             'Pending Deletion',
   },
 
   postsTitle:             'Posts',

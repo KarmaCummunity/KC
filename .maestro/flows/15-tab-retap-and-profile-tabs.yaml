@@ -1,0 +1,42 @@
+# Re-tapping the active bottom-bar tab keeps its screen, and the My Profile open / closed
+# tabs swap only the posts list while the profile card stays on screen (#1633).
+# Spec: docs/spec/requirements/02_profile_and_privacy.md FR-PROFILE-001 AC4; SRS §6.1 (5 tabs, D-16).
+appId: org.karmacommunity.app
+name: Shell — tab re-tap and profile tabs keep the screen
+tags: [shell, profile]
+---
+- runFlow: ../subflows/sign-in.yaml
+- tapOn:
+    id: tab-donations
+- extendedWaitUntil:
+    visible:
+      id: donations-hub
+    timeout: 15000
+# Re-tap the active tab: the hub stays (no new screen pushed on top).
+- tapOn:
+    id: tab-donations
+- assertVisible:
+    id: donations-hub
+- tapOn:
+    id: tab-profile
+- extendedWaitUntil:
+    visible:
+      id: my-profile-screen
+    timeout: 15000
+- tapOn:
+    id: tab-profile
+- assertVisible:
+    id: my-profile-screen
+# Switch lanes on the same screen: the tab strip and the profile screen stay visible.
+- tapOn:
+    id: profile-tab-closed
+- assertVisible:
+    id: my-profile-screen
+- assertVisible:
+    id: profile-tab-open
+- tapOn:
+    id: profile-tab-open
+- assertVisible:
+    id: my-profile-screen
+- assertVisible:
+    id: shell-tab-bar

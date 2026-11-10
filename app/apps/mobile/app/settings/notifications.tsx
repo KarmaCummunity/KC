@@ -12,7 +12,7 @@ import { isNotificationKindEnabled } from '@kc/domain';
 import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
 import { makeUseStyles, typography, spacing, radius, Text } from '@kc/ui';
-import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
+import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { NotificationToggleRow } from '../../src/components/NotificationToggleRow';
@@ -58,7 +58,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
 type PermStatus = 'granted' | 'denied' | 'undetermined';
 
 export default function NotificationSettingsScreen() {
-  const detailStackScreenOptions = useDetailStackScreenOptions();
+  const shellStackScreenOptions = useShellStackScreenOptions();
   const styles = useStyles();
   const { t } = useTranslation();
   const [permStatus, setPermStatus] = useState<PermStatus>('undetermined');
@@ -76,7 +76,7 @@ export default function NotificationSettingsScreen() {
     <>
       <Stack.Screen
         options={{
-          ...detailStackScreenOptions,
+          ...shellStackScreenOptions,
           headerTitle: t('notifications.settingsTitle'),
         }}
       />

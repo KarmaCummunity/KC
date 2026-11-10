@@ -1,6 +1,6 @@
 // D100 (docs/spec/04_product_structure.md): the one list of giving worlds. There is no
 // separate "domain" layer — a former domain is either a world of its own or a sub-category
-// of a world. Order is the order the Donations tab shows them in.
+// of a world. Order is the Donations tab's default order (re-ranked per member: worldAffinity.ts).
 import type { DonationCategorySlug } from '../value-objects';
 
 export const GIVING_WORLD_SLUGS = [
@@ -13,7 +13,7 @@ export type GivingWorldSlug = (typeof GIVING_WORLD_SLUGS)[number];
  * Worlds that publish into the marketplace (a feed of offers and requests and an in-app create
  * form). Every other world is a portal: links and knowledge only, until its flow ships.
  */
-export const FEED_WORLD_SLUGS = ['items', 'food', 'rides', 'time', 'housing'] as const;
+export const FEED_WORLD_SLUGS = ['items', 'food', 'rides', 'time', 'housing', 'animals', 'knowledge'] as const;
 export type FeedWorldSlug = (typeof FEED_WORLD_SLUGS)[number];
 
 export function isGivingWorldSlug(value: string): value is GivingWorldSlug {

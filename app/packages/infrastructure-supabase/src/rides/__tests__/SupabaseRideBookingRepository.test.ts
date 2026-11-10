@@ -13,6 +13,8 @@ const ROW = {
   reserved_at: '2026-11-01T08:00:00Z',
   confirm_by: '2026-11-01T10:00:00Z',
   rated_by_me: true,
+  requested_stop_label: 'מחלף גלילות',
+  cancel_reason: null as unknown as string,
 };
 
 function repoWith(result: { data: unknown; error: { message: string } | null }) {
@@ -25,7 +27,11 @@ describe('SupabaseRideBookingRepository', () => {
   it('books seats and returns the new booking id', async () => {
     const { rpc, repo } = repoWith({ data: { handoff_id: 'h9' }, error: null });
     await expect(repo.bookSeat('l1', 2)).resolves.toBe('h9');
-    expect(rpc).toHaveBeenCalledWith('book_ride_seat', { p_listing_id: 'l1', p_seats: 2 });
+    expect(rpc).toHaveBeenCalledWith('book_ride_seat', {
+      p_listing_id: 'l1',
+      p_seats: 2,
+      p_requested_meeting_point: undefined,
+    });
   });
 
   it('throws when bookSeat RPC returns an error', async () => {
@@ -46,13 +52,20 @@ describe('SupabaseRideBookingRepository', () => {
         reservedAt: '2026-11-01T08:00:00Z',
         confirmBy: '2026-11-01T10:00:00Z',
         ratedByMe: true,
+        requestedStopLabel: 'מחלף גלילות',
+        cancelReason: null,
       },
     ]);
     expect(rpc).toHaveBeenCalledWith('list_ride_bookings', { p_listing_id: 'l1' });
   });
 
+  it('keeps a cancelled row with its reason so the driver can reinstate it', async () => {
+    const { repo } = repoWith({ data: [{ ...ROW, status: 'cancelled', cancel_reason: 'declined' }], error: null });
+    await expect(repo.listForRide('l1')).resolves.toMatchObject([{ status: 'cancelled', cancelReason: 'declined' }]);
+  });
+
   it('drops rows with a status the driver does not manage', async () => {
-    const { repo } = repoWith({ data: [{ ...ROW, status: 'cancelled' }], error: null });
+    const { repo } = repoWith({ data: [{ ...ROW, status: 'expired' }], error: null });
     await expect(repo.listForRide('l1')).resolves.toEqual([]);
   });
 
@@ -117,6 +130,8 @@ describe('SupabaseRideBookingRepository', () => {
         reservedAt: '2026-11-01T08:00:00Z',
         confirmBy: null,
         ratedByMe: false,
+        requestedStopLabel: 'מחלף גלילות',
+        cancelReason: null,
       });
     });
   });

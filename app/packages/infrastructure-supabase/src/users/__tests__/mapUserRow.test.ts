@@ -27,6 +27,7 @@ function makeRow(overrides: Partial<UserRow> = {}): UserRow {
     followers_count: 7,
     following_count: 4,
     karma_points: 5,
+    verification_level: 1,
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-05-16T00:00:00.000Z',
     ...overrides,
@@ -47,6 +48,7 @@ describe('mapUserRow', () => {
       profileStreet: 'Allenby',
       profileStreetNumber: '12',
       contactPhone: null,
+      dateOfBirth: null,
       biography: 'I give books.',
       avatarUrl: 'https://cdn.example.com/avatars/u_1.jpg',
       privacyMode: 'Public',
@@ -63,6 +65,7 @@ describe('mapUserRow', () => {
       followersCount: 7,
       followingCount: 4,
       karmaPoints: 5,
+      verificationLevel: 1,
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-05-16T00:00:00.000Z',
       preferredLanguage: null,
@@ -71,6 +74,11 @@ describe('mapUserRow', () => {
 
   it('maps karma_points → karmaPoints (FR-KARMA-001)', () => {
     expect(mapUserRow(makeRow({ karma_points: 42 })).karmaPoints).toBe(42);
+  });
+
+  it('defaults a missing or out-of-range verification_level to 0 (FR-VERIFY-001)', () => {
+    expect(mapUserRow(makeRow({ verification_level: undefined })).verificationLevel).toBe(0);
+    expect(mapUserRow(makeRow({ verification_level: 9 })).verificationLevel).toBe(0);
   });
 
   describe('optional profile address columns', () => {

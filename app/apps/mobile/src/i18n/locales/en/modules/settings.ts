@@ -23,24 +23,24 @@ export const settingsEn = {
   loggingOut: 'Logging out...',
   deleteAccount: 'Delete account',
   deleteAccountModal: {
-    title: 'Permanently delete account',
+    title: 'Delete account',
     bullets: {
-      posts: 'All your posts will be deleted (including images)',
-      follows: 'All followers and following will be removed',
-      moderation: 'All bans and reports you submitted will be deleted',
-      donations: 'Donation links you set up will be deleted',
+      posts: 'Your profile, posts and listings are hidden from everyone right away',
+      follows: 'Your followers and following are kept for 30 days',
+      moderation: 'The blocks and reports you submitted are kept for 30 days',
+      donations: 'Donation links you set up are deleted after the 30 days',
       devices: 'All your connected devices will be disconnected',
     },
     chatsRetention:
       'Chats you had will remain with the people you talked to. They will see the messages you wrote, but not your name, photo, or profile — only "{{deletedUserLabel}}".',
     warning:
-      'This action is irreversible. Your posts, history, and connections cannot be recovered. There is no undo window — deletion is immediate.',
+      'Your account is deactivated for 30 days. If you sign in again during that time you can restore it completely. After 30 days everything is deleted for good.',
     confirmInputLabel: 'Type "delete" to confirm',
     confirmInputPlaceholder: 'delete',
     confirmKeyword: 'delete',
     buttons: {
       cancel: 'Cancel',
-      delete: 'Permanently delete the account',
+      delete: 'Delete the account',
       retry: 'Try again',
       close: 'Close',
     },
@@ -165,6 +165,7 @@ export const settingsEn = {
     optionEn: 'English',
     restartNote: 'Changing the language will reload the app.',
     saveFailed: 'Changing the language failed. Please try again.',
+    switchA11y: 'Change language / החלפת שפה',
   },
   whatsappRow: 'WhatsApp connection',
   whatsapp: {

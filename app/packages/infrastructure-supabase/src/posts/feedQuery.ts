@@ -5,7 +5,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PostFeedFilter } from '@kc/application';
 import type { Database } from '../database.types';
-import { POST_SELECT_OWNER } from './mapPostRow';
+import { FEED_CARD_SELECT } from './mapPostRow';
 import { decodeCursor } from './cursor';
 import { feedTextSearchOrClause } from './applyFeedTextSearch';
 
@@ -25,7 +25,11 @@ export function buildFeedQuery(
   source: FeedSource = 'posts',
 ) {
   // The view shares posts' row shape; type it as posts for the select-string parser.
-  let q = client.from(source as 'posts').select(POST_SELECT_OWNER);
+  let q = client.from(source as 'posts').select(FEED_CARD_SELECT);
+
+  // A post that exists for a listing kept out of the main feed (posts.feed_hidden, 0557) is
+  // never listed; the view filters it too, the guests' `posts` source needs it here.
+  q = q.eq('feed_hidden', false);
 
   // statusFilter: 'open' (default), 'closed' (delivered only), 'all'.
   const status = filter.statusFilter ?? 'open';

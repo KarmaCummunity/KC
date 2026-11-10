@@ -1,7 +1,10 @@
-// Shared native-stack options for modal/detail routes (see root `app/_layout.tsx`).
+// Native-stack chrome for modal/detail routes (post detail, edit profile, matches).
+// Settings, chat inbox, and notifications use `useShellStackScreenOptions` instead.
+import React from 'react';
 import { Platform } from 'react-native';
 import { useTheme } from '@kc/ui';
 import { nativeStackHeaderLeftIconOnly } from './nativeHeaderIconOnly';
+import { NativeStackHeaderTitle } from './NativeStackHeaderTitle';
 import { rootStackGestureEnabled, rootStackScreenAnimation } from './rootStackAnimation';
 
 export function useDetailStackScreenOptions() {
@@ -11,7 +14,11 @@ export function useDetailStackScreenOptions() {
     ...nativeStackHeaderLeftIconOnly(colors.primary),
     headerBackVisible: false,
     headerTintColor: colors.primary,
-    headerStyle: { backgroundColor: colors.surface },
+    // Match the in-tabs TopBar: cream bar + `textPrimary` title (not stack default white).
+    headerStyle: { backgroundColor: colors.surfaceCream },
+    headerTitle: ({ children }: { children: string }) => (
+      <NativeStackHeaderTitle title={typeof children === 'string' ? children : ''} />
+    ),
     headerTitleAlign: 'center' as const,
     animation: rootStackScreenAnimation(),
     gestureEnabled: rootStackGestureEnabled,

@@ -56,6 +56,7 @@
 /scripts/bump-app-version.mjs               @navesarussi
 /scripts/close-linked-issues.mjs            @navesarussi
 /scripts/run-db-tests.sh                    @navesarussi
+/scripts/run-baseline-tests.sh              @navesarussi
 /scripts/db-explain-dev.sh                  @navesarussi
 /scripts/strip-partition-types.mjs          @navesarussi
 /scripts/maestro-*                          @navesarussi
@@ -89,11 +90,10 @@ playwright.config.*                         @navesarussi
 /app/apps/mobile/tsconfig.json              @navesarussi
 /app/packages/*/tsconfig.json               @navesarussi
 
-# Process rules every agent follows (CLAUDE.md is the single source of truth;
-# the others are pointers to it).
+# Process rules every agent follows (AGENTS.md is the single source of truth;
+# CLAUDE.md only imports it).
 /CLAUDE.md                                  @navesarussi
 /AGENTS.md                                  @navesarussi
-/docs/AGENTS.md                             @navesarussi
 /.cursor/rules/                             @navesarussi
 
 # Local Supabase stack the backend lane tests against, and the EAS build

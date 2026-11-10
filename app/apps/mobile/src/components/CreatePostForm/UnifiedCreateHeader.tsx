@@ -1,12 +1,13 @@
 // Mapped to spec: FR-POST-001 AC1 / AC6.
-// Top of the unified create form: the category picker (one tile per giving world, wrapped into
-// rows of four, no horizontal scrolling) and, under it, the request / offer toggle — which is
-// hidden for worlds whose form is "add a link" (they have no give / take direction).
-import React from 'react';
-import { TouchableOpacity, View } from 'react-native';
+// Top of the unified create form: the category picker (one chip per giving world in a single
+// horizontally scrolling row, the chosen one scrolled into view) and, under it, the request / offer
+// toggle — which is hidden for worlds whose form is "add a link" (they have no give / take direction).
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ScrollView, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { iconSize, makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
+import { iconSize, makeUseStyles, spacing, useTheme, Text } from '@kc/ui';
+import { Chip } from '../ui/Chip';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import type {
   CreateCategoryConfig,
@@ -14,24 +15,10 @@ import type {
   CreateDirection,
 } from '../../lib/unifiedCreate/createCategories';
 
-const useHeaderStyles = makeUseStyles(({ colors }) => ({
+const useHeaderStyles = makeUseStyles(() => ({
   wrap: { gap: spacing.md },
-  tiles: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: spacing.xs },
-  // Four per row: grow to share the row, but never narrower than a quarter minus the gaps.
-  tile: {
-    flexGrow: 1,
-    flexBasis: '22%' as const,
-    alignItems: 'center' as const,
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.lg,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  tileOn: { borderColor: colors.primary, backgroundColor: colors.primarySurface },
-  tileText: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' as const },
-  tileTextOn: { ...typography.bold, color: colors.primary },
+  // Plain `row`: native mirrors it under forceRTL, so the first chip sits at the reading-start edge.
+  chips: { flexDirection: 'row' as const, gap: spacing.xs },
 }));
 
 interface Props {
@@ -56,6 +43,21 @@ export function UnifiedCreateHeader({
   const { colors } = useTheme();
   const styles = useCreatePostStyles();
   const header = useHeaderStyles();
+  const scrollRef = useRef<ScrollView>(null);
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const chipBoxes = useRef<Record<string, { x: number; width: number }>>({});
+
+  /** Scrolls the row so the given chip sits in the middle (or as near as the row's ends allow). */
+  const centerChip = useCallback(
+    (id: string) => {
+      const box = chipBoxes.current[id];
+      if (!box || viewportWidth === 0) return;
+      scrollRef.current?.scrollTo({ x: Math.max(box.x + box.width / 2 - viewportWidth / 2, 0), animated: true });
+    },
+    [viewportWidth],
+  );
+
+  useEffect(() => centerChip(categoryId), [categoryId, centerChip]);
 
   /** One half of the request / offer toggle. */
   const toggle = (d: CreateDirection, icon: 'search-outline' | 'gift-outline', label: string) => {
@@ -78,26 +80,34 @@ export function UnifiedCreateHeader({
   return (
     <View style={header.wrap} testID="unified-create-header">
       <Text style={styles.sectionLabel}>{t('post.unifiedCreate.categoryLabel')}</Text>
-      <View style={header.tiles} accessibilityRole="radiogroup">
-        {categories.map((c) => {
-          const on = c.id === categoryId;
-          return (
-            <TouchableOpacity
-              key={c.id}
+      {/* testID: Maestro swipes this row to reach chips beyond the screen edge (flow 13). */}
+      <ScrollView
+        ref={scrollRef}
+        testID="create-category-row"
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        onLayout={(e) => setViewportWidth(e.nativeEvent.layout.width)}
+        contentContainerStyle={header.chips}
+      >
+        {categories.map((c) => (
+          <View
+            key={c.id}
+            onLayout={(e) => {
+              const { x, width } = e.nativeEvent.layout;
+              chipBoxes.current[c.id] = { x, width };
+              if (c.id === categoryId) centerChip(c.id);
+            }}
+          >
+            <Chip
               testID={`create-category-${c.id}`}
-              style={[header.tile, on && header.tileOn]}
+              icon={c.icon}
+              label={t(c.labelKey)}
+              selected={c.id === categoryId}
               onPress={() => onCategoryChange(c.id)}
-              accessibilityRole="radio"
-              aria-checked={on}
-            >
-              <Ionicons name={c.icon} size={iconSize.xl} color={on ? colors.primary : colors.textSecondary} />
-              <Text style={[header.tileText, on && header.tileTextOn]} numberOfLines={1}>
-                {t(c.labelKey)}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+            />
+          </View>
+        ))}
+      </ScrollView>
       {showDirection ? (
         <View style={styles.typeToggle}>
           {toggle('request', 'search-outline', t('post.unifiedCreate.request'))}

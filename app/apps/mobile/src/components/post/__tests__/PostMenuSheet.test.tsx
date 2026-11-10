@@ -19,7 +19,7 @@ vi.mock('../../../hooks/useModalHardwareBack', () => ({ useModalHardwareBack: ()
 vi.mock('../../../lib/container', () => ({
   container: { socialFeed: { hidePost: () => Promise.resolve(), addMuteFilter: () => Promise.resolve() } },
 }));
-vi.mock('../../../lib/haptics', () => ({ hapticLightTap: () => {} }));
+vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticLightTap: () => {} }));
 vi.mock('../../../hooks/usePostMenuActions', () => ({
   usePostMenuActions: () => ({
     busy: false,
@@ -34,7 +34,11 @@ vi.mock('../../../hooks/usePostActorPrivacyModel', () => ({ shouldShowPostExposu
 // Sibling overlays opened from the menu are covered by their own tests.
 vi.mock('../ConfirmActionModal', () => ({ ConfirmActionModal: () => null }));
 vi.mock('../ReportPostModal', () => ({ ReportPostModal: () => null }));
+vi.mock('../../marketplace/ReportListingModal', () => ({ ReportListingModal: () => null }));
 vi.mock('../PostMenuExposureBlock', () => ({ PostMenuExposureBlock: () => null }));
+vi.mock('expo-router', () => ({ useRouter: () => ({ back: vi.fn(), canGoBack: () => true }) }));
+const blockMock = { canBlock: true, isBlocked: false, busy: false, toggle: vi.fn(async () => false) };
+vi.mock('../../../hooks/useUserBlock', () => ({ useUserBlock: () => blockMock }));
 
 import { PostMenuSheet } from '../PostMenuSheet';
 
@@ -66,9 +70,16 @@ function renderMenu(viewerId: string | null, overrides: { visible?: boolean; isS
 }
 
 describe('PostMenuSheet', () => {
-  it('shows a viewer share, hide, mute, report and save', () => {
+  it('shows a viewer share, hide, mute, block, report and save', () => {
     const { getByRole, queryByRole } = renderMenu('u_viewer');
-    for (const name of ['post.menuShare', 'post.menuHideFromFeed', 'feedSettings.menuMuteUser', 'post.report', 'post.menuSave']) {
+    for (const name of [
+      'post.menuShare',
+      'post.menuHideFromFeed',
+      'feedSettings.menuMuteUser',
+      'moderation.block.block',
+      'post.report',
+      'post.menuSave',
+    ]) {
       expect(getByRole('button', { name })).toBeTruthy();
     }
     expect(queryByRole('button', { name: 'post.menuDelete' })).toBeNull();

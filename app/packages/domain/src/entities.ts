@@ -18,6 +18,7 @@ import type {
   ReportStatus,
   ReportTargetType,
 } from './value-objects';
+import type { VerificationLevel } from './verificationLevel';
 
 // ── User ──────────────────────────────────────
 
@@ -41,6 +42,11 @@ export interface User {
    * used for FR-AUTH-005 OTP sign-in. Null = unset.
    */
   contactPhone: string | null;
+  /**
+   * Private date of birth, ISO `YYYY-MM-DD` (FR-AUTH-010 AC2.d). Owner-only: read through
+   * `users_get_self_private_fields()` and never returned for another member. Null = not given yet.
+   */
+  dateOfBirth: string | null;
   biography: string | null;
   avatarUrl: string | null;
   privacyMode: PrivacyMode;
@@ -59,6 +65,8 @@ export interface User {
   followingCount: number;
   /** Engagement score (FR-KARMA-001). Server-maintained, floored at 0. */
   karmaPoints: number;
+  /** FR-VERIFY-001 badge level. Server-derived (`users.verification_level`, migration 0637). */
+  verificationLevel: VerificationLevel;
   readonly createdAt: string;
   updatedAt: string;
   /** FR-TRANSLATE — reader's BCP-47 output language; null = resolve from device locale. */

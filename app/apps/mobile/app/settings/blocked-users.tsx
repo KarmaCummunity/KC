@@ -10,7 +10,7 @@ import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import type { BlockedUser } from '@kc/application';
-import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
+import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { AvatarInitials } from '../../src/components/AvatarInitials';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
 import { useBlockedUsers } from '../../src/hooks/useBlockedUsers';
@@ -57,7 +57,7 @@ const BlockedUserRow = React.memo(function BlockedUserRow({
 });
 
 export default function BlockedUsersScreen() {
-  const detailStackScreenOptions = useDetailStackScreenOptions();
+  const shellStackScreenOptions = useShellStackScreenOptions();
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useBlockedUsersStyles();
@@ -80,7 +80,7 @@ export default function BlockedUsersScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen options={{ ...detailStackScreenOptions, headerTitle: t('moderation.block.listTitle') }} />
+      <Stack.Screen options={{ ...shellStackScreenOptions, headerTitle: t('moderation.block.listTitle') }} />
       <Text style={styles.hint}>{t('moderation.block.listHint')}</Text>
       {isLoading ? (
         <ActivityIndicator color={colors.primary} style={styles.loading} />

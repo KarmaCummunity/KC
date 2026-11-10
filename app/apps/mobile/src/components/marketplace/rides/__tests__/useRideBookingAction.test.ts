@@ -11,7 +11,7 @@ const alertSpy = vi.spyOn(globalThis, 'alert').mockImplementation(() => {});
 
 vi.mock('../../../../lib/analytics', () => ({ track: (...args: unknown[]) => track(...args) }));
 vi.mock('../../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: (...args: unknown[]) => trackCoreLoop(...args) }));
-vi.mock('../../../../lib/haptics', () => ({ hapticSuccess: () => hapticSuccess() }));
+vi.mock('../../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticSuccess: () => hapticSuccess() }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k }),
 }));

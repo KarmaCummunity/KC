@@ -6,7 +6,7 @@ import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
+import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import type { FollowRequestWithUser } from '@kc/application';
@@ -80,7 +80,7 @@ const FollowRequestRow = React.memo(function FollowRequestRow({
 });
 
 export default function FollowRequestsScreen() {
-  const detailStackScreenOptions = useDetailStackScreenOptions();
+  const shellStackScreenOptions = useShellStackScreenOptions();
   const { t } = useTranslation();
   const router = useRouter();
   const styles = useFollowRequestsScreenStyles();
@@ -165,7 +165,7 @@ export default function FollowRequestsScreen() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen
         options={{
-          ...detailStackScreenOptions,
+          ...shellStackScreenOptions,
           headerTitle: t('settings.followRequestsScreen.headerTitle'),
         }}
       />

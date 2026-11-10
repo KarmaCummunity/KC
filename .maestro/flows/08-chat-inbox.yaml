@@ -1,5 +1,5 @@
 # The chat inbox opens from the top bar.
-# Spec: docs/SSOT/spec/07_chat.md (inbox).
+# Spec: docs/spec/requirements/07_chat.md (inbox).
 appId: org.karmacommunity.app
 name: Chat — inbox opens
 tags: [chat, smoke]
@@ -10,4 +10,11 @@ tags: [chat, smoke]
 - extendedWaitUntil:
     visible:
       id: chat-inbox-screen
+    timeout: 20000
+# FR-CHAT-017 — the "+" opens the new-conversation picker.
+- tapOn:
+    id: chat-inbox-new
+- extendedWaitUntil:
+    visible:
+      id: chat-new-screen
     timeout: 20000

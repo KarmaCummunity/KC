@@ -131,10 +131,12 @@ export class FollowFakeUserRepository implements IUserRepository {
   clearBasicInfoSkipped = N('clearBasicInfoSkipped') as IUserRepository['clearBasicInfoSkipped'];
   setBasicInfo = N('setBasicInfo') as IUserRepository['setBasicInfo'];
   setOnboardingState = N('setOnboardingState') as IUserRepository['setOnboardingState'];
+  resetOnboardingForDev = N('resetOnboardingForDev') as IUserRepository['resetOnboardingForDev'];
   setAvatar = N('setAvatar') as IUserRepository['setAvatar'];
   setBiography = N('setBiography') as IUserRepository['setBiography'];
   setProfileAddressLines = N('setProfileAddressLines') as IUserRepository['setProfileAddressLines'];
   setContactPhone = N('setContactPhone') as IUserRepository['setContactPhone'];
+  setDateOfBirth = N('setDateOfBirth') as IUserRepository['setDateOfBirth'];
   updateEditableProfile = N('updateEditableProfile') as IUserRepository['updateEditableProfile'];
   dismissClosureExplainer = N('dismissClosureExplainer') as IUserRepository['dismissClosureExplainer'];
   dismissFirstPostNudge = N('dismissFirstPostNudge') as IUserRepository['dismissFirstPostNudge'];
@@ -160,6 +162,7 @@ export function makeUser(overrides: Partial<User> = {}): User {
     profileStreet: null,
     profileStreetNumber: null,
     contactPhone: null,
+    dateOfBirth: null,
     biography: null,
     avatarUrl: null,
     privacyMode: 'Public',
@@ -176,6 +179,7 @@ export function makeUser(overrides: Partial<User> = {}): User {
     followersCount: 0,
     followingCount: 0,
     karmaPoints: 0,
+    verificationLevel: 0,
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
     preferredLanguage: null,

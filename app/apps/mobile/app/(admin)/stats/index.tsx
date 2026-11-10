@@ -10,7 +10,8 @@ import type { WorldFlowFunnelRow } from '@kc/application';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { getWorldFlowFunnelUseCase } from '../../../src/services/statsComposition';
-import { AdminFilterChip } from '../../../src/components/admin/AdminFilterChip';
+import { AdminFilterTopBarButton } from '../../../src/components/admin/AdminSearchFilterToolbar';
+import { FilterSection } from '../../../src/components/filterKit/FilterSection';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { textAlignStart } from '../../../src/lib/rtlLayout';
@@ -42,6 +43,7 @@ export default function PlatformStatsScreen() {
   const { roles, isLoading: rolesLoading } = useAdminRoles();
   const enabled = hasPermission(roles as readonly AdminRole[], 'stats.view_platform');
   const [days, setDays] = useState<number>(30);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const funnel = useQuery({
     queryKey: ['admin.stats.funnel', days],
@@ -68,11 +70,24 @@ export default function PlatformStatsScreen() {
       <Text style={styles.title}>{t.title}</Text>
       <Text style={styles.muted}>{t.subtitle}</Text>
 
-      <View style={styles.chips}>
-        {WINDOWS.map((w) => (
-          <AdminFilterChip key={w.key} label={t.windows[w.key]} active={days === w.days} onPress={() => setDays(w.days)} />
-        ))}
-      </View>
+      <AdminFilterTopBarButton
+        portalTitle={t.title}
+        activeFilterCount={days === 30 ? 0 : 1}
+        filterVisible={sheetOpen}
+        onOpenFilters={() => setSheetOpen(true)}
+        onCloseFilters={() => setSheetOpen(false)}
+        onClearFilters={() => setDays(30)}
+        sheetTitle={t.windows.d30}
+        filterButtonTestID="admin-stats-filter-button"
+        filterSheetContent={(
+          <FilterSection<number>
+            options={WINDOWS.map((w) => ({ value: w.days, label: t.windows[w.key] }))}
+            value={days}
+            onChange={(v) => setDays(v ?? 30)}
+            showAllChip={false}
+          />
+        )}
+      />
 
       {funnel.isError ? <Text style={styles.error}>{t.error}</Text> : null}
       {!funnel.isLoading && !funnel.isError && rows.length === 0 ? <AdminListEmpty title={t.empty} hint="" /> : null}

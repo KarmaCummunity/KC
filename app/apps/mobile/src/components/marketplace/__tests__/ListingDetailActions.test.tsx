@@ -8,6 +8,9 @@ import { cleanup, fireEvent, render } from '@testing-library/react';
 import { ThemeProvider } from '@kc/ui';
 import type { MarketplaceListingDetail } from '@kc/domain';
 
+// The actions settle on a mocked promise, but under a loaded `pnpm test` (turbo runs every package at
+// once) vi.waitFor's 1 s default is too tight: every wait here gets a roomy explicit timeout (#1841).
+const SETTLE = { timeout: 5000 };
 const push = vi.fn();
 const startChat = vi.fn();
 const shareToFeed = vi.fn();
@@ -50,12 +53,23 @@ const DETAIL = {
   cityId: null,
   title: 'Bookshelf',
   feedPostId: null,
+  feedHidden: false,
 } as unknown as MarketplaceListingDetail;
 
-function renderActions(viewerId: string | null, onReport = vi.fn(), detail: MarketplaceListingDetail = DETAIL) {
+function renderActions(
+  viewerId: string | null,
+  onReport = vi.fn(),
+  detail: MarketplaceListingDetail = DETAIL,
+  moderationInHeader = false,
+) {
   const view = render(
     <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
-      <ListingDetailActions detail={detail} viewerId={viewerId} onReport={onReport} />
+      <ListingDetailActions
+        detail={detail}
+        viewerId={viewerId}
+        onReport={onReport}
+        moderationInHeader={moderationInHeader}
+      />
     </ThemeProvider>,
   );
   return { ...view, onReport };
@@ -79,6 +93,13 @@ describe('ListingDetailActions', () => {
     expect(queryByTestId('listing-action-report')).toBeNull();
   });
 
+  it('keeps share to feed for the owner while the listing\'s post is hidden from the feed (0557)', () => {
+    const hidden = { ...DETAIL, feedPostId: 'p_hidden', feedHidden: true } as MarketplaceListingDetail;
+    const { queryByTestId } = renderActions('u_owner', vi.fn(), hidden);
+
+    expect(queryByTestId('listing-action-share-feed')).not.toBeNull();
+  });
+
   it('hides share to feed from the owner once the listing has a feed mirror (D-206)', () => {
     const mirrored = { ...DETAIL, feedPostId: 'p_mirror' } as MarketplaceListingDetail;
     const { queryByTestId } = renderActions('u_owner', vi.fn(), mirrored);
@@ -93,12 +114,20 @@ describe('ListingDetailActions', () => {
     const { getByTestId } = renderActions('u_viewer');
 
     fireEvent.click(getByTestId('listing-action-start-chat'));
-    await vi.waitFor(() => expect(push).toHaveBeenCalledWith('/chat/c_1'));
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith('/chat/c_1'), SETTLE);
 
     fireEvent.click(getByTestId('listing-action-start-chat'));
-    await vi.waitFor(() => expect(alert).toHaveBeenCalledWith('marketplace.actionErrors.accountNotActive'));
+    await vi.waitFor(() => expect(alert).toHaveBeenCalledWith('marketplace.actionErrors.accountNotActive'), SETTLE);
     expect(captureException).not.toHaveBeenCalled();
     alert.mockRestore();
+  });
+
+  it('still opens the chat when the server answers slower than vi.waitFor\'s 1 s default (#1841)', async () => {
+    startChat.mockImplementationOnce(() => new Promise<string>((resolve) => setTimeout(() => resolve('c_slow'), 1300)));
+    const { getByTestId } = renderActions('u_viewer');
+
+    fireEvent.click(getByTestId('listing-action-start-chat'));
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith('/chat/c_slow'), SETTLE);
   });
 
   it('shows the generic copy for an unknown failure and reports it with the action name', async () => {
@@ -108,7 +137,7 @@ describe('ListingDetailActions', () => {
     const { getByTestId } = renderActions('u_viewer');
 
     fireEvent.click(getByTestId('listing-action-start-chat'));
-    await vi.waitFor(() => expect(alert).toHaveBeenCalledWith('marketplace.actionFailed'));
+    await vi.waitFor(() => expect(alert).toHaveBeenCalledWith('marketplace.actionFailed'), SETTLE);
     expect(captureException).toHaveBeenCalledWith(failure, {
       tags: { area: 'listing_detail', action: 'start_chat', pg_code: '42501' },
     });
@@ -124,12 +153,12 @@ describe('ListingDetailActions', () => {
     expect(getByRole('button', { name: 'marketplace.report' })).toBeTruthy();
 
     fireEvent.click(message);
-    await vi.waitFor(() => expect(message.getAttribute('aria-disabled')).toBe('true'));
+    await vi.waitFor(() => expect(message.getAttribute('aria-disabled')).toBe('true'), SETTLE);
     fireEvent.click(message);
     expect(startChat).toHaveBeenCalledTimes(1);
 
     finish('c_2');
-    await vi.waitFor(() => expect(message.getAttribute('aria-disabled')).not.toBe('true'));
+    await vi.waitFor(() => expect(message.getAttribute('aria-disabled')).not.toBe('true'), SETTLE);
   });
 
   it('lets a non-owner block the owner and leaves the listing once the block lands', async () => {
@@ -137,15 +166,24 @@ describe('ListingDetailActions', () => {
     expect(blockTargets).toContain('u_owner');
 
     fireEvent.click(getByTestId('listing-action-block-owner'));
-    await vi.waitFor(() => expect(back).toHaveBeenCalled());
+    await vi.waitFor(() => expect(back).toHaveBeenCalled(), SETTLE);
     expect(blockState.toggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides share link, report and block when moderation moves to the post header', () => {
+    const { queryByTestId } = renderActions('u_viewer', vi.fn(), DETAIL, true);
+
+    expect(queryByTestId('listing-action-share-link')).toBeNull();
+    expect(queryByTestId('listing-action-report')).toBeNull();
+    expect(queryByTestId('listing-action-block-owner')).toBeNull();
+    expect(queryByTestId('listing-action-start-chat')).not.toBeNull();
   });
 
   it('stays on the listing when the block is cancelled, and never offers the owner to block', async () => {
     blockState.toggle.mockResolvedValueOnce(false);
     const viewer = renderActions('u_viewer');
     fireEvent.click(viewer.getByTestId('listing-action-block-owner'));
-    await vi.waitFor(() => expect(blockState.toggle).toHaveBeenCalled());
+    await vi.waitFor(() => expect(blockState.toggle).toHaveBeenCalled(), SETTLE);
     expect(back).not.toHaveBeenCalled();
     viewer.unmount();
 

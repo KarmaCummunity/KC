@@ -1,11 +1,16 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { isRideBookingStatus, type RideBooking } from '@kc/domain';
+import { isRideBookingListStatus, type RideBooking } from '@kc/domain';
 import type { IRideBookingRepository } from '@kc/application';
 import type { Database } from '../database.types';
 
 type Client = SupabaseClient<Database>;
 type BookingRow = Database['public']['Functions']['list_ride_bookings']['Returns'][number];
-type HandoffRpc = 'confirm_ride_booking' | 'decline_ride_booking' | 'cancel_ride_booking' | 'complete_ride_trip';
+type HandoffRpc =
+  | 'confirm_ride_booking'
+  | 'decline_ride_booking'
+  | 'cancel_ride_booking'
+  | 'complete_ride_trip'
+  | 'reinstate_ride_booking';
 
 /**
  * Ride seat bookings over the 0393/0453/0511 RPCs (docs/spec/05_giving_worlds.md §5.3, D73).
@@ -15,9 +20,18 @@ type HandoffRpc = 'confirm_ride_booking' | 'decline_ride_booking' | 'cancel_ride
 export class SupabaseRideBookingRepository implements IRideBookingRepository {
   constructor(private readonly client: Client) {}
 
-  async bookSeat(listingId: string, seats: number): Promise<string> {
-    const { data, error } = await this.client.rpc('book_ride_seat', { p_listing_id: listingId, p_seats: seats });
+  async bookSeat(
+    listingId: string,
+    seats: number,
+    requestedMeetingPoint?: Record<string, unknown> | null,
+  ): Promise<string> {
+    const { data, error } = await this.client.rpc('book_ride_seat', {
+      p_listing_id: listingId,
+      p_seats: seats,
+      p_requested_meeting_point: (requestedMeetingPoint ?? undefined) as never,
+    });
     if (error) throw new Error(error.message);
+    if (!data?.handoff_id) throw new Error('Failed to book seat');
     return data.handoff_id;
   }
 
@@ -52,6 +66,10 @@ export class SupabaseRideBookingRepository implements IRideBookingRepository {
     return data ?? 0;
   }
 
+  reinstate(handoffId: string): Promise<void> {
+    return this.runHandoffRpc('reinstate_ride_booking', handoffId);
+  }
+
   /** Every booking transition takes one handoff id and returns the updated row, unused here. */
   private async runHandoffRpc(fn: HandoffRpc, handoffId: string): Promise<void> {
     const { error } = await this.client.rpc(fn, { p_handoff_id: handoffId });
@@ -61,7 +79,7 @@ export class SupabaseRideBookingRepository implements IRideBookingRepository {
 
 /** Maps one `list_ride_bookings` row; a status outside the managed set is dropped. */
 export function mapBookingRow(row: BookingRow): RideBooking | null {
-  if (!isRideBookingStatus(row.status)) return null;
+  if (!isRideBookingListStatus(row.status)) return null;
   return {
     handoffId: row.handoff_id,
     recipientId: row.recipient_id,
@@ -72,5 +90,7 @@ export function mapBookingRow(row: BookingRow): RideBooking | null {
     reservedAt: row.reserved_at,
     confirmBy: row.confirm_by ?? null,
     ratedByMe: row.rated_by_me === true,
+    requestedStopLabel: (row as { requested_stop_label?: string | null }).requested_stop_label ?? null,
+    cancelReason: (row as { cancel_reason?: string | null }).cancel_reason ?? null,
   };
 }

@@ -32,6 +32,7 @@ vi.mock('expo-router', () => ({ useRouter: () => ({ back: vi.fn(), push: vi.fn()
 vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 vi.mock('../../../hooks/useModalHardwareBack', () => ({ useModalHardwareBack: () => {} }));
 vi.mock('../../ui/AmbientBlobs', () => ({ AmbientBlobs: () => null }));
+vi.mock('../AuthLanguageToggle', () => ({ AuthLanguageToggle: () => null }));
 vi.mock('../../../services/authMessages', () => ({ mapAuthErrorToHebrew: (code: string) => code }));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: () => {} }));
 vi.mock('../../../services/authComposition', () => {

@@ -11,6 +11,7 @@ import { Card } from '../../../../src/components/ui/Card';
 import { TextField } from '../../../../src/components/ui/TextField';
 import { PrimaryButton } from '../../../../src/components/ui/Buttons';
 import { rtlTextAlignStart } from '../../../../src/lib/rtlTextAlignStart';
+import { TimeWorldSubScreenChrome } from '../../../../src/components/giving/TimeWorldSubScreenChrome';
 
 const COMPOSER_MAX_CHARS = 2000;
 
@@ -56,7 +57,9 @@ export default function TimeSupportComposerScreen() {
   };
 
   return (
-    <Screen blobs="content">
+    <>
+      <TimeWorldSubScreenChrome activeScreenTestId="time-contact-kc" />
+      <Screen blobs="off" hasNativeHeader>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <Text style={styles.body}>{t('donations.timeScreen.body')}</Text>
         <Card padding="base" style={styles.composer}>
@@ -78,6 +81,7 @@ export default function TimeSupportComposerScreen() {
           {sendError ? <Text style={styles.errorText}>{t('donations.timeScreen.sendError')}</Text> : null}
         </Card>
       </ScrollView>
-    </Screen>
+      </Screen>
+    </>
   );
 }

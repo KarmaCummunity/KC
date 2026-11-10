@@ -2,7 +2,12 @@
 // Composed into `marketplace.field` / `marketplace.option`. Unknown keys fall back to a
 // humanized key in ListingSchemaFields.
 
+import { animalFieldLabels, animalOptionLabels } from './donations.animalFields';
+import { housingFieldLabels, housingOptionLabels } from './donations.housingFields';
+
 export const marketplaceFieldLabels = {
+  ...housingFieldLabels,
+  ...animalFieldLabels,
   item_condition: 'Condition',
   min_condition: 'Minimum condition',
   pickup_mode: 'Pickup or delivery',
@@ -24,13 +29,17 @@ export const marketplaceFieldLabels = {
   seats_available: 'Seats available',
   passengers: 'Passengers',
   luggage: 'Luggage',
-  capacity: 'Capacity',
   amount_ils: 'Amount (₪)',
   amount_requested_ils: 'Amount requested (₪)',
   receipt_requested: 'Receipt requested',
   recurrence: 'Recurrence',
   duration_minutes: 'Duration (minutes)',
   duration_days: 'Duration (days)',
+  topic: 'Topic',
+  slot_starts_at: 'Session starts',
+  slot_ends_at: 'Session ends',
+  slots_available: 'Places available',
+  preferred_modality: 'Preferred format',
   level: 'Level',
   difficulty: 'Difficulty',
   modality: 'Format',
@@ -53,11 +62,27 @@ export const marketplaceFieldLabels = {
   departs_at: 'Departure',
   reward_model: 'Ride cost',
   cost_share_ils: 'Cost sharing (₪)',
-  place_type: 'Place type',
-  house_rules: 'House rules',
+  // An organization's event (G1 step 5); `capacity` shares the housing label.
+  starts_at: 'Starts',
+  ends_at: 'Ends',
+  registration_policy: 'Registration',
+  address: 'Address',
+  // Knowledge exchange kinds (#2034, migration 0703).
+  capacity_per_slot: 'Places per time',
+  slots: 'Times',
+  audience: 'Who it suits',
+  cadence: 'How often',
+  seats: 'Number of mentees',
+  profession: 'Profession',
+  disclaimer_accepted: 'I confirm this is general information, not binding advice',
+  language: 'Languages',
+  goal: 'Your goal',
+  context_url: 'Context link',
 } as const;
 
 export const marketplaceOptionLabels = {
+  ...housingOptionLabels,
+  ...animalOptionLabels,
   New: 'New',
   LikeNew: 'Like new',
   Good: 'Good',
@@ -105,6 +130,33 @@ export const marketplaceOptionLabels = {
   soy: 'Soy',
   fish: 'Fish',
   sesame: 'Sesame',
+  automatic: 'Automatic',
+  manual: 'Organizer approves',
+  verified_only: 'Verified members only',
+  // Knowledge exchange kinds (#2034, migration 0703).
+  weekly: 'Weekly',
+  biweekly: 'Every two weeks',
+  flexible: 'Flexible',
+  career_change: 'Career change',
+  students: 'Students',
+  new_immigrants: 'New immigrants',
+  youth_18plus: 'Young adults (18+)',
+  seniors: 'Seniors',
+  lawyer: 'Lawyer',
+  accountant: 'Accountant',
+  tax_advisor: 'Tax advisor',
+  social_worker: 'Social worker',
+  employment_rights: 'Employment rights',
+  housing_rights: 'Housing rights',
+  consumer_rights: 'Consumer rights',
+  he: 'Hebrew',
+  en: 'English',
+  ar: 'Arabic',
+  ru: 'Russian',
+  am: 'Amharic',
+  fr: 'French',
+  es: 'Spanish',
+  other: 'Other',
 } as const;
 
 export const marketplaceAvailabilityLabels = {

@@ -23,12 +23,21 @@ describe('mapListingDetail', () => {
       geo: { type: 'Point', coordinates: [34.78, 32.08] },
       max_radius_km: 25,
       media: [{ storage_path: 'u/b/0.jpg', sort_order: 0 }],
-      owner: { user_id: 'u1', display_name: 'Ada', avatar_url: null, share_handle: 'ada', city_id: '5000' },
+      owner: {
+        user_id: 'u1',
+        display_name: 'Ada',
+        avatar_url: null,
+        share_handle: 'ada',
+        city_id: '5000',
+        verification_level: 2,
+      },
     });
     expect(out?.listingId).toBe('l1');
     expect(out?.lat).toBe(32.08);
     expect(out?.media).toHaveLength(1);
     expect(out?.feedPostId).toBeNull();
+    expect(out?.feedHidden).toBe(false);
+    expect(out?.owner?.verificationLevel).toBe(2);
   });
 
   it('maps the feed mirror post id when the listing has one (D-206)', () => {
@@ -43,5 +52,22 @@ describe('mapListingDetail', () => {
       feed_post_id: 'p_mirror',
     });
     expect(out?.feedPostId).toBe('p_mirror');
+    expect(out?.feedHidden).toBe(false);
+  });
+
+  it('maps a post the main feed does not list yet (0557)', () => {
+    const out = mapListingDetail({
+      listing_id: 'l1',
+      owner_id: 'u1',
+      world_slug: 'knowledge',
+      kind_slug: 'course',
+      direction: 'give',
+      title: 'Intro to SQL',
+      details: {},
+      feed_post_id: 'p_hidden',
+      feed_hidden: true,
+    });
+    expect(out?.feedPostId).toBe('p_hidden');
+    expect(out?.feedHidden).toBe(true);
   });
 });

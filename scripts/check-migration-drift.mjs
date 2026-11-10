@@ -3,7 +3,7 @@
 // matching local migration file.
 //
 // Why this exists: the repo uses SEQUENTIAL migration files (`NNNN_snake.sql`,
-// e.g. `0212_glowe_event_registration.sql`). The Supabase MCP `apply_migration`
+// e.g. `0243_listings_legacy_sync.sql`). The Supabase MCP `apply_migration`
 // tool, however, records TIMESTAMP-format versions (e.g. `20260701130827`) in
 // `supabase_migrations.schema_migrations`. `supabase db push` refuses to run
 // when the remote history has a version with no matching local file ("Remote
@@ -18,7 +18,7 @@
 //
 // Companion: `scripts/reconcile-migration-drift.mjs` runs the CLI itself and
 // emits the same repair commands. Convention it enforces lives in
-// docs/SSOT/OPERATOR_RUNBOOK.md ("Migration application rules") + CLAUDE.md §9.
+// docs/SSOT/OPERATOR_RUNBOOK.md ("Migration application rules") + AGENTS.md §9.
 
 import { appendFileSync, readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -162,7 +162,7 @@ function main() {
     '\nRoot cause: a schema change was applied to dev via the Supabase MCP ' +
       '`apply_migration`\ntool (records a timestamp version) instead of `supabase db push` from a\n' +
       'committed sequential file. This breaks the next `DB deploy` run.\n' +
-      'See docs/SSOT/OPERATOR_RUNBOOK.md → "Migration application rules" and CLAUDE.md §9.\n' +
+      'See docs/SSOT/OPERATOR_RUNBOOK.md → "Migration application rules" and AGENTS.md §9.\n' +
       '\nReconcile the ledger (does not touch schema — only the history table):',
   );
   for (const cmd of repairCommands(drift)) console.error(`  ${cmd}`);

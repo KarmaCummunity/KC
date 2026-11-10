@@ -1,4 +1,4 @@
--- 0239_kc_translation_entities — Port GloWe smart translation to KC content_translations.
+-- 0239_kc_translation_entities — Smart UGC translation entities on KC content_translations.
 -- Extends cache CHECK constraints for ride listings and public profile biography.
 -- Self-clean on source delete / ride cancel (mirrors posts/messages).
 

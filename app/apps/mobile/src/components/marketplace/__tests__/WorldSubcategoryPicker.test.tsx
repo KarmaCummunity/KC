@@ -9,8 +9,13 @@ const { listWorldSubcategories } = vi.hoisted(() => ({ listWorldSubcategories: v
 vi.mock('../../../services/marketplaceComposition', () => ({
   marketplaceRepository: () => ({ listWorldSubcategories }),
 }));
+vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }),
+  useTranslation: () => ({
+    t: (k: string) => k,
+    i18n: { language: 'he' },
+  }),
 }));
 
 import { WorldSubcategoryPicker } from '../WorldSubcategoryPicker';
@@ -51,6 +56,17 @@ describe('WorldSubcategoryPicker', () => {
     const clear = await renderPicker('c-books');
     fireEvent.click(screen.getByTestId('world-subcategory-books'));
     expect(clear).toHaveBeenLastCalledWith(null);
+  });
+
+  // Regression for #1741: the label and hint sat on the physical left in Hebrew while the section
+  // label above them sat on the right. They must follow the reading-start edge in both languages.
+  it('aligns the label and hint to the reading-start edge', async () => {
+    const { rtlTextAlignStart } = await import('../../../lib/rtlTextAlignStart');
+    await renderPicker(null);
+    for (const key of ['marketplace.fieldWorldSubcategory', 'marketplace.fieldWorldSubcategoryHint']) {
+      const el = screen.getByText(key);
+      expect(getComputedStyle(el).textAlign).toBe(rtlTextAlignStart);
+    }
   });
 
   it('renders nothing when the world has no subcategories', async () => {

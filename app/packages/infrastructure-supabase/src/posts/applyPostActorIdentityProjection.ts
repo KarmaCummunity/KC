@@ -103,6 +103,8 @@ function recipientActorFrom(post: PostWithOwner): ActorIdentityInput | null {
 export type ApplyPostActorIdentityProjectionOptions = {
   /** Whose profile "closed posts" grid is being rendered — drives D-31 third-party mask. */
   readonly identityListingHostUserId?: string | null;
+  /** Already loaded with the post rows, so a dropped second request is not required. */
+  readonly prefetchedIdentities?: Map<string, Map<string, IdentityRowDb>>;
 };
 
 function projectSingle(
@@ -135,6 +137,7 @@ function projectSingle(
       ownerName: ownerProj.mode === 'full' ? ownerProj.displayName || post.ownerName : null,
       ownerHandle: ownerProj.shareHandle,
       ownerAvatarUrl: ownerProj.avatarUrl,
+      ownerVerificationLevel: ownerProj.mode === 'full' ? post.ownerVerificationLevel : 0,
       ownerProfileNavigableFromPost: ownerProj.profileNavigableFromPost,
       recipientProfileNavigableFromPost: true,
     };
@@ -156,12 +159,14 @@ function projectSingle(
     ownerName: ownerProj.mode === 'full' ? ownerProj.displayName || post.ownerName : null,
     ownerHandle: ownerProj.shareHandle,
     ownerAvatarUrl: ownerProj.avatarUrl,
+    ownerVerificationLevel: ownerProj.mode === 'full' ? post.ownerVerificationLevel : 0,
     ownerProfileNavigableFromPost: ownerProj.profileNavigableFromPost,
     recipientUser: {
       ...recipientActor,
       displayName: recProj.mode === 'full' ? recProj.displayName : '',
       shareHandle: recProj.shareHandle,
       avatarUrl: recProj.avatarUrl,
+      verificationLevel: recProj.mode === 'full' ? post.recipientUser?.verificationLevel : 0,
     },
     recipientProfileNavigableFromPost: recProj.profileNavigableFromPost,
   };
@@ -186,10 +191,11 @@ export async function applyPostActorIdentityProjectionBatch(
   // memory, not from the identity rows — so run them in parallel to avoid a
   // request waterfall on every feed page / post / search load.
   const [identityByPost, followed] = await Promise.all([
-    fetchPostActorIdentitiesByPostIds(
-      client,
-      posts.map((p) => p.postId),
-    ),
+    opts?.prefetchedIdentities
+      ?? fetchPostActorIdentitiesByPostIds(
+        client,
+        posts.map((p) => p.postId),
+      ),
     viewerId
       ? fetchFollowedTargets(client, viewerId, targets)
       : Promise.resolve(new Set<string>()),

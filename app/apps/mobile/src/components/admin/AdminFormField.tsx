@@ -1,4 +1,5 @@
 import { TextField } from '../ui/TextField';
+import { formDecimalInputProps } from '../../lib/platform/formTextInputHints';
 
 export interface AdminFormFieldProps {
   readonly label: string;
@@ -17,7 +18,7 @@ export function AdminFormField({
       value={value}
       onChangeText={onChange}
       multiline={multiline}
-      keyboardType={keyboardNumeric ? 'decimal-pad' : 'default'}
+      {...(keyboardNumeric ? formDecimalInputProps : {})}
     />
   );
 }

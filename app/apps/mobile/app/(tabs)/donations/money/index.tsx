@@ -49,7 +49,7 @@ function MoneyHubScreen() {
   const showInAppOrgPayments = useFeatureFlag('money_in_app_org_payments');
 
   return (
-    <Screen blobs="content">
+    <Screen blobs="off">
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.scroll, { paddingBottom: tabBarPad }]}

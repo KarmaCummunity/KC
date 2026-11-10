@@ -9,6 +9,7 @@ import {
   CompleteRideListingUseCase,
   DeclineRideBookingUseCase,
   ListRideBookingsUseCase,
+  ReinstateRideBookingUseCase,
 } from '../rideBookingUseCases';
 
 const BOOKING: RideBooking = {
@@ -21,6 +22,7 @@ const BOOKING: RideBooking = {
   reservedAt: '2026-11-01T08:00:00Z',
   confirmBy: '2026-11-01T10:00:00Z',
   ratedByMe: false,
+  requestedStopLabel: null,
 };
 
 /** Typed fake: each method is a mock with the port's exact signature. */
@@ -33,6 +35,7 @@ function makeRepo() {
     cancel: vi.fn<IRideBookingRepository['cancel']>(async () => undefined),
     complete: vi.fn<IRideBookingRepository['complete']>(async () => undefined),
     completeRide: vi.fn<IRideBookingRepository['completeRide']>(async () => 2),
+    reinstate: vi.fn<IRideBookingRepository['reinstate']>(async () => undefined),
   } satisfies IRideBookingRepository;
 }
 
@@ -40,13 +43,13 @@ describe('ride booking use cases', () => {
   it('books the requested seats and returns the booking id', async () => {
     const repo = makeRepo();
     await expect(new BookRideSeatUseCase(repo).execute('l1', 2)).resolves.toBe('h1');
-    expect(repo.bookSeat).toHaveBeenCalledWith('l1', 2);
+    expect(repo.bookSeat).toHaveBeenCalledWith('l1', 2, null);
   });
 
   it('books one seat by default', async () => {
     const repo = makeRepo();
     await new BookRideSeatUseCase(repo).execute('l1');
-    expect(repo.bookSeat).toHaveBeenCalledWith('l1', 1);
+    expect(repo.bookSeat).toHaveBeenCalledWith('l1', 1, null);
   });
 
   it.each([0, 9, 1.5])('rejects %s seats without calling the server', async (seats) => {
@@ -211,5 +214,23 @@ describe('ride booking use cases', () => {
       });
       expect(repo.bookSeat).not.toHaveBeenCalled();
     });
+  });
+
+  it('reinstates only when the ride can take the booking back', async () => {
+    const repo = makeRepo();
+    const cancelled: RideBooking = { ...BOOKING, status: 'cancelled', cancelReason: 'driver_cancelled' };
+    const ride = { listingStatus: 'open', departsAt: null, capacity: 3, bookings: [cancelled] };
+    await new ReinstateRideBookingUseCase(repo).execute('h1', { ride });
+    expect(repo.reinstate).toHaveBeenCalledWith('h1');
+
+    await expect(
+      new ReinstateRideBookingUseCase(repo).execute('h1', {
+        ride: { ...ride, bookings: [{ ...cancelled, cancelReason: 'expired' }] },
+      }),
+    ).rejects.toMatchObject({ code: 'invalid_status' });
+    await expect(
+      new ReinstateRideBookingUseCase(repo).execute('h1', { ride: { ...ride, listingStatus: 'closed' } }),
+    ).rejects.toMatchObject({ code: 'listing_not_available' });
+    expect(repo.reinstate).toHaveBeenCalledTimes(1);
   });
 });

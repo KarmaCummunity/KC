@@ -53,7 +53,27 @@ export type NotificationKind =
   | 'giving_handoff_confirmed'
   | 'giving_handoff_declined'
   | 'giving_handoff_cancelled'
-  | 'giving_handoff_completed';
+  // Wave 2c (0716) — a request the giver did not answer within its confirm window lapsed.
+  | 'giving_handoff_expired'
+  | 'giving_handoff_completed'
+  // FR-KNOW-004 AC5 (0704, #2034) — knowledge slot bookings: every change reaches the other side.
+  | 'knowledge_booking_requested'
+  | 'knowledge_booking_confirmed'
+  | 'knowledge_booking_declined'
+  | 'knowledge_booking_expired'
+  | 'knowledge_booking_cancelled'
+  | 'knowledge_session_completed'
+  // FR-HOUSING-017 (0602–0603) — housing stay bookings: every change reaches the other side.
+  | 'housing_booking_requested'
+  | 'housing_booking_confirmed'
+  | 'housing_booking_declined'
+  | 'housing_booking_expired'
+  | 'housing_booking_superseded'
+  | 'housing_booking_cancelled'
+  | 'housing_booking_completed'
+  // D131 — the organizer paused, closed or deleted the event
+  // before it started, so the attendee's registration was cancelled (0686).
+  | 'event_registration_cancelled';
 
 /** Payload attached to every Expo push under `data`. The client reads this on tap. */
 export interface PushData {

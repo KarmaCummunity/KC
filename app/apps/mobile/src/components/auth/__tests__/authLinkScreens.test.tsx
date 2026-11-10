@@ -3,6 +3,7 @@
 // forgot / reset password submit through a busy primary button, and every
 // status state offers its one way forward.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarVisibility: () => false, shellTabBarHeightPx: () => 0, useShellTabBarScrollInset: () => 0 }));
 import { act, cleanup, fireEvent } from '@testing-library/react';
 
 const router = { back: vi.fn(), push: vi.fn(), replace: vi.fn() };

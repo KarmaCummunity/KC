@@ -14,9 +14,6 @@ const { router, execute, supportChat } = vi.hoisted(() => ({
     signUp: vi.fn(),
     close: vi.fn(),
     messageVolunteers: vi.fn(),
-    createOpportunity: vi.fn(),
-    addShift: vi.fn(),
-    publish: vi.fn(),
     listOrganizer: vi.fn(),
   },
   supportChat: { getSupportThread: vi.fn(), sendMessage: vi.fn() },
@@ -32,7 +29,7 @@ vi.mock('../ui/Screen', () => ({ Screen: ({ children }: { children: React.ReactN
 vi.mock('../lists/KcFlashList', () => ({ KcFlashList: ({ ListHeaderComponent }: { ListHeaderComponent: React.ReactNode }) => ListHeaderComponent }));
 vi.mock('../cards/KcRowCard', () => ({ KcRowCard: () => null }));
 vi.mock('../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarScrollInset: () => 0 }));
-vi.mock('@react-native-community/datetimepicker', () => ({ default: () => null }));
+vi.mock('../giving/TimeWorldSubScreenChrome', () => ({ TimeWorldSubScreenChrome: () => null }));
 vi.mock('../../store/authStore', () => ({
   useAuthStore: (select: (s: unknown) => unknown) => select({ session: { userId: 'u_me' } }),
 }));
@@ -51,7 +48,6 @@ vi.mock('../../services/volunteerComposition', () => ({
 import OpportunityScreen from '../../../app/(tabs)/donations/time/opportunity/[opportunityId]';
 import OrganizerManageScreen from '../../../app/(tabs)/donations/time/organizer/[opportunityId]';
 import OrganizerListScreen from '../../../app/(tabs)/donations/time/organizer/index';
-import CreateOpportunityScreen from '../../../app/(tabs)/donations/time/organizer/create';
 import SupportComposerScreen from '../../../app/(tabs)/donations/time/support';
 
 const SHIFT = { shiftId: 's_1', startsAt: '2026-11-02T08:00:00Z', endsAt: '2026-11-02T10:00:00Z', capacity: 4, filled: 1, slotsOpen: 3, myStatus: null };
@@ -105,24 +101,12 @@ describe('organizer screens', () => {
     expect(execute.messageVolunteers).toHaveBeenCalledWith('s_1', 'See you at 8');
   });
 
-  it('opens the create form from the list header', () => {
+  // G1 step 5: the organizer's create button opens the one create form on the time world's offers.
+  it('opens the unified create form on time offers from the list header', () => {
     execute.listOrganizer.mockResolvedValue([]);
     const { getByRole } = renderScreen(<OrganizerListScreen />);
     fireEvent.click(getByRole('button', { name: 'timeVolunteer.createOpportunity' }));
-    expect(router.push).toHaveBeenCalledWith('/(tabs)/donations/time/organizer/create');
-  });
-
-  it('publishes a new opportunity once and blocks the button meanwhile', async () => {
-    let settle: (id: string) => void = () => {};
-    execute.createOpportunity.mockReturnValueOnce(new Promise<string>((resolve) => { settle = resolve; }));
-    const { getByRole, getByLabelText } = renderScreen(<CreateOpportunityScreen />);
-    fireEvent.change(getByLabelText('timeVolunteer.fieldTitle'), { target: { value: 'Beach clean-up' } });
-    const publish = getByRole('button', { name: 'timeVolunteer.publish' });
-    fireEvent.click(publish);
-    expect(execute.createOpportunity).toHaveBeenCalledWith({ title: 'Beach clean-up', summary: null, locationLabel: null });
-    await vi.waitFor(() => expect(publish.getAttribute('aria-disabled')).toBe('true'));
-    await act(async () => settle('o_2'));
-    await vi.waitFor(() => expect(router.replace).toHaveBeenCalled());
+    expect(router.push).toHaveBeenCalledWith('/create?category=time&direction=give');
   });
 });
 

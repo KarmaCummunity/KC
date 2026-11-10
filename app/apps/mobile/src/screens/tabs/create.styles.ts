@@ -81,7 +81,6 @@ export const useCreatePostStyles = makeUseStyles(({ colors, isDark }) => ({
   streetInputHouse: { flex: 1, minWidth: 0, maxWidth: 120 },
   chips: { flexDirection: 'row' as const },
   /** Wrapping chip row of the listing form. */
-  chipWrap: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: spacing.sm },
   /** Space between the items form's horizontally scrolling subcategory chips. */
   chipGap: { marginEnd: spacing.sm },
   conditionRow: { flexDirection: 'row' as const, gap: spacing.sm },

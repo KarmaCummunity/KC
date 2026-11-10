@@ -9,6 +9,12 @@
 //              still serve the previous build, or index.html (SPA fallback)
 //              before version.json exists.
 //   web        `/` returns HTML and every script it references returns 200.
+//   pages      every static public page in app/apps/mobile/public (privacy,
+//              terms, support, delete-account, child-safety — the URLs the
+//              stores link to) is served as itself, at both /<name> and
+//              /<name>.html, and not as the SPA fallback (index.html), which
+//              renders the Expo Router "Unmatched Route" screen. Catches a
+//              deploy that is missing a page the store listings depend on.
 //   supabase   Auth health (/auth/v1/health) answers 200 with the anon key.
 //   functions  every Edge Function with a probe in scripts/edge-functions.mjs
 //              (SMOKE_PROBES) answers one OPTIONS request with exactly the
@@ -22,11 +28,13 @@
 // rollback with no earlier release tag), SMOKE_CHECKS (comma list, default
 // all), SMOKE_TIMEOUT_SECONDS (default 600), SUPABASE_URL, SUPABASE_ANON_KEY.
 
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, readdirSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SMOKE_PROBES, listDeployableFunctions } from './edge-functions.mjs';
 
-export const ALL_CHECKS = ['version', 'web', 'supabase', 'functions'];
+export const ALL_CHECKS = ['version', 'web', 'pages', 'supabase', 'functions'];
+const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'app', 'apps', 'mobile', 'public');
 const FIRST_DELAY_MS = 5_000;
 const MAX_DELAY_MS = 30_000;
 const REQUEST_TIMEOUT_MS = 15_000;
@@ -90,6 +98,55 @@ export async function checkWeb({ webUrl, fetch }) {
   return broken.length ? { ok: false, detail: broken.join('; ') } : { ok: true, detail: `${scripts.length} scripts load` };
 }
 
+/** Decoded text of the first <title> in `html`, or '' when there is none. */
+export function extractTitle(html) {
+  const m = /<title[^>]*>([^<]*)<\/title>/i.exec(html);
+  if (!m) return '';
+  return m[1]
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim();
+}
+
+/**
+ * The static public pages shipped in app/apps/mobile/public: every *.html
+ * except index.html (the SPA shell template), with the <title> each must be
+ * served with. Read from the checkout, which is the deployed commit.
+ */
+export function listPublicPages(dir = PUBLIC_DIR) {
+  return readdirSync(dir)
+    .filter((f) => f.endsWith('.html') && f !== 'index.html')
+    .sort()
+    .map((f) => ({ name: f.slice(0, -'.html'.length), title: extractTitle(readFileSync(join(dir, f), 'utf8')) }));
+}
+
+/**
+ * Each public page must answer 200 with its own <title> at /<name> and at
+ * /<name>.html (Cloudflare Pages may redirect the latter to the former). A
+ * missing page falls through to the SPA shell, which still answers 200, so the
+ * title is the signal, not the status.
+ */
+export async function checkPages({ webUrl, fetch, pages = listPublicPages() }) {
+  if (pages.length === 0) return { ok: false, detail: 'no public pages found to check' };
+  const bad = [];
+  for (const { name, title } of pages) {
+    if (!title) {
+      bad.push(`${name}.html has no <title> in the checkout`);
+      continue;
+    }
+    for (const path of [`/${name}`, `/${name}.html`]) {
+      const res = await request(fetch, `${webUrl}${path}`, { cache: 'no-store' });
+      const got = res.ok ? extractTitle(await res.text()) : '';
+      if (!res.ok) bad.push(`${path} → HTTP ${res.status}`);
+      else if (got !== title) bad.push(`${path} served "${got || 'no title'}" (SPA fallback?), expected "${title}"`);
+    }
+  }
+  return bad.length ? { ok: false, detail: bad.join('; ') } : { ok: true, detail: `${pages.length} pages × 2 URLs serve their own page` };
+}
+
 /** Supabase Auth health with the public anon key: proves URL, key and project are live. */
 export async function checkSupabase({ supabaseUrl, anonKey, fetch }) {
   const res = await request(fetch, `${supabaseUrl}/auth/v1/health`, { headers: { apikey: anonKey } });
@@ -131,6 +188,7 @@ export async function runSmoke(opts) {
   const runners = {
     version: () => waitForVersion(opts),
     web: () => checkWeb(opts),
+    pages: () => checkPages(opts),
     supabase: () => checkSupabase(opts),
     functions: () => checkFunctions(opts),
   };

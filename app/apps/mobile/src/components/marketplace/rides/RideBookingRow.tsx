@@ -2,14 +2,16 @@
 // that state allows — approve/decline a waiting booking, complete/cancel an approved one, and
 // rate the passenger once after the trip (spec 05 §5.3 step 3, D73; spec 07 §7.7).
 import React from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { Text } from '@kc/ui';
+import { iconSize, Text, useTheme } from '@kc/ui';
 import type { RideBooking } from '@kc/domain';
 import { HandoffRatingForm } from '../HandoffRatingForm';
 import { HandoffActionButton } from '../HandoffActionButton';
 import { formatRideTime } from '../../cards/ListingCard';
-import { useRideBookingStyles } from './rideBookingStyles';
+import { AvatarInitials } from '../../AvatarInitials';
+import { statusTone, useRideBookingsPanelStyles } from './rideBookingsPanelStyles';
 
 export interface RideBookingRowActions {
   readonly approve: (handoffId: string) => void;
@@ -17,6 +19,7 @@ export interface RideBookingRowActions {
   readonly complete: (handoffId: string) => void;
   readonly cancel: (handoffId: string) => void;
   readonly rate: (handoffId: string, rating: number, note: string | null) => void;
+  readonly reinstate?: (handoffId: string) => void;
   readonly chat?: (recipientId: string) => void;
 }
 
@@ -26,7 +29,12 @@ interface Props {
   readonly actions: RideBookingRowActions;
   /** False when approving this booking would exceed remaining ride capacity. */
   readonly canApprove?: boolean;
+  readonly canReinstate?: boolean;
+  /** False before the trip may be completed (from an hour before departure). */
+  readonly canComplete?: boolean;
 }
+
+type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 /** The driver's action pair per booking state: the main action and its outlined alternative. */
 const ACTION_PAIRS = {
@@ -34,25 +42,92 @@ const ACTION_PAIRS = {
   confirmed: { main: 'complete', mainLabel: 'rideBooking.completeTrip', other: 'cancel', otherLabel: 'rideBooking.cancel' },
 } as const;
 
-export function RideBookingRow({ booking, busy, actions, canApprove = true }: Props) {
+function InfoLine({ icon, text, warning = false, testID }: { icon: IconName; text: string; warning?: boolean; testID?: string }) {
+  const { colors } = useTheme();
+  const styles = useRideBookingsPanelStyles();
+  return (
+    <View style={styles.infoLine} testID={testID}>
+      <Ionicons name={icon} size={iconSize.sm} color={warning ? colors.error : colors.textSecondary} />
+      <Text style={warning ? styles.warningText : styles.infoText}>{text}</Text>
+    </View>
+  );
+}
+
+export function RideBookingRow({
+  booking,
+  busy,
+  actions,
+  canApprove = true,
+  canReinstate = false,
+  canComplete = true,
+}: Props) {
   const { t } = useTranslation();
-  const styles = useRideBookingStyles();
+  const { colors } = useTheme();
+  const styles = useRideBookingsPanelStyles();
   const id = booking.handoffId;
+  const name = booking.passengerName || t('rideBooking.passengerFallback');
   const deadline = booking.status === 'reserved' ? formatRideTime(booking.confirmBy) : null;
   const pair = booking.status === 'reserved' || booking.status === 'confirmed' ? ACTION_PAIRS[booking.status] : null;
   const isApproveBlocked = booking.status === 'reserved' && !canApprove;
+  const isCompleteBlocked = booking.status === 'confirmed' && !canComplete;
+  const tone = statusTone(booking.status, colors);
 
   return (
-    <View style={styles.row} testID={`ride-booking-${id}`}>
-      <Text style={styles.name}>{booking.passengerName || t('rideBooking.passengerFallback')}</Text>
-      <Text style={styles.caption}>
-        {t('rideBooking.seatsCount', { count: booking.seats })} · {t(`rideBooking.statusLabel.${booking.status}`)}
-      </Text>
-      {deadline ? <Text style={styles.caption}>{t('rideBooking.approveBy', { time: deadline })}</Text> : null}
+    <View style={[styles.passenger, booking.status === 'cancelled' && styles.passengerMuted]} testID={`ride-booking-${id}`}>
+      <View style={styles.passengerHead}>
+        <AvatarInitials name={name} avatarUrl={booking.avatarUrl} size={44} />
+        <View style={styles.passengerText}>
+          <Text style={styles.name} numberOfLines={1}>{name}</Text>
+          <View style={styles.metaRow}>
+            <View style={[styles.pill, { backgroundColor: tone.bg }]}>
+              <View style={[styles.pillDot, { backgroundColor: tone.dot }]} />
+              <Text style={styles.pillText}>{t(`rideBooking.statusLabel.${booking.status}`)}</Text>
+            </View>
+            <View style={styles.meta}>
+              <Ionicons name="person-outline" size={iconSize.xs} color={colors.textSecondary} />
+              <Text style={styles.metaText}>{t('rideBooking.seatsCount', { count: booking.seats })}</Text>
+            </View>
+          </View>
+        </View>
+        {pair && actions.chat ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('rideBooking.chat')}
+            disabled={busy}
+            style={styles.chatBtn}
+            testID={`ride-booking-chat-${id}`}
+            onPress={() => actions.chat?.(booking.recipientId)}
+          >
+            <Ionicons name="chatbubble-ellipses-outline" size={iconSize.md} color={colors.primary} />
+          </Pressable>
+        ) : null}
+      </View>
+
+      {deadline ? <InfoLine icon="hourglass-outline" text={t('rideBooking.approveBy', { time: deadline })} /> : null}
+      {booking.requestedStopLabel ? (
+        <InfoLine
+          icon="location-outline"
+          testID={`ride-booking-stop-${id}`}
+          text={t('rideBooking.requestedStopForDriver', { place: booking.requestedStopLabel })}
+        />
+      ) : null}
       {isApproveBlocked ? (
-        <Text style={styles.warning} testID={`ride-booking-exceeds-${id}`}>
-          {t('rideBooking.exceedsCapacity')}
-        </Text>
+        <InfoLine icon="alert-circle-outline" warning testID={`ride-booking-exceeds-${id}`} text={t('rideBooking.exceedsCapacity')} />
+      ) : null}
+      {isCompleteBlocked ? (
+        <InfoLine icon="time-outline" testID={`ride-booking-complete-later-${id}`} text={t('rideBooking.completeFromHourBefore')} />
+      ) : null}
+
+      {booking.status === 'cancelled' && canReinstate && actions.reinstate ? (
+        <View style={styles.actions}>
+          <HandoffActionButton
+            inRow
+            testID={`ride-booking-reinstate-${id}`}
+            label={t('rideBooking.reinstate')}
+            busy={busy}
+            onPress={() => actions.reinstate?.(id)}
+          />
+        </View>
       ) : null}
 
       {pair ? (
@@ -62,20 +137,10 @@ export function RideBookingRow({ booking, busy, actions, canApprove = true }: Pr
             testID={`ride-booking-${pair.main}-${id}`}
             label={t(pair.mainLabel)}
             busy={busy}
-            disabled={pair.main === 'approve' && isApproveBlocked}
+            disabled={(pair.main === 'approve' && isApproveBlocked) || (pair.main === 'complete' && isCompleteBlocked)}
             onPress={() => actions[pair.main](id)}
           />
           <HandoffActionButton inRow secondary testID={`ride-booking-${pair.other}-${id}`} label={t(pair.otherLabel)} busy={busy} onPress={() => actions[pair.other](id)} />
-          {actions.chat ? (
-            <HandoffActionButton
-              inRow
-              secondary
-              testID={`ride-booking-chat-${id}`}
-              label={t('rideBooking.chat')}
-              busy={busy}
-              onPress={() => actions.chat?.(booking.recipientId)}
-            />
-          ) : null}
         </View>
       ) : null}
 

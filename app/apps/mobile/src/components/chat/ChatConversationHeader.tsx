@@ -10,7 +10,9 @@ import { router } from 'expo-router';
 import { iconSize, useTheme, Text } from '@kc/ui';
 import { MirroredIcon, useDirectionalBackIcon } from '../ui/MirroredIcon';
 import { useChatConversationHeaderStyles } from './chatConversationHeader.styles';
+import type { VerificationLevel } from '@kc/domain';
 import { OnlineDot } from './OnlineDot';
+import { VerificationBadge } from '../VerificationBadge';
 
 interface Props {
   readonly title: string;
@@ -19,9 +21,12 @@ interface Props {
   readonly onOpenMenu: () => void;
   /** Counterpart user id — drives the online dot (null hides it). */
   readonly peerUserId?: string | null;
+  readonly peerVerificationLevel?: VerificationLevel;
 }
 
-export function ChatConversationHeader({ title, canOpenProfile, shareHandle, onOpenMenu, peerUserId }: Props) {
+export function ChatConversationHeader({
+  title, canOpenProfile, shareHandle, onOpenMenu, peerUserId, peerVerificationLevel,
+}: Props) {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const styles = useChatConversationHeaderStyles();
@@ -71,6 +76,7 @@ export function ChatConversationHeader({ title, canOpenProfile, shareHandle, onO
             <Text style={styles.title} numberOfLines={1}>
               {title}
             </Text>
+            <VerificationBadge level={peerVerificationLevel} />
           </View>
         </TouchableOpacity>
         <Pressable

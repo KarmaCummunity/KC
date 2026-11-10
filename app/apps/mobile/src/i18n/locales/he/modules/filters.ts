@@ -7,6 +7,8 @@ export const filtersHe = {
   apply: 'החל',
   searchPlaceholder: 'חיפוש בכותרת, תיאור או קטגוריה…',
   searchClearA11y: 'איפוס חיפוש',
+  feedSettingsLink: 'הגדרות פיד — מה להסתיר',
+  feedSettingsLinkA11y: 'מעבר להגדרות פיד — מילים, קטגוריות ואנשים מושתקים',
 
   // Section titles
   sectionType: 'סוג פוסט',

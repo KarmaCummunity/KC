@@ -39,14 +39,64 @@ const PUBLICATION_DROP_TABLE = /\bALTER\s+PUBLICATION\s+[a-z0-9_."]+\s+DROP\s+TA
 /** Dropping a session-scoped temp table (`pg_temp.*`) touches no persisted data. */
 const TEMP_TABLE_DROP = /\bDROP\s+TABLE\s+(IF\s+EXISTS\s+)?pg_temp\.[a-z0-9_"]+/gi;
 
+/** `CREATE TEMP[ORARY] TABLE [IF NOT EXISTS] <name>` — the session-scoped tables a file makes. */
+const CREATE_TEMP_TABLE = /\bCREATE\s+(?:LOCAL\s+|GLOBAL\s+)?TEMP(?:ORARY)?\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:pg_temp\.)?("?[a-z0-9_]+"?)/gi;
+
+/** `CREATE [UNLOGGED] TABLE [IF NOT EXISTS] [schema.]<name>` — a persisted table. */
+const CREATE_PERMANENT_TABLE = /\bCREATE\s+(?:UNLOGGED\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:"?[a-z0-9_]+"?\.)?("?[a-z0-9_]+"?)/gi;
+
+/** An unqualified `DROP TABLE [IF EXISTS] a, b, c [CASCADE|RESTRICT]` and its name list. */
+const UNQUALIFIED_DROP_TABLE = /\bDROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?("?[a-z0-9_]+"?(?:\s*,\s*"?[a-z0-9_]+"?)*)(?=\s*(?:CASCADE|RESTRICT)?\s*(?:;|$))/gi;
+
+const unquote = (name) => name.replace(/"/g, '').toLowerCase();
+
+/** Names of the tables `content` creates as TEMP. */
+export function tempTablesCreatedIn(content) {
+  return new Set([...content.matchAll(CREATE_TEMP_TABLE)].map((m) => unquote(m[1])));
+}
+
+/** Names of the persisted tables `content` creates (any schema). */
+export function permanentTablesCreatedIn(content) {
+  return new Set([...content.matchAll(CREATE_PERMANENT_TABLE)].map((m) => unquote(m[1])));
+}
+
+/** Every persisted table name created anywhere in `dir` (the whole migration history). */
+export function permanentTablesIn(dir = DEFAULT_DIR) {
+  const names = new Set();
+  for (const f of readdirSync(dir).filter((x) => x.endsWith('.sql'))) {
+    for (const n of permanentTablesCreatedIn(readFileSync(join(dir, f), 'utf8'))) names.add(n);
+  }
+  return names;
+}
+
+/**
+ * Strip an unqualified `DROP TABLE` whose every name is a TEMP table the same
+ * file creates and that no migration ever creates as a persisted table. Such a
+ * drop can only resolve to the session's own temp table (pg_temp is searched
+ * first) or, with IF EXISTS, do nothing — it can't reach persisted data. A
+ * name that also exists as a persisted table keeps the drop flagged.
+ */
+function stripTempTableDrops(sql, tempTables, permanentTables) {
+  return sql.replace(UNQUALIFIED_DROP_TABLE, (whole, list) => {
+    const names = list.split(',').map((n) => unquote(n.trim()));
+    const allTemp = names.every((n) => tempTables.has(n) && !permanentTables.has(n));
+    return allTemp ? '' : whole;
+  });
+}
+
 /**
  * @param {string} content
  * @param {string} filename
- * @param {{ honorAllow?: boolean }} [options] honorAllow=false scans marked lines too (release mode).
+ * @param {{ honorAllow?: boolean, permanentTables?: Set<string> }} [options]
+ *   honorAllow=false scans marked lines too (release mode). permanentTables:
+ *   persisted table names from the whole migration history (a temp-table drop
+ *   naming one of them stays flagged); this file's own are always included.
  */
-export function scanMigrationSql(content, filename, { honorAllow = true } = {}) {
+export function scanMigrationSql(content, filename, { honorAllow = true, permanentTables = new Set() } = {}) {
   const errors = [];
   const lines = content.split('\n');
+  const tempTables = tempTablesCreatedIn(content);
+  const persisted = new Set([...permanentTables, ...permanentTablesCreatedIn(content)]);
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
@@ -58,7 +108,7 @@ export function scanMigrationSql(content, filename, { honorAllow = true } = {}) 
     const commentIdx = line.indexOf('--');
     if (commentIdx >= 0) line = line.slice(0, commentIdx);
 
-    const sql = line.replace(PUBLICATION_DROP_TABLE, '').replace(TEMP_TABLE_DROP, '').trim();
+    const sql = stripTempTableDrops(line.replace(PUBLICATION_DROP_TABLE, '').replace(TEMP_TABLE_DROP, ''), tempTables, persisted).trim();
     if (!sql) continue;
 
     for (const rule of DESTRUCTIVE_RULES) {
@@ -80,10 +130,11 @@ export function checkMigrationSafety(migrationsDir) {
     .sort();
 
   const errors = [];
+  const permanentTables = permanentTablesIn(migrationsDir);
   for (const file of files) {
     const path = join(migrationsDir, file);
     const content = readFileSync(path, 'utf8');
-    errors.push(...scanMigrationSql(content, file));
+    errors.push(...scanMigrationSql(content, file, { permanentTables }));
   }
 
   return { ok: errors.length === 0, errors };
@@ -114,11 +165,20 @@ export const COMPAT_RULES = [
   { id: 'disable-rls', re: /\bDISABLE\s+ROW\s+LEVEL\s+SECURITY\b/i, hint: 'DISABLE ROW LEVEL SECURITY' },
 ];
 
-/** COMPAT_RULES hits in `content`, comments ignored. */
+/**
+ * A single-word string literal (`'rename'`, `'drop'`) is data — an enum value
+ * or an action name compared in a function body — never SQL text, since any
+ * statement needs a space. Blanked before the compatibility rules run so
+ * `elsif p_action = 'rename' then` is not read as a RENAME. Multi-word
+ * literals (dynamic SQL for EXECUTE) are still scanned.
+ */
+const ONE_WORD_LITERAL = /'[A-Za-z_]+'/g;
+
+/** COMPAT_RULES hits in `content`, comments and one-word string literals ignored. */
 export function scanCompatibility(content, filename) {
   const hits = [];
   content.split('\n').forEach((line, i) => {
-    const sql = line.replace(/--.*$/, '');
+    const sql = line.replace(/--.*$/, '').replace(ONE_WORD_LITERAL, "''");
     for (const rule of COMPAT_RULES) {
       if (rule.re.test(sql)) hits.push(`${filename}:${i + 1}: ${rule.hint} (rule ${rule.id}, breaks the previous release unless expand/contract)`);
     }
@@ -136,13 +196,14 @@ export function scanCompatibility(content, filename) {
  *     line for its file (the marker alone does not count).
  * @param {{ name: string, content: string }[]} files changed migration files
  * @param {string} prBody
+ * @param {{ permanentTables?: Set<string> }} [options] persisted table names from the whole history (see scanMigrationSql)
  */
-export function checkReleaseMigrations(files, prBody) {
+export function checkReleaseMigrations(files, prBody, { permanentTables = new Set() } = {}) {
   const justified = justifiedFiles(prBody);
   const errors = [];
   for (const { name, content } of files) {
     const ok = justified.has(name);
-    const hits = [...scanMigrationSql(content, name, { honorAllow: ok }), ...(ok ? [] : scanCompatibility(content, name))];
+    const hits = [...scanMigrationSql(content, name, { honorAllow: ok, permanentTables }), ...(ok ? [] : scanCompatibility(content, name))];
     for (const hit of hits) {
       errors.push(`${hit}${ok ? '' : ` — add \`Migration safety: ${name} — <reason>\` to the release PR body`}`);
     }
@@ -169,7 +230,7 @@ function releaseMain(base, head) {
     process.exit(2);
   }
   const files = changedMigrations(base, head);
-  const errors = checkReleaseMigrations(files, process.env.PR_BODY);
+  const errors = checkReleaseMigrations(files, process.env.PR_BODY, { permanentTables: permanentTablesIn(DEFAULT_DIR) });
   for (const err of errors) console.log(`::error::${err}`);
   if (errors.length) process.exit(1);
   console.log(`✓ Release migration scan passed — ${files.length} changed migration file(s).`);

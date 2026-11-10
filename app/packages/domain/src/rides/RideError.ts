@@ -53,10 +53,16 @@ export type RideErrorCode =
   | 'invalid_status'
   | 'ride_departed'
   | 'ride_not_started'
+  // Reinstating a booking (`reinstate_ride_booking`, 0667): the RPC's own refusal codes.
+  | 'listing_not_available'
+  | 'already_booked'
+  | 'ride_seats_exhausted'
   // FR-RIDE-046 — recurring rides: the schedule a series needs.
   | 'series_weekdays_required'
   | 'series_time_invalid'
-  | 'series_ends_in_past';
+  | 'series_ends_in_past'
+  // FR-RIDE-003 AC9 — private house numbers.
+  | 'ride_house_number_invalid';
 
 export class RideError extends DomainError {
   readonly code: RideErrorCode;

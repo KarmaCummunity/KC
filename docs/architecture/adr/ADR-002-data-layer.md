@@ -2,7 +2,7 @@
 
 - **Status:** Accepted (2026-10-30) · records the contract the code already follows
 - **Issue:** KC#1016 · **Decision log:** `D-194` in [`../../SSOT/DECISIONS.md`](../../SSOT/DECISIONS.md)
-- **Related:** [`MIGRATION_RANGES.md`](../../agents/MIGRATION_RANGES.md), [`OPERATOR_RUNBOOK.md`](../../SSOT/OPERATOR_RUNBOOK.md) "Migration application rules", CLAUDE.md §5 / §9
+- **Related:** [`MIGRATION_RANGES.md`](../../agents/MIGRATION_RANGES.md), [`OPERATOR_RUNBOOK.md`](../../SSOT/OPERATOR_RUNBOOK.md) "Migration application rules", AGENTS.md §5 / §9
 
 ## Context
 
@@ -83,4 +83,4 @@ Rules for every function:
 
 - Business rules live in one place (SQL functions) and stay enforceable for every client: app, web, bot, MCP.
 - More migrations and SQL tests per feature; the local Supabase stack (`supabase db start`) is part of the dev loop.
-- Existing raw-`Error` adapters and table writes outside these rules stay until touched (opportunistic, CLAUDE.md "Propose and Proceed").
+- Existing raw-`Error` adapters and table writes outside these rules stay until touched (opportunistic, AGENTS.md "Propose and Proceed").

@@ -13,7 +13,11 @@ export { SupabaseUserRepository } from './users/SupabaseUserRepository';
 export { SupabaseCityRepository } from './cities/SupabaseCityRepository';
 export { SupabaseStreetRepository } from './streets/SupabaseStreetRepository';
 export { SupabasePostRepository } from './posts/SupabasePostRepository';
-export { SupabasePostEngagementRepository, type PostReactionType } from './posts/SupabasePostEngagementRepository';
+export {
+  SupabasePostEngagementRepository,
+  type PostReactionType,
+  type PostCommentWithAuthor,
+} from './posts/SupabasePostEngagementRepository';
 export { SupabaseSavedPostsRepository } from './posts/SupabaseSavedPostsRepository';
 export { SupabaseNotificationInboxRepository } from './notifications/SupabaseNotificationInboxRepository';
 export { SupabaseChatV2Realtime } from './chat/SupabaseChatV2Realtime';
@@ -42,6 +46,8 @@ export type {
   MatchSuggestion, MatchRole, MatchStatus, MatchResponse, MatchRespondResult, MatchQualityByWorld,
 } from './matching/SupabaseMatchRepository';
 export type { OnlineListener } from './realtime/SupabaseOnlinePresence';
+export { SupabaseDemoDataRepository, mapDemoDataStatus, mapDemoDataWipeResult, mapDemoDataSeedResult } from './admin/SupabaseDemoDataRepository';
+export type { DemoDataStatus, DemoDataWipeResult, DemoDataSeedResult } from './admin/SupabaseDemoDataRepository';
 export { SupabaseStatsRepository } from './stats/SupabaseStatsRepository';
 export { SupabaseAboutRepository } from './about/SupabaseAboutRepository';
 export { SupabaseReportRepository } from './reports/SupabaseReportRepository';
@@ -58,6 +64,9 @@ export * from './admin/SupabaseAdminTaskRepository';
 export * from './admin/SupabaseAdminContentRepository';
 export * from './admin/SupabaseTimesheetsRepository';
 export * from './admin/SupabaseFinanceLedgerRepository';
+export * from './admin/SupabaseFinanceAccountsRepository';
+export * from './admin/SupabaseFinanceDonorsRepository';
+export * from './admin/SupabaseOrgTransparencyRepository';
 export * from './admin/SupabaseCrmContactsRepository';
 export * from './admin/SupabaseOrgApplicationsRepository';
 export * from './admin/SupabaseOrgHierarchyRepository';
@@ -71,10 +80,12 @@ export { SupabaseRideRatingRepository } from './rides/SupabaseRideRatingReposito
 export { SupabaseDriverDeclarationRepository } from './rides/SupabaseDriverDeclarationRepository';
 export { SupabaseRidesRealtime } from './rides/SupabaseRidesRealtime';
 export { SupabaseRideBookingRepository } from './rides/SupabaseRideBookingRepository';
+export { SupabaseHousingRepository } from './housing/SupabaseHousingRepository';
 export { SupabaseRidePlaceRepository } from './rides/SupabaseRidePlaceRepository';
 export { SupabaseRidesFeedRepository } from './rides/SupabaseRidesFeedRepository';
 export { SupabaseRideSavedRoutesRepository } from './rides/SupabaseRideSavedRoutesRepository';
 export { SupabaseRideSeriesRepository } from './rides/SupabaseRideSeriesRepository';
+export { SupabaseRideHouseNumberRepository } from './rides/SupabaseRideHouseNumberRepository';
 export { SupabaseRideSafetyRepository } from './rides/SupabaseRideSafetyRepository';
 export { SupabaseRideLegacyLinkRepository } from './rides/SupabaseRideLegacyLinkRepository';
 export { SupabaseSurveyRepository } from './survey/SupabaseSurveyRepository';
@@ -89,4 +100,8 @@ export { SupabasePaymentsRepository } from './payments/SupabasePaymentsRepositor
 export { SandboxPaymentProvider } from './payments/SandboxPaymentProvider';
 export { SupabaseKcSupportChannelsRepository } from './payments/SupabaseKcSupportChannelsRepository';
 export { SupabaseVolunteerRepository } from './volunteering/SupabaseVolunteerRepository';
+export { SupabaseChallengeRepository } from './challenges/SupabaseChallengeRepository';
 export * from './admin/SupabaseWhatsAppAdminRepository';
+export { SupabaseKnowledgeTopicRepository } from './knowledge/SupabaseKnowledgeTopicRepository';
+export { mapKnowledgeTopic, mapKnowledgeTopicMatch } from './knowledge/mapKnowledgeTopic';
+export { SupabaseKnowledgeBookingRepository } from './knowledge/SupabaseKnowledgeBookingRepository';

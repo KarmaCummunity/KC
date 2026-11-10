@@ -23,6 +23,7 @@ const PRIVATE_SLICE: UsersSelfPrivateSlice = {
   is_super_admin: false,
   active_posts_count_internal: 0,
   karma_points: 0,
+  date_of_birth: null,
 };
 
 function makeFakeClient(opts: {

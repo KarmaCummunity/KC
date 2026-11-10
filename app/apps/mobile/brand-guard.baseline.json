@@ -11,22 +11,8 @@
       "iconSizeLiteral": 2,
       "unmirroredDirectionalIcon": 1
     },
-    "app/settings/surveys.tsx": {
-      "fontWeightLiteral": 3,
-      "spacingLiteral": 2,
-      "adHocChip": 1,
-      "iconSizeLiteral": 4,
-      "unmirroredDirectionalIcon": 2
-    },
-    "src/components/CreatePostForm/CreatePostFormScrollContent.tsx": {
-      "physicalSide": 1
-    },
     "src/components/DeleteAccountSuccessOverlay.tsx": {
       "rawModal": 1
-    },
-    "src/components/FeedEmptyState.tsx": {
-      "fontWeightLiteral": 1,
-      "iconSizeLiteral": 1
     },
     "src/components/PostCardGrid.styles.ts": {
       "colorLiteral": 4,
@@ -54,25 +40,10 @@
     "src/components/aside/RecentSearchesAside.tsx": {
       "iconSizeLiteral": 1
     },
-    "src/components/auth/AnimatedAuthInput.tsx": {
-      "shadowLiteral": 3,
-      "rawTextInput": 1
-    },
-    "src/components/cards/PostDetailHeader.tsx": {
-      "fontSizeLiteral": 1,
-      "fontWeightLiteral": 1,
-      "spacingLiteral": 1,
-      "adHocChip": 1
-    },
     "src/components/chat/ChatReactionChips.tsx": {
       "radiusLiteral": 1,
       "spacingLiteral": 1,
       "adHocChip": 1
-    },
-    "src/components/legal/LegalConsentGate.tsx": {
-      "radiusLiteral": 5,
-      "physicalSide": 2,
-      "rawModal": 2
     },
     "src/components/map/MapExplorer.styles.ts": {
       "colorLiteral": 3,
@@ -110,10 +81,6 @@
     "src/components/search/SearchSocialSections.tsx": {
       "iconSizeLiteral": 1
     },
-    "src/components/search/UserResultCard.tsx": {
-      "iconSizeLiteral": 3,
-      "unmirroredDirectionalIcon": 1
-    },
     "src/components/search/searchResultCard.styles.ts": {
       "fontSizeLiteral": 4,
       "fontWeightLiteral": 3,
@@ -124,13 +91,6 @@
       "colorLiteral": 5,
       "fontWeightLiteral": 1,
       "radiusLiteral": 2
-    },
-    "src/features/about-landing/AboutInstagramEmbed.tsx": {
-      "iconSizeLiteral": 1
-    },
-    "src/features/about-landing/AboutInstagramEmbed.web.tsx": {
-      "physicalSide": 3,
-      "iconSizeLiteral": 1
     },
     "src/features/about-landing/AboutNavDrawer.tsx": {
       "physicalSide": 2,
@@ -152,18 +112,6 @@
     },
     "src/screens/guest/feed.styles.ts": {
       "spacingLiteral": 1
-    },
-    "src/screens/post/postDetailScreen.styles.ts": {
-      "colorLiteral": 6,
-      "fontSizeLiteral": 3,
-      "fontWeightLiteral": 7,
-      "spacingLiteral": 5,
-      "zIndexLiteral": 2,
-      "shadowLiteral": 16
-    },
-    "src/screens/research/ResearchRunner.tsx": {
-      "fontWeightLiteral": 1,
-      "radiusLiteral": 2
     },
     "src/screens/research/SurveyIntroBlock.tsx": {
       "fontWeightLiteral": 1,

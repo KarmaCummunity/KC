@@ -1,7 +1,7 @@
 /** FR-AUTH-010: Validate display_name + city; optional profile street/number (FR-PROFILE-007 shape);
  *  advance onboarding_state pending_basic_info → pending_avatar.
  *  City id+name come from the caller (CityPicker); DB FK is the final guard. */
-import { STREET_NUMBER_PATTERN } from '@kc/domain';
+import { STREET_NUMBER_PATTERN, dateOfBirthIssue } from '@kc/domain';
 import type { IAuthService } from '../ports/IAuthService';
 import type { IUserRepository } from '../ports/IUserRepository';
 import { assertSessionUser } from './assertSessionUser';
@@ -13,6 +13,8 @@ export interface CompleteBasicInfoInput {
   readonly displayName: string;
   readonly cityId: string;
   readonly cityName: string;
+  /** Required, ISO `YYYY-MM-DD`, at least 18 years old (FR-AUTH-010 AC2.d). */
+  readonly dateOfBirth: string;
   /** Optional; both trimmed non-empty required to persist (same rules as UpdateProfileUseCase). */
   readonly profileStreet?: string;
   readonly profileStreetNumber?: string;
@@ -24,6 +26,8 @@ export class CompleteBasicInfoUseCase {
   constructor(
     private readonly users: IUserRepository,
     private readonly auth: IAuthService,
+    /** Injected so the 18+ check is testable on any date. */
+    private readonly now: () => Date = () => new Date(),
   ) {}
 
   async execute(input: CompleteBasicInfoInput): Promise<void> {
@@ -37,6 +41,9 @@ export class CompleteBasicInfoUseCase {
     if (trimmedCityId.length === 0 || trimmedCityName.length === 0) {
       throw new ProfileError('invalid_city');
     }
+
+    const dobIssue = dateOfBirthIssue(input.dateOfBirth, this.now());
+    if (dobIssue) throw new ProfileError(dobIssue);
 
     const st = (input.profileStreet ?? '').trim();
     const num = (input.profileStreetNumber ?? '').trim();
@@ -63,6 +70,8 @@ export class CompleteBasicInfoUseCase {
       );
     }
 
+    // The date of birth goes first: the server re-checks the age, so a rejected one saves nothing else.
+    await this.users.setDateOfBirth(input.dateOfBirth);
     await this.users.setBasicInfo(input.userId, {
       displayName: trimmedName,
       city: trimmedCityId,
@@ -74,7 +83,7 @@ export class CompleteBasicInfoUseCase {
       await this.users.setProfileAddressLines(input.userId, null, null);
     }
     await this.users.setContactPhone(input.userId, phone.length > 0 ? phone : null);
-    await this.users.setOnboardingState(input.userId, 'pending_avatar');
+    await this.users.setOnboardingState('pending_avatar');
     await this.auth.syncProfileMetadata({ displayName: trimmedName });
   }
 }

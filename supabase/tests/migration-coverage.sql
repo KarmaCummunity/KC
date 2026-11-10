@@ -41,11 +41,13 @@ declare
     'open','confirmed_violation','dismissed_no_violation'
   ];
   v_post_statuses   text[] := array[
-    'open','closed_delivered','deleted_no_recipient','expired','removed_admin','hidden_pending_review'
+    'open','closed_delivered','deleted_no_recipient','expired','removed_admin','hidden_pending_review',
+    'paused'
   ];
+  -- `deleted` left deliberately in 0699: no writer ever stored it, and the purge removes the row.
   v_account_statuses text[] := array[
     'pending_verification','active','suspended_for_false_reports',
-    'suspended_admin','banned','deleted'
+    'suspended_admin','banned','pending_deletion'
   ];
 begin
   foreach v in array v_audit_actions loop

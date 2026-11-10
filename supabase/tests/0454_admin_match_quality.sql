@@ -20,7 +20,9 @@ end $$;
 
 create or replace function pg_temp.mk_item(p_owner uuid, p_dir text, p_title text)
 returns uuid language plpgsql as $$
-declare v uuid;
+declare
+  v uuid;
+  p_post uuid;
 begin
   -- Same category and point (Tel Aviv) on both sides so the pair is always scored.
   insert into public.listings (owner_id, world_slug, kind_id, category_id, direction, title, geo, anonymity_level, details)
@@ -33,6 +35,22 @@ begin
           extensions.st_setsrid(extensions.st_makepoint(34.7818, 32.0853), 4326)::extensions.geography, 3,
           jsonb_build_object('image_url', 'https://example.test/i.jpg'))
   returning listing_id into v;
+
+  if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then
+    insert into public.posts (
+      owner_id, type, visibility, title, category, city, street, street_number,
+      world_slug, direction, post_type, details, listing_id, listing_world_slug, legacy_listing_id,
+      status, moderation_status, published_at, geo
+    ) values (
+      p_owner, case p_dir when 'request' then 'Request' else 'Give' end, 'Public', p_title, 'Other', 'tel-aviv', 'Marketplace', '1',
+      'items', case p_dir when 'request' then 'request' else 'offer' end, 'standard',
+      jsonb_build_object('image_url', 'https://example.test/i.jpg'),
+      v, 'items', v, 'open', 'published', now(),
+      extensions.st_setsrid(extensions.st_makepoint(34.7818, 32.0853), 4326)::extensions.geography
+    ) returning post_id into p_post;
+    update public.listings set legacy_post_id = p_post where listing_id = v;
+  end if;
+
   return v;
 end $$;
 
@@ -142,6 +160,8 @@ begin
 
   insert into public.giving_handoffs (listing_id, owner_id, recipient_id, world_slug, status, handed_over_at)
   values ((select id from t where k = 'offer'), v_a, v_b, 'items', 'handed_over', now());
+  insert into public.post_handoffs (post_id, owner_id, recipient_id, world_slug, status, handed_over_at)
+  values (public.post_id_of_listing((select id from t where k = 'offer')), v_a, v_b, 'items', 'handed_over', now());
 end $$;
 
 -- ── metrics ─────────────────────────────────────────────────────────────────

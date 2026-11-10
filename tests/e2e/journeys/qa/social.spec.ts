@@ -45,7 +45,7 @@ test('notifications inbox renders', async ({ page }) => {
 test('donations hub shows every giving world with translated titles', async ({ page }) => {
   const errors = trackApiErrors(page);
   await gotoApp(page, '/donations');
-  for (const id of ['items', 'marketplace', 'time', 'money', 'food', 'rides', 'knowledge']) {
+  for (const id of ['items', 'time', 'money', 'food', 'rides', 'knowledge']) {
     await expect(page.getByTestId(`donation-tile-${id}`)).toBeVisible();
   }
   await page.waitForLoadState('networkidle');

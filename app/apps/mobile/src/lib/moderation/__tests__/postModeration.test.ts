@@ -1,7 +1,9 @@
 // D33 / D61 — a post hidden for review is shown to its owner with its own copy,
 // and admins can restore or remove it like an admin-removed post.
 import { describe, expect, it } from 'vitest';
-import { OWNER_MODERATED_POST_STATUSES, adminPostActions, ownerModerationBubbleKey } from '../postModeration';
+import {
+  OWNER_MODERATED_POST_STATUSES, adminPostActions, ownerModerationBubbleKey, removedPostLane,
+} from '../postModeration';
 
 describe('post moderation helpers', () => {
   it('tells the owner a post is hidden for review, and keeps the removal copy otherwise', () => {
@@ -24,5 +26,21 @@ describe('post moderation helpers', () => {
     expect(adminPostActions('open', all)).toEqual({ remove: true, restore: false });
     expect(adminPostActions('removed_admin', all)).toEqual({ remove: false, restore: true });
     expect(adminPostActions('hidden_pending_review', { canRemove: false, canRestore: false })).toEqual({ remove: false, restore: false });
+  });
+
+  it('lets admins remove a post in any status but removed (0682), e.g. paused or expired', () => {
+    const all = { canRemove: true, canRestore: true };
+    for (const status of ['paused', 'expired', 'closed_delivered', 'deleted_no_recipient']) {
+      expect(adminPostActions(status, all)).toEqual({ remove: true, restore: false });
+    }
+  });
+
+  it('puts a removed post in the lane of the status it had before the removal', () => {
+    expect(removedPostLane('open')).toBe('open');
+    expect(removedPostLane('paused')).toBe('open');
+    expect(removedPostLane(null)).toBe('open');
+    expect(removedPostLane('closed_delivered')).toBe('closed');
+    expect(removedPostLane('deleted_no_recipient')).toBe('closed');
+    expect(removedPostLane('expired')).toBe('closed');
   });
 });

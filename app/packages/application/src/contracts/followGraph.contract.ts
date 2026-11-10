@@ -1,6 +1,6 @@
 // Follow-graph contract (G39) — the follow and follow-request slice of
 // IUserRepository, the behaviour every implementation must honour. Mapped to
-// docs/SSOT/spec/03_following.md: FR-FOLLOW-001 (follow a Public profile),
+// docs/spec/requirements/03_following.md: FR-FOLLOW-001 (follow a Public profile),
 // FR-FOLLOW-002 (unfollow), FR-FOLLOW-003 (request a Private profile),
 // FR-FOLLOW-004 (cancel), FR-FOLLOW-005 (approve), FR-FOLLOW-006 / 008 (reject
 // and the 14-day cooldown), FR-FOLLOW-011 (the raw follow state) and

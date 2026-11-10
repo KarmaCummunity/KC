@@ -10,20 +10,30 @@
 import { medicalBodies } from './donations.medicalBodies';
 import { donations, marketplace, moneyPayments, search, timeVolunteer } from './donations';
 import { supportKc } from './donations.supportKc';
+import { challenges } from './challenges';
 import { givingHandoff } from './givingHandoff';
 import { rideBooking } from './rideBooking';
+import { knowledgeBooking } from './knowledgeBooking';
+import { housingStay } from './housingStay';
+import { eventPost } from './eventPost';
 import { ridePlaces } from './ridePlaces';
 import { dateTimeField, rideFeed, rideRoutes, rideSafety, rideSchedule, rideSeries } from './rideSchedule';
 import { authEn } from './modules/auth';
+import { authVerificationHintEn } from './modules/authVerificationHint';
 import { onboardingEn } from './modules/onboarding';
+import { dateOfBirthEn } from './modules/dateOfBirth';
+import { verificationEn } from './modules/verification';
 import { errorsEn } from './modules/errors';
 import { chatEn } from './modules/chat';
+import { chatNewEn } from './modules/chatNew';
 import { notificationsEn } from './modules/notifications';
 import { emptyStatesEn, feedSettingsEn } from './modules/feedSettings';
 import { moderationEn, auditEn, accountBlockedEn } from './modules/moderation';
+import { restoreAccountEn } from './modules/restoreAccount';
 import { postEn } from './modules/post';
 import { settingsEn } from './modules/settings';
 import { stats } from './stats';
+import { transparencyEn } from './modules/transparency';
 import { aboutContentMerged } from './modules/aboutContentBundle';
 import { tabsEn } from './modules/tabs';
 import { errorBoundaryEn, devBannerEn, optionsMenuEn } from './modules/ui';
@@ -51,10 +61,12 @@ const en = {
   config: configEn,
 
   // Auth (FR-AUTH-001..014) — see modules/auth.ts
-  auth: authEn,
+  auth: { ...authEn, ...authVerificationHintEn },
 
   // Onboarding (FR-AUTH-010..012, FR-AUTH-018) — see modules/onboarding.ts
   onboarding: onboardingEn,
+  dateOfBirth: dateOfBirthEn,
+  verification: verificationEn,
 
   // Feed — see modules/feed.ts
   feed: feedEn,
@@ -76,7 +88,7 @@ const en = {
   filters: filtersEn,
 
   // Chat — see modules/chat.ts (FR-CHAT-016)
-  chat: chatEn,
+  chat: { ...chatEn, new: chatNewEn },
 
   // Notifications (FR-NOTIF-001..015) — see modules/notifications.ts
   notifications: notificationsEn,
@@ -87,6 +99,7 @@ const en = {
   moderation: moderationEn,
   audit: auditEn,
   accountBlocked: accountBlockedEn,
+  restoreAccount: restoreAccountEn,
 
   // Admin portal (FR-ADMIN-010/011) — see modules/admin.ts
   admin: adminEn,
@@ -96,6 +109,9 @@ const en = {
 
   // Stats (FR-STATS-001..004) — see stats.ts
   stats,
+
+  // Live public financial transparency (FR-FIN-022) — see modules/transparency.ts
+  transparency: transparencyEn,
 
   // Desktop aside panels (FR-RESP-003) — see modules/aside.ts
   aside: asideEn,
@@ -123,10 +139,17 @@ const en = {
   // Direct support for KC (FR-DONATE-011) — see donations.supportKc.ts
   supportKc,
   timeVolunteer,
+  // Challenges world (docs/spec/10_challenges.md) — see challenges.ts
+  challenges,
   medicalBodies,
   givingHandoff,
   // Ride seat bookings (D73) — see rideBooking.ts
   rideBooking,
+  knowledgeBooking,
+  // Housing stays (FR-HOUSING-003, 012, 015–021) — see housingStay.ts
+  housingStay,
+  // Organization events (G1 step 5) — see eventPost.ts
+  eventPost,
   // Ride places (D71) — see ridePlaces.ts
   ridePlaces,
   // Ride quick publish (D75) and the shared date-time field — see rideSchedule.ts

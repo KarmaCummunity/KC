@@ -16,8 +16,12 @@ function walk(dir: string): string[] {
   });
 }
 
-// Organizer tooling for volunteer shifts (not a request/offer post) — reviewed exception.
-const ALLOWED_CREATE_ROUTES = ['(tabs)/create.tsx', '(tabs)/donations/time/organizer/create.tsx'];
+// The organizer's volunteer-opportunity screen was retired in G1 step 5: an organization's event
+// and a volunteer shift are both published from the one create form.
+// The form is a root-stack screen so it opens over the current screen (FR-POST-001 AC9).
+const ALLOWED_CREATE_ROUTES = ['create.tsx'];
+// Not member request/offer forms: admin back-office and the chat recipient picker.
+const NON_FORM_ROUTES = /^\(admin\)\/|^chat\/new\.tsx$/;
 
 describe('unified create — route inventory', () => {
   const routes = walk(APP).map((p) => relative(APP, p).split('\\').join('/'));
@@ -25,7 +29,7 @@ describe('unified create — route inventory', () => {
 
   // Admin back-office routes ((admin)/…) are not member request/offer forms.
   it('no per-domain create route exists', () => {
-    const createRoutes = routes.filter((r) => r.startsWith('(tabs)/') && /(^|\/)(create|new)(\/|\.tsx$|-)/i.test(r));
+    const createRoutes = routes.filter((r) => !NON_FORM_ROUTES.test(r) && /(^|\/)(create|new)(\/|\.tsx$|-)/i.test(r));
     expect(createRoutes.sort()).toEqual([...ALLOWED_CREATE_ROUTES].sort());
   });
 
@@ -36,9 +40,11 @@ describe('unified create — route inventory', () => {
 
   it('listing/post create forms are only mounted by the unified screen', () => {
     const mounts = files.filter((p) => /<(ListingCreateForm|MarketplaceCreateForm|CreatePostFormScrollContent|RideCreateSheet)\b/.test(readFileSync(p, 'utf8')));
-    // `WorldCreateForm` is the unified screen's own switch between the listing and link forms.
+    // `WorldCreateForm` is the unified screen's own switch between the listing and link forms;
+    // `edit-listing` reuses the listing form to edit an owner's existing listing (G1 owner edit).
     expect(mounts.map((p) => relative(MOBILE, p)).sort()).toEqual([
-      'app/(tabs)/create.tsx',
+      'app/create.tsx',
+      'app/edit-listing/[id].tsx',
       'src/components/CreatePostForm/WorldCreateForm.tsx',
     ]);
   });

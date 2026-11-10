@@ -2,7 +2,7 @@
 // SupabaseUserRepository — adapter for IUserRepository.
 // Slice A (P0.3): only onboarding read/write methods are wired. The remaining
 // methods throw `not_implemented` and will be filled in by P0.4 / P1.1 / P2.4.
-// docs/SSOT/spec/01_auth_and_onboarding.md
+// docs/spec/requirements/01_auth_and_onboarding.md
 // ─────────────────────────────────────────────
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -13,7 +13,10 @@ import {
   supabaseClearBasicInfoSkipped,
   supabaseGetOnboardingBootstrap,
   supabaseMarkBasicInfoSkipped,
+  supabaseResetOnboardingForDev,
   supabaseSetBasicInfo,
+  supabaseSetDateOfBirth,
+  supabaseSetOnboardingState,
 } from './onboardingSupabase';
 import {
   supabaseGetEditableProfile,
@@ -75,12 +78,12 @@ export class SupabaseUserRepository implements IUserRepository {
     return supabaseSetBasicInfo(this.client, userId, params);
   }
 
-  async setOnboardingState(userId: string, state: OnboardingState): Promise<void> {
-    const { error } = await this.client
-      .from('users')
-      .update({ onboarding_state: state })
-      .eq('user_id', userId);
-    if (error) throw new Error(`setOnboardingState: ${error.message}`);
+  setOnboardingState(state: OnboardingState): Promise<void> {
+    return supabaseSetOnboardingState(this.client, state);
+  }
+
+  resetOnboardingForDev(): Promise<void> {
+    return supabaseResetOnboardingForDev(this.client);
   }
 
   async setAvatar(userId: string, avatarUrl: string | null): Promise<void> {
@@ -141,6 +144,10 @@ export class SupabaseUserRepository implements IUserRepository {
 
   setContactPhone(userId: string, contactPhone: string | null): Promise<void> {
     return supabaseSetContactPhone(this.client, userId, contactPhone);
+  }
+
+  setDateOfBirth(isoDate: string): Promise<void> {
+    return supabaseSetDateOfBirth(this.client, isoDate);
   }
 
   updateEditableProfile(userId: string, patch: EditableProfilePatch): Promise<void> {

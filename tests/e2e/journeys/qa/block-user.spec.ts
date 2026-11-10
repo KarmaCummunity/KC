@@ -19,7 +19,7 @@ test('block and unblock a user from the profile menu', async ({ page }) => {
   await dismissGates(page);
 
   const toggle = page.getByTestId('profile-block-toggle');
-  const openMenu = () => page.getByRole('button', { name: 'דווח על משתמש' }).first().click();
+  const openMenu = () => page.getByRole('button', { name: 'דווחו על משתמש' }).first().click();
 
   await openMenu();
   await expect(toggle).toHaveText('חסימת משתמש');

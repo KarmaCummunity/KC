@@ -12,6 +12,7 @@ import type {
   PostStatus,
   PostType,
   PostVisibility,
+  VerificationLevel,
 } from '@kc/domain';
 
 import type { PostActorIdentityRow, UpsertPostActorIdentityInput } from './postActorIdentity';
@@ -39,8 +40,7 @@ export interface PostFeedFilter {
   proximitySortCity?: string;       // city_id of center for distance sort; undefined = viewer's city
   followersOnly?: boolean;          // true = restrict to posts whose owner the viewer follows (FR-FEED-020)
   /** Trimmed free-text; applied only when length >= 2 after normalize (FR-FEED-003). */
-  searchQuery?: string;
-}
+  searchQuery?: string;}
 
 export interface FeedPage {
   posts: PostWithOwner[];
@@ -52,6 +52,8 @@ export interface PostWithOwner extends Post {
   ownerAvatarUrl: string | null;
   ownerHandle: string;
   ownerPrivacyMode: 'Public' | 'Private';
+  /** FR-VERIFY-001 owner badge; 0 when the owner's identity is masked. Absent = 0. */
+  ownerVerificationLevel?: VerificationLevel;
   /**
    * Populated when a post is `closed_delivered` and the recipients row was joined.
    * The label rendered on PostDetail depends on `post.type`:
@@ -65,6 +67,8 @@ export interface PostWithOwner extends Post {
     displayName: string | null;
     shareHandle: string;
     avatarUrl: string | null;
+    /** FR-VERIFY-001; 0 when the counterparty identity is masked. */
+    verificationLevel?: VerificationLevel;
   } | null;
   /**
    * Great-circle distance from the proximity-sort center to this post's city.
@@ -167,6 +171,12 @@ export interface IPostRepository {
   // Both paths bump items_given_count via the existing posts trigger; the
   // recipient path also bumps items_received_count via the recipients trigger.
   close(postId: string, recipientUserId: string | null): Promise<Post>;
+  /** FR-CLOSURE-011 — name who received an open offer, or close items/animals with nobody named. */
+  ownerCompleteOffer(
+    targetId: string,
+    recipientUserId: string | null,
+    mode: 'assign' | 'close_without',
+  ): Promise<{ closed: boolean }>;
   // reopen: branches inside the impl —
   //   current status closed_delivered      → RPC `reopen_post_marked` (delete recipient row + status)
   //   current status deleted_no_recipient  → UPDATE status='open', delete_after=null
@@ -191,6 +201,10 @@ export interface IPostRepository {
     cursor?: string,
     visibility?: PostVisibility,
     excludeVisibility?: PostVisibility,
+    profileOpenLinks?: {
+      readonly viewerUserId: string | null;
+      readonly listMode: 'standard' | 'owner_only_me';
+    },
   ): Promise<{ posts: Post[]; nextCursor: string | null }>;
 
   /**

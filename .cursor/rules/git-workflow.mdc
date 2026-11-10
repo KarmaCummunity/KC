@@ -8,6 +8,10 @@ alwaysApply: true
 The single source of truth for all agent rules in this repo is **`CLAUDE.md`** at the repo root.
 Read it before doing any work. This file exists only so Cursor's `alwaysApply: true` mechanism still resolves to the canonical rule set.
 
+## Working an issue
+
+Take every issue from claim to merge with the [`kc-issue-to-merge`](../../.claude/skills/kc-issue-to-merge/SKILL.md) skill (your label suffix: `cursor`).
+
 ## Issue claims
 
 Before starting any issue, follow [`docs/agents/ISSUE_CLAIMS.md`](../../docs/agents/ISSUE_CLAIMS.md): skip `in-progress` issues, claim with `in-progress` + `agent:cursor`. Open every PR with the `agent:cursor` label (`gh pr create --label agent:cursor`) and `Opened by: agent:cursor` in the body.

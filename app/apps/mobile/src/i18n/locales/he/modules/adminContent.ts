@@ -23,7 +23,7 @@ export const adminContentHe = {
     banned:            'חסום',
     suspendedAdmin:    'מושעה ע"י מנהל',
     suspendedFalse:    'מושעה (דיווחי שווא)',
-    deleted:           'נמחק',
+    pendingDeletion:   'ממתין למחיקה',
   },
   userStatus: {
     active:                       'פעיל',
@@ -31,7 +31,7 @@ export const adminContentHe = {
     banned:                       'חסום',
     suspended_admin:              'מושעה',
     suspended_for_false_reports:  'מושעה (דיווחי שווא)',
-    deleted:                      'נמחק',
+    pending_deletion:             'ממתין למחיקה',
   },
 
   postsTitle:             'פוסטים',

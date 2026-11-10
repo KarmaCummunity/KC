@@ -22,12 +22,24 @@ end $$;
 create function pg_temp.handoff(p_listing uuid, p_status text)
 returns void language plpgsql as $$
 begin
-  insert into public.giving_handoffs (listing_id, owner_id, recipient_id, world_slug, status,
+  if (select relkind from pg_class where relname = 'giving_handoffs' and relnamespace = 'public'::regnamespace) = 'r' then
+    insert into public.giving_handoffs (listing_id, owner_id, recipient_id, world_slug, status,
+                                        confirmed_at, handed_over_at)
+    select l.listing_id, l.owner_id, (select taker from personas), l.world_slug, p_status,
+           case when p_status in ('confirmed', 'handed_over') then now() end,
+           case when p_status = 'handed_over' then now() end
+      from public.listings l where l.listing_id = p_listing;
+  else
+    insert into public.post_handoffs (post_id, owner_id, recipient_id, world_slug, status,
                                       confirmed_at, handed_over_at)
-  select l.listing_id, l.owner_id, (select taker from personas), l.world_slug, p_status,
-         case when p_status in ('confirmed', 'handed_over') then now() end,
-         case when p_status = 'handed_over' then now() end
-    from public.listings l where l.listing_id = p_listing;
+    select coalesce(l.legacy_post_id, (select post_id from public.posts p where p.listing_id = l.listing_id limit 1)),
+           l.owner_id, (select taker from personas), l.world_slug, p_status,
+           case when p_status in ('confirmed', 'handed_over') then now() end,
+           case when p_status = 'handed_over' then now() end
+      from public.listings l where l.listing_id = p_listing
+       and coalesce(l.legacy_post_id, (select post_id from public.posts p where p.listing_id = l.listing_id limit 1)) is not null;
+    return;
+  end if;
 end $$;
 
 -- The listing as a non-owner sees it: through the visibility predicate and the feed mirror.
@@ -80,6 +92,7 @@ begin
   perform kc_test.act_as(p.owner);
   perform public.pause_my_listing(v);
   update public.listings set expires_at = now() - interval '1 hour' where listing_id = v;
+  update public.posts set expires_at = now() - interval '1 hour' where listing_id = v or post_id in (select legacy_post_id from public.listings where listing_id = v);
   perform kc_test.assert_raises(format('select public.resume_my_listing(%L)', v),
     'listing_expired', 'resume is refused once the expiry has passed');
 end $$;
@@ -104,6 +117,8 @@ begin
 
   -- Once the handoff is cancelled the owner may act again.
   update public.giving_handoffs set status = 'cancelled', cancelled_at = now() where listing_id = v;
+  update public.post_handoffs set status = 'cancelled', cancelled_at = now()
+   where post_id in (select post_id from public.posts where listing_id = v or post_id = v);
   perform public.pause_my_listing(v);
   perform kc_test.assert_eq(kc_test.listing_status(v), 'cancelled', 'pause works after the cancel');
 end $$;

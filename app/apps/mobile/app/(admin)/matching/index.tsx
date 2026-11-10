@@ -9,9 +9,10 @@ import type { MatchQualityByWorld } from '@kc/infrastructure-supabase';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { getMatchRepository } from '../../../src/services/matchingComposition';
-import { AdminFilterChip } from '../../../src/components/admin/AdminFilterChip';
+import { AdminFilterTopBarButton } from '../../../src/components/admin/AdminSearchFilterToolbar';
+import { FilterSection } from '../../../src/components/filterKit/FilterSection';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
-import { formatRate } from '../../../src/components/admin/matching/formatRate';
+import { formatAdminPercent } from '../../../src/components/admin/formatAdminPercent';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { textAlignStart } from '../../../src/lib/rtlLayout';
 
@@ -31,6 +32,7 @@ export default function MatchQualityScreen() {
   const { roles, isLoading: rolesLoading } = useAdminRoles();
   const enabled = hasPermission(roles as readonly AdminRole[], 'matching.view_quality');
   const [days, setDays] = useState<number>(30);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const quality = useQuery({
     queryKey: ['admin.matching.quality', days],
@@ -59,11 +61,24 @@ export default function MatchQualityScreen() {
       <Text style={styles.title}>{t.title}</Text>
       <Text style={styles.muted}>{t.subtitle}</Text>
 
-      <View style={styles.chips}>
-        {WINDOWS.map((w) => (
-          <AdminFilterChip key={w.key} label={t.windows[w.key]} active={days === w.days} onPress={() => setDays(w.days)} />
-        ))}
-      </View>
+      <AdminFilterTopBarButton
+        portalTitle={t.title}
+        activeFilterCount={days === 30 ? 0 : 1}
+        filterVisible={sheetOpen}
+        onOpenFilters={() => setSheetOpen(true)}
+        onCloseFilters={() => setSheetOpen(false)}
+        onClearFilters={() => setDays(30)}
+        sheetTitle={t.windows.d30}
+        filterButtonTestID="admin-matching-filter-button"
+        filterSheetContent={(
+          <FilterSection<number>
+            options={WINDOWS.map((w) => ({ value: w.days, label: t.windows[w.key] }))}
+            value={days}
+            onChange={(v) => setDays(v ?? 30)}
+            showAllChip={false}
+          />
+        )}
+      />
 
       {quality.isError ? <Text style={styles.error}>{t.error}</Text> : null}
       {!quality.isLoading && !quality.isError && rows.length === 0 ? <AdminListEmpty title={t.empty} hint="" /> : null}
@@ -73,11 +88,11 @@ export default function MatchQualityScreen() {
           <Text style={styles.cardTitle}>{worldLabel(w)}</Text>
           <View style={styles.kpiGrid}>
             <Kpi label={t.metrics.notified} value={String(w.notifiedPairs)} />
-            <Kpi label={t.metrics.precision} value={formatRate(w.precisionProxy)} hint={t.counts(w.accepted, w.responses)} />
-            <Kpi label={t.metrics.chat} value={formatRate(w.chatRate)} hint={t.pairs(w.chatPairs)} />
+            <Kpi label={t.metrics.precision} value={formatAdminPercent(w.precisionProxy)} hint={t.counts(w.accepted, w.responses)} />
+            <Kpi label={t.metrics.chat} value={formatAdminPercent(w.chatRate)} hint={t.pairs(w.chatPairs)} />
             <Kpi
               label={t.metrics.completion}
-              value={formatRate(w.completionRate)}
+              value={formatAdminPercent(w.completionRate)}
               hint={w.completedPairs === null ? t.notTracked : t.pairs(w.completedPairs)}
             />
           </View>

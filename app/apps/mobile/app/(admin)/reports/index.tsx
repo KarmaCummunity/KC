@@ -7,8 +7,11 @@ import { spacing, Text, typography } from '@kc/ui';
 import type { ListOpenReportsFilters } from '@kc/application';
 import type { ReportInboxRow } from '@kc/domain';
 import { useReportsInbox } from '../../../src/hooks/useReportsInbox';
-import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
-import { ReportFilters } from '../../../src/components/admin/reports/ReportFilters';
+import { AdminSearchFilterToolbar } from '../../../src/components/admin/AdminSearchFilterToolbar';
+import {
+  countReportFilters,
+  ReportFilterSheetSections,
+} from '../../../src/components/admin/reports/ReportFilters';
 import { ReportRow } from '../../../src/components/admin/reports/ReportRow';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
@@ -20,6 +23,8 @@ const reportKeyExtractor = (r: ReportInboxRow) => `${r.targetType}:${r.targetId}
 export default function ReportsInbox() {
   const L = useLocaleBundle();
   const [filters, setFilters] = useState<ListOpenReportsFilters>({});
+  const [reporterDraft, setReporterDraft] = useState('');
+  const [sheetOpen, setSheetOpen] = useState(false);
   const q = useReportsInbox(filters);
   const rows = useMemo(() => q.data?.pages.flatMap((p) => p.rows) ?? [], [q.data?.pages]);
 
@@ -32,10 +37,35 @@ export default function ReportsInbox() {
     if (q.hasNextPage) void q.fetchNextPage();
   }, [q]);
 
+  const commitReporter = () => {
+    const id = reporterDraft.trim();
+    setFilters((prev) => ({ ...prev, reporterId: id || null }));
+  };
+
+  const clearFilters = () => {
+    setFilters({});
+    setReporterDraft('');
+  };
+
   return (
     <View style={styles.root}>
-      <AdminScreenHeader title={L.admin.reports.inboxTitle} />
-      <ReportFilters value={filters} onChange={setFilters} />
+      <AdminSearchFilterToolbar
+        search={{
+          value: reporterDraft,
+          onChangeText: setReporterDraft,
+          onSubmitEditing: commitReporter,
+          placeholder: L.admin.reports.filters.search,
+          autoCapitalize: 'none',
+          testID: 'admin-reports-reporter-search',
+        }}
+        activeFilterCount={countReportFilters(filters)}
+        filterVisible={sheetOpen}
+        onOpenFilters={() => setSheetOpen(true)}
+        onCloseFilters={() => setSheetOpen(false)}
+        onClearFilters={clearFilters}
+        filterButtonTestID="admin-reports-filter-button"
+        filterSheetContent={<ReportFilterSheetSections value={filters} onChange={setFilters} />}
+      />
       <KcFlashList
         data={rows}
         keyExtractor={reportKeyExtractor}

@@ -7,12 +7,15 @@ import { type AdminPermission, type AdminPostSearchResult, type AdminRole, hasPe
 import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { useAdminPostSearch } from '../../../src/hooks/useAdminContentSearch';
-import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
+import { AdminSearchFilterToolbar } from '../../../src/components/admin/AdminSearchFilterToolbar';
+import {
+  AdminContentStatusFilterSection,
+  adminStatusChipValue,
+  countAdminStatusFilter,
+} from '../../../src/components/admin/content/AdminContentStatusFilterSheet';
 import { PostSearchRow } from '../../../src/components/admin/content/PostSearchRow';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
-import { FilterSearchBar } from '../../../src/components/filterKit/FilterSearchBar';
-import { FilterChipRow } from '../../../src/components/filterKit/FilterChipRow';
 
 const STATUS_OPTIONS = [
   { value: null,                       key: 'all' as const },
@@ -32,6 +35,7 @@ export default function PostsScreen() {
   const { roles, isLoading: rolesLoading } = useAdminRoles();
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const filters = useMemo(() => ({
     query: query.trim() || undefined,
@@ -41,10 +45,25 @@ export default function PostsScreen() {
   const result = useAdminPostSearch(filters);
   const can = (perm: AdminPermission) => hasPermission(roles as readonly AdminRole[], perm);
 
+  const statusOptions = useMemo(
+    () => STATUS_OPTIONS.map((s) => ({
+      value: adminStatusChipValue(s.value),
+      label: L.admin.content.postStatusFilter[s.key],
+    })),
+    [L.admin.content.postStatusFilter],
+  );
+
   const renderItem = useCallback(
     ({ item }: { item: AdminPostSearchResult }) => <PostSearchRow row={item} />,
     [],
   );
+
+  const portalTitle = useMemo(() => {
+    if (!statusFilter) return L.admin.content.postsTitle;
+    const opt = STATUS_OPTIONS.find((s) => s.value === statusFilter);
+    if (!opt) return L.admin.content.postsTitle;
+    return `${L.admin.content.postsTitle} · ${L.admin.content.postStatusFilter[opt.key]}`;
+  }, [L.admin.content.postStatusFilter, L.admin.content.postsTitle, statusFilter]);
 
   if (rolesLoading) {
     return <View style={styles.center}><Text>{L.admin.content.loading}</Text></View>;
@@ -55,23 +74,28 @@ export default function PostsScreen() {
 
   return (
     <View style={styles.root}>
-      <AdminScreenHeader title={L.admin.content.postsTitle} />
-      <FilterSearchBar
-        style={styles.searchWrap}
-        value={query}
-        onChangeText={setQuery}
-        placeholder={L.admin.content.searchPostsPlaceholder}
-        autoCapitalize="none"
-      />
-      <FilterChipRow<string>
-        scrollable
-        options={STATUS_OPTIONS.map((s) => ({
-          value: s.value ?? '__all__',
-          label: L.admin.content.postStatusFilter[s.key],
-        }))}
-        value={statusFilter ?? '__all__'}
-        onChange={(val) => setStatusFilter(val === '__all__' || val === null ? null : val)}
-        contentContainerStyle={styles.chips}
+      <AdminSearchFilterToolbar
+        portalTitle={portalTitle}
+        search={{
+          value: query,
+          onChangeText: setQuery,
+          placeholder: L.admin.content.searchPostsPlaceholder,
+          autoCapitalize: 'none',
+          testID: 'admin-posts-search',
+        }}
+        activeFilterCount={countAdminStatusFilter(statusFilter)}
+        filterVisible={sheetOpen}
+        onOpenFilters={() => setSheetOpen(true)}
+        onCloseFilters={() => setSheetOpen(false)}
+        onClearFilters={() => setStatusFilter(null)}
+        filterButtonTestID="admin-posts-filter-button"
+        filterSheetContent={(
+          <AdminContentStatusFilterSection
+            options={statusOptions}
+            value={statusFilter}
+            onChange={setStatusFilter}
+          />
+        )}
       />
       <Text style={styles.totalLabel}>{L.admin.content.totalCount(result.page.totalCount)}</Text>
       <KcFlashList
@@ -96,8 +120,6 @@ const useStyles = makeUseStyles(({ colors }) => ({
   root:        { flex: 1, backgroundColor: colors.background },
   center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   deniedTitle: { ...typography.h3, ...typography.bold },
-  searchWrap:  { marginHorizontal: spacing.base, marginBottom: spacing.sm },
-  chips:       { paddingHorizontal: spacing.base, gap: spacing.sm, paddingBottom: spacing.sm },
   totalLabel:  { paddingHorizontal: spacing.base, paddingBottom: spacing.xs, ...typography.caption, color: colors.textSecondary },
   empty:       { padding: spacing['2xl'], alignItems: 'center' },
   emptyText:   { ...typography.body, color: colors.textSecondary },

@@ -32,10 +32,10 @@ const tile = (key: string, portal?: boolean): HubGridTile => ({
   href: `/(tabs)/donations/${key}` as HubGridTile['href'], testID: `donation-tile-${key}`, portal,
 });
 
-function renderGrid(tiles: HubGridTile[]) {
+function renderGrid(tiles: HubGridTile[], onTilePress?: (key: string) => void) {
   return render(
     <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
-      <HubTileGrid heading="worlds" tiles={tiles} delay={0} />
+      <HubTileGrid heading="worlds" tiles={tiles} delay={0} onTilePress={onTilePress} />
     </ThemeProvider>,
   );
 }
@@ -51,5 +51,12 @@ describe('HubTileGrid', () => {
     const view = renderGrid([tile('food'), tile('medical', true)]);
     fireEvent.click(view.getByTestId('donation-tile-medical'));
     expect(push).toHaveBeenCalledWith('/(tabs)/donations/medical');
+  });
+
+  it('reports the tapped world (FR-DONATE-001 AC8)', () => {
+    const onTilePress = vi.fn();
+    const view = renderGrid([tile('food'), tile('medical', true)], onTilePress);
+    fireEvent.click(view.getByTestId('donation-tile-food'));
+    expect(onTilePress).toHaveBeenCalledWith('food');
   });
 });

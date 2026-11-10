@@ -1,6 +1,6 @@
 // Shared plumbing for the per-file ratchet guards (spec 17 §6, D67):
 // a frozen baseline of finding counts that may only go down, and the
-// touched-file rule that diffs against the PR base.
+// touched-file rule that diffs against the PR base (skipped for release traffic into `main`).
 // Used by brandGuard.test.ts (style literals) and copyVoiceGuard.test.ts (copy voice, D93).
 
 import { execFileSync } from 'node:child_process';
@@ -54,10 +54,26 @@ function git(args: readonly string[]): string {
 }
 
 /**
+ * Why the touched-file rule does not apply to this run, or null when it does. The rule gates
+ * feature work on its way into `dev`. A push to `main` and a dev → main release PR carry a whole
+ * release whose files were already gated on their own PRs, and `dev` does not hold `main`'s
+ * history until the sync PR lands, so the merge-base is the previous release and every file
+ * changed since then would count. An explicit `KC_BRAND_BASE_REF` always applies the rule.
+ */
+export function touchedRuleSkipReason(env: Readonly<Record<string, string | undefined>> = process.env): string | null {
+  if (env.KC_BRAND_BASE_REF) return null;
+  if (env.GITHUB_EVENT_NAME === 'push' && env.GITHUB_REF === 'refs/heads/main') return 'push to main';
+  if (env.GITHUB_BASE_REF === 'main' && env.GITHUB_HEAD_REF === 'dev') return 'dev → main release PR';
+  return null;
+}
+
+/**
  * Mobile-relative files changed since the merge-base with `baseRef`, committed or not,
- * that `isScanned` accepts. Deleted files are left out. Null when the ref cannot be resolved.
+ * that `isScanned` accepts. Deleted files are left out. Empty when the rule is skipped
+ * (`touchedRuleSkipReason`). Null when the ref cannot be resolved.
  */
 export function touchedFiles(baseRef: string, isScanned: (mobilePath: string) => boolean): string[] | null {
+  if (touchedRuleSkipReason()) return [];
   let mergeBase: string;
   try {
     mergeBase = git(['merge-base', baseRef, 'HEAD']);

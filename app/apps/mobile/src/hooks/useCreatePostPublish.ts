@@ -28,6 +28,7 @@ import { invalidateMyProfilePostQueries } from '../lib/invalidateMyProfilePostQu
 import { buildPostCreatePayload } from '../lib/unifiedCreate/unifiedCreatePayload';
 import { trackActivationIfFirst, trackCoreLoop } from '../lib/analyticsCoreLoop';
 import { useAuthStore } from '../store/authStore';
+import { closeCreateForm } from '../navigation/closeCreateForm';
 import type { UploadedAsset } from '../services/imageUpload';
 import type { PrePromptTrigger } from '../lib/notifications/usePushPermissionGate';
 
@@ -141,7 +142,7 @@ export function useCreatePostPublish(args: {
           void args.presentPrePrompt('first-post-published');
         }
       }
-      router.replace('/(tabs)');
+      closeCreateForm(router);
     },
     onError: (err) => {
       const message = isPostError(err) ? mapPostErrorToHebrew(err.code) : t('post.networkError');

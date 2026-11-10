@@ -15,6 +15,7 @@ const BASE_USER: User = {
   city: '5000',
   cityName: 'Tel Aviv',
   contactPhone: null,
+  dateOfBirth: null,
   profileStreet: null,
   profileStreetNumber: null,
   biography: null,
@@ -33,6 +34,7 @@ const BASE_USER: User = {
   followersCount: 0,
   followingCount: 0,
   karmaPoints: 0,
+  verificationLevel: 0,
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
   preferredLanguage: null,
@@ -49,6 +51,7 @@ describe('usersSelfPrivateFields', () => {
         is_super_admin: true,
         active_posts_count_internal: 5,
         karma_points: 150,
+        date_of_birth: null,
       };
       const rpc = vi.fn().mockResolvedValue({ data: slice, error: null });
       const client = { rpc } as unknown as SupabaseClient;
@@ -89,6 +92,7 @@ describe('usersSelfPrivateFields', () => {
         is_super_admin: true,
         active_posts_count_internal: 8,
         karma_points: 200,
+        date_of_birth: '1990-05-15',
       };
 
       const merged = mergeSelfPrivateFields(BASE_USER, slice);
@@ -99,6 +103,7 @@ describe('usersSelfPrivateFields', () => {
       expect(merged.isSuperAdmin).toBe(true);
       expect(merged.activePostsCountInternal).toBe(8);
       expect(merged.karmaPoints).toBe(200);
+      expect(merged.dateOfBirth).toBe('1990-05-15');
     });
 
     it('handles nullable/falsy fields with appropriate fallbacks', () => {
@@ -110,6 +115,7 @@ describe('usersSelfPrivateFields', () => {
         is_super_admin: false,
         active_posts_count_internal: 0,
         karma_points: null as unknown as number,
+        date_of_birth: null,
       };
 
       const merged = mergeSelfPrivateFields(BASE_USER, slice);

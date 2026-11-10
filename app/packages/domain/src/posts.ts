@@ -1,6 +1,9 @@
 // Post + supporting types (MediaAsset, Recipient, ProfileClosedPostsItem).
 // Extracted from entities.ts to keep that file under the size cap (TD-29).
 
+import { DomainError } from './errors';
+import { canTransition } from './fsm/machine';
+import { postMachine } from './fsm/machines/post';
 import type {
   Address,
   Category,
@@ -10,6 +13,8 @@ import type {
   PostType,
   PostVisibility,
 } from './value-objects';
+
+export type { PostStatus };
 
 export interface MediaAsset {
   readonly mediaAssetId: string;
@@ -28,12 +33,20 @@ export interface Recipient {
   readonly markedAt: string;
 }
 
+/**
+ * A status a post can be removed from by an admin and later restored to. A post hidden for
+ * review is saved as `open` (it is only ever hidden from `open`), so neither moderation
+ * status appears here. Mirrors `posts_status_before_admin_removal_check` (0682).
+ */
+export type PostStatusBeforeAdminRemoval = Exclude<PostStatus, 'removed_admin' | 'hidden_pending_review'>;
+
 export interface Post {
   readonly postId: string;
   readonly ownerId: string;
   readonly type: PostType;
   status: PostStatus;
-  readonly statusBeforeAdminRemoval: 'open' | 'closed_delivered' | 'deleted_no_recipient' | null;
+  /** The status an admin restore returns to (D129); null unless removed. */
+  readonly statusBeforeAdminRemoval: PostStatusBeforeAdminRemoval | null;
   visibility: PostVisibility;
   title: string;
   description: string | null;
@@ -52,6 +65,10 @@ export interface Post {
   readonly listingId: string | null;
   /** Giving world of that listing (`rides`, `housing`…), set exactly when `listingId` is (FR-FEED-020). */
   readonly listingWorldSlug: string | null;
+  /** Set when this post is a challenge (docs/spec/10). Opens the challenge, not the generic post. */
+  readonly challengeId?: string | null;
+  /** Approximate map position (~100 m): the post's own point, else its city's centre; null = unknown. */
+  readonly mapPoint?: { readonly lat: number; readonly lng: number } | null;
   readonly createdAt: string;
   updatedAt: string;
   /** FR-TRANSLATE — detected BCP-47 source language of title/description; null = not yet detected. */
@@ -82,3 +99,41 @@ export interface ProfileClosedPostsItem {
   // Used as the cursor for `getProfileClosedPosts` pagination (exclusive `<`).
   readonly closedAt: string;
 }
+
+// ── S1 State Machine (Spec 07 §7.1, D104) ───────────────────────────
+// The graph lives once, in the FSM kernel (`fsm/machines/post.ts`), mirrored in the
+// Postgres catalog and enforced by the `posts_status_fsm` trigger. These helpers keep
+// the post-specific API for callers.
+
+/** Every S1 status, in the kernel's declaration order. */
+export const POST_STATUSES: readonly PostStatus[] = postMachine.states;
+
+/**
+ * True when `from → to` is a real S1 transition (spec 07 §7.1, D104).
+ * A same-status write is not a transition and returns false; the database treats it as
+ * a no-op.
+ */
+export function canTransitionPostStatus(from: PostStatus, to: PostStatus): boolean {
+  const answer = canTransition(postMachine, from, to);
+  return answer.ok && answer.changed;
+}
+
+export class PostStatusTransitionError extends DomainError {
+  readonly code = 'posts_status_transition_invalid';
+  readonly from: PostStatus;
+  readonly to: PostStatus;
+
+  constructor(from: PostStatus, to: PostStatus) {
+    super(`Cannot transition post status from ${from} to ${to}`, { from, to });
+    this.name = 'PostStatusTransitionError';
+    this.from = from;
+    this.to = to;
+  }
+}
+
+export function validatePostStatusTransition(from: PostStatus, to: PostStatus): void {
+  if (!canTransitionPostStatus(from, to)) {
+    throw new PostStatusTransitionError(from, to);
+  }
+}
+

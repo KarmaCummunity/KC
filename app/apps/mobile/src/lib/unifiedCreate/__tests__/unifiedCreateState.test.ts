@@ -9,7 +9,9 @@ import {
   parseCreatePreferences,
   postTypeToDirection,
   serializeCreatePreferences,
+  sortCreateCategoriesByUsage,
 } from '../unifiedCreateState';
+import { CREATE_CATEGORIES } from '../createCategories';
 
 describe('unified create — direction mapping', () => {
   it('maps direction <-> post type', () => {
@@ -22,7 +24,7 @@ describe('unified create — direction mapping', () => {
 
 describe('unified create — remembered preferences', () => {
   it('defaults to items + offer when nothing is stored', () => {
-    expect(DEFAULT_CREATE_PREFERENCES).toEqual({ categoryId: 'items', directions: {} });
+    expect(DEFAULT_CREATE_PREFERENCES).toEqual({ categoryId: 'items', directions: {}, usageCounts: {} });
     expect(parseCreatePreferences(null)).toEqual(DEFAULT_CREATE_PREFERENCES);
     expect(parseCreatePreferences(undefined)).toEqual(DEFAULT_CREATE_PREFERENCES);
     expect(parseCreatePreferences('')).toEqual(DEFAULT_CREATE_PREFERENCES);
@@ -30,18 +32,29 @@ describe('unified create — remembered preferences', () => {
   });
 
   it('round-trips the last category and one direction per category', () => {
-    const prefs = { categoryId: 'rides', directions: { rides: 'request', items: 'give', food: 'request' } } as const;
+    const prefs = {
+      categoryId: 'rides',
+      directions: { rides: 'request', items: 'give', food: 'request' },
+      usageCounts: { rides: 3, food: 1 },
+    } as const;
     expect(parseCreatePreferences(serializeCreatePreferences(prefs))).toEqual(prefs);
   });
 
   it('remembers directions independently per category', () => {
-    let prefs = withCategory(DEFAULT_CREATE_PREFERENCES, 'rides', 'request');
-    prefs = withCategory(prefs, 'items', 'give');
+    let prefs = withCategory(DEFAULT_CREATE_PREFERENCES, 'rides', 'request', true);
+    prefs = withCategory(prefs, 'items', 'give', true);
     prefs = withCategory(prefs, 'rides');
     expect(prefs.categoryId).toBe('rides');
     expect(directionFor(prefs, 'rides')).toBe('request');
     expect(directionFor(prefs, 'items')).toBe('give');
     expect(directionFor(prefs, 'food')).toBe('give');
+    expect(prefs.usageCounts).toEqual({ rides: 1, items: 1 });
+  });
+
+  it('sorts picker categories by usage, then hub order', () => {
+    const sorted = sortCreateCategoriesByUsage(CREATE_CATEGORIES, { rides: 4, food: 4, housing: 2 });
+    expect(sorted.map((c) => c.id).slice(0, 4)).toEqual(['food', 'rides', 'housing', 'items']);
+    expect(sorted.map((c) => c.id)).toHaveLength(CREATE_CATEGORIES.length);
   });
 
   it('survives corrupt or non-object JSON', () => {
@@ -54,6 +67,7 @@ describe('unified create — remembered preferences', () => {
     expect(parseCreatePreferences('{"categoryId":"time","direction":"request"}')).toEqual({
       categoryId: 'time',
       directions: { time: 'request' },
+      usageCounts: {},
     });
   });
 
@@ -61,9 +75,10 @@ describe('unified create — remembered preferences', () => {
     expect(parseCreatePreferences('{"categoryId":"general","direction":"request"}')).toEqual({
       categoryId: 'items',
       directions: {},
+      usageCounts: {},
     });
     expect(
       parseCreatePreferences('{"categoryId":"food","directions":{"food":"sideways","rides":"request","gone":"give"}}'),
-    ).toEqual({ categoryId: 'food', directions: { rides: 'request' } });
+    ).toEqual({ categoryId: 'food', directions: { rides: 'request' }, usageCounts: {} });
   });
 });

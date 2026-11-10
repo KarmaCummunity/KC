@@ -14,6 +14,7 @@ import { TextField } from '../../../src/components/ui/TextField';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { useDonationLinkReview } from '../../../src/hooks/useDonationLinkReview';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
+import { useAdminScreenTitle } from '../../../src/components/admin/useAdminScreenTitle';
 import { openExternalUrl } from '../../../src/utils/openExternalUrl';
 import { adminChipScroll } from '../../../src/components/admin/adminChipScroll';
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
@@ -85,6 +86,8 @@ export default function DonationLinkReviewScreen() {
   const [tab, setTab] = useState<DonationLinkReviewStatus>('pending');
   const review = useDonationLinkReview(tab, allowed);
 
+  useAdminScreenTitle(t.title);
+
   const onDecide = useCallback(
     (item: DonationLinkReviewItem, approve: boolean, note: string) => {
       void review.decide(item.id, approve, note).then((ok) => {
@@ -102,7 +105,6 @@ export default function DonationLinkReviewScreen() {
       contentContainerStyle={styles.body}
       refreshControl={<RefreshControl refreshing={review.isRefetching} onRefresh={() => void review.refetch()} />}
     >
-      <Text style={styles.title}>{t.title}</Text>
       <Text style={styles.meta}>{t.hint}</Text>
       <ScrollView
         horizontal

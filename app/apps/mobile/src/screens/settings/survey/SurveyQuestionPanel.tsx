@@ -5,6 +5,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { TextField } from '../../../components/ui';
+import type { FormFieldFocusBindings } from '../../../hooks/useFormFieldFocus';
 import type { SurveyQuestion } from '@kc/domain';
 import { Card } from '../../../components/ui/Card';
 import { SurveyRatingRow } from '../../../components/survey/SurveyRatingRow';
@@ -25,6 +26,7 @@ export type QuestionPanelProps = {
   readonly onRating: (rating: number) => void;
   readonly onChoice: (choiceKey: string) => void;
   readonly onText: (text: string) => void;
+  readonly textFieldFocus?: FormFieldFocusBindings;
 };
 
 export function SurveyQuestionPanel({
@@ -36,6 +38,7 @@ export function SurveyQuestionPanel({
   onRating,
   onChoice,
   onText,
+  textFieldFocus,
 }: QuestionPanelProps) {
   const styles = usePanelStyles();
   const { colors } = useTheme();
@@ -65,6 +68,7 @@ export function SurveyQuestionPanel({
       )}
 
       <TextField
+        ref={textFieldFocus?.ref}
         label={t('survey.textFieldLabel')}
         style={[styles.textInput, hebrewSurveyFieldTextStyle()]}
         value={textValue}
@@ -75,6 +79,11 @@ export function SurveyQuestionPanel({
         multiline
         maxLength={500}
         accessibilityLabel={question.textPlaceholderHe}
+        onFocus={textFieldFocus?.onFocus}
+        inputAccessoryViewID={textFieldFocus?.inputAccessoryViewID}
+        returnKeyType={textFieldFocus?.returnKeyType}
+        blurOnSubmit={textFieldFocus?.blurOnSubmit}
+        onSubmitEditing={textFieldFocus?.onSubmitEditing}
       />
     </Card>
   );

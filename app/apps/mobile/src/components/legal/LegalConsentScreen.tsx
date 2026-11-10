@@ -14,7 +14,7 @@ import { performFullSignOut } from '../../services/performFullSignOut';
 import { useAuthStore } from '../../store/authStore';
 import { container } from '../../lib/container';
 import { useQueryClient } from '@tanstack/react-query';
-import { rowDirectionStart } from '../../lib/rtlLayout';
+import { layoutWritingDirectionStyle, rowDirectionStart } from '../../lib/rtlLayout';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 export type LegalConsentMode = 'signup' | 'update';
@@ -99,7 +99,7 @@ export function LegalConsentScreen({ mode, pending, onResolved }: LegalConsentSc
             ...typography.h3,
             color: colors.textPrimary,
             textAlign: rtlTextAlignStart,
-            writingDirection: 'rtl',
+            ...layoutWritingDirectionStyle(),
             marginBottom: spacing.lg,
             lineHeight: 28,
           }}
@@ -147,7 +147,7 @@ export function LegalConsentScreen({ mode, pending, onResolved }: LegalConsentSc
             style={{
               ...typography.bodySmall,
               color: colors.textSecondary,
-              writingDirection: 'rtl',
+              ...layoutWritingDirectionStyle(),
             }}
           >
             {t('legal.exitLink')}
@@ -183,7 +183,7 @@ export function LegalConsentScreen({ mode, pending, onResolved }: LegalConsentSc
                 ...typography.h4,
                 color: colors.textPrimary,
                 textAlign: rtlTextAlignStart,
-                writingDirection: 'rtl',
+                ...layoutWritingDirectionStyle(),
               }}
             >
               {t('legal.exitConfirmTitle')}
@@ -193,7 +193,7 @@ export function LegalConsentScreen({ mode, pending, onResolved }: LegalConsentSc
                 ...typography.body,
                 color: colors.textPrimary,
                 textAlign: rtlTextAlignStart,
-                writingDirection: 'rtl',
+                ...layoutWritingDirectionStyle(),
                 marginVertical: spacing.md,
                 lineHeight: 24,
               }}

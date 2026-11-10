@@ -74,7 +74,14 @@ function ThemedRootShell() {
 
   React.useEffect(() => {
     // expo-navigation-bar on SDK 54 is imperative and Android-only (KC#1276).
-    if (Platform.OS === 'android') NavigationBar.setStyle(isDark ? 'dark' : 'light');
+    if (Platform.OS !== 'android') return;
+    // Edge-to-edge (targetSdk 36) can reject this on some devices; a thrown
+    // call here is an uncaught startup error, so the shell must survive it.
+    try {
+      void Promise.resolve(NavigationBar.setStyle(isDark ? 'dark' : 'light')).catch(() => undefined);
+    } catch {
+      /* navigation bar contrast is cosmetic */
+    }
   }, [isDark]);
 
   React.useEffect(() => {
@@ -115,6 +122,11 @@ function ThemedRootShell() {
               <Stack.Screen name="(guest)" />
               <Stack.Screen name="(onboarding)" />
               <Stack.Screen name="(tabs)" />
+              {/* FR-POST-001 AC9 — the create form slides up over the screen it was opened from. */}
+              <Stack.Screen
+                name="create"
+                options={{ animation: Platform.OS === 'web' ? 'fade' : 'slide_from_bottom' }}
+              />
               {/* FR-ADMIN-011 AC1 — register the admin group at the root so
                   native stack navigation can resolve `/(admin)` targets.
                   Without this, `router.push('/(admin)')` is a no-op on iOS /
@@ -135,6 +147,10 @@ function ThemedRootShell() {
               {/* FR-RESEARCH-001 — public web survey; no auth shell */}
               <Stack.Screen name="research" options={{ headerShown: false }} />
               <Stack.Screen name="edit-profile" options={{ ...detailStackScreenOptions, headerTitle: i18n.t('settings.editProfileTitle') }} />
+              <Stack.Screen
+                name="identity-verification"
+                options={{ ...detailStackScreenOptions, headerTitle: i18n.t('verification.identity.title') }}
+              />
               <Stack.Screen name="post/[id]" options={{ ...detailStackScreenOptions, headerTitle: i18n.t('post.detailTitle') }} />
               <Stack.Screen name="listing/[listingId]" options={{ ...detailStackScreenOptions, headerTitle: '' }} />
               {/* user/[handle]/* owns its own header via the nested _layout */}
@@ -144,6 +160,8 @@ function ThemedRootShell() {
               <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
               {/* chat/index renders its own header inside the screen — disable the Stack one to avoid doubling. */}
               <Stack.Screen name="chat/index" options={{ headerShown: true }} />
+              {/* FR-CHAT-017 — recipient picker; the screen sets its own header options. */}
+              <Stack.Screen name="chat/new" options={{ headerShown: true }} />
             </Stack>
               </ShellWithResponsiveChrome>
             </SoftGateProvider>

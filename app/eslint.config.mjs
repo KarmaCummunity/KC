@@ -102,6 +102,11 @@ export default tseslint.config(
               allowImportNames: ['Ionicons'],
               message: 'Ionicons is the only icon set (spec 17 §4.2): import { Ionicons } from @expo/vector-icons.',
             },
+            // Spec 17 §4.4.1 (#858) — one haptics policy gate.
+            {
+              name: 'expo-haptics',
+              message: 'Use the helpers in src/lib/haptics.ts (spec 17 §4.4.1): it is the only module that imports expo-haptics.',
+            },
           ],
           patterns: [
             // Spec 17 §4.2 (D87) — deep imports of other families, and other icon
@@ -160,6 +165,11 @@ export default tseslint.config(
       ],
       'no-useless-assignment': 'warn',
     },
+  },
+  // The haptics gate (and its test) wrap expo-haptics.
+  {
+    files: ['apps/mobile/src/lib/haptics.ts', 'apps/mobile/src/lib/__tests__/haptics.test.ts'],
+    rules: { 'no-restricted-imports': 'off' },
   },
   // i18n internals legitimately compose/select the raw locale bundles.
   {

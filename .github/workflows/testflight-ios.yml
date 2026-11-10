@@ -4,8 +4,10 @@
 # Callers: the nightly pipeline (mobile-nightly.yml, `workflow_call` with the
 # green SHA) and manual dispatch on dev. Manual dispatch resolves the newest dev
 # commit with a successful CI push run (scripts/mobile-store-target.mjs), or
-# accepts an optional `ref` input validated the same way. The commit built must
-# have a successful `CI` push run on dev (D-195 "Mobile nightly"). Tester builds use the eas.json
+# accepts an optional `ref` input validated the same way. A `[skip ci]` bump
+# commit may inherit its parent's green `CI gate` on dev when it matches the
+# bump workflow shape (same policy as scripts/deploy-target.mjs). The commit
+# built must be certified on dev (D-195 "Mobile nightly"). Tester builds use the eas.json
 # `nightly` profile and the kc-dev Supabase backend; store builds from main
 # (prod backend) are not wired yet, and scripts/mobile-store-config.mjs refuses them.
 #
@@ -74,6 +76,7 @@ jobs:
           path: .store-target
           sparse-checkout: |
             .nvmrc
+            scripts/deploy-target.mjs
             scripts/resolve-green-dev-sha.mjs
             scripts/mobile-store-target.mjs
           sparse-checkout-cone-mode: false
@@ -134,13 +137,17 @@ jobs:
           cache: pnpm
           cache-dependency-path: app/pnpm-lock.yaml
 
-      # Writes the kc-dev backend into the eas.json `nightly` profile env (runner
+      # Writes the kc-dev backend and the Sentry vars into the eas.json `nightly` profile env (runner
       # only); fails for a main commit or a key of another project.
       - name: Pin the Supabase backend
         working-directory: .
         env:
           SOURCE_BRANCH: ${{ steps.target.outputs.branch }}
           MOBILE_SUPABASE_ANON_KEY: ${{ secrets.MOBILE_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_URL: ${{ vars.SENTRY_URL }}
         run: node scripts/mobile-store-config.mjs pin
 
       - name: Install dependencies

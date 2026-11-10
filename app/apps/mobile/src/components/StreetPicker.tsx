@@ -30,8 +30,13 @@ interface Props {
   readonly allowFreeText?: boolean;
 }
 
-const matchStreet = (s: Street, q: string): boolean => s.nameHe.includes(q);
-const renderStreet = (s: Street) => ({ id: String(s.streetId), name: s.nameHe });
+const matchStreet = (s: Street, q: string): boolean => {
+  if (!s) return false;
+  const trimmed = (q ?? '').trim();
+  if (!trimmed) return true;
+  return (s.nameHe ?? '').includes(trimmed);
+};
+const renderStreet = (s: Street) => ({ id: String(s?.streetId ?? ''), name: s?.nameHe ?? '' });
 
 export function StreetPicker({ cityId, value, onChange, disabled, allowFreeText = true }: Props) {
   const { t } = useTranslation();

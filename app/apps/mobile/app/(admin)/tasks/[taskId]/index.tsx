@@ -29,6 +29,7 @@ import { TaskCategoryChip } from '../../../../src/components/admin/tasks/TaskCat
 import { TaskCategoryPicker } from '../../../../src/components/admin/tasks/TaskCategoryPicker';
 import { TaskActivityTimeline } from '../../../../src/components/admin/tasks/TaskActivityTimeline';
 import { useLocaleBundle, type LocaleBundle } from '../../../../src/i18n/useLocaleBundle';
+import { useAdminScreenTitle } from '../../../../src/components/admin/useAdminScreenTitle';
 
 async function confirmAction(message: string, L: LocaleBundle): Promise<boolean> {
   if (Platform.OS === 'web') {
@@ -51,6 +52,7 @@ export default function TaskDetailScreen() {
   const myId = useAuthStore((s) => s.session?.userId ?? null);
   const can = (perm: AdminPermission) => hasPermission(roles as readonly AdminRole[], perm);
   const q = useAdminTaskDetail(taskId);
+  useAdminScreenTitle(q.detail?.task.title ?? L.admin.tasks.title);
 
   const setStatus = useSetAdminTaskStatus();
   const addComment = useAddAdminTaskComment();

@@ -1,18 +1,20 @@
 // Animated input with orange border glow on focus — RTL-ready.
-import React, { useState } from 'react';
+import React, { forwardRef, useState } from 'react';
 import { View, type TextInputProps } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
-import { makeUseStyles, spacing, radius, typography, useTheme, TextInput, Text } from '@kc/ui';
+import { makeUseStyles, spacing, radius, typography, shadow, useTheme, TextInput, Text, type TextInput as UiTextInput } from '@kc/ui';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 interface AnimatedAuthInputProps extends TextInputProps {
   label: string;
   testID?: string;
 }
+
+const AuthFieldInput = TextInput;
 
 const useAnimatedAuthInputStyles = makeUseStyles(({ colors, isDark }) => ({
   field: { gap: spacing.xs },
@@ -36,11 +38,7 @@ const useAnimatedAuthInputStyles = makeUseStyles(({ colors, isDark }) => ({
   inputContainerFocused: {
     borderColor: colors.primary,
     backgroundColor: isDark ? colors.surface : colors.background,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: isDark ? 0.2 : 0.12,
-    shadowRadius: 6,
-    elevation: isDark ? 0 : 2,
+    ...(isDark ? {} : shadow.card),
   },
   input: {
     flex: 1,
@@ -49,12 +47,15 @@ const useAnimatedAuthInputStyles = makeUseStyles(({ colors, isDark }) => ({
   },
 }));
 
-export function AnimatedAuthInput({
-  label,
-  onFocus,
-  onBlur,
-  ...rest
-}: AnimatedAuthInputProps) {
+export const AnimatedAuthInput = forwardRef<UiTextInput, AnimatedAuthInputProps>(function AnimatedAuthInput(
+  {
+    label,
+    onFocus,
+    onBlur,
+    ...rest
+  },
+  ref,
+) {
   const { colors } = useTheme();
   const styles = useAnimatedAuthInputStyles();
   const [focused, setFocused] = useState(false);
@@ -89,7 +90,8 @@ export function AnimatedAuthInput({
           wrapperStyle,
         ]}
       >
-        <TextInput
+        <AuthFieldInput
+          ref={ref}
           style={styles.input}
           placeholderTextColor={colors.textDisabled}
           textAlign={rtlTextAlignStart}
@@ -100,4 +102,4 @@ export function AnimatedAuthInput({
       </Animated.View>
     </View>
   );
-}
+});

@@ -21,13 +21,32 @@ interface Props {
 
 // Module-scope helpers — referentially stable so the SearchablePicker doesn't
 // invalidate its memoized filter list on every render.
-const matchCity = (c: City, q: string): boolean =>
-  c.nameHe.includes(q) || c.nameEn.toLowerCase().includes(q.toLowerCase());
-const renderCity = (c: City) => ({ id: c.cityId, name: c.nameHe });
+const matchCity = (c: City, q: string): boolean => {
+  if (!c) return false;
+  const trimmed = (q ?? '').trim().toLowerCase();
+  if (!trimmed) return true;
+  const nameHe = c.nameHe ?? '';
+  const nameEn = (c.nameEn ?? '').toLowerCase();
+  return nameHe.includes(trimmed) || nameEn.includes(trimmed);
+};
+const renderCity = (c: City) => ({
+  id: c?.cityId ?? '',
+  name: c?.nameHe ?? c?.nameEn ?? '',
+});
+
+/** A value known only by its id (a loaded listing) shows the city's name once the list has it. */
+export function withCityName(
+  value: Props['value'],
+  cities: readonly City[] | undefined,
+): Props['value'] {
+  if (!value || value.name || !Array.isArray(cities)) return value;
+  const city = cities.find((c) => c?.cityId === value.id);
+  return city ? { ...value, name: renderCity(city).name } : value;
+}
 
 export function CityPicker({ value, onChange, disabled }: Props) {
   const { t } = useTranslation();
-  const { data, isLoading, error } = useQuery<City[]>({
+  const { data, isLoading, error, refetch } = useQuery<City[]>({
     queryKey: ['cities'],
     queryFn: listCities,
     staleTime: 1000 * 60 * 60, // 1h — cities rarely change.
@@ -37,8 +56,8 @@ export function CityPicker({ value, onChange, disabled }: Props) {
     <SearchablePicker<City>
       title={t('profile.cityPickerTitle')}
       placeholder={t('profile.cityPickerSearchPlaceholder')}
-      value={value}
-      items={data ?? null}
+      value={withCityName(value, data)}
+      items={Array.isArray(data) ? data : null}
       isLoading={isLoading}
       error={error}
       disabled={disabled}
@@ -47,6 +66,7 @@ export function CityPicker({ value, onChange, disabled }: Props) {
       renderRow={renderCity}
       emptyText={t('profile.cityPickerEmpty')}
       errorText={t('profile.cityPickerError')}
+      onErrorRetry={() => void refetch()}
     />
   );
 }

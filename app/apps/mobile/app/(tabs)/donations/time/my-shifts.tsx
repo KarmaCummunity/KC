@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../../../../src/components/ui/Screen';
+import { TimeWorldSubScreenChrome } from '../../../../src/components/giving/TimeWorldSubScreenChrome';
 import { volunteerUseCases } from '../../../../src/services/volunteerComposition';
 import { useShellTabBarScrollInset } from '../../../../src/navigation/useShellTabBarVisibility';
 
@@ -69,7 +70,9 @@ export default function MyVolunteerShiftsScreen() {
   };
 
   return (
-    <Screen blobs="content">
+    <>
+      <TimeWorldSubScreenChrome activeScreenTestId="time-my-shifts" />
+      <Screen blobs="off" hasNativeHeader>
       <KcFlashList
         data={signups.data ?? []}
         keyExtractor={(item) => item.signupId}
@@ -121,6 +124,7 @@ export default function MyVolunteerShiftsScreen() {
           );
         }}
       />
-    </Screen>
+      </Screen>
+    </>
   );
 }

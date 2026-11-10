@@ -5,8 +5,10 @@ import {
   canPerformBookingAction,
   isRideTripCompletable,
   isValidRideBookingSeats,
+  rideReinstateBlocker,
   RideError,
   type RideBooking,
+  type RideBookingRideContext,
   type RideBookingStatus,
 } from '@kc/domain';
 import type { IRideBookingRepository } from '../ports/IRideBookingRepository';
@@ -17,10 +19,19 @@ export interface BookRideSeatContext {
   readonly departsAt?: string | null;
 }
 
+export interface BookRideSeatOptions {
+  readonly requestedMeetingPoint?: Record<string, unknown> | null;
+}
+
 export class BookRideSeatUseCase {
   constructor(private readonly repo: IRideBookingRepository) {}
   /** Rejects a seat count outside 1..8 or exceeding availability before reaching the server. */
-  execute(listingId: string, seats = 1, context?: BookRideSeatContext): Promise<string> {
+  execute(
+    listingId: string,
+    seats = 1,
+    context?: BookRideSeatContext,
+    options?: BookRideSeatOptions,
+  ): Promise<string> {
     if (!isValidRideBookingSeats(seats)) {
       return Promise.reject(new RideError('seats_required', 'seats must be a whole number from 1 to 8'));
     }
@@ -36,7 +47,7 @@ export class BookRideSeatUseCase {
     if (context?.capacity !== undefined && seats > context.capacity) {
       return Promise.reject(new RideError('seats_exhausted', 'requested seats exceed ride capacity'));
     }
-    return this.repo.bookSeat(listingId, seats);
+    return this.repo.bookSeat(listingId, seats, options?.requestedMeetingPoint ?? null);
   }
 }
 
@@ -129,5 +140,25 @@ export class CompleteRideListingUseCase {
   constructor(private readonly repo: IRideBookingRepository) {}
   execute(listingId: string): Promise<number> {
     return this.repo.completeRide(listingId);
+  }
+}
+
+export interface ReinstateRideBookingContext {
+  /** The ride the booking belongs to; when given, the RPC's preconditions are checked first. */
+  readonly ride?: RideBookingRideContext;
+  readonly now?: Date;
+}
+
+export class ReinstateRideBookingUseCase {
+  constructor(private readonly repo: IRideBookingRepository) {}
+  /** Rejects with the RPC's own code when the ride cannot take the booking back now. */
+  execute(handoffId: string, context?: ReinstateRideBookingContext): Promise<void> {
+    const ride = context?.ride;
+    const target = ride?.bookings.find((b) => b.handoffId === handoffId);
+    const blocker = ride && target ? rideReinstateBlocker(target, ride, context?.now) : null;
+    if (blocker) {
+      return Promise.reject(new RideError(blocker, `booking cannot be reinstated: ${blocker}`));
+    }
+    return this.repo.reinstate(handoffId);
   }
 }

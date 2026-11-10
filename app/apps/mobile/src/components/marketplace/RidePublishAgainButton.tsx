@@ -18,7 +18,7 @@ export function RidePublishAgainButton({ details }: Readonly<{ details: Record<s
       style={styles.btn}
       onPress={() => {
         queueRideRepublish(details);
-        router.push({ pathname: '/(tabs)/create', params: { category: 'rides' } });
+        router.push({ pathname: '/create', params: { category: 'rides' } });
       }}
     >
       <Text style={styles.text}>{t('rideSchedule.publishAgain')}</Text>

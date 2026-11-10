@@ -1,6 +1,6 @@
 // Row → domain User mapper. Shared by findById / findByHandle.
 // The shape mirrors the columns from `users` (see 0001_init_users.sql).
-import type { PrivacyMode, User } from '@kc/domain';
+import { toVerificationLevel, type PrivacyMode, type User } from '@kc/domain';
 
 // TD-69 (audit 2026-05-16, P2.12) — narrow the raw DB string into the
 // 2-value domain union. Before D-21 (2026-05-15) the column could legally
@@ -39,6 +39,7 @@ export interface UserRow {
   followers_count: number;
   following_count: number;
   karma_points: number;
+  verification_level?: number | null;
   created_at: string;
   updated_at: string;
   preferred_language?: string | null;
@@ -55,6 +56,8 @@ export function mapUserRow(row: UserRow): User {
     profileStreet: row.profile_street ?? null,
     profileStreetNumber: row.profile_street_number ?? null,
     contactPhone: row.contact_phone ?? null,
+    // Private: only users_get_self_private_fields() carries it, never the users row.
+    dateOfBirth: null,
     biography: row.biography,
     avatarUrl: row.avatar_url,
     privacyMode: asPrivacyMode(row.privacy_mode),
@@ -71,6 +74,7 @@ export function mapUserRow(row: UserRow): User {
     followersCount: row.followers_count,
     followingCount: row.following_count,
     karmaPoints: row.karma_points,
+    verificationLevel: toVerificationLevel(row.verification_level),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     preferredLanguage: row.preferred_language ?? null,

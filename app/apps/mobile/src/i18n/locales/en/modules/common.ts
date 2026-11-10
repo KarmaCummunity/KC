@@ -3,4 +3,11 @@
 export const commonEn = {
   deletedUser: 'Deleted user',
   requiredFieldA11y: 'Required field',
+  chipRowExpandA11y: 'Show all options',
+  chipRowCollapseA11y: 'Collapse options',
+  formKeyboard: {
+    next: 'Next',
+    prev: 'Previous',
+    done: 'Done',
+  },
 } as const;

@@ -12,6 +12,7 @@ interface Row {
   profileStreet?: string | null;
   profileStreetNumber?: string | null;
   contactPhone?: string | null;
+  dateOfBirth?: string | null;
   onboardingState: OnboardingState;
   basicInfoSkipped?: boolean;
   avatarUrl?: string | null;
@@ -92,15 +93,12 @@ export function makeFakeUserRepo(seed: Record<string, Row> = {}): FakeUserRepo {
       };
       rows.set(userId, { ...row, displayName, city, cityName, basicInfoSkipped: false });
     },
-    async setOnboardingState(userId, state) {
-      const row = rows.get(userId) ?? {
-        displayName: '',
-        city: '',
-        cityName: '',
-        onboardingState: 'pending_basic_info' as OnboardingState,
-      };
-      rows.set(userId, { ...row, onboardingState: state });
+    // Acts on the signed-in member, like the RPC: the one seeded row (as setDateOfBirth below).
+    async setOnboardingState(state) {
+      const userId = [...rows.keys()][0]!;
+      rows.set(userId, { ...rows.get(userId)!, onboardingState: state });
     },
+    resetOnboardingForDev: notImpl('resetOnboardingForDev'),
     async setAvatar(userId, avatarUrl) {
       const row = rows.get(userId) ?? {
         displayName: '',
@@ -141,6 +139,11 @@ export function makeFakeUserRepo(seed: Record<string, Row> = {}): FakeUserRepo {
         onboardingState: 'pending_basic_info' as OnboardingState,
       };
       rows.set(userId, { ...row, profileStreet: street, profileStreetNumber: streetNumber });
+    },
+    // The caller's own row: the real RPC takes no user id and reads auth.uid().
+    async setDateOfBirth(dateOfBirth) {
+      const userId = [...rows.keys()][0]!;
+      rows.set(userId, { ...rows.get(userId)!, dateOfBirth });
     },
     async setContactPhone(userId, contactPhone) {
       const row = rows.get(userId) ?? {

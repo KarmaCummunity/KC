@@ -24,6 +24,10 @@ export interface FinanceLedgerUpsertInput {
   readonly description?: string | null;
   readonly referenceUrl?: string | null;
   readonly status?: FinanceEntryStatus;
+  /** FR-FIN-003: omit to keep the current account on update. */
+  readonly accountId?: string;
+  /** FR-FIN-022: omit to keep the current visibility on update (new entries default to public). */
+  readonly isPublic?: boolean;
 }
 
 export interface IFinanceLedgerRepository {

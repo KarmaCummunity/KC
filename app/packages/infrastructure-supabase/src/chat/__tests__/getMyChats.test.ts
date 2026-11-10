@@ -111,7 +111,7 @@ describe('getMyChats — happy paths', () => {
     const { client } = makeFakeClient({
       chats: [CHAT_ROW],
       messages: [MSG_ROW()],
-      users: [{ user_id: 'u_other', display_name: 'Alice', avatar_url: 'a.jpg', share_handle: 'alice' }],
+      users: [{ user_id: 'u_other', display_name: 'Alice', avatar_url: 'a.jpg', share_handle: 'alice', verification_level: 1 }],
     });
     const out = await getMyChats(client, 'u_me');
     expect(out).toHaveLength(1);
@@ -121,6 +121,7 @@ describe('getMyChats — happy paths', () => {
       avatarUrl: 'a.jpg',
       shareHandle: 'alice',
       isDeleted: false,
+      verificationLevel: 1,
     });
     expect(out[0]?.lastMessage?.messageId).toBe('m_1');
   });

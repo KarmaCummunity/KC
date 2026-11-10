@@ -5,8 +5,11 @@
 
 /** Workers that may be invoked with the service-role key only (see the regression test). */
 export const SERVICE_ROLE_ONLY_FUNCTIONS = [
+  'dispatch-notification',
   'purge-deleted-accounts',
   'receipts-issuer',
+  'reconcile-storage-orphans',
+  'strip-exif',
   'subscriptions-charger',
   'whatsapp-intake-worker',
   'whatsapp-sender',

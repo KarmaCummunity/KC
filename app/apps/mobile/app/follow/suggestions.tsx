@@ -6,8 +6,11 @@ import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
 import { container } from '../../src/lib/container';
+import type { VerificationLevel } from '@kc/domain';
 import { AvatarInitials } from '../../src/components/AvatarInitials';
+import { VerificationBadge } from '../../src/components/VerificationBadge';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
+import { rowDirectionStart } from '../../src/lib/rtlLayout';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
 import { SimpleRowListSkeleton } from '../../src/components/skeletons/SimpleRowListSkeleton';
 
@@ -17,6 +20,7 @@ type SuggestionItem = {
   displayName: string | null;
   avatarUrl: string | null;
   reason: string;
+  verificationLevel?: VerificationLevel;
 };
 
 const suggestionKeyExtractor = (item: SuggestionItem) => item.userId;
@@ -44,7 +48,10 @@ const FollowSuggestionRow = React.memo(function FollowSuggestionRow({
     <Pressable style={styles.row} onPress={handlePress}>
       <AvatarInitials name={name} avatarUrl={item.avatarUrl} size={44} />
       <View style={{ flex: 1 }}>
-        <Text style={styles.name}>{name}</Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.name}>{name}</Text>
+          <VerificationBadge level={item.verificationLevel} />
+        </View>
         <Text style={styles.meta}>@{item.shareHandle} · {reasonLabel}</Text>
       </View>
     </Pressable>
@@ -149,6 +156,7 @@ const useStyles = makeUseStyles(({ colors }) => ({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
+  nameRow: { flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.xs },
   name: { ...typography.body, color: colors.textPrimary, textAlign: rtlTextAlignStart },
   meta: { ...typography.caption, color: colors.textSecondary, textAlign: rtlTextAlignStart },
   empty: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.xl },

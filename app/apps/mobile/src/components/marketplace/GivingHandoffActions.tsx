@@ -6,7 +6,6 @@ import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import type { MarketplaceListingDetail } from '@kc/domain';
 import { useAuthStore } from '../../store/authStore';
 import { givingHandoffUseCases } from '../../services/givingHandoffComposition';
-import { ridesKnowledgeRpcs } from '../../services/ridesKnowledgeComposition';
 import { track } from '../../lib/analytics';
 import { trackCoreLoop } from '../../lib/analyticsCoreLoop';
 import { hapticSuccess } from '../../lib/haptics';
@@ -14,6 +13,9 @@ import { handoffErrorKey } from '../../lib/marketplaceCreateErrors';
 import { HandoffRatingForm } from './HandoffRatingForm';
 import { HandoffActionButton } from './HandoffActionButton';
 import { HANDOFF_WORLDS } from './listingFlow';
+import { OwnerAssignUserButton } from '../closure/OwnerAssignUserButton';
+
+const OWNER_ASSIGN_WORLDS = ['items', 'food', 'animals'];
 
 const useStyles = makeUseStyles(({ colors }) => ({
   box: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surfaceRaised },
@@ -40,13 +42,20 @@ export function GivingHandoffActions({ detail }: Props) {
   if (detail.direction !== 'give') return null;
   // Rides manage many bookings per offer — see rides/RideBookingActions (D73).
   if (!HANDOFF_WORLDS.includes(detail.worldSlug)) return null;
+  // Knowledge books by time slot, many learners per offer — see knowledge/KnowledgeBookingActions (#2034).
+  if (detail.worldSlug === 'knowledge') return null;
   if (!userId) return null;
-  if (detail.ownerId === userId && !handoff.data) return null;
+  if (detail.ownerId === userId && !handoff.data && !OWNER_ASSIGN_WORLDS.includes(detail.worldSlug)) return null;
+  // The post detail screen docks the same assign action in the bottom chrome.
+  if (detail.ownerId === userId && !handoff.data && detail.feedPostId) return null;
 
   const invalidate = async () => {
     await qc.invalidateQueries({ queryKey: ['giving-handoff', detail.listingId] });
     await qc.invalidateQueries({ queryKey: ['marketplace'] });
-    await qc.invalidateQueries({ queryKey: ['marketplace-detail', detail.listingId] });
+    // Every detail query of this listing, by listing id or by post id (the post page, 0561), and
+    // the post itself: a hand-over closes a post-form item's post (G34).
+    await qc.invalidateQueries({ queryKey: ['marketplace-detail'] });
+    await qc.invalidateQueries({ queryKey: ['post'] });
     await qc.invalidateQueries({ queryKey: ['giving-handoffs'] });
     await qc.invalidateQueries({ queryKey: ['feed'] });
   };
@@ -76,7 +85,10 @@ export function GivingHandoffActions({ detail }: Props) {
   const h = handoff.data;
   const isOwner = userId === detail.ownerId;
   const isRecipient = h != null && userId === h.recipientId;
-  const isAvailableForRequest = detail.availabilityStatus !== 'scheduled' && detail.availabilityStatus !== 'ongoing';
+  // 'ongoing' is also the default availability of every new listing (create_marketplace_listing),
+  // so it means "handed over" only once the listing has left the open state (0555 closes it).
+  const isHandedOver = detail.availabilityStatus === 'ongoing' && detail.listingStatus !== 'open';
+  const isAvailableForRequest = detail.availabilityStatus !== 'scheduled' && !isHandedOver;
 
   return (
     <View style={styles.box} testID="giving-handoff">
@@ -93,13 +105,18 @@ export function GivingHandoffActions({ detail }: Props) {
         </Text>
       ) : null}
 
-      {!h && detail.availabilityStatus === 'ongoing' ? (
+      {!h && isHandedOver ? (
         <Text style={styles.status} testID="giving-handoff-status">
           {t('givingHandoff.status', { status: t('givingHandoff.statusLabel.handed_over', { defaultValue: 'Handed over' }) })}
         </Text>
       ) : null}
 
-      {!h && isAvailableForRequest && detail.worldSlug === 'items' && !isOwner ? (
+      {/* `owner_complete_offer_with_user` refuses a post that is not open (0658). */}
+      {isOwner && !h && !detail.feedPostId && detail.listingStatus === 'open' ? (
+        <OwnerAssignUserButton targetId={detail.feedPostId ?? detail.listingId} worldSlug={detail.worldSlug} />
+      ) : null}
+
+      {!h && isAvailableForRequest && (detail.worldSlug === 'items' || detail.worldSlug === 'animals') && !isOwner ? (
         <>
           <HandoffActionButton
             testID="giving-handoff-reserve"
@@ -107,13 +124,15 @@ export function GivingHandoffActions({ detail }: Props) {
             busy={busy}
             onPress={() => run(async () => { await givingHandoffUseCases.reserveItem().execute(detail.listingId, 'pickup'); }, 'match_made')}
           />
-          <HandoffActionButton
-            testID="giving-handoff-reserve-delivery"
-            label={t('givingHandoff.reserveDelivery')}
-            busy={busy}
-            secondary
-            onPress={() => run(async () => { await givingHandoffUseCases.reserveItem().execute(detail.listingId, 'delivery'); }, 'match_made')}
-          />
+          {detail.worldSlug === 'items' ? (
+            <HandoffActionButton
+              testID="giving-handoff-reserve-delivery"
+              label={t('givingHandoff.reserveDelivery')}
+              busy={busy}
+              secondary
+              onPress={() => run(async () => { await givingHandoffUseCases.reserveItem().execute(detail.listingId, 'delivery'); }, 'match_made')}
+            />
+          ) : null}
         </>
       ) : null}
 
@@ -126,16 +145,7 @@ export function GivingHandoffActions({ detail }: Props) {
         />
       ) : null}
 
-      {!h && isAvailableForRequest && detail.worldSlug === 'knowledge' && !isOwner ? (
-        <HandoffActionButton
-          testID="giving-handoff-book-slot"
-          label={t('givingHandoff.bookKnowledgeSlot')}
-          busy={busy}
-          onPress={() => run(async () => { await ridesKnowledgeRpcs.bookKnowledgeSlot(detail.listingId); }, 'match_made')}
-        />
-      ) : null}
-
-      {h?.status === 'reserved' && isOwner && detail.worldSlug !== 'knowledge' ? (
+      {h?.status === 'reserved' && isOwner ? (
         <>
           <HandoffActionButton
             testID="giving-handoff-confirm"
@@ -153,7 +163,7 @@ export function GivingHandoffActions({ detail }: Props) {
         </>
       ) : null}
 
-      {h?.status === 'reserved' && isRecipient && detail.worldSlug !== 'knowledge' ? (
+      {h?.status === 'reserved' && isRecipient ? (
         <HandoffActionButton
           testID="giving-handoff-cancel"
           label={t('givingHandoff.cancel')}
@@ -170,24 +180,6 @@ export function GivingHandoffActions({ detail }: Props) {
             label={t('givingHandoff.markHandedOver')}
             busy={busy}
             onPress={() => run(async () => { await givingHandoffUseCases.markHandedOver().execute(h.handoffId); }, 'handover_completed')}
-          />
-          <HandoffActionButton
-            testID="giving-handoff-cancel"
-            label={t('givingHandoff.cancel')}
-            busy={busy}
-            secondary
-            onPress={() => run(async () => { await givingHandoffUseCases.cancel().execute(h.handoffId); })}
-          />
-        </>
-      ) : null}
-
-      {h?.status === 'reserved' && detail.worldSlug === 'knowledge' && (isOwner || isRecipient) ? (
-        <>
-          <HandoffActionButton
-            testID="giving-handoff-complete"
-            label={t('givingHandoff.completeSession')}
-            busy={busy}
-            onPress={() => run(async () => { await ridesKnowledgeRpcs.completeKnowledgeSession(h.handoffId); }, 'handover_completed')}
           />
           <HandoffActionButton
             testID="giving-handoff-cancel"

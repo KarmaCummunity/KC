@@ -14,6 +14,8 @@ export function mapEditProfileSaveError(code: string): string {
     biography_too_long: 'errors.profile.biography_too_long',
     biography_url_forbidden: 'errors.profile.biography_url_forbidden',
     invalid_city: 'errors.profile.invalid_city',
+    invalid_date_of_birth: 'dateOfBirth.errors.invalid',
+    underage: 'dateOfBirth.errors.underage',
   };
   const match = Object.keys(keys).find((k) => code.includes(k));
   return match ? i18n.t(keys[match]!) : code;

@@ -5,9 +5,11 @@
 
 import React, { useCallback } from 'react';
 import { View } from 'react-native';
+import type { TextInput as KitTextInput } from '@kc/ui';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
-import { TextField } from './ui/TextField';
+import type { TextFieldProps } from './ui/TextField';
+import { CompactStreetNumberField } from './address/CompactStreetNumberField';
 import { CityPicker } from './CityPicker';
 import { StreetPicker } from './StreetPicker';
 import { applyAddressResetOnCityChange } from '../lib/addressResetOnCityChange';
@@ -21,6 +23,12 @@ export interface EditProfileAddressBlockProps {
   readonly onStreetChange: (v: string) => void;
   readonly onStreetNumberChange: (v: string) => void;
   readonly disabled: boolean;
+  /** Optional keyboard-toolbar bindings for the house-number field. */
+  readonly streetNumberInputProps?: Pick<
+    TextFieldProps,
+    'onFocus' | 'inputAccessoryViewID' | 'returnKeyType' | 'blurOnSubmit' | 'onSubmitEditing'
+  >;
+  readonly streetNumberRef?: React.RefObject<KitTextInput | null>;
 }
 
 export function EditProfileAddressBlock({
@@ -31,6 +39,8 @@ export function EditProfileAddressBlock({
   onStreetChange,
   onStreetNumberChange,
   disabled,
+  streetNumberInputProps,
+  streetNumberRef,
 }: EditProfileAddressBlockProps) {
   const styles = useStyles();
   const { t } = useTranslation();
@@ -72,14 +82,14 @@ export function EditProfileAddressBlock({
               disabled={disabled}
             />
           </View>
-          <TextField
+          <CompactStreetNumberField
+            ref={streetNumberRef}
             containerStyle={styles.streetInputHouse}
-            label={t('profile.streetNumberShort')}
+            style={styles.streetNumberInput}
             value={streetNumber}
             onChangeText={onStreetNumberChange}
-            placeholder={t('profile.streetNumberShort')}
             editable={!disabled && !!city}
-            maxLength={10}
+            {...streetNumberInputProps}
           />
         </View>
       </View>
@@ -94,4 +104,5 @@ const useStyles = makeUseStyles(({ colors }) => ({
   streetRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start', width: '100%' },
   streetCol: { flex: 2, minWidth: 0 },
   streetInputHouse: { flex: 1, minWidth: 0, maxWidth: 120 },
+  streetNumberInput: { textAlign: rtlTextAlignStart },
 }));

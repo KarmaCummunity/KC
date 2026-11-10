@@ -6,7 +6,7 @@
 //   • the permissions those roles carry (role-derived only, D85);
 //   • their direct manager and reports, with assign / change manager.
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { hasPermission } from '@kc/domain';
 import { iconSize, makeUseStyles, radius, spacing, Text, typography, useTheme } from '@kc/ui';
@@ -19,6 +19,7 @@ import { RolePermissionsSection } from '../../../src/components/admin/admins/Rol
 import { AdminManagerSections } from '../../../src/components/admin/admins/AdminManagerSections';
 import { rowDirectionStart } from '../../../src/lib/rtlLayout';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
+import { useAdminScreenTitle } from '../../../src/components/admin/useAdminScreenTitle';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
@@ -32,6 +33,8 @@ export default function AdminPersonScreen() {
   const { person, isLoading } = useAdminPerson(userId);
   // People without a visible grant still open, from their user record.
   const basics = useUserBasics(userId, !isLoading && person === null);
+  const displayName = person?.displayName ?? basics.data?.displayName ?? null;
+  useAdminScreenTitle(displayName ?? L.admin.admins.detail.title);
 
   if (rolesLoading || isLoading || basics.isLoading) {
     return <View style={styles.center}><ActivityIndicator color={colors.primary} /></View>;
@@ -39,12 +42,10 @@ export default function AdminPersonScreen() {
   if (!hasPermission(roles, 'admins.view')) {
     return <View style={styles.center}><Text style={styles.title}>{L.admin.admins.forbiddenTitle}</Text></View>;
   }
-  const displayName = person?.displayName ?? basics.data?.displayName ?? null;
   const avatarUrl = person?.avatarUrl ?? basics.data?.avatarUrl ?? null;
   if (!person && !basics.data) {
     return (
       <View style={styles.center}>
-        <Stack.Screen options={{ headerTitle: L.admin.admins.detail.title }} />
         <Text style={styles.title}>{L.admin.admins.detail.notFound}</Text>
       </View>
     );
@@ -53,8 +54,6 @@ export default function AdminPersonScreen() {
   const name = displayName ?? L.admin.admins.row.unnamed;
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <Stack.Screen options={{ headerTitle: L.admin.admins.detail.title }} />
-
       <View style={styles.hero}>
         <AvatarInitials name={name} avatarUrl={avatarUrl} size={64} />
         <Text style={styles.name} numberOfLines={1}>{name}</Text>

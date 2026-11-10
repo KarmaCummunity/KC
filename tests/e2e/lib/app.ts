@@ -26,6 +26,27 @@ export async function expectNoRawI18nKeys(page: Page) {
   expect(leaks, `raw i18n keys on ${page.url()}`).toEqual([]);
 }
 
+/**
+ * FR-AUTH-010 AC2.d: a member without a date of birth is asked for it before an action (e.g.
+ * publishing). Seed users may have none, so fill an adult date once when the gate shows.
+ * Returns whether the gate was shown.
+ */
+export async function passDateOfBirthGate(page: Page): Promise<boolean> {
+  const gate = page.getByText('עוד פרט אחד לפני שממשיכים');
+  // isVisible() does not wait; give the gate (opened after the publish tap) a few seconds.
+  const shown = await gate
+    .waitFor({ state: 'visible', timeout: 5_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!shown) return false;
+  await page.getByRole('textbox', { name: 'יום' }).fill('1');
+  await page.getByRole('textbox', { name: 'חודש' }).fill('1');
+  await page.getByRole('textbox', { name: 'שנה' }).fill('1990');
+  await page.getByRole('button', { name: 'שמירה והמשך' }).click();
+  await expect(gate).toHaveCount(0, { timeout: 15_000 });
+  return true;
+}
+
 export async function gotoApp(page: Page, path: string) {
   await page.goto(path);
   await dismissGates(page);

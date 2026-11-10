@@ -12,6 +12,7 @@ import { useAdminRoles } from '../../hooks/useAdminRoles';
 import { invalidatePersonalStatsCaches } from '../../lib/invalidatePersonalStatsCaches';
 import { PostMenuSheet } from './PostMenuSheet';
 import { usePostSavedActions } from '../../hooks/usePostSavedActions';
+import { hrefForPostEdit } from '../../lib/postEditNavigation';
 
 interface Props {
   post: PostWithOwner;
@@ -78,6 +79,7 @@ export function PostMenuButton({
         onClose={() => setOpen(false)}
         post={post}
         showShareInMenu={showShareInMenu}
+        listingId={post.listingId ?? null}
         viewerId={viewerId}
         isSuperAdmin={canManuallyRemovePost}
         isSaved={isSaved}
@@ -92,7 +94,7 @@ export function PostMenuButton({
           invalidatePersonalStatsCaches(queryClient, post.ownerId);
           router.back();
         }}
-        onEdit={() => router.push(`/edit-post/${post.postId}`)}
+        onEdit={() => router.push(hrefForPostEdit(post))}
       />
     </>
   );

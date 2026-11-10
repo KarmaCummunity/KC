@@ -19,8 +19,9 @@ function fakeChannel(open = []) {
   };
 }
 
-const supabaseStub = ({ status = 'ACTIVE_HEALTHY', report = [], fail } = {}) => ({
+const supabaseStub = ({ status = 'ACTIVE_HEALTHY', hasHealthChecks = true, report = [], fail } = {}) => ({
   projectStatus: async () => status,
+  hasHealthChecks: async () => hasHealthChecks,
   healthReport: async () => {
     if (fail) throw new Error(fail);
     return report;
@@ -31,6 +32,13 @@ test('a paused project is skipped without touching any channel', async () => {
   const channel = fakeChannel();
   const summary = await runMonitor({ env: 'prod', supabase: supabaseStub({ status: 'INACTIVE' }), channels: [channel], runbookUrl: RUNBOOK });
   assert.equal(summary.skipped, 'project status INACTIVE');
+  assert.equal(channel.applied.length, 0);
+});
+
+test('a project where migration 0463 is not applied is skipped cleanly', async () => {
+  const channel = fakeChannel();
+  const summary = await runMonitor({ env: 'prod', supabase: supabaseStub({ hasHealthChecks: false }), channels: [channel], runbookUrl: RUNBOOK });
+  assert.equal(summary.skipped, 'migration 0463 (ops.run_health_checks) not applied');
   assert.equal(channel.applied.length, 0);
 });
 
@@ -66,13 +74,19 @@ test('the management client posts the read-only report query', async () => {
   const calls = [];
   const fetchImpl = async (url, init = {}) => {
     calls.push({ url, init });
-    return { ok: true, json: async () => (url.endsWith('/database/query') ? [] : { status: 'ACTIVE_HEALTHY' }) };
+    if (!url.endsWith('/database/query')) return { ok: true, json: async () => ({ status: 'ACTIVE_HEALTHY' }) };
+    const body = JSON.parse(init.body ?? '{}');
+    if (body.query.includes('pg_proc')) return { ok: true, json: async () => [{ has_ops: true }] };
+    return { ok: true, json: async () => [] };
   };
   const client = supabaseManagement({ projectRef: 'ref123', token: 'tkn', fetchImpl });
   assert.equal(await client.projectStatus(), 'ACTIVE_HEALTHY');
+  assert.equal(await client.hasHealthChecks(), true);
   await client.healthReport();
   assert.equal(calls[1].url, 'https://api.supabase.com/v1/projects/ref123/database/query');
-  assert.deepEqual(JSON.parse(calls[1].init.body), { query: 'select * from ops.run_health_checks()' });
+  assert.ok(JSON.parse(calls[1].init.body).query.includes('pg_proc'));
+  assert.equal(calls[2].url, 'https://api.supabase.com/v1/projects/ref123/database/query');
+  assert.deepEqual(JSON.parse(calls[2].init.body), { query: 'select * from ops.run_health_checks()' });
 });
 
 test('the GitHub channel creates missing labels, assigns the PM and closes on resolve', async () => {

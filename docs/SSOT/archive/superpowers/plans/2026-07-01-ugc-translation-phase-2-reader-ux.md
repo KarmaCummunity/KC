@@ -24,7 +24,7 @@ This plan is split into three phases mapping to PRs (BE/FE lane split, CLAUDE.md
 
 **Local test runner note (from repo memory):** run vitest with `NODE_OPTIONS=--experimental-require-module` on Node 20.17. From `app/`: `pnpm --filter @kc/<pkg> test`. Pre-push gates from `app/`: `pnpm typecheck && pnpm test && pnpm lint`.
 
-**Migration numbering:** at time of writing, `origin/dev` tops out at `0212`; a concurrent GLOWE PR will add `0213_glowe_event_organizer_decisions.sql`. Before creating the migration in Task 4, run `ls supabase/migrations | tail -3` and use the next unused integer. This plan names it `0214_content_translations_purge_on_edit.sql` — rename to the actual next number if 0214 is taken.
+**Migration numbering:** at time of writing, `origin/dev` tops out at `0212`; a concurrent PR will add `0213`. Before creating the migration in Task 4, run `ls supabase/migrations | tail -3` and use the next unused integer. This plan names it `0214_content_translations_purge_on_edit.sql` — rename to the actual next number if 0214 is taken.
 
 ---
 

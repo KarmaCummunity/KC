@@ -16,7 +16,7 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="profile" />
       <Tabs.Screen name="search" />
-      <Tabs.Screen name="create" />
+      {/* The "+" create form is a root-stack screen (app/create.tsx) so it opens over the current screen. */}
       <Tabs.Screen name="donations" />
       <Tabs.Screen name="index" />
     </Tabs>

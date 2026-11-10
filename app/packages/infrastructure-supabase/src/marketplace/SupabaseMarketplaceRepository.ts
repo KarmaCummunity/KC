@@ -21,9 +21,11 @@ import { mapListingDetail } from './mapListingDetail';
 import { searchExternalBodies } from './mapExternalBody';
 import { listWorldSubcategories } from './listWorldSubcategories';
 import * as handoffs from './givingHandoffs';
+import * as events from './eventRegistrations';
 import * as owner from './listingOwnerActions';
 import * as paging from './marketplacePaging';
 import { mapPinRow } from './mapPinRow';
+import { firstOf, listingDirectionOf, recordPostOf, type CardShapeColumns, type ViewClient } from './listingCardSource';
 
 export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
@@ -143,29 +145,44 @@ export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
   listWorldSubcategories = (worldSlug: string) => listWorldSubcategories(this.client, worldSlug);
 
   async getListingCard(listingId: string): Promise<MarketplaceBrowseRow | null> {
-    const { data, error } = await this.client
+    const { data, error } = await (this.client as unknown as ViewClient)
       .from('listings')
-      .select(
-        'listing_id, world_slug, direction, title, summary, urgency_level, availability_status, city_id, kind_id',
-      )
+      .select('listing_id, world_slug, direction, title, summary, urgency_level, availability_status, city_id, kind_id, origin, legacy_post_id')
       .eq('listing_id', listingId)
       .maybeSingle();
     if (error || !data) return null;
+    const row = data as unknown as typeof data & CardShapeColumns;
+    // A post-owned listing reads its post, the record; title, summary and city stay the listing's.
+    const post = recordPostOf(row);
+    if (post) {
+      return {
+        listingId: row.listing_id ?? '',
+        worldSlug: post.world_slug,
+        kindSlug: firstOf(post.kind)?.slug ?? '',
+        direction: listingDirectionOf(post.direction),
+        title: row.title ?? '',
+        summary: row.summary,
+        urgencyLevel: (post.urgency_level ?? row.urgency_level) ?? 2,
+        availabilityStatus: post.availability_status,
+        cityId: row.city_id,
+        distanceKm: null,
+      };
+    }
     const { data: kindRow } = await this.client
       .from('listing_kinds')
       .select('slug')
-      .eq('kind_id', data.kind_id)
+      .eq('kind_id', row.kind_id ?? '')
       .maybeSingle();
     return {
-      listingId: data.listing_id,
-      worldSlug: data.world_slug,
+      listingId: row.listing_id ?? '',
+      worldSlug: row.world_slug ?? '',
       kindSlug: kindRow?.slug ?? '',
-      direction: data.direction as 'give' | 'request',
-      title: data.title,
-      summary: data.summary,
-      urgencyLevel: data.urgency_level,
-      availabilityStatus: data.availability_status,
-      cityId: data.city_id,
+      direction: row.direction as 'give' | 'request',
+      title: row.title ?? '',
+      summary: row.summary,
+      urgencyLevel: row.urgency_level ?? 2,
+      availabilityStatus: row.availability_status ?? 'ongoing',
+      cityId: row.city_id,
       distanceKm: null,
     };
   }
@@ -188,6 +205,7 @@ export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
       p_category_id: input.categoryId ?? undefined,
       p_urgency_level: input.urgencyLevel ?? undefined,
       p_availability_status: input.availabilityStatus ?? undefined,
+      p_additional_world_slugs: input.additionalWorldSlugs ?? undefined,
     });
     if (error || !data) throw error ?? new Error('create_marketplace_listing failed');
     return data as string;
@@ -250,7 +268,6 @@ export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
   addMyListingMedia = (listingId: string, mediaPaths: readonly string[]) =>
     owner.addMyListingMedia(this.client, listingId, mediaPaths);
 
-
   // Items/food handoffs — see givingHandoffs.ts.
   getListingHandoff = (listingId: string) => handoffs.getListingHandoff(this.client, listingId);
   listMyGivingHandoffs = (limit?: number) => handoffs.listMyGivingHandoffs(this.client, limit);
@@ -267,4 +284,13 @@ export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
   markGivingHandedOver = (id: string) => handoffs.markGivingHandedOver(this.client, id);
   rateGivingHandoff = (id: string, rating: number, comment?: string | null) =>
     handoffs.rateGivingHandoff(this.client, id, rating, comment);
+
+  // Organization events (G1 step 5) — see eventRegistrations.ts.
+  registerForEvent = (target: string) => events.registerForEvent(this.client, target);
+  decideEventRegistration = (id: string, approve: boolean) => events.decideEventRegistration(this.client, id, approve);
+  cancelEventRegistration = (id: string) => events.cancelEventRegistration(this.client, id);
+  markEventAttendance = (id: string, attended: boolean) => events.markEventAttendance(this.client, id, attended);
+  listEventRegistrations = (target: string) => events.listEventRegistrations(this.client, target);
+  getMyEventRegistration = (postId: string) => events.getMyEventRegistration(this.client, postId);
+  listMyOrganizations = () => events.listMyOrganizations(this.client);
 }

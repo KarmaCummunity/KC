@@ -21,12 +21,16 @@ describe('SupabaseFollowSuggestionsRepository', () => {
           city_name: 'TLV',
           followers_count: 3,
           reason: 'mutual',
+          verification_level: 1,
         },
       ],
       error: null,
     });
     await expect(r.listSuggestions()).resolves.toEqual([
-      { userId: 'u1', displayName: 'A', shareHandle: 'a', avatarUrl: null, cityName: 'TLV', followersCount: 3, reason: 'mutual' },
+      {
+        userId: 'u1', displayName: 'A', shareHandle: 'a', avatarUrl: null, cityName: 'TLV', followersCount: 3,
+        reason: 'mutual', verificationLevel: 1,
+      },
     ]);
     expect(rpc).toHaveBeenCalledWith('rpc_follow_suggestions', { p_limit: 15 });
   });

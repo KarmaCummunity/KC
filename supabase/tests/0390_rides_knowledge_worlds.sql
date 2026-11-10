@@ -9,21 +9,31 @@ begin
   end if;
 
   -- world_slug check includes rides + knowledge
-  if not exists (
-    select 1 from pg_constraint c
-     join pg_class t on t.oid = c.conrelid
-    where t.relname = 'giving_handoffs'
-      and c.conname = 'giving_handoffs_world_slug_check'
-      and pg_get_constraintdef(c.oid) like '%rides%'
-      and pg_get_constraintdef(c.oid) like '%knowledge%'
-  ) then
-    raise exception 'giving_handoffs world_slug check missing rides/knowledge';
+  if (select relkind from pg_class where relname = 'giving_handoffs' and relnamespace = 'public'::regnamespace) = 'r' then
+    if not exists (
+      select 1 from pg_constraint c
+       join pg_class t on t.oid = c.conrelid
+      where t.relname = 'giving_handoffs'
+        and c.conname = 'giving_handoffs_world_slug_check'
+        and pg_get_constraintdef(c.oid) like '%rides%'
+        and pg_get_constraintdef(c.oid) like '%knowledge%'
+    ) then
+      raise exception 'giving_handoffs world_slug check missing rides/knowledge';
+    end if;
+  else
+    if not exists (
+      select 1 from public.worlds where slug = 'rides'
+    ) or not exists (
+      select 1 from public.worlds where slug = 'knowledge'
+    ) then
+      raise exception 'worlds table missing rides/knowledge';
+    end if;
   end if;
 
   if to_regprocedure('public.find_ride_listing_matches(double precision,double precision,double precision,double precision,timestamptz,timestamptz,double precision,int)') is null then
     raise exception 'find_ride_listing_matches missing';
   end if;
-  if to_regprocedure('public.book_ride_seat(uuid,int)') is null then
+  if to_regprocedure('public.book_ride_seat(uuid,int,jsonb)') is null then
     raise exception 'book_ride_seat missing';
   end if;
   if to_regprocedure('public.complete_ride_trip(uuid)') is null then

@@ -36,7 +36,10 @@ $$;
 
 do $$
 declare
-  v_admin uuid := (select user_id from public.users where is_super_admin limit 1);
+  v_admin uuid := coalesce(
+    (select user_id from public.admin_role_grants where role = 'super_admin' and revoked_at is null limit 1),
+    (select user_id from public.users where is_super_admin order by created_at asc limit 1)
+  );
   v_owner uuid := pg_temp.mk_user('h452_owner');
   v_viewer uuid := pg_temp.mk_user('h452_viewer');
   v_r uuid[] := array[pg_temp.mk_user('h452_r1'), pg_temp.mk_user('h452_r2'), pg_temp.mk_user('h452_r3'),

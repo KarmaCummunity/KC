@@ -7,6 +7,8 @@ export const filtersEn = {
   apply: 'Apply',
   searchPlaceholder: 'Search by title, description, or category…',
   searchClearA11y: 'Clear search',
+  feedSettingsLink: 'Feed settings — what to hide',
+  feedSettingsLinkA11y: 'Open feed settings — muted words, categories, and people',
 
   // Section titles
   sectionType: 'Post type',

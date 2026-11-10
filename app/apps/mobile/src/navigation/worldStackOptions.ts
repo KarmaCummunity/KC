@@ -3,6 +3,7 @@
 import { useTheme } from '@kc/ui';
 import { nativeStackHeaderLeftIconOnly } from './nativeHeaderIconOnly';
 import { nestedStackGestureOptions } from './nestedStackGestureOptions';
+import { topBarStackHeader } from './TopBarStackHeader';
 
 export function useWorldStackOptions() {
   const { colors } = useTheme();
@@ -12,6 +13,8 @@ export function useWorldStackOptions() {
     headerBackVisible: false,
     headerTintColor: colors.primary,
     headerStyle: { backgroundColor: colors.background },
+    // #1632: the app TopBar (KC logo) stays on every world screen.
+    header: topBarStackHeader,
   } as const;
   const screenOptions = {
     headerShown: false,

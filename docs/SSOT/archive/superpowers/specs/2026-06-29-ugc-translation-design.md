@@ -9,11 +9,11 @@
 
 ## 1. Problem & Goal
 
-GLOWE (the current MVP riding on Karma Community infrastructure) is a **global, multilingual NGO knowledge-exchange network**. Users speak many languages. Today the app is Hebrew-only; user-generated content (posts, chat) is shown verbatim in whatever language the author wrote it, which is unreadable to a cross-language audience.
+Karma Community serves a **multilingual community**. Users speak many languages. Today the app is Hebrew-only; user-generated content (posts, chat) is shown verbatim in whatever language the author wrote it, which is unreadable to a cross-language audience.
 
 **Primary goal:** full linguistic accessibility — any reader sees any post or message in their own language — on the **cheapest viable infrastructure**, with **fast reads** and **low bandwidth** (users on poor internet).
 
-This is **shared platform infrastructure**: it must serve both GLOWE and (later) KC, and any future content type. It is not a GLOWE-only feature.
+This is **shared platform infrastructure**: it must serve KC and any future content type. It is not a single-feature add-on.
 
 **Out of scope (UI strings):** translating the app's own UI chrome is a separate, already-architected `react-i18next` effort (`docs/SSOT/archive/superpowers/specs/2026-05-16-hebrew-to-i18n-design.md`). This design covers **UGC only**.
 

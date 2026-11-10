@@ -125,6 +125,21 @@ export class InMemoryPostRepository implements IPostRepository {
   }
 
   // ── Closure (FR-CLOSURE-001..005) ────────────────────────────────────────
+  async ownerCompleteOffer(
+    targetId: string,
+    recipientUserId: string | null,
+    mode: 'assign' | 'close_without',
+  ): Promise<{ closed: boolean }> {
+    const post = this.requireOwn(targetId);
+    if (mode === 'close_without' || recipientUserId === null) {
+      post.status = 'deleted_no_recipient';
+      return { closed: true };
+    }
+    post.status = 'closed_delivered';
+    post.recipient = { postId: targetId, recipientUserId, markedAt: this.store.now() };
+    return { closed: true };
+  }
+
   async close(postId: string, recipientUserId: string | null): Promise<Post> {
     const post = this.requireOwn(postId);
     if (post.status !== 'open') throw new PostError('closure_wrong_status', 'closure_wrong_status');
@@ -173,6 +188,7 @@ export class InMemoryPostRepository implements IPostRepository {
     cursor?: string,
     visibility?: PostVisibility,
     excludeVisibility?: PostVisibility,
+    _profileOpenLinks?: { readonly viewerUserId: string | null; readonly listMode: 'standard' | 'owner_only_me' },
   ): Promise<{ posts: Post[]; nextCursor: string | null }> {
     if (status.length === 0) return { posts: [], nextCursor: null };
     const safeLimit = Math.max(1, Math.min(limit, PAGE_MAX));

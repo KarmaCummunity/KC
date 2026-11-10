@@ -9,6 +9,7 @@ import { TextField } from '../../../../../../src/components/ui/TextField';
 import { PrimaryButton } from '../../../../../../src/components/ui/Buttons';
 import { marketplaceRepository } from '../../../../../../src/services/marketplaceComposition';
 import { useInvalidateMyListings } from '../../../../../../src/hooks/useMyMarketplaceListings';
+import { WorldSubScreenChrome } from '../../../../../../src/components/giving/useWorldHeader';
 
 const useStyles = makeUseStyles(() => ({
   body: { padding: spacing.lg, gap: spacing.md },
@@ -17,7 +18,8 @@ const useStyles = makeUseStyles(() => ({
 }));
 
 export default function EditMyListingScreen() {
-  const { listingId } = useLocalSearchParams<{ listingId: string }>();
+  const { listingId, world } = useLocalSearchParams<{ listingId: string; world?: string }>();
+  const worldSlug = typeof world === 'string' && world.length > 0 ? world : undefined;
   const { t } = useTranslation();
   const router = useRouter();
   const styles = useStyles();
@@ -74,7 +76,11 @@ export default function EditMyListingScreen() {
   }
 
   return (
-    <Screen>
+    <>
+      {worldSlug ? (
+        <WorldSubScreenChrome worldSlug={worldSlug} activeScreenTestId="world-hub-my-listings" />
+      ) : null}
+      <Screen hasNativeHeader>
       <View style={styles.body}>
         <TextField label={t('marketplace.fieldTitle')} value={title} onChangeText={setTitle} />
         <TextField label={t('marketplace.fieldSummary')} value={summary} onChangeText={setSummary} multiline />
@@ -87,6 +93,7 @@ export default function EditMyListingScreen() {
           onPress={() => void save()}
         />
       </View>
-    </Screen>
+      </Screen>
+    </>
   );
 }

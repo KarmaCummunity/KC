@@ -62,15 +62,48 @@ language plpgsql
 as $$
 declare
   v_listing_id uuid;
+  v_post_id uuid;
+  v_kind_id uuid := kc_test.listing_kind_id(p_world_slug, p_kind_slug);
 begin
   perform kc_test.act_as(p_owner_id);
   insert into public.listings (
     owner_id, world_slug, kind_id, direction, title, origin, moderation_status, details, expires_at
   ) values (
-    p_owner_id, p_world_slug, kc_test.listing_kind_id(p_world_slug, p_kind_slug), p_direction,
-    p_title, 'native', 'published', p_details, p_expires_at
+    p_owner_id, p_world_slug, v_kind_id, p_direction,
+    p_title, 'native', 'published', p_details, coalesce(p_expires_at, nullif(p_details->>'expires_at', '')::timestamptz)
   )
   returning listing_id into v_listing_id;
+
+  if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync')
+     and (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r'
+     and (select moderation_status from public.listings where listing_id = v_listing_id) = 'published' then
+    insert into public.posts (
+      owner_id, type, visibility, title, description, category, city, street, street_number,
+      location_display_level, world_slug, direction, post_type, details, category_id,
+      expires_at, listing_id, listing_world_slug, kind_id, moderation_status, availability_status,
+      urgency_level, feed_hidden
+    ) values (
+      p_owner_id, case p_direction when 'request' then 'Request' else 'Give' end,
+      coalesce(public.anonymity_level_to_visibility((select anonymity_level from public.listings where listing_id = v_listing_id)), 'Public'),
+      left(p_title, 80), null, 'Other', 'tel-aviv', 'Marketplace', '1', 'CityOnly',
+      p_world_slug, case p_direction when 'request' then 'request' else 'offer' end,
+      case when p_world_slug = 'rides' then 'ride' else 'standard' end,
+      coalesce((select details from public.listings where listing_id = v_listing_id), p_details, '{}'::jsonb), null,
+      coalesce((select expires_at from public.listings where listing_id = v_listing_id), p_expires_at, nullif(p_details->>'expires_at', '')::timestamptz),
+      v_listing_id, p_world_slug, v_kind_id, 'published', 'ongoing',
+      (select urgency_level from public.listings where listing_id = v_listing_id),
+      coalesce(public.listing_feed_hidden((select l from public.listings l where l.listing_id = v_listing_id)), false)
+    )
+    returning post_id into v_post_id;
+
+    if p_world_slug = 'rides' then
+      update public.ride_route_alerts set status = 'pending' where listing_id = v_listing_id and status = 'skipped';
+      perform public.ride_route_alert_deliver(a.route_id, a.listing_id)
+        from public.ride_route_alerts a
+       where a.listing_id = v_listing_id and a.status = 'pending';
+    end if;
+  end if;
+
   return v_listing_id;
 end;
 $$;
@@ -80,7 +113,16 @@ returns text
 language sql
 stable
 as $$
-  select status::text from public.listings where listing_id = p_listing_id;
+  select case
+    when exists (select 1 from public.listings where listing_id = p_listing_id) then
+      (select status::text from public.listings where listing_id = p_listing_id)
+    else
+      case (select status::text from public.posts where post_id = p_listing_id)
+        when 'closed_delivered' then 'closed'
+        when 'paused' then 'cancelled'
+        else (select status::text from public.posts where post_id = p_listing_id)
+      end
+  end;
 $$;
 
 create function kc_test.handoff_status(p_handoff_id uuid)
@@ -88,5 +130,8 @@ returns text
 language sql
 stable
 as $$
-  select status::text from public.giving_handoffs where handoff_id = p_handoff_id;
+  select coalesce(
+    (select status::text from public.giving_handoffs where handoff_id = p_handoff_id),
+    (select status::text from public.post_handoffs where handoff_id = p_handoff_id)
+  );
 $$;

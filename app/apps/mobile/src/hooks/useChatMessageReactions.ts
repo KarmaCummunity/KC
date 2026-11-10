@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { MessageReactionType } from '@kc/infrastructure-supabase';
 import { container } from '../lib/container';
 import { useAuthStore } from '../store/authStore';
-import { hapticLightTap } from '../lib/haptics';
+import { hapticSuccess } from '../lib/haptics';
 
 export type ReactionSummary = Partial<Record<MessageReactionType, number>>;
 
@@ -41,10 +41,10 @@ export function useChatMessageReactions(chatId: string, messageIds: string[]) {
   }, [chatId, messageIdsKey, viewerId]);
 
   const toggle = useCallback(async (messageId: string, reaction: MessageReactionType) => {
-    hapticLightTap();
     const current = mine[messageId];
     const next = current === reaction ? null : reaction;
     await container.chatV2Repo.setMessageReaction(messageId, next);
+    if (next !== null) hapticSuccess();
     setMine((s) => ({ ...s, [messageId]: next }));
   }, [mine]);
 

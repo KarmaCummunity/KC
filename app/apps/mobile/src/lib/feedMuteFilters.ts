@@ -12,6 +12,7 @@ export interface GroupedMuteFilters {
   users: MuteFilter[];
   keywords: MuteFilter[];
   categories: MuteFilter[];
+  worlds: MuteFilter[];
 }
 
 /** Server limit (0281): 1..120 chars after trim. We also require 2+ chars so single letters don't hide half the feed. */
@@ -25,12 +26,13 @@ export function normalizeMuteKeyword(raw: string): string | null {
   return v;
 }
 
-/** Splits filters into the three sections; 'world' and 'category' both match post category (0282). */
+/** Splits filters into users, keywords, item categories, and giving worlds. */
 export function groupMuteFilters(rows: readonly MuteFilter[]): GroupedMuteFilters {
-  const out: GroupedMuteFilters = { users: [], keywords: [], categories: [] };
+  const out: GroupedMuteFilters = { users: [], keywords: [], categories: [], worlds: [] };
   for (const r of rows) {
     if (r.filterKind === 'user') out.users.push(r);
     else if (r.filterKind === 'keyword') out.keywords.push(r);
+    else if (r.filterKind === 'world') out.worlds.push(r);
     else out.categories.push(r);
   }
   out.keywords.sort((a, b) => a.filterValue.localeCompare(b.filterValue));
@@ -45,7 +47,17 @@ export function isKeywordMuted(rows: readonly MuteFilter[], keyword: string): bo
 
 /** The category mute filter for a value, if any. */
 export function findCategoryMute(rows: readonly MuteFilter[], category: string): MuteFilter | undefined {
-  return rows.find((r) => (r.filterKind === 'category' || r.filterKind === 'world') && r.filterValue === category);
+  return rows.find((r) => r.filterKind === 'category' && r.filterValue === category);
+}
+
+/** The giving-world mute filter for a slug, if any. */
+export function findWorldMute(rows: readonly MuteFilter[], worldSlug: string): MuteFilter | undefined {
+  return rows.find((r) => r.filterKind === 'world' && r.filterValue === worldSlug);
+}
+
+/** Active mute rows (keywords, categories, people) — each hides part of the signed-in feed. */
+export function countMuteFilters(rows: readonly MuteFilter[]): number {
+  return rows.length;
 }
 
 /** Quiet hours times are stored as 24h HH:MM (0256 casts them to time). */

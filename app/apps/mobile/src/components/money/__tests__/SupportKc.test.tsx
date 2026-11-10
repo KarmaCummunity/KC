@@ -2,7 +2,7 @@
 // FR-DONATE-011 — "support KC directly" options + legal disclosure.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
-import { cleanup, fireEvent, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { ThemeProvider } from '@kc/ui';
 import type { KcSupportOptions } from '@kc/domain';
 
@@ -29,6 +29,8 @@ vi.mock('../../../hooks/useKcStandingOrderCancelRequest', () => ({
   useKcStandingOrderCancelRequest: () => cancelState,
 }));
 vi.mock('../../../hooks/useKcSupportOptions', () => ({ useKcSupportOptions: () => optionsQuery }));
+const copyOrShareText = vi.fn(async (_text: string) => ({ kind: 'copied' as const }));
+vi.mock('../../../lib/copyOrShareText', () => ({ copyOrShareText: (text: string) => copyOrShareText(text) }));
 
 import { SupportKcOptions } from '../SupportKcOptions';
 import { SupportKcDisclosure } from '../SupportKcDisclosure';
@@ -46,10 +48,15 @@ const withTheme = (ui: React.ReactElement) =>
 
 const full: KcSupportOptions = {
   oneTime: [
-    { kind: 'bit', url: 'https://bit.example/pay', providerLabel: 'Bit' },
-    { kind: 'card_one_time', url: 'https://pay.grow.link/once', providerLabel: 'Grow' },
+    { kind: 'bit', url: 'https://bit.example/pay', providerLabel: 'Bit', payeePhone: null },
+    { kind: 'card_one_time', url: 'https://pay.grow.link/once', providerLabel: 'Grow', payeePhone: null },
   ],
-  standingOrder: { kind: 'card_standing_order', url: 'https://pay.grow.link/monthly', providerLabel: 'Grow' },
+  standingOrder: {
+    kind: 'card_standing_order',
+    url: 'https://pay.grow.link/monthly',
+    providerLabel: 'Grow',
+    payeePhone: null,
+  },
 };
 
 describe('SupportKcOptions', () => {
@@ -138,5 +145,31 @@ describe('DonationSupportCard (About + Settings, FR-DONATE-010)', () => {
     const { getByText, queryAllByRole } = withTheme(<DonationSupportCard />);
     expect(getByText('supportKc.unavailable')).toBeTruthy();
     expect(queryAllByRole('button')).toHaveLength(0);
+  });
+});
+
+describe('payee phone under Bit / PayBox (FR-DONATE-011 AC9)', () => {
+  const withPhone: KcSupportOptions = {
+    oneTime: [{ kind: 'bit', url: 'https://bit.example/pay', providerLabel: 'Bit', payeePhone: '0501234567' }],
+    standingOrder: null,
+  };
+
+  it('shows the formatted payee phone only when the server returned one', () => {
+    const shown = withTheme(<SupportKcOptions options={withPhone} loading={false} onOpen={() => {}} />);
+    expect(shown.getByText('supportKc.payeePhone:050-123-4567')).toBeTruthy();
+    cleanup();
+    const hidden = withTheme(<SupportKcOptions options={full} loading={false} onOpen={() => {}} />);
+    expect(hidden.queryByTestId('support-kc-bit-phone')).toBeNull();
+  });
+
+  it('copies the digits-only number and confirms it', async () => {
+    const { getByTestId, getByText } = withTheme(
+      <SupportKcOptions options={withPhone} loading={false} onOpen={() => {}} />,
+    );
+    await act(async () => {
+      fireEvent.click(getByTestId('support-kc-bit-phone-copy'));
+    });
+    expect(copyOrShareText).toHaveBeenCalledWith('0501234567');
+    expect(getByText('supportKc.phoneCopied')).toBeTruthy();
   });
 });

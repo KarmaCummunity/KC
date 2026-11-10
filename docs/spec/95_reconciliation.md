@@ -1,6 +1,6 @@
 # 95 — Reconciliation: project book × legacy spec × code (2026-10-30)
 
-Purpose: record what was **verified in the code** for the project book's claims, which legacy `docs/SSOT/spec/*` FRs are **superseded** by book decisions, the **new implementation gaps** found (`G32+`), and the **questions that need a PM decision** (also listed in [92](./92_open_questions.md)).
+Purpose: record what was **verified in the code** for the project book's claims, which legacy `docs/spec/requirements/*` FRs are **superseded** by book decisions, the **new implementation gaps** found (`G32+`), and the **questions that need a PM decision** (also listed in [92](./92_open_questions.md)).
 
 Method: static reading of `dev` @ `fdc861d3` plus the book branch. No live database was queried. Evidence is cited as `file:line`.
 
@@ -72,6 +72,6 @@ Also added to [93](./93_implementation_gaps.md).
 
 ## 5. SSOT hygiene notes
 
-- **Tech-debt ID reuse.** Legacy spec headers cite `TD-69`, `TD-75` and `TD-79` for 2026-05-16 audit items, but `docs/SSOT/TECH_DEBT.md` now uses those IDs for unrelated rows (migration-drift guard, translation provider, translate tests). When reading a legacy header, treat its TD reference as **historical** and use `TECH_DEBT.md` as the live register. New IDs must never reuse a number.
+- **Tech-debt ID reuse.** Legacy spec headers cite `TD-69`, `TD-75` and `TD-79` for 2026-05-16 audit items, but the `tech-debt` issues now use those IDs for unrelated rows (migration-drift guard, translation provider, translate tests). When reading a legacy header, treat its TD reference as **historical** and use the `tech-debt` issues as the live register. New IDs must never reuse a number.
 - **Migration registry.** `docs/agents/MIGRATION_RANGES.md` recorded `0440` for the world launch flags; the flags shipped as `0441`, and `0440` is the chat-media path change. Noted in the registry.
 - **CI script tests.** Before this PR only 2 of the 8 `scripts/*.test.mjs` suites ran in CI, and two Edge Function test files (`delete-account`, `revenuecat-webhook`) were never executed. Both are now wired.

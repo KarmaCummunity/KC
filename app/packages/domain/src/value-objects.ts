@@ -22,7 +22,8 @@ export type AccountStatus =
   | 'suspended_for_false_reports'
   | 'suspended_admin'
   | 'banned'
-  | 'deleted';
+  /** FR-AUTH-016: deletion requested, restorable until the purge (the row is then removed). */
+  | 'pending_deletion';
 
 export type OnboardingState =
   | 'pending_basic_info'
@@ -40,7 +41,9 @@ export type PostStatus =
   | 'expired'
   | 'removed_admin'
   // D33/D61 — 3 reports hide a post until an admin restores or removes it.
-  | 'hidden_pending_review';
+  | 'hidden_pending_review'
+  // D104 — the owner paused the post: hidden from everyone but the owner (G1, migration 0551).
+  | 'paused';
 
 export type PostVisibility = 'Public' | 'FollowersOnly' | 'OnlyMe';
 

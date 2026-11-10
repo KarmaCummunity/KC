@@ -85,6 +85,8 @@ jobs:
     with:
       p0_only: true
       ref: ${{ needs.resolve.outputs.sha }}
+    # The called workflow reads E2E_SEED_PASSWORD; without this it receives an empty secret.
+    secrets: inherit
 
   ios:
     name: ios
@@ -96,7 +98,7 @@ jobs:
     uses: ./.github/workflows/testflight-ios.yml
     with:
       ref: ${{ needs.resolve.outputs.sha }}
-    # Repo-level store credentials; the mobile-store environment's are read in the called job.
+    # The store credentials live in the mobile-store environment and are read in the called job.
     secrets: inherit
 
   android:
