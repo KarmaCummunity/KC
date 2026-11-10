@@ -12,9 +12,10 @@
 #   secrets  EXPO_TOKEN, GOOGLE_PLAY_SERVICE_ACCOUNT_JSON,
 #            MOBILE_SUPABASE_ANON_KEY (kc-dev publishable key, mobile-store environment)
 #   vars     KC_EAS_PROJECT_ID
-# The AAB builds on EAS cloud, where the runner env never arrives: Sentry and
-# FCM config (SENTRY_*, EXPO_PUBLIC_SENTRY_DSN, GOOGLE_SERVICES_JSON) come from
-# the EAS "preview" environment that the `nightly` profile selects.
+# The AAB builds on EAS cloud, where the runner env never arrives: the Sentry DSN/org/
+# project/url are pinned into the `nightly` profile env by mobile-store-config.mjs (from
+# mobile-store vars); SENTRY_AUTH_TOKEN and the FCM config (GOOGLE_SERVICES_JSON) come
+# from the EAS "preview" environment that the profile selects.
 name: Play Internal Android
 
 on:
@@ -129,13 +130,17 @@ jobs:
           cache: pnpm
           cache-dependency-path: app/pnpm-lock.yaml
 
-      # Writes the kc-dev backend into the eas.json `nightly` profile env (runner
+      # Writes the kc-dev backend and the Sentry vars into the eas.json `nightly` profile env (runner
       # only); fails for a main commit or a key of another project.
       - name: Pin the Supabase backend
         working-directory: .
         env:
           SOURCE_BRANCH: ${{ steps.target.outputs.branch }}
           MOBILE_SUPABASE_ANON_KEY: ${{ secrets.MOBILE_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_URL: ${{ vars.SENTRY_URL }}
         run: node scripts/mobile-store-config.mjs pin
 
       - name: Install dependencies
