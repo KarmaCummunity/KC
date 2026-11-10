@@ -33,6 +33,7 @@ describe('resolvePushRoute', () => {
     'ride_booking_declined',
     'ride_booking_expired',
     'ride_booking_cancelled',
+    'ride_booking_lapsed',
     'ride_route_match',
     'ride_listing_emergency',
     'giving_handoff_requested',
