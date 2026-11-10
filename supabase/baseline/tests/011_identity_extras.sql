@@ -34,7 +34,7 @@ $$;
 create function pg_temp.id(p_who text) returns uuid language sql as
   $$select ('00000000-0000-4000-8000-00000000000' || p_who)::uuid$$;
 
-select plan(71);
+select plan(72);
 
 -- a, b, c are active (Google); d still waits for email confirmation.
 insert into auth.users (id, email, raw_app_meta_data) values
@@ -78,8 +78,10 @@ select throws_ok($$update public.legal_document_versions set body_md = 'changed'
 select throws_ok($$delete from public.legal_document_versions where version = 1$$,
   'P0001', 'append_only', 'a published version cannot be deleted');
 select is(pg_temp.run('a', 'select count(*) from public.legal_document_versions'), '3', 'a member reads every published version');
-select throws_ok($$select pg_temp.run('anon', 'select 1 from public.legal_documents')$$,
-  '42501', null, 'a signed-out caller cannot read legal documents');
+select is(pg_temp.run('anon', 'select count(*) from public.legal_document_versions'), '3',
+  'a signed-out caller reads the published legal text (sign-up screen)');
+select throws_ok($$select pg_temp.run('anon', 'update public.legal_documents set current_version = 9')$$,
+  '42501', null, 'a signed-out caller cannot change legal documents');
 select throws_ok($$select pg_temp.run('a', 'update public.legal_documents set current_version = 9')$$,
   '42501', null, 'a member cannot write legal documents');
 

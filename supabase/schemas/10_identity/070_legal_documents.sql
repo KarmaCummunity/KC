@@ -92,14 +92,16 @@ alter table public.legal_documents force row level security;
 alter table public.legal_document_versions enable row level security;
 alter table public.legal_document_versions force row level security;
 
--- Every signed-in member may read the documents, including earlier versions.
-create policy legal_documents_select_member on public.legal_documents
-  for select to authenticated
+-- Published legal text is public: the sign-up screen shows the terms and the privacy policy
+-- before an account exists (FR-AUTH-002 AC3; PM decision 2026-11-10). This is the only
+-- product table a signed-out caller can read.
+create policy legal_documents_select_anyone on public.legal_documents
+  for select to anon, authenticated
   using (true);
 
-create policy legal_document_versions_select_member on public.legal_document_versions
-  for select to authenticated
+create policy legal_document_versions_select_anyone on public.legal_document_versions
+  for select to anon, authenticated
   using (true);
 
-grant select on public.legal_documents to authenticated;
-grant select on public.legal_document_versions to authenticated;
+grant select on public.legal_documents to anon, authenticated;
+grant select on public.legal_document_versions to anon, authenticated;

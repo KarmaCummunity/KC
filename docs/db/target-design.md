@@ -360,4 +360,15 @@ Validation order for every step: local / branch database → kc-dev → kc-prod.
 | Q7 | Non-KC schema in kc-dev | **Approved to remove.** Not yet executed: it is still being written to and one of its functions is callable by the auth service, so removal waits for the confirmation step in `AGENTS.md` §7 |
 | Q8 | Video provider and maximum clip length | Decided when video is specified; `post_media` already supports it |
 
+### 12.1 Decisions taken during implementation (PM, 2026-11-10)
+
+| Topic | Decision |
+| --- | --- |
+| Deleting a post | The owner may delete their post in **any** status, also when members are registered or a handoff is live: registrations and reservations are cancelled and the affected members are notified. An organization's admins may edit and delete the posts of their organization; the super admin may do so for every post. Deletion is a status move followed by the scheduled purge, so it can be undone within the grace period. Supersedes the "active handoff blocks delete" guard (D104 / D131) for delete; pause keeps its guard |
+| Signed-out access | Minimal by design: only the published legal text (terms, privacy policy) is readable without an account, for the sign-up screen. No guest feed and no signed-out post preview; a shared link opens the sign-in screen |
+| Date of birth | Editable by its owner under the 18+ rule (FR-PROFILE-007 AC7), not write-once |
+| Place search | Server-side search now. Later, not urgent: free-text places that are not in the reference lists, and an offline list |
+| Reference-data licences | Tracked as a launch-blocking task (#2079); no reference data is loaded into kc-prod before it is closed |
+| Delivery | No pull request into `dev` until the whole baseline is complete; work is pushed to the feature branch only |
+
 Recorded as `D-228` in [`docs/SSOT/DECISIONS.md`](../SSOT/DECISIONS.md). Phase 3 starts with step (1) of §10.
