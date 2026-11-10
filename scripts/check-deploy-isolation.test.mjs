@@ -93,6 +93,13 @@ test('read-only monitor: ops-health.yml may resolve its matrix to supabase-dev/p
   assert.deepEqual(checkWorkflow('ops-health.yml', monitorYaml()), []);
 });
 
+test('read-only monitor: ci-prod-ledger.yml may resolve its matrix to supabase-prod only', () => {
+  assert.deepEqual(
+    checkWorkflow('ci-prod-ledger.yml', monitorYaml({ envs: ['supabase-prod'], job: 'ledger', run: 'node scripts/check-prod-ledger.mjs' })),
+    [],
+  );
+});
+
 test('read-only monitor: any other file, job, env, trigger or deploy command is refused', () => {
   const refused = (file, opts) => checkWorkflow(file, monitorYaml(opts)).length > 0;
   assert.ok(refused('other-monitor.yml', {}), 'unlisted workflow');

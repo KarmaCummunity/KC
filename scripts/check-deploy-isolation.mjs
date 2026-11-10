@@ -69,6 +69,7 @@ export const COMMANDS = [
  */
 export const MONITORS = {
   'ops-health.yml': { job: 'monitor', envs: ['supabase-dev', 'supabase-prod'], triggers: ['schedule', 'workflow_dispatch'] },
+  'ci-prod-ledger.yml': { job: 'ledger', envs: ['supabase-prod'], triggers: ['schedule', 'workflow_dispatch'] },
 };
 
 const PROD_ENVS = new Set(['production', 'supabase-prod', 'cloudflare-prod']);
