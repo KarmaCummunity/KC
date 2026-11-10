@@ -29,6 +29,7 @@ export function ReportUserModal({ targetUserId, visible, onClose }: Props) {
         title: t('moderation.report.user.title'),
         reasonLabel: t('moderation.report.user.reasonLabel'),
         noteLabel: t('moderation.report.user.noteLabel'),
+        noteHint: t('moderation.report.noteHint'),
         submitLabel: t('moderation.report.user.submit'),
         cancelLabel: t('moderation.actions.cancel'),
       }}
