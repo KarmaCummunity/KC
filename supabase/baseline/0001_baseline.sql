@@ -113,6 +113,10 @@ create extension if not exists postgis with schema extensions;
 -- Trigram indexes: substring search over Hebrew names, where word stemming does not help.
 create extension if not exists pg_trgm with schema extensions;
 
+-- Lets a GIN index combine a plain equality column with a trigram column, so a name search
+-- can be scoped to its parent row in one index (streets of one city).
+create extension if not exists btree_gin with schema extensions;
+
 -- >>> supabase/schemas/00_foundation/050_fsm_kernel.sql
 -- Foundation · lifecycle state machines (engineering decision D-226)
 --
@@ -259,6 +263,170 @@ create policy cities_select_member on public.cities
   using (true);
 
 grant select on public.cities to authenticated;
+
+-- >>> supabase/schemas/05_geo/020_streets.sql
+-- Geo · streets
+--
+-- Official street list, keyed by city (FR-PROFILE-007 AC1, FR-POST address fields, D-36;
+-- an official ride place, D71). Rows are loaded by the reference loader
+-- (supabase/seed/reference), never by a client. The source is not filtered (D-36): street code
+-- 9000 is the source's "the locality itself" entry and is the only street of many small localities.
+
+create table public.streets (
+  city_id   text    not null references public.cities (city_id) on delete cascade,
+  -- Official street code. Unique inside its city only, hence the composite key.
+  street_id integer not null check (street_id > 0),
+  -- The source carries Hebrew names only.
+  name_he   text    not null check (btrim(name_he) <> ''),
+  -- Street centroid: the approximate location of a post that shows city and street.
+  -- Null until a street is geocoded; readers fall back to the city centre.
+  location  extensions.geography(Point, 4326),
+  -- Also serves the foreign key and "all streets of a city".
+  primary key (city_id, street_id)
+);
+comment on table public.streets is 'Reference list of official streets per city (D-36); optional centroid for street-level approximate locations.';
+
+-- Street picker, after a city is chosen:
+--   select street_id, name_he from public.streets
+--    where city_id = $1 and name_he ilike '%' || $2 || '%'
+--    order by name_he, street_id limit $3;
+create index streets_city_name_trgm_idx on public.streets
+  using gin (city_id, name_he extensions.gin_trgm_ops);
+-- Nearest street to a point (address suggestion from a map pin or the device location).
+create index streets_location_gist_idx on public.streets using gist (location);
+
+alter table public.streets enable row level security;
+alter table public.streets force row level security;
+
+-- Read-only reference data for signed-in members.
+create policy streets_select_member on public.streets
+  for select to authenticated
+  using (true);
+
+grant select on public.streets to authenticated;
+
+-- >>> supabase/schemas/05_geo/030_road_junctions.sql
+-- Geo · road junctions and interchanges
+--
+-- Named junctions and interchanges of the national road network. With cities and streets they
+-- are the official places a ride may use for its origin, destination and meeting points (D71);
+-- the catalog and its source were approved in D98. Rows are loaded by the reference loader
+-- (supabase/seed/reference), never by a client, and never fetched from the source at runtime.
+
+create table public.road_junctions (
+  -- The source's place number; stable across refreshes of the catalog.
+  junction_id integer primary key,
+  kind        text not null check (kind in ('junction', 'interchange')),
+  name_he     text not null check (btrim(name_he) <> ''),
+  name_en     text,
+  name_ar     text,
+  -- The roads that meet there, as the source writes them (for example '2/5').
+  roads       text,
+  location    extensions.geography(Point, 4326) not null
+);
+comment on table public.road_junctions is 'Reference list of named road junctions and interchanges: official ride places (D71, D98).';
+
+-- Junctions near a point: meeting-point suggestions and the ride map.
+create index road_junctions_location_gist_idx on public.road_junctions using gist (location);
+-- Place search by name (public.search_places): substring match on either name.
+create index road_junctions_name_he_trgm_idx on public.road_junctions
+  using gin (name_he extensions.gin_trgm_ops);
+create index road_junctions_name_en_trgm_idx on public.road_junctions
+  using gin (lower(name_en) extensions.gin_trgm_ops);
+
+alter table public.road_junctions enable row level security;
+alter table public.road_junctions force row level security;
+
+-- Read-only reference data for signed-in members.
+create policy road_junctions_select_member on public.road_junctions
+  for select to authenticated
+  using (true);
+
+grant select on public.road_junctions to authenticated;
+
+-- >>> supabase/schemas/05_geo/040_place_search.sql
+-- Geo · place search
+--
+-- One search over the places a ride can start, end or meet at that are picked by name:
+-- cities and road junctions (D71). Streets are not searched here; they are picked inside a
+-- chosen city, straight from public.streets. A function rather than two table reads because
+-- the picker needs one ranked list across both catalogs with plain latitude / longitude,
+-- which a table read of a geography column does not give.
+
+-- The three PostGIS functions the search calls with the member's rights: point to latitude /
+-- longitude. Extension functions are not executable by client roles unless granted (foundation).
+grant execute on function extensions.geometry(extensions.geography) to authenticated;
+grant execute on function extensions.st_x(extensions.geometry) to authenticated;
+grant execute on function extensions.st_y(extensions.geometry) to authenticated;
+
+-- Returns at most p_limit places whose Hebrew or English name contains p_query, names that
+-- start with it first. Runs with the caller's rights: the tables' own policies apply.
+-- junction_kind tells a junction from an interchange so the client can word the label.
+create function public.search_places(
+  p_query text,
+  p_kinds text[] default array['city', 'junction'],
+  p_limit integer default 20
+)
+returns table (
+  place_kind    text,
+  place_id      text,
+  name_he       text,
+  name_en       text,
+  junction_kind text,
+  roads         text,
+  city_id       text,
+  lat           double precision,
+  lng           double precision
+)
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  v_query   text := btrim(coalesce(p_query, ''));
+  v_pattern text;
+begin
+  if char_length(v_query) not between 1 and 80 then
+    raise exception 'place_query_invalid' using errcode = '22023';
+  end if;
+  if p_kinds is null or cardinality(p_kinds) = 0 or not (p_kinds <@ array['city', 'junction']) then
+    raise exception 'place_kinds_invalid' using errcode = '22023';
+  end if;
+  if p_limit is null or p_limit not between 1 and 50 then
+    raise exception 'place_limit_invalid' using errcode = '22023';
+  end if;
+
+  -- The query is matched literally: pattern characters typed by the member are escaped.
+  v_pattern := '%' || replace(replace(replace(v_query, '\', '\\'), '%', '\%'), '_', '\_') || '%';
+
+  return query
+  select p.place_kind, p.place_id, p.name_he, p.name_en, p.junction_kind, p.roads, p.city_id,
+         extensions.st_y(p.location::extensions.geometry),
+         extensions.st_x(p.location::extensions.geometry)
+    from (
+      -- A city without a centre cannot be placed on a route, so it is not a ride place.
+      select 'city'::text as place_kind, c.city_id as place_id, c.name_he, c.name_en,
+             null::text as junction_kind, null::text as roads, c.city_id, c.location
+        from public.cities c
+       where 'city' = any (p_kinds)
+         and c.location is not null
+         and (c.name_he ilike v_pattern or lower(c.name_en) like lower(v_pattern))
+      union all
+      select 'junction', j.junction_id::text, j.name_he, j.name_en, j.kind, j.roads, null, j.location
+        from public.road_junctions j
+       where 'junction' = any (p_kinds)
+         and (j.name_he ilike v_pattern or lower(j.name_en) like lower(v_pattern))
+    ) p
+   -- Total order, so equal names always come back in the same sequence.
+   order by (p.name_he ilike substr(v_pattern, 2) or lower(p.name_en) like lower(substr(v_pattern, 2))) desc,
+            p.name_he, p.place_kind, p.place_id
+   limit p_limit;
+end;
+$$;
+comment on function public.search_places(text, text[], integer) is
+  'Place picker search over cities and road junctions (D71): at most 50 rows, names starting with the query first.';
+
+grant execute on function public.search_places(text, text[], integer) to authenticated;
 
 -- >>> supabase/schemas/10_identity/010_users.sql
 -- Identity · users (public profile)

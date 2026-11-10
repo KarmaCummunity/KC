@@ -9,3 +9,7 @@ create extension if not exists postgis with schema extensions;
 
 -- Trigram indexes: substring search over Hebrew names, where word stemming does not help.
 create extension if not exists pg_trgm with schema extensions;
+
+-- Lets a GIN index combine a plain equality column with a trigram column, so a name search
+-- can be scoped to its parent row in one index (streets of one city).
+create extension if not exists btree_gin with schema extensions;
