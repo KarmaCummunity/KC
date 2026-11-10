@@ -1,7 +1,7 @@
 // Unit tests for scripts/mobile-store-config.mjs. Run: node --test scripts/mobile-store-config.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEV_REF, DEV_URL, PROD_REF, PROD_URL, checkAnonKey, checkBundle, checkPin, injectProfileEnv, resolveStoreBackend, sentryVars } from './mobile-store-config.mjs';
+import { DEV_REF, DEV_URL, DEV_GOOGLE_WEB_CLIENT_ID, PROD_REF, PROD_URL, PROD_GOOGLE_WEB_CLIENT_ID, checkAnonKey, checkBundle, checkPin, injectProfileEnv, resolveStoreBackend, sentryVars } from './mobile-store-config.mjs';
 
 /** Build an unsigned JWT with the given payload (only the payload is inspected). */
 const jwt = (payload) =>
@@ -92,19 +92,37 @@ test('prod mode refuses any source branch other than main and a kc-dev key', () 
 });
 
 test('a bundle with only the prod URL passes in prod mode and fails in dev mode', () => {
-  const prodOnly = Buffer.from(`\u0000hbc\u0000${PROD_URL}\u0000`);
+  const prodOnly = Buffer.from(`\u0000hbc\u0000${PROD_URL} ${PROD_GOOGLE_WEB_CLIENT_ID}\u0000`);
   assert.deepEqual(checkBundle(prodOnly, 'prod'), []);
   assert.ok(checkBundle(prodOnly).some((e) => e.includes('kc-dev URL')));
 });
 
 test('a bundle without the prod URL fails in prod mode', () => {
-  assert.deepEqual(
-    checkBundle(Buffer.from('nothing here'), 'prod'),
-    [`bundle does not contain the kc-prod URL ${PROD_URL}`],
-  );
+  const errors = checkBundle(Buffer.from('nothing here'), 'prod');
+  assert.deepEqual(errors, [
+    `bundle does not contain the kc-prod URL ${PROD_URL}`,
+    'bundle does not contain the PROD Google web client ID',
+  ]);
 });
 
 test('a bundle that also mentions the dev project fails in prod mode', () => {
-  const errors = checkBundle(Buffer.from(`${PROD_URL} ${DEV_URL}`), 'prod');
+  const errors = checkBundle(Buffer.from(`${PROD_URL} ${PROD_GOOGLE_WEB_CLIENT_ID} ${DEV_URL}`), 'prod');
   assert.deepEqual(errors, [`bundle contains the kc-dev project ref ${DEV_REF}`]);
+});
+
+test('prod mode rejects a bundle that still has the kc-dev Google web client', () => {
+  const errors = checkBundle(
+    Buffer.from(`${PROD_URL} ${PROD_GOOGLE_WEB_CLIENT_ID} ${DEV_GOOGLE_WEB_CLIENT_ID}`),
+    'prod',
+  );
+  assert.deepEqual(errors, ['bundle contains the kc-dev Google web client ID']);
+});
+
+test('prod mode fails when the prod Google web client ID is missing', () => {
+  const errors = checkBundle(Buffer.from(PROD_URL), 'prod');
+  assert.deepEqual(errors, ['bundle does not contain the PROD Google web client ID']);
+});
+
+test('dev mode does not require or reject the prod Google web client ID', () => {
+  assert.deepEqual(checkBundle(Buffer.from(`${DEV_URL} ${PROD_GOOGLE_WEB_CLIENT_ID}`)), []);
 });

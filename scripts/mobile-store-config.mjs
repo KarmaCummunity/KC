@@ -16,6 +16,8 @@
 //   verify <bundle>
 //          Fail unless the JS bundle extracted from the built IPA / AAB
 //          contains the selected backend and not the other project's ref.
+//          In prod mode it also requires the 501 PROD Google web client ID
+//          and rejects the kc-dev web client (aqs65g…).
 //          Hermes bytecode stores string literals verbatim, so a byte search works.
 //
 // `pin` also writes the non-secret Sentry settings (EXPO_PUBLIC_SENTRY_DSN, SENTRY_ORG,
@@ -35,6 +37,18 @@ export const DEV_REF = 'enbqriuxvvuontiwslun';
 export const PROD_REF = 'kdqtbdbzwvlugkhonexg';
 export const DEV_URL = `https://${DEV_REF}.supabase.co`;
 export const PROD_URL = `https://${PROD_REF}.supabase.co`;
+
+/**
+ * Public Google OAuth *web* client IDs (ID-token audience). Near-term PROD
+ * Sign-In uses GCP project 501; the kc-dev web client must not ship in a
+ * production store bundle. Nightly/dev builds may keep the dev web client
+ * (and later may use the prod web client against kc-dev — so dev mode does
+ * not reject the prod ID).
+ */
+export const DEV_GOOGLE_WEB_CLIENT_ID =
+  '501128729523-aqs65gpts9moo7721ubgon55vbq0vpn8.apps.googleusercontent.com';
+export const PROD_GOOGLE_WEB_CLIENT_ID =
+  '501128729523-cpou07r8ed94b3f7caa8kct7tp4c7b3l.apps.googleusercontent.com';
 
 /** `prod` only when STORE_BACKEND is exactly "prod"; anything else is the dev path. */
 export function resolveStoreBackend(raw) {
@@ -103,6 +117,12 @@ export function checkBundle(bundle, mode = 'dev') {
     }
     if (text.includes(DEV_REF)) {
       errors.push(`bundle contains the kc-dev project ref ${DEV_REF}`);
+    }
+    if (!text.includes(PROD_GOOGLE_WEB_CLIENT_ID)) {
+      errors.push('bundle does not contain the PROD Google web client ID');
+    }
+    if (text.includes(DEV_GOOGLE_WEB_CLIENT_ID)) {
+      errors.push('bundle contains the kc-dev Google web client ID');
     }
     return errors;
   }
