@@ -26,6 +26,8 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+// The organization membership hint (FR-ORG-002) opens My organizations.
+vi.mock('expo-router', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 // A native picker may only ever mount inside the date sheet, never inline in the form.
 vi.mock('@react-native-community/datetimepicker', () => ({
   default: mocks.nativeDatePicker,

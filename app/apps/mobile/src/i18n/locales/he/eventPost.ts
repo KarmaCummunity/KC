@@ -9,6 +9,8 @@ export const eventPost = {
     kindEvent: 'אירוע של ארגון',
     orgLabel: 'ארגון',
     orgRequired: 'בחרו את הארגון שהאירוע שלו',
+    membershipHint: 'רוצים לפרסם אירוע של ארגון? חברי ארגון רשום מפרסמים אירועים. רשמו את הארגון שלכם, או בקשו ממנהל/ת הארגון לצרף אתכם.',
+    membershipHintCta: 'הארגונים שלי',
   },
   section: {
     title: 'אירוע',

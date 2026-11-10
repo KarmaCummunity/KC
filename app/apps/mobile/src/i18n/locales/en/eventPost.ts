@@ -9,6 +9,8 @@ export const eventPost = {
     kindEvent: 'Organization event',
     orgLabel: 'Organization',
     orgRequired: 'Pick the organization the event is for',
+    membershipHint: 'Want to publish an organization\'s event? Members of a registered organization publish events. Register your organization, or ask its admin to add you.',
+    membershipHintCta: 'My organizations',
   },
   section: {
     title: 'Event',
