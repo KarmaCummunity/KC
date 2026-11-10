@@ -12,6 +12,8 @@
 # Usage: scripts/run-baseline-tests.sh [test.sql ...]   (no args = every test)
 # Env:   DB_URL — admin connection URI to a local server; when unset it is read from
 #        `supabase status`, so no credential ever lives in this repository.
+#        BASELINE_SCRATCH_DB — name of the scratch database (default kc_baseline_check);
+#        set it to run several checkouts against one server at the same time.
 set -euo pipefail
 shopt -s nullglob
 
@@ -19,7 +21,12 @@ readonly ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly BASELINE="$ROOT/supabase/baseline/0001_baseline.sql"
 readonly SHIM="$ROOT/supabase/baseline/local/supabase_shim.sql"
 readonly TESTS_DIR="$ROOT/supabase/baseline/tests"
-readonly SCRATCH_DB="kc_baseline_check"
+readonly SCRATCH_DB="${BASELINE_SCRATCH_DB:-kc_baseline_check}"
+# The name is interpolated into DROP/CREATE DATABASE, so only a plain identifier is accepted.
+if [[ ! "$SCRATCH_DB" =~ ^[a-z_][a-z0-9_]{0,62}$ ]]; then
+  echo "run-baseline-tests: invalid BASELINE_SCRATCH_DB '$SCRATCH_DB'" >&2
+  exit 2
+fi
 
 if [[ -z "${DB_URL:-}" ]]; then
   DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')"
