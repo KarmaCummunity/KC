@@ -71,7 +71,8 @@ begin
   perform kc_test.assert_true(pg_temp.sees(v, p.operator), 'only me: an operator sees it');
   perform kc_test.assert_true(pg_temp.sees(v, p.owner), 'only me: the owner sees it');
 
-  -- Closed: operators still see an anonymity-1 listing; a public one leaves everyone but its owner.
+  -- Closed: operators still see an anonymity-1 listing; a delivered public one stays visible (0740: the union of the
+  -- owner's and the recipient's surfaces; the full matrix lives in 0740_delivered_listing_visibility.sql).
   update public.listings set status = 'closed' where listing_id = v;
   if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
     update public.posts set status = 'closed_delivered' where listing_id = v;
@@ -81,7 +82,7 @@ begin
   if not exists (select 1 from pg_trigger where tgname = 'listings_feed_mirror_sync') then
     update public.posts set visibility = 'Public' where listing_id = v;
   end if;
-  perform kc_test.assert_true(not pg_temp.sees(v, p.stranger), 'closed, public: a member does not see it');
+  perform kc_test.assert_true(pg_temp.sees(v, p.stranger), 'closed, public: a member sees it (0740)');
   perform kc_test.assert_true(pg_temp.sees(v, p.owner), 'closed, public: the owner sees it');
 
   -- Paused (cancelled): hidden from everyone but the owner, operators included.

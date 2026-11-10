@@ -150,6 +150,7 @@ Prefix: `FR-RIDE-*`
 > Backend invariant clarification. Closes the implicit gap: when an owner closes/cancels (or the cron expires) a ride, approved riders' seats must transition to a terminal `cancelled` row with system attribution so that (a) the participant sees their request was no longer reserved, (b) their notification fires (FR-RIDE-013 AC4), and (c) any future seat-count read returns the correct value.
 
 - AC1. On `ride_listings.status` AFTER UPDATE from `open` → {`closed`,`cancelled`,`expired`}, a trigger marks every still-`approved` participant row for that ride as `cancelled` in the same transaction.
+- AC1b. **(2026-11-10, `0734`)** On the post record (G1): when `rides_expired_listings_sweep` expires a ride that never set off, its live bookings are cancelled with it: an unanswered request as `expired` (`ride_booking_expired`), a confirmed seat as `system`, and that passenger is told the ride did not run (`ride_booking_lapsed`).
 - AC2. System cancellation marker is the same as FR-RIDE-017: `decided_at = now()`, `decided_by = NULL`.
 - AC3. The `approved → cancelled` transition fires `ride_participant_cancelled` per FR-RIDE-013 AC4, but with i18n variant key `ride_participant_cancelled_by_owner` when `decided_by IS NULL` AND the parent ride is in {`closed`,`cancelled`,`expired`} (rider-initiated vs system distinction).
 - AC4. `requested` rows are handled separately by FR-RIDE-017 (silent cancellation).

@@ -30,6 +30,8 @@ export interface ReportSheetCopy {
   readonly title: string;
   readonly reasonLabel?: string;
   readonly noteLabel: string;
+  /** Hint shown inside the empty note box; the label above stays the field's name. */
+  readonly noteHint?: string;
   readonly submitLabel: string;
   /** Submit text while sending; without it the button shows a spinner. */
   readonly submittingLabel?: string;
@@ -81,6 +83,7 @@ export function ReportSheet({
         reason={reason}
         onReasonChange={setReason}
         noteLabel={copy.noteLabel}
+        notePlaceholder={copy.noteHint}
         note={note}
         onNoteChange={setNote}
         noteMaxLength={noteMaxLength}

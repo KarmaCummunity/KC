@@ -9,13 +9,15 @@
 # bump workflow shape (same policy as scripts/deploy-target.mjs and
 # testflight-ios.yml). The commit built must be certified on dev (D-195
 # "Mobile nightly"). Tester builds use the eas.json
-# `nightly` profile and the kc-dev Supabase backend; store builds from main
-# (prod backend) are not wired yet, and scripts/mobile-store-config.mjs refuses them.
+# `nightly` profile and the kc-dev Supabase backend. PROD store builds are
+# started only by prod-store-build.yml (`backend: prod`), which builds the
+# tagged main SHA with the EAS `production` profile, pins kc-prod, and refuses
+# the kc-dev ref. Do not dispatch this workflow with backend=prod directly.
 #
 # Runs in the `mobile-store` GitHub Environment (deployment branches: dev, main).
 # Required, fail closed when unset:
 #   secrets  EXPO_TOKEN, GOOGLE_PLAY_SERVICE_ACCOUNT_JSON,
-#            MOBILE_SUPABASE_ANON_KEY (kc-dev publishable key, mobile-store environment)
+#            MOBILE_SUPABASE_ANON_KEY (kc-dev) or MOBILE_SUPABASE_ANON_KEY_PROD (kc-prod, when backend=prod)
 #   vars     KC_EAS_PROJECT_ID
 # The AAB builds on EAS cloud, where the runner env never arrives: the Sentry DSN/org/
 # project/url are pinned into the `nightly` profile env by mobile-store-config.mjs (from
@@ -27,9 +29,14 @@ on:
   workflow_call:
     inputs:
       ref:
-        description: Commit SHA to build (must have a successful CI push run on dev)
+        description: Commit SHA to build (must have a successful CI push run on dev unless backend is prod)
         type: string
         required: true
+      backend:
+        description: dev (default, kc-dev + EAS nightly) or prod (kc-prod + EAS production, only from prod-store-build.yml)
+        type: string
+        required: false
+        default: dev
     outputs:
       version_code:
         description: Android versionCode of the submitted AAB
@@ -55,6 +62,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     environment: mobile-store
+    env:
+      STORE_BACKEND: ${{ inputs.backend || 'dev' }}
+      EAS_PROFILE: ${{ (inputs.backend || 'dev') == 'prod' && 'production' || 'nightly' }}
     permissions:
       contents: read
       actions: read # read CI runs to verify the commit is green
@@ -87,7 +97,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .store-target/.nvmrc
-      - name: Verify the commit passed CI on dev
+      - name: Resolve the certified SHA
         id: target
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -96,7 +106,20 @@ jobs:
           GITHUB_REF: ${{ github.ref }}
           LOOKBACK: '30'
         working-directory: .
-        run: node .store-target/scripts/mobile-store-target.mjs
+        run: |
+          set -euo pipefail
+          if [ "$STORE_BACKEND" = "prod" ]; then
+            sha="${INPUT_REF:-}"
+            if ! printf '%s' "$sha" | grep -Eq '^[0-9a-f]{40}$'; then
+              echo "::error::PROD store builds require a 40-character main SHA"
+              exit 1
+            fi
+            echo "sha=$sha" >> "$GITHUB_OUTPUT"
+            echo "branch=main" >> "$GITHUB_OUTPUT"
+            echo "Resolved PROD store SHA $sha on main (certified by prod-store-build.yml)"
+          else
+            node .store-target/scripts/mobile-store-target.mjs
+          fi
 
       - name: Preflight secrets (fail closed)
         working-directory: .
@@ -104,11 +127,17 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           MOBILE_SUPABASE_ANON_KEY: ${{ secrets.MOBILE_SUPABASE_ANON_KEY }}
+          MOBILE_SUPABASE_ANON_KEY_PROD: ${{ secrets.MOBILE_SUPABASE_ANON_KEY_PROD }}
           KC_EAS_PROJECT_ID: ${{ vars.KC_EAS_PROJECT_ID }}
         run: |
           set -euo pipefail
           missing=()
-          for n in EXPO_TOKEN GOOGLE_PLAY_SERVICE_ACCOUNT_JSON MOBILE_SUPABASE_ANON_KEY KC_EAS_PROJECT_ID; do
+          if [ "$STORE_BACKEND" = "prod" ]; then
+            supabase_key=MOBILE_SUPABASE_ANON_KEY_PROD
+          else
+            supabase_key=MOBILE_SUPABASE_ANON_KEY
+          fi
+          for n in EXPO_TOKEN GOOGLE_PLAY_SERVICE_ACCOUNT_JSON "$supabase_key" KC_EAS_PROJECT_ID; do
             [ -n "${!n:-}" ] || missing+=("$n")
           done
           if [ ${#missing[@]} -gt 0 ]; then
@@ -135,13 +164,13 @@ jobs:
           cache: pnpm
           cache-dependency-path: app/pnpm-lock.yaml
 
-      # Writes the kc-dev backend and the Sentry vars into the eas.json `nightly` profile env (runner
-      # only); fails for a main commit or a key of another project.
+      # Writes the selected backend (kc-dev into `nightly`, or kc-prod into
+      # `production`) and the Sentry vars into eas.json on the runner only.
       - name: Pin the Supabase backend
         working-directory: .
         env:
           SOURCE_BRANCH: ${{ steps.target.outputs.branch }}
-          MOBILE_SUPABASE_ANON_KEY: ${{ secrets.MOBILE_SUPABASE_ANON_KEY }}
+          MOBILE_SUPABASE_ANON_KEY: ${{ env.STORE_BACKEND == 'prod' && secrets.MOBILE_SUPABASE_ANON_KEY_PROD || secrets.MOBILE_SUPABASE_ANON_KEY }}
           EXPO_PUBLIC_SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
@@ -181,11 +210,12 @@ jobs:
           BUILD_SHA: ${{ steps.target.outputs.sha }}
         run: |
           set -euo pipefail
-          eas build --platform android --profile nightly --non-interactive --wait --json > build.json
+          eas build --platform android --profile "$EAS_PROFILE" --non-interactive --wait --json > build.json
           url="$(jq -r '.[0].artifacts.buildUrl // empty' build.json)"
           [ -n "$url" ] || { echo "::error::No AAB artifact URL from EAS"; exit 1; }
-          # Refuse to submit unless the shipped JS bundle points at kc-dev only. The
-          # cloud builder also receives EAS server variables, so check the artifact.
+          # Refuse to submit unless the shipped JS bundle points at the selected
+          # backend only. The cloud builder also receives EAS server variables, so
+          # check the artifact.
           curl -fsSL --retry 3 -o "$RUNNER_TEMP/app.aab" "$url"
           unzip -p "$RUNNER_TEMP/app.aab" 'base/assets/index.android.bundle' > "$RUNNER_TEMP/index.android.bundle"
           node "$GITHUB_WORKSPACE/scripts/mobile-store-config.mjs" verify "$RUNNER_TEMP/index.android.bundle"
@@ -194,7 +224,7 @@ jobs:
           [ -n "$version_code" ] || { echo "::error::EAS returned no appBuildVersion (versionCode)"; exit 1; }
           eas submit --platform android --profile production --url "$url" --non-interactive
           echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
-          echo "Play internal upload: Android versionCode $version_code from $BUILD_SHA (kc-dev backend)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Play internal upload: Android versionCode $version_code from $BUILD_SHA ($STORE_BACKEND backend, profile $EAS_PROFILE)" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Remove key file
         if: always()

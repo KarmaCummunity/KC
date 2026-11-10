@@ -1877,3 +1877,15 @@ Owner rules that go with it:
 **Open.** Retention period for billing records after account deletion (legal advice pending). Video provider.
 
 **Affected.** `docs/db/**`; later `supabase/schemas/**`, `supabase/migrations/**`, `supabase/tests/**`, `app/packages/infrastructure-supabase/**`, `supabase/functions/**`, CI workflows.
+
+## D-229 — Who sees a delivered listing: the union of the two sides' surfaces (2026-11-11)
+
+**Decision.** Migration `0740`. A delivered listing (`closed_delivered`) is visible to the union of each side's own surface: the giver's `post_actor_identity.surface_visibility` (default: the post's visibility) and the recipient's (default `Public`). `Public` admits everyone including guests, `FollowersOnly` admits that side's followers, `OnlyMe` admits nobody else. The side that chose not to be exposed shows as anonymous to the other side's audience (identity masking, FR-POST-021). The recipient always sees the listing and can rate it, even if the giver chose `OnlyMe`, and still sees it after rating; an admin sees every delivered listing. A `Private` profile counts as `FollowersOnly` for its deliveries. The recipient is the one on the `handed_over` `post_handoffs` row, not the `recipients` row. The listing screens (`post_listing_visible_to`) delegate delivered posts to `is_post_visible_to`, so the post and listing screens cannot diverge. The hand-over of an items, food or animals post now records its `recipients` row through a trigger on `post_handoffs` (single recipient per post, 0658); existing rows are backfilled. Knowledge, rides, housing and events keep several handoffs per post and no recipients row.
+
+**Why.** Before, a delivered public listing disappeared for everyone but its owner on the listing screen, so the recipient could not open it to rate (the food and items E2E rating step failed), and food and animals hand-overs never wrote a `recipients` row (the carve-out of D-219 kept the items-only closure path, and 0683 repeated it), so the recipient's profile "received" list, counters and activity were empty. The trigger covers every writer of a hand-over; post karma stays items-only, so nobody is paid twice.
+
+**Rejected.** Intersection of the two surfaces (one side's hide would hide the listing from the other's audience too). Editing every hand-over RPC (large, easy to miss a writer). Keeping the recipient lookup on `recipients` (fails for worlds without a row).
+
+**Open.** Deleted accounts: visibility follows the remaining party, but the purge still cascades the delivered posts (retention is #2088). Knowledge posts close on the first hand-over without a recipient row.
+
+**Affected.** `supabase/migrations/0740_delivered_listing_visibility.sql`, `supabase/tests/0740_delivered_listing_visibility.sql`, `supabase/tests/0628_g1_visibility_on_posts.sql`, `docs/spec/requirements/04_posts.md` (FR-POST-021), `docs/agents/MIGRATION_RANGES.md`.

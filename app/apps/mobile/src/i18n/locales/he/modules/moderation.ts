@@ -1,6 +1,8 @@
 // FR-MOD-007/010 + FR-ADMIN-002..007 — moderation strings (TD-35 file-size budget).
 export const moderationHe = {
   report: {
+    // Placeholder inside the optional note box of every report sheet (post, chat, listing, user).
+    noteHint: 'ספרו לנו מה קרה כדי שנוכל לבדוק',
     user: {
       title: 'דווחו על משתמש',
       reasonLabel: 'סיבת הדיווח',
