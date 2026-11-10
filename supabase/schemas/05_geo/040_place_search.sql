@@ -6,12 +6,6 @@
 -- the picker needs one ranked list across both catalogs with plain latitude / longitude,
 -- which a table read of a geography column does not give.
 
--- The three PostGIS functions the search calls with the member's rights: point to latitude /
--- longitude. Extension functions are not executable by client roles unless granted (foundation).
-grant execute on function extensions.geometry(extensions.geography) to authenticated;
-grant execute on function extensions.st_x(extensions.geometry) to authenticated;
-grant execute on function extensions.st_y(extensions.geometry) to authenticated;
-
 -- Returns at most p_limit places whose Hebrew or English name contains p_query, names that
 -- start with it first. Runs with the caller's rights: the tables' own policies apply.
 -- junction_kind tells a junction from an interchange so the client can word the label.

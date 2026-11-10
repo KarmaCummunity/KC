@@ -35,6 +35,28 @@ comment on schema ops is 'Operational telemetry. Service role only.';
 create schema kc_access;
 comment on schema kc_access is 'Policy predicates. Usable by signed-in members inside policies; not exposed through the API.';
 
+-- >>> supabase/schemas/00_foundation/015_extensions.sql
+-- Foundation · extensions
+--
+-- Created before the privilege file (020) on purpose: that file removes the default EXECUTE
+-- grant from functions created after it, and extension functions and operators (PostGIS
+-- distance, trigram match) must stay callable with a member's own rights inside queries
+-- and policies — identically on Supabase and on a plain PostgreSQL server.
+--
+-- Installed into the platform's `extensions` schema, never into `public`, so extension
+-- functions are not part of the API surface. Types and operator classes are therefore
+-- written schema-qualified (`extensions.geography`, `extensions.gin_trgm_ops`).
+
+-- Geography type and spatial indexes for every location in the product.
+create extension if not exists postgis with schema extensions;
+
+-- Trigram indexes: substring search over Hebrew names, where word stemming does not help.
+create extension if not exists pg_trgm with schema extensions;
+
+-- Lets a GIN index combine a plain equality column with a trigram column, so a name search
+-- can be scoped to its parent row in one index (streets of one city).
+create extension if not exists btree_gin with schema extensions;
+
 -- >>> supabase/schemas/00_foundation/020_default_privileges.sql
 -- Foundation · privileges
 --
@@ -99,23 +121,6 @@ begin
 end;
 $$;
 comment on function kc_private.set_updated_at() is 'BEFORE UPDATE trigger: sets updated_at to the transaction time.';
-
--- >>> supabase/schemas/00_foundation/040_extensions.sql
--- Foundation · extensions
---
--- Installed into the platform's `extensions` schema, never into `public`, so extension
--- functions are not part of the API surface. Types and operator classes are therefore
--- written schema-qualified (`extensions.geography`, `extensions.gin_trgm_ops`).
-
--- Geography type and spatial indexes for every location in the product.
-create extension if not exists postgis with schema extensions;
-
--- Trigram indexes: substring search over Hebrew names, where word stemming does not help.
-create extension if not exists pg_trgm with schema extensions;
-
--- Lets a GIN index combine a plain equality column with a trigram column, so a name search
--- can be scoped to its parent row in one index (streets of one city).
-create extension if not exists btree_gin with schema extensions;
 
 -- >>> supabase/schemas/00_foundation/050_fsm_kernel.sql
 -- Foundation · lifecycle state machines (engineering decision D-226)
@@ -352,12 +357,6 @@ grant select on public.road_junctions to authenticated;
 -- chosen city, straight from public.streets. A function rather than two table reads because
 -- the picker needs one ranked list across both catalogs with plain latitude / longitude,
 -- which a table read of a geography column does not give.
-
--- The three PostGIS functions the search calls with the member's rights: point to latitude /
--- longitude. Extension functions are not executable by client roles unless granted (foundation).
-grant execute on function extensions.geometry(extensions.geography) to authenticated;
-grant execute on function extensions.st_x(extensions.geometry) to authenticated;
-grant execute on function extensions.st_y(extensions.geometry) to authenticated;
 
 -- Returns at most p_limit places whose Hebrew or English name contains p_query, names that
 -- start with it first. Runs with the caller's rights: the tables' own policies apply.
