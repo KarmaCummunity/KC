@@ -44,7 +44,7 @@ describe('listing field specs — per kind', () => {
   });
 
   it('renders the purpose-built fields of each category (docs/spec/07 §7.2)', () => {
-    // The food type is the world sub-category picker, not a detail field ({{D:food-type-is-subcategory}}, KC#1398).
+    // The food type is the world sub-category picker, not a detail field (D137, KC#1398).
     expect(keysOf('give_food')).toEqual(['expires_at', 'allergens', 'kosher', 'pickup_mode']);
     expect(keysOf('request_food')).toEqual(['household_size', 'dietary_needs']);
     // Route, departure, estimated end and seats are rendered by RideCreateSection (D71, D75).
@@ -85,7 +85,7 @@ describe('listing field specs — per kind', () => {
   });
 
   it('narrows options to the server enum', () => {
-    // Food type left the form ({{D:food-type-is-subcategory}}); kosher is the food offer's choice field.
+    // Food type left the form (D137); kosher is the food offer's choice field.
     const narrowed = { ...KINDS_BY_WORLD.food![0]!, detailSchema: { properties: { kosher: { enum: ['yes'] } } } };
     const spec = fieldsForKind(narrowed).find((s) => s.key === 'kosher');
     expect(spec?.type === 'choice' && spec.options).toEqual(['yes']);

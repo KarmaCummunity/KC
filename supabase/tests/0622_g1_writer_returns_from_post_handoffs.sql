@@ -60,7 +60,7 @@ begin
   perform kc_test.assert_true(p_row.listing_id is not null, p_message || ': a listing id');
   perform kc_test.assert_eq(p_row.listing_id, public.listing_id_of_post(r.post_id),
     p_message || ': the listing of the record''s post');
-  -- requested_meeting_point (0649) and knowledge_slot_id (0701) live on the record only;
+  -- requested_meeting_point (0649) and knowledge_slot_id (0703) live on the record only;
   -- giving_handoffs has no such columns.
   perform kc_test.assert_eq(to_jsonb(p_row) - 'listing_id',
     to_jsonb(r) - 'post_id' - 'requested_meeting_point' - 'knowledge_slot_id',
@@ -150,7 +150,7 @@ begin
           and p.prorettype = 'public.giving_handoffs'::regtype
           and p.prosrc ~ 'giving_handoff_row_of'$q$,
     18, 'the eighteen writers still return giving_handoffs, built by the helper');
-  -- The pre-slot entry point (0702) delegates to book_knowledge_seat, which builds the row.
+  -- The pre-slot entry point (0704) delegates to book_knowledge_seat, which builds the row.
   perform kc_test.assert_true(
     (select prosrc ~ 'book_knowledge_seat' and prorettype = 'public.giving_handoffs'::regtype
        from pg_proc where oid = 'public.book_knowledge_slot(uuid)'::regprocedure),

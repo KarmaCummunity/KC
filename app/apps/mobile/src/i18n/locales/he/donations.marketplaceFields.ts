@@ -67,7 +67,7 @@ export const marketplaceFieldLabels = {
   ends_at: 'מסתיים',
   registration_policy: 'הרשמה',
   address: 'כתובת',
-  // Knowledge exchange kinds (#2034, migration 0701).
+  // Knowledge exchange kinds (#2034, migration 0703).
   capacity_per_slot: 'מקומות בכל מועד',
   slots: 'מועדים',
   audience: 'למי זה מתאים',
@@ -133,7 +133,7 @@ export const marketplaceOptionLabels = {
   automatic: 'אוטומטית',
   manual: 'באישור המארגנים',
   verified_only: 'מאומתים בלבד',
-  // Knowledge exchange kinds (#2034, migration 0701).
+  // Knowledge exchange kinds (#2034, migration 0703).
   weekly: 'כל שבוע',
   biweekly: 'כל שבועיים',
   flexible: 'גמיש',

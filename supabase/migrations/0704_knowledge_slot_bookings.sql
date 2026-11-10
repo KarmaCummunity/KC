@@ -1,7 +1,7 @@
--- 0702_knowledge_slot_bookings | #2034 (epic #1687, KNOW-K1-B 1/6) · FR-KNOW-004 AC2, AC3, AC5
+-- 0704_knowledge_slot_bookings | #2034 (epic #1687, KNOW-K1-B 1/6) · FR-KNOW-004 AC2, AC3, AC5
 -- (docs/spec/requirements/23_knowledge.md) · docs/spec/18_knowledge_world.md §18.4, §18.10.
 --
--- Booking a seat on a knowledge slot (0701), end to end:
+-- Booking a seat on a knowledge slot (0703), end to end:
 --   list_knowledge_slots       upcoming open slots of a post with the seats left and the caller's
 --                              own booking, for the learner's slot picker
 --   book_knowledge_seat        one seat on one slot; waits for the giver (reserved)

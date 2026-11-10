@@ -1,7 +1,7 @@
 import type { KnowledgeBooking, KnowledgeSlot } from '@kc/domain';
 
 /**
- * Seat bookings on knowledge slots (FR-KNOW-004, #2034; RPCs of migration 0702). Authorization
+ * Seat bookings on knowledge slots (FR-KNOW-004, #2034; RPCs of migration 0704). Authorization
  * and state rules live on the server; every write returns once it was accepted, and the server
  * notifies the other side. Errors keep the server's code in their message (e.g. `slots_exhausted`)
  * so the app maps them to copy. Cancelling a booking is the shared giving-handoff cancel.

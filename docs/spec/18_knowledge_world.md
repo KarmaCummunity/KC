@@ -129,7 +129,7 @@ Pipeline: contribute → link enrichment (metadata, kind guess, duplicate check)
 - Shelf rules from [06](./06_domain_hubs.md) are shown on the contribute step of that shelf.
 
 ## 18.10 Karma, notifications, KPIs (S72)
-Karma (adds rows to 7.6; estimates, in `KARMA_POINT_VALUES`): lesson / mentoring / consulting session completed — giver 10 per hour (D32, cap 80/day), learner 5; resource approved — 5 (cap 5/day); resource marked helpful by others — 1 per vote received (cap 20/day); course published — 20; course completed — learner 10, author 2 per completion (cap 20/day); accepted answer — 5; question asked — 2 (cap 5/day). Since #2034 (`0702`) a session grants the giver 5 per started half hour within the 80-a-day cap and the learner 5; mentoring meetings have no completion yet (#2051).
+Karma (adds rows to 7.6; estimates, in `KARMA_POINT_VALUES`): lesson / mentoring / consulting session completed — giver 10 per hour (D32, cap 80/day), learner 5; resource approved — 5 (cap 5/day); resource marked helpful by others — 1 per vote received (cap 20/day); course published — 20; course completed — learner 10, author 2 per completion (cap 20/day); accepted answer — 5; question asked — 2 (cap 5/day). Since #2034 (`0704`) a session grants the giver 5 per started half hour within the 80-a-day cap and the learner 5; mentoring meetings have no completion yet (#2051).
 
 Notifications (7.11): resource approved / rejected (`important`); booking requested / approved / declined and a 24h session reminder (`important`, like rides D73); new enrollment and course completion for the author (`social`, grouped); answer accepted (`social`); "new on a topic you follow" (`social`, the saved-filter rule D10: max 3/day); broken link on your resource (`social`).
 

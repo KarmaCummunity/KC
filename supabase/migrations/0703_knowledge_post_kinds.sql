@@ -1,4 +1,4 @@
--- 0701_knowledge_post_kinds | #2034 (epic #1687, KNOW-K1-B 1/6) · FR-KNOW-003, FR-KNOW-004 AC1,
+-- 0703_knowledge_post_kinds | #2034 (epic #1687, KNOW-K1-B 1/6) · FR-KNOW-003, FR-KNOW-004 AC1,
 -- FR-KNOW-012 AC1 (docs/spec/requirements/23_knowledge.md) · docs/spec/18_knowledge_world.md §18.4.
 --
 -- The knowledge world gets the six exchange post kinds of the spec and real time slots:
@@ -18,7 +18,7 @@
 --      mentorship requests become mentoring requests; existing bookings point at their slot.
 --   7. karma_handoff_points gains the knowledge values of spec 07 §7.6 (S72).
 --
--- Must sort after 0667 / 0684 (post triggers) and 0694 (handoff FSM), hence the 0701 block.
+-- Must sort after 0667 / 0684 (post triggers) and 0694 (handoff FSM), hence the 0703 block.
 -- Additive: no table, column or function is dropped.
 
 begin;
@@ -422,7 +422,7 @@ as $$
     when 'rides'     then case p_role when 'giver' then 25 else 10 end
     -- Hosting: per night for the host, once for the guest (§7.6 "host 30 / night; guest 10").
     when 'housing'   then case p_role when 'giver' then 30 else 10 end
-    -- Knowledge: 5 for the giver per started half hour, 5 once for the learner (0701).
+    -- Knowledge: 5 for the giver per started half hour, 5 once for the learner (0703).
     when 'knowledge' then 5
     else case p_role when 'giver' then 5 else 3 end
   end;
@@ -439,6 +439,6 @@ revoke all on function public.posts_world_knowledge_rules() from public, anon, a
 revoke all on function public.posts_knowledge_slots_sync() from public, anon, authenticated;
 
 comment on table public.knowledge_slots is
-  'FR-KNOW-004 (0701): bookable times of a knowledge lesson offer or consulting hour, synced from posts.details.slots.';
+  'FR-KNOW-004 (0703): bookable times of a knowledge lesson offer or consulting hour, synced from posts.details.slots.';
 
 commit;

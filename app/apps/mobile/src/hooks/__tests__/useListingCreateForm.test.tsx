@@ -50,7 +50,7 @@ describe('useListingCreateForm', () => {
     const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'food', direction: 'give', title: ' Bread ', summary: ' fresh ', onPublished }), { wrapper });
     await waitFor(() => expect(result.current.kind).toBeTruthy());
     act(() => { result.current.setDetail('expires_at', '2030-01-01'); result.current.setCity({ id: 'city-1', name: 'Town' }); });
-    // A food offer names its type with the world sub-category ({{D:food-type-is-subcategory}}, KC#1398).
+    // A food offer names its type with the world sub-category (D137, KC#1398).
     await act(() => result.current.publish());
     expect(result.current.error).toEqual({ message: 'marketplace.errors.food_subcategory_required', field: 'subcategory' });
     act(() => { result.current.setSubcategoryId('cat-cooked'); });

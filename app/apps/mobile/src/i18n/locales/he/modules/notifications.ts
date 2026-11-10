@@ -101,7 +101,7 @@ export const notificationsHe = {
   givingHandoffCancelledBody: 'המסירה של "{{listingTitle}}" בוטלה.',
   givingHandoffCompletedTitle: 'המסירה הושלמה',
   givingHandoffCompletedBody: 'איך היה עם {{name}}? דרגו את המסירה של "{{listingTitle}}".',
-  // FR-KNOW-004 AC5 (0702, #2034) — knowledge slot bookings; mirrored in dispatch-notification/i18n.json.
+  // FR-KNOW-004 AC5 (0704, #2034) — knowledge slot bookings; mirrored in dispatch-notification/i18n.json.
   knowledgeBookingRequestedTitle: 'הזמנה חדשה ל"{{listingTitle}}"',
   knowledgeBookingRequestedBody: '{{name}} רוצה להצטרף ב-{{startsAt}}. אשרו או דחו.',
   knowledgeBookingConfirmedTitle: 'ההזמנה שלך אושרה',

@@ -1,5 +1,5 @@
 // FR-KNOW-003 / FR-KNOW-004 (docs/spec/requirements/23_knowledge.md, #2034) — knowledge exchange
-// kinds, bookable slots and seat bookings. The server (migrations 0701–0702) is the authority;
+// kinds, bookable slots and seat bookings. The server (migrations 0703–0704) is the authority;
 // these pure rules mirror it so the create form and the booking screens can explain a problem
 // before the round trip, with the same error codes the server raises.
 
@@ -22,7 +22,7 @@ export function isKnowledgeSlotKind(slug: string | null | undefined): slug is Kn
   return slug != null && (KNOWLEDGE_SLOT_KIND_SLUGS as readonly string[]).includes(slug);
 }
 
-/** Limits mirrored from `knowledge_check_slots` (0701). */
+/** Limits mirrored from `knowledge_check_slots` (0703). */
 export const KNOWLEDGE_SLOTS_MAX = 20;
 export const KNOWLEDGE_SLOT_MIN_MINUTES = 15;
 export const KNOWLEDGE_SLOT_MAX_MINUTES = 8 * 60;
@@ -35,7 +35,7 @@ export interface KnowledgeSlotWindow {
   readonly endsAt: string;
 }
 
-/** The server's slot error codes (0701), reused as the client's. */
+/** The server's slot error codes (0703), reused as the client's. */
 export type KnowledgeSlotProblem =
   | 'knowledge_slot_invalid'
   | 'knowledge_slot_duration_invalid'

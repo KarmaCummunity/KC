@@ -1,5 +1,5 @@
 -- kc_test knowledge | Knowledge-world builders (G38). Compose the generic fixtures with the
--- exchange-post shapes of migrations 0701–0702 (spec docs/spec/requirements/23_knowledge.md).
+-- exchange-post shapes of migrations 0703–0704 (spec docs/spec/requirements/23_knowledge.md).
 
 -- A member who may publish in the knowledge world. p_id_verified = true gives identity level 2
 -- (the consulting-hour gate, FR-KNOW-012); false leaves them verified for the world only

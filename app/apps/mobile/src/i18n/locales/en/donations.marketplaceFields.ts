@@ -67,7 +67,7 @@ export const marketplaceFieldLabels = {
   ends_at: 'Ends',
   registration_policy: 'Registration',
   address: 'Address',
-  // Knowledge exchange kinds (#2034, migration 0701).
+  // Knowledge exchange kinds (#2034, migration 0703).
   capacity_per_slot: 'Places per time',
   slots: 'Times',
   audience: 'Who it suits',
@@ -133,7 +133,7 @@ export const marketplaceOptionLabels = {
   automatic: 'Automatic',
   manual: 'Organizer approves',
   verified_only: 'Verified members only',
-  // Knowledge exchange kinds (#2034, migration 0701).
+  // Knowledge exchange kinds (#2034, migration 0703).
   weekly: 'Weekly',
   biweekly: 'Every two weeks',
   flexible: 'Flexible',

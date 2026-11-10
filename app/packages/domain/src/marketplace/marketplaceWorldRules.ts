@@ -29,7 +29,7 @@ export type MarketplaceRuleErrorCode =
   | 'ride_route_required'
   | 'ride_departure_past'
   | 'knowledge_slot_invalid'
-  // #2034 (0701): the slot list of a lesson offer or consulting hour.
+  // #2034 (0703): the slot list of a lesson offer or consulting hour.
   | 'knowledge_slot_duration_invalid'
   | 'knowledge_slot_in_past'
   | 'knowledge_slots_overlap'
@@ -45,7 +45,7 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'ride_departure_past',
   'knowledge_slot_invalid',
   'event_window_invalid',
-  // #2034 (0701–0702) — knowledge slots, bookings and the consulting-hour identity gate.
+  // #2034 (0703–0704) — knowledge slots, bookings and the consulting-hour identity gate.
   'knowledge_slot_duration_invalid',
   'knowledge_slot_in_past',
   'knowledge_slots_overlap',
@@ -172,7 +172,7 @@ export function validateMarketplaceWorldRules(input: WorldRulesInput): Marketpla
     const ts = typeof raw === 'string' ? Date.parse(raw) : Number.NaN;
     const now = (input.now ?? new Date()).getTime();
     if (Number.isNaN(ts) || ts <= now) return 'food_expiry_required';
-    // A food offer's type is its world sub-category ({{D:food-type-is-subcategory}}, KC#1398).
+    // A food offer's type is its world sub-category (D137, KC#1398).
     if (input.subcategoryId === null) return 'food_subcategory_required';
   }
 

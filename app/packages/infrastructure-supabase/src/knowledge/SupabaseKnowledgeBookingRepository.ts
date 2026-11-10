@@ -9,7 +9,7 @@ type BookingRow = Database['public']['Functions']['list_knowledge_bookings']['Re
 type HandoffRpc = 'confirm_knowledge_booking' | 'decline_knowledge_booking' | 'complete_knowledge_session';
 
 /**
- * Knowledge seat bookings over the 0702 RPCs (FR-KNOW-004, #2034). Server errors keep their
+ * Knowledge seat bookings over the 0704 RPCs (FR-KNOW-004, #2034). Server errors keep their
  * message (an error code such as `slots_exhausted`) so the app maps it to copy; the server queues
  * the push to the other side on every change.
  */

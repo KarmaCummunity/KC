@@ -1,4 +1,4 @@
--- supabase/tests/0702_knowledge_slot_bookings.sql | 0702 (#2034, FR-KNOW-004 AC2, AC3, AC5): booking
+-- supabase/tests/0704_knowledge_slot_bookings.sql | 0704 (#2034, FR-KNOW-004 AC2, AC3, AC5): booking
 -- a seat on a knowledge slot — guards, the last seat, the compatibility entry point, the giver's
 -- answers, expiry of an unanswered booking, completion karma with the daily cap, pushes.
 
@@ -169,4 +169,4 @@ select kc_test.assert_true(not has_function_privilege('authenticated', 'public.k
   'the sweeps are internal');
 
 rollback;
-\echo '✓ 0702_knowledge_slot_bookings.sql passed'
+\echo '✓ 0704_knowledge_slot_bookings.sql passed'

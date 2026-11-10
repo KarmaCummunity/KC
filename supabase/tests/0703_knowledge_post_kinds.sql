@@ -1,4 +1,4 @@
--- supabase/tests/0701_knowledge_post_kinds.sql | 0701 (#2034, FR-KNOW-003, FR-KNOW-004 AC1,
+-- supabase/tests/0703_knowledge_post_kinds.sql | 0703 (#2034, FR-KNOW-003, FR-KNOW-004 AC1,
 -- FR-KNOW-012 AC1): the six knowledge kinds, slots as rows, slot rules, offer expiry, the
 -- consulting-hour identity gate, and owner edits that would strand a learner.
 
@@ -156,4 +156,4 @@ select kc_test.assert_true(not has_function_privilege('authenticated', 'public.p
   'the sync trigger function is internal');
 
 rollback;
-\echo '✓ 0701_knowledge_post_kinds.sql passed'
+\echo '✓ 0703_knowledge_post_kinds.sql passed'
