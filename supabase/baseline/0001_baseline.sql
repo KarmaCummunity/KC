@@ -57,6 +57,10 @@ create extension if not exists pg_trgm with schema extensions;
 -- can be scoped to its parent row in one index (streets of one city).
 create extension if not exists btree_gin with schema extensions;
 
+-- Lets a GiST exclusion constraint combine a plain equality column with a range, so two
+-- time ranges of one parent row can never overlap (bookable slots of a post).
+create extension if not exists btree_gist with schema extensions;
+
 -- >>> supabase/schemas/00_foundation/020_default_privileges.sql
 -- Foundation · privileges
 --
@@ -2511,6 +2515,9 @@ create table public.post_private_locations (
   street        text check (char_length(btrim(street)) between 1 and 80),
   -- Digits with an optional entrance letter, Latin or Hebrew (U+05D0–U+05EA).
   street_number text check (street_number ~ '^[0-9]+[A-Za-z\u05D0-\u05EA]?$'),
+  -- Rides only: house number at the destination, when the ride ends on a street; the pickup
+  -- end uses street_number (FR-RIDE-003 AC9).
+  destination_street_number text check (destination_street_number ~ '^[0-9]+[A-Za-z\u05D0-\u05EA]?$'),
   -- Free text for the person arriving: floor, entrance code, where to leave things.
   access_notes  text check (char_length(access_notes) <= 300),
   updated_at    timestamptz not null default now(),
@@ -2629,10 +2636,10 @@ create policy post_private_locations_update_owner on public.post_private_locatio
                        where p.id = post_private_locations.post_id and p.owner_id = (select auth.uid())));
 
 grant select on public.post_private_locations to authenticated;
-grant insert (post_id, exact_point, street, street_number, access_notes)
+grant insert (post_id, exact_point, street, street_number, destination_street_number, access_notes)
   on public.post_private_locations to authenticated;
 -- The row cannot be moved to another post.
-grant update (exact_point, street, street_number, access_notes)
+grant update (exact_point, street, street_number, destination_street_number, access_notes)
   on public.post_private_locations to authenticated;
 
 -- >>> supabase/schemas/20_posts/060_post_counters.sql
@@ -4060,7 +4067,8 @@ grant select on public.handoff_booking_details to authenticated;
 --
 -- The exact address is readable from the table by the post owner only. The other member
 -- of a handoff receives it through this RPC, and only once the handoff is confirmed —
--- a request that is still waiting, was cancelled or ended as a no-show releases nothing.
+-- a request that is still waiting, was cancelled or ended as a no-show releases nothing,
+-- and a booking with a time slot stops releasing it 24 hours after the slot ends.
 
 -- Returns the exact location of a post to a caller who manages it, or who holds a
 -- confirmed or completed handoff on it; null when the post has no exact address. A release
@@ -4082,6 +4090,8 @@ begin
       from public.post_handoffs h
      where h.post_id = p_post_id and h.recipient_id = v_user_id
        and h.status in ('confirmed', 'handed_over')
+       -- A booked time ends the release 24 hours after it (stays and events, spec 5.6 S53).
+       and (h.slot_ends_at is null or h.slot_ends_at + interval '24 hours' > now())
      order by h.created_at desc
      limit 1;
     if not found then
@@ -9579,3 +9589,2715 @@ comment on function public.admin_audit_search(uuid, uuid, text, timestamptz, tim
   'Staff: keyset-paginated search of the audit trail, scoped by the caller''s role.';
 grant execute on function public.admin_audit_search(uuid, uuid, text, timestamptz, timestamptz, timestamptz, bigint, integer)
   to authenticated;
+
+-- >>> supabase/schemas/70_worlds/010_world_shared.sql
+-- Worlds · shared building blocks of the per-world flows
+--
+-- The worlds whose fields are filtered, constrained or scheduled get a 1:1 detail table on
+-- top of `posts` and their own RPCs on top of `post_handoffs` (design §3.2):
+--   transport (rides)  post_ride_details      housing  post_housing_details
+--   time (events)      post_event_details     food     post_food_details
+--   knowledge          post_knowledge_slots (bookable times only)
+-- Items, animals, medical, money, democracy, employment and challenges keep their fields in
+-- `posts.details` and use the generic handoff flow. Of this file only
+-- public.accept_world_consent is callable from a device.
+
+-- A recurring ride is published by the scheduler, not by its owner's request (D103).
+insert into kc_private.fsm_edge (machine_id, from_status, to_status, role) values
+  ('post', 'draft', 'open', 'system');
+
+-- Position of an official place (D71): a road junction, a street of a city (its centroid,
+-- or the city centre until the street is geocoded) or a city. Exactly one shape is
+-- accepted — junction alone, city alone, or city with street; null for anything else and
+-- for a place that is not in the catalogs or has no position.
+-- Reads only the public reference lists, with the caller's rights.
+create function kc_access.place_point(p_city_id text, p_street_id integer, p_junction_id integer)
+returns extensions.geography
+language sql
+stable
+set search_path = ''
+as $$
+  select case
+    when p_junction_id is not null and p_city_id is null and p_street_id is null then
+      (select j.location from public.road_junctions j where j.junction_id = p_junction_id)
+    when p_junction_id is null and p_street_id is not null then
+      (select coalesce(s.location, c.location)
+         from public.streets s join public.cities c on c.city_id = s.city_id
+        where s.city_id = p_city_id and s.street_id = p_street_id)
+    when p_junction_id is null then
+      (select c.location from public.cities c where c.city_id = p_city_id)
+  end;
+$$;
+comment on function kc_access.place_point(text, integer, integer) is
+  'Position of an official place (city, city + street, or road junction); null when the place is unknown.';
+grant execute on function kc_access.place_point(text, integer, integer) to authenticated;
+
+-- Version of a world consent that is in force. The texts live in the app's legal bundle;
+-- a new version is a one-line change here and asks every member again.
+create function kc_private.world_consent_version(p_kind text)
+returns integer
+language sql
+immutable
+set search_path = ''
+as $$
+  select case p_kind when 'driver_declaration' then 1 when 'housing_conduct' then 1 end;
+$$;
+comment on function kc_private.world_consent_version(text) is
+  'Current version of the driver declaration (FR-RIDE-041) and of the housing code of conduct (S59).';
+
+create function kc_private.world_consent_accepted(p_user_id uuid, p_kind text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (select 1 from public.user_consents c
+                  where c.user_id = p_user_id and c.consent_kind = p_kind
+                    and c.version = kc_private.world_consent_version(p_kind));
+$$;
+comment on function kc_private.world_consent_accepted(uuid, text) is
+  'The member accepted the current version of a world consent.';
+
+-- The caller accepts the driver declaration or the housing code of conduct. Only the
+-- version in force is accepted, so an old screen cannot record a stale consent.
+create function public.accept_world_consent(
+  p_kind text, p_version integer, p_locale text default null, p_user_agent text default null)
+returns public.user_consents
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+begin
+  if kc_private.world_consent_version(p_kind) is null then
+    raise exception 'unknown_consent_kind' using errcode = 'P0001';
+  end if;
+  if p_version is distinct from kc_private.world_consent_version(p_kind) then
+    raise exception 'consent_version_stale' using errcode = 'P0001';
+  end if;
+  return kc_private.record_consent(v_user_id, p_kind, p_version, p_locale, p_user_agent);
+end;
+$$;
+comment on function public.accept_world_consent(text, integer, text, text) is
+  'Records the caller''s consent to the current driver declaration or housing code of conduct.';
+grant execute on function public.accept_world_consent(text, integer, text, text) to authenticated;
+
+-- Raises unless the member may act in a world that requires a verified identity (D30,
+-- D116): an identity document or better (users.verification_level 2+).
+create function kc_private.world_assert_verified(p_user_id uuid, p_world_slug text)
+returns void
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if (select w.requires_verification from public.worlds w where w.slug = p_world_slug)
+     and not exists (select 1 from public.users u where u.id = p_user_id and u.verification_level >= 2) then
+    raise exception 'verification_required' using errcode = 'P0001';
+  end if;
+end;
+$$;
+comment on function kc_private.world_assert_verified(uuid, text) is
+  'Raises verification_required when the world asks for a verified identity the member lacks.';
+
+-- The post a detail row is being written for, when it is of the expected post type; raises
+-- post_details_mismatch otherwise. Called by the BEFORE trigger of every detail table.
+create function kc_private.post_for_details(p_post_id uuid, p_post_type text)
+returns public.posts
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_post public.posts;
+begin
+  select p.* into v_post from public.posts p where p.id = p_post_id;
+  if not found or v_post.post_type <> p_post_type then
+    raise exception 'post_details_mismatch' using errcode = 'P0001',
+      detail = format('the post is not of type %s', p_post_type);
+  end if;
+  return v_post;
+end;
+$$;
+comment on function kc_private.post_for_details(uuid, text) is
+  'Returns the post of a detail row; raises post_details_mismatch unless it has the expected post type.';
+
+-- May this member book the post, as far as seeing it goes? Asked before any world rule
+-- is checked, so that a refusal (departed, started, full) never tells a member about a
+-- post they cannot see. The owner passes here and is refused as own_listing by
+-- kc_private.handoff_open.
+create function kc_private.post_bookable_by(p_post public.posts, p_member_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select p_post.owner_id = p_member_id or kc_private.post_open_to_member(p_post, p_member_id);
+$$;
+comment on function kc_private.post_bookable_by(public.posts, uuid) is
+  'The member owns the post or could open it; the first check of every world booking RPC.';
+
+-- Locks a booking of the given machine for a move by the caller and returns it. One error
+-- for "no such booking", "another world's booking" and "not yours", so nothing is revealed.
+--   p_owner_only  the move belongs to the post owner (approve, complete, mark)
+--   p_active      the caller needs an active account; a cancellation does not
+create function kc_private.world_handoff_lock(
+  p_handoff_id uuid, p_machine text, p_owner_only boolean default false, p_active boolean default true)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := case when p_active then kc_private.require_active_caller()
+                                  else kc_private.require_caller() end;
+  v_handoff constant public.post_handoffs := kc_private.handoff_lock(p_handoff_id);
+begin
+  if v_handoff.machine_id <> p_machine
+     or v_user_id not in (v_handoff.owner_id, v_handoff.recipient_id)
+     or (p_owner_only and v_user_id <> v_handoff.owner_id) then
+    raise exception 'handoff_not_found' using errcode = 'P0001';
+  end if;
+  return v_handoff;
+end;
+$$;
+comment on function kc_private.world_handoff_lock(uuid, text, boolean, boolean) is
+  'Row-locks a booking of one machine for a move by one of its members (or its owner only).';
+
+-- >>> supabase/schemas/70_worlds/020_ride_series.sql
+-- Worlds · ride_series (a recurring ride, D103, FR-RIDE-046)
+--
+-- A series is a schedule plus the template of its rides. The scheduler publishes one
+-- ordinary ride post per matching day, 30 days ahead (070_ride_series_rpcs.sql), so feed,
+-- bookings, alerts and the emergency call treat an occurrence like any other ride. Table
+-- and access only; the series RPCs come after the ride details they create.
+
+insert into kc_private.fsm_state (machine_id, status) values
+  ('ride_series', 'active'), ('ride_series', 'paused'), ('ride_series', 'cancelled');
+
+-- Cancelling is terminal: a cancelled series is never resumed (publish a new one).
+insert into kc_private.fsm_edge (machine_id, from_status, to_status) values
+  ('ride_series', 'active', 'paused'),
+  ('ride_series', 'paused', 'active'),
+  ('ride_series', 'active', 'cancelled'),
+  ('ride_series', 'paused', 'cancelled');
+
+create table public.ride_series (
+  id               uuid primary key default gen_random_uuid(),
+  owner_id         uuid not null references public.users (id) on delete cascade,
+  -- The two payloads of public.create_post_with_details for one occurrence, without its
+  -- times: the post (kind, direction, title, city, audience) and the ride (route, seats,
+  -- flags). Checked by publishing the first occurrence when the series is created.
+  post_template    jsonb not null check (jsonb_typeof(post_template) = 'object'),
+  ride_template    jsonb not null check (jsonb_typeof(ride_template) = 'object'),
+  -- Departure time of every occurrence, Israel local time.
+  depart_time      time not null,
+  -- Days the ride runs, as a bit set: bit 0 = Sunday … bit 6 = Saturday.
+  weekdays         smallint not null check (weekdays between 1 and 127),
+  -- Estimated length of the ride; null = no estimated end.
+  duration_minutes integer check (duration_minutes between 1 and 1440),
+  starts_on        date not null default ((now() at time zone 'Asia/Jerusalem')::date),
+  ends_on          date,
+  -- Machine `ride_series`. Never written by a device.
+  status           text not null default 'active',
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now(),
+  constraint ride_series_dates_chk check (ends_on >= starts_on)
+);
+comment on table public.ride_series is
+  'Recurring ride: weekdays, departure time and the template of its occurrences. Written only by server code.';
+
+-- "My recurring rides", oldest first; covers the owner foreign key.
+create index ride_series_owner_idx on public.ride_series (owner_id, created_at);
+-- Materialisation sweep: the active series, oldest first.
+create index ride_series_active_idx on public.ride_series (created_at) where status = 'active';
+
+create trigger ride_series_status_fsm
+  before insert or update of status on public.ride_series
+  for each row execute function kc_private.fsm_guard_status('ride_series', 'status');
+
+create trigger ride_series_set_updated_at
+  before update on public.ride_series
+  for each row execute function kc_private.set_updated_at();
+
+alter table public.ride_series enable row level security;
+alter table public.ride_series force row level security;
+
+-- A series is its owner's alone; others see its occurrences, which are ordinary posts.
+create policy ride_series_select_owner on public.ride_series
+  for select to authenticated
+  using (owner_id = (select auth.uid()));
+
+grant select on public.ride_series to authenticated;
+
+-- >>> supabase/schemas/70_worlds/030_post_ride_details.sql
+-- Worlds · post_ride_details (the ride behind a post of type `ride`, D70)
+--
+-- One row per ride offer or ride request: the two ends of the route as official places
+-- (D71), up to three meeting points, the schedule, seats and the cost model. Created with
+-- its post by public.create_post_with_details; the owner edits it while the post is
+-- editable. Positions, the cost cap and the post's expiry are derived here, never taken
+-- from a device. Private house numbers of the two ends live in post_private_locations.
+
+create table public.post_ride_details (
+  post_id            uuid primary key references public.posts (id) on delete cascade,
+  -- Each end is a road junction, a city, or a street of a city (D71).
+  origin_city_id     text references public.cities (city_id),
+  origin_street_id   integer,
+  origin_junction_id integer references public.road_junctions (junction_id),
+  -- Derived from the place by trigger; what route search and alerts measure against.
+  origin_point       extensions.geography(Point, 4326) not null,
+  dest_city_id       text references public.cities (city_id),
+  dest_street_id     integer,
+  dest_junction_id   integer references public.road_junctions (junction_id),
+  dest_point         extensions.geography(Point, 4326) not null,
+  -- Official places along the way, in order: [{city_id, street_id, junction_id, lat, lng}].
+  -- The device sends the ids; positions are written by trigger.
+  meeting_points     jsonb not null default '[]'::jsonb
+                       check (jsonb_typeof(meeting_points) = 'array' and jsonb_array_length(meeting_points) <= 3),
+  departs_at         timestamptz not null,
+  -- Estimated end of the ride; null = not stated.
+  arrives_at         timestamptz,
+  -- Seats offered by a driver, or passengers travelling on a request.
+  seats              smallint not null default 1 check (seats between 1 and 8),
+  luggage            boolean not null default false,
+  cargo_items        boolean not null default false,
+  cargo_food         boolean not null default false,
+  -- Cost sharing is symbolic and capped by trigger (spec 5.3 rules); never a profit.
+  reward_model       text not null default 'free' check (reward_model in ('free', 'expense_share')),
+  cost_share_ils     numeric(6, 2) check (cost_share_ils >= 0),
+  notes              text check (char_length(notes) <= 280),
+  -- Occurrence of a recurring ride (D103): its series and the day it stands for.
+  series_id          uuid references public.ride_series (id) on delete set null,
+  series_on          date,
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now(),
+  constraint post_ride_details_origin_fk foreign key (origin_city_id, origin_street_id)
+    references public.streets (city_id, street_id),
+  constraint post_ride_details_dest_fk foreign key (dest_city_id, dest_street_id)
+    references public.streets (city_id, street_id),
+  constraint post_ride_details_origin_place_chk
+    check (num_nonnulls(origin_city_id, origin_junction_id) = 1 and num_nonnulls(origin_street_id, origin_junction_id) <= 1),
+  constraint post_ride_details_dest_place_chk
+    check (num_nonnulls(dest_city_id, dest_junction_id) = 1 and num_nonnulls(dest_street_id, dest_junction_id) <= 1),
+  constraint post_ride_details_arrival_chk check (arrives_at > departs_at),
+  constraint post_ride_details_cost_chk check ((reward_model = 'expense_share') = (cost_share_ils is not null)),
+  constraint post_ride_details_series_chk check ((series_id is null) or (series_on is not null)),
+  -- One occurrence per series and day; also covers the series foreign key.
+  constraint post_ride_details_series_day_key unique (series_id, series_on)
+);
+comment on table public.post_ride_details is
+  'Route, schedule, seats and cost model of a ride post. Positions and the post expiry are derived by trigger.';
+
+-- Rides feed: upcoming rides by departure (keyset on departs_at, post_id).
+create index post_ride_details_departs_idx on public.post_ride_details (departs_at, post_id);
+-- Route search and saved-route alerts: rides that start / end near a point.
+create index post_ride_details_origin_gist_idx on public.post_ride_details using gist (origin_point);
+create index post_ride_details_dest_gist_idx on public.post_ride_details using gist (dest_point);
+-- Foreign keys to the place catalogs (a catalog refresh retiring a place).
+create index post_ride_details_origin_place_idx on public.post_ride_details (origin_city_id, origin_street_id)
+  where origin_city_id is not null;
+create index post_ride_details_origin_junction_idx on public.post_ride_details (origin_junction_id)
+  where origin_junction_id is not null;
+create index post_ride_details_dest_place_idx on public.post_ride_details (dest_city_id, dest_street_id)
+  where dest_city_id is not null;
+create index post_ride_details_dest_junction_idx on public.post_ride_details (dest_junction_id)
+  where dest_junction_id is not null;
+
+-- Everything the server decides about a ride on every write:
+--   places     both ends and every meeting point must be official places; their positions
+--              are (re)written from the catalogs (ride_place_invalid)
+--   schedule   a new or moved departure lies in the future and the estimated end after
+--              it (ride_time_invalid)
+--   cost       an expense share is at most 20 ILS inside one city and 70 ILS between
+--              cities (ride_cost_share_cap_exceeded)
+--   driver     an offer needs the owner's current driver declaration (declaration_required)
+--   seats      never fewer than the seats already booked (ride_seats_below_bookings)
+--   post       its time window, and its expiry: an offer 30 minutes after the estimated
+--              end (or the departure), an occurrence of a recurring request at departure,
+--              a one-off request never (D21)
+create function kc_private.post_ride_details_prepare()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post constant public.posts := kc_private.post_for_details(new.post_id, 'ride');
+  v_invalid boolean;
+begin
+  new.origin_point := kc_access.place_point(new.origin_city_id, new.origin_street_id, new.origin_junction_id);
+  new.dest_point := kc_access.place_point(new.dest_city_id, new.dest_street_id, new.dest_junction_id);
+  select coalesce(jsonb_agg(jsonb_build_object(
+           'city_id', m.city_id, 'street_id', m.street_id, 'junction_id', m.junction_id,
+           'lat', extensions.st_y(g.point::extensions.geometry),
+           'lng', extensions.st_x(g.point::extensions.geometry)) order by e.ordinal), '[]'::jsonb),
+         coalesce(bool_or(g.point is null), false)
+    into new.meeting_points, v_invalid
+    from jsonb_array_elements(new.meeting_points) with ordinality as e (place, ordinal)
+   cross join lateral jsonb_to_record(e.place) as m (city_id text, street_id integer, junction_id integer)
+   cross join lateral (select kc_access.place_point(m.city_id, m.street_id, m.junction_id) as point) g;
+  if v_invalid or new.origin_point is null or new.dest_point is null then
+    raise exception 'ride_place_invalid' using errcode = 'P0001';
+  end if;
+
+  if ((tg_op = 'INSERT' or new.departs_at <> old.departs_at) and new.departs_at <= now())
+     or new.arrives_at <= new.departs_at then
+    raise exception 'ride_time_invalid' using errcode = 'P0001';
+  end if;
+  if new.cost_share_ils > (case when new.origin_city_id = new.dest_city_id then 20 else 70 end) then
+    raise exception 'ride_cost_share_cap_exceeded' using errcode = 'P0001';
+  end if;
+  if tg_op = 'INSERT' and v_post.direction = 'offer'
+     and not kc_private.world_consent_accepted(v_post.owner_id, 'driver_declaration') then
+    raise exception 'declaration_required' using errcode = 'P0001';
+  end if;
+  if tg_op = 'UPDATE' and new.seats < old.seats
+     and kc_private.handoff_seats_taken(new.post_id) > new.seats then
+    raise exception 'ride_seats_below_bookings' using errcode = 'P0001';
+  end if;
+
+  update public.posts p
+     set time_window = tstzrange(new.departs_at, new.arrives_at),
+         expires_at = case
+           when v_post.direction = 'offer' then coalesce(new.arrives_at, new.departs_at) + interval '30 minutes'
+           when new.series_id is not null then new.departs_at
+         end
+   where p.id = new.post_id;
+  return new;
+end;
+$$;
+comment on function kc_private.post_ride_details_prepare() is
+  'BEFORE INSERT OR UPDATE on post_ride_details: official places and positions, schedule, cost cap, driver declaration, seats, post expiry.';
+
+create trigger post_ride_details_prepare
+  before insert or update on public.post_ride_details
+  for each row execute function kc_private.post_ride_details_prepare();
+
+create trigger post_ride_details_set_updated_at
+  before update on public.post_ride_details
+  for each row execute function kc_private.set_updated_at();
+
+alter table public.post_ride_details enable row level security;
+alter table public.post_ride_details force row level security;
+
+-- A ride's details are visible exactly when its post is: the subquery runs under the
+-- caller's own access to `posts`.
+create policy post_ride_details_select_visible on public.post_ride_details
+  for select to authenticated
+  using (exists (select 1 from public.posts p where p.id = post_ride_details.post_id));
+
+-- The owner edits the ride while the post's content is editable (draft, open, paused).
+create policy post_ride_details_update_owner on public.post_ride_details
+  for update to authenticated
+  using (exists (select 1 from public.posts p
+                  where p.id = post_ride_details.post_id and p.owner_id = (select auth.uid())
+                    and p.status in ('draft', 'open', 'paused')))
+  with check (exists (select 1 from public.posts p
+                       where p.id = post_ride_details.post_id and p.owner_id = (select auth.uid())));
+
+grant select on public.post_ride_details to authenticated;
+-- Not writable: the post, the derived positions and the series link. No insert or delete:
+-- the row is created with its post and leaves with it.
+grant update (
+  origin_city_id, origin_street_id, origin_junction_id, dest_city_id, dest_street_id, dest_junction_id,
+  meeting_points, departs_at, arrives_at, seats, luggage, cargo_items, cargo_food,
+  reward_model, cost_share_ils, notes
+) on public.post_ride_details to authenticated;
+
+-- >>> supabase/schemas/70_worlds/040_ride_bookings.sql
+-- Worlds · ride bookings (machine `ride_booking` on post_handoffs, D70, D73, D96)
+--
+-- A passenger books seats on a ride offer; the driver approves or declines each booking;
+-- either side cancels; the driver may bring back a booking they declined or cancelled;
+-- the trip is completed per booking or for the whole ride. Seats held by reserved,
+-- confirmed and completed bookings never exceed the seats of the ride: every writer holds
+-- the post row lock. Pushes, counters and karma events follow from the status change
+-- (25_handoffs/030). Errors: SQLSTATE P0001 — listing_not_available, own_listing,
+-- item_already_reserved, not_ride_offer, ride_departed, ride_not_started, seats_exhausted,
+-- ride_seats_exhausted, ride_place_invalid, handoff_not_found, invalid_status.
+
+-- Books seats on a ride offer. The booking waits for the driver and lapses 12 hours after
+-- it was made or at departure, whichever is earlier (D96). The passenger may ask for one
+-- of the ride's places as their meeting point (FR-RIDE-030).
+create function public.book_ride_seat(
+  p_post_id uuid, p_seats integer default 1, p_requested_meeting_point jsonb default null)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_post public.posts;
+  v_ride public.post_ride_details;
+begin
+  select p.* into v_post from public.posts p where p.id = p_post_id for update;
+  select r.* into v_ride from public.post_ride_details r where r.post_id = p_post_id;
+  if not found or not kc_private.post_bookable_by(v_post, v_user_id) then
+    raise exception 'listing_not_available' using errcode = 'P0001';
+  end if;
+  if v_post.direction <> 'offer' then
+    raise exception 'not_ride_offer' using errcode = 'P0001';
+  end if;
+  if v_ride.departs_at <= now() then
+    raise exception 'ride_departed' using errcode = 'P0001';
+  end if;
+  if p_seats is null or p_seats not between 1 and 8 then
+    raise exception 'seats_exhausted' using errcode = 'P0001';
+  end if;
+  if p_requested_meeting_point is not null
+     and not coalesce(p_requested_meeting_point ?& array['kind', 'id', 'label'], false) then
+    raise exception 'ride_place_invalid' using errcode = 'P0001';
+  end if;
+
+  return kc_private.handoff_open(
+    p_post_id, v_user_id, 'reserved', v_ride.seats, p_seats,
+    jsonb_strip_nulls(jsonb_build_object(
+      'confirm_by', least(now() + interval '12 hours', v_ride.departs_at),
+      'requested_meeting_point', p_requested_meeting_point)));
+end;
+$$;
+comment on function public.book_ride_seat(uuid, integer, jsonb) is
+  'The caller books seats on a ride offer; the driver approves within 12 hours or by departure.';
+grant execute on function public.book_ride_seat(uuid, integer, jsonb) to authenticated;
+
+-- The driver approves a waiting booking. Its seats were held when it was made, so an
+-- approval can never overbook the ride.
+create function public.confirm_ride_booking(p_handoff_id uuid)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_handoff constant public.post_handoffs := kc_private.world_handoff_lock(p_handoff_id, 'ride_booking', true);
+begin
+  if v_handoff.status <> 'reserved' then
+    raise exception 'invalid_status' using errcode = 'P0001';
+  end if;
+  if (select r.departs_at from public.post_ride_details r where r.post_id = v_handoff.post_id) <= now() then
+    raise exception 'ride_departed' using errcode = 'P0001';
+  end if;
+  return kc_private.handoff_move(p_handoff_id, 'confirmed', 'owner');
+end;
+$$;
+comment on function public.confirm_ride_booking(uuid) is 'The driver approves a waiting ride booking.';
+grant execute on function public.confirm_ride_booking(uuid) to authenticated;
+
+-- Either side cancels a waiting or approved booking; its seats are free at once. The
+-- reason records who and when: the driver declining a request (`declined`), the driver
+-- withdrawing an approval (`driver_cancelled`), or the passenger (`passenger_cancelled`).
+create function public.cancel_ride_booking(p_handoff_id uuid)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_handoff constant public.post_handoffs :=
+    kc_private.world_handoff_lock(p_handoff_id, 'ride_booking', false, false);
+  v_by_owner constant boolean := v_handoff.owner_id = (select auth.uid());
+begin
+  if v_handoff.status not in ('reserved', 'confirmed') then
+    raise exception 'invalid_status' using errcode = 'P0001';
+  end if;
+  return kc_private.handoff_move(
+    p_handoff_id, 'cancelled',
+    case when v_by_owner then 'owner' else 'recipient' end,
+    case when not v_by_owner then 'passenger_cancelled'
+         when v_handoff.status = 'reserved' then 'declined'
+         else 'driver_cancelled' end);
+end;
+$$;
+comment on function public.cancel_ride_booking(uuid) is
+  'Either side cancels a ride booking; a driver cancelling a waiting booking declines it.';
+grant execute on function public.cancel_ride_booking(uuid) to authenticated;
+
+-- The driver brings back a booking they declined (it waits again, with a fresh deadline)
+-- or cancelled after approving it (it is approved again). Refused once the ride departed,
+-- when the passenger can no longer take the ride or holds another booking on it, and when
+-- the seats were given away meanwhile.
+create function public.reinstate_ride_booking(p_handoff_id uuid)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_handoff public.post_handoffs := kc_private.world_handoff_lock(p_handoff_id, 'ride_booking', true);
+  v_post public.posts;
+  v_ride public.post_ride_details;
+begin
+  if v_handoff.status <> 'cancelled' or v_handoff.cancel_reason not in ('declined', 'driver_cancelled') then
+    raise exception 'invalid_status' using errcode = 'P0001';
+  end if;
+  select p.* into v_post from public.posts p where p.id = v_handoff.post_id;
+  select r.* into v_ride from public.post_ride_details r where r.post_id = v_handoff.post_id;
+  if not kc_private.post_open_to_member(v_post, v_handoff.recipient_id) then
+    raise exception 'listing_not_available' using errcode = 'P0001';
+  end if;
+  if v_ride.departs_at <= now() then
+    raise exception 'ride_departed' using errcode = 'P0001';
+  end if;
+  if exists (select 1 from public.post_handoffs h
+              where h.post_id = v_handoff.post_id and h.recipient_id = v_handoff.recipient_id
+                and h.status in ('reserved', 'confirmed')) then
+    raise exception 'item_already_reserved' using errcode = 'P0001';
+  end if;
+  if kc_private.handoff_seats_taken(v_handoff.post_id) + v_handoff.seats > v_ride.seats then
+    raise exception 'ride_seats_exhausted' using errcode = 'P0001';
+  end if;
+
+  if v_handoff.cancel_reason = 'driver_cancelled' then
+    return kc_private.handoff_move(p_handoff_id, 'confirmed', 'owner');
+  end if;
+  perform kc_private.handoff_move(p_handoff_id, 'reserved', 'owner');
+  update public.post_handoffs h
+     set confirm_by = least(now() + interval '12 hours', v_ride.departs_at)
+   where h.id = p_handoff_id
+  returning h.* into v_handoff;
+  return v_handoff;
+end;
+$$;
+comment on function public.reinstate_ride_booking(uuid) is
+  'The driver reinstates a ride booking they declined or cancelled, if the ride still has room.';
+grant execute on function public.reinstate_ride_booking(uuid) to authenticated;
+
+-- Marks one booking as travelled, from one hour before departure: the passenger for an
+-- approved booking, the driver also for one still waiting. The ride closes as delivered
+-- once no booking is live and every seat was used.
+create function public.complete_ride_trip(p_handoff_id uuid)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_handoff public.post_handoffs := kc_private.world_handoff_lock(p_handoff_id, 'ride_booking');
+  v_by_owner constant boolean := v_handoff.owner_id = (select auth.uid());
+  v_ride public.post_ride_details;
+begin
+  if v_handoff.status <> 'confirmed' and not (v_by_owner and v_handoff.status = 'reserved') then
+    raise exception 'invalid_status' using errcode = 'P0001';
+  end if;
+  select r.* into v_ride from public.post_ride_details r where r.post_id = v_handoff.post_id;
+  if v_ride.departs_at > now() + interval '1 hour' then
+    raise exception 'ride_not_started' using errcode = 'P0001';
+  end if;
+
+  v_handoff := kc_private.handoff_move(
+    p_handoff_id, 'handed_over', case when v_by_owner then 'owner' else 'recipient' end);
+  if exists (select 1 from public.posts p where p.id = v_handoff.post_id and p.status = 'open')
+     and not exists (select 1 from public.post_handoffs h
+                      where h.post_id = v_handoff.post_id and h.status in ('reserved', 'confirmed'))
+     and kc_private.handoff_seats_taken(v_handoff.post_id) >= v_ride.seats then
+    perform kc_private.post_move(v_handoff.post_id, 'closed_delivered', 'system');
+  end if;
+  return v_handoff;
+end;
+$$;
+comment on function public.complete_ride_trip(uuid) is
+  'Marks one ride booking as travelled; a full ride with nothing left open closes as delivered.';
+grant execute on function public.complete_ride_trip(uuid) to authenticated;
+
+-- "Ride completed" (spec 5.3 step 7): the driver finishes the whole ride once, from one
+-- hour before departure. Approved bookings complete together, the offer closes as
+-- delivered and bookings still waiting end with it (cancelled as superseded by the
+-- closure, 25_handoffs/050). Returns the number of bookings completed.
+create function public.complete_ride(p_post_id uuid)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post constant public.posts := kc_private.post_lock_managed(p_post_id);
+  v_handoff_id uuid;
+  v_completed integer := 0;
+begin
+  if v_post.post_type <> 'ride' or v_post.direction <> 'offer' then
+    raise exception 'not_ride_offer' using errcode = 'P0001';
+  end if;
+  if v_post.status <> 'open' then
+    raise exception 'invalid_status' using errcode = 'P0001';
+  end if;
+  if (select r.departs_at from public.post_ride_details r where r.post_id = p_post_id)
+     > now() + interval '1 hour' then
+    raise exception 'ride_not_started' using errcode = 'P0001';
+  end if;
+
+  for v_handoff_id in
+    select h.id from public.post_handoffs h where h.post_id = p_post_id and h.status = 'confirmed'
+  loop
+    perform kc_private.handoff_move(v_handoff_id, 'handed_over', 'owner');
+    v_completed := v_completed + 1;
+  end loop;
+  perform kc_private.post_move(p_post_id, 'closed_delivered', 'owner');
+  return v_completed;
+end;
+$$;
+comment on function public.complete_ride(uuid) is
+  'The driver completes a ride: approved bookings are marked travelled and the offer closes as delivered.';
+grant execute on function public.complete_ride(uuid) to authenticated;
+
+-- >>> supabase/schemas/70_worlds/050_ride_saved_routes.sql
+-- Worlds · ride_saved_routes and ride_route_alerts (D74, D95)
+--
+-- A member follows a route (from → to, optionally only some weekdays and hours) and is
+-- told about each new ride along it. The alert itself is a `notification` outbox event;
+-- `ride_route_alerts` is the ledger that keeps it to one alert per follower and ride — or
+-- per recurring series — and to ten alerts per follower a day.
+
+create table public.ride_saved_routes (
+  id                 uuid primary key default gen_random_uuid(),
+  user_id            uuid not null default auth.uid() references public.users (id) on delete cascade,
+  -- Which rides the member wants to hear about.
+  wants              text not null default 'offers' check (wants in ('offers', 'requests')),
+  origin_city_id     text references public.cities (city_id),
+  origin_street_id   integer,
+  origin_junction_id integer references public.road_junctions (junction_id),
+  origin_point       extensions.geography(Point, 4326) not null,
+  dest_city_id       text references public.cities (city_id),
+  dest_street_id     integer,
+  dest_junction_id   integer references public.road_junctions (junction_id),
+  dest_point         extensions.geography(Point, 4326) not null,
+  -- A ride matches when both of its ends lie within this distance of the route's ends.
+  radius_km          integer not null default 10 check (radius_km between 1 and 50),
+  -- Optional filter, Israel local time: weekday bit set (bit 0 = Sunday) and departure hours.
+  weekdays           smallint check (weekdays between 1 and 127),
+  time_from          time,
+  time_to            time,
+  created_at         timestamptz not null default now(),
+  constraint ride_saved_routes_origin_fk foreign key (origin_city_id, origin_street_id)
+    references public.streets (city_id, street_id),
+  constraint ride_saved_routes_dest_fk foreign key (dest_city_id, dest_street_id)
+    references public.streets (city_id, street_id),
+  constraint ride_saved_routes_hours_chk check ((time_from is null) = (time_to is null)),
+  -- A route is saved once per member; also "my routes" and the member foreign key.
+  constraint ride_saved_routes_member_route_key unique nulls not distinct (
+    user_id, wants, origin_city_id, origin_street_id, origin_junction_id,
+    dest_city_id, dest_street_id, dest_junction_id)
+);
+comment on table public.ride_saved_routes is
+  'Routes a member follows to hear about new rides along them (D74). Places are official; positions are derived.';
+
+-- Alert matching: routes that start near the origin or a meeting point of a new ride.
+create index ride_saved_routes_origin_gist_idx on public.ride_saved_routes using gist (origin_point);
+-- Foreign keys to the place catalogs.
+create index ride_saved_routes_origin_place_idx on public.ride_saved_routes (origin_city_id, origin_street_id)
+  where origin_city_id is not null;
+create index ride_saved_routes_origin_junction_idx on public.ride_saved_routes (origin_junction_id)
+  where origin_junction_id is not null;
+create index ride_saved_routes_dest_place_idx on public.ride_saved_routes (dest_city_id, dest_street_id)
+  where dest_city_id is not null;
+create index ride_saved_routes_dest_junction_idx on public.ride_saved_routes (dest_junction_id)
+  where dest_junction_id is not null;
+
+-- Both ends must be official places; their positions are written from the catalogs. A
+-- member keeps at most ten routes.
+create function kc_private.ride_saved_routes_prepare()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  new.origin_point := kc_access.place_point(new.origin_city_id, new.origin_street_id, new.origin_junction_id);
+  new.dest_point := kc_access.place_point(new.dest_city_id, new.dest_street_id, new.dest_junction_id);
+  if new.origin_point is null or new.dest_point is null then
+    raise exception 'ride_place_invalid' using errcode = 'P0001';
+  end if;
+  if tg_op = 'INSERT'
+     and (select count(*) from public.ride_saved_routes r where r.user_id = new.user_id) >= 10 then
+    raise exception 'saved_routes_limit' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+comment on function kc_private.ride_saved_routes_prepare() is
+  'BEFORE INSERT OR UPDATE on ride_saved_routes: official places, derived positions, ten routes per member.';
+
+create trigger ride_saved_routes_prepare
+  before insert or update on public.ride_saved_routes
+  for each row execute function kc_private.ride_saved_routes_prepare();
+
+alter table public.ride_saved_routes enable row level security;
+alter table public.ride_saved_routes force row level security;
+
+-- A member's routes are private: read, written and removed by the member alone.
+create policy ride_saved_routes_all_owner on public.ride_saved_routes
+  for all to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+grant select, delete on public.ride_saved_routes to authenticated;
+grant insert (
+  user_id, wants, origin_city_id, origin_street_id, origin_junction_id,
+  dest_city_id, dest_street_id, dest_junction_id, radius_km, weekdays, time_from, time_to
+) on public.ride_saved_routes to authenticated;
+grant update (radius_km, weekdays, time_from, time_to) on public.ride_saved_routes to authenticated;
+
+create table public.ride_route_alerts (
+  route_id   uuid not null references public.ride_saved_routes (id) on delete cascade,
+  post_id    uuid not null references public.posts (id) on delete cascade,
+  user_id    uuid not null references public.users (id) on delete cascade,
+  -- Series of the ride, when it is an occurrence of a recurring ride.
+  series_id  uuid references public.ride_series (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (route_id, post_id),
+  -- A follower hears about a recurring ride once (D103); covers the series foreign key.
+  constraint ride_route_alerts_series_member_key unique (series_id, user_id)
+);
+comment on table public.ride_route_alerts is
+  'Ledger of saved-route alerts: one per follower and ride or series, ten per follower a day. Written only by server code.';
+
+-- Daily cap of a follower and "alerts I received"; covers the member foreign key.
+create index ride_route_alerts_member_recent_idx on public.ride_route_alerts (user_id, created_at desc);
+-- Covers the post foreign key (cascade when a ride is purged).
+create index ride_route_alerts_post_idx on public.ride_route_alerts (post_id);
+
+alter table public.ride_route_alerts enable row level security;
+alter table public.ride_route_alerts force row level security;
+
+create policy ride_route_alerts_select_self on public.ride_route_alerts
+  for select to authenticated
+  using (user_id = (select auth.uid()));
+
+grant select on public.ride_route_alerts to authenticated;
+
+-- Alerts the followers of every saved route a newly published ride runs along: the route
+-- wants this side (offers or requests), its destination and its origin lie within the
+-- route's radius of the ride's destination and of the ride's origin or one of its meeting
+-- points, the departure falls on a followed weekday and hour, and the follower could open
+-- the ride. One alert per follower; none for a series the follower already heard about,
+-- none beyond ten a day (D95). The notification carries the departure so that delivery
+-- can decide about quiet hours.
+create function kc_private.ride_route_alerts_emit()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_ride public.post_ride_details;
+  v_local timestamp;
+  v_route record;
+begin
+  select r.* into v_ride from public.post_ride_details r where r.post_id = new.id;
+  if not found or v_ride.departs_at <= now() then
+    return null;
+  end if;
+  v_local := v_ride.departs_at at time zone 'Asia/Jerusalem';
+
+  for v_route in
+    select distinct on (r.user_id) r.id, r.user_id
+      from public.ride_saved_routes r
+     where r.user_id <> new.owner_id
+       and r.wants = case new.direction when 'offer' then 'offers' else 'requests' end
+       and (r.weekdays is null or (r.weekdays & (1 << extract(dow from v_local)::integer)) <> 0)
+       and (r.time_from is null or v_local::time between r.time_from and r.time_to)
+       and extensions.st_dwithin(r.dest_point, v_ride.dest_point, r.radius_km * 1000)
+       and (extensions.st_dwithin(r.origin_point, v_ride.origin_point, r.radius_km * 1000)
+            or exists (select 1 from jsonb_array_elements(v_ride.meeting_points) m
+                        where extensions.st_dwithin(
+                                r.origin_point,
+                                extensions.st_setsrid(extensions.st_makepoint((m ->> 'lng')::float8, (m ->> 'lat')::float8), 4326)::extensions.geography,
+                                r.radius_km * 1000)))
+       and kc_private.post_open_to_member(new, r.user_id)
+     order by r.user_id, r.created_at
+  loop
+    continue when (select count(*) from public.ride_route_alerts a
+                    where a.user_id = v_route.user_id and a.created_at >= now() - interval '24 hours') >= 10;
+    insert into public.ride_route_alerts (route_id, post_id, user_id, series_id)
+    values (v_route.id, new.id, v_route.user_id, v_ride.series_id)
+    on conflict do nothing;
+    continue when not found;
+    perform kc_private.outbox_enqueue('notification', jsonb_build_object(
+      'kind', 'ride_route_match', 'recipient_id', v_route.user_id, 'actor_id', new.owner_id,
+      'entity', jsonb_build_object('type', 'post', 'id', new.id),
+      'data', jsonb_build_object(
+        'route_id', v_route.id, 'direction', new.direction, 'departs_at', v_ride.departs_at,
+        'series_id', v_ride.series_id,
+        'dedupe_key', 'ride_route_match:' || coalesce(v_ride.series_id, new.id) || ':' || v_route.user_id)));
+  end loop;
+  return null;
+end;
+$$;
+comment on function kc_private.ride_route_alerts_emit() is
+  'AFTER UPDATE OF status on posts (a ride is published): saved-route alerts as notification events.';
+
+-- A ride post always has its details before it is published (160_world_post_create.sql),
+-- so the route is known at this moment.
+create trigger posts_ride_route_alerts
+  after update of status on public.posts
+  for each row
+  when (new.post_type = 'ride' and new.status = 'open' and old.status = 'draft')
+  execute function kc_private.ride_route_alerts_emit();
+
+-- >>> supabase/schemas/70_worlds/060_rides_feed.sql
+-- Worlds · rides feed and route search (D72, D75)
+--
+-- One query for the rides world: upcoming ride offers and requests, soonest first,
+-- optionally only those running along a route. Candidates are found through the departure
+-- and GiST indexes by a definer function (a distance test is not leak-proof, so under row
+-- security it could not use an index); the rows themselves are then read with the caller's
+-- rights, so RLS on `posts` decides what comes back.
+
+-- Display name of an official place: the junction, "street, city", or the city.
+create function kc_access.place_name(p_city_id text, p_street_id integer, p_junction_id integer)
+returns text
+language sql
+stable
+set search_path = ''
+as $$
+  select case
+    when p_junction_id is not null then
+      (select j.name_he from public.road_junctions j where j.junction_id = p_junction_id)
+    else
+      (select coalesce(s.name_he || ', ', '') || c.name_he
+         from public.cities c
+         left join public.streets s on s.city_id = c.city_id and s.street_id = p_street_id
+        where c.city_id = p_city_id)
+  end;
+$$;
+comment on function kc_access.place_name(text, integer, integer) is 'Hebrew display name of an official place.';
+grant execute on function kc_access.place_name(text, integer, integer) to authenticated;
+
+-- Ids of open rides departing after the cursor, soonest first, with what only the server
+-- can count: free seats of an offer, and for a recurring ride the number of later dates
+-- folded into this row. Filters: direction, departure before p_before, and a route — the
+-- ride's origin or one of its meeting points within p_radius_m of p_origin and its
+-- destination within p_radius_m of p_dest. Occurrences of one series beyond tomorrow
+-- (Israel time) fold into the soonest of them (D103). The audience test here only keeps
+-- pages full; the caller's own row access is the real gate.
+create function kc_access.ride_candidates(
+  p_direction text,
+  p_origin extensions.geography,
+  p_dest extensions.geography,
+  p_radius_m double precision,
+  p_after timestamptz,
+  p_after_id uuid,
+  p_before timestamptz,
+  p_limit integer
+)
+returns table (post_id uuid, seats_left integer, series_more integer)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with horizon as (
+    -- Midnight that starts the day after tomorrow, Israel time.
+    select (((now() at time zone 'Asia/Jerusalem')::date + 2)::timestamp at time zone 'Asia/Jerusalem') as at
+  )
+  select r.post_id,
+         case p.direction when 'offer' then greatest(r.seats - kc_private.handoff_seats_taken(r.post_id), 0) end,
+         case when r.series_id is not null and r.departs_at >= h.at then
+           (select count(*)::integer
+              from public.post_ride_details o join public.posts op on op.id = o.post_id
+             where o.series_id = r.series_id and o.departs_at > r.departs_at and op.status = 'open')
+         else 0 end
+    from public.post_ride_details r
+    join public.posts p on p.id = r.post_id
+   cross join horizon h
+   where p.status = 'open'
+     and (r.departs_at, r.post_id) > (p_after, p_after_id)
+     and (p_before is null or r.departs_at < p_before)
+     and (p_direction is null or p.direction = p_direction)
+     and (p_dest is null or extensions.st_dwithin(r.dest_point, p_dest, p_radius_m))
+     and (p_origin is null
+          or extensions.st_dwithin(r.origin_point, p_origin, p_radius_m)
+          or exists (select 1 from jsonb_array_elements(r.meeting_points) m
+                      where extensions.st_dwithin(
+                              extensions.st_setsrid(extensions.st_makepoint(
+                                (m ->> 'lng')::float8, (m ->> 'lat')::float8), 4326)::extensions.geography,
+                              p_origin, p_radius_m)))
+     and (p.owner_id = (select auth.uid())
+          or p.visibility = 'Public'
+          or (p.visibility = 'FollowersOnly'
+              and exists (select 1 from public.follows f
+                           where f.follower_id = (select auth.uid()) and f.followed_id = p.owner_id)))
+     and (r.series_id is null or r.departs_at < h.at
+          or not exists (select 1 from public.post_ride_details o join public.posts op on op.id = o.post_id
+                          where o.series_id = r.series_id and o.departs_at >= h.at
+                            and o.departs_at < r.departs_at and op.status = 'open'))
+   order by r.departs_at, r.post_id
+   limit p_limit;
+$$;
+comment on function kc_access.ride_candidates(
+  text, extensions.geography, extensions.geography, double precision, timestamptz, uuid, timestamptz, integer) is
+  'Ids of upcoming open rides matching a direction, time window and route, with free seats and folded series dates.';
+grant execute on function kc_access.ride_candidates(
+  text, extensions.geography, extensions.geography, double precision, timestamptz, uuid, timestamptz, integer)
+  to authenticated;
+
+-- One page of the rides feed, soonest departure first. p_filters (every key optional):
+--   direction                 'offer' | 'request'
+--   origin, dest              an official place each: {city_id, street_id, junction_id};
+--                             with either, only rides along that route are returned
+--   radius_km                 distance of a ride's ends from the route's ends, default 15
+--   departs_after / _before   departure window; the feed never shows a departed ride
+-- Keyset on (departs_at, post_id): pass the last row's next_cursor to continue.
+--   ride_place_invalid  a route end that is not an official place
+create function public.rides_feed(
+  p_cursor jsonb default null,
+  p_limit integer default 30,
+  p_filters jsonb default '{}'::jsonb
+)
+returns table (
+  post_id uuid, owner_id uuid, direction text, title text, departs_at timestamptz, arrives_at timestamptz,
+  origin_name text, dest_name text, meeting_points jsonb, seats integer, seats_left integer,
+  reward_model text, series_id uuid, series_more integer, next_cursor jsonb)
+language plpgsql
+stable
+security invoker
+set search_path = ''
+as $$
+declare
+  v_f constant jsonb := coalesce(p_filters, '{}'::jsonb);
+  v_origin extensions.geography;
+  v_dest extensions.geography;
+begin
+  select kc_access.place_point(o.city_id, o.street_id, o.junction_id) into v_origin
+    from jsonb_to_record(v_f -> 'origin') as o (city_id text, street_id integer, junction_id integer);
+  select kc_access.place_point(d.city_id, d.street_id, d.junction_id) into v_dest
+    from jsonb_to_record(v_f -> 'dest') as d (city_id text, street_id integer, junction_id integer);
+  if (v_f ? 'origin' and v_origin is null) or (v_f ? 'dest' and v_dest is null) then
+    raise exception 'ride_place_invalid' using errcode = 'P0001';
+  end if;
+
+  return query
+  select p.id, p.owner_id, p.direction, p.title, r.departs_at, r.arrives_at,
+         kc_access.place_name(r.origin_city_id, r.origin_street_id, r.origin_junction_id),
+         kc_access.place_name(r.dest_city_id, r.dest_street_id, r.dest_junction_id),
+         r.meeting_points, r.seats::integer, c.seats_left, r.reward_model, r.series_id, c.series_more,
+         jsonb_build_object('t', r.departs_at, 'id', p.id)
+    from kc_access.ride_candidates(
+           v_f ->> 'direction', v_origin, v_dest,
+           least(greatest(coalesce((v_f ->> 'radius_km')::double precision, 15), 1), 100) * 1000,
+           greatest(now(), coalesce((p_cursor ->> 't')::timestamptz, (v_f ->> 'departs_after')::timestamptz, now())),
+           coalesce((p_cursor ->> 'id')::uuid, '00000000-0000-0000-0000-000000000000'),
+           (v_f ->> 'departs_before')::timestamptz,
+           least(greatest(coalesce(p_limit, 30), 1), 100)) c
+    join public.posts p on p.id = c.post_id
+    join public.post_ride_details r on r.post_id = c.post_id
+   order by r.departs_at, p.id;
+end;
+$$;
+comment on function public.rides_feed(jsonb, integer, jsonb) is
+  'One page of upcoming rides the caller can read, soonest first, optionally along a route.';
+grant execute on function public.rides_feed(jsonb, integer, jsonb) to authenticated;
+
+-- >>> supabase/schemas/70_worlds/070_ride_series_rpcs.sql
+-- Worlds · recurring rides: create, reschedule, pause / resume / cancel, materialise (D103)
+--
+-- Occurrences are ordinary ride posts created through kc_private.post_create
+-- (160_world_post_create.sql) in the role `system`, so they do not count against the
+-- owner's open-post limit at publish time and pass every rule of a ride. Errors: SQLSTATE
+-- P0001 — ride_series_not_found, ride_series_schedule_invalid, ride_series_no_occurrence,
+-- and whatever a ride itself refuses (ride_place_invalid, declaration_required, …).
+
+-- Publishes the occurrence of a series on one day, unless that day is not a ride day, its
+-- departure already passed, or the occurrence exists. Returns the number created (0 or 1).
+create function kc_private.ride_series_materialize_day(p_series public.ride_series, p_on date)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_departs constant timestamptz := (p_on + p_series.depart_time) at time zone 'Asia/Jerusalem';
+begin
+  if (p_series.weekdays & (1 << extract(dow from p_on)::integer)) = 0 or v_departs <= now()
+     or exists (select 1 from public.post_ride_details r
+                 where r.series_id = p_series.id and r.series_on = p_on) then
+    return 0;
+  end if;
+  perform kc_private.post_create(
+    p_series.owner_id,
+    p_series.post_template || jsonb_build_object('post_type', 'ride'),
+    p_series.ride_template || jsonb_build_object(
+      'departs_at', v_departs,
+      'arrives_at', v_departs + make_interval(mins => p_series.duration_minutes),
+      'series_id', p_series.id, 'series_on', p_on),
+    'system');
+  return 1;
+exception when unique_violation then
+  return 0;  -- a concurrent run published this day first
+end;
+$$;
+comment on function kc_private.ride_series_materialize_day(public.ride_series, date) is
+  'Publishes one occurrence of a recurring ride; idempotent per series and day.';
+
+-- Publishes the missing occurrences of active series — one series, or all of them — from
+-- today to 30 days ahead (Israel dates). A series whose owner's account is not active is
+-- skipped until it is. Run by the scheduler and by the series RPCs.
+create function kc_private.ride_series_materialize(p_series_id uuid default null)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_today constant date := (now() at time zone 'Asia/Jerusalem')::date;
+  v_series public.ride_series;
+  v_count integer := 0;
+begin
+  for v_series in
+    select s.* from public.ride_series s
+      join public.users u on u.id = s.owner_id and u.is_active
+     where s.status = 'active' and (p_series_id is null or s.id = p_series_id)
+     order by s.created_at
+  loop
+    select v_count + coalesce(sum(kc_private.ride_series_materialize_day(v_series, d.day::date)), 0)
+      into v_count
+      from generate_series(greatest(v_series.starts_on, v_today),
+                           least(coalesce(v_series.ends_on, v_today + 30), v_today + 30),
+                           interval '1 day') as d (day);
+  end loop;
+  return v_count;
+end;
+$$;
+comment on function kc_private.ride_series_materialize(uuid) is
+  'Publishes the missing occurrences of active recurring rides for the next 30 days; returns how many.';
+
+-- Removes the upcoming occurrences of a series that nobody booked. A ride somebody booked
+-- (in any state but cancelled) stays: it is an agreed ride (D103).
+create function kc_private.ride_series_drop_unbooked(p_series_id uuid)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  delete from public.posts p
+   using public.post_ride_details r
+   where r.post_id = p.id and r.series_id = p_series_id and r.departs_at > now()
+     and p.status in ('open', 'paused')
+     and not exists (select 1 from public.post_handoffs h where h.post_id = p.id and h.status <> 'cancelled');
+$$;
+comment on function kc_private.ride_series_drop_unbooked(uuid) is
+  'Deletes the upcoming, never-booked occurrences of a recurring ride.';
+
+-- Locks a series of the caller; one error for "no such series" and "not yours".
+create function kc_private.ride_series_lock(p_series_id uuid)
+returns public.ride_series
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_series public.ride_series;
+begin
+  select s.* into v_series from public.ride_series s
+   where s.id = p_series_id and s.owner_id = v_user_id for update;
+  if not found then
+    raise exception 'ride_series_not_found' using errcode = 'P0001';
+  end if;
+  return v_series;
+end;
+$$;
+comment on function kc_private.ride_series_lock(uuid) is 'Row-locks a recurring ride owned by the caller.';
+
+-- Creates a recurring ride and publishes its occurrences. p_post and p_ride are the
+-- payloads of public.create_post_with_details for one ride, without departure and arrival.
+-- The first occurrence proves the template: a series that publishes nothing is refused.
+create function public.create_ride_series(
+  p_post jsonb, p_ride jsonb, p_depart_time time, p_weekdays integer,
+  p_duration_minutes integer default null, p_ends_on date default null)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_series_id uuid;
+begin
+  begin
+    insert into public.ride_series (
+      owner_id, post_template, ride_template, depart_time, weekdays, duration_minutes, ends_on)
+    values (
+      v_user_id, p_post - 'id' - 'status', p_ride - 'departs_at' - 'arrives_at' - 'series_id' - 'series_on',
+      p_depart_time, p_weekdays, p_duration_minutes, p_ends_on)
+    returning id into v_series_id;
+  exception when check_violation or not_null_violation then
+    raise exception 'ride_series_schedule_invalid' using errcode = 'P0001';
+  end;
+  if kc_private.ride_series_materialize(v_series_id) = 0 then
+    raise exception 'ride_series_no_occurrence' using errcode = 'P0001';
+  end if;
+  return v_series_id;
+end;
+$$;
+comment on function public.create_ride_series(jsonb, jsonb, time, integer, integer, date) is
+  'Creates a recurring ride for the caller and publishes its occurrences for the next 30 days.';
+grant execute on function public.create_ride_series(jsonb, jsonb, time, integer, integer, date) to authenticated;
+
+-- Changes the schedule of a series. The route is not editable (publish a new series):
+-- upcoming unbooked occurrences are replaced by the new schedule, booked ones stay.
+create function public.update_ride_series(
+  p_series_id uuid, p_depart_time time, p_weekdays integer,
+  p_duration_minutes integer default null, p_ends_on date default null)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_series constant public.ride_series := kc_private.ride_series_lock(p_series_id);
+begin
+  if v_series.status = 'cancelled' then
+    raise exception 'ride_series_not_found' using errcode = 'P0001';
+  end if;
+  begin
+    update public.ride_series s
+       set depart_time = p_depart_time, weekdays = p_weekdays,
+           duration_minutes = p_duration_minutes, ends_on = p_ends_on
+     where s.id = p_series_id;
+  exception when check_violation or not_null_violation then
+    raise exception 'ride_series_schedule_invalid' using errcode = 'P0001';
+  end;
+  perform kc_private.ride_series_drop_unbooked(p_series_id);
+  perform kc_private.ride_series_materialize(p_series_id);
+end;
+$$;
+comment on function public.update_ride_series(uuid, time, integer, integer, date) is
+  'Reschedules a recurring ride: unbooked upcoming occurrences follow the new schedule.';
+grant execute on function public.update_ride_series(uuid, time, integer, integer, date) to authenticated;
+
+-- Pauses, resumes or cancels a series (machine `ride_series`). Pausing and cancelling
+-- remove the upcoming unbooked occurrences; cancelling is terminal and detaches the rides
+-- that stay, which live on as one-off rides; resuming publishes the next 30 days again.
+create function public.set_ride_series_status(p_series_id uuid, p_status text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_series constant public.ride_series := kc_private.ride_series_lock(p_series_id);
+begin
+  if p_status = v_series.status then
+    return;
+  end if;
+  update public.ride_series s set status = p_status where s.id = p_series_id;
+  if p_status = 'active' then
+    perform kc_private.ride_series_materialize(p_series_id);
+    return;
+  end if;
+  perform kc_private.ride_series_drop_unbooked(p_series_id);
+  if p_status = 'cancelled' then
+    update public.post_ride_details r set series_id = null where r.series_id = p_series_id;
+  end if;
+end;
+$$;
+comment on function public.set_ride_series_status(uuid, text) is
+  'Pauses, resumes or cancels a recurring ride of the caller.';
+grant execute on function public.set_ride_series_status(uuid, text) to authenticated;
+
+-- >>> supabase/schemas/70_worlds/080_post_emergencies.sql
+-- Worlds · post_emergencies (the emergency button of a ride or a stay)
+--
+-- A member taking part in an active ride (spec 5.3 step 6) or stay (FR-HOUSING-024) calls
+-- for help. The call is recorded, everyone else taking part is notified at once, and the
+-- safety team is told through a `moderation` event. KC is not an emergency service: the
+-- app shows the emergency numbers first; this is the record and the alert.
+
+create table public.post_emergencies (
+  id          uuid primary key default gen_random_uuid(),
+  post_id     uuid not null references public.posts (id) on delete cascade,
+  reporter_id uuid not null references public.users (id) on delete cascade,
+  note        text check (char_length(note) <= 500),
+  -- Where the caller was, when they chose to share it.
+  location    extensions.geography(Point, 4326),
+  created_at  timestamptz not null default now()
+);
+comment on table public.post_emergencies is
+  'Emergency calls made from an active ride or stay. Written only by server code.';
+
+-- Calls of a post, newest first; covers the post foreign key.
+create index post_emergencies_post_recent_idx on public.post_emergencies (post_id, created_at desc);
+-- Throttle of a caller, and the reporter foreign key.
+create index post_emergencies_reporter_recent_idx on public.post_emergencies (reporter_id, created_at desc);
+
+alter table public.post_emergencies enable row level security;
+alter table public.post_emergencies force row level security;
+
+-- The caller and the owner of the post see that a call was made. Extension point: the
+-- moderation module adds the policy that lets the safety team read every call.
+create policy post_emergencies_select_party on public.post_emergencies
+  for select to authenticated
+  using (reporter_id = (select auth.uid())
+         or exists (select 1 from public.posts p
+                     where p.id = post_emergencies.post_id and p.owner_id = (select auth.uid())));
+
+-- Existence only: the note and the location are for the safety team (FR-HOUSING-024 AC3).
+grant select (id, post_id, reporter_id, created_at) on public.post_emergencies to authenticated;
+
+-- Members taking part in a post right now, for the emergency call:
+--   ride   the driver and every passenger with an approved or completed booking, from one
+--          hour before departure until two hours after the estimated end (six hours after
+--          departure when no end was stated)
+--   stay   the host and every guest whose approved or completed booking is under way,
+--          from one hour before its start until two hours after its end
+create function kc_private.post_active_participants(p_post_id uuid)
+returns setof uuid
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select p.owner_id
+    from public.posts p
+    join public.post_ride_details r on r.post_id = p.id
+   where p.id = p_post_id
+     and now() between r.departs_at - interval '1 hour'
+                   and coalesce(r.arrives_at, r.departs_at + interval '6 hours') + interval '2 hours'
+  union
+  select h.recipient_id
+    from public.post_handoffs h
+    join public.post_ride_details r on r.post_id = h.post_id
+   where h.post_id = p_post_id and h.status in ('confirmed', 'handed_over')
+     and now() between r.departs_at - interval '1 hour'
+                   and coalesce(r.arrives_at, r.departs_at + interval '6 hours') + interval '2 hours'
+  union
+  select unnest(array[h.owner_id, h.recipient_id])
+    from public.post_handoffs h
+   where h.post_id = p_post_id and h.machine_id = 'housing_booking'
+     and h.status in ('confirmed', 'handed_over')
+     and now() between h.slot_starts_at - interval '1 hour' and h.slot_ends_at + interval '2 hours';
+$$;
+comment on function kc_private.post_active_participants(uuid) is
+  'Members of a ride or stay that is under way: who may call for help and who is alerted.';
+
+-- Records an emergency call and alerts the other participants and the safety team.
+--   emergency_not_active  the caller takes no part in the post, or it is not under way
+--                         (one answer for both, so a post is not probed)
+--   emergency_throttled   the caller already called on this post in the last five minutes
+create function public.report_post_emergency(
+  p_post_id uuid, p_note text default null,
+  p_lat double precision default null, p_lng double precision default null)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+  v_participants constant uuid[] := array(select kc_private.post_active_participants(p_post_id));
+  v_emergency_id uuid;
+  v_to uuid;
+begin
+  if not v_user_id = any (v_participants) then
+    raise exception 'emergency_not_active' using errcode = 'P0001';
+  end if;
+  if exists (select 1 from public.post_emergencies e
+              where e.post_id = p_post_id and e.reporter_id = v_user_id
+                and e.created_at > now() - interval '5 minutes') then
+    raise exception 'emergency_throttled' using errcode = 'P0001';
+  end if;
+
+  insert into public.post_emergencies (post_id, reporter_id, note, location)
+  values (p_post_id, v_user_id, nullif(btrim(p_note), ''),
+          extensions.st_setsrid(extensions.st_makepoint(p_lng, p_lat), 4326)::extensions.geography)
+  returning id into v_emergency_id;
+
+  foreach v_to in array v_participants loop
+    continue when v_to = v_user_id;
+    perform kc_private.outbox_enqueue('notification', jsonb_build_object(
+      'kind', 'post_emergency', 'recipient_id', v_to, 'actor_id', v_user_id,
+      'entity', jsonb_build_object('type', 'post', 'id', p_post_id),
+      'data', jsonb_build_object(
+        'emergency_id', v_emergency_id,
+        'dedupe_key', 'post_emergency:' || v_emergency_id || ':' || v_to)));
+  end loop;
+  -- The safety team (support, super admins) is alerted by the moderation module.
+  perform kc_private.outbox_enqueue('moderation', jsonb_build_object(
+    'kind', 'post_emergency', 'emergency_id', v_emergency_id, 'post_id', p_post_id,
+    'reporter_id', v_user_id));
+  return v_emergency_id;
+end;
+$$;
+comment on function public.report_post_emergency(uuid, text, double precision, double precision) is
+  'The caller, taking part in an active ride or stay, calls for help; the other participants and the safety team are alerted.';
+grant execute on function public.report_post_emergency(uuid, text, double precision, double precision)
+  to authenticated;
+
+-- >>> supabase/schemas/70_worlds/100_post_housing_details.sql
+-- Worlds · post_housing_details (the stay offered by a post of type `housing_stay`)
+--
+-- The public, bookable side of a stay offer (FR-HOUSING-005, FR-HOUSING-011): what the
+-- booking engine constrains — capacity per night, nights per booking, check-in times,
+-- availability and blackout dates. Descriptive fields (amenities, accessibility, house
+-- rules) stay in `posts.details`. The exact address is never here: it lives in
+-- post_private_locations and reaches a guest only once their booking is approved (S53).
+
+create table public.post_housing_details (
+  post_id            uuid primary key references public.posts (id) on delete cascade,
+  place_type         text not null check (place_type in (
+                       'private_room', 'shared_room', 'couch', 'whole_unit', 'secondary_unit', 'tent_pitch')),
+  -- Guests the place sleeps on one night, over all bookings of that night.
+  capacity           smallint not null check (capacity between 1 and 20),
+  -- One booking per night, whatever its size.
+  exclusive          boolean not null default false,
+  min_nights         smallint not null default 1,
+  max_nights         smallint not null default 3,
+  -- Israel local times. A check-in that ends after midnight is written as an earlier time
+  -- than check_in_from (for example 16:00 to 01:00).
+  check_in_from      time not null default '16:00',
+  check_in_until     time not null default '22:00',
+  check_out_by       time not null default '10:00',
+  children_ok        boolean not null default false,
+  pets_ok            boolean not null default false,
+  -- Availability (FR-HOUSING-011): a window of dates, and / or only some weekdays (bit 0 =
+  -- Sunday, the night that starts on that day). All null = ongoing.
+  available_from     date,
+  available_until    date,
+  available_weekdays smallint check (available_weekdays between 1 and 127),
+  -- Single nights the host blocked.
+  blackout_dates     date[] not null default '{}' check (coalesce(array_length(blackout_dates, 1), 0) <= 60),
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now(),
+  -- Community stays last 1 to 30 nights (D120).
+  constraint post_housing_details_nights_chk check (min_nights >= 1 and max_nights >= min_nights and max_nights <= 30),
+  constraint post_housing_details_window_chk check (available_until >= available_from),
+  -- A shared room or a couch is never exclusive (FR-HOUSING-005 AC2).
+  constraint post_housing_details_shared_chk check (not (exclusive and place_type in ('shared_room', 'couch')))
+);
+comment on table public.post_housing_details is
+  'Bookable terms of a stay offer: capacity, nights, check-in times, availability. The address is in post_private_locations.';
+
+-- Stay search by date: offers whose window covers the dates asked for.
+create index post_housing_details_window_idx on public.post_housing_details (available_from, available_until);
+
+-- Rules of a stay offer on every write:
+--   post      a stay offer (post_details_mismatch)
+--   host      on creation, a verified identity where the world asks for one and the
+--             current code of conduct (verification_required, housing_conduct_required)
+--   capacity  never below the guests of an approved booking on any night ahead
+--             (housing_active_booking_conflict, FR-HOUSING-035 AC3)
+--   post      an offer with a closing date expires when that date ends (FR-HOUSING-011 AC5)
+create function kc_private.post_housing_details_prepare()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post constant public.posts := kc_private.post_for_details(new.post_id, 'housing_stay');
+begin
+  if v_post.direction <> 'offer' then
+    raise exception 'post_details_mismatch' using errcode = 'P0001';
+  end if;
+  if tg_op = 'INSERT' then
+    perform kc_private.housing_assert_eligible(v_post.owner_id, v_post.world_slug);
+  elsif (new.capacity < old.capacity or (new.exclusive and not old.exclusive))
+        and exists (
+          select 1 from public.post_handoffs h
+            join public.handoff_booking_details d on d.handoff_id = h.id
+           cross join lateral generate_series(d.check_in_date, d.check_out_date - 1, interval '1 day') n (night)
+           where h.post_id = new.post_id and h.status = 'confirmed'
+           group by n.night
+          having sum(h.seats) > new.capacity or (new.exclusive and count(*) > 1)) then
+    raise exception 'housing_active_booking_conflict' using errcode = 'P0001';
+  end if;
+
+  update public.posts p
+     set expires_at = ((new.available_until + 1)::timestamp at time zone 'Asia/Jerusalem')
+   where p.id = new.post_id;
+  return new;
+end;
+$$;
+comment on function kc_private.post_housing_details_prepare() is
+  'BEFORE INSERT OR UPDATE on post_housing_details: stay offer, eligible host, capacity against bookings, post expiry.';
+
+-- Raises unless the member may host or book in the housing world: a verified identity
+-- where the world requires one (D30, D116) and the current code of conduct (S59).
+create function kc_private.housing_assert_eligible(p_user_id uuid, p_world_slug text)
+returns void
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.world_assert_verified(p_user_id, p_world_slug);
+  if not kc_private.world_consent_accepted(p_user_id, 'housing_conduct') then
+    raise exception 'housing_conduct_required' using errcode = 'P0001';
+  end if;
+end;
+$$;
+comment on function kc_private.housing_assert_eligible(uuid, text) is
+  'Raises verification_required or housing_conduct_required unless the member may host or book.';
+
+create trigger post_housing_details_prepare
+  before insert or update on public.post_housing_details
+  for each row execute function kc_private.post_housing_details_prepare();
+
+create trigger post_housing_details_set_updated_at
+  before update on public.post_housing_details
+  for each row execute function kc_private.set_updated_at();
+
+alter table public.post_housing_details enable row level security;
+alter table public.post_housing_details force row level security;
+
+-- Visible exactly when the post is.
+create policy post_housing_details_select_visible on public.post_housing_details
+  for select to authenticated
+  using (exists (select 1 from public.posts p where p.id = post_housing_details.post_id));
+
+-- The host edits the terms while the post's content is editable.
+create policy post_housing_details_update_owner on public.post_housing_details
+  for update to authenticated
+  using (exists (select 1 from public.posts p
+                  where p.id = post_housing_details.post_id and p.owner_id = (select auth.uid())
+                    and p.status in ('draft', 'open', 'paused')))
+  with check (exists (select 1 from public.posts p
+                       where p.id = post_housing_details.post_id and p.owner_id = (select auth.uid())));
+
+grant select on public.post_housing_details to authenticated;
+grant update (
+  place_type, capacity, exclusive, min_nights, max_nights, check_in_from, check_in_until, check_out_by,
+  children_ok, pets_ok, available_from, available_until, available_weekdays, blackout_dates
+) on public.post_housing_details to authenticated;
+
+-- Raises unless a party of p_party can stay every night from p_check_in to the night
+-- before p_check_out: each night is open (inside the window, on an offered weekday, not
+-- blacked out — housing_dates_unavailable) and has room beside the approved and completed
+-- bookings of that night, p_exclude aside (housing_capacity_exceeded). The caller holds
+-- the post row lock, so two approvals cannot both take the last bed.
+create function kc_private.housing_assert_bookable(
+  p_stay public.post_housing_details, p_check_in date, p_check_out date, p_party integer, p_exclude uuid)
+returns void
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_night record;
+begin
+  for v_night in
+    select n.night::date as night,
+           (select coalesce(sum(h.seats), 0)
+              from public.post_handoffs h
+              join public.handoff_booking_details d on d.handoff_id = h.id
+             where h.post_id = p_stay.post_id and h.status in ('confirmed', 'handed_over')
+               and h.id is distinct from p_exclude
+               and d.check_in_date <= n.night and d.check_out_date > n.night) as taken
+      from generate_series(p_check_in, p_check_out - 1, interval '1 day') n (night)
+  loop
+    if v_night.night < p_stay.available_from or v_night.night > p_stay.available_until
+       or (p_stay.available_weekdays & (1 << extract(dow from v_night.night)::integer)) = 0
+       or v_night.night = any (p_stay.blackout_dates) then
+      raise exception 'housing_dates_unavailable' using errcode = 'P0001';
+    end if;
+    if (p_stay.exclusive and v_night.taken > 0) or v_night.taken + p_party > p_stay.capacity then
+      raise exception 'housing_capacity_exceeded' using errcode = 'P0001';
+    end if;
+  end loop;
+end;
+$$;
+comment on function kc_private.housing_assert_bookable(public.post_housing_details, date, date, integer, uuid) is
+  'Checks availability and per-night capacity of a stay for a party and a date range.';
+
+-- >>> supabase/schemas/70_worlds/110_housing_bookings.sql
+-- Worlds · stay bookings (machine `housing_booking` on post_handoffs + handoff_booking_details)
+--
+-- request → the host approves or declines → the stay → the host completes it or reports a
+-- guest who did not arrive (FR-HOUSING-015 … 020). Overlap protection is a locked check,
+-- not an exclusion constraint: capacity is a sum of guests per night, which no constraint
+-- can express. Two locks serialize the writers — the post row for the place (capacity per
+-- night) and an advisory lock per guest (pending cap, no two overlapping stays) — always
+-- taken guest first, post second. Errors: SQLSTATE P0001 — listing_not_available,
+-- own_listing, item_already_reserved, verification_required, housing_conduct_required,
+-- housing_dates_invalid, housing_dates_unavailable, housing_nights_out_of_range,
+-- housing_capacity_exceeded, housing_policy_mismatch, housing_minor_unaccompanied,
+-- housing_message_required, housing_pending_cap, housing_booking_overlap,
+-- housing_note_too_long, housing_booking_started, housing_cancel_reason_required,
+-- housing_not_in_window, handoff_not_found, invalid_status.
+
+-- Serializes everything that depends on the set of one guest's stay bookings.
+create function kc_private.housing_guest_lock(p_guest_id uuid)
+returns void
+language sql
+set search_path = ''
+as $$
+  select pg_advisory_xact_lock(hashtextextended('housing_guest:' || p_guest_id, 0));
+$$;
+comment on function kc_private.housing_guest_lock(uuid) is
+  'Transaction-scoped lock on one guest''s stay bookings.';
+
+-- Does the guest hold an approved or completed stay that overlaps the dates (FR-HOUSING-015 AC4)?
+create function kc_private.housing_guest_has_overlap(p_guest_id uuid, p_check_in date, p_check_out date)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.post_handoffs h
+      join public.handoff_booking_details d on d.handoff_id = h.id
+     where h.recipient_id = p_guest_id and h.machine_id = 'housing_booking'
+       and h.status in ('confirmed', 'handed_over')
+       and d.check_in_date < p_check_out and d.check_out_date > p_check_in);
+$$;
+comment on function kc_private.housing_guest_has_overlap(uuid, date, date) is
+  'The guest already holds an approved stay overlapping the dates.';
+
+-- A verified guest who accepted the code of conduct asks to stay. The request waits for
+-- the host and lapses 24 hours after it was made or at the end of the check-in time of
+-- its first day, whichever is earlier (S52). A guest holds at most three waiting requests.
+create function public.request_housing_booking(
+  p_post_id uuid, p_check_in date, p_check_out date, p_adults integer, p_minors integer default 0,
+  p_message text default null, p_minors_guardian_ack boolean default false)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_today constant date := (now() at time zone 'Asia/Jerusalem')::date;
+  v_party constant integer := coalesce(p_adults, 0) + coalesce(p_minors, 0);
+  v_post public.posts;
+  v_stay public.post_housing_details;
+  v_deadline timestamptz;
+  v_handoff public.post_handoffs;
+begin
+  perform kc_private.housing_guest_lock(v_user_id);
+  select p.* into v_post from public.posts p where p.id = p_post_id for update;
+  select s.* into v_stay from public.post_housing_details s where s.post_id = p_post_id;
+  if not found or not kc_private.post_bookable_by(v_post, v_user_id) then
+    raise exception 'listing_not_available' using errcode = 'P0001';
+  end if;
+  perform kc_private.housing_assert_eligible(v_user_id, v_post.world_slug);
+
+  -- Last moment to arrive on the first day; a check-in that ends after midnight belongs
+  -- to the next calendar day.
+  v_deadline := (p_check_in + (v_stay.check_in_until <= v_stay.check_in_from)::integer + v_stay.check_in_until)
+                at time zone 'Asia/Jerusalem';
+  if p_check_in is null or p_check_out is null or p_check_in < v_today or p_check_in > v_today + 180
+     or now() > v_deadline then
+    raise exception 'housing_dates_invalid' using errcode = 'P0001';
+  end if;
+  if p_check_out - p_check_in not between v_stay.min_nights and v_stay.max_nights then
+    raise exception 'housing_nights_out_of_range' using errcode = 'P0001';
+  end if;
+  if coalesce(p_adults, 0) < 1 or coalesce(p_minors, 0) < 0 or v_party > 8 then
+    raise exception 'housing_capacity_exceeded' using errcode = 'P0001';
+  end if;
+  if p_minors > 0 and not v_stay.children_ok then
+    raise exception 'housing_policy_mismatch' using errcode = 'P0001';
+  end if;
+  if p_minors > 0 and not coalesce(p_minors_guardian_ack, false) then
+    raise exception 'housing_minor_unaccompanied' using errcode = 'P0001';
+  end if;
+  if char_length(btrim(coalesce(p_message, ''))) not between 1 and 500 then
+    raise exception 'housing_message_required' using errcode = 'P0001';
+  end if;
+  if (select count(*) from public.post_handoffs h
+       where h.recipient_id = v_user_id and h.machine_id = 'housing_booking' and h.status = 'reserved') >= 3 then
+    raise exception 'housing_pending_cap' using errcode = 'P0001';
+  end if;
+  if kc_private.housing_guest_has_overlap(v_user_id, p_check_in, p_check_out) then
+    raise exception 'housing_booking_overlap' using errcode = 'P0001';
+  end if;
+  perform kc_private.housing_assert_bookable(v_stay, p_check_in, p_check_out, v_party, null);
+
+  -- Capacity is per night and was checked above, so no post-wide limit is passed.
+  v_handoff := kc_private.handoff_open(
+    p_post_id, v_user_id, 'reserved', null, v_party,
+    jsonb_build_object(
+      'slot_starts_at', (p_check_in + v_stay.check_in_from) at time zone 'Asia/Jerusalem',
+      'slot_ends_at', (p_check_out + v_stay.check_out_by) at time zone 'Asia/Jerusalem',
+      'confirm_by', least(now() + interval '24 hours', v_deadline)));
+  insert into public.handoff_booking_details (
+    handoff_id, check_in_date, check_out_date, adults, minors, message, minors_guardian_ack)
+  values (v_handoff.id, p_check_in, p_check_out, p_adults, coalesce(p_minors, 0), btrim(p_message),
+          coalesce(p_minors_guardian_ack, false));
+  return v_handoff;
+end;
+$$;
+comment on function public.request_housing_booking(uuid, date, date, integer, integer, text, boolean) is
+  'The caller asks to stay at a stay offer for a date range; the host approves within 24 hours.';
+grant execute on function public.request_housing_booking(uuid, date, date, integer, integer, text, boolean)
+  to authenticated;
+
+-- The host approves or declines a waiting request, with an optional note to the guest.
+-- Approval re-checks both members and the nights under the locks, then withdraws the
+-- guest's other waiting requests that overlap it (`superseded`, S54).
+create function public.decide_housing_booking(p_handoff_id uuid, p_approve boolean, p_note text default null)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_handoff public.post_handoffs;
+  v_post public.posts;
+  v_stay public.post_housing_details;
+  v_booking public.handoff_booking_details;
+  v_other uuid;
+begin
+  perform kc_private.housing_guest_lock(
+    (select h.recipient_id from public.post_handoffs h where h.id = p_handoff_id));
+  v_handoff := kc_private.world_handoff_lock(p_handoff_id, 'housing_booking', true);
+  if v_handoff.status <> 'reserved' then
+    raise exception 'invalid_status' using errcode = 'P0001';
+  end if;
+  if char_length(p_note) > 300 then
+    raise exception 'housing_note_too_long' using errcode = 'P0001';
+  end if;
+  update public.handoff_booking_details d set decision_note = nullif(btrim(p_note), '')
+   where d.handoff_id = p_handoff_id
+  returning d.* into v_booking;
+  if not coalesce(p_approve, false) then
+    return kc_private.handoff_move(p_handoff_id, 'cancelled', 'owner', 'declined');
+  end if;
+
+  select p.* into v_post from public.posts p where p.id = v_handoff.post_id;
+  select s.* into v_stay from public.post_housing_details s where s.post_id = v_handoff.post_id;
+  if v_post.status <> 'open' then
+    raise exception 'listing_not_available' using errcode = 'P0001';
+  end if;
+  perform kc_private.housing_assert_eligible(v_handoff.owner_id, v_post.world_slug);
+  perform kc_private.housing_assert_eligible(v_handoff.recipient_id, v_post.world_slug);
+  if kc_private.housing_guest_has_overlap(v_handoff.recipient_id, v_booking.check_in_date, v_booking.check_out_date) then
+    raise exception 'housing_booking_overlap' using errcode = 'P0001';
+  end if;
+  perform kc_private.housing_assert_bookable(
+    v_stay, v_booking.check_in_date, v_booking.check_out_date, v_handoff.seats, p_handoff_id);
+  v_handoff := kc_private.handoff_move(p_handoff_id, 'confirmed', 'owner');
+
+  for v_other in
+    select h.id from public.post_handoffs h
+      join public.handoff_booking_details d on d.handoff_id = h.id
+     where h.recipient_id = v_handoff.recipient_id and h.machine_id = 'housing_booking'
+       and h.status = 'reserved'
+       and d.check_in_date < v_booking.check_out_date and d.check_out_date > v_booking.check_in_date
+  loop
+    perform kc_private.handoff_move(v_other, 'cancelled', 'system', 'superseded');
+  end loop;
+  return v_handoff;
+end;
+$$;
+comment on function public.decide_housing_booking(uuid, boolean, text) is
+  'The host approves or declines a stay request; an approval withdraws the guest''s overlapping requests.';
+grant execute on function public.decide_housing_booking(uuid, boolean, text) to authenticated;
+
+-- Either side cancels before the stay starts (FR-HOUSING-018). A host cancelling an
+-- approved stay must say why. A late cancellation of an approved stay — a guest inside
+-- 24 hours of the start, a host inside 48 — is flagged for the trust engine, never shown.
+create function public.cancel_housing_booking(p_handoff_id uuid, p_note text default null)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_handoff constant public.post_handoffs :=
+    kc_private.world_handoff_lock(p_handoff_id, 'housing_booking', false, false);
+  v_by_host constant boolean := v_handoff.owner_id = (select auth.uid());
+  v_note constant text := nullif(btrim(p_note), '');
+begin
+  if v_handoff.status not in ('reserved', 'confirmed') then
+    raise exception 'invalid_status' using errcode = 'P0001';
+  end if;
+  if char_length(v_note) > 300 then
+    raise exception 'housing_note_too_long' using errcode = 'P0001';
+  end if;
+  -- After check-in a stay is ended by completing it, not cancelled (FR-HOUSING-018 AC4).
+  if now() >= v_handoff.slot_starts_at then
+    raise exception 'housing_booking_started' using errcode = 'P0001';
+  end if;
+  if v_by_host and v_handoff.status = 'confirmed' and v_note is null then
+    raise exception 'housing_cancel_reason_required' using errcode = 'P0001';
+  end if;
+
+  update public.handoff_booking_details d
+     set cancel_note = v_note,
+         late_cancel = v_handoff.status = 'confirmed' and now() > v_handoff.slot_starts_at
+           - case when v_by_host then interval '48 hours' else interval '24 hours' end
+   where d.handoff_id = p_handoff_id;
+  return kc_private.handoff_move(
+    p_handoff_id, 'cancelled',
+    case when v_by_host then 'owner' else 'recipient' end,
+    case when not v_by_host then 'guest_cancelled'
+         when v_handoff.status = 'reserved' then 'declined'
+         else 'host_cancelled' end);
+end;
+$$;
+comment on function public.cancel_housing_booking(uuid, text) is
+  'Either side cancels a stay booking before it starts; late cancellations of approved stays are flagged.';
+grant execute on function public.cancel_housing_booking(uuid, text) to authenticated;
+
+-- The host closes an approved stay: completed (from check-in until seven days after the
+-- end, FR-HOUSING-019 AC2) or the guest did not arrive (from three to twenty-four hours
+-- after check-in, FR-HOUSING-020 AC1). A stay offer serves many bookings, so the post
+-- stays open.
+create function public.close_housing_booking(p_handoff_id uuid, p_outcome text)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_handoff constant public.post_handoffs := kc_private.world_handoff_lock(p_handoff_id, 'housing_booking', true);
+begin
+  if v_handoff.status <> 'confirmed' or p_outcome is null or p_outcome not in ('completed', 'no_show') then
+    raise exception 'invalid_status' using errcode = 'P0001';
+  end if;
+  if not (case p_outcome
+       when 'completed' then now() between v_handoff.slot_starts_at and v_handoff.slot_ends_at + interval '7 days'
+       else now() between v_handoff.slot_starts_at + interval '3 hours'
+                      and v_handoff.slot_starts_at + interval '24 hours'
+     end) then
+    raise exception 'housing_not_in_window' using errcode = 'P0001';
+  end if;
+  return kc_private.handoff_move(
+    p_handoff_id, case p_outcome when 'completed' then 'handed_over' else 'no_show' end, 'owner');
+end;
+$$;
+comment on function public.close_housing_booking(uuid, text) is
+  'The host marks an approved stay as completed or as a no-show, each inside its time window.';
+grant execute on function public.close_housing_booking(uuid, text) to authenticated;
+
+-- >>> supabase/schemas/70_worlds/120_post_event_details.sql
+-- Worlds · post_event_details (the event behind a post of type `event`, G18)
+--
+-- An event is a post with a time window, an optional capacity and a registration policy.
+-- A volunteering shift is an event too (design §12 Q3): an opportunity with several shifts
+-- is several event posts, one per shift, because capacity, the waiting list, attendance
+-- and expiry (D128) all belong to one time window. Extension point: the organizations
+-- module restricts who may publish an event for an organization (posts.beneficiary_org_id).
+
+create table public.post_event_details (
+  post_id                uuid primary key references public.posts (id) on delete cascade,
+  starts_at              timestamptz not null,
+  ends_at                timestamptz not null,
+  -- Places; null = unlimited. A full event puts new registrations on the waiting list.
+  capacity               integer check (capacity between 1 and 5000),
+  -- automatic: registered at once · manual: the organizer approves each registration ·
+  -- verified_only: automatic, for members with a verified identity.
+  registration_policy    text not null default 'automatic'
+                           check (registration_policy in ('automatic', 'manual', 'verified_only')),
+  -- Where the event takes place, as shown to everyone who can see the post.
+  address_label          text check (char_length(btrim(address_label)) between 2 and 160),
+  -- A volunteering shift: attendance adds the length of the event to the attendee's
+  -- volunteering hours (spec 5.4, D32).
+  counts_volunteer_hours boolean not null default false,
+  created_at             timestamptz not null default now(),
+  updated_at             timestamptz not null default now(),
+  constraint post_event_details_window_chk check (ends_at > starts_at)
+);
+comment on table public.post_event_details is
+  'Time window, capacity and registration policy of an event post; volunteering shifts are events.';
+
+-- Upcoming events by start: the events list of the time world and of an organization.
+create index post_event_details_starts_idx on public.post_event_details (starts_at, post_id);
+
+-- Moves the head of an event's waiting list into free places, while the event has not
+-- started: to `confirmed`, or to `reserved` with the start as its deadline when the
+-- organizer approves by hand. Called whenever a place may have become free.
+create function kc_private.event_promote_waitlist(p_post_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_event public.post_event_details;
+begin
+  select e.* into v_event from public.post_event_details e where e.post_id = p_post_id;
+  if not found or v_event.starts_at <= now() then
+    return;
+  end if;
+  -- Without a capacity nobody waits; the largest capacity stands in for "unlimited".
+  perform kc_private.handoff_promote_waitlist(
+    p_post_id, coalesce(v_event.capacity, 2147483647),
+    case v_event.registration_policy when 'manual' then 'reserved' else 'confirmed' end);
+  update public.post_handoffs h set confirm_by = v_event.starts_at
+   where h.post_id = p_post_id and h.status = 'reserved' and h.confirm_by is null;
+end;
+$$;
+comment on function kc_private.event_promote_waitlist(uuid) is
+  'Promotes waiting registrations of an event that has not started into its free places.';
+
+-- Rules of an event on every write:
+--   window    a new event starts in the future and ends after it starts (event_time_invalid)
+--   capacity  never below the places already taken (event_capacity_below_registrations)
+--   post      its time window and its expiry at the end of the event (D128); the closure
+--             rules of a post read the window (D131)
+--   bookings  live registrations follow a moved window
+create function kc_private.post_event_details_prepare()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.post_for_details(new.post_id, 'event');
+  if (tg_op = 'INSERT' and new.starts_at <= now()) or new.ends_at <= new.starts_at then
+    raise exception 'event_time_invalid' using errcode = 'P0001';
+  end if;
+  if tg_op = 'UPDATE' and new.capacity < kc_private.handoff_seats_taken(new.post_id) then
+    raise exception 'event_capacity_below_registrations' using errcode = 'P0001';
+  end if;
+  update public.posts p
+     set time_window = tstzrange(new.starts_at, new.ends_at), expires_at = new.ends_at
+   where p.id = new.post_id;
+  if tg_op = 'UPDATE' and (new.starts_at, new.ends_at) is distinct from (old.starts_at, old.ends_at) then
+    update public.post_handoffs h
+       set slot_starts_at = new.starts_at, slot_ends_at = new.ends_at,
+           confirm_by = case when h.status = 'reserved' then new.starts_at end
+     where h.post_id = new.post_id and h.status in ('waitlisted', 'reserved', 'confirmed');
+  end if;
+  return new;
+end;
+$$;
+comment on function kc_private.post_event_details_prepare() is
+  'BEFORE INSERT OR UPDATE on post_event_details: start, capacity, the post''s window and expiry, live registrations.';
+
+create trigger post_event_details_prepare
+  before insert or update on public.post_event_details
+  for each row execute function kc_private.post_event_details_prepare();
+
+-- More places, or no limit any more: the waiting list moves up.
+create function kc_private.post_event_details_capacity_raised()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.event_promote_waitlist(new.post_id);
+  return null;
+end;
+$$;
+
+create trigger post_event_details_capacity_raised
+  after update of capacity on public.post_event_details
+  for each row
+  when (new.capacity is null or new.capacity > old.capacity)
+  execute function kc_private.post_event_details_capacity_raised();
+
+create trigger post_event_details_set_updated_at
+  before update on public.post_event_details
+  for each row execute function kc_private.set_updated_at();
+
+alter table public.post_event_details enable row level security;
+alter table public.post_event_details force row level security;
+
+-- Visible exactly when the post is.
+create policy post_event_details_select_visible on public.post_event_details
+  for select to authenticated
+  using (exists (select 1 from public.posts p where p.id = post_event_details.post_id));
+
+-- The organizer edits the event while the post's content is editable.
+create policy post_event_details_update_owner on public.post_event_details
+  for update to authenticated
+  using (exists (select 1 from public.posts p
+                  where p.id = post_event_details.post_id and p.owner_id = (select auth.uid())
+                    and p.status in ('draft', 'open', 'paused')))
+  with check (exists (select 1 from public.posts p
+                       where p.id = post_event_details.post_id and p.owner_id = (select auth.uid())));
+
+grant select on public.post_event_details to authenticated;
+grant update (starts_at, ends_at, capacity, registration_policy, address_label, counts_volunteer_hours)
+  on public.post_event_details to authenticated;
+
+-- >>> supabase/schemas/70_worlds/130_event_registrations.sql
+-- Worlds · event registrations (machine `event_registration` on post_handoffs, G18)
+--
+-- register → registered at once, waiting for the organizer, or on the waiting list of a
+-- full event; a freed place promotes the list in order of registration; from the start
+-- the organizer marks who came. Volunteering shifts use the same flow, and attendance
+-- adds their length to the attendee's volunteering hours. Errors: SQLSTATE P0001 —
+-- listing_not_available, own_listing, item_already_reserved, slot_started,
+-- verification_required, event_not_started, event_message_invalid, post_not_found,
+-- handoff_not_found, invalid_status.
+
+-- Registers the caller for an event that has not started. Returns the registration:
+-- `waitlisted` when the event is full, `reserved` when the organizer approves by hand
+-- (the request lapses at the start), `confirmed` otherwise.
+create function public.register_for_event(p_post_id uuid)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_post public.posts;
+  v_event public.post_event_details;
+  v_status text;
+begin
+  -- The post row lock serializes registrations, so the last place is given once.
+  select p.* into v_post from public.posts p where p.id = p_post_id for update;
+  select e.* into v_event from public.post_event_details e where e.post_id = p_post_id;
+  if not found or not kc_private.post_bookable_by(v_post, v_user_id) then
+    raise exception 'listing_not_available' using errcode = 'P0001';
+  end if;
+  if v_event.starts_at <= now() then
+    raise exception 'slot_started' using errcode = 'P0001';
+  end if;
+  if v_event.registration_policy = 'verified_only'
+     and not exists (select 1 from public.users u where u.id = v_user_id and u.verification_level >= 2) then
+    raise exception 'verification_required' using errcode = 'P0001';
+  end if;
+
+  v_status := case
+    when kc_private.handoff_seats_taken(p_post_id) >= v_event.capacity then 'waitlisted'
+    when v_event.registration_policy = 'manual' then 'reserved'
+    else 'confirmed'
+  end;
+  return kc_private.handoff_open(
+    p_post_id, v_user_id, v_status, v_event.capacity, 1,
+    jsonb_strip_nulls(jsonb_build_object(
+      'slot_starts_at', v_event.starts_at, 'slot_ends_at', v_event.ends_at,
+      'confirm_by', case v_status when 'reserved' then v_event.starts_at end)));
+end;
+$$;
+comment on function public.register_for_event(uuid) is
+  'Registers the caller for an event: confirmed, waiting for approval, or on the waiting list when full.';
+grant execute on function public.register_for_event(uuid) to authenticated;
+
+-- The organizer approves or declines a registration that waits for them. A declined
+-- place goes to the waiting list.
+create function public.decide_event_registration(p_handoff_id uuid, p_approve boolean)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_handoff public.post_handoffs := kc_private.world_handoff_lock(p_handoff_id, 'event_registration', true);
+begin
+  if v_handoff.status <> 'reserved' then
+    raise exception 'invalid_status' using errcode = 'P0001';
+  end if;
+  if coalesce(p_approve, false) then
+    return kc_private.handoff_move(p_handoff_id, 'confirmed', 'owner');
+  end if;
+  v_handoff := kc_private.handoff_move(p_handoff_id, 'cancelled', 'owner', 'declined');
+  perform kc_private.event_promote_waitlist(v_handoff.post_id);
+  return v_handoff;
+end;
+$$;
+comment on function public.decide_event_registration(uuid, boolean) is
+  'The organizer approves or declines a registration awaiting approval.';
+grant execute on function public.decide_event_registration(uuid, boolean) to authenticated;
+
+-- The member leaves an event or its waiting list, or the organizer removes a
+-- registration. Before the start, the freed place goes to the waiting list.
+create function public.cancel_event_registration(p_handoff_id uuid)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_handoff public.post_handoffs :=
+    kc_private.world_handoff_lock(p_handoff_id, 'event_registration', false, false);
+  v_by_owner constant boolean := v_handoff.owner_id = (select auth.uid());
+begin
+  if v_handoff.status not in ('waitlisted', 'reserved', 'confirmed') then
+    raise exception 'invalid_status' using errcode = 'P0001';
+  end if;
+  v_handoff := kc_private.handoff_move(
+    p_handoff_id, 'cancelled',
+    case when v_by_owner then 'owner' else 'recipient' end,
+    case when not v_by_owner then 'recipient_cancelled'
+         when v_handoff.status = 'reserved' then 'declined'
+         else 'owner_cancelled' end);
+  perform kc_private.event_promote_waitlist(v_handoff.post_id);
+  return v_handoff;
+end;
+$$;
+comment on function public.cancel_event_registration(uuid) is
+  'Cancels an event registration (by its member or the organizer) and promotes the waiting list.';
+grant execute on function public.cancel_event_registration(uuid) to authenticated;
+
+-- From the start of the event the organizer marks a confirmed registrant as attended or
+-- absent; an absence can be corrected to attended, an attendance is final. Attending a
+-- volunteering shift adds the length of the event, in hours, to the attendee's
+-- volunteering hours — once, since nothing leaves `handed_over`.
+create function public.mark_event_attendance(p_handoff_id uuid, p_attended boolean)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_handoff public.post_handoffs := kc_private.world_handoff_lock(p_handoff_id, 'event_registration', true);
+  v_event public.post_event_details;
+begin
+  -- The event's own start, not the copy on the registration.
+  select e.* into v_event from public.post_event_details e where e.post_id = v_handoff.post_id;
+  if not found or v_event.starts_at > now() then
+    raise exception 'event_not_started' using errcode = 'P0001';
+  end if;
+  if p_attended is null
+     or not (v_handoff.status = 'confirmed' or (v_handoff.status = 'no_show' and p_attended)) then
+    raise exception 'invalid_status' using errcode = 'P0001';
+  end if;
+  if not p_attended then
+    return kc_private.handoff_move(p_handoff_id, 'no_show', 'owner');
+  end if;
+
+  v_handoff := kc_private.handoff_move(p_handoff_id, 'handed_over', 'owner');
+  if v_event.counts_volunteer_hours then
+    update public.user_stats s
+       set volunteer_hours_total = s.volunteer_hours_total
+             + round((extract(epoch from v_event.ends_at - v_event.starts_at) / 3600)::numeric, 2)
+     where s.user_id = v_handoff.recipient_id;
+  end if;
+  return v_handoff;
+end;
+$$;
+comment on function public.mark_event_attendance(uuid, boolean) is
+  'The organizer records attendance or absence once the event started; a shift adds volunteering hours.';
+grant execute on function public.mark_event_attendance(uuid, boolean) to authenticated;
+
+-- The organizer sends a short message to everyone registered for the event (approved,
+-- awaiting approval or waiting for a place). Each member receives a notification; the
+-- text travels in the event and is not stored anywhere else. Returns how many were told.
+create function public.message_event_registrants(p_post_id uuid, p_body text)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post constant public.posts := kc_private.post_lock_managed(p_post_id);
+  v_body constant text := btrim(coalesce(p_body, ''));
+  v_event_id constant uuid := gen_random_uuid();
+  v_to uuid;
+  v_count integer := 0;
+begin
+  if v_post.post_type <> 'event' then
+    raise exception 'post_not_found' using errcode = 'P0001';
+  end if;
+  if char_length(v_body) not between 1 and 500 then
+    raise exception 'event_message_invalid' using errcode = 'P0001';
+  end if;
+  for v_to in
+    select h.recipient_id from public.post_handoffs h
+     where h.post_id = p_post_id and h.status in ('waitlisted', 'reserved', 'confirmed')
+  loop
+    perform kc_private.outbox_enqueue('notification', jsonb_build_object(
+      'kind', 'event_organizer_message', 'recipient_id', v_to, 'actor_id', (select auth.uid()),
+      'entity', jsonb_build_object('type', 'post', 'id', p_post_id),
+      'data', jsonb_build_object(
+        'body', v_body, 'dedupe_key', 'event_organizer_message:' || v_event_id || ':' || v_to)));
+    v_count := v_count + 1;
+  end loop;
+  return v_count;
+end;
+$$;
+comment on function public.message_event_registrants(uuid, text) is
+  'The organizer notifies every registered member of an event with a short message.';
+grant execute on function public.message_event_registrants(uuid, text) to authenticated;
+
+-- >>> supabase/schemas/70_worlds/140_post_food_details.sql
+-- Worlds · post_food_details (what a food offer must state, D21, D28)
+--
+-- One row per food offer: when the food itself stops being good, what it is and what it
+-- contains. The expiry drives the post — it closes by itself at that time and its urgency
+-- follows from how close that is. A food request has no row and never expires (D21). The
+-- generic claim flow (public.claim_food_giving) hands the food over.
+
+create table public.post_food_details (
+  post_id           uuid primary key references public.posts (id) on delete cascade,
+  -- Until when the food is good to eat, as stated by the giver.
+  expires_at        timestamptz not null,
+  food_type         text check (food_type in ('cooked', 'packaged', 'fresh', 'frozen', 'dry', 'beverage')),
+  -- Declared allergens; an empty list is the giver's statement that there are none (D28).
+  allergens         text[] not null default '{}' check (coalesce(array_length(allergens, 1), 0) <= 20),
+  -- Null = not stated.
+  kosher            boolean,
+  dietary_tags      text[] not null default '{}' check (coalesce(array_length(dietary_tags, 1), 0) <= 20),
+  -- When the owner was told the offer is about to expire (S4); set by the sweep.
+  expiry_alerted_at timestamptz,
+  created_at        timestamptz not null default now(),
+  updated_at        timestamptz not null default now()
+);
+comment on table public.post_food_details is
+  'Expiry, type and declared contents of a food offer; the expiry closes the post and sets its urgency.';
+
+-- Expiry alert sweep and urgency refresh: offers nearing their expiry, soonest first.
+create index post_food_details_expiry_idx on public.post_food_details (expires_at);
+
+-- Urgency of a food offer from its expiry: high inside 72 hours, medium otherwise.
+create function kc_private.food_urgency_level(p_expires_at timestamptz)
+returns smallint
+language sql
+stable
+set search_path = ''
+as $$
+  select case when p_expires_at <= now() + interval '72 hours' then 3 else 2 end::smallint;
+$$;
+comment on function kc_private.food_urgency_level(timestamptz) is
+  'Urgency level of a food offer: 3 when it expires within 72 hours, else 2.';
+
+-- Rules of a food offer on every write:
+--   post     a food offer (post_details_mismatch)
+--   expiry   stated (food_expiry_required) and, when new or changed, in the future
+--            (food_expiry_in_past); a moved expiry may be alerted again
+--   post     expires with the food; urgency derived from the expiry
+create function kc_private.post_food_details_prepare()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post constant public.posts := kc_private.post_for_details(new.post_id, 'standard');
+begin
+  if v_post.world_slug <> 'food' or v_post.direction <> 'offer' then
+    raise exception 'post_details_mismatch' using errcode = 'P0001';
+  end if;
+  if new.expires_at is null then
+    raise exception 'food_expiry_required' using errcode = 'P0001';
+  end if;
+  if tg_op = 'INSERT' or new.expires_at <> old.expires_at then
+    if new.expires_at <= now() then
+      raise exception 'food_expiry_in_past' using errcode = 'P0001';
+    end if;
+    new.expiry_alerted_at := null;
+  end if;
+  update public.posts p
+     set expires_at = new.expires_at, urgency_level = kc_private.food_urgency_level(new.expires_at)
+   where p.id = new.post_id;
+  return new;
+end;
+$$;
+comment on function kc_private.post_food_details_prepare() is
+  'BEFORE INSERT OR UPDATE on post_food_details: food offer, stated future expiry, post expiry and urgency.';
+
+create trigger post_food_details_prepare
+  before insert or update on public.post_food_details
+  for each row execute function kc_private.post_food_details_prepare();
+
+create trigger post_food_details_set_updated_at
+  before update on public.post_food_details
+  for each row execute function kc_private.set_updated_at();
+
+alter table public.post_food_details enable row level security;
+alter table public.post_food_details force row level security;
+
+-- Visible exactly when the post is.
+create policy post_food_details_select_visible on public.post_food_details
+  for select to authenticated
+  using (exists (select 1 from public.posts p where p.id = post_food_details.post_id));
+
+-- The giver edits the details while the post's content is editable.
+create policy post_food_details_update_owner on public.post_food_details
+  for update to authenticated
+  using (exists (select 1 from public.posts p
+                  where p.id = post_food_details.post_id and p.owner_id = (select auth.uid())
+                    and p.status in ('draft', 'open', 'paused')))
+  with check (exists (select 1 from public.posts p
+                       where p.id = post_food_details.post_id and p.owner_id = (select auth.uid())));
+
+-- The alert stamp is the sweep's own bookkeeping and is not readable.
+grant select (post_id, expires_at, food_type, allergens, kosher, dietary_tags, created_at, updated_at)
+  on public.post_food_details to authenticated;
+grant update (expires_at, food_type, allergens, kosher, dietary_tags) on public.post_food_details to authenticated;
+
+-- >>> supabase/schemas/70_worlds/150_post_knowledge_slots.sql
+-- Worlds · post_knowledge_slots (bookable times of a lesson or consulting offer, FR-KNOW-004)
+--
+-- The knowledge world needs one thing the generic flow does not have: several bookable
+-- times on one post, each with its own places. Everything else of a knowledge post stays
+-- in `posts.details`, and a booking is an ordinary handoff of the giving machine: the
+-- giver approves it with public.confirm_item_handoff, either side cancels with
+-- public.cancel_giving_handoff, and public.mark_giving_handed_over completes the session.
+-- A booking is tied to its slot by (post_id, slot_starts_at): slots of a post never
+-- overlap, so the start identifies the slot.
+
+create table public.post_knowledge_slots (
+  id         uuid primary key default gen_random_uuid(),
+  post_id    uuid not null references public.posts (id) on delete cascade,
+  starts_at  timestamptz not null,
+  ends_at    timestamptz not null,
+  -- Learners per slot.
+  capacity   smallint not null default 1 check (capacity between 1 and 20),
+  created_at timestamptz not null default now(),
+  -- A session lasts 15 minutes to 8 hours.
+  constraint post_knowledge_slots_length_chk
+    check (ends_at - starts_at between interval '15 minutes' and interval '8 hours'),
+  -- Slots of one post never overlap. The constraint's index also serves "slots of a post"
+  -- and the post foreign key.
+  constraint post_knowledge_slots_no_overlap_excl
+    exclude using gist (post_id with =, tstzrange(starts_at, ends_at) with &&)
+);
+comment on table public.post_knowledge_slots is
+  'Bookable times of a knowledge offer, each with its own places; bookings are handoffs keyed by the slot start.';
+
+-- Places of a slot held by waiting, approved and completed bookings.
+create function kc_private.knowledge_slot_seats_taken(p_post_id uuid, p_starts_at timestamptz)
+returns integer
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(sum(h.seats), 0)::integer
+    from public.post_handoffs h
+   where h.post_id = p_post_id and h.slot_starts_at = p_starts_at
+     and h.status in ('reserved', 'confirmed', 'handed_over');
+$$;
+comment on function kc_private.knowledge_slot_seats_taken(uuid, timestamptz) is
+  'Places of a knowledge slot held by live or completed bookings.';
+
+-- Rules of a slot on every write:
+--   post      a knowledge offer (post_details_mismatch); whose, the policies below decide
+--   new slot  starts in the future, at most 20 per post (slot_started, knowledge_slots_limit)
+--   booked    a slot somebody holds is not moved or removed, and its places are not cut
+--             below its bookings (knowledge_slot_has_booking); it leaves with its post
+create function kc_private.post_knowledge_slots_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_taken constant integer := case when tg_op <> 'INSERT'
+    then kc_private.knowledge_slot_seats_taken(old.post_id, old.starts_at) else 0 end;
+begin
+  if tg_op = 'INSERT' then
+    if not exists (select 1 from public.posts p
+                    where p.id = new.post_id and p.world_slug = 'knowledge' and p.direction = 'offer') then
+      raise exception 'post_details_mismatch' using errcode = 'P0001';
+    end if;
+    if new.starts_at <= now() then
+      raise exception 'slot_started' using errcode = 'P0001';
+    end if;
+    if (select count(*) from public.post_knowledge_slots s where s.post_id = new.post_id) >= 20 then
+      raise exception 'knowledge_slots_limit' using errcode = 'P0001';
+    end if;
+  -- When the post itself is being removed its row is already gone, and the slot follows.
+  elsif v_taken > 0 and exists (select 1 from public.posts p where p.id = old.post_id)
+        and (tg_op = 'DELETE' or (new.starts_at, new.ends_at) is distinct from (old.starts_at, old.ends_at)
+             or new.capacity < v_taken) then
+    raise exception 'knowledge_slot_has_booking' using errcode = 'P0001';
+  end if;
+  return case tg_op when 'DELETE' then old else new end;
+end;
+$$;
+comment on function kc_private.post_knowledge_slots_guard() is
+  'BEFORE INSERT OR UPDATE OR DELETE on post_knowledge_slots: knowledge offer, future start, slot limit, booked slots stay.';
+
+create trigger post_knowledge_slots_guard
+  before insert or update or delete on public.post_knowledge_slots
+  for each row execute function kc_private.post_knowledge_slots_guard();
+
+-- The offer expires 30 minutes after its last slot ends (FR-KNOW-003 AC3); an offer
+-- without slots does not expire.
+create function kc_private.post_knowledge_slots_sync_expiry()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post_id constant uuid := case tg_op when 'DELETE' then old.post_id else new.post_id end;
+begin
+  update public.posts p
+     set expires_at = (select max(s.ends_at) + interval '30 minutes'
+                         from public.post_knowledge_slots s where s.post_id = v_post_id)
+   where p.id = v_post_id;
+  return null;
+end;
+$$;
+comment on function kc_private.post_knowledge_slots_sync_expiry() is
+  'AFTER write on post_knowledge_slots: the post expires 30 minutes after its last slot.';
+
+create trigger post_knowledge_slots_sync_expiry
+  after insert or delete or update of ends_at on public.post_knowledge_slots
+  for each row execute function kc_private.post_knowledge_slots_sync_expiry();
+
+alter table public.post_knowledge_slots enable row level security;
+alter table public.post_knowledge_slots force row level security;
+
+-- Visible exactly when the post is.
+create policy post_knowledge_slots_select_visible on public.post_knowledge_slots
+  for select to authenticated
+  using (exists (select 1 from public.posts p where p.id = post_knowledge_slots.post_id));
+
+-- The giver adds, changes and removes slots while the post's content is editable.
+create policy post_knowledge_slots_insert_owner on public.post_knowledge_slots
+  for insert to authenticated
+  with check (exists (select 1 from public.posts p
+                       where p.id = post_knowledge_slots.post_id and p.owner_id = (select auth.uid())
+                         and p.status in ('draft', 'open', 'paused')));
+create policy post_knowledge_slots_update_owner on public.post_knowledge_slots
+  for update to authenticated
+  using (exists (select 1 from public.posts p
+                  where p.id = post_knowledge_slots.post_id and p.owner_id = (select auth.uid())
+                    and p.status in ('draft', 'open', 'paused')));
+create policy post_knowledge_slots_delete_owner on public.post_knowledge_slots
+  for delete to authenticated
+  using (exists (select 1 from public.posts p
+                  where p.id = post_knowledge_slots.post_id and p.owner_id = (select auth.uid())
+                    and p.status in ('draft', 'open', 'paused')));
+
+grant select, delete on public.post_knowledge_slots to authenticated;
+grant insert (post_id, starts_at, ends_at, capacity) on public.post_knowledge_slots to authenticated;
+-- The slot cannot be moved to another post.
+grant update (starts_at, ends_at, capacity) on public.post_knowledge_slots to authenticated;
+
+-- Books a place in a slot that has not started. The booking waits for the giver and
+-- lapses 24 hours after it was made or at the start of the slot, whichever is earlier.
+--   listing_not_available  no such slot, or its post is not open to the caller
+--   slot_started · slots_exhausted · own_listing · item_already_reserved
+create function public.book_knowledge_seat(p_slot_id uuid)
+returns public.post_handoffs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_active_caller();
+  v_post public.posts;
+  v_slot public.post_knowledge_slots;
+begin
+  -- The post row lock serializes bookings, so the last place is given once.
+  select p.* into v_post from public.posts p
+   where p.id = (select s.post_id from public.post_knowledge_slots s where s.id = p_slot_id)
+     for update;
+  select s.* into v_slot from public.post_knowledge_slots s where s.id = p_slot_id;
+  if not found or not kc_private.post_bookable_by(v_post, v_user_id) then
+    raise exception 'listing_not_available' using errcode = 'P0001';
+  end if;
+  if v_slot.starts_at <= now() then
+    raise exception 'slot_started' using errcode = 'P0001';
+  end if;
+  if kc_private.knowledge_slot_seats_taken(v_slot.post_id, v_slot.starts_at) >= v_slot.capacity then
+    raise exception 'slots_exhausted' using errcode = 'P0001';
+  end if;
+  return kc_private.handoff_open(
+    v_slot.post_id, v_user_id, 'reserved', null, 1,
+    jsonb_build_object(
+      'slot_starts_at', v_slot.starts_at, 'slot_ends_at', v_slot.ends_at,
+      'confirm_by', least(now() + interval '24 hours', v_slot.starts_at)));
+end;
+$$;
+comment on function public.book_knowledge_seat(uuid) is
+  'The caller books a place in a knowledge slot; the giver approves within 24 hours or by the start.';
+grant execute on function public.book_knowledge_seat(uuid) to authenticated;
+
+-- >>> supabase/schemas/70_worlds/160_world_post_create.sql
+-- Worlds · creating a post together with its detail row
+--
+-- A ride, a stay offer, an event and a food offer are only meaningful with their detail
+-- row, so the two are created in one call and one transaction (quick publish, D75): the
+-- post is inserted as a draft, the details are checked by their table, and only then is
+-- the post published — route alerts and every other consequence of publishing see a
+-- complete post. One RPC for the four worlds rather than one per world: the post part is
+-- identical, and each world's rules live in its detail table, not in the RPC. Later edits
+-- need no RPC: the owner updates `posts` and the detail table directly, under their grants.
+-- Worlds without a detail table keep using a plain insert into `posts`.
+
+-- Inserts the post of p_owner_id from p_post (the columns a device may set on `posts`),
+-- its detail row from p_details, and publishes it in p_publish_role (`owner`, or `system`
+-- for a scheduled occurrence); null leaves a draft. Returns the post id.
+--   post_details_not_supported  the post is not of a kind that has a detail table
+create function kc_private.post_create(p_owner_id uuid, p_post jsonb, p_details jsonb, p_publish_role text)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post public.posts;
+begin
+  insert into public.posts (
+    owner_id, world_slug, kind_id, post_type, direction, status, visibility, title, description,
+    item_subcategory_id, details, city_id, location_display_level, urgency_level)
+  select p_owner_id, r.world_slug, r.kind_id, coalesce(r.post_type, 'standard'), r.direction, 'draft',
+         coalesce(r.visibility, 'Public'), r.title, r.description, r.item_subcategory_id,
+         coalesce(r.details, '{}'::jsonb), r.city_id,
+         coalesce(r.location_display_level, 'CityAndStreet'), r.urgency_level
+    from jsonb_populate_record(null::public.posts, coalesce(p_post, '{}'::jsonb)) r
+  returning * into v_post;
+
+  if v_post.post_type = 'ride' then
+    insert into public.post_ride_details (
+      post_id, origin_city_id, origin_street_id, origin_junction_id, dest_city_id, dest_street_id,
+      dest_junction_id, meeting_points, departs_at, arrives_at, seats, luggage, cargo_items, cargo_food,
+      reward_model, cost_share_ils, notes, series_id, series_on)
+    select v_post.id, r.origin_city_id, r.origin_street_id, r.origin_junction_id, r.dest_city_id,
+           r.dest_street_id, r.dest_junction_id, coalesce(r.meeting_points, '[]'::jsonb), r.departs_at,
+           r.arrives_at, coalesce(r.seats, 1), coalesce(r.luggage, false), coalesce(r.cargo_items, false),
+           coalesce(r.cargo_food, false), coalesce(r.reward_model, 'free'), r.cost_share_ils, r.notes,
+           -- Only the scheduler links an occurrence to its series.
+           case p_publish_role when 'system' then r.series_id end,
+           case p_publish_role when 'system' then r.series_on end
+      from jsonb_populate_record(null::public.post_ride_details, p_details) r;
+  elsif v_post.post_type = 'housing_stay' then
+    insert into public.post_housing_details (
+      post_id, place_type, capacity, exclusive, min_nights, max_nights, check_in_from, check_in_until,
+      check_out_by, children_ok, pets_ok, available_from, available_until, available_weekdays, blackout_dates)
+    select v_post.id, r.place_type, r.capacity, coalesce(r.exclusive, false), coalesce(r.min_nights, 1),
+           coalesce(r.max_nights, 3), coalesce(r.check_in_from, '16:00'), coalesce(r.check_in_until, '22:00'),
+           coalesce(r.check_out_by, '10:00'), coalesce(r.children_ok, false), coalesce(r.pets_ok, false),
+           r.available_from, r.available_until, r.available_weekdays, coalesce(r.blackout_dates, '{}')
+      from jsonb_populate_record(null::public.post_housing_details, p_details) r;
+  elsif v_post.post_type = 'event' then
+    insert into public.post_event_details (
+      post_id, starts_at, ends_at, capacity, registration_policy, address_label, counts_volunteer_hours)
+    select v_post.id, r.starts_at, r.ends_at, r.capacity, coalesce(r.registration_policy, 'automatic'),
+           r.address_label, coalesce(r.counts_volunteer_hours, false)
+      from jsonb_populate_record(null::public.post_event_details, p_details) r;
+  elsif v_post.post_type = 'standard' and v_post.world_slug = 'food' and v_post.direction = 'offer' then
+    insert into public.post_food_details (post_id, expires_at, food_type, allergens, kosher, dietary_tags)
+    select v_post.id, r.expires_at, r.food_type, coalesce(r.allergens, '{}'), r.kosher,
+           coalesce(r.dietary_tags, '{}')
+      from jsonb_populate_record(null::public.post_food_details, p_details) r;
+  else
+    raise exception 'post_details_not_supported' using errcode = 'P0001';
+  end if;
+
+  if p_publish_role is not null then
+    perform kc_private.post_move(v_post.id, 'open', p_publish_role);
+  end if;
+  return v_post.id;
+end;
+$$;
+comment on function kc_private.post_create(uuid, jsonb, jsonb, text) is
+  'Creates a post with its ride, stay, event or food details in one transaction and optionally publishes it.';
+
+-- Creates the caller's ride, stay offer, event or food offer.
+--   p_post     world_slug, kind_id, post_type ('ride' | 'housing_stay' | 'event', or absent
+--              for a food offer), direction, title, city_id and optionally description,
+--              visibility, item_subcategory_id, details, location_display_level,
+--              urgency_level; "status": "draft" keeps the post unpublished
+--   p_details  the columns of the world's detail table
+-- Errors: whatever the post and the detail table refuse — post_kind_not_allowed,
+-- post_limit_exceeded, post_details_not_supported, ride_place_invalid, declaration_required,
+-- verification_required, food_expiry_required, … — plus SQLSTATE 23xxx / 22xxx for a
+-- missing or malformed field.
+create function public.create_post_with_details(p_post jsonb, p_details jsonb)
+returns uuid
+language sql
+security definer
+set search_path = ''
+as $$
+  select kc_private.post_create(
+    kc_private.require_active_caller(), p_post, p_details,
+    case when p_post ->> 'status' = 'draft' then null else 'owner' end);
+$$;
+comment on function public.create_post_with_details(jsonb, jsonb) is
+  'Creates and publishes (or drafts) the caller''s ride, stay offer, event or food offer with its details.';
+grant execute on function public.create_post_with_details(jsonb, jsonb) to authenticated;
+
+-- A post of a kind that has a detail table never exists without its row. Checked at
+-- commit, so the post and its details can be written in either order inside one
+-- transaction; a bare insert of such a post from a device fails (post_details_required).
+create function kc_private.posts_require_details()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if exists (select 1 from public.posts p where p.id = new.id)
+     and not (case
+       when new.post_type = 'ride' then
+         exists (select 1 from public.post_ride_details d where d.post_id = new.id)
+       when new.post_type = 'housing_stay' then
+         exists (select 1 from public.post_housing_details d where d.post_id = new.id)
+       when new.post_type = 'event' then
+         exists (select 1 from public.post_event_details d where d.post_id = new.id)
+       else
+         exists (select 1 from public.post_food_details d where d.post_id = new.id)
+     end) then
+    raise exception 'post_details_required' using errcode = 'P0001';
+  end if;
+  return null;
+end;
+$$;
+comment on function kc_private.posts_require_details() is
+  'Deferred check: a ride, stay, event or food offer post has its detail row when the transaction commits.';
+
+create constraint trigger posts_require_details
+  after insert on public.posts
+  deferrable initially deferred
+  for each row
+  when (new.post_type in ('ride', 'housing_stay', 'event')
+        or (new.post_type = 'standard' and new.world_slug = 'food' and new.direction = 'offer'))
+  execute function kc_private.posts_require_details();
+
+-- >>> supabase/schemas/70_worlds/170_world_sweeps.sql
+-- Worlds · sweeps (run by the scheduler as the service role; scheduled by the ops module)
+--
+-- Time-driven moves of the worlds, all in the machine role `system`. Rows are claimed with
+-- SKIP LOCKED and re-checked by the machines, so each sweep is safe to run concurrently
+-- with itself and with member actions. What each world needs, and where it lives:
+--   ride / event / food / stay-offer / lesson expiry   kc_private.post_expiry_sweep (here):
+--       every detail table writes its own `posts.expires_at`, so one sweep serves them all
+--   unanswered ride, stay, event and lesson bookings   kc_private.handoff_reservation_expiry_sweep
+--       (25_handoffs/080), on `confirm_by`
+--   recurring rides                                    kc_private.ride_series_materialize (070)
+--   stays nobody closed                                kc_private.housing_not_completed_sweep (here)
+--   food about to expire                               kc_private.food_expiry_alert_sweep (here)
+
+-- Expires open and paused posts whose time has come (D21, D128), in every world. Before
+-- the post leaves the air its bookings are ended with an honest reason: a request nobody
+-- answered `expired`, an approved booking nobody completed `not_completed` — never
+-- completed automatically, so no karma is earned without a member saying so. Registrations
+-- of an event that took place stay for attendance marking (25_handoffs/050). The owner is
+-- told. Before, the ride sweep left bookings live and each world had its own writer.
+create function kc_private.post_expiry_sweep(p_limit integer default 500)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post record;
+  v_handoff record;
+  v_count integer := 0;
+begin
+  for v_post in
+    select p.id, p.owner_id, p.world_slug from public.posts p
+     where p.expires_at <= now() and p.status in ('open', 'paused')
+     order by p.expires_at
+     limit least(greatest(p_limit, 1), 5000)
+       for update skip locked
+  loop
+    for v_handoff in
+      select h.id, h.status from public.post_handoffs h
+       where h.post_id = v_post.id and h.status in ('reserved', 'confirmed')
+         and h.machine_id <> 'event_registration'
+    loop
+      perform kc_private.handoff_move(
+        v_handoff.id, 'cancelled', 'system',
+        case v_handoff.status when 'reserved' then 'expired' else 'not_completed' end);
+    end loop;
+    perform kc_private.post_move(v_post.id, 'expired', 'system');
+    perform kc_private.outbox_enqueue('notification', jsonb_build_object(
+      'kind', 'post_expired', 'recipient_id', v_post.owner_id, 'actor_id', null,
+      'entity', jsonb_build_object('type', 'post', 'id', v_post.id),
+      'data', jsonb_build_object('world_slug', v_post.world_slug, 'dedupe_key', 'post_expired:' || v_post.id)));
+    v_count := v_count + 1;
+  end loop;
+  return v_count;
+end;
+$$;
+comment on function kc_private.post_expiry_sweep(integer) is
+  'Expires due posts of every world, ending their open bookings first; returns how many.';
+
+-- Housing sweep: approved stays whose end passed more than seven days ago.
+create index post_handoffs_stay_close_due_idx on public.post_handoffs (slot_ends_at)
+  where status = 'confirmed' and machine_id = 'housing_booking';
+
+-- An approved stay that nobody closed within seven days of its end is cancelled as
+-- `not_completed`: nothing completes by itself and no karma follows (FR-HOUSING-019 AC5).
+create function kc_private.housing_not_completed_sweep(p_limit integer default 500)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_handoff_id uuid;
+  v_count integer := 0;
+begin
+  for v_handoff_id in
+    select h.id from public.post_handoffs h
+     where h.status = 'confirmed' and h.machine_id = 'housing_booking'
+       and h.slot_ends_at < now() - interval '7 days'
+     order by h.slot_ends_at
+     limit least(greatest(p_limit, 1), 5000)
+       for update skip locked
+  loop
+    perform kc_private.handoff_move(v_handoff_id, 'cancelled', 'system', 'not_completed');
+    v_count := v_count + 1;
+  end loop;
+  return v_count;
+end;
+$$;
+comment on function kc_private.housing_not_completed_sweep(integer) is
+  'Cancels approved stays left unclosed seven days after their end; returns how many.';
+
+-- Food offers nearing their expiry: the urgency of an open offer rises to high inside 72
+-- hours, and inside 24 hours its owner is told once that it is about to close (S4,
+-- FR-NOTIF-005). Returns the number of owners told.
+create function kc_private.food_expiry_alert_sweep(p_limit integer default 500)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_food record;
+  v_count integer := 0;
+begin
+  update public.posts p
+     set urgency_level = 3
+    from public.post_food_details f
+   where f.post_id = p.id and f.expires_at <= now() + interval '72 hours'
+     and p.status = 'open' and p.urgency_level is distinct from 3;
+
+  for v_food in
+    select f.post_id, f.expires_at, p.owner_id
+      from public.post_food_details f
+      join public.posts p on p.id = f.post_id
+     where f.expires_at > now() and f.expires_at <= now() + interval '24 hours'
+       and f.expiry_alerted_at is null and p.status = 'open'
+     order by f.expires_at
+     limit least(greatest(p_limit, 1), 5000)
+       for update of f skip locked
+  loop
+    update public.post_food_details f set expiry_alerted_at = now() where f.post_id = v_food.post_id;
+    perform kc_private.outbox_enqueue('notification', jsonb_build_object(
+      'kind', 'post_expiring', 'recipient_id', v_food.owner_id, 'actor_id', null,
+      'entity', jsonb_build_object('type', 'post', 'id', v_food.post_id),
+      'data', jsonb_build_object(
+        'world_slug', 'food', 'expires_at', v_food.expires_at,
+        'dedupe_key', 'post_expiring:' || v_food.post_id || ':' || v_food.expires_at)));
+    v_count := v_count + 1;
+  end loop;
+  return v_count;
+end;
+$$;
+comment on function kc_private.food_expiry_alert_sweep(integer) is
+  'Raises the urgency of food offers inside 72 hours of expiry and alerts owners inside 24 hours.';
+
+-- >>> supabase/schemas/70_worlds/900_world_notification_kinds.sql
+-- Worlds · notification kinds emitted by this module
+--
+-- Booking changes of rides, stays and events need no rows here: they are the
+-- `<machine>_<change>` kinds registered with the registry (50_notifications/010), and
+-- `post_expiring` (food about to expire) is registered there too. These are the kinds
+-- only this module emits.
+
+insert into kc_private.notification_kinds
+  (kind, category, bypass_preferences, bypass_quiet_hours, title_key, body_key)
+values
+  -- A new ride along a saved route (D74). Held during quiet hours unless delivery decides
+  -- otherwise from `data.departs_at` (D95).
+  ('ride_route_match', 'critical', false, false,
+   'notifications.rideRouteMatchTitle', 'notifications.rideRouteMatchBody'),
+  -- An emergency call on a ride or stay the member takes part in: a safety notice,
+  -- delivered whatever the member switched off and at any hour.
+  ('post_emergency', 'critical', true, true,
+   'notifications.postEmergencyTitle', 'notifications.postEmergencyBody'),
+  -- A message from the organizer of an event the member registered for.
+  ('event_organizer_message', 'critical', false, false,
+   'notifications.eventOrganizerMessageTitle', 'notifications.eventOrganizerMessageBody'),
+  -- The member's own post expired (S4: "and at expiry").
+  ('post_expired', 'critical', false, false,
+   'notifications.postExpiredTitle', 'notifications.postExpiredBody');

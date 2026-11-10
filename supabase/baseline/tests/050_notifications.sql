@@ -82,12 +82,12 @@ update public.users set display_name = 'Member ' || right(id::text, 1);
 insert into public.blocks (blocker_id, blocked_id) values (pg_temp.id('d'), pg_temp.id('b'));
 
 -- ── Registry ────────────────────────────────────────────────────────────────
-select is((select count(*) from kc_private.notification_kinds), 61::bigint, 'the registry holds every kind');
+select is((select count(*) from kc_private.notification_kinds), 65::bigint, 'the registry holds every kind');
 select is((select title_key || '|' || bypass_quiet_hours || '|' || category from kc_private.notification_kinds
             where kind = 'ride_booking_waitlist_promoted'),
   'notifications.rideBookingWaitlistPromotedTitle|true|critical', 'a handoff kind has its camelCase keys and rules');
-select is((select count(*) from kc_private.notification_kinds where bypass_preferences), 4::bigint,
-  'only the account and removal notices bypass preferences');
+select is((select count(*) from kc_private.notification_kinds where bypass_preferences), 5::bigint,
+  'only the account, removal and emergency notices bypass preferences');
 select is(pg_temp.run('a', 'select count(*) from kc_private.notification_kinds'), '42501', 'the registry is not readable from a device');
 
 -- ── Delivery: one notification, the push for the worker, the event confirmed ─

@@ -18,3 +18,7 @@ create extension if not exists pg_trgm with schema extensions;
 -- Lets a GIN index combine a plain equality column with a trigram column, so a name search
 -- can be scoped to its parent row in one index (streets of one city).
 create extension if not exists btree_gin with schema extensions;
+
+-- Lets a GiST exclusion constraint combine a plain equality column with a range, so two
+-- time ranges of one parent row can never overlap (bookable slots of a post).
+create extension if not exists btree_gist with schema extensions;

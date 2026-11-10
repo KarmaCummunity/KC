@@ -12,6 +12,9 @@ create table public.post_private_locations (
   street        text check (char_length(btrim(street)) between 1 and 80),
   -- Digits with an optional entrance letter, Latin or Hebrew (U+05D0–U+05EA).
   street_number text check (street_number ~ '^[0-9]+[A-Za-z\u05D0-\u05EA]?$'),
+  -- Rides only: house number at the destination, when the ride ends on a street; the pickup
+  -- end uses street_number (FR-RIDE-003 AC9).
+  destination_street_number text check (destination_street_number ~ '^[0-9]+[A-Za-z\u05D0-\u05EA]?$'),
   -- Free text for the person arriving: floor, entrance code, where to leave things.
   access_notes  text check (char_length(access_notes) <= 300),
   updated_at    timestamptz not null default now(),
@@ -130,8 +133,8 @@ create policy post_private_locations_update_owner on public.post_private_locatio
                        where p.id = post_private_locations.post_id and p.owner_id = (select auth.uid())));
 
 grant select on public.post_private_locations to authenticated;
-grant insert (post_id, exact_point, street, street_number, access_notes)
+grant insert (post_id, exact_point, street, street_number, destination_street_number, access_notes)
   on public.post_private_locations to authenticated;
 -- The row cannot be moved to another post.
-grant update (exact_point, street, street_number, access_notes)
+grant update (exact_point, street, street_number, destination_street_number, access_notes)
   on public.post_private_locations to authenticated;

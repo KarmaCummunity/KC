@@ -2,7 +2,8 @@
 --
 -- The exact address is readable from the table by the post owner only. The other member
 -- of a handoff receives it through this RPC, and only once the handoff is confirmed —
--- a request that is still waiting, was cancelled or ended as a no-show releases nothing.
+-- a request that is still waiting, was cancelled or ended as a no-show releases nothing,
+-- and a booking with a time slot stops releasing it 24 hours after the slot ends.
 
 -- Returns the exact location of a post to a caller who manages it, or who holds a
 -- confirmed or completed handoff on it; null when the post has no exact address. A release
@@ -24,6 +25,8 @@ begin
       from public.post_handoffs h
      where h.post_id = p_post_id and h.recipient_id = v_user_id
        and h.status in ('confirmed', 'handed_over')
+       -- A booked time ends the release 24 hours after it (stays and events, spec 5.6 S53).
+       and (h.slot_ends_at is null or h.slot_ends_at + interval '24 hours' > now())
      order by h.created_at desc
      limit 1;
     if not found then
