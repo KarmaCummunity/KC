@@ -1,7 +1,7 @@
 // V2-ADMIN-TIME-10 — single timesheet entry row.
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import type { TimesheetEntry } from '@kc/domain';
+import { timesheetActions, type TimesheetEntry } from '@kc/domain';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { DangerButton, PrimaryButton, SecondaryButton } from '../../ui/Buttons';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
@@ -25,6 +25,8 @@ function TimesheetEntryCardInner(props: TimesheetEntryCardProps) {
   const L = useLocaleBundle();
   const t = L.admin.time;
   const hours = entry.hoursX100 / 100;
+  // The buttons follow `timesheetMachine`, the same graph the timesheet RPCs enforce.
+  const can = timesheetActions(entry.status, { isMine, canApprove });
   return (
     <View style={styles.card}>
       <View style={styles.head}>
@@ -55,31 +57,23 @@ function TimesheetEntryCardInner(props: TimesheetEntryCardProps) {
 
       {/* Compact admin size (spec 17 §4.3); delete and reject are destructive, so DangerButtons (D94). */}
       <View style={styles.actions}>
-        {isMine && entry.status === 'draft' && (
-          <>
-            {props.onEdit && (
-              <SecondaryButton label={t.row.edit} size="sm" onPress={props.onEdit} />
-            )}
-            {props.onSubmit && (
-              <PrimaryButton label={t.row.submit} size="sm" onPress={props.onSubmit} />
-            )}
-            {props.onDelete && (
-              <DangerButton label={t.row.delete} size="sm" onPress={props.onDelete} />
-            )}
-          </>
+        {/* A rejected entry moves on only through an edit, so there it is the primary action. */}
+        {can.edit && props.onEdit && (
+          entry.status === 'rejected'
+            ? <PrimaryButton label={t.row.edit} size="sm" onPress={props.onEdit} />
+            : <SecondaryButton label={t.row.edit} size="sm" onPress={props.onEdit} />
         )}
-        {isMine && entry.status === 'rejected' && props.onEdit && (
-<PrimaryButton label={t.row.edit} size="sm" onPress={props.onEdit} />
+        {can.submit && props.onSubmit && (
+          <PrimaryButton label={t.row.submit} size="sm" onPress={props.onSubmit} />
         )}
-        {canApprove && entry.status === 'submitted' && (
-          <>
-            {props.onReject && (
-              <DangerButton label={t.row.reject} size="sm" onPress={props.onReject} />
-            )}
-            {props.onApprove && (
-              <PrimaryButton label={t.row.approve} size="sm" onPress={props.onApprove} />
-            )}
-          </>
+        {can.delete && props.onDelete && (
+          <DangerButton label={t.row.delete} size="sm" onPress={props.onDelete} />
+        )}
+        {can.decide && props.onReject && (
+          <DangerButton label={t.row.reject} size="sm" onPress={props.onReject} />
+        )}
+        {can.decide && props.onApprove && (
+          <PrimaryButton label={t.row.approve} size="sm" onPress={props.onApprove} />
         )}
       </View>
     </View>
