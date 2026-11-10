@@ -8,6 +8,11 @@ on:
   schedule:
     - cron: '0 1 * * *' # 04:00 Asia/Jerusalem (summer time)
   workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref whose tests/e2e suite runs (default refs/heads/dev, never main)
+        type: string
+        default: 'refs/heads/dev'
   workflow_call:
     inputs:
       p0_only:
@@ -36,9 +41,16 @@ jobs:
     env:
       DEV_WEB_URL: ${{ vars.DEV_WEB_URL || 'https://dev.karma-community.pages.dev' }}
     steps:
+      # Cron runs this workflow file from the default branch, so an empty
+      # `ref:` would check out main's tree against the dev Pages URL. Schedule
+      # and a bare dispatch use refs/heads/dev. workflow_call keeps the
+      # caller's SHA unless the caller passes ref (mobile-nightly does).
+      # fetch-tags: false avoids the D-195 tag-ruleset collision on `dev`.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref != '' && inputs.ref || (github.event_name == 'workflow_call' && github.sha || 'refs/heads/dev') }}
+          fetch-tags: false
+          persist-credentials: false
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
