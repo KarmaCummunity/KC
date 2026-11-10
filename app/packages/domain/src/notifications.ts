@@ -53,6 +53,8 @@ export type NotificationKind =
   | 'giving_handoff_confirmed'
   | 'giving_handoff_declined'
   | 'giving_handoff_cancelled'
+  // Wave 2c (0716) — a request the giver did not answer within its confirm window lapsed.
+  | 'giving_handoff_expired'
   | 'giving_handoff_completed'
   // FR-KNOW-004 AC5 (0704, #2034) — knowledge slot bookings: every change reaches the other side.
   | 'knowledge_booking_requested'

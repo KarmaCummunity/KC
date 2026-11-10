@@ -58,7 +58,7 @@ describe('useNotificationTapRouting', () => {
       ...['ride_request','ride_approved','ride_rejected','ride_participant_cancelled','ride_participant_cancelled_by_owner','ride_started','ride_arrived','ride_breakdown','ride_emergency'].map(k => [k, { params: { id } }, '/(tabs)/donations/rides/[id]', { id }] as [string, object, string, object]),
       ['ride_rate_prompt', { params: { id } }, '/(tabs)/donations/rides/[id]/rate', { id }],
       ...['match_suggested','match_interest','match_accepted'].map(k => [k, {}, '/matches', {}] as [string, object, string, object]),
-      ...['listing_expiring','listing_expired','ride_booking_requested','ride_booking_confirmed','ride_booking_declined','ride_booking_expired','ride_booking_cancelled','ride_route_match','ride_listing_emergency','giving_handoff_requested','giving_handoff_claimed','giving_handoff_confirmed','giving_handoff_declined','giving_handoff_cancelled','giving_handoff_completed'].map(k => [k, { params: { listingId: id } }, '/listing/[listingId]', { listingId: id }] as [string, object, string, object]),
+      ...['listing_expiring','listing_expired','ride_booking_requested','ride_booking_confirmed','ride_booking_declined','ride_booking_expired','ride_booking_cancelled','ride_route_match','ride_listing_emergency','giving_handoff_requested','giving_handoff_claimed','giving_handoff_confirmed','giving_handoff_declined','giving_handoff_cancelled','giving_handoff_expired','giving_handoff_completed'].map(k => [k, { params: { listingId: id } }, '/listing/[listingId]', { listingId: id }] as [string, object, string, object]),
     ];
     routes.forEach(([kind, payload, _pathname, _params]) => responseHandler?.(response({ kind, ...payload })));
     expect(push).toHaveBeenCalledTimes(routes.length);

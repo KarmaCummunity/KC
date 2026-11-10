@@ -40,6 +40,7 @@ describe('resolvePushRoute', () => {
     'giving_handoff_confirmed',
     'giving_handoff_declined',
     'giving_handoff_cancelled',
+    'giving_handoff_expired',
     'giving_handoff_completed',
     'knowledge_booking_requested',
     'knowledge_booking_confirmed',
