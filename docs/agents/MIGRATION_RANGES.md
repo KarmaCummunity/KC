@@ -134,6 +134,7 @@ Last applied on kc-dev when this was written: `0239`.
 | 0700 | #1398 `give_food` no longer requires `food_type` (the food type is the world sub-category) | in progress |
 | 0703–0714 | knowledge exchange posts, epic #1687 (KNOW-K1-B): `0703` six kinds, slots as rows, slot rules and sync (#2034), `0704` slot bookings, sweeps, pushes (#2034), `0705–0714` children #2035–#2039 | in progress |
 | 0715 | RLS auth initplan on the hot-table policies, all but posts (supersedes closed #1546, PR #2054) | in progress |
+| 0740 | delivered listing visibility: union of the two surfaces, recipient via handoff, `recipients` row for food / animals / items hand-overs + backfill (D-229) | in progress |
 | 0726+ | — | free |
 
 ## Next free ranges
