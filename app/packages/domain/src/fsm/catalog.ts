@@ -13,6 +13,7 @@ import { postCommentMachine } from './machines/postComment';
 import { reportMachine } from './machines/report';
 import { reviewDecisionMachine } from './machines/reviewDecision';
 import { rideBookingMachine } from './machines/rideBooking';
+import { timesheetMachine } from './machines/timesheet';
 
 /**
  * The only registry of kernel machines. Every machine listed here must have the same
@@ -37,4 +38,5 @@ export const FSM_MACHINES: readonly FsmMachine<string, string>[] = [
   followRequestMachine,
   reviewDecisionMachine,
   donationLinkReviewMachine,
+  timesheetMachine,
 ];

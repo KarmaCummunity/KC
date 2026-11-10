@@ -62,9 +62,9 @@ Per design spec §4.1, one PR per machine (or per tight family), each with code 
 | Machine | Stored in | States | Copies today | Enforcement today | Wave |
 |---|---|---|---|---|---|
 | **Review queue** (one shape, four tables) | `org_applications`, `bot_admin_review_items`, `claim_requests`, `donation_links.review_status` | pending, approved, rejected | SQL checks; `api_bot_admin_review_resolve` (`0304`); `donation_links` guard trigger (`0546`) sends an edited link back to `pending`; `claim_requests` has no reviewer RPC; `donation_links.hidden_at` (`0014`) is dead since removal became a delete (`0050`) | reviewer RPCs; one guard trigger; `fsm_assert_transition` through `kc_private.enforce_status_fsm` on all four (`0717`): `review_decision` (final decisions) and `donation_link_review` (an edit goes back to `pending`) | **4c ✅** |
-| **Volunteer opportunity** | `volunteer_opportunities.status` | draft, open, closed, cancelled | SQL check (`0370`), RPCs (`0371`, `0379`) | RPC filters | **5** |
-| **Shift signup** | `volunteer_shift_signups.status` | registered, waitlisted, checked_in, cancelled, no_show | SQL check (`0370`), RPCs (`0373`, `0374`) | RPC filters | **5** |
-| **Timesheet entry** | `timesheet_entries.status` | draft, submitted, approved, rejected | SQL check + RPCs (`0171`), TS `TimesheetEntry.ts` | RPC filters | **5** |
+| **Volunteer opportunity** | `volunteer_opportunities.status` | draft, open, closed, cancelled | SQL check (`0370`), RPCs (`0371`, `0379`) | RPC filters; organizer RLS writes any status | retire (#2072): no client creates an opportunity since the time world moved to posts and events (G1 step 5b); kc-dev holds no rows |
+| **Shift signup** | `volunteer_shift_signups.status` | registered, waitlisted, checked_in, cancelled, no_show | SQL check (`0370`), RPCs (`0373`, `0374`) | RPC filters | retire with the opportunity (#2072) |
+| **Timesheet entry** | `timesheet_entries.status` | draft, submitted, approved, rejected | kernel `timesheetMachine` (`0718`), SQL check + RPCs (`0171`), TS `TimesheetEntry.ts`; the card's actions come from `timesheetActions` | RPC author / approver checks; `fsm_assert_transition` through `kc_private.enforce_status_fsm` (`0718`) | **5 ✅** |
 | **Donation intent** | `donation_intents.status` | created, checkout, paid, failed, cancelled | SQL check (`0268`), `complete_sandbox_donation` (`0690`, behind the `sandbox_payments` flag, wrapping the `0362` body), TS `PaymentTypes.ts` | RPC filters | **6** |
 | **Payment / refund / payout** | `payments`, `payment_refunds`, `payment_payouts` | pending, succeeded, failed, refunded / pending, succeeded, failed / pending, paid, failed | SQL checks (`0268`, `0269`) | upsert only | **6** |
 | **Standing order** | `standing_orders.status` | active, paused, cancelled | SQL check (`0269`), RPCs (`0363`, `0365`); the `subscriptions-charger` worker reads due orders and writes nothing (stub, no schedule) | RPC filters | **6** |
@@ -117,8 +117,9 @@ Client state that encodes a server machine is a copy (§1 rule): it goes when it
 | Ride booking actions | `RideBookingRow.tsx`, `RideBooking.ts` (`canPerformBookingAction`, `canReinstateRideBooking`) | Ride booking | two copies that disagree (complete from reserved) |
 | Housing booking actions | `housingStayRules.ts` | Housing booking | in sync, time windows included |
 | Event roster actions | `lib/eventPost.ts` (`rosterActionsFor`) | Event registration | in sync |
-| Volunteer signup | `my-shifts.tsx` | Shift signup | no check-in window |
-| Ride series, standing order, timesheet | `MyRideSeriesList.tsx`, `standing-orders.tsx`, `TimesheetEntryCard.tsx` | Ride series, standing order, timesheet | inline |
+| Volunteer signup | `my-shifts.tsx` | Shift signup | no check-in window; retire (#2072) |
+| Ride series, standing order | `MyRideSeriesList.tsx`, `standing-orders.tsx` | Ride series, standing order | inline |
+| Timesheet actions | `TimesheetEntryCard.tsx` through `timesheetActions` (`@kc/domain`) | Timesheet entry | in sync (wave 5) |
 | Onboarding routing | `AuthGate.tsx`, three use cases | Onboarding | the only guards (§4) |
 | Account gate, delete-account modal | `accountGateDecision.ts`, `DeleteAccountConfirmModal.tsx` | Account status | classification; drifted union (§4) |
 | Chat message | `chatStore.ts`, `useChatSend.ts` | Chat message | adds a client-only `failed`; status patches have no order check |
@@ -171,8 +172,8 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 - The report dismiss cascade (`0118`) restores a post only from `removed_admin`, while auto-moderation now hides with `hidden_pending_review` (`0452`).
 
 **Organizations, volunteering, money, automation**
-- Timesheets: the UI offers delete only for `draft`; the RPC (`0171`) also deletes `rejected`.
-- `close_volunteer_opportunity` (`0379`) has no from-guard; the UI shows Close in every status. `cancelled` and shift `no_show` have no writer; the my-shifts screen labels unknown statuses as "registered".
+- ~~Timesheets: the UI offers delete only for `draft`; the RPC (`0171`) also deletes `rejected`.~~ ✅ wave 5: the card's actions follow `timesheetMachine`, so a rejected entry can be deleted too.
+- `close_volunteer_opportunity` (`0379`) has no from-guard; the UI shows Close in every status. `cancelled` and shift `no_show` have no writer; the my-shifts screen labels unknown statuses as "registered". Moot: the subsystem is to be retired (#2072).
 - Money vocabularies split: the intent says `paid`, the payment `succeeded`; the ledger spells `canceled`, every other table `cancelled`. `created` (intent) is accepted but never written. Refund, payout and KYC statuses have no writer. `cancel_standing_order` re-stamps an already cancelled order.
 - The finance ledger upsert (`0470`) allows any move, including out of `cleared`; spec `19_org_finance.md` says reconciled entries are frozen.
 - WhatsApp: the admin screen offers Resend for every `skipped_*`; the RPC (`0308`) accepts three of six. The bot session re-enters `confirm` from `published` (`0302`), and `idle` has no writer. Template sends read `is_approved` and never `meta_status`.
@@ -200,7 +201,7 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 - ~~"Complete trip" shows on every confirmed booking (the row is not given `departsAt`); the RPC refuses more than 1 hour before departure.~~ ✅ wave 2b: held, with a hint, until an hour before departure.
 - ~~Approve counts confirmed and handed-over seats; the RPC counts reserved seats too, so Approve can fail with `ride_seats_exhausted`.~~ ✅ wave 2b: other waiting bookings count too.
 - ~~Owner assign in housing and items is not gated on an open post; the RPC refuses with `closure_wrong_status`.~~ ✅ wave 2b: assign shows only on an open listing.
-- Volunteer check-in shows for any registration; the RPC allows it only from 2 hours before the shift to 4 hours after.
+- Volunteer check-in shows for any registration; the RPC allows it only from 2 hours before the shift to 4 hours after. Moot: retired with the subsystem (#2072).
 - ~~Onboarding moves are guarded only in TS use cases (read, then write); the column is client-writable with a check constraint only.~~ ✅ wave 3b (`0698`): the client grant is revoked; the server holds the graph and the step-1 rule.
 - `StartRideUseCase` / `ArriveRideUseCase` are wired but unused; `rpc_ride_start` writes `posts.status = 'in_transit'`, which S1 forbids (retire, wave 1d).
 - The client chat renders `pending` and `delivered` alike and cannot show `delivered`; donations model only `paid`, so failed and cancelled intents cannot show.
@@ -255,7 +256,7 @@ One PR per row. Each wave starts only after the previous one is merged, so the c
 | 2c ✅ | Reservation-expiry sweep for items and animals (`confirm_by`, `0716`); knowledge sweeps its own bookings (`0704`) | §4 handoffs |
 | 3 | Account status (+ composite invariant check beside the kernel call), onboarding | Many writers, failing checks, drifted unions |
 | 4 | Reports, follow requests, review-queue family, content moderation, post comments, knowledge topics | Small graphs; replaces hand-written triggers and RLS-only edges |
-| 5 | Volunteer opportunity, shift signup, timesheets | First role-heavy graphs outside giving |
+| 5 ✅ | Timesheets (`0718`): the kernel holds the graph, the RPCs keep the author / approver checks, the card's actions follow the machine. Volunteer opportunity and shift signup are retired instead (#2072) | The legacy volunteer subsystem has had no writer since G1 step 5b |
 | 6 | Money (intent, payment, refund, payout, standing order, KYC), ride series, finance ledger | Before the real payment provider webhook lands |
 | 7 | WhatsApp outbound and session, template review, chat message; background machines (embedding job, ride route alert, ingestion run, entity-resolution candidate, operator case), notification outbox in-flight state, worker schedules (§3.4) | Service-only, lowest risk |
 | — | `listings`, `giving_handoffs`, `ride_listings` (retired ✅ `0667`, views over the record); `ride_participants`, `ride_templates`, `listing_matches` | Retire with G44 / matching v2, never port. A writer that updates the `listings` view moves the post through the view's `instead of` trigger; moderation writers act on `posts` directly (`0682`) |
