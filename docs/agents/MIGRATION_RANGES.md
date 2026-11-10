@@ -133,11 +133,12 @@ Last applied on kc-dev when this was written: `0239`.
 | 0693 | composer items posts get their listing kind on insert (regression from 0666) | in progress |
 | 0700 | #1398 `give_food` no longer requires `food_type` (the food type is the world sub-category) | in progress |
 | 0703–0714 | knowledge exchange posts, epic #1687 (KNOW-K1-B): `0703` six kinds, slots as rows, slot rules and sync (#2034), `0704` slot bookings, sweeps, pushes (#2034), `0705–0714` children #2035–#2039 | in progress |
-| 0715+ | — | free |
+| 0715 | RLS auth initplan on the hot-table policies, all but posts (supersedes closed #1546, PR #2054) | in progress |
+| 0716+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0715+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0716+`.
 
 ## How to claim
 
