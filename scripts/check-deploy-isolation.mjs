@@ -70,6 +70,9 @@ export const COMMANDS = [
 export const MONITORS = {
   'ops-health.yml': { job: 'monitor', envs: ['supabase-dev', 'supabase-prod'], triggers: ['schedule', 'workflow_dispatch'] },
   'ci-prod-ledger.yml': { job: 'ledger', envs: ['supabase-prod'], triggers: ['schedule', 'workflow_dispatch'] },
+  // Read-only ledger gate of the PROD store-build pipeline. Other jobs in this
+  // workflow use mobile-store (or no environment) and must not use `production`.
+  'prod-store-build.yml': { job: 'ledger', envs: ['supabase-prod'], triggers: ['workflow_run', 'workflow_dispatch'] },
 };
 
 const PROD_ENVS = new Set(['production', 'supabase-prod', 'cloudflare-prod']);
