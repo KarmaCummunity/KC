@@ -21,6 +21,8 @@
   "notifications.rideBookingExpiredBody": "מקומך ב\"{{rideTitle}}\" לא אושר בזמן. אפשר לחפש נסיעה אחרת.",
   "notifications.rideBookingCancelledTitle": "הזמנה בטרמפ בוטלה",
   "notifications.rideBookingCancelledBody": "{{name}} ביטל/ה את ההזמנה ב\"{{rideTitle}}\".",
+  "notifications.rideBookingLapsedTitle": "הנסיעה לא יצאה",
+  "notifications.rideBookingLapsedBody": "הנסיעה \"{{rideTitle}}\" לא יצאה לדרך והסתיימה, וההזמנה שלך בוטלה. אפשר לחפש נסיעה אחרת.",
   "notifications.rideRouteMatchTitle": "נסיעה חדשה במסלול שלך",
   "notifications.rideRouteMatchBody": "{{origin}} ← {{dest}} · {{when}}",
   "notifications.givingHandoffRequestedTitle": "בקשה חדשה ל\"{{listingTitle}}\"",

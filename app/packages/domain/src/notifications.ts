@@ -43,6 +43,8 @@ export type NotificationKind =
   | 'ride_booking_declined'
   | 'ride_booking_expired'
   | 'ride_booking_cancelled'
+  // 0734 — the ride expired without leaving, so a confirmed seat was cancelled.
+  | 'ride_booking_lapsed'
   // D74 (0516) — a new ride on a route the user follows.
   | 'ride_route_match'
   // D70 (0517) — an emergency raised on a ride of the one rides flow.

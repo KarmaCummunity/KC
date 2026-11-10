@@ -70,6 +70,9 @@ export const notificationsHe = {
   rideBookingExpiredBody: 'מקומך ב"{{rideTitle}}" לא אושר בזמן. אפשר לחפש נסיעה אחרת.',
   rideBookingCancelledTitle: 'הזמנה בטרמפ בוטלה',
   rideBookingCancelledBody: '{{name}} ביטל/ה את ההזמנה ב"{{rideTitle}}".',
+  // 0734 — a confirmed seat on a ride that expired without leaving.
+  rideBookingLapsedTitle: 'הנסיעה לא יצאה',
+  rideBookingLapsedBody: 'הנסיעה "{{rideTitle}}" לא יצאה לדרך והסתיימה, וההזמנה שלך בוטלה. אפשר לחפש נסיעה אחרת.',
   // D74 — a new ride on a route the user follows (0516).
   rideRouteMatchTitle: 'נסיעה חדשה במסלול שלך',
   rideRouteMatchBody: '{{origin}} ← {{dest}} · {{when}}',

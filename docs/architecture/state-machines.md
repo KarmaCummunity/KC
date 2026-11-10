@@ -155,7 +155,7 @@ Each item is a task for the wave that owns the machine; the fix ships with a reg
 - `cancel_giving_handoff` (`0666`) accepts event registrations without promoting the waitlist (`event_promote_waitlist`), and resets `availability_status` for items and food but not animals.
 - ~~Items, animals and knowledge reservations get `confirm_by = +24h`, but only rides and housing sweep on it; a stale reservation never lapses and blocks pause / fulfill / delete.~~ ✅ wave 2c (`0716`): items and animals lapse as `expired` and both sides are pushed; knowledge bookings have their own confirm action and sweep since `0704` (#2034).
 - The giving handoff push trigger covers items and food only (`0621`): animals reservations push nobody.
-- `rides_expired_listings_sweep` (`0624`) expires the ride post but leaves its reserved / confirmed bookings live; the food sweep cancels them.
+- ~~`rides_expired_listings_sweep` (`0624`) expires the ride post but leaves its reserved / confirmed bookings live; the food sweep cancels them.~~ ✅ `0734`: an unanswered request lapses (`expired`) and a confirmed seat is cancelled by the system, with a "the ride did not run" push (`ride_booking_lapsed`).
 - ✅ wave 1b-ii (`0683`): the generic handed-over step (`mark_giving_handed_over`) serves the four worlds whose screen offers it (items, food, knowledge, animals); rides, housing and events complete through their own RPCs and windows.
 
 **Account and onboarding**
