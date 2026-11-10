@@ -1461,6 +1461,9 @@ begin
              'chats', public.chat_unread_total(),
              'notifications', public.notifications_unread_count()),
            -- ↑ End of the messaging and notifications addition.
+           -- >>> moderation module: staff roles of the caller (empty for an ordinary member).
+           'admin', jsonb_build_object('roles', public.get_my_admin_roles()),
+           -- <<< moderation module
            'legal', (
              -- Documents in force whose last material version the caller has not accepted.
              -- `modal` blocks the app; `banner` is the 7-day notice of a standard change,
@@ -7553,3 +7556,2026 @@ create trigger notifications_broadcast_badge_update
   after update on public.notifications
   referencing new table as changed_rows
   for each statement execute function kc_private.notifications_broadcast_badge();
+
+-- >>> supabase/schemas/58_audit/010_events.sql
+-- Audit · events (append-only trail of privileged and sensitive actions)
+--
+-- One row per action: who acted, what they did and on what. Rows carry ids only — never a
+-- name, a phone number or a message body (design §4) — and have no foreign keys, so they
+-- outlive the accounts and content they describe. Nobody updates or deletes a row, the
+-- service role and the table owner included; the only way data leaves is retention, which
+-- drops a whole monthly partition (FR-MOD-012 AC3).
+--
+-- Partitioned by month with plain declarative partitions (no pg_partman): a scheduled job
+-- calls kc_private.audit_ensure_partition ahead of time; the default partition catches a row
+-- whose month was never prepared, so a missed job can never fail a member's write.
+
+create sequence audit.events_id_seq;
+
+create table audit.events (
+  id          bigint not null default nextval('audit.events_id_seq'),
+  occurred_at timestamptz not null default now(),
+  -- The member who acted; null for sweeps, triggers of automatic rules and the service role.
+  actor_id    uuid,
+  -- Request context: the API role of the caller and the device address, when there is one.
+  actor_role  text,
+  request_ip  inet,
+  -- Stable snake_case verb, e.g. 'ban_user', 'restore_target', 'account_status_changed'.
+  action      text not null check (action ~ '^[a-z][a-z0-9_]{2,62}$'),
+  target_type text check (target_type ~ '^[a-z][a-z0-9_]{1,30}$'),
+  target_id   uuid,
+  -- Ids, statuses and reason codes only. The key check is a tripwire for the commonest
+  -- ways personal text could slip in; free text belongs in the module's own table.
+  metadata    jsonb not null default '{}'::jsonb
+                check (jsonb_typeof(metadata) = 'object'
+                       and not metadata ?| array['name', 'display_name', 'phone', 'email', 'address',
+                                                 'body', 'note', 'text', 'comment']),
+  primary key (occurred_at, id),
+  constraint events_target_pair_chk check (target_id is null or target_type is not null)
+) partition by range (occurred_at);
+comment on table audit.events is 'Append-only audit trail, one partition per month. Ids only; no updates, no deletes.';
+alter sequence audit.events_id_seq owned by audit.events.id;
+
+-- Admin screen "history of a member / a post": events about one target, newest first.
+create index events_target_recent_idx on audit.events (target_id, occurred_at desc, id desc)
+  where target_id is not null;
+-- Admin screen "what did this staff member do": events by one actor, newest first.
+create index events_actor_recent_idx on audit.events (actor_id, occurred_at desc, id desc)
+  where actor_id is not null;
+-- Admin screen filter by action, newest first.
+create index events_action_recent_idx on audit.events (action, occurred_at desc, id desc);
+
+alter table audit.events enable row level security;
+alter table audit.events force row level security;
+
+-- Refuses every change to audit data. Attached per row (UPDATE, DELETE) and per statement
+-- (TRUNCATE); it has no exception for any role.
+create function kc_private.audit_reject_change()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  raise exception 'append_only' using errcode = 'P0001',
+    detail = format('%s on %s.%s', tg_op, tg_table_schema, tg_table_name);
+end;
+$$;
+comment on function kc_private.audit_reject_change() is
+  'Trigger: raises append_only on UPDATE, DELETE and TRUNCATE of audit data, for every role.';
+
+-- Row triggers on the partitioned table are inherited by every partition, present and future.
+create trigger events_append_only
+  before update or delete on audit.events
+  for each row execute function kc_private.audit_reject_change();
+create trigger events_no_truncate
+  before truncate on audit.events
+  for each statement execute function kc_private.audit_reject_change();
+
+-- The service role reads the trail and writes it only through kc_private.audit_record.
+revoke all on audit.events from service_role;
+grant select on audit.events to service_role;
+
+-- Applies to one partition what the parent cannot pass down: forced RLS, no direct
+-- privileges for the service role, and the TRUNCATE guard (statement triggers are not inherited).
+create function kc_private.audit_secure_partition(p_partition text)
+returns void
+language plpgsql
+set search_path = ''
+as $$
+begin
+  execute format('alter table audit.%I enable row level security', p_partition);
+  execute format('alter table audit.%I force row level security', p_partition);
+  execute format('revoke all on audit.%I from service_role', p_partition);
+  execute format(
+    'create trigger %I before truncate on audit.%I for each statement '
+    'execute function kc_private.audit_reject_change()', p_partition || '_no_truncate', p_partition);
+end;
+$$;
+
+create table audit.events_default partition of audit.events default;
+comment on table audit.events_default is 'Safety net for a month whose partition was not created in time.';
+do $$ begin perform kc_private.audit_secure_partition('events_default'); end $$;
+
+-- Creates the partition of the month containing p_month (UTC) unless it exists. Returns
+-- whether it was created. Run monthly, a month ahead, by the scheduler; definer rights
+-- because the service role may not create objects in `audit`. If the default partition
+-- already holds rows of that month the server refuses the new partition; those rows stay
+-- readable where they are, and the month keeps using the default partition.
+create function kc_private.audit_ensure_partition(p_month date)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_from constant timestamptz := date_trunc('month', p_month)::timestamp at time zone 'UTC';
+  v_to constant timestamptz := (date_trunc('month', p_month) + interval '1 month')::timestamp at time zone 'UTC';
+  v_name constant text := 'events_' || to_char(p_month, '"y"YYYY"m"MM');
+begin
+  if to_regclass(format('audit.%I', v_name)) is not null then
+    return false;
+  end if;
+  begin
+    execute format('create table audit.%I partition of audit.events for values from (%L) to (%L)',
+                   v_name, v_from, v_to);
+  exception when check_violation then
+    return false;
+  end;
+  perform kc_private.audit_secure_partition(v_name);
+  return true;
+end;
+$$;
+comment on function kc_private.audit_ensure_partition(date) is
+  'Creates the monthly partition of audit.events for the given date; idempotent.';
+
+-- Retention, the one way audit data is ever removed: drops every monthly partition that
+-- ends at or before the month of p_cutoff. The trail is kept for at least 24 months
+-- (FR-MOD-012 AC3), so a more recent cutoff is refused.
+create function kc_private.audit_drop_partitions_before(p_cutoff date)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_partition text;
+  v_dropped integer := 0;
+begin
+  if p_cutoff > (current_date - interval '24 months')::date then
+    raise exception 'retention_too_short' using errcode = 'P0001', detail = 'audit rows are kept 24 months';
+  end if;
+  for v_partition in
+    select c.relname
+      from pg_catalog.pg_inherits i
+      join pg_catalog.pg_class c on c.oid = i.inhrelid
+     where i.inhparent = 'audit.events'::regclass
+       and c.relname ~ '^events_y[0-9]{4}m[0-9]{2}$'
+       and to_date(c.relname, '"events_y"YYYY"m"MM') + interval '1 month' <= date_trunc('month', p_cutoff)
+  loop
+    execute format('drop table audit.%I', v_partition);
+    v_dropped := v_dropped + 1;
+  end loop;
+  return v_dropped;
+end;
+$$;
+comment on function kc_private.audit_drop_partitions_before(date) is
+  'Retention: drops whole monthly partitions older than the cutoff (never younger than 24 months).';
+
+-- Partitions for the month the database is created in and the one after it.
+do $$
+begin
+  perform kc_private.audit_ensure_partition(current_date);
+  perform kc_private.audit_ensure_partition((current_date + interval '1 month')::date);
+end $$;
+
+-- >>> supabase/schemas/58_audit/020_recording.sql
+-- Audit · writing the trail
+--
+-- kc_private.audit_record is the only writer of audit.events. Privileged RPCs call it in
+-- their own transaction; modules created before this one enqueue an outbox event on topic
+-- `audit` instead, which the consumer below turns into a row; and the triggers at the end
+-- record the state changes that must never go unrecorded, whoever makes them.
+
+-- Records one event and returns its id. The actor defaults to the signed-in caller; the
+-- API role and device address are taken from the request, when there is one.
+create function kc_private.audit_record(
+  p_action text,
+  p_target_type text default null,
+  p_target_id uuid default null,
+  p_metadata jsonb default '{}'::jsonb,
+  p_actor_id uuid default auth.uid(),
+  p_occurred_at timestamptz default now()
+)
+returns bigint
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_forwarded constant text := btrim(split_part(
+    nullif(current_setting('request.headers', true), '')::jsonb ->> 'x-forwarded-for', ',', 1));
+  v_ip inet;
+  v_id bigint;
+begin
+  begin
+    v_ip := nullif(v_forwarded, '')::inet;
+  exception when invalid_text_representation then
+    v_ip := null;
+  end;
+
+  insert into audit.events (occurred_at, actor_id, actor_role, request_ip, action, target_type, target_id, metadata)
+  values (
+    coalesce(p_occurred_at, now()), p_actor_id,
+    nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role',
+    v_ip, p_action, p_target_type, p_target_id, coalesce(p_metadata, '{}'::jsonb))
+  returning id into v_id;
+  return v_id;
+end;
+$$;
+comment on function kc_private.audit_record(text, text, uuid, jsonb, uuid, timestamptz) is
+  'The only writer of audit.events: records one action with its actor, target and id-only metadata.';
+
+-- Consumer of outbox topic `audit`. Payload contract:
+--   { "action": text, "actor_id": uuid|null, "entity": { "type": text, "id": uuid }, "data": { ids… } }
+-- The row is stamped with the time the event was enqueued. A payload that cannot be
+-- recorded is released with its error and retried in an hour, so it stays visible to
+-- operations and never blocks the events behind it. Returns the number of rows written.
+create function kc_private.audit_consume_outbox(p_limit integer default 200)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_event kc_private.outbox_events;
+  v_written integer := 0;
+begin
+  for v_event in select * from kc_private.outbox_claim('audit', p_limit) loop
+    begin
+      perform kc_private.audit_record(
+        v_event.payload ->> 'action',
+        v_event.payload #>> '{entity,type}',
+        (v_event.payload #>> '{entity,id}')::uuid,
+        coalesce(v_event.payload -> 'data', '{}'::jsonb),
+        (v_event.payload ->> 'actor_id')::uuid,
+        v_event.created_at);
+      perform kc_private.outbox_complete(v_event.id);
+      v_written := v_written + 1;
+    exception when others then
+      perform kc_private.outbox_complete(v_event.id, sqlerrm, interval '1 hour');
+    end;
+  end loop;
+  return v_written;
+end;
+$$;
+comment on function kc_private.audit_consume_outbox(integer) is
+  'Scheduled job: writes the queued `audit` outbox events to audit.events.';
+
+-- ── State changes recorded by trigger ───────────────────────────────────────
+-- Every change of an account status: sanctions, restores, deletion requests, activation.
+-- The privileged RPC that caused it records its own event with the reason; this row is the
+-- state fact, written even when a future writer forgets to. The actor is the signed-in
+-- caller in whose request the change happened; a move made in the machine role `system`
+-- (an automatic rule or a sweep) has none. The same holds for the post trigger below.
+create function kc_private.audit_user_account_status()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.audit_record(
+    'account_status_changed', 'user', new.user_id,
+    jsonb_build_object('from', old.status, 'to', new.status, 'until', new.status_until),
+    case when current_setting('kc.fsm_role', true) = 'system' then null else auth.uid() end);
+  return null;
+end;
+$$;
+
+create trigger user_account_audit_status
+  after update of status on public.user_account
+  for each row when (old.status is distinct from new.status)
+  execute function kc_private.audit_user_account_status();
+
+-- Moderation moves of a post: into or out of `hidden_pending_review` and `removed_admin`,
+-- and any move made in the role `admin`. Owner moves are not audited.
+create function kc_private.audit_post_moderation_status()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.audit_record(
+    'post_status_moderated', 'post', new.id,
+    jsonb_build_object('from', old.status, 'to', new.status,
+                       'role', nullif(current_setting('kc.fsm_role', true), '')),
+    case when current_setting('kc.fsm_role', true) = 'system' then null else auth.uid() end);
+  return null;
+end;
+$$;
+
+create trigger posts_audit_moderation_status
+  after update of status on public.posts
+  for each row
+  when (old.status is distinct from new.status
+        and ('removed_admin' in (old.status, new.status)
+             or 'hidden_pending_review' in (old.status, new.status)
+             or current_setting('kc.fsm_role', true) = 'admin'))
+  execute function kc_private.audit_post_moderation_status();
+
+-- >>> supabase/schemas/58_audit/030_deletion_tombstones.sql
+-- Audit · deletion tombstones (design §4.1.4)
+--
+-- Proof that an account was deleted, without keeping the account: a salted hash of the
+-- member id and the two dates. Given an id, operations can show that it was purged and
+-- when; the table alone identifies nobody.
+
+-- The salt of the hash: one random value per database, created on first use, readable by
+-- no API role (the service role included).
+create table kc_private.audit_tombstone_salt (
+  singleton boolean primary key default true check (singleton),
+  salt      bytea not null check (octet_length(salt) >= 32)
+);
+comment on table kc_private.audit_tombstone_salt is 'Per-database salt of deletion tombstone hashes. One row, never exposed.';
+alter table kc_private.audit_tombstone_salt enable row level security;
+alter table kc_private.audit_tombstone_salt force row level security;
+revoke all on kc_private.audit_tombstone_salt from service_role;
+
+create table audit.deletion_tombstones (
+  -- sha256(salt || member id).
+  user_hash    bytea primary key check (octet_length(user_hash) = 32),
+  -- When the member asked for the deletion; null when the account was removed without a request.
+  requested_at timestamptz,
+  purged_at    timestamptz not null default now()
+);
+comment on table audit.deletion_tombstones is 'Salted hash and dates of each purged account. Append-only.';
+
+alter table audit.deletion_tombstones enable row level security;
+alter table audit.deletion_tombstones force row level security;
+revoke all on audit.deletion_tombstones from service_role;
+grant select on audit.deletion_tombstones to service_role;
+
+create trigger deletion_tombstones_append_only
+  before update or delete on audit.deletion_tombstones
+  for each row execute function kc_private.audit_reject_change();
+create trigger deletion_tombstones_no_truncate
+  before truncate on audit.deletion_tombstones
+  for each statement execute function kc_private.audit_reject_change();
+
+-- The tombstone hash of a member id.
+create function kc_private.audit_tombstone_hash(p_user_id uuid)
+returns bytea
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_salt bytea;
+begin
+  insert into kc_private.audit_tombstone_salt (salt)
+  values (uuid_send(gen_random_uuid()) || uuid_send(gen_random_uuid()))
+  on conflict (singleton) do nothing;
+  select s.salt into strict v_salt from kc_private.audit_tombstone_salt s;
+  return sha256(v_salt || uuid_send(p_user_id));
+end;
+$$;
+comment on function kc_private.audit_tombstone_hash(uuid) is
+  'Salted hash under which a purged member is remembered; also answers "was this id purged?".';
+
+-- Called by the purge job for each account, in the transaction that removes it (before the
+-- auth account is deleted, so the request date is still there). Idempotent: a purge that
+-- is retried after a failed step leaves one tombstone. The audit event names the hash,
+-- not the member.
+create function kc_private.audit_record_deletion(p_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_hash constant bytea := kc_private.audit_tombstone_hash(p_user_id);
+begin
+  insert into audit.deletion_tombstones (user_hash, requested_at)
+  values (v_hash, (select a.deletion_requested_at from public.user_account a where a.user_id = p_user_id))
+  on conflict (user_hash) do nothing;
+  if found then
+    perform kc_private.audit_record(
+      'account_purged', 'user', null, jsonb_build_object('tombstone', encode(v_hash, 'hex')), null);
+  end if;
+end;
+$$;
+comment on function kc_private.audit_record_deletion(uuid) is
+  'Purge job: leaves the tombstone of an account that is about to be removed.';
+
+-- >>> supabase/schemas/60_moderation/010_admin_roles.sql
+-- Moderation · admin roles (FR-ADMIN-006, FR-ADMIN-010, FR-ADMIN-027)
+--
+-- Who holds which staff role. A grant is a row; revoking stamps it, so the history stays.
+-- Roles are ranked, platform roles (no organization) or organization roles (scoped to one),
+-- and each grant may name the grant it reports to. Nothing here is writable from a device:
+-- grants change through the RPCs of the next file, and the first super admin is created by
+-- a direct database operation (FR-ADMIN-006 AC2).
+
+-- The role vocabulary the app uses, with the three facts every rule derives from: seniority,
+-- whether the role is platform-wide, and which roles its holder may hand out. A holder never
+-- grants a role at or above their own rank (FR-ADMIN-027); `super_admin` is granted by nobody.
+create table kc_private.admin_roles (
+  role            text primary key,
+  rank            smallint not null check (rank > 0),
+  is_platform     boolean not null,
+  grantable_roles text[] not null default '{}',
+  unique (role, is_platform)
+);
+comment on table kc_private.admin_roles is 'Staff role vocabulary: rank, scope kind and the roles each one may grant.';
+alter table kc_private.admin_roles enable row level security;
+alter table kc_private.admin_roles force row level security;
+
+insert into kc_private.admin_roles (role, rank, is_platform, grantable_roles) values
+  ('super_admin', 100, true, array['admin', 'moderator', 'support', 'org_admin', 'org_manager',
+     'operators_manager', 'volunteer_manager', 'org_employee', 'operator', 'org_volunteer']),
+  ('admin', 90, true, array['moderator', 'support', 'org_admin', 'org_manager',
+     'operators_manager', 'volunteer_manager', 'org_employee', 'operator', 'org_volunteer']),
+  ('org_admin', 80, false, array['org_manager', 'operators_manager', 'volunteer_manager',
+     'org_employee', 'operator', 'org_volunteer']),
+  ('org_manager', 70, false, array['operators_manager', 'volunteer_manager', 'org_employee',
+     'operator', 'org_volunteer']),
+  ('moderator', 60, true, '{}'),
+  ('operators_manager', 60, false, array['operator']),
+  ('volunteer_manager', 60, false, array['org_volunteer']),
+  ('support', 50, true, '{}'),
+  ('org_employee', 40, false, '{}'),
+  ('operator', 40, false, '{}'),
+  ('org_volunteer', 30, false, '{}'),
+  ('volunteer', 20, false, '{}');
+
+create table public.admin_role_grants (
+  id               uuid primary key default gen_random_uuid(),
+  user_id          uuid not null references public.users (id) on delete cascade,
+  role             text not null,
+  -- Organization the role applies to; null for a platform role. The foreign key is added by
+  -- the organizations module, which creates the referenced table.
+  scope_org_id     uuid,
+  -- Derived, so the composite foreign key below can hold a platform role to "no
+  -- organization" and an organization role to "exactly one".
+  is_platform      boolean generated always as (scope_org_id is null) stored,
+  -- The grant this one reports to; null at the top of a tree.
+  manager_grant_id uuid references public.admin_role_grants (id) on delete set null,
+  granted_by       uuid references public.users (id) on delete set null,
+  granted_at       timestamptz not null default now(),
+  -- Set when the grant ends; an active grant has none.
+  revoked_at       timestamptz,
+  revoked_by       uuid references public.users (id) on delete set null,
+  constraint admin_role_grants_role_scope_fk foreign key (role, is_platform)
+    references kc_private.admin_roles (role, is_platform),
+  constraint admin_role_grants_not_own_manager_chk check (manager_grant_id <> id)
+);
+comment on table public.admin_role_grants is 'Staff role grants with their reporting line. Written only by server code.';
+
+-- A member holds a role once per scope while it is active.
+create unique index admin_role_grants_active_key on public.admin_role_grants
+  (user_id, role, coalesce(scope_org_id, '00000000-0000-0000-0000-000000000000'::uuid))
+  where revoked_at is null;
+-- At most one active super admin (FR-ADMIN-006 AC2).
+create unique index admin_role_grants_single_super_admin_key on public.admin_role_grants (role)
+  where role = 'super_admin' and revoked_at is null;
+-- "Who are the moderators" (staff notifications) and the role foreign key.
+create index admin_role_grants_role_idx on public.admin_role_grants (role) where revoked_at is null;
+-- Direct reports of a grant (re-parenting on revoke); covers the manager foreign key.
+create index admin_role_grants_manager_idx on public.admin_role_grants (manager_grant_id)
+  where manager_grant_id is not null;
+-- Team roster of an organization.
+create index admin_role_grants_scope_idx on public.admin_role_grants (scope_org_id)
+  where scope_org_id is not null;
+-- Foreign keys to the members who granted and revoked.
+create index admin_role_grants_granted_by_idx on public.admin_role_grants (granted_by)
+  where granted_by is not null;
+create index admin_role_grants_revoked_by_idx on public.admin_role_grants (revoked_by)
+  where revoked_by is not null;
+
+-- True when the caller holds, as an active member, an active platform grant of the named
+-- role or of a more senior platform role. An unknown or organization role is never held.
+-- Definer rights: it is evaluated inside policies of tables the caller cannot read freely.
+create function kc_access.has_admin_role(p_role text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+      from public.admin_role_grants g
+      join kc_private.admin_roles r on r.role = g.role and r.is_platform
+      join public.users u on u.id = g.user_id and u.is_active
+     where g.user_id = (select auth.uid())
+       and g.revoked_at is null
+       and r.rank >= (select t.rank from kc_private.admin_roles t where t.role = p_role and t.is_platform));
+$$;
+comment on function kc_access.has_admin_role(text) is
+  'Policy predicate: the caller holds this platform role or a more senior one.';
+grant execute on function kc_access.has_admin_role(text) to authenticated;
+
+-- True for any platform staff member (support and above).
+create function kc_access.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select kc_access.has_admin_role('support');
+$$;
+comment on function kc_access.is_admin() is 'Policy predicate: the caller is platform staff.';
+grant execute on function kc_access.is_admin() to authenticated;
+
+-- The signed-in caller, who must hold the role (or a more senior one). Every privileged
+-- RPC starts here; FR-ADMIN-006 AC3 fixes the error.
+create function kc_private.require_admin_role(p_role text)
+returns uuid
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  v_user_id constant uuid := kc_private.require_caller();
+begin
+  if not kc_access.has_admin_role(p_role) then
+    raise exception 'forbidden' using errcode = '42501';
+  end if;
+  return v_user_id;
+end;
+$$;
+comment on function kc_private.require_admin_role(text) is
+  'Returns auth.uid(); raises forbidden (42501) unless the caller holds the platform role.';
+
+alter table public.admin_role_grants enable row level security;
+alter table public.admin_role_grants force row level security;
+
+-- A member reads their own grants; platform staff read the whole roster.
+create policy admin_role_grants_select_own on public.admin_role_grants
+  for select to authenticated
+  using (user_id = (select auth.uid()));
+create policy admin_role_grants_select_staff on public.admin_role_grants
+  for select to authenticated
+  using ((select kc_access.is_admin()));
+
+grant select on public.admin_role_grants to authenticated;
+
+-- The caller's active roles (FR-ADMIN-011 AC2); empty for an ordinary member. Runs with the
+-- caller's rights: the rows are their own.
+create function public.get_my_admin_roles()
+returns text[]
+language sql
+stable
+set search_path = ''
+as $$
+  select coalesce(array_agg(distinct g.role order by g.role), '{}')
+    from public.admin_role_grants g
+   where g.user_id = (select auth.uid()) and g.revoked_at is null;
+$$;
+comment on function public.get_my_admin_roles() is 'Active staff roles of the caller, or an empty array.';
+grant execute on function public.get_my_admin_roles() to authenticated;
+
+-- Every grant, revoke and change of reporting line is audited, whoever writes the row.
+create function kc_private.audit_admin_role_grant()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.audit_record(
+    case
+      when tg_op = 'INSERT' then 'admin_role_grant'
+      when new.revoked_at is not null and old.revoked_at is null then 'admin_role_revoke'
+      else 'admin_role_set_manager'
+    end,
+    'user', new.user_id,
+    jsonb_build_object('grant_id', new.id, 'role', new.role, 'scope_org_id', new.scope_org_id,
+                       'manager_grant_id', new.manager_grant_id));
+  return null;
+end;
+$$;
+
+create trigger admin_role_grants_audit_insert
+  after insert on public.admin_role_grants
+  for each row execute function kc_private.audit_admin_role_grant();
+create trigger admin_role_grants_audit_update
+  after update of revoked_at, manager_grant_id on public.admin_role_grants
+  for each row
+  when (old.revoked_at is distinct from new.revoked_at
+        or old.manager_grant_id is distinct from new.manager_grant_id)
+  execute function kc_private.audit_admin_role_grant();
+
+-- >>> supabase/schemas/60_moderation/020_admin_role_rpcs.sql
+-- Moderation · managing staff roles (FR-ADMIN-015/016, FR-ADMIN-027, FR-ADMIN-030)
+--
+-- Authority follows rank and position: a member grants only roles their own role lists
+-- (always strictly junior), an organization role only inside its own organization, and
+-- revokes or moves only grants that sit below one of their own in the reporting tree.
+-- The super admin manages everything except the super admin grant itself.
+-- Errors: forbidden / forbidden_grant / forbidden_revoke (42501); P0001 — invalid_role,
+-- invalid_scope, target_not_found, target_not_active, role_already_active, grant_not_found,
+-- grant_already_revoked, invalid_manager.
+
+-- True when grant p_ancestor is above grant p_node in the reporting tree. UNION (not UNION
+-- ALL) ends the walk even if the data ever contained a loop.
+create function kc_private.admin_grant_is_above(p_ancestor uuid, p_node uuid)
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  with recursive chain as (
+    select g.manager_grant_id as id from public.admin_role_grants g where g.id = p_node
+    union
+    select g.manager_grant_id from public.admin_role_grants g join chain c on g.id = c.id)
+  select exists (select 1 from chain c where c.id = p_ancestor);
+$$;
+
+-- The actor's active grant that entitles them to hand out p_role in p_scope, most senior
+-- first; null when they may not. A new grant reports to it.
+create function kc_private.admin_granting_grant(p_actor uuid, p_role text, p_scope uuid)
+returns uuid
+language sql
+stable
+set search_path = ''
+as $$
+  select g.id
+    from public.admin_role_grants g
+    join kc_private.admin_roles mine on mine.role = g.role
+    join kc_private.admin_roles target on target.role = p_role
+   where g.user_id = p_actor
+     and g.revoked_at is null
+     and p_role = any (mine.grantable_roles)
+     and target.rank < mine.rank
+     and target.is_platform = (p_scope is null)
+     and (mine.is_platform or g.scope_org_id = p_scope)
+   order by mine.rank desc
+   limit 1;
+$$;
+comment on function kc_private.admin_granting_grant(uuid, text, uuid) is
+  'The grant under which the actor may give a role in a scope; null when not entitled.';
+
+-- True when the actor may revoke, change or move the grant: the super admin always (except
+-- their own grant), anyone else when a more senior grant of theirs is above it.
+create function kc_private.admin_can_manage_grant(p_actor uuid, p_grant_id uuid)
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select exists (
+    select 1
+      from public.admin_role_grants t
+      join kc_private.admin_roles tr on tr.role = t.role
+      join public.admin_role_grants a on a.user_id = p_actor and a.revoked_at is null
+      join kc_private.admin_roles ar on ar.role = a.role
+     where t.id = p_grant_id
+       and t.user_id <> p_actor
+       and ar.rank > tr.rank
+       and (a.role = 'super_admin' or kc_private.admin_grant_is_above(a.id, t.id)));
+$$;
+
+-- Locks an active grant the caller may manage and returns it.
+create function kc_private.admin_lock_managed_grant(p_actor uuid, p_grant_id uuid)
+returns public.admin_role_grants
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_grant public.admin_role_grants;
+begin
+  select g.* into v_grant from public.admin_role_grants g where g.id = p_grant_id for update;
+  if not found then
+    raise exception 'grant_not_found' using errcode = 'P0001';
+  end if;
+  if v_grant.revoked_at is not null then
+    raise exception 'grant_already_revoked' using errcode = 'P0001';
+  end if;
+  if not kc_private.admin_can_manage_grant(p_actor, p_grant_id) then
+    raise exception 'forbidden_revoke' using errcode = '42501';
+  end if;
+  return v_grant;
+end;
+$$;
+
+-- Gives a member a role. The new grant reports to the caller's grant that allowed it.
+create function public.admin_grant_role(p_target_user_id uuid, p_role text, p_scope_org_id uuid default null)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_active_caller();
+  v_role kc_private.admin_roles;
+  v_manager_grant_id uuid;
+  v_grant_id uuid;
+begin
+  select r.* into v_role from kc_private.admin_roles r where r.role = p_role;
+  if not found then
+    raise exception 'invalid_role' using errcode = 'P0001';
+  end if;
+  if v_role.is_platform <> (p_scope_org_id is null) then
+    raise exception 'invalid_scope' using errcode = 'P0001';
+  end if;
+  v_manager_grant_id := kc_private.admin_granting_grant(v_actor, p_role, p_scope_org_id);
+  if v_manager_grant_id is null then
+    raise exception 'forbidden_grant' using errcode = '42501';
+  end if;
+  if not exists (select 1 from public.users u where u.id = p_target_user_id) then
+    raise exception 'target_not_found' using errcode = 'P0001';
+  end if;
+  if not exists (select 1 from public.users u where u.id = p_target_user_id and u.is_active) then
+    raise exception 'target_not_active' using errcode = 'P0001';
+  end if;
+
+  begin
+    insert into public.admin_role_grants (user_id, role, scope_org_id, granted_by, manager_grant_id)
+    values (p_target_user_id, p_role, p_scope_org_id, v_actor, v_manager_grant_id)
+    returning id into v_grant_id;
+  exception when unique_violation then
+    raise exception 'role_already_active' using errcode = 'P0001';
+  end;
+  return v_grant_id;
+end;
+$$;
+comment on function public.admin_grant_role(uuid, text, uuid) is
+  'Grants a staff role the caller is entitled to hand out; returns the grant id.';
+grant execute on function public.admin_grant_role(uuid, text, uuid) to authenticated;
+
+-- Ends a grant. Its direct reports move, as a group, to the grant it reported to.
+create function public.admin_revoke_role(p_grant_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_active_caller();
+  v_grant constant public.admin_role_grants := kc_private.admin_lock_managed_grant(v_actor, p_grant_id);
+begin
+  update public.admin_role_grants g set revoked_at = now(), revoked_by = v_actor where g.id = p_grant_id;
+  update public.admin_role_grants g
+     set manager_grant_id = v_grant.manager_grant_id
+   where g.manager_grant_id = p_grant_id;
+end;
+$$;
+comment on function public.admin_revoke_role(uuid) is 'Revokes a grant below the caller and re-parents its direct reports.';
+grant execute on function public.admin_revoke_role(uuid) to authenticated;
+
+-- Replaces the role of a grant in one step: the member keeps their scope, their manager
+-- and their reports. The caller must manage the grant and be entitled to give the new role;
+-- a change never moves a member between the platform and an organization.
+create function public.admin_change_role(p_grant_id uuid, p_new_role text)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_active_caller();
+  v_grant constant public.admin_role_grants := kc_private.admin_lock_managed_grant(v_actor, p_grant_id);
+  v_new_grant_id uuid;
+begin
+  if not exists (select 1 from kc_private.admin_roles r where r.role = p_new_role) then
+    raise exception 'invalid_role' using errcode = 'P0001';
+  end if;
+  if v_grant.role = p_new_role then
+    raise exception 'role_already_active' using errcode = 'P0001';
+  end if;
+  if not exists (select 1 from kc_private.admin_roles r
+                  where r.role = p_new_role and r.is_platform = v_grant.is_platform) then
+    raise exception 'invalid_scope' using errcode = 'P0001';
+  end if;
+  if kc_private.admin_granting_grant(v_actor, p_new_role, v_grant.scope_org_id) is null then
+    raise exception 'forbidden_grant' using errcode = '42501';
+  end if;
+
+  update public.admin_role_grants g set revoked_at = now(), revoked_by = v_actor where g.id = p_grant_id;
+  begin
+    insert into public.admin_role_grants (user_id, role, scope_org_id, granted_by, manager_grant_id)
+    values (v_grant.user_id, p_new_role, v_grant.scope_org_id, v_actor, v_grant.manager_grant_id)
+    returning id into v_new_grant_id;
+  exception when unique_violation then
+    raise exception 'role_already_active' using errcode = 'P0001';
+  end;
+  update public.admin_role_grants g set manager_grant_id = v_new_grant_id where g.manager_grant_id = p_grant_id;
+  return v_new_grant_id;
+end;
+$$;
+comment on function public.admin_change_role(uuid, text) is
+  'Swaps the role of a grant, keeping its scope, manager and reports; returns the new grant id.';
+grant execute on function public.admin_change_role(uuid, text) to authenticated;
+
+-- Moves a grant under another manager. The new manager must be an active grant that is
+-- more senior than the moved one, in the same organization or on the platform, not below
+-- the moved grant (no loops), and either the caller's own grant or one the caller manages.
+create function public.admin_set_manager(p_grant_id uuid, p_manager_grant_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_active_caller();
+  v_grant constant public.admin_role_grants := kc_private.admin_lock_managed_grant(v_actor, p_grant_id);
+begin
+  if not exists (
+       select 1
+         from public.admin_role_grants m
+         join kc_private.admin_roles mr on mr.role = m.role
+         join kc_private.admin_roles tr on tr.role = v_grant.role
+        where m.id = p_manager_grant_id
+          and m.revoked_at is null
+          and mr.rank > tr.rank
+          and (m.scope_org_id is null or m.scope_org_id = v_grant.scope_org_id)
+          and not kc_private.admin_grant_is_above(p_grant_id, m.id)
+          and (m.user_id = v_actor or kc_private.admin_can_manage_grant(v_actor, m.id))) then
+    raise exception 'invalid_manager' using errcode = 'P0001';
+  end if;
+  update public.admin_role_grants g set manager_grant_id = p_manager_grant_id where g.id = p_grant_id;
+end;
+$$;
+comment on function public.admin_set_manager(uuid, uuid) is 'Moves a grant the caller manages under another, more senior grant.';
+grant execute on function public.admin_set_manager(uuid, uuid) to authenticated;
+
+-- >>> supabase/schemas/60_moderation/030_admin_access.sql
+-- Moderation · what staff may read and manage
+--
+-- Additional policies only: nothing a member could not read before becomes readable to a
+-- member, and no existing policy changes. Platform staff (support and above) read what
+-- the admin screens show — members in every account state, every post, handoffs, ratings
+-- and comments, removed ones included. Private details (user_private, exact addresses)
+-- stay closed to staff as well. Each predicate is wrapped in a scalar subquery, so it is
+-- evaluated once per statement, not per row.
+
+-- Member search and member detail, including suspended, banned and deactivated accounts.
+create policy users_select_staff on public.users
+  for select to authenticated
+  using ((select kc_access.is_admin()));
+create policy user_account_select_staff on public.user_account
+  for select to authenticated
+  using ((select kc_access.is_admin()));
+
+-- Content search and the report case screen: posts in every status and audience.
+create policy posts_select_staff on public.posts
+  for select to authenticated
+  using ((select kc_access.is_admin()));
+create policy post_handoffs_select_staff on public.post_handoffs
+  for select to authenticated
+  using ((select kc_access.is_admin()));
+-- Comments, deleted ones included: the row is the evidence of a reported comment.
+create policy post_comments_select_staff on public.post_comments
+  for select to authenticated
+  using ((select kc_access.is_admin()));
+
+-- Ratings are read by staff only (D24): a member never sees a rating, their own included.
+create policy post_ratings_select_staff on public.post_ratings
+  for select to authenticated
+  using ((select kc_access.is_admin()));
+grant select on public.post_ratings to authenticated;
+
+-- The super admin may edit the content of every post (design §12.1), in any status. Which
+-- columns is decided by the grant of the posts module; status still moves only through RPCs.
+create policy posts_update_super_admin on public.posts
+  for update to authenticated
+  using ((select kc_access.has_admin_role('super_admin')))
+  with check ((select kc_access.has_admin_role('super_admin')));
+
+-- Replaces the handoffs module's authorization of every post management action (publish,
+-- pause, resume, delete, close, reopen): the owner, or the super admin for every post
+-- (design §12.1).
+create or replace function kc_private.can_manage_post(p_post_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+      from public.posts p
+     where p.id = p_post_id
+       and (p.owner_id = (select auth.uid())
+            or kc_access.has_admin_role('super_admin')
+            -- ORGANIZATIONS MODULE: add here "or the caller is an admin of p.beneficiary_org_id".
+           ));
+$$;
+comment on function kc_private.can_manage_post(uuid) is
+  'Authorization of every post management action: the owner, or the super admin.';
+
+-- >>> supabase/schemas/60_moderation/040_reports.sql
+-- Moderation · reports and the reporter's own hide (FR-MOD-001, FR-MOD-007, FR-MOD-011)
+--
+-- A member reports a post, a member, a comment or a chat. The report is a plain insert
+-- under RLS; triggers do the rest. Its status moves open → confirmed_violation |
+-- dismissed_no_violation, by staff only. The reporter stops seeing the target at once,
+-- whatever staff later decide.
+
+-- Every number the moderation rules use, in one row, so a product decision is a data change
+-- and no function carries a literal (D33, D61, D134, FR-MOD-010).
+create table kc_private.moderation_settings (
+  singleton                      boolean primary key default true check (singleton),
+  -- Distinct reporters with an open report, inside the window, that hide a post or a chat.
+  content_hide_reporters         smallint not null default 3 check (content_hide_reporters > 0),
+  content_hide_window            interval not null default interval '14 days',
+  -- Distinct reporters that suspend a member; the same numbers lift the suspension (D134).
+  user_suspend_reporters         smallint not null default 5 check (user_suspend_reporters > 0),
+  user_suspend_window            interval not null default interval '30 days',
+  -- Dismissed reports of one reporter, inside the window, that trigger a sanction.
+  false_report_threshold         smallint not null default 5 check (false_report_threshold > 0),
+  false_report_window            interval not null default interval '30 days',
+  -- Length of the suspension at each sanction level; a level beyond the list is open-ended.
+  false_report_suspension_days   integer[] not null default '{7,30}'
+);
+comment on table kc_private.moderation_settings is 'Thresholds and windows of the moderation rules. One row.';
+alter table kc_private.moderation_settings enable row level security;
+alter table kc_private.moderation_settings force row level security;
+-- The one row, holding the approved defaults above.
+insert into kc_private.moderation_settings default values;
+
+insert into kc_private.fsm_state (machine_id, status) values
+  ('report', 'open'),
+  ('report', 'confirmed_violation'),
+  ('report', 'dismissed_no_violation');
+insert into kc_private.fsm_edge (machine_id, from_status, to_status, role) values
+  ('report', 'open', 'confirmed_violation', 'admin'),
+  ('report', 'open', 'dismissed_no_violation', 'admin');
+
+create table public.reports (
+  id                   uuid primary key default gen_random_uuid(),
+  -- Null once the reporter's account is purged (design §4.1): the report stays.
+  reporter_id          uuid references public.users (id) on delete set null,
+  target_type          text not null check (target_type in ('post', 'user', 'comment', 'chat')),
+  -- Id of the post, member, comment or chat. No foreign key: one column, four tables, and
+  -- a report outlives a purged target.
+  target_id            uuid not null,
+  reason               text not null check (reason in ('Spam', 'Offensive', 'Misleading', 'Illegal', 'Other')),
+  note                 text check (char_length(note) between 1 and 500),
+  -- Lifecycle, machine `report`. Never written by a device.
+  status               text not null default 'open',
+  resolved_at          timestamptz,
+  resolved_by          uuid references public.users (id) on delete set null,
+  -- Set when a dismissed report has been counted into a false-report sanction (FR-MOD-010 AC1).
+  sanction_consumed_at timestamptz,
+  created_at           timestamptz not null default now(),
+  constraint reports_resolution_chk check ((status = 'open') = (resolved_at is null))
+);
+comment on table public.reports is 'Reports by members about posts, members, comments and chats.';
+
+-- One open report per reporter and target (FR-MOD-001 AC7); also "my reports".
+create unique index reports_open_per_reporter_key on public.reports (reporter_id, target_type, target_id)
+  where status = 'open';
+-- Threshold count and the case screen: reports of one target, newest first.
+create index reports_target_idx on public.reports (target_type, target_id, created_at desc);
+-- Staff inbox: open reports, oldest first.
+create index reports_open_inbox_idx on public.reports (created_at, id) where status = 'open';
+-- False-report window of a reporter: their dismissed, not yet counted reports.
+create index reports_reporter_dismissed_idx on public.reports (reporter_id, resolved_at)
+  where status = 'dismissed_no_violation' and sanction_consumed_at is null;
+-- Foreign key to the staff member who resolved.
+create index reports_resolved_by_idx on public.reports (resolved_by) where resolved_by is not null;
+
+create trigger reports_status_fsm
+  before insert or update of status on public.reports
+  for each row execute function kc_private.fsm_guard_status('report', 'status');
+
+alter table public.reports enable row level security;
+alter table public.reports force row level security;
+
+create policy reports_select_own on public.reports
+  for select to authenticated
+  using (reporter_id = (select auth.uid()));
+create policy reports_select_staff on public.reports
+  for select to authenticated
+  using ((select kc_access.is_admin()));
+-- A member with an active account files a report as themselves; it always starts open.
+create policy reports_insert_own on public.reports
+  for insert to authenticated
+  with check (
+    reporter_id = (select auth.uid())
+    and status = 'open'
+    and exists (select 1 from public.users u where u.id = (select auth.uid()) and u.is_active));
+
+grant select on public.reports to authenticated;
+grant insert (id, reporter_id, target_type, target_id, reason, note) on public.reports to authenticated;
+
+-- ── The reporter's hide (FR-MOD-001 AC5, FR-MOD-011) ────────────────────────
+create table public.report_hides (
+  reporter_id uuid not null references public.users (id) on delete cascade,
+  target_type text not null check (target_type in ('post', 'user', 'comment', 'chat')),
+  target_id   uuid not null,
+  created_at  timestamptz not null default now(),
+  primary key (reporter_id, target_type, target_id)
+);
+comment on table public.report_hides is 'Targets a member reported and therefore no longer sees. Permanent until they remove it.';
+
+alter table public.report_hides enable row level security;
+alter table public.report_hides force row level security;
+
+-- Written by the report trigger; the reporter may read and lift their own hides (AC2).
+create policy report_hides_select_own on public.report_hides
+  for select to authenticated
+  using (reporter_id = (select auth.uid()));
+create policy report_hides_delete_own on public.report_hides
+  for delete to authenticated
+  using (reporter_id = (select auth.uid()));
+grant select, delete on public.report_hides to authenticated;
+
+-- A reported post, member or comment disappears for its reporter on every surface: the
+-- policies are restrictive, so they narrow whatever any other policy allows, and each is one
+-- primary-key probe that runs under the caller's own access to report_hides (their rows
+-- only). Staff are exempt: a moderator who reported a post must still be able to review it.
+-- Chats get the same policy from the messaging module.
+create policy posts_hide_reported on public.posts
+  as restrictive
+  for select to authenticated
+  using (
+    not exists (select 1 from public.report_hides h
+                 where h.reporter_id = (select auth.uid())
+                   and h.target_type = 'post' and h.target_id = posts.id)
+    or (select kc_access.is_admin()));
+create policy users_hide_reported on public.users
+  as restrictive
+  for select to authenticated
+  using (
+    not exists (select 1 from public.report_hides h
+                 where h.reporter_id = (select auth.uid())
+                   and h.target_type = 'user' and h.target_id = users.id)
+    or (select kc_access.is_admin()));
+create policy post_comments_hide_reported on public.post_comments
+  as restrictive
+  for select to authenticated
+  using (
+    not exists (select 1 from public.report_hides h
+                 where h.reporter_id = (select auth.uid())
+                   and h.target_type = 'comment' and h.target_id = post_comments.id)
+    or (select kc_access.is_admin()));
+
+-- Checks a new report: the target must exist where this database can tell (a chat is
+-- checked by the messaging module), must not be the reporter's own, and a post already
+-- removed by staff is not reported again. Errors (P0001): report_target_not_found,
+-- cannot_report_self, target_already_moderated.
+create function kc_private.reports_validate()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_owner_id uuid;
+  v_status text;
+begin
+  if new.target_type = 'post' then
+    select p.owner_id, p.status into v_owner_id, v_status from public.posts p where p.id = new.target_id;
+  elsif new.target_type = 'user' then
+    select u.id into v_owner_id from public.users u where u.id = new.target_id;
+  elsif new.target_type = 'comment' then
+    select c.author_id, c.status into v_owner_id, v_status
+      from public.post_comments c where c.id = new.target_id;
+  else
+    return new;
+  end if;
+
+  if v_owner_id is null then
+    raise exception 'report_target_not_found' using errcode = 'P0001';
+  end if;
+  if v_owner_id = new.reporter_id then
+    raise exception 'cannot_report_self' using errcode = 'P0001';
+  end if;
+  if v_status in ('removed_admin', 'deleted', 'draft') then
+    raise exception 'target_already_moderated' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger reports_validate
+  before insert on public.reports
+  for each row execute function kc_private.reports_validate();
+
+-- >>> supabase/schemas/60_moderation/050_moderation_queue.sql
+-- Moderation · the review queue (FR-MOD-008; design §8: replaces operator_cases and
+-- moderation_queue_entries)
+--
+-- Work items for staff that are not a single report: a target the report threshold acted
+-- on, a post reopened suspiciously often, a keyword hit, a manual flag, a post that needs
+-- an operator. An entry is open until a staff member resolves it; it may be assigned on
+-- the way. One open entry per target and reason.
+
+insert into kc_private.fsm_state (machine_id, status) values
+  ('moderation_queue', 'open'),
+  ('moderation_queue', 'resolved');
+insert into kc_private.fsm_edge (machine_id, from_status, to_status, role) values
+  ('moderation_queue', 'open', 'resolved', 'admin');
+
+create table public.moderation_queue (
+  id          uuid primary key default gen_random_uuid(),
+  target_type text not null check (target_type in ('post', 'user', 'comment', 'chat')),
+  target_id   uuid not null,
+  reason      text not null check (reason in (
+                'report_threshold', 'excessive_reopens', 'forbidden_keyword', 'manual_flag', 'operator_case')),
+  -- Lifecycle, machine `moderation_queue`.
+  status      text not null default 'open',
+  -- Staff member working on the entry, if any.
+  assignee_id uuid references public.users (id) on delete set null,
+  -- Ids and counters that explain the entry (for example the reopen count).
+  metadata    jsonb not null default '{}'::jsonb check (jsonb_typeof(metadata) = 'object'),
+  resolved_at timestamptz,
+  resolved_by uuid references public.users (id) on delete set null,
+  created_at  timestamptz not null default now(),
+  constraint moderation_queue_resolution_chk check ((status = 'open') = (resolved_at is null))
+);
+comment on table public.moderation_queue is 'Review work items for staff. Written only by server code.';
+
+-- One open entry per target and reason; also "is this target queued".
+create unique index moderation_queue_open_key on public.moderation_queue (target_type, target_id, reason)
+  where status = 'open';
+-- Staff queue: open entries, oldest first.
+create index moderation_queue_open_idx on public.moderation_queue (created_at, id) where status = 'open';
+-- "Assigned to me", and the assignee foreign key.
+create index moderation_queue_assignee_idx on public.moderation_queue (assignee_id, created_at)
+  where assignee_id is not null;
+-- Foreign key to the staff member who resolved.
+create index moderation_queue_resolved_by_idx on public.moderation_queue (resolved_by)
+  where resolved_by is not null;
+
+create trigger moderation_queue_status_fsm
+  before insert or update of status on public.moderation_queue
+  for each row execute function kc_private.fsm_guard_status('moderation_queue', 'status');
+
+alter table public.moderation_queue enable row level security;
+alter table public.moderation_queue force row level security;
+
+create policy moderation_queue_select_staff on public.moderation_queue
+  for select to authenticated
+  using ((select kc_access.is_admin()));
+grant select on public.moderation_queue to authenticated;
+
+-- Opens an entry unless the same target is already queued for the same reason. Called by
+-- the report threshold, by the outbox consumer below and by any later module.
+create function kc_private.moderation_enqueue(
+  p_target_type text, p_target_id uuid, p_reason text, p_metadata jsonb default '{}'::jsonb)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into public.moderation_queue (target_type, target_id, reason, metadata)
+  values (p_target_type, p_target_id, p_reason, coalesce(p_metadata, '{}'::jsonb))
+  on conflict (target_type, target_id, reason) where status = 'open' do nothing;
+  return found;
+end;
+$$;
+comment on function kc_private.moderation_enqueue(text, uuid, text, jsonb) is
+  'Queues a target for staff review; returns false while the same entry is already open.';
+
+-- Resolves the open entries of a target (all reasons, or one) in the name of a staff
+-- member, or of the system when p_resolved_by is null.
+create function kc_private.moderation_queue_close(
+  p_target_type text, p_target_id uuid, p_resolved_by uuid, p_reason text default null)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_outer_role constant text := coalesce(current_setting('kc.fsm_role', true), '');
+begin
+  perform set_config('kc.fsm_role', 'admin', true);
+  update public.moderation_queue q
+     set status = 'resolved', resolved_at = now(), resolved_by = p_resolved_by
+   where q.target_type = p_target_type and q.target_id = p_target_id and q.status = 'open'
+     and (p_reason is null or q.reason = p_reason);
+  perform set_config('kc.fsm_role', v_outer_role, true);
+end;
+$$;
+
+-- Consumer of outbox topic `moderation`. Payload: { "kind": "excessive_reopens",
+-- "post_id": uuid, "owner_id": uuid, "reopen_count": int } → a queue entry for the post
+-- (FR-MOD-008 AC1). An unknown kind is released with an error and retried in an hour.
+create function kc_private.moderation_consume_outbox(p_limit integer default 200)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_event kc_private.outbox_events;
+  v_queued integer := 0;
+begin
+  for v_event in select * from kc_private.outbox_claim('moderation', p_limit) loop
+    if v_event.payload ->> 'kind' = 'excessive_reopens' and v_event.payload ? 'post_id' then
+      perform kc_private.moderation_enqueue(
+        'post', (v_event.payload ->> 'post_id')::uuid, 'excessive_reopens',
+        jsonb_build_object('reopen_count', v_event.payload -> 'reopen_count'));
+      perform kc_private.outbox_complete(v_event.id);
+      v_queued := v_queued + 1;
+    else
+      perform kc_private.outbox_complete(v_event.id, 'unknown moderation kind', interval '1 hour');
+    end if;
+  end loop;
+  return v_queued;
+end;
+$$;
+comment on function kc_private.moderation_consume_outbox(integer) is
+  'Scheduled job: turns queued `moderation` outbox events into review queue entries.';
+
+-- A staff member takes an open entry, or hands it to another staff member.
+create function public.admin_assign_queue_entry(p_entry_id uuid, p_assignee_id uuid default null)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_admin_role('moderator');
+  v_assignee constant uuid := coalesce(p_assignee_id, v_actor);
+begin
+  if not exists (select 1 from public.admin_role_grants g
+                  where g.user_id = v_assignee and g.revoked_at is null and g.is_platform) then
+    raise exception 'assignee_not_staff' using errcode = 'P0001';
+  end if;
+  update public.moderation_queue q set assignee_id = v_assignee
+   where q.id = p_entry_id and q.status = 'open';
+  if not found then
+    raise exception 'queue_entry_not_open' using errcode = 'P0001';
+  end if;
+  perform kc_private.audit_record('assign_queue_entry', 'moderation_queue', p_entry_id,
+                                  jsonb_build_object('assignee_id', v_assignee));
+end;
+$$;
+comment on function public.admin_assign_queue_entry(uuid, uuid) is
+  'Assigns an open review entry to the caller or to another staff member.';
+grant execute on function public.admin_assign_queue_entry(uuid, uuid) to authenticated;
+
+-- A staff member closes an open entry. What was done about the target (remove, restore,
+-- nothing) is its own action with its own audit row.
+create function public.admin_resolve_queue_entry(p_entry_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_admin_role('moderator');
+begin
+  perform set_config('kc.fsm_role', 'admin', true);
+  update public.moderation_queue q
+     set status = 'resolved', resolved_at = now(), resolved_by = v_actor
+   where q.id = p_entry_id and q.status = 'open';
+  if not found then
+    raise exception 'queue_entry_not_open' using errcode = 'P0001';
+  end if;
+  perform set_config('kc.fsm_role', '', true);
+  perform kc_private.audit_record('resolve_queue_entry', 'moderation_queue', p_entry_id);
+end;
+$$;
+comment on function public.admin_resolve_queue_entry(uuid) is 'Marks an open review entry resolved.';
+grant execute on function public.admin_resolve_queue_entry(uuid) to authenticated;
+
+-- >>> supabase/schemas/60_moderation/060_sanctions.sql
+-- Moderation · sanctions (FR-MOD-010, FR-ADMIN-004, D61, D133, D135)
+--
+-- user_account.status says what a member's state is now; user_sanctions is the history of
+-- how it got there: every suspension and ban, who issued it and why, when it ends and when
+-- and by whom it was lifted. Both are written together by the two functions below, which
+-- every sanctioning path uses — admin RPCs, the report threshold, the false-report ladder
+-- and the expiry sweep.
+
+create table public.user_sanctions (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references public.users (id) on delete cascade,
+  kind       text not null check (kind in ('suspension', 'ban')),
+  reason     text not null check (reason in (
+               'false_reports', 'report_threshold', 'spam', 'harassment', 'policy_violation', 'other')),
+  -- Free text of the issuing staff member; read by staff only, never copied to the audit trail.
+  note       text check (char_length(note) between 1 and 500),
+  -- Null for a sanction applied by an automatic rule.
+  issued_by  uuid references public.users (id) on delete set null,
+  issued_at  timestamptz not null default now(),
+  -- End of a temporary suspension; null = until lifted.
+  until      timestamptz,
+  lifted_at  timestamptz,
+  lifted_by  uuid references public.users (id) on delete set null
+);
+comment on table public.user_sanctions is 'History of suspensions and bans. Written only by server code.';
+
+-- A member has at most one sanction in force; also the member's history lookup.
+create unique index user_sanctions_active_key on public.user_sanctions (user_id) where lifted_at is null;
+-- Staff view of a member's history, newest first.
+create index user_sanctions_user_recent_idx on public.user_sanctions (user_id, issued_at desc);
+-- Foreign keys to staff members.
+create index user_sanctions_issued_by_idx on public.user_sanctions (issued_by) where issued_by is not null;
+create index user_sanctions_lifted_by_idx on public.user_sanctions (lifted_by) where lifted_by is not null;
+
+alter table public.user_sanctions enable row level security;
+alter table public.user_sanctions force row level security;
+
+create policy user_sanctions_select_staff on public.user_sanctions
+  for select to authenticated
+  using ((select kc_access.is_admin()));
+grant select on public.user_sanctions to authenticated;
+
+-- Puts a member under a suspension or a ban: moves the account status (its machine decides
+-- whether the move is legal), ends the sanction that was in force and records the new one.
+-- p_issued_by is the staff member, or null for an automatic rule.
+create function kc_private.account_sanction(
+  p_user_id uuid, p_status text, p_reason text, p_until timestamptz, p_note text, p_issued_by uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_outer_role constant text := coalesce(current_setting('kc.fsm_role', true), '');
+  v_sanction_id uuid;
+begin
+  -- The status trigger of the audit module records no actor for a move made as `system`.
+  perform set_config('kc.fsm_role', case when p_issued_by is null then 'system' else 'admin' end, true);
+  update public.user_account a set status = p_status, status_until = p_until where a.user_id = p_user_id;
+  perform set_config('kc.fsm_role', v_outer_role, true);
+
+  update public.user_sanctions s set lifted_at = now(), lifted_by = p_issued_by
+   where s.user_id = p_user_id and s.lifted_at is null;
+  insert into public.user_sanctions (user_id, kind, reason, note, issued_by, until)
+  values (p_user_id, case p_status when 'banned' then 'ban' else 'suspension' end,
+          p_reason, nullif(btrim(p_note), ''), p_issued_by, p_until)
+  returning id into v_sanction_id;
+
+  perform kc_private.audit_record(
+    case p_status when 'banned' then 'ban_user' else 'suspend_user' end, 'user', p_user_id,
+    jsonb_build_object('status', p_status, 'reason', p_reason, 'until', p_until, 'sanction_id', v_sanction_id),
+    p_issued_by);
+  return v_sanction_id;
+end;
+$$;
+comment on function kc_private.account_sanction(uuid, text, text, timestamptz, text, uuid) is
+  'Applies a suspension or ban: account status, sanction history and audit row together.';
+
+-- Returns a suspended or banned member to active and closes the sanction in force.
+-- p_cause: 'admin_restore', 'expired' or 'report_dismissed'.
+create function kc_private.account_restore(p_user_id uuid, p_lifted_by uuid, p_cause text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_outer_role constant text := coalesce(current_setting('kc.fsm_role', true), '');
+  v_from text;
+begin
+  select a.status into v_from from public.user_account a where a.user_id = p_user_id for update;
+  perform set_config('kc.fsm_role', case when p_lifted_by is null then 'system' else 'admin' end, true);
+  update public.user_account a set status = 'active', status_until = null where a.user_id = p_user_id;
+  perform set_config('kc.fsm_role', v_outer_role, true);
+
+  update public.user_sanctions s set lifted_at = now(), lifted_by = p_lifted_by
+   where s.user_id = p_user_id and s.lifted_at is null;
+  perform kc_private.audit_record(
+    case v_from when 'banned' then 'unban_user' else 'unsuspend_user' end, 'user', p_user_id,
+    jsonb_build_object('from', v_from, 'cause', p_cause), p_lifted_by);
+end;
+$$;
+comment on function kc_private.account_restore(uuid, uuid, text) is
+  'Lifts a suspension or ban: account back to active, sanction closed, audit row written.';
+
+-- The false-report ladder (FR-MOD-010): called once for each report staff dismiss. When
+-- the reporter's dismissed, not yet counted reports inside the window reach the threshold,
+-- their sanction level rises by one (at most 3) and those reports are consumed. The
+-- suspension length comes from the settings; a level without a length is open-ended and is
+-- lifted by a staff restore. A heavier state — an admin suspension, a ban, a pending
+-- deletion — is left as it is; the level still counts (D135).
+create function kc_private.apply_false_report_sanction(p_reporter_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_settings constant kc_private.moderation_settings := (select s from kc_private.moderation_settings s);
+  v_account public.user_account;
+  v_level smallint;
+  v_until timestamptz;
+  v_suspends boolean;
+begin
+  -- The account row is the per-reporter lock: two dismissals cannot both count the same reports.
+  select a.* into v_account from public.user_account a where a.user_id = p_reporter_id for update;
+  if not found then
+    return;
+  end if;
+  -- Informational running total; the window count below decides (FR-MOD-010 AC1).
+  update public.user_account a set false_reports_count = a.false_reports_count + 1
+   where a.user_id = p_reporter_id;
+
+  if (select count(*) from public.reports r
+       where r.reporter_id = p_reporter_id and r.status = 'dismissed_no_violation'
+         and r.sanction_consumed_at is null
+         and r.resolved_at > now() - v_settings.false_report_window) < v_settings.false_report_threshold then
+    return;
+  end if;
+
+  v_level := least(v_account.false_report_sanction_count + 1, 3);
+  v_until := now() + v_settings.false_report_suspension_days[v_level] * interval '1 day';
+  v_suspends := v_account.status in ('active', 'pending_verification', 'suspended_for_false_reports');
+
+  update public.user_account a set false_report_sanction_count = v_level where a.user_id = p_reporter_id;
+  update public.reports r set sanction_consumed_at = now()
+   where r.reporter_id = p_reporter_id and r.status = 'dismissed_no_violation'
+     and r.sanction_consumed_at is null
+     and r.resolved_at > now() - v_settings.false_report_window;
+
+  if v_suspends then
+    perform kc_private.account_sanction(
+      p_reporter_id, 'suspended_for_false_reports', 'false_reports', v_until, null, null);
+  end if;
+  perform kc_private.audit_record(
+    'false_report_sanction_applied', 'user', p_reporter_id,
+    jsonb_build_object('level', v_level, 'until', v_until, 'suspended', v_suspends), null);
+end;
+$$;
+comment on function kc_private.apply_false_report_sanction(uuid) is
+  'Counts a dismissed report against its reporter and applies the next sanction level when due.';
+
+-- Daily sweep: lifts every suspension whose end has passed, so a member who never signs in
+-- again is not left suspended. Returns the number of accounts restored.
+create function kc_private.lift_expired_suspensions()
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id uuid;
+  v_lifted integer := 0;
+begin
+  for v_user_id in
+    select a.user_id
+      from public.user_account a
+     where a.status_until <= now()
+       and a.status in ('suspended_for_false_reports', 'suspended_admin')
+       for update skip locked
+  loop
+    perform kc_private.account_restore(v_user_id, null, 'expired');
+    v_lifted := v_lifted + 1;
+  end loop;
+  return v_lifted;
+end;
+$$;
+comment on function kc_private.lift_expired_suspensions() is
+  'Scheduled job: restores accounts whose temporary suspension has ended.';
+
+-- >>> supabase/schemas/60_moderation/070_report_effects.sql
+-- Moderation · what a new report does (FR-MOD-001 AC5, D33, D61, D134)
+--
+-- In the transaction of the report: the target is hidden from its reporter, the report is
+-- audited, and when enough distinct members hold an open report on the same target the
+-- automatic action runs — a post is hidden until a human reviews it, a member is suspended
+-- from acting, a chat is handed to the messaging module to hide. Comments have no automatic
+-- action: a reported comment waits for staff. The reporters are never told (FR-MOD-005 AC4).
+
+-- True while the open reports on a target meet the threshold that acts on it. The same
+-- rule imposes the action and, once a dismissal brings the count below it, lifts it (D134).
+create function kc_private.report_threshold_reached(p_target_type text, p_target_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select p_target_type <> 'comment'
+     and (select count(distinct r.reporter_id)
+            from public.reports r
+           where r.target_type = p_target_type and r.target_id = p_target_id and r.status = 'open'
+             and r.created_at > now() - case p_target_type when 'user' then s.user_suspend_window
+                                                           else s.content_hide_window end)
+         >= case p_target_type when 'user' then s.user_suspend_reporters else s.content_hide_reporters end
+    from kc_private.moderation_settings s;
+$$;
+comment on function kc_private.report_threshold_reached(text, uuid) is
+  'Whether enough distinct reporters hold an open report on the target for the automatic action.';
+
+-- Sends one notification event to every active moderator, admin and super admin.
+create function kc_private.notify_moderators(p_kind text, p_entity_type text, p_entity_id uuid)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  select kc_private.outbox_enqueue('notification', jsonb_build_object(
+           'kind', p_kind, 'recipient_id', staff.user_id, 'actor_id', null,
+           'entity', jsonb_build_object('type', p_entity_type, 'id', p_entity_id),
+           'data', jsonb_build_object('dedupe_key', p_kind || ':' || p_entity_id || ':' || staff.user_id)))
+    from (select distinct g.user_id
+            from public.admin_role_grants g
+            join kc_private.admin_roles r on r.role = g.role and r.is_platform
+            join kc_private.admin_roles m on m.role = 'moderator'
+           where g.revoked_at is null and r.rank >= m.rank) staff;
+$$;
+comment on function kc_private.notify_moderators(text, text, uuid) is
+  'Enqueues a notification for each member of the moderation staff.';
+
+-- Sends one notification event to a member about something staff or a rule did.
+create function kc_private.notify_moderation_outcome(p_kind text, p_recipient_id uuid, p_post_id uuid)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  select kc_private.outbox_enqueue('notification', jsonb_build_object(
+    'kind', p_kind, 'recipient_id', p_recipient_id, 'actor_id', null,
+    'entity', jsonb_build_object('type', 'post', 'id', p_post_id),
+    'data', jsonb_build_object('post_id', p_post_id)));
+$$;
+
+create function kc_private.reports_apply_effects()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post public.posts;
+begin
+  -- Reports on one target are processed one at a time, so two reports arriving together
+  -- cannot both miss the threshold.
+  perform pg_advisory_xact_lock(hashtextextended('report:' || new.target_type || ':' || new.target_id, 0));
+
+  insert into public.report_hides (reporter_id, target_type, target_id)
+  values (new.reporter_id, new.target_type, new.target_id)
+  on conflict do nothing;
+  perform kc_private.audit_record(
+    'report_target', new.target_type, new.target_id,
+    jsonb_build_object('report_id', new.id, 'reason', new.reason), new.reporter_id);
+
+  if not kc_private.report_threshold_reached(new.target_type, new.target_id) then
+    return null;
+  end if;
+
+  if new.target_type = 'post' then
+    select p.* into v_post from public.posts p where p.id = new.target_id for update;
+    if v_post.status not in ('open', 'paused', 'closed_delivered', 'expired') then
+      return null;
+    end if;
+    perform kc_private.post_move(new.target_id, 'hidden_pending_review', 'system');
+    perform kc_private.notify_moderation_outcome('post_hidden_for_review', v_post.owner_id, v_post.id);
+  elsif new.target_type = 'user' then
+    -- A member who is already suspended by staff, banned or leaving is not moved: the
+    -- report still counts and the case still reaches staff.
+    if exists (select 1 from public.user_account a
+                where a.user_id = new.target_id
+                  and a.status in ('active', 'pending_verification', 'suspended_for_false_reports')) then
+      perform kc_private.account_sanction(new.target_id, 'suspended_admin', 'report_threshold', null, null, null);
+    end if;
+  end if;
+
+  -- One review entry per case; staff are notified, and a chat is hidden, once per entry.
+  if kc_private.moderation_enqueue(new.target_type, new.target_id, 'report_threshold') then
+    perform kc_private.audit_record(
+      'auto_remove_target', new.target_type, new.target_id,
+      jsonb_build_object('outcome', case new.target_type when 'post' then 'hidden_pending_review'
+                                                         when 'user' then 'suspended_admin'
+                                                         else 'hide_requested' end), null);
+    perform kc_private.notify_moderators('moderation_review_needed', new.target_type, new.target_id);
+    if new.target_type = 'chat' then
+      perform kc_private.outbox_enqueue('moderation_target', jsonb_build_object(
+        'kind', 'hide', 'target_type', 'chat', 'target_id', new.target_id));
+    end if;
+  end if;
+  return null;
+end;
+$$;
+comment on function kc_private.reports_apply_effects() is
+  'AFTER INSERT on reports: reporter hide, audit row and the automatic action at the threshold.';
+
+create trigger reports_apply_effects
+  after insert on public.reports
+  for each row execute function kc_private.reports_apply_effects();
+
+-- Notification kinds this module emits, registered so delivery accepts them
+-- (kc_private.notification_kinds, 50_notifications). The owner notices bypass preferences:
+-- a member must learn that their post was hidden, removed or restored (FR-MOD-005).
+insert into kc_private.notification_kinds
+  (kind, category, bypass_preferences, title_key, body_key)
+values
+  ('post_hidden_for_review', 'critical', true, 'notifications.postHiddenForReviewTitle', 'notifications.postHiddenForReviewBody'),
+  ('post_removed', 'critical', true, 'notifications.postRemovedTitle', 'notifications.postRemovedBody'),
+  ('post_restored', 'critical', true, 'notifications.postRestoredTitle', 'notifications.postRestoredBody'),
+  ('moderation_review_needed', 'critical', false, 'notifications.moderationReviewNeededTitle', 'notifications.moderationReviewNeededBody');
+
+-- >>> supabase/schemas/60_moderation/080_content_moderation.sql
+-- Moderation · staff actions on content (FR-ADMIN-002, FR-ADMIN-005, FR-ADMIN-009, D129)
+--
+-- Removing a post is a status move to `removed_admin`; the post machine remembers the status
+-- it left and a restore returns exactly there (a post hidden for review returns to open).
+-- Nothing is destroyed. Moderators and above may act. Errors: forbidden (42501); P0001 —
+-- target_not_found, invalid_target_state.
+
+-- Removes a post in the name of a staff member. Returns false when it was already removed
+-- (idempotent, no second audit row: FR-ADMIN-009 AC5). A draft was never published and
+-- cannot be removed.
+create function kc_private.moderation_remove_post(p_post_id uuid, p_actor uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post public.posts;
+begin
+  select p.* into v_post from public.posts p where p.id = p_post_id for update;
+  if not found then
+    raise exception 'target_not_found' using errcode = 'P0001';
+  end if;
+  if v_post.status = 'removed_admin' then
+    return false;
+  end if;
+  if v_post.status = 'draft' then
+    raise exception 'invalid_target_state' using errcode = 'P0001';
+  end if;
+
+  perform kc_private.post_move(p_post_id, 'removed_admin', 'admin');
+  perform kc_private.moderation_queue_close('post', p_post_id, p_actor);
+  perform kc_private.audit_record(
+    'manual_remove_target', 'post', p_post_id, jsonb_build_object('from', v_post.status), p_actor);
+  perform kc_private.notify_moderation_outcome('post_removed', v_post.owner_id, p_post_id);
+  return true;
+end;
+$$;
+
+-- Restores a removed post to the status it was removed from, or a post hidden for review
+-- to open. Returns false for a post in any other status (idempotent).
+create function kc_private.moderation_restore_post(p_post_id uuid, p_actor uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post public.posts;
+  v_to text;
+begin
+  select p.* into v_post from public.posts p where p.id = p_post_id for update;
+  if not found then
+    raise exception 'target_not_found' using errcode = 'P0001';
+  end if;
+  v_to := case v_post.status
+            when 'removed_admin' then v_post.status_before_removal
+            when 'hidden_pending_review' then 'open'
+          end;
+  if v_to is null then
+    return false;
+  end if;
+
+  perform kc_private.post_move(p_post_id, v_to, 'admin');
+  perform kc_private.moderation_queue_close('post', p_post_id, p_actor);
+  perform kc_private.audit_record(
+    'restore_target', 'post', p_post_id, jsonb_build_object('from', v_post.status, 'to', v_to), p_actor);
+  perform kc_private.notify_moderation_outcome('post_restored', v_post.owner_id, p_post_id);
+  return true;
+end;
+$$;
+
+create function public.admin_remove_post(p_post_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.moderation_remove_post(p_post_id, kc_private.require_admin_role('moderator'));
+end;
+$$;
+comment on function public.admin_remove_post(uuid) is
+  'Staff: removes a published post in any status (→ removed_admin); the owner is notified.';
+grant execute on function public.admin_remove_post(uuid) to authenticated;
+
+create function public.admin_restore_post(p_post_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform kc_private.moderation_restore_post(p_post_id, kc_private.require_admin_role('moderator'));
+end;
+$$;
+comment on function public.admin_restore_post(uuid) is
+  'Staff: returns a removed post to its previous status, or a post hidden for review to open (D129).';
+grant execute on function public.admin_restore_post(uuid) to authenticated;
+
+-- Staff delete a comment (machine role `admin`), with the replies under it, as the author's
+-- own delete does. The rows stay, readable to staff only. Idempotent on a deleted comment.
+create function public.admin_delete_comment(p_comment_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_admin_role('moderator');
+  v_comment public.post_comments;
+begin
+  select c.* into v_comment from public.post_comments c where c.id = p_comment_id for update;
+  if not found then
+    raise exception 'target_not_found' using errcode = 'P0001';
+  end if;
+  if v_comment.status = 'deleted' then
+    return;
+  end if;
+
+  perform set_config('kc.fsm_role', 'admin', true);
+  update public.post_comments c
+     set status = 'deleted'
+   where (c.id = p_comment_id or c.parent_comment_id = p_comment_id) and c.status = 'active';
+  perform set_config('kc.fsm_role', '', true);
+  perform kc_private.audit_record(
+    'manual_remove_target', 'comment', p_comment_id, jsonb_build_object('post_id', v_comment.post_id), v_actor);
+end;
+$$;
+comment on function public.admin_delete_comment(uuid) is 'Staff: deletes a comment and its replies; audited.';
+grant execute on function public.admin_delete_comment(uuid) to authenticated;
+
+-- Hook for the messaging module's admin delete of a chat message (FR-ADMIN-005 AC2). That
+-- module owns the tables, so it owns the delete; it calls this first, in the same
+-- transaction: the caller must be a moderator, and the deletion is audited with ids only.
+-- Returns the acting staff member.
+create function kc_private.moderation_authorize_message_delete(p_message_id uuid, p_chat_id uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_admin_role('moderator');
+begin
+  perform kc_private.audit_record(
+    'delete_message', 'chat', p_chat_id, jsonb_build_object('message_id', p_message_id), v_actor);
+  return v_actor;
+end;
+$$;
+comment on function kc_private.moderation_authorize_message_delete(uuid, uuid) is
+  'Messaging hook: checks the moderator role and audits the deletion of a chat message.';
+
+-- >>> supabase/schemas/60_moderation/090_report_rpcs.sql
+-- Moderation · resolving a report (FR-ADMIN-003, FR-ADMIN-013, FR-MOD-010, D134)
+--
+-- A moderator closes one report at a time; each case is independent (FR-ADMIN-013 AC3).
+--   confirm   the report was right. A post hidden for review is removed; a suspension stands.
+--   dismiss   the report was wrong. It counts against its reporter, and when the reports
+--             still open no longer meet the threshold, the automatic action is undone.
+-- Errors: forbidden (42501); P0001 — report_not_open.
+
+-- Locks an open report, stamps the outcome and audits it.
+create function kc_private.report_resolve(p_report_id uuid, p_status text, p_actor uuid)
+returns public.reports
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_report public.reports;
+begin
+  select r.* into v_report from public.reports r where r.id = p_report_id and r.status = 'open' for update;
+  if not found then
+    raise exception 'report_not_open' using errcode = 'P0001';
+  end if;
+  -- Same lock as a new report on the target takes: the threshold is judged on settled data.
+  perform pg_advisory_xact_lock(
+    hashtextextended('report:' || v_report.target_type || ':' || v_report.target_id, 0));
+
+  perform set_config('kc.fsm_role', 'admin', true);
+  update public.reports r set status = p_status, resolved_at = now(), resolved_by = p_actor
+   where r.id = p_report_id;
+  perform set_config('kc.fsm_role', '', true);
+  perform kc_private.audit_record(
+    case p_status when 'confirmed_violation' then 'confirm_report' else 'dismiss_report' end,
+    'report', p_report_id,
+    jsonb_build_object('target_type', v_report.target_type, 'target_id', v_report.target_id), p_actor);
+  return v_report;
+end;
+$$;
+
+create function public.admin_confirm_report(p_report_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_admin_role('moderator');
+  v_report constant public.reports := kc_private.report_resolve(p_report_id, 'confirmed_violation', v_actor);
+begin
+  -- The review of a hidden post ends here: a confirmed violation removes it.
+  if v_report.target_type = 'post' and exists (
+       select 1 from public.posts p where p.id = v_report.target_id and p.status = 'hidden_pending_review') then
+    perform kc_private.moderation_remove_post(v_report.target_id, v_actor);
+  end if;
+end;
+$$;
+comment on function public.admin_confirm_report(uuid) is
+  'Staff: marks an open report as a confirmed violation; a post hidden for review is removed.';
+grant execute on function public.admin_confirm_report(uuid) to authenticated;
+
+create function public.admin_dismiss_report(p_report_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_admin_role('moderator');
+  v_report constant public.reports := kc_private.report_resolve(p_report_id, 'dismissed_no_violation', v_actor);
+begin
+  perform kc_private.apply_false_report_sanction(v_report.reporter_id);
+
+  -- The automatic action stands while the rule that imposed it still holds (D134).
+  if kc_private.report_threshold_reached(v_report.target_type, v_report.target_id) then
+    return;
+  end if;
+
+  if v_report.target_type = 'post' then
+    if exists (select 1 from public.posts p
+                where p.id = v_report.target_id and p.status = 'hidden_pending_review') then
+      perform kc_private.moderation_restore_post(v_report.target_id, v_actor);
+    end if;
+  elsif v_report.target_type = 'user' then
+    -- Only the suspension the report rule imposed is lifted, never one a staff member issued.
+    if exists (select 1 from public.user_account a
+                 join public.user_sanctions s on s.user_id = a.user_id and s.lifted_at is null
+                where a.user_id = v_report.target_id and a.status = 'suspended_admin'
+                  and s.reason = 'report_threshold') then
+      perform kc_private.account_restore(v_report.target_id, v_actor, 'report_dismissed');
+    end if;
+  elsif v_report.target_type = 'chat' then
+    perform kc_private.outbox_enqueue('moderation_target', jsonb_build_object(
+      'kind', 'restore', 'target_type', 'chat', 'target_id', v_report.target_id));
+  end if;
+  perform kc_private.moderation_queue_close(
+    v_report.target_type, v_report.target_id, v_actor, 'report_threshold');
+end;
+$$;
+comment on function public.admin_dismiss_report(uuid) is
+  'Staff: dismisses an open report; counts it against the reporter and lifts an automatic action that no longer holds.';
+grant execute on function public.admin_dismiss_report(uuid) to authenticated;
+
+-- >>> supabase/schemas/60_moderation/100_admin_user_rpcs.sql
+-- Moderation · staff actions on a member (FR-ADMIN-003 AC3, FR-ADMIN-004, D133, D135)
+--
+--   suspend   moderator and above; optionally until a date, after which the sweep lifts it
+--   ban       super admin only; permanent
+--   restore   a suspension by a moderator; a ban by the super admin only (D133)
+-- A staff member cannot be sanctioned (revoke the role first) and nobody sanctions
+-- themselves. An account under deletion is not sanctioned: the member is leaving, and a
+-- sanction would cancel the deletion they asked for (FR-ADMIN-004 AC3).
+-- Errors: forbidden (42501); P0001 — target_not_found, cannot_sanction_self,
+-- cannot_sanction_admin, invalid_sanction_reason, account_pending_deletion,
+-- invalid_target_state, invalid_restore_state.
+
+-- Checks shared by suspend and ban; returns the member's locked account row.
+create function kc_private.sanction_target(p_actor uuid, p_user_id uuid, p_reason text)
+returns public.user_account
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_account public.user_account;
+begin
+  if p_user_id = p_actor then
+    raise exception 'cannot_sanction_self' using errcode = 'P0001';
+  end if;
+  if p_reason is null or p_reason not in ('spam', 'harassment', 'policy_violation', 'other') then
+    raise exception 'invalid_sanction_reason' using errcode = 'P0001';
+  end if;
+  select a.* into v_account from public.user_account a where a.user_id = p_user_id for update;
+  if not found then
+    raise exception 'target_not_found' using errcode = 'P0001';
+  end if;
+  if exists (select 1 from public.admin_role_grants g
+              where g.user_id = p_user_id and g.revoked_at is null and g.is_platform) then
+    raise exception 'cannot_sanction_admin' using errcode = 'P0001';
+  end if;
+  if v_account.status = 'pending_deletion' then
+    raise exception 'account_pending_deletion' using errcode = 'P0001';
+  end if;
+  return v_account;
+end;
+$$;
+
+create function public.admin_suspend_user(
+  p_user_id uuid, p_reason text, p_until timestamptz default null, p_note text default null)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_admin_role('moderator');
+  v_account constant public.user_account := kc_private.sanction_target(v_actor, p_user_id, p_reason);
+begin
+  if v_account.status in ('suspended_admin', 'banned') or p_until <= now() then
+    raise exception 'invalid_target_state' using errcode = 'P0001';
+  end if;
+  perform kc_private.account_sanction(p_user_id, 'suspended_admin', p_reason, p_until, p_note, v_actor);
+end;
+$$;
+comment on function public.admin_suspend_user(uuid, text, timestamptz, text) is
+  'Staff: suspends a member, open-ended or until a date.';
+grant execute on function public.admin_suspend_user(uuid, text, timestamptz, text) to authenticated;
+
+-- Idempotent on a member who is already banned (no second audit row).
+create function public.admin_ban_user(p_user_id uuid, p_reason text, p_note text default null)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_admin_role('super_admin');
+  v_account constant public.user_account := kc_private.sanction_target(v_actor, p_user_id, p_reason);
+begin
+  if v_account.status = 'banned' then
+    return;
+  end if;
+  perform kc_private.account_sanction(p_user_id, 'banned', p_reason, null, p_note, v_actor);
+end;
+$$;
+comment on function public.admin_ban_user(uuid, text, text) is 'Super admin: bans a member permanently.';
+grant execute on function public.admin_ban_user(uuid, text, text) to authenticated;
+
+-- Idempotent on an active member.
+create function public.admin_restore_user(p_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_admin_role('moderator');
+  v_status text;
+begin
+  select a.status into v_status from public.user_account a where a.user_id = p_user_id for update;
+  if not found then
+    raise exception 'target_not_found' using errcode = 'P0001';
+  end if;
+  if v_status = 'active' then
+    return;
+  end if;
+  if v_status not in ('suspended_admin', 'suspended_for_false_reports', 'banned') then
+    raise exception 'invalid_restore_state' using errcode = 'P0001';
+  end if;
+  if v_status = 'banned' then
+    perform kc_private.require_admin_role('super_admin');
+  end if;
+  perform kc_private.account_restore(p_user_id, v_actor, 'admin_restore');
+  perform kc_private.moderation_queue_close('user', p_user_id, v_actor);
+end;
+$$;
+comment on function public.admin_restore_user(uuid) is
+  'Staff: lifts a suspension; only the super admin lifts a ban.';
+grant execute on function public.admin_restore_user(uuid) to authenticated;
+
+-- >>> supabase/schemas/60_moderation/110_admin_audit_search.sql
+-- Moderation · the audit screen (FR-ADMIN-007)
+--
+-- The audit trail is not exposed as a table: staff read it through this function, newest
+-- first, one keyset page at a time. Rows carry ids only; the screen resolves names through
+-- the profiles it may read.
+--   super admin   every event
+--   moderator     events they made and events about them
+--   support       events they made
+
+create function public.admin_audit_search(
+  p_target_id uuid default null,
+  p_actor_id uuid default null,
+  p_action text default null,
+  p_from timestamptz default null,
+  p_to timestamptz default null,
+  -- Keyset cursor: occurred_at and id of the last row of the previous page.
+  p_before_occurred_at timestamptz default null,
+  p_before_id bigint default null,
+  p_limit integer default 50
+)
+returns table (
+  id bigint,
+  occurred_at timestamptz,
+  actor_id uuid,
+  action text,
+  target_type text,
+  target_id uuid,
+  metadata jsonb
+)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_admin_role('support');
+  v_sees_all constant boolean := kc_access.has_admin_role('super_admin');
+  v_sees_about_self constant boolean := kc_access.has_admin_role('moderator');
+begin
+  return query
+  select e.id, e.occurred_at, e.actor_id, e.action, e.target_type, e.target_id, e.metadata
+    from audit.events e
+   where (p_target_id is null or e.target_id = p_target_id)
+     and (p_actor_id is null or e.actor_id = p_actor_id)
+     and (p_action is null or e.action = p_action)
+     and (p_from is null or e.occurred_at >= p_from)
+     and (p_to is null or e.occurred_at < p_to)
+     and (p_before_occurred_at is null
+          or (e.occurred_at, e.id) < (p_before_occurred_at, coalesce(p_before_id, 9223372036854775807)))
+     and (v_sees_all or e.actor_id = v_actor or (v_sees_about_self and e.target_id = v_actor))
+   order by e.occurred_at desc, e.id desc
+   limit least(greatest(coalesce(p_limit, 50), 1), 200);
+end;
+$$;
+comment on function public.admin_audit_search(uuid, uuid, text, timestamptz, timestamptz, timestamptz, bigint, integer) is
+  'Staff: keyset-paginated search of the audit trail, scoped by the caller''s role.';
+grant execute on function public.admin_audit_search(uuid, uuid, text, timestamptz, timestamptz, timestamptz, bigint, integer)
+  to authenticated;

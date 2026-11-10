@@ -42,6 +42,9 @@ begin
              'chats', public.chat_unread_total(),
              'notifications', public.notifications_unread_count()),
            -- ↑ End of the messaging and notifications addition.
+           -- >>> moderation module: staff roles of the caller (empty for an ordinary member).
+           'admin', jsonb_build_object('roles', public.get_my_admin_roles()),
+           -- <<< moderation module
            'legal', (
              -- Documents in force whose last material version the caller has not accepted.
              -- `modal` blocks the app; `banner` is the 7-day notice of a standard change,

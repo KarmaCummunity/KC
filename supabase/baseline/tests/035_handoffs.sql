@@ -297,7 +297,8 @@ select is(pg_temp.act('b', 'select public.rate_handoff(~01b, 1)'), 'handoff_alre
 select is(pg_temp.act('a', 'select public.rate_handoff(~01b, 4)'), 'ok', 'the owner rates the recipient');
 select is(pg_temp.val($$select string_agg(stars || coalesce(comment, '-'), ' ' order by stars) from public.post_ratings
     where (rater_id, ratee_id) in ((@a, @b), (@b, @a))$$), '4- 5thanks', 'both ratings are stored, each about the other member');
-select is(pg_temp.act('b', 'select 1 from public.post_ratings'), '42501', 'members cannot read ratings, not even their own');
+-- The moderation module grants the table for its staff-only policy, so a member gets no rows.
+select is(pg_temp.seen('b', 'select 1 from public.post_ratings'), 0::bigint, 'members cannot read ratings, not even their own');
 select is(pg_temp.events('karma', 'rating_given'), 2::bigint, 'each rating records a karma event');
 
 -- ── Reopen, close with a recipient, un-mark ─────────────────────────────────
