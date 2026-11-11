@@ -22,3 +22,4 @@
 0020_org_sec46_machine.sql
 0026_member_realtime.sql
 0027_rich_notifications.sql
+0028_chat_fresh_thread.sql

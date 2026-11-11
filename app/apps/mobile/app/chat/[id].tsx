@@ -13,6 +13,7 @@ import { useChatStore, type OptimisticMessage } from '../../src/store/chatStore'
 import { useAuthStore } from '../../src/store/authStore';
 import { container } from '../../src/lib/container';
 import { markNeedFreshThreadWith } from '../../src/lib/chatNavigationPrefs';
+import { forgetHiddenChat } from '../../src/lib/forgetHiddenChat';
 import { MessageBubble } from '../../src/components/MessageBubble';
 import { ChatDaySeparator } from '../../src/components/chat/ChatDaySeparator';
 import { buildChatThreadRowsNewestFirst, type ChatThreadListRow } from '../../src/lib/chatThreadListRows';
@@ -176,7 +177,7 @@ export default function ChatScreen() {
     try {
       await container.hideChatFromInbox.execute({ chatId });
       if (counterpart.userId) markNeedFreshThreadWith(counterpart.userId);
-      useChatStore.getState().stopThreadSub(chatId);
+      forgetHiddenChat(chatId);
       await useChatStore.getState().refreshInbox(userId, container.chatRepo);
       setHideConfirmOpen(false);
       setHideBusy(false);
