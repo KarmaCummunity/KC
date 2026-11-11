@@ -20,8 +20,8 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 243,
-   "distinct": 221
+   "callSites": 244,
+   "distinct": 222
   },
   "table": {
    "callSites": 166,
@@ -932,7 +932,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 60,
+   "line": 61,
    "area": "chat",
    "symbol": "SupabaseChatRepository.chatCall",
    "via": "literal",
@@ -941,7 +941,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 71,
+   "line": 79,
    "area": "chat",
    "symbol": "SupabaseChatRepository.sendMessage",
    "via": "literal",
@@ -950,7 +950,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 77,
+   "line": 93,
    "area": "chat",
    "symbol": "SupabaseChatRepository.markRead",
    "via": "literal",
@@ -959,7 +959,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 81,
+   "line": 97,
    "area": "chat",
    "symbol": "SupabaseChatRepository.getUnreadTotal",
    "via": "literal",
@@ -968,7 +968,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 96,
+   "line": 112,
    "area": "chat",
    "symbol": "SupabaseChatRepository.hasSentAnyMessage",
    "via": "literal",
@@ -980,7 +980,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 117,
+   "line": 133,
    "area": "chat",
    "symbol": "SupabaseChatRepository.getCounterpart",
    "via": "literal",
@@ -992,7 +992,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-   "line": 138,
+   "line": 154,
    "area": "chat",
    "symbol": "SupabaseChatRepository.readMarkers",
    "via": "literal",
@@ -3853,9 +3853,18 @@
    "name": "user_private"
   },
   {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/users/userReads.ts",
+   "line": 36,
+   "area": "users",
+   "symbol": "loadOwnerSlice",
+   "via": "literal",
+   "name": "my_karma_points"
+  },
+  {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/users/userReads.ts",
-   "line": 45,
+   "line": 49,
    "area": "users",
    "symbol": "loadCityNames",
    "via": "literal",
@@ -3867,7 +3876,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/users/userReads.ts",
-   "line": 56,
+   "line": 60,
    "area": "users",
    "symbol": "loadStats",
    "via": "literal",
@@ -3879,7 +3888,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/users/userReads.ts",
-   "line": 93,
+   "line": 97,
    "area": "users",
    "symbol": "fetchUserBy",
    "via": "literal",

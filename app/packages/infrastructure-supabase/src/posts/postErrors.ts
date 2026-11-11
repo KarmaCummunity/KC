@@ -17,6 +17,7 @@ const CODE_BY_REASON: Readonly<Record<string, PostErrorCode>> = {
   listing_has_active_handoff: 'closure_wrong_status',
   world_not_assignable: 'closure_wrong_status',
   not_recipient_or_wrong_status: 'closure_wrong_status',
+  offer_photo_required: 'image_required_for_give',
   post_limit_exceeded: 'active_post_limit_exceeded',
   post_not_found: 'not_found',
   comment_not_found: 'not_found',
