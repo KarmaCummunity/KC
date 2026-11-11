@@ -20,8 +20,8 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 245,
-   "distinct": 223
+   "callSites": 246,
+   "distinct": 224
   },
   "table": {
    "callSites": 166,
@@ -37,6 +37,15 @@
    "symbol": "assetUrl",
    "via": "const",
    "name": "post-images"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/apps/mobile/app/pro.tsx",
+   "line": 38,
+   "area": "mobile",
+   "symbol": "ProPaywallScreen",
+   "via": "literal",
+   "name": "api_my_pro_status"
   },
   {
    "kind": "rpc",
