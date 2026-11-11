@@ -7,7 +7,7 @@ export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/
 export default function KnowledgeLinksScreen() {
   return (
     <WorldLaunchGateBySlug worldSlug="knowledge">
-      <WorldDedicatedLinksScreen worldSlug="knowledge" categorySlug="knowledge" />
+      <WorldDedicatedLinksScreen worldSlug="knowledge" />
     </WorldLaunchGateBySlug>
   );
 }

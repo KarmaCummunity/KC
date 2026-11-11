@@ -1,5 +1,5 @@
 // Reads the public facts of a post that a link-preview card needs, through the database function
-// `post_share_card` (migration 0021) with the anon key. Signed-out callers cannot read `posts`,
+// `post_share_card` (migration 0025) with the anon key. Signed-out callers cannot read `posts`,
 // so the function is the one door: it returns a row only for a public, open or delivered post of
 // an active member, and only the columns below. No direct table read happens here.
 
@@ -36,7 +36,9 @@ export async function fetchSharedPost(postId, { supabaseUrl, supabaseAnonKey }, 
     const rows = await response.json();
     const row = Array.isArray(rows) ? rows[0] : null;
     return row && typeof row.title === 'string' && row.title.trim() !== '' ? row : null;
-  } catch {
+  } catch (err) {
+    // Timeouts, network failures and non-JSON bodies all mean "no card" — never throw to the edge.
+    console.warn('[web-edge] post_share_card failed', err instanceof Error ? err.message : err);
     return null;
   } finally {
     clearTimeout(timer);

@@ -41,6 +41,7 @@ import { useKeyboardVerticalOffset } from '../../src/lib/platform/useKeyboardVer
 import { formKeyboardAccessoryProps, useFormFieldFocus } from '../../src/hooks/useFormFieldFocus';
 import type { FormFieldFocusBindings } from '../../src/hooks/useFormFieldFocus';
 import { KeyboardFormAccessory } from '../../src/components/ui/KeyboardFormAccessory';
+import { resolveKeyboardAvoidingBehavior } from '../../src/lib/platform/keyboardVerticalOffset';
 
 type DemoAnswer = { rating: number | null; text: string };
 
@@ -111,7 +112,7 @@ export default function SurveyDemoScreen() {
       />
       <KeyboardAvoidingView
         style={[styles.flex, styles.stage]}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
         keyboardVerticalOffset={keyboardOffset}
       >
         <KeyboardFormAccessory {...formKeyboardAccessoryProps(fieldFocus)} />

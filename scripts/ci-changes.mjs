@@ -90,8 +90,13 @@ export const LANE_JOBS = ['hygiene', 'static', ...LANES, ...HEAVY_LANES];
  * planned as `false`, so a ci.yml without the job (and the gate copy that
  * predates it) keeps passing; scripts/ci-gate.mjs accepts the job as skipped
  * when the plan omits it. Keep in sync with OPTIONAL_LANES there.
+ *
+ * `maestro` (the Android journeys on an emulator against kc-dev) is registered here first and planned
+ * by nothing yet. The gate judges a PR with this file from the base commit, so a PR that adds the
+ * `maestro` job to ci.yml can only pass once the base already knows it as an optional lane: this
+ * registration lands first, and the next change plans it and adds the job.
  */
-export const OPTIONAL_LANES = ['release'];
+export const OPTIONAL_LANES = ['release', 'maestro'];
 
 /** Map changed paths to the heavy lanes they need. */
 export function classify(files) {

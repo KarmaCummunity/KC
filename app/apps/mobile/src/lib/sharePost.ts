@@ -57,7 +57,9 @@ async function fetchAsFile(remoteUrl: string, imageKey: string): Promise<File | 
     const ext = (blob.type.split('/')[1] ?? 'jpg').replace('jpeg', 'jpg');
     const safeId = imageKey.replace(/[^a-zA-Z0-9-_]/g, '_');
     return new File([blob], `kc-share-${safeId}.${ext}`, { type: blob.type || 'image/jpeg' });
-  } catch {
+  } catch (err) {
+    // Image attach is best-effort; the share still goes out as text-only.
+    console.warn('[sharePost] fetchAsFile failed', err instanceof Error ? err.message : err);
     return null;
   }
 }
@@ -83,6 +85,8 @@ async function shareWeb(
     } catch (err) {
       const name = err instanceof Error ? err.name : '';
       if (name === 'AbortError') return { kind: 'dismissed' };
+      // Other Web Share failures fall through to the clipboard copy path below.
+      console.warn('[sharePost] navigator.share failed', err instanceof Error ? err.message : err);
     }
   }
   if (nav?.clipboard?.writeText) {
@@ -107,7 +111,9 @@ async function withShareImageDownloadTimeout<T>(promise: Promise<T>): Promise<T 
         timer = setTimeout(() => resolve(null), SHARE_IMAGE_DOWNLOAD_MS);
       }),
     ]);
-  } catch {
+  } catch (err) {
+    // A failed image download must not block the share sheet.
+    console.warn('[sharePost] image download failed', err instanceof Error ? err.message : err);
     return null;
   } finally {
     if (timer !== undefined) clearTimeout(timer);

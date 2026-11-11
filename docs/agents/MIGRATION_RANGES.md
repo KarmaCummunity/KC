@@ -14,10 +14,12 @@
 |---|---|---|
 | 0002 | #2150 organization entitlement (`0002_org_entitlements.sql`) | merged |
 | 0003–0019 | `claude/baseline-post-cutover`: the post-cut-over world, chat, research, housing, knowledge and money changes ported from the pre-cut-over baseline branches. `0003` post seat counts, `0004` ride series schedule, `0005` match quality, `0006` profile mine tab, `0007` chat inbox previews, `0008` post media sizes, `0009` research feedback and survey reports, `0010` housing, knowledge and finance reads; `0011`–`0019` held for follow-ups | in progress |
-| 0020 | #2154 Section 46(a) status on the kernel (`0020_org_sec46_machine.sql`) | in progress |
-| 0021 | #2049 preview card of a shared post link (`0021_post_share_card.sql`) | in progress |
+| 0020 | #2154 Section 46(a) status on the kernel (`0020_org_sec46_machine.sql`) | merged |
+| 0021–0023 | #2086 recurring events: `0021` post series, `0022` series RPCs and the end of a recurring ride, `0023` one date of a series in the feeds | in progress |
+| 0024 | #2163 links and knowledge of the giving worlds: `world_links`, `external_bodies`, `knowledge_topics`, `knowledge_topic_aliases` (`0024_world_content.sql`) | in progress |
+| 0025 | #2049 preview card of a shared post link (`0025_post_share_card.sql`) | in progress |
 
-Next free number: `0022`.
+Next free number: `0026`.
 
 ## Retired chain (before D-228)
 

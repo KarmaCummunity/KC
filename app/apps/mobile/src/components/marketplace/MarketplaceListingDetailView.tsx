@@ -16,6 +16,7 @@ import { RideRouteCard } from './RideRouteCard';
 import { RidePublishAgainButton } from './RidePublishAgainButton';
 import { RideSeriesManageLink } from './RideSeriesManageLink';
 import { RideSeriesOccurrences } from './RideSeriesOccurrences';
+import { PostSeriesOccurrences } from '../series/PostSeriesOccurrences';
 import { isTestListingTitle } from '../../lib/displayTitle';
 import { PostDetailHeader } from '../cards/PostDetailHeader';
 import { SimilarListingCard } from '../cards/SimilarListingCard';
@@ -108,6 +109,9 @@ export function MarketplaceListingDetailView({ detail, bottomInset, footer, mode
           {detail.worldSlug === 'rides' && viewerId === detail.ownerId ? <RideSeriesManageLink details={detail.details} /> : null}
           {/* An organization's event: its window, address, capacity and registration policy (G1 step 5). */}
           {detail.kindSlug === ORG_EVENT_KIND_SLUG ? <EventDetailsCard details={detail.details} /> : null}
+          {detail.kindSlug === ORG_EVENT_KIND_SLUG ? (
+            <PostSeriesOccurrences listingId={detail.listingId} details={detail.details} isOwner={viewerId === detail.ownerId} />
+          ) : null}
           {detail.summary ? <Text style={detailStyles.description}>{detail.summary}</Text> : null}
           <Text style={styles.summary}>{kindLabel}</Text>
           {detail.owner ? (
