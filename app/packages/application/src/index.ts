@@ -86,6 +86,8 @@ export type {
 } from './ports/IDonationLinksRepository';
 export * from './donations/ReviewDonationLinksUseCases'; // D9 review queue + decision
 export { ListDonationLinksUseCase } from './donations/ListDonationLinksUseCase';
+export { GetWorldContentUseCase } from './worlds/GetWorldContentUseCase';
+export type { IWorldContentRepository } from './ports/IWorldContentRepository';
 export { AddDonationLinkUseCase } from './donations/AddDonationLinkUseCase';
 export { UpdateDonationLinkUseCase } from './donations/UpdateDonationLinkUseCase';
 export { RemoveDonationLinkUseCase } from './donations/RemoveDonationLinkUseCase';

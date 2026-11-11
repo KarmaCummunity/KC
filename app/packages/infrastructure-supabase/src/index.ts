@@ -54,6 +54,7 @@ export { SupabaseBlockRepository } from './blocks/SupabaseBlockRepository';
 export { SupabaseModerationAdminRepository } from './moderation/SupabaseModerationAdminRepository';
 export { SupabaseAccountGateRepository } from './auth/SupabaseAccountGateRepository';
 export { SupabaseDonationLinksRepository } from './donations/SupabaseDonationLinksRepository';
+export { SupabaseWorldContentRepository } from './worlds/SupabaseWorldContentRepository';
 export { SupabaseSearchRepository } from './search/SupabaseSearchRepository';
 export { SupabaseDeviceRepository } from './notifications/SupabaseDeviceRepository';
 export { SupabaseLegalDocumentRepository } from './legal/SupabaseLegalDocumentRepository';

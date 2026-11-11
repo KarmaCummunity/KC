@@ -10,10 +10,10 @@
    "missing": 19
   },
   "table": {
-   "objects": 60,
-   "same": 44,
+   "objects": 63,
+   "same": 45,
    "renamed": 0,
-   "changed": 15,
+   "changed": 17,
    "removed": 0,
    "missing": 1
   },
@@ -52,10 +52,10 @@
    "missing": 0
   },
   "later": {
-   "objects": 91,
-   "same": 46,
+   "objects": 94,
+   "same": 47,
    "renamed": 4,
-   "changed": 21,
+   "changed": 23,
    "removed": 0,
    "missing": 20
   },
@@ -388,6 +388,13 @@
    "callSites": 9,
    "oneToOne": 3,
    "changed": 6,
+   "removed": 0,
+   "missing": 0
+  },
+  "worlds": {
+   "callSites": 3,
+   "oneToOne": 1,
+   "changed": 2,
    "removed": 0,
    "missing": 0
   }
@@ -799,15 +806,18 @@
     "table:post_event_details",
     "table:post_food_details",
     "table:worlds",
+    "table:world_links",
+    "table:knowledge_topics",
+    "table:external_bodies",
     "table:organizations",
     "table:road_junctions",
     "table:user_consents",
     "table:post_ratings"
    ],
    "counts": {
-    "objects": 78,
-    "oneToOne": 67,
-    "changed": 11,
+    "objects": 81,
+    "oneToOne": 68,
+    "changed": 13,
     "removed": 0,
     "missing": 0
    }
@@ -10678,6 +10688,67 @@
    ]
   },
   {
+   "old": "external_bodies",
+   "kind": "table",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`id` (not `body_id`); read directly, the search and admin RPCs of the old picker are not in the baseline.",
+   "oldObject": {
+    "columns": [
+     "body_id",
+     "body_type",
+     "contact_url",
+     "created_at",
+     "is_active",
+     "is_verified",
+     "label_en",
+     "label_he",
+     "requires_routing",
+     "slug",
+     "world_slug"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "external_bodies",
+     "columns": [
+      "body_type",
+      "contact_url",
+      "created_at",
+      "id",
+      "is_active",
+      "is_verified",
+      "label_en",
+      "label_he",
+      "requires_routing",
+      "slug",
+      "sort_order",
+      "updated_at",
+      "world_slug"
+     ],
+     "clientGrants": {}
+    }
+   ],
+   "areas": [
+    "worlds"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
+     "line": 35,
+     "symbol": "SupabaseWorldContentRepository.getWorldContent",
+     "area": "worlds",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
    "old": "feed_hides",
    "kind": "table",
    "status": "same",
@@ -11234,6 +11305,69 @@
      "line": 24,
      "symbol": "useKarmaHistory",
      "area": "mobile",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "knowledge_topics",
+   "kind": "table",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The topic tree, read-only for members: `id` (not `topic_id`), `world_slug` added, no `created_by` / `approved_by` / `legacy_category_slug`. Proposals, review and follows are not in the baseline.",
+   "oldObject": {
+    "columns": [
+     "approved_by",
+     "created_at",
+     "created_by",
+     "description_he",
+     "label_en",
+     "label_he",
+     "legacy_category_slug",
+     "merged_into_id",
+     "parent_id",
+     "slug",
+     "sort_order",
+     "status",
+     "topic_id",
+     "updated_at"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "knowledge_topics",
+     "columns": [
+      "created_at",
+      "description_he",
+      "id",
+      "label_en",
+      "label_he",
+      "merged_into_id",
+      "parent_id",
+      "slug",
+      "sort_order",
+      "status",
+      "updated_at",
+      "world_slug"
+     ],
+     "clientGrants": {}
+    }
+   ],
+   "areas": [
+    "worlds"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
+     "line": 42,
+     "symbol": "SupabaseWorldContentRepository.getWorldContent",
+     "area": "worlds",
      "ops": [
       "select"
      ]
@@ -14796,6 +14930,63 @@
      "line": 19,
      "symbol": "serve",
      "area": "fn:whatsapp-sender",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "world_links",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Curated links from one world to a related one; readable signed-out too.",
+   "oldObject": {
+    "columns": [
+     "created_at",
+     "description",
+     "from_world_slug",
+     "is_active",
+     "label_en",
+     "label_he",
+     "link_id",
+     "link_slug",
+     "to_world_slug"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "world_links",
+     "columns": [
+      "created_at",
+      "description",
+      "from_world_slug",
+      "id",
+      "is_active",
+      "label_en",
+      "label_he",
+      "link_slug",
+      "sort_order",
+      "to_world_slug",
+      "updated_at"
+     ],
+     "clientGrants": {}
+    }
+   ],
+   "areas": [
+    "worlds"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/worlds/SupabaseWorldContentRepository.ts",
+     "line": 28,
+     "symbol": "SupabaseWorldContentRepository.getWorldContent",
+     "area": "worlds",
      "ops": [
       "select"
      ]
