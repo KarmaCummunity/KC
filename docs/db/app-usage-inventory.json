@@ -20,11 +20,11 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 196,
-   "distinct": 168
+   "callSites": 194,
+   "distinct": 166
   },
   "table": {
-   "callSites": 181,
+   "callSites": 185,
    "distinct": 59
   }
  },
@@ -411,31 +411,61 @@
    "name": "admin_org_application_reject"
   },
   {
-   "kind": "rpc",
+   "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-   "line": 116,
+   "line": 88,
    "area": "admin",
    "symbol": "SupabaseOrgHierarchyRepository.getOrgTree",
    "via": "literal",
-   "name": "admin_org_tree"
+   "ops": [
+    "select"
+   ],
+   "name": "users"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-   "line": 130,
+   "line": 103,
    "area": "admin",
-   "symbol": "SupabaseOrgHierarchyRepository.setManager",
+   "symbol": "SupabaseOrgHierarchyRepository.unwrap",
    "via": "literal",
    "name": "admin_set_manager"
   },
   {
-   "kind": "rpc",
+   "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-   "line": 138,
+   "line": 111,
    "area": "admin",
    "symbol": "SupabaseOrgHierarchyRepository.getHierarchyCensus",
    "via": "literal",
-   "name": "admin_hierarchy_census"
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
+   "line": 131,
+   "area": "admin",
+   "symbol": "SupabaseOrgHierarchyRepository.snapshot",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "admin_role_grants"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
+   "line": 140,
+   "area": "admin",
+   "symbol": "SupabaseOrgHierarchyRepository.snapshot",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "organizations"
   },
   {
    "kind": "rpc",
