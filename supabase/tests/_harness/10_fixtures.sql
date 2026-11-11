@@ -135,3 +135,43 @@ as $$
     (select status::text from public.post_handoffs where handoff_id = p_handoff_id)
   );
 $$;
+
+-- Fires every deferred constraint check now, as a commit would, then defers them again so later
+-- statements behave as in production. Tests never commit, so a deferred rule (e.g. the D132 offer
+-- photo check, 0741) is only exercised through this helper.
+create function kc_test.run_commit_checks()
+returns void
+language plpgsql
+as $$
+begin
+  set constraints all immediate;
+  set constraints all deferred;
+end;
+$$;
+
+-- Publishes an offer with one attached photo through the native create RPC, acting as the owner.
+-- An offer in items, food, housing or animals needs a photo (D132, 0741); use this builder for any
+-- such offer whose test runs the commit checks. Returns the post id.
+create function kc_test.create_offer_with_photo(
+  p_owner_id uuid,
+  p_world_slug text,
+  p_kind_slug text,
+  p_title text,
+  p_details jsonb default '{}'::jsonb,
+  p_category_id uuid default null
+)
+returns uuid
+language plpgsql
+as $$
+begin
+  perform kc_test.act_as(p_owner_id);
+  return public.create_marketplace_listing(
+    p_kind_id => kc_test.listing_kind_id(p_world_slug, p_kind_slug),
+    p_title => p_title,
+    p_details => p_details,
+    p_direction => 'give',
+    p_category_id => p_category_id,
+    -- Storage paths must start with the owner's id (attach_listing_media, 0334).
+    p_media_paths => array[p_owner_id::text || '/' || gen_random_uuid()::text || '.jpg']);
+end;
+$$;
