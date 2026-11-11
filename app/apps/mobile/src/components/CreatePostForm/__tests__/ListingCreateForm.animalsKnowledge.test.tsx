@@ -27,6 +27,8 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+// The organization membership hint (FR-ORG-002) opens My organizations.
+vi.mock('expo-router', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@react-native-community/datetimepicker', () => ({
   default: mocks.nativeDatePicker,
   DateTimePickerAndroid: { open: vi.fn() },

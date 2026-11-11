@@ -6380,7 +6380,9 @@ export type Database = {
           contact_email: string | null
           contact_phone: string | null
           created_at: string
+          declared_nonprofit: boolean
           org_description: string | null
+          org_id: string | null
           org_name: string
           review_note: string | null
           reviewed_at: string | null
@@ -6394,7 +6396,9 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          declared_nonprofit?: boolean
           org_description?: string | null
+          org_id?: string | null
           org_name: string
           review_note?: string | null
           reviewed_at?: string | null
@@ -6408,7 +6412,9 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          declared_nonprofit?: boolean
           org_description?: string | null
+          org_id?: string | null
           org_name?: string
           review_note?: string | null
           reviewed_at?: string | null
@@ -6437,6 +6443,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users_public"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "org_applications_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["org_id"]
           },
           {
             foreignKeyName: "org_applications_reviewed_by_fkey"
@@ -14200,6 +14213,7 @@ export type Database = {
         Returns: string
       }
       escape_ilike: { Args: { p: string }; Returns: string }
+      event_attendance_prompt_sweep: { Args: never; Returns: number }
       event_promote_waitlist: {
         Args: { p_post_id: string }
         Returns: undefined
@@ -14236,6 +14250,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      event_reminder_sweep: { Args: never; Returns: number }
       events_expired_sweep: { Args: never; Returns: number }
       feed_cache_enqueue: { Args: { p_user_id: string }; Returns: number }
       feed_cache_enqueue_active_users: {
@@ -14773,6 +14788,10 @@ export type Database = {
         Returns: Json
       }
       kc_dev_seed_demo_match_candidates: { Args: never; Returns: number }
+      kc_dev_seed_demo_org_events: {
+        Args: { p_caller: string }
+        Returns: number
+      }
       kc_dev_seed_demo_post_media: { Args: never; Returns: undefined }
       kc_dev_seed_demo_rides: { Args: never; Returns: undefined }
       kc_dev_seed_demo_user_profiles: { Args: never; Returns: undefined }
@@ -15124,6 +15143,17 @@ export type Database = {
           starts_at: string
           status: string
           title: string
+        }[]
+      }
+      list_org_members: {
+        Args: { p_org_id: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          joined_at: string
+          role: string
+          share_handle: string
+          user_id: string
         }[]
       }
       list_profile_listings: {
@@ -15648,6 +15678,14 @@ export type Database = {
       offer_requires_photo: {
         Args: { p_direction: string; p_world_slug: string }
         Returns: boolean
+      }
+      org_add_member: {
+        Args: { p_org_id: string; p_role?: string; p_share_handle: string }
+        Returns: string
+      }
+      org_remove_member: {
+        Args: { p_org_id: string; p_user_id: string }
+        Returns: undefined
       }
       organizer_message_shift_volunteers: {
         Args: { p_message: string; p_shift_id: string }
@@ -17442,6 +17480,17 @@ export type Database = {
         }[]
       }
       stats_safe_dec: { Args: { p_value: number }; Returns: number }
+      submit_org_application: {
+        Args: {
+          p_contact_email: string
+          p_contact_phone?: string
+          p_declared_nonprofit?: boolean
+          p_org_description: string
+          p_org_name: string
+          p_website_url?: string
+        }
+        Returns: string
+      }
       submit_public_research_response: {
         Args: {
           p_answers: Json
