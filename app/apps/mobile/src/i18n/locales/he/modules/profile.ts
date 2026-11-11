@@ -102,14 +102,14 @@ export const profileHe = {
 
   // CityPicker (FR-AUTH-010 AC2 — also reused by EditProfileAddressBlock)
   cityPickerTitle: 'לבחור עיר',
-  cityPickerSearchPlaceholder: '...חיפוש עיר',
+  cityPickerSearchPlaceholder: 'חיפוש עיר…',
   cityPickerError: 'שגיאה בטעינת רשימת הערים. אפשר לנסות שוב.',
   cityPickerEmpty: 'לא נמצאו ערים תואמות.',
   cityPickerCloseA11y: 'סגור',
 
   // StreetPicker (FR-PROFILE-007 AC1 — city-dependent canonical streets)
   streetPickerTitle: 'בחרו רחוב',
-  streetPickerSearchPlaceholder: '...חיפוש רחוב',
+  streetPickerSearchPlaceholder: 'חיפוש רחוב…',
   streetPickerError: 'שגיאה בטעינת רשימת הרחובות. נסו שוב.',
   streetPickerEmpty: 'לא נמצאו רחובות תואמים.',
   streetPickerNeedCity: 'בחרו עיר תחילה',

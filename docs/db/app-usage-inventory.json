@@ -143,7 +143,7 @@
   {
    "kind": "table",
    "file": "app/apps/mobile/src/services/featureFlagsComposition.ts",
-   "line": 9,
+   "line": 12,
    "area": "mobile",
    "symbol": "fetchRemoteFeatureFlags",
    "via": "literal",
@@ -155,7 +155,7 @@
   {
    "kind": "bucket",
    "file": "app/apps/mobile/src/services/imageUpload.ts",
-   "line": 179,
+   "line": 182,
    "area": "mobile",
    "symbol": "resizeAndUploadImage",
    "via": "const",
@@ -164,7 +164,7 @@
   {
    "kind": "bucket",
    "file": "app/apps/mobile/src/services/imageUpload.ts",
-   "line": 191,
+   "line": 194,
    "area": "mobile",
    "symbol": "resizeAndUploadImage",
    "via": "const",

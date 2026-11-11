@@ -40,7 +40,7 @@ async function fillFoodOfferForm(page: Page, title: string) {
   await page.locator('input[type="datetime-local"]').fill('2030-01-01T12:00');
   await page.getByTestId('listing-date-expires_at-done').click();
   await page.getByRole('button', { name: 'לבחור עיר' }).click();
-  await page.getByPlaceholder('...חיפוש עיר').fill('לוד');
+  await page.getByPlaceholder('חיפוש עיר…').fill('לוד');
   await page.getByText('לוד', { exact: true }).first().click();
 }
 

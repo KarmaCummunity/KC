@@ -44,6 +44,7 @@ import { ConfigGate } from '../src/components/ConfigGate';
 import { isSupabaseConfigured } from '../src/lib/supabasePublicConfig';
 import { DevBanner } from '../src/components/DevBanner';
 import { SuspensionBanner } from '../src/components/SuspensionBanner';
+import { GlobalOfflineBanner } from '../src/components/common/GlobalOfflineBanner';
 import { LegalConsentGate } from '../src/components/legal/LegalConsentGate';
 import { ModalStackProvider } from '../src/components/legal/useActiveModalStack';
 import { useBrandFonts } from '../src/lib/useBrandFonts';
@@ -96,6 +97,7 @@ function ThemedRootShell() {
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <DevBanner />
       <SuspensionBanner />
+      <GlobalOfflineBanner />
       <NotificationsBridge />
       <AuthGate>
         <ModalStackProvider>
