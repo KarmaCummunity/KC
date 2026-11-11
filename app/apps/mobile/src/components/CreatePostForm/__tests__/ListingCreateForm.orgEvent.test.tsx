@@ -89,9 +89,9 @@ function renderTimeOffer() {
   return { onPublished };
 }
 
-/** Chooses the event, picks the window and the city. */
-async function fillEvent() {
-  fireEvent.click(await screen.findByTestId('time-offer-kind-event'));
+/** Chooses the event (an organization's by default), picks the window and the city. */
+async function fillEvent(kindChip = 'time-offer-kind-event') {
+  fireEvent.click(await screen.findByTestId(kindChip));
   fireEvent.click(await screen.findByTestId('listing-date-starts_at'));
   fireEvent.click(screen.getByTestId('listing-date-ends_at'));
   fireEvent.click(screen.getByTestId('city-picker'));
@@ -117,12 +117,22 @@ afterEach(() => {
 });
 
 describe('ListingCreateForm — organization event', () => {
-  it('a member of no organization sees today\'s form', async () => {
+  it('a member of no organization starts on today\'s form and may publish their own event (FR-POST-024)', async () => {
     mocks.listMyOrganizations.mockResolvedValue([]);
-    renderTimeOffer();
+    const { onPublished } = renderTimeOffer();
     expect(await screen.findByTestId('listing-field-duration_minutes')).toBeTruthy();
     await waitFor(() => expect(mocks.listMyOrganizations).toHaveBeenCalled());
-    expect(screen.queryByTestId('time-offer-kind')).toBeNull();
+    // The choice is theirs too, without the organization's chip or picker.
+    expect(await screen.findByTestId('time-offer-kind')).toBeTruthy();
+    expect(screen.queryByTestId('time-offer-kind-event')).toBeNull();
+    await fillEvent('time-offer-kind-personal-event');
+    expect(screen.queryByTestId('org-picker')).toBeNull();
+    expect(screen.getByTestId('event-recurrence')).toBeTruthy();
+    await publish();
+    await waitFor(() => expect(onPublished).toHaveBeenCalledWith('listing-event'));
+    const payload = mocks.createListing.mock.calls[0]![0] as { kindId: string; details: Record<string, unknown> };
+    expect(payload.kindId).toBe('k-event');
+    expect(payload.details).not.toHaveProperty('org_id');
   });
 
   it('tells a member of no organization how to publish an event, and opens My organizations', async () => {

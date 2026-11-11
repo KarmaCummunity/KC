@@ -41,6 +41,7 @@ export const WORLD_CHROME_BY_SLUG: Record<string, WorldChromeConfig> = {
     subScreens: worldSubScreens('/(tabs)/donations/time/handoffs', [
       { labelKey: 'timeVolunteer.myShiftsLink', path: '/(tabs)/donations/time/my-shifts', testID: 'time-my-shifts' },
       { labelKey: 'timeVolunteer.organizerLink', path: '/(tabs)/donations/time/organizer', testID: 'time-organizer' },
+      { labelKey: 'postSeries.mine', path: '/(tabs)/donations/time/series', testID: 'world-hub-post-series' },
       { labelKey: 'timeVolunteer.contactKcLink', path: '/(tabs)/donations/time/support', testID: 'time-contact-kc' },
       worldLinksSubScreenLink('time'),
     ]),
