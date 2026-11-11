@@ -1,13 +1,13 @@
 /**
  * KC#1058 — single-choice bundle mapping, the admin PMF report and active-day recording.
  * RPC mocks only; the SQL behaviour is covered by supabase/tests/0458_pmf_survey.sql.
+ * (Active-day recording moved with the identity package: SupabaseUserActivityRepository.test.ts.)
  */
 import { describe, it, expect, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../../database.legacy.types';
 import { SupabaseSurveyRepository } from '../SupabaseSurveyRepository';
 import { SupabaseSurveyAdminRepository } from '../SupabaseSurveyAdminRepository';
-import { SupabaseUserActivityRepository } from '../SupabaseUserActivityRepository';
 
 type RpcOverrides = Record<string, { data: unknown; error: { message: string } | null }>;
 
@@ -151,20 +151,5 @@ describe('SupabaseSurveyAdminRepository.getPmfReport', () => {
     await expect(
       new SupabaseSurveyAdminRepository(client.typed).getPmfReport('missing'),
     ).rejects.toMatchObject({ code: 'not_found' });
-  });
-});
-
-describe('SupabaseUserActivityRepository.recordActiveDay', () => {
-  it('calls rpc_record_active_day', async () => {
-    const client = makeClient();
-    await new SupabaseUserActivityRepository(client.typed).recordActiveDay();
-    expect(client.rpc).toHaveBeenCalledWith('rpc_record_active_day');
-  });
-
-  it('throws SurveyError(network) when the RPC fails', async () => {
-    const client = makeClient({ rpc_record_active_day: { data: null, error: { message: 'timeout' } } });
-    await expect(new SupabaseUserActivityRepository(client.typed).recordActiveDay()).rejects.toMatchObject({
-      code: 'network',
-    });
   });
 });

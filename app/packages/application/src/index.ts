@@ -14,7 +14,7 @@ export * from './translations';
 export type { IChatRealtime, InboxStreamCallbacks, SubscribeInboxOptions, ChatStreamCallbacks, Unsubscribe } from './ports/IChatRealtime';
 export type { IReportRepository } from './ports/IReportRepository';
 export type { IFeedRealtime, FeedRealtimeCallbacks, NewPublicPostSignal } from './ports/IFeedRealtime';
-export type { IUserRealtime } from './ports/IUserRealtime';
+export type { AccountChange, IUserRealtime } from './ports/IUserRealtime';
 export type { IRidesRealtime, RidesRealtimeCallbacks } from './ports/IRidesRealtime';
 export type { CommunityStatsSnapshot, IStatsRepository, MyWorldGivings, WorldFlowFunnelRow } from './ports/IStatsRepository';
 export type { IAboutRepository } from './ports/IAboutRepository';

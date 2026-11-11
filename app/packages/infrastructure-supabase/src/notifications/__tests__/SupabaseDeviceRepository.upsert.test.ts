@@ -105,6 +105,6 @@ describe('SupabaseDeviceRepository — upsert', () => {
 
     await expect(
       repo.upsert({ userId: 'u_1', pushToken: 'tok_abc', platform: 'ios' }),
-    ).rejects.toBe(pgError);
+    ).rejects.toThrow(pgError.message);
   });
 });

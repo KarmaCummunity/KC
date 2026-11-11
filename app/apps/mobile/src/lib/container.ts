@@ -132,24 +132,24 @@ export const legacySupabase = bindSupabaseClient<LegacyDatabase>(isSupabaseConfi
   getLegacySupabaseClient({ storage: pickAuthStorage() }),
 );
 
-const userRepo = new SupabaseUserRepository(legacySupabase);
+const userRepo = new SupabaseUserRepository(supabase);
 const chatRepo = new SupabaseChatRepository(legacySupabase);
 const chatRealtime = new SupabaseChatRealtime(legacySupabase);
 const reportRepo = new SupabaseReportRepository(supabase);
-const blockRepo = new SupabaseBlockRepository(legacySupabase);
+const blockRepo = new SupabaseBlockRepository(supabase);
 const donationLinksRepo = new SupabaseDonationLinksRepository(legacySupabase);
 const postRepo = new SupabasePostRepository(legacySupabase);
 const postEngagementRepo = new SupabasePostEngagementRepository(legacySupabase);
-const notificationInboxRepo = new SupabaseNotificationInboxRepository(legacySupabase);
+const notificationInboxRepo = new SupabaseNotificationInboxRepository(supabase);
 const chatV2Realtime = new SupabaseChatV2Realtime(legacySupabase);
 const onlinePresence = new SupabaseOnlinePresence(legacySupabase);
-const activeStatus = new SupabaseActiveStatusRepository(legacySupabase);
+const activeStatus = new SupabaseActiveStatusRepository(supabase);
 const chatV2Repo = new SupabaseChatV2Repository(legacySupabase);
 const socialFeedRepo = new SupabaseSocialFeedRepository(legacySupabase);
-const followSuggestionsRepo = new SupabaseFollowSuggestionsRepository(legacySupabase);
+const followSuggestionsRepo = new SupabaseFollowSuggestionsRepository();
 const moderationAdminRepo = new SupabaseModerationAdminRepository(supabase);
-const accountGateRepo = new SupabaseAccountGateRepository(legacySupabase);
-const deviceRepo = new SupabaseDeviceRepository(legacySupabase);
+const accountGateRepo = new SupabaseAccountGateRepository(supabase);
+const deviceRepo = new SupabaseDeviceRepository(supabase);
 const adminRoleRepo = new SupabaseAdminRoleRepository(supabase);
 const adminTaskRepo = new SupabaseAdminTaskRepository(legacySupabase);
 const orgHierarchyRepo = new SupabaseOrgHierarchyRepository(legacySupabase);
@@ -160,7 +160,7 @@ const orgApplicationsRepo = new SupabaseOrgApplicationsRepository(legacySupabase
 const reportsRepo = new SupabaseReportsRepository(supabase);
 const surveyRepo = new SupabaseSurveyRepository(legacySupabase);
 const surveyAdminRepo = new SupabaseSurveyAdminRepository(legacySupabase);
-const userActivityRepo = new SupabaseUserActivityRepository(legacySupabase);
+const userActivityRepo = new SupabaseUserActivityRepository(supabase);
 const publicResearchRepo = new SupabasePublicResearchRepository(legacySupabase);
 
 const hideChatFromInbox = new HideChatFromInboxUseCase(chatRepo);

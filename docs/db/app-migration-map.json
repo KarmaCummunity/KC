@@ -2,20 +2,20 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 278,
-   "same": 38,
-   "renamed": 43,
-   "changed": 118,
-   "removed": 11,
-   "missing": 68
+   "objects": 272,
+   "same": 49,
+   "renamed": 38,
+   "changed": 112,
+   "removed": 8,
+   "missing": 65
   },
   "table": {
-   "objects": 53,
-   "same": 11,
+   "objects": 55,
+   "same": 14,
    "renamed": 2,
    "changed": 33,
    "removed": 2,
-   "missing": 5
+   "missing": 4
   },
   "bucket": {
    "objects": 5,
@@ -27,25 +27,25 @@
   },
   "channel": {
    "objects": 13,
-   "same": 3,
+   "same": 4,
    "renamed": 0,
-   "changed": 4,
+   "changed": 3,
    "removed": 1,
    "missing": 5
   },
   "postgres_changes": {
-   "objects": 5,
+   "objects": 4,
    "same": 0,
    "renamed": 0,
-   "changed": 2,
+   "changed": 1,
    "removed": 1,
    "missing": 2
   },
   "edge_function": {
-   "objects": 4,
+   "objects": 3,
    "same": 3,
    "renamed": 0,
-   "changed": 1,
+   "changed": 0,
    "removed": 0,
    "missing": 0
   }
@@ -53,19 +53,19 @@
  "launchTotals": {
   "core": {
    "objects": 112,
-   "same": 35,
-   "renamed": 17,
-   "changed": 54,
-   "removed": 4,
+   "same": 50,
+   "renamed": 12,
+   "changed": 45,
+   "removed": 3,
    "missing": 2
   },
   "later": {
-   "objects": 140,
+   "objects": 134,
    "same": 15,
    "renamed": 4,
    "changed": 43,
-   "removed": 5,
-   "missing": 73
+   "removed": 3,
+   "missing": 69
   },
   "wedge": {
    "objects": 106,
@@ -77,13 +77,6 @@
   }
  },
  "modules": {
-  "about": {
-   "callSites": 1,
-   "oneToOne": 0,
-   "changed": 0,
-   "removed": 0,
-   "missing": 1
-  },
   "admin": {
    "callSites": 54,
    "oneToOne": 6,
@@ -93,17 +86,17 @@
   },
   "auth": {
    "callSites": 2,
-   "oneToOne": 1,
-   "changed": 1,
+   "oneToOne": 2,
+   "changed": 0,
    "removed": 0,
    "missing": 0
   },
   "blocks": {
-   "callSites": 4,
+   "callSites": 3,
    "oneToOne": 3,
    "changed": 0,
    "removed": 0,
-   "missing": 1
+   "missing": 0
   },
   "challenges": {
    "callSites": 10,
@@ -281,9 +274,9 @@
    "missing": 7
   },
   "legal": {
-   "callSites": 4,
+   "callSites": 3,
    "oneToOne": 3,
-   "changed": 1,
+   "changed": 0,
    "removed": 0,
    "missing": 0
   },
@@ -302,10 +295,10 @@
    "missing": 1
   },
   "mobile": {
-   "callSites": 26,
+   "callSites": 24,
    "oneToOne": 14,
    "changed": 5,
-   "removed": 4,
+   "removed": 2,
    "missing": 3
   },
   "moderation": {
@@ -371,13 +364,6 @@
    "removed": 0,
    "missing": 2
   },
-  "social": {
-   "callSites": 2,
-   "oneToOne": 0,
-   "changed": 0,
-   "removed": 0,
-   "missing": 2
-  },
   "stats": {
    "callSites": 4,
    "oneToOne": 1,
@@ -407,10 +393,10 @@
    "missing": 0
   },
   "users": {
-   "callSites": 42,
-   "oneToOne": 4,
-   "changed": 37,
-   "removed": 1,
+   "callSites": 32,
+   "oneToOne": 19,
+   "changed": 13,
+   "removed": 0,
    "missing": 0
   },
   "volunteering": {
@@ -422,6 +408,7 @@
   }
  },
  "notes": [
+  "Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): the blocked-users list (M01, the screen shows its empty state; unblock from a profile is not reachable because `users_hide_blocked` hides it), follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).",
   "Errors: every baseline RPC raises `P0001` with a stable snake_case message (`unauthenticated` uses `42501`). Map on `error.message`, never on a SQLSTATE or on Hebrew text. Codes marked † in the tables are not referenced anywhere in the app today and need a user-visible mapping.",
   "Paging: no OFFSET anywhere. Lists take the `next_cursor` JSON of the last row (cards) or explicit `p_before_*` / `p_after_*` values; application ports that expose `offset` change to an opaque cursor.",
   "Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.",
@@ -432,39 +419,6 @@
  ],
  "missing": [
   {
-   "id": "M01",
-   "title": "Blocked users list",
-   "usedBy": "Settings → Privacy → blocked users screen (SupabaseBlockRepository.listMyBlockedUsers)",
-   "spec": "FR-MOD-004 (unblock) deferred post-MVP; FR-SETTINGS-005 deprecated",
-   "launch": "no",
-   "tier": "later",
-   "action": "defer",
-   "recommendation": "Spec defers unblock to post-MVP: hide the blocked-users row at launch (blocking itself works). Later: a small definer function in `15_social_graph`: the caller's blocks with display name and avatar. Without it nobody can see whom they blocked, because `users_hide_blocked` hides those profiles. Until then hide the screen.",
-   "blocker": false
-  },
-  {
-   "id": "M03",
-   "title": "Follow suggestions",
-   "usedBy": "Search / explore \"people to follow\" (SupabaseFollowSuggestionsRepository)",
-   "spec": "not in docs/spec/requirements",
-   "launch": "no",
-   "tier": "later",
-   "action": "defer",
-   "recommendation": "Hide behind a flag; `search_users_page` with an empty query already lists the most followed members.",
-   "blocker": false
-  },
-  {
-   "id": "M04",
-   "title": "Profile completeness",
-   "usedBy": "Profile completeness hint (SupabaseFollowSuggestionsRepository.getProfileCompleteness)",
-   "spec": "not in docs/spec/requirements",
-   "launch": "no",
-   "tier": "later",
-   "action": "rls-read",
-   "recommendation": "Compute on the device from the caller's own `users` and `user_private` rows (both readable by their owner).",
-   "blocker": false
-  },
-  {
    "id": "M05",
    "title": "Suggested search queries",
    "usedBy": "Search screen extras (SupabaseSearchRepository)",
@@ -473,17 +427,6 @@
    "tier": "later",
    "action": "drop",
    "recommendation": "Remove the server call; keep the local recent searches.",
-   "blocker": false
-  },
-  {
-   "id": "M08",
-   "title": "About page team list",
-   "usedBy": "Settings → About → team (SupabaseAboutRepository)",
-   "spec": "FR-SETTINGS About refresh (no FR for a team table)",
-   "launch": "no",
-   "tier": "later",
-   "action": "drop",
-   "recommendation": "Ship the team as static content of the app, or defer the section; no database object.",
    "blocker": false
   },
   {
@@ -646,7 +589,7 @@
    "parallelWith": [],
    "files": [
     "auth/**",
-    "users/** (except users/SupabaseUserRealtime.ts)",
+    "users/**",
     "legal/**",
     "blocks/**",
     "social/**",
@@ -657,7 +600,7 @@
     "survey/SupabaseUserActivityRepository.ts",
     "apps/mobile: auth gate, onboarding, settings, edit profile, avatar upload, notification badge hook, devIdentityVerification (deleted)"
    ],
-   "work": "Replace the start-up calls with `bootstrap_session`; split the user mapper over `users` / `user_private` / `user_account` / `user_stats`; follows through `follow_user` and the request RPCs; account deletion through `request_account_deletion`.",
+   "work": "Done in P1: the account gate, private profile, onboarding state and pending legal documents read `bootstrap_session`; `users/mapUserRow.ts` maps the public `users` row plus `user_stats` and, for the caller's own row, the `bootstrap_session` private blocks (`user_private`, `user_account`, staff roles); follows go through `follow_user`, `follow_request_decide` and `follow_request_cancel`; account deletion through `request_account_deletion` and `restore_account`; the account gate listens on `user:<id>:account`. M01, M03, M04 and M08 are hidden or empty (no call is made); the dev-only identity and onboarding helpers are gone.",
    "tests": [
     "vitest: auth, users, legal, blocks, social, notifications suites",
     "contract tests against a baseline database (sqlProbes, contract.integration)",
@@ -666,50 +609,43 @@
    "degrade": "Nothing works before this package (no session): it is the first one after P0. The blocked-users row, follow suggestions, the completeness hint and the About team list are hidden (M01, M03, M04, M08).",
    "risks": "Owns `users/mapUserRow.ts`, which chat, posts and search read: it lands before P2 and P3 start. Account gate: topic `user:<id>:account` (M24).",
    "rows": [
-    "rpc:auth_check_account_gate",
-    "rpc:rpc_restore_account",
-    "rpc:rpc_set_date_of_birth",
-    "rpc:rpc_set_onboarding_state",
-    "rpc:rpc_dev_reset_onboarding",
-    "rpc:rpc_get_show_active_status",
-    "rpc:rpc_set_show_active_status",
-    "rpc:users_merge_notification_preferences",
-    "rpc:users_get_self_private_fields",
-    "rpc:get_chat_counterparty_contact",
+    "rpc:bootstrap_session",
+    "rpc:restore_account",
+    "rpc:request_account_deletion",
+    "rpc:set_date_of_birth",
+    "rpc:set_onboarding_state",
+    "rpc:set_privacy_mode",
+    "rpc:follow_user",
+    "rpc:follow_request_decide",
+    "rpc:follow_request_cancel",
+    "rpc:chat_counterpart_contact",
+    "rpc:record_active_day",
+    "table:user_private",
+    "table:user_stats",
+    "table:follows",
     "table:users",
-    "table:follow_edges",
     "table:follow_requests",
     "table:blocks",
-    "rpc:list_my_blocked_users",
     "rpc:accept_legal_document",
-    "rpc:needs_legal_reacknowledgement",
     "table:legal_documents",
     "table:legal_document_versions",
-    "rpc:rpc_follow_suggestions",
-    "rpc:rpc_profile_completeness",
     "table:cities",
     "table:streets",
-    "table:about_team_profiles",
-    "rpc:rpc_record_active_day",
     "rpc:notifications_page",
     "rpc:notifications_unread_count",
     "rpc:notifications_mark_read",
     "rpc:notifications_mark_all_read",
     "table:user_devices",
-    "rpc:dev_mock_identity_verification_allowed",
-    "rpc:dev_grant_mock_identity_verification",
     "bucket:avatars",
     "channel:topic = `user:${userId}:notifications`",
-    "channel:topic = `me:${userId}:${Date.now()}`",
-    "postgres_changes:users",
-    "edge_function:delete-account"
+    "channel:topic = `user:${userId}:account`"
    ],
    "counts": {
-    "objects": 37,
-    "oneToOne": 16,
-    "changed": 14,
-    "removed": 3,
-    "missing": 4
+    "objects": 30,
+    "oneToOne": 26,
+    "changed": 4,
+    "removed": 0,
+    "missing": 0
    }
   },
   {
@@ -803,7 +739,6 @@
    ],
    "files": [
     "chat/**",
-    "users/SupabaseUserRealtime.ts",
     "feed/SupabaseFeedRealtime.ts",
     "rides/SupabaseRidesRealtime.ts",
     "apps/mobile: chat screens, chat media, inbox and notification badge hooks"
@@ -1991,13 +1926,13 @@
    ]
   },
   {
-   "old": "topic = `me:${userId}:${Date.now()}`",
+   "old": "topic = `user:${userId}:account`",
    "kind": "channel",
-   "status": "changed",
+   "status": "same",
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "Private topic `user:<id>:account`, event `account_changed` with `status`, `status_until`, `onboarding_state`; re-read `bootstrap_session` on it (M24, built for the account gate).",
+   "note": "Already on the baseline contract (event `account_changed` with `status`, `status_until`, `onboarding_state`; M24, built for the account gate): the account gate subscribes here instead of to a `users` row.",
    "oldObject": {},
    "targets": [
     {
@@ -2011,8 +1946,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRealtime.ts",
-     "line": 21,
-     "symbol": "SupabaseUserRealtime.subscribeToSelf",
+     "line": 37,
+     "symbol": "SupabaseUserRealtime.subscribeToAccount",
      "area": "users"
     }
    ]
@@ -2107,51 +2042,6 @@
      "line": 51,
      "symbol": "SupabaseRidesRealtime.subscribeToUserParticipantUpdates",
      "area": "rides"
-    }
-   ]
-  },
-  {
-   "old": "delete-account",
-   "kind": "edge_function",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Call the RPC directly; the function is obsolete (see the Edge Functions table).",
-   "oldObject": {},
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "request_account_deletion",
-     "source": "10_identity/090_account_rpcs.sql:103",
-     "signature": [
-      "request_account_deletion() → string"
-     ],
-     "errors": [
-      {
-       "code": "suspended",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      },
-      {
-       "code": "user_not_found",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "users"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
-     "line": 186,
-     "symbol": "SupabaseUserRepository.deleteAccountViaEdgeFunction",
-     "area": "users"
     }
    ]
   },
@@ -2360,34 +2250,6 @@
    ]
   },
   {
-   "old": "users",
-   "kind": "postgres_changes",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Replaced by the account topic; no postgres_changes publication exists (M24, built for the account gate).",
-   "oldObject": {},
-   "targets": [
-    {
-     "type": "topic",
-     "name": "user:<user_id>:account"
-    }
-   ],
-   "areas": [
-    "users"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRealtime.ts",
-     "line": 23,
-     "symbol": "SupabaseUserRealtime.subscribeToSelf",
-     "area": "users",
-     "event": "UPDATE"
-    }
-   ]
-  },
-  {
    "old": "accept_housing_conduct",
    "kind": "rpc",
    "status": "changed",
@@ -2460,7 +2322,7 @@
      "errors": [
       {
        "code": "legal_version_out_of_range",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -2468,7 +2330,7 @@
       },
       {
        "code": "unknown_legal_document",
-       "knownToApp": false
+       "knownToApp": true
       }
      ]
     }
@@ -2479,8 +2341,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/legal/SupabaseLegalDocumentRepository.ts",
-     "line": 116,
-     "symbol": "SupabaseLegalDocumentRepository.acceptVersion",
+     "line": 117,
+     "symbol": "SupabaseLegalDocumentRepository.unwrapCall",
      "area": "legal"
     }
    ]
@@ -5052,47 +4914,6 @@
    ]
   },
   {
-   "old": "auth_check_account_gate",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Gate is `account.status` / `status_until` of the session payload; no per-user argument and no `allowed` flag: the app derives it from the status.",
-   "oldObject": {
-    "signature": [
-     "auth_check_account_gate(p_user_id: string) → { allowed: boolean reason: string until_at: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "bootstrap_session",
-     "source": "10_identity/100_bootstrap_session.sql:10",
-     "signature": [
-      "bootstrap_session() → Json"
-     ],
-     "errors": [
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "auth"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/auth/SupabaseAccountGateRepository.ts",
-     "line": 16,
-     "symbol": "SupabaseAccountGateRepository.checkAccountGate",
-     "area": "auth"
-    }
-   ]
-  },
-  {
    "old": "book_knowledge_seat",
    "kind": "rpc",
    "status": "renamed",
@@ -5243,6 +5064,43 @@
      "line": 28,
      "symbol": "SupabaseRideBookingRepository.bookSeat",
      "area": "rides"
+    }
+   ]
+  },
+  {
+   "old": "bootstrap_session",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Session start in one call: the account gate (`account.status`, `status_until`), the caller's `private_profile`, the staff `admin.roles` and the pending `legal.documents`. The app reads those blocks and nothing else.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "bootstrap_session",
+     "source": "10_identity/100_bootstrap_session.sql:10",
+     "signature": [
+      "bootstrap_session() → Json"
+     ],
+     "errors": [
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "auth"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/auth/bootstrapSession.ts",
+     "line": 138,
+     "symbol": "fetchBootstrapSession",
+     "area": "auth"
     }
    ]
   },
@@ -5606,6 +5464,43 @@
      "line": 131,
      "symbol": "SupabaseVolunteerRepository.cancelSignup",
      "area": "volunteering"
+    }
+   ]
+  },
+  {
+   "old": "chat_counterpart_contact",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_chat_id`; the counterpart's phone as text, null when the caller cannot use the chat, it is a support thread, the counterpart is inactive or has no phone (M06, built).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "chat_counterpart_contact",
+     "source": "40_messaging/080_chat_counterpart_contact.sql:13",
+     "signature": [
+      "chat_counterpart_contact(p_chat_id: string) → string"
+     ],
+     "errors": [
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "users"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/getChatCounterpartyContact.ts",
+     "line": 16,
+     "symbol": "getChatCounterpartyContact",
+     "area": "users"
     }
    ]
   },
@@ -7119,58 +7014,6 @@
    ]
   },
   {
-   "old": "dev_grant_mock_identity_verification",
-   "kind": "rpc",
-   "status": "removed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Dev-only; not carried over.",
-   "oldObject": {
-    "signature": [
-     "dev_grant_mock_identity_verification() → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "mobile"
-   ],
-   "callSites": [
-    {
-     "file": "app/apps/mobile/src/services/devIdentityVerification.ts",
-     "line": 14,
-     "symbol": "devGrantMockIdentityVerification",
-     "area": "mobile"
-    }
-   ]
-  },
-  {
-   "old": "dev_mock_identity_verification_allowed",
-   "kind": "rpc",
-   "status": "removed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Dev-only; not carried over. Verify test members from the dev seed scripts.",
-   "oldObject": {
-    "signature": [
-     "dev_mock_identity_verification_allowed() → boolean"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "mobile"
-   ],
-   "callSites": [
-    {
-     "file": "app/apps/mobile/src/services/devIdentityVerification.ts",
-     "line": 7,
-     "symbol": "devMockIdentityAllowed",
-     "area": "mobile"
-    }
-   ]
-  },
-  {
    "old": "embedding_job_fail",
    "kind": "rpc",
    "status": "same",
@@ -7864,6 +7707,161 @@
    ]
   },
   {
+   "old": "follow_request_cancel",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_target`; a request that is no longer pending is treated as already cancelled.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "follow_request_cancel",
+     "source": "15_social_graph/040_follow_rpcs.sql:124",
+     "signature": [
+      "follow_request_cancel(p_target: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "follow_request_not_pending",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "users"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
+     "line": 77,
+     "symbol": "cancelRequest",
+     "area": "users"
+    }
+   ]
+  },
+  {
+   "old": "follow_request_decide",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_requester`, `p_accept`; a request that is no longer pending (`follow_request_not_pending`) is treated as already decided.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "follow_request_decide",
+     "source": "15_social_graph/040_follow_rpcs.sql:93",
+     "signature": [
+      "follow_request_decide(p_accept: boolean, p_requester: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "follow_request_not_pending",
+       "knownToApp": true
+      },
+      {
+       "code": "invalid_decision",
+       "knownToApp": false
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "users"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
+     "line": 85,
+     "symbol": "unwrapCall",
+     "area": "users"
+    }
+   ]
+  },
+  {
+   "old": "follow_user",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_target`; answers `following` or `requested`, idempotent. Refusals: `self_follow_forbidden`, `blocked_relationship`, `follow_request_cooldown_active` (detail `cooldown_until=`), `account_not_active`, `rate_limited`, `user_unavailable`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "follow_user",
+     "source": "15_social_graph/040_follow_rpcs.sql:30",
+     "signature": [
+      "follow_user(p_target: string) → string"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "blocked_relationship",
+       "knownToApp": true
+      },
+      {
+       "code": "follow_request_cooldown_active",
+       "knownToApp": true
+      },
+      {
+       "code": "invalid_rate_limit_args",
+       "knownToApp": false
+      },
+      {
+       "code": "rate_limited",
+       "knownToApp": true
+      },
+      {
+       "code": "self_follow_forbidden",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      },
+      {
+       "code": "user_unavailable",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "users"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/follow/followUserRpc.ts",
+     "line": 16,
+     "symbol": "callFollowUser",
+     "area": "users"
+    }
+   ]
+  },
+  {
    "old": "fulfill_my_listing",
    "kind": "rpc",
    "status": "changed",
@@ -7958,47 +7956,6 @@
      "line": 149,
      "symbol": "SupabaseChallengeRepository.getChallenge",
      "area": "challenges"
-    }
-   ]
-  },
-  {
-   "old": "get_chat_counterparty_contact",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Same argument (`p_chat_id`), returns the phone as text, null when the caller cannot use the chat, it is a support thread, the counterpart is inactive or has no phone (M06, built).",
-   "oldObject": {
-    "signature": [
-     "get_chat_counterparty_contact(p_chat_id: string) → string"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "chat_counterpart_contact",
-     "source": "40_messaging/080_chat_counterpart_contact.sql:13",
-     "signature": [
-      "chat_counterpart_contact(p_chat_id: string) → string"
-     ],
-     "errors": [
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "users"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/getChatCounterpartyContact.ts",
-     "line": 8,
-     "symbol": "getChatCounterpartyContact",
-     "area": "users"
     }
    ]
   },
@@ -9150,32 +9107,6 @@
      "line": 20,
      "symbol": "SupabaseKnowledgeBookingRepository.listSlots",
      "area": "knowledge"
-    }
-   ]
-  },
-  {
-   "old": "list_my_blocked_users",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M01",
-   "note": "A blocker can read their `blocks` rows but not the blocked member's name or avatar (restrictive policy `users_hide_blocked`).",
-   "oldObject": {
-    "signature": [
-     "list_my_blocked_users(avatar_url: string, blocked_at: string, display_name: string, user_id: string) → { avatar_url: string blocked_at: string display_name: string user_id: string }[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "blocks"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-     "line": 38,
-     "symbol": "SupabaseBlockRepository.listMyBlockedUsers",
-     "area": "blocks"
     }
    ]
   },
@@ -10378,47 +10309,6 @@
    ]
   },
   {
-   "old": "needs_legal_reacknowledgement",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "The pending documents are `legal.documents` of the session payload, same fields (`doc_type`, `current_version`, `last_material_version`, `last_accepted_version`, `block_mode`, …).",
-   "oldObject": {
-    "signature": [
-     "needs_legal_reacknowledgement(block_mode: string, current_effective_date: string, current_version: number, doc_type: legal_doc_type, last_accepted_version: number, last_material_severity: string, last_material_version: number) → { block_mode: string current_effective_date: string current_version: number doc_type: legal_doc_type last_accepted_version: number last_material_severity: string last_material_version: number }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "bootstrap_session",
-     "source": "10_identity/100_bootstrap_session.sql:10",
-     "signature": [
-      "bootstrap_session() → Json"
-     ],
-     "errors": [
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "legal"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/legal/SupabaseLegalDocumentRepository.ts",
-     "line": 106,
-     "symbol": "SupabaseLegalDocumentRepository.getPendingForCurrentUser",
-     "area": "legal"
-    }
-   ]
-  },
-  {
    "old": "notifications_mark_all_read",
    "kind": "rpc",
    "status": "same",
@@ -10449,7 +10339,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseNotificationInboxRepository.ts",
-     "line": 84,
+     "line": 86,
      "symbol": "SupabaseNotificationInboxRepository.markAllRead",
      "area": "notifications"
     }
@@ -10518,7 +10408,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseNotificationInboxRepository.ts",
-     "line": 65,
+     "line": 62,
      "symbol": "SupabaseNotificationInboxRepository.page",
      "area": "notifications"
     }
@@ -10550,7 +10440,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseNotificationInboxRepository.ts",
-     "line": 75,
+     "line": 73,
      "symbol": "SupabaseNotificationInboxRepository.unreadCount",
      "area": "notifications"
     }
@@ -11109,6 +10999,43 @@
    ]
   },
   {
+   "old": "record_active_day",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Marks the caller active for today; idempotent within a day.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "record_active_day",
+     "source": "79_activity_stats/010_user_active_days.sql:28",
+     "signature": [
+      "record_active_day() → undefined"
+     ],
+     "errors": [
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "survey"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/survey/SupabaseUserActivityRepository.ts",
+     "line": 18,
+     "symbol": "SupabaseUserActivityRepository.recordActiveDay",
+     "area": "survey"
+    }
+   ]
+  },
+  {
    "old": "record_listing_signal",
    "kind": "rpc",
    "status": "removed",
@@ -11501,6 +11428,51 @@
    ]
   },
   {
+   "old": "request_account_deletion",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Deactivates the caller's account for 30 days and returns the purge date (refusals `suspended`, `user_not_found`); the app calls it directly.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "request_account_deletion",
+     "source": "10_identity/090_account_rpcs.sql:103",
+     "signature": [
+      "request_account_deletion() → string"
+     ],
+     "errors": [
+      {
+       "code": "suspended",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      },
+      {
+       "code": "user_not_found",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "users"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
+     "line": 169,
+     "symbol": "SupabaseUserRepository.requestAccountDeletion",
+     "area": "users"
+    }
+   ]
+  },
+  {
    "old": "request_housing_booking",
    "kind": "rpc",
    "status": "renamed",
@@ -11701,6 +11673,51 @@
      "line": 34,
      "symbol": "SupabaseKnowledgeTopicRepository.resolveTopics",
      "area": "knowledge"
+    }
+   ]
+  },
+  {
+   "old": "restore_account",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Restores the caller's account during the 30-day grace period (refusals `not_pending_deletion`, `grace_expired`).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "restore_account",
+     "source": "10_identity/090_account_rpcs.sql:143",
+     "signature": [
+      "restore_account() → undefined"
+     ],
+     "errors": [
+      {
+       "code": "grace_expired",
+       "knownToApp": true
+      },
+      {
+       "code": "not_pending_deletion",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "auth"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/auth/SupabaseAccountGateRepository.ts",
+     "line": 53,
+     "symbol": "SupabaseAccountGateRepository.restoreAccount",
+     "area": "auth"
     }
    ]
   },
@@ -12097,7 +12114,7 @@
       },
       {
        "code": "user_unavailable",
-       "knownToApp": false
+       "knownToApp": true
       }
      ]
     }
@@ -12158,7 +12175,7 @@
       },
       {
        "code": "user_unavailable",
-       "knownToApp": false
+       "knownToApp": true
       }
      ]
     }
@@ -12275,32 +12292,6 @@
      "line": 81,
      "symbol": "SupabasePostEngagementRepository.createComment",
      "area": "posts"
-    }
-   ]
-  },
-  {
-   "old": "rpc_dev_reset_onboarding",
-   "kind": "rpc",
-   "status": "removed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Dev-only helper; not carried over (design §8). Reset a test member from the dev seed scripts.",
-   "oldObject": {
-    "signature": [
-     "rpc_dev_reset_onboarding() → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "users"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/onboardingSupabase.ts",
-     "line": 87,
-     "symbol": "supabaseResetOnboardingForDev",
-     "area": "users"
     }
    ]
   },
@@ -12546,32 +12537,6 @@
    ]
   },
   {
-   "old": "rpc_follow_suggestions",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M03",
-   "note": "No suggestion query in the baseline.",
-   "oldObject": {
-    "signature": [
-     "rpc_follow_suggestions(p_limit?: number) → { avatar_url: string city_name: string display_name: string followers_count: number reason: string score: number share_handle: string user_id: string verification_level: number }[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "social"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/social/SupabaseFollowSuggestionsRepository.ts",
-     "line": 29,
-     "symbol": "SupabaseFollowSuggestionsRepository.listSuggestions",
-     "area": "social"
-    }
-   ]
-  },
-  {
    "old": "rpc_get_or_create_support_thread",
    "kind": "rpc",
    "status": "renamed",
@@ -12650,63 +12615,6 @@
      "line": 36,
      "symbol": "SupabasePostEngagementRepository.getStats",
      "area": "posts"
-    }
-   ]
-  },
-  {
-   "old": "rpc_get_show_active_status",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Read `show_active_status` of the caller's own row (policy `user_private_select_self`), or take it from `bootstrap_session().private_profile`.",
-   "oldObject": {
-    "signature": [
-     "rpc_get_show_active_status() → boolean"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "user_private",
-     "columns": [
-      "basic_info_skipped",
-      "closure_explainer_dismissed",
-      "contact_phone",
-      "date_of_birth",
-      "first_post_nudge_dismissed",
-      "notification_preferences",
-      "profile_street",
-      "profile_street_number",
-      "show_active_status",
-      "updated_at",
-      "user_id"
-     ],
-     "clientGrants": {
-      "select": true,
-      "update": [
-       "basic_info_skipped",
-       "closure_explainer_dismissed",
-       "contact_phone",
-       "first_post_nudge_dismissed",
-       "notification_preferences",
-       "profile_street",
-       "profile_street_number",
-       "show_active_status"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "users"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/SupabaseActiveStatusRepository.ts",
-     "line": 12,
-     "symbol": "SupabaseActiveStatusRepository.get",
-     "area": "users"
     }
    ]
   },
@@ -12903,32 +12811,6 @@
    ]
   },
   {
-   "old": "rpc_profile_completeness",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M04",
-   "note": "No completeness function in the baseline.",
-   "oldObject": {
-    "signature": [
-     "rpc_profile_completeness(p_user_id?: string) → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "social"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/social/SupabaseFollowSuggestionsRepository.ts",
-     "line": 53,
-     "symbol": "SupabaseFollowSuggestionsRepository.getProfileCompleteness",
-     "area": "social"
-    }
-   ]
-  },
-  {
    "old": "rpc_recipient_unmark_self",
    "kind": "rpc",
    "status": "renamed",
@@ -12974,47 +12856,6 @@
      "line": 235,
      "symbol": "SupabasePostRepository.unmrkRecipientSelf",
      "area": "posts"
-    }
-   ]
-  },
-  {
-   "old": "rpc_record_active_day",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Same call.",
-   "oldObject": {
-    "signature": [
-     "rpc_record_active_day() → undefined"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "record_active_day",
-     "source": "79_activity_stats/010_user_active_days.sql:28",
-     "signature": [
-      "record_active_day() → undefined"
-     ],
-     "errors": [
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "survey"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/survey/SupabaseUserActivityRepository.ts",
-     "line": 14,
-     "symbol": "SupabaseUserActivityRepository.recordActiveDay",
-     "area": "survey"
     }
    ]
   },
@@ -13090,55 +12931,6 @@
      "line": 34,
      "symbol": "handler",
      "area": "fn:delete-account"
-    }
-   ]
-  },
-  {
-   "old": "rpc_restore_account",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Same call.",
-   "oldObject": {
-    "signature": [
-     "rpc_restore_account() → undefined"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "restore_account",
-     "source": "10_identity/090_account_rpcs.sql:143",
-     "signature": [
-      "restore_account() → undefined"
-     ],
-     "errors": [
-      {
-       "code": "grace_expired",
-       "knownToApp": true
-      },
-      {
-       "code": "not_pending_deletion",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "auth"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/auth/SupabaseAccountGateRepository.ts",
-     "line": 41,
-     "symbol": "SupabaseAccountGateRepository.restoreAccount",
-     "area": "auth"
     }
    ]
   },
@@ -13700,59 +13492,6 @@
    ]
   },
   {
-   "old": "rpc_set_date_of_birth",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "`p_date_of_birth` → `p_date`. Editable under the 18+ rule (design §12.1), no longer write-once.",
-   "oldObject": {
-    "signature": [
-     "rpc_set_date_of_birth(p_date_of_birth: string) → undefined"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "set_date_of_birth",
-     "source": "10_identity/090_account_rpcs.sql:52",
-     "signature": [
-      "set_date_of_birth(p_date: string) → undefined"
-     ],
-     "errors": [
-      {
-       "code": "invalid_date_of_birth",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      },
-      {
-       "code": "underage",
-       "knownToApp": true
-      },
-      {
-       "code": "user_not_found",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "users"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/onboardingSupabase.ts",
-     "line": 60,
-     "symbol": "supabaseSetDateOfBirth",
-     "area": "users"
-    }
-   ]
-  },
-  {
    "old": "rpc_set_message_reaction",
    "kind": "rpc",
    "status": "changed",
@@ -13802,59 +13541,6 @@
      "line": 15,
      "symbol": "SupabaseChatV2Repository.setMessageReaction",
      "area": "chat"
-    }
-   ]
-  },
-  {
-   "old": "rpc_set_onboarding_state",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Same argument; moves are checked by the onboarding machine.",
-   "oldObject": {
-    "signature": [
-     "rpc_set_onboarding_state(p_state: string) → undefined"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "set_onboarding_state",
-     "source": "10_identity/090_account_rpcs.sql:10",
-     "signature": [
-      "set_onboarding_state(p_state: string) → undefined"
-     ],
-     "errors": [
-      {
-       "code": "onboarding_basic_info_missing",
-       "knownToApp": true
-      },
-      {
-       "code": "onboarding_transition_invalid",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      },
-      {
-       "code": "user_not_found",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "users"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/onboardingSupabase.ts",
-     "line": 73,
-     "symbol": "supabaseSetOnboardingState",
-     "area": "users"
     }
    ]
   },
@@ -13949,63 +13635,6 @@
      "line": 69,
      "symbol": "SupabasePostEngagementRepository.setReaction",
      "area": "posts"
-    }
-   ]
-  },
-  {
-   "old": "rpc_set_show_active_status",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Direct update of `show_active_status` (column grant, policy `user_private_update_self`).",
-   "oldObject": {
-    "signature": [
-     "rpc_set_show_active_status(p_enabled: boolean) → boolean"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "user_private",
-     "columns": [
-      "basic_info_skipped",
-      "closure_explainer_dismissed",
-      "contact_phone",
-      "date_of_birth",
-      "first_post_nudge_dismissed",
-      "notification_preferences",
-      "profile_street",
-      "profile_street_number",
-      "show_active_status",
-      "updated_at",
-      "user_id"
-     ],
-     "clientGrants": {
-      "select": true,
-      "update": [
-       "basic_info_skipped",
-       "closure_explainer_dismissed",
-       "contact_phone",
-       "first_post_nudge_dismissed",
-       "notification_preferences",
-       "profile_street",
-       "profile_street_number",
-       "show_active_status"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "users"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/SupabaseActiveStatusRepository.ts",
-     "line": 18,
-     "symbol": "SupabaseActiveStatusRepository.set",
-     "area": "users"
     }
    ]
   },
@@ -14335,6 +13964,55 @@
    ]
   },
   {
+   "old": "set_date_of_birth",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_date`; the 18+ rule answers `underage` / `invalid_date_of_birth`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "set_date_of_birth",
+     "source": "10_identity/090_account_rpcs.sql:52",
+     "signature": [
+      "set_date_of_birth(p_date: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "invalid_date_of_birth",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      },
+      {
+       "code": "underage",
+       "knownToApp": true
+      },
+      {
+       "code": "user_not_found",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "users"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/onboardingSupabase.ts",
+     "line": 46,
+     "symbol": "supabaseSetDateOfBirth",
+     "area": "users"
+    }
+   ]
+  },
+  {
    "old": "set_housing_private_details",
    "kind": "rpc",
    "status": "changed",
@@ -14389,6 +14067,100 @@
      "line": 113,
      "symbol": "SupabaseHousingRepository.setPrivateDetails",
      "area": "housing"
+    }
+   ]
+  },
+  {
+   "old": "set_onboarding_state",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_state`; refusals `onboarding_basic_info_missing`, `onboarding_transition_invalid`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "set_onboarding_state",
+     "source": "10_identity/090_account_rpcs.sql:10",
+     "signature": [
+      "set_onboarding_state(p_state: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "onboarding_basic_info_missing",
+       "knownToApp": true
+      },
+      {
+       "code": "onboarding_transition_invalid",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      },
+      {
+       "code": "user_not_found",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "users"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/onboardingSupabase.ts",
+     "line": 60,
+     "symbol": "supabaseSetOnboardingState",
+     "area": "users"
+    }
+   ]
+  },
+  {
+   "old": "set_privacy_mode",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_mode` 'Public' | 'Private'; going public accepts every pending follow request.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "set_privacy_mode",
+     "source": "15_social_graph/040_follow_rpcs.sql:153",
+     "signature": [
+      "set_privacy_mode(p_mode: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "invalid_privacy_mode",
+       "knownToApp": false
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "users"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
+     "line": 94,
+     "symbol": "SupabaseUserRepository.setPrivacyMode",
+     "area": "users"
     }
    ]
   },
@@ -14682,7 +14454,7 @@
       },
       {
        "code": "user_unavailable",
-       "knownToApp": false
+       "knownToApp": true
       }
      ]
     },
@@ -15237,139 +15009,6 @@
    ]
   },
   {
-   "old": "users_get_self_private_fields",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "The private fields are `private_profile` of the session payload; a later refresh reads `user_private` directly.",
-   "oldObject": {
-    "signature": [
-     "users_get_self_private_fields() → Json"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "bootstrap_session",
-     "source": "10_identity/100_bootstrap_session.sql:10",
-     "signature": [
-      "bootstrap_session() → Json"
-     ],
-     "errors": [
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "users"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/usersSelfPrivateFields.ts",
-     "line": 21,
-     "symbol": "fetchUsersSelfPrivateFields",
-     "area": "users"
-    }
-   ]
-  },
-  {
-   "old": "users_merge_notification_preferences",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Direct update of `notification_preferences`; the merge of the patch into the stored JSON moves to the adapter (read, merge, write).",
-   "oldObject": {
-    "signature": [
-     "users_merge_notification_preferences(p_merge: Json, p_user_id: string) → Json"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "user_private",
-     "columns": [
-      "basic_info_skipped",
-      "closure_explainer_dismissed",
-      "contact_phone",
-      "date_of_birth",
-      "first_post_nudge_dismissed",
-      "notification_preferences",
-      "profile_street",
-      "profile_street_number",
-      "show_active_status",
-      "updated_at",
-      "user_id"
-     ],
-     "clientGrants": {
-      "select": true,
-      "update": [
-       "basic_info_skipped",
-       "closure_explainer_dismissed",
-       "contact_phone",
-       "first_post_nudge_dismissed",
-       "notification_preferences",
-       "profile_street",
-       "profile_street_number",
-       "show_active_status"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "users"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
-     "line": 273,
-     "symbol": "SupabaseUserRepository.updateNotificationPreferences",
-     "area": "users"
-    }
-   ]
-  },
-  {
-   "old": "about_team_profiles",
-   "kind": "table",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M08",
-   "note": "View not carried over; staff grants are not readable by members.",
-   "oldObject": {
-    "columns": [
-     "avatar_url",
-     "display_name",
-     "role_key",
-     "share_handle",
-     "sort_order",
-     "user_id"
-    ],
-    "isView": true
-   },
-   "targets": [],
-   "areas": [
-    "about"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/about/SupabaseAboutRepository.ts",
-     "line": 31,
-     "symbol": "SupabaseAboutRepository.listTeamMembers",
-     "area": "about",
-     "ops": [
-      "select"
-     ]
-    }
-   ]
-  },
-  {
    "old": "admin_role_grants",
    "kind": "table",
    "status": "changed",
@@ -15542,13 +15181,12 @@
     }
    ],
    "areas": [
-    "blocks",
-    "users"
+    "blocks"
    ],
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-     "line": 11,
+     "line": 18,
      "symbol": "SupabaseBlockRepository.isBlocking",
      "area": "blocks",
      "ops": [
@@ -15557,7 +15195,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-     "line": 21,
+     "line": 28,
      "symbol": "SupabaseBlockRepository.block",
      "area": "blocks",
      "ops": [
@@ -15566,20 +15204,11 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-     "line": 28,
-     "symbol": "SupabaseBlockRepository.unblock",
+     "line": 36,
+     "symbol": "SupabaseBlockRepository.unwrapCall",
      "area": "blocks",
      "ops": [
       "delete"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/searchUsers.ts",
-     "line": 40,
-     "symbol": "fetchBlockedIdsSafe",
-     "area": "users",
-     "ops": [
-      "select"
      ]
     }
    ]
@@ -15731,7 +15360,7 @@
       },
       {
        "code": "user_unavailable",
-       "knownToApp": false
+       "knownToApp": true
       }
      ]
     }
@@ -15836,12 +15465,13 @@
    ],
    "areas": [
     "cities",
-    "rides"
+    "rides",
+    "users"
    ],
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/cities/SupabaseCityRepository.ts",
-     "line": 38,
+     "line": 42,
      "symbol": "SupabaseCityRepository.listAll",
      "area": "cities",
      "ops": [
@@ -15862,6 +15492,24 @@
      "line": 265,
      "symbol": "SupabaseRideListingRepository.rows",
      "area": "rides",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/editableProfileSupabase.ts",
+     "line": 40,
+     "symbol": "readCityName",
+     "area": "users",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/userReads.ts",
+     "line": 45,
+     "symbol": "loadCityNames",
+     "area": "users",
      "ops": [
       "select"
      ]
@@ -16354,14 +16002,13 @@
       },
       {
        "code": "user_unavailable",
-       "knownToApp": false
+       "knownToApp": true
       }
      ]
     }
    ],
    "areas": [
-    "posts",
-    "users"
+    "posts"
    ],
    "callSites": [
     {
@@ -16369,61 +16016,6 @@
      "line": 32,
      "symbol": "fetchFollowedTargets",
      "area": "posts",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
-     "line": 18,
-     "symbol": "followEdge",
-     "area": "users",
-     "ops": [
-      "select",
-      "insert"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
-     "line": 37,
-     "symbol": "unfollowEdge",
-     "area": "users",
-     "ops": [
-      "delete"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
-     "line": 50,
-     "symbol": "isFollowingEdge",
-     "area": "users",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
-     "line": 71,
-     "symbol": "listFollowers",
-     "area": "users",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
-     "line": 91,
-     "symbol": "listFollowing",
-     "area": "users",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/follow/getFollowState.ts",
-     "line": 21,
-     "symbol": "fetchFollowStateRaw",
-     "area": "users",
      "ops": [
       "select"
      ]
@@ -16504,7 +16096,7 @@
       },
       {
        "code": "user_unavailable",
-       "knownToApp": false
+       "knownToApp": true
       }
      ]
     },
@@ -16522,7 +16114,7 @@
       },
       {
        "code": "follow_request_not_pending",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "invalid_decision",
@@ -16544,7 +16136,7 @@
      "errors": [
       {
        "code": "follow_request_not_pending",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -16559,44 +16151,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
-     "line": 36,
-     "symbol": "sendRequest",
-     "area": "users",
-     "ops": [
-      "select",
-      "insert"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
-     "line": 50,
-     "symbol": "cancelRequest",
-     "area": "users",
-     "ops": [
-      "update"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
-     "line": 64,
-     "symbol": "acceptRequest",
-     "area": "users",
-     "ops": [
-      "update"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
-     "line": 78,
-     "symbol": "rejectRequest",
-     "area": "users",
-     "ops": [
-      "update"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
-     "line": 91,
+     "line": 104,
      "symbol": "listPendingRaw",
      "area": "users",
      "ops": [
@@ -16605,7 +16160,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
-     "line": 107,
+     "line": 120,
      "symbol": "listPendingWithUsers",
      "area": "users",
      "ops": [
@@ -16614,7 +16169,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/users/follow/getFollowState.ts",
-     "line": 27,
+     "line": 19,
      "symbol": "fetchFollowStateRaw",
      "area": "users",
      "ops": [
@@ -16623,7 +16178,82 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/users/follow/getFollowState.ts",
-     "line": 34,
+     "line": 26,
+     "symbol": "fetchFollowStateRaw",
+     "area": "users",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "follows",
+   "kind": "table",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Select and delete direct (`follower_id`, `followed_id`); an edge is created only by `follow_user`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "follows",
+     "columns": [
+      "created_at",
+      "followed_id",
+      "follower_id"
+     ],
+     "clientGrants": {
+      "select": true,
+      "delete": true
+     }
+    }
+   ],
+   "areas": [
+    "users"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
+     "line": 41,
+     "symbol": "unwrapCall",
+     "area": "users",
+     "ops": [
+      "delete"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
+     "line": 53,
+     "symbol": "isFollowingEdge",
+     "area": "users",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
+     "line": 80,
+     "symbol": "cursorStamp",
+     "area": "users",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
+     "line": 100,
+     "symbol": "listSide",
+     "area": "users",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/follow/getFollowState.ts",
+     "line": 17,
      "symbol": "fetchFollowStateRaw",
      "area": "users",
      "ops": [
@@ -16870,7 +16500,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/legal/SupabaseLegalDocumentRepository.ts",
-     "line": 81,
+     "line": 82,
      "symbol": "SupabaseLegalDocumentRepository.getCurrentContent",
      "area": "legal",
      "ops": [
@@ -16923,7 +16553,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/legal/SupabaseLegalDocumentRepository.ts",
-     "line": 71,
+     "line": 72,
      "symbol": "SupabaseLegalDocumentRepository.getCurrentContent",
      "area": "legal",
      "ops": [
@@ -19408,7 +19038,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/streets/SupabaseStreetRepository.ts",
-     "line": 37,
+     "line": 41,
      "symbol": "SupabaseStreetRepository.listByCity",
      "area": "streets",
      "ops": [
@@ -19505,7 +19135,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseDeviceRepository.ts",
-     "line": 39,
+     "line": 41,
      "symbol": "SupabaseDeviceRepository.upsert",
      "area": "notifications",
      "ops": [
@@ -19515,7 +19145,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseDeviceRepository.ts",
-     "line": 57,
+     "line": 59,
      "symbol": "SupabaseDeviceRepository.deactivate",
      "area": "notifications",
      "ops": [
@@ -19524,7 +19154,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseDeviceRepository.ts",
-     "line": 65,
+     "line": 66,
      "symbol": "SupabaseDeviceRepository.listForUser",
      "area": "notifications",
      "ops": [
@@ -19563,6 +19193,89 @@
      "area": "survey",
      "ops": [
       "insert"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "user_private",
+   "kind": "table",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "The caller's own row: select, and update of the granted columns (contact phone, address lines, notification preferences, dismiss flags, `basic_info_skipped`, `show_active_status`).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "user_private",
+     "columns": [
+      "basic_info_skipped",
+      "closure_explainer_dismissed",
+      "contact_phone",
+      "date_of_birth",
+      "first_post_nudge_dismissed",
+      "notification_preferences",
+      "profile_street",
+      "profile_street_number",
+      "show_active_status",
+      "updated_at",
+      "user_id"
+     ],
+     "clientGrants": {
+      "select": true,
+      "update": [
+       "basic_info_skipped",
+       "closure_explainer_dismissed",
+       "contact_phone",
+       "first_post_nudge_dismissed",
+       "notification_preferences",
+       "profile_street",
+       "profile_street_number",
+       "show_active_status"
+      ]
+     }
+    }
+   ],
+   "areas": [
+    "users"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/editableProfileSupabase.ts",
+     "line": 24,
+     "symbol": "readOwnPrivateFields",
+     "area": "users",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/ownPrivateUpdate.ts",
+     "line": 27,
+     "symbol": "updateUserPrivate",
+     "area": "users",
+     "ops": [
+      "update"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/SupabaseActiveStatusRepository.ts",
+     "line": 20,
+     "symbol": "SupabaseActiveStatusRepository.get",
+     "area": "users",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
+     "line": 230,
+     "symbol": "SupabaseUserRepository.updateNotificationPreferences",
+     "area": "users",
+     "ops": [
+      "select"
      ]
     }
    ]
@@ -19631,6 +19344,68 @@
      "line": 68,
      "symbol": "SupabaseRideRatingRepository.summaryFor",
      "area": "rides",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "user_stats",
+   "kind": "table",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Counters, select only; `open_posts_only_me` is not client-readable.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "user_stats",
+     "columns": [
+      "followers_count",
+      "following_count",
+      "items_given_count",
+      "items_received_count",
+      "karma_points",
+      "open_posts_followers_only",
+      "open_posts_only_me",
+      "open_posts_public",
+      "posts_created_total",
+      "ratings_avg",
+      "ratings_count",
+      "ratings_stars_total",
+      "updated_at",
+      "user_id",
+      "volunteer_hours_total"
+     ],
+     "clientGrants": {
+      "select": [
+       "followers_count",
+       "following_count",
+       "items_given_count",
+       "items_received_count",
+       "karma_points",
+       "open_posts_followers_only",
+       "open_posts_public",
+       "posts_created_total",
+       "updated_at",
+       "user_id",
+       "volunteer_hours_total"
+      ]
+     }
+    }
+   ],
+   "areas": [
+    "users"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/userReads.ts",
+     "line": 56,
+     "symbol": "loadStats",
+     "area": "users",
      "ops": [
       "select"
      ]
@@ -19928,7 +19703,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/users/editableProfileSupabase.ts",
-     "line": 20,
+     "line": 51,
      "symbol": "supabaseGetEditableProfile",
      "area": "users",
      "ops": [
@@ -19936,36 +19711,18 @@
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/users/editableProfileSupabase.ts",
-     "line": 59,
-     "symbol": "supabaseSetProfileAddressLines",
+     "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
+     "line": 108,
+     "symbol": "listSide",
      "area": "users",
      "ops": [
-      "update"
+      "select"
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/users/editableProfileSupabase.ts",
-     "line": 93,
-     "symbol": "supabaseUpdateEditableProfile",
-     "area": "users",
-     "ops": [
-      "update"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/editableProfileSupabase.ts",
-     "line": 103,
-     "symbol": "supabaseSetContactPhone",
-     "area": "users",
-     "ops": [
-      "update"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/fetchUserBy.ts",
-     "line": 31,
-     "symbol": "fetchUserBy",
+     "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
+     "line": 130,
+     "symbol": "listPendingWithUsers",
      "area": "users",
      "ops": [
       "select"
@@ -19981,36 +19738,9 @@
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/users/onboardingSupabase.ts",
-     "line": 11,
-     "symbol": "supabaseGetOnboardingBootstrap",
-     "area": "users",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/onboardingSupabase.ts",
-     "line": 29,
-     "symbol": "supabaseMarkBasicInfoSkipped",
-     "area": "users",
-     "ops": [
-      "update"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/onboardingSupabase.ts",
-     "line": 37,
-     "symbol": "supabaseClearBasicInfoSkipped",
-     "area": "users",
-     "ops": [
-      "update"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/onboardingSupabase.ts",
-     "line": 47,
-     "symbol": "supabaseSetBasicInfo",
+     "file": "app/packages/infrastructure-supabase/src/users/ownUserUpdate.ts",
+     "line": 20,
+     "symbol": "updateOwnUser",
      "area": "users",
      "ops": [
       "update"
@@ -20018,7 +19748,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/users/searchUsers.ts",
-     "line": 21,
+     "line": 28,
      "symbol": "searchUsers",
      "area": "users",
      "ops": [
@@ -20026,49 +19756,12 @@
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
-     "line": 91,
-     "symbol": "SupabaseUserRepository.setAvatar",
+     "file": "app/packages/infrastructure-supabase/src/users/userReads.ts",
+     "line": 93,
+     "symbol": "fetchUserBy",
      "area": "users",
      "ops": [
-      "update"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
-     "line": 99,
-     "symbol": "SupabaseUserRepository.setBiography",
-     "area": "users",
-     "ops": [
-      "update"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
-     "line": 107,
-     "symbol": "SupabaseUserRepository.setPrivacyMode",
-     "area": "users",
-     "ops": [
-      "select",
-      "update"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
-     "line": 122,
-     "symbol": "SupabaseUserRepository.dismissClosureExplainer",
-     "area": "users",
-     "ops": [
-      "update"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
-     "line": 131,
-     "symbol": "SupabaseUserRepository.dismissFirstPostNudge",
-     "area": "users",
-     "ops": [
-      "update"
+      "select"
      ]
     },
     {

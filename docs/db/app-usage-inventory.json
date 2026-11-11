@@ -16,20 +16,20 @@
    "distinct": 13
   },
   "edge_function": {
+   "callSites": 5,
+   "distinct": 3
+  },
+  "postgres_changes": {
    "callSites": 6,
    "distinct": 4
   },
-  "postgres_changes": {
-   "callSites": 7,
-   "distinct": 5
-  },
   "rpc": {
-   "callSites": 289,
-   "distinct": 278
+   "callSites": 283,
+   "distinct": 272
   },
   "table": {
-   "callSites": 175,
-   "distinct": 53
+   "callSites": 166,
+   "distinct": 55
   }
  },
  "entries": [
@@ -203,24 +203,6 @@
    "name": "chat-media"
   },
   {
-   "kind": "rpc",
-   "file": "app/apps/mobile/src/services/devIdentityVerification.ts",
-   "line": 7,
-   "area": "mobile",
-   "symbol": "devMockIdentityAllowed",
-   "via": "literal",
-   "name": "dev_mock_identity_verification_allowed"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/apps/mobile/src/services/devIdentityVerification.ts",
-   "line": 14,
-   "area": "mobile",
-   "symbol": "devGrantMockIdentityVerification",
-   "via": "literal",
-   "name": "dev_grant_mock_identity_verification"
-  },
-  {
    "kind": "table",
    "file": "app/apps/mobile/src/services/featureFlagsComposition.ts",
    "line": 9,
@@ -276,18 +258,6 @@
    "symbol": "findMatches",
    "via": "literal",
    "name": "find_ride_listing_matches"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/about/SupabaseAboutRepository.ts",
-   "line": 31,
-   "area": "about",
-   "symbol": "SupabaseAboutRepository.listTeamMembers",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "about_team_profiles"
   },
   {
    "kind": "rpc",
@@ -792,26 +762,26 @@
   },
   {
    "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/auth/SupabaseAccountGateRepository.ts",
-   "line": 16,
+   "file": "app/packages/infrastructure-supabase/src/auth/bootstrapSession.ts",
+   "line": 138,
    "area": "auth",
-   "symbol": "SupabaseAccountGateRepository.checkAccountGate",
+   "symbol": "fetchBootstrapSession",
    "via": "literal",
-   "name": "auth_check_account_gate"
+   "name": "bootstrap_session"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/auth/SupabaseAccountGateRepository.ts",
-   "line": 41,
+   "line": 53,
    "area": "auth",
    "symbol": "SupabaseAccountGateRepository.restoreAccount",
    "via": "literal",
-   "name": "rpc_restore_account"
+   "name": "restore_account"
   },
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-   "line": 11,
+   "line": 18,
    "area": "blocks",
    "symbol": "SupabaseBlockRepository.isBlocking",
    "via": "literal",
@@ -823,7 +793,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-   "line": 21,
+   "line": 28,
    "area": "blocks",
    "symbol": "SupabaseBlockRepository.block",
    "via": "literal",
@@ -835,23 +805,14 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-   "line": 28,
+   "line": 36,
    "area": "blocks",
-   "symbol": "SupabaseBlockRepository.unblock",
+   "symbol": "SupabaseBlockRepository.unwrapCall",
    "via": "literal",
    "ops": [
     "delete"
    ],
    "name": "blocks"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/blocks/SupabaseBlockRepository.ts",
-   "line": 38,
-   "area": "blocks",
-   "symbol": "SupabaseBlockRepository.listMyBlockedUsers",
-   "via": "literal",
-   "name": "list_my_blocked_users"
   },
   {
    "kind": "rpc",
@@ -1259,7 +1220,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/cities/SupabaseCityRepository.ts",
-   "line": 38,
+   "line": 42,
    "area": "cities",
    "symbol": "SupabaseCityRepository.listAll",
    "via": "literal",
@@ -1641,7 +1602,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/legal/SupabaseLegalDocumentRepository.ts",
-   "line": 71,
+   "line": 72,
    "area": "legal",
    "symbol": "SupabaseLegalDocumentRepository.getCurrentContent",
    "via": "literal",
@@ -1653,7 +1614,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/legal/SupabaseLegalDocumentRepository.ts",
-   "line": 81,
+   "line": 82,
    "area": "legal",
    "symbol": "SupabaseLegalDocumentRepository.getCurrentContent",
    "via": "literal",
@@ -1665,18 +1626,9 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/legal/SupabaseLegalDocumentRepository.ts",
-   "line": 106,
+   "line": 117,
    "area": "legal",
-   "symbol": "SupabaseLegalDocumentRepository.getPendingForCurrentUser",
-   "via": "literal",
-   "name": "needs_legal_reacknowledgement"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/legal/SupabaseLegalDocumentRepository.ts",
-   "line": 116,
-   "area": "legal",
-   "symbol": "SupabaseLegalDocumentRepository.acceptVersion",
+   "symbol": "SupabaseLegalDocumentRepository.unwrapCall",
    "via": "literal",
    "name": "accept_legal_document"
   },
@@ -2187,10 +2139,10 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseDeviceRepository.ts",
-   "line": 39,
+   "line": 41,
    "area": "notifications",
    "symbol": "SupabaseDeviceRepository.upsert",
-   "via": "const",
+   "via": "literal",
    "ops": [
     "select",
     "upsert"
@@ -2200,10 +2152,10 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseDeviceRepository.ts",
-   "line": 57,
+   "line": 59,
    "area": "notifications",
    "symbol": "SupabaseDeviceRepository.deactivate",
-   "via": "const",
+   "via": "literal",
    "ops": [
     "delete"
    ],
@@ -2212,10 +2164,10 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseDeviceRepository.ts",
-   "line": 65,
+   "line": 66,
    "area": "notifications",
    "symbol": "SupabaseDeviceRepository.listForUser",
-   "via": "const",
+   "via": "literal",
    "ops": [
     "select"
    ],
@@ -2223,39 +2175,39 @@
   },
   {
    "kind": "rpc",
-   "name": "notifications_page",
    "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseNotificationInboxRepository.ts",
-   "line": 65,
+   "line": 62,
    "area": "notifications",
    "symbol": "SupabaseNotificationInboxRepository.page",
-   "via": "wrapper:call"
+   "via": "literal",
+   "name": "notifications_page"
   },
   {
    "kind": "rpc",
-   "name": "notifications_unread_count",
    "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseNotificationInboxRepository.ts",
-   "line": 75,
+   "line": 73,
    "area": "notifications",
    "symbol": "SupabaseNotificationInboxRepository.unreadCount",
-   "via": "wrapper:call"
+   "via": "literal",
+   "name": "notifications_unread_count"
   },
   {
    "kind": "rpc",
-   "name": "notifications_mark_read",
    "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseNotificationInboxRepository.ts",
    "line": 80,
    "area": "notifications",
    "symbol": "SupabaseNotificationInboxRepository.markRead",
-   "via": "wrapper:call"
+   "via": "literal",
+   "name": "notifications_mark_read"
   },
   {
    "kind": "rpc",
-   "name": "notifications_mark_all_read",
    "file": "app/packages/infrastructure-supabase/src/notifications/SupabaseNotificationInboxRepository.ts",
-   "line": 84,
+   "line": 86,
    "area": "notifications",
    "symbol": "SupabaseNotificationInboxRepository.markAllRead",
-   "via": "wrapper:call"
+   "via": "literal",
+   "name": "notifications_mark_all_read"
   },
   {
    "kind": "rpc",
@@ -3796,24 +3748,6 @@
    "name": "search_all"
   },
   {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/social/SupabaseFollowSuggestionsRepository.ts",
-   "line": 29,
-   "area": "social",
-   "symbol": "SupabaseFollowSuggestionsRepository.listSuggestions",
-   "via": "literal",
-   "name": "rpc_follow_suggestions"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/social/SupabaseFollowSuggestionsRepository.ts",
-   "line": 53,
-   "area": "social",
-   "symbol": "SupabaseFollowSuggestionsRepository.getProfileCompleteness",
-   "via": "literal",
-   "name": "rpc_profile_completeness"
-  },
-  {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/stats/SupabaseStatsRepository.ts",
    "line": 67,
@@ -3855,7 +3789,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/streets/SupabaseStreetRepository.ts",
-   "line": 37,
+   "line": 41,
    "area": "streets",
    "symbol": "SupabaseStreetRepository.listByCity",
    "via": "literal",
@@ -3951,11 +3885,11 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/survey/SupabaseUserActivityRepository.ts",
-   "line": 14,
+   "line": 18,
    "area": "survey",
    "symbol": "SupabaseUserActivityRepository.recordActiveDay",
    "via": "literal",
-   "name": "rpc_record_active_day"
+   "name": "record_active_day"
   },
   {
    "kind": "edge_function",
@@ -4023,7 +3957,31 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/users/editableProfileSupabase.ts",
-   "line": 20,
+   "line": 24,
+   "area": "users",
+   "symbol": "readOwnPrivateFields",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "user_private"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/editableProfileSupabase.ts",
+   "line": 40,
+   "area": "users",
+   "symbol": "readCityName",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "cities"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/editableProfileSupabase.ts",
+   "line": 51,
    "area": "users",
    "symbol": "supabaseGetEditableProfile",
    "via": "literal",
@@ -4034,166 +3992,86 @@
   },
   {
    "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/users/editableProfileSupabase.ts",
-   "line": 59,
-   "area": "users",
-   "symbol": "supabaseSetProfileAddressLines",
-   "via": "literal",
-   "ops": [
-    "update"
-   ],
-   "name": "users"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/users/editableProfileSupabase.ts",
-   "line": 93,
-   "area": "users",
-   "symbol": "supabaseUpdateEditableProfile",
-   "via": "literal",
-   "ops": [
-    "update"
-   ],
-   "name": "users"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/users/editableProfileSupabase.ts",
-   "line": 103,
-   "area": "users",
-   "symbol": "supabaseSetContactPhone",
-   "via": "literal",
-   "ops": [
-    "update"
-   ],
-   "name": "users"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/users/fetchUserBy.ts",
-   "line": 31,
-   "area": "users",
-   "symbol": "fetchUserBy",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "users"
-  },
-  {
-   "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
-   "line": 18,
+   "line": 41,
    "area": "users",
-   "symbol": "followEdge",
-   "via": "literal",
-   "ops": [
-    "select",
-    "insert"
-   ],
-   "name": "follow_edges"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
-   "line": 37,
-   "area": "users",
-   "symbol": "unfollowEdge",
+   "symbol": "unwrapCall",
    "via": "literal",
    "ops": [
     "delete"
    ],
-   "name": "follow_edges"
+   "name": "follows"
   },
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
-   "line": 50,
+   "line": 53,
    "area": "users",
    "symbol": "isFollowingEdge",
    "via": "literal",
    "ops": [
     "select"
    ],
-   "name": "follow_edges"
+   "name": "follows"
   },
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
-   "line": 71,
+   "line": 80,
    "area": "users",
-   "symbol": "listFollowers",
+   "symbol": "cursorStamp",
    "via": "literal",
    "ops": [
     "select"
    ],
-   "name": "follow_edges"
+   "name": "follows"
   },
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
-   "line": 91,
+   "line": 100,
    "area": "users",
-   "symbol": "listFollowing",
+   "symbol": "listSide",
    "via": "literal",
    "ops": [
     "select"
    ],
-   "name": "follow_edges"
+   "name": "follows"
   },
   {
    "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
-   "line": 36,
+   "file": "app/packages/infrastructure-supabase/src/users/follow/followMethods.ts",
+   "line": 108,
    "area": "users",
-   "symbol": "sendRequest",
+   "symbol": "listSide",
    "via": "literal",
    "ops": [
-    "select",
-    "insert"
+    "select"
    ],
-   "name": "follow_requests"
+   "name": "users"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
-   "line": 50,
+   "line": 77,
    "area": "users",
    "symbol": "cancelRequest",
    "via": "literal",
-   "ops": [
-    "update"
-   ],
-   "name": "follow_requests"
+   "name": "follow_request_cancel"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
-   "line": 64,
+   "line": 85,
    "area": "users",
-   "symbol": "acceptRequest",
+   "symbol": "unwrapCall",
    "via": "literal",
-   "ops": [
-    "update"
-   ],
-   "name": "follow_requests"
+   "name": "follow_request_decide"
   },
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
-   "line": 78,
-   "area": "users",
-   "symbol": "rejectRequest",
-   "via": "literal",
-   "ops": [
-    "update"
-   ],
-   "name": "follow_requests"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
-   "line": 91,
+   "line": 104,
    "area": "users",
    "symbol": "listPendingRaw",
    "via": "literal",
@@ -4205,7 +4083,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
-   "line": 107,
+   "line": 120,
    "area": "users",
    "symbol": "listPendingWithUsers",
    "via": "literal",
@@ -4213,6 +4091,27 @@
     "select"
    ],
    "name": "follow_requests"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/follow/followRequestMethods.ts",
+   "line": 130,
+   "area": "users",
+   "symbol": "listPendingWithUsers",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/users/follow/followUserRpc.ts",
+   "line": 16,
+   "area": "users",
+   "symbol": "callFollowUser",
+   "via": "literal",
+   "name": "follow_user"
   },
   {
    "kind": "table",
@@ -4229,19 +4128,19 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/users/follow/getFollowState.ts",
-   "line": 21,
+   "line": 17,
    "area": "users",
    "symbol": "fetchFollowStateRaw",
    "via": "literal",
    "ops": [
     "select"
    ],
-   "name": "follow_edges"
+   "name": "follows"
   },
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/users/follow/getFollowState.ts",
-   "line": 27,
+   "line": 19,
    "area": "users",
    "symbol": "fetchFollowStateRaw",
    "via": "literal",
@@ -4253,7 +4152,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/users/follow/getFollowState.ts",
-   "line": 34,
+   "line": 26,
    "area": "users",
    "symbol": "fetchFollowStateRaw",
    "via": "literal",
@@ -4265,91 +4164,58 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/users/getChatCounterpartyContact.ts",
-   "line": 8,
+   "line": 16,
    "area": "users",
    "symbol": "getChatCounterpartyContact",
    "via": "literal",
-   "name": "get_chat_counterparty_contact"
+   "name": "chat_counterpart_contact"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/users/onboardingSupabase.ts",
-   "line": 11,
+   "line": 46,
    "area": "users",
-   "symbol": "supabaseGetOnboardingBootstrap",
+   "symbol": "supabaseSetDateOfBirth",
    "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "users"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/users/onboardingSupabase.ts",
-   "line": 29,
-   "area": "users",
-   "symbol": "supabaseMarkBasicInfoSkipped",
-   "via": "literal",
-   "ops": [
-    "update"
-   ],
-   "name": "users"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/users/onboardingSupabase.ts",
-   "line": 37,
-   "area": "users",
-   "symbol": "supabaseClearBasicInfoSkipped",
-   "via": "literal",
-   "ops": [
-    "update"
-   ],
-   "name": "users"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/users/onboardingSupabase.ts",
-   "line": 47,
-   "area": "users",
-   "symbol": "supabaseSetBasicInfo",
-   "via": "literal",
-   "ops": [
-    "update"
-   ],
-   "name": "users"
+   "name": "set_date_of_birth"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/users/onboardingSupabase.ts",
    "line": 60,
    "area": "users",
-   "symbol": "supabaseSetDateOfBirth",
-   "via": "literal",
-   "name": "rpc_set_date_of_birth"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/users/onboardingSupabase.ts",
-   "line": 73,
-   "area": "users",
    "symbol": "supabaseSetOnboardingState",
    "via": "literal",
-   "name": "rpc_set_onboarding_state"
+   "name": "set_onboarding_state"
   },
   {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/users/onboardingSupabase.ts",
-   "line": 87,
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/ownPrivateUpdate.ts",
+   "line": 27,
    "area": "users",
-   "symbol": "supabaseResetOnboardingForDev",
+   "symbol": "updateUserPrivate",
    "via": "literal",
-   "name": "rpc_dev_reset_onboarding"
+   "ops": [
+    "update"
+   ],
+   "name": "user_private"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/ownUserUpdate.ts",
+   "line": 20,
+   "area": "users",
+   "symbol": "updateOwnUser",
+   "via": "literal",
+   "ops": [
+    "update"
+   ],
+   "name": "users"
   },
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/users/searchUsers.ts",
-   "line": 21,
+   "line": 28,
    "area": "users",
    "symbol": "searchUsers",
    "via": "literal",
@@ -4360,140 +4226,90 @@
   },
   {
    "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/users/searchUsers.ts",
-   "line": 40,
+   "file": "app/packages/infrastructure-supabase/src/users/SupabaseActiveStatusRepository.ts",
+   "line": 20,
    "area": "users",
-   "symbol": "fetchBlockedIdsSafe",
+   "symbol": "SupabaseActiveStatusRepository.get",
    "via": "literal",
    "ops": [
     "select"
    ],
-   "name": "blocks"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/users/SupabaseActiveStatusRepository.ts",
-   "line": 12,
-   "area": "users",
-   "symbol": "SupabaseActiveStatusRepository.get",
-   "via": "literal",
-   "name": "rpc_get_show_active_status"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/users/SupabaseActiveStatusRepository.ts",
-   "line": 18,
-   "area": "users",
-   "symbol": "SupabaseActiveStatusRepository.set",
-   "via": "literal",
-   "name": "rpc_set_show_active_status"
+   "name": "user_private"
   },
   {
    "kind": "channel",
    "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRealtime.ts",
-   "line": 21,
+   "line": 37,
    "area": "users",
-   "symbol": "SupabaseUserRealtime.subscribeToSelf",
+   "symbol": "SupabaseUserRealtime.subscribeToAccount",
    "via": "expression",
-   "name": "topic = `me:${userId}:${Date.now()}`"
+   "name": "topic = `user:${userId}:account`"
   },
   {
-   "kind": "postgres_changes",
-   "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRealtime.ts",
-   "line": 23,
-   "area": "users",
-   "symbol": "SupabaseUserRealtime.subscribeToSelf",
-   "via": "literal",
-   "event": "UPDATE",
-   "name": "users"
-  },
-  {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
-   "line": 91,
-   "area": "users",
-   "symbol": "SupabaseUserRepository.setAvatar",
-   "via": "literal",
-   "ops": [
-    "update"
-   ],
-   "name": "users"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
-   "line": 99,
-   "area": "users",
-   "symbol": "SupabaseUserRepository.setBiography",
-   "via": "literal",
-   "ops": [
-    "update"
-   ],
-   "name": "users"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
-   "line": 107,
+   "line": 94,
    "area": "users",
    "symbol": "SupabaseUserRepository.setPrivacyMode",
    "via": "literal",
-   "ops": [
-    "select",
-    "update"
-   ],
-   "name": "users"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
-   "line": 122,
-   "area": "users",
-   "symbol": "SupabaseUserRepository.dismissClosureExplainer",
-   "via": "literal",
-   "ops": [
-    "update"
-   ],
-   "name": "users"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
-   "line": 131,
-   "area": "users",
-   "symbol": "SupabaseUserRepository.dismissFirstPostNudge",
-   "via": "literal",
-   "ops": [
-    "update"
-   ],
-   "name": "users"
-  },
-  {
-   "kind": "edge_function",
-   "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
-   "line": 186,
-   "area": "users",
-   "symbol": "SupabaseUserRepository.deleteAccountViaEdgeFunction",
-   "via": "literal",
-   "name": "delete-account"
+   "name": "set_privacy_mode"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
-   "line": 273,
+   "line": 169,
+   "area": "users",
+   "symbol": "SupabaseUserRepository.requestAccountDeletion",
+   "via": "literal",
+   "name": "request_account_deletion"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/SupabaseUserRepository.ts",
+   "line": 230,
    "area": "users",
    "symbol": "SupabaseUserRepository.updateNotificationPreferences",
    "via": "literal",
-   "name": "users_merge_notification_preferences"
+   "ops": [
+    "select"
+   ],
+   "name": "user_private"
   },
   {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/users/usersSelfPrivateFields.ts",
-   "line": 21,
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/userReads.ts",
+   "line": 45,
    "area": "users",
-   "symbol": "fetchUsersSelfPrivateFields",
+   "symbol": "loadCityNames",
    "via": "literal",
-   "name": "users_get_self_private_fields"
+   "ops": [
+    "select"
+   ],
+   "name": "cities"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/userReads.ts",
+   "line": 56,
+   "area": "users",
+   "symbol": "loadStats",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "user_stats"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/users/userReads.ts",
+   "line": 93,
+   "area": "users",
+   "symbol": "fetchUserBy",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
   },
   {
    "kind": "rpc",

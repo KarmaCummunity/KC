@@ -5,7 +5,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { InboxNotification, NotificationArgs, NotificationCategory } from '@kc/domain';
 import type { INotificationInboxRepository, NotificationInboxPageRequest } from '@kc/application';
-import type { Database } from '../database.legacy.types';
+import type { Database } from '../database.types';
+import { unwrapCall } from '../rpc/mapRpcError';
 
 interface NotificationRow {
   id: string;
@@ -55,32 +56,33 @@ function mapRow(row: NotificationRow): InboxNotification {
 export class SupabaseNotificationInboxRepository implements INotificationInboxRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
-  private async call(fn: string, args?: Record<string, unknown>): Promise<unknown> {
-    const { data, error } = await this.client.rpc(fn as never, args as never);
-    if (error) throw error;
-    return data;
-  }
-
   async page(request: NotificationInboxPageRequest = {}): Promise<InboxNotification[]> {
-    const rows = await this.call('notifications_page', {
-      p_limit: request.limit ?? 30,
-      p_before_created_at: request.before?.createdAt ?? null,
-      p_before_id: request.before?.id ?? null,
-      p_category: request.category ?? null,
-    });
-    return ((rows ?? []) as NotificationRow[]).map(mapRow);
+    const rows = unwrapCall(
+      'rpc:notifications_page',
+      await this.client.rpc('notifications_page', {
+        p_limit: request.limit ?? 30,
+        p_before_created_at: request.before?.createdAt,
+        p_before_id: request.before?.id,
+        p_category: request.category ?? undefined,
+      }),
+    );
+    return (rows ?? []).map(mapRow);
   }
 
   async unreadCount(): Promise<number> {
-    return Number((await this.call('notifications_unread_count')) ?? 0);
+    return Number(unwrapCall('rpc:notifications_unread_count', await this.client.rpc('notifications_unread_count')) ?? 0);
   }
 
   async markRead(ids: readonly string[]): Promise<number> {
     if (ids.length === 0) return 0;
-    return Number((await this.call('notifications_mark_read', { p_ids: [...ids] })) ?? 0);
+    const marked = unwrapCall(
+      'rpc:notifications_mark_read',
+      await this.client.rpc('notifications_mark_read', { p_ids: [...ids] }),
+    );
+    return Number(marked ?? 0);
   }
 
   async markAllRead(): Promise<number> {
-    return Number((await this.call('notifications_mark_all_read')) ?? 0);
+    return Number(unwrapCall('rpc:notifications_mark_all_read', await this.client.rpc('notifications_mark_all_read')) ?? 0);
   }
 }

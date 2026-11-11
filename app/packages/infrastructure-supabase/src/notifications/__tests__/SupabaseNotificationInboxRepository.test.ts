@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { BackendUnavailableError } from '@kc/domain';
+import type { Database } from '../../database.types';
 import { SupabaseNotificationInboxRepository } from '../SupabaseNotificationInboxRepository';
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 function repo(result: { data: unknown; error: unknown }) {
   const rpc = vi.fn(async (_fn: string, _args?: unknown) => result);
-  return { r: new SupabaseNotificationInboxRepository({ rpc } as unknown as SupabaseClient<any>), rpc };
+  return { r: new SupabaseNotificationInboxRepository({ rpc } as unknown as SupabaseClient<Database>), rpc };
 }
 
 const row = {
@@ -50,7 +50,7 @@ describe('SupabaseNotificationInboxRepository', () => {
       expect.objectContaining({ id: 'n2', entity: null, args: {}, worldSlug: null }),
     ]);
     expect(rpc).toHaveBeenCalledWith('notifications_page', {
-      p_limit: 30, p_before_created_at: null, p_before_id: null, p_category: null,
+      p_limit: 30, p_before_created_at: undefined, p_before_id: undefined, p_category: undefined,
     });
   });
 
@@ -86,11 +86,16 @@ describe('SupabaseNotificationInboxRepository', () => {
   });
 
   it('throws the RPC error', async () => {
-    const error = { message: 'boom' };
-    const { r } = repo({ data: null, error });
-    await expect(r.page()).rejects.toBe(error);
-    await expect(r.unreadCount()).rejects.toBe(error);
-    await expect(r.markRead(['n1'])).rejects.toBe(error);
-    await expect(r.markAllRead()).rejects.toBe(error);
+    const { r } = repo({ data: null, error: { message: 'boom' } });
+    await expect(r.page()).rejects.toThrow('boom');
+    await expect(r.unreadCount()).rejects.toThrow('boom');
+    await expect(r.markRead(['n1'])).rejects.toThrow('boom');
+    await expect(r.markAllRead()).rejects.toThrow('boom');
+  });
+
+  it('reports a missing function as BackendUnavailableError (the badge and the inbox degrade)', async () => {
+    const { r } = repo({ data: null, error: { code: 'PGRST202', message: 'not in the schema cache' } });
+    await expect(r.page()).rejects.toBeInstanceOf(BackendUnavailableError);
+    await expect(r.unreadCount()).rejects.toBeInstanceOf(BackendUnavailableError);
   });
 });

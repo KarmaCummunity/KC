@@ -9,5 +9,4 @@ export const P3_UNMIGRATED: readonly string[] = [
   'packages/infrastructure-supabase/src/feed/SupabaseFeedRealtime.ts',
   'packages/infrastructure-supabase/src/realtime/SupabaseOnlinePresence.ts',
   'packages/infrastructure-supabase/src/rides/SupabaseRidesRealtime.ts',
-  'packages/infrastructure-supabase/src/users/SupabaseUserRealtime.ts',
 ];

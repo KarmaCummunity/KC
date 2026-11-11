@@ -26,32 +26,32 @@ const edge = add('edge_function');
 const M = 'medium';
 
 // ───────────────────────────── identity: auth, users, legal, blocks, social
-rpc('auth_check_account_gate', 'changed', 'rpc:bootstrap_session', 'Gate is `account.status` / `status_until` of the session payload; no per-user argument and no `allowed` flag: the app derives it from the status.');
-rpc('rpc_restore_account', 'renamed', 'rpc:restore_account', 'Same call.');
-rpc('rpc_set_date_of_birth', 'renamed', 'rpc:set_date_of_birth', '`p_date_of_birth` → `p_date`. Editable under the 18+ rule (design §12.1), no longer write-once.');
-rpc('rpc_set_onboarding_state', 'renamed', 'rpc:set_onboarding_state', 'Same argument; moves are checked by the onboarding machine.');
-rpc('rpc_dev_reset_onboarding', 'removed', null, 'Dev-only helper; not carried over (design §8). Reset a test member from the dev seed scripts.');
-rpc('rpc_get_show_active_status', 'changed', 'table:user_private', 'Read `show_active_status` of the caller\'s own row (policy `user_private_select_self`), or take it from `bootstrap_session().private_profile`.');
-rpc('rpc_set_show_active_status', 'changed', 'table:user_private', 'Direct update of `show_active_status` (column grant, policy `user_private_update_self`).');
-rpc('users_merge_notification_preferences', 'changed', 'table:user_private', 'Direct update of `notification_preferences`; the merge of the patch into the stored JSON moves to the adapter (read, merge, write).', { c: M });
-rpc('users_get_self_private_fields', 'changed', 'rpc:bootstrap_session', 'The private fields are `private_profile` of the session payload; a later refresh reads `user_private` directly.');
-rpc('get_chat_counterparty_contact', 'renamed', 'rpc:chat_counterpart_contact', 'Same argument (`p_chat_id`), returns the phone as text, null when the caller cannot use the chat, it is a support thread, the counterpart is inactive or has no phone (M06, built).');
+// Objects the identity adapters address since they moved to the baseline (package P1): nothing left to change.
+rpc('bootstrap_session', 'same', 'rpc:bootstrap_session', 'Session start in one call: the account gate (`account.status`, `status_until`), the caller\'s `private_profile`, the staff `admin.roles` and the pending `legal.documents`. The app reads those blocks and nothing else.');
+rpc('restore_account', 'same', 'rpc:restore_account', 'Restores the caller\'s account during the 30-day grace period (refusals `not_pending_deletion`, `grace_expired`).');
+rpc('request_account_deletion', 'same', 'rpc:request_account_deletion', 'Deactivates the caller\'s account for 30 days and returns the purge date (refusals `suspended`, `user_not_found`); the app calls it directly.');
+rpc('set_date_of_birth', 'same', 'rpc:set_date_of_birth', '`p_date`; the 18+ rule answers `underage` / `invalid_date_of_birth`.');
+rpc('set_onboarding_state', 'same', 'rpc:set_onboarding_state', '`p_state`; refusals `onboarding_basic_info_missing`, `onboarding_transition_invalid`.');
+rpc('set_privacy_mode', 'same', 'rpc:set_privacy_mode', '`p_mode` \'Public\' | \'Private\'; going public accepts every pending follow request.');
+rpc('follow_user', 'same', 'rpc:follow_user', '`p_target`; answers `following` or `requested`, idempotent. Refusals: `self_follow_forbidden`, `blocked_relationship`, `follow_request_cooldown_active` (detail `cooldown_until=`), `account_not_active`, `rate_limited`, `user_unavailable`.');
+rpc('follow_request_decide', 'same', 'rpc:follow_request_decide', '`p_requester`, `p_accept`; a request that is no longer pending (`follow_request_not_pending`) is treated as already decided.');
+rpc('follow_request_cancel', 'same', 'rpc:follow_request_cancel', '`p_target`; a request that is no longer pending is treated as already cancelled.');
+rpc('chat_counterpart_contact', 'same', 'rpc:chat_counterpart_contact', '`p_chat_id`; the counterpart\'s phone as text, null when the caller cannot use the chat, it is a support thread, the counterpart is inactive or has no phone (M06, built).');
+rpc('record_active_day', 'same', 'rpc:record_active_day', 'Marks the caller active for today; idempotent within a day.');
+table('user_private', 'same', 'table:user_private', 'The caller\'s own row: select, and update of the granted columns (contact phone, address lines, notification preferences, dismiss flags, `basic_info_skipped`, `show_active_status`).');
+table('user_stats', 'same', 'table:user_stats', 'Counters, select only; `open_posts_only_me` is not client-readable.');
+table('follows', 'same', 'table:follows', 'Select and delete direct (`follower_id`, `followed_id`); an edge is created only by `follow_user`.');
 table('users', 'changed', ['table:users', 'table:user_private', 'table:user_account', 'table:user_stats'],
   'Split in four. Public profile stays in `users` (`user_id` → `id`, `city` → `city_id`, `city_name` gone: join `cities`). Contact phone, date of birth, address lines, notification preferences, dismiss flags, `basic_info_skipped` → `user_private` (own row). Account status, onboarding state, deletion dates, verification → `user_account` (read-only; moves through RPCs). Counters → `user_stats` (read-only). `is_super_admin` → `get_my_admin_roles()`. Client updates on `users` are limited to display_name, biography, avatar_url, city_id, preferred_language; `privacy_mode` moves through `set_privacy_mode`. mock-login\'s upsert goes away with the function.');
 table('users_public', 'changed', 'table:users', 'The view is gone: `users` itself now holds only public profile columns and RLS hides blocked and reported members. Owner fields of a post already come inside `post_card`.');
 table('follow_edges', 'changed', ['table:follows', 'rpc:follow_user'], 'Renamed to `follows` (`follower_id`, `followed_id`). Select and delete stay direct; the insert becomes `follow_user(p_target)`, which returns `following` or `requested` (private profile).');
 table('follow_requests', 'changed', ['table:follow_requests', 'rpc:follow_user', 'rpc:follow_request_decide', 'rpc:follow_request_cancel'], 'Read-only for clients. Insert → `follow_user`; accept / reject → `follow_request_decide(p_requester, p_accept)`; cancel → `follow_request_cancel(p_target)`. Status column is ruled by the follow_request machine.');
 table('blocks', 'same', 'table:blocks', 'Same columns, same direct select / insert / delete.');
-rpc('list_my_blocked_users', 'missing', null, 'A blocker can read their `blocks` rows but not the blocked member\'s name or avatar (restrictive policy `users_hide_blocked`).', { m: 'M01' });
 rpc('accept_legal_document', 'same', 'rpc:accept_legal_document', '`p_doc_type` is text (was an enum), `p_locale` / `p_user_agent` optional.');
-rpc('needs_legal_reacknowledgement', 'changed', 'rpc:bootstrap_session', 'The pending documents are `legal.documents` of the session payload, same fields (`doc_type`, `current_version`, `last_material_version`, `last_accepted_version`, `block_mode`, …).');
 table('legal_documents', 'same', 'table:legal_documents', 'Readable signed-out too (the only anon grant in the baseline).');
 table('legal_document_versions', 'same', 'table:legal_document_versions', '`created_at` is gone (`published_at` stays).');
-rpc('rpc_follow_suggestions', 'missing', null, 'No suggestion query in the baseline.', { m: 'M03' });
-rpc('rpc_profile_completeness', 'missing', null, 'No completeness function in the baseline.', { m: 'M04' });
 table('cities', 'changed', 'table:cities', '`lat` / `lon` / `geo` → one `location` geography column; the picker should use `search_places` instead of loading the table.');
 table('streets', 'changed', 'table:streets', '`geo` → `location`.');
-table('about_team_profiles', 'missing', null, 'View not carried over; staff grants are not readable by members.', { m: 'M08' });
 table('app_flags', 'same', 'table:app_flags', 'Same `select key, enabled`, for signed-in members only (no `anon` grant): before sign-in the compiled defaults apply. After sign-in the same map is `bootstrap_session().flags`. The rows (`world_<slug>_enabled`) are seed data, not part of the baseline (M09, verified).');
 
 // ───────────────────────────── posts, feed, search
@@ -237,7 +237,6 @@ rpc('rpc_match_refresh_mine', 'removed', null, 'Matching runs from the outbox wh
 rpc('admin_match_quality', 'missing', null, 'No match quality report.', { m: 'M14' });
 table('karma_ledger', 'changed', 'table:karma_ledger', '`ledger_id` → `id`, `points_delta` → `points`, `ref_type` / `ref_id` → `subject` / `reference`. The total is `my_karma_points()`.');
 rpc('rpc_my_activity_timeline', 'renamed', 'rpc:my_activity_timeline', 'Adds `actor_id`.');
-rpc('rpc_record_active_day', 'renamed', 'rpc:record_active_day', 'Same call.');
 rpc('my_world_givings', 'missing', null, 'No per-world giving totals of a member.', { m: 'M15' });
 rpc('admin_world_flow_funnel', 'missing', null, 'No platform funnel report.', { m: 'M14' });
 table('community_stats', 'changed', 'rpc:community_stats', 'The view becomes an RPC returning registered_users, open_public_posts, delivered_posts, refreshed_at.');
@@ -331,8 +330,6 @@ for (const name of [
   'api_bot_publish_listing', 'api_bot_my_listings', 'api_bot_my_matches', 'api_bot_find_matches',
 ]) rpc(name, 'missing', null, 'The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).', { m: 'M22' });
 table('whatsapp_channel_config', 'missing', null, 'Same: no `integrations` tables yet.', { m: 'M22' });
-rpc('dev_mock_identity_verification_allowed', 'removed', null, 'Dev-only; not carried over. Verify test members from the dev seed scripts.');
-rpc('dev_grant_mock_identity_verification', 'removed', null, 'Dev-only; not carried over.');
 
 // ───────────────────────────── Edge Function workers (service role)
 rpc('embedding_jobs_claim', 'renamed', 'rpc:embedding_jobs_claim', 'Returned `listing_id` → `post_id`.');
@@ -362,7 +359,7 @@ channel('`chat:${chatId}:typing`', 'same', 'topic:chat:<chat id>:typing', 'Membe
 channel('chatTopic = `chat-row:${chatId}:${uniqueTopicSuffix()}`', 'changed', 'topic:chat:<chat id>:messages', 'No row subscription: `chat_updated` arrives on the chat topic.');
 channel('inboxTopic = `inbox:${userId}:${uniqueTopicSuffix()}`', 'changed', 'topic:user:<user id>:chats', 'Private topic of the member; event `chat_updated`.');
 channel('topic = `user:${userId}:notifications`', 'same', 'topic:user:<user id>:notifications', 'Already on the baseline contract (event `badge`).');
-channel('topic = `me:${userId}:${Date.now()}`', 'changed', 'topic:user:<user_id>:account', 'Private topic `user:<id>:account`, event `account_changed` with `status`, `status_until`, `onboarding_state`; re-read `bootstrap_session` on it (M24, built for the account gate).');
+channel('topic = `user:${userId}:account`', 'same', 'topic:user:<user_id>:account', 'Already on the baseline contract (event `account_changed` with `status`, `status_until`, `onboarding_state`; M24, built for the account gate): the account gate subscribes here instead of to a `users` row.');
 channel('FEED_PUBLIC_TOPIC = \'feed:public\'', 'missing', null, 'No broadcast of new public posts.', { m: 'M24' });
 channel('ONLINE_PRESENCE_TOPIC = \'presence:online\'', 'missing', null, 'No policy for a global presence topic.', { m: 'M24' });
 channel('uniqueTopic(\'rides:public-feed\')', 'missing', null, 'No ride topics.', { m: 'M24' });
@@ -371,13 +368,11 @@ channel('uniqueTopic(`rides:participants:ride:${rideId}`)', 'missing', null, 'No
 channel('topic = `community-stats-watch:${suffix}`', 'removed', null, 'The counters are an RPC (`community_stats()`); refresh on focus or on a timer.');
 channel('topic', 'same', 'client:openExactTopicChannel', 'The shared helper itself: unchanged, it opens whatever private topic it is given.');
 changes('chats', 'changed', 'topic:user:<user id>:chats', 'Publication tables are gone (design §8): `chat_updated` broadcasts replace both subscriptions.');
-changes('users', 'changed', 'topic:user:<user_id>:account', 'Replaced by the account topic; no postgres_changes publication exists (M24, built for the account gate).');
 changes('ride_listings', 'missing', null, 'No ride topics.', { m: 'M24' });
 changes('ride_participants', 'missing', null, 'No ride topics.', { m: 'M24' });
 changes('community_stats', 'removed', null, 'See the community-stats topic: poll the RPC.');
 
 // ───────────────────────────── Edge Function invokes from the app
-edge('delete-account', 'changed', 'rpc:request_account_deletion', 'Call the RPC directly; the function is obsolete (see the Edge Functions table).');
 edge('public-research-submit', 'same', 'edge:public-research-submit', 'Same invoke; the function keeps calling `submit_public_research_response`.');
 edge('translate', 'same', 'edge:translate', 'Same invoke.');
 edge('validate-donation-link', 'same', 'edge:validate-donation-link', 'Same invoke; the function writes `donation_links` with the service role.');
@@ -385,11 +380,7 @@ edge('validate-donation-link', 'same', 'edge:validate-donation-link', 'Same invo
 // ═════════════════════════════ MISSING: what the baseline does not provide
 // action: build (add to the baseline) · rls-read (already possible, no new object) · drop · defer (behind a flag)
 export const missing = [
-  { id: 'M01', title: 'Blocked users list', usedBy: 'Settings → Privacy → blocked users screen (SupabaseBlockRepository.listMyBlockedUsers)', spec: 'FR-MOD-004 (unblock) deferred post-MVP; FR-SETTINGS-005 deprecated', launch: 'no', tier: 'later', action: 'defer', recommendation: 'Spec defers unblock to post-MVP: hide the blocked-users row at launch (blocking itself works). Later: a small definer function in `15_social_graph`: the caller\'s blocks with display name and avatar. Without it nobody can see whom they blocked, because `users_hide_blocked` hides those profiles. Until then hide the screen.' },
-  { id: 'M03', title: 'Follow suggestions', usedBy: 'Search / explore "people to follow" (SupabaseFollowSuggestionsRepository)', spec: 'not in docs/spec/requirements', launch: 'no', tier: 'later', action: 'defer', recommendation: 'Hide behind a flag; `search_users_page` with an empty query already lists the most followed members.' },
-  { id: 'M04', title: 'Profile completeness', usedBy: 'Profile completeness hint (SupabaseFollowSuggestionsRepository.getProfileCompleteness)', spec: 'not in docs/spec/requirements', launch: 'no', tier: 'later', action: 'rls-read', recommendation: 'Compute on the device from the caller\'s own `users` and `user_private` rows (both readable by their owner).' },
   { id: 'M05', title: 'Suggested search queries', usedBy: 'Search screen extras (SupabaseSearchRepository)', spec: 'not in spec; FR-FEED recent searches are local storage', launch: 'no', tier: 'later', action: 'drop', recommendation: 'Remove the server call; keep the local recent searches.' },
-  { id: 'M08', title: 'About page team list', usedBy: 'Settings → About → team (SupabaseAboutRepository)', spec: 'FR-SETTINGS About refresh (no FR for a team table)', launch: 'no', tier: 'later', action: 'drop', recommendation: 'Ship the team as static content of the app, or defer the section; no database object.' },
   { id: 'M12', title: 'Knowledge topic graph (topics, aliases, follows, proposals, review)', usedBy: 'Knowledge world topic picker, follow, proposal and admin review (SupabaseKnowledgeTopicRepository)', spec: 'FR-KNOW-001, FR-KNOW-002', launch: 'no (knowledge is a portal at launch)', action: 'defer', recommendation: 'Keep the knowledge world behind `world_knowledge_enabled`. When it opens: design §8 maps `knowledge_topics` → `topics`, `topic_aliases`, `topic_follows`, but no module creates them. Add them to `70_worlds` (knowledge), or launch knowledge with item subcategories only and defer.' },
   { id: 'M14', title: 'Admin analytics: world flow funnel, match quality', usedBy: 'Admin statistics screens (SupabaseStatsRepository.getWorldFlowFunnel, SupabaseMatchRepository.qualityByWorld)', spec: 'FR-STATS-007, FR-ADMIN-029', launch: 'no', action: 'defer', recommendation: 'Staff-only reports: hide behind a flag at launch and build later in `79_activity_stats` / `76_matching`.' },
   { id: 'M15', title: 'My givings by world', usedBy: 'Personal statistics screen (SupabaseStatsRepository.listMyWorldGivings)', spec: 'FR-STATS-008', launch: 'no (personal statistics are not in the launch core)', action: 'defer', recommendation: 'Hide the per-world block of the statistics screen behind a flag. Later: a function in `79_activity_stats/020_activity_and_community.sql` counting the caller\'s handed-over handoffs per world as giver and as receiver.' },
@@ -421,7 +412,7 @@ const NAME_TIER = [
   [/^(finance_|admin_task_|crm_|timesheet_|api_whatsapp|api_bot|whatsapp_|dev_|admin_(demo|seed|wipe)_|admin_survey|admin_pmf|admin_org_|rpc_org_transparency$)/, 'later'],
   [/^(admin_hierarchy_census|admin_set_manager|admin_user_feedback_list|admin_match_quality|admin_world_flow_funnel|my_world_givings)$/, 'later'],
   [/^(list_my_blocked_users|rpc_follow_suggestions|rpc_profile_completeness|rpc_search_suggested_queries|about_team_profiles)$/, 'later'],
-  [/^(community_stats|rpc_my_activity_timeline|rpc_record_active_day|app_flags|is_admin)$/, 'core'],
+  [/^(community_stats|rpc_my_activity_timeline|record_active_day|app_flags|is_admin)$/, 'core'],
   [/community-stats-watch/, 'core'],
   [/^(karma_ledger|find_ride_listing_matches|listing-images)$/, 'wedge'],
   [/rides:/, 'wedge'],
@@ -453,9 +444,9 @@ export const packages = [
     degrade: 'This package defines the rule for all others: an adapter call that hits a missing function or table throws `BackendUnavailableError`; a list screen shows its empty state, an action shows the generic "not available yet" message, a world whose `world_<slug>_enabled` flag is off never renders its entry points. No screen reads `error.message` of an unknown error.',
     risks: 'Everything depends on it and it must not change behaviour: no adapter logic changed, only its type import. CI still diffs `database.types.ts` against the old migrations until the workflow change listed in the P0 report lands.' },
   { id: 'P1', title: 'Identity: session start, profile, privacy, follow, block, legal, account deletion, devices', launch: 'core', parallelWith: [],
-    select: either(inArea('auth', 'users', 'legal', 'blocks', 'social', 'cities', 'streets', 'about', 'notifications'), named(/^(rpc_record_active_day|dev_.*|avatars|topic = `user:.*notifications`)$/)),
-    files: ['auth/**', 'users/** (except users/SupabaseUserRealtime.ts)', 'legal/**', 'blocks/**', 'social/**', 'cities/**', 'streets/**', 'about/**', 'notifications/**', 'survey/SupabaseUserActivityRepository.ts', 'apps/mobile: auth gate, onboarding, settings, edit profile, avatar upload, notification badge hook, devIdentityVerification (deleted)'],
-    work: 'Replace the start-up calls with `bootstrap_session`; split the user mapper over `users` / `user_private` / `user_account` / `user_stats`; follows through `follow_user` and the request RPCs; account deletion through `request_account_deletion`.',
+    select: either(inArea('auth', 'users', 'legal', 'blocks', 'social', 'cities', 'streets', 'about', 'notifications'), named(/^(record_active_day|avatars|topic = `user:.*notifications`)$/)),
+    files: ['auth/**', 'users/**', 'legal/**', 'blocks/**', 'social/**', 'cities/**', 'streets/**', 'about/**', 'notifications/**', 'survey/SupabaseUserActivityRepository.ts', 'apps/mobile: auth gate, onboarding, settings, edit profile, avatar upload, notification badge hook, devIdentityVerification (deleted)'],
+    work: 'Done in P1: the account gate, private profile, onboarding state and pending legal documents read `bootstrap_session`; `users/mapUserRow.ts` maps the public `users` row plus `user_stats` and, for the caller\'s own row, the `bootstrap_session` private blocks (`user_private`, `user_account`, staff roles); follows go through `follow_user`, `follow_request_decide` and `follow_request_cancel`; account deletion through `request_account_deletion` and `restore_account`; the account gate listens on `user:<id>:account`. M01, M03, M04 and M08 are hidden or empty (no call is made); the dev-only identity and onboarding helpers are gone.',
     tests: ['vitest: auth, users, legal, blocks, social, notifications suites', 'contract tests against a baseline database (sqlProbes, contract.integration)', 'pgTAP 010, 011, 020, 021, 050, 051'],
     degrade: 'Nothing works before this package (no session): it is the first one after P0. The blocked-users row, follow suggestions, the completeness hint and the About team list are hidden (M01, M03, M04, M08).',
     risks: 'Owns `users/mapUserRow.ts`, which chat, posts and search read: it lands before P2 and P3 start. Account gate: topic `user:<id>:account` (M24).' },
@@ -468,7 +459,7 @@ export const packages = [
     risks: 'Largest behavioural change: cursor and card shape reach the application ports. Owns `posts/mapPostRow.ts`, read by P5. The card carries `owner_identity_masked` (M02).' },
   { id: 'P3', title: 'Chat and realtime', launch: 'core', parallelWith: ['P2', 'P4'],
     select: either(inArea('chat'), named(/^chat-media$/)),
-    files: ['chat/**', 'users/SupabaseUserRealtime.ts', 'feed/SupabaseFeedRealtime.ts', 'rides/SupabaseRidesRealtime.ts', 'apps/mobile: chat screens, chat media, inbox and notification badge hooks'],
+    files: ['chat/**', 'feed/SupabaseFeedRealtime.ts', 'rides/SupabaseRidesRealtime.ts', 'apps/mobile: chat screens, chat media, inbox and notification badge hooks'],
     work: 'Inbox and messages through the page RPCs, `chat_members` read markers, every `postgres_changes` subscription replaced by a private Broadcast topic or by refresh-on-focus.',
     tests: ['vitest: chat suites, realtime/exactTopicChannel tests', 'pgTAP 045, 050'],
     degrade: 'The chat tab shows an empty inbox and "contact" buttons on posts are disabled; a failed subscription is ignored (the screen refreshes on focus).',
@@ -572,6 +563,7 @@ export const edgeFunctions = [
 
 // ═════════════════════════════ Rules that hold across the whole map
 export const notes = [
+  'Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): the blocked-users list (M01, the screen shows its empty state; unblock from a profile is not reachable because `users_hide_blocked` hides it), follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).',
   'Errors: every baseline RPC raises `P0001` with a stable snake_case message (`unauthenticated` uses `42501`). Map on `error.message`, never on a SQLSTATE or on Hebrew text. Codes marked † in the tables are not referenced anywhere in the app today and need a user-visible mapping.',
   'Paging: no OFFSET anywhere. Lists take the `next_cursor` JSON of the last row (cards) or explicit `p_before_*` / `p_after_*` values; application ports that expose `offset` change to an opaque cursor.',
   'Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.',

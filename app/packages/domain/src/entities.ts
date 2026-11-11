@@ -24,12 +24,11 @@ import type { VerificationLevel } from './verificationLevel';
 
 export interface User {
   readonly userId: string;
-  readonly authProvider: AuthProvider;
   readonly shareHandle: string;
   // `displayName`/`city`/`cityName` are nullable to represent the legitimate
-  // `pending_basic_info` transient window (migration 0084). Onboarding fills
-  // them; UI applies `t('profile.unnamedUser')` / `t('profile.cityNotSet')`
-  // fallbacks at render time when null.
+  // `pending_basic_info` transient window. Onboarding fills them; UI applies
+  // `t('profile.unnamedUser')` / `t('profile.cityNotSet')` fallbacks at render time
+  // when null. `city` is `cities.city_id`; `cityName` is that city's `name_he`.
   displayName: string | null;
   city: string | null;
   cityName: string | null;
@@ -43,8 +42,8 @@ export interface User {
    */
   contactPhone: string | null;
   /**
-   * Private date of birth, ISO `YYYY-MM-DD` (FR-AUTH-010 AC2.d). Owner-only: read through
-   * `users_get_self_private_fields()` and never returned for another member. Null = not given yet.
+   * Private date of birth, ISO `YYYY-MM-DD` (FR-AUTH-010 AC2.d). Owner-only: read from the member's own
+   * `user_private` row and never returned for another member. Null = not given yet.
    */
   dateOfBirth: string | null;
   biography: string | null;

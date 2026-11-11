@@ -10,10 +10,6 @@ export const verificationEn = {
     levelNone: 'Not verified',
     doneBody: 'Your identity is verified. You can publish and stay in the housing world.',
     needProfile: 'Complete your profile before identity verification.',
-    mockTitle: 'Test verification (development)',
-    mockBody: 'One tap raises your level to “ID verified” without a document — development only, until a real provider ships.',
-    mockWarning: 'Not for production. Real document + selfie verification will replace this.',
-    mockCta: 'Verify for testing',
     providerSoon: 'Document and selfie verification will open here after a provider is chosen (FR-VERIFY-005).',
     settingsRow: 'Identity verification',
     profileNudge: {

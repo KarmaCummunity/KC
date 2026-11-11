@@ -21,7 +21,6 @@ import {
 } from '../src/services/postsComposition';
 import { PersonalStatsStrip } from '../src/components/stats/PersonalStatsStrip';
 import { KarmaBadge } from '../src/components/profile/KarmaBadge';
-import { useMeRealtime } from '../src/hooks/useMeRealtime';
 import { CommunityStatsPanel } from '../src/components/stats/CommunityStatsPanel';
 import { ActivityTimelineList } from '../src/components/stats/ActivityTimelineList';
 import { MyWorldGivingsPanel } from '../src/components/stats/MyWorldGivingsPanel';
@@ -39,7 +38,6 @@ export default function StatsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const userId = useAuthStore((s) => s.session?.userId);
-  useMeRealtime();
 
   const userQuery = useQuery({
     queryKey: ['user-profile', userId],

@@ -95,7 +95,7 @@ describe('SupabaseDeviceRepository — deactivate', () => {
     const { client } = makeDeleteClient({ error: pgError });
     const repo = new SupabaseDeviceRepository(client);
 
-    await expect(repo.deactivate('tok_abc')).rejects.toBe(pgError);
+    await expect(repo.deactivate('tok_abc')).rejects.toThrow(pgError.message);
   });
 });
 
@@ -148,6 +148,6 @@ describe('SupabaseDeviceRepository — listForUser', () => {
     const { client } = makeListClient({ error: pgError });
     const repo = new SupabaseDeviceRepository(client);
 
-    await expect(repo.listForUser('u_1')).rejects.toBe(pgError);
+    await expect(repo.listForUser('u_1')).rejects.toThrow(pgError.message);
   });
 });
