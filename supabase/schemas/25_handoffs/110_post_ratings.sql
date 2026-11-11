@@ -102,7 +102,9 @@ comment on column public.user_stats.ratings_count is 'Ratings received (M07); ma
 comment on column public.user_stats.ratings_stars_total is 'Sum of the stars received; not readable, only the average derived from it is.';
 comment on column public.user_stats.ratings_avg is 'Average stars, one decimal; null until three ratings were received (FR-RIDE-038 AC2).';
 
-grant select (ratings_count, ratings_avg) on public.user_stats to authenticated;
+-- No member reads these columns: D24 (approved) says members never see ratings, and the
+-- profile shows none. They feed the trust engine and the staff screens (service role and
+-- staff policies); a public summary would need a new product decision first.
 
 -- Keeps the received-ratings summary of the ratee in step with every inserted or removed rating.
 create function kc_private.post_ratings_sync_user_stats()

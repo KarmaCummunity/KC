@@ -2524,8 +2524,17 @@
      ],
      "clientGrants": {
       "select": [
-       "ratings_avg",
-       "ratings_count"
+       "followers_count",
+       "following_count",
+       "items_given_count",
+       "items_received_count",
+       "karma_points",
+       "open_posts_followers_only",
+       "open_posts_public",
+       "posts_created_total",
+       "updated_at",
+       "user_id",
+       "volunteer_hours_total"
       ]
      }
     }
@@ -20142,8 +20151,17 @@
      ],
      "clientGrants": {
       "select": [
-       "ratings_avg",
-       "ratings_count"
+       "followers_count",
+       "following_count",
+       "items_given_count",
+       "items_received_count",
+       "karma_points",
+       "open_posts_followers_only",
+       "open_posts_public",
+       "posts_created_total",
+       "updated_at",
+       "user_id",
+       "volunteer_hours_total"
       ]
      }
     }
@@ -20327,8 +20345,17 @@
      ],
      "clientGrants": {
       "select": [
-       "ratings_avg",
-       "ratings_count"
+       "followers_count",
+       "following_count",
+       "items_given_count",
+       "items_received_count",
+       "karma_points",
+       "open_posts_followers_only",
+       "open_posts_public",
+       "posts_created_total",
+       "updated_at",
+       "user_id",
+       "volunteer_hours_total"
       ]
      }
     }

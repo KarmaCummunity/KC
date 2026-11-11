@@ -33,7 +33,7 @@ exception when others then
 end;
 $$;
 
-select plan(15);
+select plan(16);
 
 -- a owns three posts handed over to b, c and d, and one to e. e does not rate.
 insert into auth.users (id, email, raw_app_meta_data)
@@ -60,20 +60,24 @@ select is(pg_temp.q('b', $$select stars::text from public.post_ratings where rat
 select is(pg_temp.q('a', $$select count(*)::text from public.post_ratings where ratee_id = @a$$), '0', 'the ratee cannot read the rating written about them');
 select is(pg_temp.q('c', $$select count(*)::text from public.post_ratings$$), '0', 'a stranger reads no rating');
 select is(pg_temp.q('c', $$select ratings_stars_total::text from public.user_stats where user_id = @a$$), '42501', 'the star total is not a readable column');
-select is(pg_temp.q('c', $$select ratings_count || '|' || coalesce(ratings_avg::text, '~') from public.user_stats where user_id = @a$$), '1|~',
-  'the count is public and the average stays hidden under three ratings');
+select is((select ratings_count || '|' || coalesce(ratings_avg::text, '~') from public.user_stats where user_id = '00000000-0000-4000-8000-00000000000a'::uuid), '1|~',
+  'the count is kept and the average stays hidden under three ratings');
 select is(pg_temp.q('c', $$select public.rate_handoff((select id from public.post_handoffs where recipient_id = @c), 4)::text$$), '', 'a second member rates the owner');
 select is(pg_temp.q('d', $$select public.rate_handoff((select id from public.post_handoffs where recipient_id = @d), 3)::text$$), '', 'and a third');
-select is(pg_temp.q('e', $$select ratings_count || '|' || ratings_avg from public.user_stats where user_id = @a$$), '3|4.0', 'from three ratings the average is shown, to one decimal');
-select is(pg_temp.q('e', $$select ratings_count || '|' || coalesce(ratings_avg::text, '~') from public.user_stats where user_id = @b$$), '1|~', 'the owner''s rating of b counts for b');
+select is((select ratings_count || '|' || ratings_avg from public.user_stats where user_id = '00000000-0000-4000-8000-00000000000a'::uuid), '3|4.0', 'from three ratings the average is shown, to one decimal');
+select is((select ratings_count || '|' || coalesce(ratings_avg::text, '~') from public.user_stats where user_id = '00000000-0000-4000-8000-00000000000b'::uuid), '1|~', 'the owner''s rating of b counts for b');
 delete from public.post_ratings where rater_id = '00000000-0000-4000-8000-00000000000d';
-select is(pg_temp.q('e', $$select ratings_count || '|' || coalesce(ratings_avg::text, '~') from public.user_stats where user_id = @a$$), '2|~', 'removing a rating takes it out of the summary');
+select is((select ratings_count || '|' || coalesce(ratings_avg::text, '~') from public.user_stats where user_id = '00000000-0000-4000-8000-00000000000a'::uuid), '2|~', 'removing a rating takes it out of the summary');
 update public.users set privacy_mode = 'Private' where id = '00000000-0000-4000-8000-00000000000a';
 select is(pg_temp.q('e', $$select count(*)::text from public.user_stats where user_id = @a$$), '1',
   'the summary is visible exactly when the profile is (a private profile is still listed)');
 insert into public.blocks (blocker_id, blocked_id) values
   ('00000000-0000-4000-8000-00000000000a', '00000000-0000-4000-8000-00000000000e');
 select is(pg_temp.q('e', $$select count(*)::text from public.user_stats where user_id = @a$$), '0', 'and hidden from a member the owner blocked');
+
+-- D24: members never see ratings, not even the summary of another member.
+select is(pg_temp.q('c', $$select ratings_count from public.user_stats where user_id = '00000000-0000-4000-8000-00000000000a'::uuid$$),
+  '42501', 'a member cannot read the rating counters (D24)');
 
 select * from finish();
 rollback;
