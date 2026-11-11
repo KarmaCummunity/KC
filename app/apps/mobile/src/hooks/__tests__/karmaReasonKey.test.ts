@@ -2,16 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('@kc/infrastructure-supabase', () => ({ getSupabaseClient: () => ({}) }));
 import { karmaReasonKey } from '../useKarmaHistory';
 import { karmaEventIcon } from '../../components/profile/karmaHistoryIcon';
-import he from '../../i18n/locales/he';
-import en from '../../i18n/locales/en';
-
-// Event types the baseline writes to karma_ledger (supabase/schemas/72_karma): the
-// karma_values rows plus `reversal`, the entry that takes points back.
-const BASELINE_EVENT_TYPES = [
-  'handoff_giver', 'handoff_receiver', 'item_value_bonus', 'rating_given',
-  'challenge_opened', 'challenge_report', 'challenge_completed',
-  'donation', 'standing_order_month', 'reversal',
-] as const;
 
 describe('karmaReasonKey', () => {
   it('maps known and unknown events', () => {
@@ -23,14 +13,14 @@ describe('karmaReasonKey', () => {
     expect(karmaReasonKey('rating_given')).toBe('rating_given');
   });
 
-  it.each(BASELINE_EVENT_TYPES)('gives the baseline event %s its own label in he and en', (eventType) => {
-    const key = karmaReasonKey(eventType);
-    expect(key).not.toBe('other');
-    for (const bundle of [he, en]) {
-      const label = (bundle.karma.reason as Record<string, string>)[key];
-      expect(typeof label).toBe('string');
-      expect(label.length).toBeGreaterThan(0);
-    }
+  // Baseline ledger event types (supabase/schemas/72_karma); labels: i18n/__tests__/karmaEventLabels.test.ts.
+  it.each(['item_value_bonus', 'challenge_completed', 'donation', 'reversal'])('labels the baseline event %s', (eventType) => {
+    expect(karmaReasonKey(eventType)).toBe(eventType);
+  });
+
+  it('shows the baseline handoff awards with the giving labels', () => {
+    expect(karmaReasonKey('handoff_giver')).toBe('giving_handoff_giver');
+    expect(karmaReasonKey('handoff_receiver')).toBe('giving_handoff_receiver');
   });
 });
 
