@@ -1,0 +1,13 @@
+key,enabled,description
+world_items_enabled,true,Giving world: items (launch scope D102)
+world_food_enabled,true,Giving world: food (launch scope D102)
+world_rides_enabled,true,Giving world: rides (launch scope D102)
+world_time_enabled,true,Giving world: time (launch scope D102)
+world_money_enabled,false,Giving world: money (portal)
+world_knowledge_enabled,false,Giving world: knowledge (portal)
+world_housing_enabled,false,Giving world: housing (portal)
+world_medical_enabled,false,Giving world: medical (portal)
+world_animals_enabled,false,Giving world: animals (portal)
+world_employment_enabled,false,Giving world: employment (portal)
+world_democracy_enabled,false,Giving world: democracy (portal)
+world_challenges_enabled,false,Giving world: challenges (portal)

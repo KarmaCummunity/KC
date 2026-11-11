@@ -1,4 +1,4 @@
-# Reference data (cities, streets, road junctions)
+# Reference data (cities, streets, road junctions, giving-world catalog, feature flags)
 
 Rows the product cannot run without, in **every** environment: the city list, the official
 street list and the named road junctions. They are not part of the baseline (the schema holds
@@ -12,6 +12,10 @@ reaches kc-prod, reference data is loaded into kc-prod, kc-dev and local stacks 
 | `data/cities.csv` | 1,306 | `city_id`, `name_he`, `name_en`, `lat`, `lng` (14 localities have no coordinates) |
 | `data/streets.csv` | 63,565 | `city_id`, `street_id`, `name_he` |
 | `data/road_junctions.csv` | 449 | `junction_id`, `kind`, `name_he`, `name_en`, `name_ar`, `roads`, `lat`, `lng` |
+| `data/worlds.csv` | 12 | giving worlds with sensitivity, geo mode and main-feed flag |
+| `data/post_kinds.csv` | 9 | kinds of post of the launch worlds (items, food, rides, time) |
+| `data/item_subcategories.csv` | 15 | item and food subcategories |
+| `data/app_flags.csv` | 12 | one `world_<slug>_enabled` flag per world; launch worlds on (D102), the rest off. Created only when missing: a re-run never undoes the super admin's switch |
 | `load.sql`, `load.sh` | | the idempotent loader |
 | `extract-from-migrations.sh` | | how the CSV files were produced (provenance, see below) |
 
