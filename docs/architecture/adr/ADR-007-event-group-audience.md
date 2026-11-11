@@ -1,42 +1,43 @@
 # ADR-007 — Audience of an event ride group: fail-closed membership
 
-- **Status:** Proposed (2026-11-11) · for gap `{{G:event-ride-groups}}` (decision `{{D:event-ride-groups}}`)
+- **Status:** Proposed (2026-11-11, revised after code review) · for gap `{{G:event-ride-groups}}` (decision `{{D:event-ride-groups}}`)
 - **Related:** [`FR-EVRIDE-011`](../../spec/requirements/24_ride_event_groups.md), [ADR-006](./ADR-006-one-post-model.md), [ADR-002](./ADR-002-data-layer.md), [ADR-003](./ADR-003-realtime.md)
 
 ## Context
 
-An event ride group (a wedding, a party) is a private room: its rides, date and place are readable by its members and, beyond them, only by the audience each ride's publisher chose within the organizer's ceiling. A group ride is an ordinary ride post (`posts` + `ride_post_details`, bookings on `post_handoffs`), so it inherits every reader written for rides: the main feed, `list_rides_feed`, `find_ride_listing_matches`, the map, search, matching v2, saved-route alerts, embeddings, the WhatsApp bot, statistics, the share page and the realtime new-post broadcast. Many of these are `SECURITY DEFINER` functions whose body, not RLS, decides what is returned (see `FR-RIDE-018` AC2). A rule that every reader must remember to add will be forgotten by the next reader.
+An event ride group (a wedding, a party) is a private room: its rides, date and place are readable by its members and, beyond them, only by the audience each ride's publisher chose within the organizer's ceiling (`group_only`, `group_and_followers`, `everyone`). A group ride is an ordinary ride post (`posts` + `ride_post_details`, bookings on `post_handoffs`), so it inherits every reader written for rides. Reading the code showed that:
 
-Post visibility today is `Public | FollowersOnly | OnlyMe`, decided in `is_post_visible_to`.
+- visibility is decided by **three** predicates, not one: `is_post_visible_to`, `post_listing_visible_to` and `is_listing_visible_to` (the last two feed the ride page, the rides feed, the map, browse, search and matching);
+- `OnlyMe` already means "operators only" (anonymity level 1): an `OnlyMe` post opens an operator case, and the anonymity level is derived from the visibility;
+- the `closed_delivered` branch of the predicates admits viewers by the participants' profile surface, ignoring the stored visibility;
+- several `SECURITY DEFINER` readers and background paths decide for themselves what is returned (feeds, search, matching, alerts, embeddings, the bot), and the visibility writers (`rpc_ride_update_visibility`, the writable `ride_listings` view, "share to feed") do not know about groups;
+- since step 3 of ADR-006 there is **no derived `listings` row and no feed-mirror trigger**: `listings` and `ride_listings` are views over `posts`, so the feed exclusion is `posts.feed_hidden`.
+
+A rule that every reader must remember to add will be forgotten by the next reader.
 
 ## Decision
 
-A ride's publisher chooses its audience (PM, 2026-11-11): **group only** (default), **group + my followers**, or **everyone**; the organizer sets a **ceiling** on the widest choice. Mapping onto the existing visibility:
-
-| Audience | Stored `visibility` | Who sees it |
-|---|---|---|
-| group only | `OnlyMe` | owner + active group members (+ KC operators) |
-| group + my followers | `FollowersOnly` | the above + followers of the owner |
-| everyone | `Public` | everyone, like any ride |
-
-1. **Group only is stored as `OnlyMe` with `posts.feed_hidden = true`.** Every existing reader already treats that as "not for anyone else", so a forgotten reader returns nothing — it fails closed. The wider audiences use the visibility those readers already understand, so they need no new rule.
-2. **One clause in `is_post_visible_to`**: when the post's ride extension carries an `event_group_id`, an `active` member of that group sees it (group `active`/`ended`/`archived`) whatever its audience; every other viewer is decided by the stored visibility, unchanged. A CHECK ties `OnlyMe` to rides that carry a group, so `OnlyMe` on a group ride means "the group".
-3. **The ceiling is enforced on write** (`audience_above_ceiling`) and re-applied when it is lowered, narrowing existing rides.
-4. **A non-member never receives the group**: a followers/everyone ride is served as an ordinary ride (route, time, event place as an official place, an "event ride" chip); the group's name, notes and member data are returned only to members.
-5. **Group-aware readers** (`list_ride_event_group_board`, the group match function) authorize through membership and never reuse the global matching or feed functions.
-6. **A reader inventory test** lists every SQL function that selects ride posts and asserts, per function and per audience, who gets rows: for *group only*, a non-member, a banned or removed member and `anon` get none; for the wider audiences the ordinary rules hold; the ceiling is checked. A new reader missing from the list fails CI.
-7. **Realtime**: a per-group topic authorized by membership at subscribe time (ADR-003); *group only* rides are never published on the public feed topic.
-8. **Derived legacy rows**: while `listings` is still derived from posts (ADR-006), the derived listing carries the same flags so `listings_feed_mirror_sync` mirrors a group ride into the feed only for the wider audiences.
+1. **Explicit columns, not overloaded meaning.** `ride_post_details` carries `event_group_id`, `event_leg`, `audience` and `name_display`. Anonymity inside a group is its own control (`name_display`), not derived from visibility. Only the group RPCs write these columns; the client `details` JSON is never trusted for them.
+2. **The audience is also stored as the post's visibility**, as the fail-closed layer: `group_only` → `OnlyMe` (+ `feed_hidden = true`), `group_and_followers` → `FollowersOnly`, `everyone` → `Public`. Readers that already understand visibility therefore return nothing for a `group_only` ride. The triggers that treat `OnlyMe` as personal (operator-case queue, anonymity derivation, public counters) **skip group rides**.
+3. **One member clause in all three predicates**, gated on rides that carry a group, placed ahead of the `closed_delivered` branch: an `active` member of the group (group `active`, `ended`, `archived` or `cancelling`) sees the ride; everyone else is decided by the stored visibility. A `closed_delivered` group ride is never widened by the participants' surface rule. There is no operator clause in the predicates: operators use audited admin tools.
+4. **Structural exclusion in general readers.** Every general reader adds `event_group_id is null or audience <> 'group_only'` (served by a partial index) so that a member of the group does not meet group rides in the main feed, search, the rides feed, the map, matching, alerts or the bot just because the predicate now admits them. Members reach lists only through the group readers.
+5. **Background paths are readers too:** saved-route alerts, subscription alerts, the embedding queue and matching delivery check the audience (and re-check it at delivery). Group rides are never embedded or sent to a third party.
+6. **Writers cannot widen.** The audience changes only through a group RPC that enforces the ceiling in both directions; `rpc_ride_update_visibility`, the view update guard, "share to feed" and the generic edit refuse group rides. `FollowersOnly` is allowed by the group RPC although the generic path restricts it to private profiles.
+7. **Group-aware readers** (`list_ride_event_group_board`, the counters, the group match function) authorize membership **once at the top** and filter by `event_group_id` with the partial board index; they load the viewer's block list once instead of calling `is_blocked` per row. They never reuse the global matching or feed functions.
+8. **A reader inventory test** lists every SQL function and policy that selects posts or listings and asserts, per audience and per viewer kind (non-member, banned, removed, `anon`, follower, operator), who gets rows. A new reader missing from the list fails CI.
+9. **Realtime** uses a private DB-sent Broadcast topic per group, authorized by an active-membership policy, carrying a coalesced ping (revision and counters only, ≤ 1 per 5 s). Removal sends a `kicked` event to the person's own channel because a live socket is re-authorized only on token refresh.
+10. **Booking guards inside the existing RPCs:** the leg rule uses an advisory lock `(group, person, leg)` (a post row lock cannot order two drivers confirming one passenger) and applies to `reinstate_ride_booking` too; new cancel reasons extend the existing constraint.
 
 ## Alternatives considered
 
-- **A new visibility value `EventGroup`.** Clearer name, but every `check`, enumeration and TypeScript union that lists visibilities must learn it, and a reader that filters `visibility = 'Public'` is safe while one that filters `<> 'OnlyMe'` leaks. Rejected: fails open.
-- **A separate `group_rides` table.** Safest isolation, but duplicates places, seats, bookings, caps, the emergency call, karma and completion — the opposite of one rides flow (D70). Rejected.
-- **Per-reader `where event_group_id is null`.** Fails open when forgotten. Kept only as defence in depth inside readers that are known to bypass RLS.
+- **A new visibility value `EventGroup`.** Clear name, but every check, enumeration and TypeScript union learns it, and a reader that filters `<> 'OnlyMe'` leaks. Rejected: fails open.
+- **A separate `group_rides` table.** Safest isolation, but duplicates places, seats, bookings, caps, the emergency call, karma and completion: the opposite of one rides flow (D70). Rejected.
+- **Only per-reader `where event_group_id is null`.** Fails open when forgotten. Kept as the structural layer of decision 4, never alone.
+- **Reuse `OnlyMe` with its current meaning and derive anonymity from it.** Rejected: the operator queue, the anonymity derivation and the counters assume personal content.
 
 ## Consequences
 
-- *Group only* rides are invisible to a function that forgets them; the cost is that **the member-side readers must be written deliberately** (steps 1, 5).
-- `OnlyMe` on a group ride means "the group", not "only me": the owner UI shows the three audience names, never the raw visibility.
-- Closed group rides stay as participants' own history after the group is purged; they keep the audience they had.
-- The inventory test needs upkeep, and that is the point: it is the control that turns an architectural intent into a build failure.
+- The design costs one migration pass over three predicates, the general readers and the background paths, and a test that must be kept current — that test is the control that turns an intent into a build failure.
+- The owner UI shows the three audience names and the name display, never the raw visibility.
+- Closed group rides remain the participants' own history and keep matrix rows 1–3 and 7 of the spec.
+- Performance: the member clause is gated and placed after the cheap branches; the board never evaluates it per row.
