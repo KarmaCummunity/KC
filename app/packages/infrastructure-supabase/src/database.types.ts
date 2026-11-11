@@ -4924,6 +4924,20 @@ export type Database = {
           waitlisted: number
         }[]
       }
+      post_share_card: {
+        Args: { p_post_id: string }
+        Returns: {
+          city_name_he: string
+          cover_bucket: string
+          cover_key: string
+          description: string
+          direction: string
+          post_type: string
+          status: string
+          title: string
+          world_slug: string
+        }[]
+      }
       profile_closed_posts_count: {
         Args: { p_user_id: string }
         Returns: number

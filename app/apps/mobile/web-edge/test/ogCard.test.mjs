@@ -5,7 +5,7 @@ import { renderOgHtml } from '../src/ogHtml.mjs';
 import { he } from '../i18n/he.mjs';
 
 const config = { supabaseUrl: 'https://proj.supabase.co', appBaseUrl: 'https://karma-community-kc.com' };
-const row = (patch = {}) => ({ title: 'שולחן עץ', description: 'במצב מצוין', type: 'Give', status: 'open', world_slug: null, city: 'תל אביב', media_assets: [], ...patch });
+const row = (patch = {}) => ({ title: 'שולחן עץ', description: 'במצב מצוין', direction: 'offer', status: 'open', world_slug: 'items', city_name_he: 'תל אביב', cover_bucket: null, cover_key: null, ...patch });
 
 describe('resolveWorld', () => {
   it('maps a missing slug to items, known slugs to themselves and unknown slugs to generic', () => {
@@ -17,9 +17,9 @@ describe('resolveWorld', () => {
 
 describe('buildPostCard', () => {
   it('titles the card by world and direction, not with the item template', () => {
-    const ride = buildPostCard(row({ world_slug: 'rides', type: 'Give', title: 'נוסע/ת מירושלים להוד השרון' }), config);
+    const ride = buildPostCard(row({ world_slug: 'rides', direction: 'offer', title: 'נוסע/ת מירושלים להוד השרון' }), config);
     assert.equal(ride.title, `${he.titlePrefix.rides.offer} · נוסע/ת מירושלים להוד השרון`);
-    const wanted = buildPostCard(row({ world_slug: 'rides', type: 'Request' }), config);
+    const wanted = buildPostCard(row({ world_slug: 'rides', direction: 'request' }), config);
     assert.ok(wanted.title.startsWith(he.titlePrefix.rides.request));
     assert.ok(!ride.title.includes(he.titlePrefix.items.offer));
   });
@@ -29,7 +29,7 @@ describe('buildPostCard', () => {
   it('uses the post description plus the city, or the world fallback when there is none', () => {
     assert.ok(buildPostCard(row(), config).description.startsWith('במצב מצוין'));
     assert.ok(buildPostCard(row(), config).description.endsWith('📍 תל אביב'));
-    const empty = buildPostCard(row({ description: '  ', world_slug: 'food', type: 'Request', city: null }), config);
+    const empty = buildPostCard(row({ description: '  ', world_slug: 'food', direction: 'request', city_name_he: null }), config);
     assert.equal(empty.description, he.fallbackDescription.food.request);
   });
   it('truncates long titles and descriptions', () => {
@@ -40,18 +40,17 @@ describe('buildPostCard', () => {
 });
 
 describe('resolveImageUrl', () => {
-  it('uses the first image by ordinal in the bucket it lives in', () => {
-    const media = [{ path: 'u/b.jpg', bucket: 'post-images', ordinal: 1 }, { path: 'l/a b.jpg', bucket: 'listing-images', ordinal: 0 }];
-    assert.equal(resolveImageUrl(media, config), 'https://proj.supabase.co/storage/v1/object/public/listing-images/l/a%20b.jpg');
+  it('builds the public URL of the cover in the media bucket, encoding each path segment', () => {
+    assert.equal(
+      resolveImageUrl({ cover_bucket: 'post-images', cover_key: 'u/a b.jpg' }, config),
+      'https://proj.supabase.co/storage/v1/object/public/post-images/u/a%20b.jpg',
+    );
   });
-  it('defaults a row without a bucket to post-images', () => {
-    assert.equal(resolveImageUrl([{ path: 'x.jpg' }], config), 'https://proj.supabase.co/storage/v1/object/public/post-images/x.jpg');
-  });
-  it('falls back to the logo for no media, a foreign bucket or missing config', () => {
+  it('falls back to the logo for no cover, a foreign bucket or missing config', () => {
     const logo = 'https://karma-community-kc.com/pwa-icon-512.png';
-    assert.equal(resolveImageUrl([], config), logo);
-    assert.equal(resolveImageUrl([{ path: 'x.jpg', bucket: 'chat-images' }], config), logo);
-    assert.equal(resolveImageUrl([{ path: 'x.jpg' }], { ...config, supabaseUrl: '' }), logo);
+    assert.equal(resolveImageUrl({ cover_bucket: null, cover_key: null }, config), logo);
+    assert.equal(resolveImageUrl({ cover_bucket: 'chat-media', cover_key: 'x.jpg' }, config), logo);
+    assert.equal(resolveImageUrl({ cover_bucket: 'post-images', cover_key: 'x.jpg' }, { ...config, supabaseUrl: '' }), logo);
   });
 });
 

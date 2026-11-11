@@ -45,7 +45,7 @@ OAuth flows need the deployed origin in Supabase → Authentication → URL Conf
 
 ## Shared links (`/post/:id`, `/user/:handle`)
 
-The upload carries Cloudflare Pages Functions (`app/apps/mobile/functions/`, logic and tests in `app/apps/mobile/web-edge/`, `FR-POST-023`). `deploy-web.yml` writes the function's config (`app/scripts/write-web-edge-config.mjs`: the public Supabase URL and anon key, and the optional store URLs) and runs `wrangler pages deploy` from `app/apps/mobile`, where Wrangler looks for `functions/`. Per request, by User-Agent: a link-preview crawler gets an Open Graph card for the post's kind; an iOS or Android browser is redirected to the store when its URL is set; everyone else gets the SPA.
+The upload carries Cloudflare Pages Functions (`app/apps/mobile/functions/`, logic and tests in `app/apps/mobile/web-edge/`, `FR-POST-023`). `deploy-web.yml` writes the function's config (`app/scripts/write-web-edge-config.mjs`: the public Supabase URL and anon key, and the optional store URLs) and runs `wrangler pages deploy` from `app/apps/mobile`, where Wrangler looks for `functions/`. Per request, by User-Agent: a link-preview crawler gets an Open Graph card for the post's kind (read through the `post_share_card` database function); an iOS or Android browser is redirected to the store when its URL is set; everyone else gets the SPA.
 
 | Setting (GitHub environment `cloudflare-<target>`) | Kind | Effect |
 | --- | --- | --- |

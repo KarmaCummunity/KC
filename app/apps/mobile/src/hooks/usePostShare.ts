@@ -16,6 +16,9 @@ import { useAuthStore } from '../store/authStore';
 import { useFeedSessionStore } from '../store/feedSessionStore';
 import { hapticLightTap, hapticSuccess } from '../lib/haptics';
 
+/** The one public media bucket of the baseline (the post-detail carousel reads the same one). */
+const POST_IMAGES_BUCKET = 'post-images';
+
 export function usePostShare(post: PostWithOwner) {
   const { t, i18n } = useTranslation();
   const viewerId = useAuthStore((s) => s.session?.userId ?? null);
@@ -62,12 +65,8 @@ export function usePostShare(post: PostWithOwner) {
         t,
       );
       const firstAsset = post.mediaAssets[0];
-      // The photo lives in the bucket its asset names: a feed mirror of a listing borrows the
-      // listing's photos from `listing-images`, so a hard-coded bucket would share a dead link.
       const remoteImageUrl = firstAsset
-        ? getSupabaseClient().storage
-            .from(firstAsset.bucket)
-            .getPublicUrl(firstAsset.path).data.publicUrl
+        ? getSupabaseClient().storage.from(POST_IMAGES_BUCKET).getPublicUrl(firstAsset.path).data.publicUrl
         : undefined;
       const outcome = await sharePost({
         postId: post.postId,

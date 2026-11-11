@@ -9,7 +9,7 @@
  "summary": {
   "bucket": {
    "callSites": 19,
-   "distinct": 5
+   "distinct": 4
   },
   "channel": {
    "callSites": 6,
@@ -83,8 +83,8 @@
    "line": 69,
    "area": "mobile",
    "symbol": "recipientNavigable",
-   "via": "unresolved",
-   "name": "<firstAsset.bucket>"
+   "via": "const",
+   "name": "post-images"
   },
   {
    "kind": "bucket",

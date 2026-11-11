@@ -1,33 +1,35 @@
-// Reads the few public columns of a post that a link-preview card needs, over PostgREST with the
-// anon key. Row-level security decides what the anon role may see; the explicit filters below are
-// a second fence, so a hidden, removed or private post can never reach a card even if a policy
-// is loosened later.
+// Reads the public facts of a post that a link-preview card needs, through the database function
+// `post_share_card` (migration 0021) with the anon key. Signed-out callers cannot read `posts`,
+// so the function is the one door: it returns a row only for a public, open or delivered post of
+// an active member, and only the columns below. No direct table read happens here.
 
 import { trimTrailingSlashes } from './config.mjs';
 
 const UUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 const REST_TIMEOUT_MS = 2000;
-const COLUMNS = 'title,description,type,status,world_slug,city,media_assets(path,bucket,ordinal)';
 
 export function isPostId(value) {
   return UUID.test(value);
 }
 
 /**
- * @returns the row, or null when there is nothing safe to show (not configured, invalid id,
- *          hidden by RLS, not found, slow or failing backend). Never throws.
+ * @returns the card row, or null when there is nothing safe to show (not configured, invalid id,
+ *          no such public post, slow or failing backend). Never throws.
  */
 export async function fetchSharedPost(postId, { supabaseUrl, supabaseAnonKey }, fetchImpl) {
   if (!isPostId(postId) || !supabaseUrl || !supabaseAnonKey) return null;
-  const url =
-    `${trimTrailingSlashes(supabaseUrl)}/rest/v1/posts?select=${COLUMNS}` +
-    `&post_id=eq.${encodeURIComponent(postId)}` +
-    '&visibility=eq.Public&status=in.(open,closed_delivered)&limit=1';
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REST_TIMEOUT_MS);
   try {
-    const response = await fetchImpl(url, {
-      headers: { apikey: supabaseAnonKey, authorization: `Bearer ${supabaseAnonKey}`, accept: 'application/json' },
+    const response = await fetchImpl(`${trimTrailingSlashes(supabaseUrl)}/rest/v1/rpc/post_share_card`, {
+      method: 'POST',
+      headers: {
+        apikey: supabaseAnonKey,
+        authorization: `Bearer ${supabaseAnonKey}`,
+        accept: 'application/json',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ p_post_id: postId }),
       signal: controller.signal,
     });
     if (!response.ok) return null;

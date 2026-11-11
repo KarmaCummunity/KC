@@ -7,8 +7,8 @@ import { trimTrailingSlashes } from './config.mjs';
 
 export const TITLE_MAX = 70;
 export const DESCRIPTION_MAX = 200;
-/** The only buckets a post image may live in (mirrors `MediaAsset.bucket` in @kc/domain). */
-const IMAGE_BUCKETS = new Set(['post-images', 'listing-images']);
+/** The only bucket a post image may live in (the baseline's single public media bucket). */
+const IMAGE_BUCKET = 'post-images';
 /** The community logo, used when the post has no usable image. */
 export const FALLBACK_IMAGE_PATH = '/pwa-icon-512.png';
 
@@ -25,40 +25,33 @@ export function resolveWorld(worldSlug) {
   return WORLDS.has(worldSlug) ? worldSlug : 'generic';
 }
 
-/** `Give` is an offer, `Request` a request; anything else reads as an offer-free generic. */
-function resolveDirection(type) {
-  return type === 'Request' ? 'request' : 'offer';
+/** A post is an offer or a request; the database allows nothing else. */
+function resolveDirection(direction) {
+  return direction === 'request' ? 'request' : 'offer';
 }
 
-/** The public URL of the post's first image, or the logo. */
-export function resolveImageUrl(media, { supabaseUrl, appBaseUrl }) {
+/** The public URL of the post's cover image, or the logo. */
+export function resolveImageUrl({ cover_bucket: bucket, cover_key: key }, { supabaseUrl, appBaseUrl }) {
   const fallback = `${appBaseUrl}${FALLBACK_IMAGE_PATH}`;
-  if (!Array.isArray(media) || !supabaseUrl) return fallback;
-  const first = media
-    .filter((m) => m && typeof m.path === 'string' && m.path !== '' && IMAGE_BUCKETS.has(m.bucket ?? 'post-images'))
-    .sort((a, b) => (a.ordinal ?? 0) - (b.ordinal ?? 0))[0];
-  if (!first) return fallback;
-  const path = first.path.startsWith('/') ? first.path.slice(1) : first.path;
+  if (!supabaseUrl || bucket !== IMAGE_BUCKET || typeof key !== 'string' || key === '') return fallback;
+  const path = key.startsWith('/') ? key.slice(1) : key;
   const encoded = path.split('/').map(encodeURIComponent).join('/');
-  return `${trimTrailingSlashes(supabaseUrl)}/storage/v1/object/public/${first.bucket ?? 'post-images'}/${encoded}`;
+  return `${trimTrailingSlashes(supabaseUrl)}/storage/v1/object/public/${IMAGE_BUCKET}/${encoded}`;
 }
 
-/**
- * @param {{ title: string, description: string | null, type: string, status: string,
- *           world_slug: string | null, city: string | null, media_assets: unknown[] }} row
- */
+/** @param row one row of `post_share_card` (migration 0021) */
 export function buildPostCard(row, config) {
   const world = resolveWorld(row.world_slug);
-  const direction = resolveDirection(row.type);
+  const direction = resolveDirection(row.direction);
   const closed = row.status === 'closed_delivered';
   // A closed post keeps its kind in the title but leads with the check mark instead.
   const prefix = closed ? he.closedPrefix : he.titlePrefix[world][direction];
   const description = (row.description ?? '').trim() || he.fallbackDescription[world][direction];
-  const city = (row.city ?? '').trim();
+  const city = (row.city_name_he ?? '').trim();
   return {
     title: truncate(`${prefix} · ${row.title.trim()}`, TITLE_MAX),
     description: truncate(city ? `${description} 📍 ${city}` : description, DESCRIPTION_MAX),
-    imageUrl: resolveImageUrl(row.media_assets, config),
+    imageUrl: resolveImageUrl(row, config),
   };
 }
 

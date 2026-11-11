@@ -12,10 +12,10 @@ const rows = (list) => async () => new Response(JSON.stringify(list), { status: 
 
 describe('handleSharedLink /post', () => {
   it('serves a crawler the card of a ride as a ride', async () => {
-    let requested = '';
-    const fetchImpl = async (url) => {
-      requested = url;
-      return new Response(JSON.stringify([{ title: 'נוסע/ת מירושלים להוד השרון', description: null, type: 'Give', status: 'open', world_slug: 'rides', city: 'ירושלים', media_assets: [] }]));
+    let call = null;
+    const fetchImpl = async (url, init) => {
+      call = { url, init };
+      return new Response(JSON.stringify([{ title: 'נוסע/ת מירושלים להוד השרון', description: null, direction: 'offer', status: 'open', world_slug: 'rides', city_name_he: 'ירושלים', cover_bucket: null, cover_key: null }]));
     };
     const res = await handleSharedLink({ kind: 'post', param: POST_ID, request: req(`/post/${POST_ID}`, 'WhatsApp/2.0'), env, next, fetchImpl });
     const html = await res.text();
@@ -25,7 +25,9 @@ describe('handleSharedLink /post', () => {
     assert.ok(html.includes('נוסע/ת מירושלים להוד השרון'));
     assert.ok(!html.includes('חפץ שמחכה לבית חדש'));
     assert.ok(html.includes(`og:url" content="https://karma-community-kc.com/post/${POST_ID}"`));
-    assert.ok(requested.includes('visibility=eq.Public') && requested.includes('status=in.(open,closed_delivered)'));
+    assert.equal(call.url, 'https://proj.supabase.co/rest/v1/rpc/post_share_card');
+    assert.equal(call.init.method, 'POST');
+    assert.deepEqual(JSON.parse(call.init.body), { p_post_id: POST_ID });
   });
   it('serves the generic card when the post is unreadable, malformed or the backend fails', async () => {
     for (const [param, fetchImpl] of [[POST_ID, rows([])], ['not-a-uuid', rows([{ title: 'x' }])], [POST_ID, async () => { throw new Error('boom'); }], [POST_ID, async () => new Response('{}', { status: 500 })]]) {
