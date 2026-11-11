@@ -1,7 +1,7 @@
 name: Database backup
 description: >
-  Logical backup of one Supabase project (roles, schema, data, and the auth +
-  storage metadata rows), compressed, age-encrypted and uploaded as a workflow
+  Logical backup of one Supabase project (roles, schema, and the data of every
+  schema including auth and storage metadata), compressed, age-encrypted and uploaded as a workflow
   artifact, then restored into a throwaway Postgres container as a sanity check.
   Read-only against the project. Callers: db-backup-prod.yml, db-backup-dev.yml
   (the job holds the Supabase environment and passes SUPABASE_ACCESS_TOKEN,
@@ -93,11 +93,11 @@ runs:
         }
         dump roles --role-only
         dump schema
+        # The data dump also carries the rows of Supabase-managed schemas (auth,
+        # storage), so accounts and file metadata are included. The files in
+        # Storage themselves are not in any dump.
         dump data --data-only --use-copy
-        # Accounts and file metadata live in Supabase-managed schemas, which the
-        # default dump leaves out. Storage objects (the files) are not in any dump.
-        dump auth-storage-data --data-only --use-copy --schema auth,storage
-        for f in roles schema data auth-storage-data; do
+        for f in roles schema data; do
           test -s "$plain/$f.sql" || { echo "::error::empty dump file $f.sql"; exit 1; }
         done
         node scripts/db-backup-manifest.mjs analyze --schema "$plain/schema.sql" --data "$plain/data.sql" \
@@ -114,7 +114,7 @@ runs:
         plain="$RUNNER_TEMP/db-backup-plain"
         out="$RUNNER_TEMP/db-backup-out"
         mkdir -p "$out"
-        for f in roles schema data auth-storage-data manifest; do
+        for f in roles schema data manifest; do
           ext=sql; [[ "$f" == manifest ]] && ext=json
           gzip -9 -n -c "$plain/$f.$ext" | age -r "$AGE_RECIPIENT" -o "$out/$f.$ext.gz.age"
           test -s "$out/$f.$ext.gz.age" || { echo "::error::empty backup file $f"; exit 1; }
@@ -177,6 +177,9 @@ runs:
           sleep 2
         done
         stop=1; [[ "$STRICT" == true ]] || stop=0
+        # Rows of auth / storage / pgmq need tables only the platform creates; the check
+        # restores the schemas that schema.sql defines (see scripts/db-backup-manifest.mjs).
+        node scripts/db-backup-manifest.mjs split-data --manifest "$plain/manifest.json" --data "$plain/data.sql" --out "$plain/data-restorable.sql"
         psql_in() { docker exec -i restore-check psql -U postgres -h localhost -d postgres -q "$@"; }
         # Roles of Supabase services that the plain image does not run (realtime, ...) are
         # created by the platform on a real project; roles.sql may reference them.
@@ -190,7 +193,7 @@ runs:
           echo "database has no tables yet: roles and schema restored, no row counts to compare"
         else
           echo "::group::data.sql"
-          psql_in -v ON_ERROR_STOP="$stop" < "$plain/data.sql" 2>&1 | sed 's/^/  /'
+          psql_in -v ON_ERROR_STOP="$stop" < "$plain/data-restorable.sql" 2>&1 | sed 's/^/  /'
           echo "::endgroup::"
           node scripts/db-backup-manifest.mjs counts-sql --manifest "$plain/manifest.json" \
             | docker exec -i restore-check psql -U postgres -h localhost -d postgres -At -F $'\t' -v ON_ERROR_STOP=1 > "$plain/restored-counts.tsv"
