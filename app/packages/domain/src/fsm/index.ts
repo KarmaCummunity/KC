@@ -28,6 +28,7 @@ export { rideSeriesMachine } from './machines/rideSeries';
 export { challengeMachine } from './machines/challenge';
 export { matchMachine } from './machines/match';
 export { organizationMachine } from './machines/organization';
+export { orgSec46Machine } from './machines/orgSec46';
 export { orgApplicationMachine } from './machines/orgApplication';
 export { standingOrderMachine } from './machines/standingOrder';
 export { donationIntentMachine } from './machines/donationIntent';

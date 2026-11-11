@@ -1,7 +1,8 @@
 /**
- * FSM catalog contract: the rows that the production baseline (`supabase/schemas/**`)
- * seeds into `kc_private.fsm_state` / `fsm_edge` must equal the domain registry
- * `FSM_MACHINES`, row for row.
+ * FSM catalog contract: the rows that the production baseline (`supabase/schemas/**`) and
+ * the forward migrations after it (`supabase/migrations/0002…`) seed into
+ * `kc_private.fsm_state` / `fsm_edge` must equal the domain registry `FSM_MACHINES`, row
+ * for row.
  *
  * The database enforces the SQL copy (`kc_private.fsm_assert_transition`); the app reads the
  * TypeScript copy. This test is what keeps the two from drifting. CI runs it on every
@@ -49,8 +50,26 @@ function readSchemaFiles(dir: string = SCHEMAS_DIR, prefix = ''): SchemaFile[] {
   });
 }
 
-describe('FSM catalog contract (supabase/schemas vs FSM_MACHINES)', () => {
-  const replayed = readBaselineFsmSeeds(readSchemaFiles());
+/** `supabase/migrations`, beside the schema sources. */
+const MIGRATIONS_DIR = path.resolve(SCHEMAS_DIR, '../migrations');
+/** The generated baseline: the schema sources assembled, so it is not replayed twice. */
+const BASELINE_MIGRATION = '0001_baseline.sql';
+
+/**
+ * The forward migrations after the baseline, in order. The baseline is frozen, so a machine
+ * added later is seeded here. The name prefix sorts them after every schema file.
+ */
+function readForwardMigrations(): SchemaFile[] {
+  return fs.readdirSync(MIGRATIONS_DIR, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && /^\d{4}_.+\.sql$/.test(entry.name) && entry.name !== BASELINE_MIGRATION)
+    .map((entry) => ({
+      name: `~migrations/${entry.name}`,
+      sql: fs.readFileSync(path.join(MIGRATIONS_DIR, entry.name), 'utf8'),
+    }));
+}
+
+describe('FSM catalog contract (supabase/schemas and forward migrations vs FSM_MACHINES)', () => {
+  const replayed = readBaselineFsmSeeds([...readSchemaFiles(), ...readForwardMigrations()]);
   const expected = FSM_MACHINES.map(rowsOf);
 
   it('every registered machine has exactly its states in fsm_state', () => {
