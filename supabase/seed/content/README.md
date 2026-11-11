@@ -53,7 +53,8 @@ when the old migrations are archived: `world_links`, `external_bodies`, `knowled
    kinds: kept in `deferred/`, not loaded.
 3. **`kc_support_channels`** (public Bit / PayBox links to support Karma Community): kept in `deferred/`;
    say if they should be live at launch (needs the money flag).
-4. **Netanya content.** The inventory has no table or row named for Netanya. The only place-specific
-   content is the city list. If "Netanya worlds" means something else (a group of posts, events, an
-   organization), tell me where it lives; nothing user-generated was copied.
+4. **Netanya content.** No curated table has anything named for Netanya. What exists is the city (`7400`, in
+   the reference city list) and 870 posts, of which 34 are in Netanya and 10 mention it in their text:
+   posts are user-generated or demo and are not copied. If "Netanya worlds" means something else (an
+   organization, a set of links, a topic list), tell me where it lives.
 5. **Challenges (9)** were created by test accounts (a "בידקה" challenge among them): not content.
