@@ -94,3 +94,9 @@ test('the Maestro debug output is uploaded: it lives in a hidden .maestro folder
   const workflow = readFileSync(join(ROOT, '.github', 'workflows', 'ci-maestro-android.yml'), 'utf8');
   assert.match(workflow, /name: maestro-android[\s\S]*?include-hidden-files: true/);
 });
+
+test('the runner redacts the seed password from the output before it is uploaded', () => {
+  // The debug output is uploaded (hidden folder), and Maestro writes every -e variable into it in plain text.
+  const runner = readFileSync(join(ROOT, 'scripts', 'maestro-run-android.sh'), 'utf8');
+  assert.match(runner, /maestro-redact\.mjs" "\$OUT_DIR"/);
+});
