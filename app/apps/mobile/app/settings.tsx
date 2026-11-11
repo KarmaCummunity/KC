@@ -23,6 +23,7 @@ import { useActiveStatusSetting } from '../src/hooks/useActiveStatusSetting';
 import { useSettingsScreenStyles } from '../src/screens/settings.styles';
 import { effectiveVerificationLevel } from '@kc/domain';
 import { getUserRepo } from '../src/services/userComposition';
+import { WHATSAPP_BOT_AVAILABLE } from '../src/lib/parkedFeatures';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../src/components/RouteErrorBoundary';
 /** Metro `__DEV__` is false in release; set `EXPO_PUBLIC_DEV_SETTINGS_TOOLS=1` for internal builds only. */
@@ -109,11 +110,13 @@ export default function SettingsScreen() {
             icon="globe-outline"
             onPress={() => router.push('/settings/language')}
           />
-          <SettingsScreenRow
-            label={t('settings.whatsappRow')}
-            icon="logo-whatsapp"
-            onPress={() => router.push('/settings/whatsapp')}
-          />
+          {WHATSAPP_BOT_AVAILABLE ? (
+            <SettingsScreenRow
+              label={t('settings.whatsappRow')}
+              icon="logo-whatsapp"
+              onPress={() => router.push('/settings/whatsapp')}
+            />
+          ) : null}
         </View>
 
         <Text style={styles.sectionTitle}>{t('settings.notifications')}</Text>
