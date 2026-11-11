@@ -2,12 +2,12 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 225,
+   "objects": 207,
    "same": 97,
    "renamed": 20,
    "changed": 46,
    "removed": 1,
-   "missing": 61
+   "missing": 43
   },
   "table": {
    "objects": 57,
@@ -52,12 +52,12 @@
    "missing": 0
   },
   "later": {
-   "objects": 137,
+   "objects": 119,
    "same": 27,
    "renamed": 4,
    "changed": 40,
    "removed": 1,
-   "missing": 65
+   "missing": 47
   },
   "wedge": {
    "objects": 54,
@@ -70,11 +70,11 @@
  },
  "modules": {
   "admin": {
-   "callSites": 54,
+   "callSites": 36,
    "oneToOne": 6,
    "changed": 18,
    "removed": 0,
-   "missing": 30
+   "missing": 12
   },
   "auth": {
    "callSites": 2,
@@ -387,6 +387,7 @@
  },
  "notes": [
   "Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): the blocked-users list (M01, the screen shows its empty state; unblock from a profile is not reachable because `users_hide_blocked` hides it), follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).",
+  "Internal back-office tools the baseline does not provide and whose adapters therefore make no call (they report `BackendUnavailableError`; the sections are parked behind `BACK_OFFICE_TOOLS_AVAILABLE`): the admin task tracker (FR-ADMIN-018), the CRM contacts (roadmap phase 3) and the timesheets (not in the spec), formerly M19. Whether they belong in this database is a product decision.",
   "Errors: every baseline RPC raises `P0001` with a stable snake_case message (`unauthenticated` uses `42501`). Map on `error.message`, never on a SQLSTATE or on Hebrew text. Codes marked † in the tables are not referenced anywhere in the app today and need a user-visible mapping.",
   "Paging: no OFFSET anywhere. Lists take the `next_cursor` JSON of the last row (cards) or explicit `p_before_*` / `p_after_*` values; application ports that expose `offset` change to an opaque cursor.",
   "Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.",
@@ -426,17 +427,6 @@
    "launch": "no",
    "action": "defer",
    "recommendation": "Hide the admin survey dashboard behind a flag. When it opens no new object is needed at first: the super admin can read `survey_answers` (policy `survey_answers_select_super_admin`); aggregate on the device at launch volumes, and add an aggregate function to `90_research` when answers grow.",
-   "tier": "later",
-   "blocker": false
-  },
-  {
-   "id": "M19",
-   "title": "Back-office tools: tasks, CRM, timesheets",
-   "usedBy": "Admin portal (SupabaseAdminTaskRepository, SupabaseCrmContactsRepository, SupabaseTimesheetsRepository) — 18 RPCs",
-   "spec": "tasks: FR-ADMIN-018; CRM: roadmap phase 3; timesheets: not in spec",
-   "launch": "no",
-   "action": "defer",
-   "recommendation": "Internal tools, not member data: hide the three admin sections behind a flag and decide separately whether they belong in this database at all.",
    "tier": "later",
    "blocker": false
   },
@@ -1173,38 +1163,19 @@
     "admin/SupabaseTimesheetsRepository.ts",
     "apps/mobile: admin tasks, CRM, timesheets screens"
    ],
-   "work": "Nothing to migrate to: the baseline has none of it (M19). Decide first whether these tools belong in this database.",
+   "work": "Done: nothing to migrate to (the baseline has no task tracker, CRM or timesheets, old M19). The three adapters make no call and reject with `BackendUnavailableError`; whether these internal tools belong in this database is still an open product decision.",
    "tests": [
-    "—"
+    "vitest: parkedBackOffice, parkedAdminSections"
    ],
-   "degrade": "The three admin sections are hidden behind a flag; their repositories are not constructed.",
+   "degrade": "Parked behind `BACK_OFFICE_TOOLS_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts): the tasks nav entry and dashboard card are hidden, and the tasks, CRM and timesheets routes render the not-available notice.",
    "risks": "Product decision, not engineering.",
-   "rows": [
-    "rpc:admin_task_list",
-    "rpc:admin_task_detail",
-    "rpc:admin_task_create",
-    "rpc:admin_task_update",
-    "rpc:admin_task_set_status",
-    "rpc:admin_task_assign",
-    "rpc:admin_task_add_comment",
-    "rpc:admin_task_delete",
-    "rpc:crm_contact_list",
-    "rpc:crm_contact_upsert",
-    "rpc:crm_contact_delete",
-    "rpc:crm_contact_mark_contacted",
-    "rpc:timesheet_list",
-    "rpc:timesheet_upsert",
-    "rpc:timesheet_submit",
-    "rpc:timesheet_approve",
-    "rpc:timesheet_reject",
-    "rpc:timesheet_delete"
-   ],
+   "rows": [],
    "counts": {
-    "objects": 18,
+    "objects": 0,
     "oneToOne": 0,
     "changed": 0,
     "removed": 0,
-    "missing": 18
+    "missing": 0
    }
   },
   {
@@ -3074,214 +3045,6 @@
      "line": 177,
      "symbol": "SupabaseSurveyAdminRepository.getResults",
      "area": "survey"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_add_comment",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_add_comment(p_body: string, p_task_id: string) → string"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 208,
-     "symbol": "SupabaseAdminTaskRepository.addComment",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_assign",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_assign(p_new_assignee: string, p_task_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 200,
-     "symbol": "SupabaseAdminTaskRepository.assign",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_create",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_create(p_assignee_id?: string, p_category?: string, p_description?: string, p_due_at?: string, p_labels?: string[], p_priority?: string, p_title: string) → string"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 161,
-     "symbol": "SupabaseAdminTaskRepository.create",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_delete",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_delete(p_task_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 220,
-     "symbol": "SupabaseAdminTaskRepository.delete",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_detail",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_detail(p_task_id: string) → { activities: Json assignee_display_name: string assignee_id: string category: string created_at: string created_by: string created_by_display_name: string description: string due_at: string labels: string[] priority:..."
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 151,
-     "symbol": "SupabaseAdminTaskRepository.getDetail",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_list",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_list(p_assignee?: string, p_category?: string, p_due_from?: string, p_due_to?: string, p_label?: string, p_limit?: number, p_offset?: number, p_only_mine?: boolean, p_overdue?: boolean, p_priority?: string, p_status?: string, p_unassigned_only?: boolean) → { assignee_display_name: string assignee_id: string category: string comment_count: number created_at: string created_by: string created_by_display_name: string description: string due_at: string labels: string[] prio..."
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 126,
-     "symbol": "SupabaseAdminTaskRepository.list",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_set_status",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_set_status(p_new_status: string, p_task_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 192,
-     "symbol": "SupabaseAdminTaskRepository.setStatus",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_update",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_update(p_category?: string, p_clear_due?: boolean, p_description?: string, p_due_at?: string, p_labels?: string[], p_priority?: string, p_task_id: string, p_title?: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 178,
-     "symbol": "SupabaseAdminTaskRepository.update",
-     "area": "admin"
     }
    ]
   },
@@ -5965,110 +5728,6 @@
      "line": 120,
      "symbol": "SupabasePaymentsRepository.createStandingOrder",
      "area": "payments"
-    }
-   ]
-  },
-  {
-   "old": "crm_contact_delete",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No CRM in the baseline.",
-   "oldObject": {
-    "signature": [
-     "crm_contact_delete(p_contact_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
-     "line": 108,
-     "symbol": "SupabaseCrmContactsRepository.delete",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "crm_contact_list",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No CRM in the baseline.",
-   "oldObject": {
-    "signature": [
-     "crm_contact_list(p_limit?: number, p_offset?: number, p_query?: string, p_status?: string, p_tag?: string) → { contact_id: string created_at: string email: string last_contacted_at: string name: string notes: string organization: string phone: string role_title: string status: string tags: string[] total_count: number update..."
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
-     "line": 71,
-     "symbol": "SupabaseCrmContactsRepository.list",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "crm_contact_mark_contacted",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No CRM in the baseline.",
-   "oldObject": {
-    "signature": [
-     "crm_contact_mark_contacted(p_contact_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
-     "line": 113,
-     "symbol": "SupabaseCrmContactsRepository.markContacted",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "crm_contact_upsert",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No CRM in the baseline.",
-   "oldObject": {
-    "signature": [
-     "crm_contact_upsert(p_contact_id?: string, p_email?: string, p_name?: string, p_notes?: string, p_organization?: string, p_phone?: string, p_role_title?: string, p_status?: string, p_tags?: string[]) → string"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
-     "line": 89,
-     "symbol": "SupabaseCrmContactsRepository.upsert",
-     "area": "admin"
     }
    ]
   },
@@ -11365,162 +11024,6 @@
      "line": 26,
      "symbol": "submit",
      "area": "fn:public-research-submit"
-    }
-   ]
-  },
-  {
-   "old": "timesheet_approve",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No timesheets in the baseline.",
-   "oldObject": {
-    "signature": [
-     "timesheet_approve(p_entry_id: string, p_note?: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
-     "line": 118,
-     "symbol": "SupabaseTimesheetsRepository.approve",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "timesheet_delete",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No timesheets in the baseline.",
-   "oldObject": {
-    "signature": [
-     "timesheet_delete(p_entry_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
-     "line": 132,
-     "symbol": "SupabaseTimesheetsRepository.delete",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "timesheet_list",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No timesheets in the baseline.",
-   "oldObject": {
-    "signature": [
-     "timesheet_list(p_from?: string, p_limit?: number, p_offset?: number, p_status?: string, p_to?: string, p_user_id?: string) → { approval_note: string approved_at: string approved_by: string approver_name: string created_at: string description: string entry_id: string hours_x100: number project: string status: string submitted_at: string tota..."
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
-     "line": 79,
-     "symbol": "SupabaseTimesheetsRepository.list",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "timesheet_reject",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No timesheets in the baseline.",
-   "oldObject": {
-    "signature": [
-     "timesheet_reject(p_entry_id: string, p_note?: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
-     "line": 125,
-     "symbol": "SupabaseTimesheetsRepository.reject",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "timesheet_submit",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No timesheets in the baseline.",
-   "oldObject": {
-    "signature": [
-     "timesheet_submit(p_entry_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
-     "line": 113,
-     "symbol": "SupabaseTimesheetsRepository.submit",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "timesheet_upsert",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No timesheets in the baseline.",
-   "oldObject": {
-    "signature": [
-     "timesheet_upsert(p_description?: string, p_entry_id?: string, p_hours_x100?: number, p_project?: string, p_work_date?: string) → string"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
-     "line": 98,
-     "symbol": "SupabaseTimesheetsRepository.upsert",
-     "area": "admin"
     }
    ]
   },

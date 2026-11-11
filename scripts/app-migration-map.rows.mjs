@@ -201,15 +201,8 @@ rpc('admin_hierarchy_census', 'changed', 'table:admin_role_grants', 'Counts per 
 rpc('admin_org_application_list', 'changed', 'table:org_applications', 'Direct read (policy `org_applications_select_reviewers`).');
 rpc('admin_org_application_approve', 'changed', 'rpc:admin_org_application_approve', 'New required `p_slug`; returns the organization id.');
 rpc('admin_org_application_reject', 'same', 'rpc:admin_org_application_reject', 'Signature unchanged.');
-for (const name of ['admin_task_list', 'admin_task_detail', 'admin_task_create', 'admin_task_update', 'admin_task_set_status', 'admin_task_assign', 'admin_task_add_comment', 'admin_task_delete']) {
-  rpc(name, 'missing', null, 'No internal task tracker in the baseline.', { m: 'M19' });
-}
-for (const name of ['crm_contact_list', 'crm_contact_upsert', 'crm_contact_delete', 'crm_contact_mark_contacted']) {
-  rpc(name, 'missing', null, 'No CRM in the baseline.', { m: 'M19' });
-}
-for (const name of ['timesheet_list', 'timesheet_upsert', 'timesheet_submit', 'timesheet_approve', 'timesheet_reject', 'timesheet_delete']) {
-  rpc(name, 'missing', null, 'No timesheets in the baseline.', { m: 'M19' });
-}
+// Admin tasks, CRM and timesheets (old M19): the baseline has none of them and the adapters make
+// no call (package L6, `notes`).
 table('user_account', 'same', 'table:user_account', 'Staff read the account row of every member (`user_account_select_staff`): status, sanction state.');
 table('admin_role_grants', 'changed', 'table:admin_role_grants', '`grant_id` → `id`; read-only for clients. mock-login\'s insert goes away with the function.');
 
@@ -331,7 +324,6 @@ export const missing = [
   { id: 'M12', title: 'Knowledge topic graph (topics, aliases, follows, proposals, review)', usedBy: 'Knowledge world topic picker, follow, proposal and admin review (SupabaseKnowledgeTopicRepository)', spec: 'FR-KNOW-001, FR-KNOW-002', launch: 'no (knowledge is a portal at launch)', action: 'defer', recommendation: 'Keep the knowledge world behind `world_knowledge_enabled`. When it opens: design §8 maps `knowledge_topics` → `topics`, `topic_aliases`, `topic_follows`, but no module creates them. Add them to `70_worlds` (knowledge), or launch knowledge with item subcategories only and defer.' },
   { id: 'M16', title: 'Free feedback form and its admin list', usedBy: 'Settings → feedback (SupabaseSurveyRepository), admin feedback dashboard (admin_user_feedback_list)', spec: 'FR-SETTINGS-017, FR-ADMIN-021', launch: 'no (ships with the surveys and feedback hub)', action: 'defer', recommendation: 'Hide the feedback form with the surveys hub; the insert sits inside the survey prompt check today and must fail silently. Later: table `user_feedback` in `90_research` (insert own, select super admin).' },
   { id: 'M17', title: 'Survey statistics for admins (overview, results, PMF report)', usedBy: 'Admin survey dashboard (SupabaseSurveyAdminRepository)', spec: 'FR-ADMIN-021', launch: 'no', action: 'defer', recommendation: 'Hide the admin survey dashboard behind a flag. When it opens no new object is needed at first: the super admin can read `survey_answers` (policy `survey_answers_select_super_admin`); aggregate on the device at launch volumes, and add an aggregate function to `90_research` when answers grow.' },
-  { id: 'M19', title: 'Back-office tools: tasks, CRM, timesheets', usedBy: 'Admin portal (SupabaseAdminTaskRepository, SupabaseCrmContactsRepository, SupabaseTimesheetsRepository) — 18 RPCs', spec: 'tasks: FR-ADMIN-018; CRM: roadmap phase 3; timesheets: not in spec', launch: 'no', action: 'defer', recommendation: 'Internal tools, not member data: hide the three admin sections behind a flag and decide separately whether they belong in this database at all.' },
   { id: 'M20', title: 'KC support channels', usedBy: 'Donations → support KC card (SupabaseKcSupportChannelsRepository)', spec: 'FR-DONATE-010, FR-DONATE-011; launch plan A11 (only if the money world is on)', launch: 'no (money is a portal at launch)', action: 'defer', recommendation: 'The support card must render nothing when the call fails (today it throws: catch in the adapter). Later: a small reference table in `85_billing` (channel, label, url, payee phone; select for members), or ship the channels in app configuration.' },
   { id: 'M21', title: 'Organization finance summaries (ledger summary, donors summary)', usedBy: 'Org finance overview and donors screens (SupabaseFinanceLedgerRepository.summary, SupabaseFinanceDonorsRepository)', spec: 'FR-FIN-014, FR-FIN-017', launch: 'no', action: 'defer', recommendation: 'Org finance stays behind its flag. Later: two functions in `85_billing/100_org_finance_rpcs.sql` over the ledger, guarded like `finance_ledger_list`.' },
   { id: 'M22', title: 'WhatsApp bot, linking and admin console', usedBy: 'Three Edge Functions (webhook, intake worker, sender), mobile link screen, admin WhatsApp console — 32 RPCs and one table', spec: 'design Q4 (PM): not in the launch baseline', launch: 'no', action: 'defer', recommendation: 'Do not deploy the three functions; hide the link screen and the admin console behind a flag until the `integrations` module lands.' },
@@ -466,9 +458,9 @@ export const packages = [
   { id: 'L6', title: 'Back-office tools: tasks, CRM, timesheets', launch: 'later', parallelWith: ['L1', 'L2', 'L3', 'L4', 'L5', 'L7'],
     select: (row) => /^(admin_task_|crm_|timesheet_)/.test(row.old),
     files: ['admin/SupabaseAdminTaskRepository.ts', 'admin/SupabaseCrmContactsRepository.ts', 'admin/SupabaseTimesheetsRepository.ts', 'apps/mobile: admin tasks, CRM, timesheets screens'],
-    work: 'Nothing to migrate to: the baseline has none of it (M19). Decide first whether these tools belong in this database.',
-    tests: ['—'],
-    degrade: 'The three admin sections are hidden behind a flag; their repositories are not constructed.',
+    work: 'Done: nothing to migrate to (the baseline has no task tracker, CRM or timesheets, old M19). The three adapters make no call and reject with `BackendUnavailableError`; whether these internal tools belong in this database is still an open product decision.',
+    tests: ['vitest: parkedBackOffice, parkedAdminSections'],
+    degrade: 'Parked behind `BACK_OFFICE_TOOLS_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts): the tasks nav entry and dashboard card are hidden, and the tasks, CRM and timesheets routes render the not-available notice.',
     risks: 'Product decision, not engineering.' },
   { id: 'L7', title: 'WhatsApp bot, linking, admin console', launch: 'later', parallelWith: ['L1', 'L2', 'L3', 'L4', 'L5', 'L6'],
     select: (row) => /^(api_whatsapp|api_bot|whatsapp_)/.test(row.old),
@@ -507,6 +499,7 @@ export const edgeFunctions = [
 // ═════════════════════════════ Rules that hold across the whole map
 export const notes = [
   'Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): the blocked-users list (M01, the screen shows its empty state; unblock from a profile is not reachable because `users_hide_blocked` hides it), follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).',
+  'Internal back-office tools the baseline does not provide and whose adapters therefore make no call (they report `BackendUnavailableError`; the sections are parked behind `BACK_OFFICE_TOOLS_AVAILABLE`): the admin task tracker (FR-ADMIN-018), the CRM contacts (roadmap phase 3) and the timesheets (not in the spec), formerly M19. Whether they belong in this database is a product decision.',
   'Errors: every baseline RPC raises `P0001` with a stable snake_case message (`unauthenticated` uses `42501`). Map on `error.message`, never on a SQLSTATE or on Hebrew text. Codes marked † in the tables are not referenced anywhere in the app today and need a user-visible mapping.',
   'Paging: no OFFSET anywhere. Lists take the `next_cursor` JSON of the last row (cards) or explicit `p_before_*` / `p_after_*` values; application ports that expose `offset` change to an opaque cursor.',
   'Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.',

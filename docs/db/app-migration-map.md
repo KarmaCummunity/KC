@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 225 | 97 | 20 | 46 | 1 | 61 |
+| RPCs | 207 | 97 | 20 | 46 | 1 | 43 |
 | Tables and views | 57 | 37 | 0 | 16 | 0 | 4 |
 | Storage buckets | 4 | 3 | 0 | 1 | 0 | 0 |
 | Realtime channels | 6 | 6 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 3 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | 295 | 146 | 20 | 63 | 1 | 65 |
+| **Total** | 277 | 146 | 20 | 63 | 1 | 47 |
 
 ### Launch scope
 
@@ -23,7 +23,7 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 | --- | --- | --- | --- | --- | --- | --- |
 | core | 104 | 86 | 1 | 17 | 0 | 0 |
 | wedge | 54 | 33 | 15 | 6 | 0 | 0 |
-| later | 137 | 27 | 4 | 40 | 1 | 65 |
+| later | 119 | 27 | 4 | 40 | 1 | 47 |
 | **Launch-critical (core + wedge)** | 158 | 119 | 16 | 23 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
@@ -31,6 +31,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 ## 2. Rules that hold everywhere
 
 - Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): the blocked-users list (M01, the screen shows its empty state; unblock from a profile is not reachable because `users_hide_blocked` hides it), follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).
+- Internal back-office tools the baseline does not provide and whose adapters therefore make no call (they report `BackendUnavailableError`; the sections are parked behind `BACK_OFFICE_TOOLS_AVAILABLE`): the admin task tracker (FR-ADMIN-018), the CRM contacts (roadmap phase 3) and the timesheets (not in the spec), formerly M19. Whether they belong in this database is a product decision.
 - Errors: every baseline RPC raises `P0001` with a stable snake_case message (`unauthenticated` uses `42501`). Map on `error.message`, never on a SQLSTATE or on Hebrew text. Codes marked † in the tables are not referenced anywhere in the app today and need a user-visible mapping.
 - Paging: no OFFSET anywhere. Lists take the `next_cursor` JSON of the last row (cards) or explicit `p_before_*` / `p_after_*` values; application ports that expose `offset` change to an opaque cursor.
 - Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.
@@ -43,7 +44,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Module | Call sites | 1:1 | Logic changes | Removed | MISSING |
 | --- | --- | --- | --- | --- | --- |
-| `infrastructure-supabase/src/admin/` | 54 | 6 | 18 | 0 | 30 |
+| `infrastructure-supabase/src/admin/` | 36 | 6 | 18 | 0 | 12 |
 | `infrastructure-supabase/src/auth/` | 2 | 2 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/blocks/` | 3 | 3 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/challenges/` | 9 | 6 | 3 | 0 | 0 |
@@ -91,7 +92,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/admin/`
 
-54 call sites: 6 map 1:1, 18 need logic changes, 0 removed, 30 MISSING.
+36 call sites: 6 map 1:1, 18 need logic changes, 0 removed, 12 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -105,14 +106,6 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `admin_org_tree` | later | CHANGED | table `admin_role_grants` | Build the tree on the device from the grants (`manager_grant_id`, `scope_org_id`). |  | medium | SupabaseOrgHierarchyRepository.ts:116 |
 | `admin_revoke_role` | core | 1:1 | `admin_revoke_role(p_grant_id: string) → undefined` | Signature unchanged. | `account_not_active`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:143 |
 | `admin_set_manager` | later | CHANGED | `admin_set_manager(p_grant_id: string, p_manager_grant_id: string) → undefined` | `p_manager_grant_id` is required: a grant can be moved under another grant but not detached. | `account_not_active`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `invalid_manager`, `unauthenticated` | high | SupabaseOrgHierarchyRepository.ts:130 |
-| `admin_task_add_comment` | later | MISSING M19 | — | No internal task tracker in the baseline. |  | high | SupabaseAdminTaskRepository.ts:208 |
-| `admin_task_assign` | later | MISSING M19 | — | No internal task tracker in the baseline. |  | high | SupabaseAdminTaskRepository.ts:200 |
-| `admin_task_create` | later | MISSING M19 | — | No internal task tracker in the baseline. |  | high | SupabaseAdminTaskRepository.ts:161 |
-| `admin_task_delete` | later | MISSING M19 | — | No internal task tracker in the baseline. |  | high | SupabaseAdminTaskRepository.ts:220 |
-| `admin_task_detail` | later | MISSING M19 | — | No internal task tracker in the baseline. |  | high | SupabaseAdminTaskRepository.ts:151 |
-| `admin_task_list` | later | MISSING M19 | — | No internal task tracker in the baseline. |  | high | SupabaseAdminTaskRepository.ts:126 |
-| `admin_task_set_status` | later | MISSING M19 | — | No internal task tracker in the baseline. |  | high | SupabaseAdminTaskRepository.ts:192 |
-| `admin_task_update` | later | MISSING M19 | — | No internal task tracker in the baseline. |  | high | SupabaseAdminTaskRepository.ts:178 |
 | `api_whatsapp_admin_block_user` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | SupabaseWhatsAppAdminRepository.ts:176 |
 | `api_whatsapp_admin_get_channel` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | SupabaseWhatsAppAdminRepository.ts:49 |
 | `api_whatsapp_admin_list_consent` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | SupabaseWhatsAppAdminRepository.ts:82 |
@@ -123,10 +116,6 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `api_whatsapp_admin_overview` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | SupabaseWhatsAppAdminRepository.ts:63 |
 | `api_whatsapp_admin_resend` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | SupabaseWhatsAppAdminRepository.ts:170 |
 | `api_whatsapp_admin_set_channel_enabled` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | SupabaseWhatsAppAdminRepository.ts:55 |
-| `crm_contact_delete` | later | MISSING M19 | — | No CRM in the baseline. |  | high | SupabaseCrmContactsRepository.ts:108 |
-| `crm_contact_list` | later | MISSING M19 | — | No CRM in the baseline. |  | high | SupabaseCrmContactsRepository.ts:71 |
-| `crm_contact_mark_contacted` | later | MISSING M19 | — | No CRM in the baseline. |  | high | SupabaseCrmContactsRepository.ts:113 |
-| `crm_contact_upsert` | later | MISSING M19 | — | No CRM in the baseline. |  | high | SupabaseCrmContactsRepository.ts:89 |
 | `finance_account_upsert` | later | CHANGED | `finance_account_upsert(p_account_id?: string, p_is_active?: boolean, p_kind?: string, p_last4?: string, p_name?: string, p_opening_balance_agorot?: number, p_opening_balance_at?: string, p_org_id: string) → string` | New required `p_org_id`; `p_opening_balance_cents` → `_agorot`; `p_sort_order` is gone. | `account_not_active`, `account_not_found`, `forbidden`, `unauthenticated` | high | SupabaseFinanceAccountsRepository.ts:52 |
 | `finance_accounts_list` | later | CHANGED | `finance_accounts_list(p_org_id: string) → { balance_agorot: number id: string is_active: boolean kind: string last4: string name: string opening_balance_agorot: number opening_balance_at: string sort_order: number }[]` | New required `p_org_id`; `*_cents` → `*_agorot`; `account_id` → `id`; no `entry_count`. | `account_not_active`, `forbidden`, `unauthenticated` | high | SupabaseFinanceAccountsRepository.ts:45 |
 | `finance_donors_summary` | later | MISSING M21 | — | No donors summary function. |  | high | SupabaseFinanceDonorsRepository.ts:31 |
@@ -138,12 +127,6 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `finance_transparency_settings_set` | later | CHANGED | `finance_transparency_settings_set(p_org_id: string, p_settings: Json) → undefined` | New required `p_org_id`; returns void. | `account_not_active`, `forbidden`, `invalid_settings`, `unauthenticated` | high | SupabaseOrgTransparencyRepository.ts:85 |
 | `get_my_admin_roles` | core | 1:1 | `get_my_admin_roles() → string[]` | Signature unchanged. |  | high | fetchMyAdminRoles.ts:15 |
 | `rpc_org_transparency` | later | 1:1 | `rpc_org_transparency(p_slug?: string) → Json` | Signature unchanged; totals only, in agorot. | `unauthenticated` | medium | SupabaseOrgTransparencyRepository.ts:69 |
-| `timesheet_approve` | later | MISSING M19 | — | No timesheets in the baseline. |  | high | SupabaseTimesheetsRepository.ts:118 |
-| `timesheet_delete` | later | MISSING M19 | — | No timesheets in the baseline. |  | high | SupabaseTimesheetsRepository.ts:132 |
-| `timesheet_list` | later | MISSING M19 | — | No timesheets in the baseline. |  | high | SupabaseTimesheetsRepository.ts:79 |
-| `timesheet_reject` | later | MISSING M19 | — | No timesheets in the baseline. |  | high | SupabaseTimesheetsRepository.ts:125 |
-| `timesheet_submit` | later | MISSING M19 | — | No timesheets in the baseline. |  | high | SupabaseTimesheetsRepository.ts:113 |
-| `timesheet_upsert` | later | MISSING M19 | — | No timesheets in the baseline. |  | high | SupabaseTimesheetsRepository.ts:98 |
 | `admin_role_grants` (table) | core | CHANGED | table `admin_role_grants` | `grant_id` → `id`; read-only for clients. mock-login's insert goes away with the function. |  | high | SupabaseAdminRoleRepository.ts:100 |
 | `posts` (table) | core | CHANGED | table `posts`<br>`post_cards(p_post_ids: string[]) → post_card[]`<br>`post_detail(p_post_id: string) → Json`<br>`create_post_with_details(p_details: Json, p_post: Json) → string`<br>`delete_post(p_post_id: string) → undefined` | Columns: `post_id` → `id`, `type` → `direction`, `category` / `category_id` → `item_subcategory_id`, `city` → `city_id`, `urgency` → `urgency_level`, `street` / `street_number` → `post_private_locations`, `availability_status` / `moderation_status` / `feed_hidden` → `status`, `status_before_admin_removal` → `status_before_removal`; `delete_after` / `reopen_count` → `post_closures`; `estimated_value`, `item_condition`, `external_body_id`, listing columns: gone. Reads of lists should use the card RPCs (`post_cards`, `feed_page`, `profile_posts_page`, `post_detail`). Insert is direct (column grants; status `draft` or `open`), rides / stays / events / food go through `create_post_with_details`. Update is direct for content columns only; status never (owner RPCs). Delete: direct only for a draft, otherwise `delete_post`. | `account_not_active`, `post_details_not_supported`, `unauthenticated`, `listing_wrong_status`, `post_not_found` | high | SupabaseAdminContentRepository.ts:147 |
 | `users` (table) | core | CHANGED | table `users`<br>table `user_private`<br>table `user_account`<br>table `user_stats` | Split in four. Public profile stays in `users` (`user_id` → `id`, `city` → `city_id`, `city_name` gone: join `cities`). Contact phone, date of birth, address lines, notification preferences, dismiss flags, `basic_info_skipped` → `user_private` (own row). Account status, onboarding state, deletion dates, verification → `user_account` (read-only; moves through RPCs). Counters → `user_stats` (read-only). `is_super_admin` → `get_my_admin_roles()`. Client updates on `users` are limited to display_name, biography, avatar_url, city_id, preferred_language; `privacy_mode` moves through `set_privacy_mode`. mock-login's upsert goes away with the function. |  | high | SupabaseAdminContentRepository.ts:98, SupabaseAdminContentRepository.ts:114, SupabaseAdminRoleRepository.ts:120 |
@@ -757,7 +740,6 @@ Every capability the application or an Edge Function uses today that has no equi
 | M12 | no | later | Knowledge topic graph (topics, aliases, follows, proposals, review) | `propose_knowledge_topic`, `resolve_knowledge_topics`, `review_knowledge_topic`, `update_my_proposed_knowledge_topic`, `knowledge_topic_follows`, `knowledge_topics` | Knowledge world topic picker, follow, proposal and admin review (SupabaseKnowledgeTopicRepository) | FR-KNOW-001, FR-KNOW-002 | no (knowledge is a portal at launch) | defer | Keep the knowledge world behind `world_knowledge_enabled`. When it opens: design §8 maps `knowledge_topics` → `topics`, `topic_aliases`, `topic_follows`, but no module creates them. Add them to `70_worlds` (knowledge), or launch knowledge with item subcategories only and defer. |
 | M16 | no | later | Free feedback form and its admin list | `admin_user_feedback_list`, `user_feedback` | Settings → feedback (SupabaseSurveyRepository), admin feedback dashboard (admin_user_feedback_list) | FR-SETTINGS-017, FR-ADMIN-021 | no (ships with the surveys and feedback hub) | defer | Hide the feedback form with the surveys hub; the insert sits inside the survey prompt check today and must fail silently. Later: table `user_feedback` in `90_research` (insert own, select super admin). |
 | M17 | no | later | Survey statistics for admins (overview, results, PMF report) | `admin_pmf_survey_report`, `admin_survey_overview`, `admin_survey_results` | Admin survey dashboard (SupabaseSurveyAdminRepository) | FR-ADMIN-021 | no | defer | Hide the admin survey dashboard behind a flag. When it opens no new object is needed at first: the super admin can read `survey_answers` (policy `survey_answers_select_super_admin`); aggregate on the device at launch volumes, and add an aggregate function to `90_research` when answers grow. |
-| M19 | no | later | Back-office tools: tasks, CRM, timesheets | `admin_task_add_comment`, `admin_task_assign`, `admin_task_create`, `admin_task_delete`, `admin_task_detail`, `admin_task_list`, `admin_task_set_status`, `admin_task_update` … (18) | Admin portal (SupabaseAdminTaskRepository, SupabaseCrmContactsRepository, SupabaseTimesheetsRepository) — 18 RPCs | tasks: FR-ADMIN-018; CRM: roadmap phase 3; timesheets: not in spec | no | defer | Internal tools, not member data: hide the three admin sections behind a flag and decide separately whether they belong in this database at all. |
 | M20 | no | later | KC support channels | `list_kc_support_channels` | Donations → support KC card (SupabaseKcSupportChannelsRepository) | FR-DONATE-010, FR-DONATE-011; launch plan A11 (only if the money world is on) | no (money is a portal at launch) | defer | The support card must render nothing when the call fails (today it throws: catch in the adapter). Later: a small reference table in `85_billing` (channel, label, url, payee phone; select for members), or ship the channels in app configuration. |
 | M21 | no | later | Organization finance summaries (ledger summary, donors summary) | `finance_donors_summary`, `finance_ledger_summary` | Org finance overview and donors screens (SupabaseFinanceLedgerRepository.summary, SupabaseFinanceDonorsRepository) | FR-FIN-014, FR-FIN-017 | no | defer | Org finance stays behind its flag. Later: two functions in `85_billing/100_org_finance_rpcs.sql` over the ledger, guarded like `finance_ledger_list`. |
 | M22 | no | later | WhatsApp bot, linking and admin console | `api_bot_apply_extraction`, `api_bot_find_matches`, `api_bot_listing_cards`, `api_bot_my_listings`, `api_bot_my_matches`, `api_bot_open_session`, `api_bot_publish_listing`, `api_bot_search_listings` … (33) | Three Edge Functions (webhook, intake worker, sender), mobile link screen, admin WhatsApp console — 32 RPCs and one table | design Q4 (PM): not in the launch baseline | no | defer | Do not deploy the three functions; hide the link screen and the admin console behind a flag until the `integrations` module lands. |
@@ -780,7 +762,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | L3 — Challenges | later | 9 | 6 | 3 | 0 | 0 | L1, L2, L4, L5, L6, L7 |
 | L4 — Money: donations to organizations, standing orders, org finance, org onboarding | later | 32 | 8 | 20 | 1 | 3 | L1, L2, L3, L5, L6, L7 |
 | L5 — Surveys, feedback, public research | later | 14 | 6 | 3 | 0 | 5 | L1, L2, L3, L4, L6, L7 |
-| L6 — Back-office tools: tasks, CRM, timesheets | later | 18 | 0 | 0 | 0 | 18 | L1, L2, L3, L4, L5, L7 |
+| L6 — Back-office tools: tasks, CRM, timesheets | later | 0 | 0 | 0 | 0 | 0 | L1, L2, L3, L4, L5, L7 |
 | L7 — WhatsApp bot, linking, admin console | later | 33 | 0 | 0 | 0 | 33 | L1, L2, L3, L4, L5, L6 |
 
 ### P0 — Contract switch and the degrade rule (first, alone)
@@ -882,9 +864,9 @@ In launch order: after package *n* the app is shippable with everything up to *n
 ### L6 — Back-office tools: tasks, CRM, timesheets
 
 - **Owns:** `admin/SupabaseAdminTaskRepository.ts`, `admin/SupabaseCrmContactsRepository.ts`, `admin/SupabaseTimesheetsRepository.ts`, `apps/mobile: admin tasks, CRM, timesheets screens`
-- **Work:** Nothing to migrate to: the baseline has none of it (M19). Decide first whether these tools belong in this database.
-- **Must pass:** —
-- **If reached before it is migrated:** The three admin sections are hidden behind a flag; their repositories are not constructed.
+- **Work:** Done: nothing to migrate to (the baseline has no task tracker, CRM or timesheets, old M19). The three adapters make no call and reject with `BackendUnavailableError`; whether these internal tools belong in this database is still an open product decision.
+- **Must pass:** vitest: parkedBackOffice, parkedAdminSections
+- **If reached before it is migrated:** Parked behind `BACK_OFFICE_TOOLS_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts): the tasks nav entry and dashboard card are hidden, and the tasks, CRM and timesheets routes render the not-available notice.
 - **Risks:** Product decision, not engineering.
 
 ### L7 — WhatsApp bot, linking, admin console
