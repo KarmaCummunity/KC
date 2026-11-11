@@ -47,7 +47,7 @@ describe('housing and time world screens', () => {
   it('housing: an active world shows its feed with handoffs and listings', () => {
     render(<HousingWorldScreen />);
     expect(screen.getByTestId('world-feed-housing')).toBeTruthy();
-    expect(mocks.hubProps.at(-1)).toMatchObject({ worldSlug: 'housing', icon: 'home-outline', linksCategory: 'housing' });
+    expect(mocks.hubProps.at(-1)).toMatchObject({ worldSlug: 'housing', icon: 'home-outline' });
     expect(subScreenPaths()).toEqual([
       '/(tabs)/donations/housing/handoffs',
       '/(tabs)/donations/marketplace/my-listings',
@@ -60,7 +60,7 @@ describe('housing and time world screens', () => {
   it('time: an active world shows its feed, the organisations section and its own screens', () => {
     render(<TimeWorldScreen />);
     expect(screen.getByTestId('world-feed-time')).toBeTruthy();
-    expect(mocks.hubProps.at(-1)).toMatchObject({ worldSlug: 'time', icon: 'time-outline', linksCategory: 'time' });
+    expect(mocks.hubProps.at(-1)).toMatchObject({ worldSlug: 'time', icon: 'time-outline' });
     expect(mocks.hubProps.at(-1)?.headerExtra).toBeTruthy();
     expect(subScreenPaths()).toEqual([
       '/(tabs)/donations/time/handoffs',

@@ -1,7 +1,7 @@
 // Mapped to spec: FR-FEED-020 AC2 — the top of a giving world's feed: a one-line intro and
 // optional extra content. The world's own screens are a menu under the world title in the TopBar (`useWorldHeader`) and the
 // search / filters sit in the world's filter sheet, so the feed is the first thing seen, as on
-// the main feed. The curated links list sits under the feed (`WorldLinksSection`).
+// the main feed. A short list of the world's links sits under the feed (`WorldLinksPreview`).
 // There are no request / offer buttons: the "+" tab opens the form on this world (D100).
 import React from 'react';
 import { View } from 'react-native';
