@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  eventDetailColumns, foodDetailColumns, freeDetails, israelTimeOfDay, rideCityId, rideDetailColumns, rideDetailsFromRow,
+  eventDetailColumns, foodDetailColumns, freeDetails, rideCityId, rideDetailColumns, rideDetailsFromRow,
 } from '../worldDetails';
 
 const ROUTE = {
@@ -77,12 +77,5 @@ describe('rideDetailsFromRow', () => {
     });
     expect(details).not.toHaveProperty('dest_city_id');
     expect(details['meeting_points']).toEqual([{ kind: 'city', id: 'IL-002', label: 'IL-002', lat: 1, lng: 2, city_id: 'IL-002' }]);
-  });
-});
-
-describe('israelTimeOfDay', () => {
-  it('states the Israel-local time of an instant', () => {
-    expect(israelTimeOfDay('2026-01-15T05:30:00Z')).toBe('07:30');
-    expect(israelTimeOfDay('2026-07-15T05:30:00Z')).toBe('08:30');
   });
 });

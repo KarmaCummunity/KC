@@ -12,3 +12,4 @@
 0001_baseline.sql
 0002_org_entitlements.sql
 0003_post_seat_counts.sql
+0004_ride_series_schedule.sql

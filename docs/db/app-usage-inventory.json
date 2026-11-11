@@ -20,11 +20,11 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 246,
-   "distinct": 224
+   "callSites": 247,
+   "distinct": 225
   },
   "table": {
-   "callSites": 166,
+   "callSites": 165,
    "distinct": 56
   }
  },
@@ -1860,21 +1860,18 @@
    "name": "post_ride_details"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 70,
+   "line": 68,
    "area": "marketplace",
    "symbol": "seriesMarker",
    "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "post_ride_details"
+   "name": "ride_occurrence_schedules"
   },
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 79,
+   "line": 76,
    "area": "marketplace",
    "symbol": "loadEventDetails",
    "via": "literal",
@@ -1886,7 +1883,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 80,
+   "line": 77,
    "area": "marketplace",
    "symbol": "loadEventDetails",
    "via": "literal",
@@ -1898,7 +1895,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 98,
+   "line": 95,
    "area": "marketplace",
    "symbol": "loadFoodDetails",
    "via": "literal",
@@ -1910,7 +1907,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 107,
+   "line": 104,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
@@ -1919,7 +1916,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 114,
+   "line": 111,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
@@ -1931,7 +1928,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 115,
+   "line": 112,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
