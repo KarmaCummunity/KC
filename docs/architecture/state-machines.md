@@ -101,7 +101,7 @@ Workers that move a machine without a user action. A row names the trigger; the 
 | Feed cache | pgmq `feed_cache_refresh`, cron every 5 minutes (`0348`); `feed_mv_refresh_state.dirty`, cron every 2 minutes (`0346`) | message visible → invisible (30 s) → deleted; dirty → clean | no retry limit and no dead-letter queue |
 | WhatsApp | `whatsapp-sender` over pgmq `whatsapp_outbound` (`0306`); `whatsapp-webhook` claims (`0431`) | outbound queued → sending → sent / failed / skipped_*; inbound claim inserted, released on failure, pruned after 7 days | the sender has no schedule in the repo |
 
-Edge functions with no schedule or caller in the repo: `embed-worker`, `match-rerank`, `whatsapp-sender`, `subscriptions-charger`, `rotate-research-salt` (no schedule); `whatsapp-intake-worker`, `receipts-issuer`, `backfill-image-thumbs` (no caller; the last is run by hand). Their queues drain only if a schedule exists outside the repo.
+Edge functions with no schedule or caller in the repo: `whatsapp-sender` (no schedule); `whatsapp-intake-worker`, `backfill-image-thumbs` (no caller; the last is run by hand). Their queues drain only if a schedule exists outside the repo. On the baseline, `embed-worker`, `match-rerank`, `subscriptions-charger`, `rotate-research-salt` and `purge-deleted-accounts` are started by the job registry (`supabase/schemas/95_platform/900_job_registry.sql`); `receipts-issuer` was removed (D77: KC never issues receipts).
 
 ### 3.5 Client-side machines
 
