@@ -158,10 +158,10 @@ const timesheetsRepo = new SupabaseTimesheetsRepository();
 const crmContactsRepo = new SupabaseCrmContactsRepository();
 const orgApplicationsRepo = new SupabaseOrgApplicationsRepository(legacySupabase);
 const reportsRepo = new SupabaseReportsRepository(supabase);
-const surveyRepo = new SupabaseSurveyRepository(legacySupabase);
-const surveyAdminRepo = new SupabaseSurveyAdminRepository(legacySupabase);
+const surveyRepo = new SupabaseSurveyRepository(supabase);
+const surveyAdminRepo = new SupabaseSurveyAdminRepository(supabase);
 const userActivityRepo = new SupabaseUserActivityRepository(supabase);
-const publicResearchRepo = new SupabasePublicResearchRepository(legacySupabase);
+const publicResearchRepo = new SupabasePublicResearchRepository(supabase);
 
 const hideChatFromInbox = new HideChatFromInboxUseCase(chatRepo);
 const getMyAdminRoles = new GetMyAdminRolesUseCase(adminRoleRepo);

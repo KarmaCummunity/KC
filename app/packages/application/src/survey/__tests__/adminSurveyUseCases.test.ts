@@ -58,13 +58,14 @@ describe('admin survey use cases', () => {
   it('ListUserFeedbackUseCase applies default pagination', async () => {
     const repo = makeRepo();
     await new ListUserFeedbackUseCase(repo).execute();
-    expect(repo.listFeedback).toHaveBeenCalledWith(50, 0);
+    expect(repo.listFeedback).toHaveBeenCalledWith(50, null);
   });
 
   it('ListUserFeedbackUseCase forwards explicit pagination', async () => {
     const repo = makeRepo();
-    await new ListUserFeedbackUseCase(repo).execute({ limit: 10, offset: 20 });
-    expect(repo.listFeedback).toHaveBeenCalledWith(10, 20);
+    const after = { createdAt: '2026-11-01T00:00:00Z', id: 'f9' };
+    await new ListUserFeedbackUseCase(repo).execute({ limit: 10, after });
+    expect(repo.listFeedback).toHaveBeenCalledWith(10, after);
   });
 
   it('GetPmfSurveyReportUseCase reads the seeded survey by default and summarizes it', async () => {

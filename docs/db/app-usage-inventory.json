@@ -20,12 +20,12 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 216,
-   "distinct": 194
+   "callSites": 214,
+   "distinct": 192
   },
   "table": {
-   "callSites": 164,
-   "distinct": 57
+   "callSites": 169,
+   "distinct": 60
   }
  },
  "entries": [
@@ -2682,7 +2682,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/research/SupabasePublicResearchRepository.ts",
-   "line": 94,
+   "line": 91,
    "area": "research",
    "symbol": "SupabasePublicResearchRepository.loadBundle",
    "via": "literal",
@@ -2691,10 +2691,10 @@
   {
    "kind": "edge_function",
    "file": "app/packages/infrastructure-supabase/src/research/SupabasePublicResearchRepository.ts",
-   "line": 119,
+   "line": 108,
    "area": "research",
    "symbol": "SupabasePublicResearchRepository.submit",
-   "via": "literal",
+   "via": "const",
    "name": "public-research-submit"
   },
   {
@@ -3093,7 +3093,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyAdminRepository.ts",
-   "line": 170,
+   "line": 185,
    "area": "survey",
    "symbol": "SupabaseSurveyAdminRepository.listOverview",
    "via": "literal",
@@ -3102,7 +3102,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyAdminRepository.ts",
-   "line": 177,
+   "line": 191,
    "area": "survey",
    "symbol": "SupabaseSurveyAdminRepository.getResults",
    "via": "literal",
@@ -3111,7 +3111,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyAdminRepository.ts",
-   "line": 185,
+   "line": 198,
    "area": "survey",
    "symbol": "SupabaseSurveyAdminRepository.getPmfReport",
    "via": "literal",
@@ -3120,7 +3120,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyAdminRepository.ts",
-   "line": 191,
+   "line": 208,
    "area": "survey",
    "symbol": "SupabaseSurveyAdminRepository.listFeedback",
    "via": "literal",
@@ -3129,25 +3129,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyRepository.ts",
-   "line": 142,
-   "area": "survey",
-   "symbol": "SupabaseSurveyRepository.listActive",
-   "via": "literal",
-   "name": "list_active_surveys"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyRepository.ts",
-   "line": 149,
-   "area": "survey",
-   "symbol": "SupabaseSurveyRepository.getBundle",
-   "via": "literal",
-   "name": "get_survey_bundle"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyRepository.ts",
-   "line": 163,
+   "line": 67,
    "area": "survey",
    "symbol": "SupabaseSurveyRepository.upsertAnswers",
    "via": "literal",
@@ -3156,7 +3138,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyRepository.ts",
-   "line": 174,
+   "line": 73,
    "area": "survey",
    "symbol": "SupabaseSurveyRepository.checkPromptEligibility",
    "via": "literal",
@@ -3165,9 +3147,9 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyRepository.ts",
-   "line": 188,
+   "line": 84,
    "area": "survey",
-   "symbol": "SupabaseSurveyRepository.checkPromptEligibility",
+   "symbol": "SupabaseSurveyRepository.raw",
    "via": "literal",
    "ops": [
     "insert"
@@ -3182,6 +3164,66 @@
    "symbol": "SupabaseUserActivityRepository.recordActiveDay",
    "via": "literal",
    "name": "record_active_day"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+   "line": 77,
+   "area": "survey",
+   "symbol": "listActiveSurveys",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "surveys"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+   "line": 83,
+   "area": "survey",
+   "symbol": "listActiveSurveys",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "survey_answers"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+   "line": 100,
+   "area": "survey",
+   "symbol": "loadSurveyBundle",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "surveys"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+   "line": 109,
+   "area": "survey",
+   "symbol": "loadSurveyBundle",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "survey_questions"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+   "line": 115,
+   "area": "survey",
+   "symbol": "ids",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "survey_answers"
   },
   {
    "kind": "edge_function",

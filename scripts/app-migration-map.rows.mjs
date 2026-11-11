@@ -175,14 +175,15 @@ table('karma_ledger', 'changed', 'table:karma_ledger', '`ledger_id` → `id`, `p
 rpc('my_karma_points', 'same', 'rpc:my_karma_points', 'The caller\'s own karma total (the `user_stats.karma_points` column is not readable by clients).');
 rpc('check_survey_prompt_eligibility', 'same', 'rpc:check_survey_prompt_eligibility', 'Signature unchanged.');
 rpc('upsert_survey_answers', 'same', 'rpc:upsert_survey_answers', 'Signature unchanged.');
-rpc('list_active_surveys', 'changed', 'table:surveys', 'Direct read of active surveys (policy `surveys_select_published`).', { c: M });
-rpc('get_survey_bundle', 'changed', ['table:surveys', 'table:survey_questions', 'table:survey_answers'], 'Survey, the questions of its current version (`survey_versions` → `survey_questions`) and the caller\'s answers: three direct reads.', { c: M });
-table('user_feedback', 'missing', null, 'No free-feedback table.', { m: 'M16' });
+table('surveys', 'same', 'table:surveys', 'Replaces `list_active_surveys` and the survey part of `get_survey_bundle`: active, published surveys (`is_active`, `current_version > 0`, filtered by the app because the super admin also reads retired ones), with `survey_versions` (and their question ids) embedded; completion is computed on the device from the caller\'s answers.', { c: M });
+table('survey_questions', 'same', 'table:survey_questions', 'The questions of the current version (`survey_version_id`), in `sort_order`; replaces the question part of `get_survey_bundle`.', { c: M });
+table('survey_answers', 'same', 'table:survey_answers', 'The caller\'s own answers (filtered on `user_id`: the super admin reads every answer); written only through `upsert_survey_answers`.', { c: M });
+table('user_feedback', 'same', 'table:user_feedback', 'Insert of the caller\'s own feedback (`user_id`, `rating`, `body`); no client select (M16, built in `90_research/040_user_feedback.sql`).');
 for (const name of ['admin_survey_overview', 'admin_survey_results', 'admin_pmf_survey_report']) {
-  rpc(name, 'missing', null, 'No survey statistics function; raw answers are readable by the super admin only.', { m: 'M17' });
+  rpc(name, 'same', `rpc:${name}`, 'Same JSON document; moderator and more senior staff (`require_admin_role(\'moderator\')`). M17, built in `90_research/050_survey_reports.sql`.');
 }
-rpc('admin_user_feedback_list', 'missing', null, 'Depends on the free-feedback table.', { m: 'M16' });
-rpc('get_public_research_questions', 'changed', 'rpc:get_public_research_questions', 'Same signature, but service role only in the baseline (nothing is granted to signed-out callers): the public research page must load its questions through the `public-research-submit` function, not from the device.');
+rpc('admin_user_feedback_list', 'changed', 'rpc:admin_user_feedback_list', 'Offset → keyset `p_cursor` (`{ t, id }` of the last row); returns rows with `next_cursor` (M16, built).');
+rpc('get_public_research_questions', 'same', 'rpc:get_public_research_questions', 'Same signature; granted to signed-out callers, so the public research page reads the questions of an active survey directly (null when the survey is missing or not active).');
 
 // ───────────────────────────── moderation, reports, admin
 rpc('get_my_admin_roles', 'same', 'rpc:get_my_admin_roles', 'Signature unchanged.');
@@ -320,8 +321,6 @@ table('post_ratings', 'same', 'table:post_ratings', 'The rater reads back the ra
 // action: build (add to the baseline) · rls-read (already possible, no new object) · drop · defer (behind a flag)
 export const missing = [
   { id: 'M12', title: 'Knowledge topic graph (topics, aliases, follows, proposals, review)', usedBy: 'Knowledge world topic picker, follow, proposal and admin review (SupabaseKnowledgeTopicRepository)', spec: 'FR-KNOW-001, FR-KNOW-002', launch: 'no (knowledge is a portal at launch)', action: 'defer', recommendation: 'Keep the knowledge world behind `world_knowledge_enabled`. When it opens: design §8 maps `knowledge_topics` → `topics`, `topic_aliases`, `topic_follows`, but no module creates them. Add them to `70_worlds` (knowledge), or launch knowledge with item subcategories only and defer.' },
-  { id: 'M16', title: 'Free feedback form and its admin list', usedBy: 'Settings → feedback (SupabaseSurveyRepository), admin feedback dashboard (admin_user_feedback_list)', spec: 'FR-SETTINGS-017, FR-ADMIN-021', launch: 'no (ships with the surveys and feedback hub)', action: 'defer', recommendation: 'Hide the feedback form with the surveys hub; the insert sits inside the survey prompt check today and must fail silently. Later: table `user_feedback` in `90_research` (insert own, select super admin).' },
-  { id: 'M17', title: 'Survey statistics for admins (overview, results, PMF report)', usedBy: 'Admin survey dashboard (SupabaseSurveyAdminRepository)', spec: 'FR-ADMIN-021', launch: 'no', action: 'defer', recommendation: 'Hide the admin survey dashboard behind a flag. When it opens no new object is needed at first: the super admin can read `survey_answers` (policy `survey_answers_select_super_admin`); aggregate on the device at launch volumes, and add an aggregate function to `90_research` when answers grow.' },
   { id: 'M20', title: 'KC support channels', usedBy: 'Donations → support KC card (SupabaseKcSupportChannelsRepository)', spec: 'FR-DONATE-010, FR-DONATE-011; launch plan A11 (only if the money world is on)', launch: 'no (money is a portal at launch)', action: 'defer', recommendation: 'The support card must render nothing when the call fails (today it throws: catch in the adapter). Later: a small reference table in `85_billing` (channel, label, url, payee phone; select for members), or ship the channels in app configuration.' },
   { id: 'M21', title: 'Organization finance summaries (ledger summary, donors summary)', usedBy: 'Org finance overview and donors screens (SupabaseFinanceLedgerRepository.summary, SupabaseFinanceDonorsRepository)', spec: 'FR-FIN-014, FR-FIN-017', launch: 'no', action: 'defer', recommendation: 'Org finance stays behind its flag. Later: two functions in `85_billing/100_org_finance_rpcs.sql` over the ledger, guarded like `finance_ledger_list`.' },
   { id: 'M22', title: 'WhatsApp bot, linking and admin console', usedBy: 'Three Edge Functions (webhook, intake worker, sender) — 19 RPCs and one table; the mobile link screen and the admin WhatsApp console are parked and make no call', spec: 'design Q4 (PM): not in the launch baseline', launch: 'no', action: 'defer', recommendation: 'Do not deploy the three functions; hide the link screen and the admin console behind a flag until the `integrations` module lands.' },
@@ -435,7 +434,7 @@ export const packages = [
   { id: 'L3', title: 'Challenges', launch: 'later', parallelWith: ['L1', 'L2', 'L4', 'L5', 'L6', 'L7'],
     select: inArea('challenges'),
     files: ['challenges/**', 'apps/mobile: challenge screens, useChallengeLinkedPost'],
-    work: 'Mostly 1:1; keyset list and the `challenge_summary` composite.',
+    work: 'Done: keyset `list_challenges`, the `challenge_summary` composite (which names the post, so `useChallengeLinkedPost` needs no posts query), own reports from `challenge_progress_entries`, and `join_challenge` without the show-on-profile choice (the prompt is removed).',
     tests: ['vitest: challenges suite', 'pgTAP 074'],
     degrade: 'Challenges flag off: the tab is hidden; a challenge post in the feed opens as a plain post.',
     risks: 'Low.' },
@@ -449,9 +448,9 @@ export const packages = [
   { id: 'L5', title: 'Surveys, feedback, public research', launch: 'later', parallelWith: ['L1', 'L2', 'L3', 'L4', 'L6', 'L7'],
     select: (row) => row.launch === 'later' && row.areas.some((a) => ['survey', 'research', 'fn:public-research-submit', 'fn:rotate-research-salt'].includes(a)),
     files: ['survey/** (except survey/SupabaseUserActivityRepository.ts, owned by P1)', 'research/**', 'supabase/functions/{public-research-submit,rotate-research-salt}', 'apps/mobile: surveys and feedback hub, admin survey dashboard, public research page'],
-    work: 'Survey reads become table reads; the public research page loads through its function; the feedback form waits for M16 and the admin dashboard for M17.',
-    tests: ['vitest: survey, research, stats suites', 'pgTAP 079, 090'],
-    degrade: 'Survey prompt: `check_survey_prompt_eligibility` failing means "do not prompt" (its feedback insert must not throw). The surveys and feedback hub and the admin dashboard are hidden behind a flag.',
+    work: 'Done: survey reads are table reads, the public research page reads its questions with `get_public_research_questions`, and the two missing capabilities were built in `90_research` (M16: `user_feedback` + `admin_user_feedback_list`; M17: `admin_survey_overview`, `admin_survey_results`, `admin_pmf_survey_report`, all moderator and above).',
+    tests: ['vitest: survey, research, stats suites', 'pgTAP 079, 090, 091', 'deno test supabase/functions/public-research-submit'],
+    degrade: 'Survey prompt: a failing `check_survey_prompt_eligibility` means "do not prompt" (the banner already fails silently). A research function that is not deployed (HTTP 404) is `BackendUnavailableError` and the page shows its generic error.',
     risks: '`record_active_day` is core and moves with P1; `stats/**` moves with P2.' },
   { id: 'L6', title: 'Back-office tools: tasks, CRM, timesheets', launch: 'later', parallelWith: ['L1', 'L2', 'L3', 'L4', 'L5', 'L7'],
     select: (row) => /^(admin_task_|crm_|timesheet_)/.test(row.old),
