@@ -298,6 +298,7 @@ export type Database = {
         Row: {
           chat_id: string
           hidden_at: string | null
+          history_from: string | null
           joined_at: string
           last_read_at: string
           role: string
@@ -306,6 +307,7 @@ export type Database = {
         Insert: {
           chat_id: string
           hidden_at?: string | null
+          history_from?: string | null
           joined_at?: string
           last_read_at?: string
           role?: string
@@ -314,6 +316,7 @@ export type Database = {
         Update: {
           chat_id?: string
           hidden_at?: string | null
+          history_from?: string | null
           joined_at?: string
           last_read_at?: string
           role?: string
@@ -2408,6 +2411,8 @@ export type Database = {
           post_type: string
           published_at: string | null
           search_vector: unknown
+          shown_street: string | null
+          shown_street_number: string | null
           source: string
           source_language: string | null
           status: string
@@ -2436,6 +2441,8 @@ export type Database = {
           post_type?: string
           published_at?: string | null
           search_vector?: unknown
+          shown_street?: string | null
+          shown_street_number?: string | null
           source?: string
           source_language?: string | null
           status?: string
@@ -2464,6 +2471,8 @@ export type Database = {
           post_type?: string
           published_at?: string | null
           search_vector?: unknown
+          shown_street?: string | null
+          shown_street_number?: string | null
           source?: string
           source_language?: string | null
           status?: string
