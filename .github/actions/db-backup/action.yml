@@ -79,12 +79,20 @@ runs:
         mkdir -p "$plain"
         chmod 700 "$plain"
         supabase link --project-ref "$SUPABASE_PROJECT_REF" --yes >/dev/null
-        supabase db dump --linked --role-only -f "$plain/roles.sql"
-        supabase db dump --linked -f "$plain/schema.sql"
-        supabase db dump --linked --data-only --use-copy -f "$plain/data.sql"
+        # Each dump is bounded so a stuck connection fails the run instead of holding the runner.
+        dump() {
+          local name="$1"
+          shift
+          local started=$SECONDS
+          timeout 600 supabase db dump --linked "$@" -f "$plain/$name.sql"
+          echo "dumped $name in $((SECONDS - started))s, $(stat -c %s "$plain/$name.sql") bytes"
+        }
+        dump roles --role-only
+        dump schema
+        dump data --data-only --use-copy
         # Accounts and file metadata live in Supabase-managed schemas, which the
         # default dump leaves out. Storage objects (the files) are not in any dump.
-        supabase db dump --linked --data-only --use-copy --schema auth,storage -f "$plain/auth-storage-data.sql"
+        dump auth-storage-data --data-only --use-copy --schema auth,storage
         for f in roles schema data auth-storage-data; do
           test -s "$plain/$f.sql" || { echo "::error::empty dump file $f.sql"; exit 1; }
         done
