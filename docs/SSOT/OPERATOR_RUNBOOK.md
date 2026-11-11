@@ -431,7 +431,7 @@ Regenerate `database.types.ts` after applying (or merge the manually added table
 
 ## Edge Functions — CI deploy + prod smoke (2026-05-12)
 
-**Workflow:** the Edge Functions stage of **Deploy** (`.github/workflows/deploy-functions.yml`), after the database stage, for every `dev` push that passes CI (kc-dev) and every approved `main` release (prod). It deploys every function in `supabase/functions` except `_shared` and the local-only `mock-login`; the deploy smoke then sends `OPTIONS` to each and fails on a 5xx or 404. No push or manual trigger of its own — dispatch **Deploy** on `dev` to redeploy kc-dev.
+**Workflow:** the Edge Functions stage of **Deploy** (`.github/workflows/deploy-functions.yml`), after the database stage, for every `dev` push that passes CI (kc-dev) and every approved `main` release (prod). It deploys every function in `supabase/functions` except `_shared`, the local-only `mock-login` and the `whatsapp-*` functions (`NOT_DEPLOYED` in `scripts/edge-functions.mjs`; the pipeline never deletes a function, so one already deployed stays at its last version); the deploy smoke then sends `OPTIONS` to each and fails on a 5xx or 404. No push or manual trigger of its own — dispatch **Deploy** on `dev` to redeploy kc-dev.
 
 **GitHub:** Repository → Settings → Environments → `supabase-prod` / `supabase-dev` must expose the same secrets as DB deploy:
 

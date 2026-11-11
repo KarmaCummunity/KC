@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { LOCAL_ONLY, SMOKE_PROBES, inactiveFunctions, listDeployableFunctions } from './edge-functions.mjs';
+import { LOCAL_ONLY, NOT_DEPLOYED, SMOKE_PROBES, inactiveFunctions, listDeployableFunctions } from './edge-functions.mjs';
 
 function makeFunctionsDir(layout) {
   const dir = mkdtempSync(join(tmpdir(), 'edge-fns-'));
@@ -37,6 +37,29 @@ test('the real tree deploys every function except the local-only ones', () => {
   const names = listDeployableFunctions();
   assert.ok(names.length > 0);
   for (const local of LOCAL_ONLY) assert.ok(!names.includes(local), `${local} must not deploy`);
+});
+
+test('skips the functions switched off in the pipeline', () => {
+  const dir = makeFunctionsDir({ 'whatsapp-sender': ['index.ts'], translate: ['index.ts'] });
+  try {
+    assert.deepEqual(listDeployableFunctions(dir), ['translate']);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('NOT_DEPLOYED names a reason for each entry and overlaps neither LOCAL_ONLY nor the smoke probes', () => {
+  for (const [name, reason] of NOT_DEPLOYED) {
+    assert.ok(reason.length > 0, name);
+    assert.ok(!LOCAL_ONLY.has(name), `${name} is in both lists`);
+    assert.ok(!(name in SMOKE_PROBES), `${name} is not deployed, so it has no smoke probe`);
+  }
+});
+
+test('the real tree deploys no whatsapp-* function and no NOT_DEPLOYED one', () => {
+  const names = listDeployableFunctions();
+  for (const n of names) assert.ok(!n.startsWith('whatsapp-'), `${n} must be listed in NOT_DEPLOYED (or the policy changed on purpose)`);
+  for (const n of NOT_DEPLOYED.keys()) assert.ok(!names.includes(n), `${n} must not deploy`);
 });
 
 test('every deployable function declares how the smoke may probe it', () => {

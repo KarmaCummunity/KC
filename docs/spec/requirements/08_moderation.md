@@ -94,6 +94,7 @@ A user blocks another user.
    - The blocked user's posts are filtered from my feed.
    - My posts are filtered from the blocked user's feed.
 - AC5. The blocked user is never notified.
+- AC6. The confirmation appears from every entry point (feed post menu, profile menu, chat menu): the menu sheet closes first and the confirmation opens only after the sheet has finished dismissing, because iOS drops a native alert raised over a closing modal (#2062).
 
 **Related.** Screens: 6.2 · Domain: `Block`, `FollowEdge`, `FollowRequest`, `Chat`.
 
