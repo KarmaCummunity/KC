@@ -207,6 +207,11 @@
               "scheme": "https",
               "host": "karma-community-kc.com",
               "pathPrefix": "/chat"
+            },
+            {
+              "scheme": "https",
+              "host": "karma-community-kc.com",
+              "pathPrefix": "/sign-in"
             }
           ],
           "category": [

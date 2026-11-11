@@ -123,8 +123,7 @@ Feature PRs merge into `dev` first, through the merge queue of the ruleset `dev 
 ## B. Fill the config placeholders (after step A yields the values)
 
 - `app/apps/mobile/eas.json` → `submit.production.ios.ascAppId` stays a placeholder (public repo); `testflight-ios.yml` injects the real id from the `KC_ASC_APP_ID` variable on the runner.
-- `app/apps/mobile/public/.well-known/apple-app-site-association`: replace `REPLACE_WITH_APPLE_TEAM_ID`.
-- `app/apps/mobile/public/.well-known/assetlinks.json`: replace `REPLACE_WITH_ANDROID_RELEASE_SHA256` with the release signing cert SHA-256 (from `eas credentials` after the first Android build). Closes `TD-66` — until filled, universal/app links open the browser chooser instead of the app.
+- `app/apps/mobile/public/.well-known/apple-app-site-association` and `assetlinks.json`: filled (Team ID, Play app-signing and upload SHA-256). `check-well-known-links.mjs` fails CI if a placeholder returns and the deploy smoke's `applinks` check proves the live files; re-run the steps in `public/.well-known/README.md` only if a signing key rotates (`TD-66` closed).
 
 ## C. Store listing content (prepare before submitting)
 
@@ -162,5 +161,5 @@ eas submit --platform android --profile production --latest
 
 - [x] Real `extra.eas.projectId` committed (`TD-121`, closed).
 - [ ] Supabase Apple provider configured (`FR-AUTH-004`; closes the go-live half of `TD-24`).
-- [ ] Deep-link fingerprints filled (`TD-66`).
+- [x] Deep-link fingerprints filled (`TD-66`); verify live with the deploy smoke `applinks` check.
 - [ ] Remaining app bugs resolved (PM-tracked) — the first production store submission is gated on this (nightly tester builds are not).
