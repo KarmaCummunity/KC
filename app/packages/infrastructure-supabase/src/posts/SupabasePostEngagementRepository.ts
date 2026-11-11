@@ -1,7 +1,7 @@
 // KC#867 — post reactions/comments/shares via SECURITY INVOKER RPCs.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 export type PostReactionType = 'like' | 'support' | 'thanks';
 

@@ -10,7 +10,7 @@ import {
   type PublicResearchSubmission,
   type PublicResearchSubmitResult,
 } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 // ---------------------------------------------------------------------------
 // Raw JSON shape returned by get_public_research_questions RPC (snake_case)

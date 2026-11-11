@@ -5,6 +5,8 @@ import { createWhatsAppAdminUseCases } from './whatsappAdminContainer';
 import { pickAuthStorage } from '../services/authSecureStorage';
 import {
   getSupabaseClient,
+  getLegacySupabaseClient,
+  type LegacyDatabase,
   SupabaseUserRepository,
   SupabaseChatRepository,
   SupabaseChatRealtime,
@@ -121,40 +123,45 @@ import { createFinanceUseCases } from './financeContainer';
 import { isSupabaseConfigured } from './supabasePublicConfig';
 import { bindSupabaseClient } from './bindSupabaseClient';
 
+// `supabase` is baseline-typed (migrated code); `legacySupabase` is the same connection typed
+// against the frozen old schema for unmigrated adapters (docs/db/app-migration-playbook.md).
 export const supabase = bindSupabaseClient(isSupabaseConfigured(), () =>
   getSupabaseClient({ storage: pickAuthStorage() }),
 );
+export const legacySupabase = bindSupabaseClient<LegacyDatabase>(isSupabaseConfigured(), () =>
+  getLegacySupabaseClient({ storage: pickAuthStorage() }),
+);
 
-const userRepo = new SupabaseUserRepository(supabase);
-const chatRepo = new SupabaseChatRepository(supabase);
-const chatRealtime = new SupabaseChatRealtime(supabase);
-const reportRepo = new SupabaseReportRepository(supabase);
-const blockRepo = new SupabaseBlockRepository(supabase);
-const donationLinksRepo = new SupabaseDonationLinksRepository(supabase);
-const postRepo = new SupabasePostRepository(supabase);
-const postEngagementRepo = new SupabasePostEngagementRepository(supabase);
-const notificationInboxRepo = new SupabaseNotificationInboxRepository(supabase);
-const chatV2Realtime = new SupabaseChatV2Realtime(supabase);
-const onlinePresence = new SupabaseOnlinePresence(supabase);
-const activeStatus = new SupabaseActiveStatusRepository(supabase);
-const chatV2Repo = new SupabaseChatV2Repository(supabase);
-const socialFeedRepo = new SupabaseSocialFeedRepository(supabase);
-const followSuggestionsRepo = new SupabaseFollowSuggestionsRepository(supabase);
-const moderationAdminRepo = new SupabaseModerationAdminRepository(supabase);
-const accountGateRepo = new SupabaseAccountGateRepository(supabase);
-const deviceRepo = new SupabaseDeviceRepository(supabase);
-const adminRoleRepo = new SupabaseAdminRoleRepository(supabase);
-const adminTaskRepo = new SupabaseAdminTaskRepository(supabase);
-const orgHierarchyRepo = new SupabaseOrgHierarchyRepository(supabase);
-const adminContentRepo = new SupabaseAdminContentRepository(supabase);
-const timesheetsRepo = new SupabaseTimesheetsRepository(supabase);
-const crmContactsRepo = new SupabaseCrmContactsRepository(supabase);
-const orgApplicationsRepo = new SupabaseOrgApplicationsRepository(supabase);
-const reportsRepo = new SupabaseReportsRepository(supabase);
-const surveyRepo = new SupabaseSurveyRepository(supabase);
-const surveyAdminRepo = new SupabaseSurveyAdminRepository(supabase);
-const userActivityRepo = new SupabaseUserActivityRepository(supabase);
-const publicResearchRepo = new SupabasePublicResearchRepository(supabase);
+const userRepo = new SupabaseUserRepository(legacySupabase);
+const chatRepo = new SupabaseChatRepository(legacySupabase);
+const chatRealtime = new SupabaseChatRealtime(legacySupabase);
+const reportRepo = new SupabaseReportRepository(legacySupabase);
+const blockRepo = new SupabaseBlockRepository(legacySupabase);
+const donationLinksRepo = new SupabaseDonationLinksRepository(legacySupabase);
+const postRepo = new SupabasePostRepository(legacySupabase);
+const postEngagementRepo = new SupabasePostEngagementRepository(legacySupabase);
+const notificationInboxRepo = new SupabaseNotificationInboxRepository(legacySupabase);
+const chatV2Realtime = new SupabaseChatV2Realtime(legacySupabase);
+const onlinePresence = new SupabaseOnlinePresence(legacySupabase);
+const activeStatus = new SupabaseActiveStatusRepository(legacySupabase);
+const chatV2Repo = new SupabaseChatV2Repository(legacySupabase);
+const socialFeedRepo = new SupabaseSocialFeedRepository(legacySupabase);
+const followSuggestionsRepo = new SupabaseFollowSuggestionsRepository(legacySupabase);
+const moderationAdminRepo = new SupabaseModerationAdminRepository(legacySupabase);
+const accountGateRepo = new SupabaseAccountGateRepository(legacySupabase);
+const deviceRepo = new SupabaseDeviceRepository(legacySupabase);
+const adminRoleRepo = new SupabaseAdminRoleRepository(legacySupabase);
+const adminTaskRepo = new SupabaseAdminTaskRepository(legacySupabase);
+const orgHierarchyRepo = new SupabaseOrgHierarchyRepository(legacySupabase);
+const adminContentRepo = new SupabaseAdminContentRepository(legacySupabase);
+const timesheetsRepo = new SupabaseTimesheetsRepository(legacySupabase);
+const crmContactsRepo = new SupabaseCrmContactsRepository(legacySupabase);
+const orgApplicationsRepo = new SupabaseOrgApplicationsRepository(legacySupabase);
+const reportsRepo = new SupabaseReportsRepository(legacySupabase);
+const surveyRepo = new SupabaseSurveyRepository(legacySupabase);
+const surveyAdminRepo = new SupabaseSurveyAdminRepository(legacySupabase);
+const userActivityRepo = new SupabaseUserActivityRepository(legacySupabase);
+const publicResearchRepo = new SupabasePublicResearchRepository(legacySupabase);
 
 const hideChatFromInbox = new HideChatFromInboxUseCase(chatRepo);
 const getMyAdminRoles = new GetMyAdminRolesUseCase(adminRoleRepo);

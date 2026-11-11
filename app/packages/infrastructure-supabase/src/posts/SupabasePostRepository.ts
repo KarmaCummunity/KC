@@ -21,7 +21,7 @@ import type {
   ProfileClosedPostsItem,
   ProfileClosedPostsListMode,
 } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { POST_SELECT_OWNER, mapPostWithOwnerRow, type PostWithOwnerJoinedRow } from './mapPostRow';
 import { mapInsertError } from './mapInsertError';
 import { encodeCursor } from './cursor';

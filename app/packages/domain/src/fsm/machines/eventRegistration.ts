@@ -12,20 +12,20 @@ import { defineMachine } from '../machine';
  *   absence may be corrected to attended (`no_show → handed_over`, `mark_event_attendance`).
  * - `handed_over` and `cancelled` are terminal.
  *
- * SQL copy: `supabase/migrations/0694_fsm_handoffs.sql`.
+ * SQL copy: `supabase/schemas/25_handoffs/010_post_handoffs.sql` (`kc_private.fsm_state` / `fsm_edge` seeds).
  */
 export const eventRegistrationMachine = defineMachine({
   id: 'event_registration',
   states: ['waitlisted', 'reserved', 'confirmed', 'handed_over', 'cancelled', 'no_show'] as const,
   edges: [
-    { from: 'waitlisted', to: 'reserved' },
-    { from: 'waitlisted', to: 'confirmed' },
-    { from: 'waitlisted', to: 'cancelled' },
-    { from: 'reserved', to: 'confirmed' },
-    { from: 'reserved', to: 'cancelled' },
-    { from: 'confirmed', to: 'handed_over' },
-    { from: 'confirmed', to: 'cancelled' },
-    { from: 'confirmed', to: 'no_show' },
-    { from: 'no_show', to: 'handed_over' },
+    { from: 'waitlisted', to: 'reserved', roles: ['system'] },
+    { from: 'waitlisted', to: 'confirmed', roles: ['system'] },
+    { from: 'waitlisted', to: 'cancelled', roles: ['owner', 'recipient', 'system'] },
+    { from: 'reserved', to: 'confirmed', roles: ['owner', 'system'] },
+    { from: 'reserved', to: 'cancelled', roles: ['owner', 'recipient', 'system'] },
+    { from: 'confirmed', to: 'handed_over', roles: ['owner'] },
+    { from: 'confirmed', to: 'cancelled', roles: ['owner', 'recipient', 'system'] },
+    { from: 'confirmed', to: 'no_show', roles: ['owner'] },
+    { from: 'no_show', to: 'handed_over', roles: ['owner'] },
   ],
 });

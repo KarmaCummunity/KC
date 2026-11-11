@@ -2,7 +2,7 @@
 
 import { afterAll, describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../../database.types';
+import type { Database } from '../../database.legacy.types';
 import { createIntegrationClient } from '../../__tests__/integrationSupabaseClient';
 
 const URL = process.env['SUPABASE_URL'] ?? process.env['EXPO_PUBLIC_SUPABASE_URL'];

@@ -6,7 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IChatRepository, ChatWithPreview } from '@kc/application';
 import { ChatError } from '@kc/application';
 import { toVerificationLevel, type Chat, type Message, type VerificationLevel } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { rowToChat, rowToMessage } from './rowMappers';
 import { mapChatError } from './mapChatError';
 import { getMyChats } from './getMyChats';

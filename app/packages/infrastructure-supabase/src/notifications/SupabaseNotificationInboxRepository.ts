@@ -5,7 +5,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { InboxNotification, NotificationArgs, NotificationCategory } from '@kc/domain';
 import type { INotificationInboxRepository, NotificationInboxPageRequest } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 interface NotificationRow {
   id: string;

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Post, PostStatus, PostVisibility } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { POST_SELECT_BARE, mapPostRow, type PostJoinedRow } from './mapPostRow';
 import { decodeCursor, encodeCursor } from './cursor';
 import {

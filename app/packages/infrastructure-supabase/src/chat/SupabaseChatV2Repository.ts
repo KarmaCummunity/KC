@@ -2,7 +2,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Message } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { rowToMessage } from './rowMappers';
 import { mapChatError } from './mapChatError';
 

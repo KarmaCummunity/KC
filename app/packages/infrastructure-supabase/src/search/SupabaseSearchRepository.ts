@@ -3,7 +3,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { HashtagSearchResult, OrgSearchResult, SearchFilters } from '@kc/domain';
 import type { ISearchRepository, UniversalSearchResults } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { EMPTY_SEARCH_BUCKET } from './searchBucket';
 import { explorePosts, exploreUsers, exploreLinks } from './searchExploreHelpers';
 import { searchPosts, searchUsers, searchLinks } from './searchQueryHelpers';

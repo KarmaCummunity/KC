@@ -6,7 +6,7 @@
  * to take effect anyway.
  */
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../lib/container';
+import { legacySupabase as supabase } from '../lib/container';
 import { useAuthStore } from '../store/authStore';
 
 async function fetchIsSuperAdmin(userId: string): Promise<boolean> {

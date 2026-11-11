@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { SupabaseLegalDocumentRepository } from '../legal/SupabaseLegalDocumentRepository';
 import { LegalDocumentCache, type AsyncKVStorage } from '../legal/legalCache';
 

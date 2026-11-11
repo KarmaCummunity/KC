@@ -13,7 +13,7 @@ import {
   type RideParticipantErrorCode,
 } from '@kc/domain';
 import type { IRideParticipantRepository } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { mapRideParticipantRow } from './mapRideParticipantRow';
 
 type ParticipantRow = Database['public']['Tables']['ride_participants']['Row'];

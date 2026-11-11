@@ -8,7 +8,7 @@ import {
   type MyEventRegistration,
   type OrganizationMembershipOption,
 } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 // Organization event RPCs and reads (G1 step 5, supabase/migrations/0563_event_posts.sql and
 // 0564_event_attendance_waitlist.sql), split out of SupabaseMarketplaceRepository to keep that

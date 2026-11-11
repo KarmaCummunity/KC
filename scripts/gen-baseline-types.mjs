@@ -1,20 +1,21 @@
 #!/usr/bin/env node
 // Generates the Supabase TypeScript types of the production baseline without Docker.
 //
-// CI builds `database.types.ts` with `supabase gen types typescript --local`, which needs
-// the Docker stack. That command is a thin wrapper: it starts the `supabase/postgres-meta`
-// image and asks it for the types. This script runs the same generator
-// (`@supabase/postgres-meta`, from npm) against a scratch database built from
-// `supabase/baseline/0001_baseline.sql` on a plain local PostgreSQL server:
+// `supabase gen types typescript --local` needs the Docker stack. That command is a thin
+// wrapper: it starts the `supabase/postgres-meta` image and asks it for the types. This
+// script runs the same generator (`@supabase/postgres-meta`, from npm) against a scratch
+// database built from `supabase/baseline/0001_baseline.sql` on a plain local PostgreSQL
+// server:
 //
 //   1. create an empty scratch database, apply the Supabase shim and the baseline
 //      (the same three steps as scripts/run-baseline-tests.sh, without the tests)
 //   2. run the generator for the exposed schema (`public`)
 //   3. drop monthly partition children (scripts/strip-partition-types.mjs)
-//   4. write app/packages/infrastructure-supabase/src/database.baseline.types.ts
+//   4. write app/packages/infrastructure-supabase/src/database.types.ts
 //
-// The output is a separate file on purpose: the app compiles against `database.types.ts`
-// (the old schema) until its adapters move to the baseline.
+// `database.types.ts` is the one generated file the app compiles against. Adapters that
+// have not moved to the baseline yet import the frozen `database.legacy.types.ts`
+// (docs/db/app-migration-playbook.md); that file is never regenerated.
 //
 // Usage: node scripts/gen-baseline-types.mjs [--check] [--no-build] [--stdout]
 //   --check     generate and compare with the committed file; exit 1 on a difference
@@ -34,7 +35,7 @@ import { fileURLToPath } from 'node:url';
 import { stripPartitionTypes } from './strip-partition-types.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-export const OUTPUT_FILE = join(ROOT, 'app/packages/infrastructure-supabase/src/database.baseline.types.ts');
+export const OUTPUT_FILE = join(ROOT, 'app/packages/infrastructure-supabase/src/database.types.ts');
 const BASELINE = join(ROOT, 'supabase/baseline/0001_baseline.sql');
 const SHIM = join(ROOT, 'supabase/baseline/local/supabase_shim.sql');
 
@@ -198,9 +199,9 @@ function main() {
   }
   const committed = existsSync(OUTPUT_FILE) ? readFileSync(OUTPUT_FILE, 'utf8') : '';
   const difference = firstDifference(committed, types);
-  if (!difference) return console.log('gen-baseline-types: database.baseline.types.ts is up to date');
+  if (!difference) return console.log('gen-baseline-types: database.types.ts is up to date');
   console.error(
-    `gen-baseline-types: database.baseline.types.ts is out of date (line ${difference.line}).\n` +
+    `gen-baseline-types: database.types.ts is out of date (line ${difference.line}).\n` +
       `  committed: ${difference.expected}\n  generated: ${difference.actual}\n` +
       'Run: node scripts/gen-baseline-types.mjs',
   );

@@ -9,7 +9,7 @@ import type {
   SearchRideListingsInput,
 } from '@kc/application';
 import { RideError } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { mapRideRow } from './mapRideRow';
 
 type RideRow = Parameters<typeof mapRideRow>[0];

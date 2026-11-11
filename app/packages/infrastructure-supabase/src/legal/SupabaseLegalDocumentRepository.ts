@@ -11,7 +11,7 @@ import type {
   AcceptLegalDocumentResult,
   ILegalDocumentRepository,
 } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { LegalDocumentCache } from './legalCache';
 
 type VersionRow = {

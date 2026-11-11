@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GivingHandoffSnapshot, MyGivingHandoffRow } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 // Items/food handoff RPCs, split out of SupabaseMarketplaceRepository to keep
 // that file under the 300-line architecture cap.

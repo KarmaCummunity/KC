@@ -6,7 +6,7 @@ import {
   type HousingHostBooking,
   type HousingPrivateDetails,
 } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 type Fns = Database['public']['Functions'];
 export type HostBookingRow = Fns['list_housing_bookings']['Returns'][number];

@@ -12,7 +12,7 @@ import type {
 } from '@kc/domain';
 import { toVerificationLevel } from '@kc/domain';
 import type { PostWithOwner } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { postMapPoint } from './postMapPoint';
 
 type PostRow = Database['public']['Tables']['posts']['Row'];
@@ -28,7 +28,7 @@ export interface PostJoinedRow extends PostRow {
   city_ref?: { name_he: string; lat?: number | null; lon?: number | null } | null;
   media_assets?: MediaAssetRow[] | null;
   recipient?: RecipientWithUserRow | null;
-  // source_language is inherited from PostRow (database.types.ts Row type)
+  // source_language is inherited from PostRow (database.legacy.types.ts Row type)
 }
 
 export interface PostWithOwnerJoinedRow extends PostJoinedRow {

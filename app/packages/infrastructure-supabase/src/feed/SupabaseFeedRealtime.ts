@@ -10,7 +10,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { FeedRealtimeCallbacks, IFeedRealtime } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { isChannelFailure, openExactTopicChannel } from '../realtime/exactTopicChannel';
 
 export const FEED_PUBLIC_TOPIC = 'feed:public';

@@ -2,7 +2,7 @@
 // Authorization enforces it for presence (no track, no receive when off).
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 export class SupabaseActiveStatusRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 type Client = SupabaseClient<Database>;
 type Mode = 'assign' | 'close_without';

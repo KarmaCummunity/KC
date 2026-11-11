@@ -15,7 +15,7 @@ import type {
   PostFeedFilter,
   PostWithOwner,
 } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import {
   FEED_CARD_SELECT,
   mapPostWithOwnerRow,

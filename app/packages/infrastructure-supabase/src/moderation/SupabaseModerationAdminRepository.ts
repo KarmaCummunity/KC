@@ -11,7 +11,7 @@ import {
 } from '@kc/application';
 import type { AdminRole, AuditEvent } from '@kc/domain';
 import { fetchMyAdminRoles } from '../admin/fetchMyAdminRoles';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 /**
  * FR-MOD-010 / FR-ADMIN-002..007 — Supabase adapter for admin moderation

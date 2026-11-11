@@ -7,7 +7,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Device, DeviceRegistration } from '@kc/domain';
 import type { IDeviceRepository } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 interface DeviceRow {
   id: string;

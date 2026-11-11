@@ -9,7 +9,7 @@ import type {
   CreateRideTemplateInput,
   IRideTemplateRepository,
 } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { mapRideTemplateRow } from './mapRideTemplateRow';
 
 type TemplateRow = Database['public']['Tables']['ride_templates']['Row'];

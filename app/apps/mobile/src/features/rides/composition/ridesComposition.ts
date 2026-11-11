@@ -2,7 +2,7 @@
 // Mapped to spec: FR-RIDE-002..005, FR-RIDE-016 (realtime), FR-RIDE-011..014 (participants),
 //                 FR-RIDE-021..022 (templates), FR-RIDE-024..025 (dashboard + my-requests).
 import {
-  getSupabaseClient,
+  getLegacySupabaseClient,
   SupabaseRideListingRepository,
   SupabaseRideParticipantRepository,
   SupabaseRideTemplateRepository,
@@ -86,7 +86,7 @@ let _setTemplateStatus: SetRideTemplateStatusUseCase | null = null;
 let _deleteTemplate: DeleteRideTemplateUseCase | null = null;
 
 function getClient() {
-  return getSupabaseClient({ storage: pickAuthStorage() });
+  return getLegacySupabaseClient({ storage: pickAuthStorage() });
 }
 
 function getRepo(): IRideListingRepository {

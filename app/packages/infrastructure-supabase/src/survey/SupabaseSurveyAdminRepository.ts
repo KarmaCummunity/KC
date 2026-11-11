@@ -13,7 +13,7 @@ import {
   type PmfSurveyReport,
   type SurveyQuestionType,
 } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { mapPmfSurveyReport, type RawPmfSurveyReport } from './mapPmfSurveyReport';
 
 // ---------------------------------------------------------------------------

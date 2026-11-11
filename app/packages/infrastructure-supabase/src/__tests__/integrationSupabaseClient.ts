@@ -1,7 +1,7 @@
 // Shared Supabase client factory for integration suites (Node < 22 needs ws transport).
 
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 function realtimeOptions(): Record<string, unknown> {
   if (typeof globalThis.WebSocket !== 'undefined') return {};

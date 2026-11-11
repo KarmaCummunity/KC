@@ -13,7 +13,7 @@
 
 import { describe, it, expect, afterAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../../database.types';
+import type { Database } from '../../database.legacy.types';
 
 // Opt into the local Supabase stack started by `supabase start` by setting
 // CI_LOCAL_SUPABASE=true. ci-backend.yml sets it for the sqlProbes step

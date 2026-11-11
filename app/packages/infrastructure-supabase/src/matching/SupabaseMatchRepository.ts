@@ -2,7 +2,7 @@
 // (pg_cron + listing trigger); the client only reads its own pairs and answers them.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 export type MatchRole = 'offer' | 'request';
 export type MatchStatus = 'suggested' | 'accepted';

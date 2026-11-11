@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isRidePlaceKind, type RidePlace } from '@kc/domain';
 import type { IRidePlaceRepository } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 type Client = SupabaseClient<Database>;
 type PlaceRow = Database['public']['Functions']['list_ride_places']['Returns'][number];

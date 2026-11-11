@@ -11,7 +11,7 @@ import type {
   RidesRealtimeCallbacks,
   Unsubscribe,
 } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 function uniqueTopic(prefix: string): string {
   return `${prefix}:${crypto.randomUUID()}`;

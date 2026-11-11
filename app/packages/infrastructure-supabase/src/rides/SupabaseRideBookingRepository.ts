@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isRideBookingListStatus, type RideBooking } from '@kc/domain';
 import type { IRideBookingRepository } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 type Client = SupabaseClient<Database>;
 type BookingRow = Database['public']['Functions']['list_ride_bookings']['Returns'][number];

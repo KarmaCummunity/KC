@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AccountGateResult, IAccountGateRepository } from '@kc/application';
 import { InfrastructureError, RestoreAccountError } from '@kc/application';
 import type { RestoreAccountErrorCode } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 /**
  * FR-MOD-010 — thin wrapper over the `auth_check_account_gate` RPC. Returns

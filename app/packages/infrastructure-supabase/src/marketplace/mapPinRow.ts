@@ -1,5 +1,5 @@
 import type { MarketplaceMapPin } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 type GenRow = Database['public']['Functions']['map_listing_pins']['Returns'][number];
 type Nullable<T, K extends keyof T> = Omit<T, K> & { [P in K]: T[P] | null };

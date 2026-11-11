@@ -1,13 +1,16 @@
+import { backendObjectKind } from '../rpc/backendUnavailable';
+
 /**
- * PostgREST returns HTTP 404 + code `PGRST205` when the requested relation
- * is not in the schema cache (common when a migration was not applied yet).
+ * True when PostgREST reports a table, view or column that is not in the schema cache
+ * (HTTP 404 + `PGRST205` / `PGRST204`, common when a migration was not applied yet).
+ * New code uses `isBackendObjectMissing` / `unwrapCall` from `rpc/`, which also cover
+ * functions, grants, Edge Functions and buckets; this narrower test stays for the
+ * adapters that treat a missing relation as "no rows".
  */
 export function isPostgrestRelationMissing(error: {
   code?: string;
   message?: string;
 }): boolean {
-  if (error.code === 'PGRST205') return true;
-  const msg = (error.message ?? '').toLowerCase();
-  if (msg.includes('could not find the table') && msg.includes('schema cache')) return true;
-  return false;
+  const kind = backendObjectKind(error);
+  return kind === 'relation' || kind === 'column';
 }

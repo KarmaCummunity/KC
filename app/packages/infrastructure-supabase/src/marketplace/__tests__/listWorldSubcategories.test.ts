@@ -1,7 +1,7 @@
 // KC#1296 — world subcategories for the create form's picker.
 import { describe, it, expect } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../../database.types';
+import type { Database } from '../../database.legacy.types';
 import { listWorldSubcategories } from '../listWorldSubcategories';
 
 type Result = { data: unknown; error: unknown };

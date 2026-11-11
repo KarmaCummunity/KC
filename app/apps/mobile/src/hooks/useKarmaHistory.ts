@@ -1,6 +1,6 @@
 // FR-KARMA-007 — self karma ledger (RLS: karma_ledger_select_self), newest first.
 import { useQuery } from '@tanstack/react-query';
-import { getSupabaseClient } from '@kc/infrastructure-supabase';
+import { getLegacySupabaseClient } from '@kc/infrastructure-supabase';
 
 export interface KarmaHistoryRow {
   readonly id: number;
@@ -15,7 +15,7 @@ export function useKarmaHistory(userId: string | undefined) {
     enabled: Boolean(userId),
     staleTime: 60_000,
     queryFn: async (): Promise<KarmaHistoryRow[]> => {
-      const { data, error } = await getSupabaseClient()
+      const { data, error } = await getLegacySupabaseClient()
         .from('karma_ledger')
         .select('ledger_id, event_type, points_delta, created_at')
         .eq('user_id', userId!)

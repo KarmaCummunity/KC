@@ -11,7 +11,7 @@ import {
   type RideSeriesStatus,
 } from '@kc/domain';
 import type { IRideSeriesRepository } from '@kc/application';
-import type { Database, Json } from '../database.types';
+import type { Database, Json } from '../database.legacy.types';
 
 type Client = SupabaseClient<Database>;
 type SeriesRow = Database['public']['Tables']['ride_series']['Row'];

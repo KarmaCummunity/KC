@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { WorldSubcategory } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 type CategoryRow = Pick<
   Database['public']['Tables']['categories']['Row'],

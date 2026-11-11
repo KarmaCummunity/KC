@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../../database.types';
+import type { Database } from '../../database.legacy.types';
 import { SupabasePostRepository } from '../SupabasePostRepository';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

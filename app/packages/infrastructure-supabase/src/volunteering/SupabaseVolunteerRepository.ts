@@ -9,7 +9,7 @@ import type {
   VolunteerOpportunityDetail,
   VolunteerShiftSlot,
 } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 type BrowseRow = Database['public']['Functions']['list_volunteer_opportunities']['Returns'][number];
 type SignupRow = Database['public']['Functions']['list_my_volunteer_signups']['Returns'][number];

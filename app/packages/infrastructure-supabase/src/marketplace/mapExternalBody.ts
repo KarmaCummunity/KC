@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ExternalBodyOption } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 export type ExternalBodyRow = Database['public']['Functions']['search_external_bodies']['Returns'][number];
 

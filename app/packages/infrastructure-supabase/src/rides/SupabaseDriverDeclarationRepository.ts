@@ -5,7 +5,7 @@ import type {
   IDriverDeclarationRepository,
 } from '@kc/application';
 import { RideError } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 type Row = Database['public']['Tables']['driver_declarations']['Row'];
 

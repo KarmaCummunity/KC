@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { RideHouseNumberEnd, RideHouseNumbers } from '@kc/domain';
 import type { IRideHouseNumberRepository } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 type Client = SupabaseClient<Database>;
 

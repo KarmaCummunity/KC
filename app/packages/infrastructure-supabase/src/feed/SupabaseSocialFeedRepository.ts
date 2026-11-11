@@ -1,7 +1,7 @@
 // KC#870 — hide post, mute filters, feed impressions.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 export type FeedMuteFilterKind = 'user' | 'category' | 'keyword' | 'world';
 

@@ -16,7 +16,7 @@ import type {
   MyListingRow,
   ProfileListingRow,
 } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { mapListingDetail } from './mapListingDetail';
 import { searchExternalBodies } from './mapExternalBody';
 import { listWorldSubcategories } from './listWorldSubcategories';

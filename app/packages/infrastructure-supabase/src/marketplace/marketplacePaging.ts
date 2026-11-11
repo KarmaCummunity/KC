@@ -11,7 +11,7 @@ import type {
   MyListingsCursor,
 } from '@kc/application';
 import type { ListingCardPublisher, MarketplaceBrowseRow, MyListingRow, RideCardSummary } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import {
   LISTING_PUBLISHER_EMBED,
   listingDirectionOf,

@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IReportRepository } from '@kc/application';
 import { ReportError } from '@kc/application';
 import type { ReportSubmission } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 export class SupabaseReportRepository implements IReportRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}

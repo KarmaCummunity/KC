@@ -53,6 +53,7 @@ import { asideEn } from './modules/aside';
 import { configEn } from './modules/config';
 import { followEn } from './modules/follow';
 import { matchesEn } from './modules/matches';
+import { backendAvailabilityEn } from './modules/backendAvailability';
 
 const en = {
   // App
@@ -167,6 +168,9 @@ const en = {
   follow: followEn,
   // Matching v2 — see modules/matches.ts
   matches: matchesEn,
+
+  // Degrade rule copy — see modules/backendAvailability.ts
+  backend: backendAvailabilityEn,
 
   // Tab labels — see modules/tabs.ts
   tabs: tabsEn,

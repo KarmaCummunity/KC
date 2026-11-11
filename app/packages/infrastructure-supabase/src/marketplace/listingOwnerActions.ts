@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IMarketplaceRepository } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 // A listing owner's actions (spec 07 §7.1 "Owner management", migration 0543), split out of
 // SupabaseMarketplaceRepository to keep that file under the 300-line architecture cap. Each

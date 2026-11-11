@@ -2,7 +2,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { toVerificationLevel, type VerificationLevel } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 export interface FollowSuggestionRow {
   userId: string;

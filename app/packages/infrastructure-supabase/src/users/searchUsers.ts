@@ -3,7 +3,7 @@
 // closure flow's "pick from any user" mode (FR-CLOSURE-003 extension).
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { User } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { mapUserRow, type UserRow } from './mapUserRow';
 import { scrubUserForNonOwner } from './scrubUserForViewer';
 import { USER_PUBLIC_SELECT_COLUMNS } from './userPublicColumns';

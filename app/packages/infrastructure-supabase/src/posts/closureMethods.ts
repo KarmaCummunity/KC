@@ -3,7 +3,7 @@
 import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js';
 import { type ClosureCandidate, PostError, type PostErrorCode } from '@kc/application';
 import type { Post } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { mapPostRow, POST_SELECT_BARE, type PostJoinedRow } from './mapPostRow';
 
 const CLOSURE_CODES = new Set<PostErrorCode>([

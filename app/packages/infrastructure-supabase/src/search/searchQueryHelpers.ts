@@ -2,7 +2,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { DonationLinkSearchResult, SearchFilters, UserSearchResult } from '@kc/domain';
 import type { PostWithOwner } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { POST_SELECT_OWNER, mapPostWithOwnerRow, type PostWithOwnerJoinedRow } from '../posts/mapPostRow';
 import { applyPostActorIdentityProjectionBatch } from '../posts/applyPostActorIdentityProjection';
 import { dropOrphanDeletedOwnerPosts } from '../posts/dropOrphanDeletedOwnerPosts';

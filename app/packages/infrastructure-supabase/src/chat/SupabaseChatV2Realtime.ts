@@ -3,7 +3,7 @@
 // SupabaseOnlinePresence (global `presence:online` topic).
 
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { isChannelFailure, openExactTopicChannel } from '../realtime/exactTopicChannel';
 
 export type TypingCallbacks = {

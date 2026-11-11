@@ -4,7 +4,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PostFeedFilter } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { FEED_CARD_SELECT } from './mapPostRow';
 import { decodeCursor } from './cursor';
 import { feedTextSearchOrClause } from './applyFeedTextSearch';

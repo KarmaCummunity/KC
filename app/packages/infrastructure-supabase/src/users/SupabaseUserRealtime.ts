@@ -5,7 +5,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IUserRealtime, Unsubscribe } from '@kc/application';
 import type { User } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { mapUserRow, type UserRow } from './mapUserRow';
 
 export class SupabaseUserRealtime implements IUserRealtime {

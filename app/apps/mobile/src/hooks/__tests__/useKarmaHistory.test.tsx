@@ -12,7 +12,7 @@ const { from, select, eq, order, limit } = vi.hoisted(() => {
   chain.limit.mockReturnValue(chain);
   return { ...chain, from: vi.fn(() => chain) };
 });
-vi.mock('@kc/infrastructure-supabase', () => ({ getSupabaseClient: () => ({ from }) }));
+vi.mock('@kc/infrastructure-supabase', () => ({ getLegacySupabaseClient: () => ({ from }) }));
 
 import { useKarmaHistory, karmaReasonKey } from '../useKarmaHistory';
 

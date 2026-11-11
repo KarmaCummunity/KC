@@ -10,7 +10,7 @@ import {
   type SaveRideRouteInput,
 } from '@kc/domain';
 import type { IRideSavedRoutesRepository } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 type Client = SupabaseClient<Database>;
 type RouteRow = Database['public']['Tables']['ride_saved_routes']['Row'];

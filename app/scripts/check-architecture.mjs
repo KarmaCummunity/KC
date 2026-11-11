@@ -84,7 +84,7 @@ const SKIP_DIRS = new Set([
   'android',
 ]);
 // Generated types: the old schema's, and the production baseline's (scripts/gen-baseline-types.mjs).
-const SKIP_FILES = new Set(['database.types.ts', 'database.baseline.types.ts']);
+const SKIP_FILES = new Set(['database.types.ts', 'database.legacy.types.ts']);
 
 function walk(dir, files = []) {
   for (const entry of readdirSync(dir)) {

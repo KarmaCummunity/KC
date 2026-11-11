@@ -7,7 +7,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CommunityStatsSnapshot, IStatsRepository, MyWorldGivings, WorldFlowFunnelRow } from '@kc/application';
 import type { PersonalActivityItem, PersonalActivityKind } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 const ACTIVITY_KINDS = new Set<string>([
   'post_created',

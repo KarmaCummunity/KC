@@ -2,7 +2,7 @@
 // Mapped to SRS: FR-CHAT-001..013 (entity contracts in domain/entities.ts).
 
 import type { Chat, Message, MessageKind, MessageStatus } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 type ChatRow = Database['public']['Tables']['chats']['Row'];
 // Only the columns the mapper reads — keeps callers free to project a narrower

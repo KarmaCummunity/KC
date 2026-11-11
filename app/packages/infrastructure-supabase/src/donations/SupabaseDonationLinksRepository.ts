@@ -7,7 +7,7 @@ import type {
   IDonationLinksRepository,
   UpdateDonationLinkInput,
 } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import {
   donationLinkErrorFromInvokeData,
   donationLinkErrorFromInvokeFailure,

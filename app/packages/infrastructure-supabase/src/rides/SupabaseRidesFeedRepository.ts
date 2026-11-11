@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { readRideSeriesMarker, type RideFeedItem } from '@kc/domain';
 import type { IRidesFeedRepository } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 type Client = SupabaseClient<Database>;
 type FeedRow = Database['public']['Functions']['list_rides_feed']['Returns'][number];

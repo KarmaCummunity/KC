@@ -6,7 +6,7 @@ import type {
 } from '@kc/application';
 import type { RideStop } from '@kc/domain';
 import { RideError } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 const STOPS_SELECT =
   '*, city:cities!ride_stops_city_id_fkey(name_he)';

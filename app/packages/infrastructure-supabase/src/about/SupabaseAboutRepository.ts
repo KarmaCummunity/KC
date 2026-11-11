@@ -3,7 +3,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IAboutRepository } from '@kc/application';
 import type { AboutTeamMember } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 type AboutTeamRow = {
   role_key: string;

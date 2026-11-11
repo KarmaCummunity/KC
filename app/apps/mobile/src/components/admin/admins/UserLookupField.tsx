@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { TextField } from '../../ui/TextField';
-import { supabase } from '../../../lib/container';
+import { legacySupabase as supabase } from '../../../lib/container';
 import { rowDirectionStart, textAlignStart } from '../../../lib/rtlLayout';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 

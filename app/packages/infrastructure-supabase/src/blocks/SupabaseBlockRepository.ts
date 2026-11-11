@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { BlockedUser, IBlockRepository } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 /** `public.blocks` — RLS lets a user read/insert/delete only rows where they are the blocker. */
 export class SupabaseBlockRepository implements IBlockRepository {

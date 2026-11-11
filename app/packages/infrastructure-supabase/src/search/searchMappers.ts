@@ -1,5 +1,5 @@
 import { toVerificationLevel, type DonationCategorySlug, type DonationLinkSearchResult, type UserSearchResult } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 export type LinkRow = Database['public']['Tables']['donation_links']['Row'] & { tags?: string | null };
 export interface SearchUserRow {
   user_id: string; display_name: string | null; share_handle: string;

@@ -3,7 +3,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PostWithOwner } from '@kc/application';
 import { toVerificationLevel } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 type PublicUserRow = Pick<
   Database['public']['Views']['users_public']['Row'],

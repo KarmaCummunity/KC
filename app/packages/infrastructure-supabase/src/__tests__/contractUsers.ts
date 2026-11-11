@@ -10,7 +10,7 @@
 // Without them vitest.config.ts does not collect the contract suites at all.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { createIntegrationClient } from './integrationSupabaseClient';
 
 const PASSWORD = 'contract-p4ssword!!';

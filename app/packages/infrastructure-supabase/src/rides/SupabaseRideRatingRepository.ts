@@ -6,7 +6,7 @@ import type {
 } from '@kc/application';
 import type { RideRating, UserRideRatingSummary } from '@kc/domain';
 import { RideError } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 type Row = Database['public']['Tables']['ride_ratings']['Row'];
 type SummaryRow = Database['public']['Views']['user_ride_rating_summary']['Row'];

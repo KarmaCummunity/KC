@@ -5,7 +5,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IUserActivityRepository } from '@kc/application';
 import { SurveyError } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 export class SupabaseUserActivityRepository implements IUserActivityRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}

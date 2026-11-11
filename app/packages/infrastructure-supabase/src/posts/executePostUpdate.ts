@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { PostError } from '@kc/application';
 import type { UpdatePostInput } from '@kc/application';
 import type { Post } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 function mapUpdateError(error: { message?: string }): never {
   if (error.message?.includes('visibility_downgrade_forbidden')) {

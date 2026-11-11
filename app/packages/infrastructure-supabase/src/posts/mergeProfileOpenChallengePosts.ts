@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Post } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { POST_SELECT_BARE, mapPostRow, type PostJoinedRow } from './mapPostRow';
 
 export type ProfileOpenLinksMode = 'standard' | 'owner_only_me';

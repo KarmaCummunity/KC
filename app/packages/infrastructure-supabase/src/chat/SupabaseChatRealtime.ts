@@ -15,7 +15,7 @@ import type {
   ChatStreamCallbacks,
   Unsubscribe,
 } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { rowToChat, rowToMessage } from './rowMappers';
 import { isChannelFailure, openExactTopicChannel, uniqueTopicSuffix } from '../realtime/exactTopicChannel';
 

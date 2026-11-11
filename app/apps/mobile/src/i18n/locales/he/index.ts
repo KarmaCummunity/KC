@@ -51,6 +51,7 @@ import { asideHe } from './modules/aside';
 import { configHe } from './modules/config';
 import { followHe } from './modules/follow';
 import { matchesHe } from './modules/matches';
+import { backendAvailabilityHe } from './modules/backendAvailability';
 
 const he = {
   // App
@@ -165,6 +166,9 @@ const he = {
   follow: followHe,
   // Matching v2 — see modules/matches.ts
   matches: matchesHe,
+
+  // Degrade rule copy — see modules/backendAvailability.ts
+  backend: backendAvailabilityHe,
 
   // Tab labels — see modules/tabs.ts
   tabs: tabsHe,

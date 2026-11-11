@@ -42,8 +42,12 @@ function loadCorpus(repoRoot) {
         .map((f) => readFileSync(join(migrationsDir, f), 'utf8'))
         .join('\n')
     : '';
-  const typesFile = join(repoRoot, 'app/packages/infrastructure-supabase/src/database.types.ts');
-  const types = existsSync(typesFile) ? readFileSync(typesFile, 'utf8') : '';
+  // Baseline types plus the frozen legacy copy: unmigrated adapters still address the old schema.
+  const typesDir = join(repoRoot, 'app/packages/infrastructure-supabase/src');
+  const types = ['database.types.ts', 'database.legacy.types.ts']
+    .map((name) => join(typesDir, name))
+    .map((file) => (existsSync(file) ? readFileSync(file, 'utf8') : ''))
+    .join('\n');
   return (migrationSql + '\n' + types).toLowerCase();
 }
 

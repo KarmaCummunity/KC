@@ -35,6 +35,8 @@ export type OnboardingState =
 export type PostType = 'Give' | 'Request';
 
 export type PostStatus =
+  // A post that is saved but not published yet (baseline `post` machine: draft → open).
+  | 'draft'
   | 'open'
   | 'closed_delivered'
   | 'deleted_no_recipient'

@@ -6,7 +6,7 @@ import {
   type PostActorIdentityExposure,
   type PostVisibility,
 } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { isPostgrestRelationMissing } from '../lib/postgrestRelationMissing';
 
 type IdentityRowDb = Database['public']['Tables']['post_actor_identity']['Row'];

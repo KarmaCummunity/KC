@@ -2,7 +2,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ISavedPostsRepository } from '@kc/application';
 import type { Post } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import {
   isPostSavedRow,
   listSavedPostsPage,
