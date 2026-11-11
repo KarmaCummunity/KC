@@ -55,3 +55,23 @@ test('rejects a flow name the artifact upload cannot store (it broke the upload 
   ]);
   assert.deepEqual(flowProblems('flows/ok-name.yaml', `${HEADER}- assertVisible:\n    id: feed-screen\n`), []);
 });
+
+test('a scroll down followed by a tap on the same element needs an explicit centerElement (the tab bar can cover it)', () => {
+  const scroll = (extra = '') => `${HEADER}- scrollUntilVisible:\n    element:\n      id: settings-row-notifications\n    timeout: 20000\n${extra}- tapOn:\n    id: settings-row-notifications\n`;
+  assert.deepEqual(flowProblems('flows/10.yaml', scroll()), [
+    'flows/10.yaml: scrollUntilVisible to id:settings-row-notifications is followed by a tap on it, so it needs an explicit centerElement: true when the floating tab bar can cover it, false when nothing can',
+  ]);
+  assert.deepEqual(flowProblems('flows/ok.yaml', scroll('    centerElement: true\n')), []);
+  assert.deepEqual(flowProblems('flows/nothing-covers.yaml', scroll('    centerElement: false\n')), []);
+});
+
+test('the centerElement rule skips upward scrolls, other elements and a scroll with no tap, and finds nested ones', () => {
+  const up = `${HEADER}- scrollUntilVisible:\n    element:\n      id: create-category-food\n    direction: UP\n- tapOn:\n    id: create-category-food\n`;
+  assert.deepEqual(flowProblems('flows/up.yaml', up), []);
+  const other = `${HEADER}- scrollUntilVisible:\n    element:\n      id: a\n- tapOn:\n    id: b\n`;
+  assert.deepEqual(flowProblems('flows/other.yaml', other), []);
+  const nested = `${HEADER}- runFlow:\n    when:\n      platform: Android\n    commands:\n      - scrollUntilVisible:\n          element: "Save"\n      - tapOn: "Save"\n- assertVisible:\n    id: feed-screen\n`;
+  assert.deepEqual(flowProblems('flows/nested.yaml', nested), [
+    'flows/nested.yaml: scrollUntilVisible to text:Save is followed by a tap on it, so it needs an explicit centerElement: true when the floating tab bar can cover it, false when nothing can',
+  ]);
+});

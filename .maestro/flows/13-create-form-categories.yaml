@@ -16,10 +16,12 @@ tags: [posts]
     visible:
       id: unified-create-header
     timeout: 15000
+# The category row is at the top of the form: nothing covers it, and centering it would scroll it away.
 - scrollUntilVisible:
     element:
       id: create-category-rides
     timeout: 10000
+    centerElement: false
 - tapOn:
     id: create-category-rides
 - tapOn: "להציע"

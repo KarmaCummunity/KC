@@ -13,11 +13,13 @@ tags: [donations, feed]
     visible:
       id: donations-hub
     timeout: 15000
+# `centerElement`: a tile near the bottom can sit under the floating tab bar, which would catch the tap.
 - scrollUntilVisible:
     element:
       id: donation-tile-food
     direction: DOWN
     timeout: 10000
+    centerElement: true
 - tapOn:
     id: donation-tile-food
 - extendedWaitUntil:
