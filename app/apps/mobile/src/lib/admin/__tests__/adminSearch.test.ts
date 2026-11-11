@@ -2,10 +2,10 @@
 import { describe, expect, it } from 'vitest';
 import { ADMIN_DESTINATIONS } from '../adminDestinations';
 import { searchAdminDestinations, visibleDestinations } from '../adminSearch';
-import he from '../../../i18n/locales/he';
-import en from '../../../i18n/locales/en';
+import { bothLocaleBundles } from '../../../i18n/useLocaleBundle';
 
-const labels = { he: he.admin, en: en.admin } as never;
+const { he, en } = bothLocaleBundles();
+const labels = { he: he.admin, en: en.admin };
 const keys = (q: string, dest = ADMIN_DESTINATIONS) => searchAdminDestinations(q, dest, labels).map((d) => d.key);
 
 describe('searchAdminDestinations', () => {

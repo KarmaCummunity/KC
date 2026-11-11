@@ -11,9 +11,7 @@ import { FilterSearchBar } from '../filterKit/FilterSearchBar';
 import { rowDirectionStart, textAlignStart } from '../../lib/rtlLayout';
 import { ADMIN_DESTINATIONS } from '../../lib/admin/adminDestinations';
 import { searchAdminDestinations, visibleDestinations } from '../../lib/admin/adminSearch';
-import { useLocaleBundle } from '../../i18n/useLocaleBundle';
-import he from '../../i18n/locales/he';
-import en from '../../i18n/locales/en';
+import { bothLocaleBundles, useLocaleBundle } from '../../i18n/useLocaleBundle';
 
 interface Props {
   readonly roles: readonly AdminRole[];
@@ -22,7 +20,7 @@ interface Props {
 }
 
 // Both languages are searchable whatever the UI language is.
-const SEARCH_LABELS = { he: he.admin, en: en.admin } as const;
+const SEARCH_LABELS = { he: bothLocaleBundles().he.admin, en: bothLocaleBundles().en.admin };
 
 export function AdminDashboardSearch({ roles, isHidden }: Props): ReactElement {
   const L = useLocaleBundle();
