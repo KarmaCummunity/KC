@@ -13,6 +13,8 @@ vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogT
 vi.mock('@expo/vector-icons', async () => (await import('../../ui/__tests__/kitDialogTestKit')).iconsDouble);
 vi.mock('react-i18next', async () => (await import('../../ui/__tests__/kitDialogTestKit')).i18nDouble);
 vi.mock('react-native-safe-area-context', async () => (await import('../../ui/__tests__/kitDialogTestKit')).safeAreaDouble);
+// Email flows visible: the launch-surface gate renders its children (see config/launchSurfaces.ts).
+vi.mock('../../../hooks/useLaunchSurface', () => ({ useLaunchSurface: () => true }));
 vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 vi.mock('../../../hooks/useModalHardwareBack', () => ({ useModalHardwareBack: () => {} }));
 vi.mock('expo-router', () => ({ useRouter: () => router }));

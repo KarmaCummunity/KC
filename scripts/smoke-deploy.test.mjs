@@ -2,6 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  checkAppLinks,
   checkFunctions,
   checkPages,
   extractTitle,
@@ -188,4 +189,33 @@ test('checkPages reports HTTP errors and a page without a title', async () => {
   assert.equal(result.ok, false);
   assert.match(result.detail, /\/terms → HTTP 404/);
   assert.match(result.detail, /blank\.html has no <title>/);
+});
+
+const manifest = (status, body, type = 'application/json') => ({
+  ...response(status, body),
+  headers: { get: (h) => (h.toLowerCase() === 'content-type' ? type : null) },
+});
+const WK = { 'apple-app-site-association': '{"applinks":{}}', 'assetlinks.json': '[]' };
+const readSource = (name) => WK[name];
+
+test('checkAppLinks passes for direct 200 JSON that matches the checkout', async () => {
+  const { fetch, calls } = fakeFetch({
+    [`GET ${WEB}/.well-known/apple-app-site-association`]: manifest(200, '{ "applinks": {} }'),
+    [`GET ${WEB}/.well-known/assetlinks.json`]: manifest(200, '[]'),
+  });
+  const result = await checkAppLinks({ webUrl: WEB, fetch, readSource });
+  assert.equal(result.ok, true, result.detail);
+  assert.equal(calls.length, 2);
+});
+
+test('checkAppLinks fails on a redirect, a wrong content type and a stale body', async () => {
+  const { fetch } = fakeFetch({
+    [`GET ${WEB}/.well-known/apple-app-site-association`]: manifest(301, ''),
+    [`GET ${WEB}/.well-known/assetlinks.json`]: manifest(200, '[{"old":1}]', 'application/octet-stream'),
+  });
+  const result = await checkAppLinks({ webUrl: WEB, fetch, readSource });
+  assert.equal(result.ok, false);
+  assert.match(result.detail, /apple-app-site-association → HTTP 301 \(redirect/);
+  assert.match(result.detail, /assetlinks\.json content-type is "application\/octet-stream"/);
+  assert.match(result.detail, /assetlinks\.json body differs/);
 });
