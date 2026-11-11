@@ -49,7 +49,8 @@ create type public.post_card as (
 );
 comment on type public.post_card is 'Everything a post card shows, as returned by every post list.';
 
--- What a client needs to fetch and lay out one file.
+-- What a client needs to fetch and lay out one file, and to attach it again to a new post
+-- (republish): its type and size as recorded at upload.
 create function kc_access.post_media_json(p_media public.post_media)
 returns jsonb
 language sql
@@ -58,7 +59,8 @@ set search_path = ''
 as $$
   select jsonb_build_object(
     'id', p_media.id, 'kind', p_media.kind, 'storage_bucket', p_media.storage_bucket,
-    'storage_key', p_media.storage_key, 'width', p_media.width, 'height', p_media.height,
+    'storage_key', p_media.storage_key, 'mime_type', p_media.mime_type, 'size_bytes', p_media.size_bytes,
+    'width', p_media.width, 'height', p_media.height,
     'duration_ms', p_media.duration_ms, 'blurhash', p_media.blurhash);
 $$;
 comment on function kc_access.post_media_json(public.post_media) is 'JSON form of a media row inside a card or a detail payload.';

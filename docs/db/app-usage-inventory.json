@@ -212,7 +212,7 @@
   {
    "kind": "bucket",
    "file": "app/apps/mobile/src/services/listingImageUpload.ts",
-   "line": 39,
+   "line": 42,
    "area": "mobile",
    "symbol": "uploadListingImages",
    "via": "const",
@@ -221,7 +221,7 @@
   {
    "kind": "bucket",
    "file": "app/apps/mobile/src/services/listingImageUpload.ts",
-   "line": 52,
+   "line": 56,
    "area": "mobile",
    "symbol": "listingImagePublicUrl",
    "via": "const",

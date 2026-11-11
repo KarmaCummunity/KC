@@ -39,7 +39,7 @@ describe('SupabaseMarketplaceRepository', () => {
   it('builds the detail from post_detail, the world labels and the detail row', async () => {
     const card = makeCard({ id: 'p1', kind_id: 'kind-offer', world_slug: 'items', post_type: 'standard' });
     const { client } = createFakeClient({
-      rpc: { post_detail: ok({ post: card, media: [{ id: 'm1', storage_key: 'o/a.jpg' }], comments: [] }) },
+      rpc: { post_detail: ok({ post: card, media: [{ id: 'm1', storage_key: 'o/a.jpg', mime_type: 'image/png', size_bytes: 2048 }], comments: [] }) },
       tables: {
         post_kinds: ok(KINDS),
         worlds: ok({ label_he: 'items-he', label_en: 'Items' }),
@@ -50,7 +50,7 @@ describe('SupabaseMarketplaceRepository', () => {
     expect(detail).toMatchObject({
       listingId: 'p1', ownerId: 'owner-1', worldSlug: 'items', worldLabelEn: 'Items', kindSlug: 'item_offer', direction: 'give',
       title: 'Sofa', summary: 'Three seats', listingStatus: 'open', availabilityStatus: 'ongoing', lat: 32.1, lng: 34.7,
-      media: [{ storagePath: 'o/a.jpg', sortOrder: 0 }], feedPostId: 'p1', feedHidden: false,
+      media: [{ storagePath: 'o/a.jpg', sortOrder: 0, mimeType: 'image/png', sizeBytes: 2048 }], feedPostId: 'p1', feedHidden: false,
     });
     expect(detail?.owner).toMatchObject({ userId: 'owner-1', displayName: 'Dana' });
   });

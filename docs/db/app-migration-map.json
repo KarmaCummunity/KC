@@ -1552,13 +1552,13 @@
     },
     {
      "file": "app/apps/mobile/src/services/listingImageUpload.ts",
-     "line": 39,
+     "line": 42,
      "symbol": "uploadListingImages",
      "area": "mobile"
     },
     {
      "file": "app/apps/mobile/src/services/listingImageUpload.ts",
-     "line": 52,
+     "line": 56,
      "symbol": "listingImagePublicUrl",
      "area": "mobile"
     },
@@ -9081,7 +9081,7 @@
     {
      "type": "rpc",
      "name": "post_cards",
-     "source": "30_social/070_post_cards.sql:69",
+     "source": "30_social/070_post_cards.sql:71",
      "signature": [
       "post_cards(p_post_ids: string[]) → post_card[]"
      ],
@@ -9126,7 +9126,7 @@
     {
      "type": "rpc",
      "name": "post_comments_page",
-     "source": "30_social/070_post_cards.sql:112",
+     "source": "30_social/070_post_cards.sql:114",
      "signature": [
       "post_comments_page(p_cursor?: Json, p_limit?: number, p_parent_comment_id?: string, p_post_id: string) → { author_avatar_url: string author_display_name: string author_id: string author_identity_masked: boolean author_share_handle: string body: string created_at: string edited_at: string id: string mention_user_ids: stri..."
      ],
@@ -9158,7 +9158,7 @@
     {
      "type": "rpc",
      "name": "post_detail",
-     "source": "30_social/070_post_cards.sql:168",
+     "source": "30_social/070_post_cards.sql:170",
      "signature": [
       "post_detail(p_post_id: string) → Json"
      ],
@@ -13433,7 +13433,7 @@
     {
      "type": "rpc",
      "name": "post_comments_page",
-     "source": "30_social/070_post_cards.sql:112",
+     "source": "30_social/070_post_cards.sql:114",
      "signature": [
       "post_comments_page(p_cursor?: Json, p_limit?: number, p_parent_comment_id?: string, p_post_id: string) → { author_avatar_url: string author_display_name: string author_id: string author_identity_masked: boolean author_share_handle: string body: string created_at: string edited_at: string id: string mention_user_ids: stri..."
      ],
@@ -13825,7 +13825,7 @@
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "One row per photo, inserted `pending` by the owner after the upload to `post-images`; delete by the owner. An edit keeps the rows whose file and position are unchanged (no update grant).",
+   "note": "One row per photo, inserted `pending` by the owner after the upload to `post-images`; delete by the owner. An edit keeps the rows whose file and position are unchanged (no update grant). Every row records the real `mime_type` and `size_bytes` of the uploaded file (JPEG or PNG, at most 8 MB); `post_detail` returns both, so a republish attaches the same files again.",
    "oldObject": {},
    "targets": [
     {
@@ -14374,7 +14374,7 @@
     {
      "type": "rpc",
      "name": "post_cards",
-     "source": "30_social/070_post_cards.sql:69",
+     "source": "30_social/070_post_cards.sql:71",
      "signature": [
       "post_cards(p_post_ids: string[]) → post_card[]"
      ],
@@ -14383,7 +14383,7 @@
     {
      "type": "rpc",
      "name": "post_detail",
-     "source": "30_social/070_post_cards.sql:168",
+     "source": "30_social/070_post_cards.sql:170",
      "signature": [
       "post_detail(p_post_id: string) → Json"
      ],
