@@ -328,8 +328,10 @@ select is(pg_temp.val('b', $$select count(*) filter (where series_more > 0) || '
   '1|1', 'the feed folds the later dates of a series into one row');
 select is(pg_temp.act('c', $$select public.set_ride_series_status((select id from public.ride_series), 'cancelled')$$)
     || '|' || pg_temp.val(null, $$select (select count(*) from public.post_ride_details where series_id is not null)
-         || '|' || (select count(*) from public.posts where title = 'daily' and status = 'open')$$), 'ok|0|1',
-  'cancelling detaches the booked ride, which lives on');
+         || '|' || (select count(*) from public.posts where title = 'daily' and status = 'open')
+         || '|' || (select string_agg(h.status || ':' || h.cancel_reason, ',') from public.post_handoffs h
+                      join public.posts p on p.id = h.post_id where p.title = 'daily')$$), 'ok|0|0|cancelled:post_deleted',
+  'cancelling the series ends its booked ride too, and the seat ends with it (FR-RIDE-046 AC6)');
 select is(pg_temp.act('c', $$select public.set_ride_series_status((select id from public.ride_series), 'active')$$),
   'illegal_transition', 'a cancelled series is never resumed');
 
@@ -349,11 +351,11 @@ select is(kc_private.post_expiry_sweep() || '|' || pg_temp.val(null, $$select p.
     h.status || ':' || h.cancel_reason, ' ' order by h.recipient_id) from public.post_handoffs h where h.post_id = p.id and h.recipient_id in (@b, @c))
     from public.posts p where p.title = 'r1'$$) || '|' || pg_temp.told('post_expired', 'a'),
   '1|expired|cancelled:not_completed cancelled:passenger_cancelled cancelled:expired|1', 'the sweep expires a ride and ends its bookings with their reasons');
-select is(pg_temp.told('ride_booking_lapsed', 'b') || '|' || pg_temp.told('ride_booking_cancelled', 'b'), '1|1',
-  'a passenger whose seat went with an expired ride hears that the ride did not run, and the cancellation they heard before stays the only one');
+select is(pg_temp.told('ride_booking_lapsed', 'b') || '|' || pg_temp.told('ride_booking_cancelled', 'b'), '1|2',
+  'a passenger whose seat went with an expired ride hears that the ride did not run; the cancellations they heard before (a withdrawn seat, the cancelled series) stay the only ones');
 select is(pg_temp.act('b', $$select public.book_ride_seat(#r6)$$) || pg_temp.act('a', $$select public.delete_post(#r6)$$)
     || '|' || pg_temp.val(null, $$select cancel_reason from public.post_handoffs where id = ~r6.b$$)
-    || '|' || pg_temp.told('ride_booking_cancelled', 'b'), 'okok|post_deleted|2', 'deleting a ride cancels its bookings and tells the passenger');
+    || '|' || pg_temp.told('ride_booking_cancelled', 'b'), 'okok|post_deleted|3', 'deleting a ride cancels its bookings and tells the passenger');
 delete from auth.users where id = '00000000-0000-4000-8000-00000000000a';
 select is((select count(*) from public.post_ride_details r join public.posts p on p.id = r.post_id where p.owner_id = '00000000-0000-4000-8000-00000000000a')
     || '|' || (select count(*) from public.post_emergencies) || '|' || (select count(*) from public.ride_route_alerts where series_id is null),

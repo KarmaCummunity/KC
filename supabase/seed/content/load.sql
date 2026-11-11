@@ -167,7 +167,7 @@ insert into seed_platform_changes select count(*) from accounts;
 select 'platform_organization' as seed_table, 1 as rows_in_file, coalesce(sum(n), 0) as rows_changed
   from seed_platform_changes;
 
--- 5. Links and knowledge of the giving worlds (migration 0021). Every row is matched by its
+-- 5. Links and knowledge of the giving worlds (migration 0024). Every row is matched by its
 --    stable key: a link by its world and link slug, a body and a topic by their slug, an
 --    alias by its normalized text.
 with changed as (

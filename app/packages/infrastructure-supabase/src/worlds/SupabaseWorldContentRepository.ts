@@ -15,7 +15,7 @@ import {
 type Client = SupabaseClient<Database>;
 
 /**
- * Links and knowledge of a giving world (migration 0021). Three plain reads in parallel: row
+ * Links and knowledge of a giving world (migration 0024). Three plain reads in parallel: row
  * level security already hides what is not live, so the filters below only narrow to the world
  * and keep a platform admin's view of the member screens identical to a member's.
  */

@@ -22,7 +22,7 @@ loads reference and content on the baseline twice and runs `check.sql`; CI runs 
 | `data/donation_links.csv` | 108 | `donation_links`, curated (no submitter), approved after loading |
 | `data/legal_document_versions.csv` | 2 | `legal_documents` pointer + `legal_document_versions` (terms, privacy, version 1, Hebrew) |
 | `data/surveys.csv`, `survey_versions.csv`, `survey_questions.csv` | 3 / 3 / 8 | `surveys`, `survey_versions`, `survey_questions` |
-| `data/world_links.csv` | 8 | `world_links`: paths from one giving world to a related one (migration `0021`), matched by world + link slug |
+| `data/world_links.csv` | 8 | `world_links`: paths from one giving world to a related one (migration `0024`), matched by world + link slug |
 | `data/external_bodies.csv` | 7 | `external_bodies`: organizations a world works through, matched by slug; the site address is filled only where the app already curated it |
 | `data/knowledge_topics.csv`, `knowledge_topic_aliases.csv` | 56 / 78 | `knowledge_topics` (all in the knowledge world, 11 roots) and `knowledge_topic_aliases`, matched by slug / normalized alias |
 | the platform organization (in `load.sql`) | 1 + 3 | `organizations` (Karma Community) + `billing.org_finance_accounts` (cash, Bit, Paybox, empty balances) |
@@ -40,7 +40,7 @@ worlds the baseline does not ship (environment, creative; they load once those w
 | Class | What | Handling |
 | --- | --- | --- |
 | Real content / reference | NGO, volunteering and Kol Zchut links (108 in 11 lists), terms and privacy text, 3 surveys, platform org and its accounts, cities, streets, junctions, worlds, post kinds, subcategories | loaded (this seed and `../reference/`) |
-| Real content, no baseline target yet | `world_links` 4 and `external_bodies` 3 of worlds not in the baseline (the other 8 / 7, and `knowledge_topics` 56 + aliases 78, are loaded since migration `0021`), `whatsapp_message_templates` 10 (draft/deprecated), `kc_support_channels` 2, `marketplace_rules` 17 + params 9 | `deferred/` |
+| Real content, no baseline target yet | `world_links` 4 and `external_bodies` 3 of worlds not in the baseline (the other 8 / 7, and `knowledge_topics` 56 + aliases 78, are loaded since migration `0024`), `whatsapp_message_templates` 10 (draft/deprecated), `kc_support_channels` 2, `marketplace_rules` 17 + params 9 | `deferred/` |
 | Superseded by the baseline | old catalog `listing_kinds` 40 and `categories` 90 (the baseline has its own kinds and subcategories in `../reference/`), `match_weights`, `matching_settings`, `feed_ranking_config`, `fsm_*`, `app_flags` for money/payments (baseline defaults and flags own them) | not copied (kept in `deferred/` where useful) |
 | Configuration of the dev environment | `kc_dev_demo_*`, `app_flags` `dev_mock_identity_verification` and `sandbox_payments`, `payment_providers` sandbox, `research_secrets`, `ingestion_sources` (WhatsApp, flag off) | excluded |
 | Demo / test | organization `[DEMO] בית לכל חיה`, the demo seed, E2E users (`@seed.kc.test`), seeded posts/comments/reactions/chats/messages | excluded; the demo seed is archived in `../../archive/seed-kc-dev-demo/` |

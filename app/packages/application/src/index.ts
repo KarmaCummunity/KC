@@ -220,6 +220,7 @@ export { SubmitPublicResearchResponseUseCase } from './research/SubmitPublicRese
 export * from './payments';
 export * from './volunteering';
 export * from './organizations';
+export * from './series';
 export * from './giving';
 export * from './housing';
 export * from './admin/whatsapp';

@@ -17,6 +17,7 @@ export default function TimeVolunteerLayout() {
       <Stack.Screen name="index" options={{ headerTitle: t('donations.timeScreen.title') }} />
       <Stack.Screen name="handoffs" options={{ headerTitle: t('givingHandoff.myHandoffs') }} />
       <Stack.Screen name="my-shifts" options={{ headerTitle: t('timeVolunteer.myShiftsTitle') }} />
+      <Stack.Screen name="series" options={{ headerTitle: t('postSeries.mine') }} />
       <Stack.Screen name="support" options={{ headerTitle: t('donations.timeScreen.title') }} />
       <Stack.Screen
         name="opportunity/[opportunityId]"

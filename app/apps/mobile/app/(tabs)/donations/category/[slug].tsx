@@ -135,7 +135,7 @@ export default function DonationCategoryScreen() {
           <DonationLinksList categorySlug={slug} />
         </MotionEntry>
 
-        {/* Curated organizations, related worlds and knowledge topics of the world (migration 0021). */}
+        {/* Curated organizations, related worlds and knowledge topics of the world (migration 0024). */}
         <MotionEntry variant="bottom" delay={ENTRY_DELAY.section + 120}>
           <WorldCuratedContent worldSlug={worldSlugOfLinkList(slug)} />
         </MotionEntry>

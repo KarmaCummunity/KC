@@ -31,7 +31,7 @@ begin
   select count(*) into v_n from billing.org_finance_accounts a join public.organizations o on o.id = a.org_id where o.is_platform;
   if v_n <> 3 then raise exception 'seed: % platform finance accounts, want 3', v_n; end if;
 
-  -- Links and knowledge of the giving worlds (migration 0021).
+  -- Links and knowledge of the giving worlds (migration 0024).
   select count(*) into v_n from public.world_links;
   if v_n <> 8 then raise exception 'seed: % world links, want 8', v_n; end if;
   select count(*) into v_n from public.external_bodies;
