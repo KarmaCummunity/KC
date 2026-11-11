@@ -8,7 +8,6 @@ import { eventRegistrationMachine } from './machines/eventRegistration';
 import { followRequestMachine } from './machines/followRequest';
 import { givingHandoffMachine } from './machines/givingHandoff';
 import { housingBookingMachine } from './machines/housingBooking';
-import { knowledgeTopicMachine } from './machines/knowledgeTopic';
 import { kycMachine } from './machines/kyc';
 import { matchMachine } from './machines/match';
 import { moderationQueueMachine } from './machines/moderationQueue';
@@ -23,7 +22,6 @@ import { postCommentMachine } from './machines/postComment';
 import { postMediaMachine } from './machines/postMedia';
 import { refundMachine } from './machines/refund';
 import { reportMachine } from './machines/report';
-import { reviewDecisionMachine } from './machines/reviewDecision';
 import { rideBookingMachine } from './machines/rideBooking';
 import { rideSeriesMachine } from './machines/rideSeries';
 import { standingOrderMachine } from './machines/standingOrder';
@@ -69,14 +67,12 @@ export const FSM_MACHINES: readonly FsmMachine<string, string>[] = [
 ];
 
 /**
- * Machines of the pre-baseline database that the baseline does not seed: the back-office and
- * knowledge tools (packages L2, L6, L7 of `docs/db/app-migration-map.md`) still import them.
- * They are not in the catalog, so the contract test does not compare them. The package that
- * migrates the owning module deletes its machine here and in `machines/`.
+ * Machines the baseline does not seed: the parked back-office tools (admin tasks and
+ * timesheets, `parkedFeatures.ts`) still derive their screen actions from them. They are not
+ * in the catalog, so the contract test does not compare them; they leave with those tools or
+ * move into the catalog when the baseline gains the owning module.
  */
 export const LEGACY_FSM_MACHINES: readonly FsmMachine<string, string>[] = [
   adminTaskMachine,
-  knowledgeTopicMachine,
-  reviewDecisionMachine,
   timesheetMachine,
 ];
