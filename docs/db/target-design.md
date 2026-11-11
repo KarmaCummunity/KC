@@ -371,4 +371,21 @@ Validation order for every step: local / branch database → kc-dev → kc-prod.
 | Reference-data licences | Tracked as a launch-blocking task (#2079); no reference data is loaded into kc-prod before it is closed |
 | Delivery | No pull request into `dev` until the whole baseline is complete; work is pushed to the feature branch only |
 
+### 12.2 Defaults approved by the PM (2026-11-11: "approved whatever is needed for the upgrade")
+
+| Topic | Decision |
+| --- | --- |
+| Source of truth after the cut-over | The baseline becomes migration `0001`; later changes are forward-only migrations. `supabase/schemas/` is frozen as history; the pgTAP tests move to `supabase/tests` |
+| Driver declaration | Enforced before publishing a ride offer (FR-RIDE-041) |
+| Receipts | Gapless per-organization serial with a Section 46 eligibility flag; KC generates no official document (D77 stands) |
+| Account deletion record | A salted hash of the member id plus dates, no identifying data (design §4.1); supersedes D136's "no tombstone" |
+| Ride karma | Per completed booking, as the current code |
+| Worlds without a spec karma value | Earn nothing until the spec gives a value |
+| Organization page and transparency | Signed-in members only (§12.1 minimal-access decision) |
+| Public research form | Submitted through the Edge Function only; the database grants nothing to `anon` |
+| Money vocabulary | `succeeded` / `cancelled`; amounts in whole agorot |
+| Launch scope | D102: items, rides and food with the time world; money and the other worlds are portals behind their feature flags |
+| Rebuilding kc-dev | Approved in principle (§12 Q6). The destructive step itself still needs the typed confirmation required by `AGENTS.md` §7 at the time it runs |
+
+
 Recorded as `D-228` in [`docs/SSOT/DECISIONS.md`](../SSOT/DECISIONS.md). Phase 3 starts with step (1) of §10.
