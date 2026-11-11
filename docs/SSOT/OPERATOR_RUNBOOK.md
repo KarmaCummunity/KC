@@ -77,9 +77,8 @@ Artifact `db-backup-<target>-<YYYYMMDD>-<run id>-<attempt>`, each file gzip-comp
 | File | Content |
 | --- | --- |
 | `roles.sql.gz.age` | custom roles and role settings |
-| `schema.sql.gz.age` | schema of every non-managed schema (`public`, `ops`, ...) |
-| `data.sql.gz.age` | rows of those schemas (`COPY` format) |
-| `auth-storage-data.sql.gz.age` | rows of `auth` (accounts, identities) and `storage` (file metadata) |
+| `schema.sql.gz.age` | definitions of every non-managed schema (`public`, `ops`, ...); the `auth` / `storage` / `pgmq` tables are created by the platform and are not in it |
+| `data.sql.gz.age` | rows of all schemas in `COPY` format, **including `auth` (accounts, identities) and `storage` (file metadata)** and the pgmq queue tables |
 | `manifest.json.gz.age` | table list and exact row count per table |
 | `BACKUP-INFO.txt`, `SHA256SUMS` | plain text: target, project, time; checksums of the `.age` files |
 
@@ -96,7 +95,7 @@ Artifact `db-backup-<target>-<YYYYMMDD>-<run id>-<attempt>`, each file gzip-comp
 
 ### Restore check (every run)
 
-After dumping, the run starts a throwaway `supabase/postgres` container (same Postgres major and extensions as Supabase), restores `roles.sql`, `schema.sql` and `data.sql` into it with `ON_ERROR_STOP`, counts the rows of every table and compares them with the manifest. A dump that cannot be restored, or restores short, fails the run. `auth-storage-data.sql` is not part of this check (the container has no GoTrue migrations, so the `auth` columns would not match); it is restored only into a real Supabase project, where the schema matches.
+After the artifact is uploaded, the run starts a throwaway `supabase/postgres` container (same Postgres major and extensions as Supabase), restores `roles.sql` (errors ignored: roles of platform services such as realtime do not exist in the container), then `schema.sql` and the `data.sql` rows of the schemas that `schema.sql` defines, both with `ON_ERROR_STOP`, counts the rows of every such table and compares them with the manifest. A dump that cannot be restored, or restores short, fails the run, and the backup stays available because the upload comes first. The rows of `auth`, `storage` and `pgmq` are in the backup and the manifest but not in this check (the container has no GoTrue / Storage migrations, so those tables are missing or have other columns); they restore into a real Supabase project, where those tables exist.
 
 ### Restore procedure (manual, owner's key)
 
@@ -104,14 +103,14 @@ Policy `D-195` still applies: the database is forward-fix first; restore only wh
 
 1. Actions → `DB backup (prod)` (or dev) → pick the run → download artifact `db-backup-...` to a private machine (`gh run download <run id> -n <artifact name>`).
 2. Verify: `sha256sum -c SHA256SUMS`.
-3. Decrypt and decompress each file: `age -d -i key.txt roles.sql.gz.age | gunzip > roles.sql` (same for `schema`, `data`, `auth-storage-data`, `manifest.json`). Never commit, upload or keep these files after the restore.
+3. Decrypt and decompress each file: `age -d -i key.txt roles.sql.gz.age | gunzip > roles.sql` (same for `schema`, `data`, `manifest.json`). Never commit, upload or keep these files after the restore.
 4. Restore into a **new** Supabase project (Dashboard → New project, same region), then copy back what was lost; replaying a full dump over a live project also drops everything written after the backup. Use the session pooler or direct connection string as `$TARGET_DB_URL`:
    ```bash
    psql "$TARGET_DB_URL" -v ON_ERROR_STOP=1 -f roles.sql          # skip or edit if the role exists
    psql "$TARGET_DB_URL" -v ON_ERROR_STOP=1 -f schema.sql
-   psql "$TARGET_DB_URL" -v ON_ERROR_STOP=1 -f data.sql            # starts with session_replication_role = replica
-   psql "$TARGET_DB_URL" -v ON_ERROR_STOP=1 -f auth-storage-data.sql
+   psql "$TARGET_DB_URL" -f data.sql                               # starts with session_replication_role = replica
    ```
+   `data.sql` also holds queue rows (`pgmq`); until the queues exist (migrations create them), psql reports `relation "pgmq..." does not exist` for those blocks. Those errors are expected; any other error is not.
 5. Compare: for each table, `select count(*)` against `manifest.json` (`rows`).
 6. Re-create Vault secrets, Edge Function secrets and Auth settings; re-upload Storage files from their own source. Point the app (`EXPO_PUBLIC_SUPABASE_URL`, Cloudflare Pages variables, EAS) at the new project only after the owner confirms.
 7. `shred -u` the decrypted files.

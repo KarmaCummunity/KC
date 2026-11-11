@@ -72,7 +72,7 @@ runs:
 
     # Plaintext (PII) exists only in $RUNNER_TEMP of this ephemeral runner, for
     # the restore check, and is removed by the last step even on failure.
-    - name: Dump roles, schema, data, auth and storage rows
+    - name: Dump roles, schema and data
       shell: bash
       env:
         SHA: ${{ github.sha }}
