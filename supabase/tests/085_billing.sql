@@ -414,7 +414,7 @@ select is(pg_temp.act('f', $$select public.finance_ledger_mark(&aid, (select man
   || '|' || pg_temp.val('c', $$select count(*) from public.finance_ledger_list(&aid, null, 'cancelled')$$)
   || '|' || pg_temp.val('c', $$select balance_agorot from public.finance_accounts_list(&aid) where kind = 'bank'$$)
   || '|' || pg_temp.audited('finance_entry_void'),
-  '23514|ok|entry_voided|0:5|1|10000|1', 'void replaces delete: it needs a reason, is final, and the entry counts nowhere');
+  'void_reason_required|ok|entry_voided|0:5|1|10000|1', 'void replaces delete: it needs a reason, is final, and the entry counts nowhere');
 select throws_ok($$update billing.org_finance_entries set status = 'pending' where status = 'cancelled'$$, 'P0001', 'entry_voided',
   'a voided entry is frozen for every writer');
 
