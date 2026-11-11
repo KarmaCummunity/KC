@@ -14,6 +14,7 @@ import { makeUseStyles, radius, spacing, typography, useTheme, Text, iconSize } 
 import { useAdminRoles } from '../../hooks/useAdminRoles';
 import { rowDirectionStart, textAlignStart } from '../../lib/rtlLayout';
 import { useLocaleBundle, type LocaleBundle } from '../../i18n/useLocaleBundle';
+import { useLaunchSurface } from '../../hooks/useLaunchSurface';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -50,13 +51,16 @@ function normalize(href: string): string {
 export function AdminNav({ variant }: { variant: 'sidebar' | 'topbar' }): ReactElement {
   const pathname = usePathname();
   const { roles } = useAdminRoles();
+  const whatsappBotVisible = useLaunchSurface('whatsappBot');
   const { colors } = useTheme();
   const styles = useStyles();
   const L = useLocaleBundle();
   const labels = L.admin.nav;
 
   const items = ITEMS.filter(
-    (it) => it.perm == null || hasPermission(roles as readonly AdminRole[], it.perm),
+    (it) =>
+      (it.key !== 'whatsapp' || whatsappBotVisible) &&
+      (it.perm == null || hasPermission(roles as readonly AdminRole[], it.perm)),
   );
   const current = normalize(pathname || '/admin');
 
