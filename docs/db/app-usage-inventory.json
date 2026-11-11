@@ -20,8 +20,8 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 241,
-   "distinct": 219
+   "callSites": 242,
+   "distinct": 220
   },
   "table": {
    "callSites": 163,
@@ -1988,7 +1988,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-   "line": 99,
+   "line": 119,
    "area": "matching",
    "symbol": "SupabaseMatchRepository.listMine",
    "via": "literal",
@@ -1997,11 +1997,20 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-   "line": 107,
+   "line": 127,
    "area": "matching",
    "symbol": "SupabaseMatchRepository.respond",
    "via": "literal",
    "name": "match_respond"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
+   "line": 134,
+   "area": "matching",
+   "symbol": "SupabaseMatchRepository.qualityByWorld",
+   "via": "literal",
+   "name": "admin_match_quality"
   },
   {
    "kind": "table",

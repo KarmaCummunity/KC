@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 219 | 90 | 20 | 47 | 1 | 61 |
+| RPCs | 220 | 91 | 20 | 47 | 1 | 61 |
 | Tables and views | 55 | 35 | 0 | 16 | 0 | 4 |
 | Storage buckets | 4 | 3 | 0 | 1 | 0 | 0 |
 | Realtime channels | 6 | 6 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 3 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | 287 | 137 | 20 | 64 | 1 | 65 |
+| **Total** | 288 | 138 | 20 | 64 | 1 | 65 |
 
 ### Launch scope
 
@@ -23,7 +23,7 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 | --- | --- | --- | --- | --- | --- | --- |
 | core | 103 | 85 | 1 | 17 | 0 | 0 |
 | wedge | 54 | 33 | 15 | 6 | 0 | 0 |
-| later | 130 | 19 | 4 | 41 | 1 | 65 |
+| later | 131 | 20 | 4 | 41 | 1 | 65 |
 | **Launch-critical (core + wedge)** | 157 | 118 | 16 | 23 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
@@ -55,7 +55,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/knowledge/` | 13 | 1 | 5 | 0 | 7 |
 | `infrastructure-supabase/src/legal/` | 3 | 3 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/marketplace/` | 48 | 34 | 14 | 0 | 0 |
-| `infrastructure-supabase/src/matching/` | 2 | 2 | 0 | 0 | 0 |
+| `infrastructure-supabase/src/matching/` | 3 | 3 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/moderation/` | 7 | 6 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/notifications/` | 7 | 7 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/payments/` | 12 | 2 | 8 | 1 | 1 |
@@ -328,12 +328,13 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/matching/`
 
-2 call sites: 2 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
+3 call sites: 3 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `match_respond` | wedge | 1:1 | `match_respond(p_accept: boolean, p_match_id: string) → string` | `p_match_id`, `p_accept`; answers the pair's status (`accepted` when both accepted). | `account_not_active`, `match_not_found` †, `match_not_open` †, `unauthenticated` | high | SupabaseMatchRepository.ts:107 |
-| `my_matches` | wedge | 1:1 | `my_matches(p_limit?: number) → { created_at: string distance_km: number llm_reason: string match_id: string my_post_id: string my_post_title: string my_response: string my_role: string other_post: post_card other_response: string score: number stat...` | The caller's pairs, each with the other member's post as a card (`other_post`). |  | high | SupabaseMatchRepository.ts:99 |
+| `admin_match_quality` | later | 1:1 | `admin_match_quality(p_days?: number) → { accepted: number chat_pairs: number chat_rate: number completed_pairs: number completion_rate: number notified_pairs: number precision_proxy: number responses: number world_label_en: string world_label_he: string wo...` | `p_days` (clamped 1..365); per giving world the alerted pairs, answers, acceptances, chats after the alert and completed handoffs, rates as numerics. Moderators and above (`forbidden` otherwise); lives in `76_matching/070_match_quality.sql`. | `forbidden`, `unauthenticated` | high | SupabaseMatchRepository.ts:134 |
+| `match_respond` | wedge | 1:1 | `match_respond(p_accept: boolean, p_match_id: string) → string` | `p_match_id`, `p_accept`; answers the pair's status (`accepted` when both accepted). | `account_not_active`, `match_not_found` †, `match_not_open` †, `unauthenticated` | high | SupabaseMatchRepository.ts:127 |
+| `my_matches` | wedge | 1:1 | `my_matches(p_limit?: number) → { created_at: string distance_km: number llm_reason: string match_id: string my_post_id: string my_post_title: string my_response: string my_role: string other_post: post_card other_response: string score: number stat...` | The caller's pairs, each with the other member's post as a card (`other_post`). |  | high | SupabaseMatchRepository.ts:119 |
 
 ### `infrastructure-supabase/src/moderation/`
 
@@ -757,7 +758,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | P2 — Posts, feed, search, closure, translations | core | 42 | 31 | 11 | 0 | 0 | P3, P4 |
 | P3 — Chat and realtime | core | 18 | 17 | 1 | 0 | 0 | P2, P4 |
 | P4 — Reports, moderation and admin basics | core | 17 | 12 | 5 | 0 | 0 | P2, P3 |
-| P5 — Launch worlds: items, food, rides, time (events), matching, donation links | wedge | 67 | 56 | 11 | 0 | 0 | P6 |
+| P5 — Launch worlds: items, food, rides, time (events), matching, donation links | wedge | 68 | 57 | 11 | 0 | 0 | P6 |
 | P6 — Edge Functions of the launch | core | 10 | 6 | 4 | 0 | 0 | P5 |
 | L1 — Housing world | later | 12 | 3 | 9 | 0 | 0 | L2, L3, L4, L5, L6, L7 |
 | L2 — Knowledge world | later | 12 | 1 | 5 | 0 | 6 | L1, L3, L4, L5, L6, L7 |

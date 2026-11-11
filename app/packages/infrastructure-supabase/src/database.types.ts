@@ -3593,6 +3593,22 @@ export type Database = {
         }
         Returns: string
       }
+      admin_match_quality: {
+        Args: { p_days?: number }
+        Returns: {
+          accepted: number
+          chat_pairs: number
+          chat_rate: number
+          completed_pairs: number
+          completion_rate: number
+          notified_pairs: number
+          precision_proxy: number
+          responses: number
+          world_label_en: string
+          world_label_he: string
+          world_slug: string
+        }[]
+      }
       admin_org_application_approve: {
         Args: { p_application_id: string; p_note?: string; p_slug: string }
         Returns: string

@@ -1,5 +1,5 @@
 // KC#1122 / FR-ADMIN-029 — match quality per world: alerted pairs, precision proxy,
-// notification→chat and completion rates over a selectable window (admin_match_quality, 0454).
+// notification→chat and completion rates over a selectable window (admin_match_quality).
 import { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
