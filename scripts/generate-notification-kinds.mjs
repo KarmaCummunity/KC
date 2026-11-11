@@ -44,9 +44,11 @@ export const PATHS = {
 };
 
 /** Arguments a notification text may interpolate; both renderers provide exactly these. */
-export const TEXT_ARGS = ['actorName', 'count', 'othersCount', 'messagePreview'];
+export const TEXT_ARGS = ['actorName', 'count', 'othersCount', 'messagePreview', 'taskTitle'];
 /** Texts the worker needs besides the kinds' own (fallbacks of the arguments above). */
-export const AUXILIARY_KEYS = ['notifications.messagePreviewFallback', 'notifications.actorNameFallback'];
+export const AUXILIARY_KEYS = [
+  'notifications.messagePreviewFallback', 'notifications.actorNameFallback', 'notifications.taskTitleFallback',
+];
 const KEY_PREFIX = 'notifications.';
 const COLUMN_DEFAULTS = {
   default_enabled: true, bypass_preferences: false, bypass_quiet_hours: false, sends_push: true, group_window: null,
