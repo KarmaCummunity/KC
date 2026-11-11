@@ -1,88 +1,70 @@
-// FR-POST-022 — saved_posts adapter helpers (keeps SupabasePostRepository under LOC cap).
+// FR-POST-022 — saved posts (bookmarks): the caller's own `saved_posts` rows, listed as cards.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Post } from '@kc/domain';
-import type { Database } from '../database.legacy.types';
-import { POST_SELECT_BARE, mapPostRow, type PostJoinedRow } from './mapPostRow';
-import {
-  decodeSavedPostsCursor,
-  encodeSavedPostsCursor,
-} from './savedPostsCursor';
+import { PostError } from '@kc/application';
+import type { Database } from '../database.types';
+import { unwrapCall } from '../rpc/mapRpcError';
+import { sessionUserId } from '../users/userReads';
+import { encodeKeysetCursor, keysetAfterFilter, parseKeysetCursor } from './pageCursor';
+import { clampPageLimit, fetchPostsByIds } from './postCardPages';
 
-const SAVED_PAGE_MAX = 100;
+type Client = SupabaseClient<Database>;
 
-type SavedRow = {
-  saved_at: string;
-  post_id: string;
-  posts: PostJoinedRow | null;
-};
-
-async function requireUserId(client: SupabaseClient<Database>): Promise<string> {
-  const userId = (await client.auth.getUser()).data.user?.id ?? null;
-  if (!userId) throw new Error('saved_posts: not authenticated');
+async function requireUserId(client: Client): Promise<string> {
+  const userId = await sessionUserId(client);
+  if (!userId) throw new PostError('forbidden', 'saved_posts: not authenticated');
   return userId;
 }
 
-export async function savePostRow(client: SupabaseClient<Database>, postId: string): Promise<void> {
+/** Saves a post; saving it twice is not an error (the table has no update grant, so duplicates are ignored). */
+export async function savePostRow(client: Client, postId: string): Promise<void> {
   const userId = await requireUserId(client);
-  const { error } = await client.from('saved_posts').upsert(
-    { user_id: userId, post_id: postId },
-    { onConflict: 'user_id,post_id', ignoreDuplicates: true },
+  unwrapCall(
+    'table:saved_posts',
+    await client
+      .from('saved_posts')
+      .upsert({ user_id: userId, post_id: postId }, { onConflict: 'user_id,post_id', ignoreDuplicates: true }),
   );
-  if (error) throw new Error(`savePost: ${error.message}`);
 }
 
-export async function unsavePostRow(client: SupabaseClient<Database>, postId: string): Promise<void> {
-  const { error } = await client.from('saved_posts').delete().eq('post_id', postId);
-  if (error) throw new Error(`unsavePost: ${error.message}`);
+export async function unsavePostRow(client: Client, postId: string): Promise<void> {
+  unwrapCall('table:saved_posts', await client.from('saved_posts').delete().eq('post_id', postId));
 }
 
-export async function isPostSavedRow(
-  client: SupabaseClient<Database>,
-  postId: string,
-): Promise<boolean> {
-  const { data, error } = await client
-    .from('saved_posts')
-    .select('post_id')
-    .eq('post_id', postId)
-    .maybeSingle();
-  if (error) throw new Error(`isPostSaved: ${error.message}`);
-  return data !== null;
+export async function isPostSavedRow(client: Client, postId: string): Promise<boolean> {
+  const row = unwrapCall(
+    'table:saved_posts',
+    await client.from('saved_posts').select('post_id').eq('post_id', postId).maybeSingle(),
+  );
+  return row !== null;
 }
 
+/**
+ * The caller's saved posts, most recently saved first. The ids are paged by `(saved_at, post_id)` and
+ * completed into cards by `post_cards`; a saved post the caller can no longer read is simply absent.
+ */
 export async function listSavedPostsPage(
-  client: SupabaseClient<Database>,
+  client: Client,
   limit: number,
   cursor?: string,
 ): Promise<{ posts: Post[]; nextCursor: string | null }> {
   const userId = await requireUserId(client);
-  const safeLimit = Math.max(1, Math.min(limit, SAVED_PAGE_MAX));
-  const decoded = decodeSavedPostsCursor(cursor);
-
-  let q = client
+  const size = clampPageLimit(limit);
+  let query = client
     .from('saved_posts')
-    .select(`saved_at, post_id, posts (${POST_SELECT_BARE})`)
+    .select('post_id, saved_at')
     .eq('user_id', userId)
     .order('saved_at', { ascending: false })
-    .limit(safeLimit + 1);
+    .order('post_id', { ascending: false })
+    .limit(size + 1);
+  const after = parseKeysetCursor(cursor);
+  if (after) query = query.or(keysetAfterFilter('saved_at', 'post_id', after));
 
-  if (decoded) q = q.lt('saved_at', decoded.savedAt);
-
-  const { data, error } = await q;
-  if (error) throw new Error(`listSavedPosts: ${error.message}`);
-
-  const rows = (data ?? []) as unknown as SavedRow[];
-  const hasMore = rows.length > safeLimit;
-  const page = hasMore ? rows.slice(0, safeLimit) : rows;
-
-  const posts: Post[] = [];
-  for (const row of page) {
-    if (!row.posts) continue;
-    posts.push(mapPostRow(row.posts));
-  }
-
+  const rows = unwrapCall('table:saved_posts', await query) ?? [];
+  const page = rows.slice(0, size);
   const last = page[page.length - 1];
-  const nextCursor =
-    hasMore && last ? encodeSavedPostsCursor({ savedAt: last.saved_at }) : null;
+  const posts = await fetchPostsByIds(client, page.map((row) => row.post_id));
+  const nextCursor = rows.length > size && last ? encodeKeysetCursor({ t: last.saved_at, id: last.post_id }) : null;
   return { posts, nextCursor };
 }

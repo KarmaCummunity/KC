@@ -12,24 +12,20 @@
    "distinct": 5
   },
   "channel": {
-   "callSites": 7,
-   "distinct": 7
+   "callSites": 6,
+   "distinct": 6
   },
   "edge_function": {
    "callSites": 5,
    "distinct": 3
   },
-  "postgres_changes": {
-   "callSites": 1,
-   "distinct": 1
-  },
   "rpc": {
-   "callSites": 284,
-   "distinct": 271
+   "callSites": 273,
+   "distinct": 260
   },
   "table": {
-   "callSites": 158,
-   "distinct": 56
+   "callSites": 161,
+   "distinct": 62
   }
  },
  "entries": [
@@ -89,25 +85,6 @@
     "select"
    ],
    "name": "posts"
-  },
-  {
-   "kind": "channel",
-   "file": "app/apps/mobile/src/hooks/useCommunityStatsAbout.ts",
-   "line": 58,
-   "area": "mobile",
-   "symbol": "useEffect",
-   "via": "expression",
-   "name": "topic = `community-stats-watch:${suffix}`"
-  },
-  {
-   "kind": "postgres_changes",
-   "file": "app/apps/mobile/src/hooks/useCommunityStatsAbout.ts",
-   "line": 60,
-   "area": "mobile",
-   "symbol": "useEffect",
-   "via": "literal",
-   "event": "*",
-   "name": "community_stats"
   },
   {
    "kind": "table",
@@ -1193,49 +1170,64 @@
    "name": "admin_review_donation_link"
   },
   {
-   "kind": "rpc",
+   "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-   "line": 19,
+   "line": 51,
    "area": "feed",
-   "symbol": "SupabaseSocialFeedRepository.hidePost",
+   "symbol": "SupabaseSocialFeedRepository.unwrapCall",
    "via": "literal",
-   "name": "rpc_feed_hide_post"
+   "ops": [
+    "upsert"
+   ],
+   "name": "feed_hides"
   },
   {
-   "kind": "rpc",
+   "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-   "line": 25,
+   "line": 61,
    "area": "feed",
-   "symbol": "SupabaseSocialFeedRepository.logImpressions",
+   "symbol": "SupabaseSocialFeedRepository.unwrapCall",
    "via": "literal",
-   "name": "rpc_feed_log_impressions"
+   "ops": [
+    "insert"
+   ],
+   "name": "feed_impressions"
   },
   {
-   "kind": "rpc",
+   "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-   "line": 33,
+   "line": 69,
    "area": "feed",
    "symbol": "SupabaseSocialFeedRepository.listMuteFilters",
    "via": "literal",
-   "name": "rpc_feed_list_mute_filters"
+   "ops": [
+    "select"
+   ],
+   "name": "feed_mute_filters"
   },
   {
-   "kind": "rpc",
+   "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-   "line": 44,
+   "line": 86,
    "area": "feed",
-   "symbol": "SupabaseSocialFeedRepository.addMuteFilter",
+   "symbol": "SupabaseSocialFeedRepository.unwrapCall",
    "via": "literal",
-   "name": "rpc_feed_add_mute_filter"
+   "ops": [
+    "upsert"
+   ],
+   "name": "feed_mute_filters"
   },
   {
-   "kind": "rpc",
+   "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-   "line": 52,
+   "line": 91,
    "area": "feed",
    "symbol": "SupabaseSocialFeedRepository.removeMuteFilter",
    "via": "literal",
-   "name": "rpc_feed_remove_mute_filter"
+   "ops": [
+    "delete"
+   ],
+   "name": "feed_mute_filters"
   },
   {
    "kind": "rpc",
@@ -2191,120 +2183,47 @@
    "name": "get_donation_receipt"
   },
   {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/applyPostActorIdentityProjection.ts",
-   "line": 32,
-   "area": "posts",
-   "symbol": "fetchFollowedTargets",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "follow_edges"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/applyPostActorIdentityProjection.ts",
-   "line": 52,
-   "area": "posts",
-   "symbol": "fetchPostActorIdentitiesByPostIds",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "post_actor_identity"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-   "line": 38,
-   "area": "posts",
-   "symbol": "fetchPostById",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "posts"
-  },
-  {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-   "line": 54,
+   "line": 30,
    "area": "posts",
-   "symbol": "closePost",
+   "symbol": "unwrapCall",
    "via": "literal",
    "name": "close_post_with_recipient"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-   "line": 69,
+   "line": 35,
    "area": "posts",
-   "symbol": "closePost",
+   "symbol": "unwrapCall",
    "via": "literal",
-   "ops": [
-    "select",
-    "update"
-   ],
-   "name": "posts"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-   "line": 88,
-   "area": "posts",
-   "symbol": "reopenPost",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "posts"
+   "name": "close_post_without_recipient"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-   "line": 96,
+   "line": 61,
    "area": "posts",
    "symbol": "reopenPost",
    "via": "literal",
-   "name": "reopen_post_marked"
+   "name": "reopen_post"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-   "line": 102,
+   "line": 71,
    "area": "posts",
-   "symbol": "reopenPost",
+   "symbol": "unmarkRecipientSelf",
    "via": "literal",
-   "name": "reopen_post_deleted_no_recipient"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-   "line": 119,
-   "area": "posts",
-   "symbol": "republishPost",
-   "via": "literal",
-   "name": "rpc_republish_post"
+   "name": "recipient_unmark_self"
   },
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-   "line": 133,
+   "line": 107,
    "area": "posts",
-   "symbol": "getClosureCandidates",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "posts"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-   "line": 145,
-   "area": "posts",
-   "symbol": "getClosureCandidates",
+   "symbol": "chatPartners",
    "via": "literal",
    "ops": [
     "select"
@@ -2314,7 +2233,19 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-   "line": 170,
+   "line": 127,
+   "area": "posts",
+   "symbol": "getClosureCandidates",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
+   "line": 134,
    "area": "posts",
    "symbol": "getClosureCandidates",
    "via": "literal",
@@ -2325,140 +2256,20 @@
   },
   {
    "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/executePostUpdate.ts",
-   "line": 49,
-   "area": "posts",
-   "symbol": "replaceMedia",
-   "via": "literal",
-   "ops": [
-    "delete"
-   ],
-   "name": "media_assets"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/executePostUpdate.ts",
-   "line": 59,
-   "area": "posts",
-   "symbol": "replaceMedia",
-   "via": "literal",
-   "ops": [
-    "insert"
-   ],
-   "name": "media_assets"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/executePostUpdate.ts",
-   "line": 79,
-   "area": "posts",
-   "symbol": "executePostUpdate",
-   "via": "literal",
-   "ops": [
-    "update"
-   ],
-   "name": "posts"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/posts/feedQueryRanked.ts",
-   "line": 76,
-   "area": "posts",
-   "symbol": "fetchRankedFeedPage",
-   "via": "literal",
-   "name": "feed_ranked_ids"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/feedQueryRanked.ts",
-   "line": 111,
-   "area": "posts",
-   "symbol": "fetchRankedFeedPage",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "posts"
-  },
-  {
-   "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/getMyPostsPage.ts",
-   "line": 37,
+   "line": 34,
    "area": "posts",
-   "symbol": "getMyPostsPage",
+   "symbol": "listOwnerPostsPage",
    "via": "literal",
    "ops": [
     "select"
    ],
    "name": "posts"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/posts/getProfileClosedPostsHelper.ts",
-   "line": 24,
-   "area": "posts",
-   "symbol": "getProfileClosedPostsHelper",
-   "via": "literal",
-   "name": "profile_closed_posts"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/getProfileClosedPostsHelper.ts",
-   "line": 41,
-   "area": "posts",
-   "symbol": "rpcRows",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "posts"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/hydrateFeedPostOwners.ts",
-   "line": 25,
-   "area": "posts",
-   "symbol": "hydrateFeedPostOwners",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "users_public"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/posts/mergeProfileOpenChallengePosts.ts",
-   "line": 15,
-   "area": "posts",
-   "symbol": "fetchProfileOpenChallengePosts",
-   "via": "literal",
-   "name": "profile_open_challenge_post_ids"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/mergeProfileOpenChallengePosts.ts",
-   "line": 28,
-   "area": "posts",
-   "symbol": "postIds",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "posts"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/posts/ownerCompleteOfferRpc.ts",
-   "line": 14,
-   "area": "posts",
-   "symbol": "ownerCompleteOffer",
-   "via": "literal",
-   "name": "owner_complete_offer_with_user"
   },
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postActorIdentityMethods.ts",
-   "line": 16,
+   "line": 27,
    "area": "posts",
    "symbol": "listPostActorIdentitiesForPost",
    "via": "literal",
@@ -2470,30 +2281,18 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/postActorIdentityMethods.ts",
-   "line": 38,
+   "line": 47,
    "area": "posts",
-   "symbol": "upsertPostActorIdentityRow",
+   "symbol": "unwrapCall",
    "via": "literal",
    "name": "upsert_post_actor_identity"
   },
   {
    "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-   "line": 11,
-   "area": "posts",
-   "symbol": "fetchPostById",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "posts"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
    "line": 25,
    "area": "posts",
-   "symbol": "countOpenByUser",
+   "symbol": "loadPostColumns",
    "via": "literal",
    "ops": [
     "select"
@@ -2501,20 +2300,200 @@
    "name": "posts"
   },
   {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-   "line": 39,
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
+   "line": 32,
    "area": "posts",
-   "symbol": "countProfilePostsForViewer",
+   "symbol": "loadChallengeIds",
    "via": "literal",
-   "name": "active_posts_count_for_viewer"
+   "ops": [
+    "select"
+   ],
+   "name": "challenges"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
+   "line": 40,
+   "area": "posts",
+   "symbol": "loadPurgeDeadlines",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_closures"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
+   "line": 52,
+   "area": "posts",
+   "symbol": "loadRecipients",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_handoffs"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
+   "line": 61,
+   "area": "posts",
+   "symbol": "loadRecipients",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
+   "line": 68,
+   "area": "posts",
+   "symbol": "fetchPostsByIds",
+   "via": "literal",
+   "name": "post_cards"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
+   "line": 86,
+   "area": "posts",
+   "symbol": "fetchFeedPage",
+   "via": "literal",
+   "name": "feed_page"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
+   "line": 105,
+   "area": "posts",
+   "symbol": "fetchSearchPage",
+   "via": "literal",
+   "name": "search_posts_page"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
+   "line": 125,
+   "area": "posts",
+   "symbol": "fetchProfileTabPage",
+   "via": "literal",
+   "name": "profile_posts_page"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCatalog.ts",
+   "line": 54,
+   "area": "posts",
+   "symbol": "readCatalog",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "item_subcategories"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postCatalog.ts",
+   "line": 56,
+   "area": "posts",
+   "symbol": "readCatalog",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_kinds"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
+   "line": 40,
+   "area": "posts",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "ops": [
+    "insert"
+   ],
+   "name": "post_media"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
+   "line": 54,
+   "area": "posts",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_media"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
+   "line": 65,
+   "area": "posts",
+   "symbol": "replacePostMedia",
+   "via": "literal",
+   "ops": [
+    "delete"
+   ],
+   "name": "post_media"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
+   "line": 70,
+   "area": "posts",
+   "symbol": "replacePostMedia",
+   "via": "literal",
+   "ops": [
+    "insert"
+   ],
+   "name": "post_media"
   },
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-   "line": 55,
+   "line": 23,
    "area": "posts",
-   "symbol": "countProfileOpenPosts",
+   "symbol": "loadGallery",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_media"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
+   "line": 34,
+   "area": "posts",
+   "symbol": "loadOwnStreet",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_private_locations"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
+   "line": 41,
+   "area": "posts",
+   "symbol": "fetchPostDetail",
+   "via": "literal",
+   "name": "post_cards"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
+   "line": 64,
+   "area": "posts",
+   "symbol": "baseCount",
    "via": "literal",
    "ops": [
     "select"
@@ -2524,7 +2503,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-   "line": 73,
+   "line": 106,
    "area": "posts",
    "symbol": "countProfileClosedPosts",
    "via": "literal",
@@ -2532,10 +2511,99 @@
   },
   {
    "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/savedPostsMethods.ts",
-   "line": 28,
+   "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+   "line": 47,
    "area": "posts",
-   "symbol": "savePostRow",
+   "symbol": "unwrapCall",
+   "via": "literal",
+   "ops": [
+    "upsert"
+   ],
+   "name": "post_private_locations"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+   "line": 60,
+   "area": "posts",
+   "symbol": "insertDraft",
+   "via": "literal",
+   "ops": [
+    "select",
+    "insert"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+   "line": 94,
+   "area": "posts",
+   "symbol": "completeDraft",
+   "via": "literal",
+   "name": "publish_post"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+   "line": 105,
+   "area": "posts",
+   "symbol": "createPost",
+   "via": "literal",
+   "ops": [
+    "delete"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+   "line": 127,
+   "area": "posts",
+   "symbol": "mergedDetails",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+   "line": 150,
+   "area": "posts",
+   "symbol": "updatePost",
+   "via": "literal",
+   "ops": [
+    "select",
+    "update"
+   ],
+   "name": "posts"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+   "line": 170,
+   "area": "posts",
+   "symbol": "deletePost",
+   "via": "literal",
+   "name": "delete_post"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+   "line": 180,
+   "area": "posts",
+   "symbol": "adminRemovePost",
+   "via": "literal",
+   "name": "admin_remove_post"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/savedPostsMethods.ts",
+   "line": 26,
+   "area": "posts",
+   "symbol": "unwrapCall",
    "via": "literal",
    "ops": [
     "upsert"
@@ -2545,7 +2613,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/savedPostsMethods.ts",
-   "line": 36,
+   "line": 32,
    "area": "posts",
    "symbol": "unsavePostRow",
    "via": "literal",
@@ -2557,7 +2625,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/savedPostsMethods.ts",
-   "line": 45,
+   "line": 38,
    "area": "posts",
    "symbol": "isPostSavedRow",
    "via": "literal",
@@ -2569,7 +2637,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/savedPostsMethods.ts",
-   "line": 63,
+   "line": 55,
    "area": "posts",
    "symbol": "listSavedPostsPage",
    "via": "literal",
@@ -2579,18 +2647,21 @@
    "name": "saved_posts"
   },
   {
-   "kind": "rpc",
+   "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-   "line": 36,
+   "line": 71,
    "area": "posts",
    "symbol": "SupabasePostEngagementRepository.getStats",
    "via": "literal",
-   "name": "rpc_get_post_engagement_stats"
+   "ops": [
+    "select"
+   ],
+   "name": "post_stats"
   },
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-   "line": 58,
+   "line": 88,
    "area": "posts",
    "symbol": "SupabasePostEngagementRepository.getViewerReaction",
    "via": "literal",
@@ -2600,159 +2671,71 @@
    "name": "post_reactions"
   },
   {
-   "kind": "rpc",
+   "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-   "line": 69,
+   "line": 101,
    "area": "posts",
    "symbol": "SupabasePostEngagementRepository.setReaction",
    "via": "literal",
-   "name": "rpc_set_post_reaction"
+   "ops": [
+    "delete"
+   ],
+   "name": "post_reactions"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-   "line": 81,
+   "line": 106,
+   "area": "posts",
+   "symbol": "SupabasePostEngagementRepository.unwrapCall",
+   "via": "literal",
+   "name": "set_post_reaction"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
+   "line": 120,
    "area": "posts",
    "symbol": "SupabasePostEngagementRepository.createComment",
    "via": "literal",
-   "name": "rpc_create_post_comment"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-   "line": 109,
-   "area": "posts",
-   "symbol": "SupabasePostEngagementRepository.setCommentLike",
-   "via": "literal",
-   "name": "rpc_set_post_comment_like"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-   "line": 118,
-   "area": "posts",
-   "symbol": "SupabasePostEngagementRepository.listComments",
-   "via": "literal",
    "ops": [
-    "select"
+    "select",
+    "insert"
    ],
    "name": "post_comments"
   },
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-   "line": 150,
+   "line": 146,
    "area": "posts",
-   "symbol": "SupabasePostEngagementRepository.listCommentsWithAuthors",
+   "symbol": "SupabasePostEngagementRepository.unwrapCall",
    "via": "literal",
    "ops": [
-    "select"
-   ],
-   "name": "post_comments"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-   "line": 190,
-   "area": "posts",
-   "symbol": "SupabasePostEngagementRepository.listCommentsWithAuthors",
-   "via": "literal",
-   "ops": [
-    "select"
+    "delete"
    ],
    "name": "post_comment_reactions"
   },
   {
    "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostRepository.ts",
-   "line": 107,
+   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
+   "line": 153,
    "area": "posts",
-   "symbol": "SupabasePostRepository.findById",
+   "symbol": "SupabasePostEngagementRepository.unwrapCall",
    "via": "literal",
    "ops": [
-    "select"
+    "upsert"
    ],
-   "name": "posts"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostRepository.ts",
-   "line": 123,
-   "area": "posts",
-   "symbol": "SupabasePostRepository.create",
-   "via": "literal",
-   "ops": [
-    "select",
-    "insert"
-   ],
-   "name": "posts"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostRepository.ts",
-   "line": 154,
-   "area": "posts",
-   "symbol": "SupabasePostRepository.create",
-   "via": "literal",
-   "ops": [
-    "insert"
-   ],
-   "name": "media_assets"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostRepository.ts",
-   "line": 158,
-   "area": "posts",
-   "symbol": "SupabasePostRepository.create",
-   "via": "literal",
-   "ops": [
-    "delete"
-   ],
-   "name": "posts"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostRepository.ts",
-   "line": 175,
-   "area": "posts",
-   "symbol": "SupabasePostRepository.create",
-   "via": "literal",
-   "ops": [
-    "delete"
-   ],
-   "name": "posts"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostRepository.ts",
-   "line": 189,
-   "area": "posts",
-   "symbol": "SupabasePostRepository.delete",
-   "via": "literal",
-   "ops": [
-    "select",
-    "delete"
-   ],
-   "name": "posts"
+   "name": "post_comment_reactions"
   },
   {
    "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostRepository.ts",
-   "line": 206,
+   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
+   "line": 161,
    "area": "posts",
-   "symbol": "SupabasePostRepository.adminRemove",
+   "symbol": "SupabasePostEngagementRepository.commentsPage",
    "via": "literal",
-   "name": "admin_remove_post"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostRepository.ts",
-   "line": 235,
-   "area": "posts",
-   "symbol": "SupabasePostRepository.unmrkRecipientSelf",
-   "via": "literal",
-   "name": "rpc_recipient_unmark_self"
+   "name": "post_comments_page"
   },
   {
    "kind": "channel",
@@ -3440,31 +3423,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/search/searchExploreHelpers.ts",
-   "line": 22,
-   "area": "search",
-   "symbol": "explorePosts",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "posts"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/search/searchExploreHelpers.ts",
-   "line": 47,
-   "area": "search",
-   "symbol": "exploreUsers",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "users"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/search/searchExploreHelpers.ts",
-   "line": 60,
+   "line": 33,
    "area": "search",
    "symbol": "exploreLinks",
    "via": "literal",
@@ -3476,28 +3435,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/search/searchQueryHelpers.ts",
-   "line": 25,
-   "area": "search",
-   "symbol": "searchPosts",
-   "via": "literal",
-   "name": "search_posts_page"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/search/searchQueryHelpers.ts",
-   "line": 37,
-   "area": "search",
-   "symbol": "searchPosts",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "posts"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/search/searchQueryHelpers.ts",
-   "line": 61,
+   "line": 53,
    "area": "search",
    "symbol": "searchUsers",
    "via": "literal",
@@ -3506,19 +3444,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/search/searchQueryHelpers.ts",
-   "line": 71,
-   "area": "search",
-   "symbol": "searchUsers",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "users"
-  },
-  {
-   "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/search/searchQueryHelpers.ts",
-   "line": 86,
+   "line": 70,
    "area": "search",
    "symbol": "searchLinks",
    "via": "literal",
@@ -3528,70 +3454,58 @@
    "name": "donation_links"
   },
   {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/search/SupabaseSearchRepository.ts",
-   "line": 74,
-   "area": "search",
-   "symbol": "SupabaseSearchRepository.fetchSocialSearchExtras",
-   "via": "literal",
-   "name": "rpc_search_suggested_queries"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/search/SupabaseSearchRepository.ts",
-   "line": 79,
-   "area": "search",
-   "symbol": "SupabaseSearchRepository.fetchSocialSearchExtras",
-   "via": "literal",
-   "name": "rpc_search_suggested_queries"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/search/SupabaseSearchRepository.ts",
-   "line": 86,
-   "area": "search",
-   "symbol": "SupabaseSearchRepository.fetchSocialSearchExtras",
-   "via": "literal",
-   "name": "search_all"
-  },
-  {
    "kind": "table",
-   "file": "app/packages/infrastructure-supabase/src/stats/SupabaseStatsRepository.ts",
-   "line": 67,
-   "area": "stats",
-   "symbol": "SupabaseStatsRepository.getCommunityStatsSnapshot",
+   "file": "app/packages/infrastructure-supabase/src/search/searchUserReads.ts",
+   "line": 20,
+   "area": "search",
+   "symbol": "usersByIds",
    "via": "literal",
    "ops": [
     "select"
    ],
+   "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/search/searchUserReads.ts",
+   "line": 26,
+   "area": "search",
+   "symbol": "followerCounts",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "user_stats"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/search/searchUserReads.ts",
+   "line": 41,
+   "area": "search",
+   "symbol": "topMemberIds",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "users"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/stats/SupabaseStatsRepository.ts",
+   "line": 35,
+   "area": "stats",
+   "symbol": "SupabaseStatsRepository.getCommunityStatsSnapshot",
+   "via": "literal",
    "name": "community_stats"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/stats/SupabaseStatsRepository.ts",
-   "line": 81,
+   "line": 52,
    "area": "stats",
    "symbol": "SupabaseStatsRepository.listMyActivityTimeline",
    "via": "literal",
-   "name": "rpc_my_activity_timeline"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/stats/SupabaseStatsRepository.ts",
-   "line": 108,
-   "area": "stats",
-   "symbol": "SupabaseStatsRepository.getWorldFlowFunnel",
-   "via": "literal",
-   "name": "admin_world_flow_funnel"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/stats/SupabaseStatsRepository.ts",
-   "line": 128,
-   "area": "stats",
-   "symbol": "SupabaseStatsRepository.listMyWorldGivings",
-   "via": "literal",
-   "name": "my_world_givings"
+   "name": "my_activity_timeline"
   },
   {
    "kind": "table",

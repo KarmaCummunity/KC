@@ -43,8 +43,6 @@ table('user_stats', 'same', 'table:user_stats', 'Counters, select only; `open_po
 table('follows', 'same', 'table:follows', 'Select and delete direct (`follower_id`, `followed_id`); an edge is created only by `follow_user`.');
 table('users', 'changed', ['table:users', 'table:user_private', 'table:user_account', 'table:user_stats'],
   'Split in four. Public profile stays in `users` (`user_id` → `id`, `city` → `city_id`, `city_name` gone: join `cities`). Contact phone, date of birth, address lines, notification preferences, dismiss flags, `basic_info_skipped` → `user_private` (own row). Account status, onboarding state, deletion dates, verification → `user_account` (read-only; moves through RPCs). Counters → `user_stats` (read-only). `is_super_admin` → `get_my_admin_roles()`. Client updates on `users` are limited to display_name, biography, avatar_url, city_id, preferred_language; `privacy_mode` moves through `set_privacy_mode`. mock-login\'s upsert goes away with the function.');
-table('users_public', 'changed', 'table:users', 'The view is gone: `users` itself now holds only public profile columns and RLS hides blocked and reported members. Owner fields of a post already come inside `post_card`.');
-table('follow_edges', 'changed', ['table:follows', 'rpc:follow_user'], 'Renamed to `follows` (`follower_id`, `followed_id`). Select and delete stay direct; the insert becomes `follow_user(p_target)`, which returns `following` or `requested` (private profile).');
 table('follow_requests', 'changed', ['table:follow_requests', 'rpc:follow_user', 'rpc:follow_request_decide', 'rpc:follow_request_cancel'], 'Read-only for clients. Insert → `follow_user`; accept / reject → `follow_request_decide(p_requester, p_accept)`; cancel → `follow_request_cancel(p_target)`. Status column is ruled by the follow_request machine.');
 table('blocks', 'same', 'table:blocks', 'Same columns, same direct select / insert / delete.');
 rpc('accept_legal_document', 'same', 'rpc:accept_legal_document', '`p_doc_type` is text (was an enum), `p_locale` / `p_user_agent` optional.');
@@ -55,40 +53,42 @@ table('streets', 'changed', 'table:streets', '`geo` → `location`.');
 table('app_flags', 'same', 'table:app_flags', 'Same `select key, enabled`, for signed-in members only (no `anon` grant): before sign-in the compiled defaults apply. After sign-in the same map is `bootstrap_session().flags`. The rows (`world_<slug>_enabled`) are seed data, not part of the baseline (M09, verified).');
 
 // ───────────────────────────── posts, feed, search
-rpc('feed_ranked_ids', 'changed', 'rpc:feed_page', 'One call returns cards, not ids to hydrate: filters move into `p_filters` (sort, world, direction, item_subcategory_ids, status, audience, city_id + radius_km, near_city_id, q), the four cursor arguments become the opaque `next_cursor` JSON, `distance_km` → `distance_m`.');
-rpc('profile_closed_posts', 'changed', 'rpc:profile_posts_page', '`p_tab = \'closed\'`, keyset `p_cursor`, returns cards. `identity_role` is not returned: the card carries `owner_identity_masked` and null owner fields instead (M02, built).');
 rpc('profile_closed_posts_count', 'changed', 'rpc:profile_closed_posts_count', 'One argument, `p_user_id` (the viewer is the caller); counts the closed tab only, so the Hidden tab badge (`p_list_mode = owner_only_me`) is not served: take it from `user_stats.open_posts_only_me` or drop it (M13, built as a count over the same rows as the tab).');
-rpc('active_posts_count_for_viewer', 'changed', 'table:user_stats', 'Read `open_posts_public` (+ `open_posts_followers_only` for a follower) of the profile\'s `user_stats` row; the viewer-dependent sum moves to the adapter.', { c: M });
-rpc('profile_open_challenge_post_ids', 'changed', 'rpc:profile_posts_page', 'A challenge is a post (`post_type = \'challenge\'`), so the open tab already contains it; the merge step goes away.', { c: M });
-rpc('owner_complete_offer_with_user', 'changed', ['rpc:close_post_with_recipient', 'rpc:close_post_without_recipient'], 'Split by `p_mode`: with a recipient → `close_post_with_recipient(p_post_id, p_recipient_id)` (returns the handoff); without → `close_post_without_recipient`.');
 rpc('close_post_with_recipient', 'changed', 'rpc:close_post_with_recipient', '`p_recipient_user_id` → `p_recipient_id`; returns the handoff row, not the post. The recipient must have a chat with the owner (`closure_recipient_not_in_chat`).');
-rpc('reopen_post_marked', 'renamed', 'rpc:reopen_post', 'One RPC for both closed states; returns void (re-read the post).');
-rpc('reopen_post_deleted_no_recipient', 'renamed', 'rpc:reopen_post', 'Same RPC as above; `reopen_window_expired` after the grace period.');
-rpc('rpc_recipient_unmark_self', 'renamed', 'rpc:recipient_unmark_self', 'Same call.');
-rpc('rpc_republish_post', 'removed', null, 'An expired post is never reopened: republish creates a new post from the old one\'s fields (D127). The app copies the fields into the create flow.');
 rpc('admin_remove_post', 'same', 'rpc:admin_remove_post', 'Status becomes `removed_admin`; the previous status is kept in `status_before_removal`.');
-rpc('rpc_get_post_engagement_stats', 'changed', 'table:post_stats', 'Direct read of `post_stats` (`reactions_count`, `comments_count`, `shares_count`); the same counters are inside every `post_card`.');
-rpc('rpc_set_post_reaction', 'changed', 'rpc:set_post_reaction', 'Returns the reaction type now held (text, null when removed) instead of the row.');
-rpc('rpc_create_post_comment', 'changed', 'table:post_comments', 'Direct insert (columns id, post_id, author_id, parent_comment_id, body) with `.select()`; mentions and rate limiting are applied by triggers.', { c: M });
-rpc('rpc_set_post_comment_like', 'changed', 'table:post_comment_reactions', 'Direct insert / delete of the caller\'s row.');
 rpc('upsert_post_actor_identity', 'same', 'rpc:upsert_post_actor_identity', 'Same three arguments plus an optional `p_identity_visibility`; errors are P0001 codes (`not_participant`, `followers_only_requires_public_profile`). The owner of a delivered post also moves `posts.visibility` (M02, built).');
 table('post_actor_identity', 'changed', 'table:post_actor_identity', 'A member reads only their own row. The projection `projectActorIdentityForViewer` is no longer run on the device: the server masks the owner in `post_card` and the author in `post_comments_page` (M02, built).');
 table('posts', 'changed', ['table:posts', 'rpc:post_cards', 'rpc:post_detail', 'rpc:create_post_with_details', 'rpc:delete_post'],
   'Columns: `post_id` → `id`, `type` → `direction`, `category` / `category_id` → `item_subcategory_id`, `city` → `city_id`, `urgency` → `urgency_level`, `street` / `street_number` → `post_private_locations`, `availability_status` / `moderation_status` / `feed_hidden` → `status`, `status_before_admin_removal` → `status_before_removal`; `delete_after` / `reopen_count` → `post_closures`; `estimated_value`, `item_condition`, `external_body_id`, listing columns: gone. Reads of lists should use the card RPCs (`post_cards`, `feed_page`, `profile_posts_page`, `post_detail`). Insert is direct (column grants; status `draft` or `open`), rides / stays / events / food go through `create_post_with_details`. Update is direct for content columns only; status never (owner RPCs). Delete: direct only for a draft, otherwise `delete_post`.');
-table('media_assets', 'changed', 'table:post_media', 'Renamed; `path` → `storage_bucket` + `storage_key`, plus kind / ordinal / dimensions. Direct insert and delete by the owner; no update (replace = delete + insert).');
 table('saved_posts', 'same', 'table:saved_posts', 'Same columns. The upsert becomes insert-ignore-duplicate (no update grant). The saved-posts page hydrates ids with `post_cards`.');
 table('post_comments', 'changed', ['table:post_comments', 'rpc:post_comments_page', 'rpc:delete_post_comment'], '`comment_id` → `id`. Lists should use `post_comments_page` (keyset, author fields and viewer reaction included). Delete → `delete_post_comment`.');
 table('post_comment_reactions', 'same', 'table:post_comment_reactions', 'Same shape.');
 table('post_reactions', 'same', 'table:post_reactions', '`reaction_id` is gone (key is post + user).');
-rpc('rpc_feed_hide_post', 'changed', 'table:feed_hides', 'Direct insert of (user_id, post_id); unhide = delete.');
-rpc('rpc_feed_log_impressions', 'changed', 'table:feed_impressions', 'Direct bulk insert of `post_id` rows (the only granted column; user and time are filled by the table).', { c: M });
-rpc('rpc_feed_list_mute_filters', 'changed', 'table:feed_mute_filters', 'Direct select; `filter_value` is split by kind into `muted_user_id`, `world_slug`, `keyword`.');
-rpc('rpc_feed_add_mute_filter', 'changed', 'table:feed_mute_filters', 'Direct insert with the column that matches `filter_kind`.');
-rpc('rpc_feed_remove_mute_filter', 'changed', 'table:feed_mute_filters', 'Direct delete by `id`.');
 rpc('search_posts_page', 'changed', 'rpc:search_posts_page', 'Returns cards with `next_cursor` (was ids); category / city / type move into `p_filters` (same keys as `feed_page`).');
 rpc('search_users_page', 'changed', 'rpc:search_users_page', 'Returns the member fields with `viewer_follows` and `next_cursor` (was ids); city / min followers / sort arguments are gone (order: most followed).');
-rpc('search_all', 'changed', 'rpc:search_all', '`p_types` is gone: the preview always holds posts and members; donation links are searched from `donation_links` directly.');
-rpc('rpc_search_suggested_queries', 'missing', null, 'No suggested-queries source in the baseline.', { m: 'M05' });
+// Objects the post adapters address since they moved to the baseline (package P2): nothing left to change.
+rpc('feed_page', 'same', 'rpc:feed_page', '`p_cursor`, `p_limit` (at most 50), `p_filters` (sort, world, direction, item_subcategory_ids, status, audience, city_id + radius_km, near_city_id, q, scope); rows of `card`, `next_cursor`, `distance_m`. Several worlds or an item condition are narrowed on the returned page.');
+rpc('post_cards', 'same', 'rpc:post_cards', 'Cards of up to 100 post ids the caller can read, in no particular order: the adapter restores the order of the ids (saved posts, a member\'s posts by status, one post).');
+rpc('profile_posts_page', 'same', 'rpc:profile_posts_page', '`p_tab` open | closed | hidden, keyset `p_cursor`; the closed tab of a profile. The owner\'s delivered or deleted "only me" posts come from `posts` ids completed by `post_cards`.');
+rpc('close_post_without_recipient', 'same', 'rpc:close_post_without_recipient', 'Closes an open post as delivered to nobody (`closure_wrong_status`, `listing_has_active_handoff`); seven days to reopen.');
+rpc('reopen_post', 'same', 'rpc:reopen_post', 'Reopens a delivered post, or a deleted one inside its window (`closure_wrong_status`, `reopen_window_expired`); returns nothing, the adapter reads the post again.');
+rpc('recipient_unmark_self', 'same', 'rpc:recipient_unmark_self', 'The recipient removes their mark (`not_recipient_or_wrong_status`).');
+rpc('publish_post', 'same', 'rpc:publish_post', 'Publishes the draft the adapter wrote (draft → open); a failed create deletes the draft, which a device may delete. Refusals: `listing_wrong_status`, `post_limit_exceeded`.');
+rpc('delete_post', 'same', 'rpc:delete_post', 'Deletes a post in any status the owner may delete (`listing_wrong_status` for a removed or already deleted post); a published post stays seven days for a reopen.');
+rpc('set_post_reaction', 'same', 'rpc:set_post_reaction', '`p_reaction_type` like | support | thanks; a reaction is removed by deleting the caller\'s `post_reactions` row.');
+rpc('post_comments_page', 'same', 'rpc:post_comments_page', 'Root comments (`p_parent_comment_id` null) or the replies of one, oldest first, with the author already masked when the poster asked to stay anonymous; the screen reads the roots and then the replies of each root that has any.');
+rpc('community_stats', 'same', 'rpc:community_stats', 'One row of registered_users, open_public_posts, delivered_posts, refreshed_at; the About screen reads it again every 60 seconds (there is no change feed).');
+rpc('my_activity_timeline', 'same', 'rpc:my_activity_timeline', '`p_limit`; rows of occurred_at, kind, post_id, post_title, actor_id, actor_display_name.');
+table('feed_hides', 'same', 'table:feed_hides', 'Insert (user_id, post_id) ignoring duplicates; delete by post.');
+table('feed_impressions', 'same', 'table:feed_impressions', 'Bulk insert of `post_id` rows; the member and the time are filled by the table.');
+table('feed_mute_filters', 'same', 'table:feed_mute_filters', 'Kinds user, world and keyword (a keyword is 2-60 characters, trimmed, lower-case); there is no per-category mute, so that settings section is gone.');
+table('post_media', 'same', 'table:post_media', 'One row per photo, inserted `pending` by the owner after the upload to `post-images`; delete by the owner. An edit keeps the rows whose file and position are unchanged (no update grant).');
+table('post_private_locations', 'same', 'table:post_private_locations', 'The exact street and number, readable and writable by the post\'s owner only; other members see the city.');
+table('post_stats', 'same', 'table:post_stats', 'Counters of a post (reactions, comments, shares); no row until the first one.');
+table('post_closures', 'same', 'table:post_closures', 'The owner reads `purge_after`: the end of the seven-day reopen window of a post deleted without a recipient.');
+table('challenges', 'same', 'table:challenges', 'Read to find the challenge of a challenge post (`post_id` → `id`).');
+table('item_subcategories', 'same', 'table:item_subcategories', 'Read-only catalog; the items world\'s rows are the app\'s item categories (slug = lower-case category, `baby_gear`).');
+table('post_kinds', 'same', 'table:post_kinds', 'Read-only catalog; a new generic post needs the items world\'s offer / request kind id.');
 
 // ───────────────────────────── chat
 // Objects the messaging adapters address since they moved to the baseline (package P3): nothing left to change.
@@ -237,10 +237,6 @@ rpc('rpc_match_respond', 'changed', 'rpc:match_respond', '`p_candidate_id` → `
 rpc('rpc_match_refresh_mine', 'removed', null, 'Matching runs from the outbox when a post is published or changed; there is no on-demand refresh.', { c: M });
 rpc('admin_match_quality', 'missing', null, 'No match quality report.', { m: 'M14' });
 table('karma_ledger', 'changed', 'table:karma_ledger', '`ledger_id` → `id`, `points_delta` → `points`, `ref_type` / `ref_id` → `subject` / `reference`. The total is `my_karma_points()`.');
-rpc('rpc_my_activity_timeline', 'renamed', 'rpc:my_activity_timeline', 'Adds `actor_id`.');
-rpc('my_world_givings', 'missing', null, 'No per-world giving totals of a member.', { m: 'M15' });
-rpc('admin_world_flow_funnel', 'missing', null, 'No platform funnel report.', { m: 'M14' });
-table('community_stats', 'changed', 'rpc:community_stats', 'The view becomes an RPC returning registered_users, open_public_posts, delivered_posts, refreshed_at.');
 rpc('check_survey_prompt_eligibility', 'same', 'rpc:check_survey_prompt_eligibility', 'Signature unchanged.');
 rpc('upsert_survey_answers', 'same', 'rpc:upsert_survey_answers', 'Signature unchanged.');
 rpc('list_active_surveys', 'changed', 'table:surveys', 'Direct read of active surveys (policy `surveys_select_published`).', { c: M });
@@ -360,9 +356,7 @@ channel('`user:${userId}:chats`', 'same', 'topic:user:<user id>:chats', 'Private
 channel('`chat:${chatId}:typing`', 'same', 'topic:chat:<chat id>:typing', 'Members may send on `chat:%:typing` and `chat:%:presence`.');
 channel('topic = `user:${userId}:notifications`', 'same', 'topic:user:<user id>:notifications', 'Already on the baseline contract (event `badge`).');
 channel('topic = `user:${userId}:account`', 'same', 'topic:user:<user_id>:account', 'Already on the baseline contract (event `account_changed` with `status`, `status_until`, `onboarding_state`; M24, built for the account gate): the account gate subscribes here instead of to a `users` row.');
-channel('topic = `community-stats-watch:${suffix}`', 'removed', null, 'The counters are an RPC (`community_stats()`); refresh on focus or on a timer.');
 channel('topic', 'same', 'client:openExactTopicChannel', 'The shared helper itself: unchanged, it opens whatever private topic it is given.');
-changes('community_stats', 'removed', null, 'See the community-stats topic: poll the RPC.');
 
 // ───────────────────────────── Edge Function invokes from the app
 edge('public-research-submit', 'same', 'edge:public-research-submit', 'Same invoke; the function keeps calling `submit_public_research_response`.');
@@ -372,10 +366,8 @@ edge('validate-donation-link', 'same', 'edge:validate-donation-link', 'Same invo
 // ═════════════════════════════ MISSING: what the baseline does not provide
 // action: build (add to the baseline) · rls-read (already possible, no new object) · drop · defer (behind a flag)
 export const missing = [
-  { id: 'M05', title: 'Suggested search queries', usedBy: 'Search screen extras (SupabaseSearchRepository)', spec: 'not in spec; FR-FEED recent searches are local storage', launch: 'no', tier: 'later', action: 'drop', recommendation: 'Remove the server call; keep the local recent searches.' },
   { id: 'M12', title: 'Knowledge topic graph (topics, aliases, follows, proposals, review)', usedBy: 'Knowledge world topic picker, follow, proposal and admin review (SupabaseKnowledgeTopicRepository)', spec: 'FR-KNOW-001, FR-KNOW-002', launch: 'no (knowledge is a portal at launch)', action: 'defer', recommendation: 'Keep the knowledge world behind `world_knowledge_enabled`. When it opens: design §8 maps `knowledge_topics` → `topics`, `topic_aliases`, `topic_follows`, but no module creates them. Add them to `70_worlds` (knowledge), or launch knowledge with item subcategories only and defer.' },
   { id: 'M14', title: 'Admin analytics: world flow funnel, match quality', usedBy: 'Admin statistics screens (SupabaseStatsRepository.getWorldFlowFunnel, SupabaseMatchRepository.qualityByWorld)', spec: 'FR-STATS-007, FR-ADMIN-029', launch: 'no', action: 'defer', recommendation: 'Staff-only reports: hide behind a flag at launch and build later in `79_activity_stats` / `76_matching`.' },
-  { id: 'M15', title: 'My givings by world', usedBy: 'Personal statistics screen (SupabaseStatsRepository.listMyWorldGivings)', spec: 'FR-STATS-008', launch: 'no (personal statistics are not in the launch core)', action: 'defer', recommendation: 'Hide the per-world block of the statistics screen behind a flag. Later: a function in `79_activity_stats/020_activity_and_community.sql` counting the caller\'s handed-over handoffs per world as giver and as receiver.' },
   { id: 'M16', title: 'Free feedback form and its admin list', usedBy: 'Settings → feedback (SupabaseSurveyRepository), admin feedback dashboard (admin_user_feedback_list)', spec: 'FR-SETTINGS-017, FR-ADMIN-021', launch: 'no (ships with the surveys and feedback hub)', action: 'defer', recommendation: 'Hide the feedback form with the surveys hub; the insert sits inside the survey prompt check today and must fail silently. Later: table `user_feedback` in `90_research` (insert own, select super admin).' },
   { id: 'M17', title: 'Survey statistics for admins (overview, results, PMF report)', usedBy: 'Admin survey dashboard (SupabaseSurveyAdminRepository)', spec: 'FR-ADMIN-021', launch: 'no', action: 'defer', recommendation: 'Hide the admin survey dashboard behind a flag. When it opens no new object is needed at first: the super admin can read `survey_answers` (policy `survey_answers_select_super_admin`); aggregate on the device at launch volumes, and add an aggregate function to `90_research` when answers grow.' },
   { id: 'M19', title: 'Back-office tools: tasks, CRM, timesheets', usedBy: 'Admin portal (SupabaseAdminTaskRepository, SupabaseCrmContactsRepository, SupabaseTimesheetsRepository) — 18 RPCs', spec: 'tasks: FR-ADMIN-018; CRM: roadmap phase 3; timesheets: not in spec', launch: 'no', action: 'defer', recommendation: 'Internal tools, not member data: hide the three admin sections behind a flag and decide separately whether they belong in this database at all.' },
@@ -404,7 +396,6 @@ const NAME_TIER = [
   [/^(admin_hierarchy_census|admin_set_manager|admin_user_feedback_list|admin_match_quality|admin_world_flow_funnel|my_world_givings)$/, 'later'],
   [/^(list_my_blocked_users|rpc_follow_suggestions|rpc_profile_completeness|rpc_search_suggested_queries|about_team_profiles)$/, 'later'],
   [/^(community_stats|rpc_my_activity_timeline|record_active_day|app_flags|is_admin)$/, 'core'],
-  [/community-stats-watch/, 'core'],
   [/^(karma_ledger|find_ride_listing_matches|listing-images)$/, 'wedge'],
   [/rides:/, 'wedge'],
 ];

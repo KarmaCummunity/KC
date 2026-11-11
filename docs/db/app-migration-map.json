@@ -2,18 +2,18 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 271,
-   "same": 58,
-   "renamed": 32,
-   "changed": 108,
-   "removed": 8,
-   "missing": 65
+   "objects": 260,
+   "same": 70,
+   "renamed": 28,
+   "changed": 93,
+   "removed": 7,
+   "missing": 62
   },
   "table": {
-   "objects": 56,
-   "same": 17,
+   "objects": 62,
+   "same": 27,
    "renamed": 2,
-   "changed": 31,
+   "changed": 27,
    "removed": 2,
    "missing": 4
   },
@@ -26,19 +26,11 @@
    "missing": 0
   },
   "channel": {
-   "objects": 7,
+   "objects": 6,
    "same": 6,
    "renamed": 0,
    "changed": 0,
-   "removed": 1,
-   "missing": 0
-  },
-  "postgres_changes": {
-   "objects": 1,
-   "same": 0,
-   "renamed": 0,
-   "changed": 0,
-   "removed": 1,
+   "removed": 0,
    "missing": 0
   },
   "edge_function": {
@@ -52,26 +44,26 @@
  },
  "launchTotals": {
   "core": {
-   "objects": 108,
-   "same": 64,
-   "renamed": 6,
-   "changed": 35,
-   "removed": 3,
+   "objects": 104,
+   "same": 85,
+   "renamed": 2,
+   "changed": 17,
+   "removed": 0,
    "missing": 0
   },
   "later": {
-   "objects": 134,
-   "same": 15,
+   "objects": 132,
+   "same": 16,
    "renamed": 4,
    "changed": 43,
    "removed": 3,
-   "missing": 69
+   "missing": 66
   },
   "wedge": {
-   "objects": 101,
+   "objects": 100,
    "same": 8,
    "renamed": 24,
-   "changed": 63,
+   "changed": 62,
    "removed": 6,
    "missing": 0
   }
@@ -128,8 +120,8 @@
   },
   "feed": {
    "callSites": 5,
-   "oneToOne": 0,
-   "changed": 5,
+   "oneToOne": 5,
+   "changed": 0,
    "removed": 0,
    "missing": 0
   },
@@ -295,10 +287,10 @@
    "missing": 1
   },
   "mobile": {
-   "callSites": 24,
+   "callSites": 22,
    "oneToOne": 14,
    "changed": 5,
-   "removed": 2,
+   "removed": 0,
    "missing": 3
   },
   "moderation": {
@@ -323,10 +315,10 @@
    "missing": 1
   },
   "posts": {
-   "callSites": 51,
-   "oneToOne": 12,
-   "changed": 38,
-   "removed": 1,
+   "callSites": 50,
+   "oneToOne": 34,
+   "changed": 16,
+   "removed": 0,
    "missing": 0
   },
   "realtime": {
@@ -358,18 +350,18 @@
    "missing": 0
   },
   "search": {
-   "callSites": 11,
-   "oneToOne": 0,
-   "changed": 9,
+   "callSites": 6,
+   "oneToOne": 1,
+   "changed": 5,
    "removed": 0,
-   "missing": 2
+   "missing": 0
   },
   "stats": {
-   "callSites": 4,
-   "oneToOne": 1,
-   "changed": 1,
+   "callSites": 2,
+   "oneToOne": 2,
+   "changed": 0,
    "removed": 0,
-   "missing": 2
+   "missing": 0
   },
   "streets": {
    "callSites": 1,
@@ -419,17 +411,6 @@
  ],
  "missing": [
   {
-   "id": "M05",
-   "title": "Suggested search queries",
-   "usedBy": "Search screen extras (SupabaseSearchRepository)",
-   "spec": "not in spec; FR-FEED recent searches are local storage",
-   "launch": "no",
-   "tier": "later",
-   "action": "drop",
-   "recommendation": "Remove the server call; keep the local recent searches.",
-   "blocker": false
-  },
-  {
    "id": "M12",
    "title": "Knowledge topic graph (topics, aliases, follows, proposals, review)",
    "usedBy": "Knowledge world topic picker, follow, proposal and admin review (SupabaseKnowledgeTopicRepository)",
@@ -448,17 +429,6 @@
    "launch": "no",
    "action": "defer",
    "recommendation": "Staff-only reports: hide behind a flag at launch and build later in `79_activity_stats` / `76_matching`.",
-   "tier": "later",
-   "blocker": false
-  },
-  {
-   "id": "M15",
-   "title": "My givings by world",
-   "usedBy": "Personal statistics screen (SupabaseStatsRepository.listMyWorldGivings)",
-   "spec": "FR-STATS-008",
-   "launch": "no (personal statistics are not in the launch core)",
-   "action": "defer",
-   "recommendation": "Hide the per-world block of the statistics screen behind a flag. Later: a function in `79_activity_stats/020_activity_and_community.sql` counting the caller's handed-over handoffs per world as giver and as receiver.",
    "tier": "later",
    "blocker": false
   },
@@ -660,60 +630,55 @@
    "degrade": "Until it lands the feed and profile tabs show their empty state and the create-post button is disabled; nothing else in the app depends on a post list. The statistics screen shows the community counters and the timeline only: its per-world block and the admin funnel are hidden (M14, M15).",
    "risks": "Largest behavioural change: cursor and card shape reach the application ports. Owns `posts/mapPostRow.ts`, read by P5. The card carries `owner_identity_masked` (M02).",
    "rows": [
+    "table:user_stats",
     "table:users",
-    "table:users_public",
-    "table:follow_edges",
-    "rpc:feed_ranked_ids",
-    "rpc:profile_closed_posts",
     "rpc:profile_closed_posts_count",
-    "rpc:active_posts_count_for_viewer",
-    "rpc:profile_open_challenge_post_ids",
-    "rpc:owner_complete_offer_with_user",
     "rpc:close_post_with_recipient",
-    "rpc:reopen_post_marked",
-    "rpc:reopen_post_deleted_no_recipient",
-    "rpc:rpc_recipient_unmark_self",
-    "rpc:rpc_republish_post",
     "rpc:admin_remove_post",
-    "rpc:rpc_get_post_engagement_stats",
-    "rpc:rpc_set_post_reaction",
-    "rpc:rpc_create_post_comment",
-    "rpc:rpc_set_post_comment_like",
     "rpc:upsert_post_actor_identity",
     "table:post_actor_identity",
     "table:posts",
-    "table:media_assets",
     "table:saved_posts",
     "table:post_comments",
     "table:post_comment_reactions",
     "table:post_reactions",
-    "rpc:rpc_feed_hide_post",
-    "rpc:rpc_feed_log_impressions",
-    "rpc:rpc_feed_list_mute_filters",
-    "rpc:rpc_feed_add_mute_filter",
-    "rpc:rpc_feed_remove_mute_filter",
     "rpc:search_posts_page",
     "rpc:search_users_page",
-    "rpc:search_all",
-    "rpc:rpc_search_suggested_queries",
+    "rpc:feed_page",
+    "rpc:post_cards",
+    "rpc:profile_posts_page",
+    "rpc:close_post_without_recipient",
+    "rpc:reopen_post",
+    "rpc:recipient_unmark_self",
+    "rpc:publish_post",
+    "rpc:delete_post",
+    "rpc:set_post_reaction",
+    "rpc:post_comments_page",
+    "rpc:community_stats",
+    "rpc:my_activity_timeline",
+    "table:feed_hides",
+    "table:feed_impressions",
+    "table:feed_mute_filters",
+    "table:post_media",
+    "table:post_private_locations",
+    "table:post_stats",
+    "table:post_closures",
+    "table:challenges",
+    "table:item_subcategories",
+    "table:post_kinds",
     "table:chats",
-    "rpc:rpc_my_activity_timeline",
-    "rpc:my_world_givings",
-    "rpc:admin_world_flow_funnel",
-    "table:community_stats",
+    "table:post_handoffs",
     "table:donation_links",
     "rpc:get_post_translations",
     "table:content_translations",
-    "channel:topic = `community-stats-watch:${suffix}`",
-    "postgres_changes:community_stats",
     "edge_function:translate"
    ],
    "counts": {
-    "objects": 47,
-    "oneToOne": 12,
-    "changed": 29,
-    "removed": 3,
-    "missing": 3
+    "objects": 42,
+    "oneToOne": 31,
+    "changed": 11,
+    "removed": 0,
+    "missing": 0
    }
   },
   {
@@ -1813,28 +1778,6 @@
    ]
   },
   {
-   "old": "topic = `community-stats-watch:${suffix}`",
-   "kind": "channel",
-   "status": "removed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "The counters are an RPC (`community_stats()`); refresh on focus or on a timer.",
-   "oldObject": {},
-   "targets": [],
-   "areas": [
-    "mobile"
-   ],
-   "callSites": [
-    {
-     "file": "app/apps/mobile/src/hooks/useCommunityStatsAbout.ts",
-     "line": 58,
-     "symbol": "useEffect",
-     "area": "mobile"
-    }
-   ]
-  },
-  {
    "old": "topic = `user:${userId}:account`",
    "kind": "channel",
    "status": "same",
@@ -1982,29 +1925,6 @@
    ]
   },
   {
-   "old": "community_stats",
-   "kind": "postgres_changes",
-   "status": "removed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "See the community-stats topic: poll the RPC.",
-   "oldObject": {},
-   "targets": [],
-   "areas": [
-    "mobile"
-   ],
-   "callSites": [
-    {
-     "file": "app/apps/mobile/src/hooks/useCommunityStatsAbout.ts",
-     "line": 60,
-     "symbol": "useEffect",
-     "area": "mobile",
-     "event": "*"
-    }
-   ]
-  },
-  {
    "old": "accept_housing_conduct",
    "kind": "rpc",
    "status": "changed",
@@ -2099,69 +2019,6 @@
      "line": 117,
      "symbol": "SupabaseLegalDocumentRepository.unwrapCall",
      "area": "legal"
-    }
-   ]
-  },
-  {
-   "old": "active_posts_count_for_viewer",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Read `open_posts_public` (+ `open_posts_followers_only` for a follower) of the profile's `user_stats` row; the viewer-dependent sum moves to the adapter.",
-   "oldObject": {
-    "signature": [
-     "active_posts_count_for_viewer(p_owner: string, p_viewer: string) → number"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "user_stats",
-     "columns": [
-      "followers_count",
-      "following_count",
-      "items_given_count",
-      "items_received_count",
-      "karma_points",
-      "open_posts_followers_only",
-      "open_posts_only_me",
-      "open_posts_public",
-      "posts_created_total",
-      "ratings_avg",
-      "ratings_count",
-      "ratings_stars_total",
-      "updated_at",
-      "user_id",
-      "volunteer_hours_total"
-     ],
-     "clientGrants": {
-      "select": [
-       "followers_count",
-       "following_count",
-       "items_given_count",
-       "items_received_count",
-       "karma_points",
-       "open_posts_followers_only",
-       "open_posts_public",
-       "posts_created_total",
-       "updated_at",
-       "user_id",
-       "volunteer_hours_total"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "posts"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-     "line": 39,
-     "symbol": "countProfilePostsForViewer",
-     "area": "posts"
     }
    ]
   },
@@ -3092,9 +2949,9 @@
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostRepository.ts",
-     "line": 206,
-     "symbol": "SupabasePostRepository.adminRemove",
+     "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+     "line": 180,
+     "symbol": "adminRemovePost",
      "area": "posts"
     }
    ]
@@ -3643,32 +3500,6 @@
      "line": 191,
      "symbol": "SupabaseSurveyAdminRepository.listFeedback",
      "area": "survey"
-    }
-   ]
-  },
-  {
-   "old": "admin_world_flow_funnel",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M14",
-   "note": "No platform funnel report.",
-   "oldObject": {
-    "signature": [
-     "admin_world_flow_funnel(p_days?: number) → { booked: number cancelled: number closed: number completed: number confirmed: number direction: string median_hours_to_booking: number median_hours_to_completion: number published: number world_label_en: string world..."
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "stats"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/stats/SupabaseStatsRepository.ts",
-     "line": 108,
-     "symbol": "SupabaseStatsRepository.getWorldFlowFunnel",
-     "area": "stats"
     }
    ]
   },
@@ -5591,7 +5422,7 @@
       },
       {
        "code": "world_not_assignable",
-       "knownToApp": false
+       "knownToApp": true
       }
      ]
     }
@@ -5602,8 +5433,61 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 54,
-     "symbol": "closePost",
+     "line": 30,
+     "symbol": "unwrapCall",
+     "area": "posts"
+    }
+   ]
+  },
+  {
+   "old": "close_post_without_recipient",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Closes an open post as delivered to nobody (`closure_wrong_status`, `listing_has_active_handoff`); seven days to reopen.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "close_post_without_recipient",
+     "source": "25_handoffs/070_post_closure_rpcs.sql:67",
+     "signature": [
+      "close_post_without_recipient(p_post_id: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "closure_wrong_status",
+       "knownToApp": true
+      },
+      {
+       "code": "listing_has_active_handoff",
+       "knownToApp": true
+      },
+      {
+       "code": "post_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
+     "line": 35,
+     "symbol": "unwrapCall",
      "area": "posts"
     }
    ]
@@ -5662,6 +5546,43 @@
      "line": 164,
      "symbol": "SupabaseVolunteerRepository.closeOpportunity",
      "area": "volunteering"
+    }
+   ]
+  },
+  {
+   "old": "community_stats",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "One row of registered_users, open_public_posts, delivered_posts, refreshed_at; the About screen reads it again every 60 seconds (there is no change feed).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "community_stats",
+     "source": "79_activity_stats/020_activity_and_community.sql:110",
+     "signature": [
+      "community_stats(delivered_posts: number, open_public_posts: number, refreshed_at: string, registered_users: number) → { delivered_posts: number open_public_posts: number refreshed_at: string registered_users: number }[]"
+     ],
+     "errors": [
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "stats"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/stats/SupabaseStatsRepository.ts",
+     "line": 35,
+     "symbol": "SupabaseStatsRepository.getCommunityStatsSnapshot",
+     "area": "stats"
     }
    ]
   },
@@ -6890,6 +6811,55 @@
    ]
   },
   {
+   "old": "delete_post",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Deletes a post in any status the owner may delete (`listing_wrong_status` for a removed or already deleted post); a published post stays seven days for a reopen.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "delete_post",
+     "source": "25_handoffs/060_post_owner_actions.sql:83",
+     "signature": [
+      "delete_post(p_post_id: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "listing_wrong_status",
+       "knownToApp": true
+      },
+      {
+       "code": "post_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+     "line": 170,
+     "symbol": "deletePost",
+     "area": "posts"
+    }
+   ]
+  },
+  {
    "old": "embedding_job_fail",
    "kind": "rpc",
    "status": "same",
@@ -7052,18 +7022,14 @@
    ]
   },
   {
-   "old": "feed_ranked_ids",
+   "old": "feed_page",
    "kind": "rpc",
-   "status": "changed",
+   "status": "same",
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "One call returns cards, not ids to hydrate: filters move into `p_filters` (sort, world, direction, item_subcategory_ids, status, audience, city_id + radius_km, near_city_id, q), the four cursor arguments become the opaque `next_cursor` JSON, `distance_km` → `distance_m`.",
-   "oldObject": {
-    "signature": [
-     "feed_ranked_ids(p_cursor_created_at?: string, p_cursor_distance?: number, p_cursor_post_id?: string, p_cursor_rank_score?: number, p_filter_categories?: string[], p_filter_center_city?: string, p_filter_item_conditions?: string[], p_filter_radius_km?: number, p_filter_search_query?: string, p_filter_status?: string, p_filter_subcategories?: string[], p_filter_type?: string, p_filter_worlds?: string[], p_followers_only?: boolean, p_page_limit?: number, p_proximity_sort_city?: string, p_sort_order?: string, p_viewer_id: string) → { distance_km: number post_id: string rank_score: number }[]"
-    ]
-   },
+   "note": "`p_cursor`, `p_limit` (at most 50), `p_filters` (sort, world, direction, item_subcategory_ids, status, audience, city_id + radius_km, near_city_id, q, scope); rows of `card`, `next_cursor`, `distance_m`. Several worlds or an item condition are narrowed on the returned page.",
+   "oldObject": {},
    "targets": [
     {
      "type": "rpc",
@@ -7089,9 +7055,9 @@
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/posts/feedQueryRanked.ts",
-     "line": 76,
-     "symbol": "fetchRankedFeedPage",
+     "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
+     "line": 86,
+     "symbol": "fetchFeedPage",
      "area": "posts"
     }
    ]
@@ -10245,27 +10211,33 @@
    ]
   },
   {
-   "old": "my_world_givings",
+   "old": "my_activity_timeline",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M15",
-   "note": "No per-world giving totals of a member.",
-   "oldObject": {
-    "signature": [
-     "my_world_givings(closed: number, given: number, received: number, world_label_en: string, world_label_he: string, world_slug: string) → { closed: number given: number received: number world_label_en: string world_label_he: string world_slug: string }[]"
-    ]
-   },
-   "targets": [],
+   "missing": null,
+   "note": "`p_limit`; rows of occurred_at, kind, post_id, post_title, actor_id, actor_display_name.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "my_activity_timeline",
+     "source": "79_activity_stats/020_activity_and_community.sql:18",
+     "signature": [
+      "my_activity_timeline(p_limit?: number) → { actor_display_name: string actor_id: string kind: string occurred_at: string post_id: string post_title: string }[]"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "stats"
    ],
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/stats/SupabaseStatsRepository.ts",
-     "line": 128,
-     "symbol": "SupabaseStatsRepository.listMyWorldGivings",
+     "line": 52,
+     "symbol": "SupabaseStatsRepository.listMyActivityTimeline",
      "area": "stats"
     }
    ]
@@ -10556,97 +10528,6 @@
    ]
   },
   {
-   "old": "owner_complete_offer_with_user",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Split by `p_mode`: with a recipient → `close_post_with_recipient(p_post_id, p_recipient_id)` (returns the handoff); without → `close_post_without_recipient`.",
-   "oldObject": {
-    "signature": [
-     "owner_complete_offer_with_user(p_mode?: string, p_recipient_id?: string, p_target: string) → Json"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "close_post_with_recipient",
-     "source": "25_handoffs/070_post_closure_rpcs.sql:16",
-     "signature": [
-      "close_post_with_recipient(p_post_id: string, p_recipient_id: string) → post_handoffs row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "closure_recipient_not_in_chat",
-       "knownToApp": true
-      },
-      {
-       "code": "closure_wrong_status",
-       "knownToApp": true
-      },
-      {
-       "code": "post_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      },
-      {
-       "code": "world_not_assignable",
-       "knownToApp": false
-      }
-     ]
-    },
-    {
-     "type": "rpc",
-     "name": "close_post_without_recipient",
-     "source": "25_handoffs/070_post_closure_rpcs.sql:67",
-     "signature": [
-      "close_post_without_recipient(p_post_id: string) → undefined"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "closure_wrong_status",
-       "knownToApp": true
-      },
-      {
-       "code": "listing_has_active_handoff",
-       "knownToApp": true
-      },
-      {
-       "code": "post_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "posts"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/ownerCompleteOfferRpc.ts",
-     "line": 14,
-     "symbol": "ownerCompleteOffer",
-     "area": "posts"
-    }
-   ]
-  },
-  {
    "old": "pause_my_listing",
    "kind": "rpc",
    "status": "renamed",
@@ -10749,32 +10630,23 @@
    ]
   },
   {
-   "old": "profile_closed_posts",
+   "old": "post_cards",
    "kind": "rpc",
-   "status": "changed",
+   "status": "same",
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "`p_tab = 'closed'`, keyset `p_cursor`, returns cards. `identity_role` is not returned: the card carries `owner_identity_masked` and null owner fields instead (M02, built).",
-   "oldObject": {
-    "signature": [
-     "profile_closed_posts(p_cursor?: string, p_limit?: number, p_list_mode?: string, p_profile_user_id: string, p_viewer_user_id: string) → { closed_at: string identity_role: string post_id: string }[]"
-    ]
-   },
+   "note": "Cards of up to 100 post ids the caller can read, in no particular order: the adapter restores the order of the ids (saved posts, a member's posts by status, one post).",
+   "oldObject": {},
    "targets": [
     {
      "type": "rpc",
-     "name": "profile_posts_page",
-     "source": "30_social/090_profile_and_search.sql:13",
+     "name": "post_cards",
+     "source": "30_social/070_post_cards.sql:69",
      "signature": [
-      "profile_posts_page(p_cursor?: Json, p_limit?: number, p_tab?: string, p_user_id: string) → { card: post_card next_cursor: Json }[]"
+      "post_cards(p_post_ids: string[]) → post_card[]"
      ],
-     "errors": [
-      {
-       "code": "invalid_input",
-       "knownToApp": true
-      }
-     ]
+     "errors": []
     }
    ],
    "areas": [
@@ -10782,9 +10654,47 @@
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/posts/getProfileClosedPostsHelper.ts",
-     "line": 24,
-     "symbol": "getProfileClosedPostsHelper",
+     "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
+     "line": 68,
+     "symbol": "fetchPostsByIds",
+     "area": "posts"
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
+     "line": 41,
+     "symbol": "fetchPostDetail",
+     "area": "posts"
+    }
+   ]
+  },
+  {
+   "old": "post_comments_page",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Root comments (`p_parent_comment_id` null) or the replies of one, oldest first, with the author already masked when the poster asked to stay anonymous; the screen reads the roots and then the replies of each root that has any.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "post_comments_page",
+     "source": "30_social/070_post_cards.sql:112",
+     "signature": [
+      "post_comments_page(p_cursor?: Json, p_limit?: number, p_parent_comment_id?: string, p_post_id: string) → { author_avatar_url: string author_display_name: string author_id: string author_identity_masked: boolean author_share_handle: string body: string created_at: string edited_at: string id: string mention_user_ids: stri..."
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
+     "line": 161,
+     "symbol": "SupabasePostEngagementRepository.commentsPage",
      "area": "posts"
     }
    ]
@@ -10819,25 +10729,21 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-     "line": 73,
+     "line": 106,
      "symbol": "countProfileClosedPosts",
      "area": "posts"
     }
    ]
   },
   {
-   "old": "profile_open_challenge_post_ids",
+   "old": "profile_posts_page",
    "kind": "rpc",
-   "status": "changed",
+   "status": "same",
    "launch": "core",
-   "confidence": "medium",
+   "confidence": "high",
    "missing": null,
-   "note": "A challenge is a post (`post_type = 'challenge'`), so the open tab already contains it; the merge step goes away.",
-   "oldObject": {
-    "signature": [
-     "profile_open_challenge_post_ids(p_list_mode?: string, p_profile_user_id: string, p_viewer_user_id: string) → string[]"
-    ]
-   },
+   "note": "`p_tab` open | closed | hidden, keyset `p_cursor`; the closed tab of a profile. The owner's delivered or deleted \"only me\" posts come from `posts` ids completed by `post_cards`.",
+   "oldObject": {},
    "targets": [
     {
      "type": "rpc",
@@ -10859,9 +10765,9 @@
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/posts/mergeProfileOpenChallengePosts.ts",
-     "line": 15,
-     "symbol": "fetchProfileOpenChallengePosts",
+     "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
+     "line": 125,
+     "symbol": "fetchProfileTabPage",
      "area": "posts"
     }
    ]
@@ -10958,6 +10864,55 @@
    ]
   },
   {
+   "old": "publish_post",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Publishes the draft the adapter wrote (draft → open); a failed create deletes the draft, which a device may delete. Refusals: `listing_wrong_status`, `post_limit_exceeded`.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "publish_post",
+     "source": "25_handoffs/060_post_owner_actions.sql:15",
+     "signature": [
+      "publish_post(p_post_id: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "listing_wrong_status",
+       "knownToApp": true
+      },
+      {
+       "code": "post_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+     "line": 94,
+     "symbol": "completeDraft",
+     "area": "posts"
+    }
+   ]
+  },
+  {
    "old": "rate_giving_handoff",
    "kind": "rpc",
    "status": "changed",
@@ -11015,6 +10970,51 @@
      "line": 119,
      "symbol": "rateGivingHandoff",
      "area": "marketplace"
+    }
+   ]
+  },
+  {
+   "old": "recipient_unmark_self",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "The recipient removes their mark (`not_recipient_or_wrong_status`).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "recipient_unmark_self",
+     "source": "25_handoffs/070_post_closure_rpcs.sql:134",
+     "signature": [
+      "recipient_unmark_self(p_post_id: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "not_recipient_or_wrong_status",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
+     "line": 71,
+     "symbol": "unmarkRecipientSelf",
+     "area": "posts"
     }
    ]
   },
@@ -11260,18 +11260,14 @@
    ]
   },
   {
-   "old": "reopen_post_deleted_no_recipient",
+   "old": "reopen_post",
    "kind": "rpc",
-   "status": "renamed",
+   "status": "same",
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "Same RPC as above; `reopen_window_expired` after the grace period.",
-   "oldObject": {
-    "signature": [
-     "reopen_post_deleted_no_recipient(p_post_id: string) → posts row"
-    ]
-   },
+   "note": "Reopens a delivered post, or a deleted one inside its window (`closure_wrong_status`, `reopen_window_expired`); returns nothing, the adapter reads the post again.",
+   "oldObject": {},
    "targets": [
     {
      "type": "rpc",
@@ -11310,64 +11306,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 102,
-     "symbol": "reopenPost",
-     "area": "posts"
-    }
-   ]
-  },
-  {
-   "old": "reopen_post_marked",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "One RPC for both closed states; returns void (re-read the post).",
-   "oldObject": {
-    "signature": [
-     "reopen_post_marked(p_post_id: string) → posts row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "reopen_post",
-     "source": "25_handoffs/070_post_closure_rpcs.sql:98",
-     "signature": [
-      "reopen_post(p_post_id: string) → undefined"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "closure_wrong_status",
-       "knownToApp": true
-      },
-      {
-       "code": "post_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "reopen_window_expired",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "posts"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 96,
+     "line": 61,
      "symbol": "reopenPost",
      "area": "posts"
     }
@@ -12033,344 +11972,6 @@
    ]
   },
   {
-   "old": "rpc_create_post_comment",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Direct insert (columns id, post_id, author_id, parent_comment_id, body) with `.select()`; mentions and rate limiting are applied by triggers.",
-   "oldObject": {
-    "signature": [
-     "rpc_create_post_comment(p_body: string, p_parent_comment_id?: string, p_post_id: string) → post_comments row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_comments",
-     "columns": [
-      "author_id",
-      "body",
-      "created_at",
-      "edited_at",
-      "id",
-      "mention_user_ids",
-      "parent_comment_id",
-      "post_id",
-      "status",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true,
-      "insert": [
-       "author_id",
-       "body",
-       "id",
-       "parent_comment_id",
-       "post_id"
-      ],
-      "update": [
-       "body"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "posts"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 81,
-     "symbol": "SupabasePostEngagementRepository.createComment",
-     "area": "posts"
-    }
-   ]
-  },
-  {
-   "old": "rpc_feed_add_mute_filter",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Direct insert with the column that matches `filter_kind`.",
-   "oldObject": {
-    "signature": [
-     "rpc_feed_add_mute_filter(p_filter_kind: string, p_filter_value: string) → feed_mute_filters row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "feed_mute_filters",
-     "columns": [
-      "created_at",
-      "filter_kind",
-      "id",
-      "keyword",
-      "muted_user_id",
-      "user_id",
-      "world_slug"
-     ],
-     "clientGrants": {
-      "select": true,
-      "delete": true,
-      "insert": [
-       "filter_kind",
-       "id",
-       "keyword",
-       "muted_user_id",
-       "user_id",
-       "world_slug"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "feed"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-     "line": 44,
-     "symbol": "SupabaseSocialFeedRepository.addMuteFilter",
-     "area": "feed"
-    }
-   ]
-  },
-  {
-   "old": "rpc_feed_hide_post",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Direct insert of (user_id, post_id); unhide = delete.",
-   "oldObject": {
-    "signature": [
-     "rpc_feed_hide_post(p_post_id: string) → undefined"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "feed_hides",
-     "columns": [
-      "hidden_at",
-      "post_id",
-      "user_id"
-     ],
-     "clientGrants": {
-      "select": true,
-      "delete": true,
-      "insert": [
-       "post_id",
-       "user_id"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "feed"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-     "line": 19,
-     "symbol": "SupabaseSocialFeedRepository.hidePost",
-     "area": "feed"
-    }
-   ]
-  },
-  {
-   "old": "rpc_feed_list_mute_filters",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Direct select; `filter_value` is split by kind into `muted_user_id`, `world_slug`, `keyword`.",
-   "oldObject": {
-    "signature": [
-     "rpc_feed_list_mute_filters(created_at: string, filter_id: string, filter_kind: string, filter_value: string, user_id: string) → feed_mute_filters row[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "feed_mute_filters",
-     "columns": [
-      "created_at",
-      "filter_kind",
-      "id",
-      "keyword",
-      "muted_user_id",
-      "user_id",
-      "world_slug"
-     ],
-     "clientGrants": {
-      "select": true,
-      "delete": true,
-      "insert": [
-       "filter_kind",
-       "id",
-       "keyword",
-       "muted_user_id",
-       "user_id",
-       "world_slug"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "feed"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-     "line": 33,
-     "symbol": "SupabaseSocialFeedRepository.listMuteFilters",
-     "area": "feed"
-    }
-   ]
-  },
-  {
-   "old": "rpc_feed_log_impressions",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Direct bulk insert of `post_id` rows (the only granted column; user and time are filled by the table).",
-   "oldObject": {
-    "signature": [
-     "rpc_feed_log_impressions(p_post_ids: string[]) → number"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "feed_impressions",
-     "columns": [
-      "post_id",
-      "seen_at",
-      "user_id"
-     ],
-     "clientGrants": {
-      "insert": [
-       "post_id"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "feed"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-     "line": 25,
-     "symbol": "SupabaseSocialFeedRepository.logImpressions",
-     "area": "feed"
-    }
-   ]
-  },
-  {
-   "old": "rpc_feed_remove_mute_filter",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Direct delete by `id`.",
-   "oldObject": {
-    "signature": [
-     "rpc_feed_remove_mute_filter(p_filter_id: string) → undefined"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "feed_mute_filters",
-     "columns": [
-      "created_at",
-      "filter_kind",
-      "id",
-      "keyword",
-      "muted_user_id",
-      "user_id",
-      "world_slug"
-     ],
-     "clientGrants": {
-      "select": true,
-      "delete": true,
-      "insert": [
-       "filter_kind",
-       "id",
-       "keyword",
-       "muted_user_id",
-       "user_id",
-       "world_slug"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "feed"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
-     "line": 52,
-     "symbol": "SupabaseSocialFeedRepository.removeMuteFilter",
-     "area": "feed"
-    }
-   ]
-  },
-  {
-   "old": "rpc_get_post_engagement_stats",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Direct read of `post_stats` (`reactions_count`, `comments_count`, `shares_count`); the same counters are inside every `post_card`.",
-   "oldObject": {
-    "signature": [
-     "rpc_get_post_engagement_stats(p_post_id: string) → post_stats row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_stats",
-     "columns": [
-      "comments_count",
-      "post_id",
-      "reactions_count",
-      "shares_count",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "posts"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 36,
-     "symbol": "SupabasePostEngagementRepository.getStats",
-     "area": "posts"
-    }
-   ]
-  },
-  {
    "old": "rpc_match_refresh_mine",
    "kind": "rpc",
    "status": "removed",
@@ -12450,42 +12051,6 @@
    ]
   },
   {
-   "old": "rpc_my_activity_timeline",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Adds `actor_id`.",
-   "oldObject": {
-    "signature": [
-     "rpc_my_activity_timeline(p_limit?: number) → { actor_display_name: string kind: string occurred_at: string post_id: string post_title: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "my_activity_timeline",
-     "source": "79_activity_stats/020_activity_and_community.sql:18",
-     "signature": [
-      "my_activity_timeline(p_limit?: number) → { actor_display_name: string actor_id: string kind: string occurred_at: string post_id: string post_title: string }[]"
-     ],
-     "errors": []
-    }
-   ],
-   "areas": [
-    "stats"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/stats/SupabaseStatsRepository.ts",
-     "line": 81,
-     "symbol": "SupabaseStatsRepository.listMyActivityTimeline",
-     "area": "stats"
-    }
-   ]
-  },
-  {
    "old": "rpc_my_matches",
    "kind": "rpc",
    "status": "changed",
@@ -12559,81 +12124,6 @@
      "line": 69,
      "symbol": "SupabaseOrgTransparencyRepository.getPublic",
      "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "rpc_recipient_unmark_self",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Same call.",
-   "oldObject": {
-    "signature": [
-     "rpc_recipient_unmark_self(p_post_id: string) → undefined"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "recipient_unmark_self",
-     "source": "25_handoffs/070_post_closure_rpcs.sql:134",
-     "signature": [
-      "recipient_unmark_self(p_post_id: string) → undefined"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "not_recipient_or_wrong_status",
-       "knownToApp": false
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "posts"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostRepository.ts",
-     "line": 235,
-     "symbol": "SupabasePostRepository.unmrkRecipientSelf",
-     "area": "posts"
-    }
-   ]
-  },
-  {
-   "old": "rpc_republish_post",
-   "kind": "rpc",
-   "status": "removed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "An expired post is never reopened: republish creates a new post from the old one's fields (D127). The app copies the fields into the create flow.",
-   "oldObject": {
-    "signature": [
-     "rpc_republish_post(p_post_id: string) → string"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "posts"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 119,
-     "symbol": "republishPost",
-     "area": "posts"
     }
    ]
   },
@@ -13143,177 +12633,6 @@
    ]
   },
   {
-   "old": "rpc_search_suggested_queries",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M05",
-   "note": "No suggested-queries source in the baseline.",
-   "oldObject": {
-    "signature": [
-     "rpc_search_suggested_queries() → string[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "search"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/search/SupabaseSearchRepository.ts",
-     "line": 74,
-     "symbol": "SupabaseSearchRepository.fetchSocialSearchExtras",
-     "area": "search"
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/search/SupabaseSearchRepository.ts",
-     "line": 79,
-     "symbol": "SupabaseSearchRepository.fetchSocialSearchExtras",
-     "area": "search"
-    }
-   ]
-  },
-  {
-   "old": "rpc_set_post_comment_like",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Direct insert / delete of the caller's row.",
-   "oldObject": {
-    "signature": [
-     "rpc_set_post_comment_like(p_comment_id: string, p_liked: boolean) → boolean"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_comment_reactions",
-     "columns": [
-      "comment_id",
-      "created_at",
-      "user_id"
-     ],
-     "clientGrants": {
-      "select": true,
-      "insert": true,
-      "delete": true
-     }
-    }
-   ],
-   "areas": [
-    "posts"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 109,
-     "symbol": "SupabasePostEngagementRepository.setCommentLike",
-     "area": "posts"
-    }
-   ]
-  },
-  {
-   "old": "rpc_set_post_reaction",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Returns the reaction type now held (text, null when removed) instead of the row.",
-   "oldObject": {
-    "signature": [
-     "rpc_set_post_reaction(p_post_id: string, p_reaction_type: string) → post_reactions row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "set_post_reaction",
-     "source": "30_social/030_post_reactions.sql:98",
-     "signature": [
-      "set_post_reaction(p_post_id: string, p_reaction_type: string) → string"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_reaction_type",
-       "knownToApp": true
-      },
-      {
-       "code": "post_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "posts"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 69,
-     "symbol": "SupabasePostEngagementRepository.setReaction",
-     "area": "posts"
-    }
-   ]
-  },
-  {
-   "old": "search_all",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "`p_types` is gone: the preview always holds posts and members; donation links are searched from `donation_links` directly.",
-   "oldObject": {
-    "signature": [
-     "search_all(p_limit?: number, p_query: string, p_types?: string[]) → Json"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "search_all",
-     "source": "30_social/090_profile_and_search.sql:132",
-     "signature": [
-      "search_all(p_limit?: number, p_query: string) → Json"
-     ],
-     "errors": [
-      {
-       "code": "invalid_input",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "search"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/search/SupabaseSearchRepository.ts",
-     "line": 86,
-     "symbol": "SupabaseSearchRepository.fetchSocialSearchExtras",
-     "area": "search"
-    }
-   ]
-  },
-  {
    "old": "search_external_bodies",
    "kind": "rpc",
    "status": "changed",
@@ -13422,14 +12741,14 @@
     }
    ],
    "areas": [
-    "search"
+    "posts"
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/search/searchQueryHelpers.ts",
-     "line": 25,
-     "symbol": "searchPosts",
-     "area": "search"
+     "file": "app/packages/infrastructure-supabase/src/posts/postCardPages.ts",
+     "line": 105,
+     "symbol": "fetchSearchPage",
+     "area": "posts"
     }
    ]
   },
@@ -13463,7 +12782,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/search/searchQueryHelpers.ts",
-     "line": 61,
+     "line": 53,
      "symbol": "searchUsers",
      "area": "search"
     }
@@ -13748,6 +13067,55 @@
      "line": 60,
      "symbol": "supabaseSetOnboardingState",
      "area": "users"
+    }
+   ]
+  },
+  {
+   "old": "set_post_reaction",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_reaction_type` like | support | thanks; a reaction is removed by deleting the caller's `post_reactions` row.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "set_post_reaction",
+     "source": "30_social/030_post_reactions.sql:98",
+     "signature": [
+      "set_post_reaction(p_post_id: string, p_reaction_type: string) → string"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "invalid_reaction_type",
+       "knownToApp": true
+      },
+      {
+       "code": "post_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
+     "line": 106,
+     "symbol": "SupabasePostEngagementRepository.unwrapCall",
+     "area": "posts"
     }
    ]
   },
@@ -14550,15 +13918,15 @@
       },
       {
        "code": "followers_only_requires_public_profile",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "invalid_identity_visibility",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "invalid_surface_visibility",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "not_participant",
@@ -14581,8 +13949,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postActorIdentityMethods.ts",
-     "line": 38,
-     "symbol": "upsertPostActorIdentityRow",
+     "line": 47,
+     "symbol": "unwrapCall",
      "area": "posts"
     }
    ]
@@ -14905,6 +14273,79 @@
    ]
   },
   {
+   "old": "challenges",
+   "kind": "table",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Read to find the challenge of a challenge post (`post_id` → `id`).",
+   "oldObject": {
+    "columns": [
+     "cadence",
+     "challenge_id",
+     "created_at",
+     "creator_id",
+     "description",
+     "difficulty",
+     "ends_at",
+     "goal_direction",
+     "goal_value",
+     "measurement",
+     "participants_count",
+     "post_id",
+     "scope",
+     "status",
+     "target_cycles",
+     "title",
+     "topic_label",
+     "updated_at"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "challenges",
+     "columns": [
+      "cadence",
+      "created_at",
+      "creator_id",
+      "difficulty",
+      "ends_at",
+      "goal_direction",
+      "goal_value",
+      "id",
+      "measurement",
+      "participants_count",
+      "post_id",
+      "scope",
+      "status",
+      "target_cycles",
+      "topic_label",
+      "updated_at"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
+     "line": 32,
+     "symbol": "loadChallengeIds",
+     "area": "posts",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
    "old": "chat_members",
    "kind": "table",
    "status": "same",
@@ -15012,8 +14453,8 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 145,
-     "symbol": "getClosureCandidates",
+     "line": 107,
+     "symbol": "chatPartners",
      "area": "posts",
      "ops": [
       "select"
@@ -15104,54 +14545,6 @@
      "line": 45,
      "symbol": "loadCityNames",
      "area": "users",
-     "ops": [
-      "select"
-     ]
-    }
-   ]
-  },
-  {
-   "old": "community_stats",
-   "kind": "table",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "The view becomes an RPC returning registered_users, open_public_posts, delivered_posts, refreshed_at.",
-   "oldObject": {
-    "columns": [
-     "active_public_posts",
-     "as_of",
-     "items_delivered_total",
-     "registered_users"
-    ],
-    "isView": true
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "community_stats",
-     "source": "79_activity_stats/020_activity_and_community.sql:110",
-     "signature": [
-      "community_stats(delivered_posts: number, open_public_posts: number, refreshed_at: string, registered_users: number) → { delivered_posts: number open_public_posts: number refreshed_at: string registered_users: number }[]"
-     ],
-     "errors": [
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "stats"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/stats/SupabaseStatsRepository.ts",
-     "line": 67,
-     "symbol": "SupabaseStatsRepository.getCommunityStatsSnapshot",
-     "area": "stats",
      "ops": [
       "select"
      ]
@@ -15352,7 +14745,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/search/searchExploreHelpers.ts",
-     "line": 60,
+     "line": 33,
      "symbol": "exploreLinks",
      "area": "search",
      "ops": [
@@ -15361,7 +14754,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/search/searchQueryHelpers.ts",
-     "line": 86,
+     "line": 70,
      "symbol": "searchLinks",
      "area": "search",
      "ops": [
@@ -15529,89 +14922,170 @@
    ]
   },
   {
-   "old": "follow_edges",
+   "old": "feed_hides",
    "kind": "table",
-   "status": "changed",
+   "status": "same",
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "Renamed to `follows` (`follower_id`, `followed_id`). Select and delete stay direct; the insert becomes `follow_user(p_target)`, which returns `following` or `requested` (private profile).",
+   "note": "Insert (user_id, post_id) ignoring duplicates; delete by post.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "feed_hides",
+     "columns": [
+      "hidden_at",
+      "post_id",
+      "user_id"
+     ],
+     "clientGrants": {
+      "select": true,
+      "delete": true,
+      "insert": [
+       "post_id",
+       "user_id"
+      ]
+     }
+    }
+   ],
+   "areas": [
+    "feed"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
+     "line": 51,
+     "symbol": "SupabaseSocialFeedRepository.unwrapCall",
+     "area": "feed",
+     "ops": [
+      "upsert"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "feed_impressions",
+   "kind": "table",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Bulk insert of `post_id` rows; the member and the time are filled by the table.",
    "oldObject": {
     "columns": [
-     "created_at",
-     "followed_id",
-     "follower_id"
+     "impression_id",
+     "post_id",
+     "seen_at",
+     "user_id"
     ],
     "isView": false
    },
    "targets": [
     {
      "type": "table",
-     "name": "follows",
+     "name": "feed_impressions",
      "columns": [
-      "created_at",
-      "followed_id",
-      "follower_id"
+      "post_id",
+      "seen_at",
+      "user_id"
      ],
      "clientGrants": {
-      "select": true,
-      "delete": true
+      "insert": [
+       "post_id"
+      ]
      }
-    },
-    {
-     "type": "rpc",
-     "name": "follow_user",
-     "source": "15_social_graph/040_follow_rpcs.sql:30",
-     "signature": [
-      "follow_user(p_target: string) → string"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "blocked_relationship",
-       "knownToApp": true
-      },
-      {
-       "code": "follow_request_cooldown_active",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_rate_limit_args",
-       "knownToApp": true
-      },
-      {
-       "code": "rate_limited",
-       "knownToApp": true
-      },
-      {
-       "code": "self_follow_forbidden",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      },
-      {
-       "code": "user_unavailable",
-       "knownToApp": true
-      }
-     ]
     }
    ],
    "areas": [
-    "posts"
+    "feed"
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/posts/applyPostActorIdentityProjection.ts",
-     "line": 32,
-     "symbol": "fetchFollowedTargets",
-     "area": "posts",
+     "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
+     "line": 61,
+     "symbol": "SupabaseSocialFeedRepository.unwrapCall",
+     "area": "feed",
+     "ops": [
+      "insert"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "feed_mute_filters",
+   "kind": "table",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Kinds user, world and keyword (a keyword is 2-60 characters, trimmed, lower-case); there is no per-category mute, so that settings section is gone.",
+   "oldObject": {
+    "columns": [
+     "created_at",
+     "filter_id",
+     "filter_kind",
+     "filter_value",
+     "user_id"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "feed_mute_filters",
+     "columns": [
+      "created_at",
+      "filter_kind",
+      "id",
+      "keyword",
+      "muted_user_id",
+      "user_id",
+      "world_slug"
+     ],
+     "clientGrants": {
+      "select": true,
+      "delete": true,
+      "insert": [
+       "filter_kind",
+       "id",
+       "keyword",
+       "muted_user_id",
+       "user_id",
+       "world_slug"
+      ]
+     }
+    }
+   ],
+   "areas": [
+    "feed"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
+     "line": 69,
+     "symbol": "SupabaseSocialFeedRepository.listMuteFilters",
+     "area": "feed",
      "ops": [
       "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
+     "line": 86,
+     "symbol": "SupabaseSocialFeedRepository.unwrapCall",
+     "area": "feed",
+     "ops": [
+      "upsert"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/feed/SupabaseSocialFeedRepository.ts",
+     "line": 91,
+     "symbol": "SupabaseSocialFeedRepository.removeMuteFilter",
+     "area": "feed",
+     "ops": [
+      "delete"
      ]
     }
    ]
@@ -15900,6 +15374,50 @@
      "line": 34,
      "symbol": "SupabaseHousingRepository.hasAcceptedConduct",
      "area": "housing",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "item_subcategories",
+   "kind": "table",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Read-only catalog; the items world's rows are the app's item categories (slug = lower-case category, `baby_gear`).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "item_subcategories",
+     "columns": [
+      "created_at",
+      "id",
+      "is_active",
+      "label_en",
+      "label_he",
+      "parent_id",
+      "slug",
+      "sort_order",
+      "world_slug"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postCatalog.ts",
+     "line": 54,
+     "symbol": "readCatalog",
+     "area": "posts",
      "ops": [
       "select"
      ]
@@ -16378,102 +15896,6 @@
    ]
   },
   {
-   "old": "media_assets",
-   "kind": "table",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Renamed; `path` → `storage_bucket` + `storage_key`, plus kind / ordinal / dimensions. Direct insert and delete by the owner; no update (replace = delete + insert).",
-   "oldObject": {
-    "columns": [
-     "bucket",
-     "created_at",
-     "media_asset_id",
-     "mime_type",
-     "ordinal",
-     "path",
-     "post_id",
-     "size_bytes"
-    ],
-    "isView": false
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_media",
-     "columns": [
-      "blurhash",
-      "created_at",
-      "duration_ms",
-      "height",
-      "id",
-      "kind",
-      "mime_type",
-      "ordinal",
-      "owner_id",
-      "post_id",
-      "processing_status",
-      "size_bytes",
-      "storage_bucket",
-      "storage_key",
-      "width"
-     ],
-     "clientGrants": {
-      "select": true,
-      "delete": true,
-      "insert": [
-       "blurhash",
-       "duration_ms",
-       "height",
-       "id",
-       "kind",
-       "mime_type",
-       "ordinal",
-       "owner_id",
-       "post_id",
-       "size_bytes",
-       "storage_bucket",
-       "storage_key",
-       "width"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "posts"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/executePostUpdate.ts",
-     "line": 49,
-     "symbol": "replaceMedia",
-     "area": "posts",
-     "ops": [
-      "delete"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/executePostUpdate.ts",
-     "line": 59,
-     "symbol": "replaceMedia",
-     "area": "posts",
-     "ops": [
-      "insert"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostRepository.ts",
-     "line": 154,
-     "symbol": "SupabasePostRepository.create",
-     "area": "posts",
-     "ops": [
-      "insert"
-     ]
-    }
-   ]
-  },
-  {
    "old": "message_reactions",
    "kind": "table",
    "status": "same",
@@ -16717,18 +16139,53 @@
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/posts/applyPostActorIdentityProjection.ts",
-     "line": 52,
-     "symbol": "fetchPostActorIdentitiesByPostIds",
+     "file": "app/packages/infrastructure-supabase/src/posts/postActorIdentityMethods.ts",
+     "line": 27,
+     "symbol": "listPostActorIdentitiesForPost",
      "area": "posts",
      "ops": [
       "select"
      ]
-    },
+    }
+   ]
+  },
+  {
+   "old": "post_closures",
+   "kind": "table",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "The owner reads `purge_after`: the end of the seven-day reopen window of a post deleted without a recipient.",
+   "oldObject": {},
+   "targets": [
     {
-     "file": "app/packages/infrastructure-supabase/src/posts/postActorIdentityMethods.ts",
-     "line": 16,
-     "symbol": "listPostActorIdentitiesForPost",
+     "type": "table",
+     "name": "post_closures",
+     "columns": [
+      "delivered",
+      "post_id",
+      "purge_after",
+      "reopen_count",
+      "updated_at"
+     ],
+     "clientGrants": {
+      "select": [
+       "delivered",
+       "post_id",
+       "purge_after"
+      ]
+     }
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
+     "line": 40,
+     "symbol": "loadPurgeDeadlines",
      "area": "posts",
      "ops": [
       "select"
@@ -16774,11 +16231,20 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 190,
-     "symbol": "SupabasePostEngagementRepository.listCommentsWithAuthors",
+     "line": 146,
+     "symbol": "SupabasePostEngagementRepository.unwrapCall",
      "area": "posts",
      "ops": [
-      "select"
+      "delete"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
+     "line": 153,
+     "symbol": "SupabasePostEngagementRepository.unwrapCall",
+     "area": "posts",
+     "ops": [
+      "upsert"
      ]
     }
    ]
@@ -16855,7 +16321,7 @@
      "errors": [
       {
        "code": "comment_not_found",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -16871,20 +16337,12 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 118,
-     "symbol": "SupabasePostEngagementRepository.listComments",
+     "line": 120,
+     "symbol": "SupabasePostEngagementRepository.createComment",
      "area": "posts",
      "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 150,
-     "symbol": "SupabasePostEngagementRepository.listCommentsWithAuthors",
-     "area": "posts",
-     "ops": [
-      "select"
+      "select",
+      "insert"
      ]
     },
     {
@@ -16902,7 +16360,7 @@
    "old": "post_handoffs",
    "kind": "table",
    "status": "changed",
-   "launch": "wedge",
+   "launch": "core",
    "confidence": "high",
    "missing": null,
    "note": "Read-only for both parties. `handoff_id` → `id`, `reserved_at` → `created_at`, `world_slug` gone (join the post), `knowledge_slot_id` → slot times, new `machine_id`.",
@@ -16965,7 +16423,8 @@
     }
    ],
    "areas": [
-    "marketplace"
+    "marketplace",
+    "posts"
    ],
    "callSites": [
     {
@@ -16975,6 +16434,229 @@
      "area": "marketplace",
      "ops": [
       "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
+     "line": 52,
+     "symbol": "loadRecipients",
+     "area": "posts",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "post_kinds",
+   "kind": "table",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Read-only catalog; a new generic post needs the items world's offer / request kind id.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "post_kinds",
+     "columns": [
+      "created_at",
+      "default_ttl_hours",
+      "detail_schema",
+      "direction",
+      "id",
+      "is_active",
+      "label_en",
+      "label_he",
+      "slug",
+      "sort_order",
+      "world_slug"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postCatalog.ts",
+     "line": 56,
+     "symbol": "readCatalog",
+     "area": "posts",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "post_media",
+   "kind": "table",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "One row per photo, inserted `pending` by the owner after the upload to `post-images`; delete by the owner. An edit keeps the rows whose file and position are unchanged (no update grant).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "post_media",
+     "columns": [
+      "blurhash",
+      "created_at",
+      "duration_ms",
+      "height",
+      "id",
+      "kind",
+      "mime_type",
+      "ordinal",
+      "owner_id",
+      "post_id",
+      "processing_status",
+      "size_bytes",
+      "storage_bucket",
+      "storage_key",
+      "width"
+     ],
+     "clientGrants": {
+      "select": true,
+      "delete": true,
+      "insert": [
+       "blurhash",
+       "duration_ms",
+       "height",
+       "id",
+       "kind",
+       "mime_type",
+       "ordinal",
+       "owner_id",
+       "post_id",
+       "size_bytes",
+       "storage_bucket",
+       "storage_key",
+       "width"
+      ]
+     }
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
+     "line": 40,
+     "symbol": "unwrapCall",
+     "area": "posts",
+     "ops": [
+      "insert"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
+     "line": 54,
+     "symbol": "unwrapCall",
+     "area": "posts",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
+     "line": 65,
+     "symbol": "replacePostMedia",
+     "area": "posts",
+     "ops": [
+      "delete"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postMediaWrites.ts",
+     "line": 70,
+     "symbol": "replacePostMedia",
+     "area": "posts",
+     "ops": [
+      "insert"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
+     "line": 23,
+     "symbol": "loadGallery",
+     "area": "posts",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "post_private_locations",
+   "kind": "table",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "The exact street and number, readable and writable by the post's owner only; other members see the city.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "post_private_locations",
+     "columns": [
+      "access_notes",
+      "destination_street_number",
+      "exact_point",
+      "post_id",
+      "street",
+      "street_number",
+      "updated_at"
+     ],
+     "clientGrants": {
+      "select": true,
+      "insert": [
+       "access_notes",
+       "destination_street_number",
+       "exact_point",
+       "post_id",
+       "street",
+       "street_number"
+      ],
+      "update": [
+       "access_notes",
+       "destination_street_number",
+       "exact_point",
+       "street",
+       "street_number"
+      ]
+     }
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
+     "line": 34,
+     "symbol": "loadOwnStreet",
+     "area": "posts",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+     "line": 47,
+     "symbol": "unwrapCall",
+     "area": "posts",
+     "ops": [
+      "upsert"
      ]
     }
    ]
@@ -17023,8 +16705,66 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
-     "line": 58,
+     "line": 88,
      "symbol": "SupabasePostEngagementRepository.getViewerReaction",
+     "area": "posts",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
+     "line": 101,
+     "symbol": "SupabasePostEngagementRepository.setReaction",
+     "area": "posts",
+     "ops": [
+      "delete"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "post_stats",
+   "kind": "table",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Counters of a post (reactions, comments, shares); no row until the first one.",
+   "oldObject": {
+    "columns": [
+     "comment_count",
+     "post_id",
+     "reaction_count",
+     "share_count",
+     "updated_at"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "post_stats",
+     "columns": [
+      "comments_count",
+      "post_id",
+      "reactions_count",
+      "shares_count",
+      "updated_at"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
+   "areas": [
+    "posts"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostEngagementRepository.ts",
+     "line": 71,
+     "symbol": "SupabasePostEngagementRepository.getStats",
      "area": "posts",
      "ops": [
       "select"
@@ -17211,8 +16951,7 @@
     "admin",
     "mobile",
     "posts",
-    "reports",
-    "search"
+    "reports"
    ],
    "callSites": [
     {
@@ -17235,35 +16974,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 38,
-     "symbol": "fetchPostById",
-     "area": "posts",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 69,
-     "symbol": "closePost",
-     "area": "posts",
-     "ops": [
-      "select",
-      "update"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 88,
-     "symbol": "reopenPost",
-     "area": "posts",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 133,
+     "line": 127,
      "symbol": "getClosureCandidates",
      "area": "posts",
      "ops": [
@@ -17271,63 +16982,18 @@
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/posts/executePostUpdate.ts",
-     "line": 79,
-     "symbol": "executePostUpdate",
-     "area": "posts",
-     "ops": [
-      "update"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/feedQueryRanked.ts",
-     "line": 111,
-     "symbol": "fetchRankedFeedPage",
-     "area": "posts",
-     "ops": [
-      "select"
-     ]
-    },
-    {
      "file": "app/packages/infrastructure-supabase/src/posts/getMyPostsPage.ts",
-     "line": 37,
-     "symbol": "getMyPostsPage",
+     "line": 34,
+     "symbol": "listOwnerPostsPage",
      "area": "posts",
      "ops": [
       "select"
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/posts/getProfileClosedPostsHelper.ts",
-     "line": 41,
-     "symbol": "rpcRows",
-     "area": "posts",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/mergeProfileOpenChallengePosts.ts",
-     "line": 28,
-     "symbol": "postIds",
-     "area": "posts",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-     "line": 11,
-     "symbol": "fetchPostById",
-     "area": "posts",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
+     "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
      "line": 25,
-     "symbol": "countOpenByUser",
+     "symbol": "loadPostColumns",
      "area": "posts",
      "ops": [
       "select"
@@ -17335,26 +17001,17 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
-     "line": 55,
-     "symbol": "countProfileOpenPosts",
+     "line": 64,
+     "symbol": "baseCount",
      "area": "posts",
      "ops": [
       "select"
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostRepository.ts",
-     "line": 107,
-     "symbol": "SupabasePostRepository.findById",
-     "area": "posts",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostRepository.ts",
-     "line": 123,
-     "symbol": "SupabasePostRepository.create",
+     "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+     "line": 60,
+     "symbol": "insertDraft",
      "area": "posts",
      "ops": [
       "select",
@@ -17362,31 +17019,31 @@
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostRepository.ts",
-     "line": 158,
-     "symbol": "SupabasePostRepository.create",
+     "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+     "line": 105,
+     "symbol": "createPost",
      "area": "posts",
      "ops": [
       "delete"
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostRepository.ts",
-     "line": 175,
-     "symbol": "SupabasePostRepository.create",
+     "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+     "line": 127,
+     "symbol": "mergedDetails",
      "area": "posts",
      "ops": [
-      "delete"
+      "select"
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/posts/SupabasePostRepository.ts",
-     "line": 189,
-     "symbol": "SupabasePostRepository.delete",
+     "file": "app/packages/infrastructure-supabase/src/posts/postWriteMethods.ts",
+     "line": 150,
+     "symbol": "updatePost",
      "area": "posts",
      "ops": [
       "select",
-      "delete"
+      "update"
      ]
     },
     {
@@ -17394,24 +17051,6 @@
      "line": 33,
      "symbol": "postPreviews",
      "area": "reports",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/search/searchExploreHelpers.ts",
-     "line": 22,
-     "symbol": "explorePosts",
-     "area": "search",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/search/searchQueryHelpers.ts",
-     "line": 37,
-     "symbol": "searchPosts",
-     "area": "search",
      "ops": [
       "select"
      ]
@@ -18419,8 +18058,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/posts/savedPostsMethods.ts",
-     "line": 28,
-     "symbol": "savePostRow",
+     "line": 26,
+     "symbol": "unwrapCall",
      "area": "posts",
      "ops": [
       "upsert"
@@ -18428,7 +18067,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/savedPostsMethods.ts",
-     "line": 36,
+     "line": 32,
      "symbol": "unsavePostRow",
      "area": "posts",
      "ops": [
@@ -18437,7 +18076,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/savedPostsMethods.ts",
-     "line": 45,
+     "line": 38,
      "symbol": "isPostSavedRow",
      "area": "posts",
      "ops": [
@@ -18446,7 +18085,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/savedPostsMethods.ts",
-     "line": 63,
+     "line": 55,
      "symbol": "listSavedPostsPage",
      "area": "posts",
      "ops": [
@@ -18904,9 +18543,19 @@
     }
    ],
    "areas": [
+    "search",
     "users"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/search/searchUserReads.ts",
+     "line": 26,
+     "symbol": "followerCounts",
+     "area": "search",
+     "ops": [
+      "select"
+     ]
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/users/userReads.ts",
      "line": 56,
@@ -19146,8 +18795,17 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/closureMethods.ts",
-     "line": 170,
+     "line": 134,
      "symbol": "getClosureCandidates",
+     "area": "posts",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/posts/postCardExtras.ts",
+     "line": 61,
+     "symbol": "loadRecipients",
      "area": "posts",
      "ops": [
       "select"
@@ -19172,18 +18830,18 @@
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/search/searchExploreHelpers.ts",
-     "line": 47,
-     "symbol": "exploreUsers",
+     "file": "app/packages/infrastructure-supabase/src/search/searchUserReads.ts",
+     "line": 20,
+     "symbol": "usersByIds",
      "area": "search",
      "ops": [
       "select"
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/search/searchQueryHelpers.ts",
-     "line": 71,
-     "symbol": "searchUsers",
+     "file": "app/packages/infrastructure-supabase/src/search/searchUserReads.ts",
+     "line": 41,
+     "symbol": "topMemberIds",
      "area": "search",
      "ops": [
       "select"
@@ -19266,88 +18924,6 @@
      "line": 285,
      "symbol": "displayName",
      "area": "fn:validate-donation-link",
-     "ops": [
-      "select"
-     ]
-    }
-   ]
-  },
-  {
-   "old": "users_public",
-   "kind": "table",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "The view is gone: `users` itself now holds only public profile columns and RLS hides blocked and reported members. Owner fields of a post already come inside `post_card`.",
-   "oldObject": {
-    "columns": [
-     "account_status",
-     "auth_provider",
-     "avatar_url",
-     "basic_info_skipped",
-     "biography",
-     "city",
-     "city_name",
-     "closure_explainer_dismissed",
-     "created_at",
-     "display_name",
-     "first_post_nudge_dismissed",
-     "followers_count",
-     "following_count",
-     "items_given_count",
-     "items_received_count",
-     "onboarding_state",
-     "privacy_changed_at",
-     "privacy_mode",
-     "share_handle",
-     "updated_at",
-     "user_id",
-     "verification_level"
-    ],
-    "isView": true
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "users",
-     "columns": [
-      "avatar_url",
-      "biography",
-      "city_id",
-      "created_at",
-      "display_name",
-      "id",
-      "is_active",
-      "preferred_language",
-      "privacy_changed_at",
-      "privacy_mode",
-      "search_vector",
-      "share_handle",
-      "updated_at",
-      "verification_level"
-     ],
-     "clientGrants": {
-      "select": true,
-      "update": [
-       "avatar_url",
-       "biography",
-       "city_id",
-       "display_name",
-       "preferred_language"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "posts"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/posts/hydrateFeedPostOwners.ts",
-     "line": 25,
-     "symbol": "hydrateFeedPostOwners",
-     "area": "posts",
      "ops": [
       "select"
      ]
