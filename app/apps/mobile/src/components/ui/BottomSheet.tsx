@@ -35,6 +35,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { makeUseStyles, radius, shadow, shellDimensions, spacing } from '@kc/ui';
+import { ErrorBoundary } from '../ErrorBoundary';
 import { OverlayBackdrop, OverlayHeader, useFocusTitleOnOpen, useOverlayLifecycle } from './overlayParts';
 
 /** Slide-up duration, in milliseconds. */
@@ -158,13 +159,15 @@ export function BottomSheet({
             titleRef={titleRef}
             closeTestID={testID ? `${testID}-close` : undefined}
           />
-          {scrollable ? (
-            <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} keyboardShouldPersistTaps="handled">
-              {children}
-            </ScrollView>
-          ) : (
-            <View style={styles.body}>{children}</View>
-          )}
+          <ErrorBoundary boundary="bottom-sheet-body">
+            {scrollable ? (
+              <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} keyboardShouldPersistTaps="handled">
+                {children}
+              </ScrollView>
+            ) : (
+              <View style={styles.body}>{children}</View>
+            )}
+          </ErrorBoundary>
           {footer ? <View style={styles.footer}>{footer}</View> : null}
         </Animated.View>
       </KeyboardAvoidingView>

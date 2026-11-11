@@ -8,27 +8,34 @@ import { create } from 'zustand';
 import type { ClosureCandidate } from '@kc/application';
 import type { PostType } from '@kc/domain';
 import {
-  getGetClosureCandidatesUseCase,
-  getMarkAsDeliveredUseCase,
-} from '../services/postsComposition';
-import {
   getDismissClosureExplainerUseCase,
   getSearchUsersForClosureUseCase,
 } from '../services/userComposition';
+import { getGetClosureCandidatesUseCase } from '../services/postsComposition';
+import { completeOwnerClosure, type ClosureOutcome } from './completeOwnerClosure';
 
 export type ClosureStep = 'idle' | 'confirm' | 'pick' | 'explainer' | 'done' | 'error';
 export type PickMode = 'chats' | 'search';
-export type ClosureInitiator = 'post-detail' | 'chat' | null;
+export type ClosureInitiator = 'post-detail' | 'chat' | 'my-listings' | 'owner-assign' | null;
+export type { ClosureOutcome };
 
 interface ClosureState {
   postId: string | null;
   /** Drives Hebrew copy in every step — Give vs Request flips the directional
    *  language ("delivered to" vs "received from") and the Step-1 question. */
   postType: PostType | null;
+  /** Listing world (`rides`, `housing`…). Null on a social item post. Drives the sheet wording. */
+  worldSlug: string | null;
   step: ClosureStep;
   /** Tracks where the closure flow was initiated so each entry-point's
    *  done-handler only fires for its own closures. */
   initiator: ClosureInitiator;
+  /** Listing offers close through owner_complete_offer_with_user. Social posts do not. */
+  offerAssign: boolean;
+  /** Rides and housing always name a person. Items and animals may close without one. */
+  allowCloseWithout: boolean;
+  /** Set when the close RPC finishes, before the explainer. */
+  lastOutcome: ClosureOutcome | null;
   pickMode: PickMode;
   /** Chat partners (loaded once on start). */
   candidates: ClosureCandidate[];
@@ -46,7 +53,14 @@ interface ClosureActions {
     postId: string,
     ownerId: string,
     postType: PostType,
-    options?: { preselectedRecipientId?: string | null; initiator?: ClosureInitiator }
+    options?: {
+      preselectedRecipientId?: string | null;
+      initiator?: ClosureInitiator;
+      startAt?: 'confirm' | 'pick';
+      offerAssign?: boolean;
+      allowCloseWithout?: boolean;
+      worldSlug?: string | null;
+    }
   ): Promise<void>;
   selectRecipient(userId: string | null): void;
   setPickMode(mode: PickMode): void;
@@ -64,8 +78,12 @@ interface ClosureActions {
 const INITIAL: ClosureState = {
   postId: null,
   postType: null,
+  worldSlug: null,
   step: 'idle',
   initiator: null,
+  offerAssign: false,
+  allowCloseWithout: true,
+  lastOutcome: null,
   pickMode: 'chats',
   candidates: [],
   searchResults: [],
@@ -85,25 +103,29 @@ export const useClosureStore = create<ClosureState & ClosureActions>((set, get) 
 
   async start(postId, ownerId, postType, options) {
     const preselect = options?.preselectedRecipientId ?? null;
+    const offerAssign = options?.offerAssign === true;
     // When the entry-point already knows the recipient (e.g. the chat anchored
     // to this post), pre-select them AND jump straight to the picker step so
-    // the user confirms with a single tap. They can still pick a different
-    // recipient from the chat list, or hit "close without marking" to take
-    // the no-recipient branch.
+    // the user confirms with a single tap. An owner assign opens on the picker.
     set({
       ...INITIAL,
       postId,
       postType,
-      step: preselect ? 'pick' : 'confirm',
+      worldSlug: options?.worldSlug ?? null,
+      step: preselect || options?.startAt === 'pick' ? 'pick' : 'confirm',
       selectedRecipientId: preselect,
       isBusy: true,
       initiator: options?.initiator ?? null,
+      offerAssign,
+      allowCloseWithout: options?.allowCloseWithout ?? true,
     });
     try {
       const candidates = await getGetClosureCandidatesUseCase().execute({ postId, ownerId });
       set({ candidates, isBusy: false });
     } catch (e) {
-      set({ step: 'error', isBusy: false, errorMessage: (e as Error).message });
+      // Assign still works from search when the id is a listing with no anchored chats.
+      if (offerAssign) set({ candidates: [], isBusy: false });
+      else set({ step: 'error', isBusy: false, errorMessage: (e as Error).message });
     }
   },
 
@@ -150,8 +172,13 @@ export const useClosureStore = create<ClosureState & ClosureActions>((set, get) 
     if (!postId) return;
     set({ isBusy: true, errorMessage: null });
     try {
-      await getMarkAsDeliveredUseCase().execute({ postId, ownerId, recipientUserId });
-      set({ step: 'explainer', isBusy: false });
+      const lastOutcome = await completeOwnerClosure({
+        postId,
+        ownerId,
+        recipientUserId,
+        offerAssign: get().offerAssign,
+      });
+      set({ step: 'explainer', isBusy: false, lastOutcome });
     } catch (e) {
       set({ step: 'error', isBusy: false, errorMessage: (e as Error).message });
     }

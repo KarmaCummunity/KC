@@ -9,15 +9,35 @@
 import { githubGet, githubList, laneResults } from './ci-github.mjs';
 import { attemptErrors, bindPrRun } from './ci-run-binding.mjs';
 
+/** Display title used as `run-name` on `edited` CI runs in ci.yml. */
+export const EDIT_RUN_NAME = 'CI (edit)';
+
 /**
- * The newest `pull_request` run that GitHub associates with PR `prNumber` on
- * base `baseRef`, or null. Only a candidate: `pull_requests` lists every open
- * PR whose head matches, so bindPrRun must still prove the run is this PR's.
+ * Whether this CI run is an `edited` event. Only an exact `CI (edit)`
+ * `display_title` counts: misclassifying a full run as an edit (or the
+ * reverse) is fail-closed — an unknown title is treated as not an edit, and
+ * an edit without the marker is not reused as a full run only when callers
+ * skip `isEditCiRun` matches.
  */
-export function latestPullRequestRun(runs, prNumber, baseRef) {
-  const mine = runs.filter(
-    (r) => r.event === 'pull_request' && r.pull_requests?.some((p) => p.number === prNumber && p.base?.ref === baseRef),
-  );
+export function isEditCiRun(run) {
+  return run?.display_title === EDIT_RUN_NAME;
+}
+
+/**
+ * The newest full `pull_request` run that GitHub associates with PR `prNumber`
+ * on base `baseRef`, or null. Skips the current run (`currentRunId`) and any
+ * `edited` run (`CI (edit)`), so an edit or review never reuses another edit.
+ * Only a candidate: `pull_requests` lists every open PR whose head matches, so
+ * bindPrRun must still prove the run is this PR's.
+ */
+export function latestPullRequestRun(runs, prNumber, baseRef, { currentRunId } = {}) {
+  const current = currentRunId == null || currentRunId === '' ? null : Number(currentRunId);
+  const mine = runs.filter((r) => {
+    if (r.event !== 'pull_request') return false;
+    if (current != null && Number(r.id) === current) return false;
+    if (isEditCiRun(r)) return false;
+    return r.pull_requests?.some((p) => p.number === prNumber && p.base?.ref === baseRef);
+  });
   mine.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at) || b.id - a.id);
   return mine[0] ?? null;
 }
@@ -30,7 +50,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  * verdict lands after that run's. Throws — the gate fails closed — when there
  * is no such run, it never finishes in time, it cannot be bound to this PR,
  * or its jobs mix attempts.
- * Inputs (env): GITHUB_REPOSITORY, HEAD_SHA, PR_NUMBER, BASE_REF, GITHUB_TOKEN.
+ * Inputs (env): GITHUB_REPOSITORY, HEAD_SHA, PR_NUMBER, BASE_REF, GITHUB_TOKEN, GITHUB_RUN_ID.
  */
 export async function reusedLaneResults(env, lanes, { waitMs = 12 * 60_000, pollMs = 20_000 } = {}) {
   const repo = env.GITHUB_REPOSITORY;
@@ -39,7 +59,7 @@ export async function reusedLaneResults(env, lanes, { waitMs = 12 * 60_000, poll
   const deadline = Date.now() + waitMs;
   for (;;) {
     const { workflow_runs: runs } = await githubGet(`/repos/${repo}/actions/workflows/ci.yml/runs?${query}`, env);
-    const run = latestPullRequestRun(runs, pr, env.BASE_REF);
+    const run = latestPullRequestRun(runs, pr, env.BASE_REF, { currentRunId: env.GITHUB_RUN_ID });
     if (!run) throw new Error(`no pull_request CI run of PR #${pr} into ${env.BASE_REF} exists for head ${env.HEAD_SHA}; push a commit or re-run CI`);
     if (run.status === 'completed') {
       const { errors } = await bindPrRun(run, repo, env, { pr, baseRef: env.BASE_REF });

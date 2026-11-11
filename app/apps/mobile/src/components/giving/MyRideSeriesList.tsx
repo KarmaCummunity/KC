@@ -15,6 +15,7 @@ import { rideSeriesLabel, rideSeriesUntilLabel } from '../../lib/rides/rideSerie
 import { hapticSuccess } from '../../lib/haptics';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
 import { Screen } from '../ui/Screen';
+import { WorldSubScreenChrome } from './useWorldHeader';
 import { KcRowCard } from '../cards/KcRowCard';
 import { DangerButton, GhostButton, SecondaryButton } from '../ui/Buttons';
 import { RideSeriesScheduleEditor } from './RideSeriesScheduleEditor';
@@ -27,14 +28,17 @@ export function MyRideSeriesList() {
   const list = series.data ?? [];
 
   return (
-    <Screen blobs="content">
-      <ScrollView contentContainerStyle={[styles.list, { paddingBottom: inset }]} testID="ride-series-list">
-        {list.map((s) => <SeriesRow key={s.id} series={s} />)}
-        {!series.isLoading && list.length === 0 ? (
-          <Text style={styles.empty}>{t(series.isError ? 'rideSeries.error' : 'rideSeries.empty')}</Text>
-        ) : null}
-      </ScrollView>
-    </Screen>
+    <>
+      <WorldSubScreenChrome worldSlug="rides" activeScreenTestId="world-hub-ride-series" />
+      <Screen blobs="off" hasNativeHeader>
+        <ScrollView contentContainerStyle={[styles.list, { paddingBottom: inset }]} testID="ride-series-list">
+          {list.map((s) => <SeriesRow key={s.id} series={s} />)}
+          {!series.isLoading && list.length === 0 ? (
+            <Text style={styles.empty}>{t(series.isError ? 'rideSeries.error' : 'rideSeries.empty')}</Text>
+          ) : null}
+        </ScrollView>
+      </Screen>
+    </>
   );
 }
 

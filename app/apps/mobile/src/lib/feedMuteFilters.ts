@@ -1,6 +1,7 @@
-// Pure helpers for the feed settings screen (mute filters over 0281/0283, quiet hours over 0256).
+// Pure helpers for the feed settings screen (mute filters over `feed_mute_filters`, quiet hours over 0256).
 
-export type MuteKind = 'user' | 'category' | 'keyword' | 'world';
+/** What a mute hides; `feed_mute_filters` holds exactly these three kinds. */
+export type MuteKind = 'user' | 'keyword' | 'world';
 
 export interface MuteFilter {
   filterId: string;
@@ -11,12 +12,12 @@ export interface MuteFilter {
 export interface GroupedMuteFilters {
   users: MuteFilter[];
   keywords: MuteFilter[];
-  categories: MuteFilter[];
+  worlds: MuteFilter[];
 }
 
-/** Server limit (0281): 1..120 chars after trim. We also require 2+ chars so single letters don't hide half the feed. */
+/** Table limit: 2..60 chars after trim (single letters would hide half the feed). */
 export const MUTE_KEYWORD_MIN = 2;
-export const MUTE_KEYWORD_MAX = 120;
+export const MUTE_KEYWORD_MAX = 60;
 
 /** Trims, collapses inner whitespace and validates a keyword; null when it can't be saved. */
 export function normalizeMuteKeyword(raw: string): string | null {
@@ -25,13 +26,13 @@ export function normalizeMuteKeyword(raw: string): string | null {
   return v;
 }
 
-/** Splits filters into the three sections; 'world' and 'category' both match post category (0282). */
+/** Splits filters into users, keywords and giving worlds. */
 export function groupMuteFilters(rows: readonly MuteFilter[]): GroupedMuteFilters {
-  const out: GroupedMuteFilters = { users: [], keywords: [], categories: [] };
+  const out: GroupedMuteFilters = { users: [], keywords: [], worlds: [] };
   for (const r of rows) {
     if (r.filterKind === 'user') out.users.push(r);
     else if (r.filterKind === 'keyword') out.keywords.push(r);
-    else out.categories.push(r);
+    else out.worlds.push(r);
   }
   out.keywords.sort((a, b) => a.filterValue.localeCompare(b.filterValue));
   return out;
@@ -43,9 +44,14 @@ export function isKeywordMuted(rows: readonly MuteFilter[], keyword: string): bo
   return rows.some((r) => r.filterKind === 'keyword' && r.filterValue.toLocaleLowerCase() === k);
 }
 
-/** The category mute filter for a value, if any. */
-export function findCategoryMute(rows: readonly MuteFilter[], category: string): MuteFilter | undefined {
-  return rows.find((r) => (r.filterKind === 'category' || r.filterKind === 'world') && r.filterValue === category);
+/** The giving-world mute filter for a slug, if any. */
+export function findWorldMute(rows: readonly MuteFilter[], worldSlug: string): MuteFilter | undefined {
+  return rows.find((r) => r.filterKind === 'world' && r.filterValue === worldSlug);
+}
+
+/** Active mute rows (keywords, worlds, people) — each hides part of the signed-in feed. */
+export function countMuteFilters(rows: readonly MuteFilter[]): number {
+  return rows.length;
 }
 
 /** Quiet hours times are stored as 24h HH:MM (0256 casts them to time). */

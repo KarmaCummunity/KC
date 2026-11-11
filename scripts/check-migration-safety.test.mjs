@@ -6,8 +6,11 @@ import { tmpdir } from 'node:os';
 import {
   checkMigrationSafety,
   checkReleaseMigrations,
+  isInitialSchema,
   justifiedFiles,
+  permanentTablesCreatedIn,
   scanCompatibility,
+  tempTablesCreatedIn,
   scanMigrationSql,
 } from './check-migration-safety.mjs';
 
@@ -119,4 +122,79 @@ test('release mode flags every change that can break the previous release', () =
 test('an allow marker alone does not excuse a compatibility-breaking line on main', () => {
   const file = { name: '0461_y.sql', content: 'drop function f(); -- migration-safety: allow\n' };
   assert.match(checkReleaseMigrations([file], '')[0], /DROP FUNCTION .* add `Migration safety: 0461_y\.sql/);
+});
+
+// ── Temp tables created in the same file (demo seed functions, 0654/0657/0676/0678) ──
+
+const TEMP_BODY = [
+  'create or replace function public.seed() returns void language plpgsql as $$',
+  'begin',
+  '  drop table if exists s_users, s_city; -- leftovers from a previous step',
+  '  create temp table s_users on commit drop as select 1 as n;',
+  '  create temporary table if not exists s_city(n text);',
+  '  DROP TABLE s_city;',
+  'end $$;',
+].join('\n');
+
+test('collects the temp and the persisted tables a file creates', () => {
+  assert.deepEqual([...tempTablesCreatedIn(TEMP_BODY)].sort(), ['s_city', 's_users']);
+  assert.deepEqual([...permanentTablesCreatedIn('create table if not exists public.keep(id int);\ncreate unlogged table "Other"(x int);')].sort(), ['keep', 'other']);
+  assert.deepEqual([...permanentTablesCreatedIn(TEMP_BODY)], []);
+});
+
+test('does not flag dropping temp tables the same file creates, even in release mode', () => {
+  assert.deepEqual(scanMigrationSql(TEMP_BODY, '0900.sql'), []);
+  assert.deepEqual(scanMigrationSql(TEMP_BODY, '0900.sql', { honorAllow: false }), []);
+});
+
+test('still flags a drop list that names one table the file does not create as temp', () => {
+  const sql = 'create temp table s_users(n int);\ndrop table if exists s_users, users;\n';
+  const errors = scanMigrationSql(sql, '0901.sql');
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /0901\.sql:2: DROP TABLE/);
+});
+
+test('still flags a temp-named drop when a persisted table of that name exists', () => {
+  const sql = 'create temp table s_users(n int);\ndrop table if exists s_users;\n';
+  assert.equal(scanMigrationSql(sql, '0902.sql', { permanentTables: new Set(['s_users']) }).length, 1);
+  const sameFile = 'create table public.s_users(n int);\ncreate temp table s_users(n int);\ndrop table s_users;\n';
+  assert.equal(scanMigrationSql(sameFile, '0903.sql').length, 1);
+});
+
+test('still flags a schema-qualified drop of a name also created as temp', () => {
+  const sql = 'create temp table s_users(n int);\ndrop table public.s_users;\n';
+  assert.equal(scanMigrationSql(sql, '0904.sql').length, 1);
+});
+
+test('release mode needs no justification for a file whose only finding was a temp-table drop', () => {
+  assert.deepEqual(checkReleaseMigrations([{ name: '0905.sql', content: TEMP_BODY }], ''), []);
+});
+
+// ── One-word string literals are data, not SQL ──
+
+test('does not read a one-word string literal as a RENAME', () => {
+  assert.deepEqual(scanCompatibility("  elsif p_action = 'rename' then\n", '0906.sql'), []);
+});
+
+test('still flags RENAME in real DDL and in multi-word dynamic SQL', () => {
+  assert.equal(scanCompatibility('alter table a rename column b to c;\n', '0907.sql').length, 1);
+  assert.equal(scanCompatibility("execute 'alter table a rename to b';\n", '0908.sql').length, 1);
+  assert.equal(scanCompatibility("execute 'drop policy p on t';\n", '0909.sql').length, 1);
+});
+
+test('the generated initial schema is exempt; the same SQL in any other file is not', () => {
+  const header = '-- Karma Community — production baseline.\n';
+  const sql = `${header}truncate public.t;\n`;
+  const dir = mkdtempSync(join(tmpdir(), 'kc-safety-initial-'));
+  try {
+    writeFileSync(join(dir, '0001_baseline.sql'), sql);
+    assert.equal(checkMigrationSafety(dir).ok, true);
+    assert.deepEqual(checkReleaseMigrations([{ name: '0001_baseline.sql', content: sql }], ''), []);
+    writeFileSync(join(dir, '0002_later.sql'), 'truncate public.t;\n');
+    assert.equal(checkMigrationSafety(dir).ok, false);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+  assert.equal(isInitialSchema('0001_baseline.sql', 'truncate public.t;\n'), false, 'a file without the generated header is scanned');
+  assert.equal(isInitialSchema('0002_x.sql', sql), false);
 });

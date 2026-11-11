@@ -1,4 +1,5 @@
 // Unified giving marketplace (Epic #893).
+import type { VerificationLevel } from '../verificationLevel';
 
 export const MARKETPLACE_WORLD_SLUGS = [
   'money',
@@ -61,6 +62,8 @@ export interface MarketplaceListingOwner {
   readonly avatarUrl: string | null;
   readonly shareHandle: string | null;
   readonly cityId: string | null;
+  /** FR-VERIFY-001 — publisher badge on listing detail. */
+  readonly verificationLevel?: VerificationLevel;
 }
 
 export interface MarketplaceListingMedia {
@@ -92,8 +95,10 @@ export interface MarketplaceListingDetail {
   readonly maxRadiusKm: number | null;
   readonly media: readonly MarketplaceListingMedia[];
   readonly owner: MarketplaceListingOwner | null;
-  /** The listing's feed mirror post, when it has one (D-206); null until shared or mirrored. */
+  /** The listing's post, when it has one (D-206, D-218); null until published. */
   readonly feedPostId: string | null;
+  /** The post exists but the main feed does not list it yet (0557): unshared, or a later ride occurrence. */
+  readonly feedHidden: boolean;
 }
 
 export interface MarketplaceSimilarListing {
@@ -151,6 +156,8 @@ export interface MyListingRow {
   readonly urgencyLevel: number;
   readonly availabilityStatus: string;
   readonly updatedAt: string;
+  /** Post the closure sheet closes; null when the listing has no feed post yet. */
+  readonly feedPostId: string | null;
 }
 
 export interface ProfileListingRow {

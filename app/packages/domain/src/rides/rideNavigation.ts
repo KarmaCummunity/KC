@@ -3,15 +3,19 @@
 // Cities and junctions navigate to their catalog coordinates. A street place is pinned at its
 // city (streets have no coordinates), so it navigates by its address text instead.
 import type { RidePlace } from './RidePlace';
+import { rideAddressLabel } from './rideHouseNumbers';
 
 export const RIDE_NAVIGATION_APPS = ['waze', 'google', 'apple'] as const;
 export type RideNavigationApp = (typeof RIDE_NAVIGATION_APPS)[number];
 
-/** Universal links: each opens the app when installed and its web page otherwise. */
-export function rideNavigationUrl(app: RideNavigationApp, place: RidePlace): string {
+/**
+ * Universal links: each opens the app when installed and its web page otherwise. A street's
+ * private house number (FR-RIDE-003 AC9), when known, makes the address exact.
+ */
+export function rideNavigationUrl(app: RideNavigationApp, place: RidePlace, houseNumber?: string | null): string {
   const byAddress = place.kind === 'street';
   const coords = `${place.lat},${place.lng}`;
-  const address = encodeURIComponent(place.label);
+  const address = encodeURIComponent(rideAddressLabel(place, houseNumber));
   switch (app) {
     case 'waze':
       return byAddress

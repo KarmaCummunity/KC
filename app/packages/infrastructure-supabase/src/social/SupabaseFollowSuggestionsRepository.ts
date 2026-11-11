@@ -1,7 +1,11 @@
 // KC#871 — follow suggestions + profile completeness.
+//
+// The baseline has neither a suggestion query (M03) nor a completeness function (M04), and this
+// adapter does not invent one: both reads report the capability as missing, so the suggestions
+// screen shows its empty state and no completeness nudge. No call is made. When the social-graph
+// module gains the functions, the two methods call them through `unwrapCall`.
 
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../database.types';
+import { BackendUnavailableError, type VerificationLevel } from '@kc/domain';
 
 export interface FollowSuggestionRow {
   userId: string;
@@ -11,6 +15,7 @@ export interface FollowSuggestionRow {
   cityName: string | null;
   followersCount: number;
   reason: string;
+  verificationLevel: VerificationLevel;
 }
 
 export interface ProfileCompleteness {
@@ -21,47 +26,13 @@ export interface ProfileCompleteness {
 }
 
 export class SupabaseFollowSuggestionsRepository {
-  constructor(private readonly client: SupabaseClient<Database>) {}
-
-  async listSuggestions(limit = 15): Promise<FollowSuggestionRow[]> {
-    const { data, error } = await this.client.rpc('rpc_follow_suggestions' as never, { p_limit: limit } as never);
-    if (error) throw new Error(`listSuggestions: ${error.message}`);
-    return ((data ?? []) as Array<{
-      user_id: string;
-      display_name: string | null;
-      share_handle: string;
-      avatar_url: string | null;
-      city_name: string | null;
-      followers_count: number;
-      reason: string;
-    }>).map((r) => ({
-      userId: r.user_id,
-      displayName: r.display_name,
-      shareHandle: r.share_handle,
-      avatarUrl: r.avatar_url,
-      cityName: r.city_name,
-      followersCount: r.followers_count,
-      reason: r.reason,
-    }));
+  /** M03 — no suggestion query in the baseline. */
+  listSuggestions(_limit = 15): Promise<FollowSuggestionRow[]> {
+    return Promise.reject(new BackendUnavailableError('rpc:rpc_follow_suggestions', 'function'));
   }
 
-  async getProfileCompleteness(userId?: string): Promise<ProfileCompleteness> {
-    const { data, error } = await this.client.rpc(
-      'rpc_profile_completeness' as never,
-      userId ? ({ p_user_id: userId } as never) : ({} as never),
-    );
-    if (error) throw new Error(`getProfileCompleteness: ${error.message}`);
-    const row = data as unknown as {
-      score: number;
-      missing: string[];
-      verified: boolean;
-      showVerifiedBadge: boolean;
-    };
-    return {
-      score: row.score,
-      missing: row.missing ?? [],
-      verified: row.verified,
-      showVerifiedBadge: row.showVerifiedBadge,
-    };
+  /** M04 — no completeness function in the baseline. */
+  getProfileCompleteness(_userId?: string): Promise<ProfileCompleteness> {
+    return Promise.reject(new BackendUnavailableError('rpc:rpc_profile_completeness', 'function'));
   }
 }

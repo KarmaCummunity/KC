@@ -5,10 +5,11 @@ import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
-import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
+import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
-import { getMarketplaceSupabaseClient } from '../../src/services/marketplaceComposition';
+import { legacySupabase } from '../../src/lib/container';
+import { LaunchSurfaceGate } from '../../src/components/LaunchSurfaceGate';
 
 interface LinkStatus { linked: boolean; wa_id_masked: string | null; is_pro: boolean }
 interface LinkCode { code: string; expires_at: string }
@@ -16,13 +17,13 @@ interface LinkCode { code: string; expires_at: string }
 const STATUS_KEY = ['whatsapp-link-status'];
 
 async function fetchStatus(): Promise<LinkStatus> {
-  const { data, error } = await getMarketplaceSupabaseClient().rpc('api_whatsapp_my_link_status');
+  const { data, error } = await legacySupabase.rpc('api_whatsapp_my_link_status');
   if (error) throw error;
   return data as unknown as LinkStatus;
 }
 
-export default function WhatsAppLinkScreen() {
-  const detailStackScreenOptions = useDetailStackScreenOptions();
+function WhatsAppLinkScreenContent() {
+  const shellStackScreenOptions = useShellStackScreenOptions();
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useScreenStyles();
@@ -36,7 +37,7 @@ export default function WhatsAppLinkScreen() {
   const onGetCode = React.useCallback(async () => {
     setBusy(true);
     try {
-      const { data, error } = await getMarketplaceSupabaseClient().rpc('api_whatsapp_create_link_code');
+      const { data, error } = await legacySupabase.rpc('api_whatsapp_create_link_code');
       if (error) throw error;
       setCode(data as unknown as LinkCode);
     } catch {
@@ -49,7 +50,7 @@ export default function WhatsAppLinkScreen() {
   const doUnlink = React.useCallback(async () => {
     setBusy(true);
     try {
-      const { error } = await getMarketplaceSupabaseClient().rpc('api_whatsapp_unlink_me');
+      const { error } = await legacySupabase.rpc('api_whatsapp_unlink_me');
       if (error) throw error;
       setCode(null);
       await queryClient.invalidateQueries({ queryKey: STATUS_KEY });
@@ -74,7 +75,7 @@ export default function WhatsAppLinkScreen() {
     <>
       <Stack.Screen
         options={{
-          ...detailStackScreenOptions,
+          ...shellStackScreenOptions,
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.primary,
           headerTitle: t('settings.whatsapp.title'),
@@ -127,3 +128,12 @@ const useScreenStyles = makeUseStyles(({ colors }) => ({
   linkButton: { paddingVertical: spacing.sm, alignItems: 'center' as const },
   danger: { ...typography.body, color: colors.error },
 }));
+
+/** Hidden while `whatsappBot` is off (first launch): sends the visitor away instead of rendering. */
+export default function WhatsAppLinkScreen() {
+  return (
+    <LaunchSurfaceGate surface="whatsappBot" redirectTo="/settings">
+      <WhatsAppLinkScreenContent />
+    </LaunchSurfaceGate>
+  );
+}

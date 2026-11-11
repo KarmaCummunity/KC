@@ -7,9 +7,11 @@ import type { Href } from 'expo-router';
 import {
   GIVING_WORLD_SLUGS,
   isFeedWorldSlug,
+  isMarketplaceWorldLaunchEnabled,
   linkCategoryForWorld,
   type DonationCategorySlug,
   type GivingWorldSlug,
+  type RemoteAppFlags,
 } from '@kc/domain';
 
 export type CreateEngine = 'post' | 'listing' | 'link';
@@ -71,9 +73,17 @@ const ICON_BY_ID: Readonly<Record<CreateCategoryId, CreateCategoryIcon>> = {
   challenges: 'trophy-outline',
 };
 
+/**
+ * Worlds whose listing form opens only once the world is launched (D60). Until then they are
+ * portals and take community links, like the challenges world; production keeps that while the
+ * remote flag is off, tester builds launch them (#1630, #1625).
+ */
+const LAUNCH_GATED_LISTING_WORLDS: readonly string[] = ['knowledge', 'animals'];
+
 /** Items keep the mature post form (drafts, address display level, visibility, karma value). */
 function engineFor(id: CreateCategoryId): CreateEngine {
   if (id === 'items') return 'post';
+  if (LAUNCH_GATED_LISTING_WORLDS.includes(id)) return 'link';
   return isFeedWorldSlug(id) ? 'listing' : 'link';
 }
 
@@ -90,6 +100,21 @@ function toConfig(id: CreateCategoryId): CreateCategoryConfig {
 }
 
 export const CREATE_CATEGORIES: readonly CreateCategoryConfig[] = CREATE_CATEGORY_IDS.map(toConfig);
+
+/**
+ * The category as the form should use it right now. A launch-gated world (knowledge, animals)
+ * keeps its community-link form (a portal) until it is launched; once it is, members publish
+ * marketplace listings (#1630, #1625), like the challenges world (D60).
+ */
+export function resolveCreateCategory(
+  category: CreateCategoryConfig,
+  remote: RemoteAppFlags | undefined,
+): CreateCategoryConfig {
+  if (!LAUNCH_GATED_LISTING_WORLDS.includes(category.id) || !isMarketplaceWorldLaunchEnabled(category.id, remote)) {
+    return category;
+  }
+  return { ...category, engine: 'listing', worldSlug: category.id, linkCategory: null };
+}
 
 /** Type guard: is `id` a category the create form offers? */
 export function isCreateCategoryId(id: unknown): id is CreateCategoryId {
@@ -114,11 +139,11 @@ export function isCreateDirection(value: unknown): value is CreateDirection {
  * direction without a known category is dropped: the form would not know where it applies.
  */
 export function createRouteFor(categoryId?: string | null, direction?: CreateDirection | null): Href {
-  if (!isCreateCategoryId(categoryId)) return '/(tabs)/create';
+  if (!isCreateCategoryId(categoryId)) return '/create';
   const category = encodeURIComponent(categoryId);
   return isCreateDirection(direction)
-    ? `/(tabs)/create?category=${category}&direction=${direction}`
-    : `/(tabs)/create?category=${category}`;
+    ? `/create?category=${category}&direction=${direction}`
+    : `/create?category=${category}`;
 }
 
 /**

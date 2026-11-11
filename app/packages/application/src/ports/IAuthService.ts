@@ -3,7 +3,7 @@
 // Mapped to SRS: FR-AUTH-003 (Google sign-up), FR-AUTH-006 (email sign-up),
 // FR-AUTH-007 (sign-in, all paths), FR-AUTH-013 (cold-start restore), FR-AUTH-017 (sign-out).
 // Adapter lives in @kc/infrastructure-supabase.
-// docs/SSOT/spec/01_auth_and_onboarding.md
+// docs/spec/requirements/01_auth_and_onboarding.md
 // ─────────────────────────────────────────────
 
 export interface AuthSession {
@@ -79,6 +79,12 @@ export interface IAuthService {
    * by `sub`: a new Apple user is signed up, an existing one is signed in.
    */
   signInWithApple(credential: AppleIdentityCredential): Promise<AuthSession>;
+
+  /**
+   * FR-AUTH-003 / FR-AUTH-007 (native Google, #1955). Exchange the ID token from the
+   * native Google account sheet for a Supabase session; routed by `sub` like Apple.
+   */
+  signInWithGoogleIdToken(idToken: string): Promise<AuthSession>;
 
   /**
    * FR-AUTH-006 (MVP gate): resend the signup verification email to `email`.

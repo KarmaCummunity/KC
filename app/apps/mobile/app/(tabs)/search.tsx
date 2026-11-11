@@ -6,7 +6,6 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
 import { useShallow } from 'zustand/react/shallow';
 import { useTheme, Text } from '@kc/ui';
 import type { SearchResultType, SearchSortBy } from '@kc/domain';
@@ -14,7 +13,8 @@ import { useTranslation } from 'react-i18next';
 
 import { useAuthStore } from '../../src/store/authStore';
 import { useSearchStore } from '../../src/store/searchStore';
-import { getUniversalSearchUseCase } from '../../src/services/searchComposition';
+import { useUniversalSearch } from '../../src/hooks/useUniversalSearch';
+import { KcRefreshControl } from '../../src/components/lists/KcRefreshControl';
 import { SearchFilterSheet } from '../../src/components/SearchFilterSheet';
 import { TopBar } from '../../src/components/TopBar';
 import { Screen } from '../../src/components/ui/Screen';
@@ -80,26 +80,22 @@ export default function SearchScreen() {
   const isSearchMode = debouncedQuery.length >= 2;
   const isSingleCharTyped = inputText.length > 0 && inputText.trim().length < 2;
 
-  // ── Data query ──────────────────────────────
-  // Fires on mount (explore mode) AND on every debounced query change.
-  const query = useQuery({
-    queryKey: ['universalSearch', debouncedQuery, filters, expandedSection],
-    queryFn: () =>
-      getUniversalSearchUseCase().execute({
-        query: debouncedQuery,
-        filters,
-        viewerId,
-        limits: { posts: expandedSection === 'post' ? FULL_LIMIT : PREVIEW_LIMIT, users: expandedSection === 'user' ? FULL_LIMIT : PREVIEW_LIMIT, links: expandedSection === 'link' ? FULL_LIMIT : PREVIEW_LIMIT },
-      }),
-    // Always enabled — empty query triggers explore mode
+  // ── Data query (persisted + stale-while-revalidate) ──
+  const {
+    query,
+    results,
+    hasResults,
+    showFullLoading,
+    isBackgroundRefreshing,
+  } = useUniversalSearch({
+    debouncedQuery,
+    filters,
+    viewerId,
+    expandedSection,
+    previewLimit: PREVIEW_LIMIT,
+    fullLimit: FULL_LIMIT,
     enabled: !isSingleCharTyped,
-    staleTime: 60_000, // PERF-3: search results — fresh enough for explore; realtime fills gaps
   });
-
-  const results = query.data;
-  const hasResults = Boolean(
-    results && (results.posts.length || results.users.length || results.links.length || results.orgs.length || results.hashtags.length),
-  );
 
   // ── Handlers ────────────────────────────────
 
@@ -134,7 +130,7 @@ export default function SearchScreen() {
   // ── Render ──────────────────────────────────
 
   return (
-    <Screen blobs="content" testID="search-screen">
+    <Screen blobs="off" testID="search-screen">
       {/* ── Header ──────────────────────────── */}
       <TopBar />
 
@@ -180,6 +176,11 @@ export default function SearchScreen() {
         style={styles.chipContainer}
         contentContainerStyle={styles.chipRow}
       >
+        {isBackgroundRefreshing && (
+          <View style={styles.chipRefresh} testID="search-background-refresh">
+            <ActivityIndicator size="small" color={colors.primary} />
+          </View>
+        )}
         {/* Sort chips — only visible when actively searching */}
         {isSearchMode && (
           <>
@@ -202,6 +203,12 @@ export default function SearchScreen() {
         style={styles.content}
         contentContainerStyle={styles.contentInner}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <KcRefreshControl
+            refreshing={isBackgroundRefreshing}
+            onRefresh={() => { void query.refetch(); }}
+          />
+        }
       >
         {/* Min chars message (1 char typed) */}
         {isSingleCharTyped && (
@@ -216,7 +223,7 @@ export default function SearchScreen() {
         )}
 
         {/* Loading spinner */}
-        {!isSingleCharTyped && query.isLoading && (
+        {!isSingleCharTyped && showFullLoading && (
           <View style={styles.loadingWrap}>
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loadingText}>{t('search.loading')}</Text>
@@ -224,7 +231,7 @@ export default function SearchScreen() {
         )}
 
         {/* Error state */}
-        {!isSingleCharTyped && query.isError && (
+        {!isSingleCharTyped && query.isError && !results && (
           <View style={styles.emptyState}>
             <Ionicons
               name="alert-circle-outline"
@@ -243,7 +250,7 @@ export default function SearchScreen() {
         )}
 
         {/* No results (search mode only — explore always has content) */}
-        {isSearchMode && !query.isLoading && results && !hasResults && (
+        {isSearchMode && !query.isFetching && results && !hasResults && !query.isPlaceholderData && (
           <View style={styles.emptyState}>
             <Ionicons
               name="search-outline"

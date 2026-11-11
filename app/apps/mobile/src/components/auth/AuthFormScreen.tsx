@@ -16,13 +16,18 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, wit
 import { makeUseStyles, typography, spacing, radius, shadow, iconSize, useTheme, Text } from '@kc/ui';
 import { VerificationPendingPanel } from './VerificationPendingPanel';
 import { AuthSocialSignInBlock } from './AuthSocialSignInBlock';
+import { AuthLanguageToggle } from './AuthLanguageToggle';
 import { NotifyModal } from '../NotifyModal';
 import { AmbientBlobs } from '../ui/AmbientBlobs';
 import { AnimatedAuthInput } from './AnimatedAuthInput';
 import { PrimaryButton } from '../ui/Buttons';
 import { MirroredIcon, useDirectionalBackIcon } from '../ui/MirroredIcon';
+import { formEmailInputProps } from '../../lib/platform/formTextInputHints';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import type { AuthEmailForm } from './useAuthEmailForm';
+import { useKeyboardVerticalOffset } from '../../lib/platform/useKeyboardVerticalOffset';
+import { KeyboardFormAccessory } from '../ui/KeyboardFormAccessory';
+import { useFormFieldFocus } from '../../hooks/useFormFieldFocus';
 
 /** Side of the logo in the header, in points (a layout size). */
 const LOGO_SIZE = 48;
@@ -77,17 +82,34 @@ export function AuthFormScreen({
   const router = useRouter();
   const motion = useEntryMotion();
   const backIcon = useDirectionalBackIcon();
+  const keyboardOffset = useKeyboardVerticalOffset({ headerless: true });
+  const fieldFocus = useFormFieldFocus(2);
+  const showCredentialForm = !form.pendingEmail;
 
   return (
     <SafeAreaView style={styles.container}>
+      {showCredentialForm ? (
+        <KeyboardFormAccessory
+          canGoPrev={fieldFocus.canGoPrev}
+          canGoNext={fieldFocus.canGoNext}
+          onPrev={fieldFocus.focusPrev}
+          onNext={fieldFocus.focusNext}
+          onDone={fieldFocus.dismiss}
+        />
+      ) : null}
       <AmbientBlobs density="auth" />
       <Animated.View style={[styles.fill, motion.screen]}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.fill}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.fill}
+          keyboardVerticalOffset={keyboardOffset}
+        >
           <View style={styles.content}>
             <Animated.View style={[styles.header, motion.header]}>
               <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
                 <MirroredIcon name={backIcon} size={iconSize.xl} color={colors.primary} />
               </TouchableOpacity>
+              <AuthLanguageToggle />
               <Image source={require('../../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
             </Animated.View>
 
@@ -109,6 +131,7 @@ export function AuthFormScreen({
                   passwordPlaceholder={passwordPlaceholder}
                   submitLabel={submitLabel}
                   beforeSubmit={beforeSubmit}
+                  fieldFocus={fieldFocus}
                 />
               </View>
 
@@ -131,24 +154,41 @@ export function AuthFormScreen({
 type AuthCredentialFieldsProps = Pick<
   AuthFormScreenProps,
   'form' | 'passwordLabel' | 'passwordPlaceholder' | 'submitLabel' | 'beforeSubmit'
->;
+> & {
+  readonly fieldFocus: ReturnType<typeof useFormFieldFocus>;
+};
 
 /** Address and password inputs, the optional extra action and the submit. */
-function AuthCredentialFields({ form, passwordLabel, passwordPlaceholder, submitLabel, beforeSubmit }: AuthCredentialFieldsProps) {
+function AuthCredentialFields({
+  form,
+  passwordLabel,
+  passwordPlaceholder,
+  submitLabel,
+  beforeSubmit,
+  fieldFocus,
+}: AuthCredentialFieldsProps) {
   const { t } = useTranslation();
+  const emailField = fieldFocus.bindField(0);
+  const passwordField = fieldFocus.bindField(1);
   return (
     <>
       <AnimatedAuthInput
+        ref={emailField.ref}
         testID="auth-email"
         label={t('auth.email')}
         value={form.email}
         onChangeText={form.setEmail}
         placeholder={t('auth.emailPlaceholder')}
-        keyboardType="email-address"
-        autoCapitalize="none"
         editable={!form.loading}
+        {...formEmailInputProps}
+        onFocus={emailField.onFocus}
+        inputAccessoryViewID={emailField.inputAccessoryViewID}
+        returnKeyType={emailField.returnKeyType}
+        blurOnSubmit={emailField.blurOnSubmit}
+        onSubmitEditing={emailField.onSubmitEditing}
       />
       <AnimatedAuthInput
+        ref={passwordField.ref}
         testID="auth-password"
         label={passwordLabel}
         value={form.password}
@@ -156,6 +196,11 @@ function AuthCredentialFields({ form, passwordLabel, passwordPlaceholder, submit
         placeholder={passwordPlaceholder}
         secureTextEntry
         editable={!form.loading}
+        onFocus={passwordField.onFocus}
+        inputAccessoryViewID={passwordField.inputAccessoryViewID}
+        returnKeyType={passwordField.returnKeyType}
+        blurOnSubmit={passwordField.blurOnSubmit}
+        onSubmitEditing={passwordField.onSubmitEditing}
       />
       {beforeSubmit}
       {/* Literal id: the Maestro flows (and their testID checker) target the submit by it. */}

@@ -23,7 +23,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "set -e; PROJECT_DIR=\"${CLAUDE_PROJECT_DIR:-.}\"; if [ ! -f \"$PROJECT_DIR/.claude/LOOP_ENABLED\" ]; then exit 0; fi; if [ -f \"$PROJECT_DIR/.claude/HALT_LOOP\" ]; then exit 0; fi; printf '{\"decision\":\"block\",\"reason\":\"AUTONOMOUS LOOP ACTIVE per CLAUDE.md §13. Continue: pick next item from docs/SSOT/BACKLOG.md (or TECH_DEBT.md if BACKLOG empty), branch from origin/dev, implement, PR to dev with auto-merge, then call ScheduleWakeup(60s, autonomous-loop-prompt) before ending. To halt: touch .claude/HALT_LOOP. To disable permanently: rm .claude/LOOP_ENABLED.\"}'\n"
+            "command": "set -e; PROJECT_DIR=\"${CLAUDE_PROJECT_DIR:-.}\"; if [ ! -f \"$PROJECT_DIR/.claude/LOOP_ENABLED\" ]; then exit 0; fi; if [ -f \"$PROJECT_DIR/.claude/HALT_LOOP\" ]; then exit 0; fi; printf '{\"decision\":\"block\",\"reason\":\"AUTONOMOUS LOOP ACTIVE per AGENTS.md §13. Continue: pick the next Ready item from the GitHub project board (docs/process/PROJECT_BOARD.md), branch from origin/dev, implement, PR to dev with auto-merge, then call ScheduleWakeup(60s, autonomous-loop-prompt) before ending. To halt: touch .claude/HALT_LOOP. To disable permanently: rm .claude/LOOP_ENABLED.\"}'\n"
           }
         ]
       }

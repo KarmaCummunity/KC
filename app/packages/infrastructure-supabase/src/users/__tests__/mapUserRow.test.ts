@@ -1,217 +1,151 @@
 import { describe, it, expect } from 'vitest';
-import { mapUserRow, type UserRow } from '../mapUserRow';
+import { mapUserRow, toNotificationPreferences, type OwnerSlice, type UserRow, type UserStatsRow } from '../mapUserRow';
 
-function makeRow(overrides: Partial<UserRow> = {}): UserRow {
-  return {
-    user_id: 'u_1',
-    auth_provider: 'google',
-    share_handle: 'alice',
-    display_name: 'Alice',
-    city: 'IL-001',
-    city_name: 'Tel Aviv',
-    profile_street: 'Allenby',
-    profile_street_number: '12',
-    biography: 'I give books.',
-    avatar_url: 'https://cdn.example.com/avatars/u_1.jpg',
-    privacy_mode: 'Public',
-    privacy_changed_at: '2026-04-01T12:00:00.000Z',
-    account_status: 'active',
-    onboarding_state: 'completed',
-    notification_preferences: { newFollower: true },
-    is_super_admin: false,
-    closure_explainer_dismissed: false,
-    first_post_nudge_dismissed: false,
-    items_given_count: 3,
-    items_received_count: 1,
-    active_posts_count_internal: 2,
-    followers_count: 7,
-    following_count: 4,
-    karma_points: 5,
-    created_at: '2026-01-01T00:00:00.000Z',
-    updated_at: '2026-05-16T00:00:00.000Z',
-    ...overrides,
-  };
-}
+const ROW: UserRow = {
+  id: 'u1',
+  share_handle: 'dana',
+  display_name: 'Dana',
+  biography: 'bio',
+  avatar_url: 'https://cdn/a.jpg',
+  city_id: '5000',
+  privacy_mode: 'Private',
+  privacy_changed_at: '2026-05-01T00:00:00Z',
+  verification_level: 2,
+  preferred_language: 'he',
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-02-01T00:00:00Z',
+};
 
-describe('mapUserRow', () => {
-  it('maps every column to its domain field on the happy path', () => {
-    const out = mapUserRow(makeRow());
+const STATS: UserStatsRow = {
+  user_id: 'u1',
+  followers_count: 5,
+  following_count: 6,
+  items_given_count: 3,
+  items_received_count: 2,
+  open_posts_public: 4,
+  open_posts_followers_only: 1,
+};
 
-    expect(out).toEqual({
-      userId: 'u_1',
-      authProvider: 'google',
-      shareHandle: 'alice',
-      displayName: 'Alice',
-      city: 'IL-001',
+const OWNER: OwnerSlice = {
+  karmaPoints: 40,
+  account: {
+    status: 'pending_verification',
+    statusUntil: null,
+    onboardingState: 'pending_avatar',
+    deletionRequestedAt: null,
+    deletionPurgeAt: null,
+  },
+  privateProfile: {
+    contactPhone: '050-1234567',
+    dateOfBirth: '1990-05-15',
+    profileStreet: 'Herzl',
+    profileStreetNumber: '12',
+    notificationPreferences: { critical: false, kinds: { chat_message: false } },
+    showActiveStatus: true,
+    closureExplainerDismissed: true,
+    firstPostNudgeDismissed: true,
+    basicInfoSkipped: false,
+  },
+  adminRoles: ['super_admin'],
+};
+
+describe('mapUserRow — another member', () => {
+  const user = mapUserRow(ROW, { cityName: 'Tel Aviv', stats: STATS, owner: null });
+
+  it('maps the public profile and the counters', () => {
+    expect(user).toMatchObject({
+      userId: 'u1',
+      shareHandle: 'dana',
+      displayName: 'Dana',
+      city: '5000',
       cityName: 'Tel Aviv',
-      profileStreet: 'Allenby',
-      profileStreetNumber: '12',
+      biography: 'bio',
+      avatarUrl: 'https://cdn/a.jpg',
+      privacyMode: 'Private',
+      verificationLevel: 2,
+      followersCount: 5,
+      followingCount: 6,
+      itemsGivenCount: 3,
+      itemsReceivedCount: 2,
+      karmaPoints: 0,
+      preferredLanguage: 'he',
+    });
+  });
+
+  it('leaves every private field neutral (TD-39 / TD-163)', () => {
+    expect(user).toMatchObject({
       contactPhone: null,
-      biography: 'I give books.',
-      avatarUrl: 'https://cdn.example.com/avatars/u_1.jpg',
-      privacyMode: 'Public',
-      privacyChangedAt: '2026-04-01T12:00:00.000Z',
-      accountStatus: 'active',
-      onboardingState: 'completed',
-      notificationPreferences: { newFollower: true },
+      dateOfBirth: null,
+      profileStreet: null,
+      profileStreetNumber: null,
       isSuperAdmin: false,
+      activePostsCountInternal: 0,
       closureExplainerDismissed: false,
       firstPostNudgeDismissed: false,
-      itemsGivenCount: 3,
-      itemsReceivedCount: 1,
-      activePostsCountInternal: 2,
-      followersCount: 7,
-      followingCount: 4,
-      karmaPoints: 5,
-      createdAt: '2026-01-01T00:00:00.000Z',
-      updatedAt: '2026-05-16T00:00:00.000Z',
-      preferredLanguage: null,
+      notificationPreferences: { critical: true, social: true },
     });
   });
 
-  it('maps karma_points → karmaPoints (FR-KARMA-001)', () => {
-    expect(mapUserRow(makeRow({ karma_points: 42 })).karmaPoints).toBe(42);
+  it('reads as an active, onboarded member (a visible profile is an active one)', () => {
+    expect(user.accountStatus).toBe('active');
+    expect(user.onboardingState).toBe('completed');
   });
 
-  describe('optional profile address columns', () => {
-    it('defaults profile_street/profile_street_number to null when undefined', () => {
-      // The columns are optional on the row interface (omitted from older
-      // queries that don't select them); the mapper must coalesce to null.
-      const out = mapUserRow(makeRow({
-        profile_street: undefined,
-        profile_street_number: undefined,
-      }));
+  it('defaults counters to 0 and the city name to null when their rows are missing', () => {
+    const bare = mapUserRow({ ...ROW, city_id: null }, { cityName: null, stats: null, owner: null });
+    expect(bare).toMatchObject({ city: null, cityName: null, followersCount: 0, karmaPoints: 0 });
+  });
 
-      expect(out.profileStreet).toBeNull();
-      expect(out.profileStreetNumber).toBeNull();
-    });
+  it('collapses an out-of-union privacy mode to Public', () => {
+    expect(mapUserRow({ ...ROW, privacy_mode: 'Followers' }, { cityName: null, stats: null, owner: null }).privacyMode).toBe(
+      'Public',
+    );
+  });
+});
 
-    it('preserves explicit null on profile_street/profile_street_number', () => {
-      const out = mapUserRow(makeRow({
-        profile_street: null,
-        profile_street_number: null,
-      }));
+describe('mapUserRow — the caller\'s own row', () => {
+  const user = mapUserRow(ROW, { cityName: 'Tel Aviv', stats: STATS, owner: OWNER });
 
-      expect(out.profileStreet).toBeNull();
-      expect(out.profileStreetNumber).toBeNull();
-    });
-
-    it('passes through populated profile address values', () => {
-      const out = mapUserRow(makeRow({
-        profile_street: 'Dizengoff',
-        profile_street_number: '99B',
-      }));
-
-      expect(out.profileStreet).toBe('Dizengoff');
-      expect(out.profileStreetNumber).toBe('99B');
+  it('carries the private profile', () => {
+    expect(user).toMatchObject({
+      contactPhone: '050-1234567',
+      dateOfBirth: '1990-05-15',
+      profileStreet: 'Herzl',
+      profileStreetNumber: '12',
+      closureExplainerDismissed: true,
+      firstPostNudgeDismissed: true,
     });
   });
 
-  describe('nullable presentation fields', () => {
-    it('passes biography null through verbatim', () => {
-      const out = mapUserRow(makeRow({ biography: null }));
-      expect(out.biography).toBeNull();
-    });
-
-    it('passes avatar_url null through verbatim', () => {
-      const out = mapUserRow(makeRow({ avatar_url: null }));
-      expect(out.avatarUrl).toBeNull();
-    });
-
-    it('passes privacy_changed_at null through verbatim', () => {
-      const out = mapUserRow(makeRow({ privacy_changed_at: null }));
-      expect(out.privacyChangedAt).toBeNull();
-    });
-
-    // Migration 0084 — display_name/city/city_name nullable in pending_basic_info; UI fallbacks.
-    it('passes display_name / city / city_name null through verbatim (migration 0084)', () => {
-      const out = mapUserRow(makeRow({ display_name: null, city: null, city_name: null }));
-      expect(out.displayName).toBeNull();
-      expect(out.city).toBeNull();
-      expect(out.cityName).toBeNull();
-    });
+  it('carries the account state and the staff role', () => {
+    expect(user.accountStatus).toBe('pending_verification');
+    expect(user.onboardingState).toBe('pending_avatar');
+    expect(user.isSuperAdmin).toBe(true);
   });
 
-  describe('opaque enum / json casts', () => {
-    it('forwards the raw auth_provider string (cast to AuthProvider on the way out)', () => {
-      // The mapper does not validate the enum value — the DB CHECK constraint
-      // is the source of truth. If a future provider is added at the DB layer,
-      // the mapper must not block reads.
-      const out = mapUserRow(makeRow({ auth_provider: 'apple' }));
-      expect(out.authProvider).toBe('apple');
-    });
-
-    // TD-69 (audit 2026-05-16): privacy_mode narrowed to the D-21 union;
-    // unknown / legacy values collapse to 'Public'.
-    it.each([
-      ['Private', 'Private'],
-      ['Public', 'Public'],
-      ['Followers', 'Public'], // pre-D-21 legacy value
-      ['someUnexpectedValue', 'Public'],
-    ])('narrows privacy_mode %s → %s', (raw, expected) => {
-      expect(mapUserRow(makeRow({ privacy_mode: raw })).privacyMode).toBe(expected);
-    });
-
-    it('forwards the raw account_status string', () => {
-      const out = mapUserRow(makeRow({ account_status: 'pending_verification' }));
-      expect(out.accountStatus).toBe('pending_verification');
-    });
-
-    it('forwards the raw onboarding_state string', () => {
-      const out = mapUserRow(makeRow({ onboarding_state: 'pending_basic_info' }));
-      expect(out.onboardingState).toBe('pending_basic_info');
-    });
-
-    it('passes notification_preferences through without coercion (opaque JSON column)', () => {
-      const prefs = { newFollower: false, newMessage: true, extra: 'ignored' };
-      const out = mapUserRow(makeRow({ notification_preferences: prefs }));
-      // Pass-through: the same reference, not a copy.
-      expect(out.notificationPreferences).toBe(prefs);
-    });
+  it('counts the open posts that are not OnlyMe (that counter is not client-readable)', () => {
+    expect(user.activePostsCountInternal).toBe(5);
   });
 
-  describe('counter fields', () => {
-    it('preserves zero counter values', () => {
-      const out = mapUserRow(makeRow({
-        items_given_count: 0,
-        items_received_count: 0,
-        active_posts_count_internal: 0,
-        followers_count: 0,
-        following_count: 0,
-      }));
+  it('is not a super admin without the role', () => {
+    expect(mapUserRow(ROW, { cityName: null, stats: STATS, owner: { ...OWNER, adminRoles: ['support'] } }).isSuperAdmin).toBe(
+      false,
+    );
+  });
+});
 
-      expect(out.itemsGivenCount).toBe(0);
-      expect(out.itemsReceivedCount).toBe(0);
-      expect(out.activePostsCountInternal).toBe(0);
-      expect(out.followersCount).toBe(0);
-      expect(out.followingCount).toBe(0);
-    });
+describe('toNotificationPreferences', () => {
+  it('defaults critical and social to on for an empty document', () => {
+    expect(toNotificationPreferences({})).toEqual({ critical: true, social: true });
   });
 
-  describe('boolean flags', () => {
-    it('forwards is_super_admin true', () => {
-      const out = mapUserRow(makeRow({ is_super_admin: true }));
-      expect(out.isSuperAdmin).toBe(true);
-    });
-
-    it('forwards both dismissal flags', () => {
-      const out = mapUserRow(makeRow({
-        closure_explainer_dismissed: true,
-        first_post_nudge_dismissed: true,
-      }));
-
-      expect(out.closureExplainerDismissed).toBe(true);
-      expect(out.firstPostNudgeDismissed).toBe(true);
-    });
-  });
-
-  describe('mapUserRow — preferredLanguage (FR-TRANSLATE-003)', () => {
-    it('maps preferred_language when present', () => {
-      expect(mapUserRow(makeRow({ preferred_language: 'ru' })).preferredLanguage).toBe('ru');
-    });
-
-    it('defaults to null when absent', () => {
-      expect(mapUserRow(makeRow()).preferredLanguage).toBeNull();
+  it('honours explicit opt-outs and keeps quiet hours and per-kind settings', () => {
+    const quietHours = { enabled: true, start: '22:00', end: '07:00', timezone: 'Asia/Jerusalem' };
+    expect(toNotificationPreferences({ critical: false, social: true, quietHours, kinds: { chat_message: false } })).toEqual({
+      critical: false,
+      social: true,
+      quietHours,
+      kinds: { chat_message: false },
     });
   });
 });

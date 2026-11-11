@@ -24,9 +24,13 @@ See [RELEASE.md](./RELEASE.md): version bump → EAS preview → TestFlight / Pl
 
 | Need | How |
 |---|---|
-| Add a few reference/demo rows to kc-dev **without** wiping data | Idempotent migration (fixed ids + `on conflict … do update/nothing`). If the rows must never reach prod, guard the insert so it is a no-op without the kc-dev fake seed (example: `0400_kc_dev_demo_nonprofits.sql`). Also add the rows to `supabase/seed/kc-dev/seed.sql` so a reseed keeps them. |
-| Full fake dataset (users, posts, chats …) | Actions → **Seed KC dev** (`seed-kc-dev.yml`, action `seed`). **Destructive:** wipes and recreates every `@seed.kc.test` row. Ask before running. Details: [`supabase/seed/kc-dev/README.md`](../../supabase/seed/kc-dev/README.md). |
-| Remove the fake dataset | Same workflow, action `wipe`. |
+| Reference data (cities, streets, junctions) | Actions → **Seed KC dev**, action `reference` (`supabase/seed/reference/load.sh`). Idempotent. |
+| Content (organization links, legal texts, surveys, the platform organization) | Same workflow, action `content` (`supabase/seed/content/load.sh`). Idempotent; classification in [`supabase/seed/content/README.md`](../../supabase/seed/content/README.md). |
+| The e2e members `user1`…`user4@seed.kc.test` | Same workflow, action `e2e-users` (`supabase/seed/e2e/load.sql`; password from the `E2E_SEED_PASSWORD` secret). Idempotent. |
+| All three | Action `all`. |
+| A change to reference or content data | Edit the CSV under `supabase/seed/`, run the loader, review the diff in the PR. Seeds are data, never migrations. |
+
+The old fake Hebrew dataset (posts, chats, follows) was retired with the migration chain; it is kept for reference in `supabase/archive/seed-kc-dev-demo/`.
 
 Never seed prod. The seed password lives only in the `E2E_SEED_PASSWORD` Actions secret; never paste them into code, issues, PRs or chat.
 

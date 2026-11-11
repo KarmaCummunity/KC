@@ -27,6 +27,12 @@ export type NotificationPreferencesPatch = Partial<
   Pick<NotificationPreferences, 'critical' | 'social' | 'quietHours' | 'kinds'>
 >;
 
+/**
+ * What `follow_user` made of a follow: an edge at once on a Public profile (`following`), a
+ * pending request on a Private one (`requested`).
+ */
+export type FollowOutcome = 'following' | 'requested';
+
 /** Raw signals from DB used to derive FR-FOLLOW-011 state. */
 export interface FollowStateRaw {
   /** target.privacy_mode + target.account_status. null if target not visible / does not exist. */
@@ -44,22 +50,22 @@ export interface IUserRepository {
   create(user: Omit<User, 'createdAt' | 'updatedAt'>): Promise<User>;
   update(userId: string, patch: Partial<User>): Promise<User>;
   /**
-   * @deprecated V1 uses `deleteAccountViaEdgeFunction()` (no arg, identity from JWT).
+   * @deprecated V1 uses `requestAccountDeletion()` (no arg, identity from JWT).
    * The original arg-taking shape was a stub; keep the method on the port for
    * potential future admin-driven delete (mirrors IPostRepository.delete vs adminRemove).
    */
   delete(userId: string): Promise<void>;
 
   /**
-   * FR-SETTINGS-012 V1 — Self-delete the currently authenticated user. Identity
-   * is read from the JWT server-side; no client-supplied userId. Throws
+   * FR-SETTINGS-012 / FR-AUTH-016 — Deactivates the currently authenticated user's account for
+   * the 30-day grace period (`request_account_deletion`); `IAccountGateRepository.restoreAccount`
+   * brings it back. Identity is read from the JWT server-side; no client-supplied userId. Throws
    * `DeleteAccountError` with one of the documented codes:
    * - `unauthenticated` — no valid session
-   * - `suspended` — account_status blocks self-deletion
-   * - `auth_delete_failed` — DB is already cleaned but auth.users survived
-   * - `network` / `server_error` — generic failures
+   * - `suspended` — the account status blocks self-deletion
+   * - `server_error` — any other refusal
    */
-  deleteAccountViaEdgeFunction(): Promise<void>;
+  requestAccountDeletion(): Promise<void>;
 
   // ── Onboarding (P0.3) ─────────────────────────
   /** FR-AUTH-007 AC2: read onboarding_state + basic_info_skipped for cold-start routing. */
@@ -68,17 +74,19 @@ export interface IUserRepository {
   /** FR-AUTH-010 AC3: user skipped step 1 — persist so the full wizard does not reopen on relaunch. */
   markBasicInfoSkipped(userId: string): Promise<void>;
 
-  /** Clear the skip flag (e.g. dev reset onboarding, or after saving real basic info in setBasicInfo). */
+  /** Clear the skip flag (e.g. after saving real basic info in setBasicInfo). */
   clearBasicInfoSkipped(userId: string): Promise<void>;
 
-  /** FR-AUTH-010: persist step-1 fields. `cityName` must mirror the matching `cities.name_he` row. */
-  setBasicInfo(
-    userId: string,
-    params: { displayName: string; city: string; cityName: string },
-  ): Promise<void>;
+  /** FR-AUTH-010: persist step-1 fields (`city` is the `cities.city_id`; the name is the city row's). */
+  setBasicInfo(userId: string, params: { displayName: string; city: string }): Promise<void>;
 
-  /** FR-AUTH-010 AC3 / FR-AUTH-012 AC3: advance the onboarding state machine. */
-  setOnboardingState(userId: string, state: OnboardingState): Promise<void>;
+  /**
+   * FR-AUTH-010 AC3 / FR-AUTH-012 AC3 / FR-AUTH-015: moves the signed-in member's onboarding
+   * forward (`set_onboarding_state`). The server holds the graph (`onboardingMachine`) and
+   * refuses to leave step 1 without display name, city and date of birth on file.
+   * Throws `OnboardingError` `illegal_transition` | `basic_info_missing`.
+   */
+  setOnboardingState(state: OnboardingState): Promise<void>;
 
   /**
    * FR-AUTH-011 AC4 + AC5: persist the user's profile photo URL.
@@ -134,9 +142,16 @@ export interface IUserRepository {
   setContactPhone(userId: string, contactPhone: string | null): Promise<void>;
 
   /**
+   * FR-AUTH-010 AC2.d — stores the caller's private date of birth (ISO `YYYY-MM-DD`) through
+   * `rpc_set_date_of_birth`, which re-checks the 18+ rule on the server. Throws `ProfileError`
+   * with `invalid_date_of_birth` or `underage` when the server rejects it.
+   */
+  setDateOfBirth(isoDate: string): Promise<void>;
+
+  /**
    * FR-PROFILE-007 — atomic multi-field edit (audit §3.5). All present fields
-   * land in one `UPDATE users SET ...` statement, so a transport-layer failure
-   * never leaves the user with a half-applied edit (e.g. new name + old city).
+   * land in one statement per table (public profile, then private details), so a
+   * transport-layer failure never leaves a half-applied name + city pair.
    * Undefined fields are not written; null fields clear nullable columns
    * (biography, avatar_url, profile_street, profile_street_number, contact_phone).
    */
@@ -145,7 +160,6 @@ export interface IUserRepository {
     patch: {
       displayName?: string;
       city?: string;
-      cityName?: string;
       profileStreet?: string | null;
       profileStreetNumber?: string | null;
       contactPhone?: string | null;

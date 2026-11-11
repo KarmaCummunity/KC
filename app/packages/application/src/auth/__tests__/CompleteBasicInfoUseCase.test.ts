@@ -5,8 +5,12 @@ import { FakeAuthService } from './fakeAuthService';
 import { makeFakeUserRepo } from './onboardingFakeUserRepository';
 
 function makeUc(repo: ReturnType<typeof makeFakeUserRepo>, auth = new FakeAuthService()) {
-  return new CompleteBasicInfoUseCase(repo, auth);
+  return new CompleteBasicInfoUseCase(repo, auth, NOW);
 }
+
+/** 18+ on the fixed clock below. */
+const DOB = '1990-05-15';
+const NOW = () => new Date(2026, 10, 3);
 
 describe('CompleteBasicInfoUseCase', () => {
   const userId = 'user-1';
@@ -16,12 +20,11 @@ describe('CompleteBasicInfoUseCase', () => {
       [userId]: {
         displayName: 'placeholder',
         city: '5000',
-        cityName: 'תל אביב - יפו',
         onboardingState: 'pending_basic_info',
       },
     });
 
-  it('persists trimmed display_name + city + city_name and advances state to pending_avatar', async () => {
+  it('persists trimmed display_name + city id (not the name) and advances state to pending_avatar', async () => {
     const repo = seed();
     const useCase = makeUc(repo);
 
@@ -30,17 +33,18 @@ describe('CompleteBasicInfoUseCase', () => {
       displayName: '  נווה  ',
       cityId: '4000',
       cityName: 'חיפה',
+      dateOfBirth: DOB,
     });
 
     expect(repo.rows.get(userId)).toEqual({
       displayName: 'נווה',
       city: '4000',
-      cityName: 'חיפה',
       onboardingState: 'pending_avatar',
       basicInfoSkipped: false,
       profileStreet: null,
       profileStreetNumber: null,
       contactPhone: null,
+      dateOfBirth: DOB,
     });
   });
 
@@ -53,6 +57,7 @@ describe('CompleteBasicInfoUseCase', () => {
       displayName: 'נווה',
       cityId: '4000',
       cityName: 'חיפה',
+      dateOfBirth: DOB,
       contactPhone: '  050-1234567 ',
     });
 
@@ -68,6 +73,7 @@ describe('CompleteBasicInfoUseCase', () => {
       displayName: 'נווה',
       cityId: '4000',
       cityName: 'חיפה',
+      dateOfBirth: DOB,
       contactPhone: '   ',
     });
 
@@ -83,6 +89,7 @@ describe('CompleteBasicInfoUseCase', () => {
         displayName: 'נווה',
         cityId: '4000',
         cityName: 'חיפה',
+        dateOfBirth: DOB,
         contactPhone: '1234567890123456789012',
       }),
     ).rejects.toThrow('invalid_contact_phone');
@@ -92,14 +99,14 @@ describe('CompleteBasicInfoUseCase', () => {
     const useCase = makeUc(seed());
 
     await expect(
-      useCase.execute({ sessionUserId: userId, userId, displayName: '   ', cityId: '4000', cityName: 'חיפה' }),
+      useCase.execute({ sessionUserId: userId, userId, displayName: '   ', cityId: '4000', cityName: 'חיפה' , dateOfBirth: DOB}),
     ).rejects.toMatchObject({
       name: 'ProfileError',
       code: 'invalid_display_name',
     } satisfies Partial<ProfileError>);
 
     await expect(
-      useCase.execute({ sessionUserId: userId, userId, displayName: 'נווה', cityId: '', cityName: 'חיפה' }),
+      useCase.execute({ sessionUserId: userId, userId, displayName: 'נווה', cityId: '', cityName: 'חיפה' , dateOfBirth: DOB}),
     ).rejects.toBeInstanceOf(ProfileError);
 
     await expect(
@@ -108,6 +115,7 @@ describe('CompleteBasicInfoUseCase', () => {
         displayName: 'נווה',
         cityId: '4000',
         cityName: 'חיפה',
+        dateOfBirth: DOB,
         contactPhone: '1234567890123456789012',
       }),
     ).rejects.toMatchObject({ name: 'ProfileError', code: 'invalid_contact_phone' });
@@ -117,7 +125,7 @@ describe('CompleteBasicInfoUseCase', () => {
     const useCase = makeUc(seed());
 
     await expect(
-      useCase.execute({ sessionUserId: userId, userId, displayName: '   ', cityId: '4000', cityName: 'חיפה' }),
+      useCase.execute({ sessionUserId: userId, userId, displayName: '   ', cityId: '4000', cityName: 'חיפה' , dateOfBirth: DOB}),
     ).rejects.toThrowError(/display_name/);
   });
 
@@ -130,6 +138,7 @@ describe('CompleteBasicInfoUseCase', () => {
         displayName: 'a'.repeat(51),
         cityId: '4000',
         cityName: 'חיפה',
+        dateOfBirth: DOB,
       }),
     ).rejects.toThrowError(/display_name/);
   });
@@ -138,11 +147,11 @@ describe('CompleteBasicInfoUseCase', () => {
     const useCase = makeUc(seed());
 
     await expect(
-      useCase.execute({ sessionUserId: userId, userId, displayName: 'נווה', cityId: '', cityName: 'חיפה' }),
+      useCase.execute({ sessionUserId: userId, userId, displayName: 'נווה', cityId: '', cityName: 'חיפה' , dateOfBirth: DOB}),
     ).rejects.toThrowError(/city/);
 
     await expect(
-      useCase.execute({ sessionUserId: userId, userId, displayName: 'נווה', cityId: '4000', cityName: '   ' }),
+      useCase.execute({ sessionUserId: userId, userId, displayName: 'נווה', cityId: '4000', cityName: '   ' , dateOfBirth: DOB}),
     ).rejects.toThrowError(/city/);
   });
 
@@ -155,6 +164,7 @@ describe('CompleteBasicInfoUseCase', () => {
       displayName: 'נווה',
       cityId: '4000',
       cityName: 'חיפה',
+      dateOfBirth: DOB,
       profileStreet: '  הרצל ',
       profileStreetNumber: ' 12 ',
     });
@@ -162,7 +172,6 @@ describe('CompleteBasicInfoUseCase', () => {
     expect(repo.rows.get(userId)).toMatchObject({
       displayName: 'נווה',
       city: '4000',
-      cityName: 'חיפה',
       profileStreet: 'הרצל',
       profileStreetNumber: '12',
       onboardingState: 'pending_avatar',
@@ -178,6 +187,7 @@ describe('CompleteBasicInfoUseCase', () => {
         displayName: 'נווה',
         cityId: '4000',
         cityName: 'חיפה',
+        dateOfBirth: DOB,
         profileStreet: 'הרצל',
         profileStreetNumber: '',
       }),
@@ -193,6 +203,7 @@ describe('CompleteBasicInfoUseCase', () => {
       displayName: 'נווה',
       cityId: '4000',
       cityName: 'חיפה',
+      dateOfBirth: DOB,
       profileStreet: 'הרצל',
       profileStreetNumber: '12א',
     });
@@ -209,6 +220,7 @@ describe('CompleteBasicInfoUseCase', () => {
         displayName: 'נווה',
         cityId: '4000',
         cityName: 'חיפה',
+        dateOfBirth: DOB,
         profileStreet: 'הרצל',
         profileStreetNumber: '12/3',
       }),
@@ -227,7 +239,7 @@ describe('CompleteBasicInfoUseCase', () => {
     const useCase = makeUc(repo);
 
     await expect(
-      useCase.execute({ sessionUserId: userId, userId, displayName: 'נווה', cityId: '4000', cityName: 'חיפה' }),
+      useCase.execute({ sessionUserId: userId, userId, displayName: 'נווה', cityId: '4000', cityName: 'חיפה' , dateOfBirth: DOB}),
     ).rejects.toMatchObject({
       name: 'OnboardingError',
       code: 'illegal_transition',
@@ -245,8 +257,34 @@ describe('CompleteBasicInfoUseCase', () => {
     });
     const useCase = makeUc(repo);
 
-    await useCase.execute({ sessionUserId: userId, userId, displayName: 'נווה', cityId: '4000', cityName: 'חיפה' });
+    await useCase.execute({ sessionUserId: userId, userId, displayName: 'נווה', cityId: '4000', cityName: 'חיפה' , dateOfBirth: DOB});
 
     expect(repo.rows.get(userId)?.onboardingState).toBe('pending_avatar');
+  });
+
+  describe('date of birth (FR-AUTH-010 AC2.d)', () => {
+    it('stores the date of birth with the basic info', async () => {
+      const repo = seed();
+      await makeUc(repo).execute({ sessionUserId: userId, userId, displayName: 'נווה', cityId: '4000', cityName: 'חיפה', dateOfBirth: DOB });
+      expect(repo.rows.get(userId)?.dateOfBirth).toBe(DOB);
+    });
+
+    it('rejects an underage member and saves nothing', async () => {
+      const repo = seed();
+      await expect(
+        makeUc(repo).execute({ sessionUserId: userId, userId, displayName: 'נווה', cityId: '4000', cityName: 'חיפה', dateOfBirth: '2012-01-01' }),
+      ).rejects.toMatchObject({ code: 'underage' });
+      expect(repo.rows.get(userId)?.displayName).toBe('placeholder');
+      expect(repo.rows.get(userId)?.dateOfBirth).toBeUndefined();
+    });
+
+    it('rejects a missing or impossible date', async () => {
+      const repo = seed();
+      for (const bad of ['', '2001-02-29']) {
+        await expect(
+          makeUc(repo).execute({ sessionUserId: userId, userId, displayName: 'נווה', cityId: '4000', cityName: 'חיפה', dateOfBirth: bad }),
+        ).rejects.toMatchObject({ code: 'invalid_date_of_birth' });
+      }
+    });
   });
 });

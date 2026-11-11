@@ -8,10 +8,12 @@ import type { OnboardingState } from '@kc/domain';
 interface Row {
   displayName: string;
   city: string;
-  cityName: string;
+  /** Seed-only: the fake never writes it (the name is the `cities` row of `city`). */
+  cityName?: string;
   profileStreet?: string | null;
   profileStreetNumber?: string | null;
   contactPhone?: string | null;
+  dateOfBirth?: string | null;
   onboardingState: OnboardingState;
   basicInfoSkipped?: boolean;
   avatarUrl?: string | null;
@@ -39,7 +41,7 @@ export function makeFakeUserRepo(seed: Record<string, Row> = {}): FakeUserRepo {
     create: notImpl('create'),
     update: notImpl('update'),
     delete: notImpl('delete'),
-    deleteAccountViaEdgeFunction: notImpl('deleteAccountViaEdgeFunction'),
+    requestAccountDeletion: notImpl('requestAccountDeletion'),
     follow: notImpl('follow'),
     unfollow: notImpl('unfollow'),
     isFollowing: notImpl('isFollowing'),
@@ -69,7 +71,6 @@ export function makeFakeUserRepo(seed: Record<string, Row> = {}): FakeUserRepo {
       const row = rows.get(userId) ?? {
         displayName: '',
         city: '',
-        cityName: '',
         onboardingState: 'pending_basic_info' as OnboardingState,
       };
       rows.set(userId, { ...row, basicInfoSkipped: true });
@@ -78,34 +79,27 @@ export function makeFakeUserRepo(seed: Record<string, Row> = {}): FakeUserRepo {
       const row = rows.get(userId) ?? {
         displayName: '',
         city: '',
-        cityName: '',
         onboardingState: 'pending_basic_info' as OnboardingState,
       };
       rows.set(userId, { ...row, basicInfoSkipped: false });
     },
-    async setBasicInfo(userId, { displayName, city, cityName }) {
+    async setBasicInfo(userId, { displayName, city }) {
       const row = rows.get(userId) ?? {
         displayName: '',
         city: '',
-        cityName: '',
         onboardingState: 'pending_basic_info' as OnboardingState,
       };
-      rows.set(userId, { ...row, displayName, city, cityName, basicInfoSkipped: false });
+      rows.set(userId, { ...row, displayName, city, basicInfoSkipped: false });
     },
-    async setOnboardingState(userId, state) {
-      const row = rows.get(userId) ?? {
-        displayName: '',
-        city: '',
-        cityName: '',
-        onboardingState: 'pending_basic_info' as OnboardingState,
-      };
-      rows.set(userId, { ...row, onboardingState: state });
+    // Acts on the signed-in member, like the RPC: the one seeded row (as setDateOfBirth below).
+    async setOnboardingState(state) {
+      const userId = [...rows.keys()][0]!;
+      rows.set(userId, { ...rows.get(userId)!, onboardingState: state });
     },
     async setAvatar(userId, avatarUrl) {
       const row = rows.get(userId) ?? {
         displayName: '',
         city: '',
-        cityName: '',
         onboardingState: 'pending_basic_info' as OnboardingState,
       };
       rows.set(userId, { ...row, avatarUrl });
@@ -114,7 +108,6 @@ export function makeFakeUserRepo(seed: Record<string, Row> = {}): FakeUserRepo {
       const row = rows.get(userId) ?? {
         displayName: '',
         city: '',
-        cityName: '',
         onboardingState: 'pending_basic_info' as OnboardingState,
       };
       rows.set(userId, { ...row, biography });
@@ -125,7 +118,7 @@ export function makeFakeUserRepo(seed: Record<string, Row> = {}): FakeUserRepo {
       return {
         displayName: row.displayName,
         city: row.city,
-        cityName: row.cityName,
+        cityName: null,
         profileStreet: row.profileStreet ?? null,
         profileStreetNumber: row.profileStreetNumber ?? null,
         contactPhone: row.contactPhone ?? null,
@@ -137,16 +130,19 @@ export function makeFakeUserRepo(seed: Record<string, Row> = {}): FakeUserRepo {
       const row = rows.get(userId) ?? {
         displayName: '',
         city: '',
-        cityName: '',
         onboardingState: 'pending_basic_info' as OnboardingState,
       };
       rows.set(userId, { ...row, profileStreet: street, profileStreetNumber: streetNumber });
+    },
+    // The caller's own row: the real RPC takes no user id and reads auth.uid().
+    async setDateOfBirth(dateOfBirth) {
+      const userId = [...rows.keys()][0]!;
+      rows.set(userId, { ...rows.get(userId)!, dateOfBirth });
     },
     async setContactPhone(userId, contactPhone) {
       const row = rows.get(userId) ?? {
         displayName: '',
         city: '',
-        cityName: '',
         onboardingState: 'pending_basic_info' as OnboardingState,
       };
       rows.set(userId, { ...row, contactPhone });
@@ -155,13 +151,11 @@ export function makeFakeUserRepo(seed: Record<string, Row> = {}): FakeUserRepo {
       const row = rows.get(userId) ?? {
         displayName: '',
         city: '',
-        cityName: '',
         onboardingState: 'pending_basic_info' as OnboardingState,
       };
       const next = { ...row };
       if (patch.displayName !== undefined) next.displayName = patch.displayName;
       if (patch.city !== undefined) next.city = patch.city;
-      if (patch.cityName !== undefined) next.cityName = patch.cityName;
       if (patch.profileStreet !== undefined) next.profileStreet = patch.profileStreet;
       if (patch.profileStreetNumber !== undefined) next.profileStreetNumber = patch.profileStreetNumber;
       if (patch.contactPhone !== undefined) next.contactPhone = patch.contactPhone;
@@ -173,7 +167,6 @@ export function makeFakeUserRepo(seed: Record<string, Row> = {}): FakeUserRepo {
       const row = rows.get(userId) ?? {
         displayName: '',
         city: '',
-        cityName: '',
         onboardingState: 'pending_basic_info' as OnboardingState,
       };
       rows.set(userId, { ...row, closureExplainerDismissed: true });
@@ -182,7 +175,6 @@ export function makeFakeUserRepo(seed: Record<string, Row> = {}): FakeUserRepo {
       const row = rows.get(userId) ?? {
         displayName: '',
         city: '',
-        cityName: '',
         onboardingState: 'pending_basic_info' as OnboardingState,
       };
       rows.set(userId, { ...row, firstPostNudgeDismissed: true });

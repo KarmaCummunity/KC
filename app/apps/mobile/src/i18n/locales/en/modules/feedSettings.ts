@@ -1,16 +1,16 @@
-// Feed settings (mute keywords / categories / people, quiet hours) + empty-state CTAs.
+// Feed settings (mute keywords / worlds / people, quiet hours) + empty-state CTAs.
 export const feedSettingsEn = {
   title: 'Feed settings',
   settingsRow: 'Feed settings',
-  intro: 'Choose what you don’t want to see in your feed. Muted posts disappear right away, and you can undo it any time.',
+  intro: 'Choose what you don’t want to see in your feed. Muted posts disappear right away, and you can undo it any time. Quick filter and sort stay on the main feed menu.',
+  worldsTitle: 'Muted giving worlds',
+  worldsHint: 'Posts from a world (food, rides, time…) won’t show in your feed. Listings without a world count as «items».',
   keywordsTitle: 'Muted words',
   keywordPlaceholder: 'Add a word or phrase',
   add: 'Add',
   keywordsEmpty: 'No muted words yet.',
-  keywordInvalid: 'Use 2–120 characters.',
+  keywordInvalid: 'Use 2–60 characters.',
   keywordDuplicate: 'That word is already muted.',
-  categoriesTitle: 'Muted categories',
-  categoriesHint: 'Tap a category to hide its posts. Tap again to show them.',
   peopleTitle: 'Muted people',
   peopleEmpty: 'To mute someone, open the ⋮ menu on one of their posts.',
   unknownPerson: 'Community member',

@@ -17,6 +17,8 @@ describe('feedCardCategory', () => {
     ['food', 'post.unifiedCreate.categories.food', 'restaurant-outline'],
     ['housing', 'post.unifiedCreate.categories.housing', 'home-outline'],
     ['time', 'post.unifiedCreate.categories.time', 'time-outline'],
+    ['animals', 'post.unifiedCreate.categories.animals', 'paw-outline'],
+    ['knowledge', 'post.unifiedCreate.categories.knowledge', 'school-outline'],
   ] as const)('a %s mirror shows its world chip and icon', (world, chipKey, icon) => {
     const card = feedCardCategory({ category: 'Other', type: 'Give', listingWorldSlug: world });
     expect(card).toEqual({ chipKey, icon });
@@ -48,14 +50,21 @@ describe('feedCardCategory', () => {
     expect(feedCardCategory({ category: 'Other', type: 'Request', listingWorldSlug: null }).icon).toBe('hand-left-outline');
   });
 
+  it('shows the challenges world on a challenge post', () => {
+    expect(feedCardCategory({ category: 'Other', type: 'Give', listingWorldSlug: 'challenges' })).toEqual({
+      chipKey: 'post.unifiedCreate.categories.challenges',
+      icon: 'trophy-outline',
+    });
+  });
+
   it('treats a manual share from a world outside the create form like an ordinary post', () => {
-    expect(feedCardCategory({ category: 'Other', type: 'Give', listingWorldSlug: 'knowledge' })).toEqual({
+    expect(feedCardCategory({ category: 'Other', type: 'Give', listingWorldSlug: 'money' })).toEqual({
       chipKey: 'post.category.Other',
       icon: 'gift-outline',
     });
   });
 
-  it.each(['rides', 'food', 'housing', 'time', null] as const)(
+  it.each(['rides', 'food', 'housing', 'time', 'animals', 'knowledge', null] as const)(
     'the chip key of a %s card resolves in Hebrew and English',
     (world) => {
       const { chipKey } = feedCardCategory({ category: 'Other', type: 'Give', listingWorldSlug: world });
@@ -70,9 +79,11 @@ describe('worldChipKey', () => {
   it('uses the create category label for a create-form world, as the feed chip does', () => {
     expect(worldChipKey('rides')).toBe(feedCardCategory({ category: 'Other', type: 'Give', listingWorldSlug: 'rides' }).chipKey);
     expect(worldChipKey('items')).toBe('post.unifiedCreate.categories.items');
+    expect(worldChipKey('knowledge')).toBe('post.unifiedCreate.categories.knowledge');
+    expect(worldChipKey('animals')).toBe('post.unifiedCreate.categories.animals');
   });
 
-  it.each(['knowledge', 'money'])('keeps the marketplace name of the %s world, in Hebrew and English', (world) => {
+  it.each(['money'])('keeps the marketplace name of the %s world, in Hebrew and English', (world) => {
     const key = worldChipKey(world);
     expect(key).toBe(`marketplace.world.${world}`);
     expect(typeof resolveKey(he, key)).toBe('string');

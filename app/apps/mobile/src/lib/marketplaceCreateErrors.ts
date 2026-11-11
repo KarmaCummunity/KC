@@ -18,16 +18,22 @@ export function marketplaceServerErrorKey(err: unknown): MarketplaceErrorKey {
 export interface MarketplaceRuleFieldError {
   code: MarketplaceRuleErrorCode;
   /** Which form section renders the inline message. */
-  field: 'details' | 'org';
+  field: 'details' | 'org' | 'photos' | 'subcategory';
   key: MarketplaceErrorKey;
 }
 
 const FIELD_BY_CODE: Record<MarketplaceRuleErrorCode, MarketplaceRuleFieldError['field']> = {
+  offer_photo_required: 'photos',
+  food_subcategory_required: 'subcategory',
   food_expiry_required: 'details',
   routed_world_requires_external_body: 'org',
   ride_route_required: 'details',
   ride_departure_past: 'details',
   knowledge_slot_invalid: 'details',
+  knowledge_slot_duration_invalid: 'details',
+  knowledge_slot_in_past: 'details',
+  knowledge_slots_overlap: 'details',
+  event_window_invalid: 'details',
 };
 
 /** i18n key for a booking / handoff RPC error; null when there is no specific copy. */
@@ -36,7 +42,7 @@ export function handoffErrorKey(err: unknown): MarketplaceErrorKey | null {
   return code ? `marketplace.errors.${code}` : null;
 }
 
-/** Client-side world-rule check for the create form (mirrors 0266; photos are optional). */
+/** Client-side world-rule check for the create form (mirrors 0266; offers need a photo, D132). */
 export function marketplaceRuleFieldError(input: WorldRulesInput): MarketplaceRuleFieldError | null {
   const code = validateMarketplaceWorldRules(input);
   if (!code) return null;

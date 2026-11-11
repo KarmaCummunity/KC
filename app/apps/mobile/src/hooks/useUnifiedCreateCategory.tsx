@@ -3,16 +3,18 @@
 // persistence. A `?category=` deep link wins over the remembered choice, and its optional
 // `&direction=` presets request / offer (a world screen's buttons, FR-FEED-020 AC2);
 // otherwise the form reopens on the category the user last used. The direction (offer / request)
-// is remembered per category: every category reopens in the way it was last used.
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+// is remembered per category: every category reopens in the way it was last used. Category chips
+// sort by how often the member picked each one (hub order for ties and never-used worlds).
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import type { PostType } from '@kc/domain';
+import { useRemoteAppFlags } from './useLaunchWorldFlags';
 import { UnifiedCreateHeader } from '../components/CreatePostForm/UnifiedCreateHeader';
 import {
-  CREATE_CATEGORIES,
   findCreateCategory,
   isCreateCategoryId,
   isCreateDirection,
+  resolveCreateCategory,
   type CreateCategoryId,
   type CreateDirection,
 } from '../lib/unifiedCreate/createCategories';
@@ -21,7 +23,9 @@ import {
   directionFor,
   directionToPostType,
   postTypeToDirection,
+  createCategoriesForPicker,
   withCategory,
+  type CategoryUsageCounts,
   type CreatePreferences,
 } from '../lib/unifiedCreate/unifiedCreateState';
 import {
@@ -50,6 +54,8 @@ export function useUnifiedCreateCategory(
   const [ready, setReady] = useState(false);
   // What was last remembered; mutated in place so every handler sees the latest choice.
   const prefsRef = useRef<CreatePreferences>(DEFAULT_CREATE_PREFERENCES);
+  const [usageCounts, setUsageCounts] = useState<CategoryUsageCounts>({});
+  const pickerCategories = useMemo(() => createCategoriesForPicker(usageCounts), [usageCounts]);
   // Latest setType without making the effects depend on its identity.
   const setTypeRef = useRef(setType);
   setTypeRef.current = setType;
@@ -58,8 +64,10 @@ export function useUnifiedCreateCategory(
 
   /** Opens `id` in `direction`, or in the direction last used there, and remembers it. */
   const open = useCallback((id: CreateCategoryId, direction?: CreateDirection) => {
-    const prefs = withCategory(prefsRef.current, id, direction);
+    const bumpUsage = id !== prefsRef.current.categoryId;
+    const prefs = withCategory(prefsRef.current, id, direction, bumpUsage);
     prefsRef.current = prefs;
+    setUsageCounts(prefs.usageCounts);
     setCategoryId(id);
     setTypeRef.current(directionToPostType(directionFor(prefs, id)));
     void saveCreatePreferences(userIdRef.current, prefs);
@@ -72,6 +80,7 @@ export function useUnifiedCreateCategory(
     void loadCreatePreferences(userId).then((prefs) => {
       if (!active) return;
       prefsRef.current = prefs;
+      setUsageCounts(prefs.usageCounts);
       const id = isCreateCategoryId(deepLink) ? deepLink : prefs.categoryId;
       setCategoryId(id);
       const direction = isCreateDirection(deepLinkDirection) ? deepLinkDirection : directionFor(prefs, id);
@@ -102,10 +111,11 @@ export function useUnifiedCreateCategory(
     [open, categoryId],
   );
 
-  const activeCategory = findCreateCategory(categoryId);
+  const remoteFlags = useRemoteAppFlags();
+  const activeCategory = resolveCreateCategory(findCreateCategory(categoryId), remoteFlags);
   const header = (
     <UnifiedCreateHeader
-      categories={CREATE_CATEGORIES}
+      categories={pickerCategories}
       categoryId={activeCategory.id}
       onCategoryChange={open}
       showDirection={activeCategory.engine !== 'link'}

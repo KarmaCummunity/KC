@@ -3,21 +3,23 @@
 // V2-ADMIN-AUDIT-5 — date-range filter + CSV export (web).
 // Rebuilt on top of the shared filterKit (issue #1457).
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
-import { type AdminAuditRow, type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
+import { Pressable, RefreshControl, View } from 'react-native';
+import {
+  type AdminAuditRow, type AdminPermission, type AdminRole, type AdminSearchCursor, hasPermission,
+} from '@kc/domain';
 import type { AdminAuditSearchFilters } from '@kc/application';
-import { makeUseStyles, radius, spacing, Text, TextInput, typography } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { TextField } from '../../../src/components/ui/TextField';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { useAdminAuditSearch } from '../../../src/hooks/useAdminContentSearch';
-import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
 import { AuditLogRow } from '../../../src/components/admin/content/AuditLogRow';
 import { container } from '../../../src/lib/container';
 import { downloadAuditCsv, isCsvExportSupported } from '../../../src/lib/auditCsvExport';
 import { useLocaleBundle, type LocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
-import { rtlTextAlignStart } from '../../../src/lib/rtlTextAlignStart';
-import { FilterSearchBar } from '../../../src/components/filterKit/FilterSearchBar';
-import { FilterChipRow } from '../../../src/components/filterKit/FilterChipRow';
+import { AdminSearchFilterToolbar } from '../../../src/components/admin/AdminSearchFilterToolbar';
+import { FilterSection } from '../../../src/components/filterKit/FilterSection';
+import { formIsoDateInputProps } from '../../../src/lib/platform/formTextInputHints';
 
 const COMMON_ACTIONS = [
   null,
@@ -50,6 +52,21 @@ function parseToDate(value: string): Date | undefined {
   return Number.isNaN(d.getTime()) ? undefined : d;
 }
 
+/** Rows a CSV export carries at most; the server serves audit pages of at most 200 rows. */
+const EXPORT_MAX_ROWS = 500;
+
+/** Walks the audit pages (oldest cursor last) until the export cap or the end of the trail. */
+async function collectAuditRows(filters: AdminAuditSearchFilters): Promise<AdminAuditRow[]> {
+  const rows: AdminAuditRow[] = [];
+  let cursor: AdminSearchCursor | null = null;
+  do {
+    const page = await container.adminSearchAudit.execute({ ...filters, limit: 150, cursor });
+    rows.push(...page.rows);
+    cursor = page.nextCursor;
+  } while (cursor !== null && rows.length < EXPORT_MAX_ROWS);
+  return rows.slice(0, EXPORT_MAX_ROWS);
+}
+
 export default function AuditScreen() {
   const styles = useStyles();
   const L = useLocaleBundle();
@@ -60,6 +77,7 @@ export default function AuditScreen() {
   const [toRaw, setToRaw] = useState('');
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const filters = useMemo<AdminAuditSearchFilters>(() => ({
     targetUserId: targetIdRaw.trim() || undefined,
@@ -85,14 +103,10 @@ export default function AuditScreen() {
     }
     setExporting(true);
     try {
-      const page = await container.adminSearchAudit.execute({
-        ...filters,
-        limit: 500,
-        offset: 0,
-      });
+      const rows = await collectAuditRows(filters);
       const stamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
       const name  = `audit-${stamp}.csv`;
-      const ok = downloadAuditCsv(page.rows, name);
+      const ok = downloadAuditCsv(rows, name);
       if (!ok) setExportError(L.admin.content.csvExport.failed);
     } catch (err) {
       setExportError(err instanceof Error ? err.message : L.admin.content.csvExport.failed);
@@ -110,46 +124,66 @@ export default function AuditScreen() {
 
   const canSeeAll = can('audit.view_any');
 
+  const activeFilterCount =
+    (action ? 1 : 0) + (fromRaw.trim() ? 1 : 0) + (toRaw.trim() ? 1 : 0);
+
+  const clearSheetFilters = () => {
+    setAction(null);
+    setFromRaw('');
+    setToRaw('');
+  };
+
+  const actionOptions = COMMON_ACTIONS.map((a) => ({
+    value: a ?? '__all__',
+    label: a === null
+      ? L.admin.content.auditActionFilterAll
+      : (L.admin.content.auditAction[a as keyof LocaleBundle['admin']['content']['auditAction']] ?? a),
+  }));
+
   return (
     <View style={styles.root}>
-      <AdminScreenHeader
-        title={L.admin.content.auditTitle}
-        subtitle={!canSeeAll ? L.admin.content.tierLimited : undefined}
+      <AdminSearchFilterToolbar
+        portalTitle={L.admin.content.auditTitle}
+        search={{
+          value: targetIdRaw,
+          onChangeText: setTargetIdRaw,
+          placeholder: L.admin.content.auditTargetPlaceholder,
+          testID: 'audit-search-bar',
+        }}
+        activeFilterCount={activeFilterCount}
+        filterVisible={sheetOpen}
+        onOpenFilters={() => setSheetOpen(true)}
+        onCloseFilters={() => setSheetOpen(false)}
+        onClearFilters={clearSheetFilters}
+        filterButtonTestID="admin-audit-filter-button"
+        filterSheetContent={(
+          <>
+            <FilterSection<string>
+              options={actionOptions}
+              value={action ?? '__all__'}
+              onChange={(val) => setAction(val === '__all__' || val === null ? null : val)}
+            />
+            <TextField
+              label={L.admin.content.dateFromLabel}
+              value={fromRaw}
+              onChangeText={setFromRaw}
+              placeholder="YYYY-MM-DD"
+              {...formIsoDateInputProps}
+            />
+            <TextField
+              label={L.admin.content.dateToLabel}
+              value={toRaw}
+              onChangeText={setToRaw}
+              placeholder="YYYY-MM-DD"
+              {...formIsoDateInputProps}
+            />
+          </>
+        )}
       />
-      <View style={styles.searchWrap}>
-        <FilterSearchBar
-          value={targetIdRaw}
-          onChangeText={setTargetIdRaw}
-          placeholder={L.admin.content.auditTargetPlaceholder}
-          testID="audit-search-bar"
-        />
-      </View>
-
-      <View style={styles.dateRow}>
-        <View style={styles.dateField}>
-          <Text style={styles.dateLabel}>{L.admin.content.dateFromLabel}</Text>
-          <TextInput // brand-guard-allow: admin audit date filter input, not a form field
-            style={styles.dateInput}
-            value={fromRaw}
-            onChangeText={setFromRaw}
-            placeholder="YYYY-MM-DD"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="numbers-and-punctuation"
-          />
-        </View>
-        <View style={styles.dateField}>
-          <Text style={styles.dateLabel}>{L.admin.content.dateToLabel}</Text>
-          <TextInput // brand-guard-allow: admin audit date filter input, not a form field
-            style={styles.dateInput}
-            value={toRaw}
-            onChangeText={setToRaw}
-            placeholder="YYYY-MM-DD"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="numbers-and-punctuation"
-          />
-        </View>
+      {!canSeeAll ? (
+        <Text style={styles.tierHint}>{L.admin.content.tierLimited}</Text>
+      ) : null}
+      <View style={styles.exportRow}>
         <Pressable
           accessibilityRole="button"
           onPress={() => { void doExport(); }}
@@ -161,28 +195,19 @@ export default function AuditScreen() {
           </Text>
         </Pressable>
       </View>
-      {exportError !== null && (
+      {exportError !== null ? (
         <Text style={styles.exportError}>{exportError}</Text>
+      ) : null}
+      {!result.hasMore && (
+        <Text style={styles.totalLabel}>{L.admin.content.totalCount(result.rows.length)}</Text>
       )}
-
-      <FilterChipRow<string>
-        scrollable
-        options={COMMON_ACTIONS.map((a) => ({
-          value: a ?? '__all__',
-          label: a === null
-            ? L.admin.content.auditActionFilterAll
-            : (L.admin.content.auditAction[a as keyof LocaleBundle['admin']['content']['auditAction']] ?? a),
-        }))}
-        value={action ?? '__all__'}
-        onChange={(val: string | null) => setAction(val === '__all__' || val === null ? null : val)}
-        contentContainerStyle={styles.chips}
-      />
-      <Text style={styles.totalLabel}>{L.admin.content.totalCount(result.page.totalCount)}</Text>
       <KcFlashList
-        data={result.page.rows}
+        data={result.rows}
         keyExtractor={auditKeyExtractor}
         estimatedItemSize={64}
         renderItem={renderItem}
+        onEndReached={result.fetchMore}
+        onEndReachedThreshold={0.5}
         refreshControl={<RefreshControl refreshing={result.isRefetching} onRefresh={result.refetch} />}
         ListEmptyComponent={
           !result.isLoading ? (
@@ -200,21 +225,14 @@ const useStyles = makeUseStyles(({ colors }) => ({
   root:        { flex: 1, backgroundColor: colors.background },
   center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   deniedTitle: { ...typography.h3, ...typography.bold },
-  searchWrap:  { marginHorizontal: spacing.base, marginBottom: spacing.sm },
-  chips:       { paddingHorizontal: spacing.base, gap: spacing.sm, paddingBottom: spacing.sm },
   totalLabel:  { paddingHorizontal: spacing.base, paddingBottom: spacing.xs, ...typography.caption, opacity: 0.6 },
   empty:       { padding: spacing['2xl'], alignItems: 'center' },
   emptyText:   { ...typography.body, opacity: 0.6 },
-  dateRow:     { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.base, paddingBottom: spacing.sm, alignItems: 'flex-end' },
-  dateField:   { flex: 1, gap: spacing.xs },
-  dateLabel:   { ...typography.caption, opacity: 0.7 },
-  dateInput: {
-    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: radius.md,
-    padding: spacing.sm, ...typography.caption, textAlign: rtlTextAlignStart, backgroundColor: colors.surface,
-  },
+  tierHint:    { paddingHorizontal: spacing.base, paddingBottom: spacing.xs, ...typography.caption, color: colors.textSecondary },
+  exportRow:   { paddingHorizontal: spacing.base, paddingBottom: spacing.sm, alignItems: 'flex-end' },
   exportBtn: {
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md,
-    backgroundColor: colors.primary, alignSelf: 'flex-end',
+    backgroundColor: colors.primary,
   },
   exportBtnDisabled: { opacity: 0.5 },
   exportBtnText:  { color: colors.textInverse, ...typography.caption, ...typography.bold },

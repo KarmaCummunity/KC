@@ -7,6 +7,7 @@ import {
   findDrift,
   pendingMigrations,
   repairCommands,
+  hasLedgerTable,
 } from './check-migration-drift.mjs';
 
 // A realistic `supabase migration list --linked` capture with one MCP timestamp
@@ -92,4 +93,27 @@ test('pendingMigrations lists the local versions db push is about to apply', () 
   const list = ['  LOCAL | REMOTE | TIME', '  ------|--------|-----', '  0001  | 0001   | 0001', '  0002  |        | 0002'].join('\n');
   assert.deepEqual(pendingMigrations(list, ['0001', '0002', '0003']), ['0002', '0003']);
   assert.deepEqual(pendingMigrations(list, ['0001']), []);
+});
+
+// A rebuilt (or brand new) project has an empty ledger: the CLI prints the table with only
+// local rows. That is a valid state, unlike text that is not the table at all.
+const EMPTY_LEDGER_OUTPUT = `
+   Local | Remote | Time (UTC)
+  -------|--------|------------
+   0001  |        | 0001
+`;
+
+test('an empty remote ledger is recognised as the CLI table', () => {
+  assert.deepEqual(parseRemoteVersions(EMPTY_LEDGER_OUTPUT), []);
+  assert.equal(hasLedgerTable(EMPTY_LEDGER_OUTPUT), true);
+  assert.equal(hasLedgerTable(CLI_OUTPUT), true);
+});
+
+test('text that is not the CLI table is not a ledger', () => {
+  assert.equal(hasLedgerTable(''), false);
+  assert.equal(hasLedgerTable('Connecting to remote database...\nerror: timeout'), false);
+});
+
+test('an empty ledger counts every local migration as pending', () => {
+  assert.deepEqual(pendingMigrations(EMPTY_LEDGER_OUTPUT, ['0001']), ['0001']);
 });

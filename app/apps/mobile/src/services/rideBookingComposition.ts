@@ -7,6 +7,7 @@ import {
   CompleteRideListingUseCase,
   DeclineRideBookingUseCase,
   ListRideBookingsUseCase,
+  ReinstateRideBookingUseCase,
   type IRideBookingRepository,
 } from '@kc/application';
 import { SupabaseRideBookingRepository } from '@kc/infrastructure-supabase';
@@ -29,6 +30,7 @@ export const rideBookingUseCases = {
   cancel: () => new CancelRideBookingUseCase(repository()),
   complete: () => new CompleteRideTripUseCase(repository()),
   completeRide: () => new CompleteRideListingUseCase(repository()),
+  reinstate: () => new ReinstateRideBookingUseCase(repository()),
 };
 
 /** Locates or creates a DM chat between the ride driver and a passenger. */

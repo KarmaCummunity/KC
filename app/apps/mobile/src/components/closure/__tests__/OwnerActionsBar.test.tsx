@@ -17,6 +17,7 @@ vi.mock('../../../services/postsComposition', () => ({
   getReopenPostUseCase: () => ({ execute: () => Promise.resolve() }),
   getGetClosureCandidatesUseCase: () => ({ execute: () => Promise.resolve([]) }),
   getMarkAsDeliveredUseCase: () => ({ execute: () => Promise.resolve() }),
+  getOwnerCompleteOfferUseCase: () => ({ execute: () => Promise.resolve({ closed: true }) }),
 }));
 vi.mock('../../../services/userComposition', () => ({
   getDismissClosureExplainerUseCase: () => ({ execute: () => Promise.resolve() }),
@@ -55,7 +56,12 @@ describe('OwnerActionsBar', () => {
     useClosureStore.setState({ start });
     const { getByRole } = renderBar(OPEN_GIVE);
     fireEvent.click(getByRole('button', { name: 'closure.markGiveCta' }));
-    expect(start).toHaveBeenCalledWith('p_1', 'u_owner', 'Give', { initiator: 'post-detail' });
+    expect(start).toHaveBeenCalledWith('p_1', 'u_owner', 'Give', {
+      initiator: 'post-detail',
+      offerAssign: false,
+      allowCloseWithout: true,
+      worldSlug: undefined,
+    });
   });
 
   it('holds the closure action while a closure is already running', () => {

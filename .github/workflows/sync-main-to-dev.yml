@@ -10,6 +10,17 @@
 # The PR MUST land as a MERGE COMMIT (a squash would drop the ancestry):
 # temporarily enable "Allow merge commits", merge, disable again. See
 # docs/SSOT/RELEASE_CHECKLIST.md → "Immediately after squash-merge to main".
+#
+# Opening the PR uses a short-lived token from the `kc-agent-bot` GitHub App
+# (#1337), minted with actions/create-github-app-token, same as
+# auto-merge-agent-ready.yml. GITHUB_TOKEN may push the sync branch but cannot
+# open PRs while "Allow GitHub Actions to create and approve pull requests" is
+# off (run 42850571997). We do not flip that repo setting: it would also let
+# GITHUB_TOKEN approve PRs. The App already has contents:write +
+# pull-requests:write; its credentials live in the `agent-merge` environment
+# (deployment branch: dev only). A push-to-main run therefore does the git
+# work with GITHUB_TOKEN, then dispatches this workflow onto `--ref dev` to
+# open the PR. A workflow_dispatch on dev can do both in one run.
 
 name: Sync main → dev
 
@@ -17,10 +28,21 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      open_branch:
+        description: Already-pushed sync/* branch to open a PR for (used when a main run dispatches onto dev)
+        type: string
+        required: false
+      proof:
+        description: After a no-op sync, mint kc-agent-bot and open+close a throwaway draft PR to prove PR creation
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 
 concurrency:
   group: sync-main-to-dev
@@ -28,25 +50,42 @@ concurrency:
 
 jobs:
   sync:
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.open_branch == '') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      need_pr: ${{ steps.work.outputs.need_pr }}
+      branch: ${{ steps.work.outputs.branch }}
     steps:
       - name: Checkout dev
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: dev
+          # Fully-qualified branch ref + no tags. A short `ref: dev` makes
+          # actions/checkout fetch both refs/heads/dev* and refs/tags/dev*; the
+          # D-195 tag ruleset forbids tags named `dev`, and after the #1600
+          # squash, checkout then failed with "A branch or tag with the name
+          # 'dev' could not be found" (run 42826047381) even though
+          # refs/heads/dev existed.
+          ref: refs/heads/dev
+          fetch-tags: false
           fetch-depth: 0
 
-      - name: Open ancestry-only sync PR
+      - name: Build the ancestry-only sync branch
+        id: work
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ON_MAIN: ${{ github.ref == 'refs/heads/main' }}
+          REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
+          echo "need_pr=false" >> "$GITHUB_OUTPUT"
+          echo "branch=" >> "$GITHUB_OUTPUT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin main
           if git merge-base --is-ancestor origin/main HEAD; then
-            echo "dev already contains main; nothing to sync."; exit 0
+            echo "dev already contains main; nothing to sync."
+            exit 0
           fi
           short=$(git rev-parse --short origin/main)
           branch="sync/main-into-dev-$short"
@@ -56,9 +95,118 @@ jobs:
             echo "::error::-s ours merge unexpectedly changed files"; exit 1
           fi
           git push -f origin "$branch"
-          if gh pr list --head "$branch" --state open --json number -q '.[0].number' | grep -q .; then
+          echo "need_pr=true" >> "$GITHUB_OUTPUT"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          # The agent-merge environment is dev-only (see auto-merge-agent-ready.yml).
+          # A push-to-main run cannot read those secrets here; dispatch onto dev.
+          if [ "$ON_MAIN" = "true" ]; then
+            gh workflow run "Sync main → dev" --repo "$REPO" --ref dev -f open_branch="$branch"
+            echo "Dispatched PR-open job on dev for $branch."
+          fi
+
+  open-pr:
+    # Credentials are only released on dev. Skip if sync failed (but not if it
+    # was skipped because this run is the dev dispatch with open_branch set).
+    if: >-
+      always() &&
+      github.ref == 'refs/heads/dev' &&
+      (needs.sync.result == 'success' || needs.sync.result == 'skipped') &&
+      (
+        inputs.open_branch != '' ||
+        needs.sync.outputs.need_pr == 'true' ||
+        inputs.proof == true ||
+        inputs.proof == 'true'
+      )
+    needs: [sync]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: agent-merge
+    permissions: {}
+    steps:
+      - name: Detect the agent App credentials
+        id: identity
+        env:
+          APP_ID: ${{ secrets.AGENT_APP_ID }}
+          APP_KEY: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+        run: |
+          if [ -n "$APP_ID" ] && [ -n "$APP_KEY" ]; then
+            echo "app=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "app=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Mint agent GitHub App token
+        id: app
+        if: steps.identity.outputs.app == 'true'
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Open the ancestry sync PR
+        if: inputs.open_branch != '' || needs.sync.outputs.need_pr == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          BRANCH: ${{ inputs.open_branch || needs.sync.outputs.branch }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::No kc-agent-bot credentials in the agent-merge environment (AGENT_APP_ID + AGENT_APP_PRIVATE_KEY). GITHUB_TOKEN cannot open PRs while 'Allow GitHub Actions to create and approve pull requests' is off, and we do not flip that setting (it would also let GITHUB_TOKEN approve PRs). See #1337 and docs/SSOT/OPERATOR_RUNBOOK.md § Owner setup for D-195 CI/CD."
+            exit 1
+          fi
+          if [ -z "$BRANCH" ]; then
+            echo "::error::No sync branch to open a PR for."; exit 1
+          fi
+          short="${BRANCH#sync/main-into-dev-}"
+          if gh pr list --repo "$REPO" --head "$BRANCH" --state open --json number -q '.[0].number' | grep -q .; then
             echo "Sync PR already open."; exit 0
           fi
-          gh pr create --base dev --head "$branch" \
+          gh pr create --repo "$REPO" --base dev --head "$BRANCH" --label no-auto-merge \
             --title "chore: sync main ($short) into dev (ancestry only)" \
-            --body "Mapped to spec: INFRA/release. Zero-diff \`-s ours\` merge of main into dev so the next release PR doesn't conflict. **Merge as a merge commit** (temporarily allow merge commits), not squash."
+            --body "Mapped to spec: INFRA/release. Zero-diff \`-s ours\` merge of main into dev so the next release PR doesn't conflict. **Merge as a merge commit** (temporarily allow merge commits), not squash.
+
+          Opened by \`kc-agent-bot\` (not GITHUB_TOKEN). See #1337 / #1707."
+
+      - name: Proof — open and close a throwaway draft PR as kc-agent-bot
+        if: inputs.proof == true || inputs.proof == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::Proof requested, but kc-agent-bot credentials are missing."; exit 1
+          fi
+          # Installation tokens cannot call GET /user (HTTP 403 "Resource not
+          # accessible by integration"). Identify the actor from the PR author
+          # after create, which is the actual capability we need to prove.
+          branch="sync/pr-create-proof-$RUN_ID"
+          git init -q
+          git config user.name "kc-agent-bot[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --depth=1 "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" refs/heads/dev:dev
+          git checkout -b "$branch" dev
+          git commit --allow-empty -m "chore(ci): throwaway proof that kc-agent-bot can open PRs"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" "HEAD:$branch"
+          cleanup() {
+            gh pr close "$PR_URL" --repo "$REPO" --delete-branch --comment "Closing unmerged: proof that kc-agent-bot can open PRs. See the Sync main → dev run that created this." || true
+          }
+          trap cleanup EXIT
+          PR_URL=$(gh pr create --repo "$REPO" --base dev --head "$branch" --draft --label no-auto-merge \
+            --title "chore(ci): throwaway — prove kc-agent-bot can open PRs (DO NOT MERGE)" \
+            --body "Draft throwaway opened by \`kc-agent-bot\` to prove Sync main → dev can create PRs without enabling 'Allow GitHub Actions to create and approve pull requests'. This PR is closed unmerged by the same job.
+
+          Opened by: agent:cursor")
+          echo "Opened proof PR: $PR_URL"
+          author=$(gh pr view "$PR_URL" --repo "$REPO" --json author --jq .author.login)
+          echo "Proof PR author: $author"
+          case "$author" in
+            *kc-agent-bot*) ;;
+            *) echo "::error::Expected kc-agent-bot as the PR author, got $author"; exit 1 ;;
+          esac
+          # trap closes and deletes the branch

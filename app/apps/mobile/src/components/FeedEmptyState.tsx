@@ -1,6 +1,5 @@
 // FeedEmptyState — warm empty state for the Home Feed (FR-FEED-008).
-// CTAs adapt to whether filters caused the emptiness; a link to feed settings
-// helps when muted words / categories / people may be hiding posts.
+// Sheet filters (filterStore) and mutes (feed settings) are separate; both can empty the feed.
 
 import React from 'react';
 import { Pressable, View } from 'react-native';
@@ -11,15 +10,16 @@ import { FeedCommunityCounter } from './FeedCommunityCounter';
 import { EmptyStateActions } from './EmptyState';
 
 interface FeedEmptyStateProps {
-  hasActiveFilters: boolean;
+  hasSheetFilters: boolean;
+  hasMutes: boolean;
   onClearFilters: () => void;
   onShare: () => void;
-  /** Shown as a text link under the buttons when provided. */
   onOpenFeedSettings?: () => void;
 }
 
 export function FeedEmptyState({
-  hasActiveFilters,
+  hasSheetFilters,
+  hasMutes,
   onClearFilters,
   onShare,
   onOpenFeedSettings,
@@ -27,22 +27,40 @@ export function FeedEmptyState({
   const styles = useFeedEmptyStateStyles();
   const { colors } = useTheme();
   const { t } = useTranslation();
+
+  const titleKey = hasSheetFilters
+    ? 'feed.emptyFiltered'
+    : hasMutes
+      ? 'feed.emptyMuted'
+      : 'feed.empty';
+  const bodyKey = hasSheetFilters
+    ? hasMutes
+      ? 'feed.emptyFilteredAndMutedDesc'
+      : 'feed.emptyFilteredDesc'
+    : hasMutes
+      ? 'feed.emptyMutedDesc'
+      : 'feed.emptyDesc';
+  const showCommunityHint = hasSheetFilters || hasMutes;
+  const communityTemplate = hasMutes && !hasSheetFilters
+    ? (n: number) => t('feed.activeInCommunityMaybeHidden', { count: n })
+    : (n: number) => t('feed.activeInCommunityWithCount', { count: n });
+
   return (
     <View style={styles.wrap} testID="feed-empty-state">
-      <Ionicons name="archive-outline" size={56} color={colors.textDisabled} />
-      <Text style={styles.title}>
-        {hasActiveFilters ? t('feed.emptyFiltered') : t('feed.empty')}
-      </Text>
-      <Text style={styles.body}>
-        {hasActiveFilters ? t('feed.emptyFilteredDesc') : t('feed.emptyDesc')}
-      </Text>
-      <FeedCommunityCounter
-        template={(n) => t('feed.activeInCommunityWithCount', { count: n })}
+      <Ionicons
+        name="archive-outline"
+        size={56} // brand-guard-allow: empty-state illustration, above the icon scale
+        color={colors.textDisabled}
       />
+      <Text style={styles.title}>{t(titleKey)}</Text>
+      <Text style={styles.body}>{t(bodyKey)}</Text>
+      {showCommunityHint ? <FeedCommunityCounter template={communityTemplate} /> : null}
       <View style={styles.actions}>
         <EmptyStateActions
           primary={{ label: t('feed.sharePost'), onPress: onShare }}
-          secondary={hasActiveFilters ? { label: t('feed.clearFilters'), onPress: onClearFilters } : undefined}
+          secondary={
+            hasSheetFilters ? { label: t('feed.clearFilters'), onPress: onClearFilters } : undefined
+          }
         />
       </View>
       {onOpenFeedSettings ? (
@@ -64,5 +82,5 @@ const useFeedEmptyStateStyles = makeUseStyles(({ colors }) => ({
     marginBottom: spacing.sm,
   },
   actions: { marginTop: spacing.base },
-  link: { ...typography.body, color: colors.primary, fontWeight: '600' as const, marginTop: spacing.sm },
+  link: { ...typography.body, ...typography.semiBold, color: colors.primary, marginTop: spacing.sm },
 }));

@@ -8,6 +8,7 @@ import {
   type FinanceEntry, type FinanceLedgerPage, type FinanceSummaryRow,
   parseFinanceEntryKind, parseFinanceEntryStatus,
 } from '@kc/domain';
+import { toFinanceError } from './financeErrors';
 
 interface EntryRow {
   entry_id: string;
@@ -23,6 +24,9 @@ interface EntryRow {
   status: string;
   created_at: string;
   updated_at: string;
+  // 0470 columns: optional so an older server (migration not yet applied) still maps.
+  account_id?: string | null;
+  is_public?: boolean | null;
   total_count: number | string;
 }
 
@@ -32,22 +36,6 @@ interface SummaryRow {
   expense_cents: number | string;
   net_cents: number | string;
   entry_count: number | string;
-}
-
-function toError(err: { message?: string; code?: string } | null): FinanceLedgerError {
-  const msg = err?.message ?? '';
-  const map: Partial<Record<string, FinanceLedgerError['code']>> = {
-    invalid_kind: 'invalid_kind',
-    invalid_status: 'invalid_status',
-    invalid_amount: 'invalid_amount',
-    invalid_direction: 'invalid_direction',
-    missing_required_fields: 'missing_required_fields',
-    entry_not_found: 'entry_not_found',
-  };
-  if (map[msg]) return new FinanceLedgerError(map[msg]!);
-  if (err?.code === 'P0002') return new FinanceLedgerError('entry_not_found');
-  if (err?.code === '42501') return new FinanceLedgerError('forbidden');
-  return new FinanceLedgerError('unknown', msg);
 }
 
 function toInt(value: number | string): number {
@@ -71,6 +59,8 @@ function mapRow(row: EntryRow): FinanceEntry | null {
     description:  row.description,
     referenceUrl: row.reference_url,
     status,
+    accountId:    row.account_id ?? null,
+    isPublic:     row.is_public ?? true,
     createdAt:    new Date(row.created_at),
     updatedAt:    new Date(row.updated_at),
   };
@@ -95,7 +85,7 @@ export class SupabaseFinanceLedgerRepository implements IFinanceLedgerRepository
       p_limit:     filters.limit  ?? 100,
       p_offset:    filters.offset ?? 0,
     });
-    if (error) throw toError(error);
+    if (error) throw toFinanceError(error);
     const raw = Array.isArray(data) ? (data as EntryRow[]) : [];
     const rows: FinanceEntry[] = [];
     for (const r of raw) {
@@ -110,7 +100,7 @@ export class SupabaseFinanceLedgerRepository implements IFinanceLedgerRepository
       p_from: fromDate ? fromDate.toISOString() : null,
       p_to:   toDate   ? toDate.toISOString()   : null,
     });
-    if (error) throw toError(error);
+    if (error) throw toFinanceError(error);
     const raw = Array.isArray(data) ? (data as SummaryRow[]) : [];
     return raw.map((r) => ({
       currency:     r.currency,
@@ -133,8 +123,10 @@ export class SupabaseFinanceLedgerRepository implements IFinanceLedgerRepository
       p_description:  input.description  ?? null,
       p_reference_url: input.referenceUrl ?? null,
       p_status:       input.status       ?? null,
+      p_account_id:   input.accountId    ?? null,
+      p_is_public:    input.isPublic     ?? null,
     });
-    if (error) throw toError(error);
+    if (error) throw toFinanceError(error);
     if (typeof data !== 'string') {
       throw new FinanceLedgerError('unknown', 'finance_ledger_upsert did not return an id');
     }
@@ -143,6 +135,6 @@ export class SupabaseFinanceLedgerRepository implements IFinanceLedgerRepository
 
   async delete(entryId: string): Promise<void> {
     const { error } = await this.client.rpc('finance_ledger_delete', { p_entry_id: entryId });
-    if (error) throw toError(error);
+    if (error) throw toFinanceError(error);
   }
 }

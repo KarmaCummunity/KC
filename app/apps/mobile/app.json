@@ -46,6 +46,9 @@
           "remote-notification"
         ]
       },
+      "entitlements": {
+        "com.apple.developer.usernotifications.time-sensitive": true
+      },
       "privacyManifests": {
         "NSPrivacyTracking": false,
         "NSPrivacyAccessedAPITypes": [
@@ -204,6 +207,11 @@
               "scheme": "https",
               "host": "karma-community-kc.com",
               "pathPrefix": "/chat"
+            },
+            {
+              "scheme": "https",
+              "host": "karma-community-kc.com",
+              "pathPrefix": "/sign-in"
             }
           ],
           "category": [
@@ -251,7 +259,10 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#FFFBF7"
+          "backgroundColor": "#FFFBF7",
+          "android": {
+            "imageWidth": 130
+          }
         }
       ],
       [
@@ -268,7 +279,8 @@
           "android": {
             "enableEdgeToEdge": true,
             "compileSdkVersion": 36,
-            "targetSdkVersion": 36
+            "targetSdkVersion": 36,
+            "softwareKeyboardLayoutMode": "resize"
           }
         }
       ],

@@ -4,6 +4,9 @@
 // primary only for a viewer with no flow action: a guest, a request listing, a world without a
 // flow. The owner's share buttons are secondary, so the owner's detail shows no primary.
 import { afterEach, describe, expect, it, vi } from 'vitest';
+vi.mock('../../giving/RidePlaceField', () => ({ RidePlaceField: () => null }));
+vi.mock('../../../hooks/useRidePlaces', () => ({ useRidePlaces: () => ({ data: [], isLoading: false }) }));
+vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarVisibility: () => false, shellTabBarHeightPx: () => 0, useShellTabBarScrollInset: () => 0 }));
 import React from 'react';
 import { cleanup, render, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -35,13 +38,31 @@ vi.mock('../../../services/platformConfirm', () => ({ confirmAction: vi.fn().moc
 vi.mock('../../../hooks/useUserBlock', () => ({
   useUserBlock: () => ({ canBlock: false, isBlocked: false, busy: false, toggle: vi.fn() }),
 }));
-vi.mock('../../../services/ridesKnowledgeComposition', () => ({ ridesKnowledgeRpcs: {} }));
+vi.mock('../../../services/knowledgeBookingComposition', () => {
+  const slot = (id: string, days: number) => ({
+    slotId: id,
+    startsAt: new Date(Date.now() + days * 86_400_000).toISOString(),
+    endsAt: new Date(Date.now() + days * 86_400_000 + 3_600_000).toISOString(),
+    capacity: 2,
+    seatsLeft: 2,
+    myHandoffId: null,
+    myStatus: null,
+  });
+  return {
+    knowledgeBookingUseCases: { listSlots: () => ({ execute: async () => [slot('slot-1', 1), slot('slot-2', 8)] }) },
+    knowledgeSlotsQueryKey: (id: string) => ['knowledge-slots', id],
+    knowledgeBookingsQueryKey: (id: string) => ['knowledge-bookings', id],
+  };
+});
 vi.mock('../../../services/rideSafetyComposition', () => ({ raiseRideEmergency: vi.fn() }));
 vi.mock('../../../lib/analytics', () => ({ track: vi.fn() }));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn() }));
-vi.mock('../../../lib/haptics', () => ({ hapticSuccess: vi.fn() }));
+vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticSuccess: vi.fn() }));
 vi.mock('../ReportListingModal', () => ({ ReportListingModal: () => null }));
 vi.mock('../RideRouteCard', () => ({ RideRouteCard: () => null }));
+// The housing stay section has its own tests (housing/__tests__); not the subject here.
+vi.mock('../housing/HousingStayActions', () => ({ HousingStayActions: () => null }));
+vi.mock('../../closure/OwnerAssignUserButton', () => ({ OwnerAssignUserButton: () => null }));
 // The publisher card and the city lookup pull in Expo modules; neither holds a button.
 vi.mock('../../post-detail/PublisherCard', () => ({ PublisherCard: () => null }));
 vi.mock('../../../hooks/useCityName', () => ({ useCityName: () => null }));
@@ -91,6 +112,7 @@ const BASE = {
   media: [],
   owner: null,
   feedPostId: null,
+  feedHidden: false,
 } satisfies MarketplaceListingDetail;
 
 function renderDetail(overrides: Partial<MarketplaceListingDetail>) {
@@ -112,10 +134,13 @@ describe('listing detail — one primary per screen', () => {
   it.each([
     ['items', 'giving-handoff-reserve'],
     ['food', 'giving-handoff-claim'],
-    ['knowledge', 'giving-handoff-book-slot'],
+    ['knowledge', 'knowledge-slot-book-slot-1'],
     ['rides', 'giving-handoff-book-seat'],
   ])('makes the %s flow action the only primary and the message button secondary', async (worldSlug, flowAction) => {
-    const { container, findByTestId, getByTestId } = renderDetail({ worldSlug });
+    // A knowledge offer books by time slot: a lesson with two upcoming times (#2034).
+    const { container, findByTestId, getByTestId } = renderDetail(
+      worldSlug === 'knowledge' ? { worldSlug, kindSlug: 'lesson_offer' } : { worldSlug },
+    );
     await findByTestId(flowAction);
 
     expect(primaries(container)).toEqual([flowAction]);
@@ -123,7 +148,7 @@ describe('listing detail — one primary per screen', () => {
   });
 
   it.each([
-    ['a world without a flow', { worldSlug: 'housing' }, 'u_viewer'],
+    ['a world without a flow', { worldSlug: 'time' }, 'u_viewer'],
     ['a request listing', { direction: 'request' as const }, 'u_viewer'],
     ['a guest', {}, null],
   ])('makes the message button the only primary for %s', async (_case, overrides, viewerId) => {

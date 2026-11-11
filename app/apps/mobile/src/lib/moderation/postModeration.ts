@@ -1,5 +1,5 @@
 // D33 / D61 — post moderation statuses as the owner and admins see them.
-import type { PostStatus } from '@kc/domain';
+import type { PostStatus, PostStatusBeforeAdminRemoval } from '@kc/domain';
 
 /** Statuses an owner finds in the profile "removed" tab. */
 export const OWNER_MODERATED_POST_STATUSES: readonly PostStatus[] = ['removed_admin', 'hidden_pending_review'];
@@ -18,7 +18,17 @@ export function adminPostActions(
 ): { remove: boolean; restore: boolean } {
   const hidden = status === 'hidden_pending_review';
   return {
-    remove: perms.canRemove && (status === 'open' || hidden),
+    // Any post that is not already removed can be removed (`admin_remove_post`, 0682).
+    remove: perms.canRemove && status !== 'removed_admin',
     restore: perms.canRestore && (status === 'removed_admin' || hidden),
   };
+}
+
+/**
+ * The lane of the owner's "removed" tab a post belongs to, by the status it had before the
+ * admin removal (D-35): a post that was still live (open or paused) or a legacy row with no
+ * saved status goes to `open`; a post that had ended (delivered, closed, expired) to `closed`.
+ */
+export function removedPostLane(statusBefore: PostStatusBeforeAdminRemoval | null): 'open' | 'closed' {
+  return statusBefore === null || statusBefore === 'open' || statusBefore === 'paused' ? 'open' : 'closed';
 }

@@ -19,6 +19,7 @@ export function ReportPostModal({ postId, visible, onClose }: Props) {
       copy={{
         title: t('post.reportTitle'),
         noteLabel: t('post.reportNotePlaceholder'),
+        noteHint: t('moderation.report.noteHint'),
         submitLabel: t('post.reportSubmit'),
         submittingLabel: t('post.reportSubmitting'),
         cancelLabel: t('general.cancel'),

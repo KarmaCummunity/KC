@@ -7,6 +7,7 @@ import { adminOrgApprovalsHe } from './adminOrgApprovals';
 import { adminDonationLinksHe } from './adminDonationLinks';
 import { adminWhatsAppHe } from './adminWhatsApp';
 import { adminMatchingHe } from './adminMatching';
+import { adminOrgTreeHe } from './adminOrgTree';
 import { adminStatsHe } from './adminStats';
 import { adminSurveysHe } from './adminSurveys';
 import { adminTasksHe } from './adminTasks';
@@ -78,7 +79,7 @@ export const adminHe = {
       posts:      'פוסטים',
       users:      'משתמשים',
       chats:      'צ׳אטים',
-      listings:   'מודעות',
+      comments:   'תגובות',
       last7Days:  'שבעה ימים אחרונים',
       last30Days: 'שלושים ימים אחרונים',
       search:     'חיפוש לפי מזהה יעד או שם המדווח',
@@ -89,6 +90,8 @@ export const adminHe = {
       ageDays:        (d: number) => `לפני ${d} ימים`,
       ageHours:       (h: number) => `לפני ${h} שעות`,
       ageMinutes:     (m: number) => `לפני ${m} דקות`,
+      slaWarning:     'ממתין מעל 12 שעות',
+      slaOverdue:     'באיחור (24 שעות)',
     },
   },
   caseDetail: {
@@ -119,9 +122,7 @@ export const adminHe = {
       postKind:    'פוסט',
       userKind:    'משתמש',
       chatKind:    'צ׳אט',
-      listingKind: 'מודעה',
-      openListing: 'פתיחת המודעה',
-      openOwner:   'פתיחת פרופיל המפרסם',
+      commentKind: 'תגובה',
       noPreview:   '(אין תצוגה מקדימה)',
       unnamedUser: '(משתמש ללא שם)',
       openPost:    'פתיחת הפוסט',
@@ -146,6 +147,7 @@ export const adminHe = {
   money: adminMoneyHe,
   whatsapp: adminWhatsAppHe,
   matching: adminMatchingHe,
+  orgTree: adminOrgTreeHe,
   stats: adminStatsHe,
   crm: adminCrmHe,
   orgApprovals: adminOrgApprovalsHe,

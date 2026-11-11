@@ -1,5 +1,5 @@
 // D100 (docs/spec/04_product_structure.md): the Donations hub is ONE list of giving worlds, in
-// the order of `GIVING_WORLD_SLUGS`. Each tile opens its world's screen; a world with no active
+// the order of `GIVING_WORLD_SLUGS` (the hub screen re-orders it per member, FR-DONATE-001 AC8). Each tile opens its world's screen; a world with no active
 // flow yet (launch flag off, D60) is still listed and is marked as a portal.
 import type { Ionicons } from '@expo/vector-icons';
 import type { Href } from 'expo-router';
@@ -29,6 +29,8 @@ const OWN_ROUTE: Readonly<Partial<Record<GivingWorldSlug, string>>> = {
   money: '/(tabs)/donations/money',
   housing: '/(tabs)/donations/housing',
   knowledge: '/(tabs)/donations/knowledge',
+  animals: '/(tabs)/donations/animals',
+  challenges: '/(tabs)/donations/challenges',
 };
 
 /**

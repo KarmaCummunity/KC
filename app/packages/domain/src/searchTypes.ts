@@ -4,6 +4,7 @@
 // ─────────────────────────────────────────────
 
 import type { Category, DonationCategorySlug, PostType } from './value-objects';
+import type { VerificationLevel } from './verificationLevel';
 
 // ── Result types ──────────────────────────────
 
@@ -53,6 +54,8 @@ export interface UserSearchResult {
   readonly cityName: string | null;
   readonly followersCount: number;
   readonly itemsGivenCount: number;
+  /** FR-VERIFY-001 badge; absent = 0. */
+  readonly verificationLevel?: VerificationLevel;
 }
 
 // ── Donation link search result ───────────────

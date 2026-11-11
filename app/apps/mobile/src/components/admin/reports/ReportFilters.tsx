@@ -1,44 +1,47 @@
 // app/apps/mobile/src/components/admin/reports/ReportFilters.tsx
-// FR-ADMIN-012 — chip-based target/age filters + reporter-id search.
+// FR-ADMIN-012 — target-type and age filters for the reports inbox sheet.
 // Rebuilt on top of the shared filterKit (issue #1457).
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import type { ListOpenReportsFilters } from '@kc/application';
 import { makeUseStyles, spacing } from '@kc/ui';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
-import { FilterChipRow } from '../../filterKit/FilterChipRow';
-import { FilterSearchBar } from '../../filterKit/FilterSearchBar';
+import { FilterSection } from '../../filterKit/FilterSection';
 import { Chip } from '../../ui/Chip';
+import { rowDirectionStart } from '../../../lib/rtlLayout';
 
 export interface ReportFiltersProps {
   readonly value: ListOpenReportsFilters;
   readonly onChange: (next: ListOpenReportsFilters) => void;
 }
 
-export function ReportFilters({ value, onChange }: ReportFiltersProps) {
-  const [reporter, setReporter] = useState(value.reporterId ?? '');
+export function countReportFilters(value: ListOpenReportsFilters): number {
+  let n = 0;
+  if (value.targetType) n += 1;
+  if (value.maxAgeDays) n += 1;
+  if (value.reporterId?.trim()) n += 1;
+  return n;
+}
+
+export function ReportFilterSheetSections({ value, onChange }: ReportFiltersProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
 
-  const TYPES: ReadonlyArray<{ readonly key: 'all' | 'post' | 'user' | 'chat' | 'listing'; readonly label: string }> = [
+  const TYPES: ReadonlyArray<{ readonly key: 'all' | 'post' | 'user' | 'chat' | 'comment'; readonly label: string }> = [
     { key: 'all',  label: L.admin.reports.filters.all },
     { key: 'post', label: L.admin.reports.filters.posts },
     { key: 'user', label: L.admin.reports.filters.users },
     { key: 'chat', label: L.admin.reports.filters.chats },
-    { key: 'listing', label: L.admin.reports.filters.listings },
+    { key: 'comment', label: L.admin.reports.filters.comments },
   ];
 
   return (
-    <View style={styles.root}>
-      <FilterChipRow<'all' | 'post' | 'user' | 'chat' | 'listing'>
-        scrollable
-        options={TYPES.map((t) => ({
-          value: t.key,
-          label: t.label,
-        }))}
+    <>
+      <FilterSection<'all' | 'post' | 'user' | 'chat' | 'comment'>
+        options={TYPES.map((t) => ({ value: t.key, label: t.label }))}
         value={value.targetType ?? 'all'}
         onChange={(key) => onChange({ ...value, targetType: key === 'all' || key === null ? null : key })}
-      >
+      />
+      <View style={styles.ageRow}>
         <Chip
           size="sm"
           label={L.admin.reports.filters.last7Days}
@@ -51,19 +54,16 @@ export function ReportFilters({ value, onChange }: ReportFiltersProps) {
           selected={value.maxAgeDays === 30}
           onPress={() => onChange({ ...value, maxAgeDays: value.maxAgeDays === 30 ? null : 30 })}
         />
-      </FilterChipRow>
-      <FilterSearchBar
-        placeholder={L.admin.reports.filters.search}
-        value={reporter}
-        onChangeText={setReporter}
-        onSubmitEditing={() => onChange({ ...value, reporterId: reporter || null })}
-        style={styles.searchWrap}
-      />
-    </View>
+      </View>
+    </>
   );
 }
 
-const useStyles = makeUseStyles(({ colors }) => ({
-  root: { gap: spacing.sm, padding: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
-  searchWrap: { marginBottom: 0 },
+const useStyles = makeUseStyles(() => ({
+  ageRow: {
+    flexDirection: rowDirectionStart,
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
 }));

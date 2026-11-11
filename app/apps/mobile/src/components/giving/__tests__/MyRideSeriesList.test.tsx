@@ -2,6 +2,7 @@
 // FR-RIDE-046 — "my recurring rides": each series with its schedule, pause / resume,
 // cancel behind a confirm step, reschedule through the editor; the empty state.
 import { afterEach, describe, expect, it, vi } from 'vitest';
+vi.mock('../useWorldHeader', () => ({ WorldSubScreenChrome: () => null }));
 import React from 'react';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -21,7 +22,7 @@ vi.mock('react-native-reanimated', async () => (await import('../../ui/__tests__
 vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogTestKit')).hapticsDouble);
 vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 vi.mock('@expo/vector-icons', async () => (await import('../../ui/__tests__/kitDialogTestKit')).iconsDouble);
-vi.mock('../../../lib/haptics', () => ({ hapticSuccess: vi.fn() }));
+vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticSuccess: vi.fn() }));
 vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarScrollInset: () => 0 }));
 vi.mock('../../ui/Screen', () => ({ Screen: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
 vi.mock('../../../services/ridesFeedComposition', () => ({ RIDES_FEED_QUERY_KEY: ['rides-feed'] }));

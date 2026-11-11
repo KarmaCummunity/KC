@@ -46,17 +46,19 @@ export function ChatsPane({
   candidates,
   selectedId,
   onSelect,
+  emptyLabel,
 }: {
   candidates: ClosureCandidate[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  emptyLabel?: string;
 }) {
   const styles = useStyles();
   const { t } = useTranslation();
   if (candidates.length === 0) {
     return (
       <View style={styles.emptyPane}>
-        <Text style={styles.body}>{t('closure.chatsEmpty')}</Text>
+        <Text style={styles.body}>{emptyLabel ?? t('closure.chatsEmpty')}</Text>
       </View>
     );
   }

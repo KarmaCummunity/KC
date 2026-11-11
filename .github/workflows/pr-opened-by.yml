@@ -30,7 +30,7 @@ jobs:
           BODY: ${{ github.event.pull_request.body }}
         run: |
           set -euo pipefail
-          allowed="agent:cursor agent:kc-bot agent:antigravity agent:codex agent:other human"
+          allowed="agent:claude agent:cursor agent:kc-bot agent:antigravity agent:codex agent:other human"
           labels=$(gh pr view "$PR" -R "$REPO" --json labels --jq '.labels[].name')
           found=()
           for l in $allowed; do grep -qxF "$l" <<<"$labels" && found+=("$l"); done
@@ -45,6 +45,16 @@ jobs:
             hits=()
             for l in $allowed; do grep -qwF "$l" <<<"$line" && hits+=("$l"); done
             [ ${#hits[@]} -eq 1 ] && pick="${hits[0]}"
+          fi
+          if [ -z "$pick" ]; then
+            next=$(printf '%s\n' "$BODY" | awk '
+              /^[[:space:]]*#{1,6}[[:space:]]+[Oo]pened by[[:space:]]*$/ { want=1; next }
+              want && /^[[:space:]]*$/ { next }
+              want { gsub(/^[[:space:]]+|[[:space:]]+$/,""); print; exit }
+            ')
+            for l in $allowed; do
+              if [ "$next" = "$l" ]; then pick="$l"; break; fi
+            done
           fi
           if [ -n "$pick" ]; then
             if gh pr edit "$PR" -R "$REPO" --add-label "$pick" >/dev/null 2>&1; then

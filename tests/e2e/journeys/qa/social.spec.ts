@@ -6,14 +6,14 @@ import { STORAGE_B, USER_A, USER_B } from '../../lib/env';
 test('chat: user A messages the owner of a post, user B sees it', async ({ page, browser }) => {
   const b = await sessionFor(USER_B);
   const bId = (b.session.user as { id: string }).id;
-  const [post] = await rest<{ post_id: string }[]>(
+  const [post] = await rest<{ id: string }[]>(
     b.session.access_token as string,
-    `posts?select=post_id&owner_id=eq.${bId}&status=eq.open&limit=1`,
+    `posts?select=id&owner_id=eq.${bId}&status=eq.open&limit=1`,
   );
   test.skip(!post, 'user B has no open post on kc-dev');
   const text = `${runTag()} היי, זה עדיין זמין?`;
-  await gotoApp(page, `/post/${post!.post_id}`);
-  await page.getByText('שלח הודעה למפרסם').first().click();
+  await gotoApp(page, `/post/${post!.id}`);
+  await page.getByText('שלחו הודעה למפרסם').first().click();
   await expect(page).toHaveURL(/\/chat\//, { timeout: 20_000 });
   const input = page.getByPlaceholder('כתוב הודעה...');
   await input.fill(text);
@@ -45,7 +45,7 @@ test('notifications inbox renders', async ({ page }) => {
 test('donations hub shows every giving world with translated titles', async ({ page }) => {
   const errors = trackApiErrors(page);
   await gotoApp(page, '/donations');
-  for (const id of ['items', 'marketplace', 'time', 'money', 'food', 'rides', 'knowledge']) {
+  for (const id of ['items', 'time', 'money', 'food', 'rides', 'knowledge']) {
     await expect(page.getByTestId(`donation-tile-${id}`)).toBeVisible();
   }
   await page.waitForLoadState('networkidle');

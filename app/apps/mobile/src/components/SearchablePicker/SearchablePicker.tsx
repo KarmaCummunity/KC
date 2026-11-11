@@ -8,6 +8,7 @@ import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme, Text } from '@kc/ui';
 import { BottomSheet, TextField } from '../ui';
+import { ErrorBoundary } from '../ErrorBoundary';
 import {
   filterItems,
   freeTextSelection,
@@ -65,7 +66,13 @@ export function SearchablePicker<T>(props: SearchablePickerProps<T>) {
 
   useEffect(() => {
     if (!open) return;
-    const timer = setTimeout(() => searchInputRef.current?.focus(), 100);
+    const timer = setTimeout(() => {
+      try {
+        searchInputRef.current?.focus();
+      } catch {
+        // Safe focus attempt
+      }
+    }, 100);
     return () => clearTimeout(timer);
   }, [open]);
 
@@ -117,8 +124,8 @@ export function SearchablePicker<T>(props: SearchablePickerProps<T>) {
         accessibilityLabel={title}
         accessibilityState={{ disabled: !!disabled }}
       >
-        <Text style={[styles.value, !value ? styles.valuePlaceholder : null]}>
-          {value ? value.name : title}
+        <Text style={[styles.value, !value?.name ? styles.valuePlaceholder : null]}>
+          {value?.name ? value.name : title}
         </Text>
       </TouchableOpacity>
       {disabled && disabledHelperText ? (
@@ -133,71 +140,101 @@ export function SearchablePicker<T>(props: SearchablePickerProps<T>) {
         scrollable={false}
         maxHeight="70%"
       >
-        <View style={styles.sheetContent}>
-          <TextField
-            ref={searchInputRef}
-            label={placeholder}
-            containerStyle={styles.search}
-            placeholder={placeholder}
-            value={query}
-            onChangeText={setQuery}
-            autoCorrect={false}
-            autoCapitalize="none"
-          />
-          {isLoading ? (
-            <View style={styles.statusRow}>
-              <ActivityIndicator color={colors.primary} />
-            </View>
-          ) : error != null ? (
+        <ErrorBoundary
+          boundary="searchable-picker"
+          fallback={({ onRetry }) => (
             <View style={styles.errorBlock}>
               <Text style={styles.errorText}>{resolvedErrorText}</Text>
-              {onErrorRetry ? (
-                <TouchableOpacity
-                  style={styles.retryButton}
-                  onPress={onErrorRetry}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('general.retry')}
-                >
-                  <Text style={styles.retryLabel}>{t('general.retry')}</Text>
-                </TouchableOpacity>
-              ) : null}
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={onRetry}
+                accessibilityRole="button"
+                accessibilityLabel={t('general.retry')}
+              >
+                <Text style={styles.retryLabel}>{t('general.retry')}</Text>
+              </TouchableOpacity>
             </View>
-          ) : (
-            <KcFlashList
-              data={filtered as T[]}
-              keyExtractor={(item, idx) => `${renderRow(item).id}-${idx}`}
-              keyboardShouldPersistTaps="handled"
-              ListHeaderComponent={
-                showFreeTextRow ? (
-                  <TouchableOpacity
-                    style={[styles.row, styles.freeTextRow]}
-                    onPress={handleFreeTextPress}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.freeTextLabel}>
-                      {t('profile.streetPickerUseMyText', { value: trimmedQuery })}
-                    </Text>
-                  </TouchableOpacity>
-                ) : null
-              }
-              ListEmptyComponent={
-                !showFreeTextRow ? <Text style={styles.emptyText}>{resolvedEmptyText}</Text> : null
-              }
-              renderItem={({ item }) => {
-                const row = renderRow(item);
-                return (
-                  <TouchableOpacity
-                    style={styles.row}
-                    onPress={() => handleRowPress(row)}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.rowText}>{row.name}</Text>
-                  </TouchableOpacity>
-                );
-              }}
-            />
           )}
-        </View>
+        >
+          <View style={styles.sheetContent}>
+            <TextField
+              ref={searchInputRef}
+              label={placeholder}
+              containerStyle={styles.search}
+              placeholder={placeholder}
+              value={query}
+              onChangeText={setQuery}
+              autoCorrect={false}
+              autoCapitalize="none"
+            />
+            {isLoading ? (
+              <View style={styles.statusRow}>
+                <ActivityIndicator color={colors.primary} />
+              </View>
+            ) : error != null ? (
+              <View style={styles.errorBlock}>
+                <Text style={styles.errorText}>{resolvedErrorText}</Text>
+                {onErrorRetry ? (
+                  <TouchableOpacity
+                    style={styles.retryButton}
+                    onPress={onErrorRetry}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('general.retry')}
+                  >
+                    <Text style={styles.retryLabel}>{t('general.retry')}</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            ) : (
+              <KcFlashList
+                data={filtered as T[]}
+                keyExtractor={(item, idx) => {
+                  try {
+                    const row = renderRow(item);
+                    return `${row?.id ?? idx}-${idx}`;
+                  } catch {
+                    return String(idx);
+                  }
+                }}
+                keyboardShouldPersistTaps="handled"
+                ListHeaderComponent={
+                  showFreeTextRow ? (
+                    <TouchableOpacity
+                      style={[styles.row, styles.freeTextRow]}
+                      onPress={handleFreeTextPress}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.freeTextLabel}>
+                        {t('profile.streetPickerUseMyText', { value: trimmedQuery })}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null
+                }
+                ListEmptyComponent={
+                  !showFreeTextRow ? <Text style={styles.emptyText}>{resolvedEmptyText}</Text> : null
+                }
+                renderItem={({ item }) => {
+                  let row: SearchablePickerItemDescriptor | null = null;
+                  try {
+                    row = renderRow(item);
+                  } catch {
+                    return null;
+                  }
+                  if (!row || !row.name) return null;
+                  return (
+                    <TouchableOpacity
+                      style={styles.row}
+                      onPress={() => handleRowPress(row)}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.rowText}>{row.name}</Text>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            )}
+          </View>
+        </ErrorBoundary>
       </BottomSheet>
     </>
   );

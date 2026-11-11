@@ -10,6 +10,14 @@ import { readRideRoute, suggestRideArrival, withRidePlace, type RidePlace } from
 const TLV: RidePlace = { kind: 'city', id: '5000', label: 'Tel Aviv', lat: 32.0853, lng: 34.7818, cityId: '5000' };
 const JLM: RidePlace = { kind: 'city', id: '3000', label: 'Jerusalem', lat: 31.7683, lng: 35.2137, cityId: '3000' };
 
+// The native switch does not fire `onValueChange` from a DOM click; a button stands in for it.
+vi.mock('react-native', async () => {
+  const actual = await vi.importActual<typeof import('react-native')>('react-native');
+  const Switch = (p: { testID: string; value: boolean; onValueChange: (on: boolean) => void }) => (
+    <button data-testid={p.testID} data-on={String(p.value)} onClick={() => p.onValueChange(!p.value)} />
+  );
+  return { ...actual, Switch };
+});
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
 // The real field opens native pickers; here each field shows its shortcuts and one "pick" button.
 vi.mock('../../ui/DateTimeField', () => ({
@@ -23,14 +31,19 @@ vi.mock('../../ui/DateTimeField', () => ({
 
 import { RideScheduleFields } from '../RideScheduleFields';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 function Harness({ initial, withSeats = true }: { initial: Record<string, unknown>; withSeats?: boolean }) {
   const [details, setDetails] = useState(initial);
+  const [leaveNow, setLeaveNow] = useState(false);
   return (
     <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
-      <RideScheduleFields details={details} onChange={setDetails} withSeats={withSeats} />
+      <RideScheduleFields details={details} onChange={setDetails} withSeats={withSeats} leaveNow={leaveNow} onLeaveNowChange={setLeaveNow} />
       <output data-testid="details">{JSON.stringify(details)}</output>
+      <output data-testid="leave-now">{String(leaveNow)}</output>
     </ThemeProvider>
   );
 }
@@ -72,5 +85,29 @@ describe('RideScheduleFields', () => {
     fireEvent.click(view.getByTestId('ride-arrives-at-pick'));
     fireEvent.click(view.getByTestId('ride-departs-at-in60'));
     expect(read(view).arrives_at).toBe('2026-12-01T12:00:00.000Z');
+  });
+
+  describe('leave now (#1411)', () => {
+    it('sets the departure a few minutes ahead and suggests the end from the route', () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-11-04T20:00:00Z'));
+      const view = render(<Harness initial={route} />);
+
+      fireEvent.click(view.getByTestId('ride-leave-now'));
+
+      const { departs_at: departs, arrives_at: arrives } = read(view);
+      expect(departs).toBe('2026-11-04T20:05:00.000Z');
+      expect(arrives).toBe(suggestRideArrival(new Date(departs), readRideRoute(route))?.toISOString());
+      expect(view.getByTestId('leave-now').textContent).toBe('true');
+    });
+
+    it.each(['ride-departs-at-in60', 'ride-departs-at-pick'])('turns off when the member picks the time with %s', (testId) => {
+      const view = render(<Harness initial={route} />);
+      fireEvent.click(view.getByTestId('ride-leave-now'));
+
+      fireEvent.click(view.getByTestId(testId));
+
+      expect(view.getByTestId('leave-now').textContent).toBe('false');
+    });
   });
 });

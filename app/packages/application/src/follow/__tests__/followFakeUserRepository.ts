@@ -135,6 +135,7 @@ export class FollowFakeUserRepository implements IUserRepository {
   setBiography = N('setBiography') as IUserRepository['setBiography'];
   setProfileAddressLines = N('setProfileAddressLines') as IUserRepository['setProfileAddressLines'];
   setContactPhone = N('setContactPhone') as IUserRepository['setContactPhone'];
+  setDateOfBirth = N('setDateOfBirth') as IUserRepository['setDateOfBirth'];
   updateEditableProfile = N('updateEditableProfile') as IUserRepository['updateEditableProfile'];
   dismissClosureExplainer = N('dismissClosureExplainer') as IUserRepository['dismissClosureExplainer'];
   dismissFirstPostNudge = N('dismissFirstPostNudge') as IUserRepository['dismissFirstPostNudge'];
@@ -143,7 +144,7 @@ export class FollowFakeUserRepository implements IUserRepository {
   create = N('create') as IUserRepository['create'];
   update = N('update') as IUserRepository['update'];
   delete = N('delete') as IUserRepository['delete'];
-  deleteAccountViaEdgeFunction = N('deleteAccountViaEdgeFunction') as IUserRepository['deleteAccountViaEdgeFunction'];
+  requestAccountDeletion = N('requestAccountDeletion') as IUserRepository['requestAccountDeletion'];
   findByAuthIdentity = N('findByAuthIdentity') as IUserRepository['findByAuthIdentity'];
   createAuthIdentity = N('createAuthIdentity') as IUserRepository['createAuthIdentity'];
   updateNotificationPreferences = N('updateNotificationPreferences') as IUserRepository['updateNotificationPreferences'];
@@ -152,7 +153,6 @@ export class FollowFakeUserRepository implements IUserRepository {
 export function makeUser(overrides: Partial<User> = {}): User {
   return {
     userId: 'u_test',
-    authProvider: 'email',
     shareHandle: 'tester',
     displayName: 'Tester',
     city: 'tlv',
@@ -160,6 +160,7 @@ export function makeUser(overrides: Partial<User> = {}): User {
     profileStreet: null,
     profileStreetNumber: null,
     contactPhone: null,
+    dateOfBirth: null,
     biography: null,
     avatarUrl: null,
     privacyMode: 'Public',
@@ -176,6 +177,7 @@ export function makeUser(overrides: Partial<User> = {}): User {
     followersCount: 0,
     followingCount: 0,
     karmaPoints: 0,
+    verificationLevel: 0,
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
     preferredLanguage: null,

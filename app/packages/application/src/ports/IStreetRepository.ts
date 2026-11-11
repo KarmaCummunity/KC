@@ -2,7 +2,7 @@
 // IStreetRepository — port for the canonical Israeli street reference table.
 // Mapped to SRS: FR-PROFILE-007 AC1 (city-dependent street picker).
 // Adapter lives in @kc/infrastructure-supabase.
-// docs/SSOT/spec/02_profile_and_privacy.md
+// docs/spec/requirements/02_profile_and_privacy.md
 // ─────────────────────────────────────────────
 
 import type { Street } from '@kc/domain';

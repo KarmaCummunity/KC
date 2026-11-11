@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   type LaunchWorldFlagKey,
@@ -5,7 +6,9 @@ import {
   isHubTileLaunchEnabled,
   isMarketplaceWorldLaunchEnabled,
   resolveLaunchWorldEnabled,
+  withTesterActiveWorlds,
 } from '@kc/domain';
+import { isDevEnvironment } from '../config/environment';
 import { fetchRemoteFeatureFlags } from '../services/featureFlagsComposition';
 
 export function useRemoteAppFlags(): RemoteAppFlags | undefined {
@@ -14,7 +17,8 @@ export function useRemoteAppFlags(): RemoteAppFlags | undefined {
     queryFn: fetchRemoteFeatureFlags,
     staleTime: 5 * 60 * 1000,
   });
-  return data;
+  // Tester builds show the housing and knowledge feeds before their remote flag is on (#1630).
+  return useMemo(() => (isDevEnvironment() ? withTesterActiveWorlds(data) : data), [data]);
 }
 
 export function useLaunchWorldEnabled(flagKey: LaunchWorldFlagKey): boolean {

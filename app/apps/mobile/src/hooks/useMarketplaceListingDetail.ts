@@ -7,9 +7,7 @@ export function useMarketplaceListingDetail(listingId: string | undefined) {
     enabled: Boolean(listingId),
     queryFn: async () => {
       if (!listingId) return null;
-      const detail = await marketplaceRepository().getListingDetail(listingId);
-      if (detail) void marketplaceRepository().recordSignal(detail.listingId, 'view');
-      return detail;
+      return marketplaceRepository().getListingDetail(listingId);
     },
   });
 }
@@ -18,6 +16,7 @@ export function useSimilarListings(listingId: string | undefined) {
   return useQuery({
     queryKey: ['marketplace-similar', listingId],
     enabled: Boolean(listingId),
+    staleTime: 60_000,
     queryFn: () => (listingId ? marketplaceRepository().similarListings(listingId, 8) : []),
   });
 }

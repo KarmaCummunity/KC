@@ -46,7 +46,7 @@ interface ScreenProps {
 export function Screen({
   children,
   scroll = false,
-  blobs = 'content',
+  blobs = 'off',
   edges,
   contentContainerStyle,
   style,

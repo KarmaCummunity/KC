@@ -12,7 +12,6 @@ export const ABOUT_WHATSAPP_GROUP_URL =
 export const ABOUT_WHATSAPP_PERSONAL_WA_ME_BASE = 'https://wa.me/972528616878';
 
 export const ABOUT_INSTAGRAM_PROFILE_URL = 'https://www.instagram.com/karma_community_/';
-export const ABOUT_INSTAGRAM_EMBED_URL = `${ABOUT_INSTAGRAM_PROFILE_URL}embed/`;
 export const ABOUT_FACEBOOK_PROFILE_URL = 'https://www.facebook.com/karma.community';
 export const ABOUT_TIKTOK_PROFILE_URL = 'https://www.tiktok.com/@karma_community_';
 

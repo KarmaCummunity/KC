@@ -1,25 +1,31 @@
-// Mapped to spec: FR-FEED-020 AC2 — the top of a giving world's screen: intro, links to the
-// world's own sub-screens (my handoffs, my rides…) and optional extra content. The curated links
-// list is not here: it sits under the feed (`WorldLinksSection`) so the feed is the first thing seen.
+// Mapped to spec: FR-FEED-020 AC2 — the top of a giving world's feed: a one-line intro and
+// optional extra content. The world's own screens are a menu under the world title in the TopBar (`useWorldHeader`) and the
+// search / filters sit in the world's filter sheet, so the feed is the first thing seen, as on
+// the main feed. The curated links list sits under the feed (`WorldLinksSection`).
 // There are no request / offer buttons: the "+" tab opens the form on this world (D100).
 import React from 'react';
 import { View } from 'react-native';
-import { useRouter, type Href } from 'expo-router';
+import type { Href } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing, Text } from '@kc/ui';
-import { IconTile } from '../ui/IconTile';
-import { GhostButton } from '../ui/Buttons';
-import { worldHubBaseStyles } from './worldHubStyles';
+import { makeUseStyles, iconSize, spacing, typography, useTheme, Text } from '@kc/ui';
+import { rowDirectionStart } from '../../lib/rtlLayout';
+import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  hero: worldHubBaseStyles(colors).hero,
-  body: worldHubBaseStyles(colors).body,
-  links: {
-    flexDirection: 'row' as const,
-    flexWrap: 'wrap' as const,
+  intro: {
+    flexDirection: rowDirectionStart,
+    alignItems: 'center' as const,
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+  },
+  introText: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    flex: 1,
+    textAlign: rtlTextAlignStart,
   },
 }));
 
@@ -31,37 +37,24 @@ export interface WorldSubScreenLink {
 }
 
 export interface WorldHubHeaderProps {
-  readonly icon: 'car-outline' | 'school-outline' | 'gift-outline' | 'restaurant-outline' | 'home-outline' | 'time-outline';
+  readonly icon: 'car-outline' | 'school-outline' | 'gift-outline' | 'restaurant-outline' | 'home-outline' | 'time-outline' | 'paw-outline' | 'trophy-outline';
   readonly introKey: string;
-  /** The world's own screens, in display order. */
+  /** The world's own screens, in display order (the title menu, `useWorldHeader`). */
   readonly subScreens?: readonly WorldSubScreenLink[];
-  /** Extra header content under the links (e.g. the rides route search). */
+  /** Extra header content under the intro (e.g. the time world's opportunities). */
   readonly headerExtra?: React.ReactNode;
 }
 
-export function WorldHubHeader({ icon, introKey, subScreens = [], headerExtra }: WorldHubHeaderProps) {
+export function WorldHubHeader({ icon, introKey, headerExtra }: Omit<WorldHubHeaderProps, 'subScreens'>) {
   const { t } = useTranslation();
-  const router = useRouter();
+  const { colors } = useTheme();
   const styles = useStyles();
   return (
     <>
-      <View style={styles.hero}>
-        <IconTile icon={icon} size="lg" />
-        <Text style={styles.body}>{t(introKey)}</Text>
+      <View style={styles.intro}>
+        <Ionicons name={icon} size={iconSize.md} color={colors.primary} />
+        <Text style={styles.introText} numberOfLines={2}>{t(introKey)}</Text>
       </View>
-      {subScreens.length > 0 ? (
-        <View style={styles.links}>
-          {subScreens.map((link) => (
-            <GhostButton
-              key={link.testID}
-              testID={link.testID}
-              size="sm"
-              label={t(link.labelKey)}
-              onPress={() => router.push(link.path)}
-            />
-          ))}
-        </View>
-      ) : null}
       {headerExtra}
     </>
   );

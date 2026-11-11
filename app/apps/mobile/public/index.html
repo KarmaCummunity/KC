@@ -5,6 +5,16 @@
     <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <title>%WEB_TITLE%</title>
+    <!-- FR-SETTINGS-018: apply the stored UI language's direction before the bundle runs; style
+         modules read `dir` at load time, before the app's own bootstrap (key: src/i18n/language.ts). -->
+    <script>
+      try {
+        if (localStorage.getItem('kc.appLanguage') === 'en') {
+          document.documentElement.dir = 'ltr';
+          document.documentElement.lang = 'en';
+        }
+      } catch (e) {}
+    </script>
 
     <!-- PWA: Android/Chrome install + home-screen shortcuts need manifest + 192/512 PNGs (favicon.ico alone is too small). -->
     <link rel="manifest" href="/manifest.json" />

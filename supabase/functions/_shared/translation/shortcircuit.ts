@@ -2,7 +2,7 @@
 // Server-side guards: skip work that should never be translated, and skip
 // when source and target are the same base language. Mirrors @kc/domain
 // (re-implemented because Deno cannot import the workspace package here).
-// Shared by the KC `translate` and GLOWE `glowe-translate` Edge Functions.
+// Used by the KC `translate` Edge Function.
 
 const EMOJI_OR_SPACE = /^[\p{Extended_Pictographic}\p{Emoji_Component}\s]+$/u;
 const URL_ONLY = /^\s*https?:\/\/\S+\s*$/u;
@@ -29,7 +29,7 @@ export function needsTranslation(source: string | null, target: string): boolean
   return baseLang(source) !== baseLang(target);
 }
 
-// Script heuristics mirroring glowe-translate.js sameLanguageSkip — blocks
+// Script heuristics — blocks
 // he→he / en→en provider calls when detection is null or wrong.
 const HEBREW = /[\u0590-\u05FF]/;
 const NON_LATIN = /[\u0590-\u05FF\u0600-\u06FF\u0400-\u04FF\u0370-\u03FF\u4E00-\u9FFF]/;

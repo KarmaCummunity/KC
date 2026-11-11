@@ -5,6 +5,8 @@
 //
 // `extraIcon` slot: the feed renders the filter/sort icon there so it's visible
 // only on the feed and disappears when navigating to another tab (FR-FEED-004).
+// The Admin Portal shortcut renders on every top bar, for admins only (FR-ADMIN-011 AC6).
+// Stack screens pass `title` (shown instead of the logo) and a back button in `startIcon`.
 import React from 'react';
 import { Image, Platform, TouchableOpacity, View, type ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -15,6 +17,7 @@ import { useChatStore } from '../store/chatStore';
 import { useAuthStore } from '../store/authStore';
 import { useNotificationInboxBadge } from '../hooks/useNotificationInboxBadge';
 import { isLayoutRtl } from '../lib/rtlLayout';
+import { AdminPortalIcon } from './AdminPortalIcon';
 
 /**
  * Pin the notification badge to the icon's reading-end corner.
@@ -29,9 +32,13 @@ function badgeCornerEnd(): Pick<ViewStyle, 'left' | 'right' | 'end'> {
 interface TopBarProps {
   /** Optional icon rendered between the logo and the settings icon. */
   extraIcon?: React.ReactNode;
+  /** Optional icon rendered at the reading start, before the chat icon (a back button). */
+  startIcon?: React.ReactNode;
+  /** Screen title shown in place of the logo (a string, or a node such as a menu button). */
+  title?: React.ReactNode;
 }
 
-export function TopBar({ extraIcon }: TopBarProps = {}) {
+export function TopBar({ extraIcon, startIcon, title }: TopBarProps = {}) {
   const router = useRouter();
   const { t } = useTranslation();
   const styles = useTopBarStyles();
@@ -44,21 +51,35 @@ export function TopBar({ extraIcon }: TopBarProps = {}) {
 
   return (
     <View style={styles.topBar}>
-      <TouchableOpacity
-        testID="topbar-chat"
-        style={styles.iconBtn}
-        onPress={() => router.push('/chat/')}
-        accessibilityLabel={t('chat.title')}
-      >
-        <Ionicons name="chatbubbles-outline" size={iconSize['2xl']} color={colors.textPrimary} />
-        {chatUnread > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{chatDisplay}</Text>
-          </View>
-        )}
-      </TouchableOpacity>
-      <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
-      <View style={styles.rightGroup}>
+      <View style={styles.sideGroup}>
+        {startIcon}
+        <TouchableOpacity
+          testID="topbar-chat"
+          style={styles.iconBtn}
+          onPress={() => router.push('/chat/')}
+          accessibilityLabel={t('chat.title')}
+        >
+          <Ionicons name="chatbubbles-outline" size={iconSize['2xl']} color={colors.textPrimary} />
+          {chatUnread > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{chatDisplay}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        <AdminPortalIcon />
+      </View>
+      {title === undefined ? (
+        <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
+      ) : (
+        <View style={styles.titleSlot}>
+          {typeof title === 'string' ? (
+            <Text style={styles.title} numberOfLines={1}>{title}</Text>
+          ) : (
+            title
+          )}
+        </View>
+      )}
+      <View style={styles.sideGroup}>
         {extraIcon}
         <TouchableOpacity
           testID="topbar-notifications"
@@ -98,8 +119,10 @@ const useTopBarStyles = makeUseStyles(({ colors }) => ({
     backgroundColor: colors.surfaceCream,
   },
   iconBtn: { padding: spacing.xs, position: 'relative' as const },
-  rightGroup: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.xs },
+  sideGroup: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.xs },
   logo: { height: 32, width: 80 },
+  titleSlot: { flex: 1, alignItems: 'center' as const, paddingHorizontal: spacing.xs },
+  title: { ...typography.h4, color: colors.textPrimary, textAlign: 'center' as const },
   badge: {
     position: 'absolute' as const,
     top: 0,

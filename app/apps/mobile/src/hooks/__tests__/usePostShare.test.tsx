@@ -7,7 +7,7 @@ vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => k
 vi.mock('../../store/authStore', () => ({ useAuthStore: (sel: (s: { session: { userId: string } | null }) => unknown) => sel({ session: mocks.viewer.id ? { userId: mocks.viewer.id } : null }) }));
 vi.mock('../../store/feedSessionStore', () => ({ useFeedSessionStore: (sel: (s: { showEphemeralToast: typeof mocks.toast }) => unknown) => sel({ showEphemeralToast: mocks.toast }) }));
 vi.mock('../../lib/sharePost', () => ({ sharePost: mocks.share }));
-vi.mock('../../lib/haptics', () => ({ hapticLightTap: mocks.hapticLight, hapticSuccess: mocks.hapticSuccess }));
+vi.mock('../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticLightTap: mocks.hapticLight, hapticSuccess: mocks.hapticSuccess }));
 vi.mock('@kc/infrastructure-supabase', () => ({ getSupabaseClient: () => ({ storage: { from: () => ({ getPublicUrl: mocks.publicUrl }) } }) }));
 vi.mock('date-fns', async (original) => ({ ...(await original()), formatDistanceToNow: () => 'recently' }));
 vi.mock('console', () => ({ ...console, warn: mocks.warns }));

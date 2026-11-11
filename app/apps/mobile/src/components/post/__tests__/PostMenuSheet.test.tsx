@@ -19,7 +19,7 @@ vi.mock('../../../hooks/useModalHardwareBack', () => ({ useModalHardwareBack: ()
 vi.mock('../../../lib/container', () => ({
   container: { socialFeed: { hidePost: () => Promise.resolve(), addMuteFilter: () => Promise.resolve() } },
 }));
-vi.mock('../../../lib/haptics', () => ({ hapticLightTap: () => {} }));
+vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticLightTap: () => {} }));
 vi.mock('../../../hooks/usePostMenuActions', () => ({
   usePostMenuActions: () => ({
     busy: false,
@@ -34,12 +34,23 @@ vi.mock('../../../hooks/usePostActorPrivacyModel', () => ({ shouldShowPostExposu
 // Sibling overlays opened from the menu are covered by their own tests.
 vi.mock('../ConfirmActionModal', () => ({ ConfirmActionModal: () => null }));
 vi.mock('../ReportPostModal', () => ({ ReportPostModal: () => null }));
+vi.mock('../../marketplace/ReportListingModal', () => ({ ReportListingModal: () => null }));
 vi.mock('../PostMenuExposureBlock', () => ({ PostMenuExposureBlock: () => null }));
+vi.mock('expo-router', () => ({ useRouter: () => ({ back: vi.fn(), canGoBack: () => true }) }));
+const blockMock = { canBlock: true, isBlocked: false, busy: false, toggle: vi.fn(async () => false) };
+vi.mock('../../../hooks/useUserBlock', () => ({ useUserBlock: () => blockMock }));
+
+// Captures the deferred work so a test decides when the sheet has "finished dismissing".
+const deferred: Array<() => void | Promise<void>> = [];
+vi.mock('../../../lib/runAfterBottomSheetDismiss', () => ({
+  runAfterBottomSheetDismiss: (work: () => void | Promise<void>) => void deferred.push(work),
+}));
 
 import { PostMenuSheet } from '../PostMenuSheet';
 
 afterEach(() => {
   cleanup();
+  deferred.length = 0;
   vi.clearAllMocks();
 });
 
@@ -66,9 +77,16 @@ function renderMenu(viewerId: string | null, overrides: { visible?: boolean; isS
 }
 
 describe('PostMenuSheet', () => {
-  it('shows a viewer share, hide, mute, report and save', () => {
+  it('shows a viewer share, hide, mute, block, report and save', () => {
     const { getByRole, queryByRole } = renderMenu('u_viewer');
-    for (const name of ['post.menuShare', 'post.menuHideFromFeed', 'feedSettings.menuMuteUser', 'post.report', 'post.menuSave']) {
+    for (const name of [
+      'post.menuShare',
+      'post.menuHideFromFeed',
+      'feedSettings.menuMuteUser',
+      'moderation.block.block',
+      'post.report',
+      'post.menuSave',
+    ]) {
       expect(getByRole('button', { name })).toBeTruthy();
     }
     expect(queryByRole('button', { name: 'post.menuDelete' })).toBeNull();
@@ -84,6 +102,17 @@ describe('PostMenuSheet', () => {
   it('renders nothing while closed', () => {
     const { queryByRole } = renderMenu('u_viewer', { visible: false });
     expect(queryByRole('button', { name: 'post.menuSave' })).toBeNull();
+  });
+
+  // #2062: iOS drops a native Alert raised while the menu modal is still closing, so the block
+  // confirmation never appeared. It must wait until the sheet has finished dismissing.
+  it('asks to confirm a block only after the sheet has finished dismissing', () => {
+    const { getByRole, onClose } = renderMenu('u_viewer');
+    fireEvent.click(getByRole('button', { name: 'moderation.block.block' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(blockMock.toggle).not.toHaveBeenCalled();
+    deferred.forEach((work) => void work());
+    expect(blockMock.toggle).toHaveBeenCalledTimes(1);
   });
 
   it('saves, then closes', () => {

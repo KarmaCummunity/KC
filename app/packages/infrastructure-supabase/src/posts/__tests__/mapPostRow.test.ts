@@ -1,219 +1,154 @@
-import { describe, it, expect } from 'vitest';
-import {
-  mapPostRow,
-  mapPostWithOwnerRow,
-  type PostJoinedRow,
-  type PostWithOwnerJoinedRow,
-} from '../mapPostRow';
+import { describe, expect, it } from 'vitest';
+import { createFakeClient } from '../../__tests__/fakeBaselineClient';
+import { mapCardToPost, mapCardToPostWithOwner, mapMediaRow, detailNumber, detailString } from '../mapPostRow';
+import { loadPostCatalog } from '../postCatalog';
+import { KIND_ROWS, SUBCATEGORY_ROWS, makeCard, ok } from './cardFixtures';
 
-// Minimal valid PostRow shape — only the fields the mapper reads. Cast through
-// `unknown` to bypass the strict Database.Row interface; the mapper itself
-// guards against null/undefined where it matters.
-function makeRow(overrides: Partial<PostJoinedRow> = {}): PostJoinedRow {
-  return {
-    post_id: 'p_1',
-    owner_id: 'u_1',
-    type: 'Give',
-    status: 'open',
-    visibility: 'Public',
-    title: 'A title',
-    description: 'A description',
-    category: 'Furniture',
-    city: 'IL-001',
-    street: null,
-    street_number: null,
-    location_display_level: 'CityOnly',
-    item_condition: 'Good',
-    urgency: 'Normal',
-    reopen_count: 0,
-    delete_after: null,
-    created_at: '2026-05-16T12:00:00.000Z',
-    updated_at: '2026-05-16T12:00:00.000Z',
-    ...overrides,
-  } as unknown as PostJoinedRow;
+async function catalog() {
+  const { client } = createFakeClient({
+    tables: { item_subcategories: ok(SUBCATEGORY_ROWS), post_kinds: ok(KIND_ROWS) },
+  });
+  return loadPostCatalog(client);
 }
 
-describe('mapPostRow (TD-50)', () => {
-  it('maps the basic shape with no joins', () => {
-    const out = mapPostRow(makeRow());
-    expect(out.postId).toBe('p_1');
-    expect(out.ownerId).toBe('u_1');
-    expect(out.type).toBe('Give');
-    expect(out.title).toBe('A title');
-    expect(out.address.city).toBe('IL-001');
-    expect(out.address.cityName).toBe('IL-001'); // falls back to city when city_ref missing
-    expect(out.mediaAssets).toEqual([]);
-    expect(out.recipient).toBeNull();
-  });
+describe('mapCardToPost', () => {
+  it('maps the card of an item offer to the domain post', async () => {
+    const post = mapCardToPost(makeCard(), { catalog: await catalog() });
 
-  it('maps estimated_value → estimatedValue, defaulting null (FR-KARMA-004)', () => {
-    expect(mapPostRow(makeRow({ estimated_value: 250 })).estimatedValue).toBe(250);
-    expect(mapPostRow(makeRow()).estimatedValue).toBeNull();
-  });
-
-  it('maps source_language → sourceLanguage when present (FR-TRANSLATE)', () => {
-    expect(mapPostRow(makeRow({ source_language: 'en' })).sourceLanguage).toBe('en');
-  });
-
-  it('defaults sourceLanguage to null when source_language is absent (FR-TRANSLATE)', () => {
-    expect(mapPostRow(makeRow()).sourceLanguage).toBeNull();
-  });
-
-  it('maps listing_id → listingId for a feed mirror, null for a plain post (D-206)', () => {
-    expect(mapPostRow(makeRow({ listing_id: 'l_1' })).listingId).toBe('l_1');
-    expect(mapPostRow(makeRow()).listingId).toBeNull();
-  });
-
-  it('maps listing_world_slug → listingWorldSlug, null when absent (FR-FEED-020)', () => {
-    expect(mapPostRow(makeRow({ listing_id: 'l_1', listing_world_slug: 'rides' })).listingWorldSlug).toBe('rides');
-    expect(mapPostRow(makeRow()).listingWorldSlug).toBeNull();
-  });
-
-  it('maps each media asset bucket, defaulting to post-images (D-206)', () => {
-    const row = makeRow({
-      media_assets: [
-        { media_asset_id: 'm_2', post_id: 'p_1', ordinal: 1, path: 'u/b/1.jpg', mime_type: 'image/jpeg', size_bytes: 10, created_at: 'x', bucket: 'listing-images' },
-        { media_asset_id: 'm_1', post_id: 'p_1', ordinal: 0, path: 'u/b/0.jpg', mime_type: 'image/jpeg', size_bytes: 10, created_at: 'x', bucket: 'post-images' },
-      ] as unknown as PostJoinedRow['media_assets'],
+    expect(post).toMatchObject({
+      postId: 'post-1',
+      ownerId: 'owner-1',
+      type: 'Give',
+      status: 'open',
+      visibility: 'Public',
+      title: 'Sofa',
+      description: 'Three seats',
+      category: 'Furniture',
+      itemCondition: 'Good',
+      estimatedValue: 120,
+      urgency: null,
+      locationDisplayLevel: 'CityAndStreet',
+      listingId: null,
+      listingWorldSlug: null,
+      reopenCount: 0,
     });
-    expect(mapPostRow(row).mediaAssets.map((m) => [m.path, m.bucket])).toEqual([
-      ['u/b/0.jpg', 'post-images'],
-      ['u/b/1.jpg', 'listing-images'],
+    expect(post.address).toEqual({ city: 'IL-001', cityName: 'Tel Aviv', street: '', streetNumber: '' });
+    expect(post.mediaAssets).toEqual([
+      expect.objectContaining({ mediaAssetId: 'm1', bucket: 'post-images', path: 'owner-1/b/0.jpg' }),
     ]);
   });
 
-  it('uses city_ref.name_he when present', () => {
-    const out = mapPostRow(makeRow({ city_ref: { name_he: 'תל אביב' } }));
-    expect(out.address.cityName).toBe('תל אביב');
+  it('maps a request, an unknown subcategory and an urgency note', async () => {
+    const card = makeCard({
+      direction: 'request',
+      item_subcategory_id: 'sub-unknown',
+      details: { urgency_note: 'by Friday' },
+      cover_media: null,
+    });
+
+    const post = mapCardToPost(card, { catalog: await catalog() });
+
+    expect(post.type).toBe('Request');
+    expect(post.category).toBe('Other');
+    expect(post.urgency).toBe('by Friday');
+    expect(post.itemCondition).toBeNull();
+    expect(post.mediaAssets).toEqual([]);
   });
 
-  it('sorts media_assets by ordinal ascending', () => {
-    const out = mapPostRow(
-      makeRow({
-        media_assets: [
-          {
-            media_asset_id: 'm_3',
-            post_id: 'p_1',
-            path: '/c',
-            mime_type: 'image/jpeg',
-            size_bytes: 30,
-            ordinal: 3,
-            created_at: '2026-05-16T12:00:00.000Z',
-          },
-          {
-            media_asset_id: 'm_1',
-            post_id: 'p_1',
-            path: '/a',
-            mime_type: 'image/jpeg',
-            size_bytes: 10,
-            ordinal: 1,
-            created_at: '2026-05-16T12:00:00.000Z',
-          },
-          {
-            media_asset_id: 'm_2',
-            post_id: 'p_1',
-            path: '/b',
-            mime_type: 'image/jpeg',
-            size_bytes: 20,
-            ordinal: 2,
-            created_at: '2026-05-16T12:00:00.000Z',
-          },
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ] as any,
-      }),
-    );
-    expect(out.mediaAssets.map((m) => m.mediaAssetId)).toEqual(['m_1', 'm_2', 'm_3']);
+  it('ignores a condition that is not one of the known values', async () => {
+    const post = mapCardToPost(makeCard({ details: { item_condition: 'Mint' } }), { catalog: await catalog() });
+    expect(post.itemCondition).toBeNull();
   });
 
-  it('maps populated recipient join (without user)', () => {
-    const out = mapPostRow(
-      makeRow({
-        recipient: {
-          post_id: 'p_1',
-          recipient_user_id: 'u_2',
-          marked_at: '2026-05-15T10:00:00.000Z',
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any,
+  it('treats a post of another world as a listing of that world', async () => {
+    const post = mapCardToPost(makeCard({ id: 'ride-1', world_slug: 'rides', post_type: 'ride' }), {
+      catalog: await catalog(),
+    });
+
+    expect(post.listingId).toBe('ride-1');
+    expect(post.listingWorldSlug).toBe('rides');
+  });
+
+  it('takes the street from the owner-only location, and the extras from the page', async () => {
+    const post = mapCardToPost(makeCard({ status: 'deleted_no_recipient' }), {
+      catalog: await catalog(),
+      street: { street: 'Herzl', streetNumber: '5' },
+      extras: {
+        geo: null,
+        sourceLanguage: 'he',
+        statusBeforeRemoval: null,
+        challengeId: 'ch-1',
+        purgeAfter: '2026-02-01T00:00:00Z',
+        recipient: null,
+      },
+    });
+
+    expect(post.address).toMatchObject({ street: 'Herzl', streetNumber: '5' });
+    expect(post).toMatchObject({ sourceLanguage: 'he', challengeId: 'ch-1', deleteAfter: '2026-02-01T00:00:00Z' });
+  });
+
+  it('uses the whole gallery when the detail loaded it', async () => {
+    const gallery = [
+      mapMediaRow({
+        id: 'a', post_id: 'post-1', owner_id: 'owner-1', kind: 'image', storage_bucket: 'post-images',
+        storage_key: 'owner-1/b/0.jpg', ordinal: 0, mime_type: 'image/jpeg', size_bytes: 10, width: null,
+        height: null, duration_ms: null, blurhash: null, processing_status: 'pending', created_at: '2026-01-01T00:00:00Z',
       }),
-    );
-    expect(out.recipient).toEqual({
-      postId: 'p_1',
-      recipientUserId: 'u_2',
-      markedAt: '2026-05-15T10:00:00.000Z',
+    ];
+
+    const post = mapCardToPost(makeCard(), { catalog: await catalog(), media: gallery });
+
+    expect(post.mediaAssets).toEqual(gallery);
+    expect(post.mediaAssets[0]).toMatchObject({ mimeType: 'image/jpeg', sizeBytes: 10, path: 'owner-1/b/0.jpg' });
+  });
+});
+
+describe('mapCardToPostWithOwner', () => {
+  it('carries the owner shown on the card and the distance in km', async () => {
+    const post = mapCardToPostWithOwner(makeCard(), { catalog: await catalog(), distanceM: 2500 });
+
+    expect(post).toMatchObject({
+      ownerName: 'Dana',
+      ownerHandle: 'dana',
+      ownerAvatarUrl: 'https://img/dana.png',
+      ownerVerificationLevel: 2,
+      ownerProfileNavigableFromPost: true,
+      distanceKm: 2.5,
+      recipientUser: null,
+    });
+  });
+
+  it('shows a masked poster as anonymous: no owner fields and no profile link (FR-POST-021)', async () => {
+    const masked = makeCard({
+      owner_identity_masked: true,
+      owner_id: null,
+      owner_display_name: null,
+      owner_share_handle: null,
+      owner_avatar_url: null,
+      owner_verification_level: null,
+    });
+
+    const post = mapCardToPostWithOwner(masked, { catalog: await catalog() });
+
+    expect(post).toMatchObject({
+      ownerId: '',
+      ownerName: null,
+      ownerHandle: '',
+      ownerAvatarUrl: null,
+      ownerVerificationLevel: 0,
+      ownerProfileNavigableFromPost: false,
+      distanceKm: null,
     });
   });
 });
 
-describe('mapPostWithOwnerRow (TD-50)', () => {
-  function makeOwnerRow(overrides: Partial<PostWithOwnerJoinedRow> = {}): PostWithOwnerJoinedRow {
-    return {
-      ...makeRow(),
-      owner: {
-        user_id: 'u_1',
-        display_name: 'אבי',
-        avatar_url: 'https://cdn.example.com/a.jpg',
-        share_handle: 'avi',
-        privacy_mode: 'Public',
-      },
-      ...overrides,
-    } as PostWithOwnerJoinedRow;
-  }
-
-  it('maps populated owner', () => {
-    const out = mapPostWithOwnerRow(makeOwnerRow());
-    expect(out.ownerName).toBe('אבי');
-    expect(out.ownerHandle).toBe('avi');
-    expect(out.ownerAvatarUrl).toBe('https://cdn.example.com/a.jpg');
-    expect(out.ownerPrivacyMode).toBe('Public');
-    expect(out.recipientUser).toBeNull();
-    expect(out.distanceKm).toBeNull();
-  });
-
-  it('returns ownerName: null when owner is null (orphan FK); UI renders placeholder', () => {
-    const out = mapPostWithOwnerRow(makeOwnerRow({ owner: null }));
-    expect(out.ownerName).toBeNull();
-    expect(out.ownerAvatarUrl).toBeNull();
-    expect(out.ownerHandle).toBe('');
-    expect(out.ownerPrivacyMode).toBe('Public');
-  });
-
-  it('maps populated recipientUser when the recipient join has a user', () => {
-    const out = mapPostWithOwnerRow(
-      makeOwnerRow({
-        recipient: {
-          post_id: 'p_1',
-          recipient_user_id: 'u_9',
-          marked_at: '2026-05-15T10:00:00.000Z',
-          user: {
-            user_id: 'u_9',
-            display_name: 'דנה',
-            share_handle: 'dana',
-            avatar_url: null,
-          },
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any,
-      }),
-    );
-    expect(out.recipientUser).toEqual({
-      userId: 'u_9',
-      displayName: 'דנה',
-      shareHandle: 'dana',
-      avatarUrl: null,
-    });
-  });
-
-  it('recipientUser is null when recipient join exists but user is missing', () => {
-    const out = mapPostWithOwnerRow(
-      makeOwnerRow({
-        recipient: {
-          post_id: 'p_1',
-          recipient_user_id: 'u_9',
-          marked_at: '2026-05-15T10:00:00.000Z',
-          user: null,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any,
-      }),
-    );
-    expect(out.recipientUser).toBeNull();
+describe('details helpers', () => {
+  it('read only strings and finite numbers from an object document', () => {
+    expect(detailString({ a: 'x', b: '', c: 1 }, 'a')).toBe('x');
+    expect(detailString({ b: '' }, 'b')).toBeNull();
+    expect(detailString([], 'a')).toBeNull();
+    expect(detailNumber({ n: 5 }, 'n')).toBe(5);
+    expect(detailNumber({ n: '5' }, 'n')).toBeNull();
+    expect(detailNumber(null, 'n')).toBeNull();
   });
 });

@@ -17,7 +17,7 @@ import {
   useTheme,
   Text,
 } from '@kc/ui';
-import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
+import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { ModeRow, PalettePreview, type ModeOption } from '../../src/components/settings/appearanceParts';
@@ -44,7 +44,7 @@ const MODE_OPTIONS: readonly ModeOption[] = [
 ] as const;
 
 export default function AppearanceScreen() {
-  const detailStackScreenOptions = useDetailStackScreenOptions();
+  const shellStackScreenOptions = useShellStackScreenOptions();
   const { t } = useTranslation();
   const { mode, setMode, colors } = useTheme();
   const styles = useScreenStyles();
@@ -53,7 +53,7 @@ export default function AppearanceScreen() {
     <>
       <Stack.Screen
         options={{
-          ...detailStackScreenOptions,
+          ...shellStackScreenOptions,
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.primary,
           headerTitle: t('settings.appearanceScreen.title'),

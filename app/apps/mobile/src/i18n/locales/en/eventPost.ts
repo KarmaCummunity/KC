@@ -1,0 +1,64 @@
+// English — an organization's event (G1 step 5, D31): the create form's kind and organization
+// choice, the event section of the post page, registration and the organizer's roster.
+// Field and option labels (starts_at, registration_policy, automatic…) live in
+// donations.marketplaceFields.ts; error copy in donations.marketplaceErrors.ts.
+export const eventPost = {
+  create: {
+    kindLabel: 'What are you offering?',
+    kindShift: 'Volunteer shift',
+    kindEvent: 'Organization event',
+    orgLabel: 'Organization',
+    orgRequired: 'Pick the organization the event is for',
+    membershipHint: 'Want to publish an organization\'s event? Members of a registered organization publish events. Register your organization, or ask its admin to add you.',
+    membershipHintCta: 'My organizations',
+  },
+  section: {
+    title: 'Event',
+    startsAt: 'Starts: {{time}}',
+    endsAt: 'Ends: {{time}}',
+    address: 'Address: {{address}}',
+    capacity: 'Spots: {{count}}',
+    policy: 'Registration: {{policy}}',
+  },
+  registration: {
+    register: 'Register',
+    requestToJoin: 'Request to join',
+    cancel: 'Cancel registration',
+    statusReserved: 'Your request is waiting for the organizer’s approval.',
+    statusConfirmed: 'You’re registered.',
+    statusWaitlisted: 'You’re on the waitlist. You’ll move up automatically when a place frees.',
+    leaveWaitlist: 'Leave the waitlist',
+    started: 'Registration is closed: the event has started.',
+  },
+  ownerClose: {
+    cta: 'End the event',
+    confirmTitle: 'End the event?',
+    beforeStart: 'The event has not started yet. Ending it now cancels every registration, and each attendee is notified.',
+    afterStart: 'Registrations stay, and you can still mark who came after the event ends. Only marked attendance earns karma.',
+    neutral: 'Before the event starts, ending it cancels the registrations and each attendee is notified. Once it has started, registrations stay and you can mark who came.',
+    confirm: 'End the event',
+    done: 'The event has ended.',
+  },
+  roster: {
+    title: 'Registrations',
+    summary: '{{confirmed}} confirmed · {{waiting}} waiting for approval · {{waitlisted}} on the waitlist',
+    empty: 'No one has registered yet.',
+    loadError: 'We could not load the registrations. Tap to try again.',
+    nameFallback: 'Member',
+    approve: 'Approve',
+    decline: 'Decline',
+    remove: 'Remove',
+    attended: 'Attended',
+    noshow: 'Didn’t come',
+    waitlistTitle: 'Waitlist',
+    waitlistPosition: '#{{position}} on the waitlist',
+    statusLabel: {
+      reserved: 'Waiting for approval',
+      confirmed: 'Confirmed',
+      waitlisted: 'On the waitlist',
+      cancelled: 'Cancelled',
+      handed_over: 'Attended',
+      no_show: 'Did not come',
+    },
+  },
+} as const;

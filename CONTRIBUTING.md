@@ -1,13 +1,11 @@
 # Contributing to Karma Community (KC)
 
-Thank you for helping improve KC. Process rules for agents: [`CLAUDE.md`](CLAUDE.md).
+Thank you for helping improve KC. Process rules for agents: [`AGENTS.md`](AGENTS.md).
 
 ## Scope
 
 **KC mobile + web export** (`app/apps/mobile/`) and the **shared Supabase backend**
 (`supabase/`, `app/packages/**`) are in scope.
-
-The former GloWe static site was removed (see `D-190` in [`docs/SSOT/DECISIONS.md`](docs/SSOT/DECISIONS.md)).
 
 ## Local setup
 
@@ -23,6 +21,6 @@ EAS and store CI: [`app/apps/mobile/README.md`](app/apps/mobile/README.md).
 - Target branch: **`dev`** (not `main`)
 - Do not edit `app/VERSION` (PATCH is bumped automatically on merge into `dev`)
 - Pre-push (from `app/`): `pnpm typecheck && pnpm test && pnpm lint`
-- Include **Mapped to spec** in the PR body (see `CLAUDE.md`)
+- Include **Mapped to spec** in the PR body (see `AGENTS.md`)
 
 Agree to [CLA.md](CLA.md) when opening a PR.

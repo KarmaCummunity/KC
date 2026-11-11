@@ -14,6 +14,7 @@ import { makeUseStyles, radius, spacing, typography, useTheme, Text, iconSize } 
 import { useAdminRoles } from '../../hooks/useAdminRoles';
 import { rowDirectionStart, textAlignStart } from '../../lib/rtlLayout';
 import { useLocaleBundle, type LocaleBundle } from '../../i18n/useLocaleBundle';
+import { useLaunchSurface } from '../../hooks/useLaunchSurface';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -35,6 +36,7 @@ const ITEMS: readonly NavItem[] = [
   { key: 'audit',     href: '/(admin)/audit',   icon: 'time-outline',             perm: 'audit.view_own' },
   { key: 'whatsapp',  href: '/(admin)/whatsapp', icon: 'logo-whatsapp',            perm: 'whatsapp.manage' },
   { key: 'matching',  href: '/(admin)/matching', icon: 'git-compare-outline',      perm: 'matching.view_quality' },
+  { key: 'money',     href: '/(admin)/money',    icon: 'wallet-outline',           perm: 'money.manage' },
   { key: 'donationLinks', href: '/(admin)/donation-links', icon: 'link-outline',     perm: 'donation_links.review' },
   { key: 'stats',     href: '/(admin)/stats',    icon: 'stats-chart-outline',      perm: 'stats.view_platform' },
 ];
@@ -48,18 +50,24 @@ function normalize(href: string): string {
 export function AdminNav({ variant }: { variant: 'sidebar' | 'topbar' }): ReactElement {
   const pathname = usePathname();
   const { roles } = useAdminRoles();
+  const whatsappBotVisible = useLaunchSurface('whatsappBot');
   const { colors } = useTheme();
   const styles = useStyles();
   const L = useLocaleBundle();
   const labels = L.admin.nav;
 
   const items = ITEMS.filter(
-    (it) => it.perm == null || hasPermission(roles as readonly AdminRole[], it.perm),
+    (it) =>
+      (it.key !== 'whatsapp' || whatsappBotVisible) &&
+      (it.perm == null || hasPermission(roles as readonly AdminRole[], it.perm)),
   );
   const current = normalize(pathname || '/admin');
 
   const renderItem = (it: NavItem): ReactElement => {
-    const active = current === normalize(it.href);
+    // A section stays highlighted on its sub-routes (e.g. money/accounts); the dashboard
+    // ('/admin') must match exactly or it would be active everywhere.
+    const target = normalize(it.href);
+    const active = current === target || (target !== '/admin' && current.startsWith(`${target}/`));
     const base = variant === 'sidebar' ? styles.sideItem : styles.pill;
     const activeStyle = variant === 'sidebar' ? styles.sideItemActive : styles.pillActive;
     return (

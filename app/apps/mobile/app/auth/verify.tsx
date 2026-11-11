@@ -2,7 +2,7 @@
 // Receives `?token_hash=...&type=signup` from Supabase's confirmation URL,
 // exchanges the token for a session, and lets AuthGate route to onboarding/tabs.
 // Sibling of auth/callback.tsx (OAuth code exchange).
-// docs/SSOT/spec/01_auth_and_onboarding.md
+// docs/spec/requirements/01_auth_and_onboarding.md
 import React, { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -12,10 +12,11 @@ import { getVerifyEmailUseCase } from '../../src/services/authComposition';
 import { useAuthStore } from '../../src/store/authStore';
 import { mapAuthErrorToHebrew } from '../../src/services/authMessages';
 import { AuthProgressScreen, AuthStatusScreen } from '../../src/components/auth/AuthStatusScreen';
+import { LaunchSurfaceGate } from '../../src/components/LaunchSurfaceGate';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
-export default function AuthVerifyScreen() {
+function AuthVerifyScreenContent() {
   const router = useRouter();
   const { t } = useTranslation();
   const params = useLocalSearchParams<{ token_hash?: string; type?: string }>();
@@ -67,4 +68,13 @@ export default function AuthVerifyScreen() {
     );
   }
   return <AuthProgressScreen message={t('auth.verifyingProgress')} />;
+}
+
+/** Hidden while `emailAuth` is off (first launch): sends the visitor away instead of rendering. */
+export default function AuthVerifyScreen() {
+  return (
+    <LaunchSurfaceGate surface="emailAuth" redirectTo="/(auth)">
+      <AuthVerifyScreenContent />
+    </LaunchSurfaceGate>
+  );
 }

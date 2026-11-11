@@ -57,6 +57,27 @@ export function textAlignStart(): 'left' | 'right' {
   return 'left';
 }
 
+/**
+ * `textAlign` toward the reading-start edge for a fixed-direction `TextInput` (numbers, codes;
+ * FR-RESP-006 AC21). Unlike `<Text>`, native inputs do not mirror `left` / `right` under
+ * `forceRTL`, so the physical edge is returned on every platform.
+ */
+export function inputTextAlignStart(): 'left' | 'right' {
+  return isLayoutRtl() ? 'right' : 'left';
+}
+
+/**
+ * Placeholder direction of an empty free-text input. Web resolves an empty `dir="auto"` input
+ * as LTR, and iOS aligns an empty natural-aligned input by the device language, not the app's;
+ * both would push a Hebrew placeholder to the left. Typed text keeps `auto` (FR-RESP-006 AC21).
+ */
+export function emptyInputDirectionStyle(): TextStyle {
+  if (Platform.OS === 'web') {
+    return { ...layoutWritingDirectionStyle(), textAlign: inputTextAlignStart() };
+  }
+  return { textAlign: inputTextAlignStart() };
+}
+
 /** {@link textAlignStart} resolved once at module load (the app reloads on a language switch). */
 export const rtlTextAlignStart: 'left' | 'right' = textAlignStart();
 

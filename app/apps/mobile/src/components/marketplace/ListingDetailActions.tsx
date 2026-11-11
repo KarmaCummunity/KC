@@ -1,6 +1,6 @@
-// KC#1310 — the listing detail's action row, shown per viewer role: the owner can share the
-// listing to the feed (unless it is already mirrored there, D-206); anyone else can message the
-// owner, report the listing or block its owner (FR-MOD-003 AC1). Everyone can share the link. Server failures surface as an
+// KC#1310 — the listing detail's action row, shown per viewer role: anyone but the owner can
+// message the owner, report the listing or block its owner (FR-MOD-003 AC1). Everyone can share
+// the listing's link (a listing is a post, so it is already in the feed). Server failures surface as an
 // alert instead of a silent no-op: a known refusal gets its own copy, anything else the generic
 // copy and a report (#1412).
 //
@@ -15,6 +15,8 @@ import type { MarketplaceListingDetail } from '@kc/domain';
 import { marketplaceRepository } from '../../services/marketplaceComposition';
 import { trackCoreLoop } from '../../lib/analyticsCoreLoop';
 import { listingActionErrorKey, reportListingActionError } from '../../lib/listingActionError';
+import { buildListingShareUrl } from '../../lib/buildListingShareUrl';
+import { resolveWebBaseUrl } from '../../lib/buildPostShareUrl';
 import { PrimaryButton, SecondaryButton } from '../ui/Buttons';
 import { listingFlowHasViewerAction } from './listingFlow';
 import { useUserBlock } from '../../hooks/useUserBlock';
@@ -24,9 +26,11 @@ interface Props {
   /** Signed-in viewer; null for a guest, who sees the viewer actions like any non-owner. */
   readonly viewerId: string | null;
   readonly onReport: () => void;
+  /** Post detail already exposes share, report and block in the header ⋮ menu (G1 step 4a). */
+  readonly moderationInHeader?: boolean;
 }
 
-export function ListingDetailActions({ detail, viewerId, onReport }: Props) {
+export function ListingDetailActions({ detail, viewerId, onReport, moderationInHeader = false }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
   const styles = useStyles();
@@ -39,9 +43,6 @@ export function ListingDetailActions({ detail, viewerId, onReport }: Props) {
       if (changed && router.canGoBack()) router.back();
     });
   };
-  // Items and food listings are mirrored into the feed on publish; the manual share is for
-  // listings that are not in the feed yet.
-  const canShareToFeed = isOwner && detail.feedPostId === null;
   // The flow action (reserve, claim, book) is the screen's primary when the viewer has one.
   const MessageButton = listingFlowHasViewerAction(detail, viewerId) ? SecondaryButton : PrimaryButton;
 
@@ -65,14 +66,10 @@ export function ListingDetailActions({ detail, viewerId, onReport }: Props) {
       router.push(`/chat/${chatId}`);
     });
 
-  const shareToFeed = () =>
-    run('share_to_feed', async () => {
-      const postId = await marketplaceRepository().shareToFeed(detail.listingId);
-      router.push(`/post/${postId}`);
-    });
-
   const shareLink = async () => {
-    const url = `${process.env.EXPO_PUBLIC_WEB_BASE_URL ?? 'https://karma-community-kc.com'}/donations/marketplace/${detail.listingId}`;
+    // Metro inlines EXPO_PUBLIC_* only at a literal read, so the variable is read here.
+    const webBaseUrl = resolveWebBaseUrl({ EXPO_PUBLIC_WEB_BASE_URL: process.env.EXPO_PUBLIC_WEB_BASE_URL });
+    const url = buildListingShareUrl(detail, webBaseUrl);
     await Share.share({ message: `${detail.title}\n${url}`, title: detail.title });
   };
 
@@ -87,25 +84,18 @@ export function ListingDetailActions({ detail, viewerId, onReport }: Props) {
           onPress={() => void startChat()}
         />
       ) : null}
-      <SecondaryButton
-        testID="listing-action-share-link"
-        label={t('marketplace.shareLink')}
-        size="md"
-        onPress={() => void shareLink()}
-      />
-      {canShareToFeed ? (
+      {!moderationInHeader ? (
         <SecondaryButton
-          testID="listing-action-share-feed"
-          label={t('marketplace.shareFeed')}
+          testID="listing-action-share-link"
+          label={t('marketplace.shareLink')}
           size="md"
-          disabled={busy}
-          onPress={() => void shareToFeed()}
+          onPress={() => void shareLink()}
         />
       ) : null}
-      {!isOwner ? (
+      {!isOwner && !moderationInHeader ? (
         <SecondaryButton testID="listing-action-report" label={t('marketplace.report')} size="md" onPress={onReport} />
       ) : null}
-      {block.canBlock && !block.isBlocked ? (
+      {!moderationInHeader && block.canBlock && !block.isBlocked ? (
         <SecondaryButton
           testID="listing-action-block-owner"
           label={t('moderation.block.block')}

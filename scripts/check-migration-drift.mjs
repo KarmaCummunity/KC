@@ -3,7 +3,7 @@
 // matching local migration file.
 //
 // Why this exists: the repo uses SEQUENTIAL migration files (`NNNN_snake.sql`,
-// e.g. `0212_glowe_event_registration.sql`). The Supabase MCP `apply_migration`
+// e.g. `0243_listings_legacy_sync.sql`). The Supabase MCP `apply_migration`
 // tool, however, records TIMESTAMP-format versions (e.g. `20260701130827`) in
 // `supabase_migrations.schema_migrations`. `supabase db push` refuses to run
 // when the remote history has a version with no matching local file ("Remote
@@ -18,7 +18,7 @@
 //
 // Companion: `scripts/reconcile-migration-drift.mjs` runs the CLI itself and
 // emits the same repair commands. Convention it enforces lives in
-// docs/SSOT/OPERATOR_RUNBOOK.md ("Migration application rules") + CLAUDE.md §9.
+// docs/SSOT/OPERATOR_RUNBOOK.md ("Migration application rules") + AGENTS.md §9.
 
 import { appendFileSync, readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -102,6 +102,20 @@ export function repairCommands({ orphans, missing }) {
   return cmds;
 }
 
+/**
+ * True when the text is the table `supabase migration list --linked` prints: a header row
+ * with a LOCAL and a REMOTE column. A project whose ledger is empty (a fresh or just rebuilt
+ * database) prints that table with no remote version in it, which is a valid state, whereas
+ * text without the header (an error, an empty pipe) is not CLI output at all.
+ * @param {string} cliOutput
+ */
+export function hasLedgerTable(cliOutput) {
+  return cliOutput.split('\n').some((line) => {
+    const cells = line.split('|').map((c) => c.trim().toLowerCase());
+    return cells.length >= 2 && cells[0] === 'local' && cells[1] === 'remote';
+  });
+}
+
 function readCliOutput(fileArg) {
   // Explicit file path wins; otherwise read piped stdin (fd 0).
   return readFileSync(fileArg ?? 0, 'utf8');
@@ -123,7 +137,7 @@ function main() {
   const cliOutput = readCliOutput(fileArg);
 
   const remoteVersions = parseRemoteVersions(cliOutput);
-  if (remoteVersions.length === 0) {
+  if (remoteVersions.length === 0 && !hasLedgerTable(cliOutput)) {
     console.error(
       '✗ Could not parse any remote migration versions from the input.\n' +
         '  Expected `supabase migration list --linked` output (piped in or a file path arg).',
@@ -141,6 +155,10 @@ function main() {
   }
   const drift = findDrift({ localVersions, remoteVersions });
 
+  if (drift.ok && remoteVersions.length === 0) {
+    console.log('✓ No migration drift — the remote ledger is empty (a fresh or rebuilt database).');
+    return;
+  }
   if (drift.ok) {
     console.log(
       `✓ No migration drift — ${remoteVersions.length} remote versions all map to local files.`,
@@ -162,7 +180,7 @@ function main() {
     '\nRoot cause: a schema change was applied to dev via the Supabase MCP ' +
       '`apply_migration`\ntool (records a timestamp version) instead of `supabase db push` from a\n' +
       'committed sequential file. This breaks the next `DB deploy` run.\n' +
-      'See docs/SSOT/OPERATOR_RUNBOOK.md → "Migration application rules" and CLAUDE.md §9.\n' +
+      'See docs/SSOT/OPERATOR_RUNBOOK.md → "Migration application rules" and AGENTS.md §9.\n' +
       '\nReconcile the ledger (does not touch schema — only the history table):',
   );
   for (const cmd of repairCommands(drift)) console.error(`  ${cmd}`);

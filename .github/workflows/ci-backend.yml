@@ -2,10 +2,13 @@ name: CI — backend
 
 # Database lane, called by ci.yml when migrations, seed/config, the Supabase
 # adapter package or CI plumbing changed. Boots a fresh local Supabase stack
-# (all migrations + seed.sql), then runs every supabase/tests/*.sql file
-# (incl. rls-lint.sql), the database.types.ts drift check and the SECURITY
-# DEFINER SQL probe integration tests. The migration chain and destructive-op
-# scans are static and run in ci-static-guards.yml.
+# (supabase/migrations: 0001_baseline.sql, then any later migration), runs the
+# pgTAP suites of supabase/tests on an empty scratch database of the same server
+# (plus the reference and content seed loaders, applied twice), the RPC grants
+# check, the database.types.ts drift check, the FSM catalog contract and the
+# SECURITY DEFINER SQL probe / port contract integration tests. The migration
+# chain, destructive-op and baseline-assembly scans are static and run in
+# ci-static-guards.yml.
 
 on:
   workflow_call:
@@ -37,7 +40,7 @@ jobs:
           ACTOR: ${{ github.actor }}
         run: echo "$GH_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
 
-      - name: Start Supabase (applies all migrations + seed.sql)
+      - name: Start Supabase (applies supabase/migrations, the baseline and any later ones)
         run: |
           # Image pulls hit registry rate limits intermittently (`toomanyrequests`
           # on ghcr.io, `Data limit exceeded` on public.ecr.aws) — infra, not a
@@ -51,28 +54,54 @@ jobs:
           done
           exit 1
 
-      - name: Run all DB tests (harness + supabase/tests + flows)
-        # Same runner agents use locally: installs supabase/tests/_harness, then runs the
-        # per-migration tests and the per-world lifecycle flows (G44).
-        run: scripts/run-db-tests.sh
+      # The migrations are built on an empty scratch database of the same server (the state
+      # production starts from; the Supabase shim stands in for the platform objects the
+      # excluded services would create), its pgTAP suites run, and the seed loaders are
+      # proven loadable and idempotent. See docs/db/target-design.md §10.
+      # The supautils extension in the local Postgres image adds "Grant the required privileges"
+      # hints to permission errors of anon/authenticated. For a denied FUNCTION call (no table in the
+      # query) its hook dereferences an empty permission list and the backend dies with signal 11,
+      # taking every connection down. The pgTAP suites assert exactly that denial (anon cannot call
+      # internal functions), so switch the hint feature off for this throwaway stack. It only decorates
+      # error text; the privilege checks themselves are unchanged. Production never calls a denied
+      # function through PostgREST (it hides them), see docs/db/cutover-runbook.md.
+      - name: Disable supautils permission hints (image crash on denied function calls)
+        run: |
+          db_container="$(docker ps --filter 'name=supabase_db_' --format '{{.Names}}' | head -n1)"
+          test -n "$db_container"
+          DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')"
+          # throwaway local stack: supabase_admin shares the local postgres password
+          local_pw="$(sed -E 's#^[a-z]+://[^:]*:([^@]*)@.*#\1#' <<<"$DB_URL")"
+          docker exec -e PGPASSWORD="$local_pw" "$db_container" psql -h 127.0.0.1 -U supabase_admin -d postgres \
+            -v ON_ERROR_STOP=1 -qAt -c "alter system set supautils.hint_roles = ''" -c "select pg_reload_conf()"
+          sleep 2
+          psql "$DB_URL" -X -v ON_ERROR_STOP=1 -qAt <<'SQL'
+          create function public.zz_hint_probe(p text) returns text language sql stable as 'select p';
+          revoke execute on function public.zz_hint_probe(text) from public, anon, authenticated;
+          SQL
+          # A denied call must now fail with a normal 42501 instead of killing the server.
+          out="$(psql "$DB_URL" -X -qAt -c "begin; set local role anon; select public.zz_hint_probe('x'); rollback" 2>&1 || true)"
+          echo "$out" | tail -1
+          psql "$DB_URL" -X -v ON_ERROR_STOP=1 -qAt -c "drop function public.zz_hint_probe(text)"
+          grep -q 'permission denied for function' <<<"$out"
+
+      - name: Migrations apply on an empty database + pgTAP tests + seed loaders
+        run: scripts/run-baseline-tests.sh
 
       - name: Check every client RPC is granted to a client role
-        # Functions are owner/service_role-only by default (0520), so a client RPC whose
+        # Functions are owner/service_role-only by default, so a client RPC whose
         # migration forgot its `grant execute … to authenticated` fails here, not in the app.
         run: |
           set -euo pipefail
           DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')" node scripts/check-rpc-grants.mjs
 
-      # Monthly partition children are created relative to now(), so they are
-      # stripped before the diff; otherwise the check breaks on every 1st of the month.
+      # The generator is the one that produced the committed file: the migrations are applied
+      # to a scratch database of the local stack's server and `@supabase/postgres-meta` (pinned)
+      # reads it; partition children are stripped there (they are created relative to now()).
       - name: Check database.types.ts drift
         run: |
           set -euo pipefail
-          supabase gen types typescript --local | node scripts/strip-partition-types.mjs > /tmp/database.types.ts
-          if ! diff -u app/packages/infrastructure-supabase/src/database.types.ts /tmp/database.types.ts; then
-            echo "::error::database.types.ts is out of date. Run: supabase gen types typescript --local | node scripts/strip-partition-types.mjs > app/packages/infrastructure-supabase/src/database.types.ts"
-            exit 1
-          fi
+          DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')" node scripts/gen-baseline-types.mjs --check
 
       # Node 22 is deliberate (sqlProbes need native WebSocket; do not use .nvmrc).
       - name: Setup pnpm + Turbo cache (Node 22)
@@ -85,6 +114,12 @@ jobs:
         env:
           TURBO_TELEMETRY_DISABLED: '1'
         run: pnpm install --frozen-lockfile
+
+      # Runs vitest directly, not through turbo: a cached test task would skip this
+      # contract when only supabase/migrations changed (turbo does not hash that tree).
+      - name: FSM catalog contract (baseline SQL vs FSM_MACHINES)
+        working-directory: app
+        run: pnpm --filter @kc/infrastructure-supabase exec vitest run src/fsm/__tests__/catalogMatchesSql.test.ts
 
       # The port contract suites (G39) sign in through the anon key, so the three
       # credentials come from the running stack — no CLI demo key is written in
@@ -102,11 +137,42 @@ jobs:
       # sqlProbes: SECURITY DEFINER RPC probes. contract.integration: the port
       # contract suites run against the Supabase adapters with RLS; the same
       # cases run against the in-memory fakes in the frontend lane.
+      # The port contracts sign real members in and give them a city, so the stack needs the same
+      # reference data (cities, streets, worlds, flags) a deployed database gets from the seed loader.
+      - name: Load reference data into the local stack
+        run: |
+          set -euo pipefail
+          REFERENCE_DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')" supabase/seed/reference/load.sh
+
       - name: SQL probes + port contracts (against local stack)
         working-directory: app
         env:
           CI_LOCAL_SUPABASE: 'true'
         run: pnpm --filter @kc/infrastructure-supabase test sqlProbes contract.integration
+
+      - name: Diagnose (on failure)
+        if: failure()
+        continue-on-error: true
+        run: |
+          DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')"
+          U="${DB_URL%/*}/kc_baseline_check"
+          q() { echo "── $1"; psql "$U" -X -v ON_ERROR_STOP=0 -c "$1" 2>&1 | tail -6; }
+          wait_db() { for _ in $(seq 1 30); do psql "$U" -X -Atc "select 1" >/dev/null 2>&1 && return 0; sleep 2; done; }
+          wait_db
+          q "select proacl::text, prosecdef, proconfig::text from pg_proc where proname = 'search_places'"
+          q "select has_function_privilege('anon', 'public.search_places(text,text[],integer)', 'execute') as anon_exec, has_function_privilege('public'::name, 'public.search_places(text,text[],integer)', 'execute') as public_exec"
+          q "select defaclrole::regrole, defaclnamespace::regnamespace, defaclacl::text from pg_default_acl"
+          q "select (select count(*) from public.cities) as cities, (select count(*) from public.road_junctions) as junctions"
+          q "begin; set local role authenticated; select count(*) from public.search_places('ganim'); rollback"
+          wait_db
+          q "select count(*) from public.search_places('ganim')"
+          wait_db
+          q "begin; set local role anon; select count(*) from public.search_places('ganim'); rollback"
+          wait_db
+
+      - name: Database container log (on failure)
+        if: failure()
+        run: docker ps --filter name=supabase_db -q | xargs -r -n1 docker logs --tail 120 2>&1 | sed -E 's/(password|secret|key)=[^ ]+/\1=***/Ig'
 
       - name: Stop Supabase
         if: always()

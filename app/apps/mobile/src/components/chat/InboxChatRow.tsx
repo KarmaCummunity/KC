@@ -10,6 +10,8 @@ import { OnlineDot } from './OnlineDot';
 import { formatRelativeChatTime } from '../../lib/formatRelativeChatTime';
 import { formatInboxPreview } from '../../lib/formatInboxPreview';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { rowDirectionStart } from '../../lib/rtlLayout';
+import { VerificationBadge } from '../VerificationBadge';
 interface Props {
   readonly item: ChatWithPreview;
   readonly onOpen: (chatId: string) => void;
@@ -28,7 +30,9 @@ function InboxChatRowInner({ item, onOpen, onRequestHide }: Props) {
   // Some inbox rows (support/system chats, deleted peers) arrive without a
   // participant; never dereference it blindly.
   const other = item.otherParticipant;
-  const otherName = other?.displayName ?? t('common.deletedUser');
+  // A support thread has no counterpart to name: it carries the support title instead.
+  const otherName =
+    other?.displayName ?? (item.isSupportThread ? t('chat.messaging.supportThreadTitle') : t('common.deletedUser'));
   return (
     <View style={styles.chatRow}>
       <TouchableOpacity style={styles.chatRowMain} onPress={() => onOpen(item.chatId)}>
@@ -45,7 +49,10 @@ function InboxChatRowInner({ item, onOpen, onRequestHide }: Props) {
             <Text style={styles.chatTime}>
               {formatRelativeChatTime(item.lastMessage?.createdAt ?? item.lastMessageAt)}
             </Text>
-            <Text style={styles.chatName}>{otherName}</Text>
+            <View style={styles.chatNameRow}>
+              <Text style={styles.chatName}>{otherName}</Text>
+              <VerificationBadge level={other?.verificationLevel} />
+            </View>
           </View>
           <Text style={styles.chatPreview} numberOfLines={1}>
             {formatInboxPreview(item.lastMessage, t)}
@@ -93,6 +100,7 @@ const useInboxChatRowStyles = makeUseStyles(({ colors }) => ({
   },
   chatInfo: { flex: 1, gap: spacing.xs },
   chatHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  chatNameRow: { flexDirection: rowDirectionStart, alignItems: 'center', gap: spacing.xs },
   chatName: {
     ...typography.body,
     ...typography.semiBold,

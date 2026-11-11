@@ -40,7 +40,7 @@ Two options:
 
 ```bash
 # one-time, per machine:
-cd /path/to/your/clone/of/GloWe
+cd /path/to/your/clone/of/KC
 supabase login
 supabase link --project-ref <project-ref>
 

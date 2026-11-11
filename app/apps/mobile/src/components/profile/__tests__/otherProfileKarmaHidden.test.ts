@@ -1,6 +1,6 @@
 // app/apps/mobile/src/components/profile/__tests__/otherProfileKarmaHidden.test.ts
 //
-// FR-KARMA (legacy `docs/SSOT/spec/14_karma.md`, visibility AC1) and the
+// FR-KARMA (legacy `docs/spec/requirements/14_karma.md`, visibility AC1) and the
 // project book D29 (`docs/spec/07_cross_cutting_systems.md` §7.6): karma is
 // visible to its owner only. Another user's profile must not render a karma
 // value (it also has no data for it: `karma_points` is not a public column).

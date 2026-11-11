@@ -1,29 +1,33 @@
-// Settings → feed: mute keywords, categories and people (0281/0283 feed_mute_filters),
+// Settings → feed: mute keywords, worlds and people (feed_mute_filters),
 // plus quiet hours for social notifications (0256).
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { ALL_CATEGORIES } from '@kc/domain';
-import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
+import { makeUseStyles, spacing, typography, useTheme, Text } from '@kc/ui';
 import { Chip, TextField } from '../../src/components/ui';
-import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
+import { PrimaryButton } from '../../src/components/ui/Buttons';
+import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { rowDirectionStart } from '../../src/lib/rtlLayout';
+import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { container } from '../../src/lib/container';
 import { useFeedMuteFilters } from '../../src/hooks/useFeedMuteFilters';
 import { useNotificationPreferences } from '../../src/hooks/useNotificationPreferences';
+import { FeedSettingsSection } from '../../src/components/settings/FeedSettingsSection';
+import { FeedSettingsWorldsSection } from '../../src/components/settings/FeedSettingsWorldsSection';
+import type { GivingWorldSlug } from '@kc/domain';
 import { QuietHoursSection } from '../../src/components/settings/QuietHoursSection';
 import {
-  findCategoryMute,
   groupMuteFilters,
   isKeywordMuted,
   normalizeMuteKeyword,
 } from '../../src/lib/feedMuteFilters';
 
 export default function FeedSettingsScreen() {
-  const options = useDetailStackScreenOptions();
+  const options = useShellStackScreenOptions();
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const styles = useStyles();
   const { list, add, remove } = useFeedMuteFilters();
@@ -60,115 +64,145 @@ export default function FeedSettingsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ ...options, headerTitle: t('feedSettings.title') }} />
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+      <Stack.Screen
+        options={{
+          ...options,
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.primary,
+          headerTitle: t('feedSettings.title'),
+        }}
+      />
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <Text style={styles.intro}>{t('feedSettings.intro')}</Text>
 
-        <Text style={styles.header}>{t('feedSettings.keywordsTitle')}</Text>
-        <View style={styles.addRow}>
-          <TextField
-            label={t('feedSettings.keywordPlaceholder')}
-            containerStyle={styles.input}
-            value={draft}
-            onChangeText={(v) => {
-              setDraft(v);
-              if (draftError) setDraftError(null);
-            }}
-            onSubmitEditing={addKeyword}
-            placeholder={t('feedSettings.keywordPlaceholder')}
-            returnKeyType="done"
-            maxLength={120}
-            textAlign={rtlTextAlignStart}
-            accessibilityLabel={t('feedSettings.keywordPlaceholder')}
-            testID="feed-settings-keyword-input"
-          />
-          <Pressable style={styles.addBtn} onPress={addKeyword} accessibilityRole="button" testID="feed-settings-keyword-add">
-            <Text style={styles.addBtnText}>{t('feedSettings.add')}</Text>
-          </Pressable>
-        </View>
-        {draftError ? <Text style={styles.error}>{draftError}</Text> : null}
-        <View style={styles.chips}>
-          {grouped.keywords.length === 0 ? <Text style={styles.hint}>{t('feedSettings.keywordsEmpty')}</Text> : null}
-          {grouped.keywords.map((k) => (
-            <Chip
-              key={k.filterId}
-              variant="removable"
-              size="sm"
-              label={k.filterValue}
-              onRemove={() => remove.mutate(k.filterId)}
-              removeAccessibilityLabel={t('feedSettings.unmuteA11y', { value: k.filterValue })}
+        <FeedSettingsWorldsSection
+          rows={rows}
+          onAdd={(world: GivingWorldSlug) => add.mutate({ kind: 'world', value: world })}
+          onRemove={(id) => remove.mutate(id)}
+        />
+
+        <FeedSettingsSection title={t('feedSettings.keywordsTitle')}>
+          <View style={styles.addRow}>
+            <TextField
+              label={t('feedSettings.keywordPlaceholder')}
+              containerStyle={styles.input}
+              value={draft}
+              onChangeText={(v) => {
+                setDraft(v);
+                if (draftError) setDraftError(null);
+              }}
+              onSubmitEditing={addKeyword}
+              placeholder={t('feedSettings.keywordPlaceholder')}
+              returnKeyType="done"
+              maxLength={120}
+              textAlign={rtlTextAlignStart}
+              accessibilityLabel={t('feedSettings.keywordPlaceholder')}
+              testID="feed-settings-keyword-input"
             />
-          ))}
-        </View>
-
-        <Text style={styles.header}>{t('feedSettings.categoriesTitle')}</Text>
-        <Text style={styles.hint}>{t('feedSettings.categoriesHint')}</Text>
-        <View style={styles.chips}>
-          {ALL_CATEGORIES.map((c) => {
-            const muted = findCategoryMute(rows, c);
-            return (
-              <Chip
-                key={c}
-                selected={Boolean(muted)}
-                onPress={() => (muted ? remove.mutate(muted.filterId) : add.mutate({ kind: 'category', value: c }))}
-                label={t(`post.category.${c}`)}
-                icon={muted ? 'eye-off-outline' : undefined}
-              />
-            );
-          })}
-        </View>
-
-        <Text style={styles.header}>{t('feedSettings.peopleTitle')}</Text>
-        {grouped.users.length === 0 ? <Text style={styles.hint}>{t('feedSettings.peopleEmpty')}</Text> : null}
-        {grouped.users.map((u) => (
-          <View key={u.filterId} style={styles.personRow}>
-            <Text style={styles.personName} numberOfLines={1}>
-              {names.data?.[u.filterValue] ?? t('feedSettings.unknownPerson')}
-            </Text>
-            <Pressable onPress={() => remove.mutate(u.filterId)} accessibilityRole="button" hitSlop={8}>
-              <Text style={styles.link}>{t('feedSettings.unmute')}</Text>
-            </Pressable>
+            <PrimaryButton
+              label={t('feedSettings.add')}
+              size="md"
+              onPress={addKeyword}
+              testID="feed-settings-keyword-add"
+            />
           </View>
-        ))}
+          {draftError ? <Text style={styles.error}>{draftError}</Text> : null}
+          <View style={styles.chips}>
+            {grouped.keywords.length === 0 ? <Text style={styles.inlineHint}>{t('feedSettings.keywordsEmpty')}</Text> : null}
+            {grouped.keywords.map((k) => (
+              <Chip
+                key={k.filterId}
+                variant="removable"
+                size="sm"
+                label={k.filterValue}
+                onRemove={() => remove.mutate(k.filterId)}
+                removeAccessibilityLabel={t('feedSettings.unmuteA11y', { value: k.filterValue })}
+              />
+            ))}
+          </View>
+        </FeedSettingsSection>
 
-        <QuietHoursSection value={prefs.quietHours} onChange={(quietHours) => update({ quietHours })} />
+        <FeedSettingsSection title={t('feedSettings.peopleTitle')}>
+          {grouped.users.length === 0 ? (
+            <Text style={styles.inlineHint}>{t('feedSettings.peopleEmpty')}</Text>
+          ) : null}
+          {grouped.users.map((u) => (
+            <View key={u.filterId} style={styles.personRow}>
+              <Text style={styles.personName} numberOfLines={1}>
+                {names.data?.[u.filterValue] ?? t('feedSettings.unknownPerson')}
+              </Text>
+              <Pressable onPress={() => remove.mutate(u.filterId)} accessibilityRole="button" hitSlop={8}>
+                <Text style={styles.link}>{t('feedSettings.unmute')}</Text>
+              </Pressable>
+            </View>
+          ))}
+        </FeedSettingsSection>
+
+        <FeedSettingsSection title={t('notifications.quietHoursSection')}>
+          <QuietHoursSection
+            hideSectionTitle
+            value={prefs.quietHours}
+            onChange={(quietHours) => update({ quietHours })}
+          />
+        </FeedSettingsSection>
       </ScrollView>
     </>
   );
 }
 
 const useStyles = makeUseStyles(({ colors }) => ({
-  body: { paddingBottom: spacing['2xl'] },
-  intro: { ...typography.body, color: colors.textSecondary, padding: spacing.base, textAlign: rtlTextAlignStart },
-  header: {
-    ...typography.caption,
+  scroll: { flex: 1, backgroundColor: colors.background, ...webViewRtl },
+  body: { padding: spacing.base, paddingBottom: spacing['3xl'], gap: spacing.lg, ...webViewRtl },
+  intro: {
+    ...typography.body,
     color: colors.textSecondary,
+    textAlign: rtlTextAlignStart,
+    marginBottom: spacing.sm,
+    ...webTextRtl,
+  },
+  inlineHint: {
+    ...typography.caption,
+    color: colors.textDisabled,
+    textAlign: rtlTextAlignStart,
     paddingHorizontal: spacing.base,
-    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
+    ...webTextRtl,
+  },
+  error: {
+    ...typography.caption,
+    color: colors.error,
+    paddingHorizontal: spacing.base,
     paddingBottom: spacing.sm,
     textAlign: rtlTextAlignStart,
+    ...webTextRtl,
   },
-  hint: { ...typography.caption, color: colors.textDisabled, paddingHorizontal: spacing.base, textAlign: rtlTextAlignStart },
-  error: { ...typography.caption, color: colors.error, paddingHorizontal: spacing.base, textAlign: rtlTextAlignStart },
-  addRow: { flexDirection: rowDirectionStart, gap: spacing.sm, paddingHorizontal: spacing.base },
-  input: {
-    flex: 1,
+  addRow: {
+    flexDirection: rowDirectionStart,
+    alignItems: 'flex-end' as const,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.base,
+    paddingBottom: spacing.sm,
+    ...webViewRtl,
   },
-  addBtn: {
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.md,
-    backgroundColor: colors.primary,
-    justifyContent: 'center' as const,
+  input: { flex: 1 },
+  chips: {
+    flexDirection: rowDirectionStart,
+    flexWrap: 'wrap' as const,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.base,
+    paddingBottom: spacing.base,
+    ...webViewRtl,
   },
-  addBtnText: { ...typography.body, color: colors.textInverse, ...typography.semiBold },
-  chips: { flexDirection: rowDirectionStart, flexWrap: 'wrap' as const, gap: spacing.sm, padding: spacing.base },
   personRow: {
     flexDirection: rowDirectionStart,
     alignItems: 'center' as const,
     justifyContent: 'space-between' as const,
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    ...webViewRtl,
   },
-  personName: { ...typography.body, color: colors.textPrimary, flex: 1 },
+  personName: { ...typography.body, color: colors.textPrimary, flex: 1, textAlign: rtlTextAlignStart, ...webTextRtl },
   link: { ...typography.body, color: colors.primary, ...typography.semiBold },
 }));

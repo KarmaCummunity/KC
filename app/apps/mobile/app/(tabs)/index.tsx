@@ -16,30 +16,36 @@ import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useShallow } from 'zustand/react/shallow';
 import type { PostWithOwner } from '@kc/application';
 import { PostFeedList } from '../../src/components/PostFeedList';
+import { FEED_MATCHES_EVERY_N_POSTS } from '../../src/lib/feed/feedListLayout';
 import { TopBar } from '../../src/components/TopBar';
 import { FeedFilterIcon } from '../../src/components/FeedFilterIcon';
 import { NewPostsBanner } from '../../src/components/NewPostsBanner';
 import { FirstPostNudge } from '../../src/components/FirstPostNudge';
 import { SurveyPromptBanner } from '../../src/components/survey/SurveyPromptBanner';
 import { useSurveyBanner } from '../../src/hooks/useSurveyBanner';
+import { CompleteProfileBanner } from '../../src/components/CompleteProfileBanner';
+import { useCompleteProfileBanner } from '../../src/hooks/useCompleteProfileBanner';
 import { FeedEmptyState } from '../../src/components/FeedEmptyState';
-import { MarketplaceForYouSection } from '../../src/components/marketplace/MarketplaceForYouSection';
 import { PostFilterSheet, type PostFilterValue } from '../../src/components/PostFilterSheet';
 import { Screen } from '../../src/components/ui/Screen';
 import { useAuthStore } from '../../src/store/authStore';
 import type { KcFlashListRef } from '../../src/components/lists/KcFlashList';
 import { useFilterStore } from '../../src/store/filterStore';
+import { applyFilterPatch } from '../../src/store/applyFilterPatch';
 import { useFeedSessionStore } from '../../src/store/feedSessionStore';
 import { useFeedRealtime } from '../../src/hooks/useFeedRealtime';
 import { useFirstPostNudge } from '../../src/hooks/useFirstPostNudge';
 import { useReaderLanguage } from '../../src/hooks/useReaderLanguage';
 import { useTranslatedPosts } from '../../src/hooks/useTranslatedPosts';
 import { getFeedUseCase } from '../../src/services/postsComposition';
+import { encodeMapFilter } from '../../src/lib/postMap';
 import { container } from '../../src/lib/container';
 import { startMark } from '../../src/lib/observability/perfMarks';
 import { useScreenAside } from '../../src/components/aside/useScreenAside';
 import { GivingWorldsAside } from '../../src/components/aside/GivingWorldsAside';
 import { usePrefetchNextPage } from '../../src/hooks/usePrefetchNextPage';
+import { useFeedMuteFilters } from '../../src/hooks/useFeedMuteFilters';
+import { countMuteFilters } from '../../src/lib/feedMuteFilters';
 
 // Feed grid shows only the title, so only translate that field here (post
 // detail translates the description on open). FR-TRANSLATE-003.
@@ -74,7 +80,10 @@ export default function HomeFeedScreen() {
       clearAll: s.clearAll,
     })),
   );
-  const activeCount = useFilterStore((s) => s.activeCount());
+  const sheetFilterCount = useFilterStore((s) => s.activeCount());
+  const muteFilters = useFeedMuteFilters();
+  const muteCount = countMuteFilters(muteFilters.list.data ?? []);
+  const filterBadgeCount = sheetFilterCount + muteCount;
   const newPostsCount = useFeedSessionStore((s) => s.newPostsCount);
   const resetNewPosts = useFeedSessionStore((s) => s.resetNewPosts);
 
@@ -176,6 +185,7 @@ export default function HomeFeedScreen() {
 
   const nudge = useFirstPostNudge(viewerId);
   const surveyBanner = useSurveyBanner();
+  const completeProfileBanner = useCompleteProfileBanner();
 
   const sheetValue: PostFilterValue = {
     type: filter.type,
@@ -192,49 +202,32 @@ export default function HomeFeedScreen() {
     searchQuery: filter.searchQuery,
   };
 
-  // Stable callback — zustand actions via getState() so SearchSection debounce
-  // does not retrigger an infinite loop (React #185).
-  const handleFilterPatch = useCallback((patch: Partial<PostFilterValue>) => {
-    const s = useFilterStore.getState();
-    if ('type' in patch) s.setType(patch.type ?? null);
-    if ('worlds' in patch) s.setWorlds(patch.worlds ?? []);
-    if ('subcategories' in patch) s.setSubcategories(patch.subcategories ?? []);
-    if ('categories' in patch) s.setCategories(patch.categories ?? []);
-    if ('itemConditions' in patch) s.setItemConditions(patch.itemConditions ?? []);
-    if ('locationFilter' in patch) s.setLocationFilter(patch.locationFilter ?? null);
-    if ('statusFilter' in patch) s.setStatusFilter(patch.statusFilter ?? 'open');
-    if ('sortOrder' in patch) s.setSortOrder(patch.sortOrder ?? 'newest');
-    if ('proximitySortCity' in patch || 'proximitySortCityName' in patch) {
-      s.setProximitySortCity(patch.proximitySortCity ?? null, patch.proximitySortCityName ?? null);
-    }
-    if ('followersOnly' in patch) s.setFollowersOnly(patch.followersOnly ?? false);
-    if ('searchQuery' in patch) s.setSearchQuery(patch.searchQuery ?? '');
-  }, []);
-
   const header = (
     <View>
+      {completeProfileBanner.shouldShow && <CompleteProfileBanner onDismiss={completeProfileBanner.onDismiss} />}
       {surveyBanner.shouldShow && (
         <SurveyPromptBanner slug={surveyBanner.slug} onSnooze={surveyBanner.onSnooze} />
       )}
       {nudge.show && (
         <FirstPostNudge
-          onShare={() => router.push('/(tabs)/create')}
+          onShare={() => router.push('/create')}
           onRemindLater={nudge.dismissForSession}
           onDismissForever={nudge.dismissForever}
         />
       )}
       <NewPostsBanner count={newPostsCount} onPress={refetchAndReset} />
-      <MarketplaceForYouSection />
     </View>
   );
 
   return (
-    <Screen blobs="content" testID="feed-screen">
+    <Screen blobs="off" testID="feed-screen">
       <TopBar
         extraIcon={
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TouchableOpacity
-              onPress={() => router.navigate('/(tabs)/donations/marketplace/map')}
+              onPress={() =>
+                router.push({ pathname: '/(tabs)/donations/marketplace/map', params: { filter: encodeMapFilter(sheetValue) } })
+              }
               accessibilityRole="button"
               accessibilityLabel={t('feed.openMapA11y')}
               testID="feed-open-map"
@@ -242,7 +235,7 @@ export default function HomeFeedScreen() {
             >
               <Ionicons name="map-outline" size={iconSize['2xl']} color={colors.textPrimary} />
             </TouchableOpacity>
-            <FeedFilterIcon activeCount={activeCount} onPress={() => setSheetOpen(true)} />
+            <FeedFilterIcon activeCount={filterBadgeCount} onPress={() => setSheetOpen(true)} />
           </View>
         }
       />
@@ -265,11 +258,13 @@ export default function HomeFeedScreen() {
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         translations={translations}
+        matchesEveryNPosts={FEED_MATCHES_EVERY_N_POSTS}
         emptyComponent={
           <FeedEmptyState
-            hasActiveFilters={activeCount > 0}
+            hasSheetFilters={sheetFilterCount > 0}
+            hasMutes={muteCount > 0}
             onClearFilters={() => filter.clearAll()}
-            onShare={() => router.push('/(tabs)/create')}
+            onShare={() => router.push('/create')}
             onOpenFeedSettings={() => router.push('/settings/feed')}
           />
         }
@@ -278,9 +273,13 @@ export default function HomeFeedScreen() {
       <PostFilterSheet
         visible={sheetOpen}
         value={sheetValue}
-        onPatch={handleFilterPatch}
+        onPatch={applyFilterPatch}
         onClear={() => filter.clearAll()}
         onClose={() => setSheetOpen(false)}
+        onOpenFeedSettings={() => {
+          setSheetOpen(false);
+          router.push('/settings/feed');
+        }}
       />
     </Screen>
   );

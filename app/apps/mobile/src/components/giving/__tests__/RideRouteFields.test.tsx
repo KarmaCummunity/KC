@@ -3,7 +3,7 @@
 // three meeting points, and the listing city suggested from the origin (a junction's nearest city).
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React, { useState } from 'react';
-import { cleanup, fireEvent, render } from '@testing-library/react';
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { ThemeProvider } from '@kc/ui';
 import { readRideRoute, type RidePlace } from '@kc/domain';
 
@@ -12,7 +12,17 @@ const RAMAT_GAN: RidePlace = { kind: 'city', id: '8600', label: 'רמת גן', l
 const GLILOT: RidePlace = { kind: 'junction', id: '106', label: 'מחלף גלילות מערב', lat: 32.14, lng: 34.8, cityId: null };
 
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
-vi.mock('../../../lib/haptics', () => ({ hapticLightTap: vi.fn() }));
+vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticLightTap: vi.fn() }));
+// The native switch does not fire `onValueChange` from a DOM click; a button stands in for it.
+vi.mock('react-native', async () => {
+  const actual = await vi.importActual<typeof import('react-native')>('react-native');
+  const Switch = (p: { testID: string; value: boolean; onValueChange: (on: boolean) => void }) => (
+    <button data-testid={p.testID} data-on={String(p.value)} onClick={() => p.onValueChange(!p.value)} />
+  );
+  return { ...actual, Switch };
+});
+const locate = vi.hoisted(() => vi.fn());
+vi.mock('../../../hooks/useMyLocation', () => ({ useMyLocation: () => ({ locate, coords: null, status: 'idle', initial: null }) }));
 vi.mock('../../../hooks/useRidePlaces', () => ({
   useRidePlaces: () => ({ data: [TLV, RAMAT_GAN, GLILOT], isLoading: false, error: null, refetch: vi.fn() }),
 }));
@@ -27,11 +37,17 @@ import { RideRouteFields } from '../RideRouteFields';
 
 afterEach(cleanup);
 
-function Harness({ onOriginCity }: { onOriginCity: (c: { id: string; name: string }) => void }) {
+function Harness({
+  onOriginCity,
+  onFromHereChange,
+}: {
+  onOriginCity: (c: { id: string; name: string }) => void;
+  onFromHereChange?: (on: boolean) => void;
+}) {
   const [details, setDetails] = useState<Record<string, unknown>>({});
   return (
     <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
-      <RideRouteFields details={details} onChange={setDetails} onOriginCity={onOriginCity} />
+      <RideRouteFields details={details} onChange={setDetails} onOriginCity={onOriginCity} onFromHereChange={onFromHereChange} />
       <output data-testid="details">{JSON.stringify(details)}</output>
     </ThemeProvider>
   );
@@ -68,6 +84,18 @@ describe('RideRouteFields', () => {
     expect(detailsOf(view)).not.toHaveProperty('meeting_points');
   });
 
+  // Regression for #1741: these texts sat on the physical left in Hebrew while the labels above
+  // them sat on the right; they must follow the reading-start edge in both languages.
+  it('aligns the section title, add link and remove link to the reading-start edge', async () => {
+    const { rtlTextAlignStart } = await import('../../../lib/rtlTextAlignStart');
+    const view = render(<Harness onOriginCity={vi.fn()} />);
+    fireEvent.click(view.getByTestId('ride-meeting-point-add'));
+    fireEvent.click(view.getByTestId('pick:ridePlaces.meetingPointLabel'));
+    for (const key of ['ridePlaces.meetingPointsTitle', 'ridePlaces.addMeetingPoint', 'ridePlaces.removeMeetingPoint']) {
+      expect(getComputedStyle(view.getByText(key)).textAlign).toBe(rtlTextAlignStart);
+    }
+  });
+
   it('hides "add" once three meeting points are set', () => {
     const three = { meeting_points: [TLV, RAMAT_GAN, GLILOT].map((p) => ({ kind: p.kind, id: p.id, label: p.label, lat: p.lat, lng: p.lng, city_id: p.cityId })) };
     const view = render(
@@ -77,5 +105,87 @@ describe('RideRouteFields', () => {
     );
     expect(view.queryByTestId('ride-meeting-point-add')).toBeNull();
     expect(view.queryByTestId('ride-meeting-point-remove-2')).not.toBeNull();
+  });
+
+  describe('origin from the current location (#1411)', () => {
+    const switchOn = (view: ReturnType<typeof render>) => view.getByTestId('ride-origin-from-here').getAttribute('data-on');
+
+    it('sets the origin to the city nearest the device and suggests it as the listing city', async () => {
+      locate.mockResolvedValueOnce({ lat: 32.081, lng: 34.781 });
+      const onOriginCity = vi.fn();
+      const view = render(<Harness onOriginCity={onOriginCity} />);
+
+      fireEvent.click(view.getByTestId('ride-origin-from-here'));
+
+      await waitFor(() => expect(readRideRoute(detailsOf(view)).origin).toEqual(TLV));
+      expect(onOriginCity).toHaveBeenCalledWith({ id: '5000', name: 'תל אביב - יפו' });
+      expect(switchOn(view)).toBe('true');
+    });
+
+    it('turns itself off and says why when the location is unavailable', async () => {
+      locate.mockResolvedValueOnce(null);
+      const view = render(<Harness onOriginCity={vi.fn()} />);
+
+      fireEvent.click(view.getByTestId('ride-origin-from-here'));
+
+      await waitFor(() => expect(view.getByText('ridePlaces.locationUnavailable')).toBeTruthy());
+      expect(detailsOf(view)).not.toHaveProperty('origin_label');
+      expect(switchOn(view)).toBe('false');
+    });
+
+    it('hides the origin picker while on and names the place found instead', async () => {
+      locate.mockResolvedValueOnce({ lat: 32.081, lng: 34.781 });
+      const view = render(<Harness onOriginCity={vi.fn()} />);
+
+      fireEvent.click(view.getByTestId('ride-origin-from-here'));
+
+      expect(view.queryByTestId('pick:ridePlaces.fieldOrigin')).toBeNull();
+      expect(view.getByText('ridePlaces.locating')).toBeTruthy();
+      await waitFor(() => expect(view.getByText('ridePlaces.originFromHere')).toBeTruthy());
+      expect(view.queryByTestId('pick:ridePlaces.fieldOrigin')).toBeNull();
+    });
+
+    it('shows the picker again when turned off, keeping the found origin editable, and reports both changes', async () => {
+      locate.mockResolvedValueOnce({ lat: 32.081, lng: 34.781 });
+      const onFromHereChange = vi.fn();
+      const view = render(<Harness onOriginCity={vi.fn()} onFromHereChange={onFromHereChange} />);
+      fireEvent.click(view.getByTestId('ride-origin-from-here'));
+      await waitFor(() => expect(readRideRoute(detailsOf(view)).origin).toEqual(TLV));
+      expect(onFromHereChange).toHaveBeenLastCalledWith(true);
+
+      fireEvent.click(view.getByTestId('ride-origin-from-here'));
+      expect(switchOn(view)).toBe('false');
+      expect(onFromHereChange).toHaveBeenLastCalledWith(false);
+
+      fireEvent.click(view.getByTestId('pick:ridePlaces.fieldOrigin'));
+      expect(readRideRoute(detailsOf(view)).origin).toEqual(GLILOT);
+    });
+
+    it('drops a location read that finishes after the switch was turned off', async () => {
+      let resolve: (v: { lat: number; lng: number }) => void = () => {};
+      locate.mockReturnValueOnce(new Promise((r) => (resolve = r)));
+      const view = render(<Harness onOriginCity={vi.fn()} />);
+      fireEvent.click(view.getByTestId('ride-origin-from-here'));
+      fireEvent.click(view.getByTestId('ride-origin-from-here'));
+
+      resolve({ lat: 32.081, lng: 34.781 });
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(detailsOf(view)).not.toHaveProperty('origin_label');
+      expect(switchOn(view)).toBe('false');
+    });
+
+    // Regression: a device far from Israel (the simulator's default California location) used to
+    // get the "nearest" Israeli city hundreds of km away instead of "location unavailable".
+    it('turns itself off when no official city is near the device', async () => {
+      locate.mockResolvedValueOnce({ lat: 37.33, lng: -122.03 });
+      const view = render(<Harness onOriginCity={vi.fn()} />);
+
+      fireEvent.click(view.getByTestId('ride-origin-from-here'));
+
+      await waitFor(() => expect(view.getByText('ridePlaces.locationUnavailable')).toBeTruthy());
+      expect(detailsOf(view)).not.toHaveProperty('origin_label');
+      expect(switchOn(view)).toBe('false');
+    });
   });
 });

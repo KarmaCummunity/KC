@@ -2,7 +2,7 @@
 // SupabaseAuthService — adapter for IAuthService backed by @supabase/supabase-js.
 // Mapped to SRS: FR-AUTH-003 (Google sign-up), FR-AUTH-006 (email sign-up),
 // FR-AUTH-007 (sign-in, all paths), FR-AUTH-013 (cold-start restore), FR-AUTH-017 (sign-out).
-// docs/SSOT/spec/01_auth_and_onboarding.md
+// docs/spec/requirements/01_auth_and_onboarding.md
 // ─────────────────────────────────────────────
 
 import type { SupabaseClient, Session as SbSession } from '@supabase/supabase-js';
@@ -122,6 +122,18 @@ export class SupabaseAuthService implements IAuthService {
     });
     if (error) throw mapAuthError(error);
     if (!data.session) throw new AuthError('unknown', 'apple_no_session');
+    return toSession(data.session);
+  }
+
+  // No nonce: the native Google SDK doesn't expose one, so the Supabase Google
+  // provider must run with nonce checks skipped (#1955).
+  async signInWithGoogleIdToken(idToken: string): Promise<AuthSession> {
+    const { data, error } = await this.client.auth.signInWithIdToken({
+      provider: 'google',
+      token: idToken,
+    });
+    if (error) throw mapAuthError(error);
+    if (!data.session) throw new AuthError('unknown', 'google_no_session');
     return toSession(data.session);
   }
 

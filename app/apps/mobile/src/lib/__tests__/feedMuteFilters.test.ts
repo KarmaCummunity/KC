@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  findCategoryMute,
+  countMuteFilters,
+  findWorldMute,
   groupMuteFilters,
   isKeywordMuted,
   isValidQuietTime,
@@ -13,7 +14,6 @@ const rows: MuteFilter[] = [
   { filterId: '1', filterKind: 'user', filterValue: 'u-1' },
   { filterId: '2', filterKind: 'keyword', filterValue: 'sofa' },
   { filterId: '3', filterKind: 'keyword', filterValue: 'Bike' },
-  { filterId: '4', filterKind: 'category', filterValue: 'Books' },
   { filterId: '5', filterKind: 'world', filterValue: 'Toys' },
 ];
 
@@ -24,29 +24,35 @@ describe('normalizeMuteKeyword', () => {
   it('rejects too short or too long', () => {
     expect(normalizeMuteKeyword(' a ')).toBeNull();
     expect(normalizeMuteKeyword('')).toBeNull();
-    expect(normalizeMuteKeyword('x'.repeat(121))).toBeNull();
-    expect(normalizeMuteKeyword('x'.repeat(120))).toHaveLength(120);
+    expect(normalizeMuteKeyword('x'.repeat(61))).toBeNull();
+    expect(normalizeMuteKeyword('x'.repeat(60))).toHaveLength(60);
   });
 });
 
 describe('groupMuteFilters', () => {
-  it('splits into users, sorted keywords, and categories (category + world)', () => {
+  it('splits into users, sorted keywords and worlds', () => {
     const g = groupMuteFilters(rows);
     expect(g.users.map((r) => r.filterId)).toEqual(['1']);
     expect(g.keywords.map((r) => r.filterValue)).toEqual(['Bike', 'sofa']);
-    expect(g.categories.map((r) => r.filterValue)).toEqual(['Books', 'Toys']);
+    expect(g.worlds.map((r) => r.filterValue)).toEqual(['Toys']);
   });
 });
 
-describe('isKeywordMuted / findCategoryMute', () => {
+describe('countMuteFilters', () => {
+  it('counts every mute row', () => {
+    expect(countMuteFilters(rows)).toBe(4);
+    expect(countMuteFilters([])).toBe(0);
+  });
+});
+
+describe('isKeywordMuted / findWorldMute', () => {
   it('matches keywords case-insensitively', () => {
     expect(isKeywordMuted(rows, 'SOFA')).toBe(true);
     expect(isKeywordMuted(rows, 'chair')).toBe(false);
   });
-  it('finds category or world mutes', () => {
-    expect(findCategoryMute(rows, 'Books')?.filterId).toBe('4');
-    expect(findCategoryMute(rows, 'Toys')?.filterId).toBe('5');
-    expect(findCategoryMute(rows, 'Tools')).toBeUndefined();
+  it('finds a world mute by slug', () => {
+    expect(findWorldMute(rows, 'Toys')?.filterId).toBe('5');
+    expect(findWorldMute(rows, 'food')).toBeUndefined();
   });
 });
 

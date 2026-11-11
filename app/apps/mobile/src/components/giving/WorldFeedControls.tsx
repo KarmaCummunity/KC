@@ -1,19 +1,17 @@
-// Mapped to spec: FR-FEED-020 AC2 — the controls above a giving world's feed: search within
-// the world, the offers / requests filter, and the world's subcategory + distance chips.
+// Mapped to spec: FR-FEED-020 AC2 — the rides world's filter sheet parts: the offers / requests
+// chip row and a titled section. The other worlds use the main feed's `PostFilterSheet`.
 // Rebuilt on top of the shared filterKit (issue #1457).
 import React from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { makeUseStyles, spacing } from '@kc/ui';
-import { FilterSearchBar } from '../filterKit/FilterSearchBar';
+import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { FilterChipRow } from '../filterKit/FilterChipRow';
-import { BrowseRefineChips } from '../marketplace/BrowseRefineChips';
+import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import type { WorldFeedDirection } from '../../lib/worldFeed';
-import type { WorldFeedState } from '../../hooks/useWorldFeed';
 
-const useStyles = makeUseStyles(() => ({
-  root: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
-  searchBar: { marginBottom: 0 },
+const useStyles = makeUseStyles(({ colors }) => ({
+  section: { gap: spacing.xs },
+  sectionTitle: { ...typography.label, color: colors.textPrimary, textAlign: rtlTextAlignStart },
 }));
 
 /** Direction chips in display order; literal testIDs keep the Maestro contract checkable. */
@@ -23,47 +21,35 @@ const DIRECTION_CHIPS: ReadonlyArray<{ direction: WorldFeedDirection; labelKey: 
   { direction: 'request', labelKey: 'donations.worldFeed.directionRequest', testID: 'world-feed-direction-request' },
 ];
 
-interface Props {
-  readonly worldSlug: string;
-  readonly feed: WorldFeedState;
-}
-
-export function WorldFeedControls({ worldSlug, feed }: Props) {
+/** The offers / requests chip row shared by every world feed, rides included (#1626). */
+export function WorldFeedDirectionChips({
+  value,
+  onChange,
+}: Readonly<{ value: WorldFeedDirection; onChange: (direction: WorldFeedDirection) => void }>) {
   const { t } = useTranslation();
-  const styles = useStyles();
-
-  const directionOptions = DIRECTION_CHIPS.map(({ direction, labelKey, testID }) => ({
+  const options = DIRECTION_CHIPS.map(({ direction, labelKey, testID }) => ({
     value: direction,
     label: t(labelKey),
     testID,
   }));
-
   return (
-    <View style={styles.root}>
-      <FilterSearchBar
-        testID="world-feed-search"
-        placeholder={t('donations.worldFeed.searchPlaceholder')}
-        accessibilityLabel={t('donations.worldFeed.searchLabel')}
-        value={feed.query}
-        onChangeText={feed.setQuery}
-        style={styles.searchBar}
-      />
-      <FilterChipRow<WorldFeedDirection>
-        options={directionOptions}
-        value={feed.direction}
-        onChange={(d) => { if (d) feed.setDirection(d); }}
-        accessibilityLabel={t('donations.worldFeed.directionRowA11y')}
-      />
-      {/* A text search spans every subcategory and distance, so these refine browsing only. */}
-      {feed.searching ? null : (
-        <BrowseRefineChips
-          worldSlug={worldSlug}
-          categoryId={feed.categoryId}
-          onCategoryChange={feed.setCategoryId}
-          radiusKm={feed.radiusKm}
-          onRadiusChange={feed.setRadiusKm}
-        />
-      )}
+    <FilterChipRow<WorldFeedDirection>
+      options={options}
+      value={value}
+      // The row is single-select with no "none": a tap on the selected chip keeps it.
+      onChange={(direction) => { if (direction) onChange(direction); }}
+      accessibilityLabel={t('donations.worldFeed.directionRowA11y')}
+    />
+  );
+}
+
+/** A titled block inside a world's filter sheet. */
+export function WorldFilterSection({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
+  const styles = useStyles();
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {children}
     </View>
   );
 }

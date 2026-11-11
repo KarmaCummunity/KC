@@ -1,9 +1,10 @@
 # Native regression for the create-form crash: open every category in both directions and
 # open the date sheet of the food offer, so a native picker or slider that crashes the app
 # (TestFlight, 1.6.x) fails here instead of in the store build.
-# Category tiles and the request / offer toggle are tapped by their Hebrew labels (the
-# product's own words, FR-POST-001 AC6); their testIDs are built per category.
-# Spec: docs/SSOT/spec/04_posts.md FR-POST-001 AC6; docs/spec/07_cross_cutting_systems.md §7.2.
+# Category chips scroll horizontally; use testIDs so Maestro does not depend on them being on screen.
+# The category row sits at the top of the form, and a failed publish scrolls the form down to the
+# first problem field (FR-POST-001 AC6), so every category lookup scrolls UP to reach the row again.
+# Spec: docs/spec/requirements/04_posts.md FR-POST-001 AC6; docs/spec/07_cross_cutting_systems.md §7.2.
 appId: org.karmacommunity.app
 name: Posts — create form categories open on device
 tags: [posts]
@@ -15,7 +16,12 @@ tags: [posts]
     visible:
       id: unified-create-header
     timeout: 15000
-- tapOn: "טרמפים"
+- scrollUntilVisible:
+    element:
+      id: create-category-rides
+    timeout: 10000
+- tapOn:
+    id: create-category-rides
 - tapOn: "להציע"
 - extendedWaitUntil:
     visible:
@@ -28,11 +34,18 @@ tags: [posts]
 - tapOn: "לבקש"
 - assertVisible:
     id: ride-departs-at
-- tapOn: "אוכל"
-- tapOn: "להציע"
-- extendedWaitUntil:
-    visible: "תאריך תפוגה"
+- scrollUntilVisible:
+    element:
+      id: create-category-food
     timeout: 10000
+    direction: UP
+- tapOn:
+    id: create-category-food
+- tapOn: "להציע"
+# The expiry field sits below the photos, title and city, so scroll down to it.
+- scrollUntilVisible:
+    element: "תאריך תפוגה"
+    timeout: 15000
 - tapOn: "בחירת תאריך ושעה"
 # Android opens the system date dialog; iOS opens the app's bottom sheet.
 - runFlow:
@@ -46,12 +59,31 @@ tags: [posts]
     commands:
       - tapOn:
           text: "ביטול"
-- tapOn: "דיור"
+# The category row also scrolls sideways and centers the chosen chip, so visit the chips in row
+# order (food, time, housing, items) and swipe the row itself until the next chip is on screen. The
+# swipe direction depends on RTL, so each search tries one direction, then the other.
+- scrollUntilVisible:
+    element:
+      id: create-category-time
+    timeout: 10000
+    direction: UP
+- tapOn:
+    id: create-category-time
 - assertVisible:
     id: listing-create-form
-- tapOn: "זמן"
+- runFlow:
+    file: ../subflows/reveal-create-category.yaml
+    env:
+      CATEGORY: housing
+- tapOn:
+    id: create-category-housing
 - assertVisible:
     id: listing-create-form
-- tapOn: "חפצים"
+- runFlow:
+    file: ../subflows/reveal-create-category.yaml
+    env:
+      CATEGORY: items
+- tapOn:
+    id: create-category-items
 - assertVisible:
     id: create-post-screen

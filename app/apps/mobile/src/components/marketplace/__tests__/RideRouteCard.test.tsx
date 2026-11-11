@@ -35,10 +35,10 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-function renderCard(details: Record<string, unknown>) {
+function renderCard(details: Record<string, unknown>, houseNumbers?: { origin?: string; dest?: string }) {
   return render(
     <ThemeProvider mode="light" systemScheme="light" setMode={() => {}}>
-      <RideRouteCard details={details} direction="give" />
+      <RideRouteCard details={details} direction="give" houseNumbers={houseNumbers} />
     </ThemeProvider>,
   );
 }
@@ -51,6 +51,12 @@ describe('RideRouteCard', () => {
     expect(view.getByText('rideSeries.every')).toBeTruthy();
     cleanup();
     expect(renderCard(fullRoute).queryByText('rideSeries.every')).toBeNull();
+  });
+
+  it('shows no cost, even on a ride that carries an amount (rides are free for now)', () => {
+    const view = renderCard({ ...fullRoute, reward_model: 'expense_share', cost_share_ils: 30 });
+    expect(view.queryByText('cards.costShare')).toBeNull();
+    expect(view.queryByText('cards.free')).toBeNull();
   });
 
   it('lists origin, meeting point and destination in driving order', () => {
@@ -66,6 +72,26 @@ describe('RideRouteCard', () => {
     fireEvent.click(view.getByTestId('ride-navigate-waze'));
     expect(openURL).toHaveBeenCalledWith('https://waze.com/ul?ll=32.14,34.8&navigate=yes');
     expect(view.queryByTestId('ride-navigate-apple')).not.toBeNull();
+  });
+
+  describe('private house numbers (FR-RIDE-003 AC9)', () => {
+    const DIZENGOFF: RidePlace = { kind: 'street', id: '5000:404', label: 'Dizengoff, Tel Aviv', lat: 32.08, lng: 34.78, cityId: '5000' };
+    const streetRoute = withRidePlace(withRidePlace({}, 'origin', HAIFA), 'dest', DIZENGOFF);
+
+    it('shows the full address and navigates to it when the viewer may see the number', () => {
+      const view = renderCard(streetRoute, { dest: '50' });
+      expect(view.getByTestId('ride-stop-dest').textContent).toContain('Dizengoff 50, Tel Aviv');
+      expect(view.getByText('ridePlaces.houseNumberPrivateNote')).toBeTruthy();
+      fireEvent.click(view.getByTestId('ride-stop-navigate-dest'));
+      fireEvent.click(view.getByTestId('ride-navigate-waze'));
+      expect(openURL).toHaveBeenCalledWith(`https://waze.com/ul?q=${encodeURIComponent('Dizengoff 50, Tel Aviv')}&navigate=yes`);
+    });
+
+    it('shows only the street to everyone else', () => {
+      const view = renderCard(streetRoute);
+      expect(view.getByTestId('ride-stop-dest').textContent).toContain('Dizengoff, Tel Aviv');
+      expect(view.queryByText('ridePlaces.houseNumberPrivateNote')).toBeNull();
+    });
   });
 
   it('draws the route through the meeting points', () => {

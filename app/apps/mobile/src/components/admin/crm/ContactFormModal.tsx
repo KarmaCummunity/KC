@@ -12,6 +12,7 @@ import { Chip } from '../../ui/Chip';
 import { AdminFormActions } from '../AdminFormActions';
 import { container } from '../../../lib/container';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
+import { formEmailInputProps, formPhoneInputProps } from '../../../lib/platform/formTextInputHints';
 
 export interface ContactFormModalProps {
   readonly initial: CrmContact | null;
@@ -61,8 +62,8 @@ export function ContactFormModal({ initial, onClose, onSaved }: ContactFormModal
 
         <TextField label={t.form.nameLabel}         value={name}         onChangeText={setName} />
         <TextField label={t.form.organizationLabel} value={organization} onChangeText={setOrg} />
-        <TextField label={t.form.emailLabel}        value={email}        onChangeText={setEmail} />
-        <TextField label={t.form.phoneLabel}        value={phone}        onChangeText={setPhone} />
+        <TextField label={t.form.emailLabel} value={email} onChangeText={setEmail} {...formEmailInputProps} />
+        <TextField label={t.form.phoneLabel} value={phone} onChangeText={setPhone} {...formPhoneInputProps} />
         <TextField label={t.form.roleLabel}         value={roleTitle}    onChangeText={setRoleTitle} />
 
         <Text style={styles.label}>{t.form.statusLabel}</Text>

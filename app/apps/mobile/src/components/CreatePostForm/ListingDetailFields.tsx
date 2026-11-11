@@ -2,15 +2,21 @@
 // Renders the curated field set of one listing kind (lib/unifiedCreate/listingFieldSpecs)
 // with a purpose-built control per field type, styled like the rest of the create form.
 import React from 'react';
-import { Switch, View } from 'react-native';
+import { format } from 'date-fns';
+import { Switch } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '@kc/ui';
+import { formDecimalInputProps, formIntegerInputProps } from '../../lib/platform/formTextInputHints';
 import { TextField } from '../ui/TextField';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { DateTimeField } from '../ui/DateTimeField';
-import { isFieldVisible, type ListingFieldSpec } from '../../lib/unifiedCreate/listingFieldSpecs';
+import { clampWholeNumber, visibleDetailSpecs, type ListingFieldSpec } from '../../lib/unifiedCreate/listingFieldSpecs';
+import { detailField } from '../../lib/unifiedCreate/listingFormProblem';
 import { CountStepper } from './CountStepper';
+import { KnowledgeSlotListField } from './KnowledgeSlotListField';
+import { ListingFieldFrame, useListingFieldProblem } from './ListingFieldFrame';
 import { Chip } from '../ui/Chip';
+import { ChipSelectRow } from '../filterKit/ChipSelectRow';
 
 type Details = Readonly<Record<string, unknown>>;
 
@@ -21,21 +27,28 @@ interface Props {
   readonly disabled?: boolean;
 }
 
-/** Field types whose control (the kit TextField) renders its own label. */
-const SELF_LABELLED: ReadonlySet<ListingFieldSpec['type']> = new Set(['text', 'amount']);
+/** Field types whose control (the kit TextField) renders its own label and error state. */
+const SELF_LABELLED: ReadonlySet<ListingFieldSpec['type']> = new Set(['text', 'amount', 'integer']);
 
 export function ListingDetailFields({ specs, details, onChange, disabled = false }: Props) {
   const styles = useCreatePostStyles();
   return (
     <>
-      {specs
-        .filter((spec) => isFieldVisible(spec, details))
-        .map((spec) => (
-          <View key={spec.key} style={styles.section} testID={`listing-field-${spec.key}`}>
-            {SELF_LABELLED.has(spec.type) ? null : <FieldLabel spec={spec} />}
+      {visibleDetailSpecs(specs, details).map((spec) => {
+        const selfLabelled = SELF_LABELLED.has(spec.type);
+        return (
+          <ListingFieldFrame
+            key={spec.key}
+            field={detailField(spec.key)}
+            label={selfLabelled ? null : <FieldLabel spec={spec} />}
+            outlined={!selfLabelled}
+            style={styles.section}
+            testID={`listing-field-${spec.key}`}
+          >
             <FieldControl spec={spec} value={details[spec.key]} onChange={onChange} disabled={disabled} />
-          </View>
-        ))}
+          </ListingFieldFrame>
+        );
+      })}
     </>
   );
 }
@@ -63,6 +76,7 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
   const { t } = useTranslation();
   const set = (next: unknown) => onChange(spec.key, next);
   const label = `${t(`marketplace.field.${spec.key}`)}${spec.required ? ' *' : ''}`;
+  const errorText = useListingFieldProblem(detailField(spec.key)) ?? undefined;
 
   switch (spec.type) {
     case 'choice':
@@ -121,11 +135,40 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
           disabled={disabled}
         />
       );
+    case 'date':
+      return (
+        <DateTimeField
+          testID={`listing-date-${spec.key}`}
+          mode="date"
+          // A stored `yyyy-MM-dd` is a local calendar day: read it at local midnight.
+          value={typeof value === 'string' && value ? new Date(`${value}T00:00`) : null}
+          onChange={(d) => set(format(d, 'yyyy-MM-dd'))}
+          label={t(`marketplace.field.${spec.key}`)}
+          placeholder={t('post.unifiedCreate.pickDate')}
+          minimumDate={new Date()}
+          disabled={disabled}
+        />
+      );
+    case 'time':
+      return (
+        <DateTimeField
+          testID={`listing-time-${spec.key}`}
+          mode="time"
+          value={timeOfDay(typeof value === 'string' && value ? value : spec.defaultValue)}
+          onChange={(d) => set(format(d, 'HH:mm'))}
+          label={t(`marketplace.field.${spec.key}`)}
+          placeholder={spec.defaultValue}
+          disabled={disabled}
+        />
+      );
+    case 'fixed':
+      return null;
     case 'amount':
       return (
         <TextField
           label={label}
-          keyboardType="numeric"
+          errorText={errorText}
+          {...formDecimalInputProps}
           value={typeof value === 'number' ? String(value) : ''}
           onChangeText={(text) => {
             const n = Number.parseFloat(text);
@@ -135,10 +178,24 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
           editable={!disabled}
         />
       );
+    case 'integer':
+      return (
+        <TextField
+          testID={`listing-integer-${spec.key}`}
+          label={label}
+          errorText={errorText}
+          {...formIntegerInputProps}
+          value={typeof value === 'number' ? String(value) : ''}
+          onChangeText={(text) => set(clampWholeNumber(text, spec.min, spec.max))}
+          placeholder={t('post.unifiedCreate.integerPlaceholder', { min: spec.min, max: spec.max })}
+          editable={!disabled}
+        />
+      );
     case 'text':
       return (
         <TextField
           label={label}
+          errorText={errorText}
           value={typeof value === 'string' ? value : ''}
           onChangeText={set}
           multiline={spec.multiline}
@@ -146,9 +203,21 @@ function FieldControl({ spec, value, onChange, disabled }: ControlProps) {
           editable={!disabled}
         />
       );
+    case 'slotList':
+      return (
+        <KnowledgeSlotListField value={value} onChange={set} maxSlots={spec.maxSlots} disabled={disabled} />
+      );
     case 'toggle':
       return <Switch value={value === true} onValueChange={set} disabled={disabled} />;
   }
+}
+
+/** A stored `HH:mm` as today's Date at that local time, for the time picker. */
+function timeOfDay(hhmm: string): Date {
+  const [hours = 0, minutes = 0] = hhmm.split(':').map(Number);
+  const d = new Date();
+  d.setHours(hours, minutes, 0, 0);
+  return d;
 }
 
 interface ChipRowProps<T extends string | number> {
@@ -161,12 +230,11 @@ interface ChipRowProps<T extends string | number> {
 
 /** Wrapping row of kit filter chips, the same chips as the items form's subcategory row. */
 function ChipRow<T extends string | number>({ options, isOn, onPress, label, disabled }: ChipRowProps<T>) {
-  const styles = useCreatePostStyles();
   return (
-    <View style={styles.chipWrap}>
+    <ChipSelectRow testID="listing-field-chip-row">
       {options.map((o) => (
         <Chip key={String(o)} label={label(o)} selected={isOn(o)} onPress={() => onPress(o)} disabled={disabled} />
       ))}
-    </View>
+    </ChipSelectRow>
   );
 }

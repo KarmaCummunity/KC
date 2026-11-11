@@ -1,0 +1,26 @@
+# Spec: FR-RESP-006 AC5 — keyboard-aware forms: on edit profile, focusing the phone field opens the
+# keyboard and the sticky save button stays on screen, then stays after the keyboard closes.
+# Opens the screen by deep link so the flow does not depend on the profile tab layout. Every step is
+# required: an all-optional flow passes without checking anything.
+appId: org.karmacommunity.app
+name: Profile — edit profile keyboard & save CTA
+tags: [profile, keyboard]
+---
+- runFlow: ../subflows/sign-in.yaml
+- openLink: karmacommunity://edit-profile
+- extendedWaitUntil:
+    visible:
+      id: edit-profile-save
+    timeout: 20000
+# The phone field sits below the avatar, name, city and street fields.
+- scrollUntilVisible:
+    element:
+      id: edit-profile-phone
+    timeout: 15000
+- tapOn:
+    id: edit-profile-phone
+- assertVisible:
+    id: edit-profile-save
+- hideKeyboard
+- assertVisible:
+    id: edit-profile-save

@@ -1,15 +1,16 @@
 // Which listings carry a flow of their own on the detail screen — the generic handoff (items,
-// food, knowledge) or ride bookings — and so which viewer gets a flow action there. The flow
+// food, knowledge), ride bookings, housing stays (FR-HOUSING-015) or an organization event's
+// registration (G1 step 5) — and so which viewer gets a flow action there. The flow
 // action is the screen's one primary call to action (spec 17 §8.1 call 6).
-import type { MarketplaceListingDetail } from '@kc/domain';
+import { ORG_EVENT_KIND_SLUG, type MarketplaceListingDetail } from '@kc/domain';
 
 /** Worlds whose "give" listings run the generic handoff (reserve, claim, book a slot). */
-export const HANDOFF_WORLDS: readonly string[] = ['items', 'food', 'knowledge'];
+export const HANDOFF_WORLDS: readonly string[] = ['items', 'food', 'knowledge', 'animals'];
 
-/** Worlds whose "give" listings carry a flow on the detail screen: the handoff worlds plus rides. */
-const FLOW_WORLDS: readonly string[] = [...HANDOFF_WORLDS, 'rides'];
+/** Worlds whose "give" listings carry a flow on the detail screen: the handoff worlds, rides and housing stays. */
+const FLOW_WORLDS: readonly string[] = [...HANDOFF_WORLDS, 'rides', 'housing'];
 
-type FlowListing = Pick<MarketplaceListingDetail, 'direction' | 'worldSlug' | 'ownerId'>;
+type FlowListing = Pick<MarketplaceListingDetail, 'direction' | 'worldSlug' | 'kindSlug' | 'ownerId' | 'feedPostId'>;
 
 /**
  * Whether the listing's flow offers this viewer an action on the detail screen: a signed-in
@@ -19,5 +20,7 @@ type FlowListing = Pick<MarketplaceListingDetail, 'direction' | 'worldSlug' | 'o
  */
 export function listingFlowHasViewerAction(listing: FlowListing, viewerId: string | null): boolean {
   if (viewerId === null || viewerId === listing.ownerId) return false;
+  // Registration runs on the event's post, so an event without one (awaiting moderation) has no action yet.
+  if (listing.kindSlug === ORG_EVENT_KIND_SLUG) return listing.feedPostId !== null;
   return listing.direction === 'give' && FLOW_WORLDS.includes(listing.worldSlug);
 }

@@ -4,7 +4,7 @@ import { Pressable, View, type StyleProp, type TextStyle, type ViewStyle, type T
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, iconSize, radius, spacing, typography, useTheme, TextInput } from '@kc/ui';
-import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
+import { emptyInputDirectionStyle } from '../../lib/rtlLayout';
 
 export interface FilterSearchBarProps {
   readonly value: string;
@@ -58,13 +58,12 @@ export function FilterSearchBar({
         <TextInput // brand-guard-allow: search bar input, not a form field
           ref={inputRef}
           testID={testID}
-          style={[styles.input, inputStyle]}
+          style={[styles.input, value.length === 0 ? emptyInputDirectionStyle() : null, inputStyle]}
           value={value}
           onChangeText={onChangeText}
           onSubmitEditing={onSubmitEditing}
           placeholder={resolvedPlaceholder}
           placeholderTextColor={colors.textSecondary}
-          textAlign={rtlTextAlignStart}
           autoCorrect={autoCorrect}
           autoCapitalize={autoCapitalize}
           returnKeyType={returnKeyType}
@@ -103,5 +102,8 @@ const useFilterSearchBarStyles = makeUseStyles(({ colors }) => ({
     ...typography.body,
     color: colors.textPrimary,
     paddingVertical: spacing.xs,
+    // FR-RESP-006 AC21 — Hebrew / English queries follow typed content.
+    textAlign: 'auto',
+    writingDirection: 'auto',
   },
 }));

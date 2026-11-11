@@ -2,7 +2,7 @@
 // FR-ADMIN-021 — Admin Portal survey results & free-feedback dashboard.
 // Two tabs: "Surveys" (overview → per-survey stats + per-user answers) and
 // "Feedback" (free-text entries). RBAC-gated by surveys.view.
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { PMF_SURVEY_SLUG, type AdminPermission, type AdminRole, hasPermission } from '@kc/domain';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
@@ -13,13 +13,13 @@ import {
   useAdminSurveyResults,
   useAdminUserFeedback,
 } from '../../../src/hooks/useAdminSurveys';
-import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
 import { SurveyOverviewCard } from '../../../src/components/admin/surveys/SurveyOverviewCard';
 import { SurveyResultsView } from '../../../src/components/admin/surveys/SurveyResultsView';
 import { FeedbackCard } from '../../../src/components/admin/surveys/FeedbackCard';
 import { rowDirectionStart } from '../../../src/lib/rtlLayout';
 import { useLocaleBundle } from '../../../src/i18n/useLocaleBundle';
+import { useAdminScreenTitle } from '../../../src/components/admin/useAdminScreenTitle';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
@@ -42,6 +42,17 @@ export default function AdminSurveysScreen() {
   // The Sean Ellis survey also loads its PMF score (KC#1058).
   const pmf = useAdminPmfReport(allowed && selectedSlug === PMF_SURVEY_SLUG ? selectedSlug : null);
   const feedback = useAdminUserFeedback(allowed && tab === 'feedback');
+
+  const portalTitle = useMemo(() => {
+    if (tab === 'feedback') return `${t.title} · ${t.tabs.feedback}`;
+    if (selectedSlug) {
+      const item = overview.surveys.find((s) => s.slug === selectedSlug);
+      return item?.titleHe ?? selectedSlug;
+    }
+    return t.title;
+  }, [overview.surveys, selectedSlug, t.tabs.feedback, t.title, tab]);
+
+  useAdminScreenTitle(portalTitle);
 
   if (rolesLoading) {
     return <View style={styles.center}><ActivityIndicator color={colors.primary} /></View>;
@@ -67,8 +78,6 @@ export default function AdminSurveysScreen() {
 
   return (
     <View style={styles.root}>
-      <AdminScreenHeader title={t.title} subtitle={t.subtitle} />
-
       <View style={styles.tabs}>
         <TabButton label={t.tabs.surveys} active={tab === 'surveys'} onPress={() => setTab('surveys')} />
         <TabButton label={t.tabs.feedback} active={tab === 'feedback'} onPress={() => setTab('feedback')} />

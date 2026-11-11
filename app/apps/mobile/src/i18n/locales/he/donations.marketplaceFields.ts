@@ -2,7 +2,12 @@
 // Composed into `marketplace.field` / `marketplace.option`. Unknown keys fall back to a
 // humanized key in ListingSchemaFields.
 
+import { animalFieldLabels, animalOptionLabels } from './donations.animalFields';
+import { housingFieldLabels, housingOptionLabels } from './donations.housingFields';
+
 export const marketplaceFieldLabels = {
+  ...housingFieldLabels,
+  ...animalFieldLabels,
   item_condition: 'מצב החפץ',
   min_condition: 'מצב מינימלי',
   pickup_mode: 'איסוף או משלוח',
@@ -24,13 +29,17 @@ export const marketplaceFieldLabels = {
   seats_available: 'מקומות פנויים',
   passengers: 'נוסעים',
   luggage: 'מטען',
-  capacity: 'קיבולת',
   amount_ils: 'סכום (₪)',
   amount_requested_ils: 'סכום מבוקש (₪)',
   receipt_requested: 'נדרשת קבלה',
   recurrence: 'תדירות',
   duration_minutes: 'משך (דקות)',
   duration_days: 'משך (ימים)',
+  topic: 'נושא',
+  slot_starts_at: 'תחילת המפגש',
+  slot_ends_at: 'סוף המפגש',
+  slots_available: 'מספר מקומות',
+  preferred_modality: 'אופן המפגש המועדף',
   level: 'רמה',
   difficulty: 'רמת קושי',
   modality: 'אופן המפגש',
@@ -53,11 +62,27 @@ export const marketplaceFieldLabels = {
   departs_at: 'מועד יציאה',
   reward_model: 'עלות הנסיעה',
   cost_share_ils: 'השתתפות בהוצאות (₪)',
-  place_type: 'סוג המקום',
-  house_rules: 'כללי הבית',
+  // An organization's event (G1 step 5); `capacity` shares the housing label.
+  starts_at: 'מתחיל',
+  ends_at: 'מסתיים',
+  registration_policy: 'הרשמה',
+  address: 'כתובת',
+  // Knowledge exchange kinds (#2034, migration 0703).
+  capacity_per_slot: 'מקומות בכל מועד',
+  slots: 'מועדים',
+  audience: 'למי זה מתאים',
+  cadence: 'תדירות המפגשים',
+  seats: 'מספר חניכים',
+  profession: 'תחום מקצועי',
+  disclaimer_accepted: 'אני מאשר/ת שזה מידע כללי ולא ייעוץ מחייב',
+  language: 'שפות',
+  goal: 'מה המטרה',
+  context_url: 'קישור להקשר',
 } as const;
 
 export const marketplaceOptionLabels = {
+  ...housingOptionLabels,
+  ...animalOptionLabels,
   New: 'חדש',
   LikeNew: 'כמו חדש',
   Good: 'טוב',
@@ -105,6 +130,33 @@ export const marketplaceOptionLabels = {
   soy: 'סויה',
   fish: 'דגים',
   sesame: 'שומשום',
+  automatic: 'אוטומטית',
+  manual: 'באישור המארגנים',
+  verified_only: 'מאומתים בלבד',
+  // Knowledge exchange kinds (#2034, migration 0703).
+  weekly: 'כל שבוע',
+  biweekly: 'כל שבועיים',
+  flexible: 'גמיש',
+  career_change: 'הסבה מקצועית',
+  students: 'סטודנטים',
+  new_immigrants: 'עולים חדשים',
+  youth_18plus: 'צעירים (18+)',
+  seniors: 'גיל הזהב',
+  lawyer: 'עורך/ת דין',
+  accountant: 'רואה/ת חשבון',
+  tax_advisor: 'יועץ/ת מס',
+  social_worker: 'עובד/ת סוציאלי/ת',
+  employment_rights: 'זכויות עובדים',
+  housing_rights: 'זכויות דיור',
+  consumer_rights: 'זכויות צרכנים',
+  he: 'עברית',
+  en: 'אנגלית',
+  ar: 'ערבית',
+  ru: 'רוסית',
+  am: 'אמהרית',
+  fr: 'צרפתית',
+  es: 'ספרדית',
+  other: 'אחר',
 } as const;
 
 export const marketplaceAvailabilityLabels = {

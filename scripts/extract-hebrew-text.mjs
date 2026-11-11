@@ -18,11 +18,12 @@
  * - `app/apps/mobile/src/i18n/**` — canonical locale bundles (`he`, future `en`, etc.).
  * - `app/apps/mobile/web-server/i18n/**` — web-server locale bundles (Hono server has no React/i18next runtime).
  * - `supabase/migrations/**`, `supabase/seed.sql` — excluded until SQL adopts D-24 indirection.
+ * - `supabase/tests/**` — DB regression tests: fixtures, like `__tests__/**`.
  * - `supabase/functions/**` — Edge bundles (including `i18n.json`).
  * - `__tests__/**`, `*.test.ts(x)`, `*.test.mjs`, `*.test.js` — fixtures.
  * - `tests/e2e/**` — Playwright E2E suite (Hebrew selectors against rendered UI; D-55).
  * - `app/apps/mobile/ios/**` + `.plist` suffix — native permission copy (to be aligned with D-24 / InfoPlist.strings).
- * - Repo-root `CLAUDE.md` — agent-facing Hebrew examples.
+ * - Repo-root `AGENTS.md` / `CLAUDE.md` — agent-facing Hebrew examples.
  * - `SKIP_HEBREW_SCAN_EXACT_RELS` — narrow ASCII-path exceptions until moved to locale-backed data.
  * - Anything gitignored (e.g. a local `expo prebuild` android/ tree): in a git checkout only files
  *   git sees are scanned — tracked plus new untracked ones. Outside git, the whole tree is walked.
@@ -129,7 +130,11 @@ function isSkippedContentTreeRel(relPosix) {
     return true;
   }
   if (relPosix === "supabase/seed.sql") return true;
-  // Fake Hebrew test data for kc-dev (supabase/seed/kc-dev/**) – data, not UI copy.
+  // Archived pre-baseline material (legacy DB tests, the old demo seed): history, not UI copy.
+  if (relPosix === "supabase/archive" || relPosix.startsWith("supabase/archive/")) return true;
+  // DB regression tests (supabase/tests/**) are fixtures like __tests__/**, not UI copy.
+  if (relPosix === "supabase/tests" || relPosix.startsWith("supabase/tests/")) return true;
+  // Seed data (reference, content, e2e) – data, not UI copy.
   if (relPosix.startsWith("supabase/seed/")) return true;
   if (relPosix === "app/apps/mobile/src/i18n" || relPosix.startsWith("app/apps/mobile/src/i18n/")) {
     return true;
@@ -151,7 +156,7 @@ function isSkippedContentTreeRel(relPosix) {
 export function isSkippedHebrewScanRel(relPosix) {
   if (isSkippedContentTreeRel(relPosix)) return true;
   if (SKIP_HEBREW_SCAN_EXACT_RELS.has(relPosix)) return true;
-  if (relPosix === "CLAUDE.md") return true;
+  if (relPosix === "CLAUDE.md" || relPosix === "AGENTS.md") return true;
   if (relPosix.includes("/__tests__/")) return true;
   if (
     relPosix.endsWith(".test.ts") ||

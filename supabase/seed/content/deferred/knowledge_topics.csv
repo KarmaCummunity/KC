@@ -1,0 +1,57 @@
+slug,parent_slug,label_he,label_en,description_he,status,merged_into_slug,legacy_category_slug,sort_order
+programming,,תכנות וטכנולוגיה,Programming & technology,,active,,tech,1
+languages,,שפות,Languages,,active,,languages,2
+math-science,,מתמטיקה ומדעים,Math & science,,active,,stem,3
+professions,,אקדמיה ומקצוע,Academia & professions,,active,,professional,4
+arts,,אומנויות,Arts,,active,,arts,5
+cooking,,בישול וקולינריה,Cooking,,active,,,6
+personal-development,,התפתחות אישית,Personal development,,active,,,7
+parenting,,הורות וחינוך,Parenting & education,,active,,parenting,8
+life-skills,,כישורי חיים,Life skills,,active,,life-skills,9
+tradition-heritage,,מסורת ומורשת,Tradition & heritage,,active,,,10
+rights,,זכויות,Rights,,active,,,11
+drawing,arts,ציור,Drawing & painting,,active,,,1
+photography,arts,צילום,Photography,,active,,,2
+music,arts,מוזיקה,Music,,active,,,3
+theatre,arts,תיאטרון,Theatre,,active,,,4
+creative-writing,arts,כתיבה יוצרת,Creative writing,,active,,,5
+english,languages,אנגלית,English,,active,,,1
+arabic,languages,ערבית,Arabic,,active,,,2
+hebrew,languages,עברית,Hebrew,,active,,,3
+french,languages,צרפתית,French,,active,,,4
+russian,languages,רוסית,Russian,,active,,,5
+spanish,languages,ספרדית,Spanish,,active,,,6
+personal-finance,life-skills,כלכלת המשפחה,Personal finance,,active,,,1
+insurance,life-skills,ביטוח,Insurance,,active,,,2
+job-search,life-skills,חיפוש עבודה,Job search,,active,,,3
+digital-literacy,life-skills,אוריינות דיגיטלית,Digital literacy,,active,,,4
+mathematics,math-science,מתמטיקה,Mathematics,,active,,,1
+statistics,math-science,סטטיסטיקה,Statistics,,active,,,2
+physics,math-science,פיזיקה,Physics,,active,,,3
+chemistry,math-science,כימיה,Chemistry,,active,,,4
+biology,math-science,ביולוגיה,Biology,,active,,,5
+early-childhood,parenting,גיל הרך,Early childhood,,active,,,1
+teenagers,parenting,גיל ההתבגרות,Teenagers,,active,,,2
+special-education,parenting,חינוך מיוחד,Special education,,active,,,3
+time-management,personal-development,ניהול זמן,Time management,,active,,,1
+meditation,personal-development,מדיטציה,Meditation,,active,,,2
+public-speaking,personal-development,דיבור מול קהל,Public speaking,,active,,,3
+law,professions,משפטים,Law,,active,,,1
+health-sciences,professions,מדעי הבריאות,Health sciences,,active,,,2
+management,professions,ניהול,Management,,active,,,3
+economics,professions,כלכלה,Economics,,active,,,4
+accounting,professions,חשבונאות,Accounting,,active,,,5
+python,programming,פייתון,Python,,active,,,1
+javascript,programming,ג'אווהסקריפט,JavaScript,,active,,,2
+web-development,programming,פיתוח ווב,Web development,,active,,,3
+artificial-intelligence,programming,בינה מלאכותית,Artificial intelligence,,active,,,4
+cyber-security,programming,סייבר,Cyber security,,active,,,5
+data-analysis,programming,ניתוח נתונים,Data analysis,,active,,,6
+tenant-rights,rights,זכויות דיירים,Tenant rights,,active,,,1
+employment-rights,rights,זכויות עובדים,Employment rights,,active,,,2
+consumer-rights,rights,זכויות צרכנים,Consumer rights,,active,,,3
+social-security,rights,ביטוח לאומי,Social security,,active,,,4
+immigrant-rights,rights,זכויות עולים,New immigrants' rights,,active,,,5
+jewish-texts,tradition-heritage,מקורות יהודיים,Jewish texts,,active,,,1
+israeli-history,tradition-heritage,תולדות ישראל,History of Israel,,active,,,2
+philosophy,tradition-heritage,פילוסופיה,Philosophy,,active,,,3

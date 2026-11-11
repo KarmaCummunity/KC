@@ -1,8 +1,8 @@
 // app/apps/mobile/app/(admin)/money/index.tsx
 // V2-ADMIN-MONEY-9 — V2 §13.3 Admin Money — minimal donations / expenses ledger.
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { adminChipScroll } from '../../../src/components/admin/adminChipScroll';
+import { useTranslation } from 'react-i18next';
+import { Alert, Platform, RefreshControl, StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   hasPermission, isFinanceLedgerError,
@@ -15,7 +15,9 @@ import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { container } from '../../../src/lib/container';
 import { FinanceEntryCard } from '../../../src/components/admin/money/FinanceEntryCard';
 import { FinanceEntryFormModal } from '../../../src/components/admin/money/FinanceEntryFormModal';
-import { AdminFilterChip } from '../../../src/components/admin/AdminFilterChip';
+import { AdminFilterTopBarButton } from '../../../src/components/admin/AdminSearchFilterToolbar';
+import { FilterSection } from '../../../src/components/filterKit/FilterSection';
+import { MoneySubNav } from '../../../src/components/admin/money/MoneySubNav';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
 import { confirmAction as platformConfirm } from '../../../src/services/platformConfirm';
 import { useLocaleBundle, type LocaleBundle } from '../../../src/i18n/useLocaleBundle';
@@ -44,28 +46,33 @@ const financeKeyExtractor = (e: FinanceEntry) => e.entryId;
 
 const FinanceRowItem = React.memo(function FinanceRowItem({
   entry,
+  accountName,
   onEdit,
   onDelete,
 }: {
   entry: FinanceEntry;
+  accountName: string | null;
   onEdit: (entry: FinanceEntry) => void;
   onDelete: (entryId: string) => void;
 }) {
   const handleEdit = useCallback(() => onEdit(entry), [entry, onEdit]);
   const handleDelete = useCallback(() => onDelete(entry.entryId), [entry.entryId, onDelete]);
 
-  return <FinanceEntryCard entry={entry} onEdit={handleEdit} onDelete={handleDelete} />;
+  return <FinanceEntryCard entry={entry} accountName={accountName} onEdit={handleEdit} onDelete={handleDelete} />;
 });
 
 export default function MoneyScreen() {
   const styles = useStyles();
   const L = useLocaleBundle();
   const t = L.admin.money;
+  const { t: tFilters } = useTranslation();
   const { roles, isLoading: rolesLoading } = useAdminRoles();
   const can = (perm: AdminPermission) => hasPermission(roles as readonly AdminRole[], perm);
   const queryClient = useQueryClient();
 
   const [dirFilter, setDirFilter] = useState<DirFilter>('all');
+  const [sheetOpen, setSheetOpen] = useState(false);
+
   const [editing, setEditing] = useState<FinanceEntry | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -80,6 +87,19 @@ export default function MoneyScreen() {
     enabled:  can('money.manage'),
     staleTime: 15_000,
   });
+  const accounts = useQuery({
+    queryKey: ['admin.money.accounts'],
+    queryFn:  () => container.listFinanceAccounts.execute(),
+    enabled:  can('money.manage'),
+    staleTime: 60_000,
+  });
+  const accountNames = useMemo(
+    () => new Map((accounts.data ?? []).map((a) => [a.accountId, a.name])),
+    [accounts.data],
+  );
+  // Newest entries come first, so the first one with an account is the most recently used one.
+  const lastUsedAccountId = list.data?.rows.find((r) => r.accountId !== null)?.accountId ?? null;
+
   const summary = useQuery({
     queryKey: ['admin.money.summary'],
     queryFn:  () => container.getFinanceSummary.execute({}),
@@ -92,6 +112,8 @@ export default function MoneyScreen() {
     onSuccess:  () => {
       void queryClient.invalidateQueries({ queryKey: ['admin.money.list'] });
       void queryClient.invalidateQueries({ queryKey: ['admin.money.summary'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin.money.accounts'] });
+      void queryClient.invalidateQueries({ queryKey: ['org-transparency'] });
     },
   });
 
@@ -117,9 +139,14 @@ export default function MoneyScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: FinanceEntry }) => (
-      <FinanceRowItem entry={item} onEdit={handleEdit} onDelete={handleDelete} />
+      <FinanceRowItem
+        entry={item}
+        accountName={item.accountId ? (accountNames.get(item.accountId) ?? null) : null}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
     ),
-    [handleDelete, handleEdit],
+    [accountNames, handleDelete, handleEdit],
   );
 
   if (rolesLoading) {
@@ -135,6 +162,8 @@ export default function MoneyScreen() {
         <Text style={styles.title}>{t.title}</Text>
         <PrimaryButton testID="admin-money-new" label={t.newBtn} size="sm" onPress={() => setCreating(true)} />
       </View>
+
+      <MoneySubNav active="ledger" />
 
       <View style={styles.summaryBox}>
         <Text style={styles.summaryHeading}>{t.summary.period}</Text>
@@ -157,16 +186,25 @@ export default function MoneyScreen() {
         ))}
       </View>
 
-      <ScrollView horizontal style={adminChipScroll.scroll} showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.chips, adminChipScroll.content]}>
-        {(['all', 'in', 'out'] as readonly DirFilter[]).map((d) => (
-          <AdminFilterChip
-            key={d}
-            label={d === 'all' ? t.filters.all : d === 'in' ? t.filters.income : t.filters.expense}
-            active={dirFilter === d}
-            onPress={() => setDirFilter(d)}
+      <AdminFilterTopBarButton
+        activeFilterCount={dirFilter === 'all' ? 0 : 1}
+        filterVisible={sheetOpen}
+        onOpenFilters={() => setSheetOpen(true)}
+        onCloseFilters={() => setSheetOpen(false)}
+        onClearFilters={() => setDirFilter('all')}
+        sheetTitle={tFilters('filters.header')}
+        filterButtonTestID="admin-money-filter-button"
+        filterSheetContent={(
+          <FilterSection<DirFilter>
+            options={(['all', 'in', 'out'] as const).map((d) => ({
+              value: d,
+              label: d === 'all' ? t.filters.all : d === 'in' ? t.filters.income : t.filters.expense,
+            }))}
+            value={dirFilter}
+            onChange={(d) => setDirFilter(d ?? 'all')}
           />
-        ))}
-      </ScrollView>
+        )}
+      />
       <Text style={styles.totalLabel}>{t.totalCount(list.data?.totalCount ?? 0)}</Text>
 
       <KcFlashList
@@ -185,12 +223,16 @@ export default function MoneyScreen() {
       {(creating || editing) && (
         <FinanceEntryFormModal
           initial={editing}
+          accounts={accounts.data ?? []}
+          defaultAccountId={lastUsedAccountId}
           onClose={() => { setCreating(false); setEditing(null); }}
           onSaved={() => {
             setCreating(false);
             setEditing(null);
             void queryClient.invalidateQueries({ queryKey: ['admin.money.list'] });
             void queryClient.invalidateQueries({ queryKey: ['admin.money.summary'] });
+            void queryClient.invalidateQueries({ queryKey: ['admin.money.accounts'] });
+            void queryClient.invalidateQueries({ queryKey: ['org-transparency'] });
           }}
         />
       )}

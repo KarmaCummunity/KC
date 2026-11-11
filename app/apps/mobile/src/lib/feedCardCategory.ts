@@ -59,6 +59,8 @@ export function worldChipKey(worldSlug: string): string {
  * category except items, whose mirrors carry the more specific item subcategory.
  */
 function worldCategory(worldSlug: string | null) {
-  if (!worldSlug || !isFeedWorldSlug(worldSlug) || worldSlug === 'items') return null;
+  if (!worldSlug || worldSlug === 'items') return null;
+  // Challenges publish a post with no listing; the card still names the world.
+  if (!isFeedWorldSlug(worldSlug) && worldSlug !== 'challenges') return null;
   return CREATE_CATEGORIES.find((c) => c.id === worldSlug) ?? null;
 }

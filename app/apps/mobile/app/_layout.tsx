@@ -40,21 +40,19 @@ import { SoftGateProvider } from '../src/components/OnboardingSoftGate';
 import { AuthGate } from '../src/components/AuthGate';
 import { useDetailStackScreenOptions } from '../src/navigation/detailStackScreenOptions';
 import { rootStackGestureEnabled, rootStackScreenAnimation } from '../src/navigation/rootStackAnimation';
-import { ConfigErrorScreen } from '../src/components/ConfigErrorScreen';
+import { ConfigGate } from '../src/components/ConfigGate';
 import { isSupabaseConfigured } from '../src/lib/supabasePublicConfig';
 import { DevBanner } from '../src/components/DevBanner';
 import { SuspensionBanner } from '../src/components/SuspensionBanner';
 import { LegalConsentGate } from '../src/components/legal/LegalConsentGate';
 import { ModalStackProvider } from '../src/components/legal/useActiveModalStack';
-import { useMeRealtime } from '../src/hooks/useMeRealtime';
 import { useBrandFonts } from '../src/lib/useBrandFonts';
 import { useOnlinePresenceLifecycle } from '../src/hooks/useOnlinePresence';
 import { useCoreLoopReturnVisit } from '../src/hooks/useCoreLoopReturnVisit';
 import { useRecordActiveDay } from '../src/hooks/useRecordActiveDay';
 import * as NavigationBar from 'expo-navigation-bar';
 
-function MeRealtimeMount() {
-  useMeRealtime();
+function SignedInLifecycleMount() {
   useOnlinePresenceLifecycle();
   useCoreLoopReturnVisit();
   useRecordActiveDay();
@@ -74,7 +72,14 @@ function ThemedRootShell() {
 
   React.useEffect(() => {
     // expo-navigation-bar on SDK 54 is imperative and Android-only (KC#1276).
-    if (Platform.OS === 'android') NavigationBar.setStyle(isDark ? 'dark' : 'light');
+    if (Platform.OS !== 'android') return;
+    // Edge-to-edge (targetSdk 36) can reject this on some devices; a thrown
+    // call here is an uncaught startup error, so the shell must survive it.
+    try {
+      void Promise.resolve(NavigationBar.setStyle(isDark ? 'dark' : 'light')).catch(() => undefined);
+    } catch {
+      /* navigation bar contrast is cosmetic */
+    }
   }, [isDark]);
 
   React.useEffect(() => {
@@ -115,6 +120,11 @@ function ThemedRootShell() {
               <Stack.Screen name="(guest)" />
               <Stack.Screen name="(onboarding)" />
               <Stack.Screen name="(tabs)" />
+              {/* FR-POST-001 AC9 — the create form slides up over the screen it was opened from. */}
+              <Stack.Screen
+                name="create"
+                options={{ animation: Platform.OS === 'web' ? 'fade' : 'slide_from_bottom' }}
+              />
               {/* FR-ADMIN-011 AC1 — register the admin group at the root so
                   native stack navigation can resolve `/(admin)` targets.
                   Without this, `router.push('/(admin)')` is a no-op on iOS /
@@ -135,6 +145,10 @@ function ThemedRootShell() {
               {/* FR-RESEARCH-001 — public web survey; no auth shell */}
               <Stack.Screen name="research" options={{ headerShown: false }} />
               <Stack.Screen name="edit-profile" options={{ ...detailStackScreenOptions, headerTitle: i18n.t('settings.editProfileTitle') }} />
+              <Stack.Screen
+                name="identity-verification"
+                options={{ ...detailStackScreenOptions, headerTitle: i18n.t('verification.identity.title') }}
+              />
               <Stack.Screen name="post/[id]" options={{ ...detailStackScreenOptions, headerTitle: i18n.t('post.detailTitle') }} />
               <Stack.Screen name="listing/[listingId]" options={{ ...detailStackScreenOptions, headerTitle: '' }} />
               {/* user/[handle]/* owns its own header via the nested _layout */}
@@ -144,6 +158,8 @@ function ThemedRootShell() {
               <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
               {/* chat/index renders its own header inside the screen — disable the Stack one to avoid doubling. */}
               <Stack.Screen name="chat/index" options={{ headerShown: true }} />
+              {/* FR-CHAT-017 — recipient picker; the screen sets its own header options. */}
+              <Stack.Screen name="chat/new" options={{ headerShown: true }} />
             </Stack>
               </ShellWithResponsiveChrome>
             </SoftGateProvider>
@@ -188,7 +204,7 @@ function RootLayoutContent() {
       <SafeAreaProvider>
         <ErrorBoundary>
           <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
-            <MeRealtimeMount />
+            <SignedInLifecycleMount />
             <RevenueCatSync />
             <AppThemeProvider>
               {/* KC#1410: a fatal uncaught JS error shows the themed fallback;
@@ -210,15 +226,9 @@ export default function RootLayout() {
   if (brandFontStatus === 'loading') return null;
   return (
     <BrandFontProvider available={brandFontStatus === 'loaded'}>
-      {isSupabaseConfigured() ? (
+      <ConfigGate configured={isSupabaseConfigured()}>
         <RootLayoutContent />
-      ) : (
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <SafeAreaProvider>
-            <ConfigErrorScreen />
-          </SafeAreaProvider>
-        </GestureHandlerRootView>
-      )}
+      </ConfigGate>
     </BrandFontProvider>
   );
 }

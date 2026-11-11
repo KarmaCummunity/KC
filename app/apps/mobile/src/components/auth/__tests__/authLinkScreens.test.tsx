@@ -3,6 +3,7 @@
 // forgot / reset password submit through a busy primary button, and every
 // status state offers its one way forward.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+vi.mock('../../../navigation/useShellTabBarVisibility', () => ({ useShellTabBarVisibility: () => false, shellTabBarHeightPx: () => 0, useShellTabBarScrollInset: () => 0 }));
 import { act, cleanup, fireEvent } from '@testing-library/react';
 
 const router = { back: vi.fn(), push: vi.fn(), replace: vi.fn() };
@@ -15,6 +16,8 @@ vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogT
 vi.mock('@expo/vector-icons', async () => (await import('../../ui/__tests__/kitDialogTestKit')).iconsDouble);
 vi.mock('react-i18next', async () => (await import('../../ui/__tests__/kitDialogTestKit')).i18nDouble);
 vi.mock('react-native-safe-area-context', async () => (await import('../../ui/__tests__/kitDialogTestKit')).safeAreaDouble);
+// Email flows visible: the launch-surface gate renders its children (see config/launchSurfaces.ts).
+vi.mock('../../../hooks/useLaunchSurface', () => ({ useLaunchSurface: () => true }));
 vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 vi.mock('expo-router', () => ({ useRouter: () => router, useLocalSearchParams: () => params }));
 vi.mock('../../../services/authMessages', () => ({ mapAuthErrorToHebrew: (code: string) => code }));

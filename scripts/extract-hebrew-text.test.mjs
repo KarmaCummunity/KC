@@ -86,6 +86,7 @@ test('a Hebrew-free tree yields zero violations', () => {
 test('isSkippedHebrewScanRel encodes the documented skip rules', () => {
   assert.equal(isSkippedHebrewScanRel('app/apps/mobile/src/i18n/locales/he/x.ts'), true);
   assert.equal(isSkippedHebrewScanRel('supabase/migrations/0001_x.sql'), true);
+  assert.equal(isSkippedHebrewScanRel('supabase/tests/0570_knowledge_topics.sql'), true);
   assert.equal(isSkippedHebrewScanRel('supabase/functions/dispatch-notification/i18n.json'), true);
   assert.equal(isSkippedHebrewScanRel('app/apps/mobile/app.json'), true);
   assert.equal(

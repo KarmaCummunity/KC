@@ -1,8 +1,7 @@
 // app/apps/mobile/app/(admin)/time/index.tsx
 // V2-ADMIN-TIME-10 — V2 §13.10 Admin Time (timesheets).
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, Platform, RefreshControl, ScrollView, View } from 'react-native';
-import { adminChipScroll } from '../../../src/components/admin/adminChipScroll';
+import { Alert, Platform, RefreshControl, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   hasPermission,
@@ -18,10 +17,11 @@ import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { container } from '../../../src/lib/container';
 import { TimesheetEntryCard } from '../../../src/components/admin/time/TimesheetEntryCard';
 import { TimesheetFormModal } from '../../../src/components/admin/time/TimesheetFormModal';
-import { AdminFilterChip } from '../../../src/components/admin/AdminFilterChip';
+import { AdminFilterTopBarButton } from '../../../src/components/admin/AdminSearchFilterToolbar';
+import { FilterSection } from '../../../src/components/filterKit/FilterSection';
 import { AdminListEmpty } from '../../../src/components/admin/AdminListEmpty';
-import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
 import { AdminScreenGuard } from '../../../src/components/admin/AdminScreenGuard';
+import { PrimaryButton } from '../../../src/components/ui/Buttons';
 import { confirmAction as platformConfirm } from '../../../src/services/platformConfirm';
 import { useLocaleBundle, type LocaleBundle } from '../../../src/i18n/useLocaleBundle';
 import { KcFlashList } from '../../../src/components/lists/KcFlashList';
@@ -91,6 +91,7 @@ export default function TimeScreen() {
 
   const canApprove = can('time.approve');
   const [tab, setTab] = useState<Tab>('mine');
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<TimesheetEntry | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -156,6 +157,16 @@ export default function TimeScreen() {
     [canApprove, handleApprove, handleDelete, handleEdit, handleReject, handleSubmit, myId],
   );
 
+  const portalTitle = useMemo(() => {
+    if (tab === 'mine') return t.title;
+    if (tab === 'pending') return `${t.title} · ${t.pendingTab}`;
+    return `${t.title} · ${t.allTab}`;
+  }, [t.allTab, t.pendingTab, t.title, tab]);
+
+  const newEntryBtn = (
+    <PrimaryButton label={t.newBtn} size="sm" onPress={() => setCreating(true)} testID="admin-time-new" />
+  );
+
   return (
     <AdminScreenGuard
       isLoading={rolesLoading}
@@ -164,18 +175,27 @@ export default function TimeScreen() {
       forbiddenLabel={t.forbiddenTitle}
     >
     <View style={styles.root}>
-      <AdminScreenHeader title={t.title} newLabel={t.newBtn} onNew={() => setCreating(true)} />
-
-      <ScrollView horizontal style={adminChipScroll.scroll} showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.chips, adminChipScroll.content]}>
-        {(['mine', 'pending', 'all'] as readonly Tab[]).map((value) => (
-          <AdminFilterChip
-            key={value}
-            label={value === 'mine' ? t.myEntriesTab : value === 'pending' ? t.pendingTab : t.allTab}
-            active={tab === value}
-            onPress={() => setTab(value)}
+      <AdminFilterTopBarButton
+        portalTitle={portalTitle}
+        headerRightExtra={newEntryBtn}
+        activeFilterCount={tab === 'mine' ? 0 : 1}
+        filterVisible={sheetOpen}
+        onOpenFilters={() => setSheetOpen(true)}
+        onCloseFilters={() => setSheetOpen(false)}
+        onClearFilters={() => setTab('mine')}
+        sheetTitle={t.myEntriesTab}
+        filterButtonTestID="admin-time-filter-button"
+        filterSheetContent={(
+          <FilterSection<Tab>
+            options={(['mine', 'pending', 'all'] as const).map((value) => ({
+              value,
+              label: value === 'mine' ? t.myEntriesTab : value === 'pending' ? t.pendingTab : t.allTab,
+            }))}
+            value={tab}
+            onChange={(v) => setTab(v ?? 'mine')}
           />
-        ))}
-      </ScrollView>
+        )}
+      />
       <Text style={styles.totalLabel}>{t.totalCount(list.data?.totalCount ?? 0)}</Text>
 
       <KcFlashList

@@ -5,7 +5,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { hapticLightImpact } from '../../lib/haptics';
 import { MOTION } from '../../lib/animations/motion';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 
@@ -96,7 +96,7 @@ export function PressableScale({
     scale.value = reduced ? 1 : withSpring(1, MOTION.spring);
   };
   const handlePress = () => {
-    if (haptic) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    if (haptic) hapticLightImpact();
     onPress();
   };
 

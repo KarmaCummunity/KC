@@ -1,6 +1,8 @@
 // Hebrew — ride quick publish: departure, estimated end and seats (spec 05 §5.3 step 1, D75, S46).
 export const rideSchedule = {
   departure: 'שעת יציאה',
+  leaveNow: 'יציאה עכשיו',
+  leaveNowHint: 'הנסיעה יוצאת כמה דקות אחרי הפרסום.',
   arrival: 'סיום משוער',
   arrivalPlaceholder: 'יוצע לפי המסלול',
   arrivalHint: 'הצעה לפי המרחק — אפשר לשנות.',
@@ -30,6 +32,13 @@ export const rideFeed = {
   meetingPoints: 'נקודות איסוף: {{count}}',
   empty: 'אין כרגע נסיעות קרובות. אפשר לפרסם נסיעה או בקשה.',
   error: 'לא הצלחנו לטעון את הנסיעות. משכו למטה כדי לנסות שוב.',
+  // #1626 — empty-feed calls to action (neutral phrasing, spec 17 §7.2).
+  publishCta: 'פרסום נסיעה',
+  clearFilters: 'ניקוי הסינון',
+  // #1626 — the route search is a collapsed filter on top of the rides feed.
+  routeFilterTitle: 'סינון לפי מסלול',
+  routeFilterActive: '{{from}} ← {{to}}',
+  routeFilterClear: 'ניקוי מסלול',
 } as const;
 
 // Saved routes (D74): follow a route and hear about new rides on it.

@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { makeUseStyles, radius, spacing, typography, Text, TextInput } from '@kc/ui';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
+import { formIsoDateInputProps } from '../../../lib/platform/formTextInputHints';
 import { rtlTextAlignStart } from '../../../lib/rtlTextAlignStart';
 
 export interface TaskDueRangeFilterProps {
@@ -43,10 +44,8 @@ export function TaskDueRangeFilter({ fromValue, toValue, onChange, onClear }: Ta
           value={from}
           onChangeText={setFrom}
           placeholder={L.admin.tasks.dueRange.placeholder}
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="numbers-and-punctuation"
           textAlign={rtlTextAlignStart}
+          {...formIsoDateInputProps}
         />
       </View>
       <View style={styles.fieldCol}>
@@ -56,10 +55,8 @@ export function TaskDueRangeFilter({ fromValue, toValue, onChange, onClear }: Ta
           value={to}
           onChangeText={setTo}
           placeholder={L.admin.tasks.dueRange.placeholder}
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="numbers-and-punctuation"
           textAlign={rtlTextAlignStart}
+          {...formIsoDateInputProps}
         />
       </View>
       <View style={styles.actionsCol}>

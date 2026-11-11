@@ -1,49 +1,52 @@
+// A member's posts filtered by status and audience, newest first (FR-POST-016, FR-PROFILE-001).
+//
+// Used where `profile_posts_page`'s three fixed tabs do not fit: the owner's "removed" list (statuses
+// an admin or a report set), the Hidden screen, and the owner's delivered / deleted "only me" posts.
+// The ids come from `posts` under the caller's row-level security (so another member's list holds
+// only what the caller may read) and are completed into cards by `post_cards`.
+
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Post, PostStatus, PostVisibility } from '@kc/domain';
+import type { PostStatus, PostVisibility } from '@kc/domain';
 import type { Database } from '../database.types';
-import { POST_SELECT_BARE, mapPostRow, type PostJoinedRow } from './mapPostRow';
-import { decodeCursor, encodeCursor } from './cursor';
+import { unwrapCall } from '../rpc/mapRpcError';
+import { encodeKeysetCursor, keysetAfterFilter, parseKeysetCursor } from './pageCursor';
+import { clampPageLimit, fetchPostsByIds, type PostsPage } from './postCardPages';
 
-const MY_POSTS_PAGE_MAX = 100;
+type Client = SupabaseClient<Database>;
 
-/**
- * Audit §3.10 — paginated owner's posts for profile; `safeLimit + 1` probe for `nextCursor`.
- */
-export async function getMyPostsPage(
-  client: SupabaseClient<Database>,
-  userId: string,
-  status: PostStatus[],
+export interface OwnerPostsFilter {
+  readonly statuses: readonly PostStatus[];
+  readonly visibility?: PostVisibility;
+  readonly excludeVisibility?: PostVisibility;
+}
+
+/** One page (newest first, keyset on `(created_at, id)`) of the posts of `ownerId` matching `filter`. */
+export async function listOwnerPostsPage(
+  client: Client,
+  ownerId: string,
+  filter: OwnerPostsFilter,
   limit: number,
   cursor?: string,
-  visibility?: PostVisibility,
-  excludeVisibility?: PostVisibility,
-): Promise<{ posts: Post[]; nextCursor: string | null }> {
-  if (status.length === 0) return { posts: [], nextCursor: null };
-  const safeLimit = Math.max(1, Math.min(limit, MY_POSTS_PAGE_MAX));
-  const decoded = decodeCursor(cursor);
-
-  let q = client
+): Promise<PostsPage> {
+  if (filter.statuses.length === 0) return { posts: [], nextCursor: null };
+  const size = clampPageLimit(limit);
+  let query = client
     .from('posts')
-    .select(POST_SELECT_BARE)
-    .eq('owner_id', userId)
-    // Feed mirrors of listings are listed with the listings, not here (D-206).
-    .is('listing_id', null)
-    .in('status', status)
+    .select('id, created_at')
+    .eq('owner_id', ownerId)
+    .in('status', [...filter.statuses])
     .order('created_at', { ascending: false })
-    .limit(safeLimit + 1);
+    .order('id', { ascending: false })
+    .limit(size + 1);
+  if (filter.visibility) query = query.eq('visibility', filter.visibility);
+  if (filter.excludeVisibility) query = query.neq('visibility', filter.excludeVisibility);
+  const after = parseKeysetCursor(cursor);
+  if (after) query = query.or(keysetAfterFilter('created_at', 'id', after));
 
-  if (visibility) q = q.eq('visibility', visibility);
-  if (excludeVisibility) q = q.neq('visibility', excludeVisibility);
-
-  if (decoded) q = q.lt('created_at', decoded.createdAt);
-
-  const { data, error } = await q;
-  if (error) throw new Error(`getMyPosts: ${error.message}`);
-  const rows = (data ?? []) as unknown as PostJoinedRow[];
-  const hasMore = rows.length > safeLimit;
-  const page = hasMore ? rows.slice(0, safeLimit) : rows;
-  const posts = page.map(mapPostRow);
-  const last = posts[posts.length - 1];
-  const nextCursor = hasMore && last ? encodeCursor({ createdAt: last.createdAt }) : null;
+  const rows = unwrapCall('table:posts', await query) ?? [];
+  const page = rows.slice(0, size);
+  const last = page[page.length - 1];
+  const posts = await fetchPostsByIds(client, page.map((row) => row.id));
+  const nextCursor = rows.length > size && last ? encodeKeysetCursor({ t: last.created_at, id: last.id }) : null;
   return { posts, nextCursor };
 }

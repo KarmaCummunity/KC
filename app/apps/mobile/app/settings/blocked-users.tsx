@@ -1,7 +1,8 @@
 // app/apps/mobile/app/settings/blocked-users.tsx
 // FR-MOD-004 AC1 — every member the signed-in user has blocked, with avatar, name and an
-// "Unblock" button. Blocked members' profiles are hidden from the blocker (FR-MOD-009), so
-// this list is the only way back; it reads list_my_blocked_users (0545).
+// "Unblock" button. Blocked members' profiles are hidden from the blocker (FR-MOD-009). The
+// baseline has no way to read a blocked member's name or avatar yet (M01), so the list degrades
+// to an empty state with a "not available yet" caption (docs/db/app-migration-playbook.md § 3).
 
 import React, { useCallback } from 'react';
 import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
@@ -10,12 +11,13 @@ import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import type { BlockedUser } from '@kc/application';
-import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
+import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { AvatarInitials } from '../../src/components/AvatarInitials';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
 import { useBlockedUsers } from '../../src/hooks/useBlockedUsers';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
+import { listUnavailableMessage } from '../../src/lib/backendAvailability';
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
 const blockedKeyExtractor = (u: BlockedUser) => u.userId;
@@ -57,11 +59,11 @@ const BlockedUserRow = React.memo(function BlockedUserRow({
 });
 
 export default function BlockedUsersScreen() {
-  const detailStackScreenOptions = useDetailStackScreenOptions();
+  const shellStackScreenOptions = useShellStackScreenOptions();
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useBlockedUsersStyles();
-  const { users, isLoading, isError, busyId, unblock } = useBlockedUsers();
+  const { users, unavailable, isLoading, isError, busyId, unblock } = useBlockedUsers();
   const handleUnblock = useCallback((user: BlockedUser) => void unblock(user), [unblock]);
 
   const renderItem = useCallback(
@@ -80,7 +82,7 @@ export default function BlockedUsersScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen options={{ ...detailStackScreenOptions, headerTitle: t('moderation.block.listTitle') }} />
+      <Stack.Screen options={{ ...shellStackScreenOptions, headerTitle: t('moderation.block.listTitle') }} />
       <Text style={styles.hint}>{t('moderation.block.listHint')}</Text>
       {isLoading ? (
         <ActivityIndicator color={colors.primary} style={styles.loading} />
@@ -93,7 +95,11 @@ export default function BlockedUsersScreen() {
           renderItem={renderItem}
           ListEmptyComponent={
             <Text style={styles.empty}>
-              {isError ? t('moderation.block.listError') : t('moderation.block.listEmpty')}
+              {isError
+                ? t('moderation.block.listError')
+                : unavailable
+                  ? listUnavailableMessage()
+                  : t('moderation.block.listEmpty')}
             </Text>
           }
         />

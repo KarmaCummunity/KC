@@ -1,9 +1,6 @@
-// MotionEntry — staggered entry primitive matching the welcome screen idiom.
-//
-// Three variants line up with the three "sections" of the welcome screen:
-//   - hero    : fade + translateY 28 → 0,  spring(damping 18, stiffness 90)
-//   - side    : fade + translateX 24 → 0,  spring(damping 20, stiffness 100)
-//   - bottom  : fade + translateY 24 → 0,  spring(damping 18)
+// Short fade used by content screens. Delays live in ENTRY_DELAY (all 0) so a
+// screen is not held blank after its navigation transition. Welcome and auth
+// keep their own, slower entrances.
 //
 // The component honors prefers-reduced-motion (renders the final state with no
 // transform).
@@ -16,7 +13,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { type StyleProp, type ViewStyle } from 'react-native';
+import { MOTION } from '../../lib/animations/motion';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
+
+export { ENTRY_DELAY } from '../../lib/animations/motion';
 
 type Variant = 'hero' | 'side' | 'bottom';
 
@@ -29,22 +29,22 @@ interface MotionEntryProps {
 
 const CONFIG = {
   hero: {
-    translateY: 28,
+    translateY: MOTION.entryDistance,
     translateX: 0,
-    spring: { damping: 18, stiffness: 90 },
-    duration: 500,
+    spring: MOTION.spring,
+    duration: MOTION.duration.base,
   },
   side: {
     translateY: 0,
-    translateX: 24,
-    spring: { damping: 20, stiffness: 100 },
-    duration: 450,
+    translateX: MOTION.entryDistance,
+    spring: MOTION.spring,
+    duration: MOTION.duration.fast,
   },
   bottom: {
-    translateY: 24,
+    translateY: MOTION.entryDistance,
     translateX: 0,
-    spring: { damping: 18, stiffness: 100 },
-    duration: 400,
+    spring: MOTION.spring,
+    duration: MOTION.duration.fast,
   },
 } as const;
 
@@ -79,11 +79,3 @@ export function MotionEntry({
 
   return <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>;
 }
-
-/** Recommended stagger offsets that mirror the welcome screen. */
-export const ENTRY_DELAY = {
-  hero: 0,
-  section: 300,
-  buttons: 520,
-  decorative: 600,
-} as const;

@@ -1,0 +1,52 @@
+# One detail screen (G1 step 4a, ADR-006): a ride opened from the rides feed goes through the
+# listing route, which forwards to the ride's post; the post detail shows the ride's own sections
+# (route card) in place, with the post's likes and comments under them.
+# Spec: docs/spec/07_cross_cutting_systems.md §7.4; docs/spec/requirements/04_posts.md FR-POST-014..018.
+# The rides feed may be empty on a fresh environment, so the detail checks run only when a ride
+# is listed; the feed itself must always render.
+appId: org.karmacommunity.app
+name: One detail screen — a ride opens as its post with its sections, likes and comments
+tags: [donations, rides, post-detail]
+---
+- runFlow: ../subflows/sign-in.yaml
+- tapOn:
+    id: tab-donations
+- extendedWaitUntil:
+    visible:
+      id: donations-hub
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: donation-tile-rides
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: donation-tile-rides
+- extendedWaitUntil:
+    visible:
+      id: rides-feed
+    timeout: 15000
+- runFlow:
+    when:
+      visible:
+        id: "rides-feed-item-.*"
+    commands:
+      - tapOn:
+          id: "rides-feed-item-.*"
+          index: 0
+      - extendedWaitUntil:
+          visible:
+            id: post-detail-screen
+          timeout: 20000
+      - assertVisible:
+          id: ride-route-card
+      - scrollUntilVisible:
+          element:
+            id: post-engagement-section
+          direction: DOWN
+          timeout: 10000
+      - back
+      - extendedWaitUntil:
+          visible:
+            id: rides-feed
+          timeout: 15000

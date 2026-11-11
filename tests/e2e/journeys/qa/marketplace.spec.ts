@@ -3,19 +3,27 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-import { expectNoRawI18nKeys, gotoApp, trackApiErrors } from '../../lib/app';
+import { expectNoRawI18nKeys, gotoApp, passDateOfBirthGate, trackApiErrors } from '../../lib/app';
 import { cleanupE2eContent, rest, runTag, sessionFor } from '../../lib/api';
-import { STORAGE_B, USER_A } from '../../lib/env';
+import { publishPostAs } from '../../lib/publish';
+import { STORAGE_B, USER_A, USER_B } from '../../lib/env';
 
-async function anyOpenItemListing(): Promise<{ listing_id: string; title: string }> {
+/** An open items post of another member: the newest one, or one user B publishes now (kc-dev starts without posts). */
+async function anyOpenItemListing(): Promise<{ id: string; title: string }> {
   const { session } = await sessionFor(USER_A);
   const me = (session.user as { id: string }).id;
-  const [row] = await rest<{ listing_id: string; title: string }[]>(
+  const [row] = await rest<{ id: string; title: string }[]>(
     session.access_token as string,
-    `marketplace_listing_card?select=listing_id,title&world_slug=eq.items&owner_id=neq.${me}&limit=1`,
+    `posts?select=id,title&world_slug=eq.items&status=eq.open&owner_id=neq.${me}&order=created_at.desc&limit=1`,
   );
-  if (!row) throw new Error('no items listings on kc-dev');
-  return row;
+  if (row) return row;
+  return publishPostAs(USER_B, {
+    world: 'items',
+    kindSlug: 'item_offer',
+    title: `${runTag()} כיסא לבדיקת עמוד פוסט`,
+    publish: 'plain',
+    details: () => ({}),
+  });
 }
 
 /**
@@ -26,16 +34,35 @@ async function fillFoodOfferForm(page: Page, title: string) {
   await gotoApp(page, '/create?category=food');
   await page.getByTestId('create-direction-give').click();
   await page.getByTestId('listing-title').fill(title);
-  await page.getByText('מבושל', { exact: true }).first().click();
+  // The food type is the world sub-category (D137, KC#1398).
+  await page.getByTestId('world-subcategory-cooked_meals').click();
   await page.getByTestId('listing-date-expires_at').click();
   await page.locator('input[type="datetime-local"]').fill('2030-01-01T12:00');
   await page.getByTestId('listing-date-expires_at-done').click();
-  await page.getByRole('button', { name: 'בחר עיר' }).click();
+  await page.getByRole('button', { name: 'לבחור עיר' }).click();
   await page.getByPlaceholder('...חיפוש עיר').fill('לוד');
   await page.getByText('לוד', { exact: true }).first().click();
 }
 
 const publishButton = (page: Page) => page.getByTestId('listing-publish');
+
+/** Publish, pass the date-of-birth gate if it shows, and wait until the listing exists (the app may land on the feed or the listing). */
+async function publishAndFind(page: Page, title: string, timeout: number) {
+  await publishButton(page).click();
+  if (await passDateOfBirthGate(page) && /\/create/.test(page.url())) await publishButton(page).click();
+  await expect(page).not.toHaveURL(/\/create/, { timeout });
+  const { session } = await sessionFor(USER_A);
+  await expect
+    .poll(
+      async () =>
+        (await rest<{ id: string }[]>(
+          session.access_token as string,
+          `posts?select=id&title=eq.${encodeURIComponent(title)}`,
+        )).length,
+      { timeout: 20_000 },
+    )
+    .toBe(1);
+}
 const addPhotoButton = (page: Page) => page.getByRole('button', { name: 'הוסיפו תמונה' }).first();
 
 test('browse: the removed marketplace URL lands on the donations hub', async ({ page }) => {
@@ -62,10 +89,10 @@ test('search: the donations hub no longer offers a marketplace entry', async ({ 
 test('listing detail opens for an existing listing', async ({ page }) => {
   const errors = trackApiErrors(page);
   const target = await anyOpenItemListing();
-  await gotoApp(page, `/donations/marketplace/${target.listing_id}`);
+  await gotoApp(page, `/post/${target.id}`);
   await expect(page.getByText(target.title).first()).toBeVisible();
   await expect(page.getByText('המודעה לא נמצאה.')).toHaveCount(0);
-  expect(errors.filter((e) => e.includes('get_marketplace_listing_detail'))).toEqual([]);
+  expect(errors.filter((e) => e.includes('post_detail'))).toEqual([]);
 });
 
 test('create form: five categories, request / offer, human labels (no raw schema keys)', async ({ page }) => {
@@ -75,7 +102,8 @@ test('create form: five categories, request / offer, human labels (no raw schema
     await expect(page.getByTestId(`create-category-${id}`)).toBeVisible();
   }
   await page.getByTestId('create-direction-give').click();
-  await expect(page.getByTestId('listing-field-food_type')).toBeVisible();
+  await expect(page.getByTestId('listing-subcategory-field')).toBeVisible();
+  await expect(page.getByTestId('listing-field-food_type')).toHaveCount(0);
   const body = await page.locator('body').innerText();
   expect(body).not.toMatch(/\b(?:image url|image path|pickup mode|fulfillment mode|owner_approval|fcfs|linked listing id)\b/);
 });
@@ -83,12 +111,21 @@ test('create form: five categories, request / offer, human labels (no raw schema
 test.describe.serial('create + reserve', () => {
   let listingTitle = '';
 
-  test('create a food offer WITHOUT a photo', async ({ page }) => {
+  // D132 (KC#1937): an offer needs a photo; the form refuses and points at the picker.
+  test('a food offer WITHOUT a photo is refused at the photo picker', async ({ page }) => {
     const title = `${runTag()} מגש פסטה ללא תמונה`;
     await fillFoodOfferForm(page, title);
     await publishButton(page).click();
-    await expect(page).toHaveURL(/\/donations\/marketplace\/[0-9a-f-]{36}$/, { timeout: 30_000 });
-    await expect(page.getByText(title).first()).toBeVisible();
+    if (await passDateOfBirthGate(page) && /\/create/.test(page.url())) await publishButton(page).click();
+    const photoField = page.getByTestId('listing-photos-field');
+    await expect(photoField.getByText('יש להוסיף לפחות תמונה אחת להצעה.')).toBeVisible();
+    await expect(page).toHaveURL(/\/create/);
+    const { session } = await sessionFor(USER_A);
+    const rows = await rest<{ id: string }[]>(
+      session.access_token as string,
+      `posts?select=id&title=eq.${encodeURIComponent(title)}`,
+    );
+    expect(rows).toEqual([]);
   });
 
   test('create a food offer WITH a photo', async ({ page }) => {
@@ -98,22 +135,20 @@ test.describe.serial('create + reserve', () => {
     await addPhotoButton(page).click();
     await (await chooser).setFiles(path.join(HERE, '../../fixtures/item.png'));
     await expect(page.locator('img').last()).toBeVisible();
-    await publishButton(page).click();
-    await expect(page).toHaveURL(/\/donations\/marketplace\/[0-9a-f-]{36}$/, { timeout: 45_000 });
-    await expect(page.getByText(listingTitle).first()).toBeVisible();
+    await publishAndFind(page, listingTitle, 45_000);
   });
 
   test('another user claims the food', async ({ browser }) => {
     test.skip(!listingTitle, 'create-with-photo did not run');
     const { session } = await sessionFor(USER_A);
-    const [row] = await rest<{ listing_id: string }[]>(
+    const [row] = await rest<{ id: string }[]>(
       session.access_token as string,
-      `marketplace_listing_card?select=listing_id&title=eq.${encodeURIComponent(listingTitle)}`,
+      `posts?select=id&title=eq.${encodeURIComponent(listingTitle)}`,
     );
     test.skip(!row, 'listing was not created');
     const ctx = await browser.newContext({ storageState: STORAGE_B, locale: 'he-IL' });
     const page = await ctx.newPage();
-    await gotoApp(page, `/donations/marketplace/${row!.listing_id}`);
+    await gotoApp(page, `/post/${row!.id}`);
     const claim = page.getByTestId('giving-handoff-claim').or(page.getByTestId('giving-handoff-reserve')).first();
     await claim.click();
     await expect(claim).toHaveCount(0, { timeout: 20_000 });
@@ -123,4 +158,5 @@ test.describe.serial('create + reserve', () => {
 
 test.afterAll(async () => {
   await cleanupE2eContent(USER_A);
+  await cleanupE2eContent(USER_B);
 });

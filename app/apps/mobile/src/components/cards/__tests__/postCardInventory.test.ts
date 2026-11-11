@@ -58,19 +58,17 @@ describe('post card inventory', () => {
     ['src/components/cards/SimilarListingCard.tsx', 'KcCard'],
     ['src/components/matching/MatchSuggestionCard.tsx', 'KcCard'],
     ['src/components/search/PostResultCard.tsx', 'PostCardGrid'],
-    ['src/components/profile/ProfileMarketplaceListings.tsx', 'SimilarListingCard'],
     ['src/components/marketplace/MarketplaceListingDetailView.tsx', 'SimilarListingCard'],
     ['src/components/marketplace/MarketplaceListingDetailView.tsx', 'PostDetailHeader'],
     ['app/(guest)/feed.tsx', 'PostCardGrid'],
     ['app/(tabs)/donations/time/my-shifts.tsx', 'KcRowCard'],
     ['src/components/giving/time/TimeOpportunitiesSection.tsx', 'KcRowCard'],
-    ['src/components/giving/WorldMarketplaceHub.tsx', 'ListingCard'],
+    ['src/components/giving/WorldMarketplaceHub.tsx', 'PostFeedList'],
     ['app/(tabs)/donations/time/organizer/index.tsx', 'KcRowCard'],
     ['app/(tabs)/donations/marketplace/my-listings.tsx', 'KcRowCard'],
     ['src/components/giving/MyWorldHandoffsList.tsx', 'KcRowCard'],
-    ['src/components/giving/RideMatchSearch.tsx', 'KcRowCard'],
+    ['src/components/giving/RidesFeedList.tsx', 'ListingCard'],
     ['src/components/chat/AnchoredPostCard.tsx', 'KcRowCard'],
-    ['src/components/chat/AnchoredRideCard.tsx', 'KcRowCard'],
   ])('%s renders through %s', (rel, base) => {
     const f = files.find((x) => x.rel === rel);
     expect(f, rel).toBeDefined();
@@ -84,7 +82,6 @@ describe('post card inventory', () => {
 
   describe.each([
     ['src/components/chat/AnchoredPostCard.tsx', "pathname: '/post/[id]'"],
-    ['src/components/chat/AnchoredRideCard.tsx', '/(tabs)/donations/rides/'],
   ])('chat preview %s', (rel, fullPageRoute) => {
     const src = () => files.find((x) => x.rel === rel)!.src;
     it('uses the compact row card with an "open full post" link', () => {

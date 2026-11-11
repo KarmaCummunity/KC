@@ -1,16 +1,16 @@
-// Hebrew — feed settings (mute words / categories / people, quiet hours) + empty-state CTAs.
+// Hebrew — feed settings (mute words / worlds / people, quiet hours) + empty-state CTAs.
 export const feedSettingsHe = {
   title: 'הגדרות פיד',
   settingsRow: 'הגדרות פיד',
-  intro: 'בחרו מה לא להציג בפיד. פוסטים מושתקים נעלמים מיד, ואפשר לבטל בכל רגע.',
+  intro: 'בחרו מה לא להציג בפיד. פוסטים מושתקים נעלמים מיד, ואפשר לבטל בכל רגע. סינון ומיון מהירים עדיין זמינים מתפריט הפיד.',
+  worldsTitle: 'עולמות נתינה מושתקים',
+  worldsHint: 'פוסטים ששייכים לעולם (מזון, נסיעות, זמן…) לא יופיעו בפיד. מודעות ללא עולם נספרות תחת «חפצים».',
   keywordsTitle: 'מילים מושתקות',
   keywordPlaceholder: 'הוסיפו מילה או ביטוי',
   add: 'הוספה',
   keywordsEmpty: 'עדיין אין מילים מושתקות.',
-  keywordInvalid: 'צריך בין 2 ל-120 תווים.',
+  keywordInvalid: 'צריך בין 2 ל-60 תווים.',
   keywordDuplicate: 'המילה הזו כבר מושתקת.',
-  categoriesTitle: 'קטגוריות מושתקות',
-  categoriesHint: 'הקישו על קטגוריה כדי להסתיר את הפוסטים שלה, והקישו שוב כדי להציג אותם.',
   peopleTitle: 'אנשים מושתקים',
   peopleEmpty: 'כדי להשתיק מישהו, פתחו את תפריט ⋮ באחד הפוסטים שלו.',
   unknownPerson: 'חבר/ת קהילה',

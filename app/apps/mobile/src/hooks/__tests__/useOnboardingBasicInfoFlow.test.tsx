@@ -20,7 +20,7 @@ describe('useOnboardingBasicInfoFlow', () => {
     expect(result.current.hasRequiredFields).toBe(false);
     await act(() => result.current.handleContinue());
     expect(toast).toHaveBeenCalledWith('onboarding.fillNameAndCity', 'error', 2500);
-    act(() => { result.current.setDisplayName(' Name '); result.current.setCity({ id: 'c1', name: 'Town' }); result.current.setStreet('Main'); });
+    act(() => { result.current.setDisplayName(' Name '); result.current.setCity({ id: 'c1', name: 'Town' }); result.current.setStreet('Main'); result.current.setDateOfBirth('1990-05-15'); });
     await act(() => result.current.handleContinue());
     expect(result.current.canSubmit).toBe(false);
     expect(toast).toHaveBeenLastCalledWith(expect.any(String), 'error', 2800);
@@ -32,15 +32,26 @@ describe('useOnboardingBasicInfoFlow', () => {
   });
   it('saves complete info with exact arguments and navigates; maps failures', async () => {
     const { result } = renderHook(() => useOnboardingBasicInfoFlow());
-    act(() => { result.current.setCity({ id: 'c1', name: 'Town' }); result.current.setStreet('Main'); result.current.setStreetNumber('2'); result.current.setContactPhone('555'); });
+    act(() => { result.current.setCity({ id: 'c1', name: 'Town' }); result.current.setDateOfBirth('1990-05-15'); result.current.setStreet('Main'); result.current.setStreetNumber('2'); result.current.setContactPhone('555'); });
     await act(() => result.current.handleContinue());
-    expect(complete).toHaveBeenCalledWith({ sessionUserId: 'u1', userId: 'u1', displayName: 'Name', cityId: 'c1', cityName: 'Town', profileStreet: 'Main', profileStreetNumber: '2', contactPhone: '555' });
+    expect(complete).toHaveBeenCalledWith({ sessionUserId: 'u1', userId: 'u1', displayName: 'Name', cityId: 'c1', cityName: 'Town', dateOfBirth: '1990-05-15', profileStreet: 'Main', profileStreetNumber: '2', contactPhone: '555' });
     expect(setOnboarding).toHaveBeenCalledWith('pending_avatar');
     expect(replace).toHaveBeenCalledWith('/(onboarding)/photo');
     complete.mockRejectedValueOnce(new Error('offline'));
     await act(() => result.current.handleContinue());
     expect(result.current.loading).toBe(false);
     expect(toast).toHaveBeenCalledWith(expect.any(String), 'error', 2800);
+  });
+  it('does not save, and the button stays disabled, without a valid adult date of birth (FR-AUTH-010 AC2.d)', async () => {
+    const { result } = renderHook(() => useOnboardingBasicInfoFlow());
+    act(() => { result.current.setCity({ id: 'c1', name: 'Town' }); });
+    expect(result.current.hasRequiredFields).toBe(false);
+    await act(() => result.current.handleContinue());
+    expect(complete).not.toHaveBeenCalled();
+    act(() => result.current.setDateOfBirth('2015-01-01'));
+    expect(result.current.hasRequiredFields).toBe(false);
+    act(() => result.current.setDateOfBirth('1990-05-15'));
+    expect(result.current.hasRequiredFields).toBe(true);
   });
   it('skips for active sessions, ignores absent sessions, and guards back while loading', async () => {
     const { result, rerender } = renderHook(() => useOnboardingBasicInfoFlow());

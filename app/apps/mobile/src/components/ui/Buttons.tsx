@@ -31,7 +31,7 @@
 import React from 'react';
 import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { hapticLightImpact } from '../../lib/haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, Text, type ColorPalette } from '@kc/ui';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
@@ -110,7 +110,7 @@ function Button({
   const fg = foregroundColor(variant, colors);
 
   const handlePress = () => {
-    if (haptic) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    if (haptic) hapticLightImpact();
     onPress();
   };
 

@@ -20,7 +20,6 @@ import { makeUseStyles, radius, spacing, Text, typography, useBreakpoint } from 
 import { PrimaryButton } from '../../../src/components/ui/Buttons';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { rowDirectionStart } from '../../../src/lib/rtlLayout';
-import { AdminScreenHeader } from '../../../src/components/admin/AdminScreenHeader';
 import { GrantRoleModal } from '../../../src/components/admin/admins/GrantRoleModal';
 import { AdminsListView } from '../../../src/components/admin/admins/AdminsListView';
 import { AdminsTreeView } from '../../../src/components/admin/admins/AdminsTreeView';
@@ -67,7 +66,6 @@ export default function AdminsScreen() {
 
   return (
     <View style={styles.root}>
-      <AdminScreenHeader title={L.admin.admins.title} />
       <View style={styles.headerControls}>
         <View style={styles.segment}>
           {VIEW_MODES.map((m) => (

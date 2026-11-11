@@ -56,6 +56,18 @@ describe('haptics', () => {
     });
   });
 
+  describe('without a haptic engine', () => {
+    beforeEach(() => {
+      Platform.OS = 'ios';
+    });
+
+    it('swallows a rejected feedback call', async () => {
+      vi.mocked(Haptics.impactAsync).mockRejectedValueOnce(new Error('no engine'));
+      expect(() => hapticLightImpact()).not.toThrow();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+  });
+
   describe('on Android', () => {
     beforeEach(() => {
       Platform.OS = 'android';

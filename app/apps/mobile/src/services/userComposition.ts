@@ -12,6 +12,8 @@ import {
 } from '@kc/infrastructure-supabase';
 import {
   CompleteBasicInfoUseCase,
+  ReconcileDeferredBasicInfoUseCase,
+  SetDateOfBirthUseCase,
   CompleteOnboardingUseCase,
   DeleteAccountUseCase,
   DismissClosureExplainerUseCase,
@@ -23,7 +25,7 @@ import {
   type IStreetRepository,
   type IUserRepository,
 } from '@kc/application';
-import type { City, OnboardingState, Street } from '@kc/domain';
+import type { City, Street } from '@kc/domain';
 import { getAuthService } from './authComposition';
 import { CachedCityRepository, CachedStreetRepository } from './cityStreetCache';
 import { pickAuthStorage } from './authSecureStorage';
@@ -32,6 +34,8 @@ let _userRepo: IUserRepository | null = null;
 let _cityRepo: ICityRepository | null = null;
 let _streetRepo: IStreetRepository | null = null;
 let _completeBasicInfo: CompleteBasicInfoUseCase | null = null;
+let _reconcileDeferredBasicInfo: ReconcileDeferredBasicInfoUseCase | null = null;
+let _setDateOfBirth: SetDateOfBirthUseCase | null = null;
 let _completeOnboarding: CompleteOnboardingUseCase | null = null;
 let _setAvatar: SetAvatarUseCase | null = null;
 let _updateProfile: UpdateProfileUseCase | null = null;
@@ -69,6 +73,20 @@ export function getCompleteBasicInfoUseCase(): CompleteBasicInfoUseCase {
     _completeBasicInfo = new CompleteBasicInfoUseCase(getUserRepo(), getAuthService());
   }
   return _completeBasicInfo;
+}
+
+/** FR-AUTH-015 — when basic info was saved via Edit Profile while onboarding stayed deferred. */
+export function getReconcileDeferredBasicInfoUseCase(): ReconcileDeferredBasicInfoUseCase {
+  if (!_reconcileDeferredBasicInfo) {
+    _reconcileDeferredBasicInfo = new ReconcileDeferredBasicInfoUseCase(getUserRepo());
+  }
+  return _reconcileDeferredBasicInfo;
+}
+
+/** FR-AUTH-015 AC1.b — date of birth alone, for a member who already finished onboarding. */
+export function getSetDateOfBirthUseCase(): SetDateOfBirthUseCase {
+  if (!_setDateOfBirth) _setDateOfBirth = new SetDateOfBirthUseCase(getUserRepo());
+  return _setDateOfBirth;
 }
 
 export function getCompleteOnboardingUseCase(): CompleteOnboardingUseCase {
@@ -113,17 +131,6 @@ export function getOnboardingBootstrap(userId: string) {
 /** FR-AUTH-010 AC3 — persist Skip on step 1 so relaunch does not reopen the full wizard. */
 export function markBasicInfoSkipped(userId: string): Promise<void> {
   return getUserRepo().markBasicInfoSkipped(userId);
-}
-
-/** Direct setter used by the dev reset button (Settings). No validation — dev tool. */
-export async function setOnboardingStateDirect(
-  userId: string,
-  state: OnboardingState,
-): Promise<void> {
-  await getUserRepo().setOnboardingState(userId, state);
-  if (state === 'pending_basic_info') {
-    await getUserRepo().clearBasicInfoSkipped(userId);
-  }
 }
 
 /** Lists every Israeli city from `public.cities` ordered by Hebrew name. */

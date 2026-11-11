@@ -1,6 +1,8 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import {
   crossAxisAlignStart,
+  emptyInputDirectionStyle,
+  inputTextAlignStart,
   isLayoutRtl,
   layoutDirectionStyle,
   selfAlignStart,
@@ -27,6 +29,21 @@ describe('rtlLayout', () => {
       documentElement: { getAttribute: () => 'ltr' },
     });
     expect(textAlignStart()).toBe('left');
+  });
+
+  it('inputTextAlignStart returns the physical reading-start edge', () => {
+    vi.stubGlobal('document', { documentElement: { getAttribute: () => 'rtl' } });
+    expect(inputTextAlignStart()).toBe('right');
+    vi.stubGlobal('document', { documentElement: { getAttribute: () => 'ltr' } });
+    expect(inputTextAlignStart()).toBe('left');
+  });
+
+  it('emptyInputDirectionStyle pins the web placeholder to the layout direction', () => {
+    vi.stubGlobal('document', { documentElement: { getAttribute: () => 'rtl' } });
+    expect(emptyInputDirectionStyle()).toEqual({ writingDirection: 'rtl', textAlign: 'right' });
+
+    vi.stubGlobal('document', { documentElement: { getAttribute: () => 'ltr' } });
+    expect(emptyInputDirectionStyle()).toEqual({ writingDirection: 'ltr', textAlign: 'left' });
   });
 
   it('layoutDirectionStyle is a no-op (RN-Web rejects View direction)', () => {

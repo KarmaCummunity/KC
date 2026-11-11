@@ -1,7 +1,7 @@
 // Profile-editing contract (G39) — the Edit Profile and onboarding slice of
 // IUserRepository, the behaviour every implementation must honour. Mapped to
-// docs/SSOT/spec/02_profile_and_privacy.md FR-PROFILE-007 (AC1 field rules, AC4
-// atomic save) and docs/SSOT/spec/01_auth_and_onboarding.md FR-AUTH-007 AC2
+// docs/spec/requirements/02_profile_and_privacy.md FR-PROFILE-007 (AC1 field rules, AC4
+// atomic save) and docs/spec/requirements/01_auth_and_onboarding.md FR-AUTH-007 AC2
 // (cold-start bootstrap), FR-AUTH-010 (basic info and skip) and FR-AUTH-011
 // (avatar).
 //
@@ -12,7 +12,8 @@
 
 import type { IUserRepository } from '../ports/IUserRepository';
 import type { ContractCase } from './types';
-import { assertEqual, assertRejects, assertTrue } from './assert';
+import { assertEqual, assertRejects } from './assert';
+import { onboardingProgressCases } from './onboardingProgress.contract';
 
 /** The Edit Profile and onboarding methods of IUserRepository. */
 export type ProfileEditing = Pick<
@@ -28,6 +29,7 @@ export type ProfileEditing = Pick<
   | 'clearBasicInfoSkipped'
   | 'setBasicInfo'
   | 'setOnboardingState'
+  | 'setDateOfBirth'
 >;
 
 type EditableProfile = Awaited<ReturnType<ProfileEditing['getEditableProfile']>>;
@@ -71,7 +73,6 @@ function fullProfile(city: ProfileCity, tag: string): FullProfileEdit {
   return {
     displayName: `member ${tag}`,
     city: city.id,
-    cityName: city.name,
     profileStreet: `street ${tag}`,
     profileStreetNumber: HEBREW_SUFFIX_NUMBER,
     contactPhone: '050-1234567',
@@ -80,8 +81,8 @@ function fullProfile(city: ProfileCity, tag: string): FullProfileEdit {
   };
 }
 
-/** Field-by-field comparison, so a failure names the field that drifted. */
-function assertProfile(actual: EditableProfile, expected: EditableProfile, what: string): void {
+/** Field-by-field comparison of the fields `expected` names, so a failure names the field that drifted. */
+function assertProfile(actual: EditableProfile, expected: Partial<EditableProfile>, what: string): void {
   for (const key of Object.keys(expected) as Array<keyof EditableProfile>) {
     assertEqual(actual[key], expected[key], `${what} — ${key}`);
   }
@@ -180,9 +181,9 @@ const unknownCityRefused: ContractCase<Ctx> = {
   async run(ctx) {
     const me = await ctx.newActor();
     const [city] = ctx.cities;
-    await me.users.updateEditableProfile(me.userId, { city: city.id, cityName: city.name });
+    await me.users.updateEditableProfile(me.userId, { city: city.id });
     await assertRejects(
-      me.users.updateEditableProfile(me.userId, { city: 'no-such-city', cityName: 'nowhere' }),
+      me.users.updateEditableProfile(me.userId, { city: 'no-such-city' }),
       'an unknown city id',
     );
     assertEqual((await me.users.getEditableProfile(me.userId)).city, city.id, 'city after the refused edit');
@@ -253,29 +254,6 @@ const unknownProfileThrows: ContractCase<Ctx> = {
   },
 };
 
-const onboardingRoundTrip: ContractCase<Ctx> = {
-  name: 'onboarding: skip, basic info and state read back through the bootstrap (FR-AUTH-007 AC2, FR-AUTH-010 AC3)',
-  async run(ctx) {
-    const me = await ctx.newActor();
-    await me.users.markBasicInfoSkipped(me.userId);
-    assertEqual((await me.users.getOnboardingBootstrap(me.userId)).basicInfoSkipped, true, 'skip flag after skipping');
-    await me.users.clearBasicInfoSkipped(me.userId);
-    assertEqual((await me.users.getOnboardingBootstrap(me.userId)).basicInfoSkipped, false, 'skip flag after clearing');
-    await me.users.markBasicInfoSkipped(me.userId);
-    const [, city] = ctx.cities;
-    await me.users.setBasicInfo(me.userId, { displayName: 'basic info', city: city.id, cityName: city.name });
-    const bootstrap = await me.users.getOnboardingBootstrap(me.userId);
-    assertEqual(bootstrap.basicInfoSkipped, false, 'saving basic info clears the skip flag');
-    const profile = await me.users.getEditableProfile(me.userId);
-    assertTrue(profile.displayName === 'basic info' && profile.city === city.id, 'basic info is stored');
-    assertEqual(profile.cityName, city.name, 'city name is stored');
-    await me.users.setOnboardingState(me.userId, 'pending_avatar');
-    assertEqual((await me.users.getOnboardingBootstrap(me.userId)).state, 'pending_avatar', 'state after step 1');
-    await me.users.setOnboardingState(me.userId, 'completed');
-    assertEqual((await me.users.getOnboardingBootstrap(me.userId)).state, 'completed', 'state after the wizard');
-  },
-};
-
 /** The profile-editing cases, in a stable order. */
 export function profileEditingContract(): ReadonlyArray<ContractCase<Ctx>> {
   return [
@@ -289,6 +267,6 @@ export function profileEditingContract(): ReadonlyArray<ContractCase<Ctx>> {
     othersProfileIsReadOnly,
     othersPrivateFieldsHidden,
     unknownProfileThrows,
-    onboardingRoundTrip,
+    ...onboardingProgressCases(),
   ];
 }

@@ -1,71 +1,85 @@
+import { NOTIFICATION_KINDS, NOTIFICATION_TEXT_ARGS } from './notificationKinds.generated';
 import type { NotificationPreferences } from './value-objects';
+
+export { NOTIFICATION_KINDS, NOTIFICATION_TEXT_ARGS };
 
 export type NotificationCategory = 'critical' | 'social';
 
-export type NotificationKind =
-  | 'chat_message'
-  | 'support_message'
-  | 'system_message'
-  | 'post_expiring'
-  // D59 / S3 — "still relevant?" reminder to the owner (replaces expiry for items/requests).
-  | 'post_relevance_check'
-  | 'mark_recipient'
-  | 'unmark_recipient'
-  | 'auto_removed'
-  | 'follow_request'
-  | 'follow_started'
-  | 'follow_approved'
-  | 'task_assigned'
-  // FR-RIDE-013, FR-RIDE-019 — ride participant lifecycle + cascade variant.
-  | 'ride_request'
-  | 'ride_approved'
-  | 'ride_rejected'
-  | 'ride_participant_cancelled'
-  | 'ride_participant_cancelled_by_owner'
-  // FR-RIDE-031..033 + FR-RIDE-045 AC4 — active ride transitions.
-  | 'ride_started'
-  | 'ride_arrived'
-  | 'ride_breakdown'
-  // FR-RIDE-035 — emergency button.
-  | 'ride_emergency'
-  // FR-RIDE-037 — ratings prompt.
-  | 'ride_rate_prompt'
-  // Matching v2 (0420–0423) — automatic offer↔request suggestions + responses.
-  | 'match_suggested'
-  | 'match_interest'
-  | 'match_accepted'
-  // KC#1316 — food offer expiring within 24 h / expired unclaimed (spec 05 §5.1, S4).
-  | 'listing_expiring'
-  | 'listing_expired'
-  // D73 / D96 (0511) — rides on the listing flow: every booking change reaches the other side.
-  | 'ride_booking_requested'
-  | 'ride_booking_confirmed'
-  | 'ride_booking_declined'
-  | 'ride_booking_expired'
-  | 'ride_booking_cancelled'
-  // D74 (0516) — a new ride on a route the user follows.
-  | 'ride_route_match'
-  // D70 (0517) — an emergency raised on a ride of the one rides flow.
-  | 'ride_listing_emergency'
-  // FR-NOTIF-018 (0528) — item and food handoffs: every change reaches the other side.
-  | 'giving_handoff_requested'
-  | 'giving_handoff_claimed'
-  | 'giving_handoff_confirmed'
-  | 'giving_handoff_declined'
-  | 'giving_handoff_cancelled'
-  | 'giving_handoff_completed';
+/**
+ * A notification kind. Generated from the registry in the database
+ * (`kc_private.notification_kinds`, see `scripts/generate-notification-kinds.mjs`), so a
+ * kind added in SQL appears here and every `Record<NotificationKind, …>` must cover it.
+ */
+export type NotificationKind = keyof typeof NOTIFICATION_KINDS;
 
-/** Payload attached to every Expo push under `data`. The client reads this on tap. */
+/** Argument a notification text may interpolate (`{{actorName}}`, …). */
+export type NotificationTextArg = (typeof NOTIFICATION_TEXT_ARGS)[number];
+
+/** The rules of one kind, as registered in the database. */
+export interface NotificationKindSpec {
+  readonly category: NotificationCategory;
+  readonly defaultEnabled: boolean;
+  /** Account and safety notices: delivered whatever the member switched off. */
+  readonly bypassPreferences: boolean;
+  /** Time-critical: pushed during quiet hours as well. */
+  readonly bypassQuietHours: boolean;
+  /** False = shown in the notification centre only. */
+  readonly sendsPush: boolean;
+  /** Events about one entity merge within this time; null = never. */
+  readonly groupWindowSeconds: number | null;
+  readonly titleKey: string;
+  readonly bodyKey: string;
+  /** Body of a merged notification ("X and 3 others"); null when the kind never merges. */
+  readonly groupedBodyKey: string | null;
+  readonly textArgs: readonly NotificationTextArg[];
+}
+
+export const NOTIFICATION_KIND_LIST = Object.keys(NOTIFICATION_KINDS) as readonly NotificationKind[];
+export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = ['critical', 'social'];
+
+export function isNotificationKind(value: unknown): value is NotificationKind {
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(NOTIFICATION_KINDS, value);
+}
+
+export function notificationKindSpec(kind: NotificationKind): NotificationKindSpec {
+  return NOTIFICATION_KINDS[kind];
+}
+
+/** What a notification is about; a tap leads there. */
+export interface NotificationEntity {
+  readonly type: string;
+  readonly id: string;
+}
+
+/** Ids and statuses sent by the module that emitted the notification. Never text. */
+export type NotificationArgs = Readonly<Record<string, string | number | boolean>>;
+
+/** Payload attached to every push under `data`. The client reads this on tap. */
 export interface PushData {
-  category: NotificationCategory;
-  kind: NotificationKind;
   notification_id: string;
-  /** expo-router pathname, e.g. '/chat/[id]'. */
-  route?: string;
-  /** route params, e.g. { id: '<chat_id>' }. */
-  params?: Record<string, string>;
-  /** Convenience field used by the foreground handler to detect chat-active state. */
-  chat_id?: string;
+  kind: NotificationKind;
+  category: NotificationCategory;
+  entity: NotificationEntity | null;
+  group_count: number;
+  args: NotificationArgs;
+}
+
+/** One row of the in-app notification centre. */
+export interface InboxNotification {
+  readonly id: string;
+  /** Kept as text: a newer server may send a kind this build does not know. */
+  readonly kind: string;
+  readonly category: NotificationCategory;
+  readonly worldSlug: string | null;
+  readonly entity: NotificationEntity | null;
+  readonly titleKey: string;
+  readonly bodyKey: string;
+  readonly args: NotificationArgs;
+  readonly groupCount: number;
+  readonly actorDisplayName: string | null;
+  readonly actorAvatarUrl: string | null;
+  readonly readAt: string | null;
+  readonly createdAt: string;
 }
 
 export interface DeviceRegistration {

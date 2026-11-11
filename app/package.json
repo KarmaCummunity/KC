@@ -32,8 +32,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@vitest/coverage-v8": "^5.0.4",
-    "eslint": "^10.13.0",
+    "@vitest/coverage-v8": "^5.1.0",
+    "eslint": "^10.14.0",
     "eslint-plugin-react": "^7.37.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.6.0",
@@ -82,7 +82,9 @@
       "markdown-it@10": "^14.3.3",
       "postcss@>=8.4 <8.5": "^8.5.29",
       "ajv@8": "^8.18.0",
-      "@babel/core@7": "^7.29.6"
+      "@babel/core@7": "^7.29.6",
+      "glob@>=9 <=14.0.1": "14.0.2",
+      "minimatch@>=7 <11.0.1": "11.0.1"
     }
   }
 }

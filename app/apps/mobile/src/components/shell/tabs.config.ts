@@ -45,7 +45,8 @@ export const TABS: readonly TabDefinition[] = [
   },
   {
     key: 'create',
-    route: '/(tabs)/create',
+    // A root-stack screen, not a tab: it opens over the current screen (FR-POST-001 AC9).
+    route: '/create',
     labelI18nKey: 'tabs.newPost',
     // Composer uses a single glyph regardless of active state; the special
     // pill rendering is keyed off `isComposer`.
@@ -74,7 +75,7 @@ const NAMED_TAB_SEGMENTS = ['profile', 'search', 'donations', 'create'] as const
 /** True when `tab` matches the current expo-router segment trail. */
 export function isTabActive(tab: TabDefinition, segments: readonly string[]): boolean {
   const parts = tab.route.split('/').filter(Boolean);
-  const named = parts[1];
+  const named = parts[0] === '(tabs)' ? parts[1] : parts[0];
 
   if (!named) {
     // Home — active inside (tabs) without a named sibling, or on flat web segments.

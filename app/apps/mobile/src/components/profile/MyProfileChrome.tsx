@@ -1,8 +1,8 @@
 // app/apps/mobile/src/components/profile/MyProfileChrome.tsx
-// Shared chrome for My Profile open/closed routes (`/profile`, `/profile/closed`).
-// Renders TopBar + profile card (⋮ menu: web uses `right` when `dir=rtl` / `I18nManager.isRTL`; native uses `start`) + …
-// Tab clicks navigate to the sibling route (router.replace, so no back-stack
-// build-up across tab toggles).
+// Chrome of the My Profile screen (`/profile`): TopBar + profile card (⋮ menu: web uses
+// `right` when `dir=rtl` / `I18nManager.isRTL`; native uses `start`) + open / closed tabs.
+// The tabs are controlled by the screen: switching swaps only the posts list below, so
+// this chrome stays mounted and its entry animations never replay (#1633).
 // Mapped to: FR-PROFILE-001 AC1, AC4.
 import React from 'react';
 import {
@@ -30,6 +30,10 @@ import { MotionEntry, ENTRY_DELAY } from '../ui/MotionEntry';
 import { useAuthStore } from '../../store/authStore';
 import { getUserRepo } from '../../services/userComposition';
 import { useProfileTabCounts } from '../../hooks/useProfileTabCounts';
+import { isOwnProfileIncomplete } from '../../hooks/useOwnProfileIncomplete';
+import { needsIdentityVerificationReminder } from '../../hooks/useOwnProfileNeedsIdentityVerification';
+import { IdentityVerificationProfileCard } from './IdentityVerificationProfileCard';
+import { effectiveVerificationLevel } from '@kc/domain';
 import { KarmaBadge } from './KarmaBadge';
 import { formatUserLocationLine } from '../../lib/formatUserLocationLine';
 import { rowDirectionStart } from '../../lib/rtlLayout';
@@ -50,7 +54,14 @@ function profileMenuCornerHorizontalInset(): Pick<ViewStyle, 'left' | 'right' | 
   return rtl ? { right: spacing.sm } : { left: spacing.sm };
 }
 
-export function MyProfileChrome({ activeTab }: Readonly<{ activeTab: ProfilePostsTab }>) {
+export interface MyProfileChromeProps {
+  /** Posts lane highlighted in the tab strip. */
+  activeTab: ProfilePostsTab;
+  /** Called with the lane the member taps; the screen owns the tab state. */
+  onTabChange: (tab: ProfilePostsTab) => void;
+}
+
+export function MyProfileChrome({ activeTab, onTabChange }: Readonly<MyProfileChromeProps>) {
   const styles = useMyProfileChromeStyles();
   const { colors } = useTheme();
   const router = useRouter();
@@ -75,12 +86,9 @@ export function MyProfileChrome({ activeTab }: Readonly<{ activeTab: ProfilePost
   const displayName = user?.displayName?.trim() || fallbackName;
   const avatarUrl = user?.avatarUrl ?? null;
   const biography = user?.biography ?? null;
-
-  const goToTab = (next: ProfilePostsTab) => {
-    if (next === activeTab) return;
-    if (next === 'closed') router.replace('/(tabs)/profile/closed');
-    else router.replace('/(tabs)/profile');
-  };
+  const profileIncomplete = isOwnProfileIncomplete(user);
+  const identityNudge = needsIdentityVerificationReminder(user);
+  const verificationLevel = user ? effectiveVerificationLevel(user) : undefined;
 
   return (
     <>
@@ -108,6 +116,8 @@ export function MyProfileChrome({ activeTab }: Readonly<{ activeTab: ProfilePost
                   privacyMode={user?.privacyMode ?? 'Public'}
                   onLockPress={() => router.push('/settings')}
                   size={72}
+                  verificationLevel={verificationLevel}
+                  onIncompleteAvatarPress={profileIncomplete ? () => router.push('/edit-profile') : undefined}
                 />
                 <ProfileStatsRow
                   followersCount={user?.followersCount ?? 0}
@@ -128,11 +138,18 @@ export function MyProfileChrome({ activeTab }: Readonly<{ activeTab: ProfilePost
                   }
                 />
                 {user ? <KarmaBadge points={user.karmaPoints} /> : null}
+                {identityNudge ? <IdentityVerificationProfileCard /> : null}
               </>
             )}
             <View style={styles.actionRow}>
-              <TouchableOpacity style={styles.editBtn} onPress={() => router.push('/edit-profile')}>
-                <Text style={styles.editBtnText}>{t('profile.editProfile')}</Text>
+              <TouchableOpacity
+                style={[styles.editBtn, profileIncomplete && styles.completeBtn]}
+                onPress={() => router.push('/edit-profile')}
+                testID={profileIncomplete ? 'profile-complete-btn' : 'profile-edit-btn'}
+              >
+                <Text style={[styles.editBtnText, profileIncomplete && styles.completeBtnText]}>
+                  {profileIncomplete ? t('verification.nudge.cta') : t('profile.editProfile')}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.shareBtn}>
                 <Ionicons name="share-outline" size={iconSize.md} color={colors.primary} />
@@ -154,7 +171,9 @@ export function MyProfileChrome({ activeTab }: Readonly<{ activeTab: ProfilePost
       <MotionEntry variant="bottom" delay={ENTRY_DELAY.section}>
         <ProfileTabs
           active={activeTab}
-          onChange={goToTab}
+          onChange={(next) => {
+            if (next !== activeTab) onTabChange(next);
+          }}
           openCount={tabCounts.openCount}
           closedCount={tabCounts.closedCount}
         />
@@ -191,6 +210,8 @@ const useMyProfileChromeStyles = makeUseStyles(({ colors }) => ({
     alignItems: 'center' as const,
   },
   editBtnText: { ...typography.button, color: colors.textPrimary },
+  completeBtn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  completeBtnText: { color: colors.textInverse },
   shareBtn: {
     width: 44,
     height: 44,

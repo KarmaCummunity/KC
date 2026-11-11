@@ -6,7 +6,9 @@ name: Deploy smoke
 # environment. Replaces the old sleep-then-HTTP-200 prod-smoke.yml.
 #
 # Checks: /version.json serves the expected SHA (polled with backoff), the
-# page and its JS bundle load, Supabase Auth health answers with the anon
+# page and its JS bundle load, every static public page (privacy, terms,
+# support, delete-account, child-safety) is served as itself rather than the
+# SPA fallback, Supabase Auth health answers with the anon
 # key, and every probe-able Edge Function answers one side-effect-free
 # OPTIONS request with the exact status its handler's first check returns
 # (scripts/edge-functions.mjs SMOKE_PROBES). The checkout is the deployed
@@ -27,9 +29,9 @@ on:
         type: string
         required: true
       checks:
-        description: Comma-separated subset of version,web,supabase,functions
+        description: Comma-separated subset of version,web,pages,applinks,supabase,functions
         type: string
-        default: version,web,supabase,functions
+        default: version,web,pages,applinks,supabase,functions
   workflow_dispatch:
     inputs:
       target:
@@ -69,7 +71,7 @@ jobs:
         env:
           SMOKE_WEB_URL: ${{ inputs.target == 'prod' && vars.KC_PROD_URL || vars.DEV_WEB_URL }}
           SMOKE_SHA: ${{ inputs.sha }}
-          SMOKE_CHECKS: ${{ inputs.checks || 'version,web,supabase,functions' }}
+          SMOKE_CHECKS: ${{ inputs.checks || 'version,web,pages,applinks,supabase,functions' }}
           SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
         run: node scripts/smoke-deploy.mjs

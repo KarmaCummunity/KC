@@ -4,12 +4,13 @@
 // Visual hierarchy (mobile-first):
 //   1. Hero with title + tagline ("Give. Take. Donate what you have.")
 //   2. The giving worlds, all of them in one list: no featured card, no second "domains"
-//      section. A world with no active flow yet carries a "portal" tag (D60).
+//      section. A world with no active flow yet carries a "portal" tag (D60) and sits after
+//      the active worlds; each group follows the member's recent visits (FR-DONATE-001 AC8).
 //
 // Each tile uses the shared Card + IconTile primitives so it stays in lock-step
 // with the rest of the redesigned main-screen idiom (welcome-style cream
 // backdrop, soft shadow, orange-tinted icon tiles, staggered spring entries).
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
@@ -24,6 +25,7 @@ import { MatchesForYouCard } from '../../../src/components/matching/MatchesForYo
 import { useRemoteAppFlags } from '../../../src/hooks/useLaunchWorldFlags';
 import { HubTileGrid } from '../../../src/components/donations/HubTileGrid';
 import { donationsHubTiles } from '../../../src/navigation/donationsHubTiles';
+import { useHubWorldOrder } from '../../../src/hooks/useHubWorldOrder';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
@@ -70,17 +72,23 @@ export default function DonationsHubScreen() {
   const tabBarPad = useShellTabBarScrollInset();
   const remoteFlags = useRemoteAppFlags();
   // D60 — every world is shown; portal worlds (flag off) say they offer links and knowledge.
-  const tiles = donationsHubTiles(remoteFlags).map(({ tile, mode }) =>
-    mode === 'portal'
-      ? { ...tile, subtitleKey: 'donations.worldLaunch.portalTileSubtitle', portal: true }
-      : tile,
+  const tiles = useMemo(
+    () =>
+      donationsHubTiles(remoteFlags).map(({ tile, mode }) =>
+        mode === 'portal'
+          ? { ...tile, subtitleKey: 'donations.worldLaunch.portalTileSubtitle', portal: true }
+          : tile,
+      ),
+    [remoteFlags],
   );
+  // FR-DONATE-001 AC8 — active worlds first, then portals, each by this member's recent visits.
+  const { ordered, recordOpen } = useHubWorldOrder(tiles);
 
   // Desktop (>=1024) aside — live community snapshot (FR-RESP-003).
   useScreenAside(() => <CommunityStatsAside />, []);
 
   return (
-    <Screen blobs="content">
+    <Screen blobs="off">
       <TopBar />
       <ScrollView
         testID="donations-hub"
@@ -97,7 +105,8 @@ export default function DonationsHubScreen() {
         <MatchesForYouCard />
         <HubTileGrid
           heading={t('donations.hubCategoriesSectionTitle')}
-          tiles={tiles}
+          tiles={ordered}
+          onTilePress={recordOpen}
           delay={ENTRY_DELAY.section}
         />
       </ScrollView>

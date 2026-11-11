@@ -4,15 +4,15 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 
-const { execute, countOpenByUser, replace, track, activation, haptic, invalidateProfile, invalidatePersonal } = vi.hoisted(() => ({
-  execute: vi.fn(), countOpenByUser: vi.fn(), replace: vi.fn(), track: vi.fn(), activation: vi.fn(), haptic: vi.fn(), invalidateProfile: vi.fn(), invalidatePersonal: vi.fn(),
+const { execute, countOpenByUser, back, track, activation, haptic, invalidateProfile, invalidatePersonal } = vi.hoisted(() => ({
+  execute: vi.fn(), countOpenByUser: vi.fn(), back: vi.fn(), track: vi.fn(), activation: vi.fn(), haptic: vi.fn(), invalidateProfile: vi.fn(), invalidatePersonal: vi.fn(),
 }));
 vi.mock('../../services/postsComposition', () => ({ getCreatePostUseCase: () => ({ execute }), getPostRepo: () => ({ countOpenByUser }) }));
-vi.mock('expo-router', () => ({ useRouter: () => ({ replace }) }));
+vi.mock('expo-router', () => ({ useRouter: () => ({ back, canGoBack: () => true, dismissTo: vi.fn() }) }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string, values?: { message?: string }) => values ? `${key}:${values.message}` : key }) }));
 vi.mock('../../i18n', () => ({ default: { t: (key: string) => key } }));
 vi.mock('../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: track, trackActivationIfFirst: activation }));
-vi.mock('../../lib/haptics', () => ({ hapticSuccess: haptic }));
+vi.mock('../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticSuccess: haptic }));
 vi.mock('../../lib/invalidateMyProfilePostQueries', () => ({ invalidateMyProfilePostQueries: invalidateProfile }));
 vi.mock('../../lib/invalidatePersonalStatsCaches', () => ({ invalidatePersonalStatsCaches: invalidatePersonal }));
 vi.mock('../../store/authStore', () => ({ useAuthStore: { getState: () => ({ session: null }) } }));
@@ -53,7 +53,7 @@ describe('useCreatePostPublish', () => {
     const { result } = renderHook(() => useCreatePostPublish(args), { wrapper });
     act(() => result.current.tryPublish());
     await waitFor(() => expect(execute).toHaveBeenCalled());
-    await waitFor(() => expect(replace).toHaveBeenCalledWith('/(tabs)'));
+    await waitFor(() => expect(back).toHaveBeenCalledOnce());
     expect(countOpenByUser).toHaveBeenCalledWith('u1');
     expect(track).toHaveBeenCalledWith('listing_created', { world: 'items', cityId: 'city-1' });
     expect(haptic).toHaveBeenCalled();
@@ -71,6 +71,6 @@ describe('useCreatePostPublish', () => {
     execute.mockRejectedValueOnce(new Error('network'));
     act(() => result.current.tryPublish());
     await waitFor(() => expect(execute).toHaveBeenCalled());
-    expect(replace).not.toHaveBeenCalled();
+    expect(back).not.toHaveBeenCalled();
   });
 });

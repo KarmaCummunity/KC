@@ -105,7 +105,7 @@ export default function DonationCategoryScreen() {
   const iconName = ICON_BY_SLUG[slug];
 
   return (
-    <Screen blobs="content">
+    <Screen blobs="off">
       <ScrollView
         style={styles.scrollOuter}
         contentContainerStyle={[styles.scroll, { paddingBottom: tabBarPad }]}

@@ -42,10 +42,6 @@ import {
   useOtherProfileScreenStyles,
 } from '../../../src/components/profile/otherProfileScreen.styles';
 import { nativeStackHeaderRightIconOnly } from '../../../src/navigation/nativeHeaderIconOnly';
-import {
-  ProfileMarketplaceListings,
-} from '../../../src/components/profile/ProfileMarketplaceListings';
-
 export default function OtherProfileScreen() {
   const styles = useOtherProfileScreenStyles();
   const { colors } = useTheme();
@@ -178,6 +174,7 @@ export default function OtherProfileScreen() {
             avatarUrl={u.avatarUrl}
             biography={u.biography}
             privacyMode={u.privacyMode}
+            verificationLevel={u.verificationLevel}
           />
 
           <ProfileStatsRow
@@ -219,8 +216,6 @@ export default function OtherProfileScreen() {
             </View>
           ) : null}
         </View>
-
-        <ProfileMarketplaceListings ownerId={u.userId} />
 
         <ProfileTabs
           active={activeTab}

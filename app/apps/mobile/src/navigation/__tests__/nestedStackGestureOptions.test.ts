@@ -4,6 +4,7 @@ import { getNestedStackGestureOptions } from '../nestedStackGestureOptions';
 
 vi.mock('@kc/ui', () => ({ useTheme: () => ({ colors: { primary: '#000', background: '#fff' } }) }));
 vi.mock('../nativeHeaderIconOnly', () => ({ nativeStackHeaderLeftIconOnly: () => ({}) }));
+vi.mock('../TopBarStackHeader', () => ({ topBarStackHeader: () => null }));
 
 const setOS = (os: typeof Platform.OS) => {
   (Platform as { OS: typeof Platform.OS }).OS = os;

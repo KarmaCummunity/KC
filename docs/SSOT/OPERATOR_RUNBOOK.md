@@ -19,7 +19,7 @@ supabase gen types typescript --project-id <ref> \
 
 ## Migration application rules (READ FIRST) {#application-rules}
 
-The repo uses **sequential** migration files (`supabase/migrations/NNNN_snake.sql`, e.g. `0212_glowe_event_registration.sql`). The `schema_migrations` ledger on each Supabase project must match those file versions exactly.
+The repo uses **sequential** migration files (`supabase/migrations/NNNN_snake.sql`, e.g. `0243_listings_legacy_sync.sql`). The `schema_migrations` ledger on each Supabase project must match those file versions exactly.
 
 **Rule:** apply schema changes to the dev DB ONLY as committed sequential files, via **`supabase db push`** / **`supabase migration up`** — or let the **Deploy** workflow apply them after a `dev` push passes CI.
 
@@ -59,6 +59,70 @@ The key pair is created once by the owner: `age-keygen -o key.txt` prints the pu
 
 ---
 
+## Scheduled database backups (Supabase Free) {#scheduled-backups}
+
+Supabase **Free** has no automatic backups and no point-in-time recovery, and the owner decided on 2026-11-11 to stay on Free for now. Two scheduled workflows are the substitute. Both are read-only against the project (`supabase db dump` plus two `SELECT`s) and both use the shared action `.github/actions/db-backup`.
+
+| Workflow | Project | When | Kept |
+| --- | --- | --- | --- |
+| `db-backup-prod.yml` | kc-prod (`kdqtbdbzwvlugkhonexg`), environment `supabase-prod` | daily 01:17 UTC (03:17 Israel) | 30 days |
+| `db-backup-dev.yml` | kc-dev (`enbqriuxvvuontiwslun`), environment `supabase-dev` | Sundays 02:43 UTC, and whenever the backup code changes on `dev` | 14 days |
+
+**Recovery point: up to 24 hours of data lost (prod), up to 7 days (dev).** Run `DB backup (prod)` by hand (Actions → run workflow, branch `main`) right before any risky operation. Scheduled workflows only run from the default branch, so prod's schedule starts with the first release to `main`.
+
+### What is in a backup
+
+Artifact `db-backup-<target>-<YYYYMMDD>-<run id>-<attempt>`, each file gzip-compressed and encrypted with `age` to the public key in the environment variable `BACKUP_AGE_RECIPIENT`:
+
+| File | Content |
+| --- | --- |
+| `roles.sql.gz.age` | custom roles and role settings |
+| `schema.sql.gz.age` | definitions of every non-managed schema (`public`, `ops`, ...); the `auth` / `storage` / `pgmq` tables are created by the platform and are not in it |
+| `data.sql.gz.age` | rows of all schemas in `COPY` format, **including `auth` (accounts, identities) and `storage` (file metadata)** and the pgmq queue tables |
+| `manifest.json.gz.age` | table list and exact row count per table |
+| `BACKUP-INFO.txt`, `SHA256SUMS` | plain text: target, project, time; checksums of the `.age` files |
+
+**Not in a backup:** the files in Storage (avatars, post images; only their metadata rows are), Edge Function code and secrets, Vault secrets (`kc_project_url`, `kc_service_role_key`), Auth settings, and project settings. Re-apply those from the repo and the setup documents after a restore.
+
+### Safety properties
+
+- The key pair is the owner's. Without the private key (`age-keygen` output, kept offline) a backup is unreadable. **Losing the key loses every backup; leaking it exposes every backup that still exists.** Keep two offline copies.
+- The repository is public and a public repository's artifacts can be downloaded by any signed-in GitHub user. That is acceptable only because every file is encrypted; never upload a plaintext dump as an artifact, and never log row data.
+- Plaintext exists only inside the ephemeral runner (for the restore check) and is deleted by the last step, also on failure.
+- Fails closed: no valid `BACKUP_AGE_RECIPIENT`, a different project ref than the one hard-coded in the workflow, a paused or unhealthy project, or an empty dump file fails the run (GitHub emails the failure to the repository admins).
+- Cost: artifact storage is metered against the organisation's shared allowance (GitHub Free: 500 MB, then $0.25 per GB-month). November's repository usage is billed gross but fully discounted (net $0). The dump is gzip-compressed before encryption; the run warns above 200 MiB. If backups outgrow artifacts, move them to object storage (for example Cloudflare R2) rather than shortening retention.
+- An empty database (kc-prod before its baseline) is a named state: the run dumps the roles and the empty schema, restores them, records `empty` in the manifest and does not fail.
+
+### Restore check (every run)
+
+After the artifact is uploaded, the run starts a throwaway `supabase/postgres` container (same Postgres major and extensions as Supabase), restores `roles.sql` (errors ignored: roles of platform services such as realtime do not exist in the container), then `schema.sql` and the `data.sql` rows of the schemas that `schema.sql` defines, both with `ON_ERROR_STOP`, counts the rows of every such table and compares them with the manifest. A dump that cannot be restored, or restores short, fails the run, and the backup stays available because the upload comes first. The rows of `auth`, `storage` and `pgmq` are in the backup and the manifest but not in this check (the container has no GoTrue / Storage migrations, so those tables are missing or have other columns); they restore into a real Supabase project, where those tables exist.
+
+### Restore procedure (manual, owner's key)
+
+Policy `D-195` still applies: the database is forward-fix first; restore only when a forward-fix cannot repair the damage, with the PM's typed confirmation.
+
+1. Actions → `DB backup (prod)` (or dev) → pick the run → download artifact `db-backup-...` to a private machine (`gh run download <run id> -n <artifact name>`).
+2. Verify: `sha256sum -c SHA256SUMS`.
+3. Decrypt and decompress each file: `age -d -i key.txt roles.sql.gz.age | gunzip > roles.sql` (same for `schema`, `data`, `manifest.json`). Never commit, upload or keep these files after the restore.
+4. Restore into a **new** Supabase project (Dashboard → New project, same region), then copy back what was lost; replaying a full dump over a live project also drops everything written after the backup. Use the session pooler or direct connection string as `$TARGET_DB_URL`:
+   ```bash
+   psql "$TARGET_DB_URL" -v ON_ERROR_STOP=1 -f roles.sql          # skip or edit if the role exists
+   psql "$TARGET_DB_URL" -v ON_ERROR_STOP=1 -f schema.sql
+   psql "$TARGET_DB_URL" -f data.sql                               # starts with session_replication_role = replica
+   ```
+   `data.sql` also holds queue rows (`pgmq`); until the queues exist (migrations create them), psql reports `relation "pgmq..." does not exist` for those blocks. Those errors are expected; any other error is not.
+5. Compare: for each table, `select count(*)` against `manifest.json` (`rows`).
+6. Re-create Vault secrets, Edge Function secrets and Auth settings; re-upload Storage files from their own source. Point the app (`EXPO_PUBLIC_SUPABASE_URL`, Cloudflare Pages variables, EAS) at the new project only after the owner confirms.
+7. `shred -u` the decrypted files.
+
+Do a restore drill (steps 1-5 into a scratch project) after the first release to `main` and then quarterly.
+
+### Free-project pausing
+
+Supabase pauses Free projects with too little database activity over 7 days ([docs](https://supabase.com/docs/guides/platform/free-project-pausing): "a few user requests to the database each day over the previous week"). Every backup run reads the whole database through `pg_dump` and sends two `SELECT`s through the Management API, and the hourly `ops-health.yml` monitor queries the database too, so a project with these workflows enabled sees database activity every day. Supabase does not publish an exact threshold, so this is a strong mitigation, not a guarantee; a paused project makes the backup run fail with `project status is INACTIVE`, which is the alarm. Resume it from the Dashboard (data is kept for a year). The permanent fix is the Pro plan.
+
+---
+
 ## Owner setup for D-195 CI/CD {#owner-setup-ci}
 
 Repository settings only the owner (admin) can apply. Tracked as `INFRA-CI-OWNER` in [`BACKLOG.md`](./BACKLOG.md); background in [`DECISIONS.md`](./DECISIONS.md) `D-195`, layout in [`ENVIRONMENTS.md`](./ENVIRONMENTS.md). Do the steps **in this order**: each merge assumes the settings before it.
@@ -83,10 +147,13 @@ Repository settings only the owner (admin) can apply. Tracked as `INFRA-CI-OWNER
 4. **Mobile store** (nightly mobile, `INFRA-CI-4`; PR #1304 is already merged, so the nightly fails until this is done).
    - Environment `mobile-store` (deployment branches `dev` + `main`) with secret `MOBILE_SUPABASE_ANON_KEY` = the **kc-dev** publishable key.
    - EAS → project → Environment variables → `preview`: the Sentry values and the `GOOGLE_SERVICES_JSON` file variable.
+   - EAS → `preview` and `production`: `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` (Google Cloud → Maps SDK for Android key, restricted to package `org.karmacommunity.app` + the Play app-signing SHA-1). Without it the Android map is disabled (#1951).
+   - Native Google sign-in (#1955). Google Cloud: an **iOS** OAuth client (bundle `org.karmacommunity.app`) and **Android** OAuth clients for package `org.karmacommunity.app` with the upload and Play app-signing SHA-1s. Supabase → Auth → Google: add the **web** client ID to "Client IDs" and enable **Skip nonce checks**. EAS → `preview` and `production`: `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`. Without them sign-in keeps the browser flow. Takes effect in a new store build.
    - Verify the iOS signing secrets are present (`KC_IOS_*`, `ASC_*`).
    - Allow `mobile/*` tags (if a tag ruleset restricts tag creation, add `mobile/*` to the allowed patterns).
    - Then dispatch **Mobile nightly** once on `dev` to confirm.
 5. **Import the ruleset (`INFRA-CI-2`).** The gate-integrity PR #1319 is merged.
+   - **Squash message (every release).** In the merge box delete everything below the title: the default message lists every commit, 117 of them carried `[skip ci]` in the first release, so GitHub skipped all CI on `main` and the deploy could not start (`TD-275`, `RELEASE_CHECKLIST.md`).
    - **First release to `main` (one-time).** The release PR into `main` loads its judges from `main`, which has none yet, so its `CI gate` fails at `detect changes` and no lane runs. `main`'s classic protection includes administrators, so not even an admin can merge it. Before you merge, check that the latest `dev` push run of **CI** is green: it runs every lane except the release lane. Then: Settings → Branches → `main` → edit → untick **Do not allow bypassing the above settings** → merge the release PR → tick it again. The push to `main` then runs the full CI with `main`'s new judges, and **Deploy** waits for your approval click. Every later release is judged normally.
    - **One-time bootstrap.** The judges now load only from the base commit, with no fallback to the PR's copy. The PR that introduces a judge module (the test-integrity guard, the run binding) therefore fails its own `static` lane / `CI gate`, because its base does not have them yet. Read the diff, then merge it once with your admin override (the live `dev` ruleset allows the repository-admin bypass; the committed `dev-main.json` has no bypass actors). Every later PR is judged by the merged copy. Done for #1319; repeat only for a future judge-first PR that cannot pass its own gate.
    - **Version-bump App (`TD-231`) — before you delete `AGENT_MERGE_TOKEN` or import the ruleset.** `bump-version-on-merge.yml` pushes the ID commit and a `[skip ci]` `app/VERSION` commit straight to `dev` after every merge, as a third GitHub App whose only power is that push:
@@ -364,7 +431,7 @@ Regenerate `database.types.ts` after applying (or merge the manually added table
 
 ## Edge Functions — CI deploy + prod smoke (2026-05-12)
 
-**Workflow:** the Edge Functions stage of **Deploy** (`.github/workflows/deploy-functions.yml`), after the database stage, for every `dev` push that passes CI (kc-dev) and every approved `main` release (prod). It deploys every function in `supabase/functions` except `_shared` and the local-only `mock-login`; the deploy smoke then sends `OPTIONS` to each and fails on a 5xx or 404. No push or manual trigger of its own — dispatch **Deploy** on `dev` to redeploy kc-dev.
+**Workflow:** the Edge Functions stage of **Deploy** (`.github/workflows/deploy-functions.yml`), after the database stage, for every `dev` push that passes CI (kc-dev) and every approved `main` release (prod). It deploys every function in `supabase/functions` except `_shared`, the local-only `mock-login` and the `whatsapp-*` functions (`NOT_DEPLOYED` in `scripts/edge-functions.mjs`; the pipeline never deletes a function, so one already deployed stays at its last version); the deploy smoke then sends `OPTIONS` to each and fails on a 5xx or 404. No push or manual trigger of its own — dispatch **Deploy** on `dev` to redeploy kc-dev.
 
 **GitHub:** Repository → Settings → Environments → `supabase-prod` / `supabase-dev` must expose the same secrets as DB deploy:
 
@@ -524,6 +591,12 @@ on conflict (channel) do update
   set url = excluded.url, provider_label = excluded.provider_label, is_active = true;
 ```
 
+**Payee phone (interim, D121).** Set the number donors transfer to in Bit / PayBox — digits only, never in the repo. Signed-in users see it under the Bit / PayBox buttons; guests never receive it:
+
+```sql
+update public.kc_support_channels set payee_phone = '05XXXXXXXX' where channel in ('bit', 'paybox');
+```
+
 As soon as an active `card_one_time` row exists, the app hides Bit / PayBox on its own (D64) — on the Money hub and on the About / Settings card. Once clearing is confirmed working on prod, remove the interim rows for good: `delete from public.kc_support_channels where channel in ('bit', 'paybox');`
 
 The app has **no compiled payment links**: if this table cannot be read, donors see "unavailable" rather than a stale link.
@@ -556,6 +629,16 @@ The hourly **Ops health monitor** (`.github/workflows/ops-health.yml`, G42) read
 | `rides_trips_not_completed` | Confirmed seats not completed a day after departure. | Check the completion flow (`complete_ride_trip`); users may need a reminder. |
 
 **Adding a check** (any giving world): a migration with a `stable` function `ops.check_<key>()` returning `ops.health_result` (count + data-free detail) and a row in `ops.health_checks`; extend `supabase/tests/0463_ops_health_registry.sql` or the world's own test.
+
+## Report handling clock {#report-handling-clock}
+
+Apple and Google expect a reported item to be acted on within **24 h** (FR-ADMIN-012 AC5/AC6, #1039). Owners: the two platform admin accounts (super-admin and KC manager); each is the other's backup. Email addresses are not recorded in the repo.
+
+1. **Where.** Admin portal → Reports (`/(admin)/reports`), oldest case first. A yellow badge means the case has waited 12 h, a red one 24 h.
+2. **Alert.** At 12 h each active super-admin / moderator gets a push, "Report waiting over 12 hours", that opens the case. It is sent once per case by `report_sla_alert_sweep()` (pg_cron job `report_sla_alert_hourly`, minute 17 of every hour).
+3. **Act.** Open the case and choose *Confirm removal*, *Dismiss*, *Manual remove*, *Permanent ban* or *Open support thread*. Removing or dismissing takes the case out of the inbox and the clock stops.
+4. **If nobody is reachable.** The backup admin acts. If both are away, hide the target (*Manual remove*) first and review later: a hidden item can be restored, a missed deadline cannot.
+5. **If no alert arrives.** `select jobname, status, start_time from cron.job_run_details where command like '%report_sla_alert_sweep%' order by start_time desc limit 5;` then check `notifications_outbox` for `kind = 'report_sla_warning'` and the `dispatch-notification` logs.
 
 ## Publishing legal documents (FR-SETTINGS-010)
 
@@ -631,9 +714,9 @@ The published row should show the new `current_version`. For `standard` / `criti
 
 ---
 
-## External GLOWE contributors (INFRA-OSS-8)
+## External contributors (INFRA-OSS-8)
 
-Org project board: [GloWe (#2)](https://github.com/orgs/KarmaCummunity/projects/2) — public.
+Org project board: [KC (#2)](https://github.com/orgs/KarmaCummunity/projects/2) — public.
 
 ### Labels
 
@@ -642,12 +725,12 @@ Org project board: [GloWe (#2)](https://github.com/orgs/KarmaCummunity/projects/
 | `contributor-facing` | Safe for volunteers |
 | `good first issue` / `help wanted` | Entry / next tasks |
 | `maintainer-only` | Org-admin / PM only (Snyk, CodeRabbit, GitGuardian, Phase C, …) |
-| `area:glowe-web` / `area:docs` / `area:a11y` / `area:i18n` | Area filter |
+| `area:mobile` / `area:docs` / `area:a11y` / `area:i18n` | Area filter |
 | `size:S` / `size:M` | Effort hint |
 
 ### Project views (maintainer setup)
 
-**Project:** [GloWe #2](https://github.com/orgs/KarmaCummunity/projects/2)
+**Project:** [KC #2](https://github.com/orgs/KarmaCummunity/projects/2)
 
 | View | Layout | Filter | URL |
 |------|--------|--------|-----|
@@ -680,7 +763,7 @@ gh api -X POST orgs/KarmaCummunity/projectsV2/2/views \
 Set **Contributor board** as the project default in the UI: project **⋯ → Settings →
 Default view**.
 
-Custom fields (optional): **Size** (S/M/L), **Area** (glowe-web/docs/a11y/i18n).
+Custom fields (optional): **Size** (S/M/L), **Area** (mobile/docs/a11y/i18n).
 
 #### One-time: grant CLI project scope + bulk-add items
 

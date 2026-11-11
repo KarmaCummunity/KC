@@ -10,7 +10,7 @@ test('block and unblock a user from the profile menu', async ({ page }) => {
   const { session: target } = await sessionFor({ email: TARGET_EMAIL, password: USER_A.password });
   const [row] = await rest<{ share_handle: string }[]>(
     target.access_token,
-    `users?select=share_handle&user_id=eq.${target.user.id}`,
+    `users?select=share_handle&id=eq.${target.user.id}`,
   );
   expect(row?.share_handle).toBeTruthy();
 
@@ -19,7 +19,7 @@ test('block and unblock a user from the profile menu', async ({ page }) => {
   await dismissGates(page);
 
   const toggle = page.getByTestId('profile-block-toggle');
-  const openMenu = () => page.getByRole('button', { name: 'דווח על משתמש' }).first().click();
+  const openMenu = () => page.getByRole('button', { name: 'דווחו על משתמש' }).first().click();
 
   await openMenu();
   await expect(toggle).toHaveText('חסימת משתמש');

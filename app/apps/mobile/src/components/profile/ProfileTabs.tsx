@@ -1,5 +1,5 @@
 // app/apps/mobile/src/components/profile/ProfileTabs.tsx
-// Open / closed tabs row. Used by My Profile open + closed routes.
+// Open / closed tabs row. Used by the My Profile screen and the other-user profile.
 // Mapped to: FR-PROFILE-001 AC4. Saved / hidden / removed lists use the profile stack header.
 
 import React from 'react';
@@ -34,22 +34,42 @@ export function ProfileTabs({
       : t('profile.tabClosed');
   return (
     <View style={styles.row}>
-      <Tab label={openLabel} active={active === 'open'} onPress={() => onChange('open')} styles={styles} />
-      <Tab label={closedLabel} active={active === 'closed'} onPress={() => onChange('closed')} styles={styles} />
+      <Tab
+        testID="profile-tab-open"
+        label={openLabel}
+        active={active === 'open'}
+        onPress={() => onChange('open')}
+        styles={styles}
+      />
+      <Tab
+        testID="profile-tab-closed"
+        label={closedLabel}
+        active={active === 'closed'}
+        onPress={() => onChange('closed')}
+        styles={styles}
+      />
     </View>
   );
 }
 
 function Tab({
-  label, active, onPress, styles,
+  testID, label, active, onPress, styles,
 }: {
+  /** Stable E2E selector, independent of the UI language and the count in the label. */
+  testID: string;
   label: string;
   active: boolean;
   onPress: () => void;
   styles: ReturnType<typeof useProfileTabsStyles>;
 }) {
   return (
-    <TouchableOpacity style={[styles.tab, active && styles.tabActive]} onPress={onPress}>
+    <TouchableOpacity
+      testID={testID}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active }}
+      style={[styles.tab, active && styles.tabActive]}
+      onPress={onPress}
+    >
       <Text style={[styles.text, active && styles.textActive]}>{label}</Text>
     </TouchableOpacity>
   );

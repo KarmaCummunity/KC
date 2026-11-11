@@ -1,4 +1,4 @@
-// Chat list (Inbox) — FR-CHAT-001, FR-CHAT-016.
+// Chat list (Inbox) — FR-CHAT-001, FR-CHAT-016, FR-CHAT-017 ("+" starts a conversation).
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Platform } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
@@ -20,10 +20,10 @@ import { NotifyModal } from '../../src/components/NotifyModal';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
 import { useChatInboxQuery } from '../../src/hooks/useChatInboxQuery';
 import { useChatStore } from '../../src/store/chatStore';
-import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
+import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { queryClient } from '../../src/lib/queryPersist';
 import { chatInboxQueryKey } from '../../src/lib/chatInboxQuery';
-import { NativeStackHeaderTitle } from '../../src/navigation/NativeStackHeaderTitle';
+import { NewChatHeaderButton } from '../../src/components/chat/NewChatHeaderButton';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../src/components/RouteErrorBoundary';
 
@@ -34,7 +34,7 @@ export default function ChatListScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const styles = useChatListStyles();
-  const detailOptions = useDetailStackScreenOptions();
+  const shellStackOptions = useShellStackScreenOptions();
   const userId = useAuthStore((s) => s.session?.userId);
   const inboxQuery = useChatInboxQuery(userId);
   const inbox = inboxQuery.data?.chats;
@@ -82,9 +82,10 @@ export default function ChatListScreen() {
     <View style={styles.container} testID="chat-inbox-screen">
       <Stack.Screen
         options={{
-          ...detailOptions,
-          headerTitle: () => <NativeStackHeaderTitle title={t('chat.title')} />,
-          headerLargeTitle: false,
+          ...shellStackOptions,
+          headerTitle: t('chat.title'),
+          // FR-CHAT-017 AC1 — start a conversation from the inbox.
+          headerRight: () => <NewChatHeaderButton />,
         }}
       />
 

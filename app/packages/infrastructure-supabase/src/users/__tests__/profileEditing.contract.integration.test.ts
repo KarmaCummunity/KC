@@ -15,7 +15,7 @@ const CASE_TIMEOUT_MS = 60_000;
 describe('Profile-editing contract — SupabaseUserRepository (local stack)', () => {
   const users = new ContractUsers();
   const ctx: ProfileEditingContractContext = {
-    // Rows of public.cities seeded by migration 0008.
+    // Rows of public.cities loaded from supabase/seed/reference/data/cities.csv.
     cities: [
       { id: '5000', name: 'תל אביב - יפו' },
       { id: '3000', name: 'ירושלים' },

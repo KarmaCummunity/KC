@@ -1,4 +1,4 @@
-import type { Chat, Message } from '@kc/domain';
+import type { Chat, Message, VerificationLevel } from '@kc/domain';
 
 export interface ChatWithPreview extends Chat {
   otherParticipant: {
@@ -7,6 +7,7 @@ export interface ChatWithPreview extends Chat {
     avatarUrl: string | null;
     shareHandle: string | null;       // null when counterpart hard-deleted
     isDeleted: boolean;
+    verificationLevel?: VerificationLevel; // FR-VERIFY-001; absent = 0
   };
   lastMessage: Message | null;
   unreadCount: number;
@@ -18,10 +19,10 @@ export interface IChatRepository {
   findOrCreateChat(
     userId: string,
     otherUserId: string,
-    anchor?: { postId?: string; rideId?: string },
+    anchor?: { postId?: string },
     options?: { preferNewThread?: boolean },
   ): Promise<Chat>;
-  /** FR-CHAT-016 — hides chat from viewer inbox only (RPC). */
+  /** FR-CHAT-016 — hides chat from viewer inbox only (RPC `hide_chat`). */
   hideChatFromInbox(chatId: string): Promise<void>;
   findById(chatId: string): Promise<Chat | null>;
 
@@ -32,10 +33,15 @@ export interface IChatRepository {
     beforeCreatedAt?: string,
   ): Promise<Message[]>;
 
+  /**
+   * `messageId` is the client-generated id of the optimistic message: sending it again after a
+   * lost response returns the first copy instead of a duplicate.
+   */
   sendMessage(
     chatId: string,
     senderId: string,
     body: string,
+    messageId?: string,
   ): Promise<Message>;
 
   markRead(chatId: string, userId: string): Promise<void>;
@@ -51,14 +57,15 @@ export interface IChatRepository {
     avatarUrl: string | null;
     shareHandle: string | null;
     isDeleted: boolean;
+    verificationLevel?: VerificationLevel;
   }>;
 
   // Support thread (FR-CHAT-007)
   getOrCreateSupportThread(userId: string): Promise<Chat>;
 
   /**
-   * FR-MOD-002 / FR-CHAT-007 AC3 — get/create the support thread and inject a
-   * system message with the issue details in one round-trip.
+   * FR-MOD-002 / FR-CHAT-007 AC3 — get/create the support thread and send the issue details
+   * into it as the member's first message.
    */
   submitSupportIssue(category: string | null, description: string): Promise<Chat>;
 

@@ -26,7 +26,6 @@ const mockStyles = {
 
 const createMockUser = (overrides: Partial<User> = {}): User => ({
   userId: 'user-1',
-  authProvider: 'google',
   shareHandle: 'jane_doe',
   displayName: 'Jane Doe',
   city: 'tel_aviv',
@@ -34,6 +33,7 @@ const createMockUser = (overrides: Partial<User> = {}): User => ({
   profileStreet: null,
   profileStreetNumber: null,
   contactPhone: null,
+  dateOfBirth: null,
   biography: null,
   avatarUrl: null,
   privacyMode: 'Public',
@@ -53,6 +53,7 @@ const createMockUser = (overrides: Partial<User> = {}): User => ({
   followersCount: 0,
   followingCount: 0,
   karmaPoints: 0,
+  verificationLevel: 0,
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
   preferredLanguage: null,

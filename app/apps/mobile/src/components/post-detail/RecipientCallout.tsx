@@ -8,9 +8,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, iconSize, useTheme, Text } from '@kc/ui';
 import { MirroredIcon } from '../ui/MirroredIcon';
-import type { PostType } from '@kc/domain';
-import { AvatarInitials } from '../AvatarInitials';
-import { textAlignStart } from '../../lib/rtlLayout';
+import type { PostType, VerificationLevel } from '@kc/domain';
+import { AvatarWithVerificationBadge } from '../AvatarWithVerificationBadge';
+import { NameWithBadge } from '../NameWithBadge';
+import { rowDirectionStart, textAlignStart } from '../../lib/rtlLayout';
 
 interface Props {
   readonly postType: PostType;
@@ -19,6 +20,7 @@ interface Props {
     readonly displayName: string | null;
     readonly shareHandle: string;
     readonly avatarUrl: string | null;
+    readonly verificationLevel?: VerificationLevel;
   };
   readonly profileNavigable?: boolean;
 }
@@ -41,15 +43,21 @@ export function RecipientCallout({ postType, recipient, profileNavigable = true 
       </View>
       <View style={styles.textCol}>
         <Text style={styles.sublabel}>{sublabel}</Text>
-        <Text style={styles.label} numberOfLines={2}>
-          {labelLeft}{' '}
-          <Text style={styles.name}>{displayName}</Text>
-        </Text>
+        <View style={styles.labelRow}>
+          <Text style={styles.label} numberOfLines={2}>
+            {labelLeft}{' '}
+          </Text>
+          <NameWithBadge level={profileNavigable ? recipient.verificationLevel : 0}>
+            <Text style={styles.name}>{displayName}</Text>
+          </NameWithBadge>
+        </View>
       </View>
-      <AvatarInitials
+      <AvatarWithVerificationBadge
         name={displayName}
         avatarUrl={profileNavigable ? recipient.avatarUrl : null}
         size={48}
+        verificationLevel={profileNavigable ? recipient.verificationLevel : 0}
+        emphasis="detail"
       />
       {profileNavigable ? (
         <MirroredIcon name="chevron-forward" size={iconSize.lg} color={colors.textSecondary} />
@@ -95,7 +103,13 @@ const useStyles = makeUseStyles(({ colors, isDark }) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  textCol: { flex: 1, gap: 0 },
+  textCol: { flex: 1, gap: 0, minWidth: 0 },
+  labelRow: {
+    flexDirection: rowDirectionStart,
+    flexWrap: 'wrap' as const,
+    alignItems: 'center' as const,
+    gap: spacing.xs,
+  },
   sublabel: {
     ...typography.caption,
     color: colors.textSecondary,

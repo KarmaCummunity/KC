@@ -1,15 +1,20 @@
 /** FR-MOD-007 + FR-MOD-010 + FR-ADMIN-002..007 — moderation domain errors. */
 
+/**
+ * Why a staff moderation action was refused. Each value except `unknown` is a stable
+ * `P0001` message of the baseline moderation RPCs (`supabase/schemas/60_moderation`).
+ */
 export type ModerationErrorCode =
   | 'forbidden'
-  | 'invalid_target_type'
   | 'invalid_restore_state'
+  | 'invalid_target_state'
   | 'report_not_open'
-  | 'invalid_ban_reason'
-  | 'cannot_ban_self'
-  | 'cannot_ban_admin'
-  | 'cannot_delete_system_message'
+  | 'invalid_sanction_reason'
+  | 'cannot_sanction_self'
+  | 'cannot_sanction_admin'
+  | 'account_pending_deletion'
   | 'target_not_found'
+  | 'message_not_found'
   | 'cannot_report_self'
   | 'unknown';
 
@@ -50,6 +55,20 @@ export class AccountGateError extends Error {
   ) {
     super(`account_gate:${reason}`);
     this.name = 'AccountGateError';
+  }
+}
+
+export type RestoreAccountErrorCode =
+  | 'not_pending_deletion'
+  | 'grace_expired'
+  | 'unauthenticated'
+  | 'network';
+
+/** FR-AUTH-016 — why a restore did not go through; the UI maps the code to a message. */
+export class RestoreAccountError extends Error {
+  constructor(public readonly code: RestoreAccountErrorCode, public readonly cause?: unknown) {
+    super(`restore_account:${code}`);
+    this.name = 'RestoreAccountError';
   }
 }
 

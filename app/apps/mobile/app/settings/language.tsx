@@ -9,7 +9,7 @@ import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/ui';
 import i18n from '../../src/i18n';
-import { useDetailStackScreenOptions } from '../../src/navigation/detailStackScreenOptions';
+import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
 import { LanguageRow } from '../../src/components/settings/translationLanguageParts';
@@ -30,7 +30,7 @@ const LABEL_KEY: Record<AppLanguage, string> = {
 };
 
 export default function AppLanguageScreen() {
-  const detailStackScreenOptions = useDetailStackScreenOptions();
+  const shellStackScreenOptions = useShellStackScreenOptions();
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useScreenStyles();
@@ -58,7 +58,7 @@ export default function AppLanguageScreen() {
     <>
       <Stack.Screen
         options={{
-          ...detailStackScreenOptions,
+          ...shellStackScreenOptions,
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.primary,
           headerTitle: t('settings.languageScreen.title'),

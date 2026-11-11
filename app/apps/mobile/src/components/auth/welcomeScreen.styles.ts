@@ -25,6 +25,10 @@ export const useWelcomeScreenStyles = makeUseStyles(({ colors, isDark }) => ({
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing['3xl'],
   },
+  languageToggle: {
+    alignSelf: 'flex-end' as const,
+    marginTop: spacing.md,
+  },
 
   // ── Hero ──────────────────────────────────────────────────────────────
   hero: {
@@ -126,6 +130,7 @@ export const useWelcomeScreenStyles = makeUseStyles(({ colors, isDark }) => ({
     textAlign: 'center' as const,
   },
   authBtnDisabled: { opacity: 0.6 },
+  socialButtons: { gap: spacing.sm },
 
   // Google: surface card with hairline (matches surface in both modes)
   googleBtn: {

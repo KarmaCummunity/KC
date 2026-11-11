@@ -20,6 +20,10 @@ config.resolver.nodeModulesPaths = [
 config.resolver.disableHierarchicalLookup = false;
 
 // 4. Web: zustand's ESM build uses import.meta; force CJS entry (see expo/expo#36384).
+// 5. Exactly one react-native: pnpm can link workspace packages (e.g. @kc/ui) to a
+//    second react-native copy, and two renderers in one bundle crash the first
+//    native command ("property is not writable" on the first TextInput).
+const appOrigin = path.join(projectRoot, 'package.json');
 const upstreamResolve = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (moduleName === 'zustand' || moduleName.startsWith('zustand/')) {
@@ -28,10 +32,12 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
       filePath: require.resolve(moduleName, { paths: [projectRoot] }),
     };
   }
+  const isReactNative = moduleName === 'react-native' || moduleName.startsWith('react-native/');
+  const ctx = isReactNative ? { ...context, originModulePath: appOrigin } : context;
   if (upstreamResolve) {
-    return upstreamResolve(context, moduleName, platform);
+    return upstreamResolve(ctx, moduleName, platform);
   }
-  return context.resolveRequest(context, moduleName, platform);
+  return ctx.resolveRequest(ctx, moduleName, platform);
 };
 
 module.exports = config;

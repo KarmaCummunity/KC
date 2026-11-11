@@ -5,6 +5,7 @@ import type {
   IPostRepository,
   PostFeedFilter,
   PostWithOwner,
+  ProfileClosedPostsPage,
   UpdatePostInput,
 } from '../../ports/IPostRepository';
 import type { PostActorIdentityRow, UpsertPostActorIdentityInput } from '../../ports/postActorIdentity';
@@ -56,6 +57,7 @@ export class FakePostRepository implements IPostRepository {
   lastListPostActorIdentityPostId: string | null = null;
   lastUpsertPostActorIdentityArgs: UpsertPostActorIdentityInput | null = null;
   profileClosedPostsResult: ProfileClosedPostsItem[] = [];
+  profileClosedPostsNextCursor: string | null = null;
   listPostActorIdentitiesResult: PostActorIdentityRow[] = [];
 
   // Stubs / errors
@@ -123,9 +125,24 @@ export class FakePostRepository implements IPostRepository {
   republishError: PostError | Error | null = null;
   closureCandidatesResult: ClosureCandidate[] = [];
   lastCloseArgs: { postId: string; recipientUserId: string | null } | null = null;
+  lastOwnerComplete: {
+    targetId: string;
+    recipientUserId: string | null;
+    mode: 'assign' | 'close_without';
+  } | null = null;
+  ownerCompleteResult: { closed: boolean } = { closed: true };
   lastReopenArgs: { postId: string } | null = null;
   lastRepublishArgs: { postId: string } | null = null;
   lastGetClosureCandidatesPostId: string | null = null;
+
+  ownerCompleteOffer = async (
+    targetId: string,
+    recipientUserId: string | null,
+    mode: 'assign' | 'close_without',
+  ): Promise<{ closed: boolean }> => {
+    this.lastOwnerComplete = { targetId, recipientUserId, mode };
+    return this.ownerCompleteResult;
+  };
 
   close = async (postId: string, recipientUserId: string | null): Promise<Post> => {
     this.lastCloseArgs = { postId, recipientUserId };
@@ -203,9 +220,9 @@ export class FakePostRepository implements IPostRepository {
     limit: number,
     cursor?: string,
     listMode?: ProfileClosedPostsListMode,
-  ): Promise<ProfileClosedPostsItem[]> => {
+  ): Promise<ProfileClosedPostsPage> => {
     this.lastGetProfileClosedPostsArgs = { profileUserId, viewerUserId, limit, cursor, listMode };
-    return this.profileClosedPostsResult;
+    return { items: this.profileClosedPostsResult, nextCursor: this.profileClosedPostsNextCursor };
   };
 
   listPostActorIdentities = async (postId: string): Promise<PostActorIdentityRow[]> => {

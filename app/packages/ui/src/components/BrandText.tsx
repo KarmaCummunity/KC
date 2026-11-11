@@ -13,6 +13,7 @@
 
 import React, { createContext, forwardRef, useContext } from 'react';
 import {
+  Platform,
   StyleSheet,
   Text as RNText,
   TextInput as RNTextInput,
@@ -42,7 +43,10 @@ export function brandFontStyle(
   const flat = StyleSheet.flatten(style) ?? {};
   if (flat.fontFamily) return style;
   if (nested && flat.fontWeight === undefined) return style;
-  return [style, { fontFamily: brandFontFamily(flat.fontWeight), fontWeight: 'normal' }];
+  const face = { fontFamily: brandFontFamily(flat.fontWeight), fontWeight: 'normal' as const };
+  // Android adds extra font padding that clips Hebrew descenders (Rubik).
+  if (Platform.OS === 'android') return [style, face, { includeFontPadding: false }];
+  return [style, face];
 }
 
 export const Text = forwardRef<RNText, TextProps>(function BrandText({ style, ...props }, ref) {

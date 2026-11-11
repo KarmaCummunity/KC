@@ -19,9 +19,8 @@ export interface GetProfileClosedPostsInput {
 
 export interface GetProfileClosedPostsOutput {
   items: ProfileClosedPostsItem[];
-  // Pass to the next call's `cursor`. Null when no further pages exist.
-  // The RPC orders by `closed_at desc` with exclusive `<` cursor semantics,
-  // so we feed back the last item's `closedAt`.
+  // Pass to the next call's `cursor`. Null when no further pages exist. Opaque: it is the
+  // keyset position the repository returned with the page.
   nextCursor: string | null;
 }
 
@@ -33,15 +32,13 @@ export class GetProfileClosedPostsUseCase {
 
   async execute(input: GetProfileClosedPostsInput): Promise<GetProfileClosedPostsOutput> {
     const limit = clamp(input.limit ?? DEFAULT_LIMIT, 1, HARD_MAX);
-    const items = await this.repo.getProfileClosedPosts(
+    const { items, nextCursor } = await this.repo.getProfileClosedPosts(
       input.profileUserId,
       input.viewerUserId,
       limit,
       input.cursor,
       input.listMode ?? 'standard',
     );
-    const lastItem = items.length === limit ? items[items.length - 1] : undefined;
-    const nextCursor = lastItem ? lastItem.closedAt : null;
     return { items, nextCursor };
   }
 }

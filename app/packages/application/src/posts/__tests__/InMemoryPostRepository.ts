@@ -5,7 +5,7 @@
 // (`contracts/postRepository.contract.ts`). Viewer-dependent reads, admin
 // flows and feed ranking are not modelled and fail loudly.
 
-import type { Post, PostStatus, PostVisibility, ProfileClosedPostsItem } from '@kc/domain';
+import type { Post, PostStatus, PostVisibility } from '@kc/domain';
 import type {
   ClosureCandidate,
   CreatePostInput,
@@ -13,6 +13,7 @@ import type {
   IPostRepository,
   PostFeedFilter,
   PostWithOwner,
+  ProfileClosedPostsPage,
   UpdatePostInput,
 } from '../../ports/IPostRepository';
 import type { PostActorIdentityRow, UpsertPostActorIdentityInput } from '../../ports/postActorIdentity';
@@ -48,6 +49,10 @@ export class InMemoryPostRepository implements IPostRepository {
   async create(input: CreatePostInput): Promise<Post> {
     if (input.ownerId !== this.actorId) throw new PostError('forbidden', 'create: owner must be the actor');
     if (!this.store.cities.has(input.address.city)) throw new PostError('city_not_found', input.address.city);
+    // D132 (KC#2020): mirrors the server's commit-time check (migration 0741).
+    if (input.type === 'Give' && input.mediaAssets.length === 0) {
+      throw new PostError('image_required_for_give', 'create: an offer needs a photo');
+    }
     const now = this.store.now();
     const postId = crypto.randomUUID();
     const post: Post = {
@@ -125,6 +130,21 @@ export class InMemoryPostRepository implements IPostRepository {
   }
 
   // ── Closure (FR-CLOSURE-001..005) ────────────────────────────────────────
+  async ownerCompleteOffer(
+    targetId: string,
+    recipientUserId: string | null,
+    mode: 'assign' | 'close_without',
+  ): Promise<{ closed: boolean }> {
+    const post = this.requireOwn(targetId);
+    if (mode === 'close_without' || recipientUserId === null) {
+      post.status = 'deleted_no_recipient';
+      return { closed: true };
+    }
+    post.status = 'closed_delivered';
+    post.recipient = { postId: targetId, recipientUserId, markedAt: this.store.now() };
+    return { closed: true };
+  }
+
   async close(postId: string, recipientUserId: string | null): Promise<Post> {
     const post = this.requireOwn(postId);
     if (post.status !== 'open') throw new PostError('closure_wrong_status', 'closure_wrong_status');
@@ -189,7 +209,7 @@ export class InMemoryPostRepository implements IPostRepository {
     return { posts: page.map(clonePost), nextCursor };
   }
 
-  async getProfileClosedPosts(): Promise<ProfileClosedPostsItem[]> {
+  async getProfileClosedPosts(): Promise<ProfileClosedPostsPage> {
     return notModelled('getProfileClosedPosts');
   }
 

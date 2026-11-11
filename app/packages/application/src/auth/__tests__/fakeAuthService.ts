@@ -115,6 +115,17 @@ export class FakeAuthService implements IAuthService {
     return this.appleSignInResult;
   };
 
+  googleIdTokenResult: AuthSession | null = null;
+  googleIdTokenError: Error | null = null;
+  lastGoogleIdToken: string | null = null;
+
+  signInWithGoogleIdToken = async (idToken: string): Promise<AuthSession> => {
+    this.lastGoogleIdToken = idToken;
+    if (this.googleIdTokenError) throw this.googleIdTokenError;
+    if (!this.googleIdTokenResult) throw new Error('no googleIdTokenResult configured');
+    return this.googleIdTokenResult;
+  };
+
   async resendVerificationEmail(
     email: string,
     options?: { emailRedirectTo?: string },

@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useChatMessageReactions } from '../useChatMessageReactions';
+import { hapticSuccess } from '../../lib/haptics';
 
 const listMock = vi.fn();
 const setReactionMock = vi.fn();
@@ -21,7 +22,7 @@ vi.mock('../../store/authStore', () => ({
 }));
 
 vi.mock('../../lib/haptics', () => ({
-  hapticLightTap: vi.fn(),
+  hapticSuccess: vi.fn(),
 }));
 
 describe('useChatMessageReactions', () => {
@@ -96,6 +97,7 @@ describe('useChatMessageReactions', () => {
     });
     expect(setReactionMock).toHaveBeenCalledWith('m1', null);
     expect(result.current.mine.m1).toBeNull();
+    expect(hapticSuccess).not.toHaveBeenCalled();
 
     // Toggle new reaction on
     await act(async () => {
@@ -103,5 +105,20 @@ describe('useChatMessageReactions', () => {
     });
     expect(setReactionMock).toHaveBeenCalledWith('m1', 'like');
     expect(result.current.mine.m1).toBe('like');
+    expect(hapticSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it('gives no haptic when the reaction request fails', async () => {
+    listMock.mockResolvedValue([]);
+    setReactionMock.mockRejectedValue(new Error('offline'));
+
+    const { result } = renderHook(() => useChatMessageReactions('chat-1', ['m1']));
+    await waitFor(() => expect(listMock).toHaveBeenCalled());
+
+    await act(async () => {
+      await expect(result.current.toggle('m1', 'like')).rejects.toThrow('offline');
+    });
+    expect(hapticSuccess).not.toHaveBeenCalled();
+    expect(result.current.mine.m1).toBeNull();
   });
 });

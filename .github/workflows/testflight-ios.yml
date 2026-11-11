@@ -4,10 +4,14 @@
 # Callers: the nightly pipeline (mobile-nightly.yml, `workflow_call` with the
 # green SHA) and manual dispatch on dev. Manual dispatch resolves the newest dev
 # commit with a successful CI push run (scripts/mobile-store-target.mjs), or
-# accepts an optional `ref` input validated the same way. The commit built must
-# have a successful `CI` push run on dev (D-195 "Mobile nightly"). Tester builds use the eas.json
-# `nightly` profile and the kc-dev Supabase backend; store builds from main
-# (prod backend) are not wired yet, and scripts/mobile-store-config.mjs refuses them.
+# accepts an optional `ref` input validated the same way. A `[skip ci]` bump
+# commit may inherit its parent's green `CI gate` on dev when it matches the
+# bump workflow shape (same policy as scripts/deploy-target.mjs). The commit
+# built must be certified on dev (D-195 "Mobile nightly"). Tester builds use the eas.json
+# `nightly` profile and the kc-dev Supabase backend. PROD store builds are
+# started only by prod-store-build.yml (`backend: prod`), which builds the
+# tagged main SHA with the EAS `production` profile, pins kc-prod, and refuses
+# the kc-dev ref. Do not dispatch this workflow with backend=prod directly.
 #
 # Runs in the `mobile-store` GitHub Environment (deployment branches: dev, main).
 # Required, fail closed when unset:
@@ -22,9 +26,14 @@ on:
   workflow_call:
     inputs:
       ref:
-        description: Commit SHA to build (must have a successful CI push run on dev)
+        description: Commit SHA to build (must have a successful CI push run on dev unless backend is prod)
         type: string
         required: true
+      backend:
+        description: dev (default, kc-dev + EAS nightly) or prod (kc-prod + EAS production, only from prod-store-build.yml)
+        type: string
+        required: false
+        default: dev
     outputs:
       build_number:
         description: CFBundleVersion of the uploaded build
@@ -50,6 +59,9 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 150
     environment: mobile-store
+    env:
+      STORE_BACKEND: ${{ inputs.backend || 'dev' }}
+      EAS_PROFILE: ${{ (inputs.backend || 'dev') == 'prod' && 'production' || 'nightly' }}
     permissions:
       contents: read
       actions: read # read CI runs to verify the commit is green
@@ -74,6 +86,7 @@ jobs:
           path: .store-target
           sparse-checkout: |
             .nvmrc
+            scripts/deploy-target.mjs
             scripts/resolve-green-dev-sha.mjs
             scripts/mobile-store-target.mjs
           sparse-checkout-cone-mode: false
@@ -81,7 +94,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .store-target/.nvmrc
-      - name: Verify the commit passed CI on dev
+      - name: Resolve the certified SHA
         id: target
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -90,7 +103,20 @@ jobs:
           GITHUB_REF: ${{ github.ref }}
           LOOKBACK: '30'
         working-directory: .
-        run: node .store-target/scripts/mobile-store-target.mjs
+        run: |
+          set -euo pipefail
+          if [ "$STORE_BACKEND" = "prod" ]; then
+            sha="${INPUT_REF:-}"
+            if ! printf '%s' "$sha" | grep -Eq '^[0-9a-f]{40}$'; then
+              echo "::error::PROD store builds require a 40-character main SHA"
+              exit 1
+            fi
+            echo "sha=$sha" >> "$GITHUB_OUTPUT"
+            echo "branch=main" >> "$GITHUB_OUTPUT"
+            echo "Resolved PROD store SHA $sha on main (certified by prod-store-build.yml)"
+          else
+            node .store-target/scripts/mobile-store-target.mjs
+          fi
 
       - name: Preflight secrets (fail closed)
         working-directory: .
@@ -103,14 +129,20 @@ jobs:
           KC_IOS_DIST_P12_B64: ${{ secrets.KC_IOS_DIST_P12_B64 }}
           KC_IOS_DIST_P12_PASSWORD: ${{ secrets.KC_IOS_DIST_P12_PASSWORD }}
           MOBILE_SUPABASE_ANON_KEY: ${{ secrets.MOBILE_SUPABASE_ANON_KEY }}
+          MOBILE_SUPABASE_ANON_KEY_PROD: ${{ secrets.MOBILE_SUPABASE_ANON_KEY_PROD }}
           KC_ASC_APP_ID: ${{ vars.KC_ASC_APP_ID }}
           KC_EAS_PROJECT_ID: ${{ vars.KC_EAS_PROJECT_ID }}
           KC_IOS_DIST_CERT_ID: ${{ vars.KC_IOS_DIST_CERT_ID }}
         run: |
           set -euo pipefail
           missing=()
+          if [ "$STORE_BACKEND" = "prod" ]; then
+            supabase_key=MOBILE_SUPABASE_ANON_KEY_PROD
+          else
+            supabase_key=MOBILE_SUPABASE_ANON_KEY
+          fi
           for n in EXPO_TOKEN ASC_API_KEY_ID ASC_API_KEY_ISSUER_ID ASC_API_KEY_P8 KC_IOS_TEAM_ID \
-                   KC_IOS_DIST_P12_B64 KC_IOS_DIST_P12_PASSWORD MOBILE_SUPABASE_ANON_KEY \
+                   KC_IOS_DIST_P12_B64 KC_IOS_DIST_P12_PASSWORD "$supabase_key" \
                    KC_ASC_APP_ID KC_EAS_PROJECT_ID KC_IOS_DIST_CERT_ID; do
             [ -n "${!n:-}" ] || missing+=("$n")
           done
@@ -134,13 +166,17 @@ jobs:
           cache: pnpm
           cache-dependency-path: app/pnpm-lock.yaml
 
-      # Writes the kc-dev backend into the eas.json `nightly` profile env (runner
-      # only); fails for a main commit or a key of another project.
+      # Writes the selected backend (kc-dev into `nightly`, or kc-prod into
+      # `production`) and the Sentry vars into eas.json on the runner only.
       - name: Pin the Supabase backend
         working-directory: .
         env:
           SOURCE_BRANCH: ${{ steps.target.outputs.branch }}
-          MOBILE_SUPABASE_ANON_KEY: ${{ secrets.MOBILE_SUPABASE_ANON_KEY }}
+          MOBILE_SUPABASE_ANON_KEY: ${{ env.STORE_BACKEND == 'prod' && secrets.MOBILE_SUPABASE_ANON_KEY_PROD || secrets.MOBILE_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_URL: ${{ vars.SENTRY_URL }}
         run: node scripts/mobile-store-config.mjs pin
 
       - name: Install dependencies
@@ -186,7 +222,7 @@ jobs:
           pw="$KC_IOS_DIST_P12_PASSWORD"
           jq -n --arg p "$sd/kc.mobileprovision" --arg c "$sd/dist.p12" --arg pw "$pw" \
             '{ios:{provisioningProfilePath:$p,distributionCertificate:{path:$c,password:$pw}}}' > credentials.json
-          tmp="$(mktemp)"; jq '.build.nightly.ios.credentialsSource = "local"' eas.json > "$tmp" && mv "$tmp" eas.json
+          tmp="$(mktemp)"; jq --arg p "$EAS_PROFILE" '.build[$p].ios.credentialsSource = "local"' eas.json > "$tmp" && mv "$tmp" eas.json
 
       - name: Build iOS locally, verify the backend & upload to TestFlight
         id: build
@@ -207,8 +243,8 @@ jobs:
         run: |
           set -euo pipefail
           [ -n "${SENTRY_AUTH_TOKEN:-}" ] || export SENTRY_DISABLE_AUTO_UPLOAD=true
-          eas build --platform ios --profile nightly --local --non-interactive --output ./build-kc.ipa
-          # Refuse to upload unless the shipped JS bundle points at kc-dev only.
+          eas build --platform ios --profile "$EAS_PROFILE" --local --non-interactive --output ./build-kc.ipa
+          # Refuse to upload unless the shipped JS bundle points at the selected backend only.
           unzip -p ./build-kc.ipa 'Payload/*.app/main.jsbundle' > "$RUNNER_TEMP/main.jsbundle"
           node "$GITHUB_WORKSPACE/scripts/mobile-store-config.mjs" verify "$RUNNER_TEMP/main.jsbundle"
           # The build number actually inside the IPA (EAS remote autoIncrement assigned it).
@@ -219,10 +255,10 @@ jobs:
           tmp="$(mktemp)"; jq --arg id "$ASC_APP_ID" --arg k "$EXPO_ASC_API_KEY_PATH" --arg kid "$EXPO_ASC_KEY_ID" --arg iss "$EXPO_ASC_ISSUER_ID" '.submit.production.ios += {ascAppId: $id, ascApiKeyPath: $k, ascApiKeyId: $kid, ascApiKeyIssuerId: $iss}' eas.json > "$tmp" && mv "$tmp" eas.json
           eas submit --platform ios --profile production --path ./build-kc.ipa --non-interactive
           echo "build_number=$build_number" >> "$GITHUB_OUTPUT"
-          echo "TestFlight upload: iOS build $build_number from $BUILD_SHA (kc-dev backend)" >> "$GITHUB_STEP_SUMMARY"
+          echo "TestFlight upload: iOS build $build_number from $BUILD_SHA ($STORE_BACKEND backend, profile $EAS_PROFILE)" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Distribute to external testers & submit for Beta App Review (non-fatal)
-        if: success()
+        if: success() && env.STORE_BACKEND != 'prod'
         continue-on-error: true
         timeout-minutes: 50
         working-directory: .

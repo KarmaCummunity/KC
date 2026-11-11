@@ -3,8 +3,10 @@ import { defineWorldJourney } from '../lib/worldJourney';
 
 defineWorldJourney({
   world: 'items',
-  kindSlug: 'give_item',
+  kindSlug: 'item_offer',
+  publish: 'plain',
   titleHe: 'כיסא עץ למסירה',
   claim: { testId: 'giving-handoff-reserve', label: 'שריון הפריט', resultsIn: 'reserved' },
-  details: () => ({ pickup_mode: 'pickup' }),
+  // A plain post: no detail row; pickup_mode is a handoff column.
+  details: () => ({}),
 });

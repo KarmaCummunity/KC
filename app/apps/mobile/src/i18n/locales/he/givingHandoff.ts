@@ -7,8 +7,6 @@ export const givingHandoff = {
   confirmReservation: 'אישור שריון',
   markHandedOver: 'סומן כנמסר',
   cancel: 'ביטול מסירה',
-  bookKnowledgeSlot: 'הזמנת משבצת',
-  completeSession: 'סיום מפגש',
   ratingThanks: 'תודה — הדירוג בונה אמון בקהילה.',
   // Rating step after a handoff (spec 07 §7.7): 1–5 stars plus an optional note, seen only by the KC team.
   ratingTitle: 'איך היה?',
