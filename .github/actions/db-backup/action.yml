@@ -26,6 +26,10 @@ inputs:
     description: Restore the dump into a throwaway Postgres container and compare row counts
     required: false
     default: 'true'
+  restore-strict:
+    description: Stop the restore check at the first SQL error in schema.sql / data.sql (false only to list every error while developing the check)
+    required: false
+    default: 'true'
 
 runs:
   using: composite
@@ -84,7 +88,7 @@ runs:
           local name="$1"
           shift
           local started=$SECONDS
-          timeout 600 supabase db dump --linked "$@" -f "$plain/$name.sql"
+          timeout 1200 supabase db dump --linked "$@" -f "$plain/$name.sql"
           echo "dumped $name in $((SECONDS - started))s, $(stat -c %s "$plain/$name.sql") bytes"
         }
         dump roles --role-only
@@ -98,32 +102,6 @@ runs:
         done
         node scripts/db-backup-manifest.mjs analyze --schema "$plain/schema.sql" --data "$plain/data.sql" \
           --target "$TARGET" --ref "$SUPABASE_PROJECT_REF" --sha "$SHA" --out "$plain/manifest.json"
-
-    - name: Restore into a throwaway Postgres and compare row counts
-      if: inputs.restore-check == 'true'
-      shell: bash
-      run: |
-        set -euo pipefail
-        plain="$RUNNER_TEMP/db-backup-plain"
-        empty=$(jq -r .empty "$plain/manifest.json")
-        # Same Postgres major and extension set as Supabase; bump together with the project.
-        docker run -d --name restore-check -e POSTGRES_PASSWORD=restore-check supabase/postgres:17.11.0.019 >/dev/null
-        for i in $(seq 1 60); do
-          docker exec restore-check pg_isready -U postgres -h localhost >/dev/null 2>&1 && break
-          [[ "$i" -lt 60 ]] || { docker logs restore-check | tail -20; echo "::error::throwaway Postgres did not start"; exit 1; }
-          sleep 2
-        done
-        psql_in() { docker exec -i restore-check psql -U postgres -h localhost -d postgres -v ON_ERROR_STOP=1 -q "$@"; }
-        psql_in < "$plain/roles.sql"
-        psql_in < "$plain/schema.sql"
-        if [[ "$empty" == true ]]; then
-          echo "database has no tables yet: roles and schema restored, no row counts to compare"
-        else
-          psql_in < "$plain/data.sql"
-          node scripts/db-backup-manifest.mjs counts-sql --manifest "$plain/manifest.json" \
-            | docker exec -i restore-check psql -U postgres -h localhost -d postgres -At -F $'\t' -v ON_ERROR_STOP=1 > "$plain/restored-counts.tsv"
-          node scripts/db-backup-manifest.mjs verify --manifest "$plain/manifest.json" --counts "$plain/restored-counts.tsv"
-        fi
 
     - name: Compress and encrypt
       id: pack
@@ -170,7 +148,7 @@ runs:
           echo "- state: $(jq -r 'if .empty then "empty (no tables yet)" else "has data" end' "$plain/manifest.json")"
           echo "- encrypted size: $((BYTES / 1024)) KiB"
           echo "- kept for: $RETENTION days"
-          echo "- restore check: run ${{ inputs.restore-check == 'true' && 'and passed' || 'skipped' }}"
+          echo "- restore check: ${{ inputs.restore-check == 'true' && 'runs after the upload (see the step result)' || 'skipped' }}"
         } >> "$GITHUB_STEP_SUMMARY"
 
     - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -179,6 +157,45 @@ runs:
         path: ${{ runner.temp }}/db-backup-out/
         retention-days: ${{ inputs.retention-days }}
         if-no-files-found: error
+
+    # Runs after the upload on purpose: a backup that exists but fails this check
+    # is still kept, and the failed run is the alarm.
+    - name: Restore into a throwaway Postgres and compare row counts
+      if: inputs.restore-check == 'true'
+      shell: bash
+      env:
+        STRICT: ${{ inputs.restore-strict }}
+      run: |
+        set -euo pipefail
+        plain="$RUNNER_TEMP/db-backup-plain"
+        empty=$(jq -r .empty "$plain/manifest.json")
+        # Same Postgres major and extension set as Supabase; bump together with the project.
+        docker run -d --name restore-check -e POSTGRES_PASSWORD=restore-check supabase/postgres:17.11.0.019 >/dev/null
+        for i in $(seq 1 60); do
+          docker exec restore-check pg_isready -U postgres -h localhost >/dev/null 2>&1 && break
+          [[ "$i" -lt 60 ]] || { docker logs restore-check | tail -20; echo "::error::throwaway Postgres did not start"; exit 1; }
+          sleep 2
+        done
+        stop=1; [[ "$STRICT" == true ]] || stop=0
+        psql_in() { docker exec -i restore-check psql -U postgres -h localhost -d postgres -q "$@"; }
+        # Roles of Supabase services that the plain image does not run (realtime, ...) are
+        # created by the platform on a real project; roles.sql may reference them.
+        echo "::group::roles.sql"
+        psql_in -v ON_ERROR_STOP=0 < "$plain/roles.sql" 2>&1 | sed 's/^/  /' || true
+        echo "::endgroup::"
+        echo "::group::schema.sql"
+        psql_in -v ON_ERROR_STOP="$stop" < "$plain/schema.sql" 2>&1 | sed 's/^/  /'
+        echo "::endgroup::"
+        if [[ "$empty" == true ]]; then
+          echo "database has no tables yet: roles and schema restored, no row counts to compare"
+        else
+          echo "::group::data.sql"
+          psql_in -v ON_ERROR_STOP="$stop" < "$plain/data.sql" 2>&1 | sed 's/^/  /'
+          echo "::endgroup::"
+          node scripts/db-backup-manifest.mjs counts-sql --manifest "$plain/manifest.json" \
+            | docker exec -i restore-check psql -U postgres -h localhost -d postgres -At -F $'\t' -v ON_ERROR_STOP=1 > "$plain/restored-counts.tsv"
+          node scripts/db-backup-manifest.mjs verify --manifest "$plain/manifest.json" --counts "$plain/restored-counts.tsv"
+        fi
 
     - name: Remove plaintext
       if: always()
