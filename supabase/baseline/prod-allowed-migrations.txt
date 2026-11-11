@@ -12,3 +12,6 @@
 0001_baseline.sql
 0002_org_entitlements.sql
 0003_org_sec46_machine.sql
+0004_post_series.sql
+0005_post_series_rpcs.sql
+0006_series_feed_folding.sql
