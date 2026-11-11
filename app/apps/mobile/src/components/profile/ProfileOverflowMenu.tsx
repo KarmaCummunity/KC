@@ -18,18 +18,22 @@ import { ReportUserModal } from './ReportUserModal';
 import { BanUserModal } from './BanUserModal';
 import { useUserBlock } from '../../hooks/useUserBlock';
 import { runAfterBottomSheetDismiss } from '../../lib/runAfterBottomSheetDismiss';
+import { useProfileShare, type ProfileShareSubject } from '../../hooks/useProfileShare';
 
 interface Props {
   targetUserId: string;
+  /** When given, the menu leads with "Share profile" (FR-POST-023). */
+  profileShare?: ProfileShareSubject;
 }
 
 type OpenModal = 'report' | 'ban' | null;
 
-export function ProfileOverflowMenu({ targetUserId }: Props) {
+export function ProfileOverflowMenu({ targetUserId, profileShare }: Props) {
   const { t } = useTranslation();
   const { roles } = useAdminRoles();
   const canBan = hasPermission(roles as readonly AdminRole[], 'reports.permanent_ban');
   const block = useUserBlock(targetUserId);
+  const profileShareAction = useProfileShare(profileShare);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [openModal, setOpenModal] = useState<OpenModal>(null);
 
@@ -44,6 +48,18 @@ export function ProfileOverflowMenu({ targetUserId }: Props) {
       <OverflowMenuTrigger onPress={() => setSheetOpen(true)} accessibilityLabel={t('moderation.report.user.title')} />
 
       <ActionMenuSheet visible={sheetOpen} onDismiss={close} cancelLabel={t('moderation.actions.cancel')}>
+        {profileShareAction.canShare ? (
+          <SheetActionRow
+            label={t('share.profile.menuItem')}
+            disabled={profileShareAction.busy}
+            testID="profile-share"
+            onPress={() => {
+              close();
+              // The OS share sheet cannot present while this sheet is still closing (iOS).
+              runAfterBottomSheetDismiss(() => void profileShareAction.share());
+            }}
+          />
+        ) : null}
         <SheetActionRow label={t('moderation.report.user.title')} onPress={() => pick('report')} />
         {block.canBlock ? (
           <SheetActionRow
