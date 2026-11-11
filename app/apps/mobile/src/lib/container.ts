@@ -57,7 +57,6 @@ import {
   ReportListingUseCase,
   DeletePostUseCase,
   AdminRemovePostUseCase,
-  AdminRemoveListingUseCase,
   ListDonationLinksUseCase,
   AddDonationLinkUseCase,
   RemoveDonationLinkUseCase,
@@ -92,6 +91,7 @@ import {
   ListOrgApplicationsUseCase,
   DecideOrgApplicationUseCase,
   AdminSearchUsersUseCase,
+  AdminFindMembersUseCase,
   AdminSearchPostsUseCase,
   AdminSearchAuditUseCase,
   ListTimesheetsUseCase,
@@ -135,7 +135,7 @@ export const legacySupabase = bindSupabaseClient<LegacyDatabase>(isSupabaseConfi
 const userRepo = new SupabaseUserRepository(legacySupabase);
 const chatRepo = new SupabaseChatRepository(legacySupabase);
 const chatRealtime = new SupabaseChatRealtime(legacySupabase);
-const reportRepo = new SupabaseReportRepository(legacySupabase);
+const reportRepo = new SupabaseReportRepository(supabase);
 const blockRepo = new SupabaseBlockRepository(legacySupabase);
 const donationLinksRepo = new SupabaseDonationLinksRepository(legacySupabase);
 const postRepo = new SupabasePostRepository(legacySupabase);
@@ -147,17 +147,17 @@ const activeStatus = new SupabaseActiveStatusRepository(legacySupabase);
 const chatV2Repo = new SupabaseChatV2Repository(legacySupabase);
 const socialFeedRepo = new SupabaseSocialFeedRepository(legacySupabase);
 const followSuggestionsRepo = new SupabaseFollowSuggestionsRepository(legacySupabase);
-const moderationAdminRepo = new SupabaseModerationAdminRepository(legacySupabase);
+const moderationAdminRepo = new SupabaseModerationAdminRepository(supabase);
 const accountGateRepo = new SupabaseAccountGateRepository(legacySupabase);
 const deviceRepo = new SupabaseDeviceRepository(legacySupabase);
-const adminRoleRepo = new SupabaseAdminRoleRepository(legacySupabase);
+const adminRoleRepo = new SupabaseAdminRoleRepository(supabase);
 const adminTaskRepo = new SupabaseAdminTaskRepository(legacySupabase);
 const orgHierarchyRepo = new SupabaseOrgHierarchyRepository(legacySupabase);
-const adminContentRepo = new SupabaseAdminContentRepository(legacySupabase);
+const adminContentRepo = new SupabaseAdminContentRepository(supabase);
 const timesheetsRepo = new SupabaseTimesheetsRepository(legacySupabase);
 const crmContactsRepo = new SupabaseCrmContactsRepository(legacySupabase);
 const orgApplicationsRepo = new SupabaseOrgApplicationsRepository(legacySupabase);
-const reportsRepo = new SupabaseReportsRepository(legacySupabase);
+const reportsRepo = new SupabaseReportsRepository(supabase);
 const surveyRepo = new SupabaseSurveyRepository(legacySupabase);
 const surveyAdminRepo = new SupabaseSurveyAdminRepository(legacySupabase);
 const userActivityRepo = new SupabaseUserActivityRepository(legacySupabase);
@@ -181,7 +181,7 @@ export const container = {
   followSuggestions: followSuggestionsRepo,
   postEngagement: postEngagementRepo,
   notificationInbox: notificationInboxRepo,
-  moderationAdminRepo, // exposed for hooks that need adminRepo.isUserAdmin pre-checks
+  moderationAdminRepo,
   deviceRepo,
   adminRoleRepo,
   reportsRepo,
@@ -206,6 +206,7 @@ export const container = {
   addAdminTaskComment: new AddAdminTaskCommentUseCase(adminTaskRepo),
   deleteAdminTask: new DeleteAdminTaskUseCase(adminTaskRepo),
   adminSearchUsers: new AdminSearchUsersUseCase(adminContentRepo),
+  adminFindMembers: new AdminFindMembersUseCase(adminContentRepo),
   adminSearchPosts: new AdminSearchPostsUseCase(adminContentRepo),
   adminSearchAudit: new AdminSearchAuditUseCase(adminContentRepo),
   // V2-ADMIN-TIME-10
@@ -252,7 +253,6 @@ export const container = {
   // Post moderation
   deletePost: new DeletePostUseCase(postRepo),
   adminRemovePost: new AdminRemovePostUseCase(postRepo),
-  adminRemoveListing: new AdminRemoveListingUseCase(moderationAdminRepo),
 
   // Moderation admin actions (FR-MOD-007 + FR-ADMIN-002..007)
   restoreTarget: new RestoreTargetUseCase(moderationAdminRepo),

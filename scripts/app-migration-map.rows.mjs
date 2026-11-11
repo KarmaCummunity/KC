@@ -253,23 +253,16 @@ rpc('admin_user_feedback_list', 'missing', null, 'Depends on the free-feedback t
 rpc('get_public_research_questions', 'changed', 'rpc:get_public_research_questions', 'Same signature, but service role only in the baseline (nothing is granted to signed-out callers): the public research page must load its questions through the `public-research-submit` function, not from the device.');
 
 // ───────────────────────────── moderation, reports, admin
-rpc('is_admin', 'changed', 'rpc:get_my_admin_roles', 'No `uid` argument: the caller\'s own roles (also `bootstrap_session().admin.roles`); super admin = the array contains `super_admin`.');
 rpc('get_my_admin_roles', 'same', 'rpc:get_my_admin_roles', 'Signature unchanged.');
 for (const name of ['admin_confirm_report', 'admin_dismiss_report', 'admin_grant_role', 'admin_revoke_role', 'admin_change_role']) {
   rpc(name, 'same', `rpc:${name}`, 'Signature unchanged.');
 }
 rpc('admin_ban_user', 'renamed', 'rpc:admin_ban_user', '`p_target_user_id` → `p_user_id`; `p_note` optional; the reason must be one of the sanction reasons.');
-rpc('admin_restore_target', 'changed', ['rpc:admin_restore_post', 'rpc:admin_restore_user'], 'Split by target type; there is no restore for a comment or a message.');
-rpc('admin_remove_listing', 'renamed', 'rpc:admin_remove_post', 'A listing is a post.');
+rpc('admin_restore_post', 'same', 'rpc:admin_restore_post', 'Staff: returns a removed post to its previous status, a post hidden for review to open.');
+rpc('admin_restore_user', 'same', 'rpc:admin_restore_user', 'Staff: lifts a suspension; only the super admin lifts a ban.');
 rpc('admin_delete_message', 'same', 'rpc:admin_delete_message', 'Same name and argument (`p_message_id`); it lives in `40_messaging/070_chat_moderation.sql` and is audited by the moderation module (M18, verified).');
-rpc('admin_audit_lookup_guarded', 'changed', 'rpc:admin_audit_search', '`admin_audit_search(p_target_id => user)`; rows: `event_id` → `id` (bigint), `created_at` → `occurred_at`.');
 rpc('admin_audit_search', 'changed', 'rpc:admin_audit_search', 'Offset → keyset (`p_before_occurred_at`, `p_before_id`); `p_target_user_id` → `p_target_id`; no display names and no `total_count` (join `users` on the device).');
 table('reports', 'same', 'table:reports', 'Direct insert of (reporter_id, target_type, target_id, reason, note); `report_id` → `id`.');
-rpc('reports_open_inbox', 'changed', ['table:reports', 'table:moderation_queue'], 'No inbox RPC: staff read `reports` (policy `reports_select_staff`) and `moderation_queue` (`moderation_queue_select_staff`) directly, keyset on created_at; grouping per target moves to the adapter.', { c: M });
-rpc('reports_case_detail', 'changed', ['table:reports', 'table:user_sanctions', 'table:posts', 'table:users'], 'No case RPC: staff read the target\'s reports, its sanctions, the post (`posts_select_staff`) or member (`users_select_staff`) and the audit trail (`admin_audit_search`).', { c: M });
-rpc('admin_search_users', 'changed', ['rpc:search_users_page', 'table:user_account'], 'Member search plus the account row (`user_account_select_staff`) for status and sanctions.', { c: M });
-rpc('admin_search_posts', 'changed', ['rpc:search_posts_page', 'table:posts'], 'Post search; staff additionally read removed and hidden posts directly (`posts_select_staff`).', { c: M });
-rpc('admin_list_admins', 'changed', ['table:admin_role_grants', 'table:users'], 'Direct read of grants (`admin_role_grants_select_staff`) joined to `users`; `last_seen_at` is not available.', { c: M });
 rpc('admin_set_manager', 'changed', 'rpc:admin_set_manager', '`p_manager_grant_id` is required: a grant can be moved under another grant but not detached.');
 rpc('admin_org_tree', 'changed', 'table:admin_role_grants', 'Build the tree on the device from the grants (`manager_grant_id`, `scope_org_id`).', { c: M });
 rpc('admin_hierarchy_census', 'changed', 'table:admin_role_grants', 'Counts per level and role computed on the device from the same grants read.', { c: M });
@@ -285,9 +278,7 @@ for (const name of ['crm_contact_list', 'crm_contact_upsert', 'crm_contact_delet
 for (const name of ['timesheet_list', 'timesheet_upsert', 'timesheet_submit', 'timesheet_approve', 'timesheet_reject', 'timesheet_delete']) {
   rpc(name, 'missing', null, 'No timesheets in the baseline.', { m: 'M19' });
 }
-for (const name of ['admin_demo_data_status', 'admin_wipe_demo_data_step', 'admin_seed_demo_data_step']) {
-  rpc(name, 'removed', null, 'Dev-only: demo seed and wipe are not carried over (design §8, FR-ADMIN-031). Remove the admin screen; seed kc-dev from scripts.');
-}
+table('user_account', 'same', 'table:user_account', 'Staff read the account row of every member (`user_account_select_staff`): status, sanction state.');
 table('admin_role_grants', 'changed', 'table:admin_role_grants', '`grant_id` → `id`; read-only for clients. mock-login\'s insert goes away with the function.');
 
 // ───────────────────────────── organizations, donations, payments, finance

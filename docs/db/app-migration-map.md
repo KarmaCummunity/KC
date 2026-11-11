@@ -8,13 +8,13 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 288 | 36 | 44 | 126 | 14 | 68 |
-| Tables and views | 52 | 10 | 2 | 33 | 2 | 5 |
+| RPCs | 278 | 38 | 43 | 118 | 11 | 68 |
+| Tables and views | 53 | 11 | 2 | 33 | 2 | 5 |
 | Storage buckets | 5 | 3 | 0 | 2 | 0 | 0 |
 | Realtime channels | 13 | 3 | 0 | 4 | 1 | 5 |
 | postgres_changes subscriptions | 5 | 0 | 0 | 2 | 1 | 2 |
 | Edge Function invokes | 4 | 3 | 0 | 1 | 0 | 0 |
-| **Total** | 367 | 55 | 46 | 168 | 18 | 80 |
+| **Total** | 358 | 58 | 45 | 160 | 15 | 80 |
 
 ### Launch scope
 
@@ -22,10 +22,10 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 
 | Launch tier | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| core | 118 | 32 | 18 | 62 | 4 | 2 |
+| core | 112 | 35 | 17 | 54 | 4 | 2 |
 | wedge | 106 | 8 | 24 | 63 | 6 | 5 |
-| later | 143 | 15 | 4 | 43 | 8 | 73 |
-| **Launch-critical (core + wedge)** | 224 | 40 | 42 | 125 | 10 | 7 |
+| later | 140 | 15 | 4 | 43 | 5 | 73 |
+| **Launch-critical (core + wedge)** | 218 | 43 | 41 | 117 | 10 | 7 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
 
@@ -44,7 +44,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | Module | Call sites | 1:1 | Logic changes | Removed | MISSING |
 | --- | --- | --- | --- | --- | --- |
 | `infrastructure-supabase/src/about/` | 1 | 0 | 0 | 0 | 1 |
-| `infrastructure-supabase/src/admin/` | 55 | 6 | 16 | 3 | 30 |
+| `infrastructure-supabase/src/admin/` | 54 | 6 | 18 | 0 | 30 |
 | `infrastructure-supabase/src/auth/` | 2 | 1 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/blocks/` | 4 | 3 | 0 | 0 | 1 |
 | `infrastructure-supabase/src/challenges/` | 10 | 5 | 5 | 0 | 0 |
@@ -57,12 +57,12 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/legal/` | 4 | 3 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/marketplace/` | 42 | 15 | 25 | 2 | 0 |
 | `infrastructure-supabase/src/matching/` | 4 | 0 | 2 | 1 | 1 |
-| `infrastructure-supabase/src/moderation/` | 8 | 5 | 3 | 0 | 0 |
+| `infrastructure-supabase/src/moderation/` | 7 | 6 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/notifications/` | 7 | 7 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/payments/` | 12 | 2 | 8 | 1 | 1 |
 | `infrastructure-supabase/src/posts/` | 51 | 11 | 39 | 1 | 0 |
 | `infrastructure-supabase/src/realtime/` | 2 | 1 | 0 | 0 | 1 |
-| `infrastructure-supabase/src/reports/` | 3 | 1 | 2 | 0 | 0 |
+| `infrastructure-supabase/src/reports/` | 8 | 4 | 4 | 0 | 0 |
 | `infrastructure-supabase/src/research/` | 2 | 1 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/rides/` | 59 | 10 | 41 | 2 | 6 |
 | `infrastructure-supabase/src/search/` | 11 | 0 | 9 | 0 | 2 |
@@ -73,7 +73,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/translations/` | 6 | 3 | 3 | 0 | 0 |
 | `infrastructure-supabase/src/users/` | 42 | 4 | 37 | 1 | 0 |
 | `infrastructure-supabase/src/volunteering/` | 11 | 1 | 9 | 1 | 0 |
-| `apps/mobile` (direct calls outside the adapters) | 28 | 14 | 7 | 4 | 3 |
+| `apps/mobile` (direct calls outside the adapters) | 26 | 14 | 5 | 4 | 3 |
 | Edge Function `_shared` | 11 | 0 | 0 | 0 | 11 |
 | Edge Function `backfill-image-thumbs` | 2 | 0 | 2 | 0 | 0 |
 | Edge Function `delete-account` | 1 | 1 | 0 | 0 | 0 |
@@ -103,24 +103,19 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/admin/`
 
-55 call sites: 6 map 1:1, 16 need logic changes, 3 removed, 30 MISSING.
+54 call sites: 6 map 1:1, 18 need logic changes, 0 removed, 30 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `admin_audit_search` | core | CHANGED | `admin_audit_search(p_action?: string, p_actor_id?: string, p_before_id?: number, p_before_occurred_at?: string, p_from?: string, p_limit?: number, p_target_id?: string, p_to?: string) → { action: string actor_id: string id: number metadata: Json occurred_at: string target_id: string target_type: string }[]` | Offset → keyset (`p_before_occurred_at`, `p_before_id`); `p_target_user_id` → `p_target_id`; no display names and no `total_count` (join `users` on the device). | `forbidden`, `unauthenticated` | high | SupabaseAdminContentRepository.ts:135 |
-| `admin_change_role` | core | 1:1 | `admin_change_role(p_grant_id: string, p_new_role: string) → string` | Signature unchanged. | `account_not_active`, `forbidden_grant`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `invalid_role`, `invalid_scope`, `role_already_active`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:118 |
-| `admin_demo_data_status` | later | REMOVED | — | Dev-only: demo seed and wipe are not carried over (design §8, FR-ADMIN-031). Remove the admin screen; seed kc-dev from scripts. |  | high | SupabaseDemoDataRepository.ts:115 |
-| `admin_grant_role` | core | 1:1 | `admin_grant_role(p_role: string, p_scope_org_id?: string, p_target_user_id: string) → string` | Signature unchanged. | `account_not_active`, `forbidden_grant`, `invalid_role`, `invalid_scope`, `role_already_active`, `target_not_active`, `target_not_found`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:99 |
+| `admin_audit_search` | core | CHANGED | `admin_audit_search(p_action?: string, p_actor_id?: string, p_before_id?: number, p_before_occurred_at?: string, p_from?: string, p_limit?: number, p_target_id?: string, p_to?: string) → { action: string actor_id: string id: number metadata: Json occurred_at: string target_id: string target_type: string }[]` | Offset → keyset (`p_before_occurred_at`, `p_before_id`); `p_target_user_id` → `p_target_id`; no display names and no `total_count` (join `users` on the device). | `forbidden`, `unauthenticated` | high | auditSearchCall.ts:20 |
+| `admin_change_role` | core | 1:1 | `admin_change_role(p_grant_id: string, p_new_role: string) → string` | Signature unchanged. | `account_not_active`, `forbidden_grant`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `invalid_role`, `invalid_scope`, `role_already_active`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:148 |
+| `admin_grant_role` | core | 1:1 | `admin_grant_role(p_role: string, p_scope_org_id?: string, p_target_user_id: string) → string` | Signature unchanged. | `account_not_active`, `forbidden_grant`, `invalid_role`, `invalid_scope`, `role_already_active`, `target_not_active`, `target_not_found`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:130 |
 | `admin_hierarchy_census` | later | CHANGED | table `admin_role_grants` | Counts per level and role computed on the device from the same grants read. |  | medium | SupabaseOrgHierarchyRepository.ts:138 |
-| `admin_list_admins` | core | CHANGED | table `admin_role_grants`<br>table `users` | Direct read of grants (`admin_role_grants_select_staff`) joined to `users`; `last_seen_at` is not available. |  | medium | SupabaseAdminRoleRepository.ts:81 |
 | `admin_org_application_approve` | later | CHANGED | `admin_org_application_approve(p_application_id: string, p_note?: string, p_slug: string) → string` | New required `p_slug`; returns the organization id. | `application_already_decided`, `application_not_found`, `forbidden`, `slug_required` †, `unauthenticated` | high | SupabaseOrgApplicationsRepository.ts:90 |
 | `admin_org_application_list` | later | CHANGED | table `org_applications` | Direct read (policy `org_applications_select_reviewers`). |  | high | SupabaseOrgApplicationsRepository.ts:74 |
 | `admin_org_application_reject` | later | 1:1 | `admin_org_application_reject(p_application_id: string, p_note?: string) → undefined` | Signature unchanged. | `application_already_decided`, `application_not_found`, `forbidden`, `slug_required` †, `unauthenticated` | high | SupabaseOrgApplicationsRepository.ts:98 |
 | `admin_org_tree` | later | CHANGED | table `admin_role_grants` | Build the tree on the device from the grants (`manager_grant_id`, `scope_org_id`). |  | medium | SupabaseOrgHierarchyRepository.ts:116 |
-| `admin_revoke_role` | core | 1:1 | `admin_revoke_role(p_grant_id: string) → undefined` | Signature unchanged. | `account_not_active`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:113 |
-| `admin_search_posts` | core | CHANGED | `search_posts_page(p_cursor?: Json, p_filters?: Json, p_limit?: number, p_query: string) → { card: post_card distance_m: number next_cursor: Json }[]`<br>table `posts` | Post search; staff additionally read removed and hidden posts directly (`posts_select_staff`). | `invalid_input`, `unauthenticated` | medium | SupabaseAdminContentRepository.ts:123 |
-| `admin_search_users` | core | CHANGED | `search_users_page(p_cursor?: Json, p_filters?: Json, p_limit?: number, p_query: string) → { avatar_url: string city_id: string display_name: string followers_count: number id: string next_cursor: Json privacy_mode: string share_handle: string verification_level: number viewer_follows: boolean }[]`<br>table `user_account` | Member search plus the account row (`user_account_select_staff`) for status and sanctions. |  | medium | SupabaseAdminContentRepository.ts:111 |
-| `admin_seed_demo_data_step` | later | REMOVED | — | Dev-only: demo seed and wipe are not carried over (design §8, FR-ADMIN-031). Remove the admin screen; seed kc-dev from scripts. |  | high | SupabaseDemoDataRepository.ts:164 |
+| `admin_revoke_role` | core | 1:1 | `admin_revoke_role(p_grant_id: string) → undefined` | Signature unchanged. | `account_not_active`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:143 |
 | `admin_set_manager` | later | CHANGED | `admin_set_manager(p_grant_id: string, p_manager_grant_id: string) → undefined` | `p_manager_grant_id` is required: a grant can be moved under another grant but not detached. | `account_not_active`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `invalid_manager`, `unauthenticated` | high | SupabaseOrgHierarchyRepository.ts:130 |
 | `admin_task_add_comment` | later | MISSING M19 | — | No internal task tracker in the baseline. |  | high | SupabaseAdminTaskRepository.ts:208 |
 | `admin_task_assign` | later | MISSING M19 | — | No internal task tracker in the baseline. |  | high | SupabaseAdminTaskRepository.ts:200 |
@@ -130,7 +125,6 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `admin_task_list` | later | MISSING M19 | — | No internal task tracker in the baseline. |  | high | SupabaseAdminTaskRepository.ts:126 |
 | `admin_task_set_status` | later | MISSING M19 | — | No internal task tracker in the baseline. |  | high | SupabaseAdminTaskRepository.ts:192 |
 | `admin_task_update` | later | MISSING M19 | — | No internal task tracker in the baseline. |  | high | SupabaseAdminTaskRepository.ts:178 |
-| `admin_wipe_demo_data_step` | later | REMOVED | — | Dev-only: demo seed and wipe are not carried over (design §8, FR-ADMIN-031). Remove the admin screen; seed kc-dev from scripts. |  | high | SupabaseDemoDataRepository.ts:137 |
 | `api_whatsapp_admin_block_user` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | SupabaseWhatsAppAdminRepository.ts:176 |
 | `api_whatsapp_admin_get_channel` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | SupabaseWhatsAppAdminRepository.ts:49 |
 | `api_whatsapp_admin_list_consent` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | SupabaseWhatsAppAdminRepository.ts:82 |
@@ -154,7 +148,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `finance_ledger_upsert` | later | CHANGED | `finance_ledger_upsert(p_account_id?: string, p_amount_agorot?: number, p_category?: string, p_counterparty?: string, p_description?: string, p_entry_id?: string, p_is_public?: boolean, p_kind?: string, p_occurred_at?: string, p_org_id: string, p_status?: string) → string` | New required `p_org_id`; `p_amount_cents` → `_agorot`; `p_currency` and `p_reference_url` are gone. | `account_not_active`, `account_not_found`, `entry_not_found`, `forbidden`, `invalid_date` †, `unauthenticated` | high | SupabaseFinanceLedgerRepository.ts:115 |
 | `finance_transparency_settings_get` | later | CHANGED | table `organizations` | The switches are the `show_*` columns of the organization row. |  | high | SupabaseOrgTransparencyRepository.ts:79 |
 | `finance_transparency_settings_set` | later | CHANGED | `finance_transparency_settings_set(p_org_id: string, p_settings: Json) → undefined` | New required `p_org_id`; returns void. | `account_not_active`, `forbidden`, `invalid_settings`, `unauthenticated` | high | SupabaseOrgTransparencyRepository.ts:85 |
-| `get_my_admin_roles` | core | 1:1 | `get_my_admin_roles() → string[]` | Signature unchanged. |  | high | fetchMyAdminRoles.ts:13 |
+| `get_my_admin_roles` | core | 1:1 | `get_my_admin_roles() → string[]` | Signature unchanged. |  | high | fetchMyAdminRoles.ts:15 |
 | `rpc_org_transparency` | later | 1:1 | `rpc_org_transparency(p_slug?: string) → Json` | Signature unchanged; totals only, in agorot. | `unauthenticated` | medium | SupabaseOrgTransparencyRepository.ts:69 |
 | `timesheet_approve` | later | MISSING M19 | — | No timesheets in the baseline. |  | high | SupabaseTimesheetsRepository.ts:118 |
 | `timesheet_delete` | later | MISSING M19 | — | No timesheets in the baseline. |  | high | SupabaseTimesheetsRepository.ts:132 |
@@ -162,6 +156,9 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `timesheet_reject` | later | MISSING M19 | — | No timesheets in the baseline. |  | high | SupabaseTimesheetsRepository.ts:125 |
 | `timesheet_submit` | later | MISSING M19 | — | No timesheets in the baseline. |  | high | SupabaseTimesheetsRepository.ts:113 |
 | `timesheet_upsert` | later | MISSING M19 | — | No timesheets in the baseline. |  | high | SupabaseTimesheetsRepository.ts:98 |
+| `admin_role_grants` (table) | core | CHANGED | table `admin_role_grants` | `grant_id` → `id`; read-only for clients. mock-login's insert goes away with the function. |  | high | SupabaseAdminRoleRepository.ts:100 |
+| `posts` (table) | core | CHANGED | table `posts`<br>`post_cards(p_post_ids: string[]) → post_card[]`<br>`post_detail(p_post_id: string) → Json`<br>`create_post_with_details(p_details: Json, p_post: Json) → string`<br>`delete_post(p_post_id: string) → undefined` | Columns: `post_id` → `id`, `type` → `direction`, `category` / `category_id` → `item_subcategory_id`, `city` → `city_id`, `urgency` → `urgency_level`, `street` / `street_number` → `post_private_locations`, `availability_status` / `moderation_status` / `feed_hidden` → `status`, `status_before_admin_removal` → `status_before_removal`; `delete_after` / `reopen_count` → `post_closures`; `estimated_value`, `item_condition`, `external_body_id`, listing columns: gone. Reads of lists should use the card RPCs (`post_cards`, `feed_page`, `profile_posts_page`, `post_detail`). Insert is direct (column grants; status `draft` or `open`), rides / stays / events / food go through `create_post_with_details`. Update is direct for content columns only; status never (owner RPCs). Delete: direct only for a draft, otherwise `delete_post`. | `account_not_active`, `post_details_not_supported` †, `unauthenticated`, `listing_wrong_status`, `post_not_found` | high | SupabaseAdminContentRepository.ts:147 |
+| `users` (table) | core | CHANGED | table `users`<br>table `user_private`<br>table `user_account`<br>table `user_stats` | Split in four. Public profile stays in `users` (`user_id` → `id`, `city` → `city_id`, `city_name` gone: join `cities`). Contact phone, date of birth, address lines, notification preferences, dismiss flags, `basic_info_skipped` → `user_private` (own row). Account status, onboarding state, deletion dates, verification → `user_account` (read-only; moves through RPCs). Counters → `user_stats` (read-only). `is_super_admin` → `get_my_admin_roles()`. Client updates on `users` are limited to display_name, biography, avatar_url, city_id, preferred_language; `privacy_mode` moves through `set_privacy_mode`. mock-login's upsert goes away with the function. |  | high | SupabaseAdminContentRepository.ts:98, SupabaseAdminContentRepository.ts:114, SupabaseAdminRoleRepository.ts:120 |
 
 ### `infrastructure-supabase/src/auth/`
 
@@ -215,13 +212,13 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `rpc_chat_unread_total` | core | 1:1 (renamed) | `chat_unread_total() → number` | Also delivered in `bootstrap_session().unread.chats`. | `unauthenticated` | high | SupabaseChatRealtime.ts:89, SupabaseChatRepository.ts:95 |
 | `rpc_get_or_create_support_thread` | core | 1:1 (renamed) | `open_support_thread(anchor_post_id: string \| null, created_at: string, direct_user_a: string \| null, direct_user_b: string \| null, id: string, kind: string, last_message_at: string \| null, moderation_hidden_at: string \| null, support_user_id: string \| null) → chats row` | Returns the `chats` row in its new shape (`kind = 'support'`, `support_user_id`). | `unauthenticated` | high | SupabaseChatRepository.ts:116 |
 | `rpc_send_chat_media_message` | core | 1:1 (renamed) | `send_message(p_body: string, p_chat_id: string, p_media_payload?: Json, p_message_id?: string) → messages row` | `send_message(p_chat_id, p_body, p_media_payload, p_message_id)`; pass a client id for idempotent retries. | `account_not_active`, `blocked_relationship`, `chat_not_found`, `invalid_media_payload` †, `invalid_rate_limit_args` †, `message_body_invalid` †, `rate_limited`, `unauthenticated` | high | SupabaseChatV2Repository.ts:27 |
-| `rpc_set_message_reaction` | core | CHANGED | `set_message_reaction(p_message_id: string, p_reaction_type: string) → undefined` | Returns void (was the reaction row); the change arrives as a `reaction` broadcast on the chat topic. | `account_not_active`, `invalid_reaction_type` †, `message_not_found` †, `unauthenticated` | high | SupabaseChatV2Repository.ts:15 |
+| `rpc_set_message_reaction` | core | CHANGED | `set_message_reaction(p_message_id: string, p_reaction_type: string) → undefined` | Returns void (was the reaction row); the change arrives as a `reaction` broadcast on the chat topic. | `account_not_active`, `invalid_reaction_type` †, `message_not_found`, `unauthenticated` | high | SupabaseChatV2Repository.ts:15 |
 | `rpc_submit_support_issue` | core | CHANGED | `open_support_thread(anchor_post_id: string \| null, created_at: string, direct_user_a: string \| null, direct_user_b: string \| null, id: string, kind: string, last_message_at: string \| null, moderation_hidden_at: string \| null, support_user_id: string \| null) → chats row`<br>`send_message(p_body: string, p_chat_id: string, p_media_payload?: Json, p_message_id?: string) → messages row` | Two calls: open the thread, then send the issue as a message (the category goes into the body; there is no category column). | `unauthenticated`, `account_not_active`, `blocked_relationship`, `chat_not_found`, `invalid_media_payload` †, `invalid_rate_limit_args` †, `message_body_invalid` †, `rate_limited` | medium | SupabaseChatRepository.ts:101 |
 | `rpc_unread_counts_for_chats` | core | 1:1 (renamed) | `chat_unread_counts(p_chat_ids: string[]) → { chat_id: string unread_count: number }[]` | `p_viewer_id` is gone (the caller). `chat_inbox_page` already returns `unread_count` per chat. | `unauthenticated` | high | getMyChats.ts:89 |
 | `chats` (table) | core | CHANGED | table `chats`<br>`chat_inbox_page(p_before_chat_id?: string, p_before_last_message_at?: string, p_limit?: number, p_search?: string) → { anchor_post_id: string chat_id: string counterpart_avatar_url: string counterpart_display_name: string counterpart_id: string counterpart_last_read_at: string counterpart_share_handle: string kind: string last_messa...`<br>`open_direct_chat(p_anchor_post_id?: string, p_user_id: string) → chats row` | `participant_a/b` → `direct_user_a/b` + `chat_members`; `is_support_thread` → `kind`; `inbox_hidden_at_a/b` → `chat_members.hidden_at`; `anchor_listing_id` / `anchor_ride_id` → `anchor_post_id`. Read-only for clients: the inbox is `chat_inbox_page` (counterpart, preview, unread in one call), creation is `open_direct_chat`. | `unauthenticated`, `account_not_active`, `blocked_relationship`, `cannot_chat_self`, `post_unavailable` †, `user_unavailable` † | high | getMyChats.ts:57, SupabaseChatRepository.ts:29, supabaseDmChat.ts:30, supabaseDmChat.ts:101, supabaseDmChat.ts:145 |
 | `message_reactions` (table) | core | 1:1 | table `message_reactions` | `reaction_id` is gone. |  | high | SupabaseChatV2Repository.ts:44 |
 | `messages` (table) | core | CHANGED | table `messages`<br>`chat_messages_page(p_after?: string, p_before?: string, p_chat_id: string, p_limit?: number) → messages row[]`<br>`send_message(p_body: string, p_chat_id: string, p_media_payload?: Json, p_message_id?: string) → messages row` | `message_id` → `id`; `status` / `delivered_at` / `read_at` are gone (read receipt = the other member's `last_read_at`, returned by `chat_inbox_page` and broadcast as `read`). Read-only for clients: page with `chat_messages_page`, send with `send_message`. | `chat_not_found`, `unauthenticated`, `account_not_active`, `blocked_relationship`, `invalid_media_payload` †, `invalid_rate_limit_args` †, `message_body_invalid` †, `rate_limited` | high | getMyChats.ts:74, SupabaseChatRepository.ts:56, SupabaseChatRepository.ts:73, SupabaseChatRepository.ts:136 |
-| `users` (table) | core | CHANGED | table `users`<br>table `user_private`<br>table `user_account`<br>table `user_stats` | Split in four. Public profile stays in `users` (`user_id` → `id`, `city` → `city_id`, `city_name` gone: join `cities`). Contact phone, date of birth, address lines, notification preferences, dismiss flags, `basic_info_skipped` → `user_private` (own row). Account status, onboarding state, deletion dates, verification → `user_account` (read-only; moves through RPCs). Counters → `user_stats` (read-only). `is_super_admin` → `get_my_admin_roles()`. Client updates on `users` are limited to display_name, biography, avatar_url, city_id, preferred_language; `privacy_mode` moves through `set_privacy_mode`. mock-login's upsert goes away with the function. |  | high | getMyChats.ts:103, SupabaseChatRepository.ts:165, supabaseDmChat.ts:128 |
+| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | getMyChats.ts:103, SupabaseChatRepository.ts:165, supabaseDmChat.ts:128 |
 
 ### `infrastructure-supabase/src/cities/`
 
@@ -363,18 +360,17 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/moderation/`
 
-8 call sites: 5 map 1:1, 3 need logic changes, 0 removed, 0 MISSING.
+7 call sites: 6 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `admin_audit_lookup_guarded` | core | CHANGED | `admin_audit_search(p_action?: string, p_actor_id?: string, p_before_id?: number, p_before_occurred_at?: string, p_from?: string, p_limit?: number, p_target_id?: string, p_to?: string) → { action: string actor_id: string id: number metadata: Json occurred_at: string target_id: string target_type: string }[]` | `admin_audit_search(p_target_id => user)`; rows: `event_id` → `id` (bigint), `created_at` → `occurred_at`. | `forbidden`, `unauthenticated` | high | SupabaseModerationAdminRepository.ts:97 |
-| `admin_ban_user` | core | 1:1 (renamed) | `admin_ban_user(p_note?: string, p_reason: string, p_user_id: string) → undefined` | `p_target_user_id` → `p_user_id`; `p_note` optional; the reason must be one of the sanction reasons. | `account_pending_deletion` †, `cannot_sanction_admin` †, `cannot_sanction_self` †, `forbidden`, `invalid_sanction_reason` †, `target_not_found`, `unauthenticated` | high | SupabaseModerationAdminRepository.ts:83 |
-| `admin_confirm_report` | core | 1:1 | `admin_confirm_report(p_report_id: string) → undefined` | Signature unchanged. | `forbidden`, `invalid_target_state` †, `report_not_open`, `target_not_found`, `unauthenticated` | high | SupabaseModerationAdminRepository.ts:78 |
-| `admin_delete_message` | core | 1:1 | `admin_delete_message(p_message_id: string) → undefined` | Same name and argument (`p_message_id`); it lives in `40_messaging/070_chat_moderation.sql` and is audited by the moderation module (M18, verified). | `forbidden`, `message_not_found` †, `unauthenticated` | high | SupabaseModerationAdminRepository.ts:92 |
-| `admin_dismiss_report` | core | 1:1 | `admin_dismiss_report(p_report_id: string) → undefined` | Signature unchanged. | `forbidden`, `report_not_open`, `target_not_found`, `unauthenticated` | high | SupabaseModerationAdminRepository.ts:73 |
-| `admin_remove_listing` | core | 1:1 (renamed) | `admin_remove_post(p_post_id: string) → undefined` | A listing is a post. | `forbidden`, `invalid_target_state` †, `target_not_found`, `unauthenticated` | high | SupabaseModerationAdminRepository.ts:68 |
-| `admin_restore_target` | core | CHANGED | `admin_restore_post(p_post_id: string) → undefined`<br>`admin_restore_user(p_user_id: string) → undefined` | Split by target type; there is no restore for a comment or a message. | `forbidden`, `target_not_found`, `unauthenticated`, `invalid_restore_state` | high | SupabaseModerationAdminRepository.ts:60 |
-| `is_admin` | core | CHANGED | `get_my_admin_roles() → string[]` | No `uid` argument: the caller's own roles (also `bootstrap_session().admin.roles`); super admin = the array contains `super_admin`. |  | high | SupabaseModerationAdminRepository.ts:50 |
+| `admin_ban_user` | core | 1:1 (renamed) | `admin_ban_user(p_note?: string, p_reason: string, p_user_id: string) → undefined` | `p_target_user_id` → `p_user_id`; `p_note` optional; the reason must be one of the sanction reasons. | `account_pending_deletion`, `cannot_sanction_admin`, `cannot_sanction_self`, `forbidden`, `invalid_sanction_reason`, `target_not_found`, `unauthenticated` | high | SupabaseModerationAdminRepository.ts:110 |
+| `admin_confirm_report` | core | 1:1 | `admin_confirm_report(p_report_id: string) → undefined` | Signature unchanged. | `forbidden`, `invalid_target_state`, `report_not_open`, `target_not_found`, `unauthenticated` | high | SupabaseModerationAdminRepository.ts:103 |
+| `admin_delete_message` | core | 1:1 | `admin_delete_message(p_message_id: string) → undefined` | Same name and argument (`p_message_id`); it lives in `40_messaging/070_chat_moderation.sql` and is audited by the moderation module (M18, verified). | `forbidden`, `message_not_found`, `unauthenticated` | high | SupabaseModerationAdminRepository.ts:119 |
+| `admin_dismiss_report` | core | 1:1 | `admin_dismiss_report(p_report_id: string) → undefined` | Signature unchanged. | `forbidden`, `report_not_open`, `target_not_found`, `unauthenticated` | high | SupabaseModerationAdminRepository.ts:98 |
+| `admin_restore_post` | core | 1:1 | `admin_restore_post(p_post_id: string) → undefined` | Staff: returns a removed post to its previous status, a post hidden for review to open. | `forbidden`, `target_not_found`, `unauthenticated` | high | SupabaseModerationAdminRepository.ts:87 |
+| `admin_restore_user` | core | 1:1 | `admin_restore_user(p_user_id: string) → undefined` | Staff: lifts a suspension; only the super admin lifts a ban. | `forbidden`, `invalid_restore_state`, `target_not_found`, `unauthenticated` | high | SupabaseModerationAdminRepository.ts:89 |
+| `admin_role_grants` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | SupabaseModerationAdminRepository.ts:71 |
 
 ### `infrastructure-supabase/src/notifications/`
 
@@ -414,7 +410,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `active_posts_count_for_viewer` | core | CHANGED | table `user_stats` | Read `open_posts_public` (+ `open_posts_followers_only` for a follower) of the profile's `user_stats` row; the viewer-dependent sum moves to the adapter. |  | medium | postRepoQueries.ts:39 |
-| `admin_remove_post` | core | 1:1 | `admin_remove_post(p_post_id: string) → undefined` | Status becomes `removed_admin`; the previous status is kept in `status_before_removal`. | `forbidden`, `invalid_target_state` †, `target_not_found`, `unauthenticated` | high | SupabasePostRepository.ts:206 |
+| `admin_remove_post` | core | 1:1 | `admin_remove_post(p_post_id: string) → undefined` | Status becomes `removed_admin`; the previous status is kept in `status_before_removal`. | `forbidden`, `invalid_target_state`, `target_not_found`, `unauthenticated` | high | SupabasePostRepository.ts:206 |
 | `close_post_with_recipient` | core | CHANGED | `close_post_with_recipient(p_post_id: string, p_recipient_id: string) → post_handoffs row` | `p_recipient_user_id` → `p_recipient_id`; returns the handoff row, not the post. The recipient must have a chat with the owner (`closure_recipient_not_in_chat`). | `account_not_active`, `closure_recipient_not_in_chat`, `closure_wrong_status`, `post_not_found`, `unauthenticated`, `world_not_assignable` † | high | closureMethods.ts:54 |
 | `feed_ranked_ids` | core | CHANGED | `feed_page(p_cursor?: Json, p_filters?: Json, p_limit?: number) → { card: post_card distance_m: number next_cursor: Json }[]` | One call returns cards, not ids to hydrate: filters move into `p_filters` (sort, world, direction, item_subcategory_ids, status, audience, city_id + radius_km, near_city_id, q), the four cursor arguments become the opaque `next_cursor` JSON, `distance_km` → `distance_m`. | `invalid_input`, `unauthenticated` | high | feedQueryRanked.ts:76 |
 | `owner_complete_offer_with_user` | core | CHANGED | `close_post_with_recipient(p_post_id: string, p_recipient_id: string) → post_handoffs row`<br>`close_post_without_recipient(p_post_id: string) → undefined` | Split by `p_mode`: with a recipient → `close_post_with_recipient(p_post_id, p_recipient_id)` (returns the handoff); without → `close_post_without_recipient`. | `account_not_active`, `closure_recipient_not_in_chat`, `closure_wrong_status`, `post_not_found`, `unauthenticated`, `world_not_assignable` †, `listing_has_active_handoff` | high | ownerCompleteOfferRpc.ts:14 |
@@ -437,9 +433,9 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `post_comment_reactions` (table) | core | 1:1 | table `post_comment_reactions` | Same shape. |  | high | SupabasePostEngagementRepository.ts:190 |
 | `post_comments` (table) | core | CHANGED | table `post_comments`<br>`post_comments_page(p_cursor?: Json, p_limit?: number, p_parent_comment_id?: string, p_post_id: string) → { author_avatar_url: string author_display_name: string author_id: string author_identity_masked: boolean author_share_handle: string body: string created_at: string edited_at: string id: string mention_user_ids: stri...`<br>`delete_post_comment(p_comment_id: string) → undefined` | `comment_id` → `id`. Lists should use `post_comments_page` (keyset, author fields and viewer reaction included). Delete → `delete_post_comment`. | `comment_not_found` †, `unauthenticated` | high | SupabasePostEngagementRepository.ts:118, SupabasePostEngagementRepository.ts:150 |
 | `post_reactions` (table) | core | 1:1 | table `post_reactions` | `reaction_id` is gone (key is post + user). |  | high | SupabasePostEngagementRepository.ts:58 |
-| `posts` (table) | core | CHANGED | table `posts`<br>`post_cards(p_post_ids: string[]) → post_card[]`<br>`post_detail(p_post_id: string) → Json`<br>`create_post_with_details(p_details: Json, p_post: Json) → string`<br>`delete_post(p_post_id: string) → undefined` | Columns: `post_id` → `id`, `type` → `direction`, `category` / `category_id` → `item_subcategory_id`, `city` → `city_id`, `urgency` → `urgency_level`, `street` / `street_number` → `post_private_locations`, `availability_status` / `moderation_status` / `feed_hidden` → `status`, `status_before_admin_removal` → `status_before_removal`; `delete_after` / `reopen_count` → `post_closures`; `estimated_value`, `item_condition`, `external_body_id`, listing columns: gone. Reads of lists should use the card RPCs (`post_cards`, `feed_page`, `profile_posts_page`, `post_detail`). Insert is direct (column grants; status `draft` or `open`), rides / stays / events / food go through `create_post_with_details`. Update is direct for content columns only; status never (owner RPCs). Delete: direct only for a draft, otherwise `delete_post`. | `account_not_active`, `post_details_not_supported` †, `unauthenticated`, `listing_wrong_status`, `post_not_found` | high | closureMethods.ts:38, closureMethods.ts:69, closureMethods.ts:88, closureMethods.ts:133, executePostUpdate.ts:79, feedQueryRanked.ts:111, getMyPostsPage.ts:37, getProfileClosedPostsHelper.ts:41, mergeProfileOpenChallengePosts.ts:28, postRepoQueries.ts:11, postRepoQueries.ts:25, postRepoQueries.ts:55, SupabasePostRepository.ts:107, SupabasePostRepository.ts:123, SupabasePostRepository.ts:158, SupabasePostRepository.ts:175, SupabasePostRepository.ts:189 |
+| `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | closureMethods.ts:38, closureMethods.ts:69, closureMethods.ts:88, closureMethods.ts:133, executePostUpdate.ts:79, feedQueryRanked.ts:111, getMyPostsPage.ts:37, getProfileClosedPostsHelper.ts:41, mergeProfileOpenChallengePosts.ts:28, postRepoQueries.ts:11, postRepoQueries.ts:25, postRepoQueries.ts:55, SupabasePostRepository.ts:107, SupabasePostRepository.ts:123, SupabasePostRepository.ts:158, SupabasePostRepository.ts:175, SupabasePostRepository.ts:189 |
 | `saved_posts` (table) | core | 1:1 | table `saved_posts` | Same columns. The upsert becomes insert-ignore-duplicate (no update grant). The saved-posts page hydrates ids with `post_cards`. |  | high | savedPostsMethods.ts:28, savedPostsMethods.ts:36, savedPostsMethods.ts:45, savedPostsMethods.ts:63 |
-| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/chat/` |  |  |  | closureMethods.ts:170 |
+| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | closureMethods.ts:170 |
 | `users_public` (table) | core | CHANGED | table `users` | The view is gone: `users` itself now holds only public profile columns and RLS hides blocked and reported members. Owner fields of a post already come inside `post_card`. |  | high | hydrateFeedPostOwners.ts:25 |
 
 ### `infrastructure-supabase/src/realtime/`
@@ -453,13 +449,15 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/reports/`
 
-3 call sites: 1 map 1:1, 2 need logic changes, 0 removed, 0 MISSING.
+8 call sites: 4 map 1:1, 4 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `reports_case_detail` | core | CHANGED | table `reports`<br>table `user_sanctions`<br>table `posts`<br>table `users` | No case RPC: staff read the target's reports, its sanctions, the post (`posts_select_staff`) or member (`users_select_staff`) and the audit trail (`admin_audit_search`). |  | medium | SupabaseReportsRepository.ts:41 |
-| `reports_open_inbox` | core | CHANGED | table `reports`<br>table `moderation_queue` | No inbox RPC: staff read `reports` (policy `reports_select_staff`) and `moderation_queue` (`moderation_queue_select_staff`) directly, keyset on created_at; grouping per target moves to the adapter. |  | medium | SupabaseReportsRepository.ts:26 |
-| `reports` (table) | core | 1:1 | table `reports` | Direct insert of (reporter_id, target_type, target_id, reason, note); `report_id` → `id`. |  | high | SupabaseReportRepository.ts:11 |
+| `post_comments` (table) | core | CHANGED | see `infrastructure-supabase/src/posts/` |  |  |  | reportTargetPreviews.ts:71 |
+| `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | reportTargetPreviews.ts:33 |
+| `reports` (table) | core | 1:1 | table `reports` | Direct insert of (reporter_id, target_type, target_id, reason, note); `report_id` → `id`. |  | high | SupabaseReportRepository.ts:39, SupabaseReportsRepository.ts:45, SupabaseReportsRepository.ts:76 |
+| `user_account` (table) | core | 1:1 | table `user_account` | Staff read the account row of every member (`user_account_select_staff`): status, sanction state. |  | high | reportTargetPreviews.ts:54 |
+| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | reportTargetPreviews.ts:50, reportTargetPreviews.ts:106 |
 
 ### `infrastructure-supabase/src/research/`
 
@@ -532,8 +530,8 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `search_posts_page` | core | CHANGED | `search_posts_page(p_cursor?: Json, p_filters?: Json, p_limit?: number, p_query: string) → { card: post_card distance_m: number next_cursor: Json }[]` | Returns cards with `next_cursor` (was ids); category / city / type move into `p_filters` (same keys as `feed_page`). | `invalid_input`, `unauthenticated` | high | searchQueryHelpers.ts:25 |
 | `search_users_page` | core | CHANGED | `search_users_page(p_cursor?: Json, p_filters?: Json, p_limit?: number, p_query: string) → { avatar_url: string city_id: string display_name: string followers_count: number id: string next_cursor: Json privacy_mode: string share_handle: string verification_level: number viewer_follows: boolean }[]` | Returns the member fields with `viewer_follows` and `next_cursor` (was ids); city / min followers / sort arguments are gone (order: most followed). |  | high | searchQueryHelpers.ts:61 |
 | `donation_links` (table) | core | CHANGED | see `infrastructure-supabase/src/donations/` |  |  |  | searchExploreHelpers.ts:60, searchQueryHelpers.ts:86 |
-| `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/posts/` |  |  |  | searchExploreHelpers.ts:22, searchQueryHelpers.ts:37 |
-| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/chat/` |  |  |  | searchExploreHelpers.ts:47, searchQueryHelpers.ts:71 |
+| `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | searchExploreHelpers.ts:22, searchQueryHelpers.ts:37 |
+| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | searchExploreHelpers.ts:47, searchQueryHelpers.ts:71 |
 
 ### `infrastructure-supabase/src/social/`
 
@@ -610,7 +608,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `blocks` (table) | core | 1:1 | see `infrastructure-supabase/src/blocks/` |  |  |  | searchUsers.ts:40 |
 | `follow_edges` (table) | core | CHANGED | see `infrastructure-supabase/src/posts/` |  |  |  | followMethods.ts:18, followMethods.ts:37, followMethods.ts:50, followMethods.ts:71, followMethods.ts:91, getFollowState.ts:21 |
 | `follow_requests` (table) | core | CHANGED | table `follow_requests`<br>`follow_user(p_target: string) → string`<br>`follow_request_decide(p_accept: boolean, p_requester: string) → undefined`<br>`follow_request_cancel(p_target: string) → undefined` | Read-only for clients. Insert → `follow_user`; accept / reject → `follow_request_decide(p_requester, p_accept)`; cancel → `follow_request_cancel(p_target)`. Status column is ruled by the follow_request machine. | `account_not_active`, `blocked_relationship`, `follow_request_cooldown_active`, `invalid_rate_limit_args` †, `rate_limited`, `self_follow_forbidden`, `unauthenticated`, `user_unavailable` †, `follow_request_not_pending` †, `invalid_decision` † | high | followRequestMethods.ts:36, followRequestMethods.ts:50, followRequestMethods.ts:64, followRequestMethods.ts:78, followRequestMethods.ts:91, followRequestMethods.ts:107, getFollowState.ts:27, getFollowState.ts:34 |
-| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/chat/` |  |  |  | editableProfileSupabase.ts:20, editableProfileSupabase.ts:59, editableProfileSupabase.ts:93, editableProfileSupabase.ts:103, fetchUserBy.ts:31, getFollowState.ts:16, onboardingSupabase.ts:11, onboardingSupabase.ts:29, onboardingSupabase.ts:37, onboardingSupabase.ts:47, searchUsers.ts:21, SupabaseUserRepository.ts:91, SupabaseUserRepository.ts:99, SupabaseUserRepository.ts:107, SupabaseUserRepository.ts:122, SupabaseUserRepository.ts:131 |
+| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | editableProfileSupabase.ts:20, editableProfileSupabase.ts:59, editableProfileSupabase.ts:93, editableProfileSupabase.ts:103, fetchUserBy.ts:31, getFollowState.ts:16, onboardingSupabase.ts:11, onboardingSupabase.ts:29, onboardingSupabase.ts:37, onboardingSupabase.ts:47, searchUsers.ts:21, SupabaseUserRepository.ts:91, SupabaseUserRepository.ts:99, SupabaseUserRepository.ts:107, SupabaseUserRepository.ts:122, SupabaseUserRepository.ts:131 |
 
 ### `infrastructure-supabase/src/volunteering/`
 
@@ -632,7 +630,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `apps/mobile` (direct calls outside the adapters)
 
-28 call sites: 14 map 1:1, 7 need logic changes, 4 removed, 3 MISSING.
+26 call sites: 14 map 1:1, 5 need logic changes, 4 removed, 3 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -649,11 +647,9 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `dev_grant_mock_identity_verification` | later | REMOVED | — | Dev-only; not carried over. |  | high | devIdentityVerification.ts:14 |
 | `dev_mock_identity_verification_allowed` | later | REMOVED | — | Dev-only; not carried over. Verify test members from the dev seed scripts. |  | high | devIdentityVerification.ts:7 |
 | `find_ride_listing_matches` | wedge | CHANGED | `rides_feed(p_cursor?: Json, p_filters?: Json, p_limit?: number) → { arrives_at: string departs_at: string dest_name: string direction: string meeting_points: Json next_cursor: Json origin_name: string owner_id: string post_id: string reward_model: string seats: number seats_left: nu...` | Same as above (mobile composition calls it directly today). | `ride_place_invalid` | medium | ridesKnowledgeComposition.ts:20 |
-| `is_admin` | core | CHANGED | see `infrastructure-supabase/src/moderation/` |  |  |  | useIsSuperAdmin.ts:16 |
 | `app_flags` (table) | core | 1:1 | table `app_flags` | Same `select key, enabled`, for signed-in members only (no `anon` grant): before sign-in the compiled defaults apply. After sign-in the same map is `bootstrap_session().flags`. The rows (`world_<slug>_enabled`) are seed data, not part of the baseline (M09, verified). |  | high | featureFlagsComposition.ts:9 |
 | `karma_ledger` (table) | wedge | CHANGED | table `karma_ledger` | `ledger_id` → `id`, `points_delta` → `points`, `ref_type` / `ref_id` → `subject` / `reference`. The total is `my_karma_points()`. |  | high | useKarmaHistory.ts:19 |
-| `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/posts/` |  |  |  | useChallengeLinkedPost.ts:11 |
-| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/chat/` |  |  |  | UserLookupField.tsx:29 |
+| `posts` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | useChallengeLinkedPost.ts:11 |
 
 ### Edge Function `_shared`
 
@@ -714,8 +710,8 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `admin_role_grants` (table) | core | CHANGED | table `admin_role_grants` | `grant_id` → `id`; read-only for clients. mock-login's insert goes away with the function. |  | high | ensureUser.ts:91, ensureUser.ts:98 |
-| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/chat/` |  |  |  | ensureUser.ts:82 |
+| `admin_role_grants` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | ensureUser.ts:91, ensureUser.ts:98 |
+| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | ensureUser.ts:82 |
 
 ### Edge Function `payments-webhook`
 
@@ -790,7 +786,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `donation_links` (table) | core | CHANGED | see `infrastructure-supabase/src/donations/` |  |  |  | index.ts:274, index.ts:298, index.ts:318, index.ts:330 |
-| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/chat/` |  |  |  | index.ts:285 |
+| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | index.ts:285 |
 
 ### Edge Function `whatsapp-intake-worker`
 
@@ -859,7 +855,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | P1 — Identity: session start, profile, privacy, follow, block, legal, account deletion, devices | core | 37 | 16 | 14 | 3 | 4 | — |
 | P2 — Posts, feed, search, closure, translations | core | 48 | 11 | 30 | 3 | 4 | P3, P4 |
 | P3 — Chat and realtime | core | 20 | 9 | 11 | 0 | 0 | P2, P4 |
-| P4 — Reports, moderation and admin basics | core | 22 | 10 | 9 | 3 | 0 | P2, P3 |
+| P4 — Reports, moderation and admin basics | core | 17 | 12 | 5 | 0 | 0 | P2, P3 |
 | P5 — Launch worlds: items, food, rides, time (events), matching, donation links | wedge | 104 | 28 | 64 | 6 | 6 | P6 |
 | P6 — Edge Functions of the launch | core | 12 | 6 | 6 | 0 | 0 | P5 |
 | L1 — Housing world | later | 12 | 3 | 9 | 0 | 0 | L2, L3, L4, L5, L6, L7 |

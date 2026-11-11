@@ -152,7 +152,7 @@ export interface Report {
   readonly reportId: string;
   readonly reporterId: string;
   readonly targetType: ReportTargetType;
-  readonly targetId: string | null;
+  readonly targetId: string;
   readonly reason: ReportReason;
   note: string | null;
   status: ReportStatus;
@@ -204,7 +204,7 @@ export interface Street {
 
 export interface ReportSubmission {
   targetType: ReportTargetType;
-  targetId: string | null;             // null iff targetType === 'none'
+  targetId: string;
   reason: ReportReason;
   note?: string;                       // ≤ REPORT_NOTE_MAX_LENGTH
 }

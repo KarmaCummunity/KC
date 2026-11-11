@@ -47,8 +47,6 @@ export type {
   MatchSuggestion, MatchRole, MatchStatus, MatchResponse, MatchRespondResult, MatchQualityByWorld,
 } from './matching/SupabaseMatchRepository';
 export type { OnlineListener } from './realtime/SupabaseOnlinePresence';
-export { SupabaseDemoDataRepository, mapDemoDataStatus, mapDemoDataWipeResult, mapDemoDataSeedResult } from './admin/SupabaseDemoDataRepository';
-export type { DemoDataStatus, DemoDataWipeResult, DemoDataSeedResult } from './admin/SupabaseDemoDataRepository';
 export { SupabaseStatsRepository } from './stats/SupabaseStatsRepository';
 export { SupabaseAboutRepository } from './about/SupabaseAboutRepository';
 export { SupabaseReportRepository } from './reports/SupabaseReportRepository';

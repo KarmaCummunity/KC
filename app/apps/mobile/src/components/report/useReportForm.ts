@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react';
 import type { ReportReason } from '@kc/domain';
 import { ReportError } from '@kc/application';
+import { isBackendUnavailable, notAvailableMessage } from '../../lib/backendAvailability';
 
 export interface ReportOutcome {
   readonly title: string;
@@ -74,6 +75,9 @@ export function useReportForm(visible: boolean) {
       } else if (err instanceof ReportError && err.code === 'target_already_moderated') {
         onClose();
         setNotify(messages.alreadyModerated);
+      } else if (isBackendUnavailable(err)) {
+        // Degrade rule: the reports table is not deployed yet.
+        setNotify({ title: messages.error.title, message: notAvailableMessage() });
       } else {
         setNotify(messages.error);
       }

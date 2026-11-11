@@ -2,16 +2,16 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 288,
-   "same": 36,
-   "renamed": 44,
-   "changed": 126,
-   "removed": 14,
+   "objects": 278,
+   "same": 38,
+   "renamed": 43,
+   "changed": 118,
+   "removed": 11,
    "missing": 68
   },
   "table": {
-   "objects": 52,
-   "same": 10,
+   "objects": 53,
+   "same": 11,
    "renamed": 2,
    "changed": 33,
    "removed": 2,
@@ -52,19 +52,19 @@
  },
  "launchTotals": {
   "core": {
-   "objects": 118,
-   "same": 32,
-   "renamed": 18,
-   "changed": 62,
+   "objects": 112,
+   "same": 35,
+   "renamed": 17,
+   "changed": 54,
    "removed": 4,
    "missing": 2
   },
   "later": {
-   "objects": 143,
+   "objects": 140,
    "same": 15,
    "renamed": 4,
    "changed": 43,
-   "removed": 8,
+   "removed": 5,
    "missing": 73
   },
   "wedge": {
@@ -85,10 +85,10 @@
    "missing": 1
   },
   "admin": {
-   "callSites": 55,
+   "callSites": 54,
    "oneToOne": 6,
-   "changed": 16,
-   "removed": 3,
+   "changed": 18,
+   "removed": 0,
    "missing": 30
   },
   "auth": {
@@ -302,16 +302,16 @@
    "missing": 1
   },
   "mobile": {
-   "callSites": 28,
+   "callSites": 26,
    "oneToOne": 14,
-   "changed": 7,
+   "changed": 5,
    "removed": 4,
    "missing": 3
   },
   "moderation": {
-   "callSites": 8,
-   "oneToOne": 5,
-   "changed": 3,
+   "callSites": 7,
+   "oneToOne": 6,
+   "changed": 1,
    "removed": 0,
    "missing": 0
   },
@@ -344,9 +344,9 @@
    "missing": 1
   },
   "reports": {
-   "callSites": 3,
-   "oneToOne": 1,
-   "changed": 2,
+   "callSites": 8,
+   "oneToOne": 4,
+   "changed": 4,
    "removed": 0,
    "missing": 0
   },
@@ -870,7 +870,9 @@
    "degrade": "Reporting a post or member shows \"not available yet\"; the admin portal entry is hidden for everyone until the package lands (staff use the dashboard of the database meanwhile).",
    "risks": "Staff deletion of a chat message is `admin_delete_message` (M18).",
    "rows": [
-    "rpc:is_admin",
+    "table:users",
+    "table:posts",
+    "table:post_comments",
     "rpc:get_my_admin_roles",
     "rpc:admin_confirm_report",
     "rpc:admin_dismiss_report",
@@ -878,26 +880,19 @@
     "rpc:admin_revoke_role",
     "rpc:admin_change_role",
     "rpc:admin_ban_user",
-    "rpc:admin_restore_target",
-    "rpc:admin_remove_listing",
+    "rpc:admin_restore_post",
+    "rpc:admin_restore_user",
     "rpc:admin_delete_message",
-    "rpc:admin_audit_lookup_guarded",
     "rpc:admin_audit_search",
     "table:reports",
-    "rpc:reports_open_inbox",
-    "rpc:reports_case_detail",
-    "rpc:admin_search_users",
-    "rpc:admin_search_posts",
-    "rpc:admin_list_admins",
-    "rpc:admin_demo_data_status",
-    "rpc:admin_wipe_demo_data_step",
-    "rpc:admin_seed_demo_data_step"
+    "table:user_account",
+    "table:admin_role_grants"
    ],
    "counts": {
-    "objects": 22,
-    "oneToOne": 10,
-    "changed": 9,
-    "removed": 3,
+    "objects": 17,
+    "oneToOne": 12,
+    "changed": 5,
+    "removed": 0,
     "missing": 0
    }
   },
@@ -2621,51 +2616,6 @@
    ]
   },
   {
-   "old": "admin_audit_lookup_guarded",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "`admin_audit_search(p_target_id => user)`; rows: `event_id` → `id` (bigint), `created_at` → `occurred_at`.",
-   "oldObject": {
-    "signature": [
-     "admin_audit_lookup_guarded(p_limit?: number, p_user_id: string) → audit_events row[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "admin_audit_search",
-     "source": "60_moderation/110_admin_audit_search.sql:10",
-     "signature": [
-      "admin_audit_search(p_action?: string, p_actor_id?: string, p_before_id?: number, p_before_occurred_at?: string, p_from?: string, p_limit?: number, p_target_id?: string, p_to?: string) → { action: string actor_id: string id: number metadata: Json occurred_at: string target_id: string target_type: string }[]"
-     ],
-     "errors": [
-      {
-       "code": "forbidden",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "moderation"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 97,
-     "symbol": "SupabaseModerationAdminRepository.auditLookup",
-     "area": "moderation"
-    }
-   ]
-  },
-  {
    "old": "admin_audit_search",
    "kind": "rpc",
    "status": "changed",
@@ -2703,9 +2653,9 @@
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminContentRepository.ts",
-     "line": 135,
-     "symbol": "SupabaseAdminContentRepository.searchAudit",
+     "file": "app/packages/infrastructure-supabase/src/admin/auditSearchCall.ts",
+     "line": 20,
+     "symbol": "callAuditSearch",
      "area": "admin"
     }
    ]
@@ -2734,15 +2684,15 @@
      "errors": [
       {
        "code": "account_pending_deletion",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "cannot_sanction_admin",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "cannot_sanction_self",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "forbidden",
@@ -2750,7 +2700,7 @@
       },
       {
        "code": "invalid_sanction_reason",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "target_not_found",
@@ -2769,7 +2719,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 83,
+     "line": 110,
      "symbol": "SupabaseModerationAdminRepository.banUser",
      "area": "moderation"
     }
@@ -2842,7 +2792,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-     "line": 118,
+     "line": 148,
      "symbol": "SupabaseAdminRoleRepository.changeRole",
      "area": "admin"
     }
@@ -2876,7 +2826,7 @@
       },
       {
        "code": "invalid_target_state",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "report_not_open",
@@ -2899,7 +2849,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 78,
+     "line": 103,
      "symbol": "SupabaseModerationAdminRepository.confirmReport",
      "area": "moderation"
     }
@@ -2933,7 +2883,7 @@
       },
       {
        "code": "message_not_found",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -2948,35 +2898,9 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 92,
+     "line": 119,
      "symbol": "SupabaseModerationAdminRepository.deleteMessage",
      "area": "moderation"
-    }
-   ]
-  },
-  {
-   "old": "admin_demo_data_status",
-   "kind": "rpc",
-   "status": "removed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Dev-only: demo seed and wipe are not carried over (design §8, FR-ADMIN-031). Remove the admin screen; seed kc-dev from scripts.",
-   "oldObject": {
-    "signature": [
-     "admin_demo_data_status() → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseDemoDataRepository.ts",
-     "line": 115,
-     "symbol": "SupabaseDemoDataRepository.getStatus",
-     "area": "admin"
     }
    ]
   },
@@ -3027,7 +2951,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 73,
+     "line": 98,
      "symbol": "SupabaseModerationAdminRepository.dismissReport",
      "area": "moderation"
     }
@@ -3096,7 +3020,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-     "line": 99,
+     "line": 130,
      "symbol": "SupabaseAdminRoleRepository.grantRole",
      "area": "admin"
     }
@@ -3144,82 +3068,6 @@
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
      "line": 138,
      "symbol": "SupabaseOrgHierarchyRepository.getHierarchyCensus",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_list_admins",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Direct read of grants (`admin_role_grants_select_staff`) joined to `users`; `last_seen_at` is not available.",
-   "oldObject": {
-    "signature": [
-     "admin_list_admins(p_include_revoked?: boolean) → { avatar_url: string display_name: string grant_id: string granted_at: string granted_by: string granted_by_display_name: string last_seen_at: string revoked_at: string revoked_by: string role: string scope_org_id: st..."
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "admin_role_grants",
-     "columns": [
-      "granted_at",
-      "granted_by",
-      "id",
-      "is_platform",
-      "manager_grant_id",
-      "revoked_at",
-      "revoked_by",
-      "role",
-      "scope_org_id",
-      "user_id"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    },
-    {
-     "type": "table",
-     "name": "users",
-     "columns": [
-      "avatar_url",
-      "biography",
-      "city_id",
-      "created_at",
-      "display_name",
-      "id",
-      "is_active",
-      "preferred_language",
-      "privacy_changed_at",
-      "privacy_mode",
-      "search_vector",
-      "share_handle",
-      "updated_at",
-      "verification_level"
-     ],
-     "clientGrants": {
-      "select": true,
-      "update": [
-       "avatar_url",
-       "biography",
-       "city_id",
-       "display_name",
-       "preferred_language"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-     "line": 81,
-     "symbol": "SupabaseAdminRoleRepository.listAdmins",
      "area": "admin"
     }
    ]
@@ -3582,59 +3430,6 @@
    ]
   },
   {
-   "old": "admin_remove_listing",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "A listing is a post.",
-   "oldObject": {
-    "signature": [
-     "admin_remove_listing(p_listing_id: string) → undefined"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "admin_remove_post",
-     "source": "60_moderation/080_content_moderation.sql:73",
-     "signature": [
-      "admin_remove_post(p_post_id: string) → undefined"
-     ],
-     "errors": [
-      {
-       "code": "forbidden",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_target_state",
-       "knownToApp": false
-      },
-      {
-       "code": "target_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "moderation"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 68,
-     "symbol": "SupabaseModerationAdminRepository.removeListing",
-     "area": "moderation"
-    }
-   ]
-  },
-  {
    "old": "admin_remove_post",
    "kind": "rpc",
    "status": "same",
@@ -3662,7 +3457,7 @@
       },
       {
        "code": "invalid_target_state",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "target_not_found",
@@ -3688,18 +3483,14 @@
    ]
   },
   {
-   "old": "admin_restore_target",
+   "old": "admin_restore_post",
    "kind": "rpc",
-   "status": "changed",
+   "status": "same",
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "Split by target type; there is no restore for a comment or a message.",
-   "oldObject": {
-    "signature": [
-     "admin_restore_target(p_target_id: string, p_target_type: string) → undefined"
-    ]
-   },
+   "note": "Staff: returns a removed post to its previous status, a post hidden for review to open.",
+   "oldObject": {},
    "targets": [
     {
      "type": "rpc",
@@ -3722,7 +3513,30 @@
        "knownToApp": true
       }
      ]
-    },
+    }
+   ],
+   "areas": [
+    "moderation"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+     "line": 87,
+     "symbol": "SupabaseModerationAdminRepository.restoreTarget",
+     "area": "moderation"
+    }
+   ]
+  },
+  {
+   "old": "admin_restore_user",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Staff: lifts a suspension; only the super admin lifts a ban.",
+   "oldObject": {},
+   "targets": [
     {
      "type": "rpc",
      "name": "admin_restore_user",
@@ -3756,7 +3570,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 60,
+     "line": 89,
      "symbol": "SupabaseModerationAdminRepository.restoreTarget",
      "area": "moderation"
     }
@@ -3862,187 +3676,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
-     "line": 113,
+     "line": 143,
      "symbol": "SupabaseAdminRoleRepository.revokeRole",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_search_posts",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Post search; staff additionally read removed and hidden posts directly (`posts_select_staff`).",
-   "oldObject": {
-    "signature": [
-     "admin_search_posts(p_limit?: number, p_offset?: number, p_query?: string, p_status?: string) → { created_at: string owner_display_name: string owner_id: string post_id: string status: string title: string total_count: number type: string updated_at: string visibility: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "search_posts_page",
-     "source": "30_social/090_profile_and_search.sql:60",
-     "signature": [
-      "search_posts_page(p_cursor?: Json, p_filters?: Json, p_limit?: number, p_query: string) → { card: post_card distance_m: number next_cursor: Json }[]"
-     ],
-     "errors": [
-      {
-       "code": "invalid_input",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    },
-    {
-     "type": "table",
-     "name": "posts",
-     "columns": [
-      "beneficiary_org_id",
-      "city_id",
-      "created_at",
-      "description",
-      "details",
-      "direction",
-      "expires_at",
-      "geo_approx",
-      "id",
-      "item_subcategory_id",
-      "kind_id",
-      "location_display_level",
-      "owner_id",
-      "post_type",
-      "published_at",
-      "search_vector",
-      "source",
-      "source_language",
-      "status",
-      "status_before_removal",
-      "time_window",
-      "title",
-      "updated_at",
-      "urgency_level",
-      "visibility",
-      "world_slug"
-     ],
-     "clientGrants": {
-      "select": true,
-      "delete": true,
-      "insert": [
-       "beneficiary_org_id"
-      ],
-      "update": [
-       "city_id",
-       "description",
-       "details",
-       "item_subcategory_id",
-       "location_display_level",
-       "time_window",
-       "title",
-       "urgency_level",
-       "visibility"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminContentRepository.ts",
-     "line": 123,
-     "symbol": "SupabaseAdminContentRepository.searchPosts",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_search_users",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Member search plus the account row (`user_account_select_staff`) for status and sanctions.",
-   "oldObject": {
-    "signature": [
-     "admin_search_users(p_limit?: number, p_offset?: number, p_query?: string, p_status?: string) → { account_status: string city_name: string created_at: string display_name: string last_seen_at: string share_handle: string total_count: number user_id: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "search_users_page",
-     "source": "30_social/090_profile_and_search.sql:87",
-     "signature": [
-      "search_users_page(p_cursor?: Json, p_filters?: Json, p_limit?: number, p_query: string) → { avatar_url: string city_id: string display_name: string followers_count: number id: string next_cursor: Json privacy_mode: string share_handle: string verification_level: number viewer_follows: boolean }[]"
-     ],
-     "errors": []
-    },
-    {
-     "type": "table",
-     "name": "user_account",
-     "columns": [
-      "deletion_purge_at",
-      "deletion_requested_at",
-      "false_report_sanction_count",
-      "false_reports_count",
-      "food_posting_banned_until",
-      "onboarding_state",
-      "status",
-      "status_before_deletion",
-      "status_until",
-      "updated_at",
-      "user_id",
-      "verification_method",
-      "verified_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminContentRepository.ts",
-     "line": 111,
-     "symbol": "SupabaseAdminContentRepository.searchUsers",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_seed_demo_data_step",
-   "kind": "rpc",
-   "status": "removed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Dev-only: demo seed and wipe are not carried over (design §8, FR-ADMIN-031). Remove the admin screen; seed kc-dev from scripts.",
-   "oldObject": {
-    "signature": [
-     "admin_seed_demo_data_step(p_password?: string) → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseDemoDataRepository.ts",
-     "line": 164,
-     "symbol": "SupabaseDemoDataRepository.seedStep",
      "area": "admin"
     }
    ]
@@ -4391,32 +4026,6 @@
      "line": 191,
      "symbol": "SupabaseSurveyAdminRepository.listFeedback",
      "area": "survey"
-    }
-   ]
-  },
-  {
-   "old": "admin_wipe_demo_data_step",
-   "kind": "rpc",
-   "status": "removed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Dev-only: demo seed and wipe are not carried over (design §8, FR-ADMIN-031). Remove the admin screen; seed kc-dev from scripts.",
-   "oldObject": {
-    "signature": [
-     "admin_wipe_demo_data_step() → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseDemoDataRepository.ts",
-     "line": 137,
-     "symbol": "SupabaseDemoDataRepository.wipeStep",
-     "area": "admin"
     }
    ]
   },
@@ -8597,7 +8206,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/fetchMyAdminRoles.ts",
-     "line": 13,
+     "line": 15,
      "symbol": "fetchMyAdminRoles",
      "area": "admin"
     }
@@ -8937,49 +8546,6 @@
      "line": 25,
      "symbol": "SupabaseHousingRepository.currentConductVersion",
      "area": "housing"
-    }
-   ]
-  },
-  {
-   "old": "is_admin",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "No `uid` argument: the caller's own roles (also `bootstrap_session().admin.roles`); super admin = the array contains `super_admin`.",
-   "oldObject": {
-    "signature": [
-     "is_admin(uid: string) → boolean"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "get_my_admin_roles",
-     "source": "60_moderation/010_admin_roles.sql:156",
-     "signature": [
-      "get_my_admin_roles() → string[]"
-     ],
-     "errors": []
-    }
-   ],
-   "areas": [
-    "mobile",
-    "moderation"
-   ],
-   "callSites": [
-    {
-     "file": "app/apps/mobile/src/hooks/useIsSuperAdmin.ts",
-     "line": 16,
-     "symbol": "fetchIsSuperAdmin",
-     "area": "mobile"
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
-     "line": 50,
-     "symbol": "SupabaseModerationAdminRepository.isUserAdmin",
-     "area": "moderation"
     }
    ]
   },
@@ -11935,234 +11501,6 @@
    ]
   },
   {
-   "old": "reports_case_detail",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "medium",
-   "missing": null,
-   "note": "No case RPC: staff read the target's reports, its sanctions, the post (`posts_select_staff`) or member (`users_select_staff`) and the audit trail (`admin_audit_search`).",
-   "oldObject": {
-    "signature": [
-     "reports_case_detail(p_target_id: string, p_target_type: string) → Json"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "reports",
-     "columns": [
-      "created_at",
-      "id",
-      "note",
-      "reason",
-      "reporter_id",
-      "resolved_at",
-      "resolved_by",
-      "sanction_consumed_at",
-      "status",
-      "target_id",
-      "target_type"
-     ],
-     "clientGrants": {
-      "select": true,
-      "insert": [
-       "id",
-       "note",
-       "reason",
-       "reporter_id",
-       "target_id",
-       "target_type"
-      ]
-     }
-    },
-    {
-     "type": "table",
-     "name": "user_sanctions",
-     "columns": [
-      "id",
-      "issued_at",
-      "issued_by",
-      "kind",
-      "lifted_at",
-      "lifted_by",
-      "note",
-      "reason",
-      "until",
-      "user_id"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    },
-    {
-     "type": "table",
-     "name": "posts",
-     "columns": [
-      "beneficiary_org_id",
-      "city_id",
-      "created_at",
-      "description",
-      "details",
-      "direction",
-      "expires_at",
-      "geo_approx",
-      "id",
-      "item_subcategory_id",
-      "kind_id",
-      "location_display_level",
-      "owner_id",
-      "post_type",
-      "published_at",
-      "search_vector",
-      "source",
-      "source_language",
-      "status",
-      "status_before_removal",
-      "time_window",
-      "title",
-      "updated_at",
-      "urgency_level",
-      "visibility",
-      "world_slug"
-     ],
-     "clientGrants": {
-      "select": true,
-      "delete": true,
-      "insert": [
-       "beneficiary_org_id"
-      ],
-      "update": [
-       "city_id",
-       "description",
-       "details",
-       "item_subcategory_id",
-       "location_display_level",
-       "time_window",
-       "title",
-       "urgency_level",
-       "visibility"
-      ]
-     }
-    },
-    {
-     "type": "table",
-     "name": "users",
-     "columns": [
-      "avatar_url",
-      "biography",
-      "city_id",
-      "created_at",
-      "display_name",
-      "id",
-      "is_active",
-      "preferred_language",
-      "privacy_changed_at",
-      "privacy_mode",
-      "search_vector",
-      "share_handle",
-      "updated_at",
-      "verification_level"
-     ],
-     "clientGrants": {
-      "select": true,
-      "update": [
-       "avatar_url",
-       "biography",
-       "city_id",
-       "display_name",
-       "preferred_language"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "reports"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/reports/SupabaseReportsRepository.ts",
-     "line": 41,
-     "symbol": "SupabaseReportsRepository.getCaseDetail",
-     "area": "reports"
-    }
-   ]
-  },
-  {
-   "old": "reports_open_inbox",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "core",
-   "confidence": "medium",
-   "missing": null,
-   "note": "No inbox RPC: staff read `reports` (policy `reports_select_staff`) and `moderation_queue` (`moderation_queue_select_staff`) directly, keyset on created_at; grouping per target moves to the adapter.",
-   "oldObject": {
-    "signature": [
-     "reports_open_inbox(p_cursor?: Json, p_limit?: number, p_max_age_days?: number, p_reporter_filter?: string, p_target_type_filter?: string) → Json"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "reports",
-     "columns": [
-      "created_at",
-      "id",
-      "note",
-      "reason",
-      "reporter_id",
-      "resolved_at",
-      "resolved_by",
-      "sanction_consumed_at",
-      "status",
-      "target_id",
-      "target_type"
-     ],
-     "clientGrants": {
-      "select": true,
-      "insert": [
-       "id",
-       "note",
-       "reason",
-       "reporter_id",
-       "target_id",
-       "target_type"
-      ]
-     }
-    },
-    {
-     "type": "table",
-     "name": "moderation_queue",
-     "columns": [
-      "assignee_id",
-      "created_at",
-      "id",
-      "metadata",
-      "reason",
-      "resolved_at",
-      "resolved_by",
-      "status",
-      "target_id",
-      "target_type"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "reports"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/reports/SupabaseReportsRepository.ts",
-     "line": 26,
-     "symbol": "SupabaseReportsRepository.listOpenInbox",
-     "area": "reports"
-    }
-   ]
-  },
-  {
    "old": "request_housing_booking",
    "kind": "rpc",
    "status": "renamed",
@@ -14446,7 +13784,7 @@
       },
       {
        "code": "message_not_found",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -16075,9 +15413,29 @@
     }
    ],
    "areas": [
-    "fn:mock-login"
+    "admin",
+    "fn:mock-login",
+    "moderation"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
+     "line": 100,
+     "symbol": "SupabaseAdminRoleRepository.listAdmins",
+     "area": "admin",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/moderation/SupabaseModerationAdminRepository.ts",
+     "line": 71,
+     "symbol": "SupabaseModerationAdminRepository.isPlatformStaff",
+     "area": "moderation",
+     "ops": [
+      "select"
+     ]
+    },
     {
      "file": "supabase/functions/mock-login/ensureUser.ts",
      "line": 91,
@@ -18371,7 +17729,8 @@
     }
    ],
    "areas": [
-    "posts"
+    "posts",
+    "reports"
    ],
    "callSites": [
     {
@@ -18388,6 +17747,15 @@
      "line": 150,
      "symbol": "SupabasePostEngagementRepository.listCommentsWithAuthors",
      "area": "posts",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
+     "line": 71,
+     "symbol": "commentPreviews",
+     "area": "reports",
      "ops": [
       "select"
      ]
@@ -18704,8 +18072,10 @@
     }
    ],
    "areas": [
+    "admin",
     "mobile",
     "posts",
+    "reports",
     "search"
    ],
    "callSites": [
@@ -18714,6 +18084,15 @@
      "line": 11,
      "symbol": "resolveChallengePostId",
      "area": "mobile",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminContentRepository.ts",
+     "line": 147,
+     "symbol": "SupabaseAdminContentRepository.searchPosts",
+     "area": "admin",
      "ops": [
       "select"
      ]
@@ -18875,6 +18254,15 @@
      ]
     },
     {
+     "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
+     "line": 33,
+     "symbol": "postPreviews",
+     "area": "reports",
+     "ops": [
+      "select"
+     ]
+    },
+    {
      "file": "app/packages/infrastructure-supabase/src/search/searchExploreHelpers.ts",
      "line": 22,
      "symbol": "explorePosts",
@@ -18954,11 +18342,29 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/reports/SupabaseReportRepository.ts",
-     "line": 11,
+     "line": 39,
      "symbol": "SupabaseReportRepository.submit",
      "area": "reports",
      "ops": [
       "insert"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/reports/SupabaseReportsRepository.ts",
+     "line": 45,
+     "symbol": "SupabaseReportsRepository.listOpenInbox",
+     "area": "reports",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/reports/SupabaseReportsRepository.ts",
+     "line": 76,
+     "symbol": "SupabaseReportsRepository.getCaseDetail",
+     "area": "reports",
+     "ops": [
+      "select"
      ]
     }
    ]
@@ -20012,6 +19418,54 @@
    ]
   },
   {
+   "old": "user_account",
+   "kind": "table",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "Staff read the account row of every member (`user_account_select_staff`): status, sanction state.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "user_account",
+     "columns": [
+      "deletion_purge_at",
+      "deletion_requested_at",
+      "false_report_sanction_count",
+      "false_reports_count",
+      "food_posting_banned_until",
+      "onboarding_state",
+      "status",
+      "status_before_deletion",
+      "status_until",
+      "updated_at",
+      "user_id",
+      "verification_method",
+      "verified_at"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
+   "areas": [
+    "reports"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
+     "line": 54,
+     "symbol": "userPreviews",
+     "area": "reports",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
    "old": "user_devices",
    "kind": "table",
    "status": "same",
@@ -20363,20 +19817,39 @@
     }
    ],
    "areas": [
+    "admin",
     "chat",
     "fn:mock-login",
     "fn:validate-donation-link",
-    "mobile",
     "posts",
+    "reports",
     "search",
     "users"
    ],
    "callSites": [
     {
-     "file": "app/apps/mobile/src/components/admin/admins/UserLookupField.tsx",
-     "line": 29,
-     "symbol": "lookupUsers",
-     "area": "mobile",
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminContentRepository.ts",
+     "line": 98,
+     "symbol": "SupabaseAdminContentRepository.findActiveMembers",
+     "area": "admin",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminContentRepository.ts",
+     "line": 114,
+     "symbol": "SupabaseAdminContentRepository.searchUsers",
+     "area": "admin",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
+     "line": 120,
+     "symbol": "SupabaseAdminRoleRepository.loadPeople",
+     "area": "admin",
      "ops": [
       "select"
      ]
@@ -20413,6 +19886,24 @@
      "line": 170,
      "symbol": "getClosureCandidates",
      "area": "posts",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
+     "line": 50,
+     "symbol": "userPreviews",
+     "area": "reports",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/reports/reportTargetPreviews.ts",
+     "line": 106,
+     "symbol": "loadDisplayNames",
+     "area": "reports",
      "ops": [
       "select"
      ]

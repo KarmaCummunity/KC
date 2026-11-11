@@ -4,6 +4,7 @@
 // chosen reason and note, and dismisses. The ban confirm is a red `DangerButton` (D94).
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, screen } from '@testing-library/react';
+import { BackendUnavailableError } from '@kc/domain';
 import { lightColors } from '@kc/ui';
 
 vi.mock('react-native-reanimated', async () => (await import('../ui/__tests__/kitDialogTestKit')).reanimatedDouble);
@@ -26,6 +27,14 @@ const container = vi.hoisted(() => {
   };
 });
 vi.mock('../../lib/container', () => ({ container }));
+// The degrade helpers read the full i18n instance, which this test's partial react-i18next double lacks.
+vi.mock('../../lib/backendAvailability', async () => {
+  const { BackendUnavailableError } = await import('@kc/domain');
+  return {
+    isBackendUnavailable: (error: unknown) => error instanceof BackendUnavailableError,
+    notAvailableMessage: () => 'not available yet',
+  };
+});
 vi.mock('../../store/authStore', () => ({
   useAuthStore: (select: (state: { session: { userId: string } }) => unknown) => select({ session: { userId: 'u_me' } }),
 }));
@@ -115,6 +124,23 @@ describe('report sheets', () => {
     expect(container.reportUser.execute).toHaveBeenCalledWith(
       expect.objectContaining({ targetUserId: 'u_target', reason: 'Offensive', note: 'spam links' }),
     );
+  });
+});
+
+describe('report sheets — degrade rule', () => {
+  it('says "not available yet" when the reports table is missing, and keeps the generic error otherwise', async () => {
+    container.reportPost.execute.mockRejectedValueOnce(new BackendUnavailableError('table:reports', 'relation'));
+    renderInTheme(<ReportPostModal postId="p_1" visible onClose={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'post.reportSubmit' }));
+    await flush();
+    expect(screen.getByText('not available yet')).toBeTruthy();
+    cleanup();
+
+    container.reportPost.execute.mockRejectedValueOnce(new Error('boom'));
+    renderInTheme(<ReportPostModal postId="p_1" visible onClose={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'post.reportSubmit' }));
+    await flush();
+    expect(screen.getByText('post.reportErrorBody')).toBeTruthy();
   });
 });
 
