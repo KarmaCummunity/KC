@@ -38,6 +38,7 @@ import {
 } from '../../../src/hooks/useSurveyRunnerState';
 import { track } from '../../../src/lib/analytics';
 import { SurveyQuestionPanel } from '../../../src/screens/settings/survey/SurveyQuestionPanel';
+import { resolveKeyboardAvoidingBehavior } from '../../../src/lib/platform/keyboardVerticalOffset';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
 
@@ -84,7 +85,7 @@ function RunnerContent({
   return (
     <KeyboardAvoidingView
       style={[styles.flex, styles.stage]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
       keyboardVerticalOffset={keyboardOffset}
     >
       <KeyboardFormAccessory
