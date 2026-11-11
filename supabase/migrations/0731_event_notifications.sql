@@ -1,5 +1,5 @@
 -- 0731_event_notifications | Event registration notifications (G18 "Next: event notifications";
--- PM decision {{D:event-notifications}})
+-- PM decision D140)
 --
 -- Until now an event told its attendees only that the organizer cancelled it (0686). This adds:
 --

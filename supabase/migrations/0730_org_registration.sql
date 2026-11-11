@@ -1,4 +1,4 @@
--- 0730_org_registration | Organizations, first slice (FR-ORG-002, G18; PM decision {{D:org-approval-creates-org}})
+-- 0730_org_registration | Organizations, first slice (FR-ORG-002, G18; PM decision D139)
 --
 -- An organization's event is published by a member of the organization (D22, D31), and until now
 -- no one could become a member: nothing submitted an organization application, and approving one
