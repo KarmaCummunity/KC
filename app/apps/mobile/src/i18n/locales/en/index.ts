@@ -28,6 +28,7 @@ import { errorsEn } from './modules/errors';
 import { chatEn } from './modules/chat';
 import { chatNewEn } from './modules/chatNew';
 import { chatMessagingEn } from './modules/chatMessaging';
+import { marketplaceBaselineErrorsEn } from './modules/marketplaceBaselineErrors';
 import { notificationsEn } from './modules/notifications';
 import { emptyStatesEn, feedSettingsEn } from './modules/feedSettings';
 import { moderationEn, auditEn, accountBlockedEn } from './modules/moderation';
@@ -137,7 +138,8 @@ const en = {
   // Donations (D-16, FR-DONATE-001..005) — see donations.ts
   donations,
 
-  marketplace,
+  // Baseline server reasons join the marketplace error copy — see modules/marketplaceBaselineErrors.ts.
+  marketplace: { ...marketplace, errors: { ...marketplace.errors, ...marketplaceBaselineErrorsEn } },
   moneyPayments,
   // Direct support for KC (FR-DONATE-011) — see donations.supportKc.ts
   supportKc,

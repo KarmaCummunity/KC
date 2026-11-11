@@ -26,6 +26,7 @@ import { errorsHe } from './modules/errors';
 import { chatHe } from './modules/chat';
 import { chatNewHe } from './modules/chatNew';
 import { chatMessagingHe } from './modules/chatMessaging';
+import { marketplaceBaselineErrorsHe } from './modules/marketplaceBaselineErrors';
 import { notificationsHe } from './modules/notifications';
 import { emptyStatesHe, feedSettingsHe } from './modules/feedSettings';
 import { moderationHe, auditHe, accountBlockedHe } from './modules/moderation';
@@ -135,7 +136,8 @@ const he = {
   // Donations (D-16, FR-DONATE-001..005) — see donations.ts
   donations,
 
-  marketplace,
+  // Baseline server reasons join the marketplace error copy — see modules/marketplaceBaselineErrors.ts.
+  marketplace: { ...marketplace, errors: { ...marketplace.errors, ...marketplaceBaselineErrorsHe } },
   moneyPayments,
   // Direct support for KC (FR-DONATE-011) — see donations.supportKc.ts
   supportKc,
