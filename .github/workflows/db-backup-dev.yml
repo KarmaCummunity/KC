@@ -1,0 +1,49 @@
+name: DB backup (dev)
+
+# Weekly encrypted logical backup of kc-dev (Supabase Free has no backups).
+# kc-dev is rebuildable from the repo, so this is a safety net, not a
+# guarantee; it also exercises the exact action the prod backup runs, and the
+# push trigger below re-runs it whenever the backup code itself changes.
+# Details: docs/SSOT/OPERATOR_RUNBOOK.md "Scheduled database backups".
+
+on:
+  schedule:
+    - cron: '43 2 * * 0' # Sunday 02:43 UTC, off the :00 rush
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - .github/workflows/db-backup-dev.yml
+      - .github/actions/db-backup/**
+      - scripts/db-backup-manifest.mjs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup-dev
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: backup (dev)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: supabase-dev
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+      - uses: ./.github/actions/db-backup
+        with:
+          target: dev
+          expected-ref: enbqriuxvvuontiwslun
+          age-recipient: ${{ vars.BACKUP_AGE_RECIPIENT }}
+          retention-days: '14'
