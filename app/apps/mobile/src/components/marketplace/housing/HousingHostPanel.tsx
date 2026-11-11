@@ -20,6 +20,7 @@ import { HousingHostBookingRow, type HousingHostRowActions } from './HousingHost
 import { HousingHostPrivateDetailsEditor } from './HousingHostPrivateDetailsEditor';
 import { useHousingAction } from './useHousingAction';
 import { OwnerAssignUserButton } from '../../closure/OwnerAssignUserButton';
+import { listOrEmpty } from '../../../lib/backendAvailability';
 
 interface Props {
   readonly listingId: string;
@@ -39,7 +40,7 @@ export function HousingHostPanel({ listingId, cityId, listingStatus, hideOwnerAs
   const [reason, setReason] = useState('');
   const bookings = useQuery({
     queryKey: housingQueryKeys.offerBookings(listingId),
-    queryFn: () => housingUseCases.listForOffer().execute(listingId),
+    queryFn: () => listOrEmpty(() => housingUseCases.listForOffer().execute(listingId)),
   });
   const list = bookings.data ?? [];
 
