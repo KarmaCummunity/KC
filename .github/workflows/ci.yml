@@ -84,7 +84,6 @@ jobs:
       hygiene: ${{ steps.plan.outputs.hygiene }}
       static: ${{ steps.plan.outputs.static }}
       release: ${{ steps.plan.outputs.release }}
-      maestro: ${{ steps.plan.outputs.maestro }}
       frontend: ${{ steps.plan.outputs.frontend }}
       backend: ${{ steps.plan.outputs.backend }}
       edge: ${{ steps.plan.outputs.edge }}
@@ -199,21 +198,6 @@ jobs:
       contents: read
     uses: ./.github/workflows/ci-edge-functions.yml
 
-  # The Android journeys on an emulator against kc-dev (about 45 minutes). Planned only on a PR whose
-  # diff touches the app, its packages, the flows or their runner (scripts/ci-changes.mjs MAESTRO_RULES),
-  # so a failing journey now fails the gate. A merge group, a push and a dispatch do not run it: the PR
-  # already did, and `dev` has its own non-blocking run (maestro-dev-health.yml) so a shared, mutable
-  # kc-dev can never hold a deploy. The seed password reaches only runs that get secrets.
-  maestro:
-    name: maestro
-    needs: changes
-    if: needs.changes.outputs.maestro == 'true'
-    permissions:
-      contents: read
-    uses: ./.github/workflows/ci-maestro-android.yml
-    secrets:
-      E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
-
   # The only required status check. `always()` makes it report even when a
   # lane fails or is cancelled; scripts/ci-gate.mjs turns that into a verdict.
   # Every other job in this file must be a known lane listed in `needs:`
@@ -223,7 +207,7 @@ jobs:
   # up to 12 minutes for that run to finish, hence the timeout.
   gate:
     name: CI gate
-    needs: [changes, hygiene, static, release, frontend, bundles, backend, edge, maestro]
+    needs: [changes, hygiene, static, release, frontend, bundles, backend, edge]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 15

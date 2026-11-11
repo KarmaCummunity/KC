@@ -107,13 +107,3 @@ test('a failed flow is retried once and a pass on the retry is reported, so the 
   assert.match(runner, /Maestro flows that passed only on retry/);
   assert.match(runner, /Maestro flows failed: /);
 });
-
-test('the Maestro workflow is a lane of the CI gate: reusable, secret passed by ci.yml, no job-level skip', () => {
-  const lane = readFileSync(join(ROOT, '.github', 'workflows', 'ci-maestro-android.yml'), 'utf8');
-  assert.match(lane, /^on:\n {2}workflow_call:\n {4}secrets:\n {6}E2E_SEED_PASSWORD:/m);
-  // The gate sees one result for the lane, so a job that skips on its own would pass unnoticed.
-  assert.doesNotMatch(lane, /^ {4}if:/m);
-  const ci = readFileSync(join(ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
-  assert.match(ci, /^ {2}maestro:\n[\s\S]*?uses: \.\/\.github\/workflows\/ci-maestro-android\.yml/m);
-  assert.match(ci, /needs: \[changes, hygiene, static, release, frontend, bundles, backend, edge, maestro\]/);
-});

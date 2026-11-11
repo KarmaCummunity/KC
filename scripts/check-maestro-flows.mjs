@@ -5,8 +5,8 @@
 // `optional: true` indented under `- hideKeyboard` turned the step into the single
 // command "hideKeyboard optional", so the flow failed at parse time on every PR and
 // never ran (KC#1619). The same flow marked every step optional, so even a working
-// copy asserted nothing. The Maestro lane runs only on a PR that touches the app, so such a flow
-// can sit broken until the next mobile PR; this guard runs in the static lane of every PR instead.
+// copy asserted nothing. The Maestro job is not a required check, so such a flow can
+// sit broken unnoticed; this guard runs in the static lane of `CI gate` instead.
 //
 // Rules, per file under .maestro/flows and .maestro/subflows:
 //   1. the YAML parses, and its last document (the commands) is a list;

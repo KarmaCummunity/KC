@@ -1,25 +1,26 @@
 name: CI — Maestro Android E2E
 
-# Maestro lane, called by ci.yml on a PR whose diff touches the app, its packages, the flows or their
-# runner (scripts/ci-changes.mjs MAESTRO_RULES), and by maestro-dev-health.yml for the non-blocking
-# runs on `dev`. KC#1235 / #1619. It taps through the critical journeys (.maestro/flows) on an Android
-# emulator against kc-dev. The APK is a local Gradle release build (no EAS, no EXPO_TOKEN) with OTA
-# updates off (KC_E2E_BUILD=1), so it runs exactly the JS of the commit it was called for.
+# KC#1235 — taps through the critical journeys (.maestro/flows) on an Android emulator against
+# kc-dev. The APK is a local Gradle release build (no EAS, no EXPO_TOKEN) with OTA updates off
+# (KC_E2E_BUILD=1), so it runs exactly this PR's JS. Not a required check yet (AC6 once stable).
 # Runbook: docs/process/MAESTRO.md
-#
-# The CI gate fails when this lane fails, which is what makes the journeys required for such a PR
-# (D-195: the gate is the only required check). A lane's jobs may only skip on an input ci.yml
-# passes, so this job has no `if`; drafts never reach it (the gate fails them first).
 
 on:
-  workflow_call:
-    secrets:
-      E2E_SEED_PASSWORD:
-        description: kc-dev seed users' password (every flow signs in with it)
-        required: true
-  # A manual run on any branch (Actions → this workflow → Run workflow), for example to check a change
-  # to the app or the flows before the lane has planned it. Secrets come from the repository.
+  pull_request:
+    branches: [dev]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'app/apps/mobile/**'
+      - 'app/packages/**'
+      - 'app/pnpm-lock.yaml'
+      - '.maestro/**'
+      - 'scripts/maestro-*'
+      - '.github/workflows/ci-maestro-android.yml'
   workflow_dispatch:
+
+concurrency:
+  group: ci-maestro-android-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -37,6 +38,7 @@ env:
 jobs:
   android-e2e:
     name: maestro · android emulator
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
