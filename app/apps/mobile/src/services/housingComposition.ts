@@ -14,14 +14,13 @@ import {
   type IHousingRepository,
 } from '@kc/application';
 import { SupabaseHousingRepository } from '@kc/infrastructure-supabase';
-import { container } from '../lib/container';
-import { getMarketplaceSupabaseClient } from './marketplaceComposition';
+import { container, legacySupabase } from '../lib/container';
 
 let repo: IHousingRepository | null = null;
 
 /** One adapter per app session, created on first use (after auth storage is ready). */
 function repository(): IHousingRepository {
-  repo ??= new SupabaseHousingRepository(getMarketplaceSupabaseClient());
+  repo ??= new SupabaseHousingRepository(legacySupabase);
   return repo;
 }
 

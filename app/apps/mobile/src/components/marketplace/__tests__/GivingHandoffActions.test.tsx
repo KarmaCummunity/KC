@@ -34,7 +34,6 @@ vi.mock('../../../services/givingHandoffComposition', () => ({
     rate: () => ({ execute: rateHandoff }),
   },
 }));
-vi.mock('../../../services/ridesKnowledgeComposition', () => ({ ridesKnowledgeRpcs: {} }));
 vi.mock('../../../lib/analytics', () => ({ track: vi.fn() }));
 vi.mock('../../../lib/analyticsCoreLoop', () => ({ trackCoreLoop: vi.fn() }));
 vi.mock('../../../lib/haptics', () => ({ hapticLightImpact: () => undefined, hapticSuccess: vi.fn() }));

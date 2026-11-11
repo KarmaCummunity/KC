@@ -18,8 +18,6 @@ import { ChatDaySeparator } from '../../src/components/chat/ChatDaySeparator';
 import { buildChatThreadRowsNewestFirst, type ChatThreadListRow } from '../../src/lib/chatThreadListRows';
 import { computeHandledIds } from '../../src/components/chat/system/handledIds';
 import { AnchoredPostCard } from '../../src/components/chat/AnchoredPostCard';
-import { AnchoredRideCard } from '../../src/components/chat/AnchoredRideCard';
-import { AnchoredListingCard } from '../../src/components/chat/AnchoredListingCard';
 import { ChatScreenOverlays } from '../../src/components/chat/ChatScreenOverlays';
 import { useChatInit } from '../../src/components/useChatInit';
 import { useChatSend } from '../../src/hooks/useChatSend';
@@ -210,11 +208,7 @@ export default function ChatScreen() {
         style={{ flex: 1 }}
         keyboardVerticalOffset={keyboardOffset}
       >
-        {chat?.anchorRideId ? (
-          <AnchoredRideCard anchorRideId={chat.anchorRideId} />
-        ) : chat?.anchorListingId ? (
-          <AnchoredListingCard anchorListingId={chat.anchorListingId} />
-        ) : chat ? (
+        {chat ? (
           <AnchoredPostCard
             chatId={chatId}
             anchorPostId={chat.anchorPostId}
