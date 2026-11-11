@@ -17,6 +17,7 @@ import { OverflowMenuTrigger } from './OverflowMenuTrigger';
 import { ReportUserModal } from './ReportUserModal';
 import { BanUserModal } from './BanUserModal';
 import { useUserBlock } from '../../hooks/useUserBlock';
+import { runAfterBottomSheetDismiss } from '../../lib/runAfterBottomSheetDismiss';
 
 interface Props {
   targetUserId: string;
@@ -53,7 +54,8 @@ export function ProfileOverflowMenu({ targetUserId }: Props) {
             testID="profile-block-toggle"
             onPress={() => {
               close();
-              void block.toggle();
+              // #2062: iOS drops the confirmation Alert while the sheet is still closing.
+              runAfterBottomSheetDismiss(() => void block.toggle());
             }}
           />
         ) : null}
