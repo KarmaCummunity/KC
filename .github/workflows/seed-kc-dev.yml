@@ -9,6 +9,9 @@ name: Seed KC dev
 #               the platform organization
 #   e2e-users   user1 … user4 @seed.kc.test for tests/e2e  supabase/seed/e2e/load.sql
 #   all         the three above, in that order
+#   vault       the two Vault secrets the database needs to start Edge Functions from its jobs
+#               (kc_project_url, kc_service_role_key): created or updated, never printed. Not
+#               part of `all`: it is an operator step after the schema is applied.
 #
 # Every seed is idempotent, so running one again changes nothing that is already loaded. The
 # old Hebrew demo dataset (posts, chats, follows) was retired with the migration chain; it is
@@ -19,7 +22,7 @@ on:
       action:
         description: 'which seed to load'
         type: choice
-        options: [all, reference, content, e2e-users]
+        options: [all, reference, content, e2e-users, vault]
         default: all
 
 permissions:
@@ -57,6 +60,7 @@ jobs:
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --yes >/dev/null
 
       - name: Load the seeds
+        if: inputs.action != 'vault'
         env:
           E2E_SEED_PASSWORD: ${{ secrets.E2E_SEED_PASSWORD }}
         run: |
@@ -80,3 +84,27 @@ jobs:
               cat supabase/seed/e2e/load.sql
             } | psql "$url" -v ON_ERROR_STOP=1 -v pw="$E2E_SEED_PASSWORD" -qAt -f -
           fi
+
+      # The service-role key is read from the Management API with the environment's access
+      # token, masked at once, handed to psql through the environment (never an argument),
+      # and stored with vault.create_secret / vault.update_secret. Only names are printed.
+      - name: Set the Vault secrets
+        if: inputs.action == 'vault'
+        run: |
+          set -euo pipefail
+          url="$(cat supabase/.temp/pooler-url)"
+          case "$url" in *"$KC_DEV_REF"*) ;; *) echo "::error::pooler address is not kc-dev's; refusing."; exit 1 ;; esac
+          key="$(supabase projects api-keys --project-ref "$KC_DEV_REF" -o json | jq -r '[.[] | select(.name == "service_role" or .id == "service_role")][0].api_key // empty')"
+          [ -n "$key" ] || { echo "::error::no service_role key returned for kc-dev"; exit 1; }
+          echo "::add-mask::$key"
+          export KC_VAULT_URL="https://${KC_DEV_REF}.supabase.co" KC_VAULT_KEY="$key"
+          psql "$url" -v ON_ERROR_STOP=1 -qAt <<'SQL'
+          \getenv vault_url KC_VAULT_URL
+          \getenv vault_key KC_VAULT_KEY
+          select vault.create_secret(:'vault_url', 'kc_project_url') where not exists (select 1 from vault.secrets where name = 'kc_project_url');
+          select vault.update_secret(id, :'vault_url') from vault.secrets where name = 'kc_project_url';
+          select vault.create_secret(:'vault_key', 'kc_service_role_key') where not exists (select 1 from vault.secrets where name = 'kc_service_role_key');
+          select vault.update_secret(id, :'vault_key') from vault.secrets where name = 'kc_service_role_key';
+          SQL
+          echo "vault secrets present:"
+          psql "$url" -v ON_ERROR_STOP=1 -qAt -c "select name from vault.secrets where name in ('kc_project_url','kc_service_role_key') order by name"
