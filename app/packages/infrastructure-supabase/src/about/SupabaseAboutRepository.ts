@@ -1,38 +1,14 @@
 // SupabaseAboutRepository — adapter for IAboutRepository (About team roster).
+//
+// M08: the `about_team_profiles` view is not carried over and staff grants are not readable by
+// members, so the roster cannot be read. The adapter reports it as missing and the About screen
+// shows no team section; the team ships as static content of the app or not at all. No call is made.
 
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IAboutRepository } from '@kc/application';
-import type { AboutTeamMember } from '@kc/domain';
-import type { Database } from '../database.types';
-
-type AboutTeamRow = {
-  role_key: string;
-  sort_order: number;
-  display_name: string;
-  avatar_url: string | null;
-  share_handle: string;
-};
-
-function mapRow(row: AboutTeamRow): AboutTeamMember {
-  return {
-    roleKey: row.role_key,
-    sortOrder: row.sort_order,
-    displayName: row.display_name,
-    avatarUrl: row.avatar_url,
-    shareHandle: row.share_handle,
-  };
-}
+import { BackendUnavailableError, type AboutTeamMember } from '@kc/domain';
 
 export class SupabaseAboutRepository implements IAboutRepository {
-  constructor(private readonly client: SupabaseClient<Database>) {}
-
-  async listTeamMembers(): Promise<AboutTeamMember[]> {
-    const { data, error } = await this.client
-      .from('about_team_profiles')
-      .select('role_key, sort_order, display_name, avatar_url, share_handle')
-      .limit(100);
-
-    if (error) throw new Error(`listTeamMembers: ${error.message}`);
-    return (data ?? []).map((row) => mapRow(row as AboutTeamRow));
+  listTeamMembers(): Promise<AboutTeamMember[]> {
+    return Promise.reject(new BackendUnavailableError('table:about_team_profiles', 'relation'));
   }
 }

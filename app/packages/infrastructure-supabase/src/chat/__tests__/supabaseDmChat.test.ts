@@ -1,230 +1,107 @@
 import { describe, it, expect } from 'vitest';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { ChatError } from '@kc/application';
-import { findOrCreateDmChat, hideDmChatFromInbox } from '../supabaseDmChat';
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-interface FakeOpts {
-  userExists?: boolean;
-  chatsList?: any[];
-  chatsListError?: { message: string } | null;
-  chatsInsertData?: any;
-  chatsInsertError?: { code?: string; message?: string; details?: string } | null;
-  setAnchorData?: any;
-  setAnchorError?: { message: string } | null;
-  hideError?: { message: string } | null;
-}
-interface Calls {
-  rpcs: { fn: string; args: unknown }[];
-  inserts: { table: string; row: unknown }[];
-}
-
-function makeFakeClient(opts: FakeOpts = {}): { client: SupabaseClient<any>; calls: Calls } {
-  const calls: Calls = { rpcs: [], inserts: [] };
-  // Proxy chain: every method either returns the same proxy (chainable)
-  // or a terminator Promise routed by table.
-  function makeChain(table: string): any {
-    return new Proxy({}, {
-      get(_t, prop: string) {
-        if (prop === 'then') return undefined;
-        return () => {
-          if (prop === 'maybeSingle') {
-            return table === 'users'
-              ? Promise.resolve({ data: opts.userExists ? { user_id: 'u_other' } : null, error: null })
-              : Promise.resolve({ data: null, error: null });
-          }
-          if (prop === 'order') {
-            // Return a chainable object so .limit() can be called after .order()
-            return {
-              limit: () => Promise.resolve({ data: opts.chatsList ?? [], error: opts.chatsListError ?? null }),
-            };
-          }
-          return makeChain(table);
-        };
-      },
-    });
-  }
-  const client = {
-    from: (table: string) => ({
-      select: () => makeChain(table),
-      insert: (row: unknown) => ({
-        select: () => ({
-          single: async () => {
-            calls.inserts.push({ table, row });
-            return { data: opts.chatsInsertData ?? null, error: opts.chatsInsertError ?? null };
-          },
-        }),
-      }),
-    }),
-    rpc: async (fn: string, args: unknown) => {
-      calls.rpcs.push({ fn, args });
-      if (fn === 'rpc_chat_set_anchor' || fn === 'rpc_chat_set_anchor_ride') {
-        return { data: opts.setAnchorData ?? null, error: opts.setAnchorError ?? null };
-      }
-      if (fn === 'rpc_chat_hide_for_viewer') return { data: null, error: opts.hideError ?? null };
-      return { data: null, error: null };
-    },
-  } as unknown as SupabaseClient<any>;
-  return { client, calls };
-}
+import { BackendUnavailableError } from '@kc/domain';
+import { createFakeClient, type FakeError } from '../../__tests__/fakeBaselineClient';
+import { hideChat, openDirectChat, openSupportThread } from '../supabaseDmChat';
 
 const CHAT_ROW = {
-  chat_id: 'c_1',
-  participant_a: 'u_a',
-  participant_b: 'u_b',
+  id: 'c_1',
+  kind: 'direct',
+  direct_user_a: 'u_a',
+  direct_user_b: 'u_b',
+  support_user_id: null,
   anchor_post_id: null,
-  anchor_ride_id: null,
-  is_support_thread: false,
-  last_message_at: '2026-05-16T12:00:00.000Z',
+  last_message_at: null,
   created_at: '2026-05-16T11:00:00.000Z',
-  inbox_hidden_at_a: null,
-  inbox_hidden_at_b: null,
+  moderation_hidden_at: null,
 };
 
-describe('hideDmChatFromInbox', () => {
-  it('invokes rpc_chat_hide_for_viewer with the chatId', async () => {
-    const { client, calls } = makeFakeClient({});
-    await hideDmChatFromInbox(client, 'c_1');
-    expect(calls.rpcs).toEqual([{ fn: 'rpc_chat_hide_for_viewer', args: { p_chat_id: 'c_1' } }]);
+const rpcClient = (fn: string, data: unknown, error: FakeError = null) =>
+  createFakeClient({ rpc: { [fn]: { data, error } } });
+
+describe('openDirectChat', () => {
+  it('calls open_direct_chat with the other member and no anchor', async () => {
+    const { client, calls } = rpcClient('open_direct_chat', CHAT_ROW);
+
+    const chat = await openDirectChat(client, 'u_b');
+
+    expect(calls[0]).toMatchObject({ kind: 'rpc', fn: 'open_direct_chat', args: { p_user_id: 'u_b', p_anchor_post_id: undefined } });
+    expect(chat).toMatchObject({ chatId: 'c_1', participantIds: ['u_a', 'u_b'], anchorPostId: null });
   });
 
-  it('maps RPC errors through mapChatError', async () => {
-    const { client } = makeFakeClient({
-      hideError: { message: 'transport error' },
-    });
-    await expect(hideDmChatFromInbox(client, 'c_1')).rejects.toMatchObject({ name: 'ChatError' });
+  it('pins the chat to a post anchor', async () => {
+    const { client, calls } = rpcClient('open_direct_chat', { ...CHAT_ROW, anchor_post_id: 'p_1' });
+
+    const chat = await openDirectChat(client, 'u_b', { postId: 'p_1' });
+
+    expect(calls[0]?.args).toEqual({ p_user_id: 'u_b', p_anchor_post_id: 'p_1' });
+    expect(chat.anchorPostId).toBe('p_1');
+  });
+
+  it('accepts the chat row as a one-element array', async () => {
+    const chat = await openDirectChat(rpcClient('open_direct_chat', [CHAT_ROW]).client, 'u_b');
+
+    expect(chat.chatId).toBe('c_1');
+  });
+
+  it.each([
+    ['user_unavailable', 'send_to_deleted_user'],
+    ['blocked_relationship', 'blocked_relationship'],
+    ['cannot_chat_self', 'cannot_chat_self'],
+    ['post_unavailable', 'post_unavailable'],
+    ['account_not_active', 'account_not_active'],
+  ])('maps the refusal %s to ChatError %s', async (reason, code) => {
+    const { client } = rpcClient('open_direct_chat', null, { code: 'P0001', message: reason });
+
+    await expect(openDirectChat(client, 'u_b')).rejects.toMatchObject({ code });
+  });
+
+  it('reports a missing function as BackendUnavailableError', async () => {
+    const { client } = rpcClient('open_direct_chat', null, { code: 'PGRST202', message: 'not in the schema cache' });
+
+    await expect(openDirectChat(client, 'u_b')).rejects.toBeInstanceOf(BackendUnavailableError);
+  });
+
+  it('fails when the server returns no chat', async () => {
+    await expect(openDirectChat(rpcClient('open_direct_chat', null).client, 'u_b')).rejects.toMatchObject({ code: 'unknown' });
   });
 });
 
-describe('findOrCreateDmChat', () => {
-  it('throws ChatError("send_to_deleted_user") when the counterpart user does not exist', async () => {
-    const { client } = makeFakeClient({ userExists: false });
+describe('openSupportThread', () => {
+  it('calls open_support_thread without arguments and maps the thread', async () => {
+    const row = { ...CHAT_ROW, kind: 'support', direct_user_a: null, direct_user_b: null, support_user_id: 'u_me' };
+    const { client, calls } = rpcClient('open_support_thread', row);
 
-    let caught: unknown;
-    try {
-      await findOrCreateDmChat(client, 'u_me', 'u_other');
-    } catch (err) {
-      caught = err;
-    }
+    const chat = await openSupportThread(client);
 
-    expect(caught).toBeInstanceOf(ChatError);
-    expect((caught as ChatError).code).toBe('send_to_deleted_user');
+    expect(calls[0]).toMatchObject({ kind: 'rpc', fn: 'open_support_thread' });
+    expect(chat).toMatchObject({ isSupportThread: true, participantIds: ['u_me', null] });
   });
 
-  it('returns an existing visible chat when one is found in default mode', async () => {
-    // The viewer is participant_a (userId < otherUserId), so visible means
-    // inbox_hidden_at_a == null.
-    const { client, calls } = makeFakeClient({
-      userExists: true,
-      chatsList: [{ ...CHAT_ROW, chat_id: 'c_existing' }],
-    });
+  it('maps a signed-out caller to chat_forbidden', async () => {
+    const { client } = rpcClient('open_support_thread', null, { code: '42501', message: 'unauthenticated' });
 
-    const chat = await findOrCreateDmChat(client, 'u_aaaa', 'u_zzzz');
+    await expect(openSupportThread(client)).rejects.toMatchObject({ code: 'chat_forbidden' });
+  });
+});
 
-    expect(chat.chatId).toBe('c_existing');
-    expect(calls.inserts).toHaveLength(0); // no new row created
+describe('hideChat', () => {
+  it('calls hide_chat with the chat id', async () => {
+    const { client, calls } = rpcClient('hide_chat', null);
+
+    await hideChat(client, 'c_1');
+
+    expect(calls[0]).toMatchObject({ kind: 'rpc', fn: 'hide_chat', args: { p_chat_id: 'c_1' } });
   });
 
-  it('skips a chat row whose viewer-side inbox_hidden_at is set, falling through to insert', async () => {
-    // Single existing row, but hidden for viewer (participant_a) → must
-    // create a new chat instead of reusing the hidden one.
-    const { client, calls } = makeFakeClient({
-      userExists: true,
-      chatsList: [{ ...CHAT_ROW, inbox_hidden_at_a: '2026-05-15T00:00:00.000Z' }],
-      chatsInsertData: { ...CHAT_ROW, chat_id: 'c_fresh' },
-    });
+  it('maps support_thread_not_hideable', async () => {
+    const { client } = rpcClient('hide_chat', null, { code: 'P0001', message: 'support_thread_not_hideable' });
 
-    const chat = await findOrCreateDmChat(client, 'u_aaaa', 'u_zzzz');
-
-    expect(chat.chatId).toBe('c_fresh');
-    expect(calls.inserts).toHaveLength(1);
+    await expect(hideChat(client, 'c_1')).rejects.toMatchObject({ code: 'support_thread_not_hideable' });
   });
 
-  it('inserts directly when preferNewThread is true (no existing-chat lookup)', async () => {
-    const { client, calls } = makeFakeClient({
-      userExists: true,
-      chatsInsertData: { ...CHAT_ROW, chat_id: 'c_new' },
-    });
+  it('reports a missing function as BackendUnavailableError', async () => {
+    const { client } = rpcClient('hide_chat', null, { code: '42883', message: 'function does not exist' });
 
-    const chat = await findOrCreateDmChat(
-      client,
-      'u_aaaa',
-      'u_zzzz',
-      { postId: 'p_anchor' },
-      { preferNewThread: true },
-    );
-
-    expect(chat.chatId).toBe('c_new');
-    expect(calls.inserts).toEqual([
-      {
-        table: 'chats',
-        row: {
-          participant_a: 'u_aaaa',
-          participant_b: 'u_zzzz',
-          anchor_post_id: 'p_anchor',
-          anchor_ride_id: null,
-        },
-      },
-    ]);
-  });
-
-  it('derives ordered participant pair (lexicographically smaller userId → participant_a)', async () => {
-    // When userId > otherUserId, the insert payload must swap to keep the
-    // canonical ordering required by chats_unique_support_pair.
-    const { client, calls } = makeFakeClient({
-      userExists: true,
-      chatsInsertData: { ...CHAT_ROW, chat_id: 'c_new' },
-    });
-
-    await findOrCreateDmChat(client, 'u_zzzz', 'u_aaaa', undefined, {
-      preferNewThread: true,
-    });
-
-    expect((calls.inserts[0]?.row as { participant_a: string }).participant_a).toBe('u_aaaa');
-    expect((calls.inserts[0]?.row as { participant_b: string }).participant_b).toBe('u_zzzz');
-  });
-
-  it('re-anchors an existing chat via rpc_chat_set_anchor when anchorPostId differs', async () => {
-    const { client, calls } = makeFakeClient({
-      userExists: true,
-      chatsList: [{ ...CHAT_ROW, chat_id: 'c_existing', anchor_post_id: 'p_old' }],
-      setAnchorData: [{ ...CHAT_ROW, chat_id: 'c_existing', anchor_post_id: 'p_new' }],
-    });
-
-    const chat = await findOrCreateDmChat(client, 'u_aaaa', 'u_zzzz', { postId: 'p_new' });
-
-    expect(chat.anchorPostId).toBe('p_new');
-    expect(calls.rpcs).toEqual([
-      { fn: 'rpc_chat_set_anchor', args: { p_chat_id: 'c_existing', p_anchor_post_id: 'p_new' } },
-    ]);
-  });
-
-  it('does NOT call set_anchor when the existing chat already has the requested anchor', async () => {
-    const { client, calls } = makeFakeClient({
-      userExists: true,
-      chatsList: [{ ...CHAT_ROW, anchor_post_id: 'p_same' }],
-    });
-
-    await findOrCreateDmChat(client, 'u_aaaa', 'u_zzzz', { postId: 'p_same' });
-
-    expect(calls.rpcs).toHaveLength(0);
-  });
-
-  // KC#1297 — a chat shows one context: a listing anchor gives way to the post or ride entry.
-  it.each([
-    [{ postId: 'p_same' }, 'rpc_chat_set_anchor', { anchor_post_id: 'p_same' }],
-    [{ rideId: 'r_same' }, 'rpc_chat_set_anchor_ride', { anchor_ride_id: 'r_same' }],
-  ] as const)('re-anchors a listing-anchored chat entered from %o', async (anchor, rpc, current) => {
-    const { client, calls } = makeFakeClient({
-      userExists: true,
-      chatsList: [{ ...CHAT_ROW, ...current, anchor_listing_id: 'l_1' }],
-      setAnchorData: [{ ...CHAT_ROW, ...current, anchor_listing_id: null }],
-    });
-
-    const chat = await findOrCreateDmChat(client, 'u_aaaa', 'u_zzzz', anchor);
-
-    expect(calls.rpcs.map((c) => c.fn)).toEqual([rpc]);
-    expect(chat.anchorListingId).toBeNull();
+    await expect(hideChat(client, 'c_1')).rejects.toBeInstanceOf(BackendUnavailableError);
   });
 });

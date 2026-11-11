@@ -1,6 +1,7 @@
 // FR-STATS-008 — the signed-in member's own givings per world on the statistics screen:
-// given, received (handed over) and own listings closed, from my_world_givings (0547).
-// Owner only by construction: the RPC reads the session user (FR-STATS-006 AC1).
+// given, received (handed over) and own listings closed.
+// Owner only by construction: the call reads the session user (FR-STATS-006 AC1). The baseline has
+// no source for it yet (M15), so the block is not rendered while the backend lacks it.
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
@@ -8,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import type { MyWorldGivings } from '@kc/application';
 import { getListMyWorldGivingsUseCase } from '../../services/statsComposition';
+import { valueOrNull } from '../../lib/backendAvailability';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
 import { rowDirectionStart } from '../../lib/rtlLayout';
 
@@ -16,13 +18,14 @@ export function MyWorldGivingsPanel({ userId }: { userId: string | undefined }) 
   const styles = useStyles();
   const query = useQuery({
     queryKey: ['my-world-givings', userId],
-    queryFn: () => getListMyWorldGivingsUseCase().execute(),
+    queryFn: () => valueOrNull(() => getListMyWorldGivingsUseCase().execute()),
     enabled: Boolean(userId),
     staleTime: 5 * 60_000,
   });
   const isHebrew = i18n.language.startsWith('he');
   const worldName = (row: MyWorldGivings) => (isHebrew ? row.worldLabelHe : row.worldLabelEn);
   const rows = query.data ?? [];
+  if (query.data === null) return null;
 
   return (
     <View style={styles.panel} testID="my-world-givings">

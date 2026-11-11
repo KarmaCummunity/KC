@@ -75,21 +75,20 @@ describe('GetProfileClosedPostsUseCase', () => {
     ]);
   });
 
-  it('returns nextCursor = last closedAt when page fills the limit', async () => {
+  it('returns the nextCursor the repository gave with the page', async () => {
     const repo = new FakePostRepository();
     repo.profileClosedPostsResult = [
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { post: { postId: 'p1' } as any, identityRole: 'publisher', closedAt: '2026-05-10T10:00:00.000Z' },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { post: { postId: 'p2' } as any, identityRole: 'respondent', closedAt: '2026-05-09T10:00:00.000Z' },
     ];
+    repo.profileClosedPostsNextCursor = '{"t":"2026-05-10T10:00:00.000Z","id":"p1"}';
     const uc = new GetProfileClosedPostsUseCase(repo);
 
-    const { nextCursor } = await uc.execute({ profileUserId: 'u', viewerUserId: 'v', limit: 2 });
-    expect(nextCursor).toBe('2026-05-09T10:00:00.000Z');
+    const { nextCursor } = await uc.execute({ profileUserId: 'u', viewerUserId: 'v', limit: 1 });
+    expect(nextCursor).toBe('{"t":"2026-05-10T10:00:00.000Z","id":"p1"}');
   });
 
-  it('returns nextCursor = null when page is short (end of stream)', async () => {
+  it('returns nextCursor = null on the last page', async () => {
     const repo = new FakePostRepository();
     repo.profileClosedPostsResult = [
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

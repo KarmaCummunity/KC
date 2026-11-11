@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { BackendUnavailableError } from '@kc/domain';
 import { SupabaseStreetRepository } from '../SupabaseStreetRepository';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -14,7 +15,7 @@ interface FromCall {
 
 function makeFakeClient(opts: {
   data?: unknown[];
-  error?: { message: string } | null;
+  error?: { code?: string; message: string } | null;
 }): { client: SupabaseClient<any>; calls: FromCall[] } {
   const calls: FromCall[] = [];
   const all = opts.data;
@@ -114,16 +115,14 @@ describe('SupabaseStreetRepository', () => {
       expect(out.map((s) => s.streetId)).toEqual([2, 1]);
     });
 
-    it('throws with a prefixed "listByCity streets: " message when the response carries an error', async () => {
+    it('throws the database message when the response carries an error', async () => {
       const { client } = makeFakeClient({
         data: [],
         error: { message: 'connection reset by peer' },
       });
       const repo = new SupabaseStreetRepository(client);
 
-      await expect(repo.listByCity('5000')).rejects.toThrow(
-        'listByCity streets: connection reset by peer',
-      );
+      await expect(repo.listByCity('5000')).rejects.toThrow('connection reset by peer');
     });
 
     it('throws even when the error object carries an empty message', async () => {
@@ -133,7 +132,18 @@ describe('SupabaseStreetRepository', () => {
       });
       const repo = new SupabaseStreetRepository(client);
 
-      await expect(repo.listByCity('5000')).rejects.toThrow('listByCity streets: ');
+      await expect(repo.listByCity('5000')).rejects.toThrow();
+    });
+
+    it('reports a missing streets table as BackendUnavailableError', async () => {
+      const { client } = makeFakeClient({
+        data: [],
+        error: { code: 'PGRST205', message: 'Could not find the table public.streets' },
+      });
+
+      await expect(new SupabaseStreetRepository(client).listByCity('IL-001')).rejects.toBeInstanceOf(
+        BackendUnavailableError,
+      );
     });
 
     it('passes the cityId through verbatim (no implicit casting / trimming)', async () => {

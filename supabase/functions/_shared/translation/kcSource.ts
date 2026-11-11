@@ -1,6 +1,9 @@
 // supabase/functions/_shared/translation/kcSource.ts — FR-TRANSLATE-002 / 006 (KC).
 //
 // KC UGC source registry + field resolver for the `translate` Edge Function.
+// One entry per `content_type` of public.content_translations
+// (supabase/schemas/78_translation/010_content_translations.sql); the fields are the ones its
+// check constraint allows. Rides are posts, so there is no separate ride entry.
 // Anti-poisoning: text is always re-read from these rows server-side, never
 // from the request body. Proper names (display_name, share_handle) are absent.
 
@@ -14,22 +17,22 @@ export interface SourceEntry {
 export const SOURCE: Record<string, SourceEntry> = {
   post: {
     table: 'posts',
-    pk: 'post_id',
+    pk: 'id',
     fields: { title: 'title', description: 'description' },
+  },
+  comment: {
+    table: 'post_comments',
+    pk: 'id',
+    fields: { body: 'body' },
   },
   message: {
     table: 'messages',
-    pk: 'message_id',
+    pk: 'id',
     fields: { body: 'body' },
-  },
-  ride_listing: {
-    table: 'ride_listings',
-    pk: 'ride_id',
-    fields: { title: 'title', description: 'description' },
   },
   user: {
     table: 'users',
-    pk: 'user_id',
+    pk: 'id',
     fields: { biography: 'biography' },
   },
 };

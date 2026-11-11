@@ -84,7 +84,7 @@ describe('republishTargetFor', () => {
 describe('listingRepublishSeed', () => {
   it('carries the details without dates, and the photos in order', () => {
     const seed = listingRepublishSeed({
-      kindSlug: 'give_food',
+      kindSlug: 'food_offer',
       details: { food_type: 'cooked', expires_at: '2026-11-09T10:00:00Z' },
       media: [
         { storagePath: 'u1/b/1.jpg', sortOrder: 1 },
@@ -92,7 +92,7 @@ describe('listingRepublishSeed', () => {
       ],
     });
     expect(seed).toEqual({
-      kindSlug: 'give_food',
+      kindSlug: 'food_offer',
       details: { food_type: 'cooked' },
       isOrgEvent: false,
       orgId: null,
@@ -102,7 +102,7 @@ describe('listingRepublishSeed', () => {
 
   it('takes an event\'s organization out of its details', () => {
     const seed = listingRepublishSeed({
-      kindSlug: 'org_event',
+      kindSlug: 'event',
       details: { org_id: 'o1', starts_at: 'x', ends_at: 'y', registration_policy: 'automatic' },
       media: [],
     });

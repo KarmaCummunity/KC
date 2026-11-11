@@ -55,7 +55,7 @@ export function PostEngagementProvider({ postId, viewerId, children }: ProviderP
     });
     const viewerPromise = viewerId
       ? Promise.all([
-          container.postEngagement.listCommentsWithAuthors(postId, 120, viewerId),
+          container.postEngagement.listCommentsWithAuthors(postId, 120),
           container.postEngagement.getViewerReaction(postId, viewerId),
         ])
           .then(([rows, mine]) => {

@@ -295,9 +295,6 @@
     "src/hooks/useMyListingActions.ts": {
       "rawPlatformCheck": 2
     },
-    "src/hooks/useSettingsAccountActions.ts": {
-      "rawPlatformCheck": 2
-    },
     "src/hooks/useShellContentWidth.ts": {
       "rawPlatformCheck": 2
     },
@@ -328,6 +325,12 @@
     "src/lib/hebrewContentDirection.ts": {
       "rawPlatformCheck": 1
     },
+    "src/lib/notifications/badge.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/lib/notifications/channels.ts": {
+      "rawPlatformCheck": 2
+    },
     "src/lib/notifications/register.ts": {
       "rawPlatformCheck": 3
     },
@@ -347,9 +350,6 @@
       "rawPlatformCheck": 1
     },
     "src/lib/polyfills.ts": {
-      "rawPlatformCheck": 1
-    },
-    "src/lib/pushSetup.ts": {
       "rawPlatformCheck": 1
     },
     "src/lib/queryLifecycleSync.ts": {

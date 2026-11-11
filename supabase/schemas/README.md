@@ -7,8 +7,8 @@ directory is where the schema is written and reviewed. Design: [`docs/db/target-
 
 ```
 supabase/schemas/<NN>_<module>/<NNN>_<topic>.sql   authored source (this directory)
-supabase/baseline/0001_baseline.sql               generated — never edit by hand
-supabase/baseline/tests/*.sql                     pgTAP tests, run against a database built from the baseline
+supabase/migrations/0001_baseline.sql             generated — never edit by hand; frozen since the cut-over
+supabase/tests/*.sql                              pgTAP tests, run against a database built from the migrations
 supabase/baseline/local/supabase_shim.sql         stand-in for the Supabase platform objects on plain Postgres
 ```
 
@@ -28,7 +28,7 @@ module or an earlier file of its own.
 ## Commands
 
 ```bash
-node scripts/assemble-baseline.mjs           # regenerate supabase/baseline/0001_baseline.sql
+node scripts/assemble-baseline.mjs           # check supabase/migrations/0001_baseline.sql (never regenerate it after the cut-over)
 node scripts/assemble-baseline.mjs --check   # fail when the generated file is stale (also run by the script self-tests)
 scripts/run-baseline-tests.sh                # build a scratch database from the baseline and run the pgTAP tests
 ```

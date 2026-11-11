@@ -2,7 +2,7 @@
 // Assembles the production baseline migration from its per-module source files.
 //
 // Source:  supabase/schemas/<NN>_<module>/<NNN>_<topic>.sql   (authored, reviewed)
-// Output:  supabase/baseline/0001_baseline.sql                 (generated, committed)
+// Output:  supabase/migrations/0001_baseline.sql               (generated, committed, frozen)
 //
 // The output is a plain concatenation in path order, so the baseline is byte-for-byte
 // reproducible from the source and a reviewer only ever reads the small source files.
@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const SOURCE_DIR = join(ROOT, 'supabase', 'schemas');
-export const OUTPUT_FILE = join(ROOT, 'supabase', 'baseline', '0001_baseline.sql');
+export const OUTPUT_FILE = join(ROOT, 'supabase', 'migrations', '0001_baseline.sql');
 
 /** Same cap as every other file in the repo (`pnpm lint:arch`). */
 export const MAX_SOURCE_LINES = 300;
@@ -104,8 +104,8 @@ function main(argv) {
   }
   const committed = existsSync(OUTPUT_FILE) ? readFileSync(OUTPUT_FILE, 'utf8') : '';
   if (committed !== sql) {
-    console.error('assemble-baseline: supabase/baseline/0001_baseline.sql is stale.');
-    console.error('Run: node scripts/assemble-baseline.mjs');
+    console.error('assemble-baseline: supabase/migrations/0001_baseline.sql is stale (it must equal the assembly of supabase/schemas; later changes go in new migrations, never in 0001).');
+    console.error('Only while the baseline is still unreleased: node scripts/assemble-baseline.mjs');
     return 1;
   }
   console.log('assemble-baseline: baseline is up to date');

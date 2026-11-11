@@ -171,7 +171,7 @@ Light, dark and system appearance (FR-SETTINGS-014). The native app passes the O
 
 #### 4.4.1 Platform conventions (#858, KC#1960)
 
-KC provides a full native look on each platform: Apple style (HIG) on iOS, Material 3 on Android, and a neutral system look on web. The KC look is the brand colours and content; shape, depth, typography and press feedback follow each platform (D-231 supersedes D66). Design: [`docs/superpowers/specs/2026-11-08-platform-adaptive-ui-design.md`](../superpowers/specs/2026-11-08-platform-adaptive-ui-design.md).
+KC provides a full native look on each platform: Apple style (HIG) on iOS, Material 3 on Android, and a neutral system look on web. The KC look is the brand colours and content; shape, depth, typography and press feedback follow each platform ({{ENG:platform-adaptive-ui}} supersedes D66). Design: [`docs/superpowers/specs/2026-11-08-platform-adaptive-ui-design.md`](../superpowers/specs/2026-11-08-platform-adaptive-ui-design.md).
 
 #### 4.4.2 Visual platform tokens (KC#1960)
 

@@ -84,9 +84,12 @@ comment on function kc_private.fsm_assert_transition(text, text, text, text) is
 -- On insert the status must belong to the machine; on update the move must be a legal edge.
 -- The acting role is read from the transaction-local setting `kc.fsm_role`, which the RPC
 -- performing a role-restricted move sets before it writes.
+-- Definer rights: a table a member inserts into directly (a post) runs this trigger as that
+-- member, who can neither resolve names in this schema nor read the kernel tables.
 create function kc_private.fsm_guard_status()
 returns trigger
 language plpgsql
+security definer
 set search_path = ''
 as $$
 declare

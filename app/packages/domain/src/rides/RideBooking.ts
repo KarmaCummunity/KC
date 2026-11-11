@@ -2,7 +2,7 @@
 // Spec: docs/spec/05_giving_worlds.md §5.3 step 3 — the driver sees every booking and
 // approves or declines each (D73); unapproved bookings expire (D96). Gap G47.
 // Status moves follow the `ride_booking` kernel machine (fsm/machines/rideBooking.ts, 0694).
-import { canTransition } from '../fsm/machine';
+import { hasEdge } from '../fsm/machine';
 import { rideBookingMachine } from '../fsm/machines/rideBooking';
 
 /** Active booking states on a ride offer. */
@@ -198,8 +198,7 @@ export function canPerformBookingAction(
   // An action outside the union (an untyped caller) is never permitted.
   if (move === undefined) return false;
   if (move.onlyFrom !== undefined && status !== move.onlyFrom) return false;
-  const answer = canTransition(rideBookingMachine, status, move.to);
-  return answer.ok && answer.changed;
+  return hasEdge(rideBookingMachine, status, move.to);
 }
 
 /**

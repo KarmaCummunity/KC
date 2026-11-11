@@ -1559,6 +1559,8 @@ Owner rules that go with it:
 2. **KC Pro pricing:** free for the first year after launch. After that, ~~$30/month~~ **$20/month** for a private person (mainly for the WhatsApp bot) and $100/month for an organization (includes the full admin portal). *Updated 2026-11-04 by the owner: the private-person price is $20/month, not $30; the free first year and the organization price stand.*
 3. **Support email:** the single operated KC mailbox of `D-59`, `karmacommunity2.0@gmail.com`, which the app, web pages and store copy already use.
 
+**Update 2026-11-11 (PM, #1088), product decision D143:** the free first year is granted by KC to everyone (admin / promo grant through the RevenueCat webhook), not as a store free trial, so billing starts only when the product decides it. Prices are USD only (no ILS price tier). An organization holds its own `org` entitlement, separate from a person's `pro`. Store products: `org.karmacommunity.app.pro.monthly` ($20) and `org.karmacommunity.app.org.monthly` ($100); product ids cannot be renamed after creation. The `org` entitlement belongs to the organization itself (PM, 2026-11-11), not to the admin who bought it: `billing.organization_entitlements` (migration `0002`, #2150), set only through service-role functions and readable by the organization's managers through `api_org_entitlement_status`. The `revenuecat-webhook` routes an event by its entitlement: `org` events go to the organization named by the RevenueCat app user id `org:<organization uuid>` (RevenueCat sends subscriber attributes only on some events), `pro` events to the member. The paywall must therefore log RevenueCat in as `org:<id>` before an organization purchase. Nothing is gated on either entitlement during the free first year.
+
 **Why.** Store review needs live, stable policy URLs now; the custom domain is not available yet. Pricing and support contact are owner decisions recorded here so the store listing, paywall and support copy share one source.
 
 **Rejected.** Waiting for a purchased domain before submitting (blocks review with no benefit).
@@ -1704,7 +1706,7 @@ Owner rules that go with it:
 | 4.41 | 2026-11-03 | Added `D-216` (G1 step 2: the listing worlds' RPCs write posts and derive a native listing that syncs back; items unchanged; `0554`). |
 | 4.40 | 2026-11-03 | Added `D-214` (G1 plan: reverse the listing mirror, move flows one PR at a time, drop `listings` last; ADR-006). |
 | 4.39 | 2026-11-03 | Added `D-213` (live public finance numbers behind organization-controlled toggles, default off; refines `D-196` for the public view; `FIN-P0`). |
-| 4.38 | 2026-11-03 | Added `D-210` (store review on the Cloudflare Pages domain until a domain is bought; KC Pro free year then $30/$100 monthly; support mailbox). |
+| 4.38 | 2026-11-03 | Added `D-210` (store review on the Cloudflare Pages domain until a domain is bought; KC Pro free year then $20 (private person; $30 until 2026-11-04) / $100 (organization) monthly; support mailbox). |
 | 4.37 | 2026-11-03 | Added `D-209` (one dependency audit over every lockfile; reviewed exceptions expire within 90 days; gate audits on dependency changes, daily schedule otherwise; #1373). |
 | 4.36 | 2026-11-02 | `D-195` addendum: an owner's approval is required for gate-weakening changes only into `main`; on `dev` the judges pass with warnings and the release PR surfaces the changes to the owner. |
 | 4.35 | 2026-11-01 | Added `D-207` (five create categories with remembered choice, items on the post engine, curated listing fields, marketplace browse removed, no inline native pickers). |
@@ -1900,7 +1902,17 @@ Owner rules that go with it:
 
 **Affected.** `supabase/migrations/0741_offer_photo_required.sql`, `supabase/tests/0741_offer_photo_required.sql`, `supabase/tests/0351_items_image_photo_or_details.sql`, `supabase/tests/_harness/10_fixtures.sql`, `app/packages/infrastructure-supabase/src/posts/createPostWithMedia.ts`, `app/packages/application/src/contracts/postRepository.contract.ts`, `docs/spec/requirements/04_posts.md` (FR-POST-002 AC5).
 
-## D-231 — Platform-adaptive native UI and system font replace single shared look (2026-11-11)
+## D-231 — First-launch surfaces are hidden in production builds, not removed (2026-11-11)
+
+**Decision.** The first public launch hides what has no provider yet: email auth (sign-in link, sign-up, forgot / reset password, email verification), the WhatsApp bot (the Settings row, the admin nav entry and both routes) and payments (RevenueCat is not configured). One config, `app/apps/mobile/src/config/launchSurfaces.ts`, resolves `emailAuth`, `whatsappBot` and `payments` in this order: a remote `public.app_flags` row (`launch_email_auth_enabled`, `launch_whatsapp_bot_enabled`, `launch_payments_enabled`), then the build override `EXPO_PUBLIC_LAUNCH_EMAIL_AUTH` / `_WHATSAPP_BOT` / `_PAYMENTS` (`1`/`true`/`on` or `0`/`false`/`off`), then the environment default: on when `EXPO_PUBLIC_ENVIRONMENT=development`, off otherwise (an unset or unknown value is production). The email sign-in route `/sign-in` is the one exception to "hidden": it renders in every build and nothing links to it while `emailAuth` is off, so the store-review demo account can log in by direct link (`karmacommunity://sign-in`, or `https://karma-community-kc.com/sign-in` on the web). Google and Apple sign-in are unaffected. Pro and the in-app donations keep their own flags (`pro_paywall`, `money_in_app_org_payments`, both off).
+
+**Why.** Email needs an SMTP provider and SMS a phone provider; Pro and the bot need their providers and store products. Anything that cannot work on day one is hidden, not shipped broken (Nave, 2026-11-11). Defaults follow the environment that every build already sets, so no workflow or build profile changes, and development keeps email for E2E and Maestro.
+
+**Rejected.** A compile-time `__DEV__` check (it is false in preview builds that run against kc-dev). Removing the routes (the review account would have no way in). Gating `/sign-in` too (same). A separate remote-config service (`app_flags` already exists and is owner-writable).
+
+**Affected.** `app/apps/mobile/src/config/launchSurfaces.ts`, `src/hooks/useLaunchSurface.ts`, `src/components/LaunchSurfaceGate.tsx`, `app/(auth)/{index,sign-in,sign-up,forgot-password}.tsx`, `app/auth/{verify,reset-password}.tsx`, `app/settings.tsx`, `app/settings/whatsapp.tsx`, `app/(admin)/whatsapp/index.tsx` (screen moved to `src/screens/admin/WhatsAppAdminScreen.tsx`), `src/components/admin/AdminNav.tsx`, `src/services/purchases/RevenueCatSync.tsx`; FR-AUTH-001 AC2 (the welcome email link is now environment-dependent).
+
+## {{ENG:platform-adaptive-ui}} — Platform-adaptive native UI and system font replace single shared look (2026-11-11)
 
 **Decision.** KC provides a full native look on each platform: Apple style (HIG) on iOS, Material 3 on Android, and a neutral system look on web. Brand colors and content remain the shared identity; shape, depth, typography and press feedback follow each platform. System font replaces custom Rubik across all platforms. **Supersedes D66.**
 

@@ -1,7 +1,7 @@
 // FR-KNOW-004 (#2034): the Supabase adapter of knowledge seat bookings, over a recording RPC fake.
 import { describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../../database.types';
+import type { Database } from '../../database.legacy.types';
 import { mapBookingRow, mapSlotRow, SupabaseKnowledgeBookingRepository } from '../SupabaseKnowledgeBookingRepository';
 
 type Result = { data: unknown; error: { message: string } | null };

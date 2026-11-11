@@ -57,3 +57,68 @@ grant usage on schema public to anon, authenticated, service_role;
 alter default privileges for role postgres in schema public grant all on tables to anon, authenticated, service_role;
 alter default privileges for role postgres in schema public grant all on sequences to anon, authenticated, service_role;
 alter default privileges for role postgres in schema public grant all on functions to anon, authenticated, service_role;
+
+-- Minimal realtime schema: the table Broadcast authorization policies are written on, the
+-- topic accessor those policies call, and `realtime.send`, which on the platform stores the
+-- event in the same table. Tests read `realtime.messages` to assert what was broadcast.
+create schema if not exists realtime;
+grant usage on schema realtime to authenticated, service_role;
+
+create table if not exists realtime.messages (
+  id uuid not null default gen_random_uuid(),
+  topic text not null,
+  extension text not null,
+  payload jsonb,
+  event text,
+  private boolean default false,
+  inserted_at timestamp not null default now()
+);
+alter table realtime.messages enable row level security;
+grant select, insert on realtime.messages to authenticated;
+
+create or replace function realtime.topic()
+returns text
+language sql
+stable
+as $$
+  select nullif(current_setting('realtime.topic', true), '');
+$$;
+
+create or replace function realtime.send(payload jsonb, event text, topic text, private boolean default true)
+returns void
+language sql
+as $$
+  insert into realtime.messages (payload, event, topic, private, extension)
+  values (payload, event, topic, private, 'broadcast');
+$$;
+
+-- Minimal storage schema: the bucket registry, the object table storage policies are
+-- written on, and the path helper those policies call. Tests assert the bucket rows and
+-- exercise the policies by writing object rows as a member.
+create schema if not exists storage;
+grant usage on schema storage to authenticated, service_role;
+
+create table if not exists storage.buckets (
+  id text primary key,
+  name text not null,
+  public boolean default false,
+  file_size_limit bigint,
+  allowed_mime_types text[]
+);
+
+create table if not exists storage.objects (
+  id uuid primary key default gen_random_uuid(),
+  bucket_id text references storage.buckets (id),
+  name text,
+  created_at timestamptz default now()
+);
+alter table storage.objects enable row level security;
+grant select, insert, update, delete on storage.objects to authenticated;
+
+create or replace function storage.foldername(name text)
+returns text[]
+language sql
+immutable
+as $$
+  select (string_to_array(name, '/'))[1 : array_length(string_to_array(name, '/'), 1) - 1];
+$$;

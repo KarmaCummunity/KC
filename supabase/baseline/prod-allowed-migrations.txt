@@ -1,7 +1,13 @@
 # Approved production migration filenames for KC_PROD_SCHEMA_MODE=baseline (D-228).
-# One basename from supabase/migrations/ per line (for example 0001_baseline.sql).
+# One basename from supabase/migrations/ per line.
 # Blank lines and # comments are ignored.
 #
-# This list stays empty until the Path B cut-over. kc-prod must be built from
-# the new single baseline assembled from supabase/schemas/, not by replaying
-# the legacy incremental chain. Do not add legacy migration names here.
+# kc-prod is built from the single baseline (supabase/migrations/0001_baseline.sql,
+# generated from supabase/schemas/). Later forward-only migrations are added here by the
+# release owner as part of the release that ships them. Legacy migrations live in
+# supabase/migrations/archive/ and must never be listed.
+#
+# Listing a file does NOT open production: a PROD push stays blocked until the
+# supabase-prod variable KC_PROD_SCHEMA_MODE is set to "baseline" (D-228).
+0001_baseline.sql
+0002_org_entitlements.sql

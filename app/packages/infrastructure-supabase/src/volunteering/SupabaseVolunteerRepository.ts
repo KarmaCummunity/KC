@@ -1,194 +1,218 @@
+// Volunteering over event posts (design Q3, G18): an opportunity is an event post with its
+// `post_event_details` row, and one shift is one such post. A sign-up is a registration (a
+// `post_handoffs` row of the `event_registration` machine); attendance is marked by the organizer.
+// Free places per shift are not readable by a volunteer (handoffs are visible to their two members
+// only), so a shift shows its capacity as open slots and fills only for its organizer.
+
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IVolunteerRepository } from '@kc/application';
 import type {
   MyVolunteerOpportunityOrganizerRow,
   MyVolunteerSignupRow,
   ShiftVolunteerRow,
-  VolunteerCheckInResult,
   VolunteerOpportunityBrowseRow,
   VolunteerOpportunityDetail,
-  VolunteerShiftSlot,
 } from '@kc/domain';
 import type { Database } from '../database.types';
+import { unwrapCall } from '../rpc/mapRpcError';
+import { clampPageLimit } from '../posts/postCardPages';
+import { sessionUserId } from '../users/userReads';
+import {
+  cancelEventRegistration,
+  messageEventRegistrants,
+  registerForEvent,
+} from '../marketplace/eventRegistrations';
+import { fetchCardsInOrder } from '../marketplace/listingMapping';
 
-type BrowseRow = Database['public']['Functions']['list_volunteer_opportunities']['Returns'][number];
-type SignupRow = Database['public']['Functions']['list_my_volunteer_signups']['Returns'][number];
-type RosterRow = Database['public']['Functions']['list_shift_volunteers']['Returns'][number];
-type OppRow = Database['public']['Tables']['volunteer_opportunities']['Row'];
+type Client = SupabaseClient<Database>;
+type EventRow = Database['public']['Tables']['post_event_details']['Row'];
 
-function mapBrowse(row: BrowseRow): VolunteerOpportunityBrowseRow {
-  return {
-    opportunityId: row.opportunity_id,
-    title: row.title,
-    summary: row.summary,
-    locationLabel: row.location_label,
-    cityId: row.city_id,
-    nextShiftAt: row.next_shift_at,
-    openSlots: row.open_slots,
-  };
+/** Registration states that hold a place or a place in line. */
+const LIVE_STATUSES = ['waitlisted', 'reserved', 'confirmed'] as const;
+const HOUR_MS = 3_600_000;
+
+async function loadEventRows(client: Client, postIds: readonly string[]): Promise<Map<string, EventRow>> {
+  if (postIds.length === 0) return new Map();
+  const rows = unwrapCall('table:post_event_details', await client.from('post_event_details').select('*').in('post_id', [...postIds]));
+  return new Map((rows ?? []).map((row) => [row.post_id, row]));
 }
 
-function mapSignup(row: SignupRow): MyVolunteerSignupRow {
-  return {
-    signupId: row.signup_id,
-    shiftId: row.shift_id,
-    opportunityId: row.opportunity_id,
-    title: row.title,
-    startsAt: row.starts_at,
-    endsAt: row.ends_at,
-    status: row.status,
-    hoursLogged: row.hours_logged != null ? Number(row.hours_logged) : null,
-  };
-}
-
-function mapRoster(row: RosterRow): ShiftVolunteerRow {
-  return {
-    signupId: row.signup_id,
-    userId: row.user_id,
-    displayName: row.display_name,
-    shareHandle: row.share_handle,
-    status: row.status,
-    waitlistPosition: row.waitlist_position,
-    hoursLogged: row.hours_logged != null ? Number(row.hours_logged) : null,
-  };
-}
-
-function mapOrganizerOpp(row: OppRow): MyVolunteerOpportunityOrganizerRow {
-  return {
-    opportunityId: row.opportunity_id,
-    title: row.title,
-    summary: row.summary,
-    locationLabel: row.location_label,
-    cityId: row.city_id,
-    status: row.status,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-function parseDetail(data: unknown): VolunteerOpportunityDetail | null {
-  if (data == null || typeof data !== 'object') return null;
-  const o = data as Record<string, unknown>;
-  const shiftsRaw = o.shifts;
-  const shifts: VolunteerShiftSlot[] = [];
-  if (Array.isArray(shiftsRaw)) {
-    for (const raw of shiftsRaw) {
-      if (!raw || typeof raw !== 'object') continue;
-      const s = raw as Record<string, unknown>;
-      shifts.push({
-        shiftId: String(s.shift_id),
-        startsAt: String(s.starts_at),
-        endsAt: String(s.ends_at),
-        capacity: Number(s.capacity ?? 0),
-        filled: Number(s.filled ?? 0),
-        slotsOpen: Number(s.slots_open ?? 0),
-        myStatus: s.my_status != null ? String(s.my_status) : null,
-      });
-    }
-  }
-  return {
-    opportunityId: String(o.opportunity_id),
-    organizerId: String(o.organizer_id),
-    title: String(o.title),
-    summary: o.summary != null ? String(o.summary) : null,
-    locationLabel: o.location_label != null ? String(o.location_label) : null,
-    cityId: o.city_id != null ? String(o.city_id) : null,
-    status: String(o.status),
-    shifts,
-  };
+/** Hours between the start and the end of an event, to one decimal. */
+function eventHours(event: EventRow): number {
+  return Math.round(((Date.parse(event.ends_at) - Date.parse(event.starts_at)) / HOUR_MS) * 10) / 10;
 }
 
 export class SupabaseVolunteerRepository implements IVolunteerRepository {
-  constructor(private readonly client: SupabaseClient<Database>) {}
+  constructor(private readonly client: Client) {}
 
-  async listOpportunities(limit = 30, offset = 0) {
-    const { data, error } = await this.client.rpc('list_volunteer_opportunities', {
-      p_limit: limit,
-      p_offset: offset,
+  /** The next volunteering events of the time world (event posts), as the world feed lists them. */
+  async listOpportunities(limit = 30): Promise<VolunteerOpportunityBrowseRow[]> {
+    const rows = unwrapCall(
+      'rpc:feed_page',
+      await this.client.rpc('feed_page', { p_limit: clampPageLimit(limit), p_filters: { world: 'time', sort: 'newest' } }),
+    );
+    const cards = (rows ?? []).map((row) => row.card).filter((card) => card.post_type === 'event' && card.id !== null);
+    const events = await loadEventRows(this.client, cards.map((card) => card.id as string));
+    return cards.flatMap((card) => {
+      const event = events.get(card.id as string);
+      if (!event) return [];
+      return [
+        {
+          opportunityId: card.id as string,
+          title: card.title ?? '',
+          summary: card.description,
+          locationLabel: event.address_label,
+          cityId: card.city_id,
+          nextShiftAt: event.starts_at,
+          openSlots: event.capacity ?? 0,
+        },
+      ];
     });
-    if (error || !data) return [];
-    return data.map(mapBrowse);
   }
 
-  async getOpportunityDetail(opportunityId: string) {
-    const { data, error } = await this.client.rpc('get_volunteer_opportunity_detail', {
-      p_opportunity_id: opportunityId,
-    });
-    if (error) return null;
-    return parseDetail(data);
-  }
-
-  async signUpForShift(shiftId: string) {
-    const { data, error } = await this.client.rpc('sign_up_volunteer_shift', {
-      p_shift_id: shiftId,
-    });
-    if (error || !data) throw error ?? new Error('sign_up_volunteer_shift failed');
-    const row = data as Database['public']['Tables']['volunteer_shift_signups']['Row'];
-    return { signupId: row.signup_id, status: row.status };
-  }
-
-  async cancelSignup(signupId: string) {
-    const { error } = await this.client.rpc('cancel_volunteer_signup', { p_signup_id: signupId });
-    if (error) throw error;
-  }
-
-  async listMySignups(limit = 50) {
-    const { data, error } = await this.client.rpc('list_my_volunteer_signups', { p_limit: limit });
-    if (error || !data) return [];
-    return data.map(mapSignup);
-  }
-
-  async checkIn(signupId: string): Promise<VolunteerCheckInResult> {
-    const { data, error } = await this.client.rpc('check_in_volunteer_shift', {
-      p_signup_id: signupId,
-    });
-    if (error || data == null || typeof data !== 'object') {
-      throw error ?? new Error('check_in_volunteer_shift failed');
-    }
-    const o = data as Record<string, unknown>;
+  /** One opportunity is one event, with a single shift (itself). */
+  async getOpportunityDetail(opportunityId: string): Promise<VolunteerOpportunityDetail | null> {
+    const [card] = await fetchCardsInOrder(this.client, [opportunityId]);
+    const event = (await loadEventRows(this.client, [opportunityId])).get(opportunityId);
+    if (!card?.id || !event) return null;
+    const userId = await sessionUserId(this.client);
+    const mine = userId ? await this.myRegistrationStatus(opportunityId, userId) : null;
     return {
-      hoursLogged: Number(o.hours_logged ?? 0),
-      karmaPoints: Number(o.karma_points ?? 0),
+      opportunityId,
+      organizerId: card.owner_id ?? '',
+      title: card.title ?? '',
+      summary: card.description,
+      locationLabel: event.address_label,
+      cityId: card.city_id,
+      status: card.status ?? '',
+      shifts: [
+        {
+          shiftId: opportunityId,
+          startsAt: event.starts_at,
+          endsAt: event.ends_at,
+          capacity: event.capacity ?? 0,
+          filled: 0,
+          slotsOpen: event.capacity ?? 0,
+          myStatus: mine,
+        },
+      ],
     };
   }
 
-  async getShiftIcs(shiftId: string) {
-    const { data, error } = await this.client.rpc('get_volunteer_shift_ics', {
-      p_shift_id: shiftId,
-    });
-    if (error) throw error;
-    return data ?? null;
+  private async myRegistrationStatus(postId: string, userId: string): Promise<string | null> {
+    const row = unwrapCall(
+      'table:post_handoffs',
+      await this.client
+        .from('post_handoffs')
+        .select('status')
+        .eq('post_id', postId)
+        .eq('recipient_id', userId)
+        .in('status', [...LIVE_STATUSES])
+        .maybeSingle(),
+    );
+    return row?.status ?? null;
   }
 
-  async closeOpportunity(opportunityId: string) {
-    const { error } = await this.client.rpc('close_volunteer_opportunity', {
-      p_opportunity_id: opportunityId,
-    });
-    if (error) throw error;
+  async signUpForShift(shiftId: string) {
+    const registration = await registerForEvent(this.client, shiftId);
+    return { signupId: registration.handoffId, status: registration.status };
   }
 
-  async listMyOrganizerOpportunities(limit = 50) {
-    const { data, error } = await this.client.rpc('list_my_volunteer_opportunities', {
-      p_limit: limit,
+  cancelSignup = (signupId: string) => cancelEventRegistration(this.client, signupId);
+
+  /** The caller's live and attended registrations to events, newest first; attended ones carry the hours they logged. */
+  async listMySignups(limit = 50): Promise<MyVolunteerSignupRow[]> {
+    const userId = await sessionUserId(this.client);
+    if (!userId) return [];
+    const handoffs =
+      unwrapCall(
+        'table:post_handoffs',
+        await this.client.from('post_handoffs').select('*').eq('recipient_id', userId).eq('machine_id', 'event_registration').in('status', [...LIVE_STATUSES, 'handed_over']).order('created_at', { ascending: false }).limit(limit),
+      ) ?? [];
+    const ids = handoffs.map((row) => row.post_id);
+    const [events, posts] = await Promise.all([
+      loadEventRows(this.client, ids),
+      ids.length === 0 ? { data: [], error: null } : this.client.from('posts').select('id, title').in('id', ids),
+    ]);
+    const titles = new Map((unwrapCall('table:posts', posts) ?? []).map((post) => [post.id, post.title]));
+    return handoffs.flatMap((row) => {
+      const event = events.get(row.post_id);
+      if (!event) return [];
+      return [
+        {
+          signupId: row.id,
+          shiftId: row.post_id,
+          opportunityId: row.post_id,
+          title: titles.get(row.post_id) ?? '',
+          startsAt: event.starts_at,
+          endsAt: event.ends_at,
+          status: row.status,
+          hoursLogged: row.status === 'handed_over' ? eventHours(event) : null,
+        },
+      ];
     });
-    if (error || !data) return [];
-    return data.map(mapOrganizerOpp);
   }
 
-  async listShiftVolunteers(shiftId: string) {
-    const { data, error } = await this.client.rpc('list_shift_volunteers', {
-      p_shift_id: shiftId,
-    });
-    if (error || !data) return [];
-    return data.map(mapRoster);
+  /** The organizer closes the event without a recipient; a live registration refuses it. */
+  async closeOpportunity(opportunityId: string): Promise<void> {
+    unwrapCall('rpc:close_post_without_recipient', await this.client.rpc('close_post_without_recipient', { p_post_id: opportunityId }));
   }
 
-  async messageShiftVolunteers(shiftId: string, message: string) {
-    const { data, error } = await this.client.rpc('organizer_message_shift_volunteers', {
-      p_shift_id: shiftId,
-      p_message: message,
-    });
-    if (error) throw error;
-    return Number(data ?? 0);
+  /** The organizer's own events, newest first. */
+  async listMyOrganizerOpportunities(limit = 50): Promise<MyVolunteerOpportunityOrganizerRow[]> {
+    const userId = await sessionUserId(this.client);
+    if (!userId) return [];
+    const posts =
+      unwrapCall(
+        'table:posts',
+        await this.client
+          .from('posts')
+          .select('id, title, description, city_id, status, created_at, updated_at')
+          .eq('owner_id', userId)
+          .eq('post_type', 'event')
+          .neq('status', 'draft')
+          .order('created_at', { ascending: false })
+          .limit(limit),
+      ) ?? [];
+    const events = await loadEventRows(this.client, posts.map((post) => post.id));
+    return posts.map((post) => ({
+      opportunityId: post.id,
+      title: post.title,
+      summary: post.description,
+      locationLabel: events.get(post.id)?.address_label ?? null,
+      cityId: post.city_id,
+      status: post.status,
+      createdAt: post.created_at,
+      updatedAt: post.updated_at,
+    }));
   }
+
+  /** The organizer's roster of the event, oldest registration first; the waiting list is numbered in that order. */
+  async listShiftVolunteers(shiftId: string): Promise<ShiftVolunteerRow[]> {
+    const handoffs =
+      unwrapCall('table:post_handoffs', await this.client.from('post_handoffs').select('*').eq('post_id', shiftId).order('created_at', { ascending: true })) ?? [];
+    if (handoffs.length === 0) return [];
+    const [users, events] = await Promise.all([
+      this.client.from('users').select('id, display_name, share_handle').in('id', [...new Set(handoffs.map((row) => row.recipient_id))]),
+      loadEventRows(this.client, [shiftId]),
+    ]);
+    const userById = new Map((unwrapCall('table:users', users) ?? []).map((user) => [user.id, user]));
+    const event = events.get(shiftId);
+    let waiting = 0;
+    return handoffs.map((row) => {
+      const position = row.status === 'waitlisted' ? ++waiting : null;
+      const user = userById.get(row.recipient_id);
+      return {
+        signupId: row.id,
+        userId: row.recipient_id,
+        displayName: user?.display_name ?? null,
+        shareHandle: user?.share_handle ?? null,
+        status: row.status,
+        waitlistPosition: position,
+        hoursLogged: row.status === 'handed_over' && event ? eventHours(event) : null,
+      };
+    });
+  }
+
+  messageShiftVolunteers = (shiftId: string, message: string) => messageEventRegistrants(this.client, shiftId, message);
 }

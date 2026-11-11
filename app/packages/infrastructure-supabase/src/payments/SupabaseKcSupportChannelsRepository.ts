@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { KcSupportChannelsError, type IKcSupportChannelsRepository } from '@kc/application';
 import { isKcSupportChannelKind, type KcSupportChannel } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 type ChannelRow = Database['public']['Functions']['list_kc_support_channels']['Returns'][number];
 

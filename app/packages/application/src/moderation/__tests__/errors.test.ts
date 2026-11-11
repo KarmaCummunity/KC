@@ -25,14 +25,14 @@ describe('ModerationError (base)', () => {
 
   it('forwards a cause when supplied', () => {
     const cause = new Error('rls');
-    expect(new ModerationError('invalid_ban_reason', 'x', cause).cause).toBe(cause);
+    expect(new ModerationError('invalid_sanction_reason', 'x', cause).cause).toBe(cause);
   });
 
   it('preserves a sample of every code (FR-MOD-007/010, FR-ADMIN-002..007)', () => {
     for (const code of [
-      'forbidden', 'invalid_target_type', 'invalid_restore_state',
-      'report_not_open', 'invalid_ban_reason', 'cannot_ban_self',
-      'cannot_ban_admin', 'cannot_delete_system_message',
+      'forbidden', 'invalid_restore_state', 'invalid_target_state',
+      'report_not_open', 'invalid_sanction_reason', 'cannot_sanction_self',
+      'cannot_sanction_admin', 'account_pending_deletion', 'message_not_found',
       'target_not_found', 'cannot_report_self', 'unknown',
     ] as const) {
       expect(new ModerationError(code).code).toBe(code);

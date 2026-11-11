@@ -9,7 +9,7 @@ export const FINANCE_ENTRY_KINDS = [
 ] as const;
 export type FinanceEntryKind = (typeof FINANCE_ENTRY_KINDS)[number];
 
-export const FINANCE_ENTRY_STATUSES = ['pending', 'cleared', 'canceled'] as const;
+export const FINANCE_ENTRY_STATUSES = ['pending', 'cleared', 'cancelled'] as const;
 export type FinanceEntryStatus = (typeof FINANCE_ENTRY_STATUSES)[number];
 
 export type FinanceDirection = 'in' | 'out';
