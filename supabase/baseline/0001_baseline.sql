@@ -65,6 +65,57 @@ create extension if not exists btree_gist with schema extensions;
 -- matching, similar posts and recommendations (design §3.10).
 create extension if not exists vector with schema extensions;
 
+-- >>> supabase/schemas/00_foundation/016_platform_extensions.sql
+-- Foundation · platform extensions (design §4 "Secrets", §6, §7)
+--
+-- The three Supabase platform extensions the product runs on:
+--   pg_cron         the scheduler behind kc_private.scheduled_jobs (95_platform/040)
+--   pg_net          asynchronous HTTP, used to start Edge Functions (95_platform/050)
+--   supabase_vault  encrypted secrets (kc_project_url, kc_service_role_key)
+--
+-- On a Supabase project they are required: this file creates them and a failure stops the
+-- migration, so a project that cannot run the product never ends up half built. A Supabase
+-- server is recognised by its `supabase_admin` role. On a plain PostgreSQL server (the local
+-- test harness) each one is created only when the server has it; the modules that use them
+-- degrade to a recorded warning (`ops.warnings`) instead of failing.
+--
+-- pg_cron can only live in the database named by `cron.database_name` (`postgres` on
+-- Supabase). The scratch databases the test runner creates on a Supabase stack are another
+-- database, so there pg_cron is skipped with a notice.
+
+do $$
+declare
+  v_platform constant boolean := exists (select 1 from pg_catalog.pg_roles where rolname = 'supabase_admin');
+  v_cron_db constant text := coalesce(nullif(current_setting('cron.database_name', true), ''), 'postgres');
+begin
+  -- pg_cron
+  if v_platform and current_database() = v_cron_db then
+    create extension if not exists pg_cron;
+  elsif exists (select 1 from pg_catalog.pg_available_extensions e where e.name = 'pg_cron')
+        and current_database() = v_cron_db then
+    begin
+      create extension if not exists pg_cron;
+    exception when others then
+      raise notice 'pg_cron is installed but not loadable in this database: jobs are registered, not scheduled';
+    end;
+  else
+    raise notice 'pg_cron is not used in database %: jobs are registered, not scheduled', current_database();
+  end if;
+
+  -- pg_net (creates the `net` schema itself) and Vault (creates the `vault` schema).
+  if v_platform then
+    create extension if not exists pg_net with schema extensions;
+    create extension if not exists supabase_vault;
+  else
+    if exists (select 1 from pg_catalog.pg_available_extensions e where e.name = 'pg_net') then
+      create extension if not exists pg_net with schema extensions;
+    end if;
+    if exists (select 1 from pg_catalog.pg_available_extensions e where e.name = 'supabase_vault') then
+      create extension if not exists supabase_vault;
+    end if;
+  end if;
+end $$;
+
 -- >>> supabase/schemas/00_foundation/020_default_privileges.sql
 -- Foundation · privileges
 --
@@ -3230,6 +3281,8 @@ as $$
       when p_new.status = 'handed_over' then 'completed'
       when p_new.status = 'no_show' then 'no_show'
       when p_new.cancel_reason = 'expired' then 'expired'
+      -- A ride that expired without leaving: the seat lapses, nobody cancelled it.
+      when p_new.machine_id = 'ride_booking' and p_new.cancel_reason = 'not_completed' then 'lapsed'
       when p_new.cancel_reason = 'declined' then 'declined'
       when p_new.status = 'cancelled' then 'cancelled'
     end
@@ -3714,10 +3767,13 @@ begin
   if v_post.status <> 'draft' then
     raise exception 'listing_wrong_status' using errcode = 'P0001';
   end if;
+  -- An offer in items, food, housing or animals needs a photo (30_social/015, D132).
+  perform kc_private.post_require_offer_photo(p_post_id);
   perform kc_private.post_move(p_post_id, 'open', 'owner');
 end;
 $$;
-comment on function public.publish_post(uuid) is 'Publishes a draft post (draft → open).';
+comment on function public.publish_post(uuid) is
+  'Publishes a draft post (draft → open); an offer in a photo world needs a photo (offer_photo_required).';
 grant execute on function public.publish_post(uuid) to authenticated;
 
 -- Takes an open post off the air without closing it (D104). A reserved or confirmed
@@ -4555,6 +4611,81 @@ grant insert (
   id, post_id, owner_id, kind, storage_bucket, storage_key, ordinal, mime_type, size_bytes,
   width, height, duration_ms, blurhash
 ) on public.post_media to authenticated;
+
+-- >>> supabase/schemas/30_social/015_offer_photo_rule.sql
+-- Social · an offer in a photo world keeps at least one photo (D132, KC#2020)
+--
+-- An offer in items, food, housing or animals is published with at least one photo and
+-- never loses its last one while it is on the air; requests, rides, events and every other
+-- world stay photo-optional. The rule has two enforcement points, both for member writes
+-- (a server job, which runs without a session, is exempt):
+--   publish_post            a draft offer with no photo is not published (25_handoffs/060)
+--   post_media delete       the last photo of an open or paused offer cannot be removed
+-- Food offers created by `create_post_with_details` are published in the same call that
+-- creates them and get their photos afterwards, so that path is not gated here; the app
+-- form requires the photo (`OFFER_PHOTO_WORLDS`, marketplaceWorldRules.ts).
+-- The list of worlds lives only here and in that client constant.
+
+create function kc_private.offer_requires_photo(p_world_slug text, p_direction text)
+returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  select p_direction = 'offer' and p_world_slug in ('items', 'food', 'housing', 'animals');
+$$;
+comment on function kc_private.offer_requires_photo(text, text) is
+  'True for an offer in items, food, housing or animals, which needs a photo (D132).';
+
+-- Refuses (offer_photo_required) when the post is an offer in a photo world with no file.
+-- Any file counts, processed or not: the upload pipeline fails the file, not the post.
+create function kc_private.post_require_offer_photo(p_post_id uuid, p_excluding_media_id uuid default null)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_post public.posts;
+begin
+  select p.* into v_post from public.posts p where p.id = p_post_id;
+  if not found or not kc_private.offer_requires_photo(v_post.world_slug, v_post.direction) then
+    return;
+  end if;
+  if not exists (select 1 from public.post_media m
+                  where m.post_id = p_post_id and m.id is distinct from p_excluding_media_id) then
+    raise exception 'offer_photo_required' using errcode = 'P0001';
+  end if;
+end;
+$$;
+comment on function kc_private.post_require_offer_photo(uuid, uuid) is
+  'Raises offer_photo_required when a photo-world offer has no file (other than the excluded one).';
+
+create function kc_private.post_media_keep_offer_photo()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  -- Server work (the purge and orphan jobs) and the cascade of a deleted post pass: in a
+  -- cascade the post row is already gone, so there is nothing left to protect.
+  if (select auth.uid()) is null then
+    return old;
+  end if;
+  if exists (select 1 from public.posts p
+              where p.id = old.post_id and p.status in ('open', 'paused')) then
+    perform kc_private.post_require_offer_photo(old.post_id, old.id);
+  end if;
+  return old;
+end;
+$$;
+comment on function kc_private.post_media_keep_offer_photo() is
+  'BEFORE DELETE on post_media: a member cannot remove the last photo of a live photo-world offer.';
+
+create trigger post_media_keep_offer_photo
+  before delete on public.post_media
+  for each row execute function kc_private.post_media_keep_offer_photo();
 
 -- >>> supabase/schemas/30_social/020_post_stats.sql
 -- Social · post_stats (engagement counters of a post)
@@ -7620,6 +7751,7 @@ values
   ('ride_booking_declined', 'critical', true, 'notifications.rideBookingDeclinedTitle', 'notifications.rideBookingDeclinedBody'),
   ('ride_booking_cancelled', 'critical', true, 'notifications.rideBookingCancelledTitle', 'notifications.rideBookingCancelledBody'),
   ('ride_booking_expired', 'critical', true, 'notifications.rideBookingExpiredTitle', 'notifications.rideBookingExpiredBody'),
+  ('ride_booking_lapsed', 'critical', true, 'notifications.rideBookingLapsedTitle', 'notifications.rideBookingLapsedBody'),
   ('ride_booking_completed', 'critical', true, 'notifications.rideBookingCompletedTitle', 'notifications.rideBookingCompletedBody'),
   ('ride_booking_no_show', 'critical', true, 'notifications.rideBookingNoShowTitle', 'notifications.rideBookingNoShowBody'),
   ('ride_booking_waitlist_promoted', 'critical', true, 'notifications.rideBookingWaitlistPromotedTitle', 'notifications.rideBookingWaitlistPromotedBody'),
@@ -13081,9 +13213,10 @@ create constraint trigger posts_require_details
 -- Expires open and paused posts whose time has come (D21, D128), in every world. Before
 -- the post leaves the air its bookings are ended with an honest reason: a request nobody
 -- answered `expired`, an approved booking nobody completed `not_completed` — never
--- completed automatically, so no karma is earned without a member saying so. Registrations
--- of an event that took place stay for attendance marking (25_handoffs/050). The owner is
--- told. Before, the ride sweep left bookings live and each world had its own writer.
+-- completed automatically, so no karma is earned without a member saying so. Of an event
+-- that ended, the requests nobody answered and the waiting list lapse as `expired` (each
+-- member is told); confirmed registrations stay for attendance marking (25_handoffs/050).
+-- The owner is told. Before, the ride sweep left bookings live and each world had its own writer.
 create function kc_private.post_expiry_sweep(p_limit integer default 500)
 returns integer
 language plpgsql
@@ -13104,12 +13237,13 @@ begin
   loop
     for v_handoff in
       select h.id, h.status from public.post_handoffs h
-       where h.post_id = v_post.id and h.status in ('reserved', 'confirmed')
-         and h.machine_id <> 'event_registration'
+       where h.post_id = v_post.id
+         and ((h.machine_id <> 'event_registration' and h.status in ('reserved', 'confirmed'))
+              or (h.machine_id = 'event_registration' and h.status in ('waitlisted', 'reserved')))
     loop
       perform kc_private.handoff_move(
         v_handoff.id, 'cancelled', 'system',
-        case v_handoff.status when 'reserved' then 'expired' else 'not_completed' end);
+        case when v_handoff.status in ('reserved', 'waitlisted') then 'expired' else 'not_completed' end);
     end loop;
     perform kc_private.post_move(v_post.id, 'expired', 'system');
     perform kc_private.outbox_enqueue('notification', jsonb_build_object(
@@ -13201,6 +13335,93 @@ $$;
 comment on function kc_private.food_expiry_alert_sweep(integer) is
   'Raises the urgency of food offers inside 72 hours of expiry and alerts owners inside 24 hours.';
 
+-- >>> supabase/schemas/70_worlds/175_event_sweeps.sql
+-- Worlds · event sweeps (run by the scheduler as the service role; scheduled by the ops module)
+--
+-- Two hourly sweeps around the time of an event, both safe to run twice: the notification
+-- ledger keeps one notification per recipient and `dedupe_key`.
+--   event_reminder_sweep            every confirmed registrant hears once, within 24 hours of
+--                                   the start, that the event is near (`event_reminder`)
+--   event_attendance_prompt_sweep   after the end, the organizer is asked once to mark the
+--                                   attendance of confirmed registrations still unmarked
+--                                   (`event_mark_attendance`); only marked attendance earns
+--                                   karma (D124)
+-- A registration that was never answered, and a place that never freed up, end with the
+-- event itself: `post_expiry_sweep` (170) cancels them as `expired` and the registration
+-- notification kinds tell each member.
+
+create function kc_private.event_reminder_sweep(p_limit integer default 1000)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_row record;
+  v_count integer := 0;
+begin
+  -- A member who registered inside the window has just seen the date: no reminder for them.
+  for v_row in
+    select h.id, h.recipient_id, h.post_id, e.starts_at
+      from public.post_handoffs h
+      join public.post_event_details e on e.post_id = h.post_id
+      join public.posts p on p.id = h.post_id
+     where h.machine_id = 'event_registration' and h.status = 'confirmed'
+       and p.status = 'open'
+       and e.starts_at > now() and e.starts_at <= now() + interval '24 hours'
+       and h.created_at <= e.starts_at - interval '24 hours'
+     order by e.starts_at, h.id
+     limit least(greatest(p_limit, 1), 10000)
+  loop
+    perform kc_private.outbox_enqueue('notification', jsonb_build_object(
+      'kind', 'event_reminder', 'recipient_id', v_row.recipient_id, 'actor_id', null,
+      'entity', jsonb_build_object('type', 'post', 'id', v_row.post_id),
+      'data', jsonb_build_object(
+        'world_slug', 'time', 'starts_at', v_row.starts_at,
+        'dedupe_key', 'event_reminder:' || v_row.id)));
+    v_count := v_count + 1;
+  end loop;
+  return v_count;
+end;
+$$;
+comment on function kc_private.event_reminder_sweep(integer) is
+  'Reminds each confirmed registrant, within 24 hours of an open event''s start; returns how many were queued.';
+
+create function kc_private.event_attendance_prompt_sweep(p_limit integer default 500)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_row record;
+  v_count integer := 0;
+begin
+  for v_row in
+    select p.id, p.owner_id, count(*)::integer as unmarked
+      from public.post_event_details e
+      join public.posts p on p.id = e.post_id
+      join public.post_handoffs h on h.post_id = e.post_id
+       and h.machine_id = 'event_registration' and h.status = 'confirmed'
+     where e.ends_at <= now() and e.ends_at > now() - interval '24 hours'
+     group by p.id, p.owner_id
+     order by min(e.ends_at)
+     limit least(greatest(p_limit, 1), 5000)
+  loop
+    perform kc_private.outbox_enqueue('notification', jsonb_build_object(
+      'kind', 'event_mark_attendance', 'recipient_id', v_row.owner_id, 'actor_id', null,
+      'entity', jsonb_build_object('type', 'post', 'id', v_row.id),
+      'data', jsonb_build_object(
+        'world_slug', 'time', 'count', v_row.unmarked,
+        'dedupe_key', 'event_mark_attendance:' || v_row.id)));
+    v_count := v_count + 1;
+  end loop;
+  return v_count;
+end;
+$$;
+comment on function kc_private.event_attendance_prompt_sweep(integer) is
+  'Asks an organizer once, after the event ended, to mark confirmed registrations; returns how many were queued.';
+
 -- >>> supabase/schemas/70_worlds/900_world_notification_kinds.sql
 -- Worlds · notification kinds emitted by this module
 --
@@ -13225,7 +13446,13 @@ values
    'notifications.eventOrganizerMessageTitle', 'notifications.eventOrganizerMessageBody'),
   -- The member's own post expired (S4: "and at expiry").
   ('post_expired', 'critical', false, false,
-   'notifications.postExpiredTitle', 'notifications.postExpiredBody');
+   'notifications.postExpiredTitle', 'notifications.postExpiredBody'),
+  -- The event a confirmed registrant signed up for starts within a day (175_event_sweeps).
+  ('event_reminder', 'critical', false, false,
+   'notifications.eventReminderTitle', 'notifications.eventReminderBody'),
+  -- The organizer of an event that ended still has attendance to mark (D124).
+  ('event_mark_attendance', 'critical', false, false,
+   'notifications.eventMarkAttendanceTitle', 'notifications.eventMarkAttendanceBody');
 
 -- >>> supabase/schemas/72_karma/010_karma_values.sql
 -- Karma · point values (spec 07 §7.6, D12, D29)
@@ -16116,8 +16343,9 @@ create table public.org_applications (
   id                  uuid primary key default gen_random_uuid(),
   applicant_id        uuid not null references public.users (id) on delete cascade,
   org_name            text not null check (char_length(btrim(org_name)) between 2 and 120),
-  org_type            text not null check (org_type in ('nonprofit_association', 'public_benefit_company',
-                                                        'public_body', 'informal_initiative', 'private_venture')),
+  -- Unknown when the member applies from the app (the form does not ask); staff may set it.
+  org_type            text check (org_type in ('nonprofit_association', 'public_benefit_company',
+                                               'public_body', 'informal_initiative', 'private_venture')),
   -- Optional (D89): any non-profit organization may register.
   registration_number text check (registration_number ~ '^[0-9]{5,12}$'),
   org_description     text check (char_length(org_description) <= 4000),
@@ -16164,28 +16392,55 @@ create policy org_applications_select_own on public.org_applications
 create policy org_applications_select_reviewers on public.org_applications
   for select to authenticated
   using ((select kc_access.has_admin_role('admin')));
--- A member with an active account files their own application; the column grant leaves the
--- status and the review fields to the server.
-create policy org_applications_insert_own on public.org_applications
-  for insert to authenticated
-  with check (applicant_id = (select auth.uid())
-              and exists (select 1 from public.users u where u.id = (select auth.uid()) and u.is_active));
+-- Applications are filed through public.submit_org_application (070_org_registration.sql),
+-- which holds the rules (one open application, the 7-day wait after a rejection).
 
 grant select on public.org_applications to authenticated;
-grant insert (id, applicant_id, org_name, org_type, registration_number, org_description, contact_email,
-              contact_phone, website_url, declared_nonprofit)
-  on public.org_applications to authenticated;
 
 insert into kc_private.notification_kinds (kind, category, title_key, body_key) values
   -- requirements/20 § Data model: the applicant learns the decision.
   ('org_application_decided', 'critical', 'notifications.orgApplicationDecidedTitle',
    'notifications.orgApplicationDecidedBody');
 
+-- The page slug of a new organization: Hebrew letters transliterated (final forms included),
+-- everything outside a-z / 0-9 becomes a dash, at most nine words and 50 characters, so a
+-- numeric suffix keeps it inside the slug rule. A name with no usable letters becomes `org`;
+-- a taken slug gets `-2`, `-3`, …
+create function kc_private.org_slug_for(p_name text)
+returns text
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  v_base text;
+  v_slug text;
+  v_n integer := 1;
+begin
+  v_base := lower(translate(coalesce(p_name, ''), 'אבגדהוזחטיכךלמםנןסעפףצץקרשת', 'abgdhvzhtykklmmnnsappcckrst'));
+  v_base := btrim(regexp_replace(v_base, '[^a-z0-9]+', '-', 'g'), '-');
+  v_base := array_to_string((string_to_array(v_base, '-'))[1:9], '-');
+  v_base := btrim(left(v_base, 50), '-');
+  if v_base = '' then
+    v_base := 'org';
+  end if;
+  v_slug := v_base;
+  while exists (select 1 from public.organizations o where o.slug = v_slug) loop
+    v_n := v_n + 1;
+    v_slug := v_base || '-' || v_n;
+  end loop;
+  return v_slug;
+end;
+$$;
+comment on function kc_private.org_slug_for(text) is
+  'A unique, transliterated kebab-case page slug for a new organization.';
+
 -- Decides a pending application as a platform admin (`org.review_applications`: super
--- admin and admin). Approving needs the slug of the new organization's page. Returns the
--- new organization's id, or null for a rejection.
+-- admin and admin). An approval uses the given slug for the new organization's page, or
+-- derives one from its name (kc_private.org_slug_for, 070). Returns the new organization's
+-- id, or null for a rejection.
 -- Errors: forbidden (42501); P0001 application_not_found, application_already_decided,
--- slug_required, slug_taken, org_registration_number_taken.
+-- slug_taken, org_registration_number_taken.
 create function kc_private.org_application_decide(p_application_id uuid, p_approve boolean, p_slug text, p_note text)
 returns uuid
 language plpgsql
@@ -16196,6 +16451,7 @@ declare
   v_actor constant uuid := kc_private.require_admin_role('admin');
   v_application public.org_applications;
   v_org_id uuid;
+  v_slug text;
 begin
   select a.* into v_application from public.org_applications a where a.id = p_application_id for update;
   if not found then
@@ -16205,18 +16461,16 @@ begin
   end if;
 
   if p_approve then
-    if nullif(btrim(p_slug), '') is null then
-      raise exception 'slug_required' using errcode = 'P0001';
-    end if;
+    v_slug := coalesce(nullif(btrim(p_slug), ''), kc_private.org_slug_for(v_application.org_name));
     begin
       insert into public.organizations (slug, name, org_type, registration_number, public_about_he, website_url,
                                         contact_email, verification_method, verified_at, verified_by)
-      values (btrim(p_slug), btrim(v_application.org_name), v_application.org_type,
+      values (v_slug, btrim(v_application.org_name), v_application.org_type,
               v_application.registration_number, v_application.org_description, v_application.website_url,
               v_application.contact_email, 'manual', now(), v_actor)
       returning id into v_org_id;
     exception when unique_violation then
-      raise exception '%', case when exists (select 1 from public.organizations o where o.slug = btrim(p_slug))
+      raise exception '%', case when exists (select 1 from public.organizations o where o.slug = v_slug)
                                 then 'slug_taken' else 'org_registration_number_taken' end
         using errcode = 'P0001';
     end;
@@ -16247,7 +16501,7 @@ begin
 end;
 $$;
 
-create function public.admin_org_application_approve(p_application_id uuid, p_slug text, p_note text default null)
+create function public.admin_org_application_approve(p_application_id uuid, p_slug text default null, p_note text default null)
 returns uuid
 language sql
 security definer
@@ -16681,6 +16935,267 @@ grant execute on function public.report_donation_link(uuid) to authenticated;
 create policy admin_role_grants_select_org_admin on public.admin_role_grants
   for select to authenticated
   using (scope_org_id = any (kc_access.managed_org_ids()));
+
+-- >>> supabase/schemas/80_organizations/070_org_registration.sql
+-- Organizations · registration from the app and the team screen (FR-ORG-002, G18, D139)
+--
+-- The two member-facing flows of an organization:
+--   1. A member applies to register one (`submit_org_application`); staff decide in
+--      030_org_applications.sql, and the applicant becomes the first org_admin.
+--   2. An organization's administrators keep its team (`list_org_members`, `org_add_member`,
+--      `org_remove_member`). The team is the organization-scoped role grants of
+--      60_moderation; these functions are the member-facing front of them, so grants, audit
+--      and the `org_memberships` projection stay the single mechanism.
+--
+-- The screen knows four roles: org_admin, org_manager, org_employee, org_volunteer. A member
+-- holding only another organization role (volunteer_manager, treasurer, …) is listed as the
+-- nearest of the four. Rules (FR-ORG, G18):
+--   * an admin or a manager adds employees and volunteers; only an admin adds managers and admins;
+--   * a member may leave; an admin removes anyone, a manager removes employees and volunteers;
+--   * the last admin stays;
+--   * adding a member again with another role replaces their roles in that organization.
+-- Errors: unauthenticated / org_not_member / org_member_manage_forbidden (42501); P0001 —
+-- org_name_invalid, org_description_required, org_contact_email_invalid, org_website_invalid,
+-- org_nonprofit_declaration_required, org_application_pending_exists,
+-- org_application_resubmit_too_soon, org_role_invalid, org_member_user_not_found,
+-- org_member_not_found, org_last_admin.
+
+insert into kc_private.notification_kinds (kind, category, title_key, body_key) values
+  -- The member was added to an organization's team (a role change is not announced).
+  ('org_member_added', 'social', 'notifications.orgMemberAddedTitle', 'notifications.orgMemberAddedBody');
+
+-- The role of the four the team screen shows for a set of organization roles.
+create function kc_private.org_display_role(p_roles text[])
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  select case
+    when 'org_admin' = any (p_roles) then 'org_admin'
+    when p_roles && array['org_manager', 'operators_manager', 'volunteer_manager'] then 'org_manager'
+    when p_roles && array['org_employee', 'operator', 'org_treasurer', 'org_accountant'] then 'org_employee'
+    else 'org_volunteer'
+  end;
+$$;
+comment on function kc_private.org_display_role(text[]) is
+  'Maps a member''s organization roles to the nearest of org_admin, org_manager, org_employee, org_volunteer.';
+
+-- A member applies to register an organization. One application waits at a time, and a new
+-- one is accepted 7 days after a rejection (FR-ORG-002 AC3-AC4). Returns the application id.
+create function public.submit_org_application(
+  p_org_name text,
+  p_org_description text,
+  p_contact_email text,
+  p_contact_phone text default null,
+  p_website_url text default null,
+  p_declared_nonprofit boolean default false
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid constant uuid := kc_private.require_active_caller();
+  v_name constant text := btrim(coalesce(p_org_name, ''));
+  v_about constant text := nullif(btrim(coalesce(p_org_description, '')), '');
+  v_email constant text := lower(btrim(coalesce(p_contact_email, '')));
+  v_phone constant text := left(nullif(btrim(coalesce(p_contact_phone, '')), ''), 20);
+  v_site constant text := nullif(btrim(coalesce(p_website_url, '')), '');
+  v_last timestamptz;
+  v_id uuid;
+begin
+  if char_length(v_name) not between 2 and 120 then
+    raise exception 'org_name_invalid' using errcode = 'P0001';
+  end if;
+  if v_about is null or char_length(v_about) > 4000 then
+    raise exception 'org_description_required' using errcode = 'P0001';
+  end if;
+  if v_email !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' or char_length(v_email) > 320 then
+    raise exception 'org_contact_email_invalid' using errcode = 'P0001';
+  end if;
+  -- Only a secure link without credentials or whitespace.
+  if v_site is not null and (v_site !~ '^https://[^\s@]+$' or char_length(v_site) > 2000) then
+    raise exception 'org_website_invalid' using errcode = 'P0001';
+  end if;
+  if not coalesce(p_declared_nonprofit, false) then
+    raise exception 'org_nonprofit_declaration_required' using errcode = 'P0001';
+  end if;
+  if exists (select 1 from public.org_applications a where a.applicant_id = v_uid and a.status = 'pending') then
+    raise exception 'org_application_pending_exists' using errcode = 'P0001';
+  end if;
+  select max(a.reviewed_at) into v_last
+    from public.org_applications a where a.applicant_id = v_uid and a.status = 'rejected';
+  if v_last is not null and v_last > now() - interval '7 days' then
+    raise exception 'org_application_resubmit_too_soon' using errcode = 'P0001';
+  end if;
+
+  insert into public.org_applications
+    (applicant_id, org_name, org_description, contact_email, contact_phone, website_url, declared_nonprofit)
+  values (v_uid, v_name, v_about, v_email, v_phone, v_site, true)
+  returning id into v_id;
+  return v_id;
+end;
+$$;
+comment on function public.submit_org_application(text, text, text, text, text, boolean) is
+  'The caller applies to register an organization; one open application, again 7 days after a rejection.';
+grant execute on function public.submit_org_application(text, text, text, text, text, boolean) to authenticated;
+
+-- The team of an organization, for its own members.
+create function public.list_org_members(p_org_id uuid)
+returns table (
+  user_id uuid, display_name text, share_handle text, avatar_url text, role text, joined_at timestamptz)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid constant uuid := kc_private.require_active_caller();
+begin
+  if not exists (select 1 from public.org_memberships m where m.org_id = p_org_id and m.user_id = v_uid) then
+    raise exception 'org_not_member' using errcode = '42501';
+  end if;
+  return query
+  select m.user_id, u.display_name, u.share_handle, u.avatar_url,
+         kc_private.org_display_role(m.roles), m.joined_at
+    from public.org_memberships m
+    join public.users u on u.id = m.user_id
+   where m.org_id = p_org_id
+   order by m.joined_at, m.user_id;
+end;
+$$;
+comment on function public.list_org_members(uuid) is 'The team of an organization with each member''s role; members only.';
+grant execute on function public.list_org_members(uuid) to authenticated;
+
+-- Ends every active organization grant of a member and moves the grants that reported to
+-- them one level up, as admin_revoke_role does.
+create function kc_private.org_team_revoke(p_org_id uuid, p_user_id uuid, p_actor uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_grant record;
+begin
+  for v_grant in
+    select g.id, g.manager_grant_id from public.admin_role_grants g
+     where g.scope_org_id = p_org_id and g.user_id = p_user_id and g.revoked_at is null
+       for update
+  loop
+    update public.admin_role_grants g set revoked_at = now(), revoked_by = p_actor where g.id = v_grant.id;
+    update public.admin_role_grants g set manager_grant_id = v_grant.manager_grant_id
+     where g.manager_grant_id = v_grant.id and g.revoked_at is null;
+  end loop;
+end;
+$$;
+
+-- Adds a member by share handle, or changes the role of one who is already on the team.
+-- Returns the member's id.
+create function public.org_add_member(p_org_id uuid, p_share_handle text, p_role text default 'org_volunteer')
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_active_caller();
+  v_my_roles text[];
+  v_target uuid;
+  v_previous text;
+  v_manager_grant uuid;
+  v_org_name text;
+begin
+  if p_role is null or p_role not in ('org_admin', 'org_manager', 'org_employee', 'org_volunteer') then
+    raise exception 'org_role_invalid' using errcode = 'P0001';
+  end if;
+  select m.roles into v_my_roles from public.org_memberships m where m.org_id = p_org_id and m.user_id = v_actor;
+  if v_my_roles is null
+     or not (v_my_roles && array['org_admin', 'org_manager'])
+     or (p_role in ('org_admin', 'org_manager') and not ('org_admin' = any (v_my_roles))) then
+    raise exception 'org_member_manage_forbidden' using errcode = '42501';
+  end if;
+
+  -- Handles compare case-insensitively; a leading @ is accepted.
+  select u.id into v_target from public.users u
+   where u.share_handle = lower(ltrim(btrim(coalesce(p_share_handle, '')), '@')) and u.is_active;
+  if v_target is null then
+    raise exception 'org_member_user_not_found' using errcode = 'P0001';
+  end if;
+
+  select kc_private.org_display_role(m.roles) into v_previous
+    from public.org_memberships m where m.org_id = p_org_id and m.user_id = v_target;
+  if v_previous = p_role then
+    return v_target;
+  end if;
+  -- Demoting the last admin would leave the organization without one.
+  if v_previous = 'org_admin' and not exists (
+       select 1 from public.org_memberships m
+        where m.org_id = p_org_id and m.user_id <> v_target and 'org_admin' = any (m.roles)) then
+    raise exception 'org_last_admin' using errcode = 'P0001';
+  end if;
+
+  -- The new grant reports to the caller's most senior grant in this organization.
+  select g.id into v_manager_grant
+    from public.admin_role_grants g join kc_private.admin_roles r on r.role = g.role
+   where g.user_id = v_actor and g.scope_org_id = p_org_id and g.revoked_at is null
+   order by r.rank desc limit 1;
+  perform kc_private.org_team_revoke(p_org_id, v_target, v_actor);
+  insert into public.admin_role_grants (user_id, role, scope_org_id, granted_by, manager_grant_id)
+  values (v_target, p_role, p_org_id, v_actor, v_manager_grant);
+
+  if v_previous is null then
+    select o.name into v_org_name from public.organizations o where o.id = p_org_id;
+    perform kc_private.outbox_enqueue('notification', jsonb_build_object(
+      'kind', 'org_member_added', 'recipient_id', v_target, 'actor_id', v_actor,
+      'entity', jsonb_build_object('type', 'organization', 'id', p_org_id),
+      'data', jsonb_build_object('orgName', coalesce(v_org_name, ''), 'organization_id', p_org_id,
+                                 'dedupe_key', 'org_member_added:' || p_org_id || ':' || v_target)));
+  end if;
+  return v_target;
+end;
+$$;
+comment on function public.org_add_member(uuid, text, text) is
+  'An organization admin or manager adds a member by share handle or changes their role; a new member is notified.';
+grant execute on function public.org_add_member(uuid, text, text) to authenticated;
+
+-- Removes a member from the team; the caller removes themselves to leave.
+create function public.org_remove_member(p_org_id uuid, p_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor constant uuid := kc_private.require_active_caller();
+  v_my_roles text[];
+  v_target_roles text[];
+begin
+  select m.roles into v_target_roles from public.org_memberships m where m.org_id = p_org_id and m.user_id = p_user_id;
+  if v_target_roles is null then
+    raise exception 'org_member_not_found' using errcode = 'P0001';
+  end if;
+  if p_user_id <> v_actor then
+    select m.roles into v_my_roles from public.org_memberships m where m.org_id = p_org_id and m.user_id = v_actor;
+    if v_my_roles is null
+       or not (v_my_roles && array['org_admin', 'org_manager'])
+       or (v_target_roles && array['org_admin', 'org_manager'] and not ('org_admin' = any (v_my_roles))) then
+      raise exception 'org_member_manage_forbidden' using errcode = '42501';
+    end if;
+  end if;
+  if 'org_admin' = any (v_target_roles) and not exists (
+       select 1 from public.org_memberships m
+        where m.org_id = p_org_id and m.user_id <> p_user_id and 'org_admin' = any (m.roles)) then
+    raise exception 'org_last_admin' using errcode = 'P0001';
+  end if;
+  perform kc_private.org_team_revoke(p_org_id, p_user_id, v_actor);
+end;
+$$;
+comment on function public.org_remove_member(uuid, uuid) is
+  'Removes a member from an organization''s team (or the caller leaves); the last admin stays.';
+grant execute on function public.org_remove_member(uuid, uuid) to authenticated;
 
 -- >>> supabase/schemas/85_billing/010_settings_and_providers.sql
 -- Billing · settings, payment providers, payment methods
@@ -19751,19 +20266,10 @@ grant execute on function public.admin_set_app_flag(text, boolean, text) to auth
 -- So a job that fails, or silently stops running, shows up in the health checks instead of
 -- in a log nobody reads.
 --
--- pg_cron is part of the platform. On a server without it (a plain local PostgreSQL) the
+-- pg_cron is part of the platform (required on Supabase). On a server without it (a plain local PostgreSQL) the
 -- registry and the wrapper still exist and jobs_sync() does nothing.
 
-do $$
-begin
-  if exists (select 1 from pg_catalog.pg_available_extensions e where e.name = 'pg_cron') then
-    begin
-      create extension if not exists pg_cron;
-    exception when others then
-      raise notice 'pg_cron is installed but not loadable in this database: jobs are registered, not scheduled';
-    end;
-  end if;
-end $$;
+-- pg_cron itself is created by 00_foundation/016_platform_extensions.sql.
 
 create table kc_private.scheduled_jobs (
   name        text primary key check (name ~ '^[a-z][a-z0-9_]{1,62}$'),
@@ -20884,6 +21390,10 @@ insert into kc_private.scheduled_jobs (name, schedule, command, timeout, alert_a
    interval '2 minutes', interval '2 hours', 'Stays nobody closed after check-out.'),
   ('food_expiry_alert', '5 * * * *', 'select kc_private.food_expiry_alert_sweep()',
    interval '2 minutes', interval '4 hours', 'Food offers about to expire: urgency and owner alert.'),
+  ('event_reminder', '7 * * * *', 'select kc_private.event_reminder_sweep()',
+   interval '2 minutes', interval '4 hours', 'Confirmed event registrants: the day-before reminder.'),
+  ('event_attendance_prompt', '17 * * * *', 'select kc_private.event_attendance_prompt_sweep()',
+   interval '2 minutes', interval '4 hours', 'Organizers of ended events: mark the attendance.'),
   ('ride_series_materialize', '0 2 * * *', 'select kc_private.ride_series_materialize()',
    interval '10 minutes', interval '36 hours', 'Publishes the missing occurrences of recurring rides, 30 days ahead.'),
   ('lift_expired_suspensions', '*/15 * * * *', 'select kc_private.lift_expired_suspensions()',

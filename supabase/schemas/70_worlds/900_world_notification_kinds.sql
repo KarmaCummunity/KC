@@ -21,4 +21,10 @@ values
    'notifications.eventOrganizerMessageTitle', 'notifications.eventOrganizerMessageBody'),
   -- The member's own post expired (S4: "and at expiry").
   ('post_expired', 'critical', false, false,
-   'notifications.postExpiredTitle', 'notifications.postExpiredBody');
+   'notifications.postExpiredTitle', 'notifications.postExpiredBody'),
+  -- The event a confirmed registrant signed up for starts within a day (175_event_sweeps).
+  ('event_reminder', 'critical', false, false,
+   'notifications.eventReminderTitle', 'notifications.eventReminderBody'),
+  -- The organizer of an event that ended still has attendance to mark (D124).
+  ('event_mark_attendance', 'critical', false, false,
+   'notifications.eventMarkAttendanceTitle', 'notifications.eventMarkAttendanceBody');

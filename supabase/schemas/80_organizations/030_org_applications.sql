@@ -15,8 +15,9 @@ create table public.org_applications (
   id                  uuid primary key default gen_random_uuid(),
   applicant_id        uuid not null references public.users (id) on delete cascade,
   org_name            text not null check (char_length(btrim(org_name)) between 2 and 120),
-  org_type            text not null check (org_type in ('nonprofit_association', 'public_benefit_company',
-                                                        'public_body', 'informal_initiative', 'private_venture')),
+  -- Unknown when the member applies from the app (the form does not ask); staff may set it.
+  org_type            text check (org_type in ('nonprofit_association', 'public_benefit_company',
+                                               'public_body', 'informal_initiative', 'private_venture')),
   -- Optional (D89): any non-profit organization may register.
   registration_number text check (registration_number ~ '^[0-9]{5,12}$'),
   org_description     text check (char_length(org_description) <= 4000),
@@ -63,28 +64,55 @@ create policy org_applications_select_own on public.org_applications
 create policy org_applications_select_reviewers on public.org_applications
   for select to authenticated
   using ((select kc_access.has_admin_role('admin')));
--- A member with an active account files their own application; the column grant leaves the
--- status and the review fields to the server.
-create policy org_applications_insert_own on public.org_applications
-  for insert to authenticated
-  with check (applicant_id = (select auth.uid())
-              and exists (select 1 from public.users u where u.id = (select auth.uid()) and u.is_active));
+-- Applications are filed through public.submit_org_application (070_org_registration.sql),
+-- which holds the rules (one open application, the 7-day wait after a rejection).
 
 grant select on public.org_applications to authenticated;
-grant insert (id, applicant_id, org_name, org_type, registration_number, org_description, contact_email,
-              contact_phone, website_url, declared_nonprofit)
-  on public.org_applications to authenticated;
 
 insert into kc_private.notification_kinds (kind, category, title_key, body_key) values
   -- requirements/20 § Data model: the applicant learns the decision.
   ('org_application_decided', 'critical', 'notifications.orgApplicationDecidedTitle',
    'notifications.orgApplicationDecidedBody');
 
+-- The page slug of a new organization: Hebrew letters transliterated (final forms included),
+-- everything outside a-z / 0-9 becomes a dash, at most nine words and 50 characters, so a
+-- numeric suffix keeps it inside the slug rule. A name with no usable letters becomes `org`;
+-- a taken slug gets `-2`, `-3`, …
+create function kc_private.org_slug_for(p_name text)
+returns text
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  v_base text;
+  v_slug text;
+  v_n integer := 1;
+begin
+  v_base := lower(translate(coalesce(p_name, ''), 'אבגדהוזחטיכךלמםנןסעפףצץקרשת', 'abgdhvzhtykklmmnnsappcckrst'));
+  v_base := btrim(regexp_replace(v_base, '[^a-z0-9]+', '-', 'g'), '-');
+  v_base := array_to_string((string_to_array(v_base, '-'))[1:9], '-');
+  v_base := btrim(left(v_base, 50), '-');
+  if v_base = '' then
+    v_base := 'org';
+  end if;
+  v_slug := v_base;
+  while exists (select 1 from public.organizations o where o.slug = v_slug) loop
+    v_n := v_n + 1;
+    v_slug := v_base || '-' || v_n;
+  end loop;
+  return v_slug;
+end;
+$$;
+comment on function kc_private.org_slug_for(text) is
+  'A unique, transliterated kebab-case page slug for a new organization.';
+
 -- Decides a pending application as a platform admin (`org.review_applications`: super
--- admin and admin). Approving needs the slug of the new organization's page. Returns the
--- new organization's id, or null for a rejection.
+-- admin and admin). An approval uses the given slug for the new organization's page, or
+-- derives one from its name (kc_private.org_slug_for, 070). Returns the new organization's
+-- id, or null for a rejection.
 -- Errors: forbidden (42501); P0001 application_not_found, application_already_decided,
--- slug_required, slug_taken, org_registration_number_taken.
+-- slug_taken, org_registration_number_taken.
 create function kc_private.org_application_decide(p_application_id uuid, p_approve boolean, p_slug text, p_note text)
 returns uuid
 language plpgsql
@@ -95,6 +123,7 @@ declare
   v_actor constant uuid := kc_private.require_admin_role('admin');
   v_application public.org_applications;
   v_org_id uuid;
+  v_slug text;
 begin
   select a.* into v_application from public.org_applications a where a.id = p_application_id for update;
   if not found then
@@ -104,18 +133,16 @@ begin
   end if;
 
   if p_approve then
-    if nullif(btrim(p_slug), '') is null then
-      raise exception 'slug_required' using errcode = 'P0001';
-    end if;
+    v_slug := coalesce(nullif(btrim(p_slug), ''), kc_private.org_slug_for(v_application.org_name));
     begin
       insert into public.organizations (slug, name, org_type, registration_number, public_about_he, website_url,
                                         contact_email, verification_method, verified_at, verified_by)
-      values (btrim(p_slug), btrim(v_application.org_name), v_application.org_type,
+      values (v_slug, btrim(v_application.org_name), v_application.org_type,
               v_application.registration_number, v_application.org_description, v_application.website_url,
               v_application.contact_email, 'manual', now(), v_actor)
       returning id into v_org_id;
     exception when unique_violation then
-      raise exception '%', case when exists (select 1 from public.organizations o where o.slug = btrim(p_slug))
+      raise exception '%', case when exists (select 1 from public.organizations o where o.slug = v_slug)
                                 then 'slug_taken' else 'org_registration_number_taken' end
         using errcode = 'P0001';
     end;
@@ -146,7 +173,7 @@ begin
 end;
 $$;
 
-create function public.admin_org_application_approve(p_application_id uuid, p_slug text, p_note text default null)
+create function public.admin_org_application_approve(p_application_id uuid, p_slug text default null, p_note text default null)
 returns uuid
 language sql
 security definer

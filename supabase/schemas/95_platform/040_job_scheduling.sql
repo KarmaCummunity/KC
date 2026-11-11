@@ -7,19 +7,10 @@
 -- So a job that fails, or silently stops running, shows up in the health checks instead of
 -- in a log nobody reads.
 --
--- pg_cron is part of the platform. On a server without it (a plain local PostgreSQL) the
+-- pg_cron is part of the platform (required on Supabase). On a server without it (a plain local PostgreSQL) the
 -- registry and the wrapper still exist and jobs_sync() does nothing.
 
-do $$
-begin
-  if exists (select 1 from pg_catalog.pg_available_extensions e where e.name = 'pg_cron') then
-    begin
-      create extension if not exists pg_cron;
-    exception when others then
-      raise notice 'pg_cron is installed but not loadable in this database: jobs are registered, not scheduled';
-    end;
-  end if;
-end $$;
+-- pg_cron itself is created by 00_foundation/016_platform_extensions.sql.
 
 create table kc_private.scheduled_jobs (
   name        text primary key check (name ~ '^[a-z][a-z0-9_]{1,62}$'),

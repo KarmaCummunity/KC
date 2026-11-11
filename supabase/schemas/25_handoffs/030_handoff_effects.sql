@@ -35,6 +35,8 @@ as $$
       when p_new.status = 'handed_over' then 'completed'
       when p_new.status = 'no_show' then 'no_show'
       when p_new.cancel_reason = 'expired' then 'expired'
+      -- A ride that expired without leaving: the seat lapses, nobody cancelled it.
+      when p_new.machine_id = 'ride_booking' and p_new.cancel_reason = 'not_completed' then 'lapsed'
       when p_new.cancel_reason = 'declined' then 'declined'
       when p_new.status = 'cancelled' then 'cancelled'
     end

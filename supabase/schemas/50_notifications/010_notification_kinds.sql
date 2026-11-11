@@ -92,6 +92,7 @@ values
   ('ride_booking_declined', 'critical', true, 'notifications.rideBookingDeclinedTitle', 'notifications.rideBookingDeclinedBody'),
   ('ride_booking_cancelled', 'critical', true, 'notifications.rideBookingCancelledTitle', 'notifications.rideBookingCancelledBody'),
   ('ride_booking_expired', 'critical', true, 'notifications.rideBookingExpiredTitle', 'notifications.rideBookingExpiredBody'),
+  ('ride_booking_lapsed', 'critical', true, 'notifications.rideBookingLapsedTitle', 'notifications.rideBookingLapsedBody'),
   ('ride_booking_completed', 'critical', true, 'notifications.rideBookingCompletedTitle', 'notifications.rideBookingCompletedBody'),
   ('ride_booking_no_show', 'critical', true, 'notifications.rideBookingNoShowTitle', 'notifications.rideBookingNoShowBody'),
   ('ride_booking_waitlist_promoted', 'critical', true, 'notifications.rideBookingWaitlistPromotedTitle', 'notifications.rideBookingWaitlistPromotedBody'),

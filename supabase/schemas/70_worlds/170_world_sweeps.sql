@@ -14,9 +14,10 @@
 -- Expires open and paused posts whose time has come (D21, D128), in every world. Before
 -- the post leaves the air its bookings are ended with an honest reason: a request nobody
 -- answered `expired`, an approved booking nobody completed `not_completed` — never
--- completed automatically, so no karma is earned without a member saying so. Registrations
--- of an event that took place stay for attendance marking (25_handoffs/050). The owner is
--- told. Before, the ride sweep left bookings live and each world had its own writer.
+-- completed automatically, so no karma is earned without a member saying so. Of an event
+-- that ended, the requests nobody answered and the waiting list lapse as `expired` (each
+-- member is told); confirmed registrations stay for attendance marking (25_handoffs/050).
+-- The owner is told. Before, the ride sweep left bookings live and each world had its own writer.
 create function kc_private.post_expiry_sweep(p_limit integer default 500)
 returns integer
 language plpgsql
@@ -37,12 +38,13 @@ begin
   loop
     for v_handoff in
       select h.id, h.status from public.post_handoffs h
-       where h.post_id = v_post.id and h.status in ('reserved', 'confirmed')
-         and h.machine_id <> 'event_registration'
+       where h.post_id = v_post.id
+         and ((h.machine_id <> 'event_registration' and h.status in ('reserved', 'confirmed'))
+              or (h.machine_id = 'event_registration' and h.status in ('waitlisted', 'reserved')))
     loop
       perform kc_private.handoff_move(
         v_handoff.id, 'cancelled', 'system',
-        case v_handoff.status when 'reserved' then 'expired' else 'not_completed' end);
+        case when v_handoff.status in ('reserved', 'waitlisted') then 'expired' else 'not_completed' end);
     end loop;
     perform kc_private.post_move(v_post.id, 'expired', 'system');
     perform kc_private.outbox_enqueue('notification', jsonb_build_object(

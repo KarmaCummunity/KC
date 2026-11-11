@@ -24,10 +24,13 @@ begin
   if v_post.status <> 'draft' then
     raise exception 'listing_wrong_status' using errcode = 'P0001';
   end if;
+  -- An offer in items, food, housing or animals needs a photo (30_social/015, D132).
+  perform kc_private.post_require_offer_photo(p_post_id);
   perform kc_private.post_move(p_post_id, 'open', 'owner');
 end;
 $$;
-comment on function public.publish_post(uuid) is 'Publishes a draft post (draft → open).';
+comment on function public.publish_post(uuid) is
+  'Publishes a draft post (draft → open); an offer in a photo world needs a photo (offer_photo_required).';
 grant execute on function public.publish_post(uuid) to authenticated;
 
 -- Takes an open post off the air without closing it (D104). A reserved or confirmed

@@ -109,7 +109,7 @@ as $$
     $q$select status || coalesce(':' || cancel_reason, '') from public.post_handoffs where id = ~%s.%s$q$, p_title, p_who));
 $$;
 
-select plan(53);
+select plan(64);
 
 -- Alice organizes. Bob, Carol and Eve attend; only Eve has a verified identity. Dan and
 -- Alice are blocked.
@@ -229,6 +229,36 @@ select is(kc_private.post_expiry_sweep() || '|' || pg_temp.val(null, $$select st
 select is(pg_temp.act('a', $$select public.mark_event_attendance(~ev1.e, true)$$) || '|' || pg_temp.reg('ev1', 'e'), 'ok|handed_over',
   'attendance is still marked after the event expired');
 select is(pg_temp.act('e', $$select public.cancel_event_registration(~ev1.e)$$), 'invalid_status', 'an attended registration is not cancelled');
+
+-- ── Reminder, attendance prompt, and what lapses when an event ends ─────────
+select is(pg_temp.event('a', 'ev5', '30 hours', '{"capacity":1}') || pg_temp.event('a', 'ev6', '30 hours', '{"registration_policy":"manual"}')
+    || pg_temp.act('b', $$select public.register_for_event(#ev5)$$) || pg_temp.act('c', $$select public.register_for_event(#ev5)$$)
+    || pg_temp.act('e', $$select public.register_for_event(#ev6)$$)
+    || '|' || pg_temp.reg('ev5', 'b') || '|' || pg_temp.reg('ev5', 'c') || '|' || pg_temp.reg('ev6', 'e'),
+  'okokokokok|confirmed|waitlisted|reserved', 'a confirmed place, a waiting member and an unanswered request');
+select is(kc_private.event_reminder_sweep(), 0, 'no reminder while the event is more than a day away');
+update public.post_event_details set starts_at = now() + interval '10 hours', ends_at = now() + interval '13 hours'
+ where post_id = (select id from public.posts where title = 'ev5');
+select is(kc_private.event_reminder_sweep(), 0, 'nor for a member who registered inside the last day');
+update public.post_handoffs set created_at = now() - interval '2 days'
+ where recipient_id = '00000000-0000-4000-8000-00000000000b' and post_id = (select id from public.posts where title = 'ev5');
+select is(kc_private.event_reminder_sweep() || '|' || pg_temp.told('event_reminder', 'b') || '|' || pg_temp.told('event_reminder', 'c'),
+  '1|1|0', 'a confirmed registrant is reminded; the waiting member is not');
+select is(pg_temp.val(null, $$select e.payload #>> '{data,dedupe_key}' = 'event_reminder:' || h.id
+    from kc_private.outbox_events e, public.post_handoffs h
+   where e.payload ->> 'kind' = 'event_reminder' and h.id = ~ev5.b$$), 'true', 'the reminder carries a key, so a second run tells nobody twice');
+select is(kc_private.event_attendance_prompt_sweep(), 0, 'the organizer is not prompted before the event ends');
+update public.post_event_details set starts_at = now() - interval '5 hours', ends_at = now() - interval '1 hour'
+ where post_id in (select id from public.posts where title in ('ev5', 'ev6'));
+select is(kc_private.event_attendance_prompt_sweep() || '|' || pg_temp.told('event_mark_attendance', 'a'), '1|1',
+  'after the end the organizer is asked once, for the event with confirmed registrations');
+select is(pg_temp.act('a', $$select public.mark_event_attendance(~ev5.b, true)$$) || '|' || kc_private.event_attendance_prompt_sweep(),
+  'ok|0', 'nothing is asked once the attendance is marked');
+select is(kc_private.post_expiry_sweep() || '|' || pg_temp.reg('ev5', 'b') || '|' || pg_temp.reg('ev5', 'c') || '|' || pg_temp.reg('ev6', 'e'),
+  '2|handed_over|cancelled:expired|cancelled:expired', 'the end of an event lapses the waiting list and the unanswered requests; attendance stays');
+select is(pg_temp.told('event_registration_expired', 'c') || '|' || pg_temp.told('event_registration_expired', 'e'), '1|1',
+  'and each of them is told');
+
 delete from auth.users where id = '00000000-0000-4000-8000-00000000000a';
 select is((select count(*) from public.post_event_details) + (select count(*) from public.post_handoffs), 0::bigint,
   'removing the organizer removes the events and their registrations');

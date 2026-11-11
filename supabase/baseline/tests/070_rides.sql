@@ -103,7 +103,7 @@ as $$
       'seats', p_seats) || p_extra));
 $$;
 
-select plan(112);
+select plan(113);
 
 -- Alice drives. Bob, Carol and Eve ride. Dan and Alice are blocked.
 insert into auth.users (id, email, raw_app_meta_data)
@@ -349,9 +349,11 @@ select is(kc_private.post_expiry_sweep() || '|' || pg_temp.val(null, $$select p.
     h.status || ':' || h.cancel_reason, ' ' order by h.recipient_id) from public.post_handoffs h where h.post_id = p.id and h.recipient_id in (@b, @c))
     from public.posts p where p.title = 'r1'$$) || '|' || pg_temp.told('post_expired', 'a'),
   '1|expired|cancelled:not_completed cancelled:passenger_cancelled cancelled:expired|1', 'the sweep expires a ride and ends its bookings with their reasons');
+select is(pg_temp.told('ride_booking_lapsed', 'b') || '|' || pg_temp.told('ride_booking_cancelled', 'b'), '1|1',
+  'a passenger whose seat went with an expired ride hears that the ride did not run, and the cancellation they heard before stays the only one');
 select is(pg_temp.act('b', $$select public.book_ride_seat(#r6)$$) || pg_temp.act('a', $$select public.delete_post(#r6)$$)
     || '|' || pg_temp.val(null, $$select cancel_reason from public.post_handoffs where id = ~r6.b$$)
-    || '|' || pg_temp.told('ride_booking_cancelled', 'b'), 'okok|post_deleted|3', 'deleting a ride cancels its bookings and tells the passenger');
+    || '|' || pg_temp.told('ride_booking_cancelled', 'b'), 'okok|post_deleted|2', 'deleting a ride cancels its bookings and tells the passenger');
 delete from auth.users where id = '00000000-0000-4000-8000-00000000000a';
 select is((select count(*) from public.post_ride_details r join public.posts p on p.id = r.post_id where p.owner_id = '00000000-0000-4000-8000-00000000000a')
     || '|' || (select count(*) from public.post_emergencies) || '|' || (select count(*) from public.ride_route_alerts where series_id is null),

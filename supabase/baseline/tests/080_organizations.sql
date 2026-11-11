@@ -92,7 +92,7 @@ as $$
   select count(*) from audit.events e where e.action = p_action;
 $$;
 
-select plan(62);
+select plan(74);
 
 -- a super admin · b moderator · d platform admin · e applicant, then admin of `helpers` ·
 -- f its manager · c its volunteer · 3 its employee · 1, 2 members outside it.
@@ -109,17 +109,25 @@ insert into public.post_kinds (world_slug, slug, label_he, label_en, direction) 
 insert into public.organizations (slug, name, is_platform) values ('kc', 'Karma Community', true);
 
 -- ── Applications and their review ───────────────────────────────────────────
-select is(pg_temp.act('e', $$insert into public.org_applications (applicant_id, org_name, org_type, declared_nonprofit)
-    values (@e, 'Helpers', 'nonprofit_association', true)$$), 'ok', 'a member applies to register an organization');
-select is(pg_temp.act('e', $$insert into public.org_applications (applicant_id, org_name, org_type, declared_nonprofit)
-    values (@e, 'Helpers again', 'nonprofit_association', true)$$)
+select is(pg_temp.act('e', $$select public.submit_org_application('Helpers', 'We help.', 'Helpers@Mail.test', null, null, true)$$),
+  'ok', 'a member applies to register an organization');
+select is(pg_temp.val(null, $$select contact_email || '|' || (org_type is null) from public.org_applications$$), 'helpers@mail.test|true',
+  'the contact is stored in lower case and the form needs no organization type');
+select is(pg_temp.act('e', $$select public.submit_org_application('Helpers again', 'We help.', 'h@mail.test', null, null, true)$$)
   || '|' || pg_temp.act('1', $$insert into public.org_applications (applicant_id, org_name, org_type, declared_nonprofit)
-    values (@e, 'Forged', 'public_body', true)$$)
+    values (@1, 'Direct', 'public_body', true)$$)
   || '|' || pg_temp.act('1', $$insert into public.org_applications (applicant_id, org_name, org_type, declared_nonprofit, status)
     values (@1, 'Self approved', 'public_body', true, 'approved')$$)
-  || '|' || pg_temp.act('1', $$insert into public.org_applications (applicant_id, org_name, org_type, declared_nonprofit)
-    values (@1, 'For profit', 'public_body', false)$$),
-  '23505|42501|42501|23514', 'one pending application each, only one''s own, never a status, always the declaration');
+  || '|' || pg_temp.act('1', $$select public.submit_org_application('For profit', 'We earn.', 'p@mail.test', null, null, false)$$)
+  || '|' || pg_temp.act(null, $$select public.submit_org_application('Anon', 'We help.', 'a@mail.test', null, null, true)$$),
+  'org_application_pending_exists|42501|42501|org_nonprofit_declaration_required|42501',
+  'one pending application each, no direct insert, always the declaration, signed-in members only');
+select is(pg_temp.act('1', $$select public.submit_org_application('X', 'We help.', 'p@mail.test', null, null, true)$$)
+  || '|' || pg_temp.act('1', $$select public.submit_org_application('Valid name', ' ', 'p@mail.test', null, null, true)$$)
+  || '|' || pg_temp.act('1', $$select public.submit_org_application('Valid name', 'We help.', 'not an email', null, null, true)$$)
+  || '|' || pg_temp.act('1', $$select public.submit_org_application('Valid name', 'We help.', 'p@mail.test', null, 'http://x.org', true)$$),
+  'org_name_invalid|org_description_required|org_contact_email_invalid|org_website_invalid',
+  'the form is validated with a stable code per field');
 select is(pg_temp.val('e', 'select count(*) from public.org_applications') || pg_temp.val('1', 'select count(*) from public.org_applications')
   || pg_temp.val('b', 'select count(*) from public.org_applications') || pg_temp.val('d', 'select count(*) from public.org_applications')
   || pg_temp.act('anon', 'select 1 from public.org_applications'),
@@ -128,10 +136,9 @@ select is(pg_temp.act('b', $$select public.admin_org_application_approve((select
   || pg_temp.act('e', $$select public.admin_org_application_approve((select id from public.org_applications), 'helpers')$$)
   || pg_temp.act('e', $$update public.org_applications set status = 'approved'$$),
   '425014250142501', 'a moderator, the applicant and a direct update decide nothing');
-select is(pg_temp.act('d', $$select public.admin_org_application_approve((select id from public.org_applications), ' ')$$)
-  || '|' || pg_temp.act('d', $$select public.admin_org_application_approve((select id from public.org_applications), 'kc')$$)
+select is(pg_temp.act('d', $$select public.admin_org_application_approve((select id from public.org_applications), 'kc')$$)
   || '|' || pg_temp.act('d', $$select public.admin_org_application_approve(gen_random_uuid(), 'x')$$),
-  'slug_required|slug_taken|application_not_found', 'an approval needs a free slug and a real application');
+  'slug_taken|application_not_found', 'an approval needs a free slug and a real application');
 select is(pg_temp.act('d', $$select public.admin_org_application_approve((select id from public.org_applications), 'helpers', 'welcome')$$),
   'ok', 'a platform admin approves');
 select is(pg_temp.val(null, $$select o.status || '|' || o.verification_level || '|' || o.verification_method || '|' || o.is_verified_nonprofit
@@ -146,8 +153,7 @@ select is(pg_temp.audited('org_application_approve') || '|' || pg_temp.audited('
   '1|2|1', 'the approval is audited and the applicant is told');
 select is(pg_temp.act('d', $$select public.admin_org_application_reject((select id from public.org_applications))$$),
   'application_already_decided', 'a decision is final');
-select is(pg_temp.act('1', $$insert into public.org_applications (applicant_id, org_name, org_type, declared_nonprofit)
-    values (@1, 'Copy', 'informal_initiative', true)$$)
+select is(pg_temp.act('1', $$select public.submit_org_application('Copy', 'We help.', 'c@mail.test', null, null, true)$$)
   || pg_temp.act('d', $$select public.admin_org_application_reject((select id from public.org_applications where applicant_id = @1), ' not yet ')$$)
   || '|' || pg_temp.val('1', $$select status || ':' || review_note from public.org_applications$$)
   || '|' || pg_temp.audited('org_application_reject'),
@@ -343,6 +349,55 @@ select is(pg_temp.act('2', 'delete from public.donation_links') || pg_temp.val(n
   || pg_temp.act('1', 'delete from public.donation_links') || pg_temp.val(null, 'select count(*) from public.donation_links'),
   'ok1ok0', 'the submitter removes their link; another member cannot');
 
+
+-- ── Registration from the app and the team screen ───────────────────────────
+select is(kc_private.org_slug_for('קהילת חסד') || '|' || kc_private.org_slug_for('') || '|' || kc_private.org_slug_for('KC')
+  || '|' || kc_private.org_slug_for('a b c d e f g h i j k l'),
+  'khylt-hsd|org|kc-2|a-b-c-d-e-f-g-h-i', 'a page slug is transliterated, never empty, never taken and short enough for the slug rule');
+select is(pg_temp.act('1', $$select public.submit_org_application('Neighbors', 'We help.', 'n@host.test', null, null, true)$$),
+  'org_application_resubmit_too_soon', 'after a rejection a new application waits 7 days');
+update public.org_applications set reviewed_at = now() - interval '8 days' where applicant_id = '00000000-0000-4000-8000-000000000001';
+select is(pg_temp.act('1', $$select public.submit_org_application('Neighbors', 'We help.', 'n@host.test', null, 'https://neighbors.example', true)$$)
+  || pg_temp.act('d', $$select public.admin_org_application_approve((select id from public.org_applications where org_name = 'Neighbors'))$$)
+  || pg_temp.val(null, $$select slug || ':' || website_url from public.organizations where name = 'Neighbors'$$),
+  'okokneighbors:https://neighbors.example', 'later it is accepted, and an approval without a slug derives it from the name');
+create function pg_temp.handle(p_who text) returns text language sql as
+  $$ select share_handle from public.users where id = ('00000000-0000-4000-8000-00000000000' || p_who)::uuid $$;
+select is(pg_temp.act('1', 'select public.org_add_member(&neighbors, ''@' || upper(pg_temp.handle('3')) || ''', ''org_employee'')')
+  || '|' || pg_temp.val('3', $$select string_agg(right(user_id::text, 1) || ':' || role, ' ' order by user_id) from public.list_org_members(&neighbors)$$),
+  'ok|1:org_admin 3:org_employee', 'an organization admin adds a member by handle (any case, with @) and the team lists both');
+select is(pg_temp.act('1', 'select public.org_add_member(&neighbors, ''' || pg_temp.handle('3') || ''', ''org_manager'')')
+  || '|' || pg_temp.val(null, $$select (select count(*) from kc_private.outbox_events e where e.topic = 'notification'
+       and e.payload ->> 'kind' = 'org_member_added' and e.payload ->> 'recipient_id' = '00000000-0000-4000-8000-000000000003')
+     || ':' || (select array_to_string(roles, ',') from public.org_memberships where user_id = @3 and org_id = &neighbors)$$),
+  'ok|1:org_manager', 'a role change replaces the member''s role and tells nobody again; joining told them once');
+select is(pg_temp.act('3', 'select public.org_add_member(&neighbors, ''' || pg_temp.handle('2') || ''', ''org_volunteer'')')
+  || '|' || pg_temp.act('3', 'select public.org_add_member(&neighbors, ''' || pg_temp.handle('2') || ''', ''org_manager'')')
+  || '|' || pg_temp.act('3', 'select public.org_remove_member(&neighbors, @1)'),
+  'ok|42501|42501', 'a manager adds volunteers, never managers or admins, and removes no admin');
+select is(pg_temp.act('2', 'select public.org_add_member(&neighbors, ''' || pg_temp.handle('f') || ''', ''org_volunteer'')')
+  || '|' || pg_temp.act('f', 'select public.list_org_members(&neighbors)')
+  || '|' || pg_temp.act('f', 'select public.org_add_member(&neighbors, ''' || pg_temp.handle('f') || ''', ''org_volunteer'')')
+  || '|' || pg_temp.act('f', 'select public.org_remove_member(&neighbors, @2)')
+  || '|' || pg_temp.act(null, 'select public.list_org_members(&neighbors)'),
+  '42501|42501|42501|42501|42501', 'a volunteer, an outsider and a signed-out caller manage and read nothing');
+select is(pg_temp.act('1', 'select public.org_add_member(&neighbors, ''nobody_here'', ''org_volunteer'')')
+  || '|' || pg_temp.act('1', 'select public.org_add_member(&neighbors, ''' || pg_temp.handle('2') || ''', ''owner'')')
+  || '|' || pg_temp.act('1', 'select public.org_remove_member(&neighbors, @f)')
+  || '|' || pg_temp.act('1', 'select public.org_add_member(&neighbors, ''' || pg_temp.handle('1') || ''', ''org_volunteer'')')
+  || '|' || pg_temp.act('1', 'select public.org_remove_member(&neighbors, @1)'),
+  'org_member_user_not_found|org_role_invalid|org_member_not_found|org_last_admin|org_last_admin',
+  'unknown handle, role and member are refused with their codes, and the last admin stays');
+select is(pg_temp.act('1', 'select public.org_add_member(&neighbors, ''' || pg_temp.handle('3') || ''', ''org_admin'')')
+  || '|' || pg_temp.act('1', 'select public.org_remove_member(&neighbors, @1)')
+  || '|' || pg_temp.val(null, $$select string_agg(right(user_id::text, 1) || ':' || array_to_string(roles, ','), ' ' order by user_id)
+       from public.org_memberships where org_id = &neighbors$$)
+  || '|' || pg_temp.val(null, $$select count(*) from public.admin_role_grants where scope_org_id = &neighbors and user_id = @1 and revoked_at is null$$),
+  'ok|ok|2:org_volunteer 3:org_admin|0', 'a second admin lets the first leave; the leaver''s grants end, the others stay');
+select is(pg_temp.val('2', $$select string_agg(role, ',' order by user_id) from public.list_org_members(&neighbors)$$), 'org_volunteer,org_admin',
+  'every member of the team reads it');
+delete from public.organizations where slug = 'neighbors';
+
 -- ── Removal ─────────────────────────────────────────────────────────────────
 select is(pg_temp.val(null, $$select (select count(*) from public.posts where beneficiary_org_id = &helpers) || '|'
     || (select count(*) from public.org_memberships where org_id = &helpers)$$), '3|4', 'the organization has posts and members');
@@ -353,6 +408,7 @@ select is((select count(*) from public.posts where title in ('orgpost', 'orgdraf
   '3|0|0|true', 'removing an organization releases its posts and ends its memberships and grants');
 delete from auth.users where id = '00000000-0000-4000-8000-000000000002';
 select is((select count(*) from public.org_applications where org_name = 'Third'), 0::bigint, 'an application leaves with its applicant');
+
 
 select * from finish();
 rollback;
