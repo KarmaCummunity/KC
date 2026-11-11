@@ -27,6 +27,8 @@ const CODE_BY_REASON: Readonly<Record<string, ChatErrorCode>> = {
   invalid_media_payload: 'invalid_media_payload',
   invalid_reaction_type: 'invalid_reaction_type',
   unauthenticated: 'chat_forbidden',
+  description_too_short: 'description_too_short',
+  description_too_long: 'description_too_long',
 };
 
 /**

@@ -20,6 +20,8 @@ describe('mapChatError', () => {
     ['invalid_media_payload', 'invalid_media_payload'],
     ['invalid_reaction_type', 'invalid_reaction_type'],
     ['unauthenticated', 'chat_forbidden'],
+    ['description_too_short', 'description_too_short'],
+    ['description_too_long', 'description_too_long'],
   ])('maps the stable reason %s to ChatError %s', (reason, code) => {
     const out = mapChatError(rule(reason));
     expect(out).toBeInstanceOf(ChatError);

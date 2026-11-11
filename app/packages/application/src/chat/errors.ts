@@ -18,6 +18,7 @@ export type ChatErrorCode =
   | 'invalid_media_payload'
   | 'message_not_found'
   | 'invalid_reaction_type'
+  | 'description_too_long'
   | 'unknown';
 
 export class ChatError extends Error {

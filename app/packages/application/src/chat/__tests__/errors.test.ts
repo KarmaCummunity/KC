@@ -32,7 +32,7 @@ describe('ChatError', () => {
       'send_to_deleted_user', 'super_admin_not_found', 'support_thread_not_hideable',
       'description_too_short', 'cannot_chat_self', 'blocked_relationship',
       'account_not_active', 'post_unavailable', 'rate_limited', 'invalid_media_payload',
-      'message_not_found', 'invalid_reaction_type', 'unknown',
+      'message_not_found', 'description_too_long', 'invalid_reaction_type', 'unknown',
     ] as const) {
       expect(new ChatError(code, code).code).toBe(code);
     }
