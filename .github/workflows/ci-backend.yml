@@ -123,14 +123,18 @@ jobs:
           DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')"
           U="${DB_URL%/*}/kc_baseline_check"
           q() { echo "── $1"; psql "$U" -X -v ON_ERROR_STOP=0 -c "$1" 2>&1 | tail -6; }
-          q "select version()"
-          q "select setting from pg_settings where name = 'shared_preload_libraries'"
-          q "select extname from pg_extension order by 1"
-          q "begin; set local role anon; select 1 from public.streets; rollback"
-          q "begin; set local role anon; select 1 from public.road_junctions; rollback"
-          q "begin; set local role anon; select 1 from public.search_places('ganim'); rollback"
-          q "begin; set local role authenticated; select count(*) from public.streets; rollback"
+          wait_db() { for _ in $(seq 1 30); do psql "$U" -X -Atc "select 1" >/dev/null 2>&1 && return 0; sleep 2; done; }
+          wait_db
+          q "select proacl::text, prosecdef, proconfig::text from pg_proc where proname = 'search_places'"
+          q "select has_function_privilege('anon', 'public.search_places(text,text[],integer)', 'execute') as anon_exec, has_function_privilege('public'::name, 'public.search_places(text,text[],integer)', 'execute') as public_exec"
+          q "select defaclrole::regrole, defaclnamespace::regnamespace, defaclacl::text from pg_default_acl"
+          q "select (select count(*) from public.cities) as cities, (select count(*) from public.road_junctions) as junctions"
+          q "begin; set local role authenticated; select count(*) from public.search_places('ganim'); rollback"
+          wait_db
           q "select count(*) from public.search_places('ganim')"
+          wait_db
+          q "begin; set local role anon; select count(*) from public.search_places('ganim'); rollback"
+          wait_db
 
       - name: Database container log (on failure)
         if: failure()
