@@ -352,7 +352,10 @@ begin
        and p.status in ('open', 'paused')
      for update of p
   loop
-    perform public.post_record_set_status(v_post, 'deleted_no_recipient');
+    -- On the post itself: `post_record_set_status` also writes the `listings` view, whose mirror
+    -- reads its "closed" status back as `closed_delivered`.
+    update public.posts set status = 'deleted_no_recipient', updated_at = now()
+     where post_id = v_post.post_id;
     v_count := v_count + 1;
   end loop;
   return v_count;
@@ -395,8 +398,7 @@ begin
     perform kc_private.ride_series_close_booked_upcoming(s.series_id);
     -- 0666: what remains (departed dates) is detached from the ended series; `listings` is a view
     -- over posts since 0667, so the post is the only row to write. The dates just closed keep
-    -- their marker as their history: rewriting a closed post's details would replay its status
-    -- through the listing mirror.
+    -- their series marker as their history.
     update public.posts p
        set details = p.details - 'ride_series', updated_at = now()
       from public.ride_post_details r
