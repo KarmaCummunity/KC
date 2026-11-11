@@ -20,12 +20,12 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 245,
-   "distinct": 223
+   "callSites": 249,
+   "distinct": 227
   },
   "table": {
-   "callSites": 166,
-   "distinct": 56
+   "callSites": 168,
+   "distinct": 57
   }
  },
  "entries": [
@@ -1898,7 +1898,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 98,
+   "line": 100,
    "area": "marketplace",
    "symbol": "loadFoodDetails",
    "via": "literal",
@@ -1910,7 +1910,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 107,
+   "line": 109,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
@@ -1919,7 +1919,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 114,
+   "line": 116,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
@@ -1931,7 +1931,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-   "line": 115,
+   "line": 117,
    "area": "marketplace",
    "symbol": "fetchListingDetail",
    "via": "literal",
@@ -3344,6 +3344,66 @@
     "select"
    ],
    "name": "users"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+   "line": 40,
+   "area": "series",
+   "symbol": "SupabasePostSeriesRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_series"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+   "line": 56,
+   "area": "series",
+   "symbol": "SupabasePostSeriesRepository.kind",
+   "via": "literal",
+   "name": "create_post_series"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+   "line": 77,
+   "area": "series",
+   "symbol": "SupabasePostSeriesRepository.unwrapCall",
+   "via": "literal",
+   "name": "update_post_series"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+   "line": 88,
+   "area": "series",
+   "symbol": "SupabasePostSeriesRepository.setStatus",
+   "via": "literal",
+   "name": "set_post_series_status"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+   "line": 92,
+   "area": "series",
+   "symbol": "SupabasePostSeriesRepository.cancelOccurrence",
+   "via": "literal",
+   "name": "cancel_post_series_date"
+  },
+  {
+   "kind": "table",
+   "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+   "line": 101,
+   "area": "series",
+   "symbol": "SupabasePostSeriesRepository.unwrapCall",
+   "via": "literal",
+   "ops": [
+    "select"
+   ],
+   "name": "post_event_details"
   },
   {
    "kind": "rpc",
