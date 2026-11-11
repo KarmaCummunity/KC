@@ -67,14 +67,6 @@ export const FSM_MACHINES: readonly FsmMachine<string, string>[] = [
   webhookEventMachine,
   orgFinanceEntryMachine,
   adminTaskMachine,
-];
-
-/**
- * Machines the database does not seed yet: the parked timesheets tool (`parkedFeatures.ts`)
- * still derives its screen actions from it. They are not
- * in the catalog, so the contract test does not compare them; they leave with those tools or
- * move into the catalog when the baseline gains the owning module.
- */
-export const LEGACY_FSM_MACHINES: readonly FsmMachine<string, string>[] = [
   timesheetMachine,
 ];
+

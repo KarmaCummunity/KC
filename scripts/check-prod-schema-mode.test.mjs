@@ -83,7 +83,7 @@ test('the committed manifest lists exactly the migrations in the tree; prod stay
   const allowed = loadAllowedManifest(root);
   const migrations = listMigrationFiles(root);
   // Each forward-only migration after the cut-over is listed here with the PR that adds it (docs/db/cutover-runbook.md).
-  const expected = ['0001_baseline.sql', '0002_org_entitlements.sql', '0003_post_seat_counts.sql', '0004_ride_series_schedule.sql', '0005_match_quality.sql', '0006_profile_posts_mine_tab.sql', '0007_chat_inbox_previews.sql', '0008_post_media_sizes.sql', '0009_research_feedback_survey_reports.sql', '0010_housing_knowledge_finance_reads.sql', '0020_org_sec46_machine.sql', '0021_back_office_admin_tasks.sql', '0022_back_office_crm.sql'];
+  const expected = ['0001_baseline.sql', '0002_org_entitlements.sql', '0003_post_seat_counts.sql', '0004_ride_series_schedule.sql', '0005_match_quality.sql', '0006_profile_posts_mine_tab.sql', '0007_chat_inbox_previews.sql', '0008_post_media_sizes.sql', '0009_research_feedback_survey_reports.sql', '0010_housing_knowledge_finance_reads.sql', '0020_org_sec46_machine.sql', '0021_back_office_admin_tasks.sql', '0022_back_office_crm.sql', '0023_back_office_timesheets.sql'];
   assert.deepEqual(allowed, expected, 'the manifest approves the baseline and the forward-only migrations');
   assert.deepEqual(migrations, expected, 'supabase/migrations holds the baseline and the forward-only migrations (legacy chain is in archive/)');
   const blocked = checkProdSchemaMode({ mode: 'block', migrations, allowed });
