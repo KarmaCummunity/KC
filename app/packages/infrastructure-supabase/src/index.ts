@@ -90,7 +90,6 @@ export { EdgeFnTranslationService } from './translations/EdgeFnTranslationServic
 export { SupabasePostTranslationReader } from './translations/SupabasePostTranslationReader';
 export { SupabaseMarketplaceRepository } from './marketplace/SupabaseMarketplaceRepository';
 export { SupabasePaymentsRepository } from './payments/SupabasePaymentsRepository';
-export { SandboxPaymentProvider } from './payments/SandboxPaymentProvider';
 export { SupabaseKcSupportChannelsRepository } from './payments/SupabaseKcSupportChannelsRepository';
 export { SupabaseVolunteerRepository } from './volunteering/SupabaseVolunteerRepository';
 export { SupabaseOrganizationsRepository } from './organizations/SupabaseOrganizationsRepository';
