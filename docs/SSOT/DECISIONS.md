@@ -1911,3 +1911,13 @@ Owner rules that go with it:
 **Rejected.** A compile-time `__DEV__` check (it is false in preview builds that run against kc-dev). Removing the routes (the review account would have no way in). Gating `/sign-in` too (same). A separate remote-config service (`app_flags` already exists and is owner-writable).
 
 **Affected.** `app/apps/mobile/src/config/launchSurfaces.ts`, `src/hooks/useLaunchSurface.ts`, `src/components/LaunchSurfaceGate.tsx`, `app/(auth)/{index,sign-in,sign-up,forgot-password}.tsx`, `app/auth/{verify,reset-password}.tsx`, `app/settings.tsx`, `app/settings/whatsapp.tsx`, `app/(admin)/whatsapp/index.tsx` (screen moved to `src/screens/admin/WhatsAppAdminScreen.tsx`), `src/components/admin/AdminNav.tsx`, `src/services/purchases/RevenueCatSync.tsx`; FR-AUTH-001 AC2 (the welcome email link is now environment-dependent).
+
+## {{ENG:knowledge-verified-user-only}} — Knowledge listings need a verified user, not moderator approval (2026-11-09)
+
+**Decision.** The owner relaxes R-Knowledge-1 (#1037): a verified user can publish and book knowledge listings with no moderator approval step before booking. Moderators act on reports only. This supersedes the `pending_review` start state mentioned in D-224.
+
+**Why.** The approval step slows every lesson and mentorship offer, and the report path (#1302) already covers abuse.
+
+**Rejected.** Keeping the moderator approval (safer, but slower for a small team of moderators). Removing the verified-user requirement (opens the world to unverified accounts).
+
+**Affected.** Docs only in this entry. Follow-up (not done here): a migration so new knowledge listings start as published instead of `pending_review`, plus updating the R-Knowledge-1 catalog row (`0265`) and `docs/spec/requirements/23_knowledge.md`.
