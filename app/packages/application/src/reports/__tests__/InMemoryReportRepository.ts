@@ -49,7 +49,7 @@ export class InMemoryReportRepository implements IReportRepository {
   private assertTargetAllowed(input: ReportSubmission): void {
     if (input.targetType === 'user') {
       if (!input.targetId || !this.store.users.has(input.targetId)) throw new ReportError('invalid_target', 'report_target_not_visible');
-      if (input.targetId === this.actorId) throw new ReportError('invalid_target', 'cannot_report_self');
+      if (input.targetId === this.actorId) throw new ReportError('cannot_report_self', 'cannot_report_self');
     }
     if (input.targetType === 'chat') {
       const row = input.targetId ? this.store.chats.get(input.targetId) : undefined;

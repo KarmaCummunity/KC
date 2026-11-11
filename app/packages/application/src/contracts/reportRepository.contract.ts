@@ -74,10 +74,10 @@ const generalReportsRepeat: ContractCase<Ctx> = {
 };
 
 const noSelfReport: ContractCase<Ctx> = {
-  name: 'submit: a member cannot report themselves (invalid_target)',
+  name: 'submit: a member cannot report themselves (cannot_report_self)',
   async run(ctx) {
     const reporter = await ctx.newActor();
-    await assertRejectsWithCode(reportUser(reporter, reporter.userId), 'invalid_target', 'self-report');
+    await assertRejectsWithCode(reportUser(reporter, reporter.userId), 'cannot_report_self', 'self-report');
   },
 };
 
