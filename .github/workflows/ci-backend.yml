@@ -32,7 +32,15 @@ jobs:
         uses: ./.github/actions/setup-supabase-cli
 
       - name: Install psql client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+        # ubuntu-latest ships psql; apt is only a fallback. A mirror outage
+        # (azure.archive.ubuntu.com failing to resolve) must not fail the lane.
+        run: |
+          command -v psql >/dev/null && exit 0
+          for attempt in 1 2 3; do
+            sudo apt-get update && sudo apt-get install -y postgresql-client && exit 0
+            sleep 15
+          done
+          exit 1
 
       - name: Log in to ghcr.io (authenticated image pulls avoid anonymous rate limits)
         env:
