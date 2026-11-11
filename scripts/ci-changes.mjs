@@ -40,7 +40,7 @@ import { fileURLToPath } from 'node:url';
 const SHARED = [/^\.github\//, /^\.nvmrc$/];
 
 export const LANE_RULES = {
-  frontend: [/^app\//, /^scripts\//, /^Dockerfile$/, /^sonar-project\.properties$/, ...SHARED],
+  frontend: [/^app\//, /^scripts\//, /^sonar-project\.properties$/, ...SHARED],
   // DB validation also installs the app workspace (sqlProbes), so lockfile and
   // workspace manifests count. Edge Functions are excluded: the local stack
   // starts without the edge runtime.

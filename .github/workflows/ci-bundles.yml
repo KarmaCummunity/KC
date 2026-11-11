@@ -30,7 +30,7 @@ jobs:
       run:
         working-directory: app
     env:
-      # Production-shaped public env (same wiring as the Dockerfile builder);
+      # Production-shaped public env (same wiring as the deploy-web build);
       # the anon key is a placeholder — the bundle is built, never served.
       EXPO_PUBLIC_ENVIRONMENT: production
       EXPO_PUBLIC_SUPABASE_URL: https://enbqriuxvvuontiwslun.supabase.co
@@ -45,7 +45,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Build web bundle (same env wiring as Dockerfile)
+      - name: Build web bundle (same env wiring as deploy-web)
         run: pnpm build:web
 
       - name: Verify dist output
