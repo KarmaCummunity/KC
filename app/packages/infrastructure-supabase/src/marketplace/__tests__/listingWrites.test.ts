@@ -26,6 +26,10 @@ function setup(rpc: Record<string, ReturnType<typeof ok>> = {}) {
   });
 }
 
+
+/** An uploaded photo as the form hands it over: its path, type and real size. */
+const photo = (path: string, mimeType = 'image/jpeg', sizeBytes = 98304) => ({ path, mimeType, sizeBytes });
+
 describe('createListing', () => {
   it('creates a ride with its detail columns and the origin city', async () => {
     const { client, calls } = setup();
@@ -47,22 +51,24 @@ describe('createListing', () => {
   it('creates a food offer with the food columns and records its photos', async () => {
     const { client, calls } = setup();
     await createListing(client, {
-      kindId: 'k-food', title: 'Soup', cityId: 'IL-001', categoryId: 'sub-1', mediaPaths: ['u1/b/0.jpg'], details: { expires_at: 'x', kosher: 'yes' },
+      kindId: 'k-food', title: 'Soup', cityId: 'IL-001', categoryId: 'sub-1', media: [photo('u1/b/0.jpg', 'image/png', 245760)],
+      details: { expires_at: 'x', kosher: 'yes' },
     });
     const args = callsTo(calls, 'create_post_with_details')[0]?.args as { p_post: Record<string, unknown>; p_details: Record<string, unknown> };
     expect(args.p_post).toMatchObject({ item_subcategory_id: 'sub-1', direction: 'offer' });
     expect(args.p_details).toMatchObject({ expires_at: 'x', kosher: true });
     expect(callsTo(calls, 'post_media')[0]?.payload).toEqual([
-      { post_id: 'post-1', owner_id: 'u1', kind: 'image', storage_bucket: 'post-images', storage_key: 'u1/b/0.jpg', ordinal: 0, mime_type: 'image/jpeg', size_bytes: 1 },
+      { post_id: 'post-1', owner_id: 'u1', kind: 'image', storage_bucket: 'post-images', storage_key: 'u1/b/0.jpg', ordinal: 0, mime_type: 'image/png', size_bytes: 245760 },
     ]);
   });
 
   it('writes a plain post as a draft, adds its photos and publishes it; the direction of an either-kind comes from the form', async () => {
     const { client, calls } = setup();
-    expect(await createListing(client, { kindId: 'k-either', direction: 'request', title: 'Chair', cityId: 'IL-001', mediaPaths: ['u1/b/0.jpg'], details: { a: 1 } })).toBe('new-1');
+    expect(await createListing(client, { kindId: 'k-either', direction: 'request', title: 'Chair', cityId: 'IL-001', media: [photo('u1/b/0.jpg')], details: { a: 1 } })).toBe('new-1');
     const insert = callsTo(calls, 'posts').find((c) => c.kind === 'insert');
     expect(insert?.payload).toMatchObject({ owner_id: 'u1', world_slug: 'items', direction: 'request', post_type: 'standard', status: 'draft', details: { a: 1 } });
     expect(callsTo(calls, 'publish_post')[0]?.args).toEqual({ p_post_id: 'new-1' });
+    expect(callsTo(calls, 'post_media')[0]?.payload).toMatchObject([{ storage_key: 'u1/b/0.jpg', mime_type: 'image/jpeg', size_bytes: 98304 }]);
   });
 
   it('removes the draft when completing it fails', async () => {
@@ -124,8 +130,9 @@ describe('listing owner actions', () => {
       userId: 'u1',
       tables: { post_media: (c: FakeCall) => (c.kind === 'insert' ? ok(null) : ok([{ storage_key: 'u1/a.jpg', ordinal: 2 }])) },
     });
-    expect(await owner.addMyListingMedia(client, 'p1', ['u1/a.jpg', 'u1/b.jpg', 'u1/c.jpg', 'u1/d.jpg', 'u1/e.jpg'])).toBe(2);
-    const rows = callsTo(calls, 'post_media').find((c) => c.kind === 'insert')?.payload as { storage_key: string; ordinal: number }[];
-    expect(rows.map((r) => [r.storage_key, r.ordinal])).toEqual([['u1/b.jpg', 3], ['u1/c.jpg', 4]]);
+    const added = ['u1/a.jpg', 'u1/b.jpg', 'u1/c.jpg', 'u1/d.jpg', 'u1/e.jpg'].map((path, i) => photo(path, 'image/jpeg', 1000 + i));
+    expect(await owner.addMyListingMedia(client, 'p1', added)).toBe(2);
+    const rows = callsTo(calls, 'post_media').find((c) => c.kind === 'insert')?.payload as { storage_key: string; ordinal: number; size_bytes: number }[];
+    expect(rows.map((r) => [r.storage_key, r.ordinal, r.size_bytes])).toEqual([['u1/b.jpg', 3, 1001], ['u1/c.jpg', 4, 1002]]);
   });
 });

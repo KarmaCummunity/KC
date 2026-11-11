@@ -68,7 +68,7 @@ describe('useMyListingActions', () => {
 
   it('uploads picked photos and appends them to the listing', async () => {
     m.pick.mockResolvedValue([{ uri: 'file://a.jpg' }]);
-    m.upload.mockResolvedValue(['u1/batch/0.jpg']);
+    m.upload.mockResolvedValue([{ path: 'u1/batch/0.jpg', mimeType: 'image/jpeg', sizeBytes: 2048 }]);
     m.repo.addMyListingMedia.mockResolvedValue(1);
     const refetch = vi.fn(async () => undefined);
     const { result } = renderHook(() => useMyListingActions(refetch));
@@ -77,7 +77,7 @@ describe('useMyListingActions', () => {
     await flush();
 
     expect(m.upload).toHaveBeenCalledWith('u1', [{ uri: 'file://a.jpg' }]);
-    expect(m.repo.addMyListingMedia).toHaveBeenCalledWith('l1', ['u1/batch/0.jpg']);
+    expect(m.repo.addMyListingMedia).toHaveBeenCalledWith('l1', [{ path: 'u1/batch/0.jpg', mimeType: 'image/jpeg', sizeBytes: 2048 }]);
     expect(m.alert).toHaveBeenCalledWith('marketplace.myListingsAddPhotos', 'marketplace.myListingsPhotosAdded');
     expect(refetch).toHaveBeenCalled();
   });
@@ -90,7 +90,7 @@ describe('useMyListingActions', () => {
     expect(m.upload).not.toHaveBeenCalled();
 
     m.pick.mockResolvedValueOnce([{ uri: 'file://b.jpg' }]);
-    m.upload.mockResolvedValueOnce(['u1/batch/1.jpg']);
+    m.upload.mockResolvedValueOnce([{ path: 'u1/batch/1.jpg', mimeType: 'image/jpeg', sizeBytes: 2048 }]);
     m.repo.addMyListingMedia.mockRejectedValueOnce({ message: 'listing_media_full' });
     act(() => result.current.addPhotos('l1'));
     await flush();

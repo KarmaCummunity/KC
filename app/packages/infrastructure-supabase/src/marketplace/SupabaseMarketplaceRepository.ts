@@ -99,8 +99,8 @@ export class SupabaseMarketplaceRepository implements IMarketplaceRepository {
   resumeMyListing = (listingId: string) => owner.runOwnerAction(this.client, 'resume', listingId);
   fulfillMyListing = (listingId: string) => owner.runOwnerAction(this.client, 'fulfill', listingId);
   deleteMyListing = (listingId: string) => owner.runOwnerAction(this.client, 'delete', listingId);
-  addMyListingMedia = (listingId: string, mediaPaths: readonly string[]) =>
-    owner.addMyListingMedia(this.client, listingId, mediaPaths);
+  addMyListingMedia = (listingId: string, media: Parameters<IMarketplaceRepository['addMyListingMedia']>[1]) =>
+    owner.addMyListingMedia(this.client, listingId, media);
 
   // Items/food handoffs — see givingHandoffs.ts.
   getListingHandoff = (listingId: string) => handoffs.getListingHandoff(this.client, listingId);

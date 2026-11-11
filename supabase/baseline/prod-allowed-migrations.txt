@@ -16,3 +16,4 @@
 0005_match_quality.sql
 0006_profile_posts_mine_tab.sql
 0007_chat_inbox_previews.sql
+0008_post_media_sizes.sql

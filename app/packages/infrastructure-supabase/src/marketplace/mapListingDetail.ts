@@ -136,9 +136,12 @@ export async function fetchListingDetail(client: Client, listingId: string): Pro
     lat: point?.lat ?? null,
     lng: point?.lng ?? null,
     maxRadiusKm: null,
-    media: mediaRows.flatMap((m, index) =>
-      isObject(m) && typeof m['storage_key'] === 'string' ? [{ storagePath: m['storage_key'], sortOrder: index }] : [],
-    ),
+    media: mediaRows.flatMap((m, index) => {
+      if (!isObject(m) || typeof m['storage_key'] !== 'string') return [];
+      const mimeType = typeof m['mime_type'] === 'string' ? m['mime_type'] : 'image/jpeg';
+      const sizeBytes = typeof m['size_bytes'] === 'number' ? m['size_bytes'] : 0;
+      return [{ storagePath: m['storage_key'], sortOrder: index, mimeType, sizeBytes }];
+    }),
     owner: card.owner_id
       ? {
           userId: card.owner_id,
