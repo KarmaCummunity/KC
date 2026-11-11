@@ -83,12 +83,19 @@ returns table (
   counterpart_display_name text,
   counterpart_avatar_url text,
   counterpart_share_handle text,
+  -- The other member's identity verification level (FR-VERIFY), for the inbox badge.
+  counterpart_verification_level smallint,
   -- How far the other member has read: drives the read receipt on the caller's messages.
   counterpart_last_read_at timestamptz,
   last_message_id uuid,
   last_message_kind text,
   last_message_sender_id uuid,
   last_message_preview text,
+  -- What a media message carries ('image', 'video', 'voice', 'location', 'post_share'), and
+  -- the payload of a system message (its `kind` and the facts the wording needs, readable by
+  -- every member of the chat): the app words the preview from them.
+  last_message_media_type text,
+  last_message_system_payload jsonb,
   unread_count bigint
 )
 language sql
@@ -99,7 +106,7 @@ as $$
   with me as (select kc_private.require_caller() as id),
   page as (
     select c.id, c.kind, c.anchor_post_id, c.last_message_at, cm.last_read_at,
-           u.id as counterpart_id, u.display_name, u.avatar_url, u.share_handle
+           u.id as counterpart_id, u.display_name, u.avatar_url, u.share_handle, u.verification_level
       from me
       join public.chat_members cm on cm.user_id = me.id and cm.hidden_at is null
       join public.chats c on c.id = cm.chat_id
@@ -117,16 +124,17 @@ as $$
      order by c.last_message_at desc, c.id desc
      limit least(greatest(coalesce(p_limit, 30), 1), 50))
   select p.id, p.kind, p.anchor_post_id, p.last_message_at,
-         p.counterpart_id, p.display_name, p.avatar_url, p.share_handle,
+         p.counterpart_id, p.display_name, p.avatar_url, p.share_handle, p.verification_level,
          (select om.last_read_at from public.chat_members om
            where om.chat_id = p.id and om.user_id = p.counterpart_id),
          lm.id, lm.kind, lm.sender_id, left(lm.body, 140),
+         lm.media_payload ->> 'type', lm.system_payload,
          (select count(*) from public.messages m
            where m.chat_id = p.id and m.created_at > p.last_read_at
              and m.sender_id is distinct from (select me.id from me))
     from page p
     left join lateral (
-      select m.id, m.kind, m.sender_id, m.body
+      select m.id, m.kind, m.sender_id, m.body, m.media_payload, m.system_payload
         from public.messages m
        where m.chat_id = p.id
        order by m.created_at desc
@@ -134,7 +142,7 @@ as $$
    order by p.last_message_at desc, p.id desc;
 $$;
 comment on function public.chat_inbox_page(integer, timestamptz, uuid, text) is
-  'One page of the caller''s inbox: chat, other member, newest message preview, unread count.';
+  'One page of the caller''s inbox: chat, other member and their verification, newest message preview, unread count.';
 grant execute on function public.chat_inbox_page(integer, timestamptz, uuid, text) to authenticated;
 
 -- Messages of a chat the caller is a member of. Without `p_after`: one page going back in

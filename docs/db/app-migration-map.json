@@ -4861,7 +4861,7 @@
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "`p_limit`, `p_before_last_message_at`, `p_before_chat_id`, `p_search`; one row per visible chat with the counterpart, a 140-character preview of the newest message and the unread count. The app reads one page of 50; it carries no counterpart verification level and no media or system payload of the newest message.",
+   "note": "`p_limit`, `p_before_last_message_at`, `p_before_chat_id`, `p_search`; one row per visible chat with the counterpart, a 140-character preview of the newest message and the unread count. The app reads one page of 50; each row also carries the counterpart's verification level, the media type of a media message and the system payload of a system message, for the inbox badge and previews.",
    "oldObject": {},
    "targets": [
     {
@@ -4869,7 +4869,7 @@
      "name": "chat_inbox_page",
      "source": "40_messaging/040_chat_reads.sql:71",
      "signature": [
-      "chat_inbox_page(p_before_chat_id?: string, p_before_last_message_at?: string, p_limit?: number, p_search?: string) → { anchor_post_id: string chat_id: string counterpart_avatar_url: string counterpart_display_name: string counterpart_id: string counterpart_last_read_at: string counterpart_share_handle: string kind: string last_messa..."
+      "chat_inbox_page(p_before_chat_id?: string, p_before_last_message_at?: string, p_limit?: number, p_search?: string) → { anchor_post_id: string chat_id: string counterpart_avatar_url: string counterpart_display_name: string counterpart_id: string counterpart_last_read_at: string counterpart_share_handle: string counterpart_verificatio..."
      ],
      "errors": [
       {
@@ -4885,7 +4885,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/getMyChats.ts",
-     "line": 71,
+     "line": 75,
      "symbol": "getMyChats",
      "area": "chat"
     }
@@ -4904,7 +4904,7 @@
     {
      "type": "rpc",
      "name": "chat_messages_page",
-     "source": "40_messaging/040_chat_reads.sql:144",
+     "source": "40_messaging/040_chat_reads.sql:152",
      "signature": [
       "chat_messages_page(p_after?: string, p_before?: string, p_chat_id: string, p_limit?: number) → messages row[]"
      ],

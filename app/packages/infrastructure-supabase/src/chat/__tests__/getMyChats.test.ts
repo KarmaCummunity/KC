@@ -17,6 +17,9 @@ const ROW = {
   last_message_kind: 'user',
   last_message_sender_id: 'u_other',
   last_message_preview: 'see you',
+  counterpart_verification_level: 2,
+  last_message_media_type: null,
+  last_message_system_payload: null,
   unread_count: 2,
 };
 
@@ -49,9 +52,32 @@ describe('getMyChats', () => {
         avatarUrl: 'https://x/a.png',
         shareHandle: 'dana',
         isDeleted: false,
+        verificationLevel: 2,
       },
-      lastMessage: { messageId: 'm_1', senderId: 'u_other', kind: 'user', body: 'see you', createdAt: '2026-05-16T12:00:00.000Z' },
+      lastMessage: {
+        messageId: 'm_1', senderId: 'u_other', kind: 'user', body: 'see you', createdAt: '2026-05-16T12:00:00.000Z',
+        systemPayload: null, mediaPayload: null,
+      },
     });
+  });
+
+  it('previews a media message by its type and a system message by its payload', async () => {
+    const payload = { kind: 'post_closed', status: 'closed_delivered', delivered_to_chat_member: true };
+    const rows = [
+      { ...ROW, chat_id: 'c_media', last_message_kind: 'media', last_message_preview: null, last_message_media_type: 'image' },
+      { ...ROW, chat_id: 'c_system', last_message_kind: 'system', last_message_sender_id: null, last_message_preview: null, last_message_system_payload: payload },
+    ];
+
+    const [media, system] = await getMyChats(inbox(rows).client, 'u_me');
+
+    expect(media?.lastMessage).toMatchObject({ kind: 'media', body: '', mediaPayload: { type: 'image' }, systemPayload: null });
+    expect(system?.lastMessage).toMatchObject({ kind: 'system', body: '', systemPayload: payload, mediaPayload: null });
+  });
+
+  it('reads an unknown or missing verification level as unverified', async () => {
+    const [chat] = await getMyChats(inbox([{ ...ROW, counterpart_verification_level: null }]).client, 'u_me');
+
+    expect(chat?.otherParticipant.verificationLevel).toBe(0);
   });
 
   it('keeps the order the server returned (newest message first)', async () => {
