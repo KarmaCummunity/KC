@@ -58,6 +58,24 @@ jobs:
       # production starts from; the Supabase shim stands in for the platform objects the
       # excluded services would create), its pgTAP suites run, and the seed loaders are
       # proven loadable and idempotent. See docs/db/target-design.md §10.
+      - name: TEMP probe 005_geo crash
+        continue-on-error: true
+        run: |
+          DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')"
+          psql "$DB_URL" -Atc "select version()"
+          psql "$DB_URL" -Atc "select extname||' '||extversion from pg_extension order by 1" | tr '\n' ' '
+          psql "$DB_URL" -qc "drop database if exists probe_geo with (force)" -c "create database probe_geo"
+          U="$(node -e 'const u=new URL(process.argv[1]);u.pathname="/probe_geo";process.stdout.write(u.toString())' "$DB_URL")"
+          psql "$U" -v ON_ERROR_STOP=1 -q -f supabase/baseline/local/supabase_shim.sql
+          psql "$U" -v ON_ERROR_STOP=1 -q --single-transaction -f supabase/migrations/0001_baseline.sql
+          i=0
+          for probe in "select 1 from public.streets" "select 1 from public.road_junctions" "select 1 from public.search_places('ganim')"; do
+            i=$((i+1))
+            { head -65 supabase/tests/005_geo.sql; echo "select pg_temp.rows_as('anon', null, \$q\$${probe}\$q\$);"; } > /tmp/probe_$i.sql
+            echo "── probe $i: $probe"
+            psql "$U" -q -f /tmp/probe_$i.sql 2>&1 | tail -3 || true
+          done
+
       - name: Migrations apply on an empty database + pgTAP tests + seed loaders
         run: scripts/run-baseline-tests.sh
 
