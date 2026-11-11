@@ -1,73 +1,79 @@
 import { describe, it, expect } from 'vitest';
+import { BackendRuleError, BackendUnavailableError } from '@kc/domain';
 import { ChatError } from '@kc/application';
-import { mapChatError } from '../mapChatError';
+import { chatCall, mapChatError } from '../mapChatError';
+
+const rule = (reason: string) => new BackendRuleError(reason, 'rpc:test');
 
 describe('mapChatError', () => {
-  // ── SQLSTATE-based branches ────────────────────────────────────────────
-  it('maps 23503 (FK violation) → send_to_deleted_user', () => {
-    const out = mapChatError({ code: '23503', message: 'violates messages_sender_fkey' });
+  it.each([
+    ['cannot_chat_self', 'cannot_chat_self'],
+    ['user_unavailable', 'send_to_deleted_user'],
+    ['blocked_relationship', 'blocked_relationship'],
+    ['account_not_active', 'account_not_active'],
+    ['post_unavailable', 'post_unavailable'],
+    ['chat_not_found', 'chat_not_found'],
+    ['message_not_found', 'message_not_found'],
+    ['support_thread_not_hideable', 'support_thread_not_hideable'],
+    ['rate_limited', 'rate_limited'],
+    ['message_body_invalid', 'message_too_long'],
+    ['invalid_media_payload', 'invalid_media_payload'],
+    ['invalid_reaction_type', 'invalid_reaction_type'],
+    ['unauthenticated', 'chat_forbidden'],
+    ['description_too_short', 'description_too_short'],
+    ['description_too_long', 'description_too_long'],
+  ])('maps the stable reason %s to ChatError %s', (reason, code) => {
+    const out = mapChatError(rule(reason));
     expect(out).toBeInstanceOf(ChatError);
-    expect((out as ChatError).code).toBe('send_to_deleted_user');
+    expect((out as ChatError).code).toBe(code);
+    expect(out.message).toBe(reason);
   });
 
-  it('maps 42501 (RLS deny) → chat_forbidden', () => {
-    const out = mapChatError({ code: '42501', message: 'permission denied for table messages' });
-    expect((out as ChatError).code).toBe('chat_forbidden');
+  it('keeps the rule error as the cause', () => {
+    const source = rule('chat_not_found');
+    expect((mapChatError(source) as ChatError).cause).toBe(source);
   });
 
-  it('maps 23514 (CHECK violation) → message_too_long', () => {
-    const out = mapChatError({ code: '23514', message: 'messages_body_chk' });
-    expect((out as ChatError).code).toBe('message_too_long');
+  it('lets BackendUnavailableError through untouched (the degrade rule)', () => {
+    const missing = new BackendUnavailableError('rpc:send_message');
+    expect(mapChatError(missing)).toBe(missing);
   });
 
-  // ── Message-substring branches ──────────────────────────────────────────
-  it('matches "super_admin_not_found" in the message', () => {
-    const out = mapChatError({ message: 'super_admin_not_found' });
-    expect((out as ChatError).code).toBe('super_admin_not_found');
+  it('lets a ChatError through untouched', () => {
+    const chatError = new ChatError('chat_not_found', 'chat_not_found');
+    expect(mapChatError(chatError)).toBe(chatError);
   });
 
-  it('matches "support_thread_not_hideable" in the message', () => {
-    const out = mapChatError({ message: 'support_thread_not_hideable' });
-    expect((out as ChatError).code).toBe('support_thread_not_hideable');
-  });
-
-  it('matches "chat_not_found" in the message', () => {
-    const out = mapChatError({ message: 'chat_not_found' });
-    expect((out as ChatError).code).toBe('chat_not_found');
-  });
-
-  // ── Fallthrough ─────────────────────────────────────────────────────────
-  it('returns ChatError with code=unknown for an empty input', () => {
-    const out = mapChatError({});
-    expect(out).toBeInstanceOf(ChatError);
+  it('maps an unlisted reason to unknown and keeps its text', () => {
+    const out = mapChatError(rule('invalid_rate_limit_args'));
     expect((out as ChatError).code).toBe('unknown');
+    expect(out.message).toBe('invalid_rate_limit_args');
   });
 
-  it('returns ChatError with code=unknown for an unrecognized message', () => {
-    const out = mapChatError({ message: 'mysterious failure' });
+  it('maps a plain error to unknown with the original as cause', () => {
+    const source = new Error('network down');
+    const out = mapChatError(source);
     expect((out as ChatError).code).toBe('unknown');
+    expect((out as ChatError).cause).toBe(source);
   });
 
-  // ── Precedence: SQLSTATE wins over the message-substring branches ───────
-  it('prefers the SQLSTATE branch over a message substring when both match', () => {
-    const out = mapChatError({ code: '42501', message: 'chat_not_found' });
-    expect((out as ChatError).code).toBe('chat_forbidden');
+  it('maps a non-error throwable to unknown', () => {
+    expect((mapChatError('boom') as ChatError).code).toBe('unknown');
+  });
+});
+
+describe('chatCall', () => {
+  it('returns the data of a successful call', async () => {
+    expect(await chatCall('rpc:x', Promise.resolve({ data: 7, error: null }))).toBe(7);
   });
 
-  // ── Message + cause preservation ────────────────────────────────────────
-  it('preserves the original message in the wrapped ChatError', () => {
-    const out = mapChatError({ code: '23514', message: 'check failed: posts_body_chk' });
-    expect(out.message).toBe('check failed: posts_body_chk');
+  it('maps a stable P0001 refusal to a ChatError', async () => {
+    const failed = Promise.resolve({ data: null, error: { code: 'P0001', message: 'chat_not_found' } });
+    await expect(chatCall('rpc:x', failed)).rejects.toMatchObject({ code: 'chat_not_found' });
   });
 
-  it('falls back to the symbolic code when message is absent', () => {
-    const out = mapChatError({ code: '23514' });
-    expect(out.message).toBe('message_too_long');
-  });
-
-  it('preserves the original throwable as cause', () => {
-    const src = { code: '23503', message: 'fk' };
-    const out = mapChatError(src);
-    expect((out as ChatError).cause).toBe(src);
+  it('reports a missing function as BackendUnavailableError', async () => {
+    const failed = Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'not in the schema cache' } });
+    await expect(chatCall('rpc:x', failed)).rejects.toBeInstanceOf(BackendUnavailableError);
   });
 });

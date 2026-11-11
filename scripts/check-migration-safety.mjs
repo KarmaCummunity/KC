@@ -26,6 +26,18 @@ export const DESTRUCTIVE_RULES = [
   },
 ];
 
+/**
+ * The initial schema is applied to an empty database, so its DROP / TRUNCATE (idempotent
+ * resets inside the generated file, not data loss) are not destructive. Only the generated
+ * baseline qualifies: `assemble-baseline --check` keeps it identical to supabase/schemas.
+ * Every later migration is scanned in full.
+ */
+export const INITIAL_SCHEMA_FILE = '0001_baseline.sql';
+const INITIAL_SCHEMA_HEADER = '-- Karma Community — production baseline.';
+export function isInitialSchema(name, content) {
+  return name === INITIAL_SCHEMA_FILE && content.startsWith(INITIAL_SCHEMA_HEADER);
+}
+
 const ALLOW_MARKER = 'migration-safety: allow';
 
 /**
@@ -134,6 +146,7 @@ export function checkMigrationSafety(migrationsDir) {
   for (const file of files) {
     const path = join(migrationsDir, file);
     const content = readFileSync(path, 'utf8');
+    if (isInitialSchema(file, content)) continue;
     errors.push(...scanMigrationSql(content, file, { permanentTables }));
   }
 
@@ -202,6 +215,7 @@ export function checkReleaseMigrations(files, prBody, { permanentTables = new Se
   const justified = justifiedFiles(prBody);
   const errors = [];
   for (const { name, content } of files) {
+    if (isInitialSchema(name, content)) continue;
     const ok = justified.has(name);
     const hits = [...scanMigrationSql(content, name, { honorAllow: ok, permanentTables }), ...(ok ? [] : scanCompatibility(content, name))];
     for (const hit of hits) {

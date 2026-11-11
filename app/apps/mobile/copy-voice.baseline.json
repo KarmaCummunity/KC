@@ -47,9 +47,6 @@
     "src/i18n/locales/he/modules/postMenu.ts": {
       "genderedImperative": 8
     },
-    "src/i18n/locales/he/modules/postReport.ts": {
-      "genderedImperative": 2
-    },
     "src/i18n/locales/he/modules/research.ts": {
       "genderedImperative": 2
     },

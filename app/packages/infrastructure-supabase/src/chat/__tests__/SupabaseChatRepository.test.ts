@@ -1,156 +1,273 @@
 import { describe, it, expect } from 'vitest';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { ChatError } from '@kc/application';
+import { BackendUnavailableError, type Chat } from '@kc/domain';
+import { createFakeClient, callsTo, type FakeClientConfig } from '../../__tests__/fakeBaselineClient';
 import { SupabaseChatRepository } from '../SupabaseChatRepository';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-// Companion file SupabaseChatRepository.support.test.ts covers the
-// support-thread RPCs + getCounterpart (data-shape variants).
-
-interface FakeOpts {
-  selectData?: any;
-  selectError?: { message: string } | null;
-  insertData?: any;
-  insertError?: { message: string } | null;
-  rpcData?: unknown;
-  rpcError?: { message: string } | null;
-  count?: number | null;
-  countError?: { message: string } | null;
-  capturedLts?: string[];
-}
-
-function makeFakeClient(opts: FakeOpts = {}): { client: SupabaseClient<any>; rpcs: { fn: string; args: unknown }[] } {
-  const rpcs: { fn: string; args: unknown }[] = [];
-  const ltCaptor: string[] = opts.capturedLts ?? [];
-  const selectResult = () => ({ data: opts.selectData ?? null, error: opts.selectError ?? null });
-  const limitQuery = Object.assign(Promise.resolve(selectResult()), {
-    lt: (_col: string, val: string) => {
-      ltCaptor.push(val);
-      return Promise.resolve(selectResult());
-    },
-  });
-  const client = {
-    from: () => ({
-      select: (_cols: string, options?: { count?: string; head?: boolean }) => {
-        if (options?.head) {
-          return {
-            eq: () => ({
-              eq: () => ({
-                limit: async () => ({ count: opts.count ?? null, error: opts.countError ?? null }),
-              }),
-            }),
-          };
-        }
-        return {
-          eq: () => ({
-            maybeSingle: async () => selectResult(),
-            order: () => ({ limit: () => limitQuery }),
-          }),
-        };
-      },
-      insert: () => ({
-        select: () => ({
-          single: async () => ({ data: opts.insertData ?? null, error: opts.insertError ?? null }),
-        }),
-      }),
-    }),
-    rpc: async (fn: string, args: unknown) => {
-      rpcs.push({ fn, args });
-      return { data: opts.rpcData ?? null, error: opts.rpcError ?? null };
-    },
-  } as unknown as SupabaseClient<any>;
-  return { client, rpcs };
-}
+const MESSAGE_ROW = {
+  id: 'm_1',
+  chat_id: 'c_1',
+  sender_id: 'u_me',
+  kind: 'user',
+  body: 'hello',
+  system_payload: null,
+  media_payload: null,
+  source_language: null,
+  created_at: '2026-05-16T12:00:00.000Z',
+};
 
 const CHAT_ROW = {
-  chat_id: 'c_1', participant_a: 'u_a', participant_b: 'u_b',
-  anchor_post_id: null, is_support_thread: false,
-  last_message_at: '2026-05-16T12:00:00.000Z', created_at: '2026-05-16T11:00:00.000Z',
+  id: 'c_1',
+  kind: 'direct',
+  direct_user_a: 'u_me',
+  direct_user_b: 'u_other',
+  support_user_id: null,
+  anchor_post_id: null,
+  last_message_at: '2026-05-16T12:00:00.000Z',
+  created_at: '2026-05-16T11:00:00.000Z',
 };
-const MSG_ROW = {
-  message_id: 'm_1', chat_id: 'c_1', sender_id: 'u_1', kind: 'user', body: 'hi',
-  system_payload: null, status: 'pending',
-  created_at: '2026-05-16T12:00:00.000Z', delivered_at: null, read_at: null,
+
+const repo = (config: FakeClientConfig) => {
+  const fake = createFakeClient(config);
+  return { ...fake, repo: new SupabaseChatRepository(fake.client) };
 };
 
-describe('SupabaseChatRepository — simple direct methods', () => {
-  it('findById returns the mapped chat or null when missing', async () => {
-    const { client } = makeFakeClient({ selectData: CHAT_ROW });
-    expect((await new SupabaseChatRepository(client).findById('c_1'))?.chatId).toBe('c_1');
+const direct: Chat = {
+  chatId: 'c_1',
+  participantIds: ['u_me', 'u_other'],
+  anchorPostId: null,
+  isSupportThread: false,
+  lastMessageAt: null,
+  createdAt: '2026-05-16T11:00:00.000Z',
+};
 
-    const { client: c2 } = makeFakeClient({ selectData: null });
-    expect(await new SupabaseChatRepository(c2).findById('c_1')).toBeNull();
+describe('SupabaseChatRepository.findById', () => {
+  it('selects the chat by id and maps it', async () => {
+    const { repo: r, calls } = repo({ tables: { chats: { data: CHAT_ROW, error: null } } });
+
+    const chat = await r.findById('c_1');
+
+    expect(calls[0]).toMatchObject({ kind: 'select', table: 'chats', single: true });
+    expect(calls[0]?.filters).toContainEqual(['eq', 'id', 'c_1']);
+    expect(chat).toMatchObject({ chatId: 'c_1', participantIds: ['u_me', 'u_other'] });
   });
 
-  it('findById error mapped via mapChatError', async () => {
-    const { client } = makeFakeClient({ selectError: { message: 'transport' } });
-    await expect(new SupabaseChatRepository(client).findById('c_1')).rejects.toBeInstanceOf(ChatError);
+  it('is null for a chat the caller cannot see', async () => {
+    expect(await repo({ tables: { chats: { data: null, error: null } } }).repo.findById('c_x')).toBeNull();
   });
 
-  it('getMessages returns mapped rows; no-cursor branch does not call lt()', async () => {
-    const captured: string[] = [];
-    const { client } = makeFakeClient({ selectData: [MSG_ROW], capturedLts: captured });
-    const out = await new SupabaseChatRepository(client).getMessages('c_1', 50);
-    expect(out[0]?.messageId).toBe('m_1');
-    expect(captured).toEqual([]);
-  });
+  it('reports a missing table as BackendUnavailableError', async () => {
+    const { repo: r } = repo({ tables: { chats: { data: null, error: { code: 'PGRST205', message: 'not in the schema cache' } } } });
 
-  it('getMessages cursor branch passes beforeCreatedAt to lt()', async () => {
-    const captured: string[] = [];
-    const { client } = makeFakeClient({ selectData: [], capturedLts: captured });
-    await new SupabaseChatRepository(client).getMessages('c_1', 50, '2026-05-16T10:00:00.000Z');
-    expect(captured).toEqual(['2026-05-16T10:00:00.000Z']);
-  });
-
-  it('sendMessage inserts kind=user / status=pending and returns the mapped row', async () => {
-    const { client } = makeFakeClient({ insertData: MSG_ROW });
-    const out = await new SupabaseChatRepository(client).sendMessage('c_1', 'u_1', 'hi');
-    expect(out.messageId).toBe('m_1');
-  });
-
-  it('sendMessage error mapped via mapChatError', async () => {
-    const { client } = makeFakeClient({ insertError: { message: 'transport' } });
-    await expect(new SupabaseChatRepository(client).sendMessage('c_1', 'u_1', 'hi')).rejects.toBeInstanceOf(ChatError);
+    await expect(r.findById('c_1')).rejects.toBeInstanceOf(BackendUnavailableError);
   });
 });
 
-describe('SupabaseChatRepository — RPC methods', () => {
-  it('markRead calls rpc_chat_mark_read with p_chat_id', async () => {
-    const { client, rpcs } = makeFakeClient({});
-    await new SupabaseChatRepository(client).markRead('c_1', 'u_me');
-    expect(rpcs).toEqual([{ fn: 'rpc_chat_mark_read', args: { p_chat_id: 'c_1' } }]);
+describe('SupabaseChatRepository.findOrCreateChat / hideChatFromInbox', () => {
+  it('opens the direct chat through open_direct_chat and ignores preferNewThread', async () => {
+    const { repo: r, calls } = repo({ rpc: { open_direct_chat: { data: CHAT_ROW, error: null } } });
+
+    const chat = await r.findOrCreateChat('u_me', 'u_other', { postId: 'p_1' }, { preferNewThread: true });
+
+    expect(calls[0]).toMatchObject({ fn: 'open_direct_chat', args: { p_user_id: 'u_other', p_anchor_post_id: 'p_1' } });
+    expect(chat.chatId).toBe('c_1');
   });
 
-  it('markRead error mapped via mapChatError', async () => {
-    const { client } = makeFakeClient({ rpcError: { message: 'rpc error' } });
-    await expect(new SupabaseChatRepository(client).markRead('c_1', 'u_me')).rejects.toBeInstanceOf(ChatError);
-  });
+  it('hides a chat through hide_chat', async () => {
+    const { repo: r, calls } = repo({ rpc: { hide_chat: { data: null, error: null } } });
 
-  it('getUnreadTotal calls rpc_chat_unread_total and Number()-coerces the result', async () => {
-    const { client } = makeFakeClient({ rpcData: '7' });
-    expect(await new SupabaseChatRepository(client).getUnreadTotal('u_me')).toBe(7);
-  });
+    await r.hideChatFromInbox('c_1');
 
-  it('getUnreadTotal returns 0 when the RPC returns null', async () => {
-    const { client } = makeFakeClient({ rpcData: null });
-    expect(await new SupabaseChatRepository(client).getUnreadTotal('u_me')).toBe(0);
+    expect(calls[0]).toMatchObject({ fn: 'hide_chat', args: { p_chat_id: 'c_1' } });
   });
 });
 
-describe('SupabaseChatRepository — hasSentAnyMessage', () => {
-  it('returns true when count > 0', async () => {
-    const { client } = makeFakeClient({ count: 1 });
-    expect(await new SupabaseChatRepository(client).hasSentAnyMessage('u_me')).toBe(true);
+describe('SupabaseChatRepository.getMessages', () => {
+  const markers = { data: [{ user_id: 'u_me', last_read_at: '2026-05-16T12:00:00.000Z' }, { user_id: 'u_other', last_read_at: '2026-05-16T11:00:00.000Z' }], error: null };
+
+  it('pages with chat_messages_page and loads the read markers of the chat', async () => {
+    const { repo: r, calls } = repo({
+      rpc: { chat_messages_page: { data: [MESSAGE_ROW], error: null } },
+      tables: { chat_members: markers },
+    });
+
+    await r.getMessages('c_1', 30, '2026-05-16T13:00:00.000Z');
+
+    expect(callsTo(calls, 'chat_messages_page')[0]?.args).toEqual({ p_chat_id: 'c_1', p_limit: 30, p_before: '2026-05-16T13:00:00.000Z' });
+    const members = callsTo(calls, 'chat_members')[0];
+    expect(members?.columns).toBe('user_id, last_read_at');
+    expect(members?.filters).toContainEqual(['eq', 'chat_id', 'c_1']);
   });
 
-  it('returns false when count is 0 or null', async () => {
-    expect(await new SupabaseChatRepository(makeFakeClient({ count: 0 }).client).hasSentAnyMessage('u_me')).toBe(false);
-    expect(await new SupabaseChatRepository(makeFakeClient({ count: null }).client).hasSentAnyMessage('u_me')).toBe(false);
+  it('marks my message read once the other member passed it, and delivered before that', async () => {
+    const mine = { ...MESSAGE_ROW, id: 'm_old', created_at: '2026-05-16T10:00:00.000Z' };
+    const newer = { ...MESSAGE_ROW, id: 'm_new', created_at: '2026-05-16T12:00:00.000Z' };
+    const { repo: r } = repo({
+      rpc: { chat_messages_page: { data: [newer, mine], error: null } },
+      tables: { chat_members: markers },
+    });
+
+    const [latest, old] = await r.getMessages('c_1', 30);
+
+    expect(latest).toMatchObject({ messageId: 'm_new', status: 'delivered', readAt: null });
+    expect(old).toMatchObject({ messageId: 'm_old', status: 'read', readAt: '2026-05-16T11:00:00.000Z' });
   });
 
-  it('throws via mapChatError on count error', async () => {
-    const { client } = makeFakeClient({ countError: { message: 'transport' } });
-    await expect(new SupabaseChatRepository(client).hasSentAnyMessage('u_me')).rejects.toBeInstanceOf(ChatError);
+  it('reads a chat the caller is not a member of as empty (FR-CHAT-003)', async () => {
+    const { repo: r } = repo({
+      rpc: { chat_messages_page: { data: null, error: { code: 'P0001', message: 'chat_not_found' } } },
+      tables: { chat_members: markers },
+    });
+
+    await expect(r.getMessages('c_1', 30)).resolves.toEqual([]);
+  });
+
+  it('reports a missing function as BackendUnavailableError', async () => {
+    const { repo: r } = repo({
+      rpc: { chat_messages_page: { data: null, error: { code: 'PGRST202', message: 'not in the schema cache' } } },
+      tables: { chat_members: markers },
+    });
+
+    await expect(r.getMessages('c_1', 30)).rejects.toBeInstanceOf(BackendUnavailableError);
+  });
+});
+
+describe('SupabaseChatRepository.sendMessage', () => {
+  it('calls send_message with the client message id (idempotent retry) and maps the row', async () => {
+    const { repo: r, calls } = repo({ rpc: { send_message: { data: MESSAGE_ROW, error: null } } });
+
+    const message = await r.sendMessage('c_1', 'u_me', 'hello', 'client-1');
+
+    expect(calls[0]).toMatchObject({ fn: 'send_message', args: { p_chat_id: 'c_1', p_body: 'hello', p_message_id: 'client-1' } });
+    expect(message).toMatchObject({ messageId: 'm_1', senderId: 'u_me', body: 'hello', status: 'delivered' });
+  });
+
+  it.each([
+    ['rate_limited', 'rate_limited'],
+    ['blocked_relationship', 'blocked_relationship'],
+    ['chat_not_found', 'chat_forbidden'],
+    ['message_body_invalid', 'message_too_long'],
+  ])('maps the refusal %s to ChatError %s', async (reason, code) => {
+    const { repo: r } = repo({ rpc: { send_message: { data: null, error: { code: 'P0001', message: reason } } } });
+
+    await expect(r.sendMessage('c_1', 'u_me', 'hello')).rejects.toMatchObject({ code });
+  });
+
+  it('reports a missing function as BackendUnavailableError', async () => {
+    const { repo: r } = repo({ rpc: { send_message: { data: null, error: { code: 'PGRST202', message: 'not in the schema cache' } } } });
+
+    await expect(r.sendMessage('c_1', 'u_me', 'hello')).rejects.toBeInstanceOf(BackendUnavailableError);
+  });
+});
+
+describe('SupabaseChatRepository read state', () => {
+  it('markRead calls mark_chat_read', async () => {
+    const { repo: r, calls } = repo({ rpc: { mark_chat_read: { data: null, error: null } } });
+
+    await r.markRead('c_1', 'u_me');
+
+    expect(calls[0]).toMatchObject({ fn: 'mark_chat_read', args: { p_chat_id: 'c_1' } });
+  });
+
+  it('getUnreadTotal reads chat_unread_total as a number', async () => {
+    const { repo: r, calls } = repo({ rpc: { chat_unread_total: { data: '7', error: null } } });
+
+    expect(await r.getUnreadTotal('u_me')).toBe(7);
+    expect(calls[0]).toMatchObject({ fn: 'chat_unread_total' });
+  });
+});
+
+describe('SupabaseChatRepository support thread', () => {
+  const SUPPORT_ROW = { ...CHAT_ROW, kind: 'support', direct_user_a: null, direct_user_b: null, support_user_id: 'u_me' };
+
+  it('getOrCreateSupportThread opens the thread', async () => {
+    const { repo: r } = repo({ rpc: { open_support_thread: { data: SUPPORT_ROW, error: null } } });
+
+    expect(await r.getOrCreateSupportThread('u_me')).toMatchObject({ isSupportThread: true });
+  });
+
+  it('submitSupportIssue opens the thread, then sends the issue into it', async () => {
+    const { repo: r, calls } = repo({
+      rpc: { open_support_thread: { data: SUPPORT_ROW, error: null }, send_message: { data: MESSAGE_ROW, error: null } },
+    });
+
+    const chat = await r.submitSupportIssue('Bug', 'The map does not load for me');
+
+    expect(calls.map((c) => c.fn)).toEqual(['open_support_thread', 'send_message']);
+    expect(calls[1]?.args).toEqual({ p_chat_id: 'c_1', p_body: 'Bug\n\nThe map does not load for me' });
+    expect(chat.isSupportThread).toBe(true);
+  });
+});
+
+describe('SupabaseChatRepository.hasSentAnyMessage', () => {
+  it('is true when a user message of the caller exists', async () => {
+    const { repo: r, calls } = repo({ tables: { messages: { data: [{ id: 'm_1' }], error: null } } });
+
+    expect(await r.hasSentAnyMessage('u_me')).toBe(true);
+    expect(calls[0]?.filters).toEqual(expect.arrayContaining([['eq', 'sender_id', 'u_me'], ['eq', 'kind', 'user'], ['limit', 1]]));
+  });
+
+  it('is false when the caller never wrote one', async () => {
+    expect(await repo({ tables: { messages: { data: [], error: null } } }).repo.hasSentAnyMessage('u_me')).toBe(false);
+  });
+});
+
+describe('SupabaseChatRepository.getMyChats', () => {
+  it('delegates to chat_inbox_page', async () => {
+    const { repo: r, calls } = repo({ rpc: { chat_inbox_page: { data: [], error: null } } });
+
+    expect(await r.getMyChats('u_me')).toEqual([]);
+    expect(calls[0]).toMatchObject({ fn: 'chat_inbox_page' });
+  });
+});
+
+describe('SupabaseChatRepository.getCounterpart', () => {
+  const USER_ROW = { id: 'u_other', display_name: 'Dana', avatar_url: null, share_handle: 'dana', verification_level: 2 };
+
+  it('reads the other member of a direct chat from users', async () => {
+    const { repo: r, calls } = repo({ tables: { users: { data: USER_ROW, error: null } } });
+
+    const counterpart = await r.getCounterpart(direct, 'u_me');
+
+    expect(calls[0]?.filters).toContainEqual(['eq', 'id', 'u_other']);
+    expect(counterpart).toEqual({
+      userId: 'u_other',
+      displayName: 'Dana',
+      avatarUrl: null,
+      shareHandle: 'dana',
+      isDeleted: false,
+      verificationLevel: 2,
+    });
+  });
+
+  it('works from the other side of the pair', async () => {
+    const { repo: r, calls } = repo({ tables: { users: { data: { ...USER_ROW, id: 'u_me' }, error: null } } });
+
+    await r.getCounterpart(direct, 'u_other');
+
+    expect(calls[0]?.filters).toContainEqual(['eq', 'id', 'u_me']);
+  });
+
+  it('is the deleted-user placeholder when the member is gone (null participant)', async () => {
+    const { repo: r, calls } = repo({});
+
+    const counterpart = await r.getCounterpart({ ...direct, participantIds: ['u_me', null] }, 'u_me');
+
+    expect(counterpart).toMatchObject({ userId: null, displayName: null, isDeleted: true });
+    expect(calls).toHaveLength(0);
+  });
+
+  it('is the deleted-user placeholder when the profile is not visible', async () => {
+    const { repo: r } = repo({ tables: { users: { data: null, error: null } } });
+
+    expect(await r.getCounterpart(direct, 'u_me')).toMatchObject({ isDeleted: true });
+  });
+
+  it('is not a deleted user for a support thread, which has no counterpart to show', async () => {
+    const { repo: r, calls } = repo({});
+
+    const counterpart = await r.getCounterpart({ ...direct, isSupportThread: true, participantIds: ['u_me', null] }, 'u_me');
+
+    expect(counterpart).toMatchObject({ userId: null, isDeleted: false });
+    expect(calls).toHaveLength(0);
   });
 });

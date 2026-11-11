@@ -1,71 +1,23 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseChatRealtime } from '../SupabaseChatRealtime';
+import { flush, makeFakeRealtime } from '../../realtime/__tests__/fakeRealtime';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+type RpcResult = { data: unknown; error: unknown };
 
-interface OnCall {
-  event: string;
-  config: any;
-  handler: (payload: { new: unknown }) => void;
-}
-interface FakeChannel {
-  topic: string;
-  onCalls: OnCall[];
-  statusCb?: (status: string) => void;
-}
-
-function makeFakeClient(rpcImpl?: () => Promise<{ data: unknown; error: unknown }>): {
-  client: SupabaseClient<any>;
-  channels: FakeChannel[];
-  removed: FakeChannel[];
-  rpcCalls: string[];
-} {
-  const channels: FakeChannel[] = [];
-  const removed: FakeChannel[] = [];
+/** The fake realtime client plus a recording `rpc` answering `chat_unread_total`. */
+function setup(rpcImpl: () => Promise<RpcResult> = async () => ({ data: 0, error: null })) {
+  const f = makeFakeRealtime();
   const rpcCalls: string[] = [];
-  const builderToFc = new WeakMap<object, FakeChannel>();
-
   const client = {
-    channel: (topic: string) => {
-      const fc: FakeChannel = { topic, onCalls: [] };
-      channels.push(fc);
-      const builder: any = {
-        on: (event: string, config: any, handler: (payload: { new: unknown }) => void) => {
-          fc.onCalls.push({ event, config, handler });
-          return builder;
-        },
-        subscribe: (statusCb?: (status: string) => void) => {
-          fc.statusCb = statusCb;
-          return builder;
-        },
-      };
-      builderToFc.set(builder, fc);
-      return builder;
-    },
-    removeChannel: (ch: object) => {
-      const fc = builderToFc.get(ch);
-      if (fc) removed.push(fc);
-      return Promise.resolve();
-    },
+    ...f.client,
     rpc: async (fn: string) => {
       rpcCalls.push(fn);
-      return rpcImpl ? rpcImpl() : { data: 0, error: null };
+      return rpcImpl();
     },
-  } as unknown as SupabaseClient<any>;
-
-  return { client, channels, removed, rpcCalls };
+  } as unknown as SupabaseClient;
+  return { f, client, rpcCalls };
 }
-
-const CHAT_ROW = {
-  chat_id: 'c_1',
-  participant_a: 'u_1',
-  participant_b: 'u_2',
-  anchor_post_id: null,
-  is_support_thread: false,
-  last_message_at: '2026-05-16T12:00:00.000Z',
-  created_at: '2026-05-16T11:00:00.000Z',
-};
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -74,80 +26,93 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-function sub(
-  client: SupabaseClient<any>,
-  extra: Record<string, any> = {},
-  options?: { getSnapshotEpoch?: () => number },
-) {
-  const repo = new SupabaseChatRealtime(client);
-  const cb = { onChatChanged: vi.fn(), onUnreadTotalChanged: vi.fn(), ...extra };
-  const unsub = repo.subscribeToInbox('u_me', cb, options);
+async function sub(client: SupabaseClient, options?: { getSnapshotEpoch?: () => number }) {
+  const cb = { onInboxChanged: vi.fn(), onUnreadTotalChanged: vi.fn() };
+  const unsub = new SupabaseChatRealtime(client as never).subscribeToInbox('u_me', cb, options);
+  await flush();
   return { cb, unsub };
 }
 
+const ping = (channel: { emit: (type: string, event: string, payload: unknown) => void }, payload: unknown = {}) =>
+  channel.emit('broadcast', 'chat_updated', { payload });
+
 describe('SupabaseChatRealtime — subscribeToInbox', () => {
-  it('opens inbox:<userId>:<rand> with a single chats UPDATE listener (messages is Broadcast-only since 0349)', () => {
-    const { client, channels } = makeFakeClient();
-    sub(client);
-    expect(channels[0]?.topic).toMatch(/^inbox:u_me:[a-z0-9]+$/);
-    expect(channels[0]?.onCalls.map((c) => c.config)).toEqual([
-      { event: 'UPDATE', schema: 'public', table: 'chats' },
-    ]);
+  it('joins the private user:<id>:chats topic with a single chat_updated listener', async () => {
+    const { f, client } = setup();
+    await sub(client);
+    const channel = f.created[0]!;
+    expect(channel.name).toBe('user:u_me:chats');
+    expect(channel.config).toEqual({ private: true });
+    expect(channel.bindings.map((b) => [b.type, b.filter.event])).toEqual([['broadcast', 'chat_updated']]);
   });
 
-  it('routes UPDATE chats through rowToChat → onChatChanged', () => {
-    const { client, channels } = makeFakeClient();
-    const { cb } = sub(client);
-    channels[0]?.onCalls[0]?.handler({ new: CHAT_ROW });
-    expect(cb.onChatChanged).toHaveBeenCalledWith(expect.objectContaining({ chatId: 'c_1' }));
+  it('chat_updated → onInboxChanged with the ids it carries', async () => {
+    const { f, client } = setup();
+    const { cb } = await sub(client);
+    ping(f.created[0]!, { chat_id: 'c_1', last_message_at: '2026-05-16T12:00:00.000Z' });
+    expect(cb.onInboxChanged).toHaveBeenCalledWith({ chatId: 'c_1', lastMessageAt: '2026-05-16T12:00:00.000Z' });
   });
 
-  it('debounces unread RPC: rapid chat bumps collapse into one rpc_chat_unread_total call after 200ms', async () => {
-    const { client, channels, rpcCalls } = makeFakeClient(async () => ({ data: 5, error: null }));
-    const { cb } = sub(client);
-    channels[0]?.onCalls[0]?.handler({ new: CHAT_ROW });
-    channels[0]?.onCalls[0]?.handler({ new: CHAT_ROW });
-    channels[0]?.onCalls[0]?.handler({ new: CHAT_ROW });
+  it('accepts an event without ids (hide / read pings carry only the chat id)', async () => {
+    const { f, client } = setup();
+    const { cb } = await sub(client);
+    ping(f.created[0]!, {});
+    expect(cb.onInboxChanged).toHaveBeenCalledWith({ chatId: null, lastMessageAt: null });
+  });
+
+  it('debounces the unread read: rapid events collapse into one chat_unread_total call after 200ms', async () => {
+    const { f, client, rpcCalls } = setup(async () => ({ data: 5, error: null }));
+    const { cb } = await sub(client);
+    ping(f.created[0]!);
+    ping(f.created[0]!);
+    ping(f.created[0]!);
     expect(rpcCalls).toHaveLength(0);
     await vi.advanceTimersByTimeAsync(200);
-    expect(rpcCalls).toEqual(['rpc_chat_unread_total']);
+    expect(rpcCalls).toEqual(['chat_unread_total']);
     expect(cb.onUnreadTotalChanged).toHaveBeenCalledWith(5);
   });
 
   it('does not call onUnreadTotalChanged when the RPC errors', async () => {
-    const { client, channels } = makeFakeClient(async () => ({ data: null, error: { message: 'boom' } }));
-    const { cb } = sub(client);
-    channels[0]?.onCalls[0]?.handler({ new: CHAT_ROW });
+    const { f, client } = setup(async () => ({ data: null, error: { message: 'boom' } }));
+    const { cb } = await sub(client);
+    ping(f.created[0]!);
     await vi.advanceTimersByTimeAsync(200);
     expect(cb.onUnreadTotalChanged).not.toHaveBeenCalled();
   });
 
-  it('drops a stale RPC result when getSnapshotEpoch changes between timer-fire and RPC-resolve', async () => {
-    // The epoch is captured INSIDE the timer body (after debounce). Race:
-    // inbox snapshot rebuilt while the RPC was in flight — result is stale.
-    let epoch = 1;
-    let resolveRpc!: (v: { data: unknown; error: unknown }) => void;
-    const rpcPromise = new Promise<{ data: unknown; error: unknown }>((r) => { resolveRpc = r; });
-    const { client, channels } = makeFakeClient(() => rpcPromise);
-    const { cb } = sub(client, {}, { getSnapshotEpoch: () => epoch });
+  it('does not call onUnreadTotalChanged when the function is missing (degrade rule)', async () => {
+    const { f, client } = setup(async () => ({ data: null, error: { code: 'PGRST202', message: 'not found' } }));
+    const { cb } = await sub(client);
+    ping(f.created[0]!);
+    await vi.advanceTimersByTimeAsync(200);
+    expect(cb.onUnreadTotalChanged).not.toHaveBeenCalled();
+  });
 
-    channels[0]?.onCalls[0]?.handler({ new: CHAT_ROW });
-    await vi.advanceTimersByTimeAsync(200); // timer body runs; e0 captured = 1; awaits rpc.
-    epoch = 2;                              // snapshot rebuilt mid-flight.
+  it('drops a stale result when the snapshot epoch changes while the RPC is in flight', async () => {
+    let epoch = 1;
+    let resolveRpc!: (v: RpcResult) => void;
+    const pending = new Promise<RpcResult>((resolve) => {
+      resolveRpc = resolve;
+    });
+    const { f, client } = setup(() => pending);
+    const { cb } = await sub(client, { getSnapshotEpoch: () => epoch });
+
+    ping(f.created[0]!);
+    await vi.advanceTimersByTimeAsync(200); // the timer ran; epoch 1 captured; the RPC is pending
+    epoch = 2; // the inbox snapshot was rebuilt meanwhile
     resolveRpc({ data: 9, error: null });
-    await Promise.resolve();
-    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(0);
 
     expect(cb.onUnreadTotalChanged).not.toHaveBeenCalled();
   });
 
-  it('unsubscribe removes the channel and clears any pending debounce timer', () => {
-    const { client, channels, removed } = makeFakeClient();
-    const { unsub } = sub(client);
-    channels[0]?.onCalls[0]?.handler({ new: CHAT_ROW }); // arm timer
+  it('unsubscribe removes the channel and clears a pending debounce timer', async () => {
+    const { f, client, rpcCalls } = setup();
+    const { unsub } = await sub(client);
+    ping(f.created[0]!); // arm the timer
     unsub();
-    expect(removed[0]).toBe(channels[0]);
-    expect(() => vi.advanceTimersByTime(500)).not.toThrow();
+    expect(f.live).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(rpcCalls).toHaveLength(0);
   });
 });
-

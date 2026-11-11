@@ -19,7 +19,7 @@ vi.mock('../../lib/rides/rideStartDetails', () => ({ rememberRideRoute: remember
 vi.mock('../../services/rideSeriesComposition', () => ({ rideSeriesUseCases: { create: () => ({ execute: vi.fn() }) } }));
 import { useListingCreateForm } from '../useListingCreateForm';
 function wrapper({ children }: PropsWithChildren) { const client = new QueryClient({ defaultOptions: { queries: { retry: false } } }); return <QueryClientProvider client={client}>{children}</QueryClientProvider>; }
-const kind = { kindId: 'k1', slug: 'give_food', direction: 'give', detailSchema: { properties: { food_type: {}, expires_at: {} } } } as unknown as ListingKindOption;
+const kind = { kindId: 'k1', slug: 'food_offer', direction: 'give', detailSchema: { properties: { food_type: {}, expires_at: {} } } } as unknown as ListingKindOption;
 describe('useListingCreateForm', () => {
   beforeEach(() => { vi.clearAllMocks(); auth.current = 'u1'; repo.listKindsForWorld.mockResolvedValue([kind]); repo.createListing.mockResolvedValue('l1'); });
   it('reports title, required field, and city guards without publishing', async () => {
@@ -83,7 +83,7 @@ describe('useListingCreateForm', () => {
 
 describe('republish an expired listing (D127)', () => {
   const source = {
-    listingId: 'old-1', ownerId: 'u1', worldSlug: 'food', kindSlug: 'give_food', direction: 'give', cityId: 'city-1',
+    listingId: 'old-1', ownerId: 'u1', worldSlug: 'food', kindSlug: 'food_offer', direction: 'give', cityId: 'city-1',
     details: { food_type: 'cooked', expires_at: '2026-11-01T10:00:00Z' },
     media: [{ storagePath: 'u1/b/1.jpg', sortOrder: 1 }, { storagePath: 'u1/b/0.jpg', sortOrder: 0 }],
   };

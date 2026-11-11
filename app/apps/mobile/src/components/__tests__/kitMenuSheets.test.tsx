@@ -18,6 +18,11 @@ const router = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock('expo-router', () => ({ useRouter: () => router }));
 const block = vi.hoisted(() => ({ canBlock: true, isBlocked: false, busy: false, toggle: vi.fn() }));
 vi.mock('../../hooks/useUserBlock', () => ({ useUserBlock: () => block }));
+// Holds the deferred work so a test decides when the sheet has "finished dismissing" (#2062).
+const deferred = vi.hoisted(() => [] as Array<() => void | Promise<void>>);
+vi.mock('../../lib/runAfterBottomSheetDismiss', () => ({
+  runAfterBottomSheetDismiss: (work: () => void | Promise<void>) => void deferred.push(work),
+}));
 const adminRoles = vi.hoisted(() => ({ roles: [] as string[] }));
 vi.mock('../../hooks/useAdminRoles', () => ({ useAdminRoles: () => adminRoles }));
 // The sheets these menus open are covered in kitReportSheets.test.tsx.
@@ -45,6 +50,7 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   Object.assign(block, { canBlock: true, isBlocked: false, busy: false });
+  deferred.length = 0;
   adminRoles.roles = [];
 });
 
@@ -158,6 +164,9 @@ describe('ProfileOverflowMenu', () => {
     const blockRow = screen.getByTestId('profile-block-toggle');
     expect(textColor('moderation.block.block')).toBe(rgb(lightColors.error));
     fireEvent.click(blockRow);
+    // The confirmation Alert waits for the sheet to finish closing, or iOS drops it (#2062).
+    expect(block.toggle).not.toHaveBeenCalled();
+    deferred.forEach((work) => void work());
     expect(block.toggle).toHaveBeenCalledTimes(1);
   });
 

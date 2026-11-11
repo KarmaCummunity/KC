@@ -16,6 +16,7 @@ import { rideBooking } from './rideBooking';
 import { knowledgeBooking } from './knowledgeBooking';
 import { housingStay } from './housingStay';
 import { eventPost } from './eventPost';
+import { organizations } from './organizations';
 import { ridePlaces } from './ridePlaces';
 import { dateTimeField, rideFeed, rideRoutes, rideSafety, rideSchedule, rideSeries } from './rideSchedule';
 import { authEn } from './modules/auth';
@@ -26,6 +27,7 @@ import { verificationEn } from './modules/verification';
 import { errorsEn } from './modules/errors';
 import { chatEn } from './modules/chat';
 import { chatNewEn } from './modules/chatNew';
+import { chatMessagingEn } from './modules/chatMessaging';
 import { notificationsEn } from './modules/notifications';
 import { emptyStatesEn, feedSettingsEn } from './modules/feedSettings';
 import { moderationEn, auditEn, accountBlockedEn } from './modules/moderation';
@@ -53,6 +55,7 @@ import { asideEn } from './modules/aside';
 import { configEn } from './modules/config';
 import { followEn } from './modules/follow';
 import { matchesEn } from './modules/matches';
+import { backendAvailabilityEn } from './modules/backendAvailability';
 
 const en = {
   // App
@@ -88,7 +91,7 @@ const en = {
   filters: filtersEn,
 
   // Chat — see modules/chat.ts (FR-CHAT-016)
-  chat: { ...chatEn, new: chatNewEn },
+  chat: { ...chatEn, new: chatNewEn, messaging: chatMessagingEn },
 
   // Notifications (FR-NOTIF-001..015) — see modules/notifications.ts
   notifications: notificationsEn,
@@ -150,6 +153,8 @@ const en = {
   housingStay,
   // Organization events (G1 step 5) — see eventPost.ts
   eventPost,
+  // Organizations (FR-ORG-002, G18) — see organizations.ts
+  organizations,
   // Ride places (D71) — see ridePlaces.ts
   ridePlaces,
   // Ride quick publish (D75) and the shared date-time field — see rideSchedule.ts
@@ -167,6 +172,9 @@ const en = {
   follow: followEn,
   // Matching v2 — see modules/matches.ts
   matches: matchesEn,
+
+  // Degrade rule copy — see modules/backendAvailability.ts
+  backend: backendAvailabilityEn,
 
   // Tab labels — see modules/tabs.ts
   tabs: tabsEn,

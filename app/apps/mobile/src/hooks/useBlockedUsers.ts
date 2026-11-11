@@ -8,7 +8,9 @@ import { Alert, Platform } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import type { BlockedUser } from '@kc/application';
+import { BackendUnavailableError } from '@kc/domain';
 import { container } from '../lib/container';
+
 import { useAuthStore } from '../store/authStore';
 
 /** Confirm dialog (window.confirm on web); resolves true when the member confirms. */
@@ -47,9 +49,18 @@ export function useBlockedUsers() {
   // The member whose unblock is running, so their row can disable its button.
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  // M01: the backend cannot list blocked members yet. That is the degrade rule's empty state, kept
+  // apart from "you blocked nobody" so the screen can say so (`unavailable`).
   const query = useQuery({
     queryKey: [BLOCKED_USERS_QUERY_KEY, me],
-    queryFn: () => container.listMyBlockedUsers.execute(),
+    queryFn: async (): Promise<{ users: BlockedUser[]; unavailable: boolean }> => {
+      try {
+        return { users: await container.listMyBlockedUsers.execute(), unavailable: false };
+      } catch (error) {
+        if (error instanceof BackendUnavailableError) return { users: [], unavailable: true };
+        throw error;
+      }
+    },
     enabled: Boolean(me),
   });
 
@@ -78,7 +89,8 @@ export function useBlockedUsers() {
   );
 
   return {
-    users: query.data ?? [],
+    users: query.data?.users ?? [],
+    unavailable: query.data?.unavailable ?? false,
     isLoading: query.isLoading,
     isError: query.isError,
     refetch: query.refetch,

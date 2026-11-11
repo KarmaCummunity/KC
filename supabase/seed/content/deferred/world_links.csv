@@ -1,0 +1,13 @@
+from_world_slug,to_world_slug,link_slug,label_he,label_en,description,is_active
+animals,food,pet_food,מזון לחיות,Pet food,,true
+animals,items,pet_gear,ציוד לחיות,Pet gear (items),,true
+animals,time,shelter_volunteering,התנדבות במקלט,Shelter volunteering,,true
+creative,food,recipe_to_food,מתכון → חלוקת מזון,Recipe to food sharing,,true
+creative,items,instrument_as_item,כלי נגינה כחפץ,Instrument as item,,true
+creative,knowledge,lesson_as_knowledge,שיעור כידע,Lesson as knowledge,,true
+environment,items,garden_tools,כלי גינון,Garden tools (items),,true
+food,rides,urgent_food_transport,שינוע מזון דחוף,Urgent food transport,,true
+housing,rides,ride_to_host,נסיעה לאירוח,Ride to hosting,,true
+items,medical,medical_equipment_cross,ציוד רפואי יד שנייה,Second-hand medical equipment,,true
+items,rides,needs_transport,חפץ דורש שינוע,Item needs a ride,,true
+medical,rides,medical_ride,נסיעה רפואית,Medical ride,,true

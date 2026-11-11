@@ -30,6 +30,7 @@
 /scripts/ci-*                               @navesarussi
 /scripts/check-*                            @navesarussi
 /scripts/deploy-*                           @navesarussi
+/scripts/db-backup-*                          @navesarussi
 /scripts/smoke-*                            @navesarussi
 /scripts/*-guard*                           @navesarussi
 /scripts/mobile-*                           @navesarussi
@@ -56,13 +57,12 @@
 /scripts/spec-ids.mjs                       @navesarussi
 /scripts/bump-app-version.mjs               @navesarussi
 /scripts/close-linked-issues.mjs            @navesarussi
-/scripts/run-db-tests.sh                    @navesarussi
 /scripts/run-baseline-tests.sh              @navesarussi
+/scripts/gen-baseline-types.mjs               @navesarussi
 /scripts/db-explain-dev.sh                  @navesarussi
 /scripts/strip-partition-types.mjs          @navesarussi
 /scripts/maestro-*                          @navesarussi
 /scripts/ops/                               @navesarussi
-/supabase/tests/_harness/                   @navesarussi
 
 # Quality thresholds: coverage and test selection (vitest / vite configs and
 # workspaces, Deno task and test config for Edge Functions, Playwright

@@ -11,12 +11,12 @@ const MISSING =
  * (#1944). Touching the placeholder still throws, so a misconfigured tree cannot
  * talk to a fake host.
  */
-export function bindSupabaseClient(
+export function bindSupabaseClient<D = Database>(
   configured: boolean,
-  create: () => SupabaseClient<Database>,
-): SupabaseClient<Database> {
+  create: () => SupabaseClient<D>,
+): SupabaseClient<D> {
   if (configured) return create();
-  return new Proxy({} as SupabaseClient<Database>, {
+  return new Proxy({} as SupabaseClient<D>, {
     get(_target, prop) {
       if (prop === 'then') return undefined;
       throw new Error(MISSING);

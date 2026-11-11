@@ -31,4 +31,10 @@ export const stats = {
     post_expired: 'The post “{{title}}” expired',
     post_removed_admin: 'The post “{{title}}” was removed by the team',
   },
+  // #2078 — volunteering takes place; it is not delivered to a recipient.
+  activityKindTime: {
+    post_closed_delivered: 'You marked the volunteering “{{title}}” as having taken place',
+    marked_as_recipient: '{{owner}} marked you in the volunteering “{{title}}”',
+    unmarked_as_recipient: 'You removed your mark from the volunteering “{{title}}”',
+  },
 };

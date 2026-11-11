@@ -152,6 +152,11 @@ jobs:
         if: ${{ !cancelled() }}
         run: node scripts/check-web-manifest.mjs
 
+      # Universal/app links: no placeholders, app ids match app.json, every claimed path covered (the web export itself is checked in the bundles lane).
+      - name: Deep-link manifests (AASA + assetlinks)
+        if: ${{ !cancelled() }}
+        run: node app/scripts/check-well-known-links.mjs
+
       - name: expo-router platform-extension fallbacks
         if: ${{ !cancelled() }}
         run: node scripts/check-expo-router-platform-extensions.mjs

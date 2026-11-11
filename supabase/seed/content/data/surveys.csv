@@ -1,0 +1,4 @@
+slug,title_he,description_he,is_active,current_version,prompt_rules
+giving-experience,נתינה וקבלה בקהילה,ספר/י לנו איך היה לתת או לקבל דרך הקהילה.,true,1,"{""min_sessions"": 5, ""require_closure"": true}"
+pmf-sean-ellis,שאלה אחת קצרה,תשובה אחת שעוזרת לנו להבין כמה קהילת קארמה חשובה לך.,true,1,"{""min_active_days_14d"": 2}"
+ux-experience,איך החוויה שלך בקהילת קארמה?,כמה שאלות קצרות שיעזרו לנו לשפר את האפליקציה. לוקח פחות מדקה.,true,1,"{""min_sessions"": 3}"

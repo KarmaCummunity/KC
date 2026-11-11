@@ -1,124 +1,157 @@
 import { describe, it, expect } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { BackendUnavailableError } from '@kc/domain';
+import type { Database } from '../../database.types';
 import { SupabaseAccountGateRepository } from '../SupabaseAccountGateRepository';
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 interface RpcCall {
   fn: string;
   args: unknown;
 }
 
+type RpcError = { code?: string; message: string } | null;
+
 function makeFakeClient(opts: {
   data?: unknown;
-  error?: { message: string } | null;
-}): { client: SupabaseClient<any>; calls: RpcCall[] } {
+  error?: RpcError;
+}): { client: SupabaseClient<Database>; calls: RpcCall[] } {
   const calls: RpcCall[] = [];
   const client = {
     rpc: async (fn: string, args: unknown) => {
       calls.push({ fn, args });
       return { data: opts.data ?? null, error: opts.error ?? null };
     },
-  } as unknown as SupabaseClient<any>;
+  } as unknown as SupabaseClient<Database>;
   return { client, calls };
 }
 
-describe('SupabaseAccountGateRepository', () => {
-  it('calls auth_check_account_gate with p_user_id', async () => {
-    const { client, calls } = makeFakeClient({ data: [{ allowed: true }] });
-    const repo = new SupabaseAccountGateRepository(client);
+/** A `bootstrap_session()` document with the given `account` block. */
+function session(account: Record<string, unknown>) {
+  return { user_id: 'u_me', account: { onboarding_state: 'completed', ...account }, private_profile: {} };
+}
 
-    await repo.checkAccountGate('u_me');
+describe('SupabaseAccountGateRepository.checkAccountGate', () => {
+  it('reads the gate from bootstrap_session without arguments', async () => {
+    const { client, calls } = makeFakeClient({ data: session({ status: 'active' }) });
 
-    expect(calls).toHaveLength(1);
-    expect(calls[0]?.fn).toBe('auth_check_account_gate');
-    expect(calls[0]?.args).toEqual({ p_user_id: 'u_me' });
+    await new SupabaseAccountGateRepository(client).checkAccountGate('u_me');
+
+    expect(calls).toEqual([{ fn: 'bootstrap_session', args: undefined }]);
   });
 
-  it('returns { allowed: true } when the RPC returns an allowed row', async () => {
+  it('allows an active account', async () => {
+    const { client } = makeFakeClient({ data: session({ status: 'active' }) });
+
+    expect(await new SupabaseAccountGateRepository(client).checkAccountGate('u_me')).toEqual({ allowed: true });
+  });
+
+  it('blocks a suspension and carries its end', async () => {
     const { client } = makeFakeClient({
-      data: [{ allowed: true, reason: null, until_at: null }],
+      data: session({ status: 'suspended_for_false_reports', status_until: '2026-06-01T00:00:00.000Z' }),
     });
-    const repo = new SupabaseAccountGateRepository(client);
 
-    expect(await repo.checkAccountGate('u_me')).toEqual({ allowed: true });
-  });
-
-  it('returns { allowed: true } when the RPC returns no rows (defensive)', async () => {
-    const { client } = makeFakeClient({ data: [] });
-    const repo = new SupabaseAccountGateRepository(client);
-
-    expect(await repo.checkAccountGate('u_me')).toEqual({ allowed: true });
-  });
-
-  it('returns { allowed: true } when data is null (defensive)', async () => {
-    const { client } = makeFakeClient({ data: null });
-    const repo = new SupabaseAccountGateRepository(client);
-
-    expect(await repo.checkAccountGate('u_me')).toEqual({ allowed: true });
-  });
-
-  it('surfaces reason and until when the user is blocked', async () => {
-    const { client } = makeFakeClient({
-      data: [
-        {
-          allowed: false,
-          reason: 'suspended_for_false_reports',
-          until_at: '2026-06-01T00:00:00.000Z',
-        },
-      ],
-    });
-    const repo = new SupabaseAccountGateRepository(client);
-
-    expect(await repo.checkAccountGate('u_me')).toEqual({
+    expect(await new SupabaseAccountGateRepository(client).checkAccountGate('u_me')).toEqual({
       allowed: false,
       reason: 'suspended_for_false_reports',
       until: '2026-06-01T00:00:00.000Z',
     });
   });
 
-  it('omits `until` when the RPC returns a null until_at', async () => {
-    const { client } = makeFakeClient({
-      data: [{ allowed: false, reason: 'banned', until_at: null }],
-    });
-    const repo = new SupabaseAccountGateRepository(client);
+  it('omits `until` for a ban without an end', async () => {
+    const { client } = makeFakeClient({ data: session({ status: 'banned', status_until: null }) });
 
-    const out = await repo.checkAccountGate('u_me');
-    expect(out.allowed).toBe(false);
-    if (!out.allowed) {
-      expect(out.reason).toBe('banned');
-      expect(out.until).toBeUndefined();
-    }
+    const out = await new SupabaseAccountGateRepository(client).checkAccountGate('u_me');
+
+    expect(out).toEqual({ allowed: false, reason: 'banned', until: undefined });
   });
 
-  it('throws InfrastructureError when the RPC fails', async () => {
-    const { client } = makeFakeClient({ error: { message: 'network down' } });
-    const repo = new SupabaseAccountGateRepository(client);
+  it('reports a pending deletion with its purge date as `until`', async () => {
+    const { client } = makeFakeClient({
+      data: session({
+        status: 'pending_deletion',
+        status_until: null,
+        deletion_requested_at: '2026-05-02T00:00:00.000Z',
+        deletion_purge_at: '2026-06-01T00:00:00.000Z',
+      }),
+    });
 
-    await expect(repo.checkAccountGate('u_me')).rejects.toThrow(
-      /auth_check_account_gate failed: network down/,
+    expect(await new SupabaseAccountGateRepository(client).checkAccountGate('u_me')).toEqual({
+      allowed: false,
+      reason: 'pending_deletion',
+      until: '2026-06-01T00:00:00.000Z',
+    });
+  });
+
+  it('blocks an account that waits for verification', async () => {
+    const { client } = makeFakeClient({ data: session({ status: 'pending_verification' }) });
+
+    const out = await new SupabaseAccountGateRepository(client).checkAccountGate('u_me');
+
+    expect(out).toMatchObject({ allowed: false, reason: 'pending_verification' });
+  });
+
+  it('refuses a status it does not know instead of letting the member in', async () => {
+    const { client } = makeFakeClient({ data: session({ status: 'something_new' }) });
+
+    await expect(new SupabaseAccountGateRepository(client).checkAccountGate('u_me')).rejects.toThrow(
+      /unknown account status/,
     );
   });
 
-  describe('restoreAccount (FR-AUTH-016)', () => {
-    it('calls rpc_restore_account without arguments', async () => {
-      const { client, calls } = makeFakeClient({});
-      await new SupabaseAccountGateRepository(client).restoreAccount();
-      expect(calls).toHaveLength(1);
-      expect(calls[0]?.fn).toBe('rpc_restore_account');
-    });
+  it('maps a signed-out caller to the stable reason `unauthenticated`', async () => {
+    const { client } = makeFakeClient({ error: { code: '42501', message: 'unauthenticated' } });
 
-    it.each([
-      ['grace_expired', 'grace_expired'],
-      ['not_pending_deletion', 'not_pending_deletion'],
-      ['unauthenticated', 'unauthenticated'],
-      ['connection reset', 'network'],
-    ])('maps the RPC error "%s" to the code %s', async (message, code) => {
-      const { client } = makeFakeClient({ error: { message } });
-      await expect(new SupabaseAccountGateRepository(client).restoreAccount()).rejects.toMatchObject({
-        name: 'RestoreAccountError',
-        code,
-      });
+    await expect(new SupabaseAccountGateRepository(client).checkAccountGate('u_me')).rejects.toMatchObject({
+      code: 'backend_rule',
+      reason: 'unauthenticated',
     });
+  });
+
+  it('reports a missing bootstrap_session as BackendUnavailableError', async () => {
+    const { client } = makeFakeClient({ error: { code: 'PGRST202', message: 'Could not find the function' } });
+
+    await expect(new SupabaseAccountGateRepository(client).checkAccountGate('u_me')).rejects.toBeInstanceOf(
+      BackendUnavailableError,
+    );
+  });
+});
+
+describe('SupabaseAccountGateRepository.restoreAccount (FR-AUTH-016)', () => {
+  it('calls restore_account without arguments', async () => {
+    const { client, calls } = makeFakeClient({});
+
+    await new SupabaseAccountGateRepository(client).restoreAccount();
+
+    expect(calls).toEqual([{ fn: 'restore_account', args: undefined }]);
+  });
+
+  it.each([
+    ['grace_expired', 'P0001', 'grace_expired'],
+    ['not_pending_deletion', 'P0001', 'not_pending_deletion'],
+    ['unauthenticated', '42501', 'unauthenticated'],
+  ])('maps the refusal "%s" to the code %s', async (message, sqlState, code) => {
+    const { client } = makeFakeClient({ error: { code: sqlState, message } });
+
+    await expect(new SupabaseAccountGateRepository(client).restoreAccount()).rejects.toMatchObject({
+      name: 'RestoreAccountError',
+      code,
+    });
+  });
+
+  it('maps an unknown failure to the code network', async () => {
+    const { client } = makeFakeClient({ error: { message: 'connection reset' } });
+
+    await expect(new SupabaseAccountGateRepository(client).restoreAccount()).rejects.toMatchObject({
+      name: 'RestoreAccountError',
+      code: 'network',
+    });
+  });
+
+  it('lets a missing function reach the degrade rule', async () => {
+    const { client } = makeFakeClient({ error: { code: 'PGRST202', message: 'Could not find the function' } });
+
+    await expect(new SupabaseAccountGateRepository(client).restoreAccount()).rejects.toBeInstanceOf(
+      BackendUnavailableError,
+    );
   });
 });

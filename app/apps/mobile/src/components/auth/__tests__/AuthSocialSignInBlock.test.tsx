@@ -29,6 +29,8 @@ vi.mock('@expo/vector-icons', () => ({
   Ionicons: ({ name, color }: { name: string; color?: string }) => <span data-testid={`icon-${name}`} data-color={color} />,
 }));
 vi.mock('expo-router', () => ({ useRouter: () => ({ back: vi.fn(), push: vi.fn(), replace: vi.fn() }) }));
+// Email flows visible: the launch-surface gate renders its children (see config/launchSurfaces.ts).
+vi.mock('../../../hooks/useLaunchSurface', () => ({ useLaunchSurface: () => true }));
 vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 vi.mock('../../../hooks/useModalHardwareBack', () => ({ useModalHardwareBack: () => {} }));
 vi.mock('../../ui/AmbientBlobs', () => ({ AmbientBlobs: () => null }));

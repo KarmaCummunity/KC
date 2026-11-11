@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import {
   checkMigrationSafety,
   checkReleaseMigrations,
+  isInitialSchema,
   justifiedFiles,
   permanentTablesCreatedIn,
   scanCompatibility,
@@ -179,4 +180,21 @@ test('still flags RENAME in real DDL and in multi-word dynamic SQL', () => {
   assert.equal(scanCompatibility('alter table a rename column b to c;\n', '0907.sql').length, 1);
   assert.equal(scanCompatibility("execute 'alter table a rename to b';\n", '0908.sql').length, 1);
   assert.equal(scanCompatibility("execute 'drop policy p on t';\n", '0909.sql').length, 1);
+});
+
+test('the generated initial schema is exempt; the same SQL in any other file is not', () => {
+  const header = '-- Karma Community — production baseline.\n';
+  const sql = `${header}truncate public.t;\n`;
+  const dir = mkdtempSync(join(tmpdir(), 'kc-safety-initial-'));
+  try {
+    writeFileSync(join(dir, '0001_baseline.sql'), sql);
+    assert.equal(checkMigrationSafety(dir).ok, true);
+    assert.deepEqual(checkReleaseMigrations([{ name: '0001_baseline.sql', content: sql }], ''), []);
+    writeFileSync(join(dir, '0002_later.sql'), 'truncate public.t;\n');
+    assert.equal(checkMigrationSafety(dir).ok, false);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+  assert.equal(isInitialSchema('0001_baseline.sql', 'truncate public.t;\n'), false, 'a file without the generated header is scanned');
+  assert.equal(isInitialSchema('0002_x.sql', sql), false);
 });
