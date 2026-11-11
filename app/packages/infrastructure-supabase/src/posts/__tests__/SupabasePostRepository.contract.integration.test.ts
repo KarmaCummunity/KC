@@ -18,7 +18,9 @@ describe('IPostRepository contract — SupabasePostRepository (local stack)', ()
   beforeAll(async () => {
     harness = new PostContractHarness();
     const address = await harness.anyAddress();
-    ctx = { address, newActor: () => harness.newActor() };
+    // The baseline's rules (see PostRepositoryContractContext): reopen count is internal; delete keeps
+    // the post seven days for a reopen.
+    ctx = { address, newActor: () => harness.newActor(), reopenCountReadable: false, deleteKeepsPostForReopen: true };
   }, CASE_TIMEOUT_MS);
 
   afterAll(async () => {

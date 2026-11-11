@@ -3,7 +3,7 @@
 User journeys against the deployed dev web app (`DEV_WEB_URL`, default
 `https://dev.karma-community.pages.dev`) and the kc-dev Supabase project.
 
-- **Users:** the public kc-dev seed users (`user1@seed.kc.test`, `user2@seed.kc.test`,
+- **Users:** the e2e members of kc-dev (`user1@seed.kc.test` … `user4@seed.kc.test`, loaded by the **Seed KC dev** workflow, action `e2e-users`, from `supabase/seed/e2e/load.sql`; 
   password from the `E2E_SEED_PASSWORD` env / Actions secret, required). Override with `E2E_USER_A_EMAIL` / `E2E_USER_A_PASSWORD`
   and `E2E_USER_B_*`.
 - **Anon key:** read from the deployed bundle (it is the public publishable key), or set
@@ -22,6 +22,7 @@ User journeys against the deployed dev web app (`DEV_WEB_URL`, default
 | `journeys/qa/marketplace.spec.ts` | browse, search, listing detail, create item with/without photo on the unified create screen (`/create?category=items`), reserve by a second user |
 | `journeys/qa/social.spec.ts` | chat between two users, notifications inbox, donations hub, money world (active hub or portal per `world_money_enabled`), he/en + RTL |
 | `journeys/qa/block-user.spec.ts` | block then unblock `user3@seed.kc.test` from the profile ⋮ menu (Apple 1.2) |
+| `journeys/qa/report-issue.spec.ts` | report a problem from Settings (FR-MOD-002): Send disabled while too short, then the report opens the support thread and is stored there once (leaves one tagged report in user A's support thread) |
 | `journeys/qa/account-deletion.spec.ts` | **opt-in, destructive**: delete account from Settings (set `E2E_DELETE_ACCOUNT_EMAIL` to a spare seed user) |
 | `journeys/*.spec.ts` | P0 smoke journeys + the world journeys above (`lib/worldJourney.ts` holds the shared shape; a world is a fixture) |
 

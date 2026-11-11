@@ -1,50 +1,30 @@
-// app/packages/infrastructure-supabase/src/users/follow/mapFollowError.ts
-// Postgres error → typed FollowError mapping. See migration 0003 for the
-// trigger-raised error names this maps from.
+// Stable RPC refusal → typed FollowError. The reasons are the messages `follow_user`,
+// `follow_request_decide` and `follow_request_cancel` raise (15_social_graph/040_follow_rpcs.sql).
 
-import { FollowError } from '@kc/application';
+import { FollowError, type FollowErrorCode } from '@kc/application';
+import { BackendRuleError } from '@kc/domain';
 
-interface PgErrorShape {
-  readonly code?: string;
-  readonly message?: string;
-  readonly details?: string;
+const CODE_BY_REASON: Readonly<Record<string, FollowErrorCode>> = {
+  self_follow_forbidden: 'self_follow',
+  blocked_relationship: 'blocked_relationship',
+  follow_request_cooldown_active: 'cooldown_active',
+  account_not_active: 'account_not_active',
+  rate_limited: 'rate_limited',
+  user_unavailable: 'user_not_found',
+};
+
+/** `cooldown_until=<ISO>` in the detail of a cooldown refusal. */
+const COOLDOWN_DETAIL = /cooldown_until=([0-9TZ:.+-]+)/;
+
+/** The detail text of the PostgREST error a rule refusal wraps (`BackendRuleError.cause`). */
+function detailOf(error: BackendRuleError): string {
+  const cause = error.cause as { details?: unknown } | undefined;
+  return typeof cause?.details === 'string' ? cause.details : '';
 }
 
-export function mapFollowError(err: unknown): Error {
-  const pg = (err ?? {}) as PgErrorShape;
-  const text = `${pg.message ?? ''} ${pg.details ?? ''}`;
-
-  // self_follow_forbidden / self_follow_request_forbidden — RAISE check_violation
-  if (text.includes('self_follow_forbidden') || text.includes('self_follow_request_forbidden')) {
-    return new FollowError('self_follow', text, { cause: err });
-  }
-  // blocked_relationship — RAISE check_violation
-  if (text.includes('blocked_relationship')) {
-    return new FollowError('blocked_relationship', text, { cause: err });
-  }
-  // already_following — RAISE check_violation from follow_requests trigger
-  if (text.includes('already_following')) {
-    return new FollowError('already_following', text, { cause: err });
-  }
-  // follow_request_cooldown_active — RAISE check_violation; cooldown_until in detail
-  if (text.includes('follow_request_cooldown_active')) {
-    const m = text.match(/cooldown_until=([0-9TZ:.+-]+)/);
-    return new FollowError('cooldown_active', text, {
-      cause: err,
-      cooldownUntil: m?.[1],
-    });
-  }
-  // 23505 unique_violation on follow_requests_one_pending_per_pair_idx
-  if (pg.code === '23505' && text.includes('follow_requests_one_pending_per_pair_idx')) {
-    return new FollowError('pending_request_exists', text, { cause: err });
-  }
-  // PK conflict on follow_edges → already following
-  if (pg.code === '23505' && text.includes('follow_edges_pkey')) {
-    return new FollowError('already_following', text, { cause: err });
-  }
-  // 42501 RLS — surfaced as blocked when invariants are intact
-  if (pg.code === '42501') {
-    return new FollowError('blocked_relationship', text, { cause: err });
-  }
-  return new FollowError('unknown', pg.message ?? 'unknown', { cause: err });
+/** The FollowError for a stable refusal; `unknown` for a refusal the follow flow has no code for. */
+export function mapFollowError(error: BackendRuleError): FollowError {
+  const code = CODE_BY_REASON[error.reason] ?? 'unknown';
+  const cooldownUntil = code === 'cooldown_active' ? COOLDOWN_DETAIL.exec(detailOf(error))?.[1] : undefined;
+  return new FollowError(code, error.reason, { cause: error, cooldownUntil });
 }

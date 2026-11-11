@@ -1,0 +1,11 @@
+slug,world_slug,label_he,label_en,body_type,requires_routing,contact_url,is_verified,is_active
+adi,medical,אדי — איגוד להתנדבות,ADI organ registry,organ_registry,true,,true,true
+ezer_lamaret,medical,עזר מלרת,Ezer Lamaret,ngo,true,,true,true
+ezra_lemaret_bone_marrow,medical,עזר מציון — מח עצם,Ezer Mizion bone marrow,ngo,true,,true,true
+health_ministry_hazardous,environment,משרד הבריאות — פסולת מסוכנת,Health ministry hazardous waste,government,true,,true,true
+let_animals_live,animals,תנו לחיות לחיות,Let the Animals Live,ngo,true,,true,true
+mda,medical,מגן דוד אדום,Magen David Adom,blood_services,true,,true,true
+municipal_ewaste,environment,רשות מקומית — אלקטרוניקה,Municipal e-waste,government,true,,false,true
+spca_israel,animals,צער בעלי חיים בישראל,SPCA Israel,ngo,true,,true,true
+spni,environment,החברה להגנת הטבע,Society for the Protection of Nature in Israel,ngo,true,,true,true
+yad_sarah,medical,יד שרה,Yad Sarah,ngo,true,,true,true

@@ -133,11 +133,6 @@ export function markBasicInfoSkipped(userId: string): Promise<void> {
   return getUserRepo().markBasicInfoSkipped(userId);
 }
 
-/** Settings developer tool: back to onboarding step 1 with the skip flag cleared (dev database only). */
-export function resetOnboardingForDev(): Promise<void> {
-  return getUserRepo().resetOnboardingForDev();
-}
-
 /** Lists every Israeli city from `public.cities` ordered by Hebrew name. */
 export function listCities(): Promise<City[]> {
   return getCityRepo().listAll();

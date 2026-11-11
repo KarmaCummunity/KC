@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { AdminGrant } from '@kc/domain';
 import { container } from '../lib/container';
+import { listOrEmpty } from '../lib/backendAvailability';
 
 const EMPTY: readonly AdminGrant[] = [];
 
@@ -20,7 +21,8 @@ export function useAdminsList(
 ): AdminsListState {
   const q = useQuery({
     queryKey: ['admin.admins.list', { includeRevoked }],
-    queryFn: () => container.listAdmins.execute({ includeRevoked }),
+    // Degrade rule: without the role tables the roster is simply empty.
+    queryFn: () => listOrEmpty(() => container.listAdmins.execute({ includeRevoked })),
     enabled,
     staleTime: 30_000,
   });

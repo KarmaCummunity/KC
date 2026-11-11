@@ -7,7 +7,6 @@ import { adminOrgApprovalsHe } from './adminOrgApprovals';
 import { adminDonationLinksHe } from './adminDonationLinks';
 import { adminWhatsAppHe } from './adminWhatsApp';
 import { adminMatchingHe } from './adminMatching';
-import { adminDemoDataHe } from './adminDemoData';
 import { adminOrgTreeHe } from './adminOrgTree';
 import { adminStatsHe } from './adminStats';
 import { adminSurveysHe } from './adminSurveys';
@@ -32,7 +31,6 @@ export const adminHe = {
     audit:         'יומן פעולות',
     whatsapp:      'וואטסאפ',
     matching:      'איכות התאמות',
-    demoData:      'נתוני דמה',
     donationLinks: 'קישורי תרומה',
     stats:         'סטטיסטיקות',
   },
@@ -81,7 +79,7 @@ export const adminHe = {
       posts:      'פוסטים',
       users:      'משתמשים',
       chats:      'צ׳אטים',
-      listings:   'מודעות',
+      comments:   'תגובות',
       last7Days:  'שבעה ימים אחרונים',
       last30Days: 'שלושים ימים אחרונים',
       search:     'חיפוש לפי מזהה יעד או שם המדווח',
@@ -124,9 +122,7 @@ export const adminHe = {
       postKind:    'פוסט',
       userKind:    'משתמש',
       chatKind:    'צ׳אט',
-      listingKind: 'מודעה',
-      openListing: 'פתיחת המודעה',
-      openOwner:   'פתיחת פרופיל המפרסם',
+      commentKind: 'תגובה',
       noPreview:   '(אין תצוגה מקדימה)',
       unnamedUser: '(משתמש ללא שם)',
       openPost:    'פתיחת הפוסט',
@@ -151,7 +147,6 @@ export const adminHe = {
   money: adminMoneyHe,
   whatsapp: adminWhatsAppHe,
   matching: adminMatchingHe,
-  demoData: adminDemoDataHe,
   orgTree: adminOrgTreeHe,
   stats: adminStatsHe,
   crm: adminCrmHe,

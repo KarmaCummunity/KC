@@ -4,12 +4,12 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { auth, listMine, respond, refreshMine } = vi.hoisted(() => ({
-  auth: { userId: 'u1' as string | null }, listMine: vi.fn(), respond: vi.fn(), refreshMine: vi.fn(),
+const { auth, listMine, respond } = vi.hoisted(() => ({
+  auth: { userId: 'u1' as string | null }, listMine: vi.fn(), respond: vi.fn(),
 }));
 vi.mock('../../store/authStore', () => ({ useAuthStore: (selector: (state: { session: { userId: string } | null }) => unknown) => selector({ session: auth.userId ? { userId: auth.userId } : null }) }));
-vi.mock('../../services/matchingComposition', () => ({ getMatchRepository: () => ({ listMine, respond, refreshMine }) }));
-import { myMatchesQueryKey, useMyMatches, useRefreshMyMatches, useRespondToMatch } from '../useMyMatches';
+vi.mock('../../services/matchingComposition', () => ({ getMatchRepository: () => ({ listMine, respond }) }));
+import { myMatchesQueryKey, useMyMatches, useRespondToMatch } from '../useMyMatches';
 let client: QueryClient;
 const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 beforeEach(() => { auth.userId = 'u1'; client = new QueryClient({ defaultOptions: { queries: { retry: false } } }); vi.clearAllMocks(); });
@@ -41,16 +41,5 @@ describe('useMyMatches', () => {
     respond.mockRejectedValue(new Error('response failed'));
     await act(async () => { await expect(mutation.result.current.mutateAsync({ candidateId: 'c10', response: 'decline' })).rejects.toThrow('response failed'); });
     expect(mutation.result.current.isError).toBe(true);
-  });
-
-  it('invalidates after refresh succeeds or rejects', async () => {
-    refreshMine.mockResolvedValue(undefined);
-    const invalidate = vi.spyOn(client, 'invalidateQueries');
-    const refresh = renderHook(() => useRefreshMyMatches(), { wrapper });
-    await act(async () => { await refresh.result.current.mutateAsync(); });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: myMatchesQueryKey('u1') });
-    refreshMine.mockRejectedValue(new Error('refresh failed'));
-    await act(async () => { await expect(refresh.result.current.mutateAsync()).rejects.toThrow('refresh failed'); });
-    expect(invalidate).toHaveBeenCalledTimes(2);
   });
 });

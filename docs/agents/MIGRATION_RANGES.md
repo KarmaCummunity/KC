@@ -1,5 +1,13 @@
 # Migration range registry
 
+> **Reset by the production baseline cut-over (D-228).** The incremental chain `0001`–`0742` was
+> replaced by one migration, `supabase/migrations/0001_baseline.sql`, assembled from
+> `supabase/schemas/` and frozen (`node scripts/assemble-baseline.mjs --check` fails when it
+> changes). The old files are history in `supabase/migrations/archive/`. **The next free number is
+> `0002`.** Later changes are forward-only `supabase/migrations/NNNN_snake.sql` files with their
+> pgTAP test in `supabase/tests/`; claim a range below as before. The table that follows is the
+> record of the retired chain and is kept for reference only.
+
 **Rule:** before writing a migration, claim a range here, in your PR or a small docs PR to `dev`. Use only numbers inside your range. Files are `supabase/migrations/NNNN_snake_case.sql`. Gaps are fine; collisions are not.
 
 Last applied on kc-dev when this was written: `0239`.

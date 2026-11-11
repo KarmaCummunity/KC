@@ -78,17 +78,20 @@ test('parseAllowedManifest ignores comments and blank lines', () => {
   );
 });
 
-test('the committed manifest is empty (cut-over has not happened) and the live tree is blocked by default', () => {
+test('the committed manifest lists exactly the migrations in the tree; prod stays blocked by default', () => {
   const root = join(import.meta.dirname, '..');
   const allowed = loadAllowedManifest(root);
-  assert.deepEqual(allowed, [], 'prod-allowed-migrations.txt must stay empty until cut-over');
   const migrations = listMigrationFiles(root);
-  assert.ok(migrations.length > 0, 'expected the legacy supabase/migrations tree');
+  // Each forward-only migration after the cut-over is listed here with the PR that adds it (docs/db/cutover-runbook.md).
+  const expected = ['0001_baseline.sql', '0002_org_entitlements.sql'];
+  assert.deepEqual(allowed, expected, 'the manifest approves the baseline and the forward-only migrations');
+  assert.deepEqual(migrations, expected, 'supabase/migrations holds the baseline and the forward-only migrations (legacy chain is in archive/)');
   const blocked = checkProdSchemaMode({ mode: 'block', migrations, allowed });
-  assert.equal(blocked.ok, false);
-  const baseline = checkProdSchemaMode({ mode: 'baseline', migrations, allowed });
-  assert.equal(baseline.ok, false);
-  assert.match(baseline.errors[0], new RegExp(`${migrations.length} file\\(s\\) not listed`));
+  assert.equal(blocked.ok, false, 'unset / block still refuses a prod push');
+  assert.equal(checkProdSchemaMode({ mode: 'baseline', migrations, allowed }).ok, true);
+  const extra = checkProdSchemaMode({ mode: 'baseline', migrations: [...migrations, '0003_x.sql'], allowed });
+  assert.equal(extra.ok, false, 'a migration the manifest does not list is refused');
+  assert.match(extra.errors[0], /1 file\(s\) not listed/);
 });
 
 test('loadProdSchemaContext reads mode, migrations and the manifest from a tree', () => {

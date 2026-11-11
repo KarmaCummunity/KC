@@ -1,0 +1,9 @@
+survey_slug,version,sort_order,question_type,short_label_he,prompt_he,context_he,text_placeholder_he,rating_anchor_low_he,rating_anchor_high_he,choice_options
+giving-experience,1,1,rating_1_7_with_optional_text,שביעות רצון,כמה מרוצה היית מהנתינה או הקבלה האחרונה שלך?,,מה עבד טוב ומה פחות?,לא מרוצה,מרוצה מאוד,
+giving-experience,1,2,rating_1_7_with_optional_text,תקשורת,כמה קל היה לתאם עם הצד השני?,,מה היה עוזר לתיאום?,קשה מאוד,קל מאוד,
+giving-experience,1,3,rating_1_7_with_optional_text,אמון ובטיחות,כמה בטוח/ה הרגשת במהלך התהליך?,,מה היה מחזק את התחושה?,בכלל לא,מאוד,
+pmf-sean-ellis,1,1,single_choice_with_optional_text,בלי קהילת קארמה,איך היית מרגיש/ה אם לא היית יכול/ה להשתמש יותר בקהילת קארמה?,,מה הדבר העיקרי שקהילת קארמה נותנת לך?,לא מספיק,מצוין,"[{""key"": ""very_disappointed"", ""label_he"": ""מאוד מאוכזב/ת""}, {""key"": ""somewhat_disappointed"", ""label_he"": ""קצת מאוכזב/ת""}, {""key"": ""not_disappointed"", ""label_he"": ""לא מאוכזב/ת (זה לא באמת שימושי לי)""}]"
+ux-experience,1,1,rating_1_7_with_optional_text,קלות שימוש,כמה קל לך להשתמש באפליקציה?,,מה היה מסובך או לא ברור?,קשה מאוד,קל מאוד,
+ux-experience,1,2,rating_1_7_with_optional_text,מציאת מה שצריך,"כמה קל למצוא פוסטים, טרמפים או עזרה שמתאימים לך?",,מה חיפשת ולא מצאת?,קשה מאוד,קל מאוד,
+ux-experience,1,3,rating_1_7_with_optional_text,מראה ועיצוב,עד כמה המסכים נראים לך ברורים ונעימים?,,איזה מסך הכי צריך שיפור?,בכלל לא,מאוד,
+ux-experience,1,4,rating_1_7_with_optional_text,המלצה,עד כמה היית ממליץ/ה על האפליקציה לחבר או חברה?,,למה?,בכלל לא,בהחלט,

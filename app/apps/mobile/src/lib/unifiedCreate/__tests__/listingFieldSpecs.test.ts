@@ -45,8 +45,8 @@ describe('listing field specs — per kind', () => {
 
   it('renders the purpose-built fields of each category (docs/spec/07 §7.2)', () => {
     // The food type is the world sub-category picker, not a detail field (D137, KC#1398).
-    expect(keysOf('give_food')).toEqual(['expires_at', 'allergens', 'kosher', 'pickup_mode']);
-    expect(keysOf('request_food')).toEqual(['household_size', 'dietary_needs']);
+    expect(keysOf('food_offer')).toEqual(['expires_at', 'allergens', 'kosher', 'pickup_mode']);
+    expect(keysOf('food_request')).toEqual(['household_size', 'dietary_needs']);
     // Route, departure, estimated end and seats are rendered by RideCreateSection (D71, D75).
     expect(keysOf('ride_offer')).toEqual(['reward_model', 'cost_share_ils']);
     expect(keysOf('ride_request')).toEqual(['passengers', 'luggage']);
@@ -74,9 +74,9 @@ describe('listing field specs — per kind', () => {
     expect(keysOf('adoption_request')).toEqual(['species', 'age_group', 'size']);
     expect(keysOf('foster_offer')).toEqual(['species', 'care_mode', 'location_mode', 'duration_days']);
     expect(keysOf('foster_request')).toEqual(['species', 'care_mode', 'location_mode', 'starts_on', 'ends_on']);
-    expect(keysOf('volunteer_shift')).toEqual(['duration_minutes']);
-    expect(keysOf('support_request')).toEqual(['support_type', 'duration_minutes']);
-    expect(keysOf('org_event')).toEqual(['starts_at', 'ends_at', 'registration_policy', 'capacity', 'address']);
+    expect(keysOf('volunteer_offer')).toEqual(['duration_minutes']);
+    expect(keysOf('volunteer_request')).toEqual(['support_type', 'duration_minutes']);
+    expect(keysOf('event')).toEqual(['starts_at', 'ends_at', 'registration_policy', 'capacity', 'address']);
   });
 
   it('offers no emotional-support option: it is routed to a hotline (docs/spec/05 §5.4)', () => {
@@ -91,9 +91,19 @@ describe('listing field specs — per kind', () => {
     expect(spec?.type === 'choice' && spec.options).toEqual(['yes']);
   });
 
-  it('an unknown kind or an empty schema renders no curated fields', () => {
+  it('an unknown kind renders no curated fields; a schema that declares properties filters them', () => {
     expect(fieldsForKind({ ...KINDS_BY_WORLD.food![0]!, slug: 'nope' })).toEqual([]);
-    expect(fieldsForKind({ ...KINDS_BY_WORLD.food![0]!, detailSchema: {} })).toEqual([]);
+    const food = KINDS_BY_WORLD.food![0]!;
+    const declared = { ...food, detailSchema: { type: 'object', properties: { kosher: {} } } };
+    expect(fieldsForKind(declared).map((s) => s.key)).toEqual(['kosher']);
+  });
+
+  it('the baseline default schema (no properties) keeps every curated field of the kind', () => {
+    const food = KINDS_BY_WORLD.food![0]!;
+    expect(fieldsForKind({ ...food, detailSchema: { type: 'object' } }).map((s) => s.key)).toEqual(
+      ['expires_at', 'allergens', 'kosher', 'pickup_mode'],
+    );
+    expect(fieldsForKind({ ...food, detailSchema: {} })).toHaveLength(4);
   });
 
   it('every field and option has a Hebrew label', () => {
@@ -193,14 +203,14 @@ describe('kindForDirection', () => {
 
   // G1 step 5: an organization's event is chosen explicitly, never the default offer.
   it('never defaults to the organization event kind', () => {
-    expect(kindForDirection(KINDS_BY_WORLD.time!, 'give')?.slug).toBe('volunteer_shift');
-    const eventOnly = KINDS_BY_WORLD.time!.filter((k) => k.slug === 'org_event');
+    expect(kindForDirection(KINDS_BY_WORLD.time!, 'give')?.slug).toBe('volunteer_offer');
+    const eventOnly = KINDS_BY_WORLD.time!.filter((k) => k.slug === 'event');
     expect(kindForDirection(eventOnly, 'give')).toBeNull();
   });
 });
 
 describe('organization event fields (G1 step 5)', () => {
-  const eventKind = KINDS_BY_WORLD.time!.find((k) => k.slug === 'org_event')!;
+  const eventKind = KINDS_BY_WORLD.time!.find((k) => k.slug === 'event')!;
   const eventFields = fieldsForKind(eventKind);
 
   it('starts with automatic registration and needs both ends of the window', () => {

@@ -97,17 +97,12 @@ export const settingsEn = {
     submitting: 'Submitting...',
     errorGeneric: 'Something went wrong. Please try again.',
     errorAdminNotFound: 'Support is unavailable. Please try again later.',
+    errorTooLong: 'The description is over 500 characters. Shorten it and send again.',
   },
   devTools: 'Developer tools',
-  resetOnboarding: 'Reset onboarding (debug)',
-  resetting: 'Resetting...',
   simulateHardRefresh: 'Simulate full refresh (debug)',
   simulatingHardRefresh: 'Refreshing...',
   version: 'KC - Karma Community',
-  resetOnboardingFailed: 'Reset failed: {{msg}}',
-  resetOnboardingConfirmMsg: 'This will reset your onboarding state to the beginning and reopen the signup wizard. Your profile will not be deleted.\n\nContinue?',
-  resetOnboardingConfirmTitle: 'Reset onboarding',
-  resetOnboardingBtn: 'Reset',
   signOutFailed: 'Log out failed. Please try again.',
 
   // PR5d (UI sweep, Pattern #1) — Stack header title for /edit-profile.

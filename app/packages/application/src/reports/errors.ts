@@ -1,10 +1,12 @@
+/**
+ * Why a report was refused. `duplicate_within_24h` keeps its historical name: the baseline
+ * allows one open report per reporter and target (FR-MOD-001 AC7), which is what it signals.
+ */
 export type ReportErrorCode =
   | 'invalid_target'
   | 'duplicate_within_24h'
   | 'target_already_moderated'
-  /** The reporter owns the target (server guard `cannot_report_self`). */
   | 'cannot_report_self'
-  /** The reporter hit the hourly report cap (server guard `rate_limit_exceeded`). */
   | 'rate_limited'
   | 'unknown';
 

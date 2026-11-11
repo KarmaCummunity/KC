@@ -3,13 +3,10 @@ import type { ReportTargetType } from '../value-objects';
 export const AUTO_REMOVE_THRESHOLD = 3 as const;
 
 /**
- * Subset of {@link ReportTargetType} that may appear in the admin inbox / case
- * detail surfaces. The wire protocol from `reports_open_inbox` and
- * `reports_case_detail` never emits `'none'`, so the inbox/parser layer narrows
- * to these three values. Kept as a re-exported alias rather than a fresh type
- * to avoid two parallel enums diverging.
+ * The target types that may appear in the admin inbox / case detail surfaces: the four
+ * values `reports.target_type` accepts. A listing is a post, so there is no `listing` case.
  */
-export type AdminReportTargetType = Exclude<ReportTargetType, 'none'>;
+export type AdminReportTargetType = Extract<ReportTargetType, 'post' | 'user' | 'chat' | 'comment'>;
 
 export interface ReportThresholdProgress {
   readonly count: number;
@@ -46,41 +43,75 @@ export interface ReportInboxPage {
   readonly nextCursor: ReportInboxCursor | null;
 }
 
-function isTargetType(v: unknown): v is AdminReportTargetType {
-  return v === 'post' || v === 'user' || v === 'chat' || v === 'listing';
+/** One open report as the staff read of `reports` returns it. */
+export interface OpenReportRecord {
+  readonly reporterId: string | null;
+  readonly targetType: AdminReportTargetType;
+  readonly targetId: string;
+  readonly createdAt: string;      // ISO timestamp
 }
 
-export function parseReportInboxPage(input: unknown): ReportInboxPage {
-  if (!input || typeof input !== 'object') return { rows: [], nextCursor: null };
-  const obj = input as Record<string, unknown>;
-  const rowsRaw = obj['rows'];
-  const rows: ReportInboxRow[] = [];
-  if (Array.isArray(rowsRaw)) {
-    for (const raw of rowsRaw) {
-      if (!raw || typeof raw !== 'object') continue;
-      const r = raw as Record<string, unknown>;
-      if (!isTargetType(r['target_type']) || typeof r['target_id'] !== 'string') continue;
-      rows.push({
-        targetType:        r['target_type'],
-        targetId:          r['target_id'],
-        reporterCount:     typeof r['reporter_count'] === 'number' ? r['reporter_count'] : 0,
-        oldestAt:          typeof r['oldest_at'] === 'string' ? r['oldest_at'] : '',
-        latestReporterId:  typeof r['latest_reporter_id'] === 'string' ? r['latest_reporter_id'] : null,
-        target:            (r['target'] && typeof r['target'] === 'object') ? r['target'] as Record<string, unknown> : {},
-      });
-    }
+/** An inbox case before its target preview is attached. */
+export type ReportInboxGroup = Omit<ReportInboxRow, 'target'>;
+
+/** Total order of the inbox: oldest case first, ties broken by target type and id. */
+function compareGroups(a: ReportInboxGroup | ReportInboxCursor, b: ReportInboxGroup | ReportInboxCursor): number {
+  if (a.oldestAt !== b.oldestAt) return a.oldestAt < b.oldestAt ? -1 : 1;
+  if (a.targetType !== b.targetType) return a.targetType < b.targetType ? -1 : 1;
+  if (a.targetId !== b.targetId) return a.targetId < b.targetId ? -1 : 1;
+  return 0;
+}
+
+/**
+ * Folds open reports into one case per target (FR-ADMIN-013 AC3: each case is independent).
+ * The server has no inbox function, so the grouping lives here: `reporterCount` counts distinct
+ * reporters, `oldestAt` is the first report of the case, `latestReporterId` the newest report's
+ * reporter. The result is sorted oldest case first (the order the staff work it).
+ */
+export function groupOpenReports(reports: readonly OpenReportRecord[]): ReportInboxGroup[] {
+  const byTarget = new Map<string, OpenReportRecord[]>();
+  for (const report of reports) {
+    const key = `${report.targetType}:${report.targetId}`;
+    const bucket = byTarget.get(key);
+    if (bucket) bucket.push(report);
+    else byTarget.set(key, [report]);
   }
-  const cursorRaw = obj['next_cursor'];
-  let nextCursor: ReportInboxCursor | null = null;
-  if (cursorRaw && typeof cursorRaw === 'object') {
-    const c = cursorRaw as Record<string, unknown>;
-    if (typeof c['oldest_at'] === 'string' && isTargetType(c['target_type']) && typeof c['target_id'] === 'string') {
-      nextCursor = {
-        oldestAt: c['oldest_at'],
-        targetType: c['target_type'],
-        targetId: c['target_id'],
-      };
-    }
+  const groups: ReportInboxGroup[] = [];
+  for (const bucket of byTarget.values()) {
+    // Oldest first, so index 0 is the case's first report and the last element its newest.
+    const sorted = [...bucket].sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0));
+    const first = sorted[0]!;
+    const newest = sorted[sorted.length - 1]!;
+    groups.push({
+      targetType: first.targetType,
+      targetId: first.targetId,
+      reporterCount: new Set(sorted.map((r) => r.reporterId ?? `purged:${r.createdAt}`)).size,
+      oldestAt: first.createdAt,
+      latestReporterId: newest.reporterId,
+    });
   }
-  return { rows, nextCursor };
+  return groups.sort(compareGroups);
+}
+
+/**
+ * One page of `groups` (already sorted by {@link groupOpenReports}) after `cursor`. The cursor
+ * is the last case of the previous page; a cursor that no longer matches a case (it was
+ * resolved meanwhile) still resumes at the right place because the order is total.
+ */
+export function pageInboxGroups(
+  groups: readonly ReportInboxGroup[],
+  cursor: ReportInboxCursor | null,
+  limit: number,
+): { readonly groups: readonly ReportInboxGroup[]; readonly nextCursor: ReportInboxCursor | null } {
+  const start = cursor === null ? 0 : groups.findIndex((g) => compareGroups(g, cursor) > 0);
+  const remaining = start < 0 ? [] : groups.slice(start);
+  const page = remaining.slice(0, limit);
+  const last = page[page.length - 1];
+  const hasMore = remaining.length > page.length;
+  return {
+    groups: page,
+    nextCursor: hasMore && last
+      ? { oldestAt: last.oldestAt, targetType: last.targetType, targetId: last.targetId }
+      : null,
+  };
 }

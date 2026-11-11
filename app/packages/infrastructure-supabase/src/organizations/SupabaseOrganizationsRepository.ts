@@ -1,4 +1,5 @@
-// Supabase adapter for organizations, first slice (FR-ORG-002, G18), over migration 0730.
+// Supabase adapter for organizations, first slice (FR-ORG-002, G18), over the baseline's
+// organizations module (80_organizations: applications, team RPCs, the membership projection).
 // Server error messages are the domain's `OrgErrorCode`s; anything else maps to `unknown`.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IOrganizationsRepository } from '@kc/application';
@@ -54,10 +55,10 @@ export class SupabaseOrganizationsRepository implements IOrganizationsRepository
   }
 
   async getMyLatestApplication(): Promise<MyOrgApplication | null> {
-    // RLS returns only the caller's own applications (0168 `org_applications_select_self`).
+    // RLS returns only the caller's own applications (`org_applications_select_own`).
     const { data, error } = await this.client
       .from('org_applications')
-      .select('application_id, org_name, status, created_at, reviewed_at, review_note, org_id')
+      .select('id, org_name, status, created_at, reviewed_at, review_note, organization_id')
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -65,13 +66,13 @@ export class SupabaseOrganizationsRepository implements IOrganizationsRepository
     const status = parseOrgApplicationStatus(data?.status);
     if (!data || status === null) return null;
     return {
-      applicationId: data.application_id,
+      applicationId: data.id,
       orgName: data.org_name,
       status,
       createdAt: data.created_at,
       reviewedAt: data.reviewed_at,
       reviewNote: data.review_note,
-      orgId: data.org_id,
+      orgId: data.organization_id,
     };
   }
 
@@ -81,19 +82,19 @@ export class SupabaseOrganizationsRepository implements IOrganizationsRepository
     if (!userId) return [];
     const { data, error } = await this.client
       .from('org_memberships')
-      .select('org_id, role, organizations(name, slug)')
+      .select('org_id, roles, organizations(name, slug)')
       .eq('user_id', userId);
     if (error) throw toOrgError(error);
     const byOrg = new Map<string, MyOrganization>();
     for (const row of data ?? []) {
-      if (!isOrgMemberRole(row.role) || !row.organizations) continue;
-      const current = byOrg.get(row.org_id);
-      if (current && ROLE_RANK[current.role] <= ROLE_RANK[row.role]) continue;
+      // `roles` is the projection of the member's grants in the organization: the strongest counts.
+      const role = row.roles.filter(isOrgMemberRole).sort((a, b) => ROLE_RANK[a] - ROLE_RANK[b])[0];
+      if (!role || !row.organizations) continue;
       byOrg.set(row.org_id, {
         orgId: row.org_id,
         name: row.organizations.name,
         slug: row.organizations.slug,
-        role: row.role,
+        role,
       });
     }
     return [...byOrg.values()].sort((a, b) => a.name.localeCompare(b.name, 'he'));

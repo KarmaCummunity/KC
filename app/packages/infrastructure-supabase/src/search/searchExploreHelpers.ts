@@ -1,55 +1,28 @@
 // Explore-mode (no query) helpers for SupabaseSearchRepository. Has-more paging, no counts (0418).
+//   posts  `feed_page` in search scope — open posts of every world, newest first, with the filters;
+//   people the most followed members;
+//   links  the newest approved donation links.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { DonationLinkSearchResult, SearchFilters, UserSearchResult } from '@kc/domain';
 import type { PostWithOwner } from '@kc/application';
 import type { Database } from '../database.types';
-import { POST_SELECT_OWNER, mapPostWithOwnerRow, type PostWithOwnerJoinedRow } from '../posts/mapPostRow';
-import { applyPostActorIdentityProjectionBatch } from '../posts/applyPostActorIdentityProjection';
-import { dropOrphanDeletedOwnerPosts } from '../posts/dropOrphanDeletedOwnerPosts';
-import { hydrateFeedPostOwners } from '../posts/hydrateFeedPostOwners';
-import { type LinkRow, type SearchUserRow, mapUserSearchResult, mapLinkSearchResult } from './searchMappers';
+import { fetchFeedPage } from '../posts/postCardPages';
+import { unwrapCall } from '../rpc/mapRpcError';
+import { LINK_COLUMNS, mapLinkSearchResult, type LinkRow } from './searchMappers';
 import { pageFetchSize, toPagedBucket, type SearchBucket } from './searchBucket';
+import { postSearchFilters } from './searchQueryHelpers';
+import { topMembers } from './searchUserReads';
 
 type C = SupabaseClient<Database>;
-const U = 'user_id, display_name, share_handle, avatar_url, biography, city, city_name, followers_count, items_given_count, verification_level';
 
-export async function explorePosts(
-  c: C,
-  f: SearchFilters,
-  limit: number,
-  viewerId?: string | null,
-): Promise<SearchBucket<PostWithOwner>> {
-  let q = c.from('posts').select(POST_SELECT_OWNER).eq('status', 'open');
-  if (f.postType) q = q.eq('type', f.postType);
-  if (f.category) q = q.eq('category', f.category);
-  if (f.city) q = q.eq('city', f.city);
-  const { data, error } = await q.order('created_at', { ascending: false }).limit(pageFetchSize(limit));
-  if (error) throw new Error(`explorePosts: ${error.message}`);
-  const page = toPagedBucket((data ?? []) as unknown as PostWithOwnerJoinedRow[], limit);
-  const mapped = page.items.map(mapPostWithOwnerRow);
-  const items = dropOrphanDeletedOwnerPosts(
-    await applyPostActorIdentityProjectionBatch(
-      c,
-      await hydrateFeedPostOwners(c, mapped),
-      viewerId ?? null,
-    ),
-    viewerId ?? null,
-  );
-  return { items, total: items.length, hasMore: page.hasMore };
+export async function explorePosts(c: C, f: SearchFilters, limit: number): Promise<SearchBucket<PostWithOwner>> {
+  const filters = { ...(await postSearchFilters(c, f)), scope: 'search', sort: 'newest', status: 'open' };
+  const page = await fetchFeedPage(c, filters, pageFetchSize(limit));
+  return toPagedBucket(page.posts, limit);
 }
 
-export async function exploreUsers(
-  c: C,
-  f: SearchFilters,
-  _v: string | null,
-  limit: number,
-): Promise<SearchBucket<UserSearchResult>> {
-  let q = c.from('users').select(U);
-  if (f.city) q = q.eq('city', f.city);
-  if (f.minFollowers && f.minFollowers > 0) q = q.gte('followers_count', f.minFollowers);
-  const { data, error } = await q.order('followers_count', { ascending: false }).limit(pageFetchSize(limit));
-  if (error) throw new Error(`exploreUsers: ${error.message}`);
-  return toPagedBucket(((data ?? []) as SearchUserRow[]).map(mapUserSearchResult), limit);
+export async function exploreUsers(c: C, f: SearchFilters, limit: number): Promise<SearchBucket<UserSearchResult>> {
+  return toPagedBucket(await topMembers(c, f, pageFetchSize(limit)), limit);
 }
 
 export async function exploreLinks(
@@ -57,9 +30,11 @@ export async function exploreLinks(
   f: SearchFilters,
   limit: number,
 ): Promise<SearchBucket<DonationLinkSearchResult>> {
-  let q = c.from('donation_links').select('id, category_slug, url, display_name, description, tags').is('hidden_at', null);
+  let q = c.from('donation_links').select(LINK_COLUMNS).eq('review_status', 'approved');
   if (f.donationCategory) q = q.eq('category_slug', f.donationCategory);
-  const { data, error } = await q.order('created_at', { ascending: false }).limit(pageFetchSize(limit));
-  if (error) throw new Error(`exploreLinks: ${error.message}`);
-  return toPagedBucket(((data ?? []) as unknown as LinkRow[]).map(mapLinkSearchResult), limit);
+  const rows = unwrapCall(
+    'table:donation_links',
+    await q.order('created_at', { ascending: false }).limit(pageFetchSize(limit)),
+  );
+  return toPagedBucket(((rows ?? []) as LinkRow[]).map(mapLinkSearchResult), limit);
 }

@@ -1,5 +1,5 @@
 import type { KnowledgeTopic, KnowledgeTopicMatch, KnowledgeTopicStatus } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 export type KnowledgeTopicRow = Database['public']['Tables']['knowledge_topics']['Row'];
 type ResolveRow = Database['public']['Functions']['resolve_knowledge_topics']['Returns'][number];

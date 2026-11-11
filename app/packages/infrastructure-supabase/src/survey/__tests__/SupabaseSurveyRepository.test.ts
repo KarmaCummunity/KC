@@ -9,7 +9,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { SurveyError } from '@kc/domain';
-import type { Database } from '../../database.types';
+import type { Database } from '../../database.legacy.types';
 import { SupabaseSurveyRepository } from '../SupabaseSurveyRepository';
 
 // ---------------------------------------------------------------------------
