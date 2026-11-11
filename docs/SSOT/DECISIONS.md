@@ -1704,7 +1704,7 @@ Owner rules that go with it:
 | 4.41 | 2026-11-03 | Added `D-216` (G1 step 2: the listing worlds' RPCs write posts and derive a native listing that syncs back; items unchanged; `0554`). |
 | 4.40 | 2026-11-03 | Added `D-214` (G1 plan: reverse the listing mirror, move flows one PR at a time, drop `listings` last; ADR-006). |
 | 4.39 | 2026-11-03 | Added `D-213` (live public finance numbers behind organization-controlled toggles, default off; refines `D-196` for the public view; `FIN-P0`). |
-| 4.38 | 2026-11-03 | Added `D-210` (store review on the Cloudflare Pages domain until a domain is bought; KC Pro free year then $30/$100 monthly; support mailbox). |
+| 4.38 | 2026-11-03 | Added `D-210` (store review on the Cloudflare Pages domain until a domain is bought; KC Pro free year then $20 (private person; $30 until 2026-11-04) / $100 (organization) monthly; support mailbox). |
 | 4.37 | 2026-11-03 | Added `D-209` (one dependency audit over every lockfile; reviewed exceptions expire within 90 days; gate audits on dependency changes, daily schedule otherwise; #1373). |
 | 4.36 | 2026-11-02 | `D-195` addendum: an owner's approval is required for gate-weakening changes only into `main`; on `dev` the judges pass with warnings and the release PR surfaces the changes to the owner. |
 | 4.35 | 2026-11-01 | Added `D-207` (five create categories with remembered choice, items on the post engine, curated listing fields, marketplace browse removed, no inline native pickers). |

@@ -40,7 +40,7 @@ import { SoftGateProvider } from '../src/components/OnboardingSoftGate';
 import { AuthGate } from '../src/components/AuthGate';
 import { useDetailStackScreenOptions } from '../src/navigation/detailStackScreenOptions';
 import { rootStackGestureEnabled, rootStackScreenAnimation } from '../src/navigation/rootStackAnimation';
-import { ConfigErrorScreen } from '../src/components/ConfigErrorScreen';
+import { ConfigGate } from '../src/components/ConfigGate';
 import { isSupabaseConfigured } from '../src/lib/supabasePublicConfig';
 import { DevBanner } from '../src/components/DevBanner';
 import { SuspensionBanner } from '../src/components/SuspensionBanner';
@@ -226,15 +226,9 @@ export default function RootLayout() {
   if (brandFontStatus === 'loading') return null;
   return (
     <BrandFontProvider available={brandFontStatus === 'loaded'}>
-      {isSupabaseConfigured() ? (
+      <ConfigGate configured={isSupabaseConfigured()}>
         <RootLayoutContent />
-      ) : (
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <SafeAreaProvider>
-            <ConfigErrorScreen />
-          </SafeAreaProvider>
-        </GestureHandlerRootView>
-      )}
+      </ConfigGate>
     </BrandFontProvider>
   );
 }
