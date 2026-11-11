@@ -9,10 +9,6 @@
 
 begin;
 
-create temp table personas as
-select kc_test.create_user('links_curator') as curator;
-insert into public.admin_role_grants (user_id, role) select curator, 'super_admin' from personas;
-
 do $$
 declare
   v_curator uuid;
@@ -25,11 +21,15 @@ declare
   v_food_count integer;
   v_dup_count integer;
 begin
-  select curator into v_curator from personas;
+  select u.user_id into v_curator
+    from public.users u
+   where public.has_admin_role(u.user_id, 'super_admin')
+   order by u.user_id
+   limit 1;
 
   -- Verify initial state
   perform kc_test.assert_true(
-    public.has_admin_role(v_curator, 'super_admin'),
+    v_curator is not null and public.has_admin_role(v_curator, 'super_admin'),
     'curator must have super_admin role');
 
   -- Count rows belonging to the 22 new URLs
@@ -63,7 +63,7 @@ begin
   perform kc_test.assert_eq(v_count, 22, 'exactly 22 new community links seeded');
 
   -- Count per category
-  select count(*) into v_housing_count from public.donation_links where category_slug = 'housing' and url like '%kolzchut%' or url in ('https://shanti.org.il/', 'https://echpat.org.il/');
+  select count(*) into v_housing_count from public.donation_links where category_slug = 'housing' and (url like '%kolzchut%' or url in ('https://shanti.org.il/', 'https://echpat.org.il/'));
   select count(*) into v_money_count from public.donation_links where category_slug = 'money' and (url like '%kolzchut%' or url = 'https://www.naomi.org.il/');
   select count(*) into v_employment_count from public.donation_links where category_slug = 'employment' and (url like '%kolzchut%' or url = 'https://www.kavlaoved.org.il/');
   select count(*) into v_knowledge_count from public.donation_links where category_slug = 'knowledge' and (url like '%kolzchut%' or url in ('https://www.snunit.k12.il/', 'https://www.cet.ac.il/'));
