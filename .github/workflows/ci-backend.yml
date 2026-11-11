@@ -36,7 +36,7 @@ jobs:
         # (azure.archive.ubuntu.com failing to resolve) must not fail the lane.
         run: |
           command -v psql >/dev/null && exit 0
-          for attempt in 1 2 3; do
+          for _ in 1 2 3; do
             sudo apt-get update && sudo apt-get install -y postgresql-client && exit 0
             sleep 15
           done
