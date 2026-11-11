@@ -110,7 +110,7 @@ export function ListingCreateForm({
       <ListingFormPhotoPicker
         photos={form.photos}
         setPhotos={form.setPhotos}
-        carriedMediaPaths={form.carriedMediaPaths}
+        carriedMediaPaths={form.carriedMedia.map((m) => m.path)}
         onRemoveCarried={form.removeCarriedMedia}
         required={!editListingId && offerRequiresPhoto(worldSlug, direction)}
       />

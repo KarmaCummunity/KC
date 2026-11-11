@@ -10,7 +10,7 @@ const SCHEDULE_KEYS: Record<PostSeriesScheduleErrorCode, string> = {
   series_ends_in_past: 'postSeries.errors.endsInPast',
 };
 
-/** The server's own refusals (`0004_post_series.sql`, `0005_post_series_rpcs.sql`), by reason. */
+/** The server's own refusals (`0021_post_series.sql`, `0022_post_series_rpcs.sql`), by reason. */
 const SERVER_KEYS: Readonly<Record<string, string>> = {
   post_series_schedule_invalid: 'postSeries.errors.scheduleInvalid',
   post_series_no_occurrence: 'postSeries.errors.noOccurrence',

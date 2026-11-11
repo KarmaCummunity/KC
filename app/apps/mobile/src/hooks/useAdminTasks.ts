@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { AdminTask, AdminTaskWithActivities } from '@kc/domain';
 import type { AdminTaskListFilters } from '@kc/application';
 import { container } from '../lib/container';
+import { BACK_OFFICE_TOOLS_AVAILABLE } from '../lib/parkedFeatures';
 
 const EMPTY: readonly AdminTask[] = [];
 
@@ -11,6 +12,8 @@ export function useAdminTasksList(filters: AdminTaskListFilters) {
   const q = useQuery({
     queryKey: ['admin.tasks.list', filters],
     queryFn:  () => container.listAdminTasks.execute(filters),
+    // M19: no task tracker in the production baseline; the call would only be refused.
+    enabled:  BACK_OFFICE_TOOLS_AVAILABLE,
     staleTime: 30_000,
   });
   return {

@@ -2,20 +2,20 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 222,
-   "same": 93,
+   "objects": 176,
+   "same": 109,
    "renamed": 20,
-   "changed": 47,
-   "removed": 1,
-   "missing": 61
+   "changed": 28,
+   "removed": 0,
+   "missing": 19
   },
   "table": {
-   "objects": 56,
-   "same": 36,
+   "objects": 60,
+   "same": 44,
    "renamed": 0,
-   "changed": 16,
+   "changed": 15,
    "removed": 0,
-   "missing": 4
+   "missing": 1
   },
   "bucket": {
    "objects": 4,
@@ -44,24 +44,24 @@
  },
  "launchTotals": {
   "core": {
-   "objects": 104,
-   "same": 86,
+   "objects": 105,
+   "same": 87,
    "renamed": 1,
    "changed": 17,
    "removed": 0,
    "missing": 0
   },
   "later": {
-   "objects": 135,
-   "same": 24,
+   "objects": 91,
+   "same": 46,
    "renamed": 4,
-   "changed": 41,
-   "removed": 1,
-   "missing": 65
+   "changed": 21,
+   "removed": 0,
+   "missing": 20
   },
   "wedge": {
-   "objects": 52,
-   "same": 31,
+   "objects": 53,
+   "same": 32,
    "renamed": 15,
    "changed": 6,
    "removed": 0,
@@ -70,11 +70,11 @@
  },
  "modules": {
   "admin": {
-   "callSites": 54,
-   "oneToOne": 6,
-   "changed": 18,
+   "callSites": 30,
+   "oneToOne": 11,
+   "changed": 19,
    "removed": 0,
-   "missing": 30
+   "missing": 0
   },
   "auth": {
    "callSites": 2,
@@ -91,9 +91,9 @@
    "missing": 0
   },
   "challenges": {
-   "callSites": 10,
-   "oneToOne": 5,
-   "changed": 5,
+   "callSites": 9,
+   "oneToOne": 6,
+   "changed": 3,
    "removed": 0,
    "missing": 0
   },
@@ -168,8 +168,8 @@
    "missing": 0
   },
   "fn:revenuecat-webhook": {
-   "callSites": 1,
-   "oneToOne": 1,
+   "callSites": 2,
+   "oneToOne": 2,
    "changed": 0,
    "removed": 0,
    "missing": 0
@@ -231,18 +231,18 @@
    "missing": 10
   },
   "housing": {
-   "callSites": 12,
-   "oneToOne": 3,
-   "changed": 9,
+   "callSites": 18,
+   "oneToOne": 11,
+   "changed": 7,
    "removed": 0,
    "missing": 0
   },
   "knowledge": {
-   "callSites": 13,
-   "oneToOne": 1,
-   "changed": 5,
+   "callSites": 9,
+   "oneToOne": 6,
+   "changed": 3,
    "removed": 0,
-   "missing": 7
+   "missing": 0
   },
   "legal": {
    "callSites": 3,
@@ -252,25 +252,25 @@
    "missing": 0
   },
   "marketplace": {
-   "callSites": 47,
-   "oneToOne": 33,
-   "changed": 14,
+   "callSites": 48,
+   "oneToOne": 35,
+   "changed": 13,
    "removed": 0,
    "missing": 0
   },
   "matching": {
-   "callSites": 2,
-   "oneToOne": 2,
+   "callSites": 3,
+   "oneToOne": 3,
    "changed": 0,
    "removed": 0,
    "missing": 0
   },
   "mobile": {
-   "callSites": 21,
+   "callSites": 17,
    "oneToOne": 16,
-   "changed": 2,
+   "changed": 1,
    "removed": 0,
-   "missing": 3
+   "missing": 0
   },
   "moderation": {
    "callSites": 7,
@@ -294,11 +294,11 @@
    "missing": 0
   },
   "payments": {
-   "callSites": 12,
+   "callSites": 10,
    "oneToOne": 2,
    "changed": 8,
-   "removed": 1,
-   "missing": 1
+   "removed": 0,
+   "missing": 0
   },
   "posts": {
    "callSites": 50,
@@ -323,8 +323,8 @@
   },
   "research": {
    "callSites": 2,
-   "oneToOne": 1,
-   "changed": 1,
+   "oneToOne": 2,
+   "changed": 0,
    "removed": 0,
    "missing": 0
   },
@@ -339,6 +339,13 @@
    "callSites": 6,
    "oneToOne": 1,
    "changed": 5,
+   "removed": 0,
+   "missing": 0
+  },
+  "series": {
+   "callSites": 6,
+   "oneToOne": 6,
+   "changed": 0,
    "removed": 0,
    "missing": 0
   },
@@ -357,11 +364,11 @@
    "missing": 0
   },
   "survey": {
-   "callSites": 10,
-   "oneToOne": 3,
-   "changed": 2,
+   "callSites": 13,
+   "oneToOne": 12,
+   "changed": 1,
    "removed": 0,
-   "missing": 5
+   "missing": 0
   },
   "translations": {
    "callSites": 6,
@@ -387,6 +394,7 @@
  },
  "notes": [
   "Capabilities the baseline does not provide and the identity adapters therefore do not call (they report `BackendUnavailableError` and the screens degrade): the blocked-users list (M01, the screen shows its empty state; unblock from a profile is not reachable because `users_hide_blocked` hides it), follow suggestions (M03) and the profile completeness nudge (M04), both hidden on the suggestions screen, and the About team roster (M08, no team section).",
+  "Internal back-office tools the baseline does not provide and whose adapters therefore make no call (they report `BackendUnavailableError`; the sections are parked behind `BACK_OFFICE_TOOLS_AVAILABLE`): the admin task tracker (FR-ADMIN-018), the CRM contacts (roadmap phase 3) and the timesheets (not in the spec), formerly M19. Whether they belong in this database is a product decision.",
   "Errors: every baseline RPC raises `P0001` with a stable snake_case message (`unauthenticated` uses `42501`). Map on `error.message`, never on a SQLSTATE or on Hebrew text. Codes marked † in the tables are not referenced anywhere in the app today and need a user-visible mapping.",
   "Paging: no OFFSET anywhere. Lists take the `next_cursor` JSON of the last row (cards) or explicit `p_before_*` / `p_after_*` values; application ports that expose `offset` change to an opaque cursor.",
   "Money: integer agorot (`*_agorot`), never ILS floats or `*_cents` names.",
@@ -397,75 +405,9 @@
  ],
  "missing": [
   {
-   "id": "M12",
-   "title": "Knowledge topic graph (topics, aliases, follows, proposals, review)",
-   "usedBy": "Knowledge world topic picker, follow, proposal and admin review (SupabaseKnowledgeTopicRepository)",
-   "spec": "FR-KNOW-001, FR-KNOW-002",
-   "launch": "no (knowledge is a portal at launch)",
-   "action": "defer",
-   "recommendation": "Keep the knowledge world behind `world_knowledge_enabled`. When it opens: design §8 maps `knowledge_topics` → `topics`, `topic_aliases`, `topic_follows`, but no module creates them. Add them to `70_worlds` (knowledge), or launch knowledge with item subcategories only and defer.",
-   "tier": "later",
-   "blocker": false
-  },
-  {
-   "id": "M16",
-   "title": "Free feedback form and its admin list",
-   "usedBy": "Settings → feedback (SupabaseSurveyRepository), admin feedback dashboard (admin_user_feedback_list)",
-   "spec": "FR-SETTINGS-017, FR-ADMIN-021",
-   "launch": "no (ships with the surveys and feedback hub)",
-   "action": "defer",
-   "recommendation": "Hide the feedback form with the surveys hub; the insert sits inside the survey prompt check today and must fail silently. Later: table `user_feedback` in `90_research` (insert own, select super admin).",
-   "tier": "later",
-   "blocker": false
-  },
-  {
-   "id": "M17",
-   "title": "Survey statistics for admins (overview, results, PMF report)",
-   "usedBy": "Admin survey dashboard (SupabaseSurveyAdminRepository)",
-   "spec": "FR-ADMIN-021",
-   "launch": "no",
-   "action": "defer",
-   "recommendation": "Hide the admin survey dashboard behind a flag. When it opens no new object is needed at first: the super admin can read `survey_answers` (policy `survey_answers_select_super_admin`); aggregate on the device at launch volumes, and add an aggregate function to `90_research` when answers grow.",
-   "tier": "later",
-   "blocker": false
-  },
-  {
-   "id": "M19",
-   "title": "Back-office tools: tasks, CRM, timesheets",
-   "usedBy": "Admin portal (SupabaseAdminTaskRepository, SupabaseCrmContactsRepository, SupabaseTimesheetsRepository) — 18 RPCs",
-   "spec": "tasks: FR-ADMIN-018; CRM: roadmap phase 3; timesheets: not in spec",
-   "launch": "no",
-   "action": "defer",
-   "recommendation": "Internal tools, not member data: hide the three admin sections behind a flag and decide separately whether they belong in this database at all.",
-   "tier": "later",
-   "blocker": false
-  },
-  {
-   "id": "M20",
-   "title": "KC support channels",
-   "usedBy": "Donations → support KC card (SupabaseKcSupportChannelsRepository)",
-   "spec": "FR-DONATE-010, FR-DONATE-011; launch plan A11 (only if the money world is on)",
-   "launch": "no (money is a portal at launch)",
-   "action": "defer",
-   "recommendation": "The support card must render nothing when the call fails (today it throws: catch in the adapter). Later: a small reference table in `85_billing` (channel, label, url, payee phone; select for members), or ship the channels in app configuration.",
-   "tier": "later",
-   "blocker": false
-  },
-  {
-   "id": "M21",
-   "title": "Organization finance summaries (ledger summary, donors summary)",
-   "usedBy": "Org finance overview and donors screens (SupabaseFinanceLedgerRepository.summary, SupabaseFinanceDonorsRepository)",
-   "spec": "FR-FIN-014, FR-FIN-017",
-   "launch": "no",
-   "action": "defer",
-   "recommendation": "Org finance stays behind its flag. Later: two functions in `85_billing/100_org_finance_rpcs.sql` over the ledger, guarded like `finance_ledger_list`.",
-   "tier": "later",
-   "blocker": false
-  },
-  {
    "id": "M22",
    "title": "WhatsApp bot, linking and admin console",
-   "usedBy": "Three Edge Functions (webhook, intake worker, sender), mobile link screen, admin WhatsApp console — 32 RPCs and one table",
+   "usedBy": "Three Edge Functions (webhook, intake worker, sender) — 19 RPCs and one table; the mobile link screen and the admin WhatsApp console are parked and make no call",
    "spec": "design Q4 (PM): not in the launch baseline",
    "launch": "no",
    "action": "defer",
@@ -747,11 +689,12 @@
     "rpc:admin_audit_search",
     "table:reports",
     "table:user_account",
-    "table:admin_role_grants"
+    "table:admin_role_grants",
+    "table:organizations"
    ],
    "counts": {
-    "objects": 17,
-    "oneToOne": 12,
+    "objects": 18,
+    "oneToOne": 13,
     "changed": 5,
     "removed": 0,
     "missing": 0
@@ -840,8 +783,16 @@
     "rpc:get_post_private_location",
     "rpc:report_post_emergency",
     "rpc:rides_feed",
+    "rpc:ride_occurrence_schedules",
+    "rpc:post_seat_counts",
+    "table:post_series",
+    "rpc:create_post_series",
+    "rpc:update_post_series",
+    "rpc:set_post_series_status",
+    "rpc:cancel_post_series_date",
     "rpc:accept_world_consent",
     "rpc:my_matches",
+    "rpc:admin_match_quality",
     "rpc:match_respond",
     "table:post_ride_details",
     "table:post_event_details",
@@ -853,8 +804,8 @@
     "table:post_ratings"
    ],
    "counts": {
-    "objects": 70,
-    "oneToOne": 59,
+    "objects": 78,
+    "oneToOne": 67,
     "changed": 11,
     "removed": 0,
     "missing": 0
@@ -916,31 +867,34 @@
     "housing/**",
     "apps/mobile: housing screens"
    ],
-   "work": "Bookings on the shared handoff shape, private details through `post_private_locations`, consent through `accept_world_consent`.",
+   "work": "Done in L1: bookings are `post_handoffs` rows (machine `housing_booking`) with `handoff_booking_details`, read directly by host and guest; complete and no-show are `close_housing_booking`; the code of conduct comes from `bootstrap_session` and is accepted with `accept_world_consent`; the exact place is `post_private_locations` (apartment, floor, entrance and access notes folded into `access_notes`), released through `get_post_private_location`; the guest trust block counts completed stays with `housing_completed_stays`.",
    "tests": [
     "vitest: housing suite",
-    "pgTAP 071"
+    "pgTAP 071, 075 (trust counts)"
    ],
-   "degrade": "`world_housing_enabled` off: the world is a portal and no housing adapter is called.",
-   "risks": "M07 and M11 are built (shared with rides).",
+   "degrade": "`world_housing_enabled` off: the world is a portal and no housing adapter is called. With it on, the housing lists load through `listOrEmpty` / `valueOrNull` and an action on a missing object shows \"not available yet\".",
+   "risks": "The stay offer's exact point is written as EWKT; the separate apartment, floor and entrance fields come back merged in the access instructions.",
    "rows": [
+    "rpc:bootstrap_session",
+    "table:users",
+    "table:streets",
+    "table:posts",
+    "table:post_private_locations",
     "rpc:request_housing_booking",
     "rpc:decide_housing_booking",
     "rpc:cancel_housing_booking",
-    "rpc:accept_housing_conduct",
-    "rpc:housing_conduct_version",
-    "table:housing_conduct_acceptances",
-    "rpc:complete_housing_booking",
-    "rpc:mark_housing_no_show",
-    "rpc:list_housing_bookings",
-    "rpc:list_my_housing_stays",
-    "rpc:get_housing_private_details",
-    "rpc:set_housing_private_details"
+    "table:post_handoffs",
+    "rpc:close_housing_booking",
+    "table:handoff_booking_details",
+    "rpc:housing_completed_stays",
+    "rpc:get_post_private_location",
+    "rpc:accept_world_consent",
+    "table:post_ratings"
    ],
    "counts": {
-    "objects": 12,
-    "oneToOne": 3,
-    "changed": 9,
+    "objects": 15,
+    "oneToOne": 11,
+    "changed": 4,
     "removed": 0,
     "missing": 0
    }
@@ -961,33 +915,29 @@
     "knowledge/**",
     "apps/mobile: knowledge screens"
    ],
-   "work": "Slots and bookings on the generic handoff RPCs; topics wait for M12.",
+   "work": "Done in L2: slots with their places left come from `knowledge_slot_seats`, the caller's booking per slot from their `post_handoffs` rows; bookings move through the generic handoff RPCs (`book_knowledge_seat`, `confirm_item_handoff`, `cancel_giving_handoff`, `mark_giving_handed_over`). The topic graph (FR-KNOW-001) is not in the baseline: the topic repository rejects every call with `BackendUnavailableError` and calls nothing.",
    "tests": [
     "vitest: knowledge suite",
-    "pgTAP 073"
+    "pgTAP 073, 075 (slot seats)"
    ],
-   "degrade": "`world_knowledge_enabled` off: portal only. The topic picker must tolerate an empty topic list.",
-   "risks": "M12 (topic graph) is not built.",
+   "degrade": "`world_knowledge_enabled` off: portal only. With it on, the slot and booking lists load through `listOrEmpty`; a topic picker shows its empty state.",
+   "risks": "The topic graph (topics, aliases, follows, proposals, review) is still to be designed into `70_worlds` before the topic features open.",
    "rows": [
+    "table:users",
+    "rpc:confirm_item_handoff",
+    "rpc:mark_giving_handed_over",
     "rpc:book_knowledge_seat",
-    "rpc:list_knowledge_slots",
-    "rpc:list_knowledge_bookings",
-    "rpc:confirm_knowledge_booking",
-    "rpc:decline_knowledge_booking",
-    "rpc:complete_knowledge_session",
-    "rpc:resolve_knowledge_topics",
-    "rpc:propose_knowledge_topic",
-    "rpc:update_my_proposed_knowledge_topic",
-    "rpc:review_knowledge_topic",
-    "table:knowledge_topics",
-    "table:knowledge_topic_follows"
+    "rpc:cancel_giving_handoff",
+    "table:post_handoffs",
+    "rpc:knowledge_slot_seats",
+    "table:post_knowledge_slots"
    ],
    "counts": {
-    "objects": 12,
-    "oneToOne": 1,
-    "changed": 5,
+    "objects": 8,
+    "oneToOne": 6,
+    "changed": 2,
     "removed": 0,
-    "missing": 6
+    "missing": 0
    }
   },
   {
@@ -1006,7 +956,7 @@
     "challenges/**",
     "apps/mobile: challenge screens, useChallengeLinkedPost"
    ],
-   "work": "Mostly 1:1; keyset list and the `challenge_summary` composite.",
+   "work": "Done: keyset `list_challenges`, the `challenge_summary` composite (which names the post, so `useChallengeLinkedPost` needs no posts query), own reports from `challenge_progress_entries`, and `join_challenge` without the show-on-profile choice (the prompt is removed).",
    "tests": [
     "vitest: challenges suite",
     "pgTAP 074"
@@ -1022,12 +972,12 @@
     "rpc:get_challenge",
     "rpc:list_challenges",
     "rpc:list_challenge_leaderboard",
-    "rpc:list_my_challenge_entries"
+    "table:challenge_progress_entries"
    ],
    "counts": {
     "objects": 9,
-    "oneToOne": 5,
-    "changed": 4,
+    "oneToOne": 6,
+    "changed": 3,
     "removed": 0,
     "missing": 0
    }
@@ -1054,18 +1004,16 @@
     "supabase/functions/receipts-issuer (deleted)",
     "apps/mobile: donations money screens, org finance portal"
    ],
-   "work": "Agorot end to end, org-scoped finance arguments, keyset lists; charger rewritten on `api_standing_orders_charge_due`.",
+   "work": "Done in L4 for the app: amounts are agorot end to end (the payments contract), a donation starts an intent and opens the provider's checkout page (no client-side settlement), the finance adapters pass the platform organization to the org-scoped RPCs, the ledger pages by keyset and voids instead of deleting, the summaries call `finance_ledger_summary` / `finance_donors_summary` (built), applications are a direct read and an approval sends the chosen slug, the staff tree and census are built from `admin_role_grants`. The KC support channels have no baseline list: the adapter degrades without a call. Still open: the Edge Functions of this package (charger on `api_standing_orders_charge_due`, the payments webhook).",
    "tests": [
     "vitest: payments and finance suites",
-    "pgTAP 080, 085, 086"
+    "pgTAP 080, 085, 086, 087 (finance summaries)"
    ],
-   "degrade": "`world_money_enabled` off: the money world is a portal of links; the support card renders nothing when its call fails (M20); the finance portal entry is hidden.",
-   "risks": "M20, M21 open. Retention of billing rows is an open legal question (design Q5).",
+   "degrade": "`world_money_enabled` off: the money world is a portal of links; the support card shows its unavailable state (no channel list); a donation without a checkout page says \"not available yet\".",
+   "risks": "No checkout Edge Function sets `checkout_url` yet. A KC support-channel list (a small reference table in `85_billing`, or app configuration) is still to be decided. Retention of billing rows is an open legal question (design Q5).",
    "rows": [
+    "table:org_applications",
     "rpc:admin_set_manager",
-    "rpc:admin_org_tree",
-    "rpc:admin_hierarchy_census",
-    "rpc:admin_org_application_list",
     "rpc:admin_org_application_approve",
     "rpc:admin_org_application_reject",
     "rpc:create_donation_intent",
@@ -1078,28 +1026,26 @@
     "rpc:get_donation_receipt",
     "rpc:get_nonprofit_public_page",
     "rpc:list_verified_nonprofits",
-    "rpc:complete_sandbox_donation",
-    "rpc:list_kc_support_channels",
     "rpc:rpc_org_transparency",
-    "rpc:finance_transparency_settings_get",
     "rpc:finance_transparency_settings_set",
     "rpc:finance_accounts_list",
     "rpc:finance_account_upsert",
     "rpc:finance_ledger_list",
     "rpc:finance_ledger_upsert",
-    "rpc:finance_ledger_delete",
     "rpc:finance_ledger_summary",
+    "rpc:finance_ledger_mark",
     "rpc:finance_donors_summary",
     "rpc:provider_webhook_apply",
     "rpc:api_revenuecat_set_pro",
+    "rpc:api_revenuecat_set_org_entitlement",
     "rpc:api_standing_orders_charge_due"
    ],
    "counts": {
-    "objects": 31,
-    "oneToOne": 7,
-    "changed": 20,
-    "removed": 1,
-    "missing": 3
+    "objects": 27,
+    "oneToOne": 10,
+    "changed": 17,
+    "removed": 0,
+    "missing": 0
    }
   },
   {
@@ -1120,18 +1066,20 @@
     "supabase/functions/{public-research-submit,rotate-research-salt}",
     "apps/mobile: surveys and feedback hub, admin survey dashboard, public research page"
    ],
-   "work": "Survey reads become table reads; the public research page loads through its function; the feedback form waits for M16 and the admin dashboard for M17.",
+   "work": "Done: survey reads are table reads, the public research page reads its questions with `get_public_research_questions`, and the two missing capabilities were built in `90_research` (M16: `user_feedback` + `admin_user_feedback_list`; M17: `admin_survey_overview`, `admin_survey_results`, `admin_pmf_survey_report`, all moderator and above).",
    "tests": [
     "vitest: survey, research, stats suites",
-    "pgTAP 079, 090"
+    "pgTAP 079, 090, 091",
+    "deno test supabase/functions/public-research-submit"
    ],
-   "degrade": "Survey prompt: `check_survey_prompt_eligibility` failing means \"do not prompt\" (its feedback insert must not throw). The surveys and feedback hub and the admin dashboard are hidden behind a flag.",
+   "degrade": "Survey prompt: a failing `check_survey_prompt_eligibility` means \"do not prompt\" (the banner already fails silently). A research function that is not deployed (HTTP 404) is `BackendUnavailableError` and the page shows its generic error.",
    "risks": "`record_active_day` is core and moves with P1; `stats/**` moves with P2.",
    "rows": [
     "rpc:check_survey_prompt_eligibility",
     "rpc:upsert_survey_answers",
-    "rpc:list_active_surveys",
-    "rpc:get_survey_bundle",
+    "table:surveys",
+    "table:survey_questions",
+    "table:survey_answers",
     "table:user_feedback",
     "rpc:admin_survey_overview",
     "rpc:admin_survey_results",
@@ -1144,11 +1092,11 @@
     "edge_function:public-research-submit"
    ],
    "counts": {
-    "objects": 14,
-    "oneToOne": 6,
-    "changed": 3,
+    "objects": 15,
+    "oneToOne": 14,
+    "changed": 1,
     "removed": 0,
-    "missing": 5
+    "missing": 0
    }
   },
   {
@@ -1169,38 +1117,19 @@
     "admin/SupabaseTimesheetsRepository.ts",
     "apps/mobile: admin tasks, CRM, timesheets screens"
    ],
-   "work": "Nothing to migrate to: the baseline has none of it (M19). Decide first whether these tools belong in this database.",
+   "work": "Done: nothing to migrate to (the baseline has no task tracker, CRM or timesheets, old M19). The three adapters make no call and reject with `BackendUnavailableError`; whether these internal tools belong in this database is still an open product decision.",
    "tests": [
-    "—"
+    "vitest: parkedBackOffice, parkedAdminSections"
    ],
-   "degrade": "The three admin sections are hidden behind a flag; their repositories are not constructed.",
+   "degrade": "Parked behind `BACK_OFFICE_TOOLS_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts): the tasks nav entry and dashboard card are hidden, and the tasks, CRM and timesheets routes render the not-available notice.",
    "risks": "Product decision, not engineering.",
-   "rows": [
-    "rpc:admin_task_list",
-    "rpc:admin_task_detail",
-    "rpc:admin_task_create",
-    "rpc:admin_task_update",
-    "rpc:admin_task_set_status",
-    "rpc:admin_task_assign",
-    "rpc:admin_task_add_comment",
-    "rpc:admin_task_delete",
-    "rpc:crm_contact_list",
-    "rpc:crm_contact_upsert",
-    "rpc:crm_contact_delete",
-    "rpc:crm_contact_mark_contacted",
-    "rpc:timesheet_list",
-    "rpc:timesheet_upsert",
-    "rpc:timesheet_submit",
-    "rpc:timesheet_approve",
-    "rpc:timesheet_reject",
-    "rpc:timesheet_delete"
-   ],
+   "rows": [],
    "counts": {
-    "objects": 18,
+    "objects": 0,
     "oneToOne": 0,
     "changed": 0,
     "removed": 0,
-    "missing": 18
+    "missing": 0
    }
   },
   {
@@ -1221,26 +1150,13 @@
     "supabase/functions/_shared/whatsapp/**",
     "apps/mobile: WhatsApp link screen"
    ],
-   "work": "Waits for the `integrations` module (M22, design Q4).",
+   "work": "App side done: the admin console adapter makes no call and rejects with `BackendUnavailableError`, and the link screen is a not-available notice. The bot itself waits for the `integrations` module (M22, design Q4).",
    "tests": [
     "deno test supabase/functions/_shared/whatsapp"
    ],
-   "degrade": "The three functions are not deployed; the link screen and the admin console are hidden behind a flag.",
+   "degrade": "The three functions are not deployed; the settings row and the admin nav entry are hidden behind `WHATSAPP_BOT_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts), and both routes render the not-available notice.",
    "risks": "None for launch.",
    "rows": [
-    "rpc:api_whatsapp_my_link_status",
-    "rpc:api_whatsapp_create_link_code",
-    "rpc:api_whatsapp_unlink_me",
-    "rpc:api_whatsapp_admin_get_channel",
-    "rpc:api_whatsapp_admin_set_channel_enabled",
-    "rpc:api_whatsapp_admin_overview",
-    "rpc:api_whatsapp_admin_list_consent",
-    "rpc:api_whatsapp_admin_list_outbound",
-    "rpc:api_whatsapp_admin_list_rate_hits",
-    "rpc:api_whatsapp_admin_list_recent_matches",
-    "rpc:api_whatsapp_admin_list_conversations",
-    "rpc:api_whatsapp_admin_resend",
-    "rpc:api_whatsapp_admin_block_user",
     "rpc:api_whatsapp_llm_budget_take",
     "rpc:api_whatsapp_queue_reply",
     "rpc:api_whatsapp_outbound_claim",
@@ -1263,11 +1179,11 @@
     "table:whatsapp_channel_config"
    ],
    "counts": {
-    "objects": 33,
+    "objects": 20,
     "oneToOne": 0,
     "changed": 0,
     "removed": 0,
-    "missing": 33
+    "missing": 20
    }
   }
  ],
@@ -1563,13 +1479,13 @@
     },
     {
      "file": "app/apps/mobile/src/services/listingImageUpload.ts",
-     "line": 39,
+     "line": 42,
      "symbol": "uploadListingImages",
      "area": "mobile"
     },
     {
      "file": "app/apps/mobile/src/services/listingImageUpload.ts",
-     "line": 52,
+     "line": 56,
      "symbol": "listingImagePublicUrl",
      "area": "mobile"
     },
@@ -1776,7 +1692,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/research/SupabasePublicResearchRepository.ts",
-     "line": 119,
+     "line": 108,
      "symbol": "SupabasePublicResearchRepository.submit",
      "area": "research"
     }
@@ -1839,55 +1755,6 @@
      "line": 90,
      "symbol": "SupabaseDonationLinksRepository.invoke",
      "area": "donations"
-    }
-   ]
-  },
-  {
-   "old": "accept_housing_conduct",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "`accept_world_consent('housing_conduct', p_version)`; rejects a stale version (`consent_version_stale`).",
-   "oldObject": {
-    "signature": [
-     "accept_housing_conduct(p_version: number) → housing_conduct_acceptances row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "accept_world_consent",
-     "source": "70_worlds/010_world_shared.sql:92",
-     "signature": [
-      "accept_world_consent(p_kind: string, p_locale?: string, p_user_agent?: string, p_version: number) → user_consents row"
-     ],
-     "errors": [
-      {
-       "code": "consent_version_stale",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      },
-      {
-       "code": "unknown_consent_kind",
-       "knownToApp": false
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "housing"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
-     "line": 42,
-     "symbol": "SupabaseHousingRepository.acceptConduct",
-     "area": "housing"
     }
    ]
   },
@@ -1974,9 +1841,16 @@
     }
    ],
    "areas": [
+    "housing",
     "rides"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
+     "line": 66,
+     "symbol": "SupabaseHousingRepository.unwrapCall",
+     "area": "housing"
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseDriverDeclarationRepository.ts",
      "line": 61,
@@ -2397,48 +2271,37 @@
    ]
   },
   {
-   "old": "admin_hierarchy_census",
+   "old": "admin_match_quality",
    "kind": "rpc",
-   "status": "changed",
+   "status": "same",
    "launch": "later",
-   "confidence": "medium",
+   "confidence": "high",
    "missing": null,
-   "note": "Counts per level and role computed on the device from the same grants read.",
+   "note": "`p_days` (clamped 1..365); per giving world the alerted pairs, answers, acceptances, chats after the alert and completed handoffs, rates as numerics. Moderators and above (`forbidden` otherwise); lives in `76_matching/070_match_quality.sql`.",
    "oldObject": {
     "signature": [
-     "admin_hierarchy_census() → Json"
+     "admin_match_quality(p_days?: number) → { accepted: number chat_pairs: number chat_rate: number completed_pairs: number completion_rate: number notified_pairs: number precision_proxy: number responses: number world_label_en: string world_label_he: string wo..."
     ]
    },
    "targets": [
     {
-     "type": "table",
-     "name": "admin_role_grants",
-     "columns": [
-      "granted_at",
-      "granted_by",
-      "id",
-      "is_platform",
-      "manager_grant_id",
-      "revoked_at",
-      "revoked_by",
-      "role",
-      "scope_org_id",
-      "user_id"
+     "type": "rpc",
+     "name": "admin_match_quality",
+     "signature": [
+      "admin_match_quality(p_days?: number) → { accepted: number chat_pairs: number chat_rate: number completed_pairs: number completion_rate: number notified_pairs: number precision_proxy: number responses: number world_label_en: string world_label_he: string wo..."
      ],
-     "clientGrants": {
-      "select": true
-     }
+     "errors": []
     }
    ],
    "areas": [
-    "admin"
+    "matching"
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-     "line": 138,
-     "symbol": "SupabaseOrgHierarchyRepository.getHierarchyCensus",
-     "area": "admin"
+     "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
+     "line": 134,
+     "symbol": "SupabaseMatchRepository.qualityByWorld",
+     "area": "matching"
     }
    ]
   },
@@ -2489,60 +2352,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgApplicationsRepository.ts",
-     "line": 90,
-     "symbol": "SupabaseOrgApplicationsRepository.approve",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_org_application_list",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Direct read (policy `org_applications_select_reviewers`).",
-   "oldObject": {
-    "signature": [
-     "admin_org_application_list(p_limit?: number, p_offset?: number, p_status?: string) → { applicant_name: string applicant_user_id: string application_id: string contact_email: string contact_phone: string created_at: string org_description: string org_name: string review_note: string reviewed_at: string..."
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "org_applications",
-     "columns": [
-      "applicant_id",
-      "contact_email",
-      "contact_phone",
-      "created_at",
-      "declared_nonprofit",
-      "id",
-      "org_description",
-      "org_name",
-      "org_type",
-      "organization_id",
-      "registration_number",
-      "review_note",
-      "reviewed_at",
-      "reviewed_by",
-      "status",
-      "website_url"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgApplicationsRepository.ts",
-     "line": 74,
-     "symbol": "SupabaseOrgApplicationsRepository.list",
+     "line": 96,
+     "symbol": "SupabaseOrgApplicationsRepository.unwrap",
      "area": "admin"
     }
    ]
@@ -2594,54 +2405,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgApplicationsRepository.ts",
-     "line": 98,
-     "symbol": "SupabaseOrgApplicationsRepository.reject",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_org_tree",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Build the tree on the device from the grants (`manager_grant_id`, `scope_org_id`).",
-   "oldObject": {
-    "signature": [
-     "admin_org_tree(p_org_id?: string) → { avatar_url: string display_name: string effective_org_id: string grant_id: string is_platform: boolean last_seen_at: string manager_grant_id: string org_name: string role: string scope_org_id: string user_id: string..."
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "admin_role_grants",
-     "columns": [
-      "granted_at",
-      "granted_by",
-      "id",
-      "is_platform",
-      "manager_grant_id",
-      "revoked_at",
-      "revoked_by",
-      "role",
-      "scope_org_id",
-      "user_id"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-     "line": 116,
-     "symbol": "SupabaseOrgHierarchyRepository.getOrgTree",
+     "line": 103,
+     "symbol": "SupabaseOrgApplicationsRepository.unwrap",
      "area": "admin"
     }
    ]
@@ -2649,24 +2414,33 @@
   {
    "old": "admin_pmf_survey_report",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M17",
-   "note": "No survey statistics function; raw answers are readable by the super admin only.",
+   "missing": null,
+   "note": "Same JSON document; moderator and more senior staff (`require_admin_role('moderator')`). M17, built in `90_research/050_survey_reports.sql`.",
    "oldObject": {
     "signature": [
      "admin_pmf_survey_report(p_slug?: string) → Json"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_pmf_survey_report",
+     "signature": [
+      "admin_pmf_survey_report(p_slug?: string) → Json"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "survey"
    ],
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyAdminRepository.ts",
-     "line": 185,
+     "line": 198,
      "symbol": "SupabaseSurveyAdminRepository.getPmfReport",
      "area": "survey"
     }
@@ -2980,8 +2754,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
-     "line": 130,
-     "symbol": "SupabaseOrgHierarchyRepository.setManager",
+     "line": 103,
+     "symbol": "SupabaseOrgHierarchyRepository.unwrap",
      "area": "admin"
     }
    ]
@@ -2989,24 +2763,33 @@
   {
    "old": "admin_survey_overview",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M17",
-   "note": "No survey statistics function; raw answers are readable by the super admin only.",
+   "missing": null,
+   "note": "Same JSON document; moderator and more senior staff (`require_admin_role('moderator')`). M17, built in `90_research/050_survey_reports.sql`.",
    "oldObject": {
     "signature": [
      "admin_survey_overview() → Json"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_survey_overview",
+     "signature": [
+      "admin_survey_overview() → Json"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "survey"
    ],
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyAdminRepository.ts",
-     "line": 170,
+     "line": 185,
      "symbol": "SupabaseSurveyAdminRepository.listOverview",
      "area": "survey"
     }
@@ -3015,251 +2798,26 @@
   {
    "old": "admin_survey_results",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M17",
-   "note": "No survey statistics function; raw answers are readable by the super admin only.",
+   "missing": null,
+   "note": "Same JSON document; moderator and more senior staff (`require_admin_role('moderator')`). M17, built in `90_research/050_survey_reports.sql`.",
    "oldObject": {
     "signature": [
      "admin_survey_results(p_slug: string) → Json"
     ]
    },
-   "targets": [],
-   "areas": [
-    "survey"
-   ],
-   "callSites": [
+   "targets": [
     {
-     "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyAdminRepository.ts",
-     "line": 177,
-     "symbol": "SupabaseSurveyAdminRepository.getResults",
-     "area": "survey"
+     "type": "rpc",
+     "name": "admin_survey_results",
+     "signature": [
+      "admin_survey_results(p_slug: string) → Json"
+     ],
+     "errors": []
     }
-   ]
-  },
-  {
-   "old": "admin_task_add_comment",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_add_comment(p_body: string, p_task_id: string) → string"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
    ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 208,
-     "symbol": "SupabaseAdminTaskRepository.addComment",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_assign",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_assign(p_new_assignee: string, p_task_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 200,
-     "symbol": "SupabaseAdminTaskRepository.assign",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_create",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_create(p_assignee_id?: string, p_category?: string, p_description?: string, p_due_at?: string, p_labels?: string[], p_priority?: string, p_title: string) → string"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 161,
-     "symbol": "SupabaseAdminTaskRepository.create",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_delete",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_delete(p_task_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 220,
-     "symbol": "SupabaseAdminTaskRepository.delete",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_detail",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_detail(p_task_id: string) → { activities: Json assignee_display_name: string assignee_id: string category: string created_at: string created_by: string created_by_display_name: string description: string due_at: string labels: string[] priority:..."
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 151,
-     "symbol": "SupabaseAdminTaskRepository.getDetail",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_list",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_list(p_assignee?: string, p_category?: string, p_due_from?: string, p_due_to?: string, p_label?: string, p_limit?: number, p_offset?: number, p_only_mine?: boolean, p_overdue?: boolean, p_priority?: string, p_status?: string, p_unassigned_only?: boolean) → { assignee_display_name: string assignee_id: string category: string comment_count: number created_at: string created_by: string created_by_display_name: string description: string due_at: string labels: string[] prio..."
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 126,
-     "symbol": "SupabaseAdminTaskRepository.list",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_set_status",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_set_status(p_new_status: string, p_task_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 192,
-     "symbol": "SupabaseAdminTaskRepository.setStatus",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_task_update",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No internal task tracker in the baseline.",
-   "oldObject": {
-    "signature": [
-     "admin_task_update(p_category?: string, p_clear_due?: boolean, p_description?: string, p_due_at?: string, p_labels?: string[], p_priority?: string, p_task_id: string, p_title?: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminTaskRepository.ts",
-     "line": 178,
-     "symbol": "SupabaseAdminTaskRepository.update",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "admin_user_feedback_list",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M16",
-   "note": "Depends on the free-feedback table.",
-   "oldObject": {
-    "signature": [
-     "admin_user_feedback_list(p_limit?: number, p_offset?: number) → Json"
-    ]
-   },
-   "targets": [],
    "areas": [
     "survey"
    ],
@@ -3267,6 +2825,41 @@
     {
      "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyAdminRepository.ts",
      "line": 191,
+     "symbol": "SupabaseSurveyAdminRepository.getResults",
+     "area": "survey"
+    }
+   ]
+  },
+  {
+   "old": "admin_user_feedback_list",
+   "kind": "rpc",
+   "status": "changed",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Offset → keyset `p_cursor` (`{ t, id }` of the last row); returns rows with `next_cursor` (M16, built).",
+   "oldObject": {
+    "signature": [
+     "admin_user_feedback_list(p_limit?: number, p_offset?: number) → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_user_feedback_list",
+     "signature": [
+      "admin_user_feedback_list(p_cursor?: Json, p_limit?: number) → { body: string created_at: string display_name: string id: string next_cursor: Json rating: number user_id: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "survey"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyAdminRepository.ts",
+     "line": 208,
      "symbol": "SupabaseSurveyAdminRepository.listFeedback",
      "area": "survey"
     }
@@ -3583,6 +3176,37 @@
    ]
   },
   {
+   "old": "api_revenuecat_set_org_entitlement",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Service role only (RevenueCat webhook, 0002): reports an organization's store subscription state.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_revenuecat_set_org_entitlement",
+     "signature": [
+      "api_revenuecat_set_org_entitlement(p_active: boolean, p_expires_at: string, p_org_id: string) → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:revenuecat-webhook"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/revenuecat-webhook/handler.ts",
+     "line": 62,
+     "symbol": "now",
+     "area": "fn:revenuecat-webhook"
+    }
+   ]
+  },
+  {
    "old": "api_revenuecat_set_pro",
    "kind": "rpc",
    "status": "same",
@@ -3612,8 +3236,8 @@
    "callSites": [
     {
      "file": "supabase/functions/revenuecat-webhook/handler.ts",
-     "line": 43,
-     "symbol": "createRevenueCatHandler",
+     "line": 63,
+     "symbol": "now",
      "area": "fn:revenuecat-webhook"
     }
    ]
@@ -3647,266 +3271,6 @@
      "line": 18,
      "symbol": "openDueCharges",
      "area": "fn:subscriptions-charger"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_block_user",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_block_user(p_user_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 176,
-     "symbol": "SupabaseWhatsAppAdminRepository.blockUser",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_get_channel",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_get_channel() → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 49,
-     "symbol": "SupabaseWhatsAppAdminRepository.getChannel",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_list_consent",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_list_consent(p_limit?: number, p_offset?: number) → { consent_status: string last_inbound_at: string opted_in: boolean opted_in_at: string opted_out_at: string preferred_language: string total_count: number updated_at: string user_id: string wa_id_masked: string }[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 82,
-     "symbol": "SupabaseWhatsAppAdminRepository.overview",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_list_conversations",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_list_conversations(p_limit?: number) → { created_at: string listing_id: string session_id: string state: string updated_at: string user_id: string wa_id_masked: string }[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 156,
-     "symbol": "SupabaseWhatsAppAdminRepository.listConversations",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_list_outbound",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_list_outbound(p_limit?: number, p_offset?: number, p_status?: string) → { attempts: number created_at: string kind: string language: string last_error: string next_attempt_at: string outbound_id: string sent_at: string status: string template_name: string total_count: number user_id: stri..."
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 104,
-     "symbol": "SupabaseWhatsAppAdminRepository.overview",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_list_rate_hits",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_list_rate_hits(p_limit?: number) → whatsapp_rate_counters row[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 131,
-     "symbol": "SupabaseWhatsAppAdminRepository.listRateHits",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_list_recent_matches",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_list_recent_matches(p_limit?: number) → { created_at: string language: string outbound_id: string payload: Json sent_at: string status: string user_id: string wa_id_masked: string }[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 141,
-     "symbol": "SupabaseWhatsAppAdminRepository.listRecentMatches",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_overview",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_overview() → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 63,
-     "symbol": "SupabaseWhatsAppAdminRepository.overview",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_resend",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_resend(p_outbound_id: string) → string"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 170,
-     "symbol": "SupabaseWhatsAppAdminRepository.resend",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_set_channel_enabled",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_set_channel_enabled(p_enabled: boolean) → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 55,
-     "symbol": "SupabaseWhatsAppAdminRepository.setChannelEnabled",
-     "area": "admin"
     }
    ]
   },
@@ -3959,32 +3323,6 @@
      "line": 71,
      "symbol": "handleMessage",
      "area": "fn:whatsapp-webhook"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_create_link_code",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_create_link_code() → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "mobile"
-   ],
-   "callSites": [
-    {
-     "file": "app/apps/mobile/app/settings/whatsapp.tsx",
-     "line": 40,
-     "symbol": "WhatsAppLinkScreenContent",
-     "area": "mobile"
     }
    ]
   },
@@ -4096,32 +3434,6 @@
      "line": 55,
      "symbol": "body",
      "area": "fn:whatsapp-intake-worker"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_my_link_status",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_my_link_status() → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "mobile"
-   ],
-   "callSites": [
-    {
-     "file": "app/apps/mobile/app/settings/whatsapp.tsx",
-     "line": 20,
-     "symbol": "fetchStatus",
-     "area": "mobile"
     }
    ]
   },
@@ -4275,32 +3587,6 @@
    ]
   },
   {
-   "old": "api_whatsapp_unlink_me",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_unlink_me() → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "mobile"
-   ],
-   "callSites": [
-    {
-     "file": "app/apps/mobile/app/settings/whatsapp.tsx",
-     "line": 53,
-     "symbol": "WhatsAppLinkScreenContent",
-     "area": "mobile"
-    }
-   ]
-  },
-  {
    "old": "book_knowledge_seat",
    "kind": "rpc",
    "status": "renamed",
@@ -4367,7 +3653,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-     "line": 26,
+     "line": 40,
      "symbol": "SupabaseKnowledgeBookingRepository.bookSeat",
      "area": "knowledge"
     }
@@ -4413,7 +3699,7 @@
       },
       {
        "code": "not_ride_offer",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "own_listing",
@@ -4481,6 +3767,7 @@
    ],
    "areas": [
     "auth",
+    "housing",
     "rides"
    ],
    "callSites": [
@@ -4489,6 +3776,12 @@
      "line": 138,
      "symbol": "fetchBootstrapSession",
      "area": "auth"
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
+     "line": 50,
+     "symbol": "SupabaseHousingRepository.conduct",
+     "area": "housing"
     },
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseDriverDeclarationRepository.ts",
@@ -4579,7 +3872,7 @@
       },
       {
        "code": "handoff_world_not_supported",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -4589,9 +3882,16 @@
     }
    ],
    "areas": [
+    "knowledge",
     "marketplace"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
+     "line": 92,
+     "symbol": "SupabaseKnowledgeBookingRepository.move",
+     "area": "knowledge"
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
      "line": 155,
@@ -4659,9 +3959,40 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
-     "line": 69,
-     "symbol": "SupabaseHousingRepository.cancel",
+     "line": 96,
+     "symbol": "SupabaseHousingRepository.unwrapCall",
      "area": "housing"
+    }
+   ]
+  },
+  {
+   "old": "cancel_post_series_date",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Cancels one date of a series without ending it; the owner only.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "cancel_post_series_date",
+     "signature": [
+      "cancel_post_series_date(p_post_id: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "series"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+     "line": 92,
+     "symbol": "SupabasePostSeriesRepository.cancelOccurrence",
+     "area": "series"
     }
    ]
   },
@@ -4757,8 +4088,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
-     "line": 137,
-     "symbol": "SupabasePaymentsRepository.cancelStandingOrder",
+     "line": 135,
+     "symbol": "SupabasePaymentsRepository.moveStandingOrder",
      "area": "payments"
     }
    ]
@@ -4807,7 +4138,7 @@
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "`p_limit`, `p_before_last_message_at`, `p_before_chat_id`, `p_search`; one row per visible chat with the counterpart, a 140-character preview of the newest message and the unread count. The app reads one page of 50; it carries no counterpart verification level and no media or system payload of the newest message.",
+   "note": "`p_limit`, `p_before_last_message_at`, `p_before_chat_id`, `p_search`; one row per visible chat with the counterpart, a 140-character preview of the newest message and the unread count. The app reads one page of 50; each row also carries the counterpart's verification level, the media type of a media message and the system payload of a system message, for the inbox badge and previews.",
    "oldObject": {},
    "targets": [
     {
@@ -4815,7 +4146,7 @@
      "name": "chat_inbox_page",
      "source": "40_messaging/040_chat_reads.sql:71",
      "signature": [
-      "chat_inbox_page(p_before_chat_id?: string, p_before_last_message_at?: string, p_limit?: number, p_search?: string) → { anchor_post_id: string chat_id: string counterpart_avatar_url: string counterpart_display_name: string counterpart_id: string counterpart_last_read_at: string counterpart_share_handle: string kind: string last_messa..."
+      "chat_inbox_page(p_before_chat_id?: string, p_before_last_message_at?: string, p_limit?: number, p_search?: string) → { anchor_post_id: string chat_id: string counterpart_avatar_url: string counterpart_display_name: string counterpart_id: string counterpart_last_read_at: string counterpart_share_handle: string counterpart_verificatio..."
      ],
      "errors": [
       {
@@ -4831,7 +4162,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/getMyChats.ts",
-     "line": 71,
+     "line": 75,
      "symbol": "getMyChats",
      "area": "chat"
     }
@@ -4956,7 +4287,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyRepository.ts",
-     "line": 174,
+     "line": 73,
      "symbol": "SupabaseSurveyRepository.checkPromptEligibility",
      "area": "survey"
     }
@@ -5028,6 +4359,59 @@
      "line": 144,
      "symbol": "claimFoodGiving",
      "area": "marketplace"
+    }
+   ]
+  },
+  {
+   "old": "close_housing_booking",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The host closes an approved stay: `p_outcome` `completed` (check-in to seven days after the stay) or `no_show` (3 to 24 hours after check-in); `housing_not_in_window` outside them.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "close_housing_booking",
+     "source": "70_worlds/110_housing_bookings.sql:236",
+     "signature": [
+      "close_housing_booking(p_handoff_id: string, p_outcome: string) → post_handoffs row"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "handoff_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "housing_not_in_window",
+       "knownToApp": true
+      },
+      {
+       "code": "invalid_status",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "housing"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
+     "line": 111,
+     "symbol": "SupabaseHousingRepository.unwrapCall",
+     "area": "housing"
     }
    ]
   },
@@ -5153,7 +4537,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 158,
+     "line": 166,
      "symbol": "SupabaseVolunteerRepository.closeOpportunity",
      "area": "volunteering"
     }
@@ -5197,120 +4581,6 @@
    ]
   },
   {
-   "old": "complete_housing_booking",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "medium",
-   "missing": null,
-   "note": "`close_housing_booking(p_handoff_id, 'completed')`; inside its time window only (`housing_not_in_window`).",
-   "oldObject": {
-    "signature": [
-     "complete_housing_booking(p_handoff_id: string) → { cancel_reason: string | null cancelled_at: string | null confirm_by: string | null confirmed_at: string | null handed_over_at: string | null handoff_id: string | null listing_id: string | null no_show_at: string | n..."
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "close_housing_booking",
-     "source": "70_worlds/110_housing_bookings.sql:236",
-     "signature": [
-      "close_housing_booking(p_handoff_id: string, p_outcome: string) → post_handoffs row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "handoff_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "housing_not_in_window",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_status",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "housing"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
-     "line": 74,
-     "symbol": "SupabaseHousingRepository.complete",
-     "area": "housing"
-    }
-   ]
-  },
-  {
-   "old": "complete_knowledge_session",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Complete = handed over.",
-   "oldObject": {
-    "signature": [
-     "complete_knowledge_session(p_handoff_id: string) → { cancel_reason: string | null cancelled_at: string | null confirm_by: string | null confirmed_at: string | null handed_over_at: string | null handoff_id: string | null listing_id: string | null no_show_at: string | n..."
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "mark_giving_handed_over",
-     "source": "25_handoffs/040_handoff_rpcs.sql:153",
-     "signature": [
-      "mark_giving_handed_over(p_handoff_id: string) → post_handoffs row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "handoff_not_confirmed",
-       "knownToApp": true
-      },
-      {
-       "code": "handoff_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "handoff_world_not_supported",
-       "knownToApp": false
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "knowledge"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-     "line": 55,
-     "symbol": "SupabaseKnowledgeBookingRepository.runHandoffRpc",
-     "area": "knowledge"
-    }
-   ]
-  },
-  {
    "old": "complete_ride",
    "kind": "rpc",
    "status": "same",
@@ -5338,7 +4608,7 @@
       },
       {
        "code": "not_ride_offer",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "post_not_found",
@@ -5425,32 +4695,6 @@
    ]
   },
   {
-   "old": "complete_sandbox_donation",
-   "kind": "rpc",
-   "status": "removed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Sandbox shortcut; not carried over. A donation settles only through the provider event (`provider_webhook_apply`).",
-   "oldObject": {
-    "signature": [
-     "complete_sandbox_donation(p_intent_id: string) → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "payments"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
-     "line": 105,
-     "symbol": "SupabasePaymentsRepository.completeSandboxDonation",
-     "area": "payments"
-    }
-   ]
-  },
-  {
    "old": "confirm_item_handoff",
    "kind": "rpc",
    "status": "renamed",
@@ -5488,63 +4732,21 @@
     }
    ],
    "areas": [
+    "knowledge",
     "marketplace"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
+     "line": 92,
+     "symbol": "SupabaseKnowledgeBookingRepository.move",
+     "area": "knowledge"
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
      "line": 128,
      "symbol": "confirmItemHandoff",
      "area": "marketplace"
-    }
-   ]
-  },
-  {
-   "old": "confirm_knowledge_booking",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Knowledge uses the generic machine: confirm with the generic RPC.",
-   "oldObject": {
-    "signature": [
-     "confirm_knowledge_booking(p_handoff_id: string) → { cancel_reason: string | null cancelled_at: string | null confirm_by: string | null confirmed_at: string | null handed_over_at: string | null handoff_id: string | null listing_id: string | null no_show_at: string | n..."
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "confirm_item_handoff",
-     "source": "25_handoffs/040_handoff_rpcs.sql:111",
-     "signature": [
-      "confirm_item_handoff(p_handoff_id: string) → post_handoffs row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "handoff_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "knowledge"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-     "line": 55,
-     "symbol": "SupabaseKnowledgeBookingRepository.runHandoffRpc",
-     "area": "knowledge"
     }
    ]
   },
@@ -5633,7 +4835,7 @@
       },
       {
        "code": "challenge_world_not_configured",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "city_required",
@@ -5656,7 +4858,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 121,
+     "line": 150,
      "symbol": "SupabaseChallengeRepository.createChallenge",
      "area": "challenges"
     }
@@ -5698,11 +4900,11 @@
       },
       {
        "code": "money_min_amount",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "payments_unavailable",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "rate_limited",
@@ -5714,7 +4916,7 @@
       },
       {
        "code": "verified_org_required",
-       "knownToApp": false
+       "knownToApp": true
       }
      ]
     }
@@ -5725,9 +4927,40 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
-     "line": 88,
+     "line": 61,
      "symbol": "SupabasePaymentsRepository.createDonationIntent",
      "area": "payments"
+    }
+   ]
+  },
+  {
+   "old": "create_post_series",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Creates a series and materializes its first occurrences; the owner only.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "create_post_series",
+     "signature": [
+      "create_post_series(p_duration_minutes: number, p_ends_on?: string, p_event: Json, p_org_id?: string, p_post: Json, p_start_time: string, p_time_zone?: string, p_weekdays: number) → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "series"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+     "line": 56,
+     "symbol": "SupabasePostSeriesRepository.kind",
+     "area": "series"
     }
    ]
   },
@@ -5755,7 +4988,7 @@
       },
       {
        "code": "post_details_not_supported",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -5804,7 +5037,7 @@
       },
       {
        "code": "post_details_not_supported",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "ride_series_no_occurrence",
@@ -5812,7 +5045,7 @@
       },
       {
        "code": "ride_series_schedule_invalid",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -5827,7 +5060,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-     "line": 68,
+     "line": 69,
      "symbol": "SupabaseRideSeriesRepository.kind",
      "area": "rides"
     }
@@ -5869,11 +5102,11 @@
       },
       {
        "code": "money_min_amount",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "payments_unavailable",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -5881,7 +5114,7 @@
       },
       {
        "code": "verified_org_required",
-       "knownToApp": false
+       "knownToApp": true
       }
      ]
     }
@@ -5892,113 +5125,9 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
-     "line": 120,
+     "line": 75,
      "symbol": "SupabasePaymentsRepository.createStandingOrder",
      "area": "payments"
-    }
-   ]
-  },
-  {
-   "old": "crm_contact_delete",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No CRM in the baseline.",
-   "oldObject": {
-    "signature": [
-     "crm_contact_delete(p_contact_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
-     "line": 108,
-     "symbol": "SupabaseCrmContactsRepository.delete",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "crm_contact_list",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No CRM in the baseline.",
-   "oldObject": {
-    "signature": [
-     "crm_contact_list(p_limit?: number, p_offset?: number, p_query?: string, p_status?: string, p_tag?: string) → { contact_id: string created_at: string email: string last_contacted_at: string name: string notes: string organization: string phone: string role_title: string status: string tags: string[] total_count: number update..."
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
-     "line": 71,
-     "symbol": "SupabaseCrmContactsRepository.list",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "crm_contact_mark_contacted",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No CRM in the baseline.",
-   "oldObject": {
-    "signature": [
-     "crm_contact_mark_contacted(p_contact_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
-     "line": 113,
-     "symbol": "SupabaseCrmContactsRepository.markContacted",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "crm_contact_upsert",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No CRM in the baseline.",
-   "oldObject": {
-    "signature": [
-     "crm_contact_upsert(p_contact_id?: string, p_email?: string, p_name?: string, p_notes?: string, p_organization?: string, p_phone?: string, p_role_title?: string, p_status?: string, p_tags?: string[]) → string"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseCrmContactsRepository.ts",
-     "line": 89,
-     "symbol": "SupabaseCrmContactsRepository.upsert",
-     "area": "admin"
     }
    ]
   },
@@ -6130,58 +5259,9 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
-     "line": 62,
-     "symbol": "SupabaseHousingRepository.decide",
+     "line": 89,
+     "symbol": "SupabaseHousingRepository.unwrapCall",
      "area": "housing"
-    }
-   ]
-  },
-  {
-   "old": "decline_knowledge_booking",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Decline = the owner cancelling a waiting handoff.",
-   "oldObject": {
-    "signature": [
-     "decline_knowledge_booking(p_handoff_id: string) → { cancel_reason: string | null cancelled_at: string | null confirm_by: string | null confirmed_at: string | null handed_over_at: string | null handoff_id: string | null listing_id: string | null no_show_at: string | n..."
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "cancel_giving_handoff",
-     "source": "25_handoffs/040_handoff_rpcs.sql:186",
-     "signature": [
-      "cancel_giving_handoff(p_handoff_id: string) → post_handoffs row"
-     ],
-     "errors": [
-      {
-       "code": "handoff_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "handoff_world_not_supported",
-       "knownToApp": false
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "knowledge"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-     "line": 55,
-     "symbol": "SupabaseKnowledgeBookingRepository.runHandoffRpc",
-     "area": "knowledge"
     }
    ]
   },
@@ -6397,7 +5477,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 176,
+     "line": 195,
      "symbol": "SupabaseChallengeRepository.endChallenge",
      "area": "challenges"
     }
@@ -6445,7 +5525,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 52,
+     "line": 53,
      "symbol": "SupabaseVolunteerRepository.listOpportunities",
      "area": "volunteering"
     }
@@ -6498,7 +5578,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceAccountsRepository.ts",
-     "line": 52,
+     "line": 53,
      "symbol": "SupabaseFinanceAccountsRepository.upsert",
      "area": "admin"
     }
@@ -6547,7 +5627,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceAccountsRepository.ts",
-     "line": 45,
+     "line": 44,
      "symbol": "SupabaseFinanceAccountsRepository.list",
      "area": "admin"
     }
@@ -6556,78 +5636,34 @@
   {
    "old": "finance_donors_summary",
    "kind": "rpc",
-   "status": "missing",
+   "status": "changed",
    "launch": "later",
    "confidence": "high",
-   "missing": "M21",
-   "note": "No donors summary function.",
+   "missing": null,
+   "note": "New required `p_org_id`; `total_cents` → `total_agorot`; in-app donations grouped by member, typed ones by party name; organization admins only (M21, built in `85_billing/140`).",
    "oldObject": {
     "signature": [
      "finance_donors_summary(p_limit?: number) → { donations_count: number donor_name: string first_at: string last_at: string total_cents: number }[]"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "finance_donors_summary",
+     "signature": [
+      "finance_donors_summary(p_limit?: number, p_org_id: string) → { donations_count: number donor_name: string first_at: string last_at: string total_agorot: number }[]"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "admin"
    ],
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceDonorsRepository.ts",
-     "line": 31,
+     "line": 30,
      "symbol": "SupabaseFinanceDonorsRepository.summary",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "finance_ledger_delete",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Entries are never deleted: void with `finance_ledger_mark(p_org_id, p_entry_id, p_void_reason)`.",
-   "oldObject": {
-    "signature": [
-     "finance_ledger_delete(p_entry_id: string) → undefined"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "finance_ledger_mark",
-     "source": "85_billing/100_org_finance_rpcs.sql:191",
-     "signature": [
-      "finance_ledger_mark(p_entry_id: string, p_org_id: string, p_reconciled?: boolean, p_void_reason?: string) → undefined"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "entry_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "forbidden",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-     "line": 137,
-     "symbol": "SupabaseFinanceLedgerRepository.delete",
      "area": "admin"
     }
    ]
@@ -6675,8 +5711,57 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-     "line": 79,
+     "line": 62,
      "symbol": "SupabaseFinanceLedgerRepository.list",
+     "area": "admin"
+    }
+   ]
+  },
+  {
+   "old": "finance_ledger_mark",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Voids an entry with a reason (the admin delete action) or sets its reconciliation; the entry stays in the books.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "finance_ledger_mark",
+     "source": "85_billing/100_org_finance_rpcs.sql:191",
+     "signature": [
+      "finance_ledger_mark(p_entry_id: string, p_org_id: string, p_reconciled?: boolean, p_void_reason?: string) → undefined"
+     ],
+     "errors": [
+      {
+       "code": "account_not_active",
+       "knownToApp": true
+      },
+      {
+       "code": "entry_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "forbidden",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
+   "areas": [
+    "admin"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
+     "line": 126,
+     "symbol": "SupabaseFinanceLedgerRepository.unwrapFinance",
      "area": "admin"
     }
    ]
@@ -6684,24 +5769,33 @@
   {
    "old": "finance_ledger_summary",
    "kind": "rpc",
-   "status": "missing",
+   "status": "changed",
    "launch": "later",
    "confidence": "high",
-   "missing": "M21",
-   "note": "No ledger summary function.",
+   "missing": null,
+   "note": "New required `p_org_id`; `*_cents` → `*_agorot`; cleared entries only, transfers aside (M21, built in `85_billing/140`).",
    "oldObject": {
     "signature": [
      "finance_ledger_summary(p_from?: string, p_to?: string) → { currency: string entry_count: number expense_cents: number income_cents: number net_cents: number }[]"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "finance_ledger_summary",
+     "signature": [
+      "finance_ledger_summary(p_from?: string, p_org_id: string, p_to?: string) → { currency: string entry_count: number expense_agorot: number income_agorot: number net_agorot: number }[]"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
     "admin"
    ],
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-     "line": 99,
+     "line": 84,
      "symbol": "SupabaseFinanceLedgerRepository.summary",
      "area": "admin"
     }
@@ -6762,83 +5856,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseFinanceLedgerRepository.ts",
-     "line": 115,
+     "line": 103,
      "symbol": "SupabaseFinanceLedgerRepository.upsert",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "finance_transparency_settings_get",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "The switches are the `show_*` columns of the organization row.",
-   "oldObject": {
-    "signature": [
-     "finance_transparency_settings_get() → Json"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "organizations",
-     "columns": [
-      "city_id",
-      "contact_email",
-      "created_at",
-      "id",
-      "is_platform",
-      "is_verified_nonprofit",
-      "name",
-      "org_type",
-      "public_about_en",
-      "public_about_he",
-      "public_tagline_en",
-      "public_tagline_he",
-      "registration_number",
-      "sec46_approval_number",
-      "sec46_status",
-      "sec46_valid_from",
-      "sec46_valid_until",
-      "show_category_breakdown",
-      "show_donations_count",
-      "show_monthly_trend",
-      "show_program_ratio",
-      "show_totals",
-      "slug",
-      "status",
-      "updated_at",
-      "verification_level",
-      "verification_method",
-      "verified_at",
-      "verified_by",
-      "website_url"
-     ],
-     "clientGrants": {
-      "select": true,
-      "update": [
-       "city_id",
-       "contact_email",
-       "public_about_en",
-       "public_about_he",
-       "public_tagline_en",
-       "public_tagline_he",
-       "website_url"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgTransparencyRepository.ts",
-     "line": 79,
-     "symbol": "SupabaseTransparencySettingsRepository.get",
      "area": "admin"
     }
    ]
@@ -6890,8 +5909,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgTransparencyRepository.ts",
-     "line": 85,
-     "symbol": "SupabaseTransparencySettingsRepository.set",
+     "line": 102,
+     "symbol": "SupabaseTransparencySettingsRepository.unwrapFinance",
      "area": "admin"
     }
    ]
@@ -7086,7 +6105,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 149,
+     "line": 180,
      "symbol": "SupabaseChallengeRepository.getChallenge",
      "area": "challenges"
     }
@@ -7122,54 +6141,9 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
-     "line": 168,
+     "line": 129,
      "symbol": "SupabasePaymentsRepository.getDonationReceipt",
      "area": "payments"
-    }
-   ]
-  },
-  {
-   "old": "get_housing_private_details",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Returns the `post_private_locations` row: street, street_number, exact_point, `access_notes`.",
-   "oldObject": {
-    "signature": [
-     "get_housing_private_details(p_listing_id: string) → { access_instructions: string apartment: string city_id: string entrance_notes: string floor: string house_number: string lat: number listing_id: string lng: number street_name: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "get_post_private_location",
-     "source": "25_handoffs/100_private_location_release.sql:12",
-     "signature": [
-      "get_post_private_location(p_post_id: string) → post_private_locations row"
-     ],
-     "errors": [
-      {
-       "code": "post_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "housing"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
-     "line": 103,
-     "symbol": "SupabaseHousingRepository.getPrivateDetails",
-     "area": "housing"
     }
    ]
   },
@@ -7282,9 +6256,16 @@
     }
    ],
    "areas": [
+    "housing",
     "rides"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
+     "line": 129,
+     "symbol": "SupabaseHousingRepository.getPrivateDetails",
+     "area": "housing"
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideHouseNumberRepository.ts",
      "line": 37,
@@ -7332,11 +6313,11 @@
   {
    "old": "get_public_research_questions",
    "kind": "rpc",
-   "status": "changed",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
    "missing": null,
-   "note": "Same signature, but service role only in the baseline (nothing is granted to signed-out callers): the public research page must load its questions through the `public-research-submit` function, not from the device.",
+   "note": "Same signature; granted to signed-out callers, so the public research page reads the questions of an active survey directly (null when the survey is missing or not active).",
    "oldObject": {
     "signature": [
      "get_public_research_questions(p_slug: string) → Json"
@@ -7359,7 +6340,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/research/SupabasePublicResearchRepository.ts",
-     "line": 94,
+     "line": 91,
      "symbol": "SupabasePublicResearchRepository.loadBundle",
      "area": "research"
     }
@@ -7394,87 +6375,6 @@
      "line": 21,
      "symbol": "getSalt",
      "area": "fn:public-research-submit"
-    }
-   ]
-  },
-  {
-   "old": "get_survey_bundle",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Survey, the questions of its current version (`survey_versions` → `survey_questions`) and the caller's answers: three direct reads.",
-   "oldObject": {
-    "signature": [
-     "get_survey_bundle(p_slug: string) → Json"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "surveys",
-     "columns": [
-      "created_at",
-      "current_version",
-      "description_he",
-      "id",
-      "is_active",
-      "prompt_rules",
-      "slug",
-      "title_he",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    },
-    {
-     "type": "table",
-     "name": "survey_questions",
-     "columns": [
-      "choice_options",
-      "context_he",
-      "id",
-      "prompt_he",
-      "question_type",
-      "rating_anchor_high_he",
-      "rating_anchor_low_he",
-      "short_label_he",
-      "sort_order",
-      "survey_version_id",
-      "text_placeholder_he"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    },
-    {
-     "type": "table",
-     "name": "survey_answers",
-     "columns": [
-      "answer_text",
-      "choice_key",
-      "created_at",
-      "question_id",
-      "rating",
-      "updated_at",
-      "user_id"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "survey"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyRepository.ts",
-     "line": 149,
-     "symbol": "SupabaseSurveyRepository.getBundle",
-     "area": "survey"
     }
    ]
   },
@@ -7524,32 +6424,22 @@
    ]
   },
   {
-   "old": "housing_conduct_version",
+   "old": "housing_completed_stays",
    "kind": "rpc",
-   "status": "changed",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
    "missing": null,
-   "note": "Read `consents.housing_conduct.version` (and `accepted`) from the session payload (M11, built).",
-   "oldObject": {
-    "signature": [
-     "housing_conduct_version() → number"
-    ]
-   },
+   "note": "Completed stays (as host or guest) of the listed members whose profile the caller can read: the trust block of the host panel (S16, FR-HOUSING-036).",
+   "oldObject": {},
    "targets": [
     {
      "type": "rpc",
-     "name": "bootstrap_session",
-     "source": "10_identity/100_bootstrap_session.sql:10",
+     "name": "housing_completed_stays",
      "signature": [
-      "bootstrap_session() → Json"
+      "housing_completed_stays(p_user_ids: string[]) → { completed_stays: number user_id: string }[]"
      ],
-     "errors": [
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
+     "errors": []
     }
    ],
    "areas": [
@@ -7557,9 +6447,9 @@
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
-     "line": 25,
-     "symbol": "SupabaseHousingRepository.currentConductVersion",
+     "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
+     "line": 50,
+     "symbol": "completedStaysOf",
      "area": "housing"
     }
    ]
@@ -7615,15 +6505,40 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 156,
+     "line": 187,
      "symbol": "SupabaseChallengeRepository.joinChallenge",
      "area": "challenges"
-    },
+    }
+   ]
+  },
+  {
+   "old": "knowledge_slot_seats",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The slots of a knowledge offer with their places held and left, for every reader of the offer (FR-KNOW-004); the caller's booking per slot is matched on `slot_starts_at`.",
+   "oldObject": {},
+   "targets": [
     {
-     "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 163,
-     "symbol": "SupabaseChallengeRepository.joinChallenge",
-     "area": "challenges"
+     "type": "rpc",
+     "name": "knowledge_slot_seats",
+     "signature": [
+      "knowledge_slot_seats(p_post_id: string) → { capacity: number ends_at: string id: string seats_left: number seats_taken: number starts_at: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "knowledge"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
+     "line": 31,
+     "symbol": "SupabaseKnowledgeBookingRepository.listSlots",
+     "area": "knowledge"
     }
    ]
   },
@@ -7674,54 +6589,9 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 171,
+     "line": 191,
      "symbol": "SupabaseChallengeRepository.leaveChallenge",
      "area": "challenges"
-    }
-   ]
-  },
-  {
-   "old": "list_active_surveys",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Direct read of active surveys (policy `surveys_select_published`).",
-   "oldObject": {
-    "signature": [
-     "list_active_surveys() → Json"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "surveys",
-     "columns": [
-      "created_at",
-      "current_version",
-      "description_he",
-      "id",
-      "is_active",
-      "prompt_rules",
-      "slug",
-      "title_he",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "survey"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyRepository.ts",
-     "line": 142,
-     "symbol": "SupabaseSurveyRepository.listActive",
-     "area": "survey"
     }
    ]
   },
@@ -7755,7 +6625,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 201,
+     "line": 228,
      "symbol": "SupabaseChallengeRepository.listLeaderboard",
      "area": "challenges"
     }
@@ -7800,326 +6670,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 139,
+     "line": 169,
      "symbol": "SupabaseChallengeRepository.listChallenges",
-     "area": "challenges"
-    }
-   ]
-  },
-  {
-   "old": "list_housing_bookings",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "medium",
-   "missing": null,
-   "note": "The host reads the handoffs of the post with their booking details and the guests' names. Guest reputation fields (`guest_completed_stays`, `rated_by_me`) are not derivable: `rated_by_me` is a select on `post_ratings`, the reputation count is `user_stats.ratings_count` (M07, built).",
-   "oldObject": {
-    "signature": [
-     "list_housing_bookings(p_listing_id: string) → { adults: number avatar_url: string check_in_date: string check_out_date: string confirm_by: string guest_completed_stays: number guest_member_since: string guest_name: string guest_verified: boolean handoff_id: strin..."
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_handoffs",
-     "columns": [
-      "cancel_reason",
-      "cancelled_at",
-      "confirm_by",
-      "confirmed_at",
-      "created_at",
-      "handed_over_at",
-      "id",
-      "machine_id",
-      "no_show_at",
-      "owner_id",
-      "pickup_mode",
-      "pickup_window_end",
-      "pickup_window_start",
-      "post_id",
-      "recipient_id",
-      "requested_meeting_point",
-      "seats",
-      "slot_ends_at",
-      "slot_starts_at",
-      "status",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    },
-    {
-     "type": "table",
-     "name": "handoff_booking_details",
-     "columns": [
-      "adults",
-      "cancel_note",
-      "check_in_date",
-      "check_out_date",
-      "created_at",
-      "decision_note",
-      "handoff_id",
-      "late_cancel",
-      "message",
-      "minors",
-      "minors_guardian_ack",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    },
-    {
-     "type": "table",
-     "name": "users",
-     "columns": [
-      "avatar_url",
-      "biography",
-      "city_id",
-      "created_at",
-      "display_name",
-      "id",
-      "is_active",
-      "preferred_language",
-      "privacy_changed_at",
-      "privacy_mode",
-      "search_vector",
-      "share_handle",
-      "updated_at",
-      "verification_level"
-     ],
-     "clientGrants": {
-      "select": true,
-      "update": [
-       "avatar_url",
-       "biography",
-       "city_id",
-       "display_name",
-       "preferred_language"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "housing"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
-     "line": 84,
-     "symbol": "SupabaseHousingRepository.listForOffer",
-     "area": "housing"
-    }
-   ]
-  },
-  {
-   "old": "list_kc_support_channels",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M20",
-   "note": "No support-channel list in the baseline.",
-   "oldObject": {
-    "signature": [
-     "list_kc_support_channels(channel: string, payee_phone: string, provider_label: string, url: string) → { channel: string payee_phone: string provider_label: string url: string }[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "payments"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/payments/SupabaseKcSupportChannelsRepository.ts",
-     "line": 29,
-     "symbol": "SupabaseKcSupportChannelsRepository.listActiveChannels",
-     "area": "payments"
-    }
-   ]
-  },
-  {
-   "old": "list_knowledge_bookings",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "medium",
-   "missing": null,
-   "note": "The giver reads the post's handoffs and the learners' names directly.",
-   "oldObject": {
-    "signature": [
-     "list_knowledge_bookings(p_post_id: string) → { cancel_reason: string confirm_by: string ends_at: string handoff_id: string learner_avatar: string learner_id: string learner_name: string slot_id: string starts_at: string status: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_handoffs",
-     "columns": [
-      "cancel_reason",
-      "cancelled_at",
-      "confirm_by",
-      "confirmed_at",
-      "created_at",
-      "handed_over_at",
-      "id",
-      "machine_id",
-      "no_show_at",
-      "owner_id",
-      "pickup_mode",
-      "pickup_window_end",
-      "pickup_window_start",
-      "post_id",
-      "recipient_id",
-      "requested_meeting_point",
-      "seats",
-      "slot_ends_at",
-      "slot_starts_at",
-      "status",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    },
-    {
-     "type": "table",
-     "name": "users",
-     "columns": [
-      "avatar_url",
-      "biography",
-      "city_id",
-      "created_at",
-      "display_name",
-      "id",
-      "is_active",
-      "preferred_language",
-      "privacy_changed_at",
-      "privacy_mode",
-      "search_vector",
-      "share_handle",
-      "updated_at",
-      "verification_level"
-     ],
-     "clientGrants": {
-      "select": true,
-      "update": [
-       "avatar_url",
-       "biography",
-       "city_id",
-       "display_name",
-       "preferred_language"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "knowledge"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-     "line": 33,
-     "symbol": "SupabaseKnowledgeBookingRepository.listBookings",
-     "area": "knowledge"
-    }
-   ]
-  },
-  {
-   "old": "list_knowledge_slots",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Direct read of the slots; the caller's booking per slot comes from their `post_handoffs` rows (match on `slot_starts_at`); `seats_left` is not returned.",
-   "oldObject": {
-    "signature": [
-     "list_knowledge_slots(p_post_id: string) → { capacity: number ends_at: string my_handoff_id: string my_status: string seats_left: number slot_id: string starts_at: string }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_knowledge_slots",
-     "columns": [
-      "capacity",
-      "created_at",
-      "ends_at",
-      "id",
-      "post_id",
-      "starts_at"
-     ],
-     "clientGrants": {
-      "select": true,
-      "delete": true,
-      "insert": [
-       "capacity",
-       "ends_at",
-       "post_id",
-       "starts_at"
-      ],
-      "update": [
-       "capacity",
-       "ends_at",
-       "starts_at"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "knowledge"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
-     "line": 20,
-     "symbol": "SupabaseKnowledgeBookingRepository.listSlots",
-     "area": "knowledge"
-    }
-   ]
-  },
-  {
-   "old": "list_my_challenge_entries",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Direct read of the caller's own entries (policy `challenge_progress_entries_select_own`).",
-   "oldObject": {
-    "signature": [
-     "list_my_challenge_entries(p_challenge_id: string, p_limit?: number) → { cycle_start: string goal_met: boolean note: string reported_at: string value: number }[]"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "challenge_progress_entries",
-     "columns": [
-      "challenge_id",
-      "cycle_start",
-      "goal_met",
-      "note",
-      "reported_at",
-      "user_id",
-      "value"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "challenges"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 192,
-     "symbol": "SupabaseChallengeRepository.listMyEntries",
      "area": "challenges"
     }
    ]
@@ -8154,87 +6706,9 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
-     "line": 152,
+     "line": 109,
      "symbol": "SupabasePaymentsRepository.listDonationHistory",
      "area": "payments"
-    }
-   ]
-  },
-  {
-   "old": "list_my_housing_stays",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "medium",
-   "missing": null,
-   "note": "The guest reads their handoffs with booking details, joined to `posts` and `users`; `can_view_address` = status confirmed (then call `get_post_private_location`).",
-   "oldObject": {
-    "signature": [
-     "list_my_housing_stays(p_limit?: number) → { adults: number can_view_address: boolean cancel_reason: string check_in_date: string check_out_date: string city_id: string confirm_by: string handoff_id: string host_id: string host_name: string listing_id: string ..."
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_handoffs",
-     "columns": [
-      "cancel_reason",
-      "cancelled_at",
-      "confirm_by",
-      "confirmed_at",
-      "created_at",
-      "handed_over_at",
-      "id",
-      "machine_id",
-      "no_show_at",
-      "owner_id",
-      "pickup_mode",
-      "pickup_window_end",
-      "pickup_window_start",
-      "post_id",
-      "recipient_id",
-      "requested_meeting_point",
-      "seats",
-      "slot_ends_at",
-      "slot_starts_at",
-      "status",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    },
-    {
-     "type": "table",
-     "name": "handoff_booking_details",
-     "columns": [
-      "adults",
-      "cancel_note",
-      "check_in_date",
-      "check_out_date",
-      "created_at",
-      "decision_note",
-      "handoff_id",
-      "late_cancel",
-      "message",
-      "minors",
-      "minors_guardian_ack",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "housing"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
-     "line": 93,
-     "symbol": "SupabaseHousingRepository.listMyStays",
-     "area": "housing"
     }
    ]
   },
@@ -8268,7 +6742,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
-     "line": 131,
+     "line": 87,
      "symbol": "SupabasePaymentsRepository.listMyStandingOrders",
      "area": "payments"
     }
@@ -8349,7 +6823,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
-     "line": 42,
+     "line": 33,
      "symbol": "SupabasePaymentsRepository.listVerifiedNonprofits",
      "area": "payments"
     }
@@ -8489,7 +6963,7 @@
       },
       {
        "code": "handoff_world_not_supported",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -8499,71 +6973,21 @@
     }
    ],
    "areas": [
+    "knowledge",
     "marketplace"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
+     "line": 92,
+     "symbol": "SupabaseKnowledgeBookingRepository.move",
+     "area": "knowledge"
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/givingHandoffs.ts",
      "line": 163,
      "symbol": "markGivingHandedOver",
      "area": "marketplace"
-    }
-   ]
-  },
-  {
-   "old": "mark_housing_no_show",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "medium",
-   "missing": null,
-   "note": "`close_housing_booking(p_handoff_id, 'no_show')`.",
-   "oldObject": {
-    "signature": [
-     "mark_housing_no_show(p_handoff_id: string) → { cancel_reason: string | null cancelled_at: string | null confirm_by: string | null confirmed_at: string | null handed_over_at: string | null handoff_id: string | null listing_id: string | null no_show_at: string | n..."
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "close_housing_booking",
-     "source": "70_worlds/110_housing_bookings.sql:236",
-     "signature": [
-      "close_housing_booking(p_handoff_id: string, p_outcome: string) → post_handoffs row"
-     ],
-     "errors": [
-      {
-       "code": "account_not_active",
-       "knownToApp": true
-      },
-      {
-       "code": "handoff_not_found",
-       "knownToApp": true
-      },
-      {
-       "code": "housing_not_in_window",
-       "knownToApp": true
-      },
-      {
-       "code": "invalid_status",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "housing"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
-     "line": 79,
-     "symbol": "SupabaseHousingRepository.markNoShow",
-     "area": "housing"
     }
    ]
   },
@@ -8610,7 +7034,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-     "line": 107,
+     "line": 127,
      "symbol": "SupabaseMatchRepository.respond",
      "area": "matching"
     }
@@ -8640,7 +7064,7 @@
       },
       {
        "code": "event_message_invalid",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "post_not_found",
@@ -8755,7 +7179,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/matching/SupabaseMatchRepository.ts",
-     "line": 99,
+     "line": 119,
      "symbol": "SupabaseMatchRepository.listMine",
      "area": "matching"
     }
@@ -9195,8 +7619,8 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
-     "line": 142,
-     "symbol": "SupabasePaymentsRepository.pauseStandingOrder",
+     "line": 135,
+     "symbol": "SupabasePaymentsRepository.moveStandingOrder",
      "area": "payments"
     }
    ]
@@ -9304,8 +7728,39 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 107,
+     "line": 106,
      "symbol": "fetchListingDetail",
+     "area": "marketplace"
+    }
+   ]
+  },
+  {
+   "old": "post_seat_counts",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "wedge",
+   "confidence": "high",
+   "missing": null,
+   "note": "Places held, waiting registrations and seats left of event and ride posts the caller can read (`p_post_ids`, at most 100); the volunteering shifts and the occurrences of a ride series read their free places here.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "post_seat_counts",
+     "signature": [
+      "post_seat_counts(p_post_ids: string[]) → { capacity: number post_id: string seats_left: number seats_taken: number waitlisted: number }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "marketplace"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/postSeatCounts.ts",
+     "line": 22,
+     "symbol": "loadSeatCounts",
      "area": "marketplace"
     }
    ]
@@ -9353,7 +7808,7 @@
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "`p_tab` open | closed | hidden, keyset `p_cursor`; the closed tab of a profile. The owner's delivered or deleted \"only me\" posts come from `posts` ids completed by `post_cards`.",
+   "note": "`p_tab` open | closed | hidden | mine, keyset `p_cursor`; the closed tab of a profile. `mine` is the owner's own posts in every status and audience, narrowed by `p_statuses` (`forbidden` on another member's profile): \"my listings\" reads it. The owner's delivered or deleted \"only me\" posts still come from `posts` ids completed by `post_cards`.",
    "oldObject": {},
    "targets": [
     {
@@ -9361,7 +7816,7 @@
      "name": "profile_posts_page",
      "source": "30_social/090_profile_and_search.sql:13",
      "signature": [
-      "profile_posts_page(p_cursor?: Json, p_limit?: number, p_tab?: string, p_user_id: string) → { card: post_card next_cursor: Json }[]"
+      "profile_posts_page(p_cursor?: Json, p_limit?: number, p_statuses?: string[], p_tab?: string, p_user_id: string) → { card: post_card next_cursor: Json }[]"
      ],
      "errors": [
       {
@@ -9378,7 +7833,13 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 88,
+     "line": 68,
+     "symbol": "SupabaseMarketplaceRepository.listMyListingsPage",
+     "area": "marketplace"
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
+     "line": 89,
      "symbol": "SupabaseMarketplaceRepository.listProfileListings",
      "area": "marketplace"
     },
@@ -9387,32 +7848,6 @@
      "line": 125,
      "symbol": "fetchProfileTabPage",
      "area": "posts"
-    }
-   ]
-  },
-  {
-   "old": "propose_knowledge_topic",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M12",
-   "note": "No topic graph in the baseline.",
-   "oldObject": {
-    "signature": [
-     "propose_knowledge_topic(p_description_he?: string, p_label_en: string, p_label_he: string, p_parent_slug?: string, p_slug: string) → knowledge_topics row"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "knowledge"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeTopicRepository.ts",
-     "line": 40,
-     "symbol": "SupabaseKnowledgeTopicRepository.proposeTopic",
-     "area": "knowledge"
     }
    ]
   },
@@ -9934,7 +8369,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
-     "line": 181,
+     "line": 200,
      "symbol": "SupabaseChallengeRepository.reportProgress",
      "area": "challenges"
     }
@@ -10005,7 +8440,7 @@
      "errors": [
       {
        "code": "emergency_not_active",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "emergency_throttled",
@@ -10178,7 +8613,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
-     "line": 47,
+     "line": 73,
      "symbol": "SupabaseHousingRepository.requestStay",
      "area": "housing"
     }
@@ -10250,32 +8685,6 @@
      "line": 115,
      "symbol": "reserveItemGiving",
      "area": "marketplace"
-    }
-   ]
-  },
-  {
-   "old": "resolve_knowledge_topics",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M12",
-   "note": "No topic graph in the baseline.",
-   "oldObject": {
-    "signature": [
-     "resolve_knowledge_topics(p_text: string) → { matched_slug: string slug: string topic_id: string via: string }[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "knowledge"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeTopicRepository.ts",
-     "line": 34,
-     "symbol": "SupabaseKnowledgeTopicRepository.resolveTopics",
-     "area": "knowledge"
     }
    ]
   },
@@ -10412,35 +8821,40 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/payments/SupabasePaymentsRepository.ts",
-     "line": 147,
-     "symbol": "SupabasePaymentsRepository.resumeStandingOrder",
+     "line": 135,
+     "symbol": "SupabasePaymentsRepository.moveStandingOrder",
      "area": "payments"
     }
    ]
   },
   {
-   "old": "review_knowledge_topic",
+   "old": "ride_occurrence_schedules",
    "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
+   "status": "same",
+   "launch": "wedge",
    "confidence": "high",
-   "missing": "M12",
-   "note": "No topic graph in the baseline.",
-   "oldObject": {
-    "signature": [
-     "review_knowledge_topic(p_action: string, p_label_en?: string, p_label_he?: string, p_merge_into_id?: string, p_topic_id: string) → knowledge_topics row"
-    ]
-   },
-   "targets": [],
+   "missing": null,
+   "note": "The series day, weekdays, departure time and last day of ride occurrences the caller can read (`p_post_ids`); the ride detail builds its series marker from it, since `ride_series` is its owner's alone.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "ride_occurrence_schedules",
+     "signature": [
+      "ride_occurrence_schedules(p_post_ids: string[]) → { depart_time: string ends_on: string post_id: string series_id: string series_on: string weekdays: number }[]"
+     ],
+     "errors": []
+    }
+   ],
    "areas": [
-    "knowledge"
+    "marketplace"
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeTopicRepository.ts",
-     "line": 63,
-     "symbol": "SupabaseKnowledgeTopicRepository.reviewTopic",
-     "area": "knowledge"
+     "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
+     "line": 68,
+     "symbol": "seriesMarker",
+     "area": "marketplace"
     }
    ]
   },
@@ -10451,7 +8865,7 @@
    "launch": "wedge",
    "confidence": "high",
    "missing": null,
-   "note": "The rides feed; with `p_filters.origin` / `dest` / `radius_km` it is the route search. The app reads the first page; the series marker (weekdays) is not part of a row.",
+   "note": "The rides feed; with `p_filters.origin` / `dest` / `radius_km` it is the route search. The app reads the first page; an occurrence of a recurring ride carries `series_on`, `series_weekdays` and `series_depart_time` for its series marker.",
    "oldObject": {},
    "targets": [
     {
@@ -10548,7 +8962,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgTransparencyRepository.ts",
-     "line": 69,
+     "line": 77,
      "symbol": "SupabaseOrgTransparencyRepository.getPublic",
      "area": "admin"
     }
@@ -10713,7 +9127,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 51,
+     "line": 54,
      "symbol": "SupabaseMarketplaceRepository.startChat",
      "area": "marketplace"
     }
@@ -10765,65 +9179,6 @@
      "line": 46,
      "symbol": "supabaseSetDateOfBirth",
      "area": "users"
-    }
-   ]
-  },
-  {
-   "old": "set_housing_private_details",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Owner insert / update. Apartment, floor, entrance notes and access instructions fold into `access_notes`; `p_street_id` → `street` text; lat / lng → `exact_point`.",
-   "oldObject": {
-    "signature": [
-     "set_housing_private_details(p_access_instructions?: string, p_apartment?: string, p_entrance_notes?: string, p_floor?: string, p_house_number: string, p_lat?: number, p_listing_id: string, p_lng?: number, p_street_id: number) → housing_private_details row"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "post_private_locations",
-     "columns": [
-      "access_notes",
-      "destination_street_number",
-      "exact_point",
-      "post_id",
-      "street",
-      "street_number",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true,
-      "insert": [
-       "access_notes",
-       "destination_street_number",
-       "exact_point",
-       "post_id",
-       "street",
-       "street_number"
-      ],
-      "update": [
-       "access_notes",
-       "destination_street_number",
-       "exact_point",
-       "post_id",
-       "street",
-       "street_number"
-      ]
-     }
-    }
-   ],
-   "areas": [
-    "housing"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
-     "line": 113,
-     "symbol": "SupabaseHousingRepository.setPrivateDetails",
-     "area": "housing"
     }
    ]
   },
@@ -11020,6 +9375,37 @@
    ]
   },
   {
+   "old": "set_post_series_status",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "`p_series`, `p_status`: active, paused or cancelled; the owner only.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "set_post_series_status",
+     "signature": [
+      "set_post_series_status(p_series_id: string, p_status: string) → undefined"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "series"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+     "line": 88,
+     "symbol": "SupabasePostSeriesRepository.setStatus",
+     "area": "series"
+    }
+   ]
+  },
+  {
    "old": "set_privacy_mode",
    "kind": "rpc",
    "status": "same",
@@ -11092,7 +9478,7 @@
       },
       {
        "code": "post_details_not_supported",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "ride_series_not_found",
@@ -11111,7 +9497,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-     "line": 84,
+     "line": 85,
      "symbol": "SupabaseRideSeriesRepository.setStatus",
      "area": "rides"
     }
@@ -11143,7 +9529,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 30,
+     "line": 33,
      "symbol": "SupabaseMarketplaceRepository.similarListings",
      "area": "marketplace"
     }
@@ -11280,184 +9666,33 @@
    ]
   },
   {
-   "old": "timesheet_approve",
+   "old": "update_post_series",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M19",
-   "note": "No timesheets in the baseline.",
-   "oldObject": {
-    "signature": [
-     "timesheet_approve(p_entry_id: string, p_note?: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
+   "missing": null,
+   "note": "Edits the series template and schedule; the owner only (`post_series_not_found`).",
+   "oldObject": {},
+   "targets": [
     {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
-     "line": 118,
-     "symbol": "SupabaseTimesheetsRepository.approve",
-     "area": "admin"
+     "type": "rpc",
+     "name": "update_post_series",
+     "signature": [
+      "update_post_series(p_duration_minutes: number, p_ends_on?: string, p_event?: Json, p_post?: Json, p_series_id: string, p_start_time: string, p_weekdays: number) → undefined"
+     ],
+     "errors": []
     }
-   ]
-  },
-  {
-   "old": "timesheet_delete",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No timesheets in the baseline.",
-   "oldObject": {
-    "signature": [
-     "timesheet_delete(p_entry_id: string) → undefined"
-    ]
-   },
-   "targets": [],
+   ],
    "areas": [
-    "admin"
+    "series"
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
-     "line": 132,
-     "symbol": "SupabaseTimesheetsRepository.delete",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "timesheet_list",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No timesheets in the baseline.",
-   "oldObject": {
-    "signature": [
-     "timesheet_list(p_from?: string, p_limit?: number, p_offset?: number, p_status?: string, p_to?: string, p_user_id?: string) → { approval_note: string approved_at: string approved_by: string approver_name: string created_at: string description: string entry_id: string hours_x100: number project: string status: string submitted_at: string tota..."
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
-     "line": 79,
-     "symbol": "SupabaseTimesheetsRepository.list",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "timesheet_reject",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No timesheets in the baseline.",
-   "oldObject": {
-    "signature": [
-     "timesheet_reject(p_entry_id: string, p_note?: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
-     "line": 125,
-     "symbol": "SupabaseTimesheetsRepository.reject",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "timesheet_submit",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No timesheets in the baseline.",
-   "oldObject": {
-    "signature": [
-     "timesheet_submit(p_entry_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
-     "line": 113,
-     "symbol": "SupabaseTimesheetsRepository.submit",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "timesheet_upsert",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M19",
-   "note": "No timesheets in the baseline.",
-   "oldObject": {
-    "signature": [
-     "timesheet_upsert(p_description?: string, p_entry_id?: string, p_hours_x100?: number, p_project?: string, p_work_date?: string) → string"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseTimesheetsRepository.ts",
-     "line": 98,
-     "symbol": "SupabaseTimesheetsRepository.upsert",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "update_my_proposed_knowledge_topic",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M12",
-   "note": "No topic graph in the baseline.",
-   "oldObject": {
-    "signature": [
-     "update_my_proposed_knowledge_topic(p_description_he?: string, p_label_en: string, p_label_he: string, p_topic_id: string) → knowledge_topics row"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "knowledge"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeTopicRepository.ts",
-     "line": 52,
-     "symbol": "SupabaseKnowledgeTopicRepository.updateMyProposal",
-     "area": "knowledge"
+     "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+     "line": 77,
+     "symbol": "SupabasePostSeriesRepository.unwrapCall",
+     "area": "series"
     }
    ]
   },
@@ -11489,7 +9724,7 @@
       },
       {
        "code": "post_details_not_supported",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "ride_series_not_found",
@@ -11497,7 +9732,7 @@
       },
       {
        "code": "ride_series_schedule_invalid",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -11512,7 +9747,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-     "line": 110,
+     "line": 117,
      "symbol": "SupabaseRideSeriesRepository.unwrapCall",
      "area": "rides"
     }
@@ -11630,7 +9865,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyRepository.ts",
-     "line": 163,
+     "line": 67,
      "symbol": "SupabaseSurveyRepository.upsertAnswers",
      "area": "survey"
     }
@@ -11688,6 +9923,15 @@
      "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminRoleRepository.ts",
      "line": 100,
      "symbol": "SupabaseAdminRoleRepository.listAdmins",
+     "area": "admin",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
+     "line": 131,
+     "symbol": "SupabaseOrgHierarchyRepository.snapshot",
      "area": "admin",
      "ops": [
       "select"
@@ -11818,6 +10062,60 @@
      "area": "blocks",
      "ops": [
       "delete"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "challenge_progress_entries",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The caller's own reports of a challenge, newest cycle first (policy `challenge_progress_entries_select_own`); replaces `list_my_challenge_entries`.",
+   "oldObject": {
+    "columns": [
+     "challenge_id",
+     "cycle_start",
+     "entry_id",
+     "goal_met",
+     "note",
+     "reported_at",
+     "user_id",
+     "value"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "challenge_progress_entries",
+     "columns": [
+      "challenge_id",
+      "cycle_start",
+      "goal_met",
+      "note",
+      "reported_at",
+      "user_id",
+      "value"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
+   "areas": [
+    "challenges"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/challenges/SupabaseChallengeRepository.ts",
+     "line": 217,
+     "symbol": "SupabaseChallengeRepository.listMyEntries",
+     "area": "challenges",
+     "ops": [
+      "select"
      ]
     }
    ]
@@ -12752,34 +11050,31 @@
    ]
   },
   {
-   "old": "housing_conduct_acceptances",
+   "old": "handoff_booking_details",
    "kind": "table",
-   "status": "changed",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
    "missing": null,
-   "note": "Read `user_consents` where `consent_kind = 'housing_conduct'`.",
-   "oldObject": {
-    "columns": [
-     "accepted_at",
-     "user_id",
-     "version"
-    ],
-    "isView": false
-   },
+   "note": "Dates, party, message and notes of a stay booking, read by its host and guest next to the `post_handoffs` row.",
+   "oldObject": {},
    "targets": [
     {
      "type": "table",
-     "name": "user_consents",
+     "name": "handoff_booking_details",
      "columns": [
-      "accepted_at",
-      "consent_kind",
-      "id",
-      "ip_address",
-      "locale",
-      "user_agent",
-      "user_id",
-      "version"
+      "adults",
+      "cancel_note",
+      "check_in_date",
+      "check_out_date",
+      "created_at",
+      "decision_note",
+      "handoff_id",
+      "late_cancel",
+      "message",
+      "minors",
+      "minors_guardian_ack",
+      "updated_at"
      ],
      "clientGrants": {
       "select": true
@@ -12791,9 +11086,9 @@
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
-     "line": 34,
-     "symbol": "SupabaseHousingRepository.hasAcceptedConduct",
+     "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
+     "line": 32,
+     "symbol": "detailsOf",
      "area": "housing",
      "ops": [
       "select"
@@ -12902,88 +11197,6 @@
      "line": 24,
      "symbol": "useKarmaHistory",
      "area": "mobile",
-     "ops": [
-      "select"
-     ]
-    }
-   ]
-  },
-  {
-   "old": "knowledge_topic_follows",
-   "kind": "table",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M12",
-   "note": "No topic follows in the baseline.",
-   "oldObject": {
-    "columns": [
-     "created_at",
-     "topic_id",
-     "user_id"
-    ],
-    "isView": false
-   },
-   "targets": [],
-   "areas": [
-    "knowledge"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeTopicRepository.ts",
-     "line": 75,
-     "symbol": "SupabaseKnowledgeTopicRepository.listFollowedTopicIds",
-     "area": "knowledge",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeTopicRepository.ts",
-     "line": 83,
-     "symbol": "SupabaseKnowledgeTopicRepository.setTopicFollowed",
-     "area": "knowledge",
-     "ops": []
-    }
-   ]
-  },
-  {
-   "old": "knowledge_topics",
-   "kind": "table",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M12",
-   "note": "No topic graph in the baseline (design §8 names `topics`, not built).",
-   "oldObject": {
-    "columns": [
-     "approved_by",
-     "created_at",
-     "created_by",
-     "description_he",
-     "label_en",
-     "label_he",
-     "legacy_category_slug",
-     "merged_into_id",
-     "parent_id",
-     "slug",
-     "sort_order",
-     "status",
-     "topic_id",
-     "updated_at"
-    ],
-    "isView": false
-   },
-   "targets": [],
-   "areas": [
-    "knowledge"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeTopicRepository.ts",
-     "line": 25,
-     "symbol": "SupabaseKnowledgeTopicRepository.listTopics",
-     "area": "knowledge",
      "ops": [
       "select"
      ]
@@ -13221,7 +11434,7 @@
    "launch": "later",
    "confidence": "high",
    "missing": null,
-   "note": "Read-only for the applicant (own rows) and org reviewers; written through `submit_org_application`. Ported from dev (organization registration).",
+   "note": "Read-only: the applicant reads their own rows, and platform admins read the review queue directly (policy `org_applications_select_reviewers`) with an exact count; written through `submit_org_application`.",
    "oldObject": {
     "columns": [
      "applicant_user_id",
@@ -13267,9 +11480,19 @@
     }
    ],
    "areas": [
+    "admin",
     "organizations"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgApplicationsRepository.ts",
+     "line": 75,
+     "symbol": "SupabaseOrgApplicationsRepository.list",
+     "area": "admin",
+     "ops": [
+      "select"
+     ]
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/organizations/SupabaseOrganizationsRepository.ts",
      "line": 60,
@@ -13348,7 +11571,7 @@
    "old": "organizations",
    "kind": "table",
    "status": "same",
-   "launch": "wedge",
+   "launch": "core",
    "confidence": "high",
    "missing": null,
    "note": "The routed worlds' body picker (organizations by name).",
@@ -13421,9 +11644,37 @@
     }
    ],
    "areas": [
+    "admin",
     "marketplace"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/financeOrg.ts",
+     "line": 20,
+     "symbol": "readPlatformOrgId",
+     "area": "admin",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
+     "line": 140,
+     "symbol": "SupabaseOrgHierarchyRepository.snapshot",
+     "area": "admin",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgTransparencyRepository.ts",
+     "line": 91,
+     "symbol": "SupabaseTransparencySettingsRepository.get",
+     "area": "admin",
+     "ops": [
+      "select"
+     ]
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapExternalBody.ts",
      "line": 38,
@@ -13715,6 +11966,8 @@
       "ends_at",
       "post_id",
       "registration_policy",
+      "series_id",
+      "series_on",
       "starts_at",
       "updated_at"
      ],
@@ -13733,12 +11986,13 @@
    ],
    "areas": [
     "marketplace",
+    "series",
     "volunteering"
    ],
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 79,
+     "line": 76,
      "symbol": "loadEventDetails",
      "area": "marketplace",
      "ops": [
@@ -13746,8 +12000,17 @@
      ]
     },
     {
+     "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+     "line": 101,
+     "symbol": "SupabasePostSeriesRepository.unwrapCall",
+     "area": "series",
+     "ops": [
+      "select"
+     ]
+    },
+    {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 36,
+     "line": 37,
      "symbol": "loadEventRows",
      "area": "volunteering",
      "ops": [
@@ -13807,7 +12070,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 98,
+     "line": 97,
      "symbol": "loadFoodDetails",
      "area": "marketplace",
      "ops": [
@@ -13883,12 +12146,50 @@
     }
    ],
    "areas": [
+    "housing",
+    "knowledge",
     "marketplace",
     "posts",
     "rides",
     "volunteering"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
+     "line": 67,
+     "symbol": "unwrapCall",
+     "area": "housing",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
+     "line": 98,
+     "symbol": "unwrapCall",
+     "area": "housing",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
+     "line": 49,
+     "symbol": "SupabaseKnowledgeBookingRepository.unwrapCall",
+     "area": "knowledge",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
+     "line": 82,
+     "symbol": "SupabaseKnowledgeBookingRepository.unwrapCall",
+     "area": "knowledge",
+     "ops": [
+      "select"
+     ]
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/eventRegistrations.ts",
      "line": 114,
@@ -13945,7 +12246,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 106,
+     "line": 114,
      "symbol": "SupabaseVolunteerRepository.myRegistrationStatus",
      "area": "volunteering",
      "ops": [
@@ -13954,7 +12255,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 130,
+     "line": 138,
      "symbol": "SupabaseVolunteerRepository.unwrapCall",
      "area": "volunteering",
      "ops": [
@@ -13963,7 +12264,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 193,
+     "line": 201,
      "symbol": "SupabaseVolunteerRepository.listShiftVolunteers",
      "area": "volunteering",
      "ops": [
@@ -14029,13 +12330,66 @@
    ]
   },
   {
+   "old": "post_knowledge_slots",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The giver's view maps each booking to its slot by its start.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "post_knowledge_slots",
+     "columns": [
+      "capacity",
+      "created_at",
+      "ends_at",
+      "id",
+      "post_id",
+      "starts_at"
+     ],
+     "clientGrants": {
+      "select": true,
+      "delete": true,
+      "insert": [
+       "capacity",
+       "ends_at",
+       "post_id",
+       "starts_at"
+      ],
+      "update": [
+       "capacity",
+       "ends_at",
+       "starts_at"
+      ]
+     }
+    }
+   ],
+   "areas": [
+    "knowledge"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
+     "line": 53,
+     "symbol": "SupabaseKnowledgeBookingRepository.listBookings",
+     "area": "knowledge",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
    "old": "post_media",
    "kind": "table",
    "status": "same",
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "One row per photo, inserted `pending` by the owner after the upload to `post-images`; delete by the owner. An edit keeps the rows whose file and position are unchanged (no update grant).",
+   "note": "One row per photo, inserted `pending` by the owner after the upload to `post-images`; delete by the owner. An edit keeps the rows whose file and position are unchanged (no update grant). Every row records the real `mime_type` and `size_bytes` of the uploaded file (JPEG or PNG, at most 8 MB); `post_detail` returns both, so a republish attaches the same files again.",
    "oldObject": {},
    "targets": [
     {
@@ -14193,10 +12547,20 @@
     }
    ],
    "areas": [
+    "housing",
     "posts",
     "rides"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
+     "line": 148,
+     "symbol": "SupabaseHousingRepository.unwrapCall",
+     "area": "housing",
+     "ops": [
+      "upsert"
+     ]
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/posts/postRepoQueries.ts",
      "line": 34,
@@ -14254,9 +12618,19 @@
     }
    ],
    "areas": [
+    "housing",
     "rides"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
+     "line": 41,
+     "symbol": "ratedOf",
+     "area": "housing",
+     "ops": [
+      "select"
+     ]
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideBookingRepository.ts",
      "line": 46,
@@ -14406,17 +12780,8 @@
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 70,
-     "symbol": "seriesMarker",
-     "area": "marketplace",
-     "ops": [
-      "select"
-     ]
-    },
-    {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-     "line": 93,
+     "line": 94,
      "symbol": "SupabaseRideSeriesRepository.unwrapCall",
      "area": "rides",
      "ops": [
@@ -14425,9 +12790,56 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-     "line": 124,
+     "line": 131,
      "symbol": "SupabaseRideSeriesRepository.soonestOccurrence",
      "area": "rides",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "post_series",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "The recurring-event series of a post (schedule plus post and event templates); read through the series RPCs, written only by them.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "table",
+     "name": "post_series",
+     "columns": [
+      "beneficiary_org_id",
+      "created_at",
+      "duration_minutes",
+      "ends_on",
+      "event_template",
+      "id",
+      "owner_id",
+      "post_template",
+      "start_time",
+      "starts_on",
+      "status",
+      "time_zone",
+      "updated_at",
+      "weekdays"
+     ],
+     "clientGrants": {}
+    }
+   ],
+   "areas": [
+    "series"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/series/SupabasePostSeriesRepository.ts",
+     "line": 40,
+     "symbol": "SupabasePostSeriesRepository.unwrapCall",
+     "area": "series",
      "ops": [
       "select"
      ]
@@ -14552,6 +12964,7 @@
       "details",
       "direction",
       "expires_at",
+      "feed_folded",
       "geo_approx",
       "id",
       "item_subcategory_id",
@@ -14623,7 +13036,7 @@
       },
       {
        "code": "post_details_not_supported",
-       "knownToApp": false
+       "knownToApp": true
       },
       {
        "code": "unauthenticated",
@@ -14660,27 +13073,36 @@
    ],
    "areas": [
     "admin",
+    "housing",
     "marketplace",
-    "mobile",
     "posts",
     "reports",
     "volunteering"
    ],
    "callSites": [
     {
-     "file": "app/apps/mobile/src/hooks/useChallengeLinkedPost.ts",
-     "line": 11,
-     "symbol": "resolveChallengePostId",
-     "area": "mobile",
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminContentRepository.ts",
+     "line": 147,
+     "symbol": "SupabaseAdminContentRepository.searchPosts",
+     "area": "admin",
      "ops": [
       "select"
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseAdminContentRepository.ts",
-     "line": 147,
-     "symbol": "SupabaseAdminContentRepository.searchPosts",
-     "area": "admin",
+     "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
+     "line": 111,
+     "symbol": "listGuestStays",
+     "area": "housing",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
+     "line": 164,
+     "symbol": "SupabaseHousingRepository.cityOf",
+     "area": "housing",
      "ops": [
       "select"
      ]
@@ -14734,7 +13156,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 80,
+     "line": 77,
      "symbol": "loadEventDetails",
      "area": "marketplace",
      "ops": [
@@ -14743,17 +13165,8 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 115,
+     "line": 114,
      "symbol": "fetchListingDetail",
-     "area": "marketplace",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 65,
-     "symbol": "SupabaseMarketplaceRepository.listMyListingsPage",
      "area": "marketplace",
      "ops": [
       "select"
@@ -14844,7 +13257,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 135,
+     "line": 143,
      "symbol": "SupabaseVolunteerRepository.listMySignups",
      "area": "volunteering",
      "ops": [
@@ -14853,7 +13266,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 169,
+     "line": 177,
      "symbol": "SupabaseVolunteerRepository.unwrapCall",
      "area": "volunteering",
      "ops": [
@@ -15118,7 +13531,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-     "line": 47,
+     "line": 48,
      "symbol": "SupabaseRideSeriesRepository.unwrapCall",
      "area": "rides",
      "ops": [
@@ -15291,10 +13704,20 @@
     }
    ],
    "areas": [
+    "housing",
     "rides",
     "streets"
    ],
    "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/housing/SupabaseHousingRepository.ts",
+     "line": 144,
+     "symbol": "SupabaseHousingRepository.setPrivateDetails",
+     "area": "housing",
+     "ops": [
+      "select"
+     ]
+    },
     {
      "file": "app/packages/infrastructure-supabase/src/rides/ridePlaces.ts",
      "line": 101,
@@ -15309,6 +13732,198 @@
      "line": 41,
      "symbol": "SupabaseStreetRepository.listByCity",
      "area": "streets",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "survey_answers",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "The caller's own answers (filtered on `user_id`: the super admin reads every answer); written only through `upsert_survey_answers`.",
+   "oldObject": {
+    "columns": [
+     "answer_text",
+     "choice_key",
+     "created_at",
+     "id",
+     "question_id",
+     "rating",
+     "survey_id",
+     "updated_at",
+     "user_id",
+     "version"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "survey_answers",
+     "columns": [
+      "answer_text",
+      "choice_key",
+      "created_at",
+      "question_id",
+      "rating",
+      "updated_at",
+      "user_id"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
+   "areas": [
+    "survey"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+     "line": 83,
+     "symbol": "listActiveSurveys",
+     "area": "survey",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+     "line": 115,
+     "symbol": "ids",
+     "area": "survey",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "survey_questions",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "The questions of the current version (`survey_version_id`), in `sort_order`; replaces the question part of `get_survey_bundle`.",
+   "oldObject": {
+    "columns": [
+     "choice_options",
+     "context_he",
+     "id",
+     "prompt_he",
+     "question_type",
+     "rating_anchor_high_he",
+     "rating_anchor_low_he",
+     "short_label_he",
+     "sort_order",
+     "survey_version_id",
+     "text_placeholder_he"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "survey_questions",
+     "columns": [
+      "choice_options",
+      "context_he",
+      "id",
+      "prompt_he",
+      "question_type",
+      "rating_anchor_high_he",
+      "rating_anchor_low_he",
+      "short_label_he",
+      "sort_order",
+      "survey_version_id",
+      "text_placeholder_he"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
+   "areas": [
+    "survey"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+     "line": 109,
+     "symbol": "loadSurveyBundle",
+     "area": "survey",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "surveys",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Replaces `list_active_surveys` and the survey part of `get_survey_bundle`: active, published surveys (`is_active`, `current_version > 0`, filtered by the app because the super admin also reads retired ones), with `survey_versions` (and their question ids) embedded; completion is computed on the device from the caller's answers.",
+   "oldObject": {
+    "columns": [
+     "created_at",
+     "current_version",
+     "description_he",
+     "id",
+     "is_active",
+     "prompt_rules",
+     "slug",
+     "title_he",
+     "updated_at"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "surveys",
+     "columns": [
+      "created_at",
+      "current_version",
+      "description_he",
+      "id",
+      "is_active",
+      "prompt_rules",
+      "slug",
+      "title_he",
+      "updated_at"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
+   "areas": [
+    "survey"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+     "line": 77,
+     "symbol": "listActiveSurveys",
+     "area": "survey",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+     "line": 100,
+     "symbol": "loadSurveyBundle",
+     "area": "survey",
      "ops": [
       "select"
      ]
@@ -15477,11 +14092,11 @@
   {
    "old": "user_feedback",
    "kind": "table",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M16",
-   "note": "No free-feedback table.",
+   "missing": null,
+   "note": "Insert of the caller's own feedback (`user_id`, `rating`, `body`); no client select (M16, built in `90_research/040_user_feedback.sql`).",
    "oldObject": {
     "columns": [
      "body",
@@ -15492,15 +14107,28 @@
     ],
     "isView": false
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "table",
+     "name": "user_feedback",
+     "columns": [
+      "body",
+      "created_at",
+      "id",
+      "rating",
+      "user_id"
+     ],
+     "clientGrants": {}
+    }
+   ],
    "areas": [
     "survey"
    ],
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyRepository.ts",
-     "line": 188,
-     "symbol": "SupabaseSurveyRepository.checkPromptEligibility",
+     "line": 84,
+     "symbol": "SupabaseSurveyRepository.raw",
      "area": "survey",
      "ops": [
       "insert"
@@ -15846,6 +14474,8 @@
     "admin",
     "chat",
     "donations",
+    "housing",
+    "knowledge",
     "marketplace",
     "posts",
     "reports",
@@ -15883,6 +14513,33 @@
      ]
     },
     {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgApplicationsRepository.ts",
+     "line": 84,
+     "symbol": "SupabaseOrgApplicationsRepository.list",
+     "area": "admin",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
+     "line": 88,
+     "symbol": "SupabaseOrgHierarchyRepository.getOrgTree",
+     "area": "admin",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseOrgHierarchyRepository.ts",
+     "line": 111,
+     "symbol": "SupabaseOrgHierarchyRepository.getHierarchyCensus",
+     "area": "admin",
+     "ops": [
+      "select"
+     ]
+    },
+    {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
      "line": 133,
      "symbol": "SupabaseChatRepository.getCounterpart",
@@ -15896,6 +14553,33 @@
      "line": 123,
      "symbol": "SupabaseDonationLinksRepository.unwrapCall",
      "area": "donations",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
+     "line": 76,
+     "symbol": "listHostBookings",
+     "area": "housing",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/housing/housingReads.ts",
+     "line": 112,
+     "symbol": "listGuestStays",
+     "area": "housing",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/knowledge/SupabaseKnowledgeBookingRepository.ts",
+     "line": 54,
+     "symbol": "SupabaseKnowledgeBookingRepository.listBookings",
+     "area": "knowledge",
      "ops": [
       "select"
      ]
@@ -16037,7 +14721,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-     "line": 196,
+     "line": 204,
      "symbol": "SupabaseVolunteerRepository.listShiftVolunteers",
      "area": "volunteering",
      "ops": [
@@ -16141,7 +14825,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 114,
+     "line": 113,
      "symbol": "fetchListingDetail",
      "area": "marketplace",
      "ops": [

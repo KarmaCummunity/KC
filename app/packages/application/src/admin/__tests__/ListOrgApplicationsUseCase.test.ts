@@ -9,7 +9,7 @@ describe('ListOrgApplicationsUseCase', () => {
     const repo = { list } as unknown as IOrgApplicationsRepository;
     const uc = new ListOrgApplicationsUseCase(repo);
 
-    const filters = { status: 'pending' as const, limit: 25, offset: 50 };
+    const filters = { status: 'pending' as const, limit: 25 };
     const out = await uc.execute(filters);
 
     expect(list).toHaveBeenCalledWith(filters);

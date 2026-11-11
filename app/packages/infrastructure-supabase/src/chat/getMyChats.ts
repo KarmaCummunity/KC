@@ -5,7 +5,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ChatWithPreview } from '@kc/application';
-import type { Message, MessageKind } from '@kc/domain';
+import { toVerificationLevel, type Message, type MessageKind } from '@kc/domain';
 import type { Database } from '../database.types';
 import { chatCall } from './mapChatError';
 
@@ -14,10 +14,13 @@ type InboxRow = Database['public']['Functions']['chat_inbox_page']['Returns'][nu
 /** The largest page `chat_inbox_page` serves (the server clamps larger requests to 50). */
 const INBOX_PAGE_SIZE = 50;
 
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
 /**
  * The newest message as the inbox shows it. The page carries a 140-character preview of the
- * body, the kind and the sender, not the full row: a system message arrives without its payload
- * and a media-only message without its media, so those render as a bare "system message" line.
+ * body, the kind and the sender, the system payload of a system message and the media type of a
+ * media message (its only media field the preview needs), not the full row.
  */
 function previewMessage(row: InboxRow): Message | null {
   if (!row.last_message_id) return null;
@@ -27,8 +30,8 @@ function previewMessage(row: InboxRow): Message | null {
     senderId: row.last_message_sender_id,
     kind: row.last_message_kind as MessageKind,
     body: row.last_message_preview ?? '',
-    systemPayload: null,
-    mediaPayload: null,
+    systemPayload: isObject(row.last_message_system_payload) ? row.last_message_system_payload : null,
+    mediaPayload: row.last_message_media_type ? { type: row.last_message_media_type } : null,
     status: 'delivered',
     createdAt: row.last_message_at,
     deliveredAt: row.last_message_at,
@@ -58,6 +61,7 @@ function rowToPreview(row: InboxRow, viewerId: string): ChatWithPreview {
       avatarUrl: row.counterpart_avatar_url,
       shareHandle: row.counterpart_share_handle,
       isDeleted: counterpartId === null && !isSupport,
+      verificationLevel: toVerificationLevel(row.counterpart_verification_level),
     },
     lastMessage: previewMessage(row),
     unreadCount: Number(row.unread_count),

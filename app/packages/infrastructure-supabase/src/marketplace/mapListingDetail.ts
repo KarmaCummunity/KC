@@ -6,7 +6,7 @@
 // RPC and the tables run with the caller's rights.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { rideWeekdaysToMask, toVerificationLevel, type MarketplaceListingDetail } from '@kc/domain';
+import { toVerificationLevel, type MarketplaceListingDetail } from '@kc/domain';
 import type { Database, Json } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 import { parseWkbPoint } from '../posts/postMapPoint';
@@ -14,7 +14,7 @@ import type { PostCardRow } from '../posts/mapPostRow';
 import { meetingPointRefs, placeRefKey, resolvePlaces, type PlaceRef } from '../rides/ridePlaces';
 import { listingDirectionOf, loadKindCatalog } from './kindCatalog';
 import { availabilityOf, listingStatusOf } from './listingMapping';
-import { israelTimeOfDay, rideDetailsFromRow } from './worldDetails';
+import { rideDetailsFromRow } from './worldDetails';
 
 type Client = SupabaseClient<Database>;
 type JsonObject = { [key: string]: Json | undefined };
@@ -52,26 +52,23 @@ async function loadRideDetails(client: Client, postId: string, card: PostCardRow
       return place ? [place] : [];
     }),
   );
-  if (row.series_id && row.series_on) {
-    const marker = await seriesMarker(client, row.series_id, row.series_on, row.departs_at);
+  if (row.series_id) {
+    const marker = await seriesMarker(client, postId);
     if (marker) details['ride_series'] = marker;
   }
   return details;
 }
 
 /**
- * The marker of a recurring ride's occurrence. A series row is its owner's alone, so the weekdays
- * are read off the occurrences themselves: the scheduler keeps every running day of the next 30
- * days published, so the distinct weekdays of their dates are the series' weekdays.
+ * The marker of a recurring ride's occurrence, from its series' schedule
+ * (`ride_occurrence_schedules`); null once the series was cancelled. `depart_time` arrives as
+ * `HH:MM:SS`, Israel time; `weekdays` is the series' bit set (bit 0 = Sunday).
  */
-async function seriesMarker(client: Client, seriesId: string, on: string, departsAt: string): Promise<Record<string, unknown> | null> {
-  const rows = unwrapCall(
-    'table:post_ride_details',
-    await client.from('post_ride_details').select('series_on').eq('series_id', seriesId),
-  );
-  const days = (rows ?? []).flatMap((r) => (r.series_on ? [new Date(`${r.series_on}T00:00:00Z`).getUTCDay()] : []));
-  const mask = rideWeekdaysToMask(days);
-  return mask === 0 ? null : { id: seriesId, on, weekdays: mask, time: israelTimeOfDay(departsAt) };
+async function seriesMarker(client: Client, postId: string): Promise<Record<string, unknown> | null> {
+  const rows = unwrapCall('rpc:ride_occurrence_schedules', await client.rpc('ride_occurrence_schedules', { p_post_ids: [postId] }));
+  const schedule = rows?.[0];
+  if (!schedule) return null;
+  return { id: schedule.series_id, on: schedule.series_on, weekdays: schedule.weekdays, time: schedule.depart_time.slice(0, 5) };
 }
 
 async function loadEventDetails(client: Client, postId: string): Promise<Record<string, unknown>> {
@@ -141,9 +138,12 @@ export async function fetchListingDetail(client: Client, listingId: string): Pro
     lat: point?.lat ?? null,
     lng: point?.lng ?? null,
     maxRadiusKm: null,
-    media: mediaRows.flatMap((m, index) =>
-      isObject(m) && typeof m['storage_key'] === 'string' ? [{ storagePath: m['storage_key'], sortOrder: index }] : [],
-    ),
+    media: mediaRows.flatMap((m, index) => {
+      if (!isObject(m) || typeof m['storage_key'] !== 'string') return [];
+      const mimeType = typeof m['mime_type'] === 'string' ? m['mime_type'] : 'image/jpeg';
+      const sizeBytes = typeof m['size_bytes'] === 'number' ? m['size_bytes'] : 0;
+      return [{ storagePath: m['storage_key'], sortOrder: index, mimeType, sizeBytes }];
+    }),
     owner: card.owner_id
       ? {
           userId: card.owner_id,

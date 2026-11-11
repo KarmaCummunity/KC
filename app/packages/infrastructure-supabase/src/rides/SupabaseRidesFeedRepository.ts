@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { RideFeedItem } from '@kc/domain';
+import { rideWeekdaysFromMask, type RideFeedItem, type RideSeriesMarker } from '@kc/domain';
 import type { IRidesFeedRepository, RideFeedRoute } from '@kc/application';
 import type { Database, Json } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
@@ -36,10 +36,19 @@ function routeFilters(route: RideFeedRoute | undefined): Json {
 
 const meetingPointCount = (points: Json): number => (Array.isArray(points) ? points.length : 0);
 
+/** The series marker of an occurrence row; null on a single ride or a series no longer running. */
+function seriesMarkerOf(row: FeedRow): RideSeriesMarker | null {
+  if (!row.series_id || !row.series_on || row.series_weekdays === null || !row.series_depart_time) return null;
+  const weekdays = rideWeekdaysFromMask(row.series_weekdays);
+  if (weekdays.length === 0) return null;
+  // `series_depart_time` arrives as `HH:MM:SS`, Israel time.
+  return { id: row.series_id, on: row.series_on, weekdays, time: row.series_depart_time.slice(0, 5) };
+}
+
 /**
  * Maps one feed row; a row of an unknown direction is dropped. An offer states its free seats, a
- * request its passengers. The feed does not say which weekdays a recurring ride runs, so the
- * row carries no series marker; `seriesMore` still counts the later dates folded into it.
+ * request its passengers. An occurrence of a recurring ride carries its series marker, and
+ * `seriesMore` counts the later dates folded into it.
  */
 export function mapFeedRow(row: FeedRow): RideFeedItem | null {
   if (row.direction !== 'offer' && row.direction !== 'request') return null;
@@ -54,7 +63,7 @@ export function mapFeedRow(row: FeedRow): RideFeedItem | null {
     meetingPoints: meetingPointCount(row.meeting_points),
     seatsLeft: offer ? row.seats_left : null,
     passengers: offer ? null : row.seats,
-    recurrence: null,
+    recurrence: seriesMarkerOf(row),
     seriesMore: row.series_more,
   };
 }

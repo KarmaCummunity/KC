@@ -5,8 +5,6 @@ import { createWhatsAppAdminUseCases } from './whatsappAdminContainer';
 import { pickAuthStorage } from '../services/authSecureStorage';
 import {
   getSupabaseClient,
-  getLegacySupabaseClient,
-  type LegacyDatabase,
   SupabaseUserRepository,
   SupabaseChatRepository,
   SupabaseChatRealtime,
@@ -123,13 +121,9 @@ import { createFinanceUseCases } from './financeContainer';
 import { isSupabaseConfigured } from './supabasePublicConfig';
 import { bindSupabaseClient } from './bindSupabaseClient';
 
-// `supabase` is baseline-typed (migrated code); `legacySupabase` is the same connection typed
-// against the frozen old schema for unmigrated adapters (docs/db/app-migration-playbook.md).
+// The one Supabase connection of the app, typed against the production baseline schema.
 export const supabase = bindSupabaseClient(isSupabaseConfigured(), () =>
   getSupabaseClient({ storage: pickAuthStorage() }),
-);
-export const legacySupabase = bindSupabaseClient<LegacyDatabase>(isSupabaseConfigured(), () =>
-  getLegacySupabaseClient({ storage: pickAuthStorage() }),
 );
 
 const userRepo = new SupabaseUserRepository(supabase);
@@ -151,17 +145,17 @@ const moderationAdminRepo = new SupabaseModerationAdminRepository(supabase);
 const accountGateRepo = new SupabaseAccountGateRepository(supabase);
 const deviceRepo = new SupabaseDeviceRepository(supabase);
 const adminRoleRepo = new SupabaseAdminRoleRepository(supabase);
-const adminTaskRepo = new SupabaseAdminTaskRepository(legacySupabase);
-const orgHierarchyRepo = new SupabaseOrgHierarchyRepository(legacySupabase);
+const adminTaskRepo = new SupabaseAdminTaskRepository();
+const orgHierarchyRepo = new SupabaseOrgHierarchyRepository(supabase);
 const adminContentRepo = new SupabaseAdminContentRepository(supabase);
-const timesheetsRepo = new SupabaseTimesheetsRepository(legacySupabase);
-const crmContactsRepo = new SupabaseCrmContactsRepository(legacySupabase);
-const orgApplicationsRepo = new SupabaseOrgApplicationsRepository(legacySupabase);
+const timesheetsRepo = new SupabaseTimesheetsRepository();
+const crmContactsRepo = new SupabaseCrmContactsRepository();
+const orgApplicationsRepo = new SupabaseOrgApplicationsRepository(supabase);
 const reportsRepo = new SupabaseReportsRepository(supabase);
-const surveyRepo = new SupabaseSurveyRepository(legacySupabase);
-const surveyAdminRepo = new SupabaseSurveyAdminRepository(legacySupabase);
+const surveyRepo = new SupabaseSurveyRepository(supabase);
+const surveyAdminRepo = new SupabaseSurveyAdminRepository(supabase);
 const userActivityRepo = new SupabaseUserActivityRepository(supabase);
-const publicResearchRepo = new SupabasePublicResearchRepository(legacySupabase);
+const publicResearchRepo = new SupabasePublicResearchRepository(supabase);
 
 const hideChatFromInbox = new HideChatFromInboxUseCase(chatRepo);
 const getMyAdminRoles = new GetMyAdminRolesUseCase(adminRoleRepo);
@@ -218,7 +212,7 @@ export const container = {
   deleteTimesheet:  new DeleteTimesheetUseCase(timesheetsRepo),
   // V2-ADMIN-MONEY-9 (+ accounts, donors, public display: FR-FIN-003/022/023)
   ...createFinanceUseCases(supabase),
-  ...createWhatsAppAdminUseCases(supabase),
+  ...createWhatsAppAdminUseCases(),
   // V2-ADMIN-CRM-8
   listCrmContacts: new ListCrmContactsUseCase(crmContactsRepo),
   upsertCrmContact: new UpsertCrmContactUseCase(crmContactsRepo),

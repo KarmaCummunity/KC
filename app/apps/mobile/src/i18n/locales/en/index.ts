@@ -29,6 +29,8 @@ import { errorsEn } from './modules/errors';
 import { chatEn } from './modules/chat';
 import { chatNewEn } from './modules/chatNew';
 import { chatMessagingEn } from './modules/chatMessaging';
+import { marketplaceBaselineErrorsEn } from './modules/marketplaceBaselineErrors';
+import { challengeBaselineErrorsEn } from './modules/challengeBaselineErrors';
 import { notificationsEn } from './modules/notifications';
 import { emptyStatesEn, feedSettingsEn } from './modules/feedSettings';
 import { moderationEn, auditEn, accountBlockedEn } from './modules/moderation';
@@ -50,7 +52,9 @@ import { surveyDemoEn } from './modules/surveyDemo';
 import { surveyEn } from './modules/survey';
 import { researchEn } from './modules/research';
 import { adminEn } from './modules/admin';
+import { adminOrgApprovalsBaselineEn } from './modules/adminOrgApprovalsBaseline';
 import { karmaEn } from './modules/karma';
+import { karmaEventsEn } from './modules/karmaEvents';
 import { cardsEn } from './modules/cards';
 import { asideEn } from './modules/aside';
 import { configEn } from './modules/config';
@@ -75,8 +79,8 @@ const en = {
   // Feed — see modules/feed.ts
   feed: feedEn,
 
-  // Karma points (FR-KARMA-004/007) — see modules/karma.ts
-  karma: karmaEn,
+  // Karma points (FR-KARMA-004/007) — see modules/karma.ts and modules/karmaEvents.ts
+  karma: { ...karmaEn, reason: { ...karmaEn.reason, ...karmaEventsEn } },
   cards: cardsEn,
 
   // Post — see modules/post.ts
@@ -106,7 +110,15 @@ const en = {
   restoreAccount: restoreAccountEn,
 
   // Admin portal (FR-ADMIN-010/011) — see modules/admin.ts
-  admin: adminEn,
+  // The baseline approval copy joins admin.orgApprovals — see modules/adminOrgApprovalsBaseline.ts.
+  admin: {
+    ...adminEn,
+    orgApprovals: {
+      ...adminEn.orgApprovals,
+      row: { ...adminEn.orgApprovals.row, ...adminOrgApprovalsBaselineEn.row },
+      errors: { ...adminEn.orgApprovals.errors, ...adminOrgApprovalsBaselineEn.errors },
+    },
+  },
 
   // Settings — see modules/settings.ts
   settings: settingsEn,
@@ -138,13 +150,15 @@ const en = {
   // Donations (D-16, FR-DONATE-001..005) — see donations.ts
   donations,
 
-  marketplace,
+  // Baseline server reasons join the marketplace error copy — see modules/marketplaceBaselineErrors.ts.
+  marketplace: { ...marketplace, errors: { ...marketplace.errors, ...marketplaceBaselineErrorsEn } },
   moneyPayments,
   // Direct support for KC (FR-DONATE-011) — see donations.supportKc.ts
   supportKc,
   timeVolunteer,
-  // Challenges world (docs/spec/10_challenges.md) — see challenges.ts
-  challenges,
+  // Challenges world (docs/spec/10_challenges.md) — see challenges.ts; baseline refusals in
+  // modules/challengeBaselineErrors.ts.
+  challenges: { ...challenges, errors: { ...challenges.errors, ...challengeBaselineErrorsEn } },
   medicalBodies,
   givingHandoff,
   // Ride seat bookings (D73) — see rideBooking.ts

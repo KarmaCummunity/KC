@@ -3260,6 +3260,37 @@ export type Database = {
           },
         ]
       }
+      user_feedback: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          rating: number | null
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          rating?: number | null
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          rating?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_feedback_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_private: {
         Row: {
           basic_info_skipped: boolean
@@ -3672,6 +3703,22 @@ export type Database = {
         }
         Returns: string
       }
+      admin_match_quality: {
+        Args: { p_days?: number }
+        Returns: {
+          accepted: number
+          chat_pairs: number
+          chat_rate: number
+          completed_pairs: number
+          completion_rate: number
+          notified_pairs: number
+          precision_proxy: number
+          responses: number
+          world_label_en: string
+          world_label_he: string
+          world_slug: string
+        }[]
+      }
       admin_org_application_approve: {
         Args: { p_application_id: string; p_note?: string; p_slug?: string }
         Returns: string
@@ -3680,6 +3727,7 @@ export type Database = {
         Args: { p_application_id: string; p_note?: string }
         Returns: undefined
       }
+      admin_pmf_survey_report: { Args: { p_slug?: string }; Returns: Json }
       admin_refund_payment: {
         Args: {
           p_amount_agorot: number
@@ -3734,6 +3782,8 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_survey_overview: { Args: never; Returns: Json }
+      admin_survey_results: { Args: { p_slug: string }; Returns: Json }
       admin_suspend_user: {
         Args: {
           p_note?: string
@@ -3742,6 +3792,18 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      admin_user_feedback_list: {
+        Args: { p_cursor?: Json; p_limit?: number }
+        Returns: {
+          body: string
+          created_at: string
+          display_name: string
+          id: string
+          next_cursor: Json
+          rating: number
+          user_id: string
+        }[]
       }
       api_donation_intent_set_checkout: {
         Args: {
@@ -4040,12 +4102,15 @@ export type Database = {
           counterpart_id: string
           counterpart_last_read_at: string
           counterpart_share_handle: string
+          counterpart_verification_level: number
           kind: string
           last_message_at: string
           last_message_id: string
           last_message_kind: string
+          last_message_media_type: string
           last_message_preview: string
           last_message_sender_id: string
+          last_message_system_payload: Json
           unread_count: number
         }[]
       }
@@ -4483,6 +4548,16 @@ export type Database = {
           sort_order: number
         }[]
       }
+      finance_donors_summary: {
+        Args: { p_limit?: number; p_org_id: string }
+        Returns: {
+          donations_count: number
+          donor_name: string
+          first_at: string
+          last_at: string
+          total_agorot: number
+        }[]
+      }
       finance_ledger_list: {
         Args: {
           p_after_id?: string
@@ -4522,6 +4597,16 @@ export type Database = {
           p_void_reason?: string
         }
         Returns: undefined
+      }
+      finance_ledger_summary: {
+        Args: { p_from?: string; p_org_id: string; p_to?: string }
+        Returns: {
+          currency: string
+          entry_count: number
+          expense_agorot: number
+          income_agorot: number
+          net_agorot: number
+        }[]
       }
       finance_ledger_upsert: {
         Args: {
@@ -4603,7 +4688,25 @@ export type Database = {
       get_public_research_questions: { Args: { p_slug: string }; Returns: Json }
       get_research_salt: { Args: never; Returns: string }
       hide_chat: { Args: { p_chat_id: string }; Returns: undefined }
+      housing_completed_stays: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          completed_stays: number
+          user_id: string
+        }[]
+      }
       join_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
+      knowledge_slot_seats: {
+        Args: { p_post_id: string }
+        Returns: {
+          capacity: number
+          ends_at: string
+          id: string
+          seats_left: number
+          seats_taken: number
+          starts_at: string
+        }[]
+      }
       leave_challenge: { Args: { p_challenge_id: string }; Returns: undefined }
       list_challenge_leaderboard: {
         Args: { p_challenge_id: string; p_limit?: number }
@@ -4907,6 +5010,16 @@ export type Database = {
         }[]
       }
       post_detail: { Args: { p_post_id: string }; Returns: Json }
+      post_seat_counts: {
+        Args: { p_post_ids: string[] }
+        Returns: {
+          capacity: number
+          post_id: string
+          seats_left: number
+          seats_taken: number
+          waitlisted: number
+        }[]
+      }
       profile_closed_posts_count: {
         Args: { p_user_id: string }
         Returns: number
@@ -4915,6 +5028,7 @@ export type Database = {
         Args: {
           p_cursor?: Json
           p_limit?: number
+          p_statuses?: string[]
           p_tab?: string
           p_user_id: string
         }
@@ -5124,6 +5238,17 @@ export type Database = {
       restore_account: { Args: never; Returns: undefined }
       resume_post: { Args: { p_post_id: string }; Returns: undefined }
       resume_standing_order: { Args: { p_order_id: string }; Returns: Json }
+      ride_occurrence_schedules: {
+        Args: { p_post_ids: string[] }
+        Returns: {
+          depart_time: string
+          ends_on: string
+          post_id: string
+          series_id: string
+          series_on: string
+          weekdays: number
+        }[]
+      }
       rides_feed: {
         Args: { p_cursor?: Json; p_filters?: Json; p_limit?: number }
         Returns: {
@@ -5139,8 +5264,11 @@ export type Database = {
           reward_model: string
           seats: number
           seats_left: number
+          series_depart_time: string
           series_id: string
           series_more: number
+          series_on: string
+          series_weekdays: number
           title: string
         }[]
       }

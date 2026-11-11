@@ -7,7 +7,10 @@ describe('TranslationTypes guards', () => {
   it('accepts only known content types', () => {
     expect(isContentType('post')).toBe(true);
     expect(isContentType('message')).toBe(true);
-    expect(isContentType('comment')).toBe(false);
+    expect(isContentType('comment')).toBe(true);
+    expect(isContentType('user')).toBe(true);
+    expect(isContentType('ride_listing')).toBe(false); // rides are posts
+    expect(isContentType('listing')).toBe(false);
     expect(isContentType('')).toBe(false);
   });
 
@@ -19,7 +22,7 @@ describe('TranslationTypes guards', () => {
   });
 
   it('exposes the canonical lists', () => {
-    expect([...CONTENT_TYPES]).toEqual(['post', 'message', 'ride_listing', 'user']);
+    expect([...CONTENT_TYPES]).toEqual(['post', 'comment', 'message', 'user']);
     expect([...TRANSLATION_FIELDS]).toEqual(['title', 'description', 'body', 'biography']);
   });
 });

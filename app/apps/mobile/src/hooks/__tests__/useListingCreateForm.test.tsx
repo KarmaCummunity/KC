@@ -58,11 +58,11 @@ describe('useListingCreateForm', () => {
     await act(() => result.current.publish());
     expect(result.current.error).toEqual({ message: 'marketplace.errors.offer_photo_required', field: 'photos' });
     expect(repo.createListing).not.toHaveBeenCalled();
-    upload.mockResolvedValue(['u1/bread.jpg']);
+    upload.mockResolvedValue([{ path: 'u1/bread.jpg', mimeType: 'image/jpeg', sizeBytes: 81920 }]);
     act(() => { result.current.setPhotos([{ uri: 'file://bread.jpg' } as never]); });
     await act(() => result.current.publish());
     expect(upload).toHaveBeenCalledWith('u1', [{ uri: 'file://bread.jpg' }]);
-    expect(repo.createListing).toHaveBeenCalledWith({ kindId: 'k1', title: 'Bread', summary: 'fresh', details: { expires_at: '2030-01-01' }, direction: null, cityId: 'city-1', lat: null, lng: null, maxRadiusKm: 25, mediaPaths: ['u1/bread.jpg'], externalBodyId: null, categoryId: 'cat-cooked' });
+    expect(repo.createListing).toHaveBeenCalledWith({ kindId: 'k1', title: 'Bread', summary: 'fresh', details: { expires_at: '2030-01-01' }, direction: null, cityId: 'city-1', lat: null, lng: null, maxRadiusKm: 25, media: [{ path: 'u1/bread.jpg', mimeType: 'image/jpeg', sizeBytes: 81920 }], externalBodyId: null, categoryId: 'cat-cooked' });
     expect(onPublished).toHaveBeenCalledWith('l1');
     expect(track).toHaveBeenCalledWith('listing_created', { world: 'food', cityId: 'city-1' });
     expect(activation).toHaveBeenCalledWith({ world: 'food', cityId: 'city-1', accountCreatedAt: 'today' });
@@ -85,7 +85,10 @@ describe('republish an expired listing (D127)', () => {
   const source = {
     listingId: 'old-1', ownerId: 'u1', worldSlug: 'food', kindSlug: 'food_offer', direction: 'give', cityId: 'city-1',
     details: { food_type: 'cooked', expires_at: '2026-11-01T10:00:00Z' },
-    media: [{ storagePath: 'u1/b/1.jpg', sortOrder: 1 }, { storagePath: 'u1/b/0.jpg', sortOrder: 0 }],
+    media: [
+      { storagePath: 'u1/b/1.jpg', sortOrder: 1, mimeType: 'image/jpeg', sizeBytes: 2048 },
+      { storagePath: 'u1/b/0.jpg', sortOrder: 0, mimeType: 'image/jpeg', sizeBytes: 1024 },
+    ],
   };
   beforeEach(() => {
     vi.clearAllMocks();
@@ -100,7 +103,7 @@ describe('republish an expired listing (D127)', () => {
     const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'food', direction: 'give', title: 'Soup', summary: '', onPublished, republishFromListingId: 'old-1' }), { wrapper });
     await waitFor(() => expect(result.current.details).toEqual({ food_type: 'cooked' }));
     expect(result.current.city?.id).toBe('city-1');
-    expect(result.current.carriedMediaPaths).toEqual(['u1/b/0.jpg', 'u1/b/1.jpg']);
+    expect(result.current.carriedMedia.map((m) => m.path)).toEqual(['u1/b/0.jpg', 'u1/b/1.jpg']);
     act(() => result.current.setDetail('expires_at', '2099-11-20T10:00:00Z'));
     // The source's sub-category is not carried (the detail does not expose it), so the member picks it again.
     await act(() => result.current.publish());
@@ -110,13 +113,16 @@ describe('republish an expired listing (D127)', () => {
     expect(repo.updateMyListing).not.toHaveBeenCalled();
     const payload = repo.createListing.mock.calls[0]![0];
     expect(payload.details).toEqual({ food_type: 'cooked', expires_at: '2099-11-20T10:00:00Z' });
-    expect(payload.mediaPaths).toEqual(['u1/b/0.jpg', 'u1/b/1.jpg']);
+    expect(payload.media).toEqual([
+      { path: 'u1/b/0.jpg', mimeType: 'image/jpeg', sizeBytes: 1024 },
+      { path: 'u1/b/1.jpg', mimeType: 'image/jpeg', sizeBytes: 2048 },
+    ]);
     expect(onPublished).toHaveBeenCalledWith('new-1');
   });
 
   it('refuses a republished offer once every carried photo is removed (D132)', async () => {
     const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'food', direction: 'give', title: 'Soup', summary: '', onPublished: vi.fn(), republishFromListingId: 'old-1' }), { wrapper });
-    await waitFor(() => expect(result.current.carriedMediaPaths).toHaveLength(2));
+    await waitFor(() => expect(result.current.carriedMedia).toHaveLength(2));
     act(() => { result.current.setDetail('expires_at', '2099-11-20T10:00:00Z'); result.current.setSubcategoryId('cat-cooked'); result.current.removeCarriedMedia('u1/b/0.jpg'); result.current.removeCarriedMedia('u1/b/1.jpg'); });
     await act(() => result.current.publish());
     expect(result.current.error).toEqual({ message: 'marketplace.errors.offer_photo_required', field: 'photos' });
@@ -130,7 +136,7 @@ describe('republish an expired listing (D127)', () => {
     repo.getListingDetail.mockResolvedValue(open);
     const { result } = renderHook(() => useListingCreateForm({ worldSlug: 'food', direction: 'give', title: 'Soup', summary: '', onPublished: vi.fn(), editListingId: 'old-1', onSaved }), { wrapper });
     await waitFor(() => expect(result.current.details).toEqual(open.details));
-    expect(result.current.carriedMediaPaths).toEqual([]);
+    expect(result.current.carriedMedia).toEqual([]);
     await act(() => result.current.publish());
     expect(repo.createListing).not.toHaveBeenCalled();
     expect(repo.updateMyListing).toHaveBeenCalledWith('old-1', expect.objectContaining({ details: open.details }));

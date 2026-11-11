@@ -11,7 +11,15 @@
 # supabase-prod variable KC_PROD_SCHEMA_MODE is set to "baseline" (D-228).
 0001_baseline.sql
 0002_org_entitlements.sql
-0003_org_sec46_machine.sql
-0004_post_series.sql
-0005_post_series_rpcs.sql
-0006_series_feed_folding.sql
+0003_post_seat_counts.sql
+0004_ride_series_schedule.sql
+0005_match_quality.sql
+0006_profile_posts_mine_tab.sql
+0007_chat_inbox_previews.sql
+0008_post_media_sizes.sql
+0009_research_feedback_survey_reports.sql
+0010_housing_knowledge_finance_reads.sql
+0020_org_sec46_machine.sql
+0021_post_series.sql
+0022_post_series_rpcs.sql
+0023_series_feed_folding.sql

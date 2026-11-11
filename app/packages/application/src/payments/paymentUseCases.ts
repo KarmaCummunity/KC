@@ -1,7 +1,6 @@
-import type { IPaymentProvider } from '../ports/IPaymentProvider';
+// Money world use cases (FR-DONATE-011, FR-ORG-010, FR-FIN-021). Amounts are integer agorot.
 import type { IPaymentsRepository } from '../ports/IPaymentsRepository';
 import type {
-  CompletedDonation,
   DonationCheckoutResult,
   DonationHistoryRow,
   DonationReceiptDetail,
@@ -24,36 +23,30 @@ export class GetNonprofitPublicPageUseCase {
   }
 }
 
+/** Starts a one-time donation; the provider's page settles it (the app never completes a payment). */
 export class DonateNowUseCase {
-  constructor(private readonly provider: IPaymentProvider) {}
+  constructor(private readonly repo: IPaymentsRepository) {}
   execute(input: {
     orgId: string;
-    amountIls: number;
+    amountAgorot: number;
     idempotencyKey: string;
-    listingId?: string | null;
+    postId?: string | null;
   }): Promise<DonationCheckoutResult> {
-    return this.provider.startDonationCheckout(input);
-  }
-}
-
-export class ConfirmDonationUseCase {
-  constructor(private readonly provider: IPaymentProvider) {}
-  execute(intentId: string): Promise<CompletedDonation> {
-    return this.provider.finalizeDonation(intentId);
+    return this.repo.createDonationIntent(input.orgId, input.amountAgorot, input.idempotencyKey, input.postId ?? null);
   }
 }
 
 export class CreateStandingOrderUseCase {
   constructor(private readonly repo: IPaymentsRepository) {}
-  execute(input: { orgId: string; amountIls: number; idempotencyKey: string }): Promise<StandingOrderRow> {
-    return this.repo.createStandingOrder(input.orgId, input.amountIls, input.idempotencyKey);
+  execute(input: { orgId: string; amountAgorot: number; idempotencyKey: string }): Promise<StandingOrderRow> {
+    return this.repo.createStandingOrder(input.orgId, input.amountAgorot, input.idempotencyKey);
   }
 }
 
 export class ListMyStandingOrdersUseCase {
   constructor(private readonly repo: IPaymentsRepository) {}
-  execute(limit?: number): Promise<StandingOrderRow[]> {
-    return this.repo.listMyStandingOrders(limit);
+  execute(): Promise<StandingOrderRow[]> {
+    return this.repo.listMyStandingOrders();
   }
 }
 

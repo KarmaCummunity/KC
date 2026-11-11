@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseWhatsAppAdminRepository } from '@kc/infrastructure-supabase';
 import {
   BlockWhatsAppUserUseCase,
@@ -13,8 +12,9 @@ import {
   SetWhatsAppChannelEnabledUseCase,
 } from '@kc/application';
 
-export function createWhatsAppAdminUseCases(supabase: SupabaseClient) {
-  const repo = new SupabaseWhatsAppAdminRepository(supabase);
+/** The WhatsApp console's use cases; the adapter is parked until the integrations module (M22). */
+export function createWhatsAppAdminUseCases() {
+  const repo = new SupabaseWhatsAppAdminRepository();
   return {
     getWhatsAppAdminOverview: new GetWhatsAppAdminOverviewUseCase(repo),
     getWhatsAppChannel: new GetWhatsAppChannelUseCase(repo),

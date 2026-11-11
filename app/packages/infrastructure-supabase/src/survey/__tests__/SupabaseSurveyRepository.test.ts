@@ -1,279 +1,124 @@
-/**
- * Unit tests for SupabaseSurveyRepository — listActive, getBundle, upsertAnswers.
- * Uses a manually-crafted mock — no live Supabase instance.
- * Integration tests against a local Supabase fixture are deferred
- * (no local-Supabase fixture in CI per existing repo pattern).
- * See SupabaseSurveyRepository.feedback.test.ts for checkPromptEligibility
- * and submitFreeFeedback.
- */
-import { describe, it, expect, vi } from 'vitest';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { SurveyError } from '@kc/domain';
-import type { Database } from '../../database.legacy.types';
+// SupabaseSurveyRepository on the baseline: the catalog, questions and the caller's answers are
+// table reads; answers, the prompt rule and free feedback are one RPC or insert each. The SQL
+// behaviour is covered by supabase/baseline/tests/090_research.sql and 091_research_reports.sql.
+import { describe, it, expect } from 'vitest';
+import { BackendUnavailableError, SurveyError } from '@kc/domain';
+import { callsTo, createFakeClient, type FakeClientConfig } from '../../__tests__/fakeBaselineClient';
+import { fail, ok } from '../../posts/__tests__/cardFixtures';
 import { SupabaseSurveyRepository } from '../SupabaseSurveyRepository';
 
-// ---------------------------------------------------------------------------
-// Mock factory
-// ---------------------------------------------------------------------------
-
-type RpcOverrides = Record<string, { data: unknown; error: { message: string } | null }>;
-
-export function makeClient(opts: {
-  rpcResults?: RpcOverrides;
-  insertResult?: { error: { message: string } | null };
-  userId?: string | null;
-  authError?: { message: string } | null;
-} = {}): SupabaseClient<Database> {
-  const rpcResults = opts.rpcResults ?? {};
-  const insertResult = opts.insertResult ?? { error: null };
-  const userId = 'userId' in opts ? opts.userId : 'user-uuid';
-  const authError = opts.authError ?? null;
-
-  return {
-    rpc: vi.fn().mockImplementation((name: string) => {
-      const result = rpcResults[name];
-      return Promise.resolve(result ?? { data: null, error: null });
-    }),
-    from: vi.fn().mockReturnValue({
-      insert: vi.fn().mockResolvedValue(insertResult),
-    }),
-    auth: {
-      getUser: vi.fn().mockResolvedValue({
-        data: { user: userId ? { id: userId } : null },
-        error: authError,
-      }),
-    },
-  } as unknown as SupabaseClient<Database>;
+function makeRepo(config: FakeClientConfig) {
+  const { client, calls } = createFakeClient({ userId: 'u1', ...config });
+  return { repo: new SupabaseSurveyRepository(client), calls };
 }
 
-// ---------------------------------------------------------------------------
-// Fixtures
-// ---------------------------------------------------------------------------
-
-const ACTIVE_SURVEY_ROW = {
-  slug: 'ux-experience',
-  title_he: 'סקר חווית משתמש',
-  description_he: 'תיאור',
-  current_version: 1,
-  completion_status: 'not_started',
-};
-
-const BUNDLE_RAW = {
-  slug: 'ux-experience',
-  title_he: 'סקר חווית משתמש',
-  version: 1,
-  questions: [
-    {
-      id: 'q-001',
-      sort_order: 1,
-      question_type: 'rating_1_7_with_optional_text',
-      short_label_he: 'המלצה',
-      prompt_he: 'כמה סביר שתמליץ?',
-      context_he: '',
-      text_placeholder_he: 'הסבר קצר',
-      rating_anchor_low_he: 'לא מספיק',
-      rating_anchor_high_he: 'מצוין',
-    },
-  ],
-  answers: [
-    { question_id: 'q-001', rating: 5, answer_text: 'בסדר' },
+const SURVEY = {
+  id: 's1', slug: 'pmf-sean-ellis', title_he: 'PMF', description_he: null, current_version: 2,
+  survey_versions: [
+    { id: 'v1', version: 1, survey_questions: [{ id: 'old' }] },
+    { id: 'v2', version: 2, survey_questions: [{ id: 'q1' }, { id: 'q2' }] },
   ],
 };
+const RATING_QUESTION = {
+  id: 'q1', survey_version_id: 'v2', sort_order: 1, question_type: 'rating_1_7_with_optional_text',
+  short_label_he: 'use', prompt_he: 'How useful?', context_he: '', text_placeholder_he: '',
+  rating_anchor_low_he: 'low', rating_anchor_high_he: 'high', choice_options: null,
+};
+const CHOICE_QUESTION = {
+  ...RATING_QUESTION, id: 'q2', sort_order: 2, question_type: 'single_choice_with_optional_text',
+  choice_options: [{ key: 'very_disappointed', label_he: 'very' }, { key: 'not_disappointed', label_he: 'not' }],
+};
 
-// ---------------------------------------------------------------------------
-// listActive
-// ---------------------------------------------------------------------------
-
-describe('SupabaseSurveyRepository.listActive', () => {
-  it('maps snake_case rows to SurveyListItem[]', async () => {
-    const client = makeClient({
-      rpcResults: {
-        list_active_surveys: { data: [ACTIVE_SURVEY_ROW], error: null },
-      },
+describe('SupabaseSurveyRepository · reads', () => {
+  it('lists active surveys with the caller\'s progress on the current version', async () => {
+    const { repo, calls } = makeRepo({
+      tables: { surveys: ok([SURVEY]), survey_answers: ok([{ question_id: 'q1' }, { question_id: 'old' }]) },
     });
-    const repo = new SupabaseSurveyRepository(client);
-    const result = await repo.listActive();
-
-    expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({
-      slug: 'ux-experience',
-      titleHe: 'סקר חווית משתמש',
-      descriptionHe: 'תיאור',
-      currentVersion: 1,
-      completionStatus: 'not_started',
-    });
-    expect(client.rpc).toHaveBeenCalledWith('list_active_surveys');
+    await expect(repo.listActive()).resolves.toEqual([
+      { slug: 'pmf-sean-ellis', titleHe: 'PMF', descriptionHe: null, currentVersion: 2, completionStatus: 'in_progress' },
+    ]);
+    expect(callsTo(calls, 'surveys')[0]?.filters).toEqual([
+      ['eq', 'is_active', true], ['gt', 'current_version', 0], ['order', 'created_at', { ascending: true }],
+    ]);
+    expect(callsTo(calls, 'survey_answers')[0]?.filters).toEqual([['eq', 'user_id', 'u1']]);
   });
 
-  it('returns [] when RPC returns null data', async () => {
-    const client = makeClient({
-      rpcResults: { list_active_surveys: { data: null, error: null } },
-    });
-    const repo = new SupabaseSurveyRepository(client);
-    expect(await repo.listActive()).toEqual([]);
+  it('reports not_started and completed', async () => {
+    const none = makeRepo({ tables: { surveys: ok([SURVEY]), survey_answers: ok([]) } });
+    expect((await none.repo.listActive())[0]?.completionStatus).toBe('not_started');
+    const all = makeRepo({ tables: { surveys: ok([SURVEY]), survey_answers: ok([{ question_id: 'q1' }, { question_id: 'q2' }]) } });
+    expect((await all.repo.listActive())[0]?.completionStatus).toBe('completed');
   });
 
-  it('throws SurveyError(network) on RPC error', async () => {
-    const client = makeClient({
-      rpcResults: { list_active_surveys: { data: null, error: { message: 'timeout' } } },
+  it('loads the current version\'s questions, choice options and the caller\'s answers', async () => {
+    const answer = { question_id: 'q2', rating: null, choice_key: 'very_disappointed', answer_text: null };
+    const { repo, calls } = makeRepo({
+      tables: { surveys: ok(SURVEY), survey_questions: ok([RATING_QUESTION, CHOICE_QUESTION]), survey_answers: ok([answer]) },
     });
-    const repo = new SupabaseSurveyRepository(client);
-    await expect(repo.listActive()).rejects.toBeInstanceOf(SurveyError);
-    await expect(repo.listActive()).rejects.toMatchObject({ code: 'network' });
+    const bundle = await repo.getBundle('pmf-sean-ellis');
+    expect(bundle).toMatchObject({ slug: 'pmf-sean-ellis', titleHe: 'PMF', version: 2 });
+    expect(bundle.questions.map((q) => q.choiceOptions.length)).toEqual([0, 2]);
+    expect(bundle.questions[1]?.choiceOptions[0]).toEqual({ key: 'very_disappointed', labelHe: 'very' });
+    expect(bundle.answers).toEqual([{ questionId: 'q2', rating: null, choiceKey: 'very_disappointed', answerText: null }]);
+    expect(callsTo(calls, 'survey_questions')[0]?.filters).toEqual([
+      ['eq', 'survey_version_id', 'v2'], ['order', 'sort_order', { ascending: true }],
+    ]);
+    expect(callsTo(calls, 'survey_answers')[0]?.filters).toEqual([['eq', 'user_id', 'u1'], ['in', 'question_id', ['q1', 'q2']]]);
+  });
+
+  it('maps an unknown or retired survey to not_found and a missing table to unavailable', async () => {
+    const { repo } = makeRepo({ tables: { surveys: ok(null) } });
+    await expect(repo.getBundle('nope')).rejects.toMatchObject({ constructor: SurveyError, code: 'not_found' });
+    const missing = makeRepo({ tables: { surveys: fail('PGRST205', 'no table') } });
+    await expect(missing.repo.listActive()).rejects.toBeInstanceOf(BackendUnavailableError);
   });
 });
 
-// ---------------------------------------------------------------------------
-// getBundle
-// ---------------------------------------------------------------------------
-
-describe('SupabaseSurveyRepository.getBundle', () => {
-  it('maps snake_case JSON including per-question rating anchors', async () => {
-    const client = makeClient({
-      rpcResults: { get_survey_bundle: { data: BUNDLE_RAW, error: null } },
-    });
-    const repo = new SupabaseSurveyRepository(client);
-    const bundle = await repo.getBundle('ux-experience');
-
-    expect(bundle.slug).toBe('ux-experience');
-    expect(bundle.titleHe).toBe('סקר חווית משתמש');
-    expect(bundle.version).toBe(1);
-    expect(bundle.questions).toHaveLength(1);
-
-    const [q] = bundle.questions;
-    expect(q?.id).toBe('q-001');
-    expect(q?.sortOrder).toBe(1);
-    expect(q?.questionType).toBe('rating_1_7_with_optional_text');
-    expect(q?.shortLabelHe).toBe('המלצה');
-    expect(q?.ratingAnchorLowHe).toBe('לא מספיק');
-    expect(q?.ratingAnchorHighHe).toBe('מצוין');
-  });
-
-  it('maps existing answers (question_id → questionId)', async () => {
-    const client = makeClient({
-      rpcResults: { get_survey_bundle: { data: BUNDLE_RAW, error: null } },
-    });
-    const repo = new SupabaseSurveyRepository(client);
-    const bundle = await repo.getBundle('ux-experience');
-
-    expect(bundle.answers).toHaveLength(1);
-    expect(bundle.answers[0]).toEqual({
-      questionId: 'q-001',
-      rating: 5,
-      choiceKey: null,
-      answerText: 'בסדר',
-    });
-  });
-
-  it('calls RPC with correct p_slug argument', async () => {
-    const client = makeClient({
-      rpcResults: { get_survey_bundle: { data: BUNDLE_RAW, error: null } },
-    });
-    const repo = new SupabaseSurveyRepository(client);
-    await repo.getBundle('ux-experience');
-    expect(client.rpc).toHaveBeenCalledWith('get_survey_bundle', { p_slug: 'ux-experience' });
-  });
-
-  it('throws SurveyError(not_found) when RPC raises survey_not_found', async () => {
-    const client = makeClient({
-      rpcResults: {
-        get_survey_bundle: { data: null, error: { message: 'survey_not_found' } },
-      },
-    });
-    const repo = new SupabaseSurveyRepository(client);
-    await expect(repo.getBundle('missing')).rejects.toMatchObject({ code: 'not_found' });
-  });
-});
-
-// ---------------------------------------------------------------------------
-// upsertAnswers
-// ---------------------------------------------------------------------------
-
-describe('SupabaseSurveyRepository.upsertAnswers', () => {
-  it('calls RPC with the correct p_slug and snake_case p_answers payload', async () => {
-    const client = makeClient({
-      rpcResults: { upsert_survey_answers: { data: null, error: null } },
-    });
-    const repo = new SupabaseSurveyRepository(client);
-    await repo.upsertAnswers('ux-experience', [
-      { questionId: 'q-001', rating: 5, choiceKey: null, answerText: 'great' },
-    ]);
-
-    expect(client.rpc).toHaveBeenCalledWith('upsert_survey_answers', {
-      p_slug: 'ux-experience',
-      p_answers: [{ question_id: 'q-001', rating: 5, choice_key: null, answer_text: 'great' }],
-    });
-  });
-
-  it('maps null answerText to null in payload', async () => {
-    const client = makeClient({
-      rpcResults: { upsert_survey_answers: { data: null, error: null } },
-    });
-    const repo = new SupabaseSurveyRepository(client);
-    await repo.upsertAnswers('ux-experience', [
-      { questionId: 'q-001', rating: 3, choiceKey: null, answerText: null },
-    ]);
-    expect(client.rpc).toHaveBeenCalledWith(
-      'upsert_survey_answers',
-      expect.objectContaining({
-        p_answers: [{ question_id: 'q-001', rating: 3, choice_key: null, answer_text: null }],
-      }),
-    );
-  });
-
-  it('sends a single-choice answer as choice_key with a null rating (KC#1058)', async () => {
-    const client = makeClient({
-      rpcResults: { upsert_survey_answers: { data: null, error: null } },
-    });
-    const repo = new SupabaseSurveyRepository(client);
+describe('SupabaseSurveyRepository · writes', () => {
+  it('saves answers through upsert_survey_answers with a snake_case payload', async () => {
+    const { repo, calls } = makeRepo({ rpc: { upsert_survey_answers: ok(null) } });
     await repo.upsertAnswers('pmf-sean-ellis', [
-      { questionId: 'q-pmf', rating: null, choiceKey: 'very_disappointed', answerText: null },
+      { questionId: 'q1', rating: 6, choiceKey: null, answerText: null },
+      { questionId: 'q2', rating: null, choiceKey: 'very_disappointed', answerText: 'great' },
     ]);
-    expect(client.rpc).toHaveBeenCalledWith('upsert_survey_answers', {
+    expect(callsTo(calls, 'upsert_survey_answers')[0]?.args).toEqual({
       p_slug: 'pmf-sean-ellis',
-      p_answers: [{ question_id: 'q-pmf', rating: null, choice_key: 'very_disappointed', answer_text: null }],
+      p_answers: [
+        { question_id: 'q1', rating: 6, choice_key: null, answer_text: null },
+        { question_id: 'q2', rating: null, choice_key: 'very_disappointed', answer_text: 'great' },
+      ],
     });
   });
 
-  it('throws SurveyError(validation) for invalid_choice errors', async () => {
-    const client = makeClient({
-      rpcResults: {
-        upsert_survey_answers: { data: null, error: { message: 'invalid_choice for question q-pmf' } },
-      },
-    });
-    const repo = new SupabaseSurveyRepository(client);
-    await expect(repo.upsertAnswers('pmf-sean-ellis', [])).rejects.toMatchObject({ code: 'validation' });
+  it('maps the refusals of upsert_survey_answers', async () => {
+    const invalid = makeRepo({ rpc: { upsert_survey_answers: fail('P0001', 'invalid_input') } });
+    await expect(invalid.repo.upsertAnswers('s', [])).rejects.toMatchObject({ code: 'validation' });
+    const gone = makeRepo({ rpc: { upsert_survey_answers: fail('P0001', 'survey_not_found') } });
+    await expect(gone.repo.upsertAnswers('s', [])).rejects.toMatchObject({ code: 'not_found' });
+    const other = makeRepo({ rpc: { upsert_survey_answers: fail('XX000', 'boom') } });
+    await expect(other.repo.upsertAnswers('s', [])).rejects.toMatchObject({ code: 'network' });
   });
 
-  it('throws SurveyError(inactive) for survey_not_found_or_inactive', async () => {
-    const client = makeClient({
-      rpcResults: {
-        upsert_survey_answers: {
-          data: null,
-          error: { message: 'survey_not_found_or_inactive' },
-        },
-      },
-    });
-    const repo = new SupabaseSurveyRepository(client);
-    await expect(
-      repo.upsertAnswers('ux-experience', []),
-    ).rejects.toMatchObject({ code: 'inactive' });
+  it('reads the prompt rule with the device session count', async () => {
+    const { repo, calls } = makeRepo({ rpc: { check_survey_prompt_eligibility: ok({ show: true, reasons: ['eligible'] }) } });
+    await expect(repo.checkPromptEligibility('pmf-sean-ellis', 4)).resolves.toEqual({ show: true, slug: 'pmf-sean-ellis' });
+    expect(callsTo(calls, 'check_survey_prompt_eligibility')[0]?.args).toEqual({ p_slug: 'pmf-sean-ellis', p_session_count: 4 });
+    const no = makeRepo({ rpc: { check_survey_prompt_eligibility: ok({ show: false, reasons: ['already_completed'] }) } });
+    await expect(no.repo.checkPromptEligibility('x', 1)).resolves.toEqual({ show: false, slug: 'x' });
   });
 
-  it('throws SurveyError(validation) for invalid_rating errors', async () => {
-    const client = makeClient({
-      rpcResults: {
-        upsert_survey_answers: {
-          data: null,
-          error: { message: 'invalid_rating for question q-001' },
-        },
-      },
+  it('files free feedback as the signed-in member with a trimmed text', async () => {
+    const { repo, calls } = makeRepo({ tables: { user_feedback: ok(null) } });
+    await repo.submitFreeFeedback({ rating: null, body: '  Useful app, thanks  ' });
+    expect(callsTo(calls, 'user_feedback')[0]).toMatchObject({
+      kind: 'insert', payload: { user_id: 'u1', rating: null, body: 'Useful app, thanks' },
     });
-    const repo = new SupabaseSurveyRepository(client);
-    await expect(
-      repo.upsertAnswers('ux-experience', [
-        { questionId: 'q-001', rating: 0, choiceKey: null, answerText: null },
-      ]),
-    ).rejects.toMatchObject({ code: 'validation' });
+  });
+
+  it('refuses feedback without a session and maps a failed insert', async () => {
+    const signedOut = makeRepo({ userId: null });
+    await expect(signedOut.repo.submitFreeFeedback({ rating: 3, body: 'Long enough text' })).rejects.toMatchObject({ code: 'network' });
+    const refused = makeRepo({ tables: { user_feedback: fail('42501', 'new row violates row-level security policy') } });
+    await expect(refused.repo.submitFreeFeedback({ rating: 3, body: 'Long enough text' })).rejects.toBeInstanceOf(SurveyError);
   });
 });

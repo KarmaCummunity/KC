@@ -33,7 +33,6 @@ const ROOT_BOUNDARY_ONLY = [
   'settings/report-issue.tsx',
   'settings/survey-demo.tsx',
   'settings/surveys.tsx',
-  'settings/whatsapp.tsx',
   'stats.tsx',
 ];
 

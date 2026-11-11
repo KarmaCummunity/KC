@@ -40,7 +40,7 @@ Per design spec §4.1, one PR per machine (or per tight family), each with code 
 | Post availability | `posts.availability_status` | immediate, scheduled, ongoing | SQL check (`0626`); reserve / claim → scheduled, cancel and no-show sweep → immediate (items and food), handed over / pause / owner complete → ongoing (`0666`, `0667`) | no from-guards | 2 (moves with the handoff) |
 | Content moderation | `posts.moderation_status` (the `listings` column is a view column since `0667`) | draft, pending_review, published, rejected | SQL check (`0626`); read by `operator_case_enqueue_for_post` | insert-time default only; no update writer | 4 (no moves to hold until a writer exists) |
 | Ride series | `ride_series.status` | active, paused, cancelled | kernel `rideSeriesMachine` (`0719`), SQL check (`0531`), `set_ride_series_status` (`0666`) | the RPC refuses a cancelled series (`ride_series_for_update`, `0531`); `fsm_assert_transition` through `kc_private.enforce_status_fsm` (`0719`) | **6a ✅** |
-| Section 46(a) approval | `organizations.sec46_status` | none, pending, active, expired, revoked | kernel `orgSec46Machine`, SQL seeds and guard (`0003_org_sec46_machine.sql`), `finance_sec46_set` | `kc_private.fsm_guard_status`; `active → expired` only by the nightly job `org_tax_approval_expire` (role `system`) | **✅** |
+| Section 46(a) approval | `organizations.sec46_status` | none, pending, active, expired, revoked | kernel `orgSec46Machine`, SQL seeds and guard (`0020_org_sec46_machine.sql`), `finance_sec46_set` | `kc_private.fsm_guard_status`; `active → expired` only by the nightly job `org_tax_approval_expire` (role `system`) | **✅** |
 | Listing (legacy) | `listings` view over `posts` since `0667` | derived from S1: paused / deleted_no_recipient → cancelled, closed_delivered → closed | the view and its `instead of` trigger (`0667`) | no own state | **retired ✅ (`0667`)** |
 | Handoff (legacy) | `giving_handoffs` view over `post_handoffs` since `0667` | as `post_handoffs` | the view (`0667`) | no own state | **retired ✅ (`0667`)** |
 | Ride listing / participants / templates (legacy) | `ride_listings`, `ride_participants`, `ride_templates` | 6 / 4 / 3 states | SQL checks (`0177`, `0139`, `0148`), TS use cases | their pg_cron jobs are retired (`0695`) | **1d ✅**, then retire the tables (G44) |
@@ -102,7 +102,7 @@ Workers that move a machine without a user action. A row names the trigger; the 
 | Feed cache | pgmq `feed_cache_refresh`, cron every 5 minutes (`0348`); `feed_mv_refresh_state.dirty`, cron every 2 minutes (`0346`) | message visible → invisible (30 s) → deleted; dirty → clean | no retry limit and no dead-letter queue |
 | WhatsApp | `whatsapp-sender` over pgmq `whatsapp_outbound` (`0306`); `whatsapp-webhook` claims (`0431`) | outbound queued → sending → sent / failed / skipped_*; inbound claim inserted, released on failure, pruned after 7 days | the sender has no schedule in the repo |
 
-Edge functions with no schedule or caller in the repo: `embed-worker`, `match-rerank`, `whatsapp-sender`, `subscriptions-charger`, `rotate-research-salt` (no schedule); `whatsapp-intake-worker`, `receipts-issuer`, `backfill-image-thumbs` (no caller; the last is run by hand). Their queues drain only if a schedule exists outside the repo.
+Edge functions with no schedule or caller in the repo: `whatsapp-sender` (no schedule); `whatsapp-intake-worker`, `backfill-image-thumbs` (no caller; the last is run by hand). Their queues drain only if a schedule exists outside the repo. On the baseline, `embed-worker`, `match-rerank`, `subscriptions-charger`, `rotate-research-salt` and `purge-deleted-accounts` are started by the job registry (`supabase/schemas/95_platform/900_job_registry.sql`); `receipts-issuer` was removed (D77: KC never issues receipts).
 
 ### 3.5 Client-side machines
 
@@ -128,7 +128,7 @@ Client state that encodes a server machine is a copy (§1 rule): it goes when it
 | Match UI | `lib/matching.ts` | Match candidate | narrower, consistent |
 | Admin task | `(admin)/tasks/[taskId]` | Admin task | on the kernel ✅ |
 | Unused graph copies | `canTransitionGivingHandoff`, `validateGivingHandoffTransition` (`givingHandoff.ts`), `isValidRideBookingTransition` (`RideBooking.ts`) | Handoff, ride booking | tests only or unused: delete in wave 2 |
-| Legacy ride types | `RideStatus.ts`, `RideParticipantStatus.ts`, `StartRideUseCase`, `ArriveRideUseCase` | retired ride tables | retire with G44 (wave 1d) |
+| Legacy ride types | `RideStatus.ts`, `RideParticipantStatus.ts`, `StartRideUseCase`, `ArriveRideUseCase` | retired ride tables | deleted with the v1 ride domain types (2026-11-11) |
 
 ## 4. Divergences found (verified in code, 2026-11-09)
 

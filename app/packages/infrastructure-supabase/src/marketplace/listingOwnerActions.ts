@@ -5,7 +5,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { BackendRuleError } from '@kc/domain';
-import type { IMarketplaceRepository } from '@kc/application';
+import type { IMarketplaceRepository, MediaAssetInput } from '@kc/application';
 import type { Database, Json } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 import { sessionUserId } from '../users/userReads';
@@ -83,12 +83,12 @@ export async function updateMyListing(client: Client, listingId: string, patch: 
 }
 
 /** Appends uploaded photos to the owner's listing; resolves with how many were added (duplicates are skipped, five at most). */
-export async function addMyListingMedia(client: Client, listingId: string, mediaPaths: readonly string[]): Promise<number> {
+export async function addMyListingMedia(client: Client, listingId: string, media: readonly MediaAssetInput[]): Promise<number> {
   const ownerId = await sessionUserId(client);
   if (!ownerId) throw new BackendRuleError('unauthenticated', 'table:post_media');
   const existing = unwrapCall('table:post_media', await client.from('post_media').select('storage_key, ordinal').eq('post_id', listingId)) ?? [];
   const known = new Set(existing.map((row) => row.storage_key));
-  const fresh = mediaPaths.filter((path) => !known.has(path));
+  const fresh = media.filter((asset) => !known.has(asset.path));
   const next = existing.length === 0 ? 0 : Math.max(...existing.map((row) => row.ordinal)) + 1;
   return next >= MAX_PHOTOS ? 0 : recordPhotos(client, listingId, ownerId, fresh, next);
 }
