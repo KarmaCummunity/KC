@@ -88,7 +88,7 @@ export const challenges = {
   errors: {
     generic: 'Something went wrong. Please try again.',
     title_too_short: 'The challenge name is too short (at least 3 characters).',
-    title_too_long: 'The challenge name is too long (up to 120 characters).',
+    title_too_long: 'The challenge name is too long (up to 80 characters).',
     description_too_long: 'The description is too long (up to 2,000 characters).',
     topic_too_long: 'The topic is too long (up to 50 characters).',
     invalid_scope: 'Choose who can see the challenge.',

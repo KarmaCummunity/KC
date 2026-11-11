@@ -88,7 +88,7 @@ export const challenges = {
   errors: {
     generic: 'משהו השתבש. נסו שוב.',
     title_too_short: 'שם האתגר קצר מדי (לפחות 3 תווים).',
-    title_too_long: 'שם האתגר ארוך מדי (עד 120 תווים).',
+    title_too_long: 'שם האתגר ארוך מדי (עד 80 תווים).',
     description_too_long: 'התיאור ארוך מדי (עד 2,000 תווים).',
     topic_too_long: 'הנושא ארוך מדי (עד 50 תווים).',
     invalid_scope: 'בחרו מי רואה את האתגר.',

@@ -26,7 +26,8 @@ export const CHALLENGE_LIST_VIEWS = ['discover', 'joined', 'created'] as const;
 export type ChallengeListView = (typeof CHALLENGE_LIST_VIEWS)[number];
 
 export const CHALLENGE_TITLE_MIN_LENGTH = 3;
-export const CHALLENGE_TITLE_MAX_LENGTH = 120;
+/** A challenge is a post: its title obeys the posts title limit of 1–80 characters. */
+export const CHALLENGE_TITLE_MAX_LENGTH = 80;
 export const CHALLENGE_DESCRIPTION_MAX_LENGTH = 2000;
 export const CHALLENGE_TOPIC_MAX_LENGTH = 50;
 export const CHALLENGE_NOTE_MAX_LENGTH = 500;
