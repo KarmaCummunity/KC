@@ -20,8 +20,8 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 229,
-   "distinct": 207
+   "callSites": 216,
+   "distinct": 194
   },
   "table": {
    "callSites": 164,
@@ -37,33 +37,6 @@
    "symbol": "assetUrl",
    "via": "const",
    "name": "post-images"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/apps/mobile/app/settings/whatsapp.tsx",
-   "line": 20,
-   "area": "mobile",
-   "symbol": "fetchStatus",
-   "via": "literal",
-   "name": "api_whatsapp_my_link_status"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/apps/mobile/app/settings/whatsapp.tsx",
-   "line": 40,
-   "area": "mobile",
-   "symbol": "WhatsAppLinkScreenContent",
-   "via": "literal",
-   "name": "api_whatsapp_create_link_code"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/apps/mobile/app/settings/whatsapp.tsx",
-   "line": 53,
-   "area": "mobile",
-   "symbol": "WhatsAppLinkScreenContent",
-   "via": "literal",
-   "name": "api_whatsapp_unlink_me"
   },
   {
    "kind": "bucket",
@@ -463,96 +436,6 @@
    "symbol": "SupabaseTransparencySettingsRepository.set",
    "via": "literal",
    "name": "finance_transparency_settings_set"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-   "line": 49,
-   "area": "admin",
-   "symbol": "SupabaseWhatsAppAdminRepository.getChannel",
-   "via": "literal",
-   "name": "api_whatsapp_admin_get_channel"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-   "line": 55,
-   "area": "admin",
-   "symbol": "SupabaseWhatsAppAdminRepository.setChannelEnabled",
-   "via": "literal",
-   "name": "api_whatsapp_admin_set_channel_enabled"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-   "line": 63,
-   "area": "admin",
-   "symbol": "SupabaseWhatsAppAdminRepository.overview",
-   "via": "literal",
-   "name": "api_whatsapp_admin_overview"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-   "line": 82,
-   "area": "admin",
-   "symbol": "SupabaseWhatsAppAdminRepository.overview",
-   "via": "literal",
-   "name": "api_whatsapp_admin_list_consent"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-   "line": 104,
-   "area": "admin",
-   "symbol": "SupabaseWhatsAppAdminRepository.overview",
-   "via": "literal",
-   "name": "api_whatsapp_admin_list_outbound"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-   "line": 131,
-   "area": "admin",
-   "symbol": "SupabaseWhatsAppAdminRepository.listRateHits",
-   "via": "literal",
-   "name": "api_whatsapp_admin_list_rate_hits"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-   "line": 141,
-   "area": "admin",
-   "symbol": "SupabaseWhatsAppAdminRepository.listRecentMatches",
-   "via": "literal",
-   "name": "api_whatsapp_admin_list_recent_matches"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-   "line": 156,
-   "area": "admin",
-   "symbol": "SupabaseWhatsAppAdminRepository.listConversations",
-   "via": "literal",
-   "name": "api_whatsapp_admin_list_conversations"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-   "line": 170,
-   "area": "admin",
-   "symbol": "SupabaseWhatsAppAdminRepository.resend",
-   "via": "literal",
-   "name": "api_whatsapp_admin_resend"
-  },
-  {
-   "kind": "rpc",
-   "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-   "line": 176,
-   "area": "admin",
-   "symbol": "SupabaseWhatsAppAdminRepository.blockUser",
-   "via": "literal",
-   "name": "api_whatsapp_admin_block_user"
   },
   {
    "kind": "rpc",

@@ -22,6 +22,7 @@ vi.mock('../../i18n/useLocaleBundle', () => ({
 import AdminTasksLayout from '../../../app/(admin)/tasks/_layout';
 import AdminCrmLayout from '../../../app/(admin)/crm/_layout';
 import AdminTimeLayout from '../../../app/(admin)/time/_layout';
+import AdminWhatsAppLayout from '../../../app/(admin)/whatsapp/_layout';
 
 afterEach(cleanup);
 
@@ -39,5 +40,13 @@ describe('parked back-office sections (M19)', () => {
     expect(getByTestId(testId)).toBeTruthy();
     expect(queryByTestId('slot')).toBeNull();
     expect(queryByTestId('stack')).toBeNull();
+  });
+});
+
+describe('parked WhatsApp console (M22)', () => {
+  it('shows the not-available notice, not the console', () => {
+    const { getByTestId, queryByTestId } = renderLayout(AdminWhatsAppLayout);
+    expect(getByTestId('admin-whatsapp-parked')).toBeTruthy();
+    expect(queryByTestId('slot')).toBeNull();
   });
 });

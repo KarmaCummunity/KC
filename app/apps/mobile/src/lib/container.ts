@@ -218,7 +218,7 @@ export const container = {
   deleteTimesheet:  new DeleteTimesheetUseCase(timesheetsRepo),
   // V2-ADMIN-MONEY-9 (+ accounts, donors, public display: FR-FIN-003/022/023)
   ...createFinanceUseCases(supabase),
-  ...createWhatsAppAdminUseCases(supabase),
+  ...createWhatsAppAdminUseCases(),
   // V2-ADMIN-CRM-8
   listCrmContacts: new ListCrmContactsUseCase(crmContactsRepo),
   upsertCrmContact: new UpsertCrmContactUseCase(crmContactsRepo),

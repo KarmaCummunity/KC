@@ -2,12 +2,12 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 207,
+   "objects": 194,
    "same": 97,
    "renamed": 20,
    "changed": 46,
    "removed": 1,
-   "missing": 43
+   "missing": 30
   },
   "table": {
    "objects": 57,
@@ -52,12 +52,12 @@
    "missing": 0
   },
   "later": {
-   "objects": 119,
+   "objects": 106,
    "same": 27,
    "renamed": 4,
    "changed": 40,
    "removed": 1,
-   "missing": 47
+   "missing": 34
   },
   "wedge": {
    "objects": 54,
@@ -70,11 +70,11 @@
  },
  "modules": {
   "admin": {
-   "callSites": 36,
+   "callSites": 26,
    "oneToOne": 6,
    "changed": 18,
    "removed": 0,
-   "missing": 12
+   "missing": 2
   },
   "auth": {
    "callSites": 2,
@@ -266,11 +266,11 @@
    "missing": 0
   },
   "mobile": {
-   "callSites": 20,
+   "callSites": 17,
    "oneToOne": 16,
    "changed": 1,
    "removed": 0,
-   "missing": 3
+   "missing": 0
   },
   "moderation": {
    "callSites": 7,
@@ -455,7 +455,7 @@
   {
    "id": "M22",
    "title": "WhatsApp bot, linking and admin console",
-   "usedBy": "Three Edge Functions (webhook, intake worker, sender), mobile link screen, admin WhatsApp console — 32 RPCs and one table",
+   "usedBy": "Three Edge Functions (webhook, intake worker, sender) — 19 RPCs and one table; the mobile link screen and the admin WhatsApp console are parked and make no call",
    "spec": "design Q4 (PM): not in the launch baseline",
    "launch": "no",
    "action": "defer",
@@ -1196,26 +1196,13 @@
     "supabase/functions/_shared/whatsapp/**",
     "apps/mobile: WhatsApp link screen"
    ],
-   "work": "Waits for the `integrations` module (M22, design Q4).",
+   "work": "App side done: the admin console adapter makes no call and rejects with `BackendUnavailableError`, and the link screen is a not-available notice. The bot itself waits for the `integrations` module (M22, design Q4).",
    "tests": [
     "deno test supabase/functions/_shared/whatsapp"
    ],
-   "degrade": "The three functions are not deployed; the link screen and the admin console are hidden behind a flag.",
+   "degrade": "The three functions are not deployed; the settings row and the admin nav entry are hidden behind `WHATSAPP_BOT_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts), and both routes render the not-available notice.",
    "risks": "None for launch.",
    "rows": [
-    "rpc:api_whatsapp_my_link_status",
-    "rpc:api_whatsapp_create_link_code",
-    "rpc:api_whatsapp_unlink_me",
-    "rpc:api_whatsapp_admin_get_channel",
-    "rpc:api_whatsapp_admin_set_channel_enabled",
-    "rpc:api_whatsapp_admin_overview",
-    "rpc:api_whatsapp_admin_list_consent",
-    "rpc:api_whatsapp_admin_list_outbound",
-    "rpc:api_whatsapp_admin_list_rate_hits",
-    "rpc:api_whatsapp_admin_list_recent_matches",
-    "rpc:api_whatsapp_admin_list_conversations",
-    "rpc:api_whatsapp_admin_resend",
-    "rpc:api_whatsapp_admin_block_user",
     "rpc:api_whatsapp_llm_budget_take",
     "rpc:api_whatsapp_queue_reply",
     "rpc:api_whatsapp_outbound_claim",
@@ -1238,11 +1225,11 @@
     "table:whatsapp_channel_config"
    ],
    "counts": {
-    "objects": 33,
+    "objects": 20,
     "oneToOne": 0,
     "changed": 0,
     "removed": 0,
-    "missing": 33
+    "missing": 20
    }
   }
  ],
@@ -3484,266 +3471,6 @@
    ]
   },
   {
-   "old": "api_whatsapp_admin_block_user",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_block_user(p_user_id: string) → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 176,
-     "symbol": "SupabaseWhatsAppAdminRepository.blockUser",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_get_channel",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_get_channel() → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 49,
-     "symbol": "SupabaseWhatsAppAdminRepository.getChannel",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_list_consent",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_list_consent(p_limit?: number, p_offset?: number) → { consent_status: string last_inbound_at: string opted_in: boolean opted_in_at: string opted_out_at: string preferred_language: string total_count: number updated_at: string user_id: string wa_id_masked: string }[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 82,
-     "symbol": "SupabaseWhatsAppAdminRepository.overview",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_list_conversations",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_list_conversations(p_limit?: number) → { created_at: string listing_id: string session_id: string state: string updated_at: string user_id: string wa_id_masked: string }[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 156,
-     "symbol": "SupabaseWhatsAppAdminRepository.listConversations",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_list_outbound",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_list_outbound(p_limit?: number, p_offset?: number, p_status?: string) → { attempts: number created_at: string kind: string language: string last_error: string next_attempt_at: string outbound_id: string sent_at: string status: string template_name: string total_count: number user_id: stri..."
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 104,
-     "symbol": "SupabaseWhatsAppAdminRepository.overview",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_list_rate_hits",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_list_rate_hits(p_limit?: number) → whatsapp_rate_counters row[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 131,
-     "symbol": "SupabaseWhatsAppAdminRepository.listRateHits",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_list_recent_matches",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_list_recent_matches(p_limit?: number) → { created_at: string language: string outbound_id: string payload: Json sent_at: string status: string user_id: string wa_id_masked: string }[]"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 141,
-     "symbol": "SupabaseWhatsAppAdminRepository.listRecentMatches",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_overview",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_overview() → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 63,
-     "symbol": "SupabaseWhatsAppAdminRepository.overview",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_resend",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_resend(p_outbound_id: string) → string"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 170,
-     "symbol": "SupabaseWhatsAppAdminRepository.resend",
-     "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_admin_set_channel_enabled",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_admin_set_channel_enabled(p_enabled: boolean) → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "admin"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/admin/SupabaseWhatsAppAdminRepository.ts",
-     "line": 55,
-     "symbol": "SupabaseWhatsAppAdminRepository.setChannelEnabled",
-     "area": "admin"
-    }
-   ]
-  },
-  {
    "old": "api_whatsapp_bot_access",
    "kind": "rpc",
    "status": "missing",
@@ -3792,32 +3519,6 @@
      "line": 71,
      "symbol": "handleMessage",
      "area": "fn:whatsapp-webhook"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_create_link_code",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_create_link_code() → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "mobile"
-   ],
-   "callSites": [
-    {
-     "file": "app/apps/mobile/app/settings/whatsapp.tsx",
-     "line": 40,
-     "symbol": "WhatsAppLinkScreenContent",
-     "area": "mobile"
     }
    ]
   },
@@ -3929,32 +3630,6 @@
      "line": 55,
      "symbol": "body",
      "area": "fn:whatsapp-intake-worker"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_my_link_status",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_my_link_status() → Json"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "mobile"
-   ],
-   "callSites": [
-    {
-     "file": "app/apps/mobile/app/settings/whatsapp.tsx",
-     "line": 20,
-     "symbol": "fetchStatus",
-     "area": "mobile"
     }
    ]
   },
@@ -4104,32 +3779,6 @@
      "line": 81,
      "symbol": "handleMessage",
      "area": "fn:whatsapp-webhook"
-    }
-   ]
-  },
-  {
-   "old": "api_whatsapp_unlink_me",
-   "kind": "rpc",
-   "status": "missing",
-   "launch": "later",
-   "confidence": "high",
-   "missing": "M22",
-   "note": "The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4).",
-   "oldObject": {
-    "signature": [
-     "api_whatsapp_unlink_me() → undefined"
-    ]
-   },
-   "targets": [],
-   "areas": [
-    "mobile"
-   ],
-   "callSites": [
-    {
-     "file": "app/apps/mobile/app/settings/whatsapp.tsx",
-     "line": 53,
-     "symbol": "WhatsAppLinkScreenContent",
-     "area": "mobile"
     }
    ]
   },

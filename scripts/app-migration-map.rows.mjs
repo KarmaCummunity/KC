@@ -243,11 +243,9 @@ table('user_devices', 'same', 'table:user_devices', 'Already moved to the baseli
 
 // ───────────────────────────── WhatsApp bot and dev helpers
 for (const name of [
-  'api_whatsapp_my_link_status', 'api_whatsapp_create_link_code', 'api_whatsapp_unlink_me',
-  'api_whatsapp_admin_get_channel', 'api_whatsapp_admin_set_channel_enabled', 'api_whatsapp_admin_overview',
-  'api_whatsapp_admin_list_consent', 'api_whatsapp_admin_list_outbound', 'api_whatsapp_admin_list_rate_hits',
-  'api_whatsapp_admin_list_recent_matches', 'api_whatsapp_admin_list_conversations', 'api_whatsapp_admin_resend',
-  'api_whatsapp_admin_block_user', 'api_whatsapp_llm_budget_take', 'api_whatsapp_queue_reply',
+  // The link screen and the admin console make no call while M22 is open (package L7); these are
+  // the parked Edge Functions' own calls.
+  'api_whatsapp_llm_budget_take', 'api_whatsapp_queue_reply',
   'api_whatsapp_outbound_claim', 'api_whatsapp_outbound_result', 'api_whatsapp_claim_inbound',
   'api_whatsapp_release_inbound', 'api_whatsapp_inbound_allowed', 'api_whatsapp_ingest_inbound',
   'api_whatsapp_handle_keyword', 'api_whatsapp_redeem_link_code', 'api_whatsapp_bot_access',
@@ -326,7 +324,7 @@ export const missing = [
   { id: 'M17', title: 'Survey statistics for admins (overview, results, PMF report)', usedBy: 'Admin survey dashboard (SupabaseSurveyAdminRepository)', spec: 'FR-ADMIN-021', launch: 'no', action: 'defer', recommendation: 'Hide the admin survey dashboard behind a flag. When it opens no new object is needed at first: the super admin can read `survey_answers` (policy `survey_answers_select_super_admin`); aggregate on the device at launch volumes, and add an aggregate function to `90_research` when answers grow.' },
   { id: 'M20', title: 'KC support channels', usedBy: 'Donations → support KC card (SupabaseKcSupportChannelsRepository)', spec: 'FR-DONATE-010, FR-DONATE-011; launch plan A11 (only if the money world is on)', launch: 'no (money is a portal at launch)', action: 'defer', recommendation: 'The support card must render nothing when the call fails (today it throws: catch in the adapter). Later: a small reference table in `85_billing` (channel, label, url, payee phone; select for members), or ship the channels in app configuration.' },
   { id: 'M21', title: 'Organization finance summaries (ledger summary, donors summary)', usedBy: 'Org finance overview and donors screens (SupabaseFinanceLedgerRepository.summary, SupabaseFinanceDonorsRepository)', spec: 'FR-FIN-014, FR-FIN-017', launch: 'no', action: 'defer', recommendation: 'Org finance stays behind its flag. Later: two functions in `85_billing/100_org_finance_rpcs.sql` over the ledger, guarded like `finance_ledger_list`.' },
-  { id: 'M22', title: 'WhatsApp bot, linking and admin console', usedBy: 'Three Edge Functions (webhook, intake worker, sender), mobile link screen, admin WhatsApp console — 32 RPCs and one table', spec: 'design Q4 (PM): not in the launch baseline', launch: 'no', action: 'defer', recommendation: 'Do not deploy the three functions; hide the link screen and the admin console behind a flag until the `integrations` module lands.' },
+  { id: 'M22', title: 'WhatsApp bot, linking and admin console', usedBy: 'Three Edge Functions (webhook, intake worker, sender) — 19 RPCs and one table; the mobile link screen and the admin WhatsApp console are parked and make no call', spec: 'design Q4 (PM): not in the launch baseline', launch: 'no', action: 'defer', recommendation: 'Do not deploy the three functions; hide the link screen and the admin console behind a flag until the `integrations` module lands.' },
 ];
 
 // ═════════════════════════════ Launch tier of a row (spec D102, docs/spec/96, docs/spec/14)
@@ -465,9 +463,9 @@ export const packages = [
   { id: 'L7', title: 'WhatsApp bot, linking, admin console', launch: 'later', parallelWith: ['L1', 'L2', 'L3', 'L4', 'L5', 'L6'],
     select: (row) => /^(api_whatsapp|api_bot|whatsapp_)/.test(row.old),
     files: ['admin/SupabaseWhatsAppAdminRepository.ts', 'supabase/functions/{whatsapp-webhook,whatsapp-intake-worker,whatsapp-sender}', 'supabase/functions/_shared/whatsapp/**', 'apps/mobile: WhatsApp link screen'],
-    work: 'Waits for the `integrations` module (M22, design Q4).',
+    work: 'App side done: the admin console adapter makes no call and rejects with `BackendUnavailableError`, and the link screen is a not-available notice. The bot itself waits for the `integrations` module (M22, design Q4).',
     tests: ['deno test supabase/functions/_shared/whatsapp'],
-    degrade: 'The three functions are not deployed; the link screen and the admin console are hidden behind a flag.',
+    degrade: 'The three functions are not deployed; the settings row and the admin nav entry are hidden behind `WHATSAPP_BOT_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts), and both routes render the not-available notice.',
     risks: 'None for launch.' },
 ];
 

@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 207 | 97 | 20 | 46 | 1 | 43 |
+| RPCs | 194 | 97 | 20 | 46 | 1 | 30 |
 | Tables and views | 57 | 37 | 0 | 16 | 0 | 4 |
 | Storage buckets | 4 | 3 | 0 | 1 | 0 | 0 |
 | Realtime channels | 6 | 6 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 3 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | 277 | 146 | 20 | 63 | 1 | 47 |
+| **Total** | 264 | 146 | 20 | 63 | 1 | 34 |
 
 ### Launch scope
 
@@ -23,7 +23,7 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 | --- | --- | --- | --- | --- | --- | --- |
 | core | 104 | 86 | 1 | 17 | 0 | 0 |
 | wedge | 54 | 33 | 15 | 6 | 0 | 0 |
-| later | 119 | 27 | 4 | 40 | 1 | 47 |
+| later | 106 | 27 | 4 | 40 | 1 | 34 |
 | **Launch-critical (core + wedge)** | 158 | 119 | 16 | 23 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
@@ -44,7 +44,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Module | Call sites | 1:1 | Logic changes | Removed | MISSING |
 | --- | --- | --- | --- | --- | --- |
-| `infrastructure-supabase/src/admin/` | 36 | 6 | 18 | 0 | 12 |
+| `infrastructure-supabase/src/admin/` | 26 | 6 | 18 | 0 | 2 |
 | `infrastructure-supabase/src/auth/` | 2 | 2 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/blocks/` | 3 | 3 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/challenges/` | 9 | 6 | 3 | 0 | 0 |
@@ -73,7 +73,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/translations/` | 6 | 3 | 3 | 0 | 0 |
 | `infrastructure-supabase/src/users/` | 33 | 20 | 13 | 0 | 0 |
 | `infrastructure-supabase/src/volunteering/` | 9 | 3 | 6 | 0 | 0 |
-| `apps/mobile` (direct calls outside the adapters) | 20 | 16 | 1 | 0 | 3 |
+| `apps/mobile` (direct calls outside the adapters) | 17 | 16 | 1 | 0 | 0 |
 | Edge Function `_shared` | 11 | 0 | 0 | 0 | 11 |
 | Edge Function `backfill-image-thumbs` | 2 | 0 | 2 | 0 | 0 |
 | Edge Function `embed-worker` | 3 | 3 | 0 | 0 | 0 |
@@ -92,7 +92,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/admin/`
 
-36 call sites: 6 map 1:1, 18 need logic changes, 0 removed, 12 MISSING.
+26 call sites: 6 map 1:1, 18 need logic changes, 0 removed, 2 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -106,16 +106,6 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `admin_org_tree` | later | CHANGED | table `admin_role_grants` | Build the tree on the device from the grants (`manager_grant_id`, `scope_org_id`). |  | medium | SupabaseOrgHierarchyRepository.ts:116 |
 | `admin_revoke_role` | core | 1:1 | `admin_revoke_role(p_grant_id: string) → undefined` | Signature unchanged. | `account_not_active`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `unauthenticated` | high | SupabaseAdminRoleRepository.ts:143 |
 | `admin_set_manager` | later | CHANGED | `admin_set_manager(p_grant_id: string, p_manager_grant_id: string) → undefined` | `p_manager_grant_id` is required: a grant can be moved under another grant but not detached. | `account_not_active`, `forbidden_revoke`, `grant_already_revoked`, `grant_not_found`, `invalid_manager`, `unauthenticated` | high | SupabaseOrgHierarchyRepository.ts:130 |
-| `api_whatsapp_admin_block_user` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | SupabaseWhatsAppAdminRepository.ts:176 |
-| `api_whatsapp_admin_get_channel` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | SupabaseWhatsAppAdminRepository.ts:49 |
-| `api_whatsapp_admin_list_consent` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | SupabaseWhatsAppAdminRepository.ts:82 |
-| `api_whatsapp_admin_list_conversations` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | SupabaseWhatsAppAdminRepository.ts:156 |
-| `api_whatsapp_admin_list_outbound` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | SupabaseWhatsAppAdminRepository.ts:104 |
-| `api_whatsapp_admin_list_rate_hits` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | SupabaseWhatsAppAdminRepository.ts:131 |
-| `api_whatsapp_admin_list_recent_matches` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | SupabaseWhatsAppAdminRepository.ts:141 |
-| `api_whatsapp_admin_overview` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | SupabaseWhatsAppAdminRepository.ts:63 |
-| `api_whatsapp_admin_resend` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | SupabaseWhatsAppAdminRepository.ts:170 |
-| `api_whatsapp_admin_set_channel_enabled` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | SupabaseWhatsAppAdminRepository.ts:55 |
 | `finance_account_upsert` | later | CHANGED | `finance_account_upsert(p_account_id?: string, p_is_active?: boolean, p_kind?: string, p_last4?: string, p_name?: string, p_opening_balance_agorot?: number, p_opening_balance_at?: string, p_org_id: string) → string` | New required `p_org_id`; `p_opening_balance_cents` → `_agorot`; `p_sort_order` is gone. | `account_not_active`, `account_not_found`, `forbidden`, `unauthenticated` | high | SupabaseFinanceAccountsRepository.ts:52 |
 | `finance_accounts_list` | later | CHANGED | `finance_accounts_list(p_org_id: string) → { balance_agorot: number id: string is_active: boolean kind: string last4: string name: string opening_balance_agorot: number opening_balance_at: string sort_order: number }[]` | New required `p_org_id`; `*_cents` → `*_agorot`; `account_id` → `id`; no `entry_count`. | `account_not_active`, `forbidden`, `unauthenticated` | high | SupabaseFinanceAccountsRepository.ts:45 |
 | `finance_donors_summary` | later | MISSING M21 | — | No donors summary function. |  | high | SupabaseFinanceDonorsRepository.ts:31 |
@@ -570,7 +560,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `apps/mobile` (direct calls outside the adapters)
 
-20 call sites: 16 map 1:1, 1 need logic changes, 0 removed, 3 MISSING.
+17 call sites: 16 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -578,9 +568,6 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `chat-media` (bucket) | core | 1:1 | bucket `chat-media` | Declared in `95_platform/090_storage.sql`: private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members (M23, verified). |  | high | chatMediaUpload.ts:44, chatMediaUrl.ts:17 |
 | `post-images` (bucket) | core | 1:1 | bucket `post-images` | Declared by the baseline (own-folder insert / delete policies); `post_media.storage_bucket` points at it. |  | high | [id].tsx:42, PostImageCarousel.tsx:72, usePostShare.ts:64, probeDraftImageAvailability.ts:30, imageUpload.ts:179, imageUpload.ts:191, listingImageUpload.ts:42, listingImageUpload.ts:56 |
 | `topic = 'user:${userId}:notifications'` (channel) | core | 1:1 | topic `user:<user id>:notifications` | Already on the baseline contract (event `badge`). |  | high | useNotificationInboxBadge.ts:30 |
-| `api_whatsapp_create_link_code` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | whatsapp.tsx:40 |
-| `api_whatsapp_my_link_status` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | whatsapp.tsx:20 |
-| `api_whatsapp_unlink_me` | later | MISSING M22 | — | The `integrations` schema is reserved but empty: the WhatsApp module lands later as one additive migration (design Q4). |  | high | whatsapp.tsx:53 |
 | `app_flags` (table) | core | 1:1 | table `app_flags` | Same `select key, enabled`, for signed-in members only (no `anon` grant): before sign-in the compiled defaults apply. After sign-in the same map is `bootstrap_session().flags`. The rows (`world_<slug>_enabled`) are seed data, not part of the baseline (M09, verified). |  | high | featureFlagsComposition.ts:9 |
 | `karma_ledger` (table) | wedge | CHANGED | table `karma_ledger` | `ledger_id` → `id`, `points_delta` → `points`, `ref_type` / `ref_id` → `subject` / `reference`. The total is `my_karma_points()`. |  | high | useKarmaHistory.ts:24 |
 
@@ -742,7 +729,7 @@ Every capability the application or an Edge Function uses today that has no equi
 | M17 | no | later | Survey statistics for admins (overview, results, PMF report) | `admin_pmf_survey_report`, `admin_survey_overview`, `admin_survey_results` | Admin survey dashboard (SupabaseSurveyAdminRepository) | FR-ADMIN-021 | no | defer | Hide the admin survey dashboard behind a flag. When it opens no new object is needed at first: the super admin can read `survey_answers` (policy `survey_answers_select_super_admin`); aggregate on the device at launch volumes, and add an aggregate function to `90_research` when answers grow. |
 | M20 | no | later | KC support channels | `list_kc_support_channels` | Donations → support KC card (SupabaseKcSupportChannelsRepository) | FR-DONATE-010, FR-DONATE-011; launch plan A11 (only if the money world is on) | no (money is a portal at launch) | defer | The support card must render nothing when the call fails (today it throws: catch in the adapter). Later: a small reference table in `85_billing` (channel, label, url, payee phone; select for members), or ship the channels in app configuration. |
 | M21 | no | later | Organization finance summaries (ledger summary, donors summary) | `finance_donors_summary`, `finance_ledger_summary` | Org finance overview and donors screens (SupabaseFinanceLedgerRepository.summary, SupabaseFinanceDonorsRepository) | FR-FIN-014, FR-FIN-017 | no | defer | Org finance stays behind its flag. Later: two functions in `85_billing/100_org_finance_rpcs.sql` over the ledger, guarded like `finance_ledger_list`. |
-| M22 | no | later | WhatsApp bot, linking and admin console | `api_bot_apply_extraction`, `api_bot_find_matches`, `api_bot_listing_cards`, `api_bot_my_listings`, `api_bot_my_matches`, `api_bot_open_session`, `api_bot_publish_listing`, `api_bot_search_listings` … (33) | Three Edge Functions (webhook, intake worker, sender), mobile link screen, admin WhatsApp console — 32 RPCs and one table | design Q4 (PM): not in the launch baseline | no | defer | Do not deploy the three functions; hide the link screen and the admin console behind a flag until the `integrations` module lands. |
+| M22 | no | later | WhatsApp bot, linking and admin console | `api_bot_apply_extraction`, `api_bot_find_matches`, `api_bot_listing_cards`, `api_bot_my_listings`, `api_bot_my_matches`, `api_bot_open_session`, `api_bot_publish_listing`, `api_bot_search_listings` … (20) | Three Edge Functions (webhook, intake worker, sender) — 19 RPCs and one table; the mobile link screen and the admin WhatsApp console are parked and make no call | design Q4 (PM): not in the launch baseline | no | defer | Do not deploy the three functions; hide the link screen and the admin console behind a flag until the `integrations` module lands. |
 
 ## 5. Work packages for the adapter phase
 
@@ -763,7 +750,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | L4 — Money: donations to organizations, standing orders, org finance, org onboarding | later | 32 | 8 | 20 | 1 | 3 | L1, L2, L3, L5, L6, L7 |
 | L5 — Surveys, feedback, public research | later | 14 | 6 | 3 | 0 | 5 | L1, L2, L3, L4, L6, L7 |
 | L6 — Back-office tools: tasks, CRM, timesheets | later | 0 | 0 | 0 | 0 | 0 | L1, L2, L3, L4, L5, L7 |
-| L7 — WhatsApp bot, linking, admin console | later | 33 | 0 | 0 | 0 | 33 | L1, L2, L3, L4, L5, L6 |
+| L7 — WhatsApp bot, linking, admin console | later | 20 | 0 | 0 | 0 | 20 | L1, L2, L3, L4, L5, L6 |
 
 ### P0 — Contract switch and the degrade rule (first, alone)
 
@@ -872,9 +859,9 @@ In launch order: after package *n* the app is shippable with everything up to *n
 ### L7 — WhatsApp bot, linking, admin console
 
 - **Owns:** `admin/SupabaseWhatsAppAdminRepository.ts`, `supabase/functions/{whatsapp-webhook,whatsapp-intake-worker,whatsapp-sender}`, `supabase/functions/_shared/whatsapp/**`, `apps/mobile: WhatsApp link screen`
-- **Work:** Waits for the `integrations` module (M22, design Q4).
+- **Work:** App side done: the admin console adapter makes no call and rejects with `BackendUnavailableError`, and the link screen is a not-available notice. The bot itself waits for the `integrations` module (M22, design Q4).
 - **Must pass:** deno test supabase/functions/_shared/whatsapp
-- **If reached before it is migrated:** The three functions are not deployed; the link screen and the admin console are hidden behind a flag.
+- **If reached before it is migrated:** The three functions are not deployed; the settings row and the admin nav entry are hidden behind `WHATSAPP_BOT_AVAILABLE` (apps/mobile/src/lib/parkedFeatures.ts), and both routes render the not-available notice.
 - **Risks:** None for launch.
 
 ## 6. Edge Functions
