@@ -24,14 +24,35 @@ coordinates are WGS84 decimal degrees, so a refresh produces a reviewable diff.
 
 ## Sources and attribution
 
-| Data | Source | Licence / attribution as recorded in this repository |
-| --- | --- | --- |
-| City codes and names | data.gov.il locality list, resource `5c78e9fa-c2e2-4771-93ff-7f400a12f7ba` (migration `0008`) | not stated in the repository |
-| City coordinates | `akivaschiff/israel-geolocation` `src/locations.json`, snapshot 2026-05-16; 27 localities from OpenStreetMap Nominatim; two manual corrections (`3400`, `3658`); about 30 large cities set by hand earlier (migrations `0023`, `0024`, `0089`) | israel-geolocation: MIT. OpenStreetMap data: licence not stated in the repository |
-| Streets | data.gov.il package `321`, resource `9ad3862c-8391-4b2f-84a4-2d4c68625f4b`, unfiltered (engineering decision D-36; migration `0101`, generator `scripts/generate-streets-seed.mjs`) | not stated in the repository |
-| Road junctions | Ministry of Transport "junction and interchange names", data.gov.il package `zmt_names`, resource `09bbc3b7-7289-4beb-97c7-a10ebc4973c6`, existing places only (product decision D98; migration `0513`, generator `scripts/import-road-junctions.mjs`) | CC BY; the source is credited in the app's About screen (D98) |
+Licence check of 2026-11-11 (issue #2079): every source is free to use, including commercially,
+with attribution. The PM sign-off to load kc-prod was given on 2026-11-11. This is a read of the
+licence terms, not legal advice. The attribution strings below are shown on the app's About
+screen (`aboutContent.footerDataCredit*` in `aboutContentCopyA.ts`, he and en); keep them in step.
 
-Where the licence is "not stated", confirm it before the first production load.
+| Data | Source | Licence | Attribution required |
+| --- | --- | --- | --- |
+| City codes and names | data.gov.il package `citiesandsettelments`, resource `5c78e9fa-c2e2-4771-93ff-7f400a12f7ba` (Population and Immigration Authority; migration `0008`); fetched 2026-11-08 | data.gov.il general data licence (https://data.gov.il/terms-of-use; CKAN `license_id = other-open`). Commercial and non-commercial use, copying, redistribution and derivative works allowed | Yes: state the source |
+| Streets | data.gov.il package `321`, resource `9ad3862c-8391-4b2f-84a4-2d4c68625f4b` (Population and Immigration Authority), unfiltered (D-36; migration `0101`, generator `scripts/generate-streets-seed.mjs`); fetched 2026-11-01 | Same data.gov.il general data licence | Yes, same reason (the list is loaded unchanged) |
+| Road junctions | Ministry of Transport and Road Safety "junction and interchange names", data.gov.il package `zmt_names`, resource `09bbc3b7-7289-4beb-97c7-a10ebc4973c6`, existing places only (D98; migration `0513`, generator `scripts/import-road-junctions.mjs`) | CC BY | Yes: credit the Ministry and name the licence |
+| City coordinates (bulk) | `akivaschiff/israel-geolocation` `src/locations.json`, snapshot 2026-05-16 | MIT | Keep the copyright notice in the third-party notices |
+| 27 city coordinates | OpenStreetMap Nominatim | ODbL 1.0. Share-alike is not triggered: 27 features is far below the OSMF "Substantial" guideline's 100-feature line, and the OSMF Geocoding guideline treats individual geocoding results as insubstantial extracts. A one-off extraction; do not aggregate into a substantial copy of OSM | Yes: "© OpenStreetMap contributors" |
+
+Other coordinate sources: two manual corrections (`3400`, `3658`); about 30 large cities set by
+hand earlier (migrations `0023`, `0024`, `0089`).
+
+### Attribution strings (About screen)
+
+- Cities and streets: `Place and street lists: Population and Immigration Authority, via the Israeli Government Databases portal (data.gov.il), used under the data.gov.il open data licence.`
+- Junctions: `Junction and interchange names: Ministry of Transport and Road Safety, data.gov.il, licensed under CC BY (https://creativecommons.org/licenses/by/4.0/).`
+- OpenStreetMap: `© OpenStreetMap contributors (ODbL 1.0)`, link https://www.openstreetmap.org/copyright
+- MIT notice: `israel-geolocation, Copyright (c) 2025 akivaschiff, MIT License.`
+- Required by the data.gov.il licence (no implied endorsement, as is): `This app is not an official government service and is not endorsed by the State of Israel. The data is provided as is; the official publications prevail over the data shown.`
+
+### What the data.gov.il licence forbids
+
+Misleading or distorting presentation, cross-referencing that harms a person's privacy, and
+implying official status or State endorsement. The licence version in force when the data was
+fetched governs, so keep the fetch dates above with the files.
 
 ## Loading
 
