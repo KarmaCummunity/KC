@@ -126,7 +126,7 @@ Client state that encodes a server machine is a copy (§1 rule): it goes when it
 | Match UI | `lib/matching.ts` | Match candidate | narrower, consistent |
 | Admin task | `(admin)/tasks/[taskId]` | Admin task | on the kernel ✅ |
 | Unused graph copies | `canTransitionGivingHandoff`, `validateGivingHandoffTransition` (`givingHandoff.ts`), `isValidRideBookingTransition` (`RideBooking.ts`) | Handoff, ride booking | tests only or unused: delete in wave 2 |
-| Legacy ride types | `RideStatus.ts`, `RideParticipantStatus.ts`, `StartRideUseCase`, `ArriveRideUseCase` | retired ride tables | retire with G44 (wave 1d) |
+| Legacy ride types | `RideStatus.ts`, `RideParticipantStatus.ts`, `StartRideUseCase`, `ArriveRideUseCase` | retired ride tables | deleted with the v1 ride domain types (2026-11-11) |
 
 ## 4. Divergences found (verified in code, 2026-11-09)
 

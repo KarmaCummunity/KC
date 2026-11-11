@@ -12,8 +12,6 @@ export const timeVolunteer = {
   signUp: 'הרשמה',
   waitlist: 'רשימת המתנה',
   cancelSignup: 'ביטול הרשמה',
-  checkIn: 'צ׳ק-אין',
-  checkInDone: 'צ׳ק-אין בוצע — {{hours}} שעות, +{{karma}} נקודות קארמה',
   addCalendar: 'הוספה ליומן',
   calendarShareTitle: 'משמרת התנדבות',
   statusRegistered: 'רשום/ה',
