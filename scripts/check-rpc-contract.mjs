@@ -34,21 +34,28 @@ export function collectSymbols(rootDir, regex) {
   return symbols;
 }
 
+/** Every `.sql` file under `dir`, recursively (the baseline sources are nested by module). */
+function walkSqlFiles(dir, out = []) {
+  if (!existsSync(dir)) return out;
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) walkSqlFiles(full, out);
+    else if (entry.endsWith('.sql')) out.push(full);
+  }
+  return out;
+}
+
+// What the database declares: the incremental migrations, the baseline schema sources
+// (`supabase/schemas`, the contract the app is generated against) and the generated types.
 function loadCorpus(repoRoot) {
-  const migrationsDir = join(repoRoot, 'supabase/migrations');
-  const migrationSql = existsSync(migrationsDir)
-    ? readdirSync(migrationsDir)
-        .filter((f) => f.endsWith('.sql'))
-        .map((f) => readFileSync(join(migrationsDir, f), 'utf8'))
-        .join('\n')
-    : '';
-  // Baseline types plus the frozen legacy copy: unmigrated adapters still address the old schema.
-  const typesDir = join(repoRoot, 'app/packages/infrastructure-supabase/src');
-  const types = ['database.types.ts', 'database.legacy.types.ts']
-    .map((name) => join(typesDir, name))
-    .map((file) => (existsSync(file) ? readFileSync(file, 'utf8') : ''))
-    .join('\n');
-  return (migrationSql + '\n' + types).toLowerCase();
+  const sqlFiles = [
+    ...walkSqlFiles(join(repoRoot, 'supabase/migrations')),
+    ...walkSqlFiles(join(repoRoot, 'supabase/schemas')),
+  ];
+  const sql = sqlFiles.map((file) => readFileSync(file, 'utf8')).join('\n');
+  const typesFile = join(repoRoot, 'app/packages/infrastructure-supabase/src/database.types.ts');
+  const types = existsSync(typesFile) ? readFileSync(typesFile, 'utf8') : '';
+  return (sql + '\n' + types).toLowerCase();
 }
 
 export function checkRpcContract({ repoRoot = DEFAULT_REPO_ROOT } = {}) {
@@ -70,7 +77,7 @@ export function checkRpcContract({ repoRoot = DEFAULT_REPO_ROOT } = {}) {
       `"${needle}":`,
     ];
     if (!patterns.some((p) => corpus.includes(p))) {
-      errors.push(`RPC '${rpc}' used in infrastructure-supabase but not found in migrations or database.types.ts`);
+      errors.push(`RPC '${rpc}' used in infrastructure-supabase but not found in migrations, supabase/schemas or database.types.ts`);
     }
   }
 
@@ -87,7 +94,7 @@ export function checkRpcContract({ repoRoot = DEFAULT_REPO_ROOT } = {}) {
       `create view ${needle}`,
     ];
     if (!patterns.some((p) => corpus.includes(p))) {
-      errors.push(`Table '${table}' used in infrastructure-supabase but not found in migrations or database.types.ts`);
+      errors.push(`Table '${table}' used in infrastructure-supabase but not found in migrations, supabase/schemas or database.types.ts`);
     }
   }
 

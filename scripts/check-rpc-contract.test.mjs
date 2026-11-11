@@ -110,3 +110,26 @@ test('skips files inside __tests__ directories', () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('passes when RPC and table exist only in the baseline schema sources', () => {
+  const root = mkdtempSync(join(tmpdir(), 'contract-baseline-'));
+  try {
+    const infra = join(root, 'app/packages/infrastructure-supabase/src');
+    const module = join(root, 'supabase/schemas/20_posts');
+    mkdirSync(infra, { recursive: true });
+    mkdirSync(module, { recursive: true });
+    mkdirSync(join(root, 'scripts'), { recursive: true });
+    seedAllowlist(root);
+    seedTypesStub(root);
+    writeFileSync(join(infra, 'Repo.ts'), `client.rpc('feed_page', {}); client.from('user_stats').select();`);
+    writeFileSync(
+      join(module, '010_posts.sql'),
+      `create table public.user_stats (user_id uuid primary key);
+       create function public.feed_page() returns setof uuid language sql as $$ select null::uuid $$;`,
+    );
+    const result = checkRpcContract({ repoRoot: root });
+    assert.equal(result.ok, true, result.errors.join('\n'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

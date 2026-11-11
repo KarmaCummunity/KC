@@ -1,4 +1,4 @@
-export { getSupabaseClient, getLegacySupabaseClient, resetSupabaseClient, setOnForbiddenCallback } from './client';
+export { getSupabaseClient, resetSupabaseClient, setOnForbiddenCallback } from './client';
 export type { SupabaseAuthStorage, SupabaseClientOptions } from './client';
 export {
   createTimeoutFetch,
@@ -7,7 +7,6 @@ export {
   isTimeoutError,
 } from './timeoutFetch';
 export type { Database } from './database.types';
-export type { Database as LegacyDatabase } from './database.legacy.types';
 
 export { SupabaseAuthService } from './auth/SupabaseAuthService';
 export { SupabaseUserRepository } from './users/SupabaseUserRepository';

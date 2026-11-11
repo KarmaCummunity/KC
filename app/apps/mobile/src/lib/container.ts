@@ -5,8 +5,6 @@ import { createWhatsAppAdminUseCases } from './whatsappAdminContainer';
 import { pickAuthStorage } from '../services/authSecureStorage';
 import {
   getSupabaseClient,
-  getLegacySupabaseClient,
-  type LegacyDatabase,
   SupabaseUserRepository,
   SupabaseChatRepository,
   SupabaseChatRealtime,
@@ -123,13 +121,9 @@ import { createFinanceUseCases } from './financeContainer';
 import { isSupabaseConfigured } from './supabasePublicConfig';
 import { bindSupabaseClient } from './bindSupabaseClient';
 
-// `supabase` is baseline-typed (migrated code); `legacySupabase` is the same connection typed
-// against the frozen old schema for unmigrated adapters (docs/db/app-migration-playbook.md).
+// The one Supabase connection of the app, typed against the production baseline schema.
 export const supabase = bindSupabaseClient(isSupabaseConfigured(), () =>
   getSupabaseClient({ storage: pickAuthStorage() }),
-);
-export const legacySupabase = bindSupabaseClient<LegacyDatabase>(isSupabaseConfigured(), () =>
-  getLegacySupabaseClient({ storage: pickAuthStorage() }),
 );
 
 const userRepo = new SupabaseUserRepository(supabase);
