@@ -60,6 +60,8 @@ export const adminEn = {
     auditKpi: 'Audit Log',
     auditOpenLabel: 'Open',
     noCount: '—',
+    searchPlaceholder: 'Search admin screens and settings',
+    searchEmpty: 'No matching screen',
   },
   comingSoon: {
     title: 'This screen is coming soon',

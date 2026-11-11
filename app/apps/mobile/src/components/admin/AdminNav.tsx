@@ -15,31 +15,12 @@ import { useAdminRoles } from '../../hooks/useAdminRoles';
 import { rowDirectionStart, textAlignStart } from '../../lib/rtlLayout';
 import { useLocaleBundle, type LocaleBundle } from '../../i18n/useLocaleBundle';
 import { useLaunchSurface } from '../../hooks/useLaunchSurface';
+import { ADMIN_DESTINATIONS, type AdminDestination } from '../../lib/admin/adminDestinations';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
-interface NavItem {
-  key: keyof LocaleBundle['admin']['nav'];
-  href: Extract<Href, string>;
-  icon: IconName;
-  perm: AdminPermission | null;
-}
-
-const ITEMS: readonly NavItem[] = [
-  { key: 'dashboard', href: '/(admin)',         icon: 'grid-outline',             perm: null },
-  { key: 'reports',   href: '/(admin)/reports', icon: 'flag-outline',             perm: null },
-  { key: 'tasks',     href: '/(admin)/tasks',   icon: 'checkbox-outline',         perm: 'tasks.view' },
-  { key: 'admins',    href: '/(admin)/admins',  icon: 'shield-checkmark-outline', perm: 'admins.view' },
-  { key: 'users',     href: '/(admin)/users',   icon: 'people-outline',           perm: 'users.search' },
-  { key: 'posts',     href: '/(admin)/posts',   icon: 'document-text-outline',    perm: 'posts.search' },
-  { key: 'surveys',   href: '/(admin)/surveys', icon: 'bar-chart-outline',        perm: 'surveys.view' },
-  { key: 'audit',     href: '/(admin)/audit',   icon: 'time-outline',             perm: 'audit.view_own' },
-  { key: 'whatsapp',  href: '/(admin)/whatsapp', icon: 'logo-whatsapp',            perm: 'whatsapp.manage' },
-  { key: 'matching',  href: '/(admin)/matching', icon: 'git-compare-outline',      perm: 'matching.view_quality' },
-  { key: 'money',     href: '/(admin)/money',    icon: 'wallet-outline',           perm: 'money.manage' },
-  { key: 'donationLinks', href: '/(admin)/donation-links', icon: 'link-outline',     perm: 'donation_links.review' },
-  { key: 'stats',     href: '/(admin)/stats',    icon: 'stats-chart-outline',      perm: 'stats.view_platform' },
-];
+type NavItem = AdminDestination;
+const ITEMS = ADMIN_DESTINATIONS;
 
 function normalize(href: string): string {
   // Strip the expo-router group prefix so the literal route matches what

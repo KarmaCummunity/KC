@@ -60,6 +60,8 @@ export const adminHe = {
     auditKpi: 'יומן פעולות',
     auditOpenLabel: 'פתיחה',
     noCount: '—',
+    searchPlaceholder: 'חיפוש מסך או הגדרה בפורטל',
+    searchEmpty: 'לא נמצא מסך תואם',
   },
   comingSoon: {
     title: 'מסך זה יזמין בקרוב',
