@@ -2,7 +2,6 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { MarketplaceListingDetail } from '@kc/domain';
 import { givingHandoffUseCases } from '../../services/givingHandoffComposition';
-import { ridesKnowledgeRpcs } from '../../services/ridesKnowledgeComposition';
 import { HandoffActionButton } from './HandoffActionButton';
 
 interface Props {
@@ -95,24 +94,6 @@ export function GivingHandoffRequestButtons({
               action: 'claim_food',
               payload: { listingId: detail.listingId },
             },
-          )
-        }
-      />
-    );
-  }
-
-  if (detail.worldSlug === 'knowledge') {
-    return (
-      <HandoffActionButton
-        testID="giving-handoff-book-slot"
-        label={t('givingHandoff.bookKnowledgeSlot')}
-        busy={busy}
-        onPress={() =>
-          run(
-            async () => {
-              await ridesKnowledgeRpcs.bookKnowledgeSlot(detail.listingId);
-            },
-            'match_made',
           )
         }
       />
