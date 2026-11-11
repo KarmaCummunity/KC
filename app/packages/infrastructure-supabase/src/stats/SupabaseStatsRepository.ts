@@ -26,6 +26,8 @@ type ActivityRpcRow = {
   post_id: string;
   post_title: string;
   actor_display_name: string | null;
+  /** Absent from servers before `0742`. */
+  world_slug?: string | null;
 };
 
 function mapActivityKind(kind: string): PersonalActivityKind {
@@ -101,6 +103,7 @@ export class SupabaseStatsRepository implements IStatsRepository {
       postId: r.post_id,
       postTitle: r.post_title,
       actorDisplayName: r.actor_display_name,
+      worldSlug: r.world_slug ?? null,
     }));
   }
 
