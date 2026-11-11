@@ -1687,6 +1687,8 @@ export type Database = {
           ends_at: string
           post_id: string
           registration_policy: string
+          series_id: string | null
+          series_on: string | null
           starts_at: string
           updated_at: string
         }
@@ -1698,6 +1700,8 @@ export type Database = {
           ends_at: string
           post_id: string
           registration_policy?: string
+          series_id?: string | null
+          series_on?: string | null
           starts_at: string
           updated_at?: string
         }
@@ -1709,6 +1713,8 @@ export type Database = {
           ends_at?: string
           post_id?: string
           registration_policy?: string
+          series_id?: string | null
+          series_on?: string | null
           starts_at?: string
           updated_at?: string
         }
@@ -1717,6 +1723,12 @@ export type Database = {
             foreignKeyName: "post_event_details_post_id_fkey"
             columns: ["post_id"]
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_event_details_series_id_fkey"
+            columns: ["series_id"]
+            referencedRelation: "post_series"
             referencedColumns: ["id"]
           },
         ]
@@ -2315,6 +2327,70 @@ export type Database = {
             foreignKeyName: "post_ride_details_series_id_fkey"
             columns: ["series_id"]
             referencedRelation: "ride_series"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_series: {
+        Row: {
+          beneficiary_org_id: string | null
+          created_at: string
+          duration_minutes: number
+          ends_on: string | null
+          event_template: Json
+          id: string
+          owner_id: string
+          post_template: Json
+          start_time: string
+          starts_on: string
+          status: string
+          time_zone: string
+          updated_at: string
+          weekdays: number
+        }
+        Insert: {
+          beneficiary_org_id?: string | null
+          created_at?: string
+          duration_minutes: number
+          ends_on?: string | null
+          event_template: Json
+          id?: string
+          owner_id: string
+          post_template: Json
+          start_time: string
+          starts_on?: string
+          status?: string
+          time_zone?: string
+          updated_at?: string
+          weekdays: number
+        }
+        Update: {
+          beneficiary_org_id?: string | null
+          created_at?: string
+          duration_minutes?: number
+          ends_on?: string | null
+          event_template?: Json
+          id?: string
+          owner_id?: string
+          post_template?: Json
+          start_time?: string
+          starts_on?: string
+          status?: string
+          time_zone?: string
+          updated_at?: string
+          weekdays?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_series_beneficiary_org_id_fkey"
+            columns: ["beneficiary_org_id"]
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_series_owner_id_fkey"
+            columns: ["owner_id"]
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -3908,6 +3984,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      cancel_post_series_date: {
+        Args: { p_post_id: string }
+        Returns: undefined
+      }
       cancel_ride_booking: {
         Args: { p_handoff_id: string }
         Returns: {
@@ -4238,6 +4318,19 @@ export type Database = {
           p_post_id?: string
         }
         Returns: Json
+      }
+      create_post_series: {
+        Args: {
+          p_duration_minutes: number
+          p_ends_on?: string
+          p_event: Json
+          p_org_id?: string
+          p_post: Json
+          p_start_time: string
+          p_time_zone?: string
+          p_weekdays: number
+        }
+        Returns: string
       }
       create_post_with_details: {
         Args: { p_details: Json; p_post: Json }
@@ -5137,6 +5230,10 @@ export type Database = {
         Args: { p_post_id: string; p_reaction_type: string }
         Returns: string
       }
+      set_post_series_status: {
+        Args: { p_series_id: string; p_status: string }
+        Returns: undefined
+      }
       set_privacy_mode: { Args: { p_mode: string }; Returns: undefined }
       set_ride_series_status: {
         Args: { p_series_id: string; p_status: string }
@@ -5176,6 +5273,18 @@ export type Database = {
           p_version: number
         }
         Returns: string
+      }
+      update_post_series: {
+        Args: {
+          p_duration_minutes: number
+          p_ends_on?: string
+          p_event?: Json
+          p_post?: Json
+          p_series_id: string
+          p_start_time: string
+          p_weekdays: number
+        }
+        Returns: undefined
       }
       update_ride_series: {
         Args: {

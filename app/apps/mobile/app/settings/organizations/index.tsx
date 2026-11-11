@@ -51,6 +51,13 @@ export default function MyOrganizationsScreen() {
             loading={loading}
             onOpen={(org) => router.push({ pathname: '/settings/organizations/[orgId]', params: { orgId: org.orgId } })}
           />
+          {/* The member's recurring events (FR-POST-024): pause, change times, cancel a date, end. */}
+          <SettingsScreenRow
+            testID="my-organizations-series"
+            icon="repeat-outline"
+            label={t('postSeries.mine')}
+            onPress={() => router.push('/settings/organizations/series')}
+          />
           {canRegister ? (
             <PrimaryButton
               testID="my-organizations-register"

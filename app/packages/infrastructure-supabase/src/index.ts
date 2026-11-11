@@ -79,6 +79,7 @@ export { SupabaseRidePlaceRepository } from './rides/SupabaseRidePlaceRepository
 export { SupabaseRidesFeedRepository } from './rides/SupabaseRidesFeedRepository';
 export { SupabaseRideSavedRoutesRepository } from './rides/SupabaseRideSavedRoutesRepository';
 export { SupabaseRideSeriesRepository } from './rides/SupabaseRideSeriesRepository';
+export { SupabasePostSeriesRepository } from './series/SupabasePostSeriesRepository';
 export { SupabaseRideHouseNumberRepository } from './rides/SupabaseRideHouseNumberRepository';
 export { SupabaseRideSafetyRepository } from './rides/SupabaseRideSafetyRepository';
 export { SupabaseSurveyRepository } from './survey/SupabaseSurveyRepository';

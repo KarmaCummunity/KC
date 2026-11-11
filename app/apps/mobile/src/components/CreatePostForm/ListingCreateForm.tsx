@@ -26,6 +26,7 @@ import { ListingKindChooser } from './ListingKindChooser';
 import { KindGate } from './ListingKindGate';
 import { TimeOfferKindChooser } from './TimeOfferKindChooser';
 import { OrgEventMembershipHint } from './OrgEventMembershipHint';
+import { EventRecurrenceSection } from './EventRecurrenceSection';
 import { formKeyboardAccessoryProps, useFormFieldFocus } from '../../hooks/useFormFieldFocus';
 import { KeyboardFormAccessory } from '../ui/KeyboardFormAccessory';
 
@@ -219,12 +220,10 @@ export function ListingCreateForm({
             disabled={form.busy}
           />
 
-          <ListingDetailFields
-            specs={form.specs}
-            details={form.details}
-            onChange={form.setDetail}
-            disabled={form.busy}
-          />
+          <ListingDetailFields specs={form.specs} details={form.details} onChange={form.setDetail} disabled={form.busy} />
+          {form.isEvent ? (
+            <EventRecurrenceSection value={form.recurrence} onChange={form.setRecurrence} details={form.details} disabled={form.busy} />
+          ) : null}
 
           <View style={styles.section}>
             <TextField
