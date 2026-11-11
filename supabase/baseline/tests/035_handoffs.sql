@@ -398,6 +398,10 @@ select is(pg_temp.events('notification', 'giving_handoff_expired'), 2::bigint, '
 select is(pg_temp.act('a', 'select public.pause_post(#02)'), 'ok', 'with no live handoff the owner pauses');
 select is(pg_temp.act('a', 'select public.pause_post(#02)'), 'listing_wrong_status', 'only an open post is paused');
 select is(pg_temp.act('b', 'select public.resume_post(#02)'), 'post_not_found', 'only a manager resumes');
+-- A draft item offer is published with a photo (D132).
+insert into public.post_media (post_id, owner_id, storage_key, ordinal, mime_type, size_bytes)
+values ('10000000-0000-4000-8000-000000000012', '00000000-0000-4000-8000-00000000000a',
+        '00000000-0000-4000-8000-00000000000a/12.jpg', 0, 'image/jpeg', 10);
 select is(pg_temp.act('a', 'select public.resume_post(#02)') || ' ' || pg_temp.act('a', 'select public.publish_post(#12)')
     || ' ' || pg_temp.act('a', 'select public.publish_post(#12)'), 'ok ok listing_wrong_status', 'resume and publish move once');
 

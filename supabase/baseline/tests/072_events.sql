@@ -109,7 +109,7 @@ as $$
     $q$select status || coalesce(':' || cancel_reason, '') from public.post_handoffs where id = ~%s.%s$q$, p_title, p_who));
 $$;
 
-select plan(64);
+select plan(63);
 
 -- Alice organizes. Bob, Carol and Eve attend; only Eve has a verified identity. Dan and
 -- Alice are blocked.
