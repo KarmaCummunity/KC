@@ -13,6 +13,7 @@ import { useMyMarketplaceListings } from '../../../hooks/useMyMarketplaceListing
 import { housingQueryKeys, housingUseCases } from '../../../services/housingComposition';
 import { rtlTextAlignStart } from '../../../lib/rtlTextAlignStart';
 import { WorldSubScreenChrome } from '../../giving/useWorldHeader';
+import { listOrEmpty } from '../../../lib/backendAvailability';
 
 export function HousingMyHostingScreen() {
   const { t } = useTranslation();
@@ -30,7 +31,7 @@ export function HousingMyHostingScreen() {
   const pending = useQueries({
     queries: offers.map((offer) => ({
       queryKey: housingQueryKeys.offerBookings(offer.listingId),
-      queryFn: () => housingUseCases.listForOffer().execute(offer.listingId),
+      queryFn: () => listOrEmpty(() => housingUseCases.listForOffer().execute(offer.listingId)),
       staleTime: 30_000,
     })),
   });

@@ -10,7 +10,7 @@ import { defineMachine } from '../machine';
  *   its validity ends (role `system`). A lapsed or revoked approval is renewed (`active`),
  *   applied for again (`pending`) or cleared (`none`).
  *
- * SQL copy: `supabase/migrations/0003_org_sec46_machine.sql` (`kc_private.fsm_state` / `fsm_edge` seeds).
+ * SQL copy: `supabase/migrations/0020_org_sec46_machine.sql` (`kc_private.fsm_state` / `fsm_edge` seeds).
  */
 export const orgSec46Machine = defineMachine({
   id: 'org_sec46',

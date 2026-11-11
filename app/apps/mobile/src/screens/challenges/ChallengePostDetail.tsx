@@ -30,7 +30,6 @@ import { postShowsEngagementSection } from '../../lib/postEngagementVisible';
 import { useAuthStore } from '../../store/authStore';
 import { CHALLENGES_QUERY_KEY, challengeUseCases } from '../../services/challengeComposition';
 import { confirmAction } from '../../services/platformConfirm';
-import { promptChallengeJoinProfileSurface } from '../../lib/challenges/promptChallengeJoinProfileSurface';
 import { useChallengeLinkedPost } from '../../hooks/useChallengeLinkedPost';
 import { usePostDetailStyles } from '../post/postDetailScreen.styles';
 import { ChallengePostDetailView } from './ChallengePostDetailView';
@@ -101,33 +100,13 @@ export default function ChallengePostDetail() {
   });
 
   const membership = useMutation({
-    mutationFn: (
-      input: { action: 'join'; showOnProfile: boolean } | { action: 'leave' | 'end' },
-    ) => {
-      if (input.action === 'join') {
-        return challengeUseCases.join().execute(challengeId, input.showOnProfile);
-      }
-      return challengeUseCases[input.action]().execute(challengeId);
-    },
+    mutationFn: (input: { action: 'join' | 'leave' | 'end' }) =>
+      challengeUseCases[input.action]().execute(challengeId),
     onSuccess: async (_data, input) => {
       await refresh();
       if (input.action === 'leave') router.back();
     },
   });
-
-  const requestJoin = async () => {
-    const choice = await promptChallengeJoinProfileSurface(
-      t('challenges.detail.joinProfileTitle'),
-      t('challenges.detail.joinProfileBody'),
-      {
-        show: t('challenges.detail.joinProfileShow'),
-        hide: t('challenges.detail.joinProfileHidden'),
-        cancel: t('general.cancel'),
-      },
-    );
-    if (choice === 'cancel') return;
-    membership.mutate({ action: 'join', showOnProfile: choice === 'show' });
-  };
 
   const confirmThen = async (action: 'leave' | 'end') => {
     const ok = await confirmAction(t(`challenges.detail.${action}Title`), t(`challenges.detail.${action}Body`), {
@@ -179,7 +158,7 @@ export default function ChallengePostDetail() {
     floatingCtaReserve: floatJoinPill ? POST_DETAIL_FLOATING_CTA_RESERVE_PX : 0,
   });
   const joinPill = (
-    <ChallengeJoinPill busy={membership.isPending} onPress={() => void requestJoin()} />
+    <ChallengeJoinPill busy={membership.isPending} onPress={() => membership.mutate({ action: 'join' })} />
   );
 
   const panels = (

@@ -22,6 +22,9 @@ export interface ISurveyAdminRepository {
    */
   getPmfReport(slug: string): Promise<PmfSurveyReport>;
 
-  /** Paginated free-text feedback with submitter display name. */
-  listFeedback(limit: number, offset: number): Promise<AdminFeedbackEntry[]>;
+  /**
+   * Free-text feedback with the submitter's display name, newest first. Keyset paging: pass
+   * the last entry of the previous page as `after` to read the entries older than it.
+   */
+  listFeedback(limit: number, after: Pick<AdminFeedbackEntry, 'createdAt' | 'id'> | null): Promise<AdminFeedbackEntry[]>;
 }

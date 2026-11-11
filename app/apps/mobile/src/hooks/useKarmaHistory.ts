@@ -38,6 +38,9 @@ const KNOWN = new Set([
   'registration', 'post_created', 'post_removed', 'outreach', 'follower_gained', 'follower_gained_reverse',
   'closure_giver', 'closure_receiver', 'giving_handoff_giver', 'giving_handoff_receiver',
   'listing_fulfilled', 'volunteer_checkin', 'backfill', 'rating_given',
+  // Baseline awards (supabase/schemas/72_karma) and the entry that takes points back.
+  'item_value_bonus', 'challenge_opened', 'challenge_report', 'challenge_completed',
+  'donation', 'standing_order_month', 'reversal',
 ]);
 
 /** The baseline's handoff awards, shown with the label of the same award in the old vocabulary. */

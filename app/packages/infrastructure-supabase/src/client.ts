@@ -5,11 +5,9 @@
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
-import type { Database as LegacyDatabase } from './database.legacy.types';
 import { createTimeoutFetch, DEFAULT_SUPABASE_TIMEOUT_MS } from './timeoutFetch';
 
-// One singleton. `D` is a compile-time view of it: the baseline schema by default, the frozen
-// legacy schema for adapters that have not moved yet (docs/db/app-migration-playbook.md).
+// One singleton, typed against the production baseline schema.
 let _client: SupabaseClient<Database> | null = null;
 
 // Singleton callback invoked when a PostgREST call returns 403 (RLS forbidden).
@@ -59,20 +57,10 @@ export interface SupabaseClientOptions {
  * In React Native / Expo: pass AsyncStorage as the storage adapter.
  * In Node (Edge Functions): no storage adapter needed.
  */
-export function getSupabaseClient<D = Database>(options?: SupabaseClientOptions): SupabaseClient<D> {
-  // `D` is inferred from the parameter the result is passed to, so the composition root
-  // hands the same client to a baseline adapter and to a not-yet-migrated one unchanged.
-  return getTypedClient(options) as unknown as SupabaseClient<D>;
+export function getSupabaseClient(options?: SupabaseClientOptions): SupabaseClient<Database> {
+  return getTypedClient(options);
 }
 
-/**
- * The same singleton typed against the frozen pre-baseline schema, for code that still
- * addresses old objects. Every use is listed in `migrationStatus.ts` and disappears with
- * its package; never use it in new code.
- */
-export function getLegacySupabaseClient(options?: SupabaseClientOptions): SupabaseClient<LegacyDatabase> {
-  return getSupabaseClient<LegacyDatabase>(options);
-}
 
 function getTypedClient(options?: SupabaseClientOptions): SupabaseClient<Database> {
   if (_client) return _client;

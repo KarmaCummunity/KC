@@ -13,6 +13,12 @@ const KINDS = [
   { id: 'kind-ride', slug: 'ride_offer', world_slug: 'rides', direction: 'offer', label_he: 'a', label_en: 'Ride', detail_schema: {} },
 ];
 
+const RIDE_ROW = {
+  post_id: 'p2', departs_at: '2030-01-01T07:00:00Z', arrives_at: null, seats: 3, luggage: false, reward_model: 'free', cost_share_ils: null,
+  origin_city_id: 'IL-001', origin_street_id: null, origin_junction_id: null, dest_city_id: 'IL-002', dest_street_id: null, dest_junction_id: null,
+  meeting_points: [], series_id: null, series_on: null,
+};
+
 describe('listing status words', () => {
   it('maps post statuses to the listing vocabulary the screens render', () => {
     expect(['open', 'paused', 'closed_delivered', 'deleted_no_recipient', 'expired', 'hidden_pending_review'].map(listingStatusOf)).toEqual([
@@ -33,7 +39,7 @@ describe('SupabaseMarketplaceRepository', () => {
   it('builds the detail from post_detail, the world labels and the detail row', async () => {
     const card = makeCard({ id: 'p1', kind_id: 'kind-offer', world_slug: 'items', post_type: 'standard' });
     const { client } = createFakeClient({
-      rpc: { post_detail: ok({ post: card, media: [{ id: 'm1', storage_key: 'o/a.jpg' }], comments: [] }) },
+      rpc: { post_detail: ok({ post: card, media: [{ id: 'm1', storage_key: 'o/a.jpg', mime_type: 'image/png', size_bytes: 2048 }], comments: [] }) },
       tables: {
         post_kinds: ok(KINDS),
         worlds: ok({ label_he: 'items-he', label_en: 'Items' }),
@@ -44,18 +50,14 @@ describe('SupabaseMarketplaceRepository', () => {
     expect(detail).toMatchObject({
       listingId: 'p1', ownerId: 'owner-1', worldSlug: 'items', worldLabelEn: 'Items', kindSlug: 'item_offer', direction: 'give',
       title: 'Sofa', summary: 'Three seats', listingStatus: 'open', availabilityStatus: 'ongoing', lat: 32.1, lng: 34.7,
-      media: [{ storagePath: 'o/a.jpg', sortOrder: 0 }], feedPostId: 'p1', feedHidden: false,
+      media: [{ storagePath: 'o/a.jpg', sortOrder: 0, mimeType: 'image/png', sizeBytes: 2048 }], feedPostId: 'p1', feedHidden: false,
     });
     expect(detail?.owner).toMatchObject({ userId: 'owner-1', displayName: 'Dana' });
   });
 
   it('folds a ride\'s details into the form-style document', async () => {
     const card = makeCard({ id: 'p2', kind_id: 'kind-ride', world_slug: 'rides', post_type: 'ride', details: {} });
-    const rideRow = {
-      post_id: 'p2', departs_at: '2030-01-01T07:00:00Z', arrives_at: null, seats: 3, luggage: false, reward_model: 'free', cost_share_ils: null,
-      origin_city_id: 'IL-001', origin_street_id: null, origin_junction_id: null, dest_city_id: 'IL-002', dest_street_id: null, dest_junction_id: null,
-      meeting_points: [], series_id: null, series_on: null,
-    };
+    const rideRow = RIDE_ROW;
     const { client } = createFakeClient({
       rpc: { post_detail: ok({ post: card, media: [], comments: [] }) },
       tables: {
@@ -69,6 +71,27 @@ describe('SupabaseMarketplaceRepository', () => {
     expect(detail?.details).toMatchObject({
       departs_at: '2030-01-01T07:00:00Z', seats_available: 3, origin_label: 'Lod', dest_label: 'Haifa', origin_city_id: 'IL-001',
     });
+    expect(detail?.details).not.toHaveProperty('ride_series');
+  });
+
+  it('marks an occurrence of a recurring ride with its series schedule', async () => {
+    const card = makeCard({ id: 'p3', post_type: 'ride', world_slug: 'rides', direction: 'offer' });
+    const { client, calls } = createFakeClient({
+      rpc: {
+        post_detail: ok({ post: card, media: [], comments: [] }),
+        ride_occurrence_schedules: ok([
+          { post_id: 'p3', series_id: 's1', series_on: '2030-01-07', weekdays: 10, depart_time: '07:30:00', ends_on: null },
+        ]),
+      },
+      tables: {
+        post_kinds: ok(KINDS), worlds: ok({ label_he: 'r', label_en: 'Rides' }), posts: ok({ geo_approx: null }),
+        post_ride_details: ok({ ...RIDE_ROW, post_id: 'p3', series_id: 's1', series_on: '2030-01-07' }),
+        cities: ok([]), road_junctions: ok([]), streets: ok([]),
+      },
+    });
+    const detail = await new SupabaseMarketplaceRepository(client).getListingDetail('p3');
+    expect(detail?.details['ride_series']).toEqual({ id: 's1', on: '2030-01-07', weekdays: 10, time: '07:30' });
+    expect(callsTo(calls, 'ride_occurrence_schedules')[0]?.args).toEqual({ p_post_ids: ['p3'] });
   });
 
   it('answers null when the caller cannot read the post', async () => {
@@ -103,19 +126,31 @@ describe('SupabaseMarketplaceRepository', () => {
     await expect(new SupabaseMarketplaceRepository(client).startChat('p1')).rejects.toMatchObject({ reason: 'post_unavailable' });
   });
 
-  it('pages the caller\'s own listings by creation time and hands on an opaque cursor', async () => {
+  it('pages the caller\'s own listings through the owner-only tab and hands on an opaque cursor', async () => {
+    const cursor = { t: '2026-02-01T00:00:00Z', id: 'a' };
     const { client, calls } = createFakeClient({
       userId: 'me',
-      tables: {
-        post_kinds: ok(KINDS),
-        posts: ok([{ id: 'a', created_at: '2026-02-01T00:00:00Z' }, { id: 'b', created_at: '2026-01-01T00:00:00Z' }]),
-      },
-      rpc: { post_cards: ok([makeCard({ id: 'a', status: 'paused', kind_id: 'kind-offer' })]) },
+      tables: { post_kinds: ok(KINDS) },
+      rpc: { profile_posts_page: ok([{ card: makeCard({ id: 'a', status: 'paused', kind_id: 'kind-offer' }), next_cursor: cursor }]) },
     });
-    const page = await new SupabaseMarketplaceRepository(client).listMyListingsPage(1);
+    const repo = new SupabaseMarketplaceRepository(client);
+    const page = await repo.listMyListingsPage(1);
     expect(page.rows[0]).toMatchObject({ listingId: 'a', status: 'cancelled', kindSlug: 'item_offer', feedPostId: 'a' });
-    expect(JSON.parse(page.nextCursor ?? '{}')).toEqual({ t: '2026-02-01T00:00:00Z', id: 'a' });
-    expect(callsTo(calls, 'posts')[0]?.filters).toContainEqual(['neq', 'status', 'draft']);
+    expect(JSON.parse(page.nextCursor ?? '{}')).toEqual(cursor);
+    const args = callsTo(calls, 'profile_posts_page')[0]?.args as { p_tab: string; p_statuses: string[]; p_user_id: string };
+    expect(args).toMatchObject({ p_user_id: 'me', p_tab: 'mine', p_limit: 1 });
+    expect(args.p_statuses).toContain('paused');
+    expect(args.p_statuses).not.toContain('draft');
+    await repo.listMyListingsPage(1, page.nextCursor);
+    expect(callsTo(calls, 'profile_posts_page')[1]?.args).toMatchObject({ p_cursor: cursor });
+    expect(calls.some((call) => call.table === 'posts')).toBe(false);
+  });
+
+  it('ends the listing pages on a short page and keeps the server\'s refusal', async () => {
+    const short = createFakeClient({ userId: 'me', tables: { post_kinds: ok(KINDS) }, rpc: { profile_posts_page: ok([]) } });
+    expect(await new SupabaseMarketplaceRepository(short.client).listMyListingsPage(5)).toEqual({ rows: [], nextCursor: null });
+    const refused = createFakeClient({ userId: 'me', tables: { post_kinds: ok(KINDS) }, rpc: { profile_posts_page: fail('42501', 'forbidden') } });
+    await expect(new SupabaseMarketplaceRepository(refused.client).listMyListingsPage(5)).rejects.not.toBeInstanceOf(BackendUnavailableError);
   });
 
   it('lists a member\'s open listings through the profile tab', async () => {

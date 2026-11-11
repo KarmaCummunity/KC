@@ -39,6 +39,10 @@ export type OrgApplicationErrorCode =
   | 'invalid_status'
   | 'application_not_found'
   | 'application_already_decided'
+  /** The organization's web address is missing or not in the allowed form. */
+  | 'invalid_slug'
+  /** Another organization already has this web address. */
+  | 'slug_taken'
   | 'unknown';
 
 export class OrgApplicationError extends Error {

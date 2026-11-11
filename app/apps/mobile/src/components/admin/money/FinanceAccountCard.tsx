@@ -25,7 +25,7 @@ function FinanceAccountCardInner({ account, onEdit, onToggleActive }: FinanceAcc
           <Text style={styles.meta}>
             {t.kind[account.kind]}
             {account.last4 ? ` · ${t.last4(account.last4)}` : ''}
-            {` · ${t.entries(account.entryCount)}`}
+            {account.entryCount === null ? '' : ` · ${t.entries(account.entryCount)}`}
           </Text>
         </View>
         <Chip variant="tag" tone="neutral" label={t.kind[account.kind]} size="sm" />

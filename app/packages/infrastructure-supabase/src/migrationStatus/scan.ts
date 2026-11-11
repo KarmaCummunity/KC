@@ -23,14 +23,12 @@ export type BaselineObjects = { readonly rpc: ReadonlySet<string>; readonly tabl
 const SECTION = /^ {4}(Tables|Views|Functions|Enums|CompositeTypes): \{/;
 const NAME = /^ {6}([A-Za-z0-9_]+): /;
 const LEGACY_REFERENCE = /database\.legacy\.types|getLegacySupabaseClient|\blegacySupabase\b|\bLegacyDatabase\b/;
-/** Files that define or compose the legacy view; they are not adapters and are not tracked. */
+/**
+ * The legacy view is removed (every package moved), so only this file, which names the
+ * pattern, is exempt: any other legacy reference is reported as an unmigrated file.
+ */
 const LEGACY_VIEW_DEFINITIONS: readonly string[] = [
-  'packages/infrastructure-supabase/src/client.ts',
-  'packages/infrastructure-supabase/src/index.ts',
-  'packages/infrastructure-supabase/src/database.legacy.types.ts',
   'packages/infrastructure-supabase/src/migrationStatus/scan.ts',
-  'apps/mobile/src/lib/container.ts',
-  'apps/mobile/src/lib/bindSupabaseClient.ts',
 ];
 /** Test files of the migration machinery itself. */
 const MACHINERY_TESTS = /(baselineCompatibility|degradeRule)\.test\.ts$/;
