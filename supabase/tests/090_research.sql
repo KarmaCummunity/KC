@@ -53,7 +53,7 @@ begin
 end;
 $$;
 
-select plan(31);
+select plan(32);
 
 insert into auth.users (id, email, raw_app_meta_data)
 select ('00000000-0000-4000-8000-00000000000' || x)::uuid, x || '@example.test', '{"provider":"google"}'
@@ -152,8 +152,11 @@ select is((select string_agg(pg_temp.submit('c', null, 2), ',') from generate_se
   'the sixth response of one address in a minute is refused');
 select is(pg_temp.act('a', $$select public.submit_public_research_response('pmf', 2, 'x', repeat('a', 64), null, '{}', null)$$) || '/'
        || pg_temp.act('a', 'select public.get_research_salt()') || '/' || pg_temp.act('a', 'select 1 from kc_private.research_responses')
-       || '/' || pg_temp.act(null, $$select public.get_public_research_questions('pmf')$$), '42501/42501/42501/42501',
-  'the form functions and tables are closed to members and signed-out callers');
+       , '42501/42501/42501',
+  'the submit and salt functions and the response tables are closed to members and signed-out callers');
+select is(pg_temp.act(null, $$select public.get_public_research_questions('pmf') ->> 'version'$$) || '/'
+       || pg_temp.act('a', $$select public.get_public_research_questions('pmf') ->> 'version'$$), 'ok/ok',
+  'the questions are readable by signed-out and signed-in callers (the page uses the anonymous key)');
 select is(char_length(public.get_research_salt()) || '/' || (public.get_research_salt() = public.get_research_salt()), '64/true',
   'the salt is created on first use and stays until rotated');
 create temporary table salt_before as select public.get_research_salt() as value;
@@ -161,7 +164,7 @@ select lives_ok('select public.rotate_research_salt()', 'the salt is rotated');
 select is((select public.get_research_salt() <> value from salt_before), true, 'rotation replaces it');
 select is(public.get_public_research_questions('pmf') ->> 'version' || '/'
           || jsonb_array_length(public.get_public_research_questions('pmf') -> 'questions'), '2/2',
-  'the form reads the current questions through the service role');
+  'the form reads the current questions');
 
 select * from finish();
 rollback;

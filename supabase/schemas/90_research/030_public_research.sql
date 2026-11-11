@@ -160,7 +160,8 @@ comment on function public.submit_public_research_response(text, integer, text, 
 
 -- The questions of a survey's current version, for the public form:
 -- { slug, title_he, description_he, version, questions: [...] }, or null when the survey is
--- not active. Read by the service role on behalf of the page.
+-- not active. The page reads it with the anonymous key, so signed-out callers may execute it
+-- (the questions of an active survey are public by design; nothing else is reachable through it).
 create function public.get_public_research_questions(p_slug text)
 returns jsonb
 language sql
@@ -179,4 +180,5 @@ as $$
    where s.slug = p_slug and s.is_active;
 $$;
 comment on function public.get_public_research_questions(text) is
-  'Questions of the current version of an active survey, for the public research form. Service role only.';
+  'Questions of the current version of an active survey, for the public research form. Open to signed-out and signed-in callers.';
+grant execute on function public.get_public_research_questions(text) to anon, authenticated;
