@@ -14,7 +14,7 @@ Claims after the cut-over:
 |---|---|---|
 | 0002 | #2150 organization entitlement | merged |
 | 0003 | #2154 Section 46(a) status on the FSM kernel (`org_sec46` machine, nightly expiry) | in progress |
-| 0004–0007 | #2086 recurring events: `0004` post series, `0005` series RPCs and the end of a recurring ride, `0006` series dates in the main feed; `0007` held | in progress |
+| 0004–0007 | #2086 recurring events: `0004` post series, `0005` series RPCs and the end of a recurring ride, `0006` one date of a series in the feeds; `0007` held | in progress |
 
 **Rule:** before writing a migration, claim a range here, in your PR or a small docs PR to `dev`. Use only numbers inside your range. Files are `supabase/migrations/NNNN_snake_case.sql`. Gaps are fine; collisions are not.
 

@@ -2475,6 +2475,7 @@ export type Database = {
           details: Json
           direction: string
           expires_at: string | null
+          feed_folded: boolean
           geo_approx: unknown
           id: string
           item_subcategory_id: string | null
@@ -2503,6 +2504,7 @@ export type Database = {
           details?: Json
           direction: string
           expires_at?: string | null
+          feed_folded?: boolean
           geo_approx?: unknown
           id?: string
           item_subcategory_id?: string | null
@@ -2531,6 +2533,7 @@ export type Database = {
           details?: Json
           direction?: string
           expires_at?: string | null
+          feed_folded?: boolean
           geo_approx?: unknown
           id?: string
           item_subcategory_id?: string | null
