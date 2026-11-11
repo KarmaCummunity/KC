@@ -112,13 +112,13 @@ describe('SupabaseChatRepository.getMessages', () => {
     expect(old).toMatchObject({ messageId: 'm_old', status: 'read', readAt: '2026-05-16T11:00:00.000Z' });
   });
 
-  it('maps a chat the caller cannot use to chat_not_found', async () => {
+  it('reads a chat the caller is not a member of as empty (FR-CHAT-003)', async () => {
     const { repo: r } = repo({
       rpc: { chat_messages_page: { data: null, error: { code: 'P0001', message: 'chat_not_found' } } },
       tables: { chat_members: markers },
     });
 
-    await expect(r.getMessages('c_1', 30)).rejects.toMatchObject({ code: 'chat_not_found' });
+    await expect(r.getMessages('c_1', 30)).resolves.toEqual([]);
   });
 
   it('reports a missing function as BackendUnavailableError', async () => {

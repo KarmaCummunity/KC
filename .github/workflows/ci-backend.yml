@@ -137,6 +137,13 @@ jobs:
       # sqlProbes: SECURITY DEFINER RPC probes. contract.integration: the port
       # contract suites run against the Supabase adapters with RLS; the same
       # cases run against the in-memory fakes in the frontend lane.
+      # The port contracts sign real members in and give them a city, so the stack needs the same
+      # reference data (cities, streets, worlds, flags) a deployed database gets from the seed loader.
+      - name: Load reference data into the local stack
+        run: |
+          set -euo pipefail
+          REFERENCE_DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')" supabase/seed/reference/load.sh
+
       - name: SQL probes + port contracts (against local stack)
         working-directory: app
         env:

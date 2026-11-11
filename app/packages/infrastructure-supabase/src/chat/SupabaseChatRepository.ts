@@ -3,7 +3,7 @@
 // Mapped to spec: FR-CHAT-001..013, FR-CHAT-016.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { IChatRepository, ChatWithPreview } from '@kc/application';
+import { ChatError, type IChatRepository, type ChatWithPreview } from '@kc/application';
 import { toVerificationLevel, type Chat, type Message, type VerificationLevel } from '@kc/domain';
 import type { Database } from '../database.types';
 import { rowToChat, rowToMessage, readAtFor, CHAT_COLUMNS, type MessageRowSlice, type ReadMarker } from './rowMappers';
@@ -54,14 +54,21 @@ export class SupabaseChatRepository implements IChatRepository {
 
   /** Newest first. Read receipts come from the members' read markers, loaded with the page. */
   async getMessages(chatId: string, limit: number, beforeCreatedAt?: string): Promise<Message[]> {
-    const [rows, markers] = await Promise.all([
-      chatCall(
-        'rpc:chat_messages_page',
-        this.client.rpc('chat_messages_page', { p_chat_id: chatId, p_limit: limit, p_before: beforeCreatedAt }),
-      ),
-      this.readMarkers(chatId),
-    ]);
-    return (rows ?? []).map((row: MessageRowSlice) => rowToMessage(row, readAtFor(row, markers)));
+    try {
+      const [rows, markers] = await Promise.all([
+        chatCall(
+          'rpc:chat_messages_page',
+          this.client.rpc('chat_messages_page', { p_chat_id: chatId, p_limit: limit, p_before: beforeCreatedAt }),
+        ),
+        this.readMarkers(chatId),
+      ]);
+      return (rows ?? []).map((row: MessageRowSlice) => rowToMessage(row, readAtFor(row, markers)));
+    } catch (error) {
+      // A chat the caller is not a member of reads as empty (FR-CHAT-003), as it did under row-level
+      // security; the RPC names it `chat_not_found` so as not to confirm that the chat exists.
+      if (error instanceof ChatError && error.code === 'chat_not_found') return [];
+      throw error;
+    }
   }
 
   /** Sends a text message; `messageId` makes a retry idempotent (the server returns the first copy). */

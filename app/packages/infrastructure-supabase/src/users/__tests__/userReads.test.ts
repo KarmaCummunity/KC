@@ -29,7 +29,6 @@ const STATS_ROW = {
   items_received_count: 2,
   open_posts_public: 6,
   open_posts_followers_only: 1,
-  karma_points: 12,
 };
 
 const SESSION = {
@@ -57,7 +56,7 @@ describe('fetchUserBy', () => {
     expect(read?.columns).toBe(USER_COLUMNS);
     expect(read?.filters).toContainEqual(['eq', 'id', 'u_target']);
     expect(read?.single).toBe(true);
-    expect(user).toMatchObject({ userId: 'u_target', cityName: 'Tel Aviv', followersCount: 9, karmaPoints: 12 });
+    expect(user).toMatchObject({ userId: 'u_target', cityName: 'Tel Aviv', followersCount: 9, karmaPoints: 0 });
     expect(callsTo(calls, 'user_stats')[0]?.columns).toBe(USER_STATS_COLUMNS);
   });
 
@@ -78,7 +77,7 @@ describe('fetchUserBy', () => {
   it('keeps every private field out of another member\'s profile and never reads the session', async () => {
     const { client, calls } = createFakeClient({
       tables: tables(),
-      rpc: { bootstrap_session: ok(SESSION) },
+      rpc: { bootstrap_session: ok(SESSION), my_karma_points: ok(12) },
       userId: 'u_viewer',
     });
 
@@ -91,7 +90,7 @@ describe('fetchUserBy', () => {
   it('merges the caller\'s private profile into their own row from bootstrap_session', async () => {
     const { client, calls } = createFakeClient({
       tables: tables(),
-      rpc: { bootstrap_session: ok(SESSION) },
+      rpc: { bootstrap_session: ok(SESSION), my_karma_points: ok(12) },
       userId: 'u_target',
     });
 
@@ -103,6 +102,7 @@ describe('fetchUserBy', () => {
       dateOfBirth: '1990-05-15',
       accountStatus: 'active',
       activePostsCountInternal: 7,
+      karmaPoints: 12,
     });
   });
 

@@ -31,8 +31,12 @@ export async function sessionUserId(client: SupabaseClient<Database>): Promise<s
 
 /** The caller's private state (account, private profile, staff roles) in one call. */
 async function loadOwnerSlice(client: SupabaseClient<Database>): Promise<OwnerSlice> {
-  const { account, privateProfile, adminRoles } = await fetchBootstrapSession(client);
-  return { account, privateProfile, adminRoles };
+  const [{ account, privateProfile, adminRoles }, karma] = await Promise.all([
+    fetchBootstrapSession(client),
+    client.rpc('my_karma_points'),
+  ]);
+  const karmaPoints = unwrapCall('rpc:my_karma_points', karma) ?? 0;
+  return { account, privateProfile, adminRoles, karmaPoints };
 }
 
 async function loadCityNames(

@@ -13,7 +13,7 @@ const userRow = (id: string) => ({
 });
 const statsRow = (id: string, followers: number) => ({
   user_id: id, followers_count: followers, following_count: 0, items_given_count: 4, items_received_count: 0,
-  open_posts_public: 0, open_posts_followers_only: 0, karma_points: 0,
+  open_posts_public: 0, open_posts_followers_only: 0,
 });
 const linkRow = (id: string) => ({
   id, category_slug: 'food', url: `https://x/${id}`, display_name: `Link ${id}`, description: null,

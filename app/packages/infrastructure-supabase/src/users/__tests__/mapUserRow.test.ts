@@ -24,10 +24,10 @@ const STATS: UserStatsRow = {
   items_received_count: 2,
   open_posts_public: 4,
   open_posts_followers_only: 1,
-  karma_points: 40,
 };
 
 const OWNER: OwnerSlice = {
+  karmaPoints: 40,
   account: {
     status: 'pending_verification',
     statusUntil: null,
@@ -67,7 +67,7 @@ describe('mapUserRow — another member', () => {
       followingCount: 6,
       itemsGivenCount: 3,
       itemsReceivedCount: 2,
-      karmaPoints: 40,
+      karmaPoints: 0,
       preferredLanguage: 'he',
     });
   });

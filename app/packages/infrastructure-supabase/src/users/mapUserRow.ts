@@ -31,7 +31,7 @@ export const USER_COLUMNS =
 
 /** Columns of `public.user_stats` granted to `authenticated` (`open_posts_only_me` is not). */
 export const USER_STATS_COLUMNS =
-  'user_id, followers_count, following_count, items_given_count, items_received_count, open_posts_public, open_posts_followers_only, karma_points' as const;
+  'user_id, followers_count, following_count, items_given_count, items_received_count, open_posts_public, open_posts_followers_only' as const;
 
 /** A row of `public.users` selected with {@link USER_COLUMNS}. */
 export interface UserRow {
@@ -58,7 +58,6 @@ export interface UserStatsRow {
   items_received_count: number;
   open_posts_public: number;
   open_posts_followers_only: number;
-  karma_points: number;
 }
 
 /** The signed-in member's own private state, from `bootstrap_session()`. */
@@ -66,6 +65,8 @@ export interface OwnerSlice {
   readonly account: BootstrapAccount;
   readonly privateProfile: BootstrapPrivateProfile;
   readonly adminRoles: readonly string[];
+  /** The caller's karma total: private to its owner, read through `my_karma_points()`. */
+  readonly karmaPoints: number;
 }
 
 /** What a user needs besides the `users` row. */
@@ -133,7 +134,8 @@ export function mapUserRow(row: UserRow, extras: UserExtras): User {
     activePostsCountInternal: owner && stats ? stats.open_posts_public + stats.open_posts_followers_only : 0,
     followersCount: stats?.followers_count ?? 0,
     followingCount: stats?.following_count ?? 0,
-    karmaPoints: stats?.karma_points ?? 0,
+    // Karma is private to its owner: another member's total is not readable, so it shows as 0.
+    karmaPoints: owner?.karmaPoints ?? 0,
     verificationLevel: toVerificationLevel(row.verification_level),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
