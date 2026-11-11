@@ -3,7 +3,12 @@
  * One source of truth for notification kinds.
  *
  * The registry of kinds is SQL vocabulary (`insert into kc_private.notification_kinds …
- * values …` under supabase/schemas/). The app (type `NotificationKind`, routes, channels),
+ * values …`) under supabase/schemas/ and in the forward migrations after the frozen baseline
+ * (supabase/migrations/NNNN_*.sql except 0001_baseline.sql, which is those schemas assembled).
+ * Files are read in that order, schemas by path and migrations by number, so a later file wins:
+ * a row re-registered with `on conflict (kind) do update set col = excluded.col, …` replaces
+ * the named columns of the earlier row, `on conflict (kind) do nothing` keeps the earlier row,
+ * and a plain second insert of the same kind is reported as registered twice. The app (type `NotificationKind`, routes, channels),
  * the push worker (`dispatch-notification`) and the tests all need the same list, so this
  * script derives it and writes three generated files:
  *
@@ -31,6 +36,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const WORKER_DIR = 'supabase/functions/dispatch-notification';
 export const PATHS = {
   schemas: 'supabase/schemas',
+  migrations: 'supabase/migrations',
   locale: 'app/apps/mobile/src/i18n/locales/he/modules/notifications.ts',
   domain: 'app/packages/domain/src/notificationKinds.generated.ts',
   worker: `${WORKER_DIR}/kinds.generated.ts`,
@@ -46,6 +52,9 @@ const COLUMN_DEFAULTS = {
   default_enabled: true, bypass_preferences: false, bypass_quiet_hours: false, sends_push: true, group_window: null,
 };
 const REQUIRED_COLUMNS = ['kind', 'category', 'title_key', 'body_key'];
+/** The generated baseline: the schema sources assembled, so it is never read twice. */
+const BASELINE_MIGRATION = '0001_baseline.sql';
+const FORWARD_MIGRATION = /^\d{4}_.+\.sql$/;
 const INTERVAL_UNITS = { second: 1, minute: 60, hour: 3600, day: 86400 };
 
 /** SQL text without `--` comments; string literals are kept intact. */
@@ -99,7 +108,32 @@ function splitTopLevel(text) {
   return parts;
 }
 
-/** The rows of one `insert … (columns) values (…), (…)` statement. */
+/**
+ * Splits the text after `values` into the literal tuples and an optional
+ * `on conflict (kind) do nothing | do update set col = excluded.col, …` clause.
+ * Returns { tuples, onConflict, updateColumns }.
+ */
+function splitConflictClause(text, where) {
+  let inString = false;
+  for (let i = 0; i < text.length; i += 1) {
+    if (text[i] === "'") inString = !inString;
+    if (inString || !/^on\s+conflict\b/i.test(text.slice(i, i + 12)) || /\w/.test(text[i - 1] ?? '')) continue;
+    const clause = text.slice(i).trim();
+    const nothing = /^on\s+conflict\s*\(\s*kind\s*\)\s*do\s+nothing$/i.exec(clause);
+    if (nothing) return { tuples: text.slice(0, i), onConflict: 'nothing', updateColumns: [] };
+    const update = /^on\s+conflict\s*\(\s*kind\s*\)\s*do\s+update\s+set\s+([\s\S]+)$/i.exec(clause);
+    if (!update) throw new Error(`${where}: unsupported conflict clause — use \`on conflict (kind) do nothing\` or \`do update set col = excluded.col, …\``);
+    const updateColumns = update[1].split(',').map((assignment) => {
+      const m = /^\s*(\w+)\s*=\s*excluded\.(\w+)\s*$/i.exec(assignment);
+      if (!m || m[1] !== m[2]) throw new Error(`${where}: conflict update must be \`col = excluded.col\`, got '${assignment.trim()}'`);
+      return m[1];
+    });
+    return { tuples: text.slice(0, i), onConflict: 'update', updateColumns };
+  }
+  return { tuples: text, onConflict: 'none', updateColumns: [] };
+}
+
+/** The rows of one `insert … (columns) values (…), (…) [on conflict …]` statement. */
 function parseInsert(statement, where) {
   const match = /^insert\s+into\s+kc_private\.notification_kinds\s*\(([^)]*)\)\s*values\s*([\s\S]*)$/i.exec(statement.trim());
   if (!match) {
@@ -108,23 +142,56 @@ function parseInsert(statement, where) {
       'Write the rows out so the kind list can be generated without a database.');
   }
   const columns = match[1].split(',').map((c) => c.trim());
+  const { tuples, onConflict, updateColumns } = splitConflictClause(match[2], where);
+  for (const column of updateColumns) {
+    if (!columns.includes(column)) throw new Error(`${where}: conflict update sets ${column}, which the insert does not name`);
+  }
   const rows = [];
   const tuplePattern = /\(((?:[^()']|'(?:[^']|'')*')*)\)/g;
   // Anything left between the tuples (a function call, a sub-select) is not a literal row.
-  if (match[2].replace(tuplePattern, '').replace(/[\s,]/g, '') !== '') {
+  if (tuples.replace(tuplePattern, '').replace(/[\s,]/g, '') !== '') {
     throw new Error(`${where}: registry rows must be literal tuples (no expressions)`);
   }
-  for (const tuple of match[2].matchAll(tuplePattern)) {
+  for (const tuple of tuples.matchAll(tuplePattern)) {
     const values = splitTopLevel(tuple[1]);
     if (values.length !== columns.length) throw new Error(`${where}: a row has ${values.length} values for ${columns.length} columns`);
     const row = { ...COLUMN_DEFAULTS };
     columns.forEach((column, i) => {
       row[column] = parseValue(values[i], `${where} (${column})`);
     });
-    rows.push(row);
+    rows.push(onConflict === 'none' ? row : withConflict(row, onConflict, updateColumns));
   }
   if (rows.length === 0) throw new Error(`${where}: no literal rows found`);
   return rows;
+}
+
+/** Marks a row with how it meets an earlier row of the same kind (not enumerable: rows stay plain). */
+function withConflict(row, onConflict, updateColumns) {
+  Object.defineProperty(row, 'conflict', { value: { onConflict, updateColumns }, enumerable: false });
+  return row;
+}
+
+/**
+ * Applies rows in file order onto the registry, as the database would: a row without a
+ * conflict clause is appended (a second one of a kind is caught by build()), `do nothing`
+ * keeps an earlier row, `do update` overwrites the named columns of it.
+ */
+export function mergeRegistryRows(rows) {
+  const merged = [];
+  const byKind = new Map();
+  for (const row of rows) {
+    const earlier = byKind.get(row.kind);
+    const conflict = row.conflict;
+    if (earlier && conflict?.onConflict === 'nothing') continue;
+    if (earlier && conflict?.onConflict === 'update') {
+      for (const column of conflict.updateColumns) earlier[column] = row[column];
+      continue;
+    }
+    const copy = { ...row };
+    merged.push(copy);
+    if (!earlier) byKind.set(row.kind, copy);
+  }
+  return merged;
 }
 
 /** Every kind registered by one SQL file. */
@@ -150,13 +217,27 @@ function sqlFiles(dir) {
     });
 }
 
-/** The registry as written under supabase/schemas, in path order. */
+/** The forward migrations after the baseline, by number. */
+export function forwardMigrationFiles(root = ROOT) {
+  const dir = join(root, PATHS.migrations);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && FORWARD_MIGRATION.test(entry.name) && entry.name !== BASELINE_MIGRATION)
+    .map((entry) => entry.name)
+    .sort()
+    .map((name) => join(dir, name));
+}
+
+/**
+ * The registry as written under supabase/schemas (path order), then in the forward
+ * migrations (number order), with a later file winning as described at the top.
+ */
 export function readRegistry(root = ROOT) {
-  const kinds = [];
-  for (const file of sqlFiles(join(root, PATHS.schemas))) {
-    kinds.push(...parseRegistrySql(readFileSync(file, 'utf8'), relative(root, file)));
+  const rows = [];
+  for (const file of [...sqlFiles(join(root, PATHS.schemas)), ...forwardMigrationFiles(root)]) {
+    rows.push(...parseRegistrySql(readFileSync(file, 'utf8'), relative(root, file)));
   }
-  return kinds;
+  return mergeRegistryRows(rows);
 }
 
 /** The string map of the Hebrew notifications locale module (a plain object literal). */
@@ -225,7 +306,8 @@ function renderModule(kinds) {
   };
   return [
     '// GENERATED by scripts/generate-notification-kinds.mjs from the kind registry in',
-    '// supabase/schemas (kc_private.notification_kinds) and the Hebrew locale. Do not edit:',
+    '// supabase/schemas and the forward migrations (kc_private.notification_kinds) and the',
+    '// Hebrew locale. Do not edit:',
     '// change the SQL rows or the locale strings and run the script again.',
     '',
     '/** Arguments a notification text may interpolate. */',
