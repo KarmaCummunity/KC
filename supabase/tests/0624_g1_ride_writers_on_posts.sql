@@ -299,7 +299,7 @@ begin
     v_series, 'open'), 1, 'sweep: one open occurrence is listed');
 end $$;
 
--- ── 5. cancel detaches the booked occurrences of both shapes ──────────────────────────────────
+-- ── 5. cancel ends the booked occurrences of both shapes and detaches them (0743) ─────────────
 do $$
 declare
   p personas;
@@ -319,7 +319,10 @@ begin
     and not ((select details from public.posts where listing_id = v_old) ? 'ride_series')
     and (select r.series_id from public.ride_post_details r where r.post_id = public.post_id_of_listing(v_old)) is null,
     'cancel: the old-shape booked ride is detached on its listing and its post follows');
-  perform kc_test.assert_eq(kc_test.listing_status(v_old), 'open', 'cancel: it goes on as a single ride');
+  -- 0743 ({{D:series-end-cancels-booked}}): a booked upcoming date ends with the series.
+  perform kc_test.assert_eq(
+    (select status from public.posts where post_id = public.post_id_of_listing(v_old)),
+    'deleted_no_recipient', 'cancel: the booked date ends with the series');
   perform kc_test.assert_raises(format('select public.set_ride_series_status(%L, %L)', v_series, 'active'),
     'ride_series_cancelled', 'cancel: a cancelled series cannot be resumed');
 end $$;
