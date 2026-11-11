@@ -1,7 +1,7 @@
 // Unit tests for scripts/deploy-preflight.mjs. Run: node --test scripts/deploy-preflight.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TARGETS, checkProjectActive, checkSupabaseEnv, checkWebEnv } from './deploy-preflight.mjs';
+import { TARGETS, checkProdSchemaSource, checkProjectActive, checkSupabaseEnv, checkWebEnv } from './deploy-preflight.mjs';
 
 const AGE = `age1${'q'.repeat(58)}`;
 const SUPABASE_PROD = {
@@ -59,4 +59,12 @@ test('checkProjectActive accepts only ACTIVE_HEALTHY', async () => {
   assert.deepEqual(await checkProjectActive({ ref: 'r', token: 't', fetch: reply(true, 200, { status: 'ACTIVE_HEALTHY' }) }), []);
   assert.match((await checkProjectActive({ ref: 'r', token: 't', fetch: reply(true, 200, { status: 'INACTIVE' }) }))[0], /is INACTIVE/);
   assert.match((await checkProjectActive({ ref: 'r', token: 't', fetch: reply(false, 401, {}) }))[0], /HTTP 401/);
+});
+
+test('prod schema source is refused by default and skipped for dev', () => {
+  const errors = checkProdSchemaSource('prod', {});
+  assert.ok(errors.length >= 1);
+  assert.match(errors[0], /D-228/);
+  assert.deepEqual(checkProdSchemaSource('dev', {}), []);
+  assert.equal(checkProdSchemaSource('prod', { KC_PROD_SCHEMA_MODE: 'legacy' }).length, 0);
 });

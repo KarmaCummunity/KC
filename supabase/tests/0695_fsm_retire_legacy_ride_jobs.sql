@@ -64,14 +64,17 @@ declare
   v_handoff uuid;
 begin
   select * into p from personas;
-  v_offer := kc_test.create_listing(p.giver, 'food', 'give_food', 'give', 'Soup for tonight',
+  -- The offer carries its required photo (D132, 0741).
+  v_offer := kc_test.add_listing_photo(kc_test.create_listing(p.giver, 'food', 'give_food', 'give', 'Soup for tonight',
     jsonb_build_object('food_type', 'cooked', 'expires_at', kc_test.iso_in(interval '2 days'),
                        'allergens', jsonb_build_array('gluten')),
-    p_expires_at => null);
+    p_expires_at => null));
   perform kc_test.act_as(p.receiver);
   v_handoff := (public.claim_food_giving(v_offer)).handoff_id;
   -- Backdate the expiry as the hour passing would: the write-time world rules reject a past
   -- food expiry, so they are off for this one statement (as in flows/food_lifecycle.sql).
+  -- Settle the pending D132 photo check first: DDL on `posts` is refused while one is queued.
+  perform kc_test.run_commit_checks();
   alter table public.posts disable trigger posts_before_write_world_rules;
   update public.posts set expires_at = now() - interval '1 minute' where post_id = v_offer;
   alter table public.posts enable trigger posts_before_write_world_rules;

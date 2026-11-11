@@ -1877,3 +1877,25 @@ Owner rules that go with it:
 **Open.** Retention period for billing records after account deletion (legal advice pending). Video provider.
 
 **Affected.** `docs/db/**`; later `supabase/schemas/**`, `supabase/migrations/**`, `supabase/tests/**`, `app/packages/infrastructure-supabase/**`, `supabase/functions/**`, CI workflows.
+
+## D-229 — Who sees a delivered listing: the union of the two sides' surfaces (2026-11-11)
+
+**Decision.** Migration `0740`. A delivered listing (`closed_delivered`) is visible to the union of each side's own surface: the giver's `post_actor_identity.surface_visibility` (default: the post's visibility) and the recipient's (default `Public`). `Public` admits everyone including guests, `FollowersOnly` admits that side's followers, `OnlyMe` admits nobody else. The side that chose not to be exposed shows as anonymous to the other side's audience (identity masking, FR-POST-021). The recipient always sees the listing and can rate it, even if the giver chose `OnlyMe`, and still sees it after rating; an admin sees every delivered listing. A `Private` profile counts as `FollowersOnly` for its deliveries. The recipient is the one on the `handed_over` `post_handoffs` row, not the `recipients` row. The listing screens (`post_listing_visible_to`) delegate delivered posts to `is_post_visible_to`, so the post and listing screens cannot diverge. The hand-over of an items, food or animals post now records its `recipients` row through a trigger on `post_handoffs` (single recipient per post, 0658); existing rows are backfilled. Knowledge, rides, housing and events keep several handoffs per post and no recipients row.
+
+**Why.** Before, a delivered public listing disappeared for everyone but its owner on the listing screen, so the recipient could not open it to rate (the food and items E2E rating step failed), and food and animals hand-overs never wrote a `recipients` row (the carve-out of D-219 kept the items-only closure path, and 0683 repeated it), so the recipient's profile "received" list, counters and activity were empty. The trigger covers every writer of a hand-over; post karma stays items-only, so nobody is paid twice.
+
+**Rejected.** Intersection of the two surfaces (one side's hide would hide the listing from the other's audience too). Editing every hand-over RPC (large, easy to miss a writer). Keeping the recipient lookup on `recipients` (fails for worlds without a row).
+
+**Open.** Deleted accounts: visibility follows the remaining party, but the purge still cascades the delivered posts (retention is #2088). Knowledge posts close on the first hand-over without a recipient row.
+
+**Affected.** `supabase/migrations/0740_delivered_listing_visibility.sql`, `supabase/tests/0740_delivered_listing_visibility.sql`, `supabase/tests/0628_g1_visibility_on_posts.sql`, `docs/spec/requirements/04_posts.md` (FR-POST-021), `docs/agents/MIGRATION_RANGES.md`.
+
+## D-230 — The offer photo rule is a commit-time check on member writes (2026-11-11)
+
+**Decision.** Migration `0741` (KC#2020) enforces D132 on the server. `offer_photo_check()` runs at commit from two deferred constraint triggers, one on every new post and one on every deleted `listing_media` row, and refuses (`offer_photo_required`) an offer in items, food, housing or animals that has no `listing_media` row, no `media_assets` row and no legacy details image. The triggers queue only when `auth.uid()` is set: a trigger's `WHEN` clause is evaluated when the row changes, so system writers that clear the JWT claims (the kc-dev demo seed) are exempt, as they are from the write caps. Updates never queue the check, so offers published before the rule stay readable and editable. The items post engine creates through `create_post_with_media(p_post, p_media)`, a `SECURITY INVOKER` RPC: the caller's RLS on `posts` and `media_assets` applies exactly as it did to the two direct inserts it replaces, and the owner is always the caller.
+
+**Why.** The photos of a native listing are attached after its post row in the same RPC, and a deleted post removes its photos first, so a check at commit is the only point that sees the final state (the 0351 precedent). A `SECURITY DEFINER` create RPC would have had to re-implement the `posts` insert policy (owner, active member, FollowersOnly needs a Private profile).
+
+**Rejected.** An immediate check inside `create_marketplace_listing` only (misses the last-photo delete and the items post engine). Guarding `media_assets` deletes now: the items edit still replaces its photos in two requests (delete, then insert), so that guard would refuse every photo change on an items offer; KC#2118. Backfilling photos onto existing offers.
+
+**Affected.** `supabase/migrations/0741_offer_photo_required.sql`, `supabase/tests/0741_offer_photo_required.sql`, `supabase/tests/0351_items_image_photo_or_details.sql`, `supabase/tests/_harness/10_fixtures.sql`, `app/packages/infrastructure-supabase/src/posts/createPostWithMedia.ts`, `app/packages/application/src/contracts/postRepository.contract.ts`, `docs/spec/requirements/04_posts.md` (FR-POST-002 AC5).

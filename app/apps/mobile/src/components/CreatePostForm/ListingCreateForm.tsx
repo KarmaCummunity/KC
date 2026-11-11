@@ -25,6 +25,7 @@ import { ListingFormPhotoPicker } from './ListingFormPhotoPicker';
 import { ListingKindChooser } from './ListingKindChooser';
 import { KindGate } from './ListingKindGate';
 import { TimeOfferKindChooser } from './TimeOfferKindChooser';
+import { OrgEventMembershipHint } from './OrgEventMembershipHint';
 import { formKeyboardAccessoryProps, useFormFieldFocus } from '../../hooks/useFormFieldFocus';
 import { KeyboardFormAccessory } from '../ui/KeyboardFormAccessory';
 
@@ -153,8 +154,10 @@ export function ListingCreateForm({
             />
           )}
 
-          {/* A member of an organization picks a volunteer shift or the organization's event (G1 step 5). */}
+          {/* A member of an organization picks a volunteer shift or the organization's event (G1 step 5);
+              anyone else is told how to become one (FR-ORG-002). */}
           {form.eventChoice.available ? <TimeOfferKindChooser choice={form.eventChoice} disabled={form.busy} /> : null}
+          {form.eventChoice.suggestMembership ? <OrgEventMembershipHint /> : null}
 
           {form.isRides ? null : photoPicker}
 

@@ -1,4 +1,6 @@
--- supabase/tests/0351_items_image_photo_or_details.sql | items image optional (0357 removed the 0351 rule)
+-- supabase/tests/0351_items_image_photo_or_details.sql | the items offer image rule across its history:
+-- 0351 required a photo or a details image, 0357 dropped it, and 0741 (D132, KC#2020) restored it
+-- for offers in items, food, housing and animals. Full coverage of 0741: 0741_offer_photo_required.sql.
 
 begin;
 
@@ -53,38 +55,47 @@ begin
   execute 'set constraints all deferred';
 end $$;
 
--- 3) RPC without any photo or details image succeeds (0357: photos are optional).
+-- 3) RPC without any photo or details image is refused at commit (0741 / D132 reverses 0357).
 do $$
 declare
   v_kind uuid;
-  v_id uuid;
+  v_error text;
 begin
   select kind_id into v_kind from public.listing_kinds where world_slug = 'items' and slug = 'give_item';
-  v_id := public.create_marketplace_listing(
-    p_kind_id => v_kind, p_title => 'Table without photo', p_details => '{}'::jsonb,
-    p_media_paths => null::text[]);
-  execute 'set constraints all immediate';
+  begin
+    perform public.create_marketplace_listing(
+      p_kind_id => v_kind, p_title => 'Table without photo', p_details => '{}'::jsonb,
+      p_media_paths => null::text[]);
+    execute 'set constraints all immediate';
+  exception when others then
+    v_error := sqlerrm;
+  end;
   execute 'set constraints all deferred';
-  if not exists (select 1 from public.listings where listing_id = v_id) then
-    raise exception 'ASSERT FAILED: items listing without photo should be created';
+  if v_error is distinct from 'offer_photo_required' then
+    raise exception 'ASSERT FAILED: items offer without photo should be refused, got %', coalesce(v_error, 'success');
   end if;
 end $$;
 
--- 4) Removing the last photo of an image-less items listing succeeds.
+-- 4) Removing the last photo of an image-less items offer is refused (0741 / D132).
 do $$
 declare
   v_id uuid;
+  v_error text;
 begin
   select listing_id into v_id from public.listings where title = 'Chair with photo';
-  delete from public.listing_media where listing_id = v_id;
-  execute 'set constraints all immediate';
+  begin
+    delete from public.listing_media where listing_id = v_id;
+    execute 'set constraints all immediate';
+  exception when others then
+    v_error := sqlerrm;
+  end;
   execute 'set constraints all deferred';
-  if exists (select 1 from public.listing_media where listing_id = v_id) then
-    raise exception 'ASSERT FAILED: last photo should be deletable';
+  if v_error is distinct from 'offer_photo_required' then
+    raise exception 'ASSERT FAILED: last photo of an offer should not be deletable, got %', coalesce(v_error, 'success');
   end if;
 end $$;
 
--- 5) The image check triggers and function are gone.
+-- 5) The 0351 image check triggers and function are gone (0741 replaced them with offer_photo_check).
 do $$
 begin
   if exists (select 1 from pg_trigger where tgname like '%items_image_required%') then

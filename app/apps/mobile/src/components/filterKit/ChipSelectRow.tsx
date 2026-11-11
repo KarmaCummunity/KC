@@ -98,7 +98,9 @@ const useChipSelectRowStyles = makeUseStyles(({ colors }) => ({
     alignItems: 'center',
     gap: spacing.xs,
   },
-  scrollFlex: { flex: 1 },
+  // Longhands, not `flex: 1`: with `scroll` setting flexGrow/flexShrink 0, react-native-web resolves the
+  // shorthand + longhand mix to `flex: 0 0 0%` and the chips collapse to zero width (invisible, unclickable).
+  scrollFlex: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 },
   gapRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: spacing.sm },
   wrapRow: {
     flexDirection: 'row' as const,

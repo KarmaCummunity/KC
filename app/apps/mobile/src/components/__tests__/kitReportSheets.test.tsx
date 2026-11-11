@@ -104,7 +104,8 @@ describe('report sheets', () => {
   it('ReportListingModal submits and dismisses from cancel and the ✕', async () => {
     const onClose = vi.fn();
     renderInTheme(<ReportListingModal listingId="m_1" visible onClose={onClose} />);
-    fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }));
+    // #2060: the cancel label must be a key that exists in the locale (`common.cancel` did not).
+    fireEvent.click(screen.getByRole('button', { name: 'general.cancel' }));
     fireEvent.click(screen.getByRole('button', { name: 'general.close' }));
     expect(onClose).toHaveBeenCalledTimes(2);
     fireEvent.click(fillReport('post.reportReasonOther', 'post.reportNotePlaceholder', 'post.reportSubmit'));
@@ -141,6 +142,18 @@ describe('report sheets — degrade rule', () => {
     fireEvent.click(screen.getByRole('button', { name: 'post.reportSubmit' }));
     await flush();
     expect(screen.getByText('post.reportErrorBody')).toBeTruthy();
+  });
+});
+
+describe('report note field hint (#2060)', () => {
+  it.each([
+    ['post', <ReportPostModal key="p" postId="p_1" visible onClose={vi.fn()} />],
+    ['chat', <ReportChatModal key="c" chatId="c_1" visible onClose={vi.fn()} />],
+    ['listing', <ReportListingModal key="l" listingId="m_1" visible onClose={vi.fn()} />],
+    ['user', <ReportUserModal key="u" targetUserId="u_t" visible onClose={vi.fn()} />],
+  ])('the %s report note field shows a placeholder hint inside the box', (_name, modal) => {
+    renderInTheme(modal);
+    expect(screen.getByPlaceholderText('moderation.report.noteHint')).toBeTruthy();
   });
 });
 

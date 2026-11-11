@@ -16,4 +16,10 @@ export const postReportEn = {
   reportAlreadyModeratedTitle: 'Already handled',
   reportAlreadyModeratedBody: 'This item has already been handled by the moderators. Thanks for the help.',
   reportErrorBody: 'Please try again later.',
+  reportInvalidTargetTitle: 'Item unavailable',
+  reportInvalidTargetBody: 'This item is no longer available to report.',
+  reportSelfTitle: 'Cannot report',
+  reportSelfBody: 'You cannot report your own content.',
+  reportRateLimitedTitle: 'Too many reports',
+  reportRateLimitedBody: 'You have sent many reports in the last hour. Please try again later.',
 } as const;

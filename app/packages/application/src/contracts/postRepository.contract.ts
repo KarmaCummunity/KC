@@ -28,7 +28,12 @@ export interface PostRepositoryContractContext {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** Minimal valid Give post for `ownerId`; override what a case is about. */
+/** One photo under the owner's storage prefix: a Give post needs at least one (D132). */
+function onePhoto(ownerId: string): CreatePostInput['mediaAssets'] {
+  return [{ path: `${ownerId}/contract.jpg`, mimeType: 'image/jpeg', sizeBytes: 1000 }];
+}
+
+/** Minimal valid Give post (with its required photo) for `ownerId`; override what a case is about. */
 export function newPostInput(
   ownerId: string,
   address: Address,
@@ -45,7 +50,7 @@ export function newPostInput(
     locationDisplayLevel: 'CityOnly',
     itemCondition: 'Good',
     urgency: null,
-    mediaAssets: [],
+    mediaAssets: onePhoto(ownerId),
     ...overrides,
   };
 }
@@ -71,11 +76,30 @@ const createReturnsOpenPost: ContractCase<Ctx> = {
     assertEqual(post.visibility, 'Public', 'visibility');
     assertEqual(post.itemCondition, 'Good', 'itemCondition');
     assertEqual(post.address.city, ctx.address.city, 'address.city');
-    assertEqual(post.mediaAssets.length, 0, 'mediaAssets of a post created without media');
+    assertEqual(post.mediaAssets.length, 1, 'mediaAssets of a post created with one photo');
+    assertEqual(post.mediaAssets[0]?.path, input.mediaAssets[0]?.path, 'the photo is stored with the post');
     assertEqual(post.recipient, null, 'recipient of a new post');
     assertEqual(post.reopenCount, 0, 'reopenCount of a new post');
     assertEqual(post.deleteAfter, null, 'deleteAfter of a new post');
     assertTrue(Number.isFinite(Date.parse(post.createdAt)), 'createdAt is a timestamp');
+  },
+};
+
+// D132 (KC#2020): an offer needs a photo; the server checks it when the post commits, so an
+// implementation must refuse the photo-less offer as a whole (no post left behind).
+const createOfferNeedsPhoto: ContractCase<Ctx> = {
+  name: 'create: an offer without a photo is refused; a request without one is created',
+  async run(ctx) {
+    const actor = await ctx.newActor();
+    await assertRejectsWithCode(
+      createFor(actor, ctx, { mediaAssets: [] }),
+      'image_required_for_give',
+      'Give post without a photo',
+    );
+    assertEqual(await actor.repo.countOpenByUser(actor.userId), 0, 'no post is left behind');
+
+    const request = await createFor(actor, ctx, { type: 'Request', itemCondition: null, mediaAssets: [] });
+    assertEqual(request.mediaAssets.length, 0, 'a request is created without a photo');
   },
 };
 
@@ -213,6 +237,7 @@ const deleteUnlinkedOwnPost: ContractCase<Ctx> = {
 export function postRepositoryContract(): ContractCase<PostRepositoryContractContext>[] {
   return [
     createReturnsOpenPost,
+    createOfferNeedsPhoto,
     findByIdRoundTrip,
     updatePatchesFields,
     myPostsNewestFirstPaged,

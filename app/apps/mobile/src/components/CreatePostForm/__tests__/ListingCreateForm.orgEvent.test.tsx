@@ -2,7 +2,7 @@
 // G1 step 5 (docs/spec/08_organizations.md Events, D31) — the time world's offer form for a member
 // of an organization: a volunteer shift by default, or the organization's event with its
 // organization, window and registration policy, published through the one createListing path.
-// A member of no organization sees exactly today's form.
+// A member of no organization sees today's form, with a hint how to publish an event (FR-ORG-002).
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   listKindsForWorld: vi.fn(),
   listMyOrganizations: vi.fn(),
   createListing: vi.fn(),
+  push: vi.fn(),
   // The instant each date field picks when tapped, by detail key.
   picks: {} as Record<string, string>,
 }));
@@ -29,6 +30,8 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+// The organization membership hint (FR-ORG-002) opens My organizations.
+vi.mock('expo-router', () => ({ useRouter: () => ({ push: mocks.push }) }));
 vi.mock('@react-native-community/datetimepicker', () => ({ default: () => null, DateTimePickerAndroid: { open: vi.fn() } }));
 vi.mock('../../../services/marketplaceComposition', () => ({
   marketplaceRepository: () => ({
@@ -120,6 +123,19 @@ describe('ListingCreateForm — organization event', () => {
     expect(await screen.findByTestId('listing-field-duration_minutes')).toBeTruthy();
     await waitFor(() => expect(mocks.listMyOrganizations).toHaveBeenCalled());
     expect(screen.queryByTestId('time-offer-kind')).toBeNull();
+  });
+
+  it('tells a member of no organization how to publish an event, and opens My organizations', async () => {
+    mocks.listMyOrganizations.mockResolvedValue([]);
+    renderTimeOffer();
+    fireEvent.click(await screen.findByTestId('org-event-membership-hint-open'));
+    expect(mocks.push).toHaveBeenCalledWith('/settings/organizations');
+  });
+
+  it('shows a member of an organization no membership hint', async () => {
+    renderTimeOffer();
+    expect(await screen.findByTestId('time-offer-kind')).toBeTruthy();
+    expect(screen.queryByTestId('org-event-membership-hint')).toBeNull();
   });
 
   it('defaults to a volunteer shift and switches to the event fields', async () => {

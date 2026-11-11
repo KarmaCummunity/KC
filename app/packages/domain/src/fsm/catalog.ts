@@ -79,4 +79,6 @@ export const LEGACY_FSM_MACHINES: readonly FsmMachine<string, string>[] = [
   knowledgeTopicMachine,
   reviewDecisionMachine,
   timesheetMachine,
+  rideSeriesMachine,
+  standingOrderMachine,
 ];

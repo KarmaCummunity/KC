@@ -41,6 +41,7 @@ A user reports a post, another user, a comment (none in MVP UI but reserved), or
 - AC5. The target post / profile is **immediately hidden** from the reporter (client-side) regardless of whether the auto-removal threshold is reached.
 - AC6. The reporter receives a confirmation toast: *"✅ Report received. Our team will review."*
 - AC7. Duplicate reports from the same reporter on the same target within 24 hours are rejected with `DUPLICATE_REPORT` (idempotency).
+- AC8. A report the server rejects shows the cause, never only the generic error: the item is no longer available (sheet closes), the content is the reporter's own (sheet closes), or the hourly report cap is reached (sheet stays open, note kept). A failure with no such cause is sent to Sentry with its database code and keeps the generic notice (#2061).
 
 **Related.** Screens: 6.1 · Domain: `Report`.
 
@@ -90,6 +91,7 @@ A user blocks another user.
    - The blocked user's posts are filtered from my feed.
    - My posts are filtered from the blocked user's feed.
 - AC5. The blocked user is never notified.
+- AC6. The confirmation appears from every entry point (feed post menu, profile menu, chat menu): the menu sheet closes first and the confirmation opens only after the sheet has finished dismissing, because iOS drops a native alert raised over a closing modal (#2062).
 
 **Related.** Screens: 6.2 · Domain: `Block`, `FollowEdge`, `FollowRequest`, `Chat`.
 

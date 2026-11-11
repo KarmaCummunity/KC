@@ -3,6 +3,7 @@ import { Pressable, View } from 'react-native';
 import { KcFlashList } from '../../../../src/components/lists/KcFlashList';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { standingOrderActions } from '@kc/domain';
 import { makeUseStyles, radius, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../../../../src/components/ui/Screen';
 import { paymentsUseCases } from '../../../../src/services/paymentsComposition';
@@ -48,6 +49,8 @@ export default function MyStandingOrdersScreen() {
         }
         renderItem={({ item }) => {
           const busy = busyId === item.orderId;
+          // The buttons follow `standingOrderMachine`, the graph the standing-order RPCs enforce.
+          const can = standingOrderActions(item.status);
           return (
             <View style={styles.row}>
               <Text style={styles.title}>
@@ -60,7 +63,7 @@ export default function MyStandingOrdersScreen() {
                   : ''}
               </Text>
               <View style={styles.actions}>
-                {item.status === 'active' ? (
+                {can.pause ? (
                   <Pressable
                     style={styles.btn}
                     disabled={busy}
@@ -69,7 +72,7 @@ export default function MyStandingOrdersScreen() {
                     <Text style={styles.btnText}>{t('moneyPayments.pauseStanding')}</Text>
                   </Pressable>
                 ) : null}
-                {item.status === 'paused' ? (
+                {can.resume ? (
                   <Pressable
                     style={styles.btn}
                     disabled={busy}
@@ -78,7 +81,7 @@ export default function MyStandingOrdersScreen() {
                     <Text style={styles.btnText}>{t('moneyPayments.resumeStanding')}</Text>
                   </Pressable>
                 ) : null}
-                {item.status !== 'cancelled' ? (
+                {can.cancel ? (
                   <Pressable
                     style={styles.btn}
                     disabled={busy}

@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import type { ReportReason } from '@kc/domain';
 import { ReportError } from '@kc/application';
 import { isBackendUnavailable, notAvailableMessage } from '../../lib/backendAvailability';
+import { getSentryIfInit } from '../../lib/observability/sentry';
 
 export interface ReportOutcome {
   readonly title: string;
@@ -19,6 +20,11 @@ export interface ReportOutcomeMessages {
   readonly duplicate: ReportOutcome;
   readonly alreadyModerated: ReportOutcome;
   readonly error: ReportOutcome;
+  // Server-side rejections (#2061). Optional so a sheet with its own copy keeps working; a code
+  // without copy falls back to `error`.
+  readonly invalidTarget?: ReportOutcome;
+  readonly cannotReportSelf?: ReportOutcome;
+  readonly rateLimited?: ReportOutcome;
 }
 
 /** A single report action — receives the chosen reason and the trimmed note. */
@@ -38,7 +44,25 @@ export function postNamespaceReportMessages(t: (key: string) => string): ReportO
       message: t('post.reportAlreadyModeratedBody'),
     },
     error: { title: t('general.error'), message: t('post.reportErrorBody') },
+    invalidTarget: { title: t('post.reportInvalidTargetTitle'), message: t('post.reportInvalidTargetBody') },
+    cannotReportSelf: { title: t('post.reportSelfTitle'), message: t('post.reportSelfBody') },
+    rateLimited: { title: t('post.reportRateLimitedTitle'), message: t('post.reportRateLimitedBody') },
   };
+}
+
+/**
+ * Sends a failure no outcome covers to Sentry, tagged with its code, so the next occurrence
+ * names its cause (#2061). Never throws: observability must not break the report flow.
+ */
+function reportUnmappedFailure(err: unknown): void {
+  try {
+    getSentryIfInit()?.captureException(err, {
+      tags: { area: 'report', report_error_code: err instanceof ReportError ? err.code : 'non_report_error' },
+      extra: { cause: err instanceof ReportError ? err.cause : undefined },
+    });
+  } catch {
+    /* swallow: see above */
+  }
 }
 
 export function useReportForm(visible: boolean) {
@@ -78,7 +102,18 @@ export function useReportForm(visible: boolean) {
       } else if (isBackendUnavailable(err)) {
         // Degrade rule: the reports table is not deployed yet.
         setNotify({ title: messages.error.title, message: notAvailableMessage() });
+      } else if (err instanceof ReportError && err.code === 'invalid_target') {
+        // The item is gone or no longer visible to the reporter: nothing left to retry.
+        onClose();
+        setNotify(messages.invalidTarget ?? messages.error);
+      } else if (err instanceof ReportError && err.code === 'cannot_report_self') {
+        onClose();
+        setNotify(messages.cannotReportSelf ?? messages.error);
+      } else if (err instanceof ReportError && err.code === 'rate_limited') {
+        // Keep the sheet open: the note is kept and the user can retry once the cap resets.
+        setNotify(messages.rateLimited ?? messages.error);
       } else {
+        reportUnmappedFailure(err);
         setNotify(messages.error);
       }
     } finally {

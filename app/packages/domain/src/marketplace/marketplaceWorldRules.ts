@@ -129,6 +129,8 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'housing_not_in_window',
   'housing_note_too_long',
   'housing_use_booking_cancel',
+  // 0733 — an event registration cancels through its own RPC, not the generic handoff cancel.
+  'event_use_registration_cancel',
   // G1 step 5 (0563) — organization events: membership, verified-only registration, organizer actions.
   'event_org_required',
   'verification_required',

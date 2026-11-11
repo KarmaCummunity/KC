@@ -1,7 +1,9 @@
 // G1 step 5 (D31) — the time world's offer form: only a member of an organization may choose an
 // organization's event; everyone else gets the default kind, and a single organization is preselected.
 import { describe, expect, it } from 'vitest';
-import { canChooseOrgEvent, kindForCreate, orgEventKind, preselectedOrgId } from '../orgEventCreate';
+import {
+  canChooseOrgEvent, kindForCreate, orgEventKind, preselectedOrgId, suggestsOrgMembership,
+} from '../orgEventCreate';
 import { KINDS_BY_WORLD } from './listingKindFixtures';
 
 const TIME = KINDS_BY_WORLD.time!;
@@ -17,6 +19,15 @@ describe('canChooseOrgEvent', () => {
     expect(canChooseOrgEvent(TIME, 'give', [])).toBe(false);
     expect(canChooseOrgEvent(TIME, 'request', ONE_ORG)).toBe(false);
     expect(canChooseOrgEvent(KINDS_BY_WORLD.food!, 'give', ONE_ORG)).toBe(false);
+  });
+});
+
+describe('suggestsOrgMembership', () => {
+  it('tells an offerer with no organization how to publish an event, in a world that has events', () => {
+    expect(suggestsOrgMembership(TIME, 'give', [])).toBe(true);
+    expect(suggestsOrgMembership(TIME, 'give', ONE_ORG)).toBe(false);
+    expect(suggestsOrgMembership(TIME, 'request', [])).toBe(false);
+    expect(suggestsOrgMembership(KINDS_BY_WORLD.food!, 'give', [])).toBe(false);
   });
 });
 

@@ -298,9 +298,9 @@ Besides the two category toggles (FR-NOTIF-014), the user can turn off a single 
 
 ---
 
-## FR-NOTIF-018 — Item and food handoff changes *(Critical)*
+## FR-NOTIF-018 — Item, food and animal handoff changes *(Critical)*
 
-> **Status (2026-11-02):** ✅ Implemented — KC#1391. Book §7.5 (closing and handoff). Rides have the same contract for bookings (0511, D73); this FR covers the items and food worlds.
+> **Status (2026-11-02):** ✅ Implemented — KC#1391. Book §7.5 (closing and handoff). Rides have the same contract for bookings (0511, D73); this FR covers the items and food worlds, and since `0733` the animals world's adoption and foster requests, which run the same flow (0658).
 
 **Description.**
 Every change to an item or food handoff (`giving_handoffs`) pushes the other side, so neither the giver nor the requester has to open the app to learn about it.
