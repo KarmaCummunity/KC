@@ -2,14 +2,14 @@
 // V2-ADMIN-MONEY-9 — V2 §13.3 Admin Money — minimal donations / expenses ledger.
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Platform, RefreshControl, StyleSheet, View } from 'react-native';
+import { Alert, RefreshControl, StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   hasPermission, isFinanceLedgerError,
   type AdminPermission, type AdminRole,
   type FinanceDirection, type FinanceEntry,
 } from '@kc/domain';
-import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography, platformSelect } from '@kc/ui';
 import { PrimaryButton } from '../../../src/components/ui/Buttons';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { container } from '../../../src/lib/container';
@@ -127,7 +127,7 @@ export default function MoneyScreen() {
       } catch (err) {
         const code = isFinanceLedgerError(err) ? err.code : 'unknown';
         const msg = t.errors[code as keyof typeof t.errors] ?? t.errors.unknown;
-        if (Platform.OS === 'web') {
+        if (platformSelect({ web: true, default: false })) {
           if (typeof window !== 'undefined') window.alert(msg);
         } else {
           Alert.alert(msg);

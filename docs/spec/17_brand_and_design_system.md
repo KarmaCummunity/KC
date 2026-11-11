@@ -169,9 +169,23 @@ Admin and team-only screens use the **same** colours, type, radius, components a
 
 Light, dark and system appearance (FR-SETTINGS-014). The native app passes the OS colour scheme through (`app.json` `userInterfaceStyle: "automatic"`, `expo-system-ui` on Android) so "system" can resolve to dark; signed-out surfaces stay light.
 
-#### 4.4.1 Platform conventions (#858)
+#### 4.4.1 Platform conventions (#858, KC#1960)
 
-KC follows each platform where the user expects it to, and keeps one KC look everywhere else. Values are KC policy, not a full HIG / Material copy. Design: [`docs/superpowers/specs/2026-11-07-mobile-native-feel-design.md`](../superpowers/specs/2026-11-07-mobile-native-feel-design.md).
+KC provides a full native look on each platform: Apple style (HIG) on iOS, Material 3 on Android, and a neutral system look on web. The KC look is the brand colours and content; shape, depth, typography and press feedback follow each platform (D-231 supersedes D66). Design: [`docs/superpowers/specs/2026-11-08-platform-adaptive-ui-design.md`](../superpowers/specs/2026-11-08-platform-adaptive-ui-design.md).
+
+#### 4.4.2 Visual platform tokens (KC#1960)
+
+Visual tokens branch through `platformSelect` in `@kc/ui` and are exposed as `theme.platform` in `ThemeContext`:
+
+| Token | iOS (Apple HIG) | Android (Material 3) | Web (System) |
+|---|---|---|---|
+| Corner Radius (card/dialog) | Compact: `sm` 8px, `md` 10px, `lg` 14px, `xl` 20px | Rounded: `sm` 8px, `md` 12px, `lg` 16px, `xl` 28px | Clean: `sm` 6px, `md` 8px, `lg` 12px, `xl` 16px |
+| Depth / Shadows | Layered soft blur shadows (`shadowRadius: 4-16`, low opacity) | Native elevation (`elevation: 2-8`), surface tint | Subdued box-shadows |
+| Press Feedback | Opacity fade (`activeOpacity: 0.7`) | Material surface ripple | Subdued hover / active state |
+| Typography / Font | System font (SF Pro) via dynamic type | System font (Roboto) | System sans-serif stack |
+| Branching gate | `platformSelect` from `@kc/ui` | Same | Same |
+
+Raw `Platform.OS` or `Platform.select` checks are forbidden by the CI brand guard (`rawPlatformCheck`, §6). All branching must go through `platformSelect`.
 
 | Concern | iOS | Android | Web (export) | Hook |
 |---|---|---|---|---|

@@ -1,7 +1,7 @@
 // app/apps/mobile/app/(admin)/time/index.tsx
 // V2-ADMIN-TIME-10 — V2 §13.10 Admin Time (timesheets).
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, Platform, RefreshControl, View } from 'react-native';
+import { Alert, RefreshControl, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   hasPermission,
@@ -11,7 +11,7 @@ import {
   type TimesheetEntry,
   type TimesheetStatus,
 } from '@kc/domain';
-import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
+import { makeUseStyles, spacing, Text, typography, platformSelect } from '@kc/ui';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useAdminRoles } from '../../../src/hooks/useAdminRoles';
 import { container } from '../../../src/lib/container';
@@ -127,7 +127,7 @@ export default function TimeScreen() {
     } catch (err) {
       const code = isTimesheetError(err) ? err.code : 'unknown';
       const msg = t.errors[code as keyof typeof t.errors] ?? t.errors.unknown;
-      if (Platform.OS === 'web') {
+      if (platformSelect({ web: true, default: false })) {
         if (typeof window !== 'undefined') window.alert(msg);
       } else {
         Alert.alert(msg);

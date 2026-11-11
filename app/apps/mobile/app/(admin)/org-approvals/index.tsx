@@ -5,7 +5,7 @@
 // out of scope here — it lands in a separate slice when the org world
 // schema is built.
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { adminChipScroll } from '../../../src/components/admin/adminChipScroll';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -13,7 +13,7 @@ import {
   type AdminPermission, type AdminRole,
   type OrgApplication, type OrgApplicationStatus,
 } from '@kc/domain';
-import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography, platformSelect } from '@kc/ui';
 import { Chip } from '../../../src/components/ui/Chip';
 import { DangerButton, PrimaryButton } from '../../../src/components/ui/Buttons';
 import { TextField } from '../../../src/components/ui/TextField';
@@ -30,7 +30,7 @@ const STATUS_TABS: readonly StatusFilter[] = ['pending', 'approved', 'rejected',
 const orgApplicationKeyExtractor = (a: OrgApplication) => a.applicationId;
 
 async function confirmAction(message: string, L: LocaleBundle): Promise<boolean> {
-  if (Platform.OS === 'web') {
+  if (platformSelect({ web: true, default: false })) {
     return typeof window !== 'undefined' && window.confirm(message);
   }
   return new Promise<boolean>((resolve) => {
@@ -92,7 +92,7 @@ export default function OrgApprovalsScreen() {
       } catch (err) {
         const code = isOrgApplicationError(err) ? err.code : 'unknown';
         const msg = t.errors[code as keyof typeof t.errors] ?? t.errors.unknown;
-        if (Platform.OS === 'web') {
+        if (platformSelect({ web: true, default: false })) {
           if (typeof window !== 'undefined') window.alert(msg);
         } else {
           Alert.alert(msg);

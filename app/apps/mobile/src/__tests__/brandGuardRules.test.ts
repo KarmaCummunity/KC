@@ -193,3 +193,21 @@ describe('countLiterals — directional icons (spec 17 §4.2, FR-RESP-006 AC18)'
     expect(countLiterals(source)).toEqual({});
   });
 });
+
+describe('countLiterals — rawPlatformCheck (spec 17 §4.4.2, KC#1960)', () => {
+  it('counts raw Platform.OS and Platform.select checks', () => {
+    const source = [
+      "const isIos = Platform.OS === 'ios';",
+      "const shadow = Platform.select({ ios: 'card', default: 'none' });",
+    ].join('\n');
+    expect(countLiterals(source)).toEqual({ rawPlatformCheck: 2 });
+  });
+
+  it('allows lines with brand-guard-allow marker', () => {
+    const source = [
+      "const isAndroid = Platform.OS === 'android'; // brand-guard-allow: native back handler",
+      'const font = platformSelect({ ios: "System", android: "Roboto" });',
+    ].join('\n');
+    expect(countLiterals(source)).toEqual({});
+  });
+});

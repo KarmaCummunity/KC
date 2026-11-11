@@ -7,6 +7,7 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { StyleSheet, type ImageStyle, type TextStyle, type ViewStyle } from 'react-native';
 import { darkColors, lightColors, type ColorPalette } from './colors';
+import { getPlatformTokens, type PlatformTokens } from '../platform/platformTokens';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 export type ResolvedScheme = 'light' | 'dark';
@@ -16,6 +17,7 @@ export interface ThemeContextValue {
   scheme: ResolvedScheme;                     // mode resolved against OS
   isDark: boolean;
   colors: ColorPalette;
+  platform: PlatformTokens;
   setMode: (mode: ThemeMode) => void;
 }
 
@@ -26,6 +28,7 @@ const ThemeContext = createContext<ThemeContextValue>({
   scheme: 'light',
   isDark: false,
   colors: fallbackPalette,
+  platform: getPlatformTokens(),
   setMode: () => {},
 });
 
@@ -37,6 +40,7 @@ export interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ mode, systemScheme, setMode, children }: ThemeProviderProps) {
+  const platform = useMemo(() => getPlatformTokens(), []);
   const value = useMemo<ThemeContextValue>(() => {
     const scheme: ResolvedScheme = mode === 'system' ? systemScheme : mode;
     const isDark = scheme === 'dark';
@@ -45,9 +49,10 @@ export function ThemeProvider({ mode, systemScheme, setMode, children }: ThemePr
       scheme,
       isDark,
       colors: isDark ? darkColors : lightColors,
+      platform,
       setMode,
     };
-  }, [mode, systemScheme, setMode]);
+  }, [mode, systemScheme, setMode, platform]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

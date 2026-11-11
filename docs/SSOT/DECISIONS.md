@@ -1899,3 +1899,17 @@ Owner rules that go with it:
 **Rejected.** An immediate check inside `create_marketplace_listing` only (misses the last-photo delete and the items post engine). Guarding `media_assets` deletes now: the items edit still replaces its photos in two requests (delete, then insert), so that guard would refuse every photo change on an items offer; KC#2118. Backfilling photos onto existing offers.
 
 **Affected.** `supabase/migrations/0741_offer_photo_required.sql`, `supabase/tests/0741_offer_photo_required.sql`, `supabase/tests/0351_items_image_photo_or_details.sql`, `supabase/tests/_harness/10_fixtures.sql`, `app/packages/infrastructure-supabase/src/posts/createPostWithMedia.ts`, `app/packages/application/src/contracts/postRepository.contract.ts`, `docs/spec/requirements/04_posts.md` (FR-POST-002 AC5).
+
+## D-231 — Platform-adaptive native UI and system font replace single shared look (2026-11-11)
+
+**Decision.** KC provides a full native look on each platform: Apple style (HIG) on iOS, Material 3 on Android, and a neutral system look on web. Brand colors and content remain the shared identity; shape, depth, typography and press feedback follow each platform. System font replaces custom Rubik across all platforms. **Supersedes D66.**
+
+1. **Tokens (`@kc/ui`):** `platformSelect({ ios, android, web, default })` is the canonical platform branching primitive. `getPlatformTokens()` resolves `PlatformTokens` (`radius`, `shadow`, `pressFeedback`).
+2. **Runtime:** `ThemeContext` injects `theme.platform: PlatformTokens`, accessible to `useTheme()` and `makeUseStyles`.
+3. **CI Guard:** `brandGuardRules` includes `rawPlatformCheck` preventing untyped `Platform.OS` or `Platform.select` branches without `platformSelect` or an explicit `brand-guard-allow:` reason. A ratchet baseline ensures new or edited files are 100% on tokens.
+
+**Why.** Single shared tokens made elements look right on iOS but flat or incorrect on Android (and vice versa). 226 raw `Platform.OS` checks were scattered across 130 files without type safety or consistency.
+
+**Rejected.** Full screen rewrites per platform; maintaining custom brand font Rubik across platforms.
+
+**Affected.** `app/packages/ui/src/platform/**`, `app/packages/ui/src/theme/ThemeContext.tsx`, `app/apps/mobile/src/__tests__/brandGuardRules.ts`, `app/apps/mobile/brand-guard.baseline.json`, `docs/spec/17_brand_and_design_system.md`, `docs/spec/requirements/17_responsive_desktop.md` (FR-RESP-006).

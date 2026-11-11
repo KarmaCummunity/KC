@@ -1,6 +1,45 @@
 {
   "$comment": "Frozen brand-guard findings per file (spec 17 §6, TD-199). Counts may only go down.",
   "files": {
+    "app/(auth)/index.tsx": {
+      "rawPlatformCheck": 2
+    },
+    "app/(guest)/feed.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "app/(onboarding)/photo.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "app/_layout.tsx": {
+      "rawPlatformCheck": 6
+    },
+    "app/account-blocked.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "app/auth/callback.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "app/auth/verify.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "app/chat/[id].tsx": {
+      "rawPlatformCheck": 1
+    },
+    "app/chat/index.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "app/create.tsx": {
+      "rawPlatformCheck": 2
+    },
+    "app/edit-listing/[id].tsx": {
+      "rawPlatformCheck": 1
+    },
+    "app/edit-post/[id].tsx": {
+      "rawPlatformCheck": 1
+    },
+    "app/follow/suggestions.tsx": {
+      "rawPlatformCheck": 1
+    },
     "app/research/[slug].web.tsx": {
       "fontWeightLiteral": 1,
       "radiusLiteral": 1
@@ -11,15 +50,37 @@
       "iconSizeLiteral": 2,
       "unmirroredDirectionalIcon": 1
     },
+    "app/settings/notifications.tsx": {
+      "rawPlatformCheck": 2
+    },
+    "app/settings/survey-demo.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "app/settings/survey/[slug].tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/components/ChatBadge.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/components/CreatePostForm/PhotoPicker.tsx": {
+      "rawPlatformCheck": 1
+    },
     "src/components/DeleteAccountSuccessOverlay.tsx": {
       "rawModal": 1
+    },
+    "src/components/DonationLinksList.tsx": {
+      "rawPlatformCheck": 2
+    },
+    "src/components/NotificationToggleRow.tsx": {
+      "rawPlatformCheck": 1
     },
     "src/components/PostCardGrid.styles.ts": {
       "colorLiteral": 4,
       "fontSizeLiteral": 12,
       "fontWeightLiteral": 5,
       "spacingLiteral": 13,
-      "shadowLiteral": 4
+      "shadowLiteral": 4,
+      "rawPlatformCheck": 2
     },
     "src/components/PostImageCarousel.tsx": {
       "colorLiteral": 2,
@@ -37,13 +98,55 @@
       "rawModal": 1,
       "iconSizeLiteral": 1
     },
+    "src/components/TabBar.tsx": {
+      "rawPlatformCheck": 2
+    },
+    "src/components/TopBar.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/components/WebRefreshButton.tsx": {
+      "rawPlatformCheck": 2
+    },
     "src/components/aside/RecentSearchesAside.tsx": {
       "iconSizeLiteral": 1
+    },
+    "src/components/auth/AuthFormScreen.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/components/auth/AuthSocialSignInBlock.tsx": {
+      "rawPlatformCheck": 2
+    },
+    "src/components/auth/welcomeScreen.styles.ts": {
+      "rawPlatformCheck": 1
     },
     "src/components/chat/ChatReactionChips.tsx": {
       "radiusLiteral": 1,
       "spacingLiteral": 1,
       "adHocChip": 1
+    },
+    "src/components/chat/system/adminActions.ts": {
+      "rawPlatformCheck": 3
+    },
+    "src/components/chat/webEnterToSend.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/components/donationLinkRowHandlers.ts": {
+      "rawPlatformCheck": 2
+    },
+    "src/components/filterKit/FilterButton.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/components/legal/LegalConsentGate.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/components/legal/LegalConsentScreen.tsx": {
+      "rawPlatformCheck": 3
+    },
+    "src/components/legal/LegalDocumentReader.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/components/map/KcMap.native.tsx": {
+      "rawPlatformCheck": 1
     },
     "src/components/map/MapExplorer.styles.ts": {
       "colorLiteral": 3,
@@ -54,8 +157,26 @@
       "shadowLiteral": 12,
       "adHocChip": 1
     },
+    "src/components/marketplace/RideRouteStops.tsx": {
+      "rawPlatformCheck": 1
+    },
     "src/components/marketplace/listingChipStyles.ts": {
       "adHocChip": 1
+    },
+    "src/components/post-detail/PostDetailBottomChrome.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/components/post-detail/PostEngagementComposer.tsx": {
+      "rawPlatformCheck": 3
+    },
+    "src/components/post-detail/postDetailCorner.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/components/post/PostShareButton.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/components/profile/MyProfileChrome.tsx": {
+      "rawPlatformCheck": 1
     },
     "src/components/research/ResearchEndShareCard.tsx": {
       "fontWeightLiteral": 2,
@@ -87,22 +208,188 @@
       "radiusLiteral": 2,
       "spacingLiteral": 8
     },
+    "src/components/shell/AppShell.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/components/shell/ShellWithResponsiveChrome.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/components/survey/hebrewSurveyFieldStyle.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/components/ui/BottomSheet.tsx": {
+      "rawPlatformCheck": 3
+    },
+    "src/components/ui/DateTimeField.tsx": {
+      "rawPlatformCheck": 2
+    },
+    "src/components/ui/FormScreen.tsx": {
+      "rawPlatformCheck": 3
+    },
+    "src/components/ui/KeyboardFormAccessory.tsx": {
+      "rawPlatformCheck": 4
+    },
+    "src/components/ui/MirroredIcon.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/components/ui/Modal.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/components/ui/TextField.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/components/ui/buttonStyles.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/components/ui/overlayParts.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/components/useDonationLinkActions.ts": {
+      "rawPlatformCheck": 2
+    },
     "src/features/about-landing/AboutHero.tsx": {
       "colorLiteral": 5,
       "fontWeightLiteral": 1,
       "radiusLiteral": 2
     },
+    "src/features/about-landing/AboutLandingScreen.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/features/about-landing/AboutLogoEvolutionSection.tsx": {
+      "rawPlatformCheck": 1
+    },
     "src/features/about-landing/AboutNavDrawer.tsx": {
       "physicalSide": 2,
+      "rawPlatformCheck": 1,
       "rawModal": 1,
       "iconSizeLiteral": 3,
       "unmirroredDirectionalIcon": 1
+    },
+    "src/features/about-landing/AboutRoadmapTimeline.tsx": {
+      "rawPlatformCheck": 1
     },
     "src/features/about-landing/AboutValuesGrid.tsx": {
       "fontWeightLiteral": 1,
       "shadowLiteral": 4,
       "adHocChip": 1,
       "iconSizeLiteral": 1
+    },
+    "src/features/about-landing/AboutVisionSection.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/features/about-landing/aboutOpenExternalUrl.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/hooks/listingScrollToField.ts": {
+      "rawPlatformCheck": 2
+    },
+    "src/hooks/useBlockedUsers.ts": {
+      "rawPlatformCheck": 2
+    },
+    "src/hooks/useExternalDonations.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/hooks/useModalHardwareBack.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/hooks/useMyListingActions.ts": {
+      "rawPlatformCheck": 2
+    },
+    "src/hooks/useSettingsAccountActions.ts": {
+      "rawPlatformCheck": 2
+    },
+    "src/hooks/useShellContentWidth.ts": {
+      "rawPlatformCheck": 2
+    },
+    "src/hooks/useUnsavedChangesGuard.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/hooks/useUserBlock.ts": {
+      "rawPlatformCheck": 2
+    },
+    "src/i18n/language.ts": {
+      "rawPlatformCheck": 5
+    },
+    "src/lib/auditCsvExport.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/lib/challenges/promptChallengeJoinProfileSurface.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/lib/copyOrShareText.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/lib/downloadPostImageForShare.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/lib/haptics.ts": {
+      "rawPlatformCheck": 2
+    },
+    "src/lib/hebrewContentDirection.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/lib/notifications/register.ts": {
+      "rawPlatformCheck": 3
+    },
+    "src/lib/notifications/tapHandler.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/lib/observability/globalErrorHandlers.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/lib/openMail.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/lib/platform/keyboardVerticalOffset.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/lib/platform/useKeyboardVerticalOffset.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/lib/polyfills.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/lib/pushSetup.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/lib/queryLifecycleSync.ts": {
+      "rawPlatformCheck": 2
+    },
+    "src/lib/queryPersist.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/lib/rtlLayout.ts": {
+      "rawPlatformCheck": 6
+    },
+    "src/lib/runAfterBottomSheetDismiss.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/lib/sharePost.ts": {
+      "rawPlatformCheck": 3
+    },
+    "src/lib/shareResearchSurvey.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/lib/webDocumentBootstrap.ts": {
+      "rawPlatformCheck": 2
+    },
+    "src/navigation/detailStackScreenOptions.tsx": {
+      "rawPlatformCheck": 2
+    },
+    "src/navigation/nativeHeaderIconOnly.tsx": {
+      "rawPlatformCheck": 3
+    },
+    "src/navigation/nestedStackGestureOptions.ts": {
+      "rawPlatformCheck": 2
+    },
+    "src/navigation/rootStackAnimation.ts": {
+      "rawPlatformCheck": 3
+    },
+    "src/navigation/shellStackScreenOptions.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/screens/challenges/ChallengePostDetail.tsx": {
+      "rawPlatformCheck": 1
     },
     "src/screens/edit-post/editPostScreen.styles.ts": {
       "radiusLiteral": 2,
@@ -113,11 +400,41 @@
     "src/screens/guest/feed.styles.ts": {
       "spacingLiteral": 1
     },
+    "src/screens/post/ListingPostDetail.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/screens/post/PostDetailScreen.tsx": {
+      "rawPlatformCheck": 1
+    },
+    "src/screens/post/postDetailScreen.styles.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/screens/research/ResearchRunner.tsx": {
+      "rawPlatformCheck": 1
+    },
     "src/screens/research/SurveyIntroBlock.tsx": {
       "fontWeightLiteral": 1,
       "radiusLiteral": 2,
       "spacingLiteral": 2,
       "iconSizeLiteral": 1
+    },
+    "src/services/authComposition.ts": {
+      "rawPlatformCheck": 2
+    },
+    "src/services/authSecureStorage.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/services/avatarUpload.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/services/platformConfirm.ts": {
+      "rawPlatformCheck": 1
+    },
+    "src/services/purchases/revenuecat.ts": {
+      "rawPlatformCheck": 2
+    },
+    "src/utils/openExternalUrl.ts": {
+      "rawPlatformCheck": 1
     }
   }
 }

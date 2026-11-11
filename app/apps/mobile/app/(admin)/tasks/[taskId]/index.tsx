@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import {
   Alert,
-  Platform,
   RefreshControl,
   ScrollView,
   View,
@@ -14,7 +13,7 @@ import {
   type AdminTaskCategory, type AdminTaskStatus,
   hasPermission, isAdminTaskError, isStatusTransitionAllowed,
 } from '@kc/domain';
-import { makeUseStyles, spacing, Text, typography } from '@kc/ui';
+import { makeUseStyles, spacing, Text, typography, platformSelect } from '@kc/ui';
 import { DangerButton, PrimaryButton, SecondaryButton } from '../../../../src/components/ui/Buttons';
 import { TextField } from '../../../../src/components/ui/TextField';
 import { useAuthStore } from '../../../../src/store/authStore';
@@ -32,7 +31,7 @@ import { useLocaleBundle, type LocaleBundle } from '../../../../src/i18n/useLoca
 import { useAdminScreenTitle } from '../../../../src/components/admin/useAdminScreenTitle';
 
 async function confirmAction(message: string, L: LocaleBundle): Promise<boolean> {
-  if (Platform.OS === 'web') {
+  if (platformSelect({ web: true, default: false })) {
     return typeof window !== 'undefined' && window.confirm(message);
   }
   return new Promise<boolean>((resolve) => {

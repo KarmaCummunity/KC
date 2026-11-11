@@ -44,6 +44,9 @@ const LINE_RULES = {
   // locale keys never match; a `pill` is not counted because the name also
   // covers nav tabs and separators.
   adHocChip: /(?:^|[{,])\s*['"]?chip['"]?\s*:\s*\{/g,
+  // Spec 17 §4.4.2 (KC#1960): platform-specific values must use `platformSelect`
+  // from `@kc/ui`. Raw `Platform.OS` or `Platform.select` branches are counted.
+  rawPlatformCheck: /\bPlatform\.(?:OS|select)\b/g,
 } as const;
 
 /** Rules that do not apply inside the UI kit, which is where the shared wrappers live. */

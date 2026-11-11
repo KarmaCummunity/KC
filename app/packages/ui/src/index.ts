@@ -30,3 +30,4 @@ export { AsideProvider, useAside, useAsideContent } from './components/AsideCont
 export { AsidePanel } from './components/AsidePanel';
 export { Skeleton } from './components/Skeleton';
 export type { SkeletonProps } from './components/Skeleton';
+export * from './platform';

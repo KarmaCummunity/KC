@@ -3,7 +3,7 @@
 // Buttons are wholly driven by PERMISSION_MATRIX in @kc/domain. Adding a new
 // action in a future iteration is: matrix entry + action id + i18n label.
 import { useState } from 'react';
-import { Alert, View, Platform } from 'react-native';
+import { Alert, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   type AdminPermission,
@@ -12,7 +12,7 @@ import {
   type AdminReportTargetType,
   hasPermission,
 } from '@kc/domain';
-import { makeUseStyles, spacing } from '@kc/ui';
+import { makeUseStyles, spacing, platformSelect } from '@kc/ui';
 import { DangerButton, SecondaryButton } from '../../ui/Buttons';
 import { container } from '../../../lib/container';
 import { useAdminRoles } from '../../../hooks/useAdminRoles';
@@ -29,7 +29,7 @@ type ActionId =
   | 'permanentBan' | 'manualRemove' | 'openSupport';
 
 async function confirmDialog(L: LocaleBundle, question: string): Promise<boolean> {
-  if (Platform.OS === 'web') {
+  if (platformSelect({ web: true, default: false })) {
     return typeof window !== 'undefined' && window.confirm(question);
   }
   return new Promise<boolean>((resolve) => {

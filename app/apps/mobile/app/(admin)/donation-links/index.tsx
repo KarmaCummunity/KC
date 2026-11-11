@@ -4,10 +4,10 @@
 // approve and reject (an optional note tells the submitter why), plus the decided ones.
 // Gated by the 'donation_links.review' permission; the server re-checks the role (0546).
 import React, { useCallback, useState } from 'react';
-import { Platform, RefreshControl, ScrollView, View } from 'react-native';
+import { RefreshControl, ScrollView, View } from 'react-native';
 import { hasPermission, type AdminRole, type DonationLinkReviewStatus } from '@kc/domain';
 import type { DonationLinkReviewItem } from '@kc/application';
-import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography, platformSelect } from '@kc/ui';
 import { Chip } from '../../../src/components/ui/Chip';
 import { DangerButton, PrimaryButton } from '../../../src/components/ui/Buttons';
 import { TextField } from '../../../src/components/ui/TextField';
@@ -25,7 +25,7 @@ type Strings = ReturnType<typeof useLocaleBundle>['admin']['donationLinks'];
 
 /** One-line notice (window.alert on web). */
 function notify(message: string): void {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') window.alert(message);
+  if (platformSelect({ web: true, default: false }) && typeof window !== 'undefined') window.alert(message);
 }
 
 function ReviewRow({

@@ -2,9 +2,9 @@
 // FR-ADMIN-022 / FR-ADMIN-030 — one of a person's grants on their admin
 // screen: the role and where it applies, when it was granted (or revoked),
 // and the change / revoke actions the viewer has authority for.
-import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import type { AdminGrant } from '@kc/domain';
-import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
+import { makeUseStyles, radius, spacing, Text, typography, platformSelect } from '@kc/ui';
 import { RoleBadge } from './RoleBadge';
 import { rowDirectionStart, textAlignStart } from '../../../lib/rtlLayout';
 import { useLocaleBundle, type LocaleBundle } from '../../../i18n/useLocaleBundle';
@@ -36,7 +36,7 @@ function grantMeta(L: LocaleBundle, grant: AdminGrant): string {
 
 async function confirmRevoke(L: LocaleBundle, name: string): Promise<boolean> {
   const msg = L.admin.admins.row.revokeConfirm(name);
-  if (Platform.OS === 'web') {
+  if (platformSelect({ web: true, default: false })) {
     return typeof window !== 'undefined' && window.confirm(msg);
   }
   return new Promise<boolean>((resolve) => {
