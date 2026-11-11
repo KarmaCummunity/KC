@@ -3981,8 +3981,8 @@
    "callSites": [
     {
      "file": "app/apps/mobile/app/settings/whatsapp.tsx",
-     "line": 39,
-     "symbol": "WhatsAppLinkScreen",
+     "line": 40,
+     "symbol": "WhatsAppLinkScreenContent",
      "area": "mobile"
     }
    ]
@@ -4118,7 +4118,7 @@
    "callSites": [
     {
      "file": "app/apps/mobile/app/settings/whatsapp.tsx",
-     "line": 19,
+     "line": 20,
      "symbol": "fetchStatus",
      "area": "mobile"
     }
@@ -4293,8 +4293,8 @@
    "callSites": [
     {
      "file": "app/apps/mobile/app/settings/whatsapp.tsx",
-     "line": 52,
-     "symbol": "WhatsAppLinkScreen",
+     "line": 53,
+     "symbol": "WhatsAppLinkScreenContent",
      "area": "mobile"
     }
    ]

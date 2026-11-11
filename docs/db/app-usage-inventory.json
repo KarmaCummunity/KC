@@ -41,7 +41,7 @@
   {
    "kind": "rpc",
    "file": "app/apps/mobile/app/settings/whatsapp.tsx",
-   "line": 19,
+   "line": 20,
    "area": "mobile",
    "symbol": "fetchStatus",
    "via": "literal",
@@ -50,18 +50,18 @@
   {
    "kind": "rpc",
    "file": "app/apps/mobile/app/settings/whatsapp.tsx",
-   "line": 39,
+   "line": 40,
    "area": "mobile",
-   "symbol": "WhatsAppLinkScreen",
+   "symbol": "WhatsAppLinkScreenContent",
    "via": "literal",
    "name": "api_whatsapp_create_link_code"
   },
   {
    "kind": "rpc",
    "file": "app/apps/mobile/app/settings/whatsapp.tsx",
-   "line": 52,
+   "line": 53,
    "area": "mobile",
-   "symbol": "WhatsAppLinkScreen",
+   "symbol": "WhatsAppLinkScreenContent",
    "via": "literal",
    "name": "api_whatsapp_unlink_me"
   },
