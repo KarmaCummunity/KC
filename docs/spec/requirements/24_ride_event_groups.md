@@ -50,6 +50,9 @@ Prefix: `FR-EVRIDE-*`
 | 9 | Anonymity | Name and photo hidden until a booking is approved |
 | 10 | UI name | "קבוצות לאירועים" |
 | 11 | A non-member booking a wider-audience ride | Yes, with the driver's approval |
+| 13 | Large groups | Joining is **open by default**; the organizer may require approval for every new person at the start or at any moment, remove anyone, and report |
+| 14 | Who sees a request's origin city | **Every member of the group** |
+| 15 | Minors | Passengers only, group-only |
 | 12 | Pilot | No date: the team builds a high-quality, stable and fast system first and goes out when the quality gates pass; real events are plentiful |
 
 ## Product decisions recorded for this spec (pending PM approval; defaults apply until answered)
@@ -59,8 +62,8 @@ Prefix: `FR-EVRIDE-*`
 | `S73` | Every group is **private and unlisted**; there are no public groups. Join by link, code or QR, with the organizer's optional approval |
 | `S74` | The publisher of each ride chooses its audience (`group_only` default, `group_and_followers`, `everyone`) and its name display; the organizer sets a **ceiling** (default `group_only` for an invite-only group). Members see a `group_only` ride in the group, the main feed and the rides feed; it never reaches a non-member's feed, search, map, matching, saved-route alerts, subscription alerts, embeddings, the WhatsApp bot, public statistics or push, and it is stored fail-closed (ADR-007) |
 | `S75` | A non-member who can see a wider-audience ride sees an ordinary ride whose event end is shown at **city level**, with no group name and no "event" marker. The exact event place is shown only to members and to passengers with a confirmed booking. A non-member's booking always needs the driver's approval (as every booking does, D73), shown to the driver as "not in the event group" |
-| `S76` | Members see a ride's other end at **city** level; a **request** shows its origin city only to members who have an active offer on that leg. The street, junction and private house number go only to the driver and confirmed passengers, and the exact start of a ride is the **meeting point the driver picked**, never a home address |
-| `S77` | The link is a bearer secret, so joining has brakes: a **join spike freeze** (> 60 joins in 10 minutes pauses joins and alerts the organizer), a one-tap **freeze joins**, an optional **join note** ("who invited you") shown to the organizer, a **join log** (time and count only), **bulk removal by join time**, and `approval` as a switch. A member removed from an open group needs re-approval to return |
+| `S76` | Members see a ride's other end at **city** level; a **request** shows its origin city to every member of the group (PM). The street, junction and private house number go only to the driver and confirmed passengers, and the exact start of a ride is the **meeting point the driver picked**, never a home address |
+| `S77` | The link is a bearer secret, so joining has brakes: a **join spike alert** (> 60 joins in 10 minutes alerts the organizer with a one-tap "require approval"; nothing is frozen automatically), a one-tap **require approval** at any time (open is the default), an optional **join note** ("who invited you") shown to the organizer, a **join log** (time and count only), **bulk removal by join time**, and `approval` as a switch. A member removed from an open group needs re-approval to return |
 | `S78` | No group chat in P1/P2: pair chat per ride (inquiries limited, `FR-EVRIDE-018`) plus one-way organizer announcements |
 | `S79` | A request is answered by a driver's **"I can take you"** offer; the requester accepts or declines; no member opens a chat with a requester unasked |
 | `S80` | The ride home is first-class: a "leaving now" live status, a "no ride home yet" nudge at `ends_at − 1 h`, a departure-update push, and an exemption of event-window pushes from quiet hours (`starts_at − 2 h … ends_at + 3 h`) |
@@ -83,7 +86,7 @@ Prefix: `FR-EVRIDE-*`
 | 1 | The publisher | Sees and manages it |
 | 2 | Blocked either way | Never sees it or its chat card |
 | 3 | A person with a booking on it (any status), after the ride narrowed or the group left/removed them | Keeps access to **their own booking and its chat**, not to the ride in lists |
-| 4 | `G`, group `active/ended/archived/cancelling` | Sees it in the group's area, in the main feed and the rides feed, and its detail, whatever the audience, **except** a request's origin city (`S` origin privacy) |
+| 4 | `G`, group `active/ended/archived/cancelling` | Sees it in the group's area, in the main feed and the rides feed, and its detail, whatever the audience, (a ride's other end at city level, `S` origin privacy) |
 | 5 | `audience = everyone` | Sees an ordinary ride (event end at city level) |
 | 6 | `audience = group_and_followers` and `F` | Sees an ordinary ride (event end at city level) |
 | 7 | Anyone else | Not available, indistinguishable from a deleted post |
@@ -205,7 +208,7 @@ An account's deletion removes its memberships at once, cancels its rides through
 - AC1. The invite screen shows the link `https://karma-community-kc.com/rides/join/<token>`, the code `KC-XXXXX-XXXXX`, a QR (saveable and printable), a WhatsApp share with a ready message, and copy.
 - AC2. Token and code are random, hashed at rest, constant-time compared. A wrong code is a failed attempt: **5 failures in 10 minutes** lock code entry for that person for 30 minutes, and there is a per-day cap on all join attempts per person and per device; a step-up challenge follows 3 failures (`join_attempts_locked`).
 - AC3. **Rotate**: new token and code, old ones dead at once, members stay; atomic against joins.
-- AC4. Leak response toolkit: switch to `approval`, **freeze joins**, **bulk-remove** by join-time range, the **join log** (time and count only).
+- AC4. Leak response toolkit: joining is **open by default**; the organizer can switch to `approval` at the start or at any moment (new people then wait for a manual decision), **freeze joins** entirely, remove anyone, **bulk-remove** by join-time range, report, and read the **join log** (time and count only). A spike of joins only alerts the organizer.
 - AC5. `invite_sharing`: `members` (default) or `organizers`.
 - AC6. The shared message and the OG preview carry no event details; the landing sends `noindex`, `no-store`, `Referrer-Policy: no-referrer`; the token is kept out of analytics and error reports.
 - AC7. Tokens die when the group is `ended`, `cancelling`, `cancelled` or removed. **All failure answers (unknown, rotated, dead, banned) are one `group_not_found` with the same shape and comparable timing**, covered by a test.
@@ -234,7 +237,7 @@ An account's deletion removes its memberships at once, cancels its rides through
 
 ## FR-EVRIDE-008 — The group board
 - AC1. Tabs **הלוך / חזור**, offers and requests chips, counters "N drivers · M free seats · K looking" (members only), keyset paging by `(departs_at, post_id)`, grouping before / during / after the event.
-- AC2. Cards are text-only and compact; the other end shows the city; a request's city appears only to members with an active offer on that leg; filter by origin area (15 km) shows offers only.
+- AC2. Cards are text-only and compact; the other end shows the city; every member sees a request's city; filter by origin area (15 km) shows offers only.
 - AC3. Pinned announcements, the organizer strip, the "ride home" panel from `ends_at − 2 h` (`FR-EVRIDE-035`).
 - AC4. All UX states of the specification above.
 - AC5. Realtime: a topic per group authorized by membership; **one coalesced ping per 5 s** carrying a revision number; the client refetches with 0–3 s jitter; a 60 s polling fallback; unsubscribe on blur after 60 s. Presence and `postgres_changes` are not used.
@@ -347,7 +350,7 @@ An account's deletion removes its memberships at once, cancels its rides through
 - AC3. Platforms: iOS, Android and the Expo web export, which supports join, board, publish and booking (parity); the invite landing is static.
 - AC4. Files ≤ 300 lines, one use case per file, ports/adapters per AGENTS §5, ADR-002 RPC checklist per RPC.
 - AC5. Server clock only; clients never decide a window.
-- AC6. Observability: alerts on dispatch backlog > 200 rows older than 2 min, cascade lag, join-spike freezes, reader-inventory test failures; an ops-health row per sweep.
+- AC6. Observability: alerts on dispatch backlog > 200 rows older than 2 min, cascade lag, join-spike alerts, reader-inventory test failures; an ops-health row per sweep.
 - AC7. Kill switches: the flag, and per-feature switches for joins and for audience above `group_only`.
 
 ## FR-EVRIDE-034 — Answering a request
@@ -406,7 +409,7 @@ An account's deletion removes its memberships at once, cancels its rides through
 
 | # | Case | Handling | FR |
 |---|---|---|---|
-| 1 | Link forwarded to strangers | Spike freeze, approval, bulk-remove, rotate, join log | 004, 005 |
+| 1 | Link forwarded to strangers | Spike alert, one-tap require-approval, remove, report, rotate, join log | 004, 005 |
 | 2 | Code guessing, many accounts | 10 chars, 5/10 min lock, device and daily caps, step-up | 004 AC2 |
 | 3 | Two joins for the last place | Locked transaction, `group_full` | 005 AC3 |
 | 4 | Join racing rotation/ban/freeze | Atomic; the restriction wins | 004, 005 |
@@ -461,7 +464,7 @@ An account's deletion removes its memberships at once, cancels its rides through
 | 53 | Anonymous author misbehaves | Moderate by ride; server resolves author | 011 AC8 |
 | 54 | Outsider books a wider-audience ride | Driver sees the tag and confirms; no group data | 010 AC2 |
 | 55 | Non-member sees an `everyone` ride | City-level event end only | S nonmember-view |
-| 56 | Request origin stalking | City only to members with an offer; approved-driver restriction | 034 |
+| 56 | Request origin exposure | City visible to the group (PM); the discreet filter and reports; no unasked chat with a requester | 034, 040 |
 | 57 | Chat spam | One inquiry per ride, 10 per day per group | 018 AC6 |
 | 58 | Dead socket after removal | `kicked` event, policy refuses re-subscribe | 007 AC4 |
 | 59 | Narrowing leaves a pending alert | Alerts re-check audience at delivery | 011 AC3 |

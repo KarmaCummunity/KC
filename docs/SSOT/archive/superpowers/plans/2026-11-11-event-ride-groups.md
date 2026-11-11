@@ -107,7 +107,7 @@ S6 can start as soon as S2 defines the kinds; S3 and S4 can run in parallel lane
 | A reader exposes a `group_only` ride | Critical | ADR-007 layers, inventory test as a CI gate, independent review, flag off until green |
 | Notification storm / duplicate pushes at launch | High | Per-recipient dedupe, batch dispatcher, claimed retries, k6 gate |
 | Cancel cascade times out or half-completes | High | State flip + chunked resumable worker, atomic per ride |
-| Invite link goes viral beyond the wedding | High | Spike freeze, approval switch, join log, bulk-remove |
+| Invite link goes viral beyond the wedding | High | Spike alert, one-tap require-approval, join log, remove, report |
 | Landing too slow → funnel collapse | High | Static landing, LCP budget, web parity |
 | Realtime connection quota | Medium | Coalesced ping, blur-unsubscribe, polling fallback, no presence |
 | Visibility predicate cost in feeds | Medium | Gated clause after cheap branches; board reader checks membership once |
@@ -132,7 +132,7 @@ S6 can start as soon as S2 defines the kinds; S3 and S4 can run in parallel lane
 
 ## 9. Observability
 
-Ops-health rows for each sweep; alerts: dispatch backlog > 200 rows older than 2 min, cascade lag, spike freezes, failed-attempt locks, inventory test failures, error rate of the group RPCs; funnel dashboard (link → sign-up → join, per step); realtime connection count; cost of `list_rides_feed` before/after.
+Ops-health rows for each sweep; alerts: dispatch backlog > 200 rows older than 2 min, cascade lag, join-spike alerts, failed-attempt locks, inventory test failures, error rate of the group RPCs; funnel dashboard (link → sign-up → join, per step); realtime connection count; cost of `list_rides_feed` before/after.
 
 ## 10. First issues to open (after approval)
 
