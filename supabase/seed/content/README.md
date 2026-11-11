@@ -4,7 +4,7 @@ Rows a new environment ships with that are **content, not schema and not demo da
 lists of organization links, the legal texts, the in-app surveys and the platform
 organization. They were exported once, read-only, from kc-dev (2026-11-11) and are the
 version-controlled source from now on. Reference data (cities, streets, junctions, worlds,
-post kinds, subcategories, world flags) stays in `../reference/`; demo data stays in `../kc-dev/`
+post kinds, subcategories, world flags) stays in `../reference/`; the retired demo data is in `../../archive/seed-kc-dev-demo/`
 and never reaches kc-prod.
 
 ```bash
@@ -39,7 +39,7 @@ when the old migrations are archived: `world_links`, `external_bodies`, `knowled
 | Real content, no baseline target yet | `world_links` 12, `external_bodies` 10, `knowledge_topics` 56 + aliases 78, `whatsapp_message_templates` 10 (draft/deprecated), `kc_support_channels` 2, `marketplace_rules` 17 + params 9 | `deferred/` |
 | Superseded by the baseline | old catalog `listing_kinds` 40 and `categories` 90 (the baseline has its own kinds and subcategories in `../reference/`), `match_weights`, `matching_settings`, `feed_ranking_config`, `fsm_*`, `app_flags` for money/payments (baseline defaults and flags own them) | not copied (kept in `deferred/` where useful) |
 | Configuration of the dev environment | `kc_dev_demo_*`, `app_flags` `dev_mock_identity_verification` and `sandbox_payments`, `payment_providers` sandbox, `research_secrets`, `ingestion_sources` (WhatsApp, flag off) | excluded |
-| Demo / test | organization `[DEMO] בית לכל חיה`, the demo seed, E2E users (`@seed.kc.test`), seeded posts/comments/reactions/chats/messages | excluded; the demo seed stays in `../kc-dev/` |
+| Demo / test | organization `[DEMO] בית לכל חיה`, the demo seed, E2E users (`@seed.kc.test`), seeded posts/comments/reactions/chats/messages | excluded; the demo seed is archived in `../../archive/seed-kc-dev-demo/` |
 | User-generated | users 210, auth identities, posts 870 and their media/stats/embeddings, handoffs, chats, messages, follows, saves, notifications, karma, reports, challenges 9 (created by test accounts), knowledge slots 9, survey answers | excluded, backed up in the dev backup |
 | Runtime state | outbox, rate limits, impressions, caches, `embedding_jobs`, health checks, audit events | excluded |
 
