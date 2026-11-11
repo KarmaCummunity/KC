@@ -6,6 +6,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionMenuSheet } from './ui/ActionMenuSheet';
 import { SheetActionRow } from './ui/SheetActionRow';
+import { runAfterBottomSheetDismiss } from '../lib/runAfterBottomSheetDismiss';
 
 interface Props {
   readonly visible: boolean;
@@ -40,7 +41,8 @@ export function ChatActionMenu({ visible, onClose, onReport, deleteLabel, onDele
           testID="chat-menu-block"
           onPress={() => {
             onClose();
-            onBlock();
+            // #2062: iOS drops the confirmation Alert while the sheet is still closing.
+            runAfterBottomSheetDismiss(onBlock);
           }}
         />
       ) : null}
