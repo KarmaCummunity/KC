@@ -20,8 +20,8 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 244,
-   "distinct": 222
+   "callSites": 245,
+   "distinct": 223
   },
   "table": {
    "callSites": 166,
@@ -4191,9 +4191,18 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/revenuecat-webhook/handler.ts",
-   "line": 43,
+   "line": 62,
    "area": "fn:revenuecat-webhook",
-   "symbol": "createRevenueCatHandler",
+   "symbol": "now",
+   "via": "literal",
+   "name": "api_revenuecat_set_org_entitlement"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/revenuecat-webhook/handler.ts",
+   "line": 63,
+   "area": "fn:revenuecat-webhook",
+   "symbol": "now",
    "via": "literal",
    "name": "api_revenuecat_set_pro"
   },

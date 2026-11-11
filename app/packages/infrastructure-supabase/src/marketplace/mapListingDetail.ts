@@ -95,7 +95,7 @@ async function loadEventDetails(client: Client, postId: string): Promise<Record<
 async function loadFoodDetails(client: Client, postId: string): Promise<Record<string, unknown>> {
   const row = unwrapCall(
     'table:post_food_details',
-    await client.from('post_food_details').select('*').eq('post_id', postId).maybeSingle(),
+    await client.from('post_food_details').select('expires_at, allergens, kosher').eq('post_id', postId).maybeSingle(),
   );
   if (!row) return {};
   const kosher = row.kosher === null ? {} : { kosher: row.kosher ? 'yes' : 'no' };
