@@ -65,7 +65,7 @@ begin
   perform kc_test.act_as(p.super_admin);
   r := public.admin_seed_demo_data('SeedPass-2026');
 
-  perform kc_test.assert_eq((r->>'users')::int, 200, 'two hundred demo users');
+  perform kc_test.assert_eq((r->>'users')::int, 209, 'bulk demo users plus nine DCC wave-1 fixtures');
   perform kc_test.assert_true((r->>'posts')::int > 0, 'demo posts were created');
   perform kc_test.assert_true((r->>'rides')::int > 0, 'demo rides were created');
   perform kc_test.assert_eq((r->>'organizations')::int, 5, 'five demo nonprofits');
@@ -73,7 +73,7 @@ begin
   perform kc_test.assert_eq(
     (select count(*)::int from auth.users
       where email like '%@seed.kc.test' and coalesce(raw_app_meta_data->>'seed', '') = 'true'),
-    200, 'every demo user is flagged and on the seed domain');
+    209, 'every demo user is flagged and on the seed domain');
   perform kc_test.assert_true(
     exists (select 1 from auth.users
              where email = 'user1@seed.kc.test'
@@ -83,8 +83,8 @@ begin
     (select password_hash is not null from public.kc_dev_demo_config), 'the password hash is saved for later restores');
   perform kc_test.assert_true(
     (public.admin_demo_data_status()->>'has_saved_password')::boolean is true
-    and (public.admin_demo_data_status()->>'demo_users')::int = 200,
-    'status now shows 200 users and a saved password');
+    and (public.admin_demo_data_status()->>'demo_users')::int = 209,
+    'status now shows all demo users (bulk + DCC) and a saved password');
 
   perform kc_test.assert_eq(
     (select count(*)::int from public.audit_events where action = 'admin_seed_demo_data' and actor_id = p.super_admin),

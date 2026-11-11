@@ -130,11 +130,12 @@ Last applied on kc-dev when this was written: `0239`.
 | 0691 | #1961 reset the public schema comment (retired product cleanup) | in progress |
 | 0692 | #1964 demo: bulk admin wipe/seed, +2 orgs, moderation reports, KPIs | in progress |
 | 0693 | #1964 demo G1 alignment (posts, ride_post_details, rate limits) | in progress |
-| 0694+ | — | free |
+| 0694 | #1964 DCC wave 1 — Post S1 / admin_task / report fixtures + coverage RPC | in progress |
+| 0695+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0694+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0695+`.
 
 ## How to claim
 
