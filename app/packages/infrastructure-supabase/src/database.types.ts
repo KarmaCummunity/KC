@@ -7608,6 +7608,189 @@ export type Database = {
           },
         ]
       }
+      post_series: {
+        Row: {
+          city_id: string | null
+          created_at: string
+          details: Json
+          duration_minutes: number
+          ends_on: string | null
+          kind_id: string
+          owner_id: string
+          series_id: string
+          start_time: string
+          starts_on: string
+          status: string
+          summary: string | null
+          time_zone: string
+          title: string
+          updated_at: string
+          version: number
+          weekdays: number
+        }
+        Insert: {
+          city_id?: string | null
+          created_at?: string
+          details?: Json
+          duration_minutes: number
+          ends_on?: string | null
+          kind_id: string
+          owner_id: string
+          series_id?: string
+          start_time: string
+          starts_on: string
+          status?: string
+          summary?: string | null
+          time_zone?: string
+          title: string
+          updated_at?: string
+          version?: number
+          weekdays: number
+        }
+        Update: {
+          city_id?: string | null
+          created_at?: string
+          details?: Json
+          duration_minutes?: number
+          ends_on?: string | null
+          kind_id?: string
+          owner_id?: string
+          series_id?: string
+          start_time?: string
+          starts_on?: string
+          status?: string
+          summary?: string | null
+          time_zone?: string
+          title?: string
+          updated_at?: string
+          version?: number
+          weekdays?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_series_kind_id_fkey"
+            columns: ["kind_id"]
+            isOneToOne: false
+            referencedRelation: "listing_kinds"
+            referencedColumns: ["kind_id"]
+          },
+          {
+            foreignKeyName: "post_series_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "giving_user_trust_score"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_series_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "post_series_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users_public"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      post_series_occurrences: {
+        Row: {
+          feed_hidden_default: boolean
+          occurrence_on: string
+          post_id: string | null
+          series_id: string
+          series_version: number
+          starts_at: string
+          status: string
+        }
+        Insert: {
+          feed_hidden_default?: boolean
+          occurrence_on: string
+          post_id?: string | null
+          series_id: string
+          series_version: number
+          starts_at: string
+          status?: string
+        }
+        Update: {
+          feed_hidden_default?: boolean
+          occurrence_on?: string
+          post_id?: string | null
+          series_id?: string
+          series_version?: number
+          starts_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_series_occurrences_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "post_series_occurrences_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "post_series_occurrences_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "post_series_occurrences_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "post_series_occurrences_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "post_series_occurrences_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "post_series_occurrences_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "post_series_occurrences_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
+          },
+          {
+            foreignKeyName: "post_series_occurrences_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "post_series"
+            referencedColumns: ["series_id"]
+          },
+        ]
+      }
       post_shares: {
         Row: {
           created_at: string
@@ -13445,6 +13628,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      cancel_post_series_occurrence: {
+        Args: { p_post_id: string }
+        Returns: undefined
+      }
       cancel_ride_booking: {
         Args: { p_handoff_id: string }
         Returns: {
@@ -13922,6 +14109,24 @@ export type Database = {
           p_urgency_level?: number
         }
         Returns: string
+      }
+      create_post_series: {
+        Args: {
+          p_city_id?: string
+          p_details: Json
+          p_duration_minutes: number
+          p_ends_on?: string
+          p_kind_id: string
+          p_start_time: string
+          p_summary?: string
+          p_time_zone?: string
+          p_title: string
+          p_weekdays: number
+        }
+        Returns: {
+          first_post_id: string
+          series_id: string
+        }[]
       }
       create_post_with_media: {
         Args: { p_media?: Json; p_post: Json }
@@ -15156,6 +15361,14 @@ export type Database = {
           user_id: string
         }[]
       }
+      list_post_series_occurrences: {
+        Args: { p_limit?: number; p_series_id: string }
+        Returns: {
+          occurrence_on: string
+          post_id: string
+          starts_at: string
+        }[]
+      }
       list_profile_listings: {
         Args: { p_limit?: number; p_owner_id: string }
         Returns: {
@@ -15840,6 +16053,7 @@ export type Database = {
         Args: { p_age_days: number }
         Returns: boolean
       }
+      post_series_sweep: { Args: never; Returns: number }
       post_stats_bump: {
         Args: {
           p_comment_delta?: number
@@ -17422,6 +17636,34 @@ export type Database = {
         Args: { p_listing_id: string; p_world_slugs: string[] }
         Returns: undefined
       }
+      set_post_series_status: {
+        Args: { p_series_id: string; p_status: string }
+        Returns: {
+          city_id: string | null
+          created_at: string
+          details: Json
+          duration_minutes: number
+          ends_on: string | null
+          kind_id: string
+          owner_id: string
+          series_id: string
+          start_time: string
+          starts_on: string
+          status: string
+          summary: string | null
+          time_zone: string
+          title: string
+          updated_at: string
+          version: number
+          weekdays: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "post_series"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_ride_house_numbers: {
         Args: { p_dest?: string; p_listing_id: string; p_origin?: string }
         Returns: undefined
@@ -17602,6 +17844,43 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "knowledge_topics"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_post_series: {
+        Args: {
+          p_details: Json
+          p_duration_minutes: number
+          p_ends_on?: string
+          p_series_id: string
+          p_start_time: string
+          p_summary?: string
+          p_title: string
+          p_weekdays: number
+        }
+        Returns: {
+          city_id: string | null
+          created_at: string
+          details: Json
+          duration_minutes: number
+          ends_on: string | null
+          kind_id: string
+          owner_id: string
+          series_id: string
+          start_time: string
+          starts_on: string
+          status: string
+          summary: string | null
+          time_zone: string
+          title: string
+          updated_at: string
+          version: number
+          weekdays: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "post_series"
           isOneToOne: true
           isSetofReturn: false
         }

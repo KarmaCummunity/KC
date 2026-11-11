@@ -10,6 +10,7 @@ import { knowledgeTopicMachine } from './machines/knowledgeTopic';
 import { onboardingMachine } from './machines/onboarding';
 import { postMachine } from './machines/post';
 import { postCommentMachine } from './machines/postComment';
+import { postSeriesMachine } from './machines/postSeries';
 import { reportMachine } from './machines/report';
 import { reviewDecisionMachine } from './machines/reviewDecision';
 import { rideBookingMachine } from './machines/rideBooking';
@@ -43,4 +44,5 @@ export const FSM_MACHINES: readonly FsmMachine<string, string>[] = [
   timesheetMachine,
   rideSeriesMachine,
   standingOrderMachine,
+  postSeriesMachine,
 ];

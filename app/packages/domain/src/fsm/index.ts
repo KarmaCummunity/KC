@@ -23,6 +23,7 @@ export { reviewDecisionMachine } from './machines/reviewDecision';
 export { donationLinkReviewMachine } from './machines/donationLinkReview';
 export { timesheetMachine } from './machines/timesheet';
 export { rideSeriesMachine } from './machines/rideSeries';
+export { postSeriesMachine } from './machines/postSeries';
 export { standingOrderMachine } from './machines/standingOrder';
 export { handoffMachineFor } from './machines/handoffMachineFor';
 export { accountStatusMachine } from './machines/accountStatus';

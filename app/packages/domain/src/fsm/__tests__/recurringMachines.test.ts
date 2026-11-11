@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { canTransition, isTerminal } from '../machine';
 import { rideSeriesMachine } from '../machines/rideSeries';
 import { standingOrderMachine } from '../machines/standingOrder';
+import { postSeriesMachine } from '../machines/postSeries';
 import { standingOrderActions } from '../../payments/standingOrderActions';
 
 describe.each([
@@ -18,6 +19,20 @@ describe.each([
     expect(canTransition(machine, 'paused', 'cancelled').ok).toBe(true);
     expect(isTerminal(machine, 'cancelled')).toBe(true);
     expect(canTransition(machine, 'cancelled', 'active')).toEqual({ ok: false, code: 'illegal_transition' });
+  });
+});
+
+describe('post series machine (FR-POST-024)', () => {
+  it('pauses and resumes', () => {
+    expect(canTransition(postSeriesMachine, 'active', 'paused').ok).toBe(true);
+    expect(canTransition(postSeriesMachine, 'paused', 'active').ok).toBe(true);
+  });
+
+  it('ends from either state, for good', () => {
+    expect(canTransition(postSeriesMachine, 'active', 'ended').ok).toBe(true);
+    expect(canTransition(postSeriesMachine, 'paused', 'ended').ok).toBe(true);
+    expect(isTerminal(postSeriesMachine, 'ended')).toBe(true);
+    expect(canTransition(postSeriesMachine, 'ended', 'paused')).toEqual({ ok: false, code: 'illegal_transition' });
   });
 });
 

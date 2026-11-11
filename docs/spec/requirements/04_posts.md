@@ -549,13 +549,14 @@ A member who volunteers on a fixed schedule (for example every Tuesday at 17:00,
 - AC1. The time form (offer, the `volunteer_shift` and `org_event` kinds) has a "recurring" switch under the schedule: weekdays, a start time and duration, an optional end date. The series' time zone is the member's (Israel by default); the first occurrence opens after publishing.
 - AC2. A series publishes its occurrences for the coming 30 days and keeps that window filled; one occurrence per series and date, never two, also when two runs overlap.
 - AC3. Each occurrence is a time post with its own registrations: capacity, waitlist and registration policy are copied from the series, and the organizer marks attendance per occurrence; only marked attendance earns karma (D124). A person's series (not an organization's) follows the same rules.
-- AC4. A local start time that does not exist on a clock-change day moves to the next valid time; an ambiguous one takes the first.
+- AC4. A local start time that does not exist on a clock-change day moves forward by the jump (02:30 → 03:30, as calendars do); a time that occurs twice takes the first. Server: `kc_private.series_local_instant` (`0744`).
 - AC5. **Edit all**: the owner edits the series (title, description, schedule, capacity); upcoming occurrences nobody registered for are replaced; an occurrence that has registrations keeps its time and details.
 - AC6. **Cancel one**: the owner cancels a single occurrence; its registrations are cancelled and each registrant gets a notification; the date is not published again.
 - AC7. **Pause / resume**: pausing stops publishing new dates and removes the upcoming occurrences nobody registered for; occurrences with registrations go ahead. Resuming publishes again.
 - AC8. **End**: ending a series is final. Every upcoming occurrence is cancelled, including those with registrations, and each registrant gets a notification. Past occurrences stay as they were.
 - AC9. The series moves on the kernel: `active ⇄ paused → ended`; any other move is refused.
 - AC10. Not in the first version: editing a single occurrence, and "this and the following".
+- Server (`0744`): `post_series` + `post_series_occurrences` (one row per series and date; the idempotency key and the tombstone of a cancelled date); machine `post_series`; RPCs `create_post_series`, `update_post_series`, `set_post_series_status`, `cancel_post_series_occurrence`, `list_post_series_occurrences`; hourly `post_series_sweep` (keeps 30 days published, hands the main-feed place to the soonest date, ends a series past its last date). First slice: an organization's event; a person's series follows once a person's time post takes registrations.
 
 ---
 
