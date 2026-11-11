@@ -29,6 +29,9 @@
 | נקודת איסוף | Meeting point | An official place along a ride where passengers board; up to 3 per ride (D71) |
 | מסלול שמור | Saved route | A followed from → to route that notifies on new rides along it (D74) |
 | הזמנת מקום | Seat booking | A passenger's request for seats on a ride offer; approved or declined by the driver (D73) |
+| קבוצת טרמפים לאירוע | Event ride group | A private room around one event (wedding, party, concert, trip) whose members publish and book rides to and from it; its rides are visible to members only (`{{D:event-ride-groups}}`, requirements/24) |
+| רגל נסיעה | Ride leg | `to_event` (ends at the event place) or `from_event` (starts there) of a group ride |
+| מארגן קבוצה | Group organizer | The one creator of an event ride group, with up to 3 co-organizers who manage members and announcements |
 | חוקת ברזל | Iron constitution | Rules core not changeable by vote (D40) |
 | listings | listings (code term) | Legacy table to become `posts` (D19); **not** a product term |
 | סעיף 46א | Section 46(a) | Income Tax Ordinance approval that lets donors claim a tax credit; KC records an org's approval and receipts, never decides eligibility or issues receipts (D77) |
@@ -77,6 +80,7 @@
 | Form per type | `PostTypeFormSchema` | `createCategories.ts` |
 | Subcategories | `ItemSubcategory` / `WorldSubcategory` | `Category` / `public.categories` |
 | Extensions | `PostHandoff`, `RidePostDetails`, `EventPostDetails`, `HousingPostDetails` (+ `HousingBookingDetails`, `HousingPrivateDetails`), `NonprofitJobPostDetails` | `giving_handoffs`, `ride_listings` |
+| Event ride group | `RideEventGroup`, `RideEventGroupMember`, `RideEventGroupUpdate`, `RideEventLeg`, `ride_event_groups`, `ride_event_group_members`, `ride_event_group_updates`; ride extension `ride_post_details.event_group_id` / `event_leg` (never a bare `groups`) | none |
 | Rating / match | `PostRating`, `PostMatch` | `ride_ratings`, `match_candidates` |
 | Expiry | `Post.expires_at`, `PostRelevanceReminder` | none |
 | Feed | `FeedRecommendationEngine`, `FeedSortMode`, `FeedAudience` | `PostFilterSheet` |
