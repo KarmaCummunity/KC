@@ -62,16 +62,15 @@ export function UnifiedCreateHeader({
   /** One half of the request / offer toggle. */
   const toggle = (d: CreateDirection, icon: 'search-outline' | 'gift-outline', label: string) => {
     const on = direction === d;
-    const activeStyle = d === 'give' ? styles.typeBtnActiveGive : styles.typeBtnActive;
     return (
       <TouchableOpacity
         testID={`create-direction-${d}`}
-        style={[styles.typeBtn, on && activeStyle]}
+        style={[styles.typeBtn, on && styles.typeBtnActive]}
         onPress={() => onDirectionChange(d)}
         accessibilityRole="button"
         aria-selected={on}
       >
-        <Ionicons name={icon} size={iconSize.md} color={on ? colors.textPrimary : colors.textSecondary} />
+        <Ionicons name={icon} size={iconSize.md} color={on ? colors.textInverse : colors.textSecondary} />
         <Text style={[styles.typeBtnText, on && styles.typeBtnTextActive]}>{label}</Text>
       </TouchableOpacity>
     );

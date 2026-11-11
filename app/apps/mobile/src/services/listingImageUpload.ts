@@ -41,7 +41,7 @@ export async function uploadListingImages(
     const bytes = await encodeJpeg(slice[i]!.uri);
     const { error } = await client.storage.from(LISTING_BUCKET).upload(path, bytes, {
       contentType: LISTING_IMAGE_MIME,
-      upsert: true,
+      upsert: false,
       cacheControl: IMMUTABLE_CACHE_CONTROL,
     });
     if (error) throw new Error(error.message);

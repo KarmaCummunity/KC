@@ -20,8 +20,8 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 200,
-   "distinct": 172
+   "callSites": 201,
+   "distinct": 173
   },
   "table": {
    "callSites": 187,
@@ -37,6 +37,15 @@
    "symbol": "assetUrl",
    "via": "const",
    "name": "post-images"
+  },
+  {
+   "kind": "rpc",
+   "file": "app/apps/mobile/app/pro.tsx",
+   "line": 38,
+   "area": "mobile",
+   "symbol": "ProPaywallScreen",
+   "via": "literal",
+   "name": "api_my_pro_status"
   },
   {
    "kind": "bucket",
@@ -143,7 +152,7 @@
   {
    "kind": "table",
    "file": "app/apps/mobile/src/services/featureFlagsComposition.ts",
-   "line": 9,
+   "line": 12,
    "area": "mobile",
    "symbol": "fetchRemoteFeatureFlags",
    "via": "literal",
@@ -155,7 +164,7 @@
   {
    "kind": "bucket",
    "file": "app/apps/mobile/src/services/imageUpload.ts",
-   "line": 179,
+   "line": 182,
    "area": "mobile",
    "symbol": "resizeAndUploadImage",
    "via": "const",
@@ -164,7 +173,7 @@
   {
    "kind": "bucket",
    "file": "app/apps/mobile/src/services/imageUpload.ts",
-   "line": 191,
+   "line": 194,
    "area": "mobile",
    "symbol": "resizeAndUploadImage",
    "via": "const",
