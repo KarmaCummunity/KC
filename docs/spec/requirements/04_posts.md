@@ -556,7 +556,7 @@ A member who volunteers on a fixed schedule (for example every Tuesday at 17:00,
 - AC8. **End**: ending a series is final. Every upcoming date is cancelled, including those with registrations, and each registrant gets a notification. Past dates stay as they were. The scheduler also ends a series whose last day has passed. ✅ server, ⏳ app
 - AC9. The series moves on the kernel: `active ⇄ paused → ended`; any other move is refused (`illegal_transition`). ✅
 - AC10. Not in the first version: editing a single date, "this and the following", and folding a series' later dates in the main feed (every date is an ordinary post there, as with recurring rides).
-- Server (`0003_post_series.sql`, `0004_post_series_rpcs.sql`): `post_series` (schedule + post and event templates, optional organization), `post_event_details.series_id / series_on` (one date per series and day), `kc_private.post_series_skipped_days` (cancelled days), machine `post_series`, `kc_private.series_local_instant`, `kc_private.post_series_materialize` (daily job, and on every series RPC), RPCs `create_post_series`, `update_post_series`, `set_post_series_status`, `cancel_post_series_date`. Tests: `supabase/tests/075_post_series.sql`.
+- Server (`0004_post_series.sql`, `0005_post_series_rpcs.sql`): `post_series` (schedule + post and event templates, optional organization), `post_event_details.series_id / series_on` (one date per series and day), `kc_private.post_series_skipped_days` (cancelled days), machine `post_series`, `kc_private.series_local_instant`, `kc_private.post_series_materialize` (daily job, and on every series RPC), RPCs `create_post_series`, `update_post_series`, `set_post_series_status`, `cancel_post_series_date`. Tests: `supabase/tests/075_post_series.sql`.
 
 ---
 

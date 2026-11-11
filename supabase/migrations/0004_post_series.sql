@@ -4,7 +4,7 @@
 -- a schedule plus the template of its events. The scheduler publishes one ordinary event
 -- post per matching day, 30 days ahead, so registration, the waiting list, attendance,
 -- reminders and expiry treat a date like any other event (a volunteering shift is an event,
--- 70_worlds/120). The series RPCs are in 0004_post_series_rpcs.sql.
+-- 70_worlds/120). The series RPCs are in 0005_post_series_rpcs.sql.
 --
 -- Differences from a recurring ride (ride_series, D103), both PM decisions of 2026-11-11:
 --   * a series has its own time zone, and a clock change never loses or doubles a date;

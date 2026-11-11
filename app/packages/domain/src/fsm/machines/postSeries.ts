@@ -10,7 +10,7 @@ import { defineMachine } from '../machine';
  * - Ending, from either state, is final: every upcoming date is cancelled and its registrants
  *   are told. The scheduler also ends a series whose last day has passed.
  *
- * SQL copy: `supabase/migrations/0003_post_series.sql` (`kc_private.fsm_state` / `fsm_edge` seeds).
+ * SQL copy: `supabase/migrations/0004_post_series.sql` (`kc_private.fsm_state` / `fsm_edge` seeds).
  */
 export const postSeriesMachine = defineMachine({
   id: 'post_series',
