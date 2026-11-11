@@ -95,4 +95,27 @@ if ((failed)); then
   echo "run-baseline-tests: FAILED" >&2
   exit 1
 fi
+
+# The seed loaders (reference data, then content) apply on the baseline, change nothing the
+# second time, and leave what check.sql expects. Only in a full run: the tests above roll back,
+# so the scratch database is still empty here.
+if ((${#@} == 0)); then
+  echo "── Seed loaders (reference, content) ──"
+  seed_load() { # dir
+    (cd "$ROOT/supabase/seed/$1" && psql "$SCRATCH_URL" -v ON_ERROR_STOP=1 --single-transaction -qAt -f load.sql)
+  }
+  for dir in reference content; do
+    first="$(seed_load "$dir")"
+    second="$(seed_load "$dir")"
+    echo "$dir: first run" && echo "$first"
+    # Each result row is `table|rows_in_file|rows_changed`; a second run must change nothing.
+    if grep -E '^[a-z_]+\|' <<<"$second" | grep -Ev '\|0$' | grep -q .; then
+      echo "run-baseline-tests: the $dir seed is not idempotent; second run:" >&2
+      echo "$second" >&2
+      exit 1
+    fi
+  done
+  psql "$SCRATCH_URL" -v ON_ERROR_STOP=1 -q -f "$ROOT/supabase/seed/content/check.sql"
+  echo "seed loaders: ok"
+fi
 echo "run-baseline-tests: all baseline tests passed"

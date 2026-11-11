@@ -38,7 +38,9 @@ create table public.donation_links (
   url           text not null check (url ~* '^https?://' and char_length(url) <= 2000),
   display_name  text not null check (char_length(display_name) between 2 and 80),
   description   text check (char_length(description) <= 280),
-  submitted_by  uuid not null references public.users (id) on delete cascade,
+  -- Null for the links the team curated as seed content (supabase/seed/content); a member's
+  -- suggestion always names them and leaves with their account.
+  submitted_by  uuid references public.users (id) on delete cascade,
   -- When the Edge Function last confirmed that the address answers.
   validated_at  timestamptz not null,
   -- Review, machine `donation_link_review`.
