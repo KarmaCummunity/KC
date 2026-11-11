@@ -31,9 +31,9 @@ test('report a problem opens the support thread with the report', async ({ page 
   // The report is stored once, as a message of that thread (readable by its participant).
   const chatId = page.url().match(/\/chat\/([0-9a-f-]{36})/)![1];
   const { session } = await sessionFor(USER_A);
-  const rows = await rest<{ message_id: string }[]>(
+  const rows = await rest<{ id: string }[]>(
     session.access_token,
-    `messages?select=message_id&chat_id=eq.${chatId}&body=eq.${encodeURIComponent(`[Bug] ${description}`)}`,
+    `messages?select=id&chat_id=eq.${chatId}&body=eq.${encodeURIComponent(`Bug\n\n${description}`)}`,
   );
   expect(rows).toHaveLength(1);
 });
