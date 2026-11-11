@@ -1,70 +1,25 @@
 import { describe, it, expect, vi } from 'vitest';
+import { BackendUnavailableError } from '@kc/domain';
 import { FEED_PUBLIC_TOPIC, SupabaseFeedRealtime } from '../SupabaseFeedRealtime';
-import { flush, makeFakeRealtime } from '../../realtime/__tests__/fakeRealtime';
 
-async function sub(onError?: (e: Error) => void) {
-  const f = makeFakeRealtime();
-  const onNewPublicPost = vi.fn();
-  const unsub = new SupabaseFeedRealtime(f.client).subscribeToPublicInserts({ onNewPublicPost, onError });
-  await flush();
-  return { f, onNewPublicPost, unsub, ch: f.created[0]! };
-}
-
-describe('SupabaseFeedRealtime', () => {
-  it('subscribes to the private feed:public Broadcast topic (0416)', async () => {
-    const { ch, f } = await sub();
-    expect(ch.name).toBe(FEED_PUBLIC_TOPIC);
-    expect(ch.config).toEqual({ private: true });
-    expect(ch.bindings).toHaveLength(1);
-    expect(ch.bindings[0]).toMatchObject({ type: 'broadcast', filter: { event: 'new_post' } });
-    expect(f.setAuth).toHaveBeenCalled();
-  });
-
-  it('forwards post/owner ids from new_post pings', async () => {
-    const { ch, onNewPublicPost } = await sub();
-    ch.emit('broadcast', 'new_post', { payload: { post_id: 'p1', owner_id: 'u1' } });
-    expect(onNewPublicPost).toHaveBeenCalledWith({ postId: 'p1', ownerId: 'u1' });
-  });
-
-  it('maps malformed payloads to null ids (still counts)', async () => {
-    const { ch, onNewPublicPost } = await sub();
-    ch.emit('broadcast', 'new_post', { payload: { post_id: 7 } });
-    ch.emit('broadcast', 'new_post', {});
-    expect(onNewPublicPost).toHaveBeenNthCalledWith(1, { postId: null, ownerId: null });
-    expect(onNewPublicPost).toHaveBeenNthCalledWith(2, { postId: null, ownerId: null });
-  });
-
-  it('reports channel failures only', async () => {
+describe('SupabaseFeedRealtime (degraded: the baseline has no feed topic, M24)', () => {
+  it('reports BackendUnavailableError for the missing topic through onError', () => {
     const onError = vi.fn();
-    const { ch } = await sub(onError);
-    ch.statusCb!('SUBSCRIBED');
-    ch.statusCb!('CHANNEL_ERROR');
-    ch.statusCb!('TIMED_OUT');
-    expect(onError).toHaveBeenCalledTimes(2);
-    expect((onError.mock.calls[0]?.[0] as Error).message).toBe('feed channel channel_error');
+
+    new SupabaseFeedRealtime().subscribeToPublicInserts({ onNewPublicPost: vi.fn(), onError });
+
+    expect(onError).toHaveBeenCalledTimes(1);
+    const error = onError.mock.calls[0]![0] as BackendUnavailableError;
+    expect(error).toBeInstanceOf(BackendUnavailableError);
+    expect(error.object).toBe(`channel:${FEED_PUBLIC_TOPIC}`);
   });
 
-  it('works without an onError sink', async () => {
-    const { ch } = await sub();
-    expect(() => ch.statusCb!('CHANNEL_ERROR')).not.toThrow();
-  });
+  it('never delivers a post and hands back a harmless unsubscribe', () => {
+    const onNewPublicPost = vi.fn();
 
-  it('unsubscribe removes the channel; remount re-creates a fresh one', async () => {
-    const { f, unsub } = await sub();
-    unsub();
-    expect(f.live).toHaveLength(0);
-    const again = new SupabaseFeedRealtime(f.client).subscribeToPublicInserts({ onNewPublicPost: vi.fn() });
-    await flush();
-    expect(f.created).toHaveLength(2);
-    expect(f.live).toHaveLength(1);
-    again();
-  });
+    const unsubscribe = new SupabaseFeedRealtime().subscribeToPublicInserts({ onNewPublicPost });
 
-  it('unsubscribe before open leaks no channel', async () => {
-    const f = makeFakeRealtime();
-    const unsub = new SupabaseFeedRealtime(f.client).subscribeToPublicInserts({ onNewPublicPost: vi.fn() });
-    unsub();
-    await flush();
-    expect(f.live).toHaveLength(0);
+    expect(() => unsubscribe()).not.toThrow();
+    expect(onNewPublicPost).not.toHaveBeenCalled();
   });
 });

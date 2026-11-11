@@ -11,51 +11,52 @@ import type {
   AcceptLegalDocumentResult,
   ILegalDocumentRepository,
 } from '@kc/application';
+import { LegalConsentError } from '@kc/application';
+import { fetchBootstrapSession, type BootstrapLegalDocument } from '../auth/bootstrapSession';
 import type { Database } from '../database.types';
+import { unwrapCall } from '../rpc/mapRpcError';
+import { mapRuleErrors } from '../auth/ruleErrors';
 import { LegalDocumentCache } from './legalCache';
 
-type VersionRow = {
-  doc_type: LegalDocType;
-  version: number;
-  effective_date: string;
-  body_md: string;
-  content_hash: string;
-  severity: LegalSeverity;
-  change_summary: string | null;
-  published_at: string;
-};
+type VersionRow = Pick<
+  Database['public']['Tables']['legal_document_versions']['Row'],
+  | 'doc_type'
+  | 'version'
+  | 'effective_date'
+  | 'body_md'
+  | 'content_hash'
+  | 'severity'
+  | 'change_summary'
+  | 'published_at'
+>;
 
-type PendingRow = {
-  doc_type: LegalDocType;
-  current_version: number;
-  current_effective_date: string;
-  last_material_version: number;
-  last_material_severity: LegalSeverity | null;
-  last_accepted_version: number;
-  block_mode: LegalBlockMode;
-};
+/** Stable refusals of `accept_legal_document` → consent error codes. */
+const CONSENT_CODES = {
+  legal_version_out_of_range: 'version_out_of_range',
+  unknown_legal_document: 'unknown_document',
+} as const;
 
 function mapVersionRow(row: VersionRow): LegalDocumentContent {
   return {
-    docType: row.doc_type,
+    docType: row.doc_type as LegalDocType,
     version: row.version,
     effectiveDate: new Date(row.effective_date),
     bodyMd: row.body_md,
     contentHash: row.content_hash,
-    severity: row.severity,
+    severity: row.severity as LegalSeverity,
     changeSummary: row.change_summary,
     publishedAt: new Date(row.published_at),
   };
 }
 
-function mapPendingRow(row: PendingRow): LegalPendingItem {
+function mapPendingDocument(doc: BootstrapLegalDocument): LegalPendingItem {
   return {
-    docType: row.doc_type,
-    currentVersion: row.current_version,
-    currentEffectiveDate: new Date(row.current_effective_date),
-    lastAcceptedVersion: row.last_accepted_version,
-    severity: row.last_material_severity ?? 'standard',
-    blockMode: row.block_mode,
+    docType: doc.docType as LegalDocType,
+    currentVersion: doc.currentVersion,
+    currentEffectiveDate: new Date(doc.currentEffectiveDate),
+    lastAcceptedVersion: doc.lastAcceptedVersion,
+    severity: (doc.lastMaterialSeverity ?? 'standard') as LegalSeverity,
+    blockMode: doc.blockMode as LegalBlockMode,
   };
 }
 
@@ -88,7 +89,7 @@ export class SupabaseLegalDocumentRepository implements ILegalDocumentRepository
         return await this.fallbackToCacheOrThrow(docType, versionQ.error?.message ?? 'no version row');
       }
 
-      const fresh = mapVersionRow(versionQ.data as VersionRow);
+      const fresh = mapVersionRow(versionQ.data);
       await this.cache.write(fresh);
       return fresh;
     } catch (err) {
@@ -102,27 +103,30 @@ export class SupabaseLegalDocumentRepository implements ILegalDocumentRepository
     throw new Error(`legal:getCurrentContent failed for ${docType}: ${reason}`);
   }
 
+  /** The documents in force the caller has not accepted: `legal.documents` of `bootstrap_session()`. */
   async getPendingForCurrentUser(): Promise<LegalPendingItem[]> {
-    const { data, error } = await this.client.rpc('needs_legal_reacknowledgement');
-    if (error) {
-      throw new Error(`legal:getPendingForCurrentUser failed: ${error.message}`);
-    }
-    if (!data) return [];
-    const rows = data as unknown as PendingRow[];
-    return rows.map(mapPendingRow);
+    const session = await fetchBootstrapSession(this.client);
+    return session.legalDocuments.map(mapPendingDocument);
   }
 
   async acceptVersion(input: AcceptLegalDocumentInput): Promise<AcceptLegalDocumentResult> {
-    const { data, error } = await this.client.rpc('accept_legal_document', {
-      p_doc_type: input.docType,
-      p_version: input.version,
-      p_locale: input.locale,
-      p_user_agent: input.userAgent,
-    });
-    if (error) {
-      throw new Error(`legal:acceptVersion failed: ${error.message}`);
-    }
-    const row = data as unknown as { acceptance_id: string; accepted_at: string };
+    const data = await mapRuleErrors(
+      async () =>
+        unwrapCall(
+          'rpc:accept_legal_document',
+          await this.client.rpc('accept_legal_document', {
+            p_doc_type: input.docType,
+            p_version: input.version,
+            p_locale: input.locale,
+            p_user_agent: input.userAgent,
+          }),
+        ),
+      (reason, cause) => {
+        const code = CONSENT_CODES[reason as keyof typeof CONSENT_CODES];
+        return code ? new LegalConsentError(code, cause) : null;
+      },
+    );
+    const row = data as { acceptance_id: string; accepted_at: string };
     return {
       acceptanceId: row.acceptance_id,
       acceptedAt: new Date(row.accepted_at),

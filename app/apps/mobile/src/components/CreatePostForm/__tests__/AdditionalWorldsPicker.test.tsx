@@ -9,6 +9,8 @@ afterEach(() => {
   cleanup();
 });
 
+vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (k: string) => k,

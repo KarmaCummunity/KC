@@ -8,7 +8,7 @@
 All PR checks run behind the single required check `CI gate` (`.github/workflows/ci.yml`, `D-195`); the lanes below are jobs inside it, planned from the changed paths.
 
 1. **Unit** — `cd app && pnpm test` (vitest). `frontend` lane of `CI gate`.
-2. **Contract / migrations / DB flows** — `backend` lane (fresh local stack, `supabase/tests/*.sql`, types drift, sqlProbes) and the RPC contract + migration-chain checks in the `static` lane. DB tests run through `scripts/run-db-tests.sh` (shared `kc_test` harness, per-migration tests, per-world lifecycle flows) — see [`supabase/tests/_harness/README.md`](../../supabase/tests/_harness/README.md).
+2. **Contract / migrations / DB flows** — `backend` lane (fresh local stack, `supabase/tests/*.sql` on an empty database built from `supabase/migrations`, types drift, sqlProbes) and the RPC contract + migration-chain checks in the `static` lane. DB tests run through `scripts/run-baseline-tests.sh` (empty scratch database, every migration in order, then every `supabase/tests/*.sql`, then the seed loaders twice). The pre-baseline harness and its per-migration tests are history in `supabase/archive/tests-legacy/`.
 3. **Bundle smoke** — `scripts/smoke-web-bundle.mjs` on the exported dist. `frontend` lane.
 4. **E2E (Web)** — Playwright vs `DEV_WEB_URL`. **Required** on PR `dev` → `main` (P0 journeys, `release` lane), plus the nightly QA suite.
 5. **Performance** — Lighthouse + k6. Scheduled on `dev` (Wave 4); blocking only after budgets stabilize.

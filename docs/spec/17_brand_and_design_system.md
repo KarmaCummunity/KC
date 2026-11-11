@@ -137,7 +137,7 @@ Screens move onto the kit one area per PR, after the PM approves the look; track
 
 The shared filter kit (`apps/mobile/src/components/filterKit`) standardizes search inputs, filter buttons, chip rows, section frames, and sort sections across the mobile app.
 
-- **Kit controls:** `FilterSearchBar` (search input with search icon, clear button, RTL alignment, testID), `FilterButton` (icon or boxed filter button with active count badge), `FilterChipRow` (horizontal scrollable or wrapping inline chip row of kit `Chip`s, single or multi-select), `FilterSection` (composite titled section wrapping `FilterChipRow`), `SortSection` (preset sort options row), `FilterSheetFrame` (standardized bottom sheet frame with scrollable body, count badge, reset link, and footer apply action).
+- **Kit controls:** `FilterSearchBar` (search input with search icon, clear button, RTL alignment, testID), `FilterButton` (icon or boxed filter button with active count badge), `ChipSelectRow` (default chip layout for forms and filter sections: one sideways-scroll row plus a small expand control that switches to multi-line wrap), `FilterChipRow` (chip row of kit `Chip`s on top of `ChipSelectRow`, single or multi-select; pass `scrollable` for scroll-only bars without expand), `FilterSection` (composite titled section wrapping `FilterChipRow`), `SortSection` (preset sort options row), `FilterSheetFrame` (standardized bottom sheet frame with scrollable body, count badge, reset link, and footer apply action).
 - **Surfaces migrated to kit:**
   - Home feed filter sheet (`components/PostFilterSheet/*`)
   - Universal Search screen (`app/(tabs)/search.tsx`, `components/search/*`) and sheet (`components/SearchFilterSheet.tsx`)

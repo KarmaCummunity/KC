@@ -3,7 +3,7 @@
 // requests. While the animals launch flag is off the world stays a portal (curated links, D60).
 import React from 'react';
 import { WorldMarketplaceHub } from '../../../../src/components/giving/WorldMarketplaceHub';
-import { worldSubScreens } from '../../../../src/components/giving/worldSubScreens';
+import { WORLD_CHROME_BY_SLUG } from '../../../../src/components/giving/worldChromeRegistry';
 import { WorldLaunchGateBySlug } from '../../../../src/components/worlds/WorldLaunchGate';
 
 export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
@@ -16,7 +16,7 @@ export default function AnimalsWorldScreen() {
         icon="paw-outline"
         introKey="donations.worldFeed.animalsIntro"
         linksCategory="animals"
-        subScreens={worldSubScreens('/(tabs)/donations/animals/handoffs')}
+        subScreens={WORLD_CHROME_BY_SLUG.animals.subScreens}
       />
     </WorldLaunchGateBySlug>
   );

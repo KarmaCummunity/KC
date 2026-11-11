@@ -14,17 +14,13 @@ import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { rowDirectionStart } from '../../src/lib/rtlLayout';
 import { formatRelativeChatTime } from '../../src/lib/formatRelativeChatTime';
 import { groupInboxByDay } from '../../src/lib/notificationInboxView';
+import { resolveNotificationRoute } from '../../src/lib/notifications/notificationRoutes';
+import { notificationText } from '../../src/lib/notifications/notificationText';
 import { NotificationInboxRow } from '../../src/components/notifications/NotificationInboxRow';
 import { EmptyState } from '../../src/components/EmptyState';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
 import { SimpleRowListSkeleton } from '../../src/components/skeletons/SimpleRowListSkeleton';
 
-function resolveDeepLink(data: Record<string, unknown>): { pathname: string; params?: Record<string, string> } | null {
-  const route = data.route;
-  if (typeof route !== 'string') return null;
-  const params = data.params as Record<string, string> | undefined;
-  return { pathname: route, params };
-}
 
 const notificationKeyExtractor = (entry: { key: string }) => entry.key;
 
@@ -39,7 +35,7 @@ export default function NotificationInboxScreen() {
 
   const query = useQuery({
     queryKey: ['notification-inbox', userId],
-    queryFn: () => container.notificationInbox.list({ limit: 40 }),
+    queryFn: () => container.notificationInbox.page({ limit: 40 }),
     enabled: Boolean(userId),
   });
   const rows = useMemo(() => query.data ?? [], [query.data]);
@@ -59,15 +55,15 @@ export default function NotificationInboxScreen() {
   }, [refreshAll]);
 
   const onOpen = useCallback(
-    async (inboxId: string, data: Record<string, unknown>, readAt: string | null) => {
+    async (id: string, _data: Record<string, unknown>, readAt: string | null) => {
       if (!readAt) {
-        await container.notificationInbox.markRead(inboxId);
+        await container.notificationInbox.markRead([id]);
         await refreshAll();
       }
-      const link = resolveDeepLink(data);
+      const link = resolveNotificationRoute(rows.find((row) => row.id === id));
       if (link) router.push(link as never);
     },
-    [refreshAll, router],
+    [refreshAll, router, rows],
   );
 
   const renderItem = useCallback(
@@ -80,15 +76,14 @@ export default function NotificationInboxScreen() {
         );
       }
       const item = entry.item;
-      const args = item.bodyArgs as Record<string, string>;
+      const text = notificationText(item, t);
       return (
         <NotificationInboxRow
-          inboxId={item.inboxId}
-          data={item.data}
+          inboxId={item.id}
           readAt={item.readAt}
           kind={item.kind}
-          title={t(item.titleKey, args)}
-          body={t(item.bodyKey, args)}
+          title={text.title}
+          body={text.body}
           time={formatRelativeChatTime(item.createdAt)}
           groupHint={item.groupCount > 1 ? t('notifications.inboxGrouped', { count: item.groupCount }) : undefined}
           unread={!item.readAt}

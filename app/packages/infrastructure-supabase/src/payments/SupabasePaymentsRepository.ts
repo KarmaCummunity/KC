@@ -8,7 +8,7 @@ import type {
   StandingOrderRow,
   VerifiedNonprofitRow,
 } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 type NonprofitRow = Database['public']['Functions']['list_verified_nonprofits']['Returns'][number];
 

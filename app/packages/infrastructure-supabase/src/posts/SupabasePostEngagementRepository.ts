@@ -1,7 +1,16 @@
-// KC#867 — post reactions/comments/shares via SECURITY INVOKER RPCs.
+// Reactions, comments and comment likes of a post (FR-POST-*, KC#867) over the baseline.
+//
+// Counters come from `post_stats`; the viewer's reaction is their own `post_reactions` row; a
+// reaction is set by `set_post_reaction` and removed by deleting the row. Comments are inserted
+// directly (mentions, rate limit and notifications are done by triggers) and listed with
+// `post_comments_page`, which returns the author with the poster-anonymity mask already applied.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { PostError } from '@kc/application';
 import type { Database } from '../database.types';
+import { unwrapCall } from '../rpc/mapRpcError';
+import { sessionUserId } from '../users/userReads';
+import { toPostError } from './postErrors';
 
 export type PostReactionType = 'like' | 'support' | 'thanks';
 
@@ -29,187 +38,145 @@ export type PostCommentWithAuthor = PostCommentRow & {
   likedByViewer: boolean;
 };
 
+/** Most comments the detail screen loads: root comments, then the replies of those that have any. */
+const ROOT_PAGE_MAX = 50;
+
+type CommentPageRow = Database['public']['Functions']['post_comments_page']['Returns'][number];
+
+function toCommentWithAuthor(row: CommentPageRow): PostCommentWithAuthor {
+  return {
+    commentId: row.id,
+    postId: row.post_id,
+    // A masked author (FR-POST-021) arrives without id, name, handle and avatar.
+    authorId: row.author_id ?? '',
+    parentCommentId: row.parent_comment_id,
+    body: row.body,
+    createdAt: row.created_at,
+    authorDisplayName: row.author_display_name,
+    authorAvatarUrl: row.author_avatar_url,
+    authorShareHandle: row.author_share_handle,
+    likeCount: row.reactions_count,
+    likedByViewer: row.viewer_reacted,
+  };
+}
+
 export class SupabasePostEngagementRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
+  /** The post's counters; zeros while nobody has reacted, commented or shared (no `post_stats` row yet). */
   async getStats(postId: string): Promise<PostEngagementStats | null> {
-    const { data, error } = await this.client.rpc(
-      'rpc_get_post_engagement_stats' as never,
-      { p_post_id: postId } as never,
+    const row = unwrapCall(
+      'table:post_stats',
+      await this.client
+        .from('post_stats')
+        .select('reactions_count, comments_count, shares_count')
+        .eq('post_id', postId)
+        .maybeSingle(),
     );
-    if (error) throw error;
-    const row = data as {
-      post_id: string;
-      reaction_count: number;
-      comment_count: number;
-      share_count: number;
-    } | null;
-    if (!row) return null;
     return {
-      postId: row.post_id,
-      reactionCount: row.reaction_count,
-      commentCount: row.comment_count,
-      shareCount: row.share_count,
+      postId,
+      reactionCount: row?.reactions_count ?? 0,
+      commentCount: row?.comments_count ?? 0,
+      shareCount: row?.shares_count ?? 0,
     };
   }
 
   async getViewerReaction(postId: string, viewerId: string): Promise<PostReactionType | null> {
-    const { data, error } = await this.client
-      .from('post_reactions' as never)
-      .select('reaction_type')
-      .eq('post_id', postId)
-      .eq('user_id', viewerId)
-      .maybeSingle();
-    if (error) throw error;
-    const row = data as { reaction_type: PostReactionType } | null;
-    return row?.reaction_type ?? null;
+    const row = unwrapCall(
+      'table:post_reactions',
+      await this.client
+        .from('post_reactions')
+        .select('reaction_type')
+        .eq('post_id', postId)
+        .eq('user_id', viewerId)
+        .maybeSingle(),
+    );
+    return (row?.reaction_type as PostReactionType | undefined) ?? null;
   }
 
+  /** Sets the caller's reaction, or removes it when `reactionType` is null. */
   async setReaction(postId: string, reactionType: PostReactionType | null): Promise<void> {
-    const { error } = await this.client.rpc(
-      'rpc_set_post_reaction' as never,
-      { p_post_id: postId, p_reaction_type: reactionType } as never,
-    );
-    if (error) throw error;
+    try {
+      if (reactionType === null) {
+        unwrapCall('table:post_reactions', await this.client.from('post_reactions').delete().eq('post_id', postId));
+        return;
+      }
+      unwrapCall(
+        'rpc:set_post_reaction',
+        await this.client.rpc('set_post_reaction', { p_post_id: postId, p_reaction_type: reactionType }),
+      );
+    } catch (error) {
+      throw toPostError(error);
+    }
   }
 
-  async createComment(
-    postId: string,
-    body: string,
-    parentCommentId?: string | null,
-  ): Promise<PostCommentRow> {
-    const { data, error } = await this.client.rpc(
-      'rpc_create_post_comment' as never,
-      {
-        p_post_id: postId,
-        p_body: body,
-        p_parent_comment_id: parentCommentId ?? null,
-      } as never,
-    );
-    if (error) throw error;
-    const row = data as {
-      comment_id: string;
-      post_id: string;
-      author_id: string;
-      parent_comment_id: string | null;
-      body: string;
-      created_at: string;
-    };
-    return {
-      commentId: row.comment_id,
-      postId: row.post_id,
-      authorId: row.author_id,
-      parentCommentId: row.parent_comment_id,
-      body: row.body,
-      createdAt: row.created_at,
-    };
+  async createComment(postId: string, body: string, parentCommentId?: string | null): Promise<PostCommentRow> {
+    const authorId = await sessionUserId(this.client);
+    if (!authorId) throw new PostError('forbidden', 'createComment: not signed in');
+    try {
+      const row = unwrapCall(
+        'table:post_comments',
+        await this.client
+          .from('post_comments')
+          .insert({ post_id: postId, author_id: authorId, parent_comment_id: parentCommentId ?? null, body })
+          .select('id, post_id, author_id, parent_comment_id, body, created_at')
+          .single(),
+      );
+      if (!row) throw new PostError('unknown', 'createComment: no row returned');
+      return {
+        commentId: row.id,
+        postId: row.post_id,
+        authorId: row.author_id,
+        parentCommentId: row.parent_comment_id,
+        body: row.body,
+        createdAt: row.created_at,
+      };
+    } catch (error) {
+      throw toPostError(error);
+    }
   }
 
+  /** Likes (`liked`) or unlikes a comment; liking twice is not an error. */
   async setCommentLike(commentId: string, liked: boolean): Promise<void> {
-    const { error } = await this.client.rpc(
-      'rpc_set_post_comment_like' as never,
-      { p_comment_id: commentId, p_liked: liked } as never,
+    const userId = await sessionUserId(this.client);
+    if (!userId) throw new PostError('forbidden', 'setCommentLike: not signed in');
+    if (!liked) {
+      unwrapCall(
+        'table:post_comment_reactions',
+        await this.client.from('post_comment_reactions').delete().eq('comment_id', commentId).eq('user_id', userId),
+      );
+      return;
+    }
+    unwrapCall(
+      'table:post_comment_reactions',
+      await this.client
+        .from('post_comment_reactions')
+        .upsert({ comment_id: commentId, user_id: userId }, { onConflict: 'comment_id,user_id', ignoreDuplicates: true }),
     );
-    if (error) throw error;
   }
 
-  async listComments(postId: string, limit = 40): Promise<PostCommentRow[]> {
-    const { data, error } = await this.client
-      .from('post_comments' as never)
-      .select('comment_id, post_id, author_id, parent_comment_id, body, created_at')
-      .eq('post_id', postId)
-      .eq('status', 'active')
-      .order('created_at', { ascending: true })
-      .limit(limit);
-    if (error) throw error;
-    type CommentRow = {
-      comment_id: string;
-      post_id: string;
-      author_id: string;
-      parent_comment_id: string | null;
-      body: string;
-      created_at: string;
-    };
-    const rows = (data ?? []) as CommentRow[];
-    return rows.map((row) => ({
-      commentId: row.comment_id,
-      postId: row.post_id,
-      authorId: row.author_id,
-      parentCommentId: row.parent_comment_id,
-      body: row.body,
-      createdAt: row.created_at,
-    }));
+  private async commentsPage(postId: string, parentCommentId: string | null, limit: number) {
+    const rows = unwrapCall(
+      'rpc:post_comments_page',
+      await this.client.rpc('post_comments_page', {
+        p_post_id: postId,
+        p_parent_comment_id: parentCommentId ?? undefined,
+        p_limit: limit,
+      }),
+    );
+    return rows ?? [];
   }
 
-  async listCommentsWithAuthors(
-    postId: string,
-    limit = 120,
-    viewerId: string | null,
-  ): Promise<PostCommentWithAuthor[]> {
-    const embedded = await this.client
-      .from('post_comments' as never)
-      .select(
-        `comment_id, post_id, author_id, parent_comment_id, body, created_at,
-        author:users!post_comments_author_id_fkey(display_name, avatar_url, share_handle)`,
-      )
-      .eq('post_id', postId)
-      .eq('status', 'active')
-      .order('created_at', { ascending: true })
-      .limit(limit);
-
-    type CommentRow = {
-      comment_id: string;
-      post_id: string;
-      author_id: string;
-      parent_comment_id: string | null;
-      body: string;
-      created_at: string;
-      author?: { display_name: string | null; avatar_url: string | null; share_handle: string | null } | null;
-    };
-
-    let rows: CommentRow[];
-    if (embedded.error) {
-      const plain = await this.listComments(postId, limit);
-      rows = plain.map((c) => ({
-        comment_id: c.commentId,
-        post_id: c.postId,
-        author_id: c.authorId,
-        parent_comment_id: c.parentCommentId,
-        body: c.body,
-        created_at: c.createdAt,
-        author: null,
-      }));
-    } else {
-      rows = (embedded.data ?? []) as CommentRow[];
-    }
-    if (rows.length === 0) return [];
-
-    const commentIds = rows.map((r) => r.comment_id);
-    // Likes are optional until migration 0641 is applied; a missing table must not hide comments.
-    const { data: likeRows } = await this.client
-      .from('post_comment_reactions' as never)
-      .select('comment_id, user_id')
-      .in('comment_id', commentIds);
-
-    const likeCounts = new Map<string, number>();
-    const viewerLikes = new Set<string>();
-    for (const lr of (likeRows ?? []) as { comment_id: string; user_id: string }[]) {
-      likeCounts.set(lr.comment_id, (likeCounts.get(lr.comment_id) ?? 0) + 1);
-      if (viewerId && lr.user_id === viewerId) viewerLikes.add(lr.comment_id);
-    }
-
-    return rows.map((row) => ({
-      commentId: row.comment_id,
-      postId: row.post_id,
-      authorId: row.author_id,
-      parentCommentId: row.parent_comment_id,
-      body: row.body,
-      createdAt: row.created_at,
-      authorDisplayName: row.author?.display_name ?? null,
-      authorAvatarUrl: row.author?.avatar_url ?? null,
-      authorShareHandle: row.author?.share_handle ?? null,
-      likeCount: likeCounts.get(row.comment_id) ?? 0,
-      likedByViewer: viewerLikes.has(row.comment_id),
-    }));
+  /**
+   * Root comments and their replies, oldest first, each with its author (anonymous when the poster asked
+   * for it), like count and whether the caller liked it. At most `limit` comments are returned, but never
+   * more than one page of root comments: replies are read for the roots that have any.
+   */
+  async listCommentsWithAuthors(postId: string, limit = 120): Promise<PostCommentWithAuthor[]> {
+    const roots = await this.commentsPage(postId, null, Math.min(limit, ROOT_PAGE_MAX));
+    const withReplies = roots.filter((root) => root.replies_count > 0);
+    const replyPages = await Promise.all(withReplies.map((root) => this.commentsPage(postId, root.id, ROOT_PAGE_MAX)));
+    const byParent = new Map(withReplies.map((root, index) => [root.id, replyPages[index] ?? []]));
+    return roots.flatMap((root) => [root, ...(byParent.get(root.id) ?? [])]).slice(0, limit).map(toCommentWithAuthor);
   }
 }

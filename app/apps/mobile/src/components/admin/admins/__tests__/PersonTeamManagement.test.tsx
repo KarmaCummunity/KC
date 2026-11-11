@@ -44,6 +44,11 @@ vi.mock('../../../../hooks/useSetManager', () => ({
   useSetManager: () => ({ mutateAsync: setManagerMutate, isPending: false }),
 }));
 vi.mock('../../../../lib/container', () => ({ supabase: {} }));
+// The degrade helpers read the full i18n instance, which this test's partial react-i18next double lacks.
+vi.mock('../../../../lib/backendAvailability', () => ({
+  isBackendUnavailable: () => false,
+  notAvailableMessage: () => 'not available yet',
+}));
 // The virtualized list needs native globals; a plain map renders the same rows.
 vi.mock('../../../lists/KcFlashList', () => ({
   KcFlashList: <T,>({ data, renderItem, keyExtractor }: {

@@ -4,8 +4,10 @@ import type { Ionicons } from '@expo/vector-icons';
 type IconName = keyof typeof Ionicons.glyphMap;
 
 export function notificationIcon(kind: string): IconName {
-  if (kind.startsWith('chat_')) return 'chatbubble-ellipses-outline';
+  if (kind.endsWith('_message')) return 'chatbubble-ellipses-outline';
   if (kind.startsWith('ride_')) return 'car-outline';
+  if (kind.startsWith('housing_')) return 'home-outline';
+  if (kind.startsWith('event_')) return 'calendar-outline';
   if (kind === 'post_reaction') return 'heart-outline';
   if (kind === 'post_comment') return 'chatbox-outline';
   if (kind === 'post_mention') return 'at-outline';
@@ -19,7 +21,7 @@ export type InboxListItem<T> =
   | { type: 'row'; key: string; item: T };
 
 /** Splits newest-first rows into Today / Earlier sections (local day boundary). */
-export function groupInboxByDay<T extends { inboxId: string; createdAt: string }>(
+export function groupInboxByDay<T extends { id: string; createdAt: string }>(
   rows: readonly T[],
   now: Date = new Date(),
 ): InboxListItem<T>[] {
@@ -30,7 +32,7 @@ export function groupInboxByDay<T extends { inboxId: string; createdAt: string }
   const push = (section: 'today' | 'earlier', list: readonly T[]) => {
     if (list.length === 0) return;
     out.push({ type: 'header', key: `h-${section}`, section });
-    for (const item of list) out.push({ type: 'row', key: item.inboxId, item });
+    for (const item of list) out.push({ type: 'row', key: item.id, item });
   };
   push('today', today);
   push('earlier', earlier);

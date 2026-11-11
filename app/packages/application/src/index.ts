@@ -11,10 +11,10 @@ export type { BatchTranslationItem, ITranslationService } from './ports/ITransla
 export type { IPostTranslationReader, PostTranslationHit } from './ports/IPostTranslationReader';
 export type * from './ports/IMarketplaceRepository';
 export * from './translations';
-export type { IChatRealtime, InboxStreamCallbacks, SubscribeInboxOptions, ChatStreamCallbacks, Unsubscribe } from './ports/IChatRealtime';
+export type { IChatRealtime, InboxStreamCallbacks, InboxChange, SubscribeInboxOptions, ChatStreamCallbacks, ChatChange, Unsubscribe } from './ports/IChatRealtime';
 export type { IReportRepository } from './ports/IReportRepository';
 export type { IFeedRealtime, FeedRealtimeCallbacks, NewPublicPostSignal } from './ports/IFeedRealtime';
-export type { IUserRealtime } from './ports/IUserRealtime';
+export type { AccountChange, IUserRealtime } from './ports/IUserRealtime';
 export type { IRidesRealtime, RidesRealtimeCallbacks } from './ports/IRidesRealtime';
 export type { CommunityStatsSnapshot, IStatsRepository, MyWorldGivings, WorldFlowFunnelRow } from './ports/IStatsRepository';
 export type { IAboutRepository } from './ports/IAboutRepository';
@@ -63,8 +63,7 @@ export { MarkChatReadUseCase } from './chat/MarkChatReadUseCase';
 export { GetUnreadTotalUseCase } from './chat/GetUnreadTotalUseCase';
 export { GetSupportThreadUseCase } from './chat/GetSupportThreadUseCase';
 export * from './chat/ListChatStartCandidatesUseCase';
-export { SubmitSupportIssueUseCase } from './chat/SubmitSupportIssueUseCase';
-export type { SubmitSupportIssueInput } from './chat/SubmitSupportIssueUseCase';
+export * from './chat/SubmitSupportIssueUseCase';
 export { ChatError } from './chat/errors';
 export type { ChatErrorCode } from './chat/errors';
 
@@ -131,11 +130,11 @@ export { LookupAuditUseCase } from './moderation/LookupAuditUseCase';
 export type { LookupAuditInput } from './moderation/LookupAuditUseCase';
 export { ReportUserUseCase } from './moderation/ReportUserUseCase';
 export type { ReportUserInput } from './moderation/ReportUserUseCase';
-export { AdminRemoveListingUseCase, type AdminRemoveListingInput } from './moderation/AdminRemoveListingUseCase';
 export { CheckAccountGateUseCase } from './moderation/CheckAccountGateUseCase';
 export type { CheckAccountGateInput } from './moderation/CheckAccountGateUseCase';
 export { RestoreAccountUseCase } from './moderation/RestoreAccountUseCase';
 export type { IDeviceRepository } from './notifications/IDeviceRepository';
+export type * from './notifications/INotificationInboxRepository';
 export { RegisterDeviceUseCase } from './notifications/RegisterDeviceUseCase';
 export { DeactivateDeviceUseCase } from './notifications/DeactivateDeviceUseCase';
 export { UpdateNotificationPreferencesUseCase } from './notifications/UpdateNotificationPreferencesUseCase';
@@ -161,6 +160,7 @@ export * from './admin/AddAdminTaskCommentUseCase';
 export * from './admin/DeleteAdminTaskUseCase';
 export * from './admin/IAdminContentRepository';
 export * from './admin/AdminSearchUsersUseCase';
+export * from './admin/AdminFindMembersUseCase';
 export * from './admin/AdminSearchPostsUseCase';
 export * from './admin/AdminSearchAuditUseCase';
 export * from './admin/ITimesheetsRepository';
@@ -183,81 +183,6 @@ export * from './admin/GetHierarchySnapshotUseCase';
 export * from './reports/IReportsRepository';
 export * from './reports/ListOpenReportsUseCase';
 export * from './reports/GetReportCaseDetailUseCase';
-
-// Rides V2.0 (FR-RIDE-*)
-export type {
-  IRideListingRepository,
-  RideListingRow,
-  CreateRideListingRepoInput,
-  SearchRideListingsInput,
-  RideVisibility,
-  ListMyRidesInput,
-} from './ports/IRideListingRepository';
-export { CreateRideListingUseCase } from './rides/CreateRideListingUseCase';
-export type { CreateRideListingInput } from './rides/CreateRideListingUseCase';
-export { SearchRideListingsUseCase } from './rides/SearchRideListingsUseCase';
-export { GetRideListingUseCase } from './rides/GetRideListingUseCase';
-export type { GetRideListingInput } from './rides/GetRideListingUseCase';
-export { CloseRideListingUseCase } from './rides/CloseRideListingUseCase';
-export type { CloseRideListingInput } from './rides/CloseRideListingUseCase';
-export { FindRideMatchesUseCase } from './rides/FindRideMatchesUseCase';
-export type { FindRideMatchesInput } from './ports/IRideListingRepository';
-export { UpdateRideVisibilityUseCase } from './rides/UpdateRideVisibilityUseCase';
-export type { UpdateRideVisibilityInput } from './rides/UpdateRideVisibilityUseCase';
-export { ListMyRidesUseCase } from './rides/ListMyRidesUseCase';
-export type {
-  IRideStopsRepository,
-  SetRideStopsInput,
-} from './ports/IRideStopsRepository';
-export { ListRideStopsUseCase } from './rides/ListRideStopsUseCase';
-export { SetRideStopsUseCase } from './rides/SetRideStopsUseCase';
-export type { SetRideStopsUseCaseInput } from './rides/SetRideStopsUseCase';
-export { StartRideUseCase } from './rides/StartRideUseCase';
-export { ArriveRideUseCase } from './rides/ArriveRideUseCase';
-export type { ArriveRideInput } from './rides/ArriveRideUseCase';
-export type {
-  IRideEmergencyRepository,
-  TriggerRideEmergencyInput,
-} from './ports/IRideEmergencyRepository';
-export { TriggerRideEmergencyUseCase } from './rides/TriggerRideEmergencyUseCase';
-export { ListRideEmergencyEventsUseCase } from './rides/ListRideEmergencyEventsUseCase';
-export type {
-  IRideRatingRepository,
-  SubmitRideRatingInput,
-} from './ports/IRideRatingRepository';
-export { SubmitRideRatingUseCase } from './rides/SubmitRideRatingUseCase';
-export { ListRideRatingsUseCase } from './rides/ListRideRatingsUseCase';
-export { GetUserRideRatingSummaryUseCase, RATING_DISPLAY_MIN_COUNT } from './rides/GetUserRideRatingSummaryUseCase';
-export type { GetUserRideRatingSummaryResult } from './rides/GetUserRideRatingSummaryUseCase';
-
-// Ride templates (FR-RIDE-021 / FR-RIDE-022)
-export type {
-  IRideTemplateRepository,
-  CreateRideTemplateInput,
-} from './ports/IRideTemplateRepository';
-export { CreateRideTemplateUseCase } from './rides/CreateRideTemplateUseCase';
-export type { CreateRideTemplateUseCaseInput } from './rides/CreateRideTemplateUseCase';
-export { ListMyRideTemplatesUseCase } from './rides/ListMyRideTemplatesUseCase';
-export { SetRideTemplateStatusUseCase } from './rides/SetRideTemplateStatusUseCase';
-export { DeleteRideTemplateUseCase } from './rides/DeleteRideTemplateUseCase';
-
-export type { IRideJoinPolicy } from './rides/ports/IRideJoinPolicy';
-export type { IRideMatchScorer } from './rides/ports/IRideMatchScorer';
-export { DirectChatJoinPolicy } from './rides/DirectChatJoinPolicy';
-export { ChronologicalRideMatchScorer } from './rides/ChronologicalRideMatchScorer';
-
-// Ride participants (FR-RIDE-011 / FR-RIDE-012)
-export type { IRideParticipantRepository } from './ports/IRideParticipantRepository';
-export { RequestRideJoinUseCase } from './rides/RequestRideJoinUseCase';
-export type { RequestRideJoinInput } from './rides/RequestRideJoinUseCase';
-export { DecideRideJoinUseCase } from './rides/DecideRideJoinUseCase';
-export type { DecideRideJoinInput } from './rides/DecideRideJoinUseCase';
-export { CancelRideJoinUseCase } from './rides/CancelRideJoinUseCase';
-export type { CancelRideJoinInput } from './rides/CancelRideJoinUseCase';
-export { ListRideParticipantsUseCase } from './rides/ListRideParticipantsUseCase';
-export type { ListRideParticipantsInput } from './rides/ListRideParticipantsUseCase';
-export { ListUserRideRequestsUseCase } from './rides/ListUserRideRequestsUseCase';
-export type { ListUserRideRequestsInput } from './rides/ListUserRideRequestsUseCase';
 
 // Driver declaration gate (FR-RIDE-041)
 export type {
@@ -292,6 +217,7 @@ export { LoadPublicResearchBundleUseCase } from './research/LoadPublicResearchBu
 export { SubmitPublicResearchResponseUseCase } from './research/SubmitPublicResearchResponseUseCase';
 export * from './payments';
 export * from './volunteering';
+export * from './organizations';
 export * from './giving';
 export * from './housing';
 export * from './admin/whatsapp';

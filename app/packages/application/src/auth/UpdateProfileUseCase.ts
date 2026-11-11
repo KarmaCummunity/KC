@@ -1,6 +1,7 @@
-/** FR-PROFILE-007: Edit Profile orchestrator. Validates inputs, then issues
- *  a single atomic `UPDATE users SET ...` (audit §3.5 — was Promise.all of
- *  four independent writes). Typed `ProfileError` codes per audit §3.6. */
+/** FR-PROFILE-007: Edit Profile orchestrator. Validates inputs, then hands one patch to the
+ *  repository (audit §3.5 — one statement per table, not four independent writes). Typed
+ *  `ProfileError` codes per audit §3.6. The city name is validated with its id but never
+ *  stored: the name is the `cities` row of the id. */
 import { BIOGRAPHY_MAX_LENGTH, STREET_NUMBER_PATTERN, containsBiographyUrl } from '@kc/domain';
 import type { AuthProfileMetadataPatch, IAuthService } from '../ports/IAuthService';
 import type { IUserRepository } from '../ports/IUserRepository';
@@ -95,7 +96,6 @@ function buildPatch(
   const patch: ProfilePatch = {};
   if (input.displayName !== undefined) patch.displayName = input.displayName.trim();
   if (input.city !== undefined) patch.city = input.city;
-  if (input.cityName !== undefined) patch.cityName = input.cityName;
   if (address !== undefined) {
     patch.profileStreet = address.street;
     patch.profileStreetNumber = address.streetNumber;

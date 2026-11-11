@@ -13,7 +13,7 @@ import {
   type SurveyQuestionType,
   type SurveyCompletionStatus,
 } from '@kc/domain';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 
 // ---------------------------------------------------------------------------
 // Raw JSON shapes returned by RPCs (snake_case from Postgres)
@@ -162,7 +162,7 @@ export class SupabaseSurveyRepository implements ISurveyRepository {
     }));
     const { error } = await this.client.rpc('upsert_survey_answers', {
       p_slug: slug,
-      p_answers: payload as unknown as import('../database.types').Database['public']['Functions']['upsert_survey_answers']['Args']['p_answers'],
+      p_answers: payload as unknown as import('../database.legacy.types').Database['public']['Functions']['upsert_survey_answers']['Args']['p_answers'],
     });
     if (error) throw mapRpcError(error.message);
   }

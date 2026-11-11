@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { BackendUnavailableError } from '@kc/domain';
 import { SupabaseCityRepository } from '../SupabaseCityRepository';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -18,7 +19,7 @@ interface FromCall {
  */
 function makeFakeClient(opts: {
   data?: unknown[];
-  error?: { message: string } | null;
+  error?: { code?: string; message: string } | null;
 }): { client: SupabaseClient<any>; calls: FromCall[] } {
   const calls: FromCall[] = [];
   const all = opts.data;
@@ -119,14 +120,14 @@ describe('SupabaseCityRepository', () => {
       expect(await repo.listAll()).toEqual([]);
     });
 
-    it('throws with a prefixed "listAll cities: " message when the response carries an error', async () => {
+    it('throws the database message when the response carries an error', async () => {
       const { client } = makeFakeClient({
         data: [],
         error: { message: 'connection reset by peer' },
       });
       const repo = new SupabaseCityRepository(client);
 
-      await expect(repo.listAll()).rejects.toThrow('listAll cities: connection reset by peer');
+      await expect(repo.listAll()).rejects.toThrow('connection reset by peer');
     });
 
     it('throws even when the error object carries an empty message', async () => {
@@ -136,7 +137,16 @@ describe('SupabaseCityRepository', () => {
       });
       const repo = new SupabaseCityRepository(client);
 
-      await expect(repo.listAll()).rejects.toThrow('listAll cities: ');
+      await expect(repo.listAll()).rejects.toThrow();
+    });
+
+    it('reports a missing cities table as BackendUnavailableError', async () => {
+      const { client } = makeFakeClient({
+        data: [],
+        error: { code: 'PGRST205', message: 'Could not find the table public.cities' },
+      });
+
+      await expect(new SupabaseCityRepository(client).listAll()).rejects.toBeInstanceOf(BackendUnavailableError);
     });
 
     it('paginates with .range(from, to) in 1000-row pages to bypass server db-max-rows cap', async () => {

@@ -1,4 +1,4 @@
-// Hebrew — feed settings (mute words / categories / people, quiet hours) + empty-state CTAs.
+// Hebrew — feed settings (mute words / worlds / people, quiet hours) + empty-state CTAs.
 export const feedSettingsHe = {
   title: 'הגדרות פיד',
   settingsRow: 'הגדרות פיד',
@@ -9,10 +9,8 @@ export const feedSettingsHe = {
   keywordPlaceholder: 'הוסיפו מילה או ביטוי',
   add: 'הוספה',
   keywordsEmpty: 'עדיין אין מילים מושתקות.',
-  keywordInvalid: 'צריך בין 2 ל-120 תווים.',
+  keywordInvalid: 'צריך בין 2 ל-60 תווים.',
   keywordDuplicate: 'המילה הזו כבר מושתקת.',
-  categoriesTitle: 'קטגוריות מושתקות',
-  categoriesHint: 'הקישו על קטגוריה כדי להסתיר את הפוסטים שלה, והקישו שוב כדי להציג אותם.',
   peopleTitle: 'אנשים מושתקים',
   peopleEmpty: 'כדי להשתיק מישהו, פתחו את תפריט ⋮ באחד הפוסטים שלו.',
   unknownPerson: 'חבר/ת קהילה',

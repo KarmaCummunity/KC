@@ -21,7 +21,6 @@ import {
   detailsForSubmit,
   fieldsForKind,
   firstMissingRequiredField,
-  initialDetailsFor,
   kindChoices,
 } from '../lib/unifiedCreate/listingFieldSpecs';
 import { kindForCreate } from '../lib/unifiedCreate/orgEventCreate';
@@ -41,7 +40,8 @@ import { afterRidePublished } from '../lib/rides/afterRidePublished';
 import { rideSeriesUseCases } from '../services/rideSeriesComposition';
 import type { RideRecurrenceDraft } from '../components/giving/RideRecurrenceFields';
 import { useOrgEventChoice } from './useOrgEventChoice';
-import { pickRideDetails, rideAutoTitle, withEventOrg } from '../lib/unifiedCreate/listingCreateDetails';
+import { useListingFormSource } from './useListingFormSource';
+import { rideAutoTitle, withEventOrg } from '../lib/unifiedCreate/listingCreateDetails';
 
 export { rideAutoTitle };
 
@@ -60,6 +60,8 @@ interface Args {
   /** When set, the form loads this listing and saves via `updateMyListing` (G1 owner edit). */
   readonly editListingId?: string | null;
   readonly onSaved?: () => void;
+  /** When set, the form starts from this (expired) listing minus its dates and publishes a NEW one (D127). */
+  readonly republishFromListingId?: string | null;
 }
 
 export function useListingCreateForm({
@@ -70,6 +72,7 @@ export function useListingCreateForm({
   onPublished,
   editListingId = null,
   onSaved,
+  republishFromListingId = null,
 }: Args) {
   const { t } = useTranslation();
   const userId = useAuthStore((s) => s.session?.userId ?? null);
@@ -78,13 +81,6 @@ export function useListingCreateForm({
     queryFn: () => marketplaceRepository().listKindsForWorld(worldSlug),
     staleTime: 10 * 60_000, // kinds change only with a migration
   });
-  const editDetailQuery = useQuery({
-    queryKey: ['marketplace', 'detail', editListingId],
-    queryFn: () => marketplaceRepository().getListingDetail(editListingId!),
-    enabled: Boolean(editListingId),
-    staleTime: 60_000,
-  });
-  const editHydratedId = useRef<string | null>(null);
   const eventChoice = useOrgEventChoice(worldSlug, direction, kindsQuery.data ?? []);
   // The kind the member picked among several of this direction (animals, knowledge); a direction
   // switch or a kind that no longer applies falls back to the direction's default.
@@ -118,23 +114,19 @@ export function useListingCreateForm({
     setError(null);
   }, [title, details, city, recurrence, houseNumbers, eventChoice.orgId]);
 
-  // A new kind (direction switch) starts from its own defaults. The ride route and schedule are
-  // shared by both ride kinds, so they survive the switch (RideCreateSection keeps showing them).
-  useEffect(() => {
-    if (editListingId) return;
-    setDetails((prev) => ({ ...pickRideDetails(prev), ...initialDetailsFor(specs) }));
-    setError(null);
-  }, [specs, editListingId]);
-
-  useEffect(() => {
-    const detail = editDetailQuery.data;
-    if (!editListingId || !detail || editHydratedId.current === detail.listingId) return;
-    editHydratedId.current = detail.listingId;
-    setDetails({ ...detail.details });
-    if (detail.cityId) setCity({ id: detail.cityId, name: '' });
-    setChosenKindSlug(detail.kindSlug);
-    setError(null);
-  }, [editListingId, editDetailQuery.data]);
+  // Edit / republish source: hydration and the per-kind defaults reset (useListingFormSource).
+  const source = useListingFormSource({
+    editListingId,
+    republishFromListingId,
+    kind,
+    specs,
+    setDetails,
+    setCity,
+    setChosenKindSlug,
+    setError,
+    eventChoice,
+  });
+  const photoCount = photos.length + source.carriedMediaPaths.length;
 
   const setDetail = (key: string, value: unknown) => setDetails((prev) => ({ ...prev, [key]: value }));
   const isRides = worldSlug === 'rides';
@@ -157,7 +149,9 @@ export function useListingCreateForm({
     }
     if (eventChoice.isOrgEvent && !eventChoice.orgId) return { message: t('eventPost.create.orgRequired'), field: 'org' };
     if (!isRides && !city) return { message: t('post.unifiedCreate.errors.cityRequired'), field: 'city' };
-    const rule = marketplaceRuleFieldError({ worldSlug, direction, details: submitted, photoCount: photos.length });
+    // An edit keeps the listing's photos and sub-category, so it passes neither and skips those rules.
+    const creating = editListingId ? {} : { photoCount, subcategoryId: showSubcategory ? subcategoryId : undefined };
+    const rule = marketplaceRuleFieldError({ worldSlug, direction, details: submitted, ...creating });
     if (rule) return { message: t(rule.key), field: fieldForRule(rule.code, submitted) };
     if (isRides && recurrence && recurrence.weekdays.length === 0) {
       return { message: t('rideSeries.errors.weekdaysRequired'), field: 'ride:recurrence' };
@@ -192,7 +186,7 @@ export function useListingCreateForm({
 
   const publish = async () => {
     if (!userId || !kind || busy || publishLock.current) return;
-    if (editListingId && editDetailQuery.isLoading) return;
+    if (source.loading) return;
     const timed = isRides && !editListingId && leaveNow ? withLeaveNowDeparture(details, new Date()) : details;
     const submitted = withEventOrg(detailsForSubmit(specs, timed), eventChoice);
     const problem = validate(submitted);
@@ -218,7 +212,9 @@ export function useListingCreateForm({
         onPublished(firstId);
         return;
       }
-      const mediaPaths = photos.length > 0 ? await uploadListingImages(userId, photos) : [];
+      // A republish reuses the source's photos (already in the owner's folder) before new ones.
+      const uploaded = photos.length > 0 ? await uploadListingImages(userId, photos) : [];
+      const mediaPaths = [...source.carriedMediaPaths, ...uploaded];
       const id = await marketplaceRepository().createListing(
         buildListingCreatePayload({
           kindId: kind.kindId,
@@ -269,6 +265,8 @@ export function useListingCreateForm({
     setCity,
     photos,
     setPhotos,
+    carriedMediaPaths: source.carriedMediaPaths,
+    removeCarriedMedia: source.removeCarriedMedia,
     subcategoryId,
     setSubcategoryId,
     additionalWorlds,
@@ -291,8 +289,9 @@ export function useListingCreateForm({
     busy,
     error,
     publish,
-    canPublish: Boolean(userId && kind) && !busy && !(editListingId && editDetailQuery.isLoading),
+    canPublish: Boolean(userId && kind) && !busy && !source.loading,
     isEdit: Boolean(editListingId),
-    editLoading: Boolean(editListingId && editDetailQuery.isLoading),
+    /** The edit / republish source is loading. */
+    editLoading: source.loading,
   };
 }

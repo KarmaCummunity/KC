@@ -9,7 +9,7 @@
 | Schema + RLS + RPCs | `supabase/migrations/` | Numbered; claim ranges in [MIGRATION_RANGES.md](./MIGRATION_RANGES.md) |
 | Edge Functions | `supabase/functions/` | Deno; WhatsApp, workers |
 | CI / deploy workflows | `.github/workflows/` | PRs → `dev`; push to `dev` deploys kc-dev + Pages. Table in [DEPLOY.md](./DEPLOY.md#all-workflows) |
-| kc-dev seed | `supabase/seed/kc-dev/` | Fake Hebrew data, dev only. See [DEPLOY.md](./DEPLOY.md#seeding-kc-dev-only) |
+| Seeds | `supabase/seed/{reference,content,e2e}/` | Versioned, idempotent data loaders. See [DEPLOY.md](./DEPLOY.md#seeding-kc-dev-only) |
 | E2E | `tests/e2e/` | Playwright against the dev site + kc-dev |
 | Specs / backlog | `docs/SSOT/` | Product SSOT |
 | Agent operating model | [OPERATING_MODEL.md](./OPERATING_MODEL.md) | Who merges, labels, flow |

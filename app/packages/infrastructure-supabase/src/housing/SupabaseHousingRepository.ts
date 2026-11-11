@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { HousingGuestStay, HousingHostBooking, HousingPrivateDetails, HousingStayRequestInput } from '@kc/domain';
 import type { HousingPrivateDetailsInput, IHousingRepository } from '@kc/application';
-import type { Database } from '../database.types';
+import type { Database } from '../database.legacy.types';
 import { mapGuestStayRow, mapHostBookingRow, mapPrivateDetailsRow } from './housingMappers';
 
 type Client = SupabaseClient<Database>;

@@ -59,6 +59,70 @@ The key pair is created once by the owner: `age-keygen -o key.txt` prints the pu
 
 ---
 
+## Scheduled database backups (Supabase Free) {#scheduled-backups}
+
+Supabase **Free** has no automatic backups and no point-in-time recovery, and the owner decided on 2026-11-11 to stay on Free for now. Two scheduled workflows are the substitute. Both are read-only against the project (`supabase db dump` plus two `SELECT`s) and both use the shared action `.github/actions/db-backup`.
+
+| Workflow | Project | When | Kept |
+| --- | --- | --- | --- |
+| `db-backup-prod.yml` | kc-prod (`kdqtbdbzwvlugkhonexg`), environment `supabase-prod` | daily 01:17 UTC (03:17 Israel) | 30 days |
+| `db-backup-dev.yml` | kc-dev (`enbqriuxvvuontiwslun`), environment `supabase-dev` | Sundays 02:43 UTC, and whenever the backup code changes on `dev` | 14 days |
+
+**Recovery point: up to 24 hours of data lost (prod), up to 7 days (dev).** Run `DB backup (prod)` by hand (Actions → run workflow, branch `main`) right before any risky operation. Scheduled workflows only run from the default branch, so prod's schedule starts with the first release to `main`.
+
+### What is in a backup
+
+Artifact `db-backup-<target>-<YYYYMMDD>-<run id>-<attempt>`, each file gzip-compressed and encrypted with `age` to the public key in the environment variable `BACKUP_AGE_RECIPIENT`:
+
+| File | Content |
+| --- | --- |
+| `roles.sql.gz.age` | custom roles and role settings |
+| `schema.sql.gz.age` | definitions of every non-managed schema (`public`, `ops`, ...); the `auth` / `storage` / `pgmq` tables are created by the platform and are not in it |
+| `data.sql.gz.age` | rows of all schemas in `COPY` format, **including `auth` (accounts, identities) and `storage` (file metadata)** and the pgmq queue tables |
+| `manifest.json.gz.age` | table list and exact row count per table |
+| `BACKUP-INFO.txt`, `SHA256SUMS` | plain text: target, project, time; checksums of the `.age` files |
+
+**Not in a backup:** the files in Storage (avatars, post images; only their metadata rows are), Edge Function code and secrets, Vault secrets (`kc_project_url`, `kc_service_role_key`), Auth settings, and project settings. Re-apply those from the repo and the setup documents after a restore.
+
+### Safety properties
+
+- The key pair is the owner's. Without the private key (`age-keygen` output, kept offline) a backup is unreadable. **Losing the key loses every backup; leaking it exposes every backup that still exists.** Keep two offline copies.
+- The repository is public and a public repository's artifacts can be downloaded by any signed-in GitHub user. That is acceptable only because every file is encrypted; never upload a plaintext dump as an artifact, and never log row data.
+- Plaintext exists only inside the ephemeral runner (for the restore check) and is deleted by the last step, also on failure.
+- Fails closed: no valid `BACKUP_AGE_RECIPIENT`, a different project ref than the one hard-coded in the workflow, a paused or unhealthy project, or an empty dump file fails the run (GitHub emails the failure to the repository admins).
+- Cost: artifact storage is metered against the organisation's shared allowance (GitHub Free: 500 MB, then $0.25 per GB-month). November's repository usage is billed gross but fully discounted (net $0). The dump is gzip-compressed before encryption; the run warns above 200 MiB. If backups outgrow artifacts, move them to object storage (for example Cloudflare R2) rather than shortening retention.
+- An empty database (kc-prod before its baseline) is a named state: the run dumps the roles and the empty schema, restores them, records `empty` in the manifest and does not fail.
+
+### Restore check (every run)
+
+After the artifact is uploaded, the run starts a throwaway `supabase/postgres` container (same Postgres major and extensions as Supabase), restores `roles.sql` (errors ignored: roles of platform services such as realtime do not exist in the container), then `schema.sql` and the `data.sql` rows of the schemas that `schema.sql` defines, both with `ON_ERROR_STOP`, counts the rows of every such table and compares them with the manifest. A dump that cannot be restored, or restores short, fails the run, and the backup stays available because the upload comes first. The rows of `auth`, `storage` and `pgmq` are in the backup and the manifest but not in this check (the container has no GoTrue / Storage migrations, so those tables are missing or have other columns); they restore into a real Supabase project, where those tables exist.
+
+### Restore procedure (manual, owner's key)
+
+Policy `D-195` still applies: the database is forward-fix first; restore only when a forward-fix cannot repair the damage, with the PM's typed confirmation.
+
+1. Actions → `DB backup (prod)` (or dev) → pick the run → download artifact `db-backup-...` to a private machine (`gh run download <run id> -n <artifact name>`).
+2. Verify: `sha256sum -c SHA256SUMS`.
+3. Decrypt and decompress each file: `age -d -i key.txt roles.sql.gz.age | gunzip > roles.sql` (same for `schema`, `data`, `manifest.json`). Never commit, upload or keep these files after the restore.
+4. Restore into a **new** Supabase project (Dashboard → New project, same region), then copy back what was lost; replaying a full dump over a live project also drops everything written after the backup. Use the session pooler or direct connection string as `$TARGET_DB_URL`:
+   ```bash
+   psql "$TARGET_DB_URL" -v ON_ERROR_STOP=1 -f roles.sql          # skip or edit if the role exists
+   psql "$TARGET_DB_URL" -v ON_ERROR_STOP=1 -f schema.sql
+   psql "$TARGET_DB_URL" -f data.sql                               # starts with session_replication_role = replica
+   ```
+   `data.sql` also holds queue rows (`pgmq`); until the queues exist (migrations create them), psql reports `relation "pgmq..." does not exist` for those blocks. Those errors are expected; any other error is not.
+5. Compare: for each table, `select count(*)` against `manifest.json` (`rows`).
+6. Re-create Vault secrets, Edge Function secrets and Auth settings; re-upload Storage files from their own source. Point the app (`EXPO_PUBLIC_SUPABASE_URL`, Cloudflare Pages variables, EAS) at the new project only after the owner confirms.
+7. `shred -u` the decrypted files.
+
+Do a restore drill (steps 1-5 into a scratch project) after the first release to `main` and then quarterly.
+
+### Free-project pausing
+
+Supabase pauses Free projects with too little database activity over 7 days ([docs](https://supabase.com/docs/guides/platform/free-project-pausing): "a few user requests to the database each day over the previous week"). Every backup run reads the whole database through `pg_dump` and sends two `SELECT`s through the Management API, and the hourly `ops-health.yml` monitor queries the database too, so a project with these workflows enabled sees database activity every day. Supabase does not publish an exact threshold, so this is a strong mitigation, not a guarantee; a paused project makes the backup run fail with `project status is INACTIVE`, which is the alarm. Resume it from the Dashboard (data is kept for a year). The permanent fix is the Pro plan.
+
+---
+
 ## Owner setup for D-195 CI/CD {#owner-setup-ci}
 
 Repository settings only the owner (admin) can apply. Tracked as `INFRA-CI-OWNER` in [`BACKLOG.md`](./BACKLOG.md); background in [`DECISIONS.md`](./DECISIONS.md) `D-195`, layout in [`ENVIRONMENTS.md`](./ENVIRONMENTS.md). Do the steps **in this order**: each merge assumes the settings before it.
@@ -367,7 +431,7 @@ Regenerate `database.types.ts` after applying (or merge the manually added table
 
 ## Edge Functions — CI deploy + prod smoke (2026-05-12)
 
-**Workflow:** the Edge Functions stage of **Deploy** (`.github/workflows/deploy-functions.yml`), after the database stage, for every `dev` push that passes CI (kc-dev) and every approved `main` release (prod). It deploys every function in `supabase/functions` except `_shared` and the local-only `mock-login`; the deploy smoke then sends `OPTIONS` to each and fails on a 5xx or 404. No push or manual trigger of its own — dispatch **Deploy** on `dev` to redeploy kc-dev.
+**Workflow:** the Edge Functions stage of **Deploy** (`.github/workflows/deploy-functions.yml`), after the database stage, for every `dev` push that passes CI (kc-dev) and every approved `main` release (prod). It deploys every function in `supabase/functions` except `_shared`, the local-only `mock-login` and the `whatsapp-*` functions (`NOT_DEPLOYED` in `scripts/edge-functions.mjs`; the pipeline never deletes a function, so one already deployed stays at its last version); the deploy smoke then sends `OPTIONS` to each and fails on a 5xx or 404. No push or manual trigger of its own — dispatch **Deploy** on `dev` to redeploy kc-dev.
 
 **GitHub:** Repository → Settings → Environments → `supabase-prod` / `supabase-dev` must expose the same secrets as DB deploy:
 

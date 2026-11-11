@@ -144,7 +144,7 @@ export class FollowFakeUserRepository implements IUserRepository {
   create = N('create') as IUserRepository['create'];
   update = N('update') as IUserRepository['update'];
   delete = N('delete') as IUserRepository['delete'];
-  deleteAccountViaEdgeFunction = N('deleteAccountViaEdgeFunction') as IUserRepository['deleteAccountViaEdgeFunction'];
+  requestAccountDeletion = N('requestAccountDeletion') as IUserRepository['requestAccountDeletion'];
   findByAuthIdentity = N('findByAuthIdentity') as IUserRepository['findByAuthIdentity'];
   createAuthIdentity = N('createAuthIdentity') as IUserRepository['createAuthIdentity'];
   updateNotificationPreferences = N('updateNotificationPreferences') as IUserRepository['updateNotificationPreferences'];
@@ -153,7 +153,6 @@ export class FollowFakeUserRepository implements IUserRepository {
 export function makeUser(overrides: Partial<User> = {}): User {
   return {
     userId: 'u_test',
-    authProvider: 'email',
     shareHandle: 'tester',
     displayName: 'Tester',
     city: 'tlv',

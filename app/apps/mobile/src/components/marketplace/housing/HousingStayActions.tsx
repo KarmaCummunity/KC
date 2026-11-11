@@ -16,7 +16,12 @@ export function HousingStayActions({ detail, hideOwnerAssign = false }: Props) {
   const userId = useAuthStore((s) => s.session?.userId ?? null);
   if (detail.worldSlug !== 'housing' || detail.direction !== 'give' || !userId) return null;
   return userId === detail.ownerId ? (
-    <HousingHostPanel listingId={detail.listingId} cityId={detail.cityId} hideOwnerAssign={hideOwnerAssign} />
+    <HousingHostPanel
+      listingId={detail.listingId}
+      cityId={detail.cityId}
+      listingStatus={detail.listingStatus ?? ''}
+      hideOwnerAssign={hideOwnerAssign}
+    />
   ) : (
     <HousingGuestPanel listingId={detail.listingId} terms={housingOfferTerms(detail.details)} />
   );

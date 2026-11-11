@@ -29,6 +29,8 @@ vi.mock('@expo/vector-icons', () => ({
   Ionicons: ({ name, color }: { name: string; color?: string }) => <span data-testid={`icon-${name}`} data-color={color} />,
 }));
 vi.mock('expo-router', () => ({ useRouter: () => ({ back: vi.fn(), push: vi.fn(), replace: vi.fn() }) }));
+// Email flows visible: the launch-surface gate renders its children (see config/launchSurfaces.ts).
+vi.mock('../../../hooks/useLaunchSurface', () => ({ useLaunchSurface: () => true }));
 vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 vi.mock('../../../hooks/useModalHardwareBack', () => ({ useModalHardwareBack: () => {} }));
 vi.mock('../../ui/AmbientBlobs', () => ({ AmbientBlobs: () => null }));
@@ -85,6 +87,16 @@ describe('social sign-in block', () => {
     const probe = document.createElement('span');
     probe.style.color = getByTestId('icon-logo-apple').getAttribute('data-color') ?? '';
     expect(probe.style.color).toBe(ink);
+  });
+});
+
+describe('social sign-in spacing', () => {
+  it('separates the Apple and Google buttons with a gap', () => {
+    Platform.OS = 'ios';
+    const { getByText } = renderInTheme(<AuthSocialSignInBlock />);
+    const stack = getByText('auth.continueWithApple').parentElement?.parentElement as HTMLElement;
+    expect(getByText('auth.continueWithGoogle').parentElement?.parentElement).toBe(stack);
+    expect(getComputedStyle(stack).gap).toMatch(/^[1-9]\d*px/);
   });
 });
 

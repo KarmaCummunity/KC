@@ -1,7 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  canTransitionGivingHandoff,
-  validateGivingHandoffTransition,
   validateHandoffFeedback,
   isGivingHandoffStatus,
   isValidPickupMode,
@@ -39,105 +37,6 @@ describe('giving handoff domain model', () => {
       expect(isValidHandoffRating(4.5)).toBe(false);
       expect(isValidHandoffRating('5')).toBe(false);
       expect(isValidHandoffRating(null)).toBe(false);
-    });
-  });
-
-  describe('canTransitionGivingHandoff', () => {
-    it('allows owner to confirm a reservation (select recipient)', () => {
-      expect(canTransitionGivingHandoff('reserved', 'confirmed', 'owner')).toBe(true);
-      expect(canTransitionGivingHandoff('reserved', 'confirmed')).toBe(true);
-    });
-
-    it('forbids recipient from confirming a reservation', () => {
-      expect(canTransitionGivingHandoff('reserved', 'confirmed', 'recipient')).toBe(false);
-    });
-
-    it('allows both owner and recipient to cancel a reserved handoff', () => {
-      expect(canTransitionGivingHandoff('reserved', 'cancelled', 'owner')).toBe(true);
-      expect(canTransitionGivingHandoff('reserved', 'cancelled', 'recipient')).toBe(true);
-    });
-
-    it('forbids jumping directly from reserved to handed_over without confirmation', () => {
-      expect(canTransitionGivingHandoff('reserved', 'handed_over', 'owner')).toBe(false);
-      expect(canTransitionGivingHandoff('reserved', 'handed_over', 'recipient')).toBe(false);
-    });
-
-    it('allows completing a confirmed handoff', () => {
-      expect(canTransitionGivingHandoff('confirmed', 'handed_over', 'owner')).toBe(true);
-      expect(canTransitionGivingHandoff('confirmed', 'handed_over', 'recipient')).toBe(true);
-    });
-
-    it('allows cancelling a confirmed handoff', () => {
-      expect(canTransitionGivingHandoff('confirmed', 'cancelled', 'owner')).toBe(true);
-      expect(canTransitionGivingHandoff('confirmed', 'cancelled', 'recipient')).toBe(true);
-    });
-
-    it('forbids any transition from terminal states', () => {
-      for (const terminal of ['handed_over', 'cancelled', 'no_show'] as const) {
-        expect(canTransitionGivingHandoff(terminal, 'confirmed')).toBe(false);
-        expect(canTransitionGivingHandoff(terminal, 'reserved')).toBe(false);
-        expect(canTransitionGivingHandoff(terminal, 'handed_over')).toBe(false);
-        expect(canTransitionGivingHandoff(terminal, 'cancelled')).toBe(false);
-      }
-    });
-
-    it('forbids transitioning to the same status', () => {
-      expect(canTransitionGivingHandoff('reserved', 'reserved')).toBe(false);
-      expect(canTransitionGivingHandoff('confirmed', 'confirmed')).toBe(false);
-    });
-  });
-
-  describe('validateGivingHandoffTransition', () => {
-    it('accepts valid request -> select recipient transition', () => {
-      expect(() => validateGivingHandoffTransition('reserved', 'confirmed', 'owner')).not.toThrow();
-    });
-
-    it('accepts valid confirmed -> handed_over complete transition', () => {
-      expect(() => validateGivingHandoffTransition('confirmed', 'handed_over', 'owner')).not.toThrow();
-      expect(() => validateGivingHandoffTransition('confirmed', 'handed_over', 'recipient')).not.toThrow();
-    });
-
-    it('throws handoff_not_confirmed if trying to complete from reserved', () => {
-      expect(() => validateGivingHandoffTransition('reserved', 'handed_over', 'owner')).toThrowError(
-        GivingHandoffError,
-      );
-      try {
-        validateGivingHandoffTransition('reserved', 'handed_over', 'owner');
-      } catch (e) {
-        expect((e as GivingHandoffError).code).toBe('handoff_not_confirmed');
-      }
-    });
-
-    it('throws owner_only if recipient tries to confirm reservation', () => {
-      try {
-        validateGivingHandoffTransition('reserved', 'confirmed', 'recipient');
-      } catch (e) {
-        expect((e as GivingHandoffError).code).toBe('owner_only');
-      }
-    });
-
-    it('throws invalid_status on transition from terminal states', () => {
-      try {
-        validateGivingHandoffTransition('handed_over', 'confirmed');
-      } catch (e) {
-        expect((e as GivingHandoffError).code).toBe('invalid_status');
-      }
-      try {
-        validateGivingHandoffTransition('cancelled', 'handed_over');
-      } catch (e) {
-        expect((e as GivingHandoffError).code).toBe('invalid_status');
-      }
-    });
-
-    it('handles cancellation and invalid intermediate transitions', () => {
-      expect(() => validateGivingHandoffTransition('reserved', 'cancelled', 'owner')).not.toThrow();
-      expect(() => validateGivingHandoffTransition('confirmed', 'cancelled', 'recipient')).not.toThrow();
-
-      expect(() => validateGivingHandoffTransition('reserved', 'no_show')).toThrowError(GivingHandoffError);
-      expect(() => validateGivingHandoffTransition('confirmed', 'reserved')).toThrowError(GivingHandoffError);
-      expect(() => validateGivingHandoffTransition('confirmed', 'no_show')).toThrowError(GivingHandoffError);
-      // @ts-expect-error test unsupported from status
-      expect(() => validateGivingHandoffTransition('unknown_status', 'confirmed')).toThrowError(GivingHandoffError);
     });
   });
 

@@ -40,21 +40,19 @@ import { SoftGateProvider } from '../src/components/OnboardingSoftGate';
 import { AuthGate } from '../src/components/AuthGate';
 import { useDetailStackScreenOptions } from '../src/navigation/detailStackScreenOptions';
 import { rootStackGestureEnabled, rootStackScreenAnimation } from '../src/navigation/rootStackAnimation';
-import { ConfigErrorScreen } from '../src/components/ConfigErrorScreen';
+import { ConfigGate } from '../src/components/ConfigGate';
 import { isSupabaseConfigured } from '../src/lib/supabasePublicConfig';
 import { DevBanner } from '../src/components/DevBanner';
 import { SuspensionBanner } from '../src/components/SuspensionBanner';
 import { LegalConsentGate } from '../src/components/legal/LegalConsentGate';
 import { ModalStackProvider } from '../src/components/legal/useActiveModalStack';
-import { useMeRealtime } from '../src/hooks/useMeRealtime';
 import { useBrandFonts } from '../src/lib/useBrandFonts';
 import { useOnlinePresenceLifecycle } from '../src/hooks/useOnlinePresence';
 import { useCoreLoopReturnVisit } from '../src/hooks/useCoreLoopReturnVisit';
 import { useRecordActiveDay } from '../src/hooks/useRecordActiveDay';
 import * as NavigationBar from 'expo-navigation-bar';
 
-function MeRealtimeMount() {
-  useMeRealtime();
+function SignedInLifecycleMount() {
   useOnlinePresenceLifecycle();
   useCoreLoopReturnVisit();
   useRecordActiveDay();
@@ -74,7 +72,14 @@ function ThemedRootShell() {
 
   React.useEffect(() => {
     // expo-navigation-bar on SDK 54 is imperative and Android-only (KC#1276).
-    if (Platform.OS === 'android') NavigationBar.setStyle(isDark ? 'dark' : 'light');
+    if (Platform.OS !== 'android') return;
+    // Edge-to-edge (targetSdk 36) can reject this on some devices; a thrown
+    // call here is an uncaught startup error, so the shell must survive it.
+    try {
+      void Promise.resolve(NavigationBar.setStyle(isDark ? 'dark' : 'light')).catch(() => undefined);
+    } catch {
+      /* navigation bar contrast is cosmetic */
+    }
   }, [isDark]);
 
   React.useEffect(() => {
@@ -199,7 +204,7 @@ function RootLayoutContent() {
       <SafeAreaProvider>
         <ErrorBoundary>
           <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
-            <MeRealtimeMount />
+            <SignedInLifecycleMount />
             <RevenueCatSync />
             <AppThemeProvider>
               {/* KC#1410: a fatal uncaught JS error shows the themed fallback;
@@ -221,15 +226,9 @@ export default function RootLayout() {
   if (brandFontStatus === 'loading') return null;
   return (
     <BrandFontProvider available={brandFontStatus === 'loaded'}>
-      {isSupabaseConfigured() ? (
+      <ConfigGate configured={isSupabaseConfigured()}>
         <RootLayoutContent />
-      ) : (
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <SafeAreaProvider>
-            <ConfigErrorScreen />
-          </SafeAreaProvider>
-        </GestureHandlerRootView>
-      )}
+      </ConfigGate>
     </BrandFontProvider>
   );
 }

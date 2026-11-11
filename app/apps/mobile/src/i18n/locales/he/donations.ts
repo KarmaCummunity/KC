@@ -19,6 +19,7 @@ export const donations = {
   hubHeroTitle: 'לתת. לקבל. לתרום מה שיש לך.',
   hubHeroSubtitle: 'לבחור תחום שמדבר אלינו ולהפוך אותו לפעולה.',
   hubCategoriesSectionTitle: 'עולמות התרומה',
+  worldLinksNav: 'קישורי הקהילה',
   worldLaunch,
   worldFeed,
   items: { title: 'חפצים', subtitle: 'תרומה ובקשת חפצים' },

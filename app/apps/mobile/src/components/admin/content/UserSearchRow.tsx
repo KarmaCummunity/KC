@@ -17,6 +17,7 @@ import {
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { Chip } from '../../ui/Chip';
 import { useAdminRoles } from '../../../hooks/useAdminRoles';
+import { useCityName } from '../../../hooks/useCityName';
 import { BanUserModal } from '../../profile/BanUserModal';
 import { rowDirectionStart, textAlignStart } from '../../../lib/rtlLayout';
 import { useLocaleBundle, type LocaleBundle } from '../../../i18n/useLocaleBundle';
@@ -28,20 +29,23 @@ export interface UserSearchRowProps {
 function statusTone(status: string): 'success' | 'warning' | 'error' | 'muted' {
   if (status === 'active') return 'success';
   if (status === 'pending_verification') return 'warning';
-  if (status === 'banned' || status === 'deleted') return 'error';
+  if (status === 'banned') return 'error';
+  if (status === 'pending_deletion') return 'warning';
   return 'muted';
 }
 
-// Banning is permanent in MVP (FR-ADMIN-004 AC3) — only offer it to users who
-// aren't already banned / deleted; deleted accounts are immutable.
+// Banning is permanent in MVP (FR-ADMIN-004 AC3): offered to an account that is not banned yet
+// and not leaving — `admin_ban_user` refuses an account under deletion (0696).
 function canShowBanButton(status: string): boolean {
-  return status !== 'banned' && status !== 'deleted';
+  return status !== 'banned' && status !== 'pending_deletion';
 }
 
 function UserSearchRowInner({ row }: UserSearchRowProps) {
   const styles = useStyles();
   const L = useLocaleBundle();
   const tone = statusTone(row.accountStatus);
+  // The search returns the city id; its name comes from the cached city list.
+  const cityName = useCityName(row.cityId);
   const { roles } = useAdminRoles();
   const can = (perm: AdminPermission) => hasPermission(roles as readonly AdminRole[], perm);
   const showBan = can('reports.permanent_ban') && canShowBanButton(row.accountStatus);
@@ -63,7 +67,7 @@ function UserSearchRowInner({ row }: UserSearchRowProps) {
             {row.displayName ?? L.admin.admins.row.unnamed}
           </Text>
           {row.shareHandle && <Text style={styles.handle} numberOfLines={1}>@{row.shareHandle}</Text>}
-          {row.cityName && <Text style={styles.meta} numberOfLines={1}>{row.cityName}</Text>}
+          {cityName && <Text style={styles.meta} numberOfLines={1}>{cityName}</Text>}
         </View>
         <Chip
           variant="tag"

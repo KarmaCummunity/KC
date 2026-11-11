@@ -25,14 +25,16 @@ export function CaseReporterList({ reporters }: CaseReporterListProps) {
   return (
     <View style={styles.list}>
       {reporters.map((r) => {
-        const fallback = r.reporterId.slice(0, 8);
+        // A purged reporter account has no id left (the report stays); there is no profile to open.
+        const fallback = r.reporterId?.slice(0, 8) ?? '—';
         const label = r.reporterName ?? fallback;
         return (
           <Pressable
             key={r.reportId}
             accessibilityRole="button"
             accessibilityLabel={L.admin.caseDetail.openReporter(label)}
-            onPress={() => router.push(`/user/${r.reporterId}`)}
+            disabled={r.reporterId === null}
+            onPress={() => { if (r.reporterId) router.push(`/user/${r.reporterId}`); }}
             style={styles.item}
           >
             <View style={styles.head}>

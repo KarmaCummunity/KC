@@ -23,7 +23,7 @@ interface VisibleWhen {
 }
 
 interface BaseSpec {
-  /** Detail key inside `listings.details` (must exist in the kind's detail schema). */
+  /** Detail key of the listing's `details` document (when the kind declares a schema, it must list the key). */
   readonly key: string;
   readonly required?: boolean;
   readonly visibleWhen?: VisibleWhen;
@@ -44,21 +44,23 @@ export type ListingFieldSpec =
   | (BaseSpec & { readonly type: 'integer'; readonly min: number; readonly max: number })
   | (BaseSpec & { readonly type: 'text'; readonly multiline?: boolean; readonly maxLength: number })
   | (BaseSpec & { readonly type: 'toggle'; readonly defaultValue?: boolean })
+  // Bookable time slots of a knowledge lesson or consulting hour (#2034): `[{starts_at, ends_at}]`.
+  | (BaseSpec & { readonly type: 'slotList'; readonly maxSlots: number })
   // A detail the form sets without a control (no editor for it yet); seeded from `defaultValue`.
   | (BaseSpec & { readonly type: 'fixed'; readonly defaultValue: unknown });
 
 const DURATIONS_MIN: readonly number[] = [30, 60, 120, 180, 240];
 
-/** Field sets keyed by listing kind slug (`listing_kinds.slug`). Order = render order. */
+/** Field sets keyed by post kind slug (`post_kinds.slug`). Order = render order. */
 const SPECS_BY_KIND: Readonly<Record<string, readonly ListingFieldSpec[]>> = {
-  give_food: [
-    { key: 'food_type', type: 'choice', required: true, options: ['cooked', 'packaged', 'fresh', 'frozen', 'dry', 'beverage'] },
+  food_offer: [
+    // No `food_type`: the food world's sub-category picker is the food type (D137, KC#1398).
     { key: 'expires_at', type: 'dateTime', required: true },
     { key: 'allergens', type: 'multiChoice', options: ['gluten', 'milk', 'eggs', 'nuts', 'peanuts', 'soy', 'fish', 'sesame'] },
     { key: 'kosher', type: 'choice', options: ['yes', 'no'] },
     { key: 'pickup_mode', type: 'choice', options: ['pickup', 'delivery', 'either'], defaultValue: 'pickup' },
   ],
-  request_food: [
+  food_request: [
     { key: 'household_size', type: 'count', min: 1, max: 12, defaultValue: 1 },
     { key: 'dietary_needs', type: 'text', maxLength: 200 },
   ],
@@ -78,7 +80,7 @@ const SPECS_BY_KIND: Readonly<Record<string, readonly ListingFieldSpec[]>> = {
   ...HOUSING_FIELD_SPECS,
   ...KNOWLEDGE_FIELD_SPECS,
   ...ANIMALS_FIELD_SPECS,
-  volunteer_shift: [{ key: 'duration_minutes', type: 'duration', options: DURATIONS_MIN, defaultValue: 60 }],
+  volunteer_offer: [{ key: 'duration_minutes', type: 'duration', options: DURATIONS_MIN, defaultValue: 60 }],
   // An organization's event (G1 step 5, 0563). The organization (`org_id`) has its own picker
   // (OrganizationPicker), so it is not a field here; the window rule is checked on publish.
   [ORG_EVENT_KIND_SLUG]: [
@@ -89,7 +91,7 @@ const SPECS_BY_KIND: Readonly<Record<string, readonly ListingFieldSpec[]>> = {
     { key: 'address', type: 'text', maxLength: 160 },
   ],
   // Emotional support is routed to a hotline, never a member post (docs/spec/05 §5.4).
-  support_request: [
+  volunteer_request: [
     { key: 'support_type', type: 'choice', required: true, options: ['companionship', 'practical', 'escort'] },
     { key: 'duration_minutes', type: 'duration', options: DURATIONS_MIN, defaultValue: 60 },
   ],
@@ -140,9 +142,11 @@ function narrowOptions(spec: ListingFieldSpec, prop: SchemaProperty): ListingFie
  */
 export function fieldsForKind(kind: ListingKindOption): readonly ListingFieldSpec[] {
   const props = schemaProperties(kind);
-  return (SPECS_BY_KIND[kind.slug] ?? [])
-    .filter((spec) => spec.key in props)
-    .map((spec) => narrowOptions(spec, props[spec.key]!));
+  const specs = SPECS_BY_KIND[kind.slug] ?? [];
+  // The baseline kinds carry the default `{"type":"object"}` schema: the detail tables and the
+  // free `posts.details` document take what the form sends, so there is nothing to filter by.
+  if (Object.keys(props).length === 0) return specs;
+  return specs.filter((spec) => spec.key in props).map((spec) => narrowOptions(spec, props[spec.key]!));
 }
 
 /** Whether `spec` is shown for the current details (conditional fields). */
@@ -177,12 +181,17 @@ function isEmptyValue(v: unknown): boolean {
   return v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
 }
 
+/** A required toggle is a confirmation: only "on" fills it (the knowledge disclaimer, #2034). */
+function isMissing(spec: ListingFieldSpec, value: unknown): boolean {
+  return spec.type === 'toggle' ? value !== true : isEmptyValue(value);
+}
+
 /** First visible required field without a value, or null when every one is filled. */
 export function firstMissingRequiredField(
   specs: readonly ListingFieldSpec[],
   details: Readonly<Record<string, unknown>>,
 ): ListingFieldSpec | null {
-  return specs.find((s) => s.required && isFieldVisible(s, details) && isEmptyValue(details[s.key])) ?? null;
+  return specs.find((s) => s.required && isFieldVisible(s, details) && isMissing(s, details[s.key])) ?? null;
 }
 
 /**

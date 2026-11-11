@@ -134,9 +134,13 @@ export function PostMenuSheet({
               testID="post-menu-block-owner"
               onPress={() => {
                 onClose();
-                void block.toggle().then((changed) => {
-                  if (changed && router.canGoBack()) router.back();
-                });
+                // iOS drops a native Alert raised while this sheet is still animating closed
+                // (#2062), so the confirmation must wait for the dismissal to finish.
+                runAfterBottomSheetDismiss(() =>
+                  block.toggle().then((changed) => {
+                    if (changed && router.canGoBack()) router.back();
+                  }),
+                );
               }}
             />
           ) : null}

@@ -21,9 +21,21 @@ interface Props {
   readonly summary: string;
   readonly onSummaryChange: (v: string) => void;
   readonly onPublishActionChange: (action: (() => void) | null, loading: boolean) => void;
+  /** Republish (D127): the expired listing the listing form starts from; null for a blank form. */
+  readonly republishFromListingId?: string | null;
 }
 
-export function WorldCreateForm({ category, header, direction, title, onTitleChange, summary, onSummaryChange, onPublishActionChange }: Props) {
+export function WorldCreateForm({
+  category,
+  header,
+  direction,
+  title,
+  onTitleChange,
+  summary,
+  onSummaryChange,
+  onPublishActionChange,
+  republishFromListingId = null,
+}: Props) {
   const router = useRouter();
   // D60 — the challenges world only opens real challenges once launched; until then it takes links.
   const challengesLaunched = useLaunchWorldEnabled('world_challenges_enabled');
@@ -44,8 +56,10 @@ export function WorldCreateForm({ category, header, direction, title, onTitleCha
   if (category.engine === 'listing' && category.worldSlug) {
     const listing = (
       <ListingCreateForm
-        key={category.worldSlug}
+        // A republish source arriving later remounts a clean form for it.
+        key={`${category.worldSlug}:${republishFromListingId ?? ''}`}
         worldSlug={category.worldSlug}
+        republishFromListingId={republishFromListingId}
         header={header}
         direction={direction}
         title={title}

@@ -2,15 +2,21 @@ import { describe, expect, it } from 'vitest';
 import {
   MARKETPLACE_SERVER_ERROR_CODES,
   mapMarketplaceServerError,
+  offerRequiresPhoto,
   validateMarketplaceWorldRules,
 } from '../marketplaceWorldRules';
 
 const now = new Date('2026-10-17T00:00:00Z');
 
 describe('validateMarketplaceWorldRules — items', () => {
-  it('does not require a photo (photos are optional)', () => {
-    expect(validateMarketplaceWorldRules({ worldSlug: 'items', direction: 'give', details: {}, photoCount: 0 })).toBeNull();
-    expect(validateMarketplaceWorldRules({ worldSlug: 'items', direction: 'give', details: { image_url: '  ' }, photoCount: 0 })).toBeNull();
+  it('requires a photo on an offer (D132, KC#1937)', () => {
+    expect(validateMarketplaceWorldRules({ worldSlug: 'items', direction: 'give', details: {}, photoCount: 0 })).toBe(
+      'offer_photo_required',
+    );
+    // A blank details image is not a photo.
+    expect(validateMarketplaceWorldRules({ worldSlug: 'items', direction: 'give', details: { image_url: '  ' }, photoCount: 0 })).toBe(
+      'offer_photo_required',
+    );
   });
   it('passes with an attached photo or a details image', () => {
     expect(validateMarketplaceWorldRules({ worldSlug: 'items', direction: 'give', details: {}, photoCount: 1 })).toBeNull();
@@ -44,7 +50,7 @@ describe('validateMarketplaceWorldRules — food', () => {
         worldSlug: 'food',
         direction: 'give',
         details: { expires_at: '2026-10-18T12:00:00Z' },
-        photoCount: 0,
+        photoCount: 1,
         now,
       }),
     ).toBeNull();
@@ -74,7 +80,7 @@ describe('validateMarketplaceWorldRules — routed worlds', () => {
     expect(validateMarketplaceWorldRules({ worldSlug, direction: 'give', details: {}, photoCount: 0, externalBodyId: 'org-1' })).toBeNull();
   });
   it('animals are direct give and take: no external body needed (0612)', () => {
-    expect(validateMarketplaceWorldRules({ worldSlug: 'animals', direction: 'give', details: {}, photoCount: 0 })).toBeNull();
+    expect(validateMarketplaceWorldRules({ worldSlug: 'animals', direction: 'give', details: {}, photoCount: 1 })).toBeNull();
   });
   it('other worlds have no client rule', () => {
     expect(validateMarketplaceWorldRules({ worldSlug: 'knowledge', direction: 'give', details: {}, photoCount: 0 })).toBeNull();
@@ -145,5 +151,62 @@ describe('mapMarketplaceServerError', () => {
   });
   it('every code is unique', () => {
     expect(new Set(MARKETPLACE_SERVER_ERROR_CODES).size).toBe(MARKETPLACE_SERVER_ERROR_CODES.length);
+  });
+});
+
+// D132 (KC#1937): an offer in items, food, housing or animals needs a photo.
+describe('validateMarketplaceWorldRules — offer photo', () => {
+  const future = { expires_at: '2026-10-18T12:00:00Z' };
+  it.each(['items', 'food', 'housing', 'animals'])('a %s offer without a photo is refused', (worldSlug) => {
+    expect(validateMarketplaceWorldRules({ worldSlug, direction: 'give', details: future, photoCount: 0, now })).toBe(
+      'offer_photo_required',
+    );
+  });
+  it.each(['items', 'food', 'housing', 'animals'])('a %s offer with one photo passes', (worldSlug) => {
+    expect(validateMarketplaceWorldRules({ worldSlug, direction: 'give', details: future, photoCount: 1, now })).toBeNull();
+  });
+  it.each(['items', 'food', 'housing', 'animals'])('a %s request never needs a photo', (worldSlug) => {
+    expect(validateMarketplaceWorldRules({ worldSlug, direction: 'request', details: {}, photoCount: 0, now })).toBeNull();
+  });
+  it('a ride offer keeps photos optional', () => {
+    expect(offerRequiresPhoto('rides', 'give')).toBe(false);
+  });
+  it('a listing edit (photo count unknown) skips the rule', () => {
+    expect(validateMarketplaceWorldRules({ worldSlug: 'housing', direction: 'give', details: {}, now })).toBeNull();
+  });
+  it('reports a field-specific problem before the missing photo', () => {
+    expect(validateMarketplaceWorldRules({ worldSlug: 'food', direction: 'give', details: {}, photoCount: 0, now })).toBe(
+      'food_expiry_required',
+    );
+  });
+  it('maps the server code to itself', () => {
+    expect(mapMarketplaceServerError({ message: 'offer_photo_required' })).toBe('offer_photo_required');
+  });
+});
+
+// D137 (KC#1398): a food offer's type is its world sub-category.
+describe('validateMarketplaceWorldRules — food sub-category', () => {
+  const future = { expires_at: '2026-10-18T12:00:00Z' };
+  it('refuses a food offer with no sub-category', () => {
+    expect(
+      validateMarketplaceWorldRules({ worldSlug: 'food', direction: 'give', details: future, photoCount: 1, subcategoryId: null, now }),
+    ).toBe('food_subcategory_required');
+  });
+  it('passes a food offer with a sub-category', () => {
+    expect(
+      validateMarketplaceWorldRules({ worldSlug: 'food', direction: 'give', details: future, photoCount: 1, subcategoryId: 'cat-1', now }),
+    ).toBeNull();
+  });
+  it('never asks a food request or another world for a sub-category', () => {
+    expect(validateMarketplaceWorldRules({ worldSlug: 'food', direction: 'request', details: {}, subcategoryId: null, now })).toBeNull();
+    expect(validateMarketplaceWorldRules({ worldSlug: 'items', direction: 'give', details: {}, photoCount: 1, subcategoryId: null, now })).toBeNull();
+  });
+  it('skips the rule when the caller passes no sub-category (a listing edit)', () => {
+    expect(validateMarketplaceWorldRules({ worldSlug: 'food', direction: 'give', details: future, photoCount: 1, now })).toBeNull();
+  });
+  it('reports the missing expiry before the missing sub-category', () => {
+    expect(
+      validateMarketplaceWorldRules({ worldSlug: 'food', direction: 'give', details: {}, photoCount: 1, subcategoryId: null, now }),
+    ).toBe('food_expiry_required');
   });
 });

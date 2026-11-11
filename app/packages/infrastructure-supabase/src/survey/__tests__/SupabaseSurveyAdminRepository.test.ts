@@ -4,7 +4,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../../database.types';
+import type { Database } from '../../database.legacy.types';
 import { SupabaseSurveyAdminRepository } from '../SupabaseSurveyAdminRepository';
 
 type RpcOverrides = Record<string, { data: unknown; error: { message: string } | null }>;
