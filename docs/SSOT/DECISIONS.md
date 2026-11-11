@@ -1910,6 +1910,8 @@ Owner rules that go with it:
 
 **Rejected.** A compile-time `__DEV__` check (it is false in preview builds that run against kc-dev). Removing the routes (the review account would have no way in). Gating `/sign-in` too (same). A separate remote-config service (`app_flags` already exists and is owner-writable).
 
+**Update (2026-11-11, #2148).** Since the D-228 baseline `public.app_flags` is readable by signed-in members only, so the remote row of a launch surface applies after sign-in; on the welcome screen the build override and the environment default decide. All flag reads (`useFeatureFlag`, `useLaunchSurface`, `useLaunchWorldFlags`) go through one hook, `useAppFlags`, which waits for a signed-in member, is keyed by that member, and treats a failed read as "not loaded" (compiled defaults) instead of caching it as "no flags". Before, the welcome screen's denied read stayed cached for five minutes and a member who had just signed in saw rides, a launch world, as a portal.
+
 **Affected.** `app/apps/mobile/src/config/launchSurfaces.ts`, `src/hooks/useLaunchSurface.ts`, `src/components/LaunchSurfaceGate.tsx`, `app/(auth)/{index,sign-in,sign-up,forgot-password}.tsx`, `app/auth/{verify,reset-password}.tsx`, `app/settings.tsx`, `app/settings/whatsapp.tsx`, `app/(admin)/whatsapp/index.tsx` (screen moved to `src/screens/admin/WhatsAppAdminScreen.tsx`), `src/components/admin/AdminNav.tsx`, `src/services/purchases/RevenueCatSync.tsx`; FR-AUTH-001 AC2 (the welcome email link is now environment-dependent).
 
 ## D-232 — Knowledge listings need a verified user, not moderator approval (2026-11-09)

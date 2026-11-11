@@ -62,11 +62,13 @@ tags: [posts, organizations, time]
           direction: DOWN
           timeout: 10000
       # Publishing without a window is refused in the form, before any server call.
+      # The publish button ends the form, where the floating tab bar can cover it.
       - scrollUntilVisible:
           element:
             id: listing-publish
           direction: DOWN
           timeout: 10000
+          centerElement: true
       - tapOn:
           id: listing-publish
       - assertVisible:

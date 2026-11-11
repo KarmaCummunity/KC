@@ -182,7 +182,7 @@
   {
    "kind": "table",
    "file": "app/apps/mobile/src/services/featureFlagsComposition.ts",
-   "line": 9,
+   "line": 12,
    "area": "mobile",
    "symbol": "fetchRemoteFeatureFlags",
    "via": "literal",
