@@ -135,7 +135,8 @@ Last applied on kc-dev when this was written: `0239`.
 | 0703–0714 | knowledge exchange posts, epic #1687 (KNOW-K1-B): `0703` six kinds, slots as rows, slot rules and sync (#2034), `0704` slot bookings, sweeps, pushes (#2034), `0705–0714` children #2035–#2039 | in progress |
 | 0715 | RLS auth initplan on the hot-table policies, all but posts (supersedes closed #1546, PR #2054) | in progress |
 | 0740 | delivered listing visibility: union of the two surfaces, recipient via handoff, `recipients` row for food / animals / items hand-overs + backfill (D-229) | in progress |
-| 0726+ | — | free |
+| 0741 | #2020 offer photo rule on the server (D132): commit-time check on new posts and deleted listing photos, `create_post_with_media` | in progress |
+| 0726+ | — | free (0734, 0740, 0741 taken) |
 
 ## Next free ranges
 
