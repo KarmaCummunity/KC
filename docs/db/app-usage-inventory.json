@@ -907,7 +907,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/chat/getMyChats.ts",
-   "line": 72,
+   "line": 73,
    "area": "chat",
    "symbol": "getMyChats",
    "via": "literal",
