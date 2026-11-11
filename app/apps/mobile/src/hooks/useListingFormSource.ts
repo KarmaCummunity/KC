@@ -52,7 +52,7 @@ export function useListingFormSource({
   const [seedVersion, setSeedVersion] = useState(0);
   // The source's photos a republish reuses; the member may remove them like picked ones.
   const [carriedMediaPaths, setCarriedMediaPaths] = useState<string[]>([]);
-  const { setWantsOrgEvent, setOrgId } = eventChoice;
+  const { setWantsOrgEvent, setWantsPersonalEvent, setOrgId } = eventChoice;
   const kindSlug = kind?.slug ?? null;
 
   // A new kind (direction switch) starts from its own defaults. The ride route and schedule are
@@ -86,12 +86,14 @@ export function useListingFormSource({
       return;
     }
     const seed = listingRepublishSeed(detail);
-    if (seed.isOrgEvent) setWantsOrgEvent(true);
+    // An event republishes as what it was: an organization's, or the member's own.
+    if (seed.isOrgEvent && seed.orgId) setWantsOrgEvent(true);
+    else if (seed.isOrgEvent) setWantsPersonalEvent(true);
     if (seed.orgId) setOrgId(seed.orgId);
     setCarriedMediaPaths(seed.mediaPaths);
     pendingSeed.current = seed;
     setSeedVersion((v) => v + 1);
-  }, [sourceId, editListingId, sourceQuery.data, setCity, setChosenKindSlug, setDetails, setError, setWantsOrgEvent, setOrgId]);
+  }, [sourceId, editListingId, sourceQuery.data, setCity, setChosenKindSlug, setDetails, setError, setWantsOrgEvent, setWantsPersonalEvent, setOrgId]);
 
   return {
     /** The source is still loading; the form shows a spinner and cannot publish yet. */

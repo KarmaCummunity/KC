@@ -1,27 +1,29 @@
-// FR-POST-024 — "My recurring events": every series the member runs, with pause / resume, a
+// FR-POST-024 — "My recurring events", in the time world's menu: every series the member runs
+// (their own regular volunteering or an organization's event), with pause / resume, a
 // change of times, cancelling one date and ending the series. The server keeps the dates in
 // step: a pause drops the upcoming dates nobody registered for, an end cancels them all and
 // tells each registrant.
 import React, { useState } from 'react';
 import { Alert, ScrollView } from 'react-native';
-import { Stack } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
-import { Screen } from '../../../src/components/ui';
-import { PostSeriesRow } from '../../../src/components/series/PostSeriesRow';
-import { useShellStackScreenOptions } from '../../../src/navigation/shellStackScreenOptions';
-import { MY_POST_SERIES_QUERY_KEY, postSeriesUseCases } from '../../../src/services/postSeriesComposition';
-import { postSeriesErrorKey } from '../../../src/lib/postSeriesError';
-import { hapticSuccess } from '../../../src/lib/haptics';
-import { webTextRtl } from '../../../src/lib/webRtlStyle';
-export { RouteErrorBoundary as ErrorBoundary } from '../../../src/components/RouteErrorBoundary';
+import { Screen } from '../../../../src/components/ui';
+import { WorldSubScreenChrome } from '../../../../src/components/giving/useWorldHeader';
+import { PostSeriesRow } from '../../../../src/components/series/PostSeriesRow';
+import { MY_POST_SERIES_QUERY_KEY, postSeriesUseCases } from '../../../../src/services/postSeriesComposition';
+import { postSeriesErrorKey } from '../../../../src/lib/postSeriesError';
+import { hapticSuccess } from '../../../../src/lib/haptics';
+import { useShellTabBarScrollInset } from '../../../../src/navigation/useShellTabBarVisibility';
+import { webTextRtl } from '../../../../src/lib/webRtlStyle';
+export { RouteErrorBoundary as ErrorBoundary } from '../../../../src/components/RouteErrorBoundary';
 
 export default function MyPostSeriesScreen() {
-  const shellStackScreenOptions = useShellStackScreenOptions();
   const { t } = useTranslation();
   const styles = useStyles();
   const queryClient = useQueryClient();
+  // Keeps the last row clear of the floating tab bar.
+  const inset = useShellTabBarScrollInset();
   const [busy, setBusy] = useState(false);
   const series = useQuery({ queryKey: MY_POST_SERIES_QUERY_KEY, queryFn: () => postSeriesUseCases.listMine().execute() });
   const list = series.data ?? [];
@@ -49,9 +51,9 @@ export default function MyPostSeriesScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ ...shellStackScreenOptions, headerTitle: t('postSeries.mine') }} />
-      <Screen>
-        <ScrollView contentContainerStyle={styles.list} testID="post-series-list">
+      <WorldSubScreenChrome worldSlug="time" activeScreenTestId="world-hub-post-series" />
+      <Screen blobs="off" hasNativeHeader>
+        <ScrollView contentContainerStyle={[styles.list, { paddingBottom: inset }]} testID="post-series-list">
           <Text style={[styles.intro, webTextRtl]}>{t('postSeries.intro')}</Text>
           {list.map((item) => <PostSeriesRow key={item.id} series={item} busy={busy} run={run} />)}
           {!series.isLoading && list.length === 0 ? (

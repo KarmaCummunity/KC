@@ -146,7 +146,7 @@ export function ListingCreateForm({
           onRetry={() => void form.kindsQuery.refetch()}
         >
           {/* Several kinds in this direction (animals, knowledge): the member says which one. */}
-          {form.eventChoice.isOrgEvent ? null : (
+          {form.eventChoice.isEvent ? null : (
             <ListingKindChooser
               choices={form.kindChoices}
               selectedKindId={form.kind?.kindId ?? null}
@@ -157,7 +157,7 @@ export function ListingCreateForm({
 
           {/* A member of an organization picks a volunteer shift or the organization's event (G1 step 5);
               anyone else is told how to become one (FR-ORG-002). */}
-          {form.eventChoice.available ? <TimeOfferKindChooser choice={form.eventChoice} disabled={form.busy} /> : null}
+          {form.eventChoice.personalAvailable ? <TimeOfferKindChooser choice={form.eventChoice} disabled={form.busy} /> : null}
           {form.eventChoice.suggestMembership ? <OrgEventMembershipHint /> : null}
 
           {form.isRides ? null : photoPicker}

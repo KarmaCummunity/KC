@@ -67,6 +67,7 @@ describe('housing and time world screens', () => {
       '/(tabs)/donations/marketplace/my-listings',
       '/(tabs)/donations/time/my-shifts',
       '/(tabs)/donations/time/organizer',
+      '/(tabs)/donations/time/series',
       '/(tabs)/donations/time/support',
       '/(tabs)/donations/time/links',
     ]);

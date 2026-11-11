@@ -56,7 +56,7 @@ export default function MyOrganizationsScreen() {
             testID="my-organizations-series"
             icon="repeat-outline"
             label={t('postSeries.mine')}
-            onPress={() => router.push('/settings/organizations/series')}
+            onPress={() => router.push('/(tabs)/donations/time/series')}
           />
           {canRegister ? (
             <PrimaryButton

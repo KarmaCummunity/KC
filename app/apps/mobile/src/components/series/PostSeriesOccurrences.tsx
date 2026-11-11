@@ -62,7 +62,7 @@ export function PostSeriesOccurrences({ listingId, details, isOwner }: Props) {
           size="md"
           icon="repeat-outline"
           label={t('postSeries.manage')}
-          onPress={() => router.push('/settings/organizations/series')}
+          onPress={() => router.push('/(tabs)/donations/time/series')}
         />
       ) : null}
     </View>

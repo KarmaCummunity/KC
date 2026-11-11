@@ -9,7 +9,7 @@ export const postSeries = {
   manage: 'Manage the recurring event',
   mine: 'My recurring events',
   intro: 'Each recurring event publishes a date per week, a month ahead. Pause it, change its times, cancel a date or end it here.',
-  empty: 'You have no recurring event yet. In the organization event form, switch on "Recurring event" and pick days.',
+  empty: 'You have no recurring event yet. When you publish volunteering with sign-up or an organization event, switch on "Recurring event" and pick days.',
   error: 'We could not load your recurring events. Try again.',
   status: { paused: 'Paused' },
   pause: 'Pause',

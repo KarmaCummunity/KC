@@ -86,8 +86,8 @@ export function useListingCreateForm({
   const [chosenKindSlug, setChosenKindSlug] = useState<string | null>(null);
   const choices = useMemo(() => kindChoices(kindsQuery.data ?? [], direction), [kindsQuery.data, direction]);
   const kind = useMemo(
-    () => kindForCreate(kindsQuery.data ?? [], direction, eventChoice.isOrgEvent, chosenKindSlug),
-    [kindsQuery.data, direction, eventChoice.isOrgEvent, chosenKindSlug],
+    () => kindForCreate(kindsQuery.data ?? [], direction, eventChoice.isEvent, chosenKindSlug),
+    [kindsQuery.data, direction, eventChoice.isEvent, chosenKindSlug],
   );
   const specs = useMemo(() => (kind ? fieldsForKind(kind) : []), [kind]);
 
