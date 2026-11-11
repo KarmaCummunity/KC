@@ -51,6 +51,7 @@ import { surveyEn } from './modules/survey';
 import { researchEn } from './modules/research';
 import { adminEn } from './modules/admin';
 import { karmaEn } from './modules/karma';
+import { karmaEventsEn } from './modules/karmaEvents';
 import { cardsEn } from './modules/cards';
 import { asideEn } from './modules/aside';
 import { configEn } from './modules/config';
@@ -75,8 +76,8 @@ const en = {
   // Feed — see modules/feed.ts
   feed: feedEn,
 
-  // Karma points (FR-KARMA-004/007) — see modules/karma.ts
-  karma: karmaEn,
+  // Karma points (FR-KARMA-004/007) — see modules/karma.ts and modules/karmaEvents.ts
+  karma: { ...karmaEn, reason: { ...karmaEn.reason, ...karmaEventsEn } },
   cards: cardsEn,
 
   // Post — see modules/post.ts

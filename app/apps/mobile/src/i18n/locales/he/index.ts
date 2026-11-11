@@ -49,6 +49,7 @@ import { surveyHe } from './modules/survey';
 import { researchHe } from './modules/research';
 import { adminHe } from './modules/admin';
 import { karmaHe } from './modules/karma';
+import { karmaEventsHe } from './modules/karmaEvents';
 import { cardsHe } from './modules/cards';
 import { asideHe } from './modules/aside';
 import { configHe } from './modules/config';
@@ -73,8 +74,8 @@ const he = {
   // Feed — see modules/feed.ts
   feed: feedHe,
 
-  // Karma points (FR-KARMA-004/007) — see modules/karma.ts
-  karma: karmaHe,
+  // Karma points (FR-KARMA-004/007) — see modules/karma.ts and modules/karmaEvents.ts
+  karma: { ...karmaHe, reason: { ...karmaHe.reason, ...karmaEventsHe } },
   cards: cardsHe,
 
   // Post — see modules/post.ts
