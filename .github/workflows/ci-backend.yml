@@ -62,26 +62,29 @@ jobs:
         continue-on-error: true
         run: |
           DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')"
-          U="${DB_URL%/*}/probe_geo"
-          psql "$DB_URL" -X -qc "drop database if exists probe_geo with (force)" -c "create database probe_geo"
-          psql "$U" -X -v ON_ERROR_STOP=1 -q -f supabase/baseline/local/supabase_shim.sql
-          psql "$U" -X -v ON_ERROR_STOP=1 -q --single-transaction -f supabase/migrations/0001_baseline.sql
-          psql "$U" -X -q -c "create function public.zz_a(p text) returns table(a text) language plpgsql stable set search_path = '' as \$\$ begin return query select p; end \$\$" \
-            -c "create function public.zz_b(p text) returns table(a text) language plpgsql stable as \$\$ begin return query select p; end \$\$" \
-            -c "create function public.zz_c(p text, k text[] default array['x'], l integer default 20) returns table(a text) language plpgsql stable set search_path = '' as \$\$ begin return query select p; end \$\$" \
-            -c "create function public.zz_d(p text) returns text language sql stable as 'select p'" \
-            -c "revoke execute on function public.zz_a(text), public.zz_b(text), public.zz_c(text,text[],integer), public.zz_d(text) from public, anon"
-          wait_db() { for _ in $(seq 1 30); do psql "$U" -X -Atc "select 1" >/dev/null 2>&1 && return 0; sleep 2; done; }
-          q() { echo "── $1"; psql "$U" -X -v ON_ERROR_STOP=0 -c "begin; set local role anon; $1; rollback" 2>&1 | tail -3; wait_db; }
-          q "select count(*) from public.zz_a('x')"
-          q "select count(*) from public.zz_b('x')"
-          q "select count(*) from public.zz_c('x')"
-          q "select public.zz_d('x')"
-          q "select count(*) from public.cities"
-          q "select count(*) from public.search_places('ganim', array['city'], 5)"
-          q "select count(*) from public.search_places('ganim')"
-          q "select public.set_onboarding_state('completed')"
-          q "select * from public.search_places('ganim')"
+          mk() { psql "$DB_URL" -X -qc "drop database if exists $1 with (force)" -c "create database $1"; }
+          fn="create function public.zz_d(p text) returns text language sql stable as 'select p'"
+          rv="revoke execute on function public.zz_d(text) from public, anon, authenticated"
+          t() { # url role
+            echo "── $1 as $2"; psql "$1" -X -v ON_ERROR_STOP=0 -c "begin; set local role $2; select public.zz_d('x'); rollback" 2>&1 | tail -2
+            for _ in $(seq 1 30); do psql "$1" -X -Atc "select 1" >/dev/null 2>&1 && break; sleep 2; done
+          }
+          mk probe_a; UA="${DB_URL%/*}/probe_a"
+          psql "$UA" -X -v ON_ERROR_STOP=1 -q -f supabase/baseline/local/supabase_shim.sql
+          psql "$UA" -X -q -c "$fn" -c "$rv"
+          t "$UA" anon
+          mk probe_b; UB="${DB_URL%/*}/probe_b"
+          psql "$UB" -X -v ON_ERROR_STOP=1 -q -f supabase/baseline/local/supabase_shim.sql
+          psql "$UB" -X -v ON_ERROR_STOP=1 -q --single-transaction -f supabase/migrations/0001_baseline.sql
+          psql "$UB" -X -q -c "$fn" -c "$rv"
+          t "$UB" authenticated
+          t "$UB" service_role
+          t "$UB" anon
+          psql "$UB" -X -Atc "select defaclrole::regrole, defaclnamespace::regnamespace, defaclobjtype, defaclacl::text from pg_default_acl order by 1,2,3"
+          UP="${DB_URL%/*}/postgres"
+          psql "$UP" -X -q -c "$fn" -c "$rv"
+          t "$UP" anon
+          psql "$UP" -X -q -c "drop function public.zz_d(text)"
 
       - name: Migrations apply on an empty database + pgTAP tests + seed loaders
         run: scripts/run-baseline-tests.sh
