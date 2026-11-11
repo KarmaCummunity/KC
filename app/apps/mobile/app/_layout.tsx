@@ -49,12 +49,14 @@ import { LegalConsentGate } from '../src/components/legal/LegalConsentGate';
 import { ModalStackProvider } from '../src/components/legal/useActiveModalStack';
 import { useBrandFonts } from '../src/lib/useBrandFonts';
 import { useOnlinePresenceLifecycle } from '../src/hooks/useOnlinePresence';
+import { useMeRealtime } from '../src/hooks/useMeRealtime';
 import { useCoreLoopReturnVisit } from '../src/hooks/useCoreLoopReturnVisit';
 import { useRecordActiveDay } from '../src/hooks/useRecordActiveDay';
 import * as NavigationBar from 'expo-navigation-bar';
 
 function SignedInLifecycleMount() {
   useOnlinePresenceLifecycle();
+  useMeRealtime();
   useCoreLoopReturnVisit();
   useRecordActiveDay();
   return null;

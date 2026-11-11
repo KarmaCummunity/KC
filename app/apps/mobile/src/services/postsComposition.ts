@@ -140,7 +140,7 @@ export function getGetClosureCandidatesUseCase(): GetClosureCandidatesUseCase {
 // ── P1.2 — feed discovery (FR-FEED-009, 014, 015) ─────────────────────────
 export function getFeedRealtime(): IFeedRealtime {
   if (!_realtime) {
-    _realtime = new SupabaseFeedRealtime();
+    _realtime = new SupabaseFeedRealtime(getSupabaseClient({ storage: pickAuthStorage() }));
   }
   return _realtime;
 }
