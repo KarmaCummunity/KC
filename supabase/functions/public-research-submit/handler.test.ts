@@ -11,10 +11,17 @@ const post = (body: unknown, headers: Record<string, string> = {}) =>
     body: typeof body === 'string' ? body : JSON.stringify(body),
   });
 
-function setup(over: { salt?: () => Promise<string>; submit?: (a: SubmitArgs) => Promise<string> } = {}) {
+const BUNDLE = { slug: 'alt-platforms', title_he: 't', description_he: null, version: 2, questions: [] };
+
+function setup(over: {
+  salt?: () => Promise<string>;
+  submit?: (a: SubmitArgs) => Promise<string>;
+  questions?: (slug: string) => Promise<unknown | null>;
+} = {}) {
   const submitted: SubmitArgs[] = [];
   const reported: unknown[] = [];
   const handler = createResearchHandler({
+    loadQuestions: over.questions ?? ((slug) => Promise.resolve(slug === BUNDLE.slug ? BUNDLE : null)),
     getSalt: over.salt ?? (() => Promise.resolve('salt-1')),
     submit: (args) => {
       submitted.push(args);
@@ -109,5 +116,33 @@ Deno.test('a missing salt is reported and answered 500 salt_missing without subm
   assertEquals(res.status, 500);
   assertEquals(await res.json(), { error: 'salt_missing' });
   assertEquals(submitted, []);
+  assertEquals(reported.length, 1);
+});
+
+Deno.test('serves the questions of an active survey to an allowed origin, without touching the salt', async () => {
+  const { handler, submitted } = setup({ salt: () => Promise.reject(new Error('not needed')) });
+  const res = await handler(post({ action: 'questions', slug: 'alt-platforms' }));
+  assertEquals(res.status, 200);
+  assertEquals(await res.json(), BUNDLE);
+  assertEquals(res.headers.get('Access-Control-Allow-Origin'), ORIGIN);
+  assertEquals(submitted, []);
+});
+
+Deno.test('answers an unknown survey with 400 survey_not_found and a malformed slug with invalid_body', async () => {
+  const { handler } = setup();
+  const missing = await handler(post({ action: 'questions', slug: 'gone' }));
+  assertEquals([missing.status, await missing.json()], [400, { error: 'survey_not_found' }]);
+  for (const slug of ['', 'Bad Slug', 42]) {
+    const res = await handler(post({ action: 'questions', slug }));
+    assertEquals([res.status, await res.json()], [400, { error: 'invalid_body' }]);
+  }
+  const foreign = await handler(post({ action: 'questions', slug: 'alt-platforms' }, { origin: 'https://evil.example' }));
+  assertEquals(foreign.status, 403);
+});
+
+Deno.test('a failed question read is reported and answered 500 internal', async () => {
+  const { handler, reported } = setup({ questions: () => Promise.reject(new Error('down')) });
+  const res = await handler(post({ action: 'questions', slug: 'alt-platforms' }));
+  assertEquals([res.status, await res.json()], [500, { error: 'internal' }]);
   assertEquals(reported.length, 1);
 });

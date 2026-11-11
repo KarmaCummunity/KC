@@ -1,6 +1,9 @@
 // SupabasePublicResearchRepository — adapter for IPublicResearchRepository (FR-RESEARCH-001..003).
-// Calls get_public_research_questions RPC (anon) and public-research-submit Edge Function.
-// Zero business logic — only RPC/Edge Function calls, mapping, and error wrapping.
+// Both calls go through the `public-research-submit` Edge Function: the page has no account and
+// the baseline grants the research functions to the service role only
+// (supabase/schemas/90_research/030_public_research.sql). The function loads the questions
+// (`{ action: 'questions', slug }`) and stores a response after the origin check and address
+// hashing. Zero business logic — only the invoke, mapping, and error wrapping.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { IPublicResearchRepository } from '@kc/application';
@@ -9,37 +12,36 @@ import {
   type PublicResearchBundle,
   type PublicResearchSubmission,
   type PublicResearchSubmitResult,
+  type SurveyQuestion,
+  type SurveyQuestionType,
 } from '@kc/domain';
-import type { Database } from '../database.legacy.types';
+import type { Database } from '../database.types';
+import { toBackendUnavailable, type BackendErrorLike } from '../rpc/backendUnavailable';
 
-// ---------------------------------------------------------------------------
-// Raw JSON shape returned by get_public_research_questions RPC (snake_case)
-// ---------------------------------------------------------------------------
+const FUNCTION_NAME = 'public-research-submit';
 
+/** A question as `get_public_research_questions` returns it (the table row as JSON). */
 interface RawQuestion {
   id: string;
   sort_order: number;
-  question_type: 'rating_1_7_with_optional_text';
+  question_type: SurveyQuestionType;
   short_label_he: string;
   prompt_he: string;
   context_he: string;
   text_placeholder_he: string;
   rating_anchor_low_he: string;
   rating_anchor_high_he: string;
+  choice_options: { key: string; label_he: string }[] | null;
 }
 
 interface RawBundle {
   slug: string;
   title_he: string;
   version: number;
-  questions: RawQuestion[];
+  questions: RawQuestion[] | null;
 }
 
-// ---------------------------------------------------------------------------
-// Mappers
-// ---------------------------------------------------------------------------
-
-function mapQuestion(q: RawQuestion) {
+function mapQuestion(q: RawQuestion): SurveyQuestion {
   return {
     id: q.id,
     sortOrder: q.sort_order,
@@ -50,8 +52,7 @@ function mapQuestion(q: RawQuestion) {
     textPlaceholderHe: q.text_placeholder_he,
     ratingAnchorLowHe: q.rating_anchor_low_he,
     ratingAnchorHighHe: q.rating_anchor_high_he,
-    // Public research questions are rating-only.
-    choiceOptions: [],
+    choiceOptions: (q.choice_options ?? []).map((o) => ({ key: o.key, labelHe: o.label_he })),
   };
 }
 
@@ -64,12 +65,13 @@ function mapBundle(raw: RawBundle): PublicResearchBundle {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Edge Function HTTP error → domain error code mapping
-// ---------------------------------------------------------------------------
-
-function mapEdgeFunctionError(error: unknown): PublicResearchError {
-  // FunctionsHttpError exposes `context.status` or a top-level `status` field.
+/**
+ * Edge Function failure → error. A function that is not deployed (HTTP 404) is a
+ * `BackendUnavailableError`; the function's own answers map by status.
+ */
+function mapEdgeFunctionError(error: unknown): Error {
+  const unavailable = toBackendUnavailable(`fn:${FUNCTION_NAME}`, error as BackendErrorLike);
+  if (unavailable) return unavailable;
   const status =
     (error as { context?: { status?: number }; status?: number }).context?.status ??
     (error as { status?: number }).status;
@@ -83,40 +85,25 @@ function mapEdgeFunctionError(error: unknown): PublicResearchError {
   return new PublicResearchError('network', msg);
 }
 
-// ---------------------------------------------------------------------------
-// Repository
-// ---------------------------------------------------------------------------
-
 export class SupabasePublicResearchRepository implements IPublicResearchRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
   async loadBundle(slug: string): Promise<PublicResearchBundle> {
-    const { data, error } = await this.client.rpc('get_public_research_questions', {
-      p_slug: slug,
+    const { data, error } = await this.client.functions.invoke(FUNCTION_NAME, {
+      body: { action: 'questions', slug },
     });
-
-    if (error) {
-      if (error.message?.includes('survey_not_found')) {
-        throw new PublicResearchError('survey_not_found', error.message);
-      }
-      throw new PublicResearchError('network', error.message);
-    }
-
-    return mapBundle(data as unknown as RawBundle);
+    if (error) throw mapEdgeFunctionError(error);
+    const raw = data as RawBundle | null;
+    if (!raw?.slug) throw new PublicResearchError('survey_not_found', 'survey_not_found');
+    return mapBundle(raw);
   }
 
   async submit(payload: PublicResearchSubmission): Promise<PublicResearchSubmitResult> {
-    // Invoke the Edge Function, NOT the RPC directly. The Edge Function
-    // adds Origin validation + IP hashing before forwarding to the SECURITY
-    // DEFINER RPC (FR-RESEARCH-002).
     const answersPayload = Object.fromEntries(
-      payload.answers.map((a) => [
-        a.questionId,
-        { rating: a.rating, answer_text: a.answerText },
-      ]),
+      payload.answers.map((a) => [a.questionId, { rating: a.rating, answer_text: a.answerText }]),
     );
 
-    const { data, error } = await this.client.functions.invoke('public-research-submit', {
+    const { data, error } = await this.client.functions.invoke(FUNCTION_NAME, {
       body: {
         slug: payload.slug,
         version: payload.version,
@@ -127,16 +114,12 @@ export class SupabasePublicResearchRepository implements IPublicResearchReposito
         contactWindowHe: payload.contactWindowHe,
       },
     });
-
-    if (error) {
-      throw mapEdgeFunctionError(error);
-    }
+    if (error) throw mapEdgeFunctionError(error);
 
     const result = data as { responseId?: string } | null;
     if (!result?.responseId) {
       throw new PublicResearchError('network', 'missing_response_id');
     }
-
     return { responseId: result.responseId };
   }
 }

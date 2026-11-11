@@ -2,20 +2,20 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 188,
-   "same": 91,
+   "objects": 186,
+   "same": 94,
    "renamed": 20,
-   "changed": 46,
+   "changed": 45,
    "removed": 1,
-   "missing": 30
+   "missing": 26
   },
   "table": {
-   "objects": 56,
-   "same": 36,
+   "objects": 59,
+   "same": 40,
    "renamed": 0,
    "changed": 16,
    "removed": 0,
-   "missing": 4
+   "missing": 3
   },
   "bucket": {
    "objects": 4,
@@ -52,12 +52,12 @@
    "missing": 0
   },
   "later": {
-   "objects": 100,
-   "same": 21,
+   "objects": 101,
+   "same": 28,
    "renamed": 4,
-   "changed": 40,
+   "changed": 39,
    "removed": 1,
-   "missing": 34
+   "missing": 29
   },
   "wedge": {
    "objects": 54,
@@ -161,9 +161,9 @@
    "missing": 0
   },
   "fn:public-research-submit": {
-   "callSites": 2,
+   "callSites": 3,
    "oneToOne": 2,
-   "changed": 0,
+   "changed": 1,
    "removed": 0,
    "missing": 0
   },
@@ -316,8 +316,8 @@
   },
   "research": {
    "callSites": 2,
-   "oneToOne": 1,
-   "changed": 1,
+   "oneToOne": 2,
+   "changed": 0,
    "removed": 0,
    "missing": 0
   },
@@ -350,11 +350,11 @@
    "missing": 0
   },
   "survey": {
-   "callSites": 10,
-   "oneToOne": 3,
-   "changed": 2,
+   "callSites": 13,
+   "oneToOne": 12,
+   "changed": 1,
    "removed": 0,
-   "missing": 5
+   "missing": 0
   },
   "translations": {
    "callSites": 6,
@@ -398,28 +398,6 @@
    "launch": "no (knowledge is a portal at launch)",
    "action": "defer",
    "recommendation": "Keep the knowledge world behind `world_knowledge_enabled`. When it opens: design §8 maps `knowledge_topics` → `topics`, `topic_aliases`, `topic_follows`, but no module creates them. Add them to `70_worlds` (knowledge), or launch knowledge with item subcategories only and defer.",
-   "tier": "later",
-   "blocker": false
-  },
-  {
-   "id": "M16",
-   "title": "Free feedback form and its admin list",
-   "usedBy": "Settings → feedback (SupabaseSurveyRepository), admin feedback dashboard (admin_user_feedback_list)",
-   "spec": "FR-SETTINGS-017, FR-ADMIN-021",
-   "launch": "no (ships with the surveys and feedback hub)",
-   "action": "defer",
-   "recommendation": "Hide the feedback form with the surveys hub; the insert sits inside the survey prompt check today and must fail silently. Later: table `user_feedback` in `90_research` (insert own, select super admin).",
-   "tier": "later",
-   "blocker": false
-  },
-  {
-   "id": "M17",
-   "title": "Survey statistics for admins (overview, results, PMF report)",
-   "usedBy": "Admin survey dashboard (SupabaseSurveyAdminRepository)",
-   "spec": "FR-ADMIN-021",
-   "launch": "no",
-   "action": "defer",
-   "recommendation": "Hide the admin survey dashboard behind a flag. When it opens no new object is needed at first: the super admin can read `survey_answers` (policy `survey_answers_select_super_admin`); aggregate on the device at launch volumes, and add an aggregate function to `90_research` when answers grow.",
    "tier": "later",
    "blocker": false
   },
@@ -985,7 +963,7 @@
     "challenges/**",
     "apps/mobile: challenge screens, useChallengeLinkedPost"
    ],
-   "work": "Mostly 1:1; keyset list and the `challenge_summary` composite.",
+   "work": "Done: keyset `list_challenges`, the `challenge_summary` composite (which names the post, so `useChallengeLinkedPost` needs no posts query), own reports from `challenge_progress_entries`, and `join_challenge` without the show-on-profile choice (the prompt is removed).",
    "tests": [
     "vitest: challenges suite",
     "pgTAP 074"
@@ -1099,18 +1077,20 @@
     "supabase/functions/{public-research-submit,rotate-research-salt}",
     "apps/mobile: surveys and feedback hub, admin survey dashboard, public research page"
    ],
-   "work": "Survey reads become table reads; the public research page loads through its function; the feedback form waits for M16 and the admin dashboard for M17.",
+   "work": "Done: survey reads are table reads, the public research page loads its questions through `public-research-submit`, and the two missing capabilities were built in `90_research` (M16: `user_feedback` + `admin_user_feedback_list`; M17: `admin_survey_overview`, `admin_survey_results`, `admin_pmf_survey_report`, all moderator and above).",
    "tests": [
     "vitest: survey, research, stats suites",
-    "pgTAP 079, 090"
+    "pgTAP 079, 090, 091",
+    "deno test supabase/functions/public-research-submit"
    ],
-   "degrade": "Survey prompt: `check_survey_prompt_eligibility` failing means \"do not prompt\" (its feedback insert must not throw). The surveys and feedback hub and the admin dashboard are hidden behind a flag.",
+   "degrade": "Survey prompt: a failing `check_survey_prompt_eligibility` means \"do not prompt\" (the banner already fails silently). A research function that is not deployed (HTTP 404) is `BackendUnavailableError` and the page shows its generic error.",
    "risks": "`record_active_day` is core and moves with P1; `stats/**` moves with P2.",
    "rows": [
     "rpc:check_survey_prompt_eligibility",
     "rpc:upsert_survey_answers",
-    "rpc:list_active_surveys",
-    "rpc:get_survey_bundle",
+    "table:surveys",
+    "table:survey_questions",
+    "table:survey_answers",
     "table:user_feedback",
     "rpc:admin_survey_overview",
     "rpc:admin_survey_results",
@@ -1123,11 +1103,11 @@
     "edge_function:public-research-submit"
    ],
    "counts": {
-    "objects": 14,
-    "oneToOne": 6,
-    "changed": 3,
+    "objects": 15,
+    "oneToOne": 13,
+    "changed": 2,
     "removed": 0,
-    "missing": 5
+    "missing": 0
    }
   },
   {
@@ -1252,8 +1232,8 @@
   {
    "name": "public-research-submit",
    "verdict": "done",
-   "uses": "get_research_salt, submit_public_research_response",
-   "change": "Retargeted: the salt comes from `get_research_salt()`; `invalid_input` maps to 400."
+   "uses": "get_public_research_questions, get_research_salt, submit_public_research_response",
+   "change": "Retargeted: the salt comes from `get_research_salt()`; `invalid_input` maps to 400. Also serves the form's questions (`{ action: 'questions', slug }`), since `get_public_research_questions` is service-role only."
   },
   {
    "name": "rotate-research-salt",
@@ -1709,7 +1689,7 @@
    "launch": "later",
    "confidence": "high",
    "missing": null,
-   "note": "Same invoke; the function keeps calling `submit_public_research_response`.",
+   "note": "Same invoke for a response; the function keeps calling `submit_public_research_response`. It also serves the form's questions (`{ action: 'questions', slug }` → `get_public_research_questions`).",
    "oldObject": {},
    "targets": [
     {
@@ -1723,7 +1703,13 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/research/SupabasePublicResearchRepository.ts",
-     "line": 119,
+     "line": 92,
+     "symbol": "SupabasePublicResearchRepository.loadBundle",
+     "area": "research"
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/research/SupabasePublicResearchRepository.ts",
+     "line": 106,
      "symbol": "SupabasePublicResearchRepository.submit",
      "area": "research"
     }
@@ -2661,24 +2647,51 @@
   {
    "old": "admin_pmf_survey_report",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M17",
-   "note": "No survey statistics function; raw answers are readable by the super admin only.",
+   "missing": null,
+   "note": "Same JSON document; moderator and more senior staff (`require_admin_role('moderator')`). M17, built in `90_research/050_survey_reports.sql`.",
    "oldObject": {
     "signature": [
      "admin_pmf_survey_report(p_slug?: string) → Json"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_pmf_survey_report",
+     "source": "90_research/050_survey_reports.sql:141",
+     "signature": [
+      "admin_pmf_survey_report(p_slug?: string) → Json"
+     ],
+     "errors": [
+      {
+       "code": "forbidden",
+       "knownToApp": true
+      },
+      {
+       "code": "survey_has_no_choice_question",
+       "knownToApp": true
+      },
+      {
+       "code": "survey_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
    "areas": [
     "survey"
    ],
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyAdminRepository.ts",
-     "line": 185,
+     "line": 198,
      "symbol": "SupabaseSurveyAdminRepository.getPmfReport",
      "area": "survey"
     }
@@ -3001,24 +3014,43 @@
   {
    "old": "admin_survey_overview",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M17",
-   "note": "No survey statistics function; raw answers are readable by the super admin only.",
+   "missing": null,
+   "note": "Same JSON document; moderator and more senior staff (`require_admin_role('moderator')`). M17, built in `90_research/050_survey_reports.sql`.",
    "oldObject": {
     "signature": [
      "admin_survey_overview() → Json"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_survey_overview",
+     "source": "90_research/050_survey_reports.sql:45",
+     "signature": [
+      "admin_survey_overview() → Json"
+     ],
+     "errors": [
+      {
+       "code": "forbidden",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
    "areas": [
     "survey"
    ],
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyAdminRepository.ts",
-     "line": 170,
+     "line": 185,
      "symbol": "SupabaseSurveyAdminRepository.listOverview",
      "area": "survey"
     }
@@ -3027,24 +3059,47 @@
   {
    "old": "admin_survey_results",
    "kind": "rpc",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M17",
-   "note": "No survey statistics function; raw answers are readable by the super admin only.",
+   "missing": null,
+   "note": "Same JSON document; moderator and more senior staff (`require_admin_role('moderator')`). M17, built in `90_research/050_survey_reports.sql`.",
    "oldObject": {
     "signature": [
      "admin_survey_results(p_slug: string) → Json"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_survey_results",
+     "source": "90_research/050_survey_reports.sql:80",
+     "signature": [
+      "admin_survey_results(p_slug: string) → Json"
+     ],
+     "errors": [
+      {
+       "code": "forbidden",
+       "knownToApp": true
+      },
+      {
+       "code": "survey_not_found",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
    "areas": [
     "survey"
    ],
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyAdminRepository.ts",
-     "line": 177,
+     "line": 191,
      "symbol": "SupabaseSurveyAdminRepository.getResults",
      "area": "survey"
     }
@@ -3053,24 +3108,43 @@
   {
    "old": "admin_user_feedback_list",
    "kind": "rpc",
-   "status": "missing",
+   "status": "changed",
    "launch": "later",
    "confidence": "high",
-   "missing": "M16",
-   "note": "Depends on the free-feedback table.",
+   "missing": null,
+   "note": "Offset → keyset `p_cursor` (`{ t, id }` of the last row); returns rows with `next_cursor` (M16, built).",
    "oldObject": {
     "signature": [
      "admin_user_feedback_list(p_limit?: number, p_offset?: number) → Json"
     ]
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "admin_user_feedback_list",
+     "source": "90_research/040_user_feedback.sql:38",
+     "signature": [
+      "admin_user_feedback_list(p_cursor?: Json, p_limit?: number) → { body: string created_at: string display_name: string id: string next_cursor: Json rating: number user_id: string }[]"
+     ],
+     "errors": [
+      {
+       "code": "forbidden",
+       "knownToApp": true
+      },
+      {
+       "code": "unauthenticated",
+       "knownToApp": true
+      }
+     ]
+    }
+   ],
    "areas": [
     "survey"
    ],
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyAdminRepository.ts",
-     "line": 191,
+     "line": 208,
      "symbol": "SupabaseSurveyAdminRepository.listFeedback",
      "area": "survey"
     }
@@ -4422,7 +4496,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyRepository.ts",
-     "line": 174,
+     "line": 73,
      "symbol": "SupabaseSurveyRepository.checkPromptEligibility",
      "area": "survey"
     }
@@ -6698,7 +6772,7 @@
    "launch": "later",
    "confidence": "high",
    "missing": null,
-   "note": "Same signature, but service role only in the baseline (nothing is granted to signed-out callers): the public research page must load its questions through the `public-research-submit` function, not from the device.",
+   "note": "Same signature, but service role only in the baseline (nothing is granted to signed-out callers): the public research page loads its questions through the `public-research-submit` function (`{ action: 'questions', slug }`), which calls it.",
    "oldObject": {
     "signature": [
      "get_public_research_questions(p_slug: string) → Json"
@@ -6716,14 +6790,14 @@
     }
    ],
    "areas": [
-    "research"
+    "fn:public-research-submit"
    ],
    "callSites": [
     {
-     "file": "app/packages/infrastructure-supabase/src/research/SupabasePublicResearchRepository.ts",
-     "line": 94,
-     "symbol": "SupabasePublicResearchRepository.loadBundle",
-     "area": "research"
+     "file": "supabase/functions/public-research-submit/index.ts",
+     "line": 24,
+     "symbol": "loadQuestions",
+     "area": "fn:public-research-submit"
     }
    ]
   },
@@ -6753,90 +6827,9 @@
    "callSites": [
     {
      "file": "supabase/functions/public-research-submit/index.ts",
-     "line": 21,
+     "line": 29,
      "symbol": "getSalt",
      "area": "fn:public-research-submit"
-    }
-   ]
-  },
-  {
-   "old": "get_survey_bundle",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Survey, the questions of its current version (`survey_versions` → `survey_questions`) and the caller's answers: three direct reads.",
-   "oldObject": {
-    "signature": [
-     "get_survey_bundle(p_slug: string) → Json"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "surveys",
-     "columns": [
-      "created_at",
-      "current_version",
-      "description_he",
-      "id",
-      "is_active",
-      "prompt_rules",
-      "slug",
-      "title_he",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    },
-    {
-     "type": "table",
-     "name": "survey_questions",
-     "columns": [
-      "choice_options",
-      "context_he",
-      "id",
-      "prompt_he",
-      "question_type",
-      "rating_anchor_high_he",
-      "rating_anchor_low_he",
-      "short_label_he",
-      "sort_order",
-      "survey_version_id",
-      "text_placeholder_he"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    },
-    {
-     "type": "table",
-     "name": "survey_answers",
-     "columns": [
-      "answer_text",
-      "choice_key",
-      "created_at",
-      "question_id",
-      "rating",
-      "updated_at",
-      "user_id"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "survey"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyRepository.ts",
-     "line": 149,
-     "symbol": "SupabaseSurveyRepository.getBundle",
-     "area": "survey"
     }
    ]
   },
@@ -7033,51 +7026,6 @@
      "line": 191,
      "symbol": "SupabaseChallengeRepository.leaveChallenge",
      "area": "challenges"
-    }
-   ]
-  },
-  {
-   "old": "list_active_surveys",
-   "kind": "rpc",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "medium",
-   "missing": null,
-   "note": "Direct read of active surveys (policy `surveys_select_published`).",
-   "oldObject": {
-    "signature": [
-     "list_active_surveys() → Json"
-    ]
-   },
-   "targets": [
-    {
-     "type": "table",
-     "name": "surveys",
-     "columns": [
-      "created_at",
-      "current_version",
-      "description_he",
-      "id",
-      "is_active",
-      "prompt_rules",
-      "slug",
-      "title_he",
-      "updated_at"
-     ],
-     "clientGrants": {
-      "select": true
-     }
-    }
-   ],
-   "areas": [
-    "survey"
-   ],
-   "callSites": [
-    {
-     "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyRepository.ts",
-     "line": 142,
-     "symbol": "SupabaseSurveyRepository.listActive",
-     "area": "survey"
     }
    ]
   },
@@ -10399,7 +10347,7 @@
    "callSites": [
     {
      "file": "supabase/functions/public-research-submit/index.ts",
-     "line": 26,
+     "line": 34,
      "symbol": "submit",
      "area": "fn:public-research-submit"
     }
@@ -10600,7 +10548,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyRepository.ts",
-     "line": 163,
+     "line": 67,
      "symbol": "SupabaseSurveyRepository.upsertAnswers",
      "area": "survey"
     }
@@ -14234,6 +14182,198 @@
    ]
   },
   {
+   "old": "survey_answers",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "The caller's own answers (filtered on `user_id`: the super admin reads every answer); written only through `upsert_survey_answers`.",
+   "oldObject": {
+    "columns": [
+     "answer_text",
+     "choice_key",
+     "created_at",
+     "id",
+     "question_id",
+     "rating",
+     "survey_id",
+     "updated_at",
+     "user_id",
+     "version"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "survey_answers",
+     "columns": [
+      "answer_text",
+      "choice_key",
+      "created_at",
+      "question_id",
+      "rating",
+      "updated_at",
+      "user_id"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
+   "areas": [
+    "survey"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+     "line": 83,
+     "symbol": "listActiveSurveys",
+     "area": "survey",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+     "line": 115,
+     "symbol": "ids",
+     "area": "survey",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "survey_questions",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "The questions of the current version (`survey_version_id`), in `sort_order`; replaces the question part of `get_survey_bundle`.",
+   "oldObject": {
+    "columns": [
+     "choice_options",
+     "context_he",
+     "id",
+     "prompt_he",
+     "question_type",
+     "rating_anchor_high_he",
+     "rating_anchor_low_he",
+     "short_label_he",
+     "sort_order",
+     "survey_version_id",
+     "text_placeholder_he"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "survey_questions",
+     "columns": [
+      "choice_options",
+      "context_he",
+      "id",
+      "prompt_he",
+      "question_type",
+      "rating_anchor_high_he",
+      "rating_anchor_low_he",
+      "short_label_he",
+      "sort_order",
+      "survey_version_id",
+      "text_placeholder_he"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
+   "areas": [
+    "survey"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+     "line": 109,
+     "symbol": "loadSurveyBundle",
+     "area": "survey",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
+   "old": "surveys",
+   "kind": "table",
+   "status": "same",
+   "launch": "later",
+   "confidence": "medium",
+   "missing": null,
+   "note": "Replaces `list_active_surveys` and the survey part of `get_survey_bundle`: active, published surveys (`is_active`, `current_version > 0`, filtered by the app because the super admin also reads retired ones), with `survey_versions` (and their question ids) embedded; completion is computed on the device from the caller's answers.",
+   "oldObject": {
+    "columns": [
+     "created_at",
+     "current_version",
+     "description_he",
+     "id",
+     "is_active",
+     "prompt_rules",
+     "slug",
+     "title_he",
+     "updated_at"
+    ],
+    "isView": false
+   },
+   "targets": [
+    {
+     "type": "table",
+     "name": "surveys",
+     "columns": [
+      "created_at",
+      "current_version",
+      "description_he",
+      "id",
+      "is_active",
+      "prompt_rules",
+      "slug",
+      "title_he",
+      "updated_at"
+     ],
+     "clientGrants": {
+      "select": true
+     }
+    }
+   ],
+   "areas": [
+    "survey"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+     "line": 77,
+     "symbol": "listActiveSurveys",
+     "area": "survey",
+     "ops": [
+      "select"
+     ]
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/survey/surveyReads.ts",
+     "line": 100,
+     "symbol": "loadSurveyBundle",
+     "area": "survey",
+     "ops": [
+      "select"
+     ]
+    }
+   ]
+  },
+  {
    "old": "user_account",
    "kind": "table",
    "status": "same",
@@ -14395,11 +14535,11 @@
   {
    "old": "user_feedback",
    "kind": "table",
-   "status": "missing",
+   "status": "same",
    "launch": "later",
    "confidence": "high",
-   "missing": "M16",
-   "note": "No free-feedback table.",
+   "missing": null,
+   "note": "Insert of the caller's own feedback (`user_id`, `rating`, `body`); no client select (M16, built in `90_research/040_user_feedback.sql`).",
    "oldObject": {
     "columns": [
      "body",
@@ -14410,15 +14550,34 @@
     ],
     "isView": false
    },
-   "targets": [],
+   "targets": [
+    {
+     "type": "table",
+     "name": "user_feedback",
+     "columns": [
+      "body",
+      "created_at",
+      "id",
+      "rating",
+      "user_id"
+     ],
+     "clientGrants": {
+      "insert": [
+       "body",
+       "rating",
+       "user_id"
+      ]
+     }
+    }
+   ],
    "areas": [
     "survey"
    ],
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/survey/SupabaseSurveyRepository.ts",
-     "line": 188,
-     "symbol": "SupabaseSurveyRepository.checkPromptEligibility",
+     "line": 84,
+     "symbol": "SupabaseSurveyRepository.raw",
      "area": "survey",
      "ops": [
       "insert"

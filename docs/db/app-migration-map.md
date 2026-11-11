@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 188 | 91 | 20 | 46 | 1 | 30 |
-| Tables and views | 56 | 36 | 0 | 16 | 0 | 4 |
+| RPCs | 186 | 94 | 20 | 45 | 1 | 26 |
+| Tables and views | 59 | 40 | 0 | 16 | 0 | 3 |
 | Storage buckets | 4 | 3 | 0 | 1 | 0 | 0 |
 | Realtime channels | 6 | 6 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 3 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | 257 | 139 | 20 | 63 | 1 | 34 |
+| **Total** | 258 | 146 | 20 | 62 | 1 | 29 |
 
 ### Launch scope
 
@@ -23,7 +23,7 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 | --- | --- | --- | --- | --- | --- | --- |
 | core | 103 | 85 | 1 | 17 | 0 | 0 |
 | wedge | 54 | 33 | 15 | 6 | 0 | 0 |
-| later | 100 | 21 | 4 | 40 | 1 | 34 |
+| later | 101 | 28 | 4 | 39 | 1 | 29 |
 | **Launch-critical (core + wedge)** | 157 | 118 | 16 | 23 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
@@ -63,12 +63,12 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/posts/` | 50 | 34 | 16 | 0 | 0 |
 | `infrastructure-supabase/src/realtime/` | 1 | 1 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/reports/` | 8 | 4 | 4 | 0 | 0 |
-| `infrastructure-supabase/src/research/` | 2 | 1 | 1 | 0 | 0 |
+| `infrastructure-supabase/src/research/` | 2 | 2 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/rides/` | 28 | 19 | 9 | 0 | 0 |
 | `infrastructure-supabase/src/search/` | 6 | 1 | 5 | 0 | 0 |
 | `infrastructure-supabase/src/stats/` | 2 | 2 | 0 | 0 | 0 |
 | `infrastructure-supabase/src/streets/` | 1 | 0 | 1 | 0 | 0 |
-| `infrastructure-supabase/src/survey/` | 10 | 3 | 2 | 0 | 5 |
+| `infrastructure-supabase/src/survey/` | 13 | 12 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/translations/` | 6 | 3 | 3 | 0 | 0 |
 | `infrastructure-supabase/src/users/` | 32 | 19 | 13 | 0 | 0 |
 | `infrastructure-supabase/src/volunteering/` | 9 | 3 | 6 | 0 | 0 |
@@ -78,7 +78,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | Edge Function `embed-worker` | 3 | 3 | 0 | 0 | 0 |
 | Edge Function `match-rerank` | 2 | 1 | 1 | 0 | 0 |
 | Edge Function `payments-webhook` | 1 | 1 | 0 | 0 | 0 |
-| Edge Function `public-research-submit` | 2 | 2 | 0 | 0 | 0 |
+| Edge Function `public-research-submit` | 3 | 2 | 1 | 0 | 0 |
 | Edge Function `revenuecat-webhook` | 1 | 1 | 0 | 0 | 0 |
 | Edge Function `rotate-research-salt` | 1 | 1 | 0 | 0 | 0 |
 | Edge Function `strip-exif` | 3 | 3 | 0 | 0 | 0 |
@@ -414,12 +414,11 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/research/`
 
-2 call sites: 1 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
+2 call sites: 2 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `public-research-submit` (edge function) | later | 1:1 | edge `public-research-submit` | Same invoke; the function keeps calling `submit_public_research_response`. |  | high | SupabasePublicResearchRepository.ts:119 |
-| `get_public_research_questions` | later | CHANGED | `get_public_research_questions(p_slug: string) → Json` | Same signature, but service role only in the baseline (nothing is granted to signed-out callers): the public research page must load its questions through the `public-research-submit` function, not from the device. |  | high | SupabasePublicResearchRepository.ts:94 |
+| `public-research-submit` (edge function) | later | 1:1 | edge `public-research-submit` | Same invoke for a response; the function keeps calling `submit_public_research_response`. It also serves the form's questions (`{ action: 'questions', slug }` → `get_public_research_questions`). |  | high | SupabasePublicResearchRepository.ts:92, SupabasePublicResearchRepository.ts:106 |
 
 ### `infrastructure-supabase/src/rides/`
 
@@ -483,20 +482,21 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/survey/`
 
-10 call sites: 3 map 1:1, 2 need logic changes, 0 removed, 5 MISSING.
+13 call sites: 12 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `admin_pmf_survey_report` | later | MISSING M17 | — | No survey statistics function; raw answers are readable by the super admin only. |  | high | SupabaseSurveyAdminRepository.ts:185 |
-| `admin_survey_overview` | later | MISSING M17 | — | No survey statistics function; raw answers are readable by the super admin only. |  | high | SupabaseSurveyAdminRepository.ts:170 |
-| `admin_survey_results` | later | MISSING M17 | — | No survey statistics function; raw answers are readable by the super admin only. |  | high | SupabaseSurveyAdminRepository.ts:177 |
-| `admin_user_feedback_list` | later | MISSING M16 | — | Depends on the free-feedback table. |  | high | SupabaseSurveyAdminRepository.ts:191 |
-| `check_survey_prompt_eligibility` | later | 1:1 | `check_survey_prompt_eligibility(p_session_count: number, p_slug: string) → Json` | Signature unchanged. | `unauthenticated` | high | SupabaseSurveyRepository.ts:174 |
-| `get_survey_bundle` | later | CHANGED | table `surveys`<br>table `survey_questions`<br>table `survey_answers` | Survey, the questions of its current version (`survey_versions` → `survey_questions`) and the caller's answers: three direct reads. |  | medium | SupabaseSurveyRepository.ts:149 |
-| `list_active_surveys` | later | CHANGED | table `surveys` | Direct read of active surveys (policy `surveys_select_published`). |  | medium | SupabaseSurveyRepository.ts:142 |
+| `admin_pmf_survey_report` | later | 1:1 | `admin_pmf_survey_report(p_slug?: string) → Json` | Same JSON document; moderator and more senior staff (`require_admin_role('moderator')`). M17, built in `90_research/050_survey_reports.sql`. | `forbidden`, `survey_has_no_choice_question`, `survey_not_found`, `unauthenticated` | high | SupabaseSurveyAdminRepository.ts:198 |
+| `admin_survey_overview` | later | 1:1 | `admin_survey_overview() → Json` | Same JSON document; moderator and more senior staff (`require_admin_role('moderator')`). M17, built in `90_research/050_survey_reports.sql`. | `forbidden`, `unauthenticated` | high | SupabaseSurveyAdminRepository.ts:185 |
+| `admin_survey_results` | later | 1:1 | `admin_survey_results(p_slug: string) → Json` | Same JSON document; moderator and more senior staff (`require_admin_role('moderator')`). M17, built in `90_research/050_survey_reports.sql`. | `forbidden`, `survey_not_found`, `unauthenticated` | high | SupabaseSurveyAdminRepository.ts:191 |
+| `admin_user_feedback_list` | later | CHANGED | `admin_user_feedback_list(p_cursor?: Json, p_limit?: number) → { body: string created_at: string display_name: string id: string next_cursor: Json rating: number user_id: string }[]` | Offset → keyset `p_cursor` (`{ t, id }` of the last row); returns rows with `next_cursor` (M16, built). | `forbidden`, `unauthenticated` | high | SupabaseSurveyAdminRepository.ts:208 |
+| `check_survey_prompt_eligibility` | later | 1:1 | `check_survey_prompt_eligibility(p_session_count: number, p_slug: string) → Json` | Signature unchanged. | `unauthenticated` | high | SupabaseSurveyRepository.ts:73 |
 | `record_active_day` | core | 1:1 | `record_active_day() → undefined` | Marks the caller active for today; idempotent within a day. | `unauthenticated` | high | SupabaseUserActivityRepository.ts:18 |
-| `upsert_survey_answers` | later | 1:1 | `upsert_survey_answers(p_answers: Json, p_slug: string) → undefined` | Signature unchanged. | `account_not_active`, `invalid_input`, `survey_not_found`, `unauthenticated` | high | SupabaseSurveyRepository.ts:163 |
-| `user_feedback` (table) | later | MISSING M16 | — | No free-feedback table. |  | high | SupabaseSurveyRepository.ts:188 |
+| `upsert_survey_answers` | later | 1:1 | `upsert_survey_answers(p_answers: Json, p_slug: string) → undefined` | Signature unchanged. | `account_not_active`, `invalid_input`, `survey_not_found`, `unauthenticated` | high | SupabaseSurveyRepository.ts:67 |
+| `survey_answers` (table) | later | 1:1 | table `survey_answers` | The caller's own answers (filtered on `user_id`: the super admin reads every answer); written only through `upsert_survey_answers`. |  | medium | surveyReads.ts:83, surveyReads.ts:115 |
+| `survey_questions` (table) | later | 1:1 | table `survey_questions` | The questions of the current version (`survey_version_id`), in `sort_order`; replaces the question part of `get_survey_bundle`. |  | medium | surveyReads.ts:109 |
+| `surveys` (table) | later | 1:1 | table `surveys` | Replaces `list_active_surveys` and the survey part of `get_survey_bundle`: active, published surveys (`is_active`, `current_version > 0`, filtered by the app because the super admin also reads retired ones), with `survey_versions` (and their question ids) embedded; completion is computed on the device from the caller's answers. |  | medium | surveyReads.ts:77, surveyReads.ts:100 |
+| `user_feedback` (table) | later | 1:1 | table `user_feedback` | Insert of the caller's own feedback (`user_id`, `rating`, `body`); no client select (M16, built in `90_research/040_user_feedback.sql`). |  | high | SupabaseSurveyRepository.ts:84 |
 
 ### `infrastructure-supabase/src/translations/`
 
@@ -611,12 +611,13 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### Edge Function `public-research-submit`
 
-2 call sites: 2 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
+3 call sites: 2 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `get_research_salt` | later | 1:1 | `get_research_salt() → string` | Service role only: the current hashing salt of the public research form (the `research_secrets` table is private). |  | high | index.ts:21 |
-| `submit_public_research_response` | later | 1:1 | `submit_public_research_response(p_answers: Json, p_contact_email?: string, p_contact_window_he?: string, p_honeypot: string, p_ip_hash: string, p_slug: string, p_source: string, p_user_agent_hash: string, p_version: number) → string` | Signature unchanged. | `invalid_input`, `rate_limited_day` †, `rate_limited_hour` †, `rate_limited_minute` †, `research_circuit_open` †, `survey_not_found_or_version_mismatch` † | high | index.ts:26 |
+| `get_public_research_questions` | later | CHANGED | `get_public_research_questions(p_slug: string) → Json` | Same signature, but service role only in the baseline (nothing is granted to signed-out callers): the public research page loads its questions through the `public-research-submit` function (`{ action: 'questions', slug }`), which calls it. |  | high | index.ts:24 |
+| `get_research_salt` | later | 1:1 | `get_research_salt() → string` | Service role only: the current hashing salt of the public research form (the `research_secrets` table is private). |  | high | index.ts:29 |
+| `submit_public_research_response` | later | 1:1 | `submit_public_research_response(p_answers: Json, p_contact_email?: string, p_contact_window_he?: string, p_honeypot: string, p_ip_hash: string, p_slug: string, p_source: string, p_user_agent_hash: string, p_version: number) → string` | Signature unchanged. | `invalid_input`, `rate_limited_day` †, `rate_limited_hour` †, `rate_limited_minute` †, `research_circuit_open` †, `survey_not_found_or_version_mismatch` † | high | index.ts:34 |
 
 ### Edge Function `revenuecat-webhook`
 
@@ -709,8 +710,6 @@ Every capability the application or an Edge Function uses today that has no equi
 | Id | Blocker | Tier | Capability | Old objects | Used by | Spec | Needed at launch | Action | Recommendation |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | M12 | no | later | Knowledge topic graph (topics, aliases, follows, proposals, review) | `propose_knowledge_topic`, `resolve_knowledge_topics`, `review_knowledge_topic`, `update_my_proposed_knowledge_topic`, `knowledge_topic_follows`, `knowledge_topics` | Knowledge world topic picker, follow, proposal and admin review (SupabaseKnowledgeTopicRepository) | FR-KNOW-001, FR-KNOW-002 | no (knowledge is a portal at launch) | defer | Keep the knowledge world behind `world_knowledge_enabled`. When it opens: design §8 maps `knowledge_topics` → `topics`, `topic_aliases`, `topic_follows`, but no module creates them. Add them to `70_worlds` (knowledge), or launch knowledge with item subcategories only and defer. |
-| M16 | no | later | Free feedback form and its admin list | `admin_user_feedback_list`, `user_feedback` | Settings → feedback (SupabaseSurveyRepository), admin feedback dashboard (admin_user_feedback_list) | FR-SETTINGS-017, FR-ADMIN-021 | no (ships with the surveys and feedback hub) | defer | Hide the feedback form with the surveys hub; the insert sits inside the survey prompt check today and must fail silently. Later: table `user_feedback` in `90_research` (insert own, select super admin). |
-| M17 | no | later | Survey statistics for admins (overview, results, PMF report) | `admin_pmf_survey_report`, `admin_survey_overview`, `admin_survey_results` | Admin survey dashboard (SupabaseSurveyAdminRepository) | FR-ADMIN-021 | no | defer | Hide the admin survey dashboard behind a flag. When it opens no new object is needed at first: the super admin can read `survey_answers` (policy `survey_answers_select_super_admin`); aggregate on the device at launch volumes, and add an aggregate function to `90_research` when answers grow. |
 | M20 | no | later | KC support channels | `list_kc_support_channels` | Donations → support KC card (SupabaseKcSupportChannelsRepository) | FR-DONATE-010, FR-DONATE-011; launch plan A11 (only if the money world is on) | no (money is a portal at launch) | defer | The support card must render nothing when the call fails (today it throws: catch in the adapter). Later: a small reference table in `85_billing` (channel, label, url, payee phone; select for members), or ship the channels in app configuration. |
 | M21 | no | later | Organization finance summaries (ledger summary, donors summary) | `finance_donors_summary`, `finance_ledger_summary` | Org finance overview and donors screens (SupabaseFinanceLedgerRepository.summary, SupabaseFinanceDonorsRepository) | FR-FIN-014, FR-FIN-017 | no | defer | Org finance stays behind its flag. Later: two functions in `85_billing/100_org_finance_rpcs.sql` over the ledger, guarded like `finance_ledger_list`. |
 | M22 | no | later | WhatsApp bot, linking and admin console | `api_bot_apply_extraction`, `api_bot_find_matches`, `api_bot_listing_cards`, `api_bot_my_listings`, `api_bot_my_matches`, `api_bot_open_session`, `api_bot_publish_listing`, `api_bot_search_listings` … (20) | Three Edge Functions (webhook, intake worker, sender) — 19 RPCs and one table; the mobile link screen and the admin WhatsApp console are parked and make no call | design Q4 (PM): not in the launch baseline | no | defer | Do not deploy the three functions; hide the link screen and the admin console behind a flag until the `integrations` module lands. |
@@ -732,7 +731,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | L2 — Knowledge world | later | 12 | 1 | 5 | 0 | 6 | L1, L3, L4, L5, L6, L7 |
 | L3 — Challenges | later | 9 | 6 | 3 | 0 | 0 | L1, L2, L4, L5, L6, L7 |
 | L4 — Money: donations to organizations, standing orders, org finance, org onboarding | later | 31 | 7 | 20 | 1 | 3 | L1, L2, L3, L5, L6, L7 |
-| L5 — Surveys, feedback, public research | later | 14 | 6 | 3 | 0 | 5 | L1, L2, L3, L4, L6, L7 |
+| L5 — Surveys, feedback, public research | later | 15 | 13 | 2 | 0 | 0 | L1, L2, L3, L4, L6, L7 |
 | L6 — Back-office tools: tasks, CRM, timesheets | later | 0 | 0 | 0 | 0 | 0 | L1, L2, L3, L4, L5, L7 |
 | L7 — WhatsApp bot, linking, admin console | later | 20 | 0 | 0 | 0 | 20 | L1, L2, L3, L4, L5, L6 |
 
@@ -811,7 +810,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 ### L3 — Challenges
 
 - **Owns:** `challenges/**`, `apps/mobile: challenge screens, useChallengeLinkedPost`
-- **Work:** Mostly 1:1; keyset list and the `challenge_summary` composite.
+- **Work:** Done: keyset `list_challenges`, the `challenge_summary` composite (which names the post, so `useChallengeLinkedPost` needs no posts query), own reports from `challenge_progress_entries`, and `join_challenge` without the show-on-profile choice (the prompt is removed).
 - **Must pass:** vitest: challenges suite; pgTAP 074
 - **If reached before it is migrated:** Challenges flag off: the tab is hidden; a challenge post in the feed opens as a plain post.
 - **Risks:** Low.
@@ -827,9 +826,9 @@ In launch order: after package *n* the app is shippable with everything up to *n
 ### L5 — Surveys, feedback, public research
 
 - **Owns:** `survey/** (except survey/SupabaseUserActivityRepository.ts, owned by P1)`, `research/**`, `supabase/functions/{public-research-submit,rotate-research-salt}`, `apps/mobile: surveys and feedback hub, admin survey dashboard, public research page`
-- **Work:** Survey reads become table reads; the public research page loads through its function; the feedback form waits for M16 and the admin dashboard for M17.
-- **Must pass:** vitest: survey, research, stats suites; pgTAP 079, 090
-- **If reached before it is migrated:** Survey prompt: `check_survey_prompt_eligibility` failing means "do not prompt" (its feedback insert must not throw). The surveys and feedback hub and the admin dashboard are hidden behind a flag.
+- **Work:** Done: survey reads are table reads, the public research page loads its questions through `public-research-submit`, and the two missing capabilities were built in `90_research` (M16: `user_feedback` + `admin_user_feedback_list`; M17: `admin_survey_overview`, `admin_survey_results`, `admin_pmf_survey_report`, all moderator and above).
+- **Must pass:** vitest: survey, research, stats suites; pgTAP 079, 090, 091; deno test supabase/functions/public-research-submit
+- **If reached before it is migrated:** Survey prompt: a failing `check_survey_prompt_eligibility` means "do not prompt" (the banner already fails silently). A research function that is not deployed (HTTP 404) is `BackendUnavailableError` and the page shows its generic error.
 - **Risks:** `record_active_day` is core and moves with P1; `stats/**` moves with P2.
 
 ### L6 — Back-office tools: tasks, CRM, timesheets
@@ -859,7 +858,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | `match-rerank` | done | api_match_llm_pending, api_match_llm_store | Retargeted: a store of an unknown pair (`match_not_found`) counts as failed; service-role key only. |
 | `payments-webhook` | done | provider_webhook_apply | Retargeted: the provider's HMAC-SHA256 signature is verified (secret `PAYMENTS_WEBHOOK_SECRET_<SLUG>`, fail closed), the provider's own event id is the idempotency key (never generated), and `verify_jwt` is off for it in `supabase/config.toml`. |
 | `revenuecat-webhook` | done | api_revenuecat_set_pro | Verified against the baseline signature; no change. |
-| `public-research-submit` | done | get_research_salt, submit_public_research_response | Retargeted: the salt comes from `get_research_salt()`; `invalid_input` maps to 400. |
+| `public-research-submit` | done | get_public_research_questions, get_research_salt, submit_public_research_response | Retargeted: the salt comes from `get_research_salt()`; `invalid_input` maps to 400. Also serves the form's questions (`{ action: 'questions', slug }`), since `get_public_research_questions` is service-role only. |
 | `rotate-research-salt` | done | rotate_research_salt | Retargeted: calls `rotate_research_salt()`; service-role key only. |
 | `translate` | done | content_translations (select, insert, delete) | Retargeted: the source registry follows the cache's content types (`post`, `comment`, `message`, `user`) over `posts`, `post_comments`, `messages`, `users` keyed by `id`; `ride_listing` is gone (rides are posts). |
 | `validate-donation-link` | done | donation_links (select, insert, update), get_my_admin_roles | Retargeted: new and edited links start in `review_status = pending`, the giving world is checked by the foreign key, the super-admin check reads the caller's roles; split into handler and SSRF guard. |

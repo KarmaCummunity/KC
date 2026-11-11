@@ -1,9 +1,11 @@
-// SupabaseSurveyAdminRepository — adapter for ISurveyAdminRepository (FR-ADMIN-021).
-// Maps admin survey RPCs (snake_case JSON) → domain types. Zero business logic.
+// SupabaseSurveyAdminRepository — adapter for ISurveyAdminRepository (FR-ADMIN-021) on the
+// baseline staff reads of supabase/schemas/90_research (040_user_feedback, 050_survey_reports).
+// Maps their snake_case JSON to domain types. Zero business logic.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ISurveyAdminRepository } from '@kc/application';
 import {
+  BackendUnavailableError,
   SurveyError,
   type AdminSurveyOverviewItem,
   type AdminSurveyResults,
@@ -13,7 +15,9 @@ import {
   type PmfSurveyReport,
   type SurveyQuestionType,
 } from '@kc/domain';
-import type { Database } from '../database.legacy.types';
+import type { Database } from '../database.types';
+import { unwrapCall, type CallResult } from '../rpc/mapRpcError';
+import { refusalReason } from '../admin/refusalReason';
 import { mapPmfSurveyReport, type RawPmfSurveyReport } from './mapPmfSurveyReport';
 
 // ---------------------------------------------------------------------------
@@ -68,14 +72,8 @@ interface RawResults {
   respondents: RawRespondent[];
 }
 
-interface RawFeedback {
-  id: string;
-  user_id: string;
-  display_name: string | null;
-  rating: number | null;
-  body: string;
-  created_at: string;
-}
+/** Generated RETURNS TABLE columns are non-null; `rating` and `display_name` may be null. */
+type FeedbackRow = Database['public']['Functions']['admin_user_feedback_list']['Returns'][number];
 
 // ---------------------------------------------------------------------------
 // Mappers
@@ -141,22 +139,30 @@ function mapResults(raw: RawResults): AdminSurveyResults {
   };
 }
 
-function mapFeedback(r: RawFeedback): AdminFeedbackEntry {
+function mapFeedback(r: FeedbackRow): AdminFeedbackEntry {
   return {
     id: r.id,
     userId: r.user_id,
-    displayName: r.display_name,
-    rating: r.rating,
+    displayName: r.display_name ?? null,
+    rating: r.rating ?? null,
     body: r.body,
     createdAt: r.created_at,
   };
 }
 
-function mapError(msg: string): SurveyError {
-  if (msg.includes('forbidden')) return new SurveyError('validation', msg);
-  if (msg.includes('survey_not_found')) return new SurveyError('not_found', msg);
-  if (msg.includes('survey_has_no_choice_question')) return new SurveyError('validation', msg);
-  return new SurveyError('network', msg);
+/**
+ * Maps a failed staff read by its stable refusal: `forbidden` (a caller below moderator) and
+ * `survey_has_no_choice_question` are `validation`, `survey_not_found` is `not_found`. A
+ * missing backend object stays a `BackendUnavailableError`; anything else is `network`.
+ */
+function toSurveyAdminError(error: unknown): Error {
+  if (error instanceof BackendUnavailableError) return error;
+  const reason = refusalReason(error);
+  if (reason === 'survey_not_found') return new SurveyError('not_found', reason, { cause: error });
+  if (reason === 'forbidden' || reason === 'survey_has_no_choice_question') {
+    return new SurveyError('validation', reason, { cause: error });
+  }
+  return new SurveyError('network', reason ?? (error instanceof Error ? error.message : 'unknown'), { cause: error });
 }
 
 // ---------------------------------------------------------------------------
@@ -166,34 +172,44 @@ function mapError(msg: string): SurveyError {
 export class SupabaseSurveyAdminRepository implements ISurveyAdminRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
+  /** Runs one call and maps every failure with {@link toSurveyAdminError}. */
+  private async call<T>(object: string, request: () => PromiseLike<CallResult<T>>): Promise<T> {
+    try {
+      return unwrapCall(object, await request());
+    } catch (error) {
+      throw toSurveyAdminError(error);
+    }
+  }
+
   async listOverview(): Promise<AdminSurveyOverviewItem[]> {
-    const { data, error } = await this.client.rpc('admin_survey_overview');
-    if (error) throw mapError(error.message);
-    const rows = (data ?? []) as unknown as RawOverview[];
-    return rows.map(mapOverview);
+    const data = await this.call('rpc:admin_survey_overview', () => this.client.rpc('admin_survey_overview'));
+    return ((data ?? []) as unknown as RawOverview[]).map(mapOverview);
   }
 
   async getResults(slug: string): Promise<AdminSurveyResults> {
-    const { data, error } = await this.client.rpc('admin_survey_results', {
-      p_slug: slug,
-    });
-    if (error) throw mapError(error.message);
+    const data = await this.call('rpc:admin_survey_results', () =>
+      this.client.rpc('admin_survey_results', { p_slug: slug }),
+    );
     return mapResults(data as unknown as RawResults);
   }
 
   async getPmfReport(slug: string): Promise<PmfSurveyReport> {
-    const { data, error } = await this.client.rpc('admin_pmf_survey_report', { p_slug: slug });
-    if (error) throw mapError(error.message);
+    const data = await this.call('rpc:admin_pmf_survey_report', () =>
+      this.client.rpc('admin_pmf_survey_report', { p_slug: slug }),
+    );
     return mapPmfSurveyReport(data as unknown as RawPmfSurveyReport);
   }
 
-  async listFeedback(limit: number, offset: number): Promise<AdminFeedbackEntry[]> {
-    const { data, error } = await this.client.rpc('admin_user_feedback_list', {
-      p_limit: limit,
-      p_offset: offset,
-    });
-    if (error) throw mapError(error.message);
-    const rows = (data ?? []) as unknown as RawFeedback[];
-    return rows.map(mapFeedback);
+  async listFeedback(
+    limit: number,
+    after: Pick<AdminFeedbackEntry, 'createdAt' | 'id'> | null,
+  ): Promise<AdminFeedbackEntry[]> {
+    const rows = await this.call('rpc:admin_user_feedback_list', () =>
+      this.client.rpc('admin_user_feedback_list', {
+        p_limit: limit,
+        p_cursor: after ? { t: after.createdAt, id: after.id } : undefined,
+      }),
+    );
+    return (rows ?? []).map(mapFeedback);
   }
 }

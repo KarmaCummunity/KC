@@ -3,7 +3,9 @@
 // origin allowlist, hashes the visitor's address and user agent with the daily salt (the
 // salt is rotated by `rotate-research-salt`, so hashes cannot be linked across days) and
 // hands the response to submit_public_research_response, which owns the honeypot, the
-// rate limits and the circuit breaker. Anonymous callers: no credential is checked.
+// rate limits and the circuit breaker. It also serves the form its questions
+// (get_public_research_questions is service-role only, so the page cannot read them itself).
+// Anonymous callers: no credential is checked.
 import { corsHeaders, isAllowedOrigin } from '../_shared/cors.ts';
 
 /** The arguments of submit_public_research_response; every value is already hashed or validated. */
@@ -20,6 +22,8 @@ export interface SubmitArgs {
 }
 
 export interface ResearchDeps {
+  /** Calls `get_public_research_questions(slug)`; null when the survey is not active. */
+  readonly loadQuestions: (slug: string) => Promise<unknown | null>;
   /** Calls `get_research_salt()`; rejects when the database cannot answer. */
   readonly getSalt: () => Promise<string>;
   /** Calls `submit_public_research_response`; resolves to the response id, rejects with the database error. */
@@ -37,6 +41,9 @@ interface RequestBody {
   contactEmail?: string;
   contactWindowHe?: string;
 }
+
+/** A survey slug as `public.surveys` allows it. */
+const SLUG = /^[a-z0-9][a-z0-9-]{1,60}$/;
 
 /** Used when no proxy header names the client, so a missing header still hashes to something. */
 const LOCAL_IP_PLACEHOLDER = '127.0.0.1';
@@ -77,7 +84,22 @@ export function mapRpcError(message: string): { status: number; body: Record<str
   return { status: 500, body: { error: 'internal' } };
 }
 
-/** POST { slug, version, source?, answers, honeypot, contactEmail?, contactWindowHe? } → 200 { responseId }. */
+/** POST { action: 'questions', slug } → 200 { slug, title_he, description_he, version, questions }. */
+async function answerQuestions(deps: ResearchDeps, slug: unknown, cors: Record<string, string>): Promise<Response> {
+  if (typeof slug !== 'string' || !SLUG.test(slug)) return json({ error: 'invalid_body' }, 400, cors);
+  try {
+    const bundle = await deps.loadQuestions(slug);
+    return bundle ? json(bundle, 200, cors) : json({ error: 'survey_not_found' }, 400, cors);
+  } catch (error) {
+    await deps.report(error);
+    return json({ error: 'internal' }, 500, cors);
+  }
+}
+
+/**
+ * POST { slug, version, source?, answers, honeypot, contactEmail?, contactWindowHe? } → 200 { responseId };
+ * POST { action: 'questions', slug } → the form's questions.
+ */
 export function createResearchHandler(deps: ResearchDeps): (req: Request) => Promise<Response> {
   return async (req) => {
     const origin = req.headers.get('origin');
@@ -92,6 +114,7 @@ export function createResearchHandler(deps: ResearchDeps): (req: Request) => Pro
     let body: RequestBody;
     try {
       const raw = await req.json();
+      if (raw?.action === 'questions') return answerQuestions(deps, raw.slug, cors);
       if (!isValidBody(raw)) return json({ error: 'invalid_body' }, 400, cors);
       body = raw;
     } catch {
