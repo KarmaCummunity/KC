@@ -5,7 +5,7 @@ import { searchAdminDestinations, visibleDestinations } from '../adminSearch';
 import he from '../../../i18n/locales/he';
 import en from '../../../i18n/locales/en';
 
-const labels = { he: he.admin.nav, en: en.admin.nav } as never;
+const labels = { he: he.admin, en: en.admin } as never;
 const keys = (q: string, dest = ADMIN_DESTINATIONS) => searchAdminDestinations(q, dest, labels).map((d) => d.key);
 
 describe('searchAdminDestinations', () => {

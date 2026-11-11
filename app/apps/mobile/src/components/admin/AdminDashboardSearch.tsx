@@ -22,7 +22,7 @@ interface Props {
 }
 
 // Both languages are searchable whatever the UI language is.
-const SEARCH_LABELS = { he: he.admin.nav, en: en.admin.nav } as const;
+const SEARCH_LABELS = { he: he.admin, en: en.admin } as const;
 
 export function AdminDashboardSearch({ roles, isHidden }: Props): ReactElement {
   const L = useLocaleBundle();

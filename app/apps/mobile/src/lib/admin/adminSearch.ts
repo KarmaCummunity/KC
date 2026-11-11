@@ -3,11 +3,17 @@
 // title in Hebrew AND English (whatever the UI language) plus its keyword list, so an admin can
 // type either language. RBAC is applied first: a destination the session cannot open is never a result.
 import { hasPermission, type AdminRole } from '@kc/domain';
-import { ADMIN_SEARCH_KEYWORDS, type AdminDestination } from './adminDestinations';
+import type { AdminDestination } from './adminDestinations';
+
+/** One language's screen titles (`admin.nav`) and extra search words (`admin.searchKeywords`). */
+export interface AdminSearchLanguage {
+  readonly nav: Readonly<Record<string, string>>;
+  readonly searchKeywords: Readonly<Record<string, string>>;
+}
 
 export interface AdminSearchLabels {
-  readonly he: Readonly<Record<string, string>>;
-  readonly en: Readonly<Record<string, string>>;
+  readonly he: AdminSearchLanguage;
+  readonly en: AdminSearchLanguage;
 }
 
 const norm = (s: string): string => s.trim().toLocaleLowerCase();
@@ -34,8 +40,11 @@ export function searchAdminDestinations(
   if (words.length === 0) return [];
   const scored: { d: AdminDestination; rank: number }[] = [];
   for (const d of destinations) {
-    const titles = [labels.he[d.key], labels.en[d.key]].filter((x): x is string => !!x).map(norm);
-    const keywords = (ADMIN_SEARCH_KEYWORDS[d.key] ?? []).map(norm);
+    const titles = [labels.he.nav[d.key], labels.en.nav[d.key]].filter((x): x is string => !!x).map(norm);
+    const keywords = `${labels.he.searchKeywords[d.key] ?? ''} ${labels.en.searchKeywords[d.key] ?? ''}`
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(norm);
     let rank = 0;
     let all = true;
     for (const w of words) {

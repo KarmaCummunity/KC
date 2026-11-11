@@ -33,23 +33,3 @@ export const ADMIN_DESTINATIONS: readonly AdminDestination[] = [
   { key: 'donationLinks', href: '/(admin)/donation-links', icon: 'link-outline',     perm: 'donation_links.review' },
   { key: 'stats',     href: '/(admin)/stats',    icon: 'stats-chart-outline',      perm: 'stats.view_platform' },
 ];
-
-/**
- * Extra search words per destination, in Hebrew and English, for what an admin might type besides
- * the screen's title (a synonym, or the thing the screen manages). Lower-case; matched by substring.
- */
-export const ADMIN_SEARCH_KEYWORDS: Readonly<Partial<Record<AdminDestination['key'], readonly string[]>>> = {
-  dashboard: ['בית', 'ראשי', 'home', 'overview', 'main'],
-  reports: ['דיווח', 'תלונה', 'הפרה', 'report', 'complaint', 'abuse', 'moderation', 'הסרה'],
-  tasks: ['משימה', 'צוות', 'task', 'todo', 'ticket'],
-  admins: ['מנהל', 'הרשאות', 'תפקיד', 'admin', 'permission', 'role', 'team'],
-  users: ['משתמש', 'חבר', 'חשבון', 'חסימה', 'user', 'member', 'account', 'ban', 'block'],
-  posts: ['פוסט', 'מודעה', 'תוכן', 'post', 'listing', 'content'],
-  surveys: ['סקר', 'שאלון', 'survey', 'poll', 'questionnaire', 'research'],
-  audit: ['יומן', 'לוג', 'היסטוריה', 'audit', 'log', 'history', 'activity'],
-  whatsapp: ['וואטסאפ', 'ווטסאפ', 'בוט', 'whatsapp', 'bot', 'chat'],
-  matching: ['התאמה', 'התאמות', 'match', 'quality', 'algorithm'],
-  money: ['כסף', 'תשלום', 'תרומה', 'money', 'payment', 'finance', 'wallet'],
-  donationLinks: ['תרומה', 'קישור', 'donate', 'link', 'url'],
-  stats: ['סטטיסטיקה', 'נתונים', 'מדדים', 'stats', 'analytics', 'metrics', 'kpi', 'numbers'],
-};

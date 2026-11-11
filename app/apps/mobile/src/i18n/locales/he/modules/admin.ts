@@ -46,6 +46,22 @@ export const adminHe = {
     volunteer_manager: 'מנהל מתנדבים',
     org_volunteer: 'מתנדב בארגון',
   },
+  // Extra words the portal search (#2081) matches besides the screen title, space-separated.
+  searchKeywords: {
+    dashboard: 'בית ראשי סקירה',
+    reports: 'דיווח תלונה הפרה הסרה',
+    tasks: 'משימה צוות',
+    admins: 'מנהל הרשאות תפקיד',
+    users: 'משתמש חבר חשבון חסימה',
+    posts: 'פוסט מודעה תוכן',
+    surveys: 'סקר שאלון מחקר',
+    audit: 'יומן לוג היסטוריה',
+    whatsapp: 'וואטסאפ ווטסאפ בוט',
+    matching: 'התאמה התאמות',
+    money: 'כסף תשלום תרומה',
+    donationLinks: 'תרומה קישור',
+    stats: 'סטטיסטיקה נתונים מדדים',
+  },
   dashboard: {
     welcome: 'ברוך הבא לפורטל הניהול',
     rolesLabel: 'התפקידים שלך',
