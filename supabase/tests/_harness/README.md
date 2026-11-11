@@ -17,7 +17,7 @@ The connection comes from `supabase status` (or a `DB_URL` override), so no cred
 | File | Contents |
 |---|---|
 | `00_core.sql` | `act_as(user)`, `act_as_anon()`, `fail`, `assert_true`, `assert_eq`, `assert_raises(sql, error)`, `assert_row_count(sql, n)`, `iso_in(interval)` |
-| `10_fixtures.sql` | world-agnostic builders: `create_user(handle)`, `create_listing(...)`, `create_offer_with_photo(...)` (D132), `listing_kind_id`, `listing_status`, `handoff_status`, `run_commit_checks()` (fires deferred checks, since tests never commit) |
+| `10_fixtures.sql` | world-agnostic builders: `create_user(handle)`, `create_listing(...)`, `create_offer_with_photo(...)` and `add_listing_photo(id)` (D132), `listing_kind_id`, `listing_status`, `handoff_status`, `run_commit_checks()` (fires deferred checks, since tests never commit) |
 | `20_world_<slug>.sql` | one per giving world, composing the generic fixtures (`20_world_rides.sql`: `create_ride_offer`, `book_ride`) |
 
 ## Writing a test

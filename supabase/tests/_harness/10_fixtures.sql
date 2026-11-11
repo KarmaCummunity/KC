@@ -175,3 +175,24 @@ begin
     p_media_paths => array[p_owner_id::text || '/' || gen_random_uuid()::text || '.jpg']);
 end;
 $$;
+
+-- Attaches one photo to a listing built by `create_listing` and returns its id, so it composes:
+-- `kc_test.add_listing_photo(kc_test.create_listing(...))`. A test that runs DDL on `posts` after
+-- creating an offer needs this plus `run_commit_checks()` first: Postgres refuses DDL on a table
+-- with a pending deferred check, and the D132 check (0741) is pending for every new member offer.
+create function kc_test.add_listing_photo(p_listing_id uuid)
+returns uuid
+language plpgsql
+as $$
+declare
+  v_post public.posts;
+begin
+  select * into v_post from public.posts where post_id = p_listing_id or listing_id = p_listing_id limit 1;
+  if v_post.post_id is null then
+    perform kc_test.fail(format('no post for listing %s', p_listing_id));
+  end if;
+  insert into public.listing_media (listing_id, storage_path, sort_order)
+  values (v_post.post_id, v_post.owner_id::text || '/' || gen_random_uuid()::text || '.jpg', 0);
+  return p_listing_id;
+end;
+$$;
