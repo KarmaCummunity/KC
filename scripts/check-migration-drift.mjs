@@ -102,6 +102,20 @@ export function repairCommands({ orphans, missing }) {
   return cmds;
 }
 
+/**
+ * True when the text is the table `supabase migration list --linked` prints: a header row
+ * with a LOCAL and a REMOTE column. A project whose ledger is empty (a fresh or just rebuilt
+ * database) prints that table with no remote version in it, which is a valid state, whereas
+ * text without the header (an error, an empty pipe) is not CLI output at all.
+ * @param {string} cliOutput
+ */
+export function hasLedgerTable(cliOutput) {
+  return cliOutput.split('\n').some((line) => {
+    const cells = line.split('|').map((c) => c.trim().toLowerCase());
+    return cells.length >= 2 && cells[0] === 'local' && cells[1] === 'remote';
+  });
+}
+
 function readCliOutput(fileArg) {
   // Explicit file path wins; otherwise read piped stdin (fd 0).
   return readFileSync(fileArg ?? 0, 'utf8');
@@ -123,7 +137,7 @@ function main() {
   const cliOutput = readCliOutput(fileArg);
 
   const remoteVersions = parseRemoteVersions(cliOutput);
-  if (remoteVersions.length === 0) {
+  if (remoteVersions.length === 0 && !hasLedgerTable(cliOutput)) {
     console.error(
       '✗ Could not parse any remote migration versions from the input.\n' +
         '  Expected `supabase migration list --linked` output (piped in or a file path arg).',
@@ -141,6 +155,10 @@ function main() {
   }
   const drift = findDrift({ localVersions, remoteVersions });
 
+  if (drift.ok && remoteVersions.length === 0) {
+    console.log('✓ No migration drift — the remote ledger is empty (a fresh or rebuilt database).');
+    return;
+  }
   if (drift.ok) {
     console.log(
       `✓ No migration drift — ${remoteVersions.length} remote versions all map to local files.`,
