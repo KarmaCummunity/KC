@@ -129,11 +129,12 @@ Last applied on kc-dev when this was written: `0239`.
 | 0690 | money sandbox completion behind the `sandbox_payments` server flag; org memberships written by definer functions only | merged (#1983) |
 | 0691 | #1961 reset the public schema comment (retired product cleanup) | in progress |
 | 0692 | #1964 demo: bulk admin wipe/seed, +2 orgs, moderation reports, KPIs | in progress |
-| 0693+ | — | free |
+| 0693 | #1964 demo G1 alignment (posts, ride_post_details, rate limits) | in progress |
+| 0694+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0693+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0694+`.
 
 ## How to claim
 

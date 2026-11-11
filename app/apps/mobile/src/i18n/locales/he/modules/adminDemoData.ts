@@ -14,9 +14,9 @@ export const adminDemoDataHe = {
   reports: 'דיווחים (מודרציה)',
   openReports: 'דיווחים פתוחים',
   postMedia: 'תמונות דמה (DB)',
-  legacyRides: 'טרמפים ישנים (ride_listings)',
+  legacyRides: 'טרמפים ללא פרטי נסיעה (G1)',
   legacyRidesHint:
-    'יש טרמפים בטבלה הישנה ואין (מספיק) בפוסטים — כנראה שחזור לפני מיגרציה 0676. הריצו שחזור נתוני דמה אחרי deploy.',
+    'יש פוסטי טרמפ בלי שורה ב-ride_post_details. הריצו שחזור נתוני דמה אחרי deploy.',
   noneTitle: 'אין נתוני דמה במערכת',
   noneHintRestore: 'אפשר להחזיר אותם בלחיצה אחת.',
   noneHintNoRestore: 'שחזור זמין רק בסביבת הפיתוח.',

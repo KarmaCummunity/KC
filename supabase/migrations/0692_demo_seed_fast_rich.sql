@@ -67,7 +67,7 @@ begin
           join public.posts p on p.post_id = mls.listing_id
          where p.owner_id = any (p_ids)) into v_left;
       end if;
-    when 'giving_handoffs' then
+    when 'giving_handoffs', 'post_handoffs' then
       with doomed as (
         select ph.ctid from public.post_handoffs ph
          where ph.owner_id = any (p_ids) or ph.recipient_id = any (p_ids)

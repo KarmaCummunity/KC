@@ -9,7 +9,7 @@ export interface DemoDataStatus {
   readonly demoRidePosts: number;
   /** Item give/request posts (non-rides). */
   readonly demoItemPosts: number;
-  /** Leftover `ride_listings` rows; should be 0 after a full restore on current seed. */
+  /** Ride posts missing `ride_post_details` (G1 gap); should be 0 after a full restore. */
   readonly demoLegacyRideListings: number;
   /** Staff rows on `[DEMO]` nonprofits (`demo_seed`). */
   readonly demoOrgMemberships: number;

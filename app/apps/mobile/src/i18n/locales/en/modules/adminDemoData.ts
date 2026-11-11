@@ -14,9 +14,9 @@ export const adminDemoDataEn = {
   reports: 'Reports (moderation)',
   openReports: 'Open reports',
   postMedia: 'Demo photos (DB)',
-  legacyRides: 'Legacy rides (ride_listings)',
+  legacyRides: 'Rides missing details (G1)',
   legacyRidesHint:
-    'Rides still live in the old table but not as posts — likely a seed before migration 0676. Re-run restore demo data after deploy.',
+    'Some ride posts have no ride_post_details row. Re-run restore demo data after deploy.',
   noneTitle: 'No demo data in the system',
   noneHintRestore: 'You can bring it back with one press.',
   noneHintNoRestore: 'Restoring is available in the dev environment only.',
