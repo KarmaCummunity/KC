@@ -83,13 +83,13 @@ test('the committed manifest lists exactly the migrations in the tree; prod stay
   const allowed = loadAllowedManifest(root);
   const migrations = listMigrationFiles(root);
   // Each forward-only migration after the cut-over is listed here with the PR that adds it (docs/db/cutover-runbook.md).
-  const expected = ['0001_baseline.sql', '0002_org_entitlements.sql'];
+  const expected = ['0001_baseline.sql', '0002_org_entitlements.sql', '0003_world_content.sql'];
   assert.deepEqual(allowed, expected, 'the manifest approves the baseline and the forward-only migrations');
   assert.deepEqual(migrations, expected, 'supabase/migrations holds the baseline and the forward-only migrations (legacy chain is in archive/)');
   const blocked = checkProdSchemaMode({ mode: 'block', migrations, allowed });
   assert.equal(blocked.ok, false, 'unset / block still refuses a prod push');
   assert.equal(checkProdSchemaMode({ mode: 'baseline', migrations, allowed }).ok, true);
-  const extra = checkProdSchemaMode({ mode: 'baseline', migrations: [...migrations, '0003_x.sql'], allowed });
+  const extra = checkProdSchemaMode({ mode: 'baseline', migrations: [...migrations, '0004_x.sql'], allowed });
   assert.equal(extra.ok, false, 'a migration the manifest does not list is refused');
   assert.match(extra.errors[0], /1 file\(s\) not listed/);
 });

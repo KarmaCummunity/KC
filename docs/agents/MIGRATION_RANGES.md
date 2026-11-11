@@ -4,7 +4,7 @@
 > replaced by one migration, `supabase/migrations/0001_baseline.sql`, assembled from
 > `supabase/schemas/` and frozen (`node scripts/assemble-baseline.mjs --check` fails when it
 > changes). The old files are history in `supabase/migrations/archive/`. **The next free number is
-> `0002`.** Later changes are forward-only `supabase/migrations/NNNN_snake.sql` files with their
+> `0004`** (`0002_org_entitlements`, #2150; `0003_world_content`: links and knowledge of the giving worlds). Later changes are forward-only `supabase/migrations/NNNN_snake.sql` files with their
 > pgTAP test in `supabase/tests/`; claim a range below as before. The table that follows is the
 > record of the retired chain and is kept for reference only.
 
