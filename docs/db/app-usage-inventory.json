@@ -9,7 +9,7 @@
  "summary": {
   "bucket": {
    "callSites": 19,
-   "distinct": 4
+   "distinct": 5
   },
   "channel": {
    "callSites": 6,
@@ -80,11 +80,11 @@
   {
    "kind": "bucket",
    "file": "app/apps/mobile/src/hooks/usePostShare.ts",
-   "line": 64,
+   "line": 69,
    "area": "mobile",
    "symbol": "recipientNavigable",
-   "via": "const",
-   "name": "post-images"
+   "via": "unresolved",
+   "name": "<firstAsset.bucket>"
   },
   {
    "kind": "bucket",
