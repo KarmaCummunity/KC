@@ -327,7 +327,10 @@ begin
     join public.post_series_occurrences o on o.post_id = p.post_id
    where o.series_id = p_series_id and o.occurrence_on = p_on;
   if found and v_post.status in ('open', 'paused') then
-    perform public.post_record_set_status(v_post, 'deleted_no_recipient');
+    -- On the post itself: `post_record_set_status` also writes the `listings` view, whose mirror
+    -- reads its "closed" status back as `closed_delivered`.
+    update public.posts set status = 'deleted_no_recipient', updated_at = now()
+     where post_id = v_post.post_id;
   end if;
 end;
 $$;
