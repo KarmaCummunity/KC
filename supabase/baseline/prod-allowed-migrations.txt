@@ -19,6 +19,10 @@
 0008_post_media_sizes.sql
 0009_research_feedback_survey_reports.sql
 0010_housing_knowledge_finance_reads.sql
+0011_admin_role_authority.sql
+0012_admin_team_roster.sql
+0013_admin_census_and_bootstrap.sql
+0014_org_slug_and_void_reason.sql
 0020_org_sec46_machine.sql
 0021_post_series.sql
 0022_post_series_rpcs.sql

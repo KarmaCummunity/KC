@@ -3703,6 +3703,25 @@ export type Database = {
         }
         Returns: string
       }
+      admin_hierarchy_census: { Args: never; Returns: Json }
+      admin_list_admins: {
+        Args: { p_include_revoked?: boolean }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          grant_id: string
+          granted_at: string
+          granted_by: string
+          granted_by_display_name: string
+          last_seen_at: string
+          manager_grant_id: string
+          revoked_at: string
+          revoked_by: string
+          role: string
+          scope_org_id: string
+          user_id: string
+        }[]
+      }
       admin_match_quality: {
         Args: { p_days?: number }
         Returns: {
@@ -3726,6 +3745,22 @@ export type Database = {
       admin_org_application_reject: {
         Args: { p_application_id: string; p_note?: string }
         Returns: undefined
+      }
+      admin_org_tree: {
+        Args: { p_org_id?: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          effective_org_id: string
+          grant_id: string
+          is_platform: boolean
+          last_seen_at: string
+          manager_grant_id: string
+          org_name: string
+          role: string
+          scope_org_id: string
+          user_id: string
+        }[]
       }
       admin_pmf_survey_report: { Args: { p_slug?: string }; Returns: Json }
       admin_refund_payment: {
@@ -3766,8 +3801,12 @@ export type Database = {
         }
       }
       admin_set_manager: {
-        Args: { p_grant_id: string; p_manager_grant_id: string }
+        Args: { p_grant_id: string; p_manager_grant_id?: string }
         Returns: undefined
+      }
+      admin_set_org_slug: {
+        Args: { p_org_id: string; p_slug: string }
+        Returns: string
       }
       admin_set_org_status: {
         Args: { p_org_id: string; p_status: string }
