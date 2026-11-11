@@ -5004,6 +5004,17 @@ export type Database = {
       restore_account: { Args: never; Returns: undefined }
       resume_post: { Args: { p_post_id: string }; Returns: undefined }
       resume_standing_order: { Args: { p_order_id: string }; Returns: Json }
+      ride_occurrence_schedules: {
+        Args: { p_post_ids: string[] }
+        Returns: {
+          depart_time: string
+          ends_on: string
+          post_id: string
+          series_id: string
+          series_on: string
+          weekdays: number
+        }[]
+      }
       rides_feed: {
         Args: { p_cursor?: Json; p_filters?: Json; p_limit?: number }
         Returns: {
@@ -5019,8 +5030,11 @@ export type Database = {
           reward_model: string
           seats: number
           seats_left: number
+          series_depart_time: string
           series_id: string
           series_more: number
+          series_on: string
+          series_weekdays: number
           title: string
         }[]
       }

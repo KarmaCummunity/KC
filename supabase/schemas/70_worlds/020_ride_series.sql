@@ -62,3 +62,22 @@ create policy ride_series_select_owner on public.ride_series
   using (owner_id = (select auth.uid()));
 
 grant select on public.ride_series to authenticated;
+
+-- The schedule of a series as the readers of its occurrences see it (FR-RIDE-046): days,
+-- departure time (Israel time) and last day, while the series is not cancelled. The row
+-- itself stays its owner's; this is released only through rides_feed and
+-- ride_occurrence_schedules, which reach a series through an occurrence the caller can read.
+create function kc_access.ride_series_schedule(p_series_id uuid)
+returns table (weekdays smallint, depart_time time, ends_on date)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select s.weekdays, s.depart_time, s.ends_on
+    from public.ride_series s
+   where s.id = p_series_id and s.status <> 'cancelled';
+$$;
+comment on function kc_access.ride_series_schedule(uuid) is
+  'Weekdays, departure time and last day of a running series; released through readable occurrences only.';
+grant execute on function kc_access.ride_series_schedule(uuid) to authenticated;

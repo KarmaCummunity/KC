@@ -302,7 +302,8 @@ rpc('message_event_registrants', 'same', 'rpc:message_event_registrants', 'The o
 rpc('complete_ride', 'same', 'rpc:complete_ride', 'The driver completes the whole ride; answers the number of bookings completed.');
 rpc('get_post_private_location', 'same', 'rpc:get_post_private_location', 'The private house numbers of a ride, released to the driver and to the passengers of a confirmed booking.');
 rpc('report_post_emergency', 'same', 'rpc:report_post_emergency', '`p_post_id`, optional `p_note`; refusals `ride_not_active`, `emergency_throttled`.');
-rpc('rides_feed', 'same', 'rpc:rides_feed', 'The rides feed; with `p_filters.origin` / `dest` / `radius_km` it is the route search. The app reads the first page; the series marker (weekdays) is not part of a row.');
+rpc('rides_feed', 'same', 'rpc:rides_feed', 'The rides feed; with `p_filters.origin` / `dest` / `radius_km` it is the route search. The app reads the first page; an occurrence of a recurring ride carries `series_on`, `series_weekdays` and `series_depart_time` for its series marker.');
+rpc('ride_occurrence_schedules', 'same', 'rpc:ride_occurrence_schedules', 'The series day, weekdays, departure time and last day of ride occurrences the caller can read (`p_post_ids`); the ride detail builds its series marker from it, since `ride_series` is its owner\'s alone.');
 rpc('post_seat_counts', 'same', 'rpc:post_seat_counts', 'Places held, waiting registrations and seats left of event and ride posts the caller can read (`p_post_ids`, at most 100); the volunteering shifts and the occurrences of a ride series read their free places here.');
 rpc('accept_world_consent', 'same', 'rpc:accept_world_consent', 'Accepts the driver declaration in force (`p_kind`, `p_version`); `consent_version_stale` for an old version.');
 rpc('my_matches', 'same', 'rpc:my_matches', 'The caller\'s pairs, each with the other member\'s post as a card (`other_post`).');

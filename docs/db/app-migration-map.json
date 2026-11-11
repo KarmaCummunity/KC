@@ -2,8 +2,8 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 218,
-   "same": 89,
+   "objects": 219,
+   "same": 90,
    "renamed": 20,
    "changed": 47,
    "removed": 1,
@@ -60,8 +60,8 @@
    "missing": 65
   },
   "wedge": {
-   "objects": 53,
-   "same": 32,
+   "objects": 54,
+   "same": 33,
    "renamed": 15,
    "changed": 6,
    "removed": 0,
@@ -826,6 +826,7 @@
     "rpc:get_post_private_location",
     "rpc:report_post_emergency",
     "rpc:rides_feed",
+    "rpc:ride_occurrence_schedules",
     "rpc:post_seat_counts",
     "rpc:accept_world_consent",
     "rpc:my_matches",
@@ -840,8 +841,8 @@
     "table:post_ratings"
    ],
    "counts": {
-    "objects": 66,
-    "oneToOne": 55,
+    "objects": 67,
+    "oneToOne": 56,
     "changed": 11,
     "removed": 0,
     "missing": 0
@@ -9124,7 +9125,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 107,
+     "line": 104,
      "symbol": "fetchListingDetail",
      "area": "marketplace"
     }
@@ -10293,19 +10294,51 @@
    ]
   },
   {
+   "old": "ride_occurrence_schedules",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "wedge",
+   "confidence": "high",
+   "missing": null,
+   "note": "The series day, weekdays, departure time and last day of ride occurrences the caller can read (`p_post_ids`); the ride detail builds its series marker from it, since `ride_series` is its owner's alone.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "ride_occurrence_schedules",
+     "source": "70_worlds/060_rides_feed.sql:163",
+     "signature": [
+      "ride_occurrence_schedules(p_post_ids: string[]) → { depart_time: string ends_on: string post_id: string series_id: string series_on: string weekdays: number }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "marketplace"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
+     "line": 68,
+     "symbol": "seriesMarker",
+     "area": "marketplace"
+    }
+   ]
+  },
+  {
    "old": "rides_feed",
    "kind": "rpc",
    "status": "same",
    "launch": "wedge",
    "confidence": "high",
    "missing": null,
-   "note": "The rides feed; with `p_filters.origin` / `dest` / `radius_km` it is the route search. The app reads the first page; the series marker (weekdays) is not part of a row.",
+   "note": "The rides feed; with `p_filters.origin` / `dest` / `radius_km` it is the route search. The app reads the first page; an occurrence of a recurring ride carries `series_on`, `series_weekdays` and `series_depart_time` for its series marker.",
    "oldObject": {},
    "targets": [
     {
      "type": "rpc",
      "name": "rides_feed",
-     "source": "70_worlds/060_rides_feed.sql:105",
+     "source": "70_worlds/060_rides_feed.sql:107",
      "signature": [
       "rides_feed(p_cursor?: Json, p_filters?: Json, p_limit?: number) → { arrives_at: string departs_at: string dest_name: string direction: string meeting_points: Json next_cursor: Json origin_name: string owner_id: string post_id: string reward_model: string seats: number seats_left: nu..."
      ],
@@ -13439,7 +13472,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 79,
+     "line": 76,
      "symbol": "loadEventDetails",
      "area": "marketplace",
      "ops": [
@@ -13508,7 +13541,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 98,
+     "line": 95,
      "symbol": "loadFoodDetails",
      "area": "marketplace",
      "ops": [
@@ -14106,15 +14139,6 @@
      ]
     },
     {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 70,
-     "symbol": "seriesMarker",
-     "area": "marketplace",
-     "ops": [
-      "select"
-     ]
-    },
-    {
      "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
      "line": 94,
      "symbol": "SupabaseRideSeriesRepository.unwrapCall",
@@ -14434,7 +14458,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 80,
+     "line": 77,
      "symbol": "loadEventDetails",
      "area": "marketplace",
      "ops": [
@@ -14443,7 +14467,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 115,
+     "line": 112,
      "symbol": "fetchListingDetail",
      "area": "marketplace",
      "ops": [
@@ -15841,7 +15865,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
-     "line": 114,
+     "line": 111,
      "symbol": "fetchListingDetail",
      "area": "marketplace",
      "ops": [
