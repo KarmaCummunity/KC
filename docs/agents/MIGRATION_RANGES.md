@@ -146,12 +146,11 @@ Last applied on kc-dev when this was written: `0239`.
 | 0740 | delivered listing visibility: union of the two surfaces, recipient via handoff, `recipients` row for food / animals / items hand-overs + backfill (D-229) | in progress |
 | 0741 | #2020 offer photo rule on the server (D132): commit-time check on new posts and deleted listing photos, `create_post_with_media` | in progress |
 | 0742 | #2078 the personal activity timeline returns each post's world (volunteering wording, FR-CLOSURE-011 AC9) | in progress |
-| 0745 | #1993 seed verified Kol Zchut and community links for remaining worlds (housing, knowledge, animals, money, employment, food) | in progress |
-| 0726–0729, 0743–0744, 0746+ | — | free |
+| 0726–0729, 0743+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0726–0729`, `0743–0744`, `0746+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0726–0729`, `0743+`.
 
 ## How to claim
 
