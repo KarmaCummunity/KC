@@ -43,7 +43,13 @@ Known emulator quirks and CI flakes the job handles:
   3. System (Android 13+ / API 33+) or in-app push notification permission dialogs.
   Previously, these caused `extendedWaitUntil: visible: id: feed-screen` to fail after ~1m24s across all flows. Now, `.maestro/subflows/dismiss-gates.yaml` conditionally checks and taps the exact testIDs (`legal-consent-terms-checkbox`, `legal-consent-privacy-checkbox`, `legal-consent-age-checkbox`, `legal-consent-submit`, `onboarding-skip`, `push-gate-decline`) and text fallbacks. The shared `.maestro/subflows/sign-in.yaml` waits for auth submission to transition, loops `dismiss-gates` while `feed-screen` is not visible, and uses generous timeouts (60–90s) without hiding real failures.
 
-The check is **not required** for merge yet. Make it required (issue AC6) after it has been green for a week of PRs.
+## Required for a PR that touches the app, and a health run on `dev`
+
+- **On a PR:** `maestro` is a lane of the `CI gate` (the only required check, D-195), planned by `scripts/ci-changes.mjs` (`MAESTRO_RULES`) when the diff touches `app/apps/mobile`, `app/packages`, `app/pnpm-lock.yaml`, `.maestro`, `scripts/maestro-*` or the workflow. A failed flow fails the gate. It is not planned for other diffs, for a Dependabot PR (no secrets), or in a merge group or a push, so a docs or database PR does not wait for it. Expect about 45 minutes on a mobile PR.
+- **On `dev`:** `maestro-dev-health.yml` runs the same journeys after a push to `dev` that touches the app (one run in flight, a newer push replaces it) and on demand. It is **not** part of `CI`: `deploy.yml` deploys on a green `CI` push run, kc-dev is what those deploys and reseeds change, and a 45-minute run that needs kc-dev quiet must never hold, or be held by, a deploy. Read a red run as a signal to look at; the artifact has the evidence.
+- **Retry:** a flow that fails is run once more (`scripts/maestro-run-android.sh`). Passing only on the retry prints a warning naming the flow and keeps the first attempt's video and debug output, so an unstable flow stays visible; failing twice fails the lane. A flow that is retried often is a bug to fix, not a retry to raise.
+- **kc-dev is shared and mutable.** A rebuild, a reseed or a deploy while the lane runs can fail sign-in or hide data (this happened on 2026-11-11 after the baseline cut-over). If a PR is red on sign-in across many flows, check the `Seed KC dev` and `Deploy` runs of the same window before touching the PR, and re-run the failed job once.
+- **Changing the lane** (`ci.yml`, `ci-changes.mjs`, `ci-gate.mjs`) is a gate-weakening-class change: it needs the owner's approval on the head SHA (INFRA-CI-2).
 
 ## Writing a flow
 
