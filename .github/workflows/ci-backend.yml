@@ -58,33 +58,30 @@ jobs:
       # production starts from; the Supabase shim stands in for the platform objects the
       # excluded services would create), its pgTAP suites run, and the seed loaders are
       # proven loadable and idempotent. See docs/db/target-design.md §10.
-      - name: TEMP probe 005_geo crash
-        continue-on-error: true
+      # The supautils extension in the local Postgres image adds "Grant the required privileges"
+      # hints to permission errors of anon/authenticated. For a denied FUNCTION call (no table in the
+      # query) its hook dereferences an empty permission list and the backend dies with signal 11,
+      # taking every connection down. The pgTAP suites assert exactly that denial (anon cannot call
+      # internal functions), so switch the hint feature off for this throwaway stack. It only decorates
+      # error text; the privilege checks themselves are unchanged. Production never calls a denied
+      # function through PostgREST (it hides them), see docs/db/cutover-runbook.md.
+      - name: Disable supautils permission hints (image crash on denied function calls)
         run: |
+          db_container="$(docker ps --filter 'name=supabase_db_' --format '{{.Names}}' | head -n1)"
+          test -n "$db_container"
+          docker exec "$db_container" psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -qAt \
+            -c "alter system set supautils.hint_roles = ''" -c "select pg_reload_conf()"
+          sleep 2
           DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')"
-          mk() { psql "$DB_URL" -X -qc "drop database if exists $1 with (force)" -c "create database $1"; }
-          fn="create function public.zz_d(p text) returns text language sql stable as 'select p'"
-          rv="revoke execute on function public.zz_d(text) from public, anon, authenticated"
-          t() { # url role
-            echo "── $1 as $2"; psql "$1" -X -v ON_ERROR_STOP=0 -c "begin; set local role $2; select public.zz_d('x'); rollback" 2>&1 | tail -2
-            for _ in $(seq 1 30); do psql "$1" -X -Atc "select 1" >/dev/null 2>&1 && break; sleep 2; done
-          }
-          mk probe_a; UA="${DB_URL%/*}/probe_a"
-          psql "$UA" -X -v ON_ERROR_STOP=1 -q -f supabase/baseline/local/supabase_shim.sql
-          psql "$UA" -X -q -c "$fn" -c "$rv"
-          t "$UA" anon
-          mk probe_b; UB="${DB_URL%/*}/probe_b"
-          psql "$UB" -X -v ON_ERROR_STOP=1 -q -f supabase/baseline/local/supabase_shim.sql
-          psql "$UB" -X -v ON_ERROR_STOP=1 -q --single-transaction -f supabase/migrations/0001_baseline.sql
-          psql "$UB" -X -q -c "$fn" -c "$rv"
-          t "$UB" authenticated
-          t "$UB" service_role
-          t "$UB" anon
-          psql "$UB" -X -Atc "select defaclrole::regrole, defaclnamespace::regnamespace, defaclobjtype, defaclacl::text from pg_default_acl order by 1,2,3"
-          UP="${DB_URL%/*}/postgres"
-          psql "$UP" -X -q -c "$fn" -c "$rv"
-          t "$UP" anon
-          psql "$UP" -X -q -c "drop function public.zz_d(text)"
+          psql "$DB_URL" -X -v ON_ERROR_STOP=1 -qAt <<'SQL'
+          create function public.zz_hint_probe(p text) returns text language sql stable as 'select p';
+          revoke execute on function public.zz_hint_probe(text) from public, anon, authenticated;
+          SQL
+          # A denied call must now fail with a normal 42501 instead of killing the server.
+          out="$(psql "$DB_URL" -X -qAt -c "begin; set local role anon; select public.zz_hint_probe('x'); rollback" 2>&1 || true)"
+          echo "$out" | tail -1
+          psql "$DB_URL" -X -v ON_ERROR_STOP=1 -qAt -c "drop function public.zz_hint_probe(text)"
+          grep -q 'permission denied for function' <<<"$out"
 
       - name: Migrations apply on an empty database + pgTAP tests + seed loaders
         run: scripts/run-baseline-tests.sh
