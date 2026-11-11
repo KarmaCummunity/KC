@@ -1,12 +1,12 @@
 # 2.24 Event ride groups (קבוצות טרמפים לאירוע)
 
-> **Status:** ⏳ Spec v1 draft (2026-11-11), **pending PM approval**. Nothing is implemented. Product decision: `{{D:event-ride-groups}}`. Assumptions awaiting approval are the `S` fills in the table below. Implementation gap: `{{G:event-ride-groups}}`.
+> **Status:** ⏳ Spec v2 draft (2026-11-11), **pending PM approval**. v2 reflects the PM's direction of 2026-11-11: each publisher chooses a ride's audience and anonymity, and the first release is the group as an organized area with a one-tap request/offer. Nothing is implemented. Product decision: `{{D:event-ride-groups}}`. Assumptions awaiting approval are the `S` fills in the table below. Implementation gap: `{{G:event-ride-groups}}`.
 
 Prefix: `FR-EVRIDE-*`
 
 > **Source of truth.** Product book [`05_giving_worlds.md` §5.3](../05_giving_worlds.md) wins where it disagrees (D35). Built on the one rides flow (D70–D75, D103): a group ride **is** an ordinary ride post, so places, seats, bookings, the cost caps, the emergency call, karma and the completion flow are reused, never copied. Also relevant: D16 (visibility and anonymity), D23 (verification shown, not blocking), D31 (events), D33 (reports), D95 (rides urgency), `G61` (one status graph per lifecycle), [ADR-006](../../architecture/adr/ADR-006-one-post-model.md) (one post model), [ADR-007](../../architecture/adr/ADR-007-event-group-audience.md) (audience of an event group).
 
-> **Why.** Today a rides group lives in WhatsApp: "who drives from Haifa to the wedding? who takes me back at 1am?". A ride published to the general rides feed reaches strangers, exposes the event, and drowns among unrelated rides. An **event ride group** is a small private room around one event (wedding, party, bar mitzvah, concert, conference, trip, funeral): only its members see its rides, every ride is either **to** or **from** the event, and the organizer can see at a glance whether everyone has a way there and back. Each group is also an acquisition channel: one wedding brings 100–500 guests through a shared link (D38, D47).
+> **Why.** Today a rides group lives in WhatsApp: "who drives from Haifa to the wedding? who takes me back at 1am?". A ride published to the general rides feed reaches strangers, exposes the event, and drowns among unrelated rides. An **event ride group** is a small private room around one event (wedding, party, bar mitzvah, concert, conference, trip, funeral): its members see its rides in one orderly place and each publisher decides whether anyone beyond the group may see a ride, every ride is either **to** or **from** the event, and the organizer can see at a glance whether everyone has a way there and back. Each group is also an acquisition channel: one wedding brings 100–500 guests through a shared link (D38, D47).
 
 > **Scope.** Create a group for one event; invite by link, code or QR; join with or without approval; publish ride offers and requests that live only inside the group; book seats; organizer announcements; the full lifecycle (moved, cancelled, ended, archived, purged); moderation; analytics. Phase 2 and 3 are specified in outline so P1 does not close doors.
 
@@ -19,7 +19,7 @@ Prefix: `FR-EVRIDE-*`
 | Event ride group (**group**) | The room around one event; has an organizer, members, an event place and window |
 | Event place | An **official place** (D71): a city, optionally an official street and a private-to-members house number, or a junction. The venue name is a label only and never routes |
 | Leg | The direction of a group ride: `to_event` (ends at the event place) or `from_event` (starts there) |
-| Group ride | A ride offer or request post that carries a group and a leg; visible only to active members |
+| Group ride | A ride offer or request post that carries a group and a leg; always visible to active members, and to others only as far as its publisher's audience choice and the group's ceiling allow |
 | Organizer / co-organizer | The creator (exactly one) / up to 3 members the organizer promotes; co-organizers do everything but delete or transfer the group |
 | Member | A person with an `active` membership |
 | Invite link / code / QR | The three ways to the same secret token; rotatable |
@@ -30,7 +30,8 @@ Prefix: `FR-EVRIDE-*`
 | ID | Decision (working assumption) |
 |---|---|
 | `{{S:event-group-access-model}}` | A group is **invite-only and unlisted** by default: it cannot be found, searched or seen without the invite token. Public groups (listed, searchable) arrive in P2. Join is by link, code or QR; the organizer picks **open with the link** or **approval for each join** |
-| `{{S:event-group-ride-audience}}` | A group ride is visible **only to active members**, and **never** reaches the general rides feed, main feed, search, map, matching, saved-route alerts, the WhatsApp bot, public statistics or push to non-members. Fail-closed by design (ADR-007) |
+| `{{S:event-group-ride-audience}}` | **The publisher of each ride chooses its audience**: *group only* (default), *group + my followers*, or *everyone*; and any anonymity level of D16. Group members always see the group's rides in its area. The **organizer sets a ceiling** on the widest audience a ride may choose (default *group only* for an invite-only group, *everyone* for a public one). A *group only* ride never reaches the general feed, search, map, matching, saved-route alerts, the WhatsApp bot, public statistics or a non-member's push, and is stored fail-closed (ADR-007) |
+| `{{S:event-group-mvp-board}}` | The first release is the group as **an organized area of posts** (the board) with a one-tap quick request/offer to the group; join approval, announcements, reminders, matching and public groups follow in later slices (see Rollout, *MVP cut*) |
 | `{{S:event-group-no-group-chat}}` | No group chat in P1/P2: coordination uses the existing pair chat per ride plus one-way **organizer announcements**. Group chat is P3 (needs a new chat model; the chat today is strictly one pair) |
 | `{{S:event-group-limits}}` | Limits (one config object `EVENT_RIDE_GROUP_LIMITS`, tunable like `KARMA_POINT_VALUES`): title 3–80 chars; description ≤ 500; access note ≤ 280; event ends in the future, starts ≤ 365 days ahead, lasts ≤ 14 days (default 6 h when no end is given); ≤ 3 active groups per organizer; ≤ 3 co-organizers; members 2–1000 (default 500); a person is in ≤ 20 active groups; ≤ 5 announcements per group per day (≤ 500 chars); per member and leg ≤ 3 active offers and ≤ 1 active request |
 | `{{S:event-group-lifecycle}}` | Publishing is open from creation until `ends_at + 12 h`; the group is read-only from then (**ended**), archived at `ends_at + 7 d`, and its personal data purged at `ends_at + 90 d` (only aggregate counters stay) |
@@ -48,7 +49,9 @@ Prefix: `FR-EVRIDE-*`
 | Join (open policy) / request to join (approval) | ❌ | ✅ | — | — | — | — | ✅ |
 | See the group, board, announcements | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
 | Publish a ride offer / request in the group | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | — |
-| Book a seat | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | — |
+| Book a seat | ❌ | per the ride's audience | ❌ | ✅ | ✅ | ✅ | — |
+| Choose a ride's audience and anonymity | ❌ | ❌ | ❌ | ✅ (within the ceiling) | ✅ | ✅ | — |
+| Set the audience ceiling | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
 | See / share the invite link | ❌ | ❌ | ❌ | per setting (`FR-EVRIDE-004` AC5) | ✅ | ✅ | ✅ |
 | Approve or decline join requests, remove or ban a member | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
 | Post an announcement, edit the event | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
@@ -59,10 +62,11 @@ Every action also requires an `active` account (suspended and pending-deletion a
 
 ## Data model (summary; names are indicative, final in the migrations)
 
-- `ride_event_groups` — organizer, title, event kind, `starts_at`, `ends_at`, event place (kind, id, label, coordinates, optional street house number), venue label, `access_note`, `join_policy` (`open_with_link` | `approval`), `visibility` (`invite_only` | `public`, P2), `invite_sharing` (`members` | `organizers`), `member_cap`, `status`, token hash, short code, `purge_at`.
+- `ride_event_groups` — organizer, title, event kind, `starts_at`, `ends_at`, event place (kind, id, label, coordinates, optional street house number), venue label, `access_note`, `join_policy` (`open_with_link` | `approval`), `ride_audience_ceiling`, `visibility` (`invite_only` | `public`, P2), `invite_sharing` (`members` | `organizers`), `member_cap`, `status`, token hash, short code, `purge_at`.
 - `ride_event_group_members` — group, user, `role` (`organizer` | `co_organizer` | `member`), `status` (`pending` | `active` | `left` | `removed` | `banned`), `joined_at`, `decided_by`. One row per (group, user); history is the status.
 - `ride_event_group_updates` — organizer announcements (author, body, created_at).
-- Ride extension: `ride_post_details` gains `event_group_id`, `event_leg` (`to_event` | `from_event`) and, in P2, `paired_post_id` (the other leg of a round trip). A CHECK keeps the three together.
+- Ride extension: `ride_post_details` gains `event_group_id`, `event_leg` (`to_event` | `from_event`) and, in P2, `paired_post_id` (the other leg of a round trip). A CHECK keeps the three together. The ride's audience is the post's own visibility: *group only* = `OnlyMe` + membership, *group + my followers* = `FollowersOnly`, *everyone* = `Public`; anonymity stays the post's `anonymity_level` (D16).
+- The group carries `ride_audience_ceiling` (`group_only` | `group_and_followers` | `everyone`).
 - Status graph `rideEventGroup` in `@kc/domain` `fsm/machines/` mirrored in `fsm_state` / `fsm_edge` (G61); membership status has its own graph.
 - Config flag `app_flags.rides_event_groups_enabled` (off in prod until the pilot passes; the pattern of `0441`).
 
@@ -81,7 +85,7 @@ Every action also requires an `active` account (suspended and pending-deletion a
 - AC4. Behind `rides_event_groups_enabled`; flag off ⇒ no entry point, and every RPC refuses with `feature_disabled`.
 
 ## FR-EVRIDE-002 — Create a group
-- AC1. Any active member may create (an organization profile may not, P1). Fields: **title** (required), **event kind** (wedding, bar/bat mitzvah, brit, henna, party, birthday, concert/festival, conference, sports, memorial/funeral, trip/camp, other — drives the icon and suggested copy only), **starts_at** (required), **ends_at** (optional; default `starts_at + 6 h`, required explicitly when the kind is trip/camp/conference/festival), **event place** (official place picker of D71, plus an optional house number for a street, plus a venue label ≤ 80), **access note** ("how to find us / parking", members only), **join policy**, optional **member cap**.
+- AC1. Any active member may create (an organization profile may not, P1). Fields: **title** (required), **event kind** (wedding, bar/bat mitzvah, brit, henna, party, birthday, concert/festival, conference, sports, memorial/funeral, trip/camp, other — drives the icon and suggested copy only), **starts_at** (required), **ends_at** (optional; default `starts_at + 6 h`, required explicitly when the kind is trip/camp/conference/festival), **event place** (official place picker of D71, plus an optional house number for a street, plus a venue label ≤ 80), **access note** ("how to find us / parking", members only), **join policy**, **widest ride audience** (the ceiling; default per group visibility), optional **member cap**.
 - AC2. Validation (`validateRideEventGroupDraft`, mirrored in SQL): title and note lengths per `S` limits; `ends_at > starts_at`; `ends_at` in the future; `starts_at` ≤ 365 days ahead; duration ≤ 14 days; the place must come from a catalog (`ride_place_invalid`); a venue label never replaces a place. Typed errors, never raw `Error`.
 - AC3. An event that **already started** can still get a group while it has not ended (guests need return rides during the party). A funeral or shiva with a start an hour away is valid: there is no minimum lead time.
 - AC4. **Venue not on a street** (a field, a beach, a kibbutz hall, a forest): the organizer picks the nearest official junction or the city and describes the way in the access note; navigation uses the official place and house number, never the label.
@@ -95,6 +99,7 @@ Every action also requires an `active` account (suspended and pending-deletion a
 - AC2. Editing the member cap below the current member count is refused (`member_cap_below_members`).
 - AC3. Changing `starts_at` / `ends_at` follows `FR-EVRIDE-015` (rides outside the new window are flagged, members told once).
 - AC4. Each edit is audited (who, what, when); the audit is visible to organizers and admins only.
+- AC5. **Lowering the ceiling** never deletes rides: every ride wider than the new ceiling is narrowed to it, its publisher is told once, and bookings stay valid.
 
 ## FR-EVRIDE-004 — Invite: link, code, QR, share
 - AC1. The invite screen shows the link `https://karma-community-kc.com/rides/join/<token>`, a short code (8 characters from an alphabet without look-alikes `0 O 1 I L`, shown as `KC-XXXX-XXXX`), a **QR** image (saveable and printable, "put it on the invitation"), a **"share to WhatsApp"** button with a ready Hebrew message, and "copy".
@@ -136,36 +141,41 @@ Every action also requires an `active` account (suspended and pending-deletion a
 - AC6. A group in `ended` / `archived` shows the board read-only with a banner; a `cancelled` group shows the cancellation message and no rides.
 
 ## FR-EVRIDE-009 — Publish a ride inside the group
+- AC0. **Quick post.** The board has one floating button with two choices, **"אני מציע/ה טרמפ"** and **"אני מחפש/ת טרמפ"**. The sheet opens with the leg guessed from the time of day relative to the event, the event end filled, the departure suggested, seats 3 (offer), the last audience and anonymity remembered, and a single **Publish** button: a typical post takes the origin city, a time and one tap.
 - AC1. From the board: **"אני נוהג/ת"** (offer) and **"אני צריך/ה טרמפ"** (request), each for a chosen leg. The form is the quick-publish form of the rides flow with the event end **locked**: `to_event` ⇒ destination = event place; `from_event` ⇒ origin = event place. Seats 1–8 for an offer (default 3), `passengers` 1–8 for a request, up to 3 meeting points, a constraints note ≤ 280 (kids' seats, accessibility, luggage, pets, instruments).
 - AC2. The other end and the meeting points come only from official catalogs (D71). The "from my current location" and "leave now" switches work; the Waze handoff of `FR-RIDE-003` AC8 is **off** for group rides (the destination would expose the event outside the group).
 - AC3. Departure must fall in the leg's window (`S` ride windows) or the form refuses with `ride_outside_event_window`. Defaults: a `to_event` ride suggests arrival ≈ `starts_at − 30 min` (`suggestRideArrival`); a `from_event` ride suggests departure ≈ `ends_at`, with chips "בסוף האירוע / חצות / 01:00 / 02:00" and a free time. The departure of a return ride can be marked "בערך" (approximate).
 - AC4. Limits per member and leg (`S` limits): ≤ 3 active offers, ≤ 1 active request (`ride_limit_reached`).
-- AC5. The ride is created with `event_group_id`, `event_leg`, visibility `OnlyMe`, `feed_hidden = true`, `anonymity` fixed to named (a small trusted audience; the driver's name and verification level are shown), likes and comments **off** (every comment is a leak surface; the pair chat is the channel). Series (`FR-RIDE-046`) and cargo/food shipping are not offered.
+- AC5. The ride is created with `event_group_id` and `event_leg`. The publisher picks the **audience** — *group only* (default), *group + my followers* or *everyone*, never wider than the group's ceiling (`audience_above_ceiling`) — and any **anonymity level** of D16 (the counterpart of a booking sees the real name, as everywhere). Both can be changed later in both directions (`FR-EVRIDE-011` AC7). Likes and comments are **off** in the first release (every comment is another place to leak; the pair chat is the channel). Series (`FR-RIDE-046`) and cargo/food shipping are not offered.
 - AC6. The group rides never feed the "publish again" memory or the device's **last route** (`rideStartDetails`) of the general form, so the event place cannot be pre-filled into a public ride by accident.
 - AC7. The existing rules apply unchanged: the driver declaration (`FR-RIDE-041`), the cost caps (rides are free at launch), the emergency call window, expiry of an offer 30 min after its estimated end, `complete_ride_trip`.
 - AC8. A **request** never expires on its own (D21) but is closed `expired` with the reason `event_ended` when the group reaches `ended`; an unanswered request gets a nudge (`FR-EVRIDE-025`, `FR-EVRIDE-026`).
 
 ## FR-EVRIDE-010 — Book a seat in the group
 - AC1. The booking flow is the existing one (`book_ride_seat`, `confirm_ride_booking`, `decline_ride_booking`, `cancel_ride_booking`, expiry after 12 h or at departure, one `important` push per change, D73/D96); the new guards below run **inside** those RPCs.
-- AC2. Only an active member of the ride's group may book (`not_group_member`); the driver is a member too (`FR-EVRIDE-011`).
+- AC2. A person books a group ride only if they can see it (`FR-EVRIDE-011`): any active member, or — when the publisher chose *group + my followers* / *everyone* — a follower or any member of KC. A non-member who books gets no access to the group itself. The leg rule below counts per person and group.
 - AC3. **Leg rule** (`S`): a second *confirmed* booking on the same leg for the same person is refused to the driver as `leg_already_covered` with the passenger's other ride named; a confirmation withdraws the passenger's other pending bookings on that leg, and tells the other drivers neutrally.
 - AC4. Seats are never overbooked: confirmation locks the ride before recounting (`0533` pattern), also against a concurrent group cancellation, a removal and a rotation.
 - AC5. A passenger can hold bookings on **different** legs of different drivers; overlapping departures on the same leg warn but are allowed (`overlapping_booking` warning).
 - AC6. When the passenger or driver leaves, is removed, or the group is cancelled, bookings end through `FR-EVRIDE-007` / `FR-EVRIDE-014` with system attribution and no rating or karma penalty for the innocent side.
 
-## FR-EVRIDE-011 — Audience and privacy: fail closed
-> The core safety requirement of the feature. Design: [ADR-007](../../architecture/adr/ADR-007-event-group-audience.md). A wedding's date, place and guests are exactly what a stranger must not be able to read.
+## FR-EVRIDE-011 — Audience and privacy
+> The core safety requirement of the feature. Design: [ADR-007](../../architecture/adr/ADR-007-event-group-audience.md). A wedding's date, place and guests are exactly what a stranger must not read unless the people involved chose that.
 
-- AC1. A group ride is readable only through membership: `is_post_visible_to` gains one clause (viewer is the owner, or an `active` member of the ride's group, or a KC operator) and **every other branch** denies. Because the stored visibility is `OnlyMe`, a reader that forgets the new rule returns **nothing** instead of leaking.
-- AC2. **Reader inventory.** These paths must exclude group rides for everyone except members (SECURITY DEFINER functions bypass RLS, so each one is checked on its own): the main feed view and ranked RPC, the new-post broadcast on the public feed topic, `list_rides_feed`, `find_ride_listing_matches`, `ride_listings_search`, the rides map RPC, `browse_listings`, post and user search, the semantic-search embeddings and the embed queue, `match_candidates` and its delivery, `posts_ride_route_alerts` / `ride_route_alerts_sweep`, the WhatsApp bot's search and match notices, public/community statistics and the activity log (aggregates only, never rows), a user's profile posts tab as seen by others, the share page `/post/<id>`, sitemaps, and notification payload text sent to non-members.
-- AC3. The reader inventory is a **maintained list in a test**: a new SQL function that reads ride posts must either appear in the list with a member-only assertion or the test fails.
-- AC4. A non-member who opens a group ride link (`/post/<id>`) or a stale push sees the same "not available" screen as a deleted post; nothing about the group is revealed.
-- AC5. The **event place's house number** and the access note are members-only; the **ride's** street/junction/house number at the non-event end follow `S` origin privacy (city for members, exact for the driver and confirmed passengers; the private house number uses `get_ride_house_numbers`).
-- AC6. Blocks hold: if either side blocked the other, the two never see each other's group rides or chat anchors (`is_blocked`), although both stay members.
-- AC7. Chat anchored to a group ride shows the ride card only while the viewer can see the ride; a removed member's chat keeps messages but not the card.
-- AC8. Realtime channels for a group authorize by membership at subscribe time and are torn down on removal.
-- AC9. Purge removes membership rows, announcements, invite hashes and the ride→group link; closed rides stay only as the participants' own history (karma, ratings) and remain invisible to everyone else.
-- AC10. No admin or analytics surface lists members' home cities or street data; admin tools show a group's counters and its organizer.
+- AC1. **Three audiences per ride**, chosen by its publisher: *group only* (default) · *group + my followers* · *everyone*. Active members of the group **always** see the group's rides in its area, whatever the audience. The audience is the post's visibility (`OnlyMe` + membership, `FollowersOnly`, `Public`), so every existing reader already honours it.
+- AC2. **Ceiling.** The organizer sets the widest audience the group allows (default *group only* for an invite-only group, *everyone* for a public one). A wider choice is refused (`audience_above_ceiling`); lowering the ceiling narrows existing rides (`FR-EVRIDE-003` AC5).
+- AC3. **What a non-member sees** of a *group + followers* or *everyone* ride is an ordinary ride: the route, the time and the event place as an official place, with a small "event ride" chip. Never the group's name, description, access note, member count or other rides.
+- AC4. **Group only is fail-closed.** `is_post_visible_to` gains one clause (viewer is the owner, or an `active` member of the ride's group, or a KC operator); with `OnlyMe` stored, a reader that forgets the rule returns **nothing**. These readers must be checked individually (SECURITY DEFINER functions bypass RLS): the main feed view and ranked RPC, the new-post broadcast on the public feed topic, `list_rides_feed`, `find_ride_listing_matches`, `ride_listings_search`, the rides map RPC, `browse_listings`, post and user search, the semantic-search embeddings and queue, `match_candidates` and its delivery, `posts_ride_route_alerts` / `ride_route_alerts_sweep`, the WhatsApp bot's search and notices, public/community statistics and the activity log (aggregates only), a profile's posts tab as seen by others, the share page `/post/<id>`, sitemaps, and notification text sent to non-members. A *followers* or *everyone* ride appears in those general surfaces exactly like any other ride of that visibility.
+- AC5. The reader inventory is a **maintained list in a test** with one assertion per audience: a new SQL function that reads ride posts must appear with its member-only (group only) and ceiling assertions, or the test fails.
+- AC6. A non-member who opens a *group only* ride link or a stale push sees the same "not available" screen as a deleted post; nothing about the group is revealed.
+- AC7. **Changing the audience** later, wider or narrower, is allowed while the ride is open and within the ceiling (D16 "both ways"). Narrowing never cancels bookings; people who can no longer see the ride keep access to their own booking and chat.
+- AC8. **Anonymity** follows D16 for every level. In a group the organizer never learns an anonymous author: moderation acts on the ride (hide, remove) and the server resolves the author for a ban; KC admins see the identity as for any post.
+- AC9. The **event place's house number** and the access note are members-only. The ride's non-event end follows `S` origin privacy (city for other viewers, exact for the driver and confirmed passengers; the private house number uses `get_ride_house_numbers`).
+- AC10. Blocks hold: if either side blocked the other, the two never see each other's group rides or chat anchors (`is_blocked`), although both stay members.
+- AC11. Chat anchored to a group ride shows the ride card only while the viewer can see the ride.
+- AC12. Realtime channels for a group authorize by membership at subscribe time and are torn down on removal; *group only* rides are never broadcast on the public feed topic.
+- AC13. Purge removes membership rows, announcements, invite hashes and the ride→group link; closed rides stay only as the participants' own history and keep their own visibility rules.
+- AC14. No admin or analytics surface lists members' home cities or street data; admin tools show a group's counters and its organizer.
 
 ## FR-EVRIDE-012 — Organizer announcements
 - AC1. Organizers post one-way updates (≤ 500 chars, plain text, no links to unknown domains is a P2 filter): "החניה מלאה, חנו ב…", "האירוע התחיל באיחור". Each triggers one push to active members (`FR-EVRIDE-013`), ≤ 5 per group per day, ≤ 30 per group.
@@ -330,7 +340,7 @@ Drivers-must-be-verified (level 2, after `FR-VERIFY`), organizer pre-approved dr
 | 33 | Gender-separated events (religious weddings) | Today the note; structured preference is an open item | 033 |
 | 34 | Minors | Never drivers; passengers per S16 | 018 AC2 |
 | 35 | A and B blocked each other but are in one group | Mutually invisible rides and chat card | 011 AC6 |
-| 36 | Group ride leaks into the general feed, map, search, alerts, bot, stats, share page | Fail-closed audience + reader inventory test | 011 |
+| 36 | A *group only* ride leaks into the general feed, map, search, alerts, bot, stats, share page | Fail-closed audience + reader inventory test | 011 |
 | 37 | The public-feed realtime broadcast carries a group ride | Group rides never broadcast on the public topic | 008 AC5, 011 AC2 |
 | 38 | Last-used route pre-fills the event venue in a public ride | Group rides excluded from remembered routes | 009 AC6 |
 | 39 | Waze handoff after publishing exposes the venue | Off for group rides | 009 AC2 |
@@ -345,6 +355,14 @@ Drivers-must-be-verified (level 2, after `FR-VERIFY`), organizer pre-approved dr
 | 48 | Data kept forever | Purge at +90 d: members, announcements, hashes, links | 011 AC9 |
 | 49 | User deletes their account mid-event | Membership removed, their rides cancelled by the existing deletion flow, partners notified | 007 |
 | 50 | Feature flag off in prod | No entry point; RPCs refuse | 001 AC4 |
+| 51 | Publisher picks *everyone* for a private wedding | Refused above the organizer's ceiling | 011 AC2 |
+| 52 | Organizer lowers the ceiling after wider rides exist | Rides narrowed, publishers told once, bookings kept | 003 AC5 |
+| 53 | Publisher widens/narrows the audience after bookings | Allowed; booked people keep their booking and chat | 011 AC7 |
+| 54 | Anonymous author misbehaves | Organizer hides the ride; the server resolves the author for a ban; admins see identity | 011 AC8 |
+| 55 | A non-member books a followers/everyone ride | Allowed, no group access; the leg rule still counts per person | 010 AC2 |
+| 56 | A non-member sees an *everyone* ride to a private event | Sees an ordinary ride and the event place only; never the group | 011 AC3 |
+| 57 | Group cancelled with *everyone* rides already booked by outsiders | Same cascade for every booking, outsiders included | 014 |
+| 58 | A follower sees a *followers* ride but is not a member | Sees it as an ordinary ride; cannot open the group | 011 AC3 |
 
 ## Notifications (catalog)
 
@@ -371,6 +389,16 @@ Drivers-must-be-verified (level 2, after `FR-VERIFY`), organizer pre-approved dr
 
 `rides_event_groups_enabled`: on in kc-dev, off in kc-prod. Pilot with one real event on kc-dev and then prod for invited organizers; widen after the leak matrix and the pilot pass. Migrations claim `0750–0769` ([`MIGRATION_RANGES.md`](../../agents/MIGRATION_RANGES.md)). Delivery slices (one issue each): (1) data model + audience + leak matrix, (2) create/edit/invite/join, (3) members and succession, (4) group rides + booking guards, (5) board + notifications + announcements, (6) lifecycle + cancel/move, (7) moderation + admin + analytics, (8) E2E + pilot. Phase 2 and 3 follow.
 
+## MVP cut (first release)
+
+The first release is **the group as an organized area of posts**: members of the group see its rides in one orderly place and post a request or an offer to it in one tap.
+
+| In the first release | Follows later |
+|---|---|
+| 001 entry points, 002 create, 003 edit, 004 link/code/QR (join policy: open with the link), 005 join | 006 approval and bulk decisions (approval policy itself ships with 005 as a switch), 012 announcements |
+| 007 leave / remove / ban, 008 board, **009 quick post with audience + anonymity**, 010 booking guards | 013 extra notifications beyond join, cancel and move, 015 outside-window flags, 017 succession beyond "must transfer", 018 extras beyond the emergency call |
+| **011 audience and privacy with the ceiling and the leak matrix**, 014 cancel, 016 lifecycle, 019 reports + admin hide/remove, 020 limits, 021, 022 | Phase 2 and 3 |
+
 ## Success metrics (hypotheses, tuned after the pilot)
 
 | Metric | Target |
@@ -390,7 +418,7 @@ Drivers-must-be-verified (level 2, after `FR-VERIFY`), organizer pre-approved dr
 3. **Who may create a group?** Default: any active member with an account older than 24 h, ≤ 3 active groups.
 4. **Gender-separated rides** (religious weddings): today a free-text note; a structured "women only / men only" preference needs a decision on `FR-RIDE-029`.
 5. **Event content policy**: political rallies and demonstrations as events — allowed under the general moderation policy, never listed publicly? Default: allowed, not listed.
-6. **Group rides in the general feed for public groups?** Default: never.
+6. **"Friends only" without the group.** The audience choices are additive (the group always sees its rides). A publisher who wants only their followers, not the group, publishes an ordinary ride. Confirm?
 7. **Sober-driver chip** wording and legal comfort (counsel).
 8. **Link domain and manifests**: `/rides/join` in universal links and Android App Links depends on the Apple Team ID and Android SHA-256 (A2/A3).
 9. **Legal text** for the join/creation acknowledgement and organizer responsibility (L3).

@@ -5,18 +5,28 @@
 
 ## Context
 
-An event ride group (a wedding, a party) is a private room: its rides, date and place must be readable by its members and by nobody else. A group ride is an ordinary ride post (`posts` + `ride_post_details`, bookings on `post_handoffs`), so it inherits every reader written for rides: the main feed, `list_rides_feed`, `find_ride_listing_matches`, the map, search, matching v2, saved-route alerts, embeddings, the WhatsApp bot, statistics, the share page and the realtime new-post broadcast. Many of these are `SECURITY DEFINER` functions whose body, not RLS, decides what is returned (see `FR-RIDE-018` AC2). A rule that every reader must remember to add will be forgotten by the next reader.
+An event ride group (a wedding, a party) is a private room: its rides, date and place are readable by its members and, beyond them, only by the audience each ride's publisher chose within the organizer's ceiling. A group ride is an ordinary ride post (`posts` + `ride_post_details`, bookings on `post_handoffs`), so it inherits every reader written for rides: the main feed, `list_rides_feed`, `find_ride_listing_matches`, the map, search, matching v2, saved-route alerts, embeddings, the WhatsApp bot, statistics, the share page and the realtime new-post broadcast. Many of these are `SECURITY DEFINER` functions whose body, not RLS, decides what is returned (see `FR-RIDE-018` AC2). A rule that every reader must remember to add will be forgotten by the next reader.
 
 Post visibility today is `Public | FollowersOnly | OnlyMe`, decided in `is_post_visible_to`.
 
 ## Decision
 
-1. **Store group rides as `OnlyMe` with `posts.feed_hidden = true`.** Every existing reader already treats that as "not for anyone else", so a forgotten reader returns nothing — it fails closed.
-2. **Add one clause to `is_post_visible_to`**: when the post's ride extension carries an `event_group_id`, the viewer sees it only if they are its owner, an `active` member of that group while the group is `active`/`ended`/`archived`, or a KC operator. No other branch applies to a group ride (a group ride is never `Public` or `FollowersOnly`, enforced by a CHECK that ties `event_group_id` to `OnlyMe`).
-3. **New group-aware readers are the only way in**: `list_ride_event_group_board`, the group match function and the member list authorize through membership. They never reuse the global matching or feed functions.
-4. **A reader inventory test** lists every SQL function that selects ride posts and asserts, per function, that a non-member, a banned member, a removed member and `anon` get zero group rows. A new reader missing from the list fails CI.
-5. **Realtime**: a per-group topic authorized by membership at subscribe time (ADR-003); group rides are never published on the public feed topic.
-6. **Derived legacy rows**: while `listings` is still derived from posts (ADR-006), the derived listing carries the same flags so `listings_feed_mirror_sync` never mirrors a group ride into the feed.
+A ride's publisher chooses its audience (PM, 2026-11-11): **group only** (default), **group + my followers**, or **everyone**; the organizer sets a **ceiling** on the widest choice. Mapping onto the existing visibility:
+
+| Audience | Stored `visibility` | Who sees it |
+|---|---|---|
+| group only | `OnlyMe` | owner + active group members (+ KC operators) |
+| group + my followers | `FollowersOnly` | the above + followers of the owner |
+| everyone | `Public` | everyone, like any ride |
+
+1. **Group only is stored as `OnlyMe` with `posts.feed_hidden = true`.** Every existing reader already treats that as "not for anyone else", so a forgotten reader returns nothing — it fails closed. The wider audiences use the visibility those readers already understand, so they need no new rule.
+2. **One clause in `is_post_visible_to`**: when the post's ride extension carries an `event_group_id`, an `active` member of that group sees it (group `active`/`ended`/`archived`) whatever its audience; every other viewer is decided by the stored visibility, unchanged. A CHECK ties `OnlyMe` to rides that carry a group, so `OnlyMe` on a group ride means "the group".
+3. **The ceiling is enforced on write** (`audience_above_ceiling`) and re-applied when it is lowered, narrowing existing rides.
+4. **A non-member never receives the group**: a followers/everyone ride is served as an ordinary ride (route, time, event place as an official place, an "event ride" chip); the group's name, notes and member data are returned only to members.
+5. **Group-aware readers** (`list_ride_event_group_board`, the group match function) authorize through membership and never reuse the global matching or feed functions.
+6. **A reader inventory test** lists every SQL function that selects ride posts and asserts, per function and per audience, who gets rows: for *group only*, a non-member, a banned or removed member and `anon` get none; for the wider audiences the ordinary rules hold; the ceiling is checked. A new reader missing from the list fails CI.
+7. **Realtime**: a per-group topic authorized by membership at subscribe time (ADR-003); *group only* rides are never published on the public feed topic.
+8. **Derived legacy rows**: while `listings` is still derived from posts (ADR-006), the derived listing carries the same flags so `listings_feed_mirror_sync` mirrors a group ride into the feed only for the wider audiences.
 
 ## Alternatives considered
 
@@ -26,7 +36,7 @@ Post visibility today is `Public | FollowersOnly | OnlyMe`, decided in `is_post_
 
 ## Consequences
 
-- Group rides are invisible to a function that forgets them; the cost is that **the member-side readers must be written deliberately** (steps 1, 3).
-- `OnlyMe` on a group ride means "the group", not "only me": the owner UI never shows a visibility control for it, and the label is derived from the group.
-- Closed group rides stay as participants' own history after the group is purged; they remain invisible to everyone else.
+- *Group only* rides are invisible to a function that forgets them; the cost is that **the member-side readers must be written deliberately** (steps 1, 5).
+- `OnlyMe` on a group ride means "the group", not "only me": the owner UI shows the three audience names, never the raw visibility.
+- Closed group rides stay as participants' own history after the group is purged; they keep the audience they had.
 - The inventory test needs upkeep, and that is the point: it is the control that turns an architectural intent into a build failure.
