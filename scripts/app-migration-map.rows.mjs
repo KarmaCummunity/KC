@@ -303,6 +303,7 @@ rpc('complete_ride', 'same', 'rpc:complete_ride', 'The driver completes the whol
 rpc('get_post_private_location', 'same', 'rpc:get_post_private_location', 'The private house numbers of a ride, released to the driver and to the passengers of a confirmed booking.');
 rpc('report_post_emergency', 'same', 'rpc:report_post_emergency', '`p_post_id`, optional `p_note`; refusals `ride_not_active`, `emergency_throttled`.');
 rpc('rides_feed', 'same', 'rpc:rides_feed', 'The rides feed; with `p_filters.origin` / `dest` / `radius_km` it is the route search. The app reads the first page; the series marker (weekdays) is not part of a row.');
+rpc('post_seat_counts', 'same', 'rpc:post_seat_counts', 'Places held, waiting registrations and seats left of event and ride posts the caller can read (`p_post_ids`, at most 100); the volunteering shifts and the occurrences of a ride series read their free places here.');
 rpc('accept_world_consent', 'same', 'rpc:accept_world_consent', 'Accepts the driver declaration in force (`p_kind`, `p_version`); `consent_version_stale` for an old version.');
 rpc('my_matches', 'same', 'rpc:my_matches', 'The caller\'s pairs, each with the other member\'s post as a card (`other_post`).');
 rpc('match_respond', 'same', 'rpc:match_respond', '`p_match_id`, `p_accept`; answers the pair\'s status (`accepted` when both accepted).');

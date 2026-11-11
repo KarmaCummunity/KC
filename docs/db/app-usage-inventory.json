@@ -20,8 +20,8 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 239,
-   "distinct": 217
+   "callSites": 240,
+   "distinct": 218
   },
   "table": {
    "callSites": 164,
@@ -1942,6 +1942,15 @@
   },
   {
    "kind": "rpc",
+   "file": "app/packages/infrastructure-supabase/src/marketplace/postSeatCounts.ts",
+   "line": 22,
+   "area": "marketplace",
+   "symbol": "loadSeatCounts",
+   "via": "literal",
+   "name": "post_seat_counts"
+  },
+  {
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
    "line": 30,
    "area": "marketplace",
@@ -3147,7 +3156,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-   "line": 47,
+   "line": 48,
    "area": "rides",
    "symbol": "SupabaseRideSeriesRepository.unwrapCall",
    "via": "literal",
@@ -3159,7 +3168,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-   "line": 68,
+   "line": 69,
    "area": "rides",
    "symbol": "SupabaseRideSeriesRepository.kind",
    "via": "literal",
@@ -3168,7 +3177,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-   "line": 84,
+   "line": 85,
    "area": "rides",
    "symbol": "SupabaseRideSeriesRepository.setStatus",
    "via": "literal",
@@ -3177,7 +3186,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-   "line": 93,
+   "line": 94,
    "area": "rides",
    "symbol": "SupabaseRideSeriesRepository.unwrapCall",
    "via": "literal",
@@ -3189,7 +3198,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-   "line": 110,
+   "line": 117,
    "area": "rides",
    "symbol": "SupabaseRideSeriesRepository.unwrapCall",
    "via": "literal",
@@ -3198,7 +3207,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/rides/SupabaseRideSeriesRepository.ts",
-   "line": 124,
+   "line": 131,
    "area": "rides",
    "symbol": "SupabaseRideSeriesRepository.soonestOccurrence",
    "via": "literal",
@@ -3831,7 +3840,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-   "line": 36,
+   "line": 37,
    "area": "volunteering",
    "symbol": "loadEventRows",
    "via": "literal",
@@ -3843,7 +3852,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-   "line": 52,
+   "line": 53,
    "area": "volunteering",
    "symbol": "SupabaseVolunteerRepository.listOpportunities",
    "via": "literal",
@@ -3852,7 +3861,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-   "line": 106,
+   "line": 114,
    "area": "volunteering",
    "symbol": "SupabaseVolunteerRepository.myRegistrationStatus",
    "via": "literal",
@@ -3864,7 +3873,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-   "line": 130,
+   "line": 138,
    "area": "volunteering",
    "symbol": "SupabaseVolunteerRepository.unwrapCall",
    "via": "literal",
@@ -3876,7 +3885,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-   "line": 135,
+   "line": 143,
    "area": "volunteering",
    "symbol": "SupabaseVolunteerRepository.listMySignups",
    "via": "literal",
@@ -3888,7 +3897,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-   "line": 158,
+   "line": 166,
    "area": "volunteering",
    "symbol": "SupabaseVolunteerRepository.closeOpportunity",
    "via": "literal",
@@ -3897,7 +3906,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-   "line": 169,
+   "line": 177,
    "area": "volunteering",
    "symbol": "SupabaseVolunteerRepository.unwrapCall",
    "via": "literal",
@@ -3909,7 +3918,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-   "line": 193,
+   "line": 201,
    "area": "volunteering",
    "symbol": "SupabaseVolunteerRepository.listShiftVolunteers",
    "via": "literal",
@@ -3921,7 +3930,7 @@
   {
    "kind": "table",
    "file": "app/packages/infrastructure-supabase/src/volunteering/SupabaseVolunteerRepository.ts",
-   "line": 196,
+   "line": 204,
    "area": "volunteering",
    "symbol": "SupabaseVolunteerRepository.listShiftVolunteers",
    "via": "literal",

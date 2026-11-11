@@ -4777,6 +4777,16 @@ export type Database = {
         }[]
       }
       post_detail: { Args: { p_post_id: string }; Returns: Json }
+      post_seat_counts: {
+        Args: { p_post_ids: string[] }
+        Returns: {
+          capacity: number
+          post_id: string
+          seats_left: number
+          seats_taken: number
+          waitlisted: number
+        }[]
+      }
       profile_closed_posts_count: {
         Args: { p_user_id: string }
         Returns: number
