@@ -51,6 +51,10 @@ jobs:
       - name: Verify dist output
         run: test -f apps/mobile/dist/index.html && test -f apps/mobile/dist/_headers
 
+      # The AASA / assetlinks files must survive the export (dot-directory) and be served as JSON via _headers.
+      - name: Deep-link manifests shipped in the web export
+        run: node scripts/check-well-known-links.mjs --dist apps/mobile/dist
+
       # Reads the export above; fails if the bundle is missing or over budget.
       - name: Web bundle gzip budget (#901)
         run: |

@@ -28,7 +28,7 @@ function parseCaseId(
   const type = decoded.slice(0, idx);
   const id = decoded.slice(idx + 1);
   if (!id) return null;
-  if (type !== 'post' && type !== 'user' && type !== 'chat') return null;
+  if (type !== 'post' && type !== 'user' && type !== 'chat' && type !== 'comment') return null;
   return { type, id };
 }
 

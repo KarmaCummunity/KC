@@ -7,9 +7,7 @@ export function useMarketplaceListingDetail(listingId: string | undefined) {
     enabled: Boolean(listingId),
     queryFn: async () => {
       if (!listingId) return null;
-      const detail = await marketplaceRepository().getListingDetail(listingId);
-      if (detail) void marketplaceRepository().recordSignal(detail.listingId, 'view');
-      return detail;
+      return marketplaceRepository().getListingDetail(listingId);
     },
   });
 }

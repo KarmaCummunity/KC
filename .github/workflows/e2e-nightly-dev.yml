@@ -1,7 +1,7 @@
 name: E2E nightly (dev)
 
 # Full Playwright QA suite against https://dev.karma-community.pages.dev + kc-dev.
-# Uses the public kc-dev seed users (supabase/seed/kc-dev) and the publishable anon key
+# Uses the e2e members of kc-dev (supabase/seed/e2e, loaded by the Seed KC dev workflow) and the publishable anon key
 # read from the deployed bundle, so it needs no repository secrets. Never targets prod.
 # mobile-nightly.yml calls it with `p0_only` to gate the store builds on the P0 journeys.
 on:

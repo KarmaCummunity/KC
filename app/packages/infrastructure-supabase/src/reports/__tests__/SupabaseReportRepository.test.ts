@@ -1,30 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { ReportError } from '@kc/application';
-import type { ReportSubmission } from '@kc/domain';
+import { BackendUnavailableError, type ReportSubmission } from '@kc/domain';
 import { SupabaseReportRepository } from '../SupabaseReportRepository';
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-interface InsertCall {
-  table: string;
-  row: unknown;
-}
-
-function makeFakeClient(opts: {
-  error?: { code?: string; message: string } | null;
-}): { client: SupabaseClient<any>; calls: InsertCall[] } {
-  const calls: InsertCall[] = [];
-  const client = {
-    from: (table: string) => ({
-      insert: async (row: unknown) => {
-        calls.push({ table, row });
-        return { error: opts.error ?? null };
-      },
-    }),
-  } as unknown as SupabaseClient<any>;
-  return { client, calls };
-}
+import { fakeStaffClient } from '../../__tests__/fakeStaffClient';
 
 const POST_SUBMISSION: ReportSubmission = {
   targetType: 'post',
@@ -33,215 +11,119 @@ const POST_SUBMISSION: ReportSubmission = {
   note: 'spammy content',
 };
 
-describe('SupabaseReportRepository', () => {
-  describe('submit — insert shape', () => {
-    it('inserts into the reports table', async () => {
-      const { client, calls } = makeFakeClient({});
-      const repo = new SupabaseReportRepository(client);
+/** A client whose `reports` insert resolves to `error` (or succeeds), recording the inserted row. */
+function reportsClient(error: { code?: string; message: string } | null) {
+  const fake = fakeStaffClient({ tables: { reports: { data: null, error } } });
+  return { ...fake, repo: new SupabaseReportRepository(fake.client) };
+}
 
-      await repo.submit('u_reporter', POST_SUBMISSION);
+/** The row passed to `insert(...)` on the first `reports` chain. */
+const insertedRow = (chains: ReturnType<typeof fakeStaffClient>['chains']): unknown =>
+  chains[0]?.calls.find(([method]) => method === 'insert')?.[1][0];
 
-      expect(calls).toHaveLength(1);
-      expect(calls[0]?.table).toBe('reports');
-    });
+describe('SupabaseReportRepository — insert shape', () => {
+  it('inserts into the reports table with the snake_case row', async () => {
+    const { chains, repo } = reportsClient(null);
 
-    it('maps the camelCase submission to the snake_case row shape', async () => {
-      const { client, calls } = makeFakeClient({});
-      const repo = new SupabaseReportRepository(client);
+    await repo.submit('u_reporter', POST_SUBMISSION);
 
-      await repo.submit('u_reporter', POST_SUBMISSION);
-
-      expect(calls[0]?.row).toEqual({
-        reporter_id: 'u_reporter',
-        target_type: 'post',
-        target_id: 'p_1',
-        reason: 'Spam',
-        note: 'spammy content',
-      });
-    });
-
-    it('coalesces undefined note to null in the row', async () => {
-      // Domain says note is `string | undefined`; DB column is nullable.
-      // The repo must coalesce so we never write `note: undefined`, which
-      // PostgREST would either drop silently or reject depending on version.
-      const { client, calls } = makeFakeClient({});
-      const repo = new SupabaseReportRepository(client);
-
-      await repo.submit('u_reporter', {
-        targetType: 'user',
-        targetId: 'u_target',
-        reason: 'Offensive',
-      });
-
-      expect((calls[0]?.row as { note: unknown }).note).toBeNull();
-    });
-
-    it('forwards null targetId verbatim (targetType=none case)', async () => {
-      const { client, calls } = makeFakeClient({});
-      const repo = new SupabaseReportRepository(client);
-
-      await repo.submit('u_reporter', {
-        targetType: 'none',
-        targetId: null,
-        reason: 'Other',
-      });
-
-      expect((calls[0]?.row as { target_id: unknown }).target_id).toBeNull();
-    });
-
-    it('resolves to void on a successful insert (no return value)', async () => {
-      const { client } = makeFakeClient({});
-      const repo = new SupabaseReportRepository(client);
-
-      const result = await repo.submit('u_reporter', POST_SUBMISSION);
-
-      expect(result).toBeUndefined();
+    expect(chains).toHaveLength(1);
+    expect(chains[0]?.table).toBe('reports');
+    expect(insertedRow(chains)).toEqual({
+      reporter_id: 'u_reporter',
+      target_type: 'post',
+      target_id: 'p_1',
+      reason: 'Spam',
+      note: 'spammy content',
     });
   });
 
-  describe('submit — Postgres error mapping', () => {
-    it('maps SQLSTATE 23505 → ReportError("duplicate_within_24h") (the unique reporter+target+24h index)', async () => {
-      const { client } = makeFakeClient({
-        error: { code: '23505', message: 'duplicate key on reports_reporter_target_24h_idx' },
-      });
-      const repo = new SupabaseReportRepository(client);
+  it('coalesces an undefined note to null', async () => {
+    const { chains, repo } = reportsClient(null);
 
-      await expect(repo.submit('u_reporter', POST_SUBMISSION)).rejects.toMatchObject({
-        name: 'ReportError',
-        code: 'duplicate_within_24h',
-      });
-    });
+    await repo.submit('u_reporter', { targetType: 'user', targetId: 'u_target', reason: 'Offensive' });
 
-    it('maps message containing duplicate_report → ReportError("duplicate_within_24h")', async () => {
-      const { client } = makeFakeClient({
-        error: { message: 'trigger: duplicate_report error' },
-      });
-      const repo = new SupabaseReportRepository(client);
+    expect((insertedRow(chains) as { note: unknown }).note).toBeNull();
+  });
 
-      await expect(repo.submit('u_reporter', POST_SUBMISSION)).rejects.toMatchObject({
-        name: 'ReportError',
-        code: 'duplicate_within_24h',
-      });
-    });
+  it('files a listing report against its post (a listing is a post)', async () => {
+    const { chains, repo } = reportsClient(null);
 
-    it('maps SQLSTATE P0020 → ReportError("target_already_moderated")', async () => {
-      const { client } = makeFakeClient({
-        error: { code: 'P0020', message: 'target has already been removed' },
-      });
-      const repo = new SupabaseReportRepository(client);
+    await repo.submit('u_reporter', { targetType: 'listing', targetId: 'l_1', reason: 'Illegal' });
 
-      await expect(repo.submit('u_reporter', POST_SUBMISSION)).rejects.toMatchObject({
-        name: 'ReportError',
-        code: 'target_already_moderated',
-      });
-    });
+    expect(insertedRow(chains)).toMatchObject({ target_type: 'post', target_id: 'l_1' });
+  });
 
-    it('maps the report_target_not_visible trigger error (23514) → ReportError("invalid_target")', async () => {
-      const { client } = makeFakeClient({
-        error: { code: '23514', message: 'report_target_not_visible' },
-      });
-      const repo = new SupabaseReportRepository(client);
+  it('files comment and chat reports as they are', async () => {
+    const { chains, repo } = reportsClient(null);
 
-      await expect(repo.submit('u_reporter', POST_SUBMISSION)).rejects.toMatchObject({ code: 'invalid_target' });
-    });
+    await repo.submit('u_reporter', { targetType: 'comment', targetId: 'c_1', reason: 'Spam' });
+    await repo.submit('u_reporter', { targetType: 'chat', targetId: 'ch_1', reason: 'Spam' });
 
-    // Regression for #2061: the self-report guard raises the same SQLSTATE as the target shape
-    // check (23514), so it must be told apart by message or it surfaces as a generic failure.
-    it('maps the cannot_report_self trigger error (23514) → ReportError("cannot_report_self")', async () => {
-      const { client } = makeFakeClient({
-        error: { code: '23514', message: 'cannot_report_self' },
-      });
-      const repo = new SupabaseReportRepository(client);
+    expect(chains.map((c) => (c.calls[0]?.[1][0] as { target_type: string }).target_type)).toEqual(['comment', 'chat']);
+  });
 
-      await expect(repo.submit('u_reporter', POST_SUBMISSION)).rejects.toMatchObject({
-        name: 'ReportError',
-        code: 'cannot_report_self',
-      });
-    });
+  it('resolves to void on a successful insert', async () => {
+    const { repo } = reportsClient(null);
 
-    // Regression for #2061: the per-reporter hourly cap (enforce_rate_limit, SQLSTATE 22023)
-    // used to fall into "unknown" and show the generic error.
-    it('maps rate_limit_exceeded (22023) → ReportError("rate_limited")', async () => {
-      const { client } = makeFakeClient({
-        error: { code: '22023', message: 'rate_limit_exceeded' },
-      });
-      const repo = new SupabaseReportRepository(client);
+    await expect(repo.submit('u_reporter', POST_SUBMISSION)).resolves.toBeUndefined();
+  });
+});
 
-      await expect(repo.submit('u_reporter', POST_SUBMISSION)).rejects.toMatchObject({
-        name: 'ReportError',
-        code: 'rate_limited',
-      });
-    });
+describe('SupabaseReportRepository — error mapping', () => {
+  it.each([
+    ['report_target_not_found', 'invalid_target'],
+    ['cannot_report_self', 'cannot_report_self'],
+    ['target_already_moderated', 'target_already_moderated'],
+    ['rate_limited', 'rate_limited'],
+  ] as const)('maps the stable P0001 message %s to ReportError(%s)', async (message, code) => {
+    const { repo } = reportsClient({ code: 'P0001', message });
 
-    it('maps SQLSTATE 23514 (CHECK violation) → ReportError("invalid_target")', async () => {
-      const { client } = makeFakeClient({
-        error: { code: '23514', message: 'reports_target_check' },
-      });
-      const repo = new SupabaseReportRepository(client);
+    await expect(repo.submit('u_reporter', POST_SUBMISSION)).rejects.toMatchObject({ name: 'ReportError', code });
+  });
 
-      await expect(repo.submit('u_reporter', POST_SUBMISSION)).rejects.toMatchObject({
-        name: 'ReportError',
-        code: 'invalid_target',
-      });
-    });
+  it('maps the unique index on open reports (23505) to duplicate_within_24h', async () => {
+    const { repo } = reportsClient({ code: '23505', message: 'duplicate key value violates reports_open_per_reporter_key' });
 
-    it('maps SQLSTATE 23502 (NOT NULL violation) → ReportError("invalid_target")', async () => {
-      const { client } = makeFakeClient({
-        error: { code: '23502', message: 'null value in column "target_id"' },
-      });
-      const repo = new SupabaseReportRepository(client);
+    await expect(repo.submit('u_reporter', POST_SUBMISSION)).rejects.toMatchObject({ code: 'duplicate_within_24h' });
+  });
 
-      await expect(repo.submit('u_reporter', POST_SUBMISSION)).rejects.toMatchObject({
-        name: 'ReportError',
-        code: 'invalid_target',
-      });
-    });
+  it.each(['23514', '23502'])('maps SQLSTATE %s (note length, missing column) to invalid_target', async (code) => {
+    const { repo } = reportsClient({ code, message: 'constraint' });
 
-    it('maps any other Postgres code → ReportError("unknown")', async () => {
-      const { client } = makeFakeClient({
-        error: { code: '42501', message: 'permission denied for table reports' },
-      });
-      const repo = new SupabaseReportRepository(client);
+    await expect(repo.submit('u_reporter', POST_SUBMISSION)).rejects.toMatchObject({ code: 'invalid_target' });
+  });
 
-      await expect(repo.submit('u_reporter', POST_SUBMISSION)).rejects.toMatchObject({
+  it('maps an RLS refusal (inactive reporter) and any unknown failure to unknown', async () => {
+    for (const error of [
+      { code: '42501', message: 'new row violates row-level security policy for table "reports"' },
+      { message: 'connection reset' },
+      { code: 'P0001', message: 'some_future_reason' },
+    ]) {
+      await expect(reportsClient(error).repo.submit('u_reporter', POST_SUBMISSION)).rejects.toMatchObject({
         name: 'ReportError',
         code: 'unknown',
       });
-    });
+    }
+  });
 
-    it('maps an error with no code → ReportError("unknown")', async () => {
-      const { client } = makeFakeClient({
-        error: { message: 'connection reset' },
-      });
-      const repo = new SupabaseReportRepository(client);
+  it('degrades to BackendUnavailableError when the reports table is not deployed', async () => {
+    const { repo } = reportsClient({ code: 'PGRST205', message: "Could not find the table 'public.reports'" });
 
-      await expect(repo.submit('u_reporter', POST_SUBMISSION)).rejects.toMatchObject({
-        name: 'ReportError',
-        code: 'unknown',
-      });
-    });
+    const failure = await repo.submit('u_reporter', POST_SUBMISSION).catch((e: unknown) => e);
 
-    it('forwards the original Postgres error as cause on every error branch', async () => {
-      const pgError = { code: '23505', message: 'dup' };
-      const { client } = makeFakeClient({ error: pgError });
-      const repo = new SupabaseReportRepository(client);
+    expect(failure).toBeInstanceOf(BackendUnavailableError);
+    expect(failure).toMatchObject({ object: 'table:reports', kind: 'relation' });
+  });
 
-      try {
-        await repo.submit('u_reporter', POST_SUBMISSION);
-        throw new Error('should have thrown');
-      } catch (err) {
-        expect(err).toBeInstanceOf(ReportError);
-        expect((err as ReportError).cause).toBe(pgError);
-      }
-    });
+  it('forwards the original database error as cause and keeps its message', async () => {
+    const pgError = { code: '23505', message: 'dup msg verbatim' };
+    const { repo } = reportsClient(pgError);
 
-    it('uses the Postgres error message as the thrown error message', async () => {
-      const { client } = makeFakeClient({
-        error: { code: '23505', message: 'dup msg verbatim' },
-      });
-      const repo = new SupabaseReportRepository(client);
+    const failure = await repo.submit('u_reporter', POST_SUBMISSION).catch((e: unknown) => e);
 
-      await expect(repo.submit('u_reporter', POST_SUBMISSION)).rejects.toThrow('dup msg verbatim');
-    });
+    expect(failure).toBeInstanceOf(ReportError);
+    expect((failure as ReportError).cause).toBe(pgError);
+    expect((failure as ReportError).message).toBe('dup msg verbatim');
   });
 });

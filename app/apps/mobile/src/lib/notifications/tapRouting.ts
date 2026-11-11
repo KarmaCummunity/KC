@@ -4,7 +4,7 @@
 // unit-testable under the node vitest env; `tapHandler.ts` wires these decisions
 // to the router and the notification listeners.
 import type { PushData, OnboardingState } from '@kc/domain';
-import { resolvePushRoute, type ResolvedRoute } from './pushRouteAllowlist';
+import { resolveNotificationRoute, type ResolvedRoute } from './notificationRoutes';
 import { isRestorablePath } from '../../store/redirectIntentStore';
 
 export type { ResolvedRoute };
@@ -49,7 +49,7 @@ export function toConcretePath(route: ResolvedRoute): string {
 
 /**
  * Decide how to handle a tapped notification:
- *  - `drop`  — the payload resolves to no allow-listed route.
+ *  - `drop`  — the payload is not a notification.
  *  - `push`  — the app is ready; navigate now.
  *  - `defer` — the app is not ready (cold start). The caller queues the route to
  *    flush once auth is ready and, when the concrete path is one AuthGate can
@@ -58,7 +58,7 @@ export function toConcretePath(route: ResolvedRoute): string {
  *    default `(tabs)` screen.
  */
 export function decideTapAction(data: Partial<PushData>, auth: TapAuthState): TapAction {
-  const route = resolvePushRoute(data);
+  const route = resolveNotificationRoute(data);
   if (!route) return { kind: 'drop' };
   if (isReadyToRoute(auth)) return { kind: 'push', route };
   const concrete = toConcretePath(route);

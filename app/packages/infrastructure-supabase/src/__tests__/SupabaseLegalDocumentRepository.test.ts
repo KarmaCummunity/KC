@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { LegalConsentError } from '@kc/application';
+import { BackendUnavailableError } from '@kc/domain';
 import type { Database } from '../database.types';
 import { SupabaseLegalDocumentRepository } from '../legal/SupabaseLegalDocumentRepository';
 import { LegalDocumentCache, type AsyncKVStorage } from '../legal/legalCache';
@@ -20,7 +22,7 @@ function makeMemStorage(): AsyncKVStorage {
 function makeClient(overrides: {
   pointerResult?: { data: { current_version: number } | null; error: { message: string } | null };
   versionResult?: { data: unknown; error: { message: string } | null };
-  rpcResults?: Record<string, { data: unknown; error: { message: string } | null }>;
+  rpcResults?: Record<string, { data: unknown; error: { code?: string; message: string } | null }>;
 } = {}): SupabaseClient<Database> {
   const pointer = overrides.pointerResult ?? { data: null, error: { message: 'not found' } };
   const version = overrides.versionResult ?? { data: null, error: { message: 'not found' } };
@@ -136,71 +138,91 @@ describe('SupabaseLegalDocumentRepository.getCurrentContent', () => {
   });
 });
 
+const bootstrap = (documents: unknown) => ({
+  data: { user_id: 'u1', account: { status: 'active' }, private_profile: {}, legal: { documents } },
+  error: null,
+});
+
 describe('SupabaseLegalDocumentRepository.getPendingForCurrentUser', () => {
-  it('maps RPC rows to LegalPendingItem domain shape', async () => {
+  it('maps the legal.documents of bootstrap_session to LegalPendingItem domain shape', async () => {
     const client = makeClient({
       rpcResults: {
-        needs_legal_reacknowledgement: {
-          data: [
-            {
-              doc_type: 'terms',
-              current_version: 2,
-              current_effective_date: '2026-05-20T00:00:00.000Z',
-              last_material_version: 2,
-              last_material_severity: 'standard',
-              last_accepted_version: 0,
-              block_mode: 'banner',
-            },
-          ],
-          error: null,
-        },
+        bootstrap_session: bootstrap([
+          {
+            doc_type: 'terms',
+            current_version: 2,
+            current_effective_date: '2026-05-20T00:00:00.000Z',
+            last_material_version: 2,
+            last_material_severity: 'standard',
+            last_accepted_version: 0,
+            block_mode: 'banner',
+          },
+        ]),
       },
     });
-    const repo = new SupabaseLegalDocumentRepository(
-      client,
-      new LegalDocumentCache(makeMemStorage()),
-    );
+    const repo = new SupabaseLegalDocumentRepository(client, new LegalDocumentCache(makeMemStorage()));
 
     const result = await repo.getPendingForCurrentUser();
-    expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({
-      docType: 'terms',
-      currentVersion: 2,
-      currentEffectiveDate: new Date('2026-05-20T00:00:00.000Z'),
-      lastAcceptedVersion: 0,
-      severity: 'standard',
-      blockMode: 'banner',
-    });
+
+    expect(client.rpc).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(client.rpc).mock.calls[0]?.[0]).toBe('bootstrap_session');
+    expect(result).toEqual([
+      {
+        docType: 'terms',
+        currentVersion: 2,
+        currentEffectiveDate: new Date('2026-05-20T00:00:00.000Z'),
+        lastAcceptedVersion: 0,
+        severity: 'standard',
+        blockMode: 'banner',
+      },
+    ]);
   });
 
-  it('returns [] when the RPC returns null data', async () => {
+  it('reads a document without a material severity as standard', async () => {
     const client = makeClient({
-      rpcResults: { needs_legal_reacknowledgement: { data: null, error: null } },
+      rpcResults: {
+        bootstrap_session: bootstrap([
+          { doc_type: 'privacy', current_version: 1, current_effective_date: '2026-05-20T00:00:00Z', block_mode: 'modal' },
+        ]),
+      },
     });
-    const repo = new SupabaseLegalDocumentRepository(
-      client,
-      new LegalDocumentCache(makeMemStorage()),
-    );
+    const repo = new SupabaseLegalDocumentRepository(client, new LegalDocumentCache(makeMemStorage()));
 
-    const result = await repo.getPendingForCurrentUser();
-    expect(result).toEqual([]);
+    expect((await repo.getPendingForCurrentUser())[0]).toMatchObject({ severity: 'standard', blockMode: 'modal' });
+  });
+
+  it('returns [] when nothing is pending', async () => {
+    const client = makeClient({ rpcResults: { bootstrap_session: bootstrap([]) } });
+    const repo = new SupabaseLegalDocumentRepository(client, new LegalDocumentCache(makeMemStorage()));
+
+    expect(await repo.getPendingForCurrentUser()).toEqual([]);
   });
 
   it('throws when the RPC returns an error', async () => {
     const client = makeClient({
-      rpcResults: { needs_legal_reacknowledgement: { data: null, error: { message: 'rpc fail' } } },
+      rpcResults: { bootstrap_session: { data: null, error: { message: 'rpc fail' } } },
     });
-    const repo = new SupabaseLegalDocumentRepository(
-      client,
-      new LegalDocumentCache(makeMemStorage()),
-    );
+    const repo = new SupabaseLegalDocumentRepository(client, new LegalDocumentCache(makeMemStorage()));
 
-    await expect(repo.getPendingForCurrentUser()).rejects.toThrow();
+    await expect(repo.getPendingForCurrentUser()).rejects.toThrow('rpc fail');
+  });
+
+  it('reports a missing bootstrap_session as BackendUnavailableError', async () => {
+    const client = makeClient({
+      rpcResults: { bootstrap_session: { data: null, error: { code: 'PGRST202', message: 'not found' } } },
+    });
+    const repo = new SupabaseLegalDocumentRepository(client, new LegalDocumentCache(makeMemStorage()));
+
+    await expect(repo.getPendingForCurrentUser()).rejects.toBeInstanceOf(BackendUnavailableError);
   });
 });
 
 describe('SupabaseLegalDocumentRepository.acceptVersion', () => {
-  it('calls accept_legal_document RPC and maps the response', async () => {
+  const input = { docType: 'terms', version: 3, locale: 'he', userAgent: 'iOS 17' } as const;
+  const repoFor = (client: SupabaseClient<Database>) =>
+    new SupabaseLegalDocumentRepository(client, new LegalDocumentCache(makeMemStorage()));
+
+  it('calls accept_legal_document with the named arguments and maps the response', async () => {
     const client = makeClient({
       rpcResults: {
         accept_legal_document: {
@@ -209,22 +231,10 @@ describe('SupabaseLegalDocumentRepository.acceptVersion', () => {
         },
       },
     });
-    const repo = new SupabaseLegalDocumentRepository(
-      client,
-      new LegalDocumentCache(makeMemStorage()),
-    );
 
-    const result = await repo.acceptVersion({
-      docType: 'terms',
-      version: 3,
-      locale: 'he',
-      userAgent: 'iOS 17',
-    });
+    const result = await repoFor(client).acceptVersion(input);
 
-    expect(result).toEqual({
-      acceptanceId: 'uuid-1',
-      acceptedAt: new Date('2026-05-24T12:00:00.000Z'),
-    });
+    expect(result).toEqual({ acceptanceId: 'uuid-1', acceptedAt: new Date('2026-05-24T12:00:00.000Z') });
     expect(client.rpc).toHaveBeenCalledWith('accept_legal_document', {
       p_doc_type: 'terms',
       p_version: 3,
@@ -233,22 +243,33 @@ describe('SupabaseLegalDocumentRepository.acceptVersion', () => {
     });
   });
 
-  it('throws when the RPC returns an error', async () => {
+  it.each([
+    ['legal_version_out_of_range', 'version_out_of_range'],
+    ['unknown_legal_document', 'unknown_document'],
+  ])('maps the refusal %s to LegalConsentError(%s)', async (reason, code) => {
     const client = makeClient({
-      rpcResults: {
-        accept_legal_document: {
-          data: null,
-          error: { message: 'accepted version 1 must be in [2, 2]' },
-        },
-      },
+      rpcResults: { accept_legal_document: { data: null, error: { code: 'P0001', message: reason } } },
     });
-    const repo = new SupabaseLegalDocumentRepository(
-      client,
-      new LegalDocumentCache(makeMemStorage()),
-    );
 
-    await expect(
-      repo.acceptVersion({ docType: 'terms', version: 1, locale: 'he', userAgent: 'ua' }),
-    ).rejects.toThrow(/accepted version/);
+    const error = await repoFor(client).acceptVersion(input).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(LegalConsentError);
+    expect(error).toMatchObject({ code });
+  });
+
+  it('leaves a signed-out refusal as the rule error', async () => {
+    const client = makeClient({
+      rpcResults: { accept_legal_document: { data: null, error: { code: '42501', message: 'unauthenticated' } } },
+    });
+
+    await expect(repoFor(client).acceptVersion(input)).rejects.toMatchObject({ reason: 'unauthenticated' });
+  });
+
+  it('throws on any other error', async () => {
+    const client = makeClient({
+      rpcResults: { accept_legal_document: { data: null, error: { message: 'connection reset' } } },
+    });
+
+    await expect(repoFor(client).acceptVersion(input)).rejects.toThrow('connection reset');
   });
 });

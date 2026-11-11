@@ -4,7 +4,6 @@ import type { Message, Chat } from '@kc/domain';
 import type { ChatState, OptimisticMessage } from './chatStoreTypes';
 import { runRefreshInbox, runStartInboxSub } from './chatStoreInboxLifecycle';
 import { useAuthStore } from './authStore';
-import { useOutboxStore } from './outboxStore';
 import { queryClient } from '../lib/queryPersist';
 import {
   chatInboxQueryKey,
@@ -81,35 +80,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   setThreadMessages: (chatId, msgs) => {
     const next = msgs.map(toOptimistic).sort(compareCreatedAt);
-    const outboxItems = useOutboxStore
-      .getState()
-      .items.filter(
-        (i) =>
-          i.entityType === 'chat_message' &&
-          (i.payload as { chatId?: string }).chatId === chatId &&
-          !next.some((m) => m.clientId === (i.payload as { clientId?: string }).clientId),
-      );
-    const pendingFromOutbox: OptimisticMessage[] = outboxItems.map((i) => {
-      const p = i.payload as { clientId: string; chatId: string; senderId: string; body: string };
-      return {
-        messageId: p.clientId,
-        clientId: p.clientId,
-        chatId: p.chatId,
-        senderId: p.senderId,
-        kind: 'user',
-        body: p.body,
-        systemPayload: null,
-        mediaPayload: null,
-        status: 'pending',
-        createdAt: i.createdAt,
-        deliveredAt: null,
-        readAt: null,
-        failed: i.status === 'failed',
-      };
-    });
-    set((s) => ({
-      threads: { ...s.threads, [chatId]: [...next, ...pendingFromOutbox].sort(compareCreatedAt) },
-    }));
+    set((s) => ({ threads: { ...s.threads, [chatId]: next } }));
   },
 
   appendOptimistic: (chatId, msg) =>
@@ -153,22 +124,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return { threads: { ...s.threads, [chatId]: next } };
     }),
 
-  applyStatusChange: (chatId, patch) =>
-    set((s) => ({
-      threads: {
-        ...s.threads,
-        [chatId]: (s.threads[chatId] ?? []).map((m) =>
-          m.messageId === patch.messageId
-            ? {
-                ...m,
-                status: patch.status,
-                deliveredAt: patch.deliveredAt,
-                readAt: patch.readAt,
-              }
-            : m,
-        ),
-      },
-    })),
+  applyReadMarker: (chatId, marker) =>
+    set((s) => {
+      const markerMs = Date.parse(marker.lastReadAt);
+      return {
+        threads: {
+          ...s.threads,
+          [chatId]: (s.threads[chatId] ?? []).map((m) =>
+            // A member's marker reads everything sent by others up to it (FR-CHAT-011).
+            m.senderId !== marker.userId && m.status !== 'read' && Date.parse(m.createdAt) <= markerMs
+              ? { ...m, status: 'read', readAt: marker.lastReadAt }
+              : m,
+          ),
+        },
+      };
+    }),
 
   startInboxSub: async (userId, repo, realtime) => {
     if (get().inboxSub) return;
@@ -199,7 +169,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       get().setThreadMessages(chatId, msgs);
       const unsub = realtime.subscribeToChat(chatId, {
         onMessage: (m) => get().applyIncomingMessage(chatId, m),
-        onMessageStatusChanged: (p) => get().applyStatusChange(chatId, p),
+        onReadMarker: (marker) => get().applyReadMarker(chatId, marker),
         onChatChanged,
         onError: () => { /* deferred: surface via ChatChannelStatus hook */ },
       });

@@ -33,7 +33,6 @@ export default function MyProfileHiddenScreen() {
         status: ['open'],
         limit: 30,
         visibility: 'OnlyMe',
-        profileOpenLinks: { viewerUserId: userId!, listMode: 'owner_only_me' },
       }),
     enabled: Boolean(userId),
     staleTime: 5 * 60_000, // PERF-3: profile (self) — edit-profile invalidates explicitly

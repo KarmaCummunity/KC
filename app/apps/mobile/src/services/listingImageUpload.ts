@@ -6,7 +6,8 @@ export type { PickedImage };
 import * as ImageManipulator from 'expo-image-manipulator';
 import { base64ToUint8Array } from './mediaEncoding';
 
-const LISTING_BUCKET = 'listing-images';
+/** A listing is a post: its photos live in the post bucket, under the owner's folder. */
+const LISTING_BUCKET = 'post-images';
 const MAX_LISTING_IMAGES = 5;
 const MAX_EDGE = 2048;
 const COMPRESS = 0.85;

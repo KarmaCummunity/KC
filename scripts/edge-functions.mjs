@@ -18,8 +18,8 @@ import { fileURLToPath } from 'node:url';
 
 const DEFAULT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'supabase', 'functions');
 
-/** mock-login mints sessions without OAuth for local E2E; it 404s on hosted projects but has no business there. */
-export const LOCAL_ONLY = new Set(['mock-login']);
+/** Functions that exist for a local stack only and must never be deployed; none today (demo users are dev seed data, target-design §9). */
+export const LOCAL_ONLY = new Set();
 
 /**
  * Functions that stay in the repo but are NOT deployed to any hosted project by
@@ -48,14 +48,12 @@ export const NOT_DEPLOYED = new Map([
  */
 export const SMOKE_PROBES = {
   'backfill-image-thumbs': { expect: [405], why: 'method guard (POST only) runs first' },
-  'delete-account': { expect: [200], why: 'answers the CORS preflight' },
   'dispatch-notification': { expect: [401], why: 'service-role bearer check runs before the body is read' },
   'embed-worker': { expect: [401], why: 'service-role bearer check runs first' },
   'match-rerank': { expect: [405], why: 'method guard (POST only) runs first' },
   'payments-webhook': { expect: [405], why: 'method guard (POST only) runs first' },
   'public-research-submit': { expect: [200], why: 'answers the preflight for the deployed web origin (403 = origin not allowlisted)' },
   'purge-deleted-accounts': { expect: [405], why: 'method guard (POST only) runs first' },
-  'receipts-issuer': { expect: [405], why: 'method guard (POST only) runs first' },
   'reconcile-storage-orphans': { expect: [405], why: 'method guard (POST only) runs first' },
   'revenuecat-webhook': { expect: [405], why: 'method guard (POST only) runs first' },
   'rotate-research-salt': { expect: [405], why: 'method guard (POST only) runs first' },

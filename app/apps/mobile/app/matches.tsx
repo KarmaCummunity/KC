@@ -1,6 +1,6 @@
 // Matching v2 — "Matches for you": automatic offer↔request pairs computed in Postgres.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { RefreshControl, View } from 'react-native';
+import { View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
@@ -8,7 +8,7 @@ import { useDetailStackScreenOptions } from '../src/navigation/detailStackScreen
 import { KcFlashList } from '../src/components/lists/KcFlashList';
 import { SimpleRowListSkeleton } from '../src/components/skeletons/SimpleRowListSkeleton';
 import { MatchSuggestionCard } from '../src/components/matching/MatchSuggestionCard';
-import { useMyMatches, useRefreshMyMatches, useRespondToMatch } from '../src/hooks/useMyMatches';
+import { useMyMatches, useRespondToMatch } from '../src/hooks/useMyMatches';
 import { sortMatches, matchStateOf } from '../src/lib/matching';
 import { trackCoreLoop } from '../src/lib/analyticsCoreLoop';
 import { rtlTextAlignStart } from '../src/lib/rtlTextAlignStart';
@@ -21,7 +21,6 @@ export default function MatchesScreen() {
   const detailOptions = useDetailStackScreenOptions();
   const query = useMyMatches(50);
   const respond = useRespondToMatch();
-  const refresh = useRefreshMyMatches();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const shownRef = useRef(false);
@@ -61,9 +60,6 @@ export default function MatchesScreen() {
         data={sortMatches(query.data ?? [])}
         keyExtractor={(m) => m.candidateId}
         contentContainerStyle={styles.list}
-        refreshControl={
-          <RefreshControl refreshing={refresh.isPending} onRefresh={() => refresh.mutate()} />
-        }
         ListHeaderComponent={
           <View testID="matches-screen">
             <Text style={styles.intro}>{t('matches.intro')}</Text>

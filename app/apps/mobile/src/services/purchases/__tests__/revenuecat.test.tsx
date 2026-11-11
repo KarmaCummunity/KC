@@ -70,6 +70,7 @@ describe('RevenueCatSync', () => {
     vi.resetModules();
     const sync = vi.fn(async () => {});
     vi.doMock('../revenuecat', () => ({ syncRevenueCatUser: sync }));
+    vi.doMock('../../../hooks/useLaunchSurface', () => ({ useLaunchSurface: () => true }));
     vi.doMock('../../../store/authStore', () => ({
       useAuthStore: (sel: (s: unknown) => unknown) => sel({ session: { userId: 'u9' } }),
     }));

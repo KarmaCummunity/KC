@@ -31,16 +31,12 @@ export class ReserveItemGivingUseCase {
     pickupMode?: GivingHandoffPickupMode,
     pickupWindowStart?: string | null,
     pickupWindowEnd?: string | null,
-    idempotencyKey?: string | null,
   ): Promise<GivingHandoffSnapshot> {
     if (!listingId || !listingId.trim()) {
       throw new GivingHandoffError('listing_not_available', 'Listing ID is required');
     }
     if (pickupMode !== undefined && !isValidPickupMode(pickupMode)) {
       throw new GivingHandoffError('invalid_pickup_mode', 'Invalid pickup mode');
-    }
-    if (idempotencyKey !== undefined) {
-      return this.repo.reserveItemGiving(listingId, pickupMode, pickupWindowStart, pickupWindowEnd, idempotencyKey);
     }
     return this.repo.reserveItemGiving(listingId, pickupMode, pickupWindowStart, pickupWindowEnd);
   }
@@ -62,13 +58,9 @@ export class ClaimFoodGivingUseCase {
     listingId: string,
     pickupWindowStart?: string | null,
     pickupWindowEnd?: string | null,
-    idempotencyKey?: string | null,
   ): Promise<GivingHandoffSnapshot> {
     if (!listingId || !listingId.trim()) {
       throw new GivingHandoffError('listing_not_available', 'Listing ID is required');
-    }
-    if (idempotencyKey !== undefined) {
-      return this.repo.claimFoodGiving(listingId, pickupWindowStart, pickupWindowEnd, idempotencyKey);
     }
     return this.repo.claimFoodGiving(listingId, pickupWindowStart, pickupWindowEnd);
   }

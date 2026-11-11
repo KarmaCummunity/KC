@@ -7,7 +7,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { PublicResearchError } from '@kc/domain';
-import type { Database } from '../../database.types';
+import type { Database } from '../../database.legacy.types';
 import { SupabasePublicResearchRepository } from '../SupabasePublicResearchRepository';
 
 // ---------------------------------------------------------------------------

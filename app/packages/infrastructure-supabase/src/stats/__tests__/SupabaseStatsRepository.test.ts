@@ -1,166 +1,77 @@
-import { describe, it, expect } from 'vitest';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { describe, expect, it } from 'vitest';
+import { BackendUnavailableError } from '@kc/domain';
+import { callsTo, createFakeClient, type FakeResult } from '../../__tests__/fakeBaselineClient';
 import { SupabaseStatsRepository } from '../SupabaseStatsRepository';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+const ok = (data: unknown): FakeResult => ({ data, error: null });
 
-interface FakeOpts {
-  snapshotData?: any;
-  snapshotError?: { message: string } | null;
-  rpcData?: unknown;
-  rpcError?: { code?: string; message: string } | null;
-}
-interface RpcCall { fn: string; args: unknown }
+const COMMUNITY = {
+  registered_users: 12,
+  open_public_posts: 7,
+  delivered_posts: 31,
+  refreshed_at: '2026-01-01T00:00:00Z',
+};
 
-function makeFakeClient(opts: FakeOpts): { client: SupabaseClient<any>; rpcs: RpcCall[] } {
-  const rpcs: RpcCall[] = [];
-  const client = {
-    from: () => ({
-      select: () => ({
-        maybeSingle: async () => ({
-          data: opts.snapshotData ?? null,
-          error: opts.snapshotError ?? null,
-        }),
-      }),
-    }),
-    rpc: async (fn: string, args: unknown) => {
-      rpcs.push({ fn, args });
-      return { data: opts.rpcData ?? null, error: opts.rpcError ?? null };
-    },
-  } as unknown as SupabaseClient<any>;
-  return { client, rpcs };
-}
+describe('getCommunityStatsSnapshot', () => {
+  it('reads the one row of community_stats()', async () => {
+    const { client } = createFakeClient({ rpc: { community_stats: ok([COMMUNITY]) } });
 
-describe('SupabaseStatsRepository — getCommunityStatsSnapshot', () => {
-  it('reads from community_stats and maps the row to camelCase + Number()-coerced fields', async () => {
-    const { client } = makeFakeClient({
-      snapshotData: {
-        registered_users: 100,
-        active_public_posts: 25,
-        items_delivered_total: 80,
-        as_of: '2026-05-16T12:00:00.000Z',
-      },
-    });
-    expect(await new SupabaseStatsRepository(client).getCommunityStatsSnapshot()).toEqual({
-      registeredUsers: 100,
-      activePublicPosts: 25,
-      itemsDeliveredTotal: 80,
-      asOf: '2026-05-16T12:00:00.000Z',
+    const snapshot = await new SupabaseStatsRepository(client).getCommunityStatsSnapshot();
+
+    expect(snapshot).toEqual({
+      registeredUsers: 12,
+      activePublicPosts: 7,
+      itemsDeliveredTotal: 31,
+      asOf: '2026-01-01T00:00:00Z',
     });
   });
 
-  it('coerces null/undefined counters to 0 and missing as_of to null (defensive defaults)', async () => {
-    const { client } = makeFakeClient({ snapshotData: null });
-    expect(await new SupabaseStatsRepository(client).getCommunityStatsSnapshot()).toEqual({
-      registeredUsers: 0,
-      activePublicPosts: 0,
-      itemsDeliveredTotal: 0,
-      asOf: null,
-    });
+  it('is zero before the first refresh, and the active count is the open public posts', async () => {
+    const { client } = createFakeClient({ rpc: { community_stats: ok([]) } });
+    const repo = new SupabaseStatsRepository(client);
+
+    expect(await repo.getCommunityStatsSnapshot()).toMatchObject({ registeredUsers: 0, asOf: null });
+    expect(await repo.getActivePublicPostsCount()).toBe(0);
   });
 
-  it('coerces non-numeric values via Number() (defensive — view sometimes returns strings)', async () => {
-    const { client } = makeFakeClient({
-      snapshotData: { registered_users: '99', active_public_posts: '7', items_delivered_total: '3', as_of: null },
+  it('reports a missing function as unavailable', async () => {
+    const { client } = createFakeClient({
+      rpc: { community_stats: { data: null, error: { code: 'PGRST202', message: 'not found' } } },
     });
-    const s = await new SupabaseStatsRepository(client).getCommunityStatsSnapshot();
-    expect(s.registeredUsers).toBe(99);
-    expect(s.activePublicPosts).toBe(7);
-    expect(s.itemsDeliveredTotal).toBe(3);
-  });
-
-  it('throws with a prefixed "getCommunityStatsSnapshot: " message on query error', async () => {
-    const { client } = makeFakeClient({ snapshotError: { message: 'rls denied' } });
-    await expect(new SupabaseStatsRepository(client).getCommunityStatsSnapshot()).rejects.toThrow(
-      'getCommunityStatsSnapshot: rls denied',
+    await expect(new SupabaseStatsRepository(client).getCommunityStatsSnapshot()).rejects.toBeInstanceOf(
+      BackendUnavailableError,
     );
   });
 });
 
-describe('SupabaseStatsRepository — getActivePublicPostsCount', () => {
-  it('returns the activePublicPosts field from the snapshot (delegates, no extra query)', async () => {
-    const { client } = makeFakeClient({
-      snapshotData: { registered_users: 0, active_public_posts: 42, items_delivered_total: 0, as_of: null },
+describe('listMyActivityTimeline', () => {
+  it('maps the rows and falls back to a creation for a kind the app has no label for', async () => {
+    const { client, calls } = createFakeClient({
+      rpc: {
+        my_activity_timeline: ok([
+          { occurred_at: 't1', kind: 'marked_as_recipient', post_id: 'p1', post_title: 'Sofa', actor_id: 'u2', actor_display_name: 'Dana', world_slug: 'time' },
+          { occurred_at: 't2', kind: 'something_new', post_id: 'p2', post_title: 'Bike', actor_id: 'u1', actor_display_name: 'Me', world_slug: null },
+        ]),
+      },
     });
-    expect(await new SupabaseStatsRepository(client).getActivePublicPostsCount()).toBe(42);
+
+    const items = await new SupabaseStatsRepository(client).listMyActivityTimeline(25);
+
+    expect(callsTo(calls, 'my_activity_timeline')[0]?.args).toEqual({ p_limit: 25 });
+    expect(items).toEqual([
+      { occurredAt: 't1', kind: 'marked_as_recipient', postId: 'p1', postTitle: 'Sofa', actorDisplayName: 'Dana', worldSlug: 'time' },
+      { occurredAt: 't2', kind: 'post_created', postId: 'p2', postTitle: 'Bike', actorDisplayName: 'Me', worldSlug: null },
+    ]);
   });
 });
 
-describe('SupabaseStatsRepository — listMyActivityTimeline', () => {
-  it('calls rpc_my_activity_timeline with { p_limit } and maps rows to camelCase', async () => {
-    const { client, rpcs } = makeFakeClient({
-      rpcData: [
-        {
-          occurred_at: '2026-05-16T12:00:00.000Z',
-          kind: 'post_created',
-          post_id: 'p_1',
-          post_title: 'Title',
-          actor_display_name: 'Alice',
-          world_slug: 'time',
-        },
-      ],
-    });
-    const out = await new SupabaseStatsRepository(client).listMyActivityTimeline(50);
-    expect(rpcs).toEqual([{ fn: 'rpc_my_activity_timeline', args: { p_limit: 50 } }]);
-    expect(out).toEqual([
-      {
-        occurredAt: '2026-05-16T12:00:00.000Z',
-        kind: 'post_created',
-        postId: 'p_1',
-        postTitle: 'Title',
-        actorDisplayName: 'Alice',
-        worldSlug: 'time',
-      },
-    ]);
-  });
+describe('capabilities the baseline lacks (M14, M15)', () => {
+  it('throws BackendUnavailableError for the funnel and the per-world givings, without calling the server', async () => {
+    const { client, calls } = createFakeClient();
+    const repo = new SupabaseStatsRepository(client);
 
-  it('coerces an unknown kind to "post_created" (defensive fallback for future enum values)', async () => {
-    const { client } = makeFakeClient({
-      rpcData: [
-        { occurred_at: 't', kind: 'totally_new_kind', post_id: 'p', post_title: 't', actor_display_name: null },
-      ],
-    });
-    const out = await new SupabaseStatsRepository(client).listMyActivityTimeline(10);
-    expect(out[0]?.kind).toBe('post_created');
-  });
-
-  it('reads a row without a world (a server before 0742) as no world', async () => {
-    const { client } = makeFakeClient({
-      rpcData: [
-        { occurred_at: 't', kind: 'post_created', post_id: 'p', post_title: 't', actor_display_name: null },
-      ],
-    });
-    const out = await new SupabaseStatsRepository(client).listMyActivityTimeline(10);
-    expect(out[0]?.worldSlug).toBeNull();
-  });
-
-  it('returns [] when the RPC returns null data', async () => {
-    const { client } = makeFakeClient({ rpcData: null });
-    expect(await new SupabaseStatsRepository(client).listMyActivityTimeline(10)).toEqual([]);
-  });
-
-  describe('RPC-missing detection (silently returns [])', () => {
-    const cases: Array<[string, { code?: string; message: string }]> = [
-      ['PGRST202 → []', { code: 'PGRST202', message: 'something' }],
-      ['42883 → []', { code: '42883', message: 'function not found' }],
-      ['plain "not found" message → []', { message: 'not found' }],
-      ['"could not find" + function name → []', { message: 'could not find rpc_my_activity_timeline' }],
-      ['"does not exist" + function name → []', { message: 'rpc_my_activity_timeline does not exist' }],
-    ];
-    for (const [label, error] of cases) {
-      it(label, async () => {
-        const { client } = makeFakeClient({ rpcError: error });
-        expect(await new SupabaseStatsRepository(client).listMyActivityTimeline(10)).toEqual([]);
-      });
-    }
-  });
-
-  it('throws on any other RPC error with prefixed "listMyActivityTimeline: " message', async () => {
-    const { client } = makeFakeClient({
-      rpcError: { code: '42501', message: 'permission denied' },
-    });
-    await expect(
-      new SupabaseStatsRepository(client).listMyActivityTimeline(10),
-    ).rejects.toThrow('listMyActivityTimeline: permission denied');
+    await expect(repo.getWorldFlowFunnel(30)).rejects.toBeInstanceOf(BackendUnavailableError);
+    await expect(repo.listMyWorldGivings()).rejects.toBeInstanceOf(BackendUnavailableError);
+    expect(calls).toHaveLength(0);
   });
 });

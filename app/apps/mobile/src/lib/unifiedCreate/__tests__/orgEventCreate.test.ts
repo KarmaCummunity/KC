@@ -33,9 +33,9 @@ describe('suggestsOrgMembership', () => {
 
 describe('kindForCreate', () => {
   it('publishes the event kind only when chosen', () => {
-    expect(kindForCreate(TIME, 'give', true)?.slug).toBe('org_event');
-    expect(kindForCreate(TIME, 'give', false)?.slug).toBe('volunteer_shift');
-    expect(kindForCreate(TIME, 'request', false)?.slug).toBe('support_request');
+    expect(kindForCreate(TIME, 'give', true)?.slug).toBe('event');
+    expect(kindForCreate(TIME, 'give', false)?.slug).toBe('volunteer_offer');
+    expect(kindForCreate(TIME, 'request', false)?.slug).toBe('volunteer_request');
   });
 
   it('finds no event kind in a world without one', () => {

@@ -110,3 +110,33 @@ test('skips files inside __tests__ directories', () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('an object of launch tier "later" that the baseline lacks is tolerated; a launch-tier one is not', () => {
+  const root = mkdtempSync(join(tmpdir(), 'contract-later-'));
+  try {
+    const infra = join(root, 'app/packages/infrastructure-supabase/src');
+    mkdirSync(infra, { recursive: true });
+    mkdirSync(join(root, 'supabase/migrations'), { recursive: true });
+    mkdirSync(join(root, 'scripts'), { recursive: true });
+    mkdirSync(join(root, 'docs/db'), { recursive: true });
+    seedAllowlist(root);
+    seedTypesStub(root);
+    writeFileSync(join(infra, 'Repo.ts'), `client.rpc('timesheet_list', {}); client.rpc('book_ride_seat', {});`);
+    writeFileSync(
+      join(root, 'docs/db/app-migration-map.json'),
+      JSON.stringify({
+        rows: [
+          { kind: 'rpc', old: 'timesheet_list', status: 'missing', launch: 'later' },
+          { kind: 'rpc', old: 'book_ride_seat', status: 'missing', launch: 'wedge' },
+        ],
+      }),
+    );
+    const result = checkRpcContract({ repoRoot: root });
+    assert.equal(result.ok, false);
+    assert.deepEqual(result.tolerated, ['rpc timesheet_list']);
+    assert.equal(result.errors.length, 1);
+    assert.match(result.errors[0], /book_ride_seat/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

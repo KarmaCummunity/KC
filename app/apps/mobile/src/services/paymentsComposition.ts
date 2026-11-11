@@ -2,7 +2,7 @@ import {
   SandboxPaymentProvider,
   SupabaseKcSupportChannelsRepository,
   SupabasePaymentsRepository,
-  getSupabaseClient,
+  getLegacySupabaseClient,
 } from '@kc/infrastructure-supabase';
 import {
   CancelStandingOrderUseCase,
@@ -25,7 +25,7 @@ let _repo: SupabasePaymentsRepository | null = null;
 let _provider: SandboxPaymentProvider | null = null;
 
 function client() {
-  return getSupabaseClient({ storage: pickAuthStorage() });
+  return getLegacySupabaseClient({ storage: pickAuthStorage() });
 }
 
 function repo() {

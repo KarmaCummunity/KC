@@ -108,15 +108,29 @@ describe('useChatStore — inbox cache helpers', () => {
 describe('useChatStore — thread mutations', () => {
   beforeEach(() => resetStore());
 
-  it('appendOptimistic, reconcileSent, markFailed and applyStatusChange', () => {
+  it('appendOptimistic, reconcileSent and markFailed', () => {
     const s = useChatStore.getState();
     s.appendOptimistic('c1', { messageId: 'tmp', clientId: 'k1', body: 'a' } as never);
     s.markFailed('c1', 'k1');
     expect(useChatStore.getState().threads.c1?.[0]?.failed).toBe(true);
     s.reconcileSent('c1', 'k1', { messageId: 'm1', body: 'a' } as never);
     expect(useChatStore.getState().threads.c1?.[0]).toMatchObject({ messageId: 'm1', failed: false });
-    s.applyStatusChange('c1', { messageId: 'm1', status: 'read', deliveredAt: 'd', readAt: 'r' } as never);
-    expect(useChatStore.getState().threads.c1?.[0]).toMatchObject({ status: 'read', readAt: 'r' });
+  });
+
+  it('applyReadMarker marks others\' messages up to the marker as read and leaves the reader\'s own', () => {
+    const s = useChatStore.getState();
+    s.setThreadMessages('c1', [
+      { messageId: 'old', senderId: 'u_me', status: 'delivered', createdAt: '2026-05-16T10:00:00.000Z' },
+      { messageId: 'new', senderId: 'u_me', status: 'delivered', createdAt: '2026-05-16T12:00:00.000Z' },
+      { messageId: 'theirs', senderId: 'u_other', status: 'delivered', createdAt: '2026-05-16T10:30:00.000Z' },
+    ] as never);
+
+    s.applyReadMarker('c1', { userId: 'u_other', lastReadAt: '2026-05-16T11:00:00.000Z' });
+
+    const byId = Object.fromEntries((useChatStore.getState().threads.c1 ?? []).map((m) => [m.messageId, m]));
+    expect(byId['old']).toMatchObject({ status: 'read', readAt: '2026-05-16T11:00:00.000Z' });
+    expect(byId['new']).toMatchObject({ status: 'delivered' });
+    expect(byId['theirs']).toMatchObject({ status: 'delivered' });
   });
 
   it('applyIncomingMessage replaces a matching pending optimistic row', () => {
@@ -172,7 +186,7 @@ describe('useChatStore — subscriptions lifecycle', () => {
     await useChatStore.getState().startThreadSub('c1', repo as never, realtime as never, vi.fn());
     expect(repo.getMessages).toHaveBeenCalledTimes(1);
     handlers.onMessage?.({ ...(MSG as object), messageId: 'm10' });
-    handlers.onMessageStatusChanged?.({ messageId: 'm10', status: 'delivered' });
+    handlers.onReadMarker?.({ userId: 'u_other', lastReadAt: '2026-05-16T13:00:00.000Z' });
     handlers.onError?.(new Error('x'));
     expect(useChatStore.getState().threads.c1).toHaveLength(2);
     useChatStore.getState().stopThreadSub('c1');

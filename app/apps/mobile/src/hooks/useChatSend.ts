@@ -7,10 +7,21 @@ import { randomUUID } from 'expo-crypto';
 import { MESSAGE_MAX_CHARS } from '@kc/domain';
 import { ChatError } from '@kc/application';
 import { useChatStore, type OptimisticMessage } from '../store/chatStore';
-import { useNetworkStatusStore } from '../lib/networkStatusStore';
-import { useOutboxStore } from '../store/outboxStore';
 import i18n from '../i18n';
 import { container } from '../lib/container';
+
+/** Locale keys of the notice each send refusal that the member can act on shows (FR-CHAT-003). */
+const SEND_FAILURE_NOTICES: Partial<Record<ChatError['code'], { title: string; message: string }>> = {
+  send_to_deleted_user: { title: 'errors.chat.userUnavailableTitle', message: 'errors.chat.userUnavailableMessage' },
+  rate_limited: { title: 'chat.messaging.rateLimited.title', message: 'chat.messaging.rateLimited.message' },
+  blocked_relationship: { title: 'chat.messaging.blocked.title', message: 'chat.messaging.blocked.message' },
+};
+
+/** The translated notice for a failed send, or null when the failure only needs the red retry state. */
+function sendFailureNotice(code: ChatError['code']): { title: string; message: string } | null {
+  const keys = SEND_FAILURE_NOTICES[code];
+  return keys ? { title: i18n.t(keys.title), message: i18n.t(keys.message) } : null;
+}
 
 interface UseChatSendArgs {
   chatId: string;
@@ -68,32 +79,14 @@ export function useChatSend({
       useChatStore.getState().appendOptimistic(chatId, optimistic);
       setInput('');
     }
-    const isOnline = useNetworkStatusStore.getState().isOnline;
-    if (!isOnline) {
-      useOutboxStore.getState().enqueue({
-        entityType: 'chat_message',
-        action: 'send_message',
-        payload: { chatId, senderId: userId, body, clientId },
-        idempotencyKey: `chat:${chatId}:${clientId}`,
-      });
-      return;
-    }
     try {
-      const server = await container.sendMessage.execute({ chatId, senderId: userId, body, clientId });
+      const server = await container.sendMessage.execute({ chatId, senderId: userId, body, messageId: clientId });
       useChatStore.getState().reconcileSent(chatId, clientId, server);
       if (wasFirstSend) void presentPrePrompt('first-message-sent');
     } catch (err) {
       useChatStore.getState().markFailed(chatId, clientId);
-      if (err instanceof ChatError && err.code === 'send_to_deleted_user') {
-        setNotify({ title: i18n.t('errors.chat.userUnavailableTitle'), message: i18n.t('errors.chat.userUnavailableMessage') });
-      } else {
-        useOutboxStore.getState().enqueue({
-          entityType: 'chat_message',
-          action: 'send_message',
-          payload: { chatId, senderId: userId, body, clientId },
-          idempotencyKey: `chat:${chatId}:${clientId}`,
-        });
-      }
+      const notice = err instanceof ChatError ? sendFailureNotice(err.code) : null;
+      if (notice) setNotify(notice);
     }
   };
 }

@@ -1,5 +1,13 @@
 # Migration range registry
 
+> **Reset by the production baseline cut-over (D-228).** The incremental chain `0001`–`0742` was
+> replaced by one migration, `supabase/migrations/0001_baseline.sql`, assembled from
+> `supabase/schemas/` and frozen (`node scripts/assemble-baseline.mjs --check` fails when it
+> changes). The old files are history in `supabase/migrations/archive/`. **The next free number is
+> `0002`.** Later changes are forward-only `supabase/migrations/NNNN_snake.sql` files with their
+> pgTAP test in `supabase/tests/`; claim a range below as before. The table that follows is the
+> record of the retired chain and is kept for reference only.
+
 **Rule:** before writing a migration, claim a range here, in your PR or a small docs PR to `dev`. Use only numbers inside your range. Files are `supabase/migrations/NNNN_snake_case.sql`. Gaps are fine; collisions are not.
 
 Last applied on kc-dev when this was written: `0239`.
@@ -129,13 +137,20 @@ Last applied on kc-dev when this was written: `0239`.
 | 0680–0689, 0694–0699, 0701–0702, 0716–0725 | FSM kernel program (`docs/architecture/state-machines.md`): `0680` kernel catalog (`fsm_state` / `fsm_edge` / `fsm_assert_transition`) and the admin-task pilot; `0681` post S1 (wave 1a); `0682` admin restore (wave 1b-i); `0683` handoff writers (1b-ii); `0684` items without expiry and `0685` events expire (1b-iii); `0686` event owner actions (1b-iv); `0694` handoff machines (wave 2); `0695` legacy ride jobs retired (wave 1d); `0696` account status (wave 3a); `0697` account status writers (3a-2); `0698` onboarding (3b); `0699` retryable account purge (3c); `0701` reports and follow requests (4a); `0702` comments and knowledge topics (4b); `0716` item / animal reservation expiry (2c); `0717` review queues (4c); `0718` timesheets (5); `0719` ride series and standing orders (6a); `0720`–`0725` held for the next waves; `0692`, `0693` and `0700` are other work | in progress |
 | 0690 | money sandbox completion behind the `sandbox_payments` server flag; org memberships written by definer functions only | merged (#1983) |
 | 0691 | #1961 reset the public schema comment (retired product cleanup) | in progress |
+| 0692 | G1 compatibility views (`listings`, `giving_handoffs`, `ride_listings`) follow the base tables' access rules | merged (#2017) |
+| 0693 | composer items posts get their listing kind on insert (regression from 0666) | in progress |
+| 0700 | #1398 `give_food` no longer requires `food_type` (the food type is the world sub-category) | in progress |
+| 0703–0714 | knowledge exchange posts, epic #1687 (KNOW-K1-B): `0703` six kinds, slots as rows, slot rules and sync (#2034), `0704` slot bookings, sweeps, pushes (#2034), `0705–0714` children #2035–#2039 | in progress |
+| 0715 | RLS auth initplan on the hot-table policies, all but posts (supersedes closed #1546, PR #2054) | in progress |
+| 0730–0739 | Events and organizations (G18) and the handoff fixes found on the way: `0730` organization registration and members (FR-ORG-002 first slice), `0731` event notifications, `0732` demo events on kc-dev, `0733` animal handoff pushes (`fix/animals-handoff-push`), `0734` ride expiry settles bookings (`fix/rides-expiry-settles-bookings`), `0735` an event's close earns no fulfilled karma, `0736` the end of an event lapses its requests and waitlist; `0737`–`0739` unused (below the applied `0740`, not reissued) | merged (#2106, #2109, #2112) |
+| 0740 | delivered listing visibility: union of the two surfaces, recipient via handoff, `recipients` row for food / animals / items hand-overs + backfill (D-229) | in progress |
+| 0741 | #2020 offer photo rule on the server (D132): commit-time check on new posts and deleted listing photos, `create_post_with_media` | in progress |
 | 0742 | #2078 the personal activity timeline returns each post's world (volunteering wording, FR-CLOSURE-011 AC9) | in progress |
-| 0743–0745 | #1999 ADR-004 idempotency keys on post creation and handoff RPCs | in progress |
-| 0726–0729, 0746+ | — | free |
+| 0726–0729, 0743+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0726–0729`, `0746+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0726–0729`, `0743+`.
 
 ## How to claim
 

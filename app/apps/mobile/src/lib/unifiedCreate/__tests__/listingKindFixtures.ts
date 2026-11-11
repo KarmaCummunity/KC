@@ -27,7 +27,7 @@ function kind(slug: string, direction: 'give' | 'request', schema: Record<string
 
 export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[]>> = {
   food: [
-    kind('give_food', 'give', obj({
+    kind('food_offer', 'give', obj({
       food_type: { enum: ['cooked', 'packaged', 'fresh', 'frozen', 'dry', 'beverage'] },
       expires_at: { type: 'string', format: 'date-time' },
       allergens: { type: 'array', items: { type: 'string' } },
@@ -39,7 +39,7 @@ export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[
       pickup_window_start: { type: 'string', format: 'date-time' },
       pickup_window_end: { type: 'string', format: 'date-time' },
     }, ['expires_at'])), // food_type left `required` in 0700 (D137).
-    kind('request_food', 'request', obj({ household_size: { type: 'integer' }, dietary_needs: { type: 'string' } })),
+    kind('food_request', 'request', obj({ household_size: { type: 'integer' }, dietary_needs: { type: 'string' } })),
   ],
   rides: [
     kind('ride_offer', 'give', obj({
@@ -175,17 +175,17 @@ export const KINDS_BY_WORLD: Readonly<Record<string, readonly ListingKindOption[
     })),
   ],
   time: [
-    kind('volunteer_shift', 'give', obj({
+    kind('volunteer_offer', 'give', obj({
       duration_minutes: { type: 'integer' },
       skills: { type: 'array', items: { type: 'string' } },
       org_host_slug: { type: 'string' },
     })),
-    kind('support_request', 'request', obj({
+    kind('volunteer_request', 'request', obj({
       support_type: { enum: ['emotional', 'companionship', 'practical', 'escort'] },
       duration_minutes: { type: 'integer' },
     })),
     // An organization's event (0563), offered only to members of an organization.
-    kind('org_event', 'give', obj({
+    kind('event', 'give', obj({
       org_id: { type: 'string', minLength: 36, maxLength: 36 },
       starts_at: { type: 'string', format: 'date-time' },
       ends_at: { type: 'string', format: 'date-time' },

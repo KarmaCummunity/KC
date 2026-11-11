@@ -15,7 +15,7 @@ describe('useChatSend', () => {
     const { result } = renderHook(() => useChatSend({ chatId: 'c1', userId: 'u1', input: ' hello ', setInput, presentPrePrompt: prompt, setNotify: vi.fn() }));
     await act(async () => result.current());
     expect(m.append).toHaveBeenCalledWith('c1', expect.objectContaining({ messageId: 'client-1', body: 'hello', status: 'pending' }));
-    expect(m.send).toHaveBeenCalledWith({ chatId: 'c1', senderId: 'u1', body: 'hello', clientId: 'client-1' });
+    expect(m.send).toHaveBeenCalledWith({ chatId: 'c1', senderId: 'u1', body: 'hello', messageId: 'client-1' });
     expect(m.reconcile).toHaveBeenCalledWith('c1', 'client-1', { messageId: 'server-1' });
     expect(setInput).toHaveBeenCalledWith(''); expect(prompt).toHaveBeenCalledWith('first-message-sent');
   });
@@ -43,7 +43,7 @@ describe('useChatSend', () => {
     m.hasSent.mockResolvedValue(true); m.send.mockResolvedValue({ messageId: 'server-2' });
     const setInput = vi.fn(); const { result } = renderHook(() => useChatSend({ chatId: 'c2', userId: 'u2', input: 'ignored', setInput, presentPrePrompt: vi.fn(), setNotify: vi.fn() }));
     await act(async () => result.current('chosen-id', '  custom body  '));
-    expect(m.send).toHaveBeenCalledWith({ chatId: 'c2', senderId: 'u2', body: 'custom body', clientId: 'chosen-id' });
+    expect(m.send).toHaveBeenCalledWith({ chatId: 'c2', senderId: 'u2', body: 'custom body', messageId: 'chosen-id' });
     expect(m.reconcile).toHaveBeenCalledWith('c2', 'chosen-id', { messageId: 'server-2' });
     expect(m.append).not.toHaveBeenCalled(); expect(setInput).not.toHaveBeenCalled(); expect(m.uuid).not.toHaveBeenCalled();
   });
@@ -51,7 +51,7 @@ describe('useChatSend', () => {
     m.hasSent.mockRejectedValue(new Error('offline')); m.send.mockResolvedValue({ messageId: 'server-3' });
     const prompt = vi.fn(); const { result } = renderHook(() => useChatSend({ chatId: 'c1', userId: 'u1', input: 'ok', setInput: vi.fn(), presentPrePrompt: prompt, setNotify: vi.fn() }));
     await act(async () => result.current());
-    expect(m.send).toHaveBeenCalledWith({ chatId: 'c1', senderId: 'u1', body: 'ok', clientId: 'client-1' }); expect(prompt).not.toHaveBeenCalled();
+    expect(m.send).toHaveBeenCalledWith({ chatId: 'c1', senderId: 'u1', body: 'ok', messageId: 'client-1' }); expect(prompt).not.toHaveBeenCalled();
   });
   it('marks ordinary send rejection failed without exposing a deleted-user notice', async () => {
     m.hasSent.mockResolvedValue(true); m.send.mockRejectedValue(new Error('offline'));
@@ -59,17 +59,16 @@ describe('useChatSend', () => {
     await act(async () => result.current());
     expect(m.failed).toHaveBeenCalledWith('c1', 'client-1'); expect(notify).not.toHaveBeenCalled(); expect(m.reconcile).not.toHaveBeenCalled();
   });
-  it('enqueues to outbox immediately when offline without attempting network send', async () => {
-    const { useNetworkStatusStore } = await import('../../lib/networkStatusStore');
-    const { useOutboxStore } = await import('../../store/outboxStore');
-    useNetworkStatusStore.setState({ isOnline: false, isInternetReachable: false });
-    const setInput = vi.fn();
-    const { result } = renderHook(() => useChatSend({ chatId: 'c_off', userId: 'u_off', input: 'offline msg', setInput, presentPrePrompt: vi.fn(), setNotify: vi.fn() }));
+  it.each([
+    ['rate_limited', 'rateLimited'],
+    ['blocked_relationship', 'blocked'],
+  ] as const)('explains a %s refusal with its own notice', async (code, key) => {
+    m.hasSent.mockResolvedValue(true);
+    const { ChatError } = await import('@kc/application');
+    m.send.mockRejectedValue(new ChatError(code, code));
+    const notify = vi.fn(); const { result } = renderHook(() => useChatSend({ chatId: 'c1', userId: 'u1', input: 'ok', setInput: vi.fn(), presentPrePrompt: vi.fn(), setNotify: notify }));
     await act(async () => result.current());
-    expect(m.send).not.toHaveBeenCalled();
-    expect(m.append).toHaveBeenCalledWith('c_off', expect.objectContaining({ body: 'offline msg', status: 'pending' }));
-    expect(setInput).toHaveBeenCalledWith('');
-    expect(useOutboxStore.getState().items.some((i) => i.idempotencyKey === 'chat:c_off:client-1')).toBe(true);
-    useNetworkStatusStore.setState({ isOnline: true, isInternetReachable: true });
+    expect(m.failed).toHaveBeenCalledWith('c1', 'client-1');
+    expect(notify).toHaveBeenCalledWith({ title: `chat.messaging.${key}.title`, message: `chat.messaging.${key}.message` });
   });
 });

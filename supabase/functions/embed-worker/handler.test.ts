@@ -1,8 +1,8 @@
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
-import { createEmbedWorkerHandler, embedText, isServiceRoleJwt, stubEmbed, type ClaimedJob } from './handler.ts';
+import { createEmbedWorkerHandler, embedText, stubEmbed, type ClaimedJob } from './handler.ts';
 
-const b64 = (o: unknown) => btoa(JSON.stringify(o)).replace(/=+$/, '');
-const jwt = (role: string) => `${b64({ alg: 'HS256' })}.${b64({ role })}.sig`;
+// The service-role key the database sends as the bearer (050_edge_invocation.sql).
+const KEY = 'service-key';
 const req = (token?: string, body?: unknown) =>
   new Request('http://x/embed-worker', {
     method: 'POST',
@@ -11,7 +11,7 @@ const req = (token?: string, body?: unknown) =>
   });
 
 const JOB: ClaimedJob = {
-  job_id: 'j1', listing_id: 'l1', model: 'text-embedding-3-small',
+  job_id: 'j1', post_id: 'p1', model: 'text-embedding-3-small',
   title: 'Sofa', summary: 'blue', details: { item_condition: 'Good' },
 };
 
@@ -22,6 +22,7 @@ function deps(results: Record<string, { data: unknown; error: { message: string 
   return {
     calls,
     d: {
+      serviceRoleKey: KEY,
       rpc: (fn: string, args: Record<string, unknown>) => {
         calls.push({ fn, args });
         return Promise.resolve(results[fn] ?? { data: null, error: null });
@@ -30,20 +31,21 @@ function deps(results: Record<string, { data: unknown; error: { message: string 
   };
 }
 
-Deno.test('rejects a caller without a service-role bearer with 401, before any RPC', async () => {
+Deno.test('rejects a caller without the service-role key with 401, before any RPC', async () => {
   const { d, calls } = deps({});
   const h = createEmbedWorkerHandler(d);
   assertEquals((await h(req())).status, 401);
-  assertEquals((await h(req(jwt('authenticated')))).status, 401);
-  assertEquals((await h(req('not-a-jwt'))).status, 401);
+  assertEquals((await h(req('another-key'))).status, 401);
+  // A well-formed JWT claiming the service role is not the key itself.
+  const forged = `${btoa('{"alg":"HS256"}')}.${btoa('{"role":"service_role"}')}.sig`;
+  assertEquals((await h(req(forged))).status, 401);
   assertEquals(calls, []);
-  assertEquals(isServiceRoleJwt(`Bearer ${jwt('service_role')}`), true);
 });
 
 Deno.test('claims with the requested limit, capped at 50, defaulting to 20', async () => {
   for (const [body, expected] of [[{ limit: 5 }, 5], [{ limit: 500 }, 50], [{}, 20], [undefined, 20]] as const) {
     const { d, calls } = deps({ embedding_jobs_claim: { data: [], error: null } });
-    const res = await createEmbedWorkerHandler(d)(req(jwt('service_role'), body));
+    const res = await createEmbedWorkerHandler(d)(req(KEY, body));
     assertEquals(await res.json(), { ok: true, processed: 0 });
     assertEquals(calls, [{ fn: 'embedding_jobs_claim', args: { p_limit: expected } }]);
   }
@@ -52,7 +54,7 @@ Deno.test('claims with the requested limit, capped at 50, defaulting to 20', asy
 Deno.test('stores each claimed job\'s stub vector with its model', async () => {
   const second = { ...JOB, job_id: 'j2', model: null };
   const { d, calls } = deps({ embedding_jobs_claim: { data: [JOB, second], error: null }, embedding_job_store: { data: true, error: null } });
-  const res = await createEmbedWorkerHandler(d)(req(jwt('service_role'), { limit: 2 }));
+  const res = await createEmbedWorkerHandler(d)(req(KEY, { limit: 2 }));
   assertEquals(await res.json(), { ok: true, processed: 2 });
   assertEquals(calls.map((c) => c.fn), ['embedding_jobs_claim', 'embedding_job_store', 'embedding_job_store']);
   assertEquals(calls[1].args, { p_job_id: 'j1', p_embedding: stubEmbed(embedText(JOB)), p_model: 'text-embedding-3-small' });
@@ -64,14 +66,14 @@ Deno.test('fails a job whose store errors and goes on', async () => {
     embedding_jobs_claim: { data: [JOB], error: null },
     embedding_job_store: { data: null, error: { message: 'boom' } },
   });
-  const res = await createEmbedWorkerHandler(d)(req(jwt('service_role')));
+  const res = await createEmbedWorkerHandler(d)(req(KEY));
   assertEquals(await res.json(), { ok: true, processed: 0 });
   assertEquals(calls[2], { fn: 'embedding_job_fail', args: { p_job_id: 'j1', p_error: 'boom' } });
 });
 
 Deno.test('answers 500 when the claim fails', async () => {
   const { d } = deps({ embedding_jobs_claim: { data: null, error: { message: 'down' } } });
-  const res = await createEmbedWorkerHandler(d)(req(jwt('service_role')));
+  const res = await createEmbedWorkerHandler(d)(req(KEY));
   assertEquals(res.status, 500);
   assertEquals(await res.json(), { ok: false, error: 'down' });
 });

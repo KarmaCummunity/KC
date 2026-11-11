@@ -10,9 +10,6 @@ import type {
   PostVisibility,
 } from '@kc/domain';
 import { isPostError } from '@kc/application';
-import { generateUuid } from '../lib/uuid';
-import { useNetworkStatusStore } from '../lib/networkStatusStore';
-import { useOutboxStore } from '../store/outboxStore';
 import { getCreatePostUseCase, getPostRepo } from '../services/postsComposition';
 import { useFeedSessionStore } from '../store/feedSessionStore';
 import { useLastAddressStore } from '../store/lastAddressStore';
@@ -162,40 +159,6 @@ export function useCreatePostPublish(args: {
     args.requestSoftGate(() => {
       if (publishStartedRef.current) return;
       publishStartedRef.current = true;
-      if (!useNetworkStatusStore.getState().isOnline) {
-        const { ownerId, city, street, streetNumber } = args;
-        if (!ownerId || !city) {
-          publishStartedRef.current = false;
-          return;
-        }
-        const postId = generateUuid();
-        const payload = {
-          ...buildPostCreatePayload({
-            ...args,
-            ownerId,
-            city,
-            visibility: args.visibilityRef.current,
-          }),
-          postId,
-        };
-        useOutboxStore.getState().enqueue({
-          entityType: 'post',
-          action: 'create_post',
-          payload,
-          idempotencyKey: `post:${postId}`,
-        });
-        useLastAddressStore.getState().setLastAddress({
-          cityId: city.id,
-          cityName: city.name,
-          street,
-          streetNumber,
-        });
-        usePostDraftStore.getState().clearDraft();
-        useFeedSessionStore.getState().showEphemeralToast(t('offlineSync.postPending'), 'success');
-        publishStartedRef.current = false;
-        closeCreateForm(router);
-        return;
-      }
       publish.mutate();
     });
   };
