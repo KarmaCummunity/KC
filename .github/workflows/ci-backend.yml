@@ -56,6 +56,12 @@ jobs:
         # per-migration tests and the per-world lifecycle flows (G44).
         run: scripts/run-db-tests.sh
 
+      # The production baseline (supabase/schemas → supabase/baseline) is built on an empty
+      # scratch database of the same server and its pgTAP tests run against it. It is not
+      # part of supabase/migrations until the cut-over (docs/db/target-design.md §10).
+      - name: Production baseline applies on an empty database + pgTAP tests
+        run: scripts/run-baseline-tests.sh
+
       - name: Check every client RPC is granted to a client role
         # Functions are owner/service_role-only by default (0520), so a client RPC whose
         # migration forgot its `grant execute … to authenticated` fails here, not in the app.

@@ -124,6 +124,14 @@ const KIND_ROUTES: Record<NotificationKind, KindHandler> = {
   ride_booking_declined: (d) => listingRoute(d.params),
   ride_booking_expired: (d) => listingRoute(d.params),
   ride_booking_cancelled: (d) => listingRoute(d.params),
+  ride_booking_lapsed: (d) => listingRoute(d.params),
+  // FR-KNOW-004 AC5 (0704, #2034) — knowledge slot bookings open the lesson.
+  knowledge_booking_requested: (d) => listingRoute(d.params),
+  knowledge_booking_confirmed: (d) => listingRoute(d.params),
+  knowledge_booking_declined: (d) => listingRoute(d.params),
+  knowledge_booking_expired: (d) => listingRoute(d.params),
+  knowledge_booking_cancelled: (d) => listingRoute(d.params),
+  knowledge_session_completed: (d) => listingRoute(d.params),
   // D74 — a new ride on a followed route opens the ride.
   ride_route_match: (d) => listingRoute(d.params),
   // D70 — an emergency on a ride opens that ride.
@@ -134,8 +142,34 @@ const KIND_ROUTES: Record<NotificationKind, KindHandler> = {
   giving_handoff_confirmed: (d) => listingRoute(d.params),
   giving_handoff_declined: (d) => listingRoute(d.params),
   giving_handoff_cancelled: (d) => listingRoute(d.params),
+  giving_handoff_expired: (d) => listingRoute(d.params),
   giving_handoff_completed: (d) => listingRoute(d.params),
   // FR-HOUSING-017 — housing booking changes open the stay offer, where both sides act on it.
+  // D131 — a cancelled event registration opens the event post.
+  event_registration_cancelled: (d) => listingRoute(d.params),
+  // G18 (0731) — every event registration notice opens the event post.
+  event_join_request: (d) => listingRoute(d.params),
+  event_registration_approved: (d) => listingRoute(d.params),
+  event_registration_promoted: (d) => listingRoute(d.params),
+  event_registration_declined: (d) => listingRoute(d.params),
+  event_registration_expired: (d) => listingRoute(d.params),
+  event_reminder: (d) => listingRoute(d.params),
+  event_mark_attendance: (d) => listingRoute(d.params),
+  // FR-ORG-002 (0730) — organization notices open "My organizations"; no params to trust.
+  org_registration_decided: () => ({ pathname: '/settings/organizations', params: {} }),
+  org_member_added: () => ({ pathname: '/settings/organizations', params: {} }),
+  // FR-FEED engagement — a reaction, comment or mention opens the post.
+  post_reaction: (d) => postRoute(d.params?.id),
+  post_comment: (d) => postRoute(d.params?.id),
+  post_mention: (d) => postRoute(d.params?.id),
+  // FR-MOD — a suspension opens the blocked-account screen; a removed chat, the member's audit
+  // trail (like auto_removed); a late report, its admin case.
+  account_suspended: () => ({ pathname: '/account-blocked', params: {} }),
+  chat_auto_removed: () => ({ pathname: '/settings/audit', params: {} }),
+  report_sla_warning: (d) => reportCaseRoute(d.route),
+  // Match v1 opens the member's listing; a listing subscription opens the new post.
+  listing_match_found: (d) => listingRoute({ listingId: d.listing_id ?? '' }),
+  listing_subscription_hit: (d) => postRoute(d.listing_id),
   housing_booking_requested: (d) => listingRoute(d.params),
   housing_booking_confirmed: (d) => listingRoute(d.params),
   housing_booking_declined: (d) => listingRoute(d.params),
@@ -150,6 +184,22 @@ const KIND_ROUTES: Record<NotificationKind, KindHandler> = {
  * 0562 adds `params.postId`). A payload written before that carries only the listing id and opens
  * the listing route, which forwards to the post. Only well-formed ids are followed.
  */
+/** The post detail screen, for a well-formed post id only. */
+function postRoute(raw: string | undefined): ResolvedRoute | null {
+  const id = requireUuid(raw);
+  return id ? { pathname: '/post/[id]', params: { id } } : null;
+}
+
+/** Report case ids are `<target_type>:<uuid>`; the SLA alert (0611) writes them URL-encoded. */
+const REPORT_CASE_ROUTE_RE = /^\/\(admin\)\/reports\/(post|user|chat|listing)%3A([0-9a-f-]{36})$/i;
+
+/** The admin report case the SLA alert names, shape-checked like every other id. */
+function reportCaseRoute(route: string | undefined): ResolvedRoute | null {
+  const match = route ? REPORT_CASE_ROUTE_RE.exec(route) : null;
+  const id = match ? requireUuid(match[2]) : null;
+  return match && id ? { pathname: '/(admin)/reports/[caseId]', params: { caseId: `${match[1]}:${id}` } } : null;
+}
+
 function listingRoute(params: PushData['params']): ResolvedRoute | null {
   const postId = requireUuid(params?.postId);
   if (postId) return { pathname: '/post/[id]', params: { id: postId } };

@@ -28,6 +28,12 @@ describe('mapInsertError (TD-50 follow-up)', () => {
     expect(out.code).toBe('forbidden');
   });
 
+  // ── D132 offer photo rule (0741) ────────────────────────────────────────
+  it('maps offer_photo_required → image_required_for_give', () => {
+    const out = mapInsertError(pg('23514', 'offer_photo_required'));
+    expect(out.code).toBe('image_required_for_give');
+  });
+
   // ── 23514 check_violation ───────────────────────────────────────────────
   it('maps 23514 with "street_number" → street_number_invalid', () => {
     const out = mapInsertError(pg('23514', 'new row violates posts_street_number_chk'));

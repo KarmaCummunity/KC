@@ -26,7 +26,8 @@ async function fillFoodOfferForm(page: Page, title: string) {
   await gotoApp(page, '/create?category=food');
   await page.getByTestId('create-direction-give').click();
   await page.getByTestId('listing-title').fill(title);
-  await page.getByText('מבושל', { exact: true }).first().click();
+  // The food type is the world sub-category (D137, KC#1398).
+  await page.getByTestId('world-subcategory-cooked-ready').click();
   await page.getByTestId('listing-date-expires_at').click();
   await page.locator('input[type="datetime-local"]').fill('2030-01-01T12:00');
   await page.getByTestId('listing-date-expires_at-done').click();
@@ -93,7 +94,8 @@ test('create form: five categories, request / offer, human labels (no raw schema
     await expect(page.getByTestId(`create-category-${id}`)).toBeVisible();
   }
   await page.getByTestId('create-direction-give').click();
-  await expect(page.getByTestId('listing-field-food_type')).toBeVisible();
+  await expect(page.getByTestId('listing-subcategory-field')).toBeVisible();
+  await expect(page.getByTestId('listing-field-food_type')).toHaveCount(0);
   const body = await page.locator('body').innerText();
   expect(body).not.toMatch(/\b(?:image url|image path|pickup mode|fulfillment mode|owner_approval|fcfs|linked listing id)\b/);
 });
@@ -101,10 +103,21 @@ test('create form: five categories, request / offer, human labels (no raw schema
 test.describe.serial('create + reserve', () => {
   let listingTitle = '';
 
-  test('create a food offer WITHOUT a photo', async ({ page }) => {
+  // D132 (KC#1937): an offer needs a photo; the form refuses and points at the picker.
+  test('a food offer WITHOUT a photo is refused at the photo picker', async ({ page }) => {
     const title = `${runTag()} מגש פסטה ללא תמונה`;
     await fillFoodOfferForm(page, title);
-    await publishAndFind(page, title, 30_000);
+    await publishButton(page).click();
+    if (await passDateOfBirthGate(page) && /\/create/.test(page.url())) await publishButton(page).click();
+    const photoField = page.getByTestId('listing-photos-field');
+    await expect(photoField.getByText('יש להוסיף לפחות תמונה אחת להצעה.')).toBeVisible();
+    await expect(page).toHaveURL(/\/create/);
+    const { session } = await sessionFor(USER_A);
+    const rows = await rest<{ listing_id: string }[]>(
+      session.access_token as string,
+      `marketplace_listing_card?select=listing_id&title=eq.${encodeURIComponent(title)}`,
+    );
+    expect(rows).toEqual([]);
   });
 
   test('create a food offer WITH a photo', async ({ page }) => {

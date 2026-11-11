@@ -28,6 +28,7 @@ import { useCreatePostStyles } from '../src/screens/tabs/create.styles';
 import { useCreatePostPublish } from '../src/hooks/useCreatePostPublish';
 import { CreatePostFormScrollContent } from '../src/components/CreatePostForm/CreatePostFormScrollContent';
 import { useUnifiedCreateCategory } from '../src/hooks/useUnifiedCreateCategory';
+import { useRepublishPrefill } from '../src/hooks/useRepublishPrefill';
 import { WorldCreateForm } from '../src/components/CreatePostForm/WorldCreateForm';
 import { CreateFormHeaderPublishAction } from '../src/components/CreatePostForm/CreateFormHeaderPublishAction';
 import { useKeyboardVerticalOffset } from '../src/lib/platform/useKeyboardVerticalOffset';
@@ -59,6 +60,11 @@ export default function CreatePostScreen() {
 
   const form = useCreatePostFormState();
   const { activeCategory, direction, header, ready, selectCategory } = useUnifiedCreateCategory(ownerId, form.type, form.setType);
+  // D127: `?republishFrom=` opens the source's world prefilled; the listing form publishes a new post.
+  const republish = useRepublishPrefill({
+    ownerId, ready, activeCategoryId: activeCategory.id, selectCategory,
+    setTitle: form.setTitle, setDescription: form.setDescription,
+  });
 
   const draftHydration = usePostDraftHydration(ownerId);
 
@@ -194,7 +200,7 @@ export default function CreatePostScreen() {
         />
       </View>
 
-      {!ready ? (
+      {!ready || republish.loading ? (
         <ActivityIndicator style={styles.scroll} testID="create-preferences-loading" />
       ) : activeCategory.engine !== 'post' ? (
         <KeyboardAvoidingView
@@ -211,6 +217,7 @@ export default function CreatePostScreen() {
             summary={form.description}
             onSummaryChange={form.setDescription}
             onPublishActionChange={setListingPublishState}
+            republishFromListingId={republish.republishFromListingId}
           />
         </KeyboardAvoidingView>
       ) : (

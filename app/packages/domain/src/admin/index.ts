@@ -14,6 +14,7 @@ export * from './AdminTaskError';
 export * from './AdminContentSearch';
 export * from './AdminSurveyResults';
 export * from './TimesheetEntry';
+export * from './timesheetActions';
 export * from './FinanceLedger';
 export * from './FinanceAccount';
 export * from './FinanceCategory';

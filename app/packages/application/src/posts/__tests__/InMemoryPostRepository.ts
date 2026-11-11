@@ -48,6 +48,10 @@ export class InMemoryPostRepository implements IPostRepository {
   async create(input: CreatePostInput): Promise<Post> {
     if (input.ownerId !== this.actorId) throw new PostError('forbidden', 'create: owner must be the actor');
     if (!this.store.cities.has(input.address.city)) throw new PostError('city_not_found', input.address.city);
+    // D132 (KC#2020): mirrors the server's commit-time check (migration 0741).
+    if (input.type === 'Give' && input.mediaAssets.length === 0) {
+      throw new PostError('image_required_for_give', 'create: an offer needs a photo');
+    }
     const now = this.store.now();
     const postId = crypto.randomUUID();
     const post: Post = {

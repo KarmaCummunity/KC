@@ -1,6 +1,9 @@
+import { reportMachine } from '../fsm/machines/report';
+import type { ReportStatus } from '../value-objects';
 import type { AdminReportTargetType } from './ReportInbox';
 
-export type AdminReportStatus = 'open' | 'confirmed_violation' | 'dismissed_no_violation';
+/** The report lifecycle as the admin console reads it (`reportMachine`). */
+export type AdminReportStatus = ReportStatus;
 
 export interface ReportCaseReporter {
   readonly reportId: string;
@@ -30,8 +33,10 @@ export interface ReportCaseDetail {
   readonly timeline: readonly ReportCaseAuditEntry[];
 }
 
+const REPORT_STATES: readonly string[] = reportMachine.states;
+
 function isAdminReportStatus(v: unknown): v is AdminReportStatus {
-  return v === 'open' || v === 'confirmed_violation' || v === 'dismissed_no_violation';
+  return typeof v === 'string' && REPORT_STATES.includes(v);
 }
 
 function parseReporters(raw: unknown): ReportCaseReporter[] {

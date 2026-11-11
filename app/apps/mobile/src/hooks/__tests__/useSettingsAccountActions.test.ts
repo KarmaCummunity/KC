@@ -3,13 +3,13 @@ import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-  deleteExecute: vi.fn(), resetDirect: vi.fn(), signOut: vi.fn(), setLocal: vi.fn(), setSkipped: vi.fn(),
+  deleteExecute: vi.fn(), resetOnboarding: vi.fn(), signOut: vi.fn(), setLocal: vi.fn(), setSkipped: vi.fn(),
   replace: vi.fn(), t: vi.fn((key: string, options?: { msg?: string }) => options ? `${key}:${options.msg}` : key),
   alert: vi.fn(), confirm: vi.fn(), platform: { os: 'web' as string },
 }));
 vi.mock('../../services/userComposition', () => ({
   getDeleteAccountUseCase: () => ({ execute: mocks.deleteExecute }),
-  setOnboardingStateDirect: mocks.resetDirect,
+  resetOnboardingForDev: mocks.resetOnboarding,
 }));
 vi.mock('../../services/performFullSignOut', () => ({ performFullSignOut: mocks.signOut }));
 vi.mock('../../store/authStore', () => ({
@@ -39,7 +39,7 @@ beforeEach(() => {
   vi.useRealTimers(); vi.clearAllMocks(); mocks.platform.os = 'web';
   vi.stubGlobal('confirm', mocks.confirm);
   vi.stubGlobal('alert', mocks.alert);
-  mocks.deleteExecute.mockResolvedValue(undefined); mocks.resetDirect.mockResolvedValue(undefined);
+  mocks.deleteExecute.mockResolvedValue(undefined); mocks.resetOnboarding.mockResolvedValue(undefined);
   mocks.signOut.mockResolvedValue(undefined); mocks.confirm.mockReturnValue(true);
 });
 afterEach(() => vi.useRealTimers());
@@ -49,12 +49,12 @@ describe('useSettingsAccountActions', () => {
     const { result } = renderHook(() => useSettingsAccountActions());
     await act(async () => result.current.handleResetOnboarding());
     expect(mocks.confirm).toHaveBeenCalledWith('settings.resetOnboardingConfirmMsg');
-    expect(mocks.resetDirect).toHaveBeenCalledWith('u1', 'pending_basic_info');
+    expect(mocks.resetOnboarding).toHaveBeenCalledOnce();
     expect(mocks.setLocal).toHaveBeenCalledWith('pending_basic_info');
     expect(mocks.setSkipped).toHaveBeenCalledWith(false);
     expect(mocks.replace).toHaveBeenCalledWith('/(onboarding)/about-intro');
 
-    mocks.resetDirect.mockRejectedValueOnce(new Error('offline'));
+    mocks.resetOnboarding.mockRejectedValueOnce(new Error('offline'));
     await act(async () => result.current.handleResetOnboarding());
     expect(mocks.alert).toHaveBeenCalledWith('settings.resetOnboardingFailed:offline');
     expect(result.current.resettingOnboarding).toBe(false);
@@ -67,10 +67,10 @@ describe('useSettingsAccountActions', () => {
     const actions = mocks.alert.mock.calls[0]?.[2] as Array<{ onPress?: () => void; style?: string }>;
     expect(actions.map((action) => action.style)).toEqual(['cancel', 'destructive']);
     act(() => actions[0]?.onPress?.());
-    expect(mocks.resetDirect).not.toHaveBeenCalled();
+    expect(mocks.resetOnboarding).not.toHaveBeenCalled();
     await act(async () => actions[1]?.onPress?.());
-    expect(mocks.resetDirect).toHaveBeenCalledWith('u1', 'pending_basic_info');
-    mocks.resetDirect.mockRejectedValueOnce('unknown');
+    expect(mocks.resetOnboarding).toHaveBeenCalledOnce();
+    mocks.resetOnboarding.mockRejectedValueOnce('unknown');
     await act(async () => result.current.handleResetOnboarding());
     const errorActions = mocks.alert.mock.calls.at(-1)?.[2] as Array<{ onPress?: () => void }>;
     await act(async () => errorActions[1]?.onPress?.());
@@ -103,7 +103,7 @@ describe('useSettingsAccountActions', () => {
     mocks.confirm.mockReturnValue(false);
     const { result } = renderHook(() => useSettingsAccountActions());
     act(() => result.current.handleResetOnboarding());
-    expect(mocks.resetDirect).not.toHaveBeenCalled();
+    expect(mocks.resetOnboarding).not.toHaveBeenCalled();
     expect(result.current.resettingOnboarding).toBe(false);
   });
 });

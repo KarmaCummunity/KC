@@ -5,12 +5,11 @@
 import React, { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { MAX_MEDIA_ASSETS } from '@kc/domain';
+import { offerRequiresPhoto } from '@kc/domain';
 import { spacing, Text, useTheme } from '@kc/ui';
 import { TextField } from '../ui/TextField';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { useShellTabBarScrollInset } from '../../navigation/useShellTabBarVisibility';
-import { pickListingImages } from '../../services/listingImageUpload';
 import type { CreateDirection } from '../../lib/unifiedCreate/createCategories';
 import { useListingCreateForm } from '../../hooks/useListingCreateForm';
 import { useScrollToListingProblem } from '../../hooks/useScrollToListingProblem';
@@ -22,10 +21,11 @@ import { WorldSubcategoryPicker } from '../marketplace/WorldSubcategoryPicker';
 import { AdditionalWorldsPicker } from './AdditionalWorldsPicker';
 import { ListingDetailFields } from './ListingDetailFields';
 import { ListingFieldFrame, ListingFieldProblemContext } from './ListingFieldFrame';
-import { PhotoPicker } from './PhotoPicker';
+import { ListingFormPhotoPicker } from './ListingFormPhotoPicker';
 import { ListingKindChooser } from './ListingKindChooser';
 import { KindGate } from './ListingKindGate';
 import { TimeOfferKindChooser } from './TimeOfferKindChooser';
+import { OrgEventMembershipHint } from './OrgEventMembershipHint';
 import { formKeyboardAccessoryProps, useFormFieldFocus } from '../../hooks/useFormFieldFocus';
 import { KeyboardFormAccessory } from '../ui/KeyboardFormAccessory';
 
@@ -45,6 +45,8 @@ interface Props {
   readonly onPublishActionChange: (action: (() => void) | null, loading: boolean) => void;
   readonly editListingId?: string | null;
   readonly onSaved?: () => void;
+  /** Republish (D127): start from this listing minus its dates and publish a new listing. */
+  readonly republishFromListingId?: string | null;
 }
 
 export function ListingCreateForm({
@@ -59,6 +61,7 @@ export function ListingCreateForm({
   onPublishActionChange,
   editListingId = null,
   onSaved,
+  republishFromListingId = null,
 }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -72,6 +75,7 @@ export function ListingCreateForm({
     onPublished,
     editListingId,
     onSaved,
+    republishFromListingId,
   });
   const publishRef = useRef(form.publish);
   publishRef.current = form.publish;
@@ -79,6 +83,7 @@ export function ListingCreateForm({
     isRides: form.isRides,
     isOrgEvent: form.eventChoice.isOrgEvent,
     detailKeys: visibleDetailSpecs(form.specs, form.details).map((s) => s.key),
+    showSubcategory: form.showSubcategory,
   });
   const invalidField = inlineProblemField(form.error, rendered);
   const { scrollRef, contentRef, register, onScroll } = useScrollToListingProblem(form.error, invalidField);
@@ -98,20 +103,17 @@ export function ListingCreateForm({
     return () => onPublishActionChange(null, false);
   }, [form.busy, onPublishActionChange]);
 
-  const addPhotos = async () => {
-    const next = await pickListingImages(form.photos.length);
-    if (next.length > 0) form.setPhotos((prev) => [...prev, ...next].slice(0, MAX_MEDIA_ASSETS));
-  };
-
+  // An offer in a photo world needs one photo (D132); an edit keeps its photos.
   const photoPicker = (
-    <PhotoPicker
-      uploads={form.photos.map((p) => ({ path: p.uri, previewUri: p.uri }))}
-      isUploading={false}
-      uploadingCount={0}
-      required={false}
-      onAdd={() => void addPhotos()}
-      onRemove={(uri) => form.setPhotos((prev) => prev.filter((p) => p.uri !== uri))}
-    />
+    <ListingFieldFrame field="photos" testID="listing-photos-field">
+      <ListingFormPhotoPicker
+        photos={form.photos}
+        setPhotos={form.setPhotos}
+        carriedMediaPaths={form.carriedMediaPaths}
+        onRemoveCarried={form.removeCarriedMedia}
+        required={!editListingId && offerRequiresPhoto(worldSlug, direction)}
+      />
+    </ListingFieldFrame>
   );
 
   if (form.editLoading) {
@@ -152,8 +154,10 @@ export function ListingCreateForm({
             />
           )}
 
-          {/* A member of an organization picks a volunteer shift or the organization's event (G1 step 5). */}
+          {/* A member of an organization picks a volunteer shift or the organization's event (G1 step 5);
+              anyone else is told how to become one (FR-ORG-002). */}
           {form.eventChoice.available ? <TimeOfferKindChooser choice={form.eventChoice} disabled={form.busy} /> : null}
+          {form.eventChoice.suggestMembership ? <OrgEventMembershipHint /> : null}
 
           {form.isRides ? null : photoPicker}
 
@@ -198,12 +202,14 @@ export function ListingCreateForm({
           ) : null}
 
           {form.showSubcategory ? (
-            <WorldSubcategoryPicker
-              worldSlug={worldSlug}
-              value={form.subcategoryId}
-              onChange={form.setSubcategoryId}
-              disabled={form.busy}
-            />
+            <ListingFieldFrame field="subcategory" testID="listing-subcategory-field">
+              <WorldSubcategoryPicker
+                worldSlug={worldSlug}
+                value={form.subcategoryId}
+                onChange={form.setSubcategoryId}
+                disabled={form.busy}
+              />
+            </ListingFieldFrame>
           ) : null}
 
           <AdditionalWorldsPicker

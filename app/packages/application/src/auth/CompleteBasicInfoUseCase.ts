@@ -83,7 +83,7 @@ export class CompleteBasicInfoUseCase {
       await this.users.setProfileAddressLines(input.userId, null, null);
     }
     await this.users.setContactPhone(input.userId, phone.length > 0 ? phone : null);
-    await this.users.setOnboardingState(input.userId, 'pending_avatar');
+    await this.users.setOnboardingState('pending_avatar');
     await this.auth.syncProfileMetadata({ displayName: trimmedName });
   }
 }

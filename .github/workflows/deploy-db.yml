@@ -61,6 +61,7 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
       BACKUP_AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+      KC_PROD_SCHEMA_MODE: ${{ vars.KC_PROD_SCHEMA_MODE }}
       SHA: ${{ inputs.sha }}
     steps:
       # The guard comes from deploy.yml's own commit, not the deployed one.
@@ -158,6 +159,7 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
       BACKUP_AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+      KC_PROD_SCHEMA_MODE: ${{ vars.KC_PROD_SCHEMA_MODE }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -198,6 +200,12 @@ jobs:
           set -euo pipefail
           supabase migration list --linked --yes | tee "$RUNNER_TEMP/migrations.txt"
           node scripts/check-migration-drift.mjs --count-pending "$RUNNER_TEMP/migrations.txt"
+
+      # D-228: refuse a prod push unless KC_PROD_SCHEMA_MODE allows this tree.
+      # Default (unset) is block. Defense in depth on top of deploy-preflight.
+      - name: Prod schema mode (D-228)
+        if: inputs.target == 'prod'
+        run: node scripts/check-prod-schema-mode.mjs
 
       # Prod omits --include-all so out-of-order or remote-ahead histories fail
       # here, before anything is applied.

@@ -76,7 +76,14 @@ function ThemedRootShell() {
 
   React.useEffect(() => {
     // expo-navigation-bar on SDK 54 is imperative and Android-only (KC#1276).
-    if (Platform.OS === 'android') NavigationBar.setStyle(isDark ? 'dark' : 'light');
+    if (Platform.OS !== 'android') return;
+    // Edge-to-edge (targetSdk 36) can reject this on some devices; a thrown
+    // call here is an uncaught startup error, so the shell must survive it.
+    try {
+      void Promise.resolve(NavigationBar.setStyle(isDark ? 'dark' : 'light')).catch(() => undefined);
+    } catch {
+      /* navigation bar contrast is cosmetic */
+    }
   }, [isDark]);
 
   React.useEffect(() => {

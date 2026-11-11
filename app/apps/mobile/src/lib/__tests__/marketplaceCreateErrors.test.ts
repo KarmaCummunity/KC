@@ -17,12 +17,27 @@ describe('marketplaceServerErrorKey', () => {
 });
 
 describe('marketplaceRuleFieldError', () => {
-  it('items without photos → no error (photos are optional)', () => {
-    expect(marketplaceRuleFieldError({ worldSlug: 'items', direction: 'give', details: {}, photoCount: 0 })).toBeNull();
+  it('an items offer without photos → inline photo error (D132, KC#1937)', () => {
+    expect(marketplaceRuleFieldError({ worldSlug: 'items', direction: 'give', details: {}, photoCount: 0 })).toEqual({
+      code: 'offer_photo_required',
+      field: 'photos',
+      key: 'marketplace.errors.offer_photo_required',
+    });
     expect(marketplaceRuleFieldError({ worldSlug: 'items', direction: 'give', details: {}, photoCount: 2 })).toBeNull();
+  });
+  it('a listing edit passes no photo count → no photo error', () => {
+    expect(marketplaceRuleFieldError({ worldSlug: 'animals', direction: 'give', details: {} })).toBeNull();
   });
   it('food offer without expiry → inline details error', () => {
     expect(marketplaceRuleFieldError({ worldSlug: 'food', direction: 'give', details: {}, photoCount: 0 })?.field).toBe('details');
+  });
+  it('a food offer with no sub-category → inline sub-category error (D137, KC#1398)', () => {
+    const details = { expires_at: '2099-01-01T10:00:00Z' };
+    expect(marketplaceRuleFieldError({ worldSlug: 'food', direction: 'give', details, photoCount: 1, subcategoryId: null })).toEqual({
+      code: 'food_subcategory_required',
+      field: 'subcategory',
+      key: 'marketplace.errors.food_subcategory_required',
+    });
   });
   it('food request without expiry → no error (requests never expire, D21)', () => {
     expect(marketplaceRuleFieldError({ worldSlug: 'food', direction: 'request', details: {}, photoCount: 0 })).toBeNull();

@@ -30,6 +30,8 @@ interface Props {
   /** False when approving this booking would exceed remaining ride capacity. */
   readonly canApprove?: boolean;
   readonly canReinstate?: boolean;
+  /** False before the trip may be completed (from an hour before departure). */
+  readonly canComplete?: boolean;
 }
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -51,7 +53,14 @@ function InfoLine({ icon, text, warning = false, testID }: { icon: IconName; tex
   );
 }
 
-export function RideBookingRow({ booking, busy, actions, canApprove = true, canReinstate = false }: Props) {
+export function RideBookingRow({
+  booking,
+  busy,
+  actions,
+  canApprove = true,
+  canReinstate = false,
+  canComplete = true,
+}: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useRideBookingsPanelStyles();
@@ -60,6 +69,7 @@ export function RideBookingRow({ booking, busy, actions, canApprove = true, canR
   const deadline = booking.status === 'reserved' ? formatRideTime(booking.confirmBy) : null;
   const pair = booking.status === 'reserved' || booking.status === 'confirmed' ? ACTION_PAIRS[booking.status] : null;
   const isApproveBlocked = booking.status === 'reserved' && !canApprove;
+  const isCompleteBlocked = booking.status === 'confirmed' && !canComplete;
   const tone = statusTone(booking.status, colors);
 
   return (
@@ -104,6 +114,9 @@ export function RideBookingRow({ booking, busy, actions, canApprove = true, canR
       {isApproveBlocked ? (
         <InfoLine icon="alert-circle-outline" warning testID={`ride-booking-exceeds-${id}`} text={t('rideBooking.exceedsCapacity')} />
       ) : null}
+      {isCompleteBlocked ? (
+        <InfoLine icon="time-outline" testID={`ride-booking-complete-later-${id}`} text={t('rideBooking.completeFromHourBefore')} />
+      ) : null}
 
       {booking.status === 'cancelled' && canReinstate && actions.reinstate ? (
         <View style={styles.actions}>
@@ -124,7 +137,7 @@ export function RideBookingRow({ booking, busy, actions, canApprove = true, canR
             testID={`ride-booking-${pair.main}-${id}`}
             label={t(pair.mainLabel)}
             busy={busy}
-            disabled={pair.main === 'approve' && isApproveBlocked}
+            disabled={(pair.main === 'approve' && isApproveBlocked) || (pair.main === 'complete' && isCompleteBlocked)}
             onPress={() => actions[pair.main](id)}
           />
           <HandoffActionButton inRow secondary testID={`ride-booking-${pair.other}-${id}`} label={t(pair.otherLabel)} busy={busy} onPress={() => actions[pair.other](id)} />

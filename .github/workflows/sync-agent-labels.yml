@@ -1,0 +1,51 @@
+name: Sync agent labels
+
+# Creates (or updates the color and description of) the labels the agent
+# issue-to-merge process relies on (.claude/skills/kc-issue-to-merge/), so an
+# agent never fails on a missing label. It only touches the labels listed here;
+# every other label in the repo is left alone. To add a process label, add a
+# line to LABELS and merge.
+#
+# `push` to dev runs from dev's own copy of this file, so no change to main is
+# needed. No PR code is checked out or run.
+
+on:
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/sync-agent-labels.yml']
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: sync-agent-labels
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: sync agent labels
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Create or update labels
+        run: |
+          set -euo pipefail
+          # name|hex color|description — one label per line.
+          LABELS='
+          agent:claude|5319E7|Claimed or opened by a Claude Code agent
+          found-by-agent|D4C5F9|Opened by an agent from a finding outside its task scope
+          needs-triage|FBCA04|Waits for PM triage; agents never pick it from the queue
+          size:XS|C2E0C6|Extra small — under an hour
+          size:L|C2E0C6|Large — two to three days
+          size:XL|C2E0C6|Too large for one PR — split into an epic
+          '
+          while IFS='|' read -r name color description; do
+            name="$(echo "$name" | xargs)"
+            [ -z "$name" ] && continue
+            # --force updates color and description when the label already exists.
+            gh label create "$name" --color "$color" --description "$description" --force
+          done <<< "$LABELS"

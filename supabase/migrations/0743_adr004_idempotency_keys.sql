@@ -1,4 +1,4 @@
--- 0692_adr004_idempotency_keys.sql
+-- 0743_adr004_idempotency_keys.sql
 -- ADR-004 §2: Idempotency keys per entity (#1999)
 -- 1. Adds idempotency_key to public.post_handoffs
 -- 2. Adds client_id to public.messages

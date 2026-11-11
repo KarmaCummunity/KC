@@ -189,6 +189,7 @@ A returning user authenticates using the method they originally signed up with.
 - AC4. Session expiry is 30 days of inactivity. Active use silently refreshes the token.
 - AC6. When `signInWithPassword` returns `email_not_confirmed`, the sign-in screen renders the verification-pending state defined in FR-AUTH-006 AC2 instead of an error alert. The user can then resend, open mail, or change email.
 - AC7. The email sign-in screen reads, top to bottom: title → social sign-in (Google; Apple on iOS) → an "או" ("or") divider → the email and password form. The divider sits **below** the social buttons and leads into the form. The email sign-up screen (`FR-AUTH-006`) follows the same order. Implemented by the shared `AuthSocialSignInBlock`; regression test `components/auth/__tests__/AuthSocialSignInBlock.test.tsx`.
+- AC8. On the email sign-in and sign-up screens the Apple and Google buttons are separated by a vertical gap on the `spacing` scale, and the e-mail and password inputs (placeholder and typed text) align to the reading-start edge: right in Hebrew, left in English (`inputTextAlignStart()` in `lib/rtlLayout.ts`). Regression test `components/auth/__tests__/AuthSocialSignInBlock.test.tsx`, `lib/__tests__/rtlLayout.test.ts`. Issue #2048.
 
 **Related.** Screens: 1.2, 1.3 · Domain: `Session`.
 
@@ -261,6 +262,7 @@ Captures `display_name`, `city` (canonical picker), and optionally `profile_stre
 - AC2.d. **Date of birth (`D109`):** a required date field (`users.date_of_birth`), private to the owner. The user must be at least 18 on the day of the check; a younger or invalid date is rejected with an inline error and nothing is saved. The server enforces the same rule, so a modified client cannot bypass it.
 - AC3. A "Skip" option exists. Skipping advances to step 3 (Profile Photo, `FR-AUTH-011`) but marks `User.onboarding_state = pending_basic_info` (and leaves the date of birth empty). The first attempt at a meaningful action (post creation, follow, sending the first chat message) re-prompts to fill these fields (see `FR-AUTH-015`). The system also persists `users.basic_info_skipped = true` on Skip so returning sessions (cold start, app update, re-auth) **land on the Home Feed** instead of forcing the full-screen wizard again; the deferred fields are still collected only via `FR-AUTH-015` until saved.
 - AC4. SSO-prefilled values are editable and persisted upon "Continue".
+- AC5. **The onboarding stage moves forward only, and the server holds the order** (machine `onboarding`, `0698`): `pending_basic_info → pending_avatar → completed`, or `pending_basic_info → completed` for a deferred profile reconciled under `FR-AUTH-015`. Leaving `pending_basic_info` requires `display_name`, `city` and `date_of_birth` on file, so a modified client can neither skip step 1 nor move back. Only the Settings developer tool returns a member to step 1, and only on the dev database.
 
 **Edge Cases.**
 - The city list is updated post-launch: existing users with an obsolete city retain it; an inline notice shown next time they edit their profile suggests selecting a current city.
@@ -417,3 +419,4 @@ The user can log out from the Settings screen, terminating the local session.
 | 0.6 | 2026-05-17 | `FR-AUTH-010` AC2.c + `FR-AUTH-015` AC1 extended with optional, non-verified **contact phone** (`users.contact_phone`, 1–20 chars). Distinct from the OTP `auth.users.phone`. Migration `0096`. Surfaced on the chat anchored-post card as a `tel:` link (`FR-CHAT-014`). |
 | 0.7 | 2026-11-01 | `FR-AUTH-007` AC7: sign-in / sign-up reading order — social buttons, then the "or" divider, then the email form (the divider used to render above the Google button). |
 | 0.8 | 2026-11-08 | `FR-AUTH-003` AC6: native Google account sheet on iOS / Android (ID token → `signInWithIdToken`, browser fallback); web unchanged (#1955). |
+| 0.9 | 2026-11-10 | `FR-AUTH-007` AC8: spacing between the social sign-in buttons and reading-start alignment of the e-mail and password inputs (#2048). |

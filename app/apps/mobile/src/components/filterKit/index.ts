@@ -3,6 +3,7 @@
 
 export { FilterButton, type FilterButtonProps } from './FilterButton';
 export { FilterSearchBar, type FilterSearchBarProps } from './FilterSearchBar';
+export { ChipSelectRow, type ChipSelectRowProps } from './ChipSelectRow';
 export {
   FilterChipRow,
   type FilterOption,

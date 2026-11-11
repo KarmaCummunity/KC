@@ -28,14 +28,15 @@ export interface UserSearchRowProps {
 function statusTone(status: string): 'success' | 'warning' | 'error' | 'muted' {
   if (status === 'active') return 'success';
   if (status === 'pending_verification') return 'warning';
-  if (status === 'banned' || status === 'deleted') return 'error';
+  if (status === 'banned') return 'error';
+  if (status === 'pending_deletion') return 'warning';
   return 'muted';
 }
 
-// Banning is permanent in MVP (FR-ADMIN-004 AC3) — only offer it to users who
-// aren't already banned / deleted; deleted accounts are immutable.
+// Banning is permanent in MVP (FR-ADMIN-004 AC3): offered to an account that is not banned yet
+// and not leaving — `admin_ban_user` refuses an account under deletion (0696).
 function canShowBanButton(status: string): boolean {
-  return status !== 'banned' && status !== 'deleted';
+  return status !== 'banned' && status !== 'pending_deletion';
 }
 
 function UserSearchRowInner({ row }: UserSearchRowProps) {

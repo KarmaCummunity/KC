@@ -23,11 +23,10 @@ import type {
 } from '@kc/domain';
 import type { Database } from '../database.types';
 import { POST_SELECT_OWNER, mapPostWithOwnerRow, type PostWithOwnerJoinedRow } from './mapPostRow';
-import { mapInsertError } from './mapInsertError';
+import { createPostWithMedia } from './createPostWithMedia';
 import { encodeCursor } from './cursor';
 import { runSimpleFeedQuery } from './feedQuery';
 import { fetchRankedFeedPage, needsRankedPath } from './feedQueryRanked';
-import { createPostHelper } from './createPostHelper';
 import {
   closePost as closePostHelper,
   reopenPost as reopenPostHelper,
@@ -120,7 +119,28 @@ export class SupabasePostRepository implements IPostRepository {
 
   // ── Mutations ───────────────────────────────────────────────────────────
   async create(input: CreatePostInput): Promise<Post> {
-    return createPostHelper(this.client, input);
+    // One transaction for the post and its photos (KC#2020): the server refuses an
+    // items offer that has no photo at commit, and a failed photo leaves no orphan post.
+    const postId = await createPostWithMedia(this.client, input);
+
+    const created = await fetchPostById(this.client, postId);
+    if (!created) throw new Error(`create: post ${postId} disappeared after insert`);
+
+    if (input.hideFromCounterparty) {
+      try {
+        await upsertPostActorIdentityRow(this.client, {
+          postId,
+          userId: input.ownerId,
+          surfaceVisibility: input.visibility,
+          hideFromCounterparty: true,
+        });
+      } catch (e) {
+        await this.client.from('posts').delete().eq('post_id', postId);
+        throw e instanceof Error ? e : new Error(String(e));
+      }
+    }
+
+    return created;
   }
 
   async update(postId: string, patch: UpdatePostInput): Promise<Post> {

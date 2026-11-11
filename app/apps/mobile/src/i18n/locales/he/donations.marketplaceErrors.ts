@@ -3,11 +3,22 @@
 // Keys mirror MARKETPLACE_SERVER_ERROR_CODES in @kc/domain (marketplaceWorldRules.ts).
 
 export const marketplaceErrors = {
+  offer_photo_required: 'יש להוסיף לפחות תמונה אחת להצעה.',
+  food_subcategory_required: 'יש לבחור את סוג המזון.',
   food_expiry_required: 'יש להזין תאריך ושעת תפוגה עתידיים למזון.',
   routed_world_requires_external_body: 'יש לבחור ארגון מאומת לפני הפרסום בעולם זה.',
   ride_route_required: 'בחרו מאיפה הנסיעה יוצאת ולאן היא מגיעה.',
   ride_departure_past: 'בחרו שעת יציאה עתידית.',
   knowledge_slot_invalid: 'בחרו שעת התחלה עתידית ושעת סיום אחריה.',
+  knowledge_slot_duration_invalid: 'מפגש נמשך בין רבע שעה ל-8 שעות.',
+  knowledge_slot_in_past: 'אפשר להוסיף רק מועדים עתידיים.',
+  knowledge_slots_overlap: 'שני מועדים חופפים. בחרו שעות שלא נוגעות זו בזו.',
+  knowledge_slot_has_booking: 'יש הזמנה במועד הזה, ולכן אי אפשר להסיר או לשנות אותו. בטלו קודם את ההזמנה.',
+  knowledge_slot_capacity_below_bookings: 'כבר הוזמנו יותר מקומות מהמספר החדש.',
+  consulting_requires_id_verification: 'שעת ייעוץ מקצועית דורשת אימות זהות. אמתו את הזהות בפרופיל ונסו שוב.',
+  slot_not_found: 'המועד הזה כבר לא זמין.',
+  booking_expired: 'ההזמנה פגה כי לא אושרה בזמן.',
+  account_not_active: 'החשבון לא פעיל כרגע, ולכן אי אפשר להזמין.',
   event_window_invalid: 'האירוע צריך להסתיים אחרי שהוא מתחיל.',
   seats_exhausted: 'לא נשארו מקומות בנסיעה הזו.',
   ride_seats_exhausted: 'לא נשארו מספיק מקומות לאישור ההזמנה הזו.',
@@ -76,6 +87,7 @@ export const marketplaceErrors = {
   housing_not_in_window: 'הפעולה הזו אינה אפשרית בזמן הזה של האירוח.',
   housing_note_too_long: 'ההודעה ארוכה מדי. עד 300 תווים.',
   housing_use_booking_cancel: 'ביטול אירוח נעשה מכרטיס ההזמנה.',
+  event_use_registration_cancel: 'ביטול הרשמה לאירוע נעשה מכרטיס ההרשמה.',
   // Organization events (0563).
   event_org_required: 'רק חברי הארגון יכולים לפרסם את האירוע שלו. בחרו אחד מהארגונים שלכם.',
   verification_required: 'האירוע פתוח לחברים מאומתים בלבד. אמתו את החשבון ונסו שוב.',

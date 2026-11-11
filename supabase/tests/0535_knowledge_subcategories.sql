@@ -35,13 +35,15 @@ declare
   v_viewer uuid := (select user_id from public.users where share_handle='k1468_viewer');
 begin
   perform kc_test.act_as(v_owner);
+  -- #2034 retired the `course` kind; a lesson offer is the knowledge post with slots now.
   v_listing := public.create_marketplace_listing(
-    p_kind_id => (select kind_id from public.listing_kinds where world_slug='knowledge' and slug='course'),
+    p_kind_id => (select kind_id from public.listing_kinds where world_slug='knowledge' and slug='lesson_offer'),
     p_title => 'Intro to science',
     p_details => jsonb_build_object(
-      'topic', 'Science', 'modality', 'video', 'slots_available', 1,
-      'slot_starts_at', to_char((now() + interval '1 day') at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-      'slot_ends_at', to_char((now() + interval '1 day 1 hour') at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')),
+      'topic', 'Science', 'modality', 'video', 'capacity_per_slot', 1,
+      'slots', jsonb_build_array(jsonb_build_object(
+        'starts_at', to_char((now() + interval '1 day') at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+        'ends_at', to_char((now() + interval '1 day 1 hour') at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')))),
     p_category_id => v_category,
     p_lat => 32.0853,
     p_lng => 34.7818

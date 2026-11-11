@@ -1,4 +1,4 @@
-// KC#869 — in-app notification center (read/unread, deep links).
+// KC#869 — in-app notification center (read/unread, deep links through the push allowlist).
 
 import React, { useCallback, useMemo } from 'react';
 import { Pressable, View } from 'react-native';
@@ -15,16 +15,10 @@ import { rowDirectionStart } from '../../src/lib/rtlLayout';
 import { formatRelativeChatTime } from '../../src/lib/formatRelativeChatTime';
 import { groupInboxByDay } from '../../src/lib/notificationInboxView';
 import { NotificationInboxRow } from '../../src/components/notifications/NotificationInboxRow';
+import { resolveInboxRoute } from '../../src/lib/notifications/inboxRoute';
 import { EmptyState } from '../../src/components/EmptyState';
 import { KcFlashList } from '../../src/components/lists/KcFlashList';
 import { SimpleRowListSkeleton } from '../../src/components/skeletons/SimpleRowListSkeleton';
-
-function resolveDeepLink(data: Record<string, unknown>): { pathname: string; params?: Record<string, string> } | null {
-  const route = data.route;
-  if (typeof route !== 'string') return null;
-  const params = data.params as Record<string, string> | undefined;
-  return { pathname: route, params };
-}
 
 const notificationKeyExtractor = (entry: { key: string }) => entry.key;
 
@@ -64,10 +58,12 @@ export default function NotificationInboxScreen() {
         await container.notificationInbox.markRead(inboxId);
         await refreshAll();
       }
-      const link = resolveDeepLink(data);
+      // Same rule as a push tap: the route comes from the row's kind, never from data.route as-is.
+      const kind = rows.find((row) => row.inboxId === inboxId)?.kind ?? '';
+      const link = resolveInboxRoute(kind, data);
       if (link) router.push(link as never);
     },
-    [refreshAll, router],
+    [refreshAll, router, rows],
   );
 
   const renderItem = useCallback(

@@ -30,12 +30,14 @@
 /scripts/ci-*                               @navesarussi
 /scripts/check-*                            @navesarussi
 /scripts/deploy-*                           @navesarussi
+/scripts/db-backup-*                          @navesarussi
 /scripts/smoke-*                            @navesarussi
 /scripts/*-guard*                           @navesarussi
 /scripts/mobile-*                           @navesarussi
 /scripts/testflight-*                        @navesarussi
 /scripts/release-version.mjs                @navesarussi
 /scripts/resolve-green-dev-sha.mjs           @navesarussi
+/scripts/prod-store-build-gate.mjs           @navesarussi
 /scripts/edge-functions.mjs                 @navesarussi
 /scripts/cloudflare-pages.mjs               @navesarussi
 /scripts/extract-hebrew-text.mjs            @navesarussi
@@ -56,6 +58,7 @@
 /scripts/bump-app-version.mjs               @navesarussi
 /scripts/close-linked-issues.mjs            @navesarussi
 /scripts/run-db-tests.sh                    @navesarussi
+/scripts/run-baseline-tests.sh              @navesarussi
 /scripts/db-explain-dev.sh                  @navesarussi
 /scripts/strip-partition-types.mjs          @navesarussi
 /scripts/maestro-*                          @navesarussi

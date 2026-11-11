@@ -2,16 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
   canApproveRideBooking,
   canBookRideSeats,
+  canCompleteRideBooking,
   canReinstateRideBooking,
   canPerformBookingAction,
-  getRideRemainingCapacity,
   isRideBookingStatus,
   isRideTripCompletable,
   isValidRideBookingSeats,
-  isValidRideBookingTransition,
+  rideReinstateBlocker,
   summarizeRideSeats,
   type RideBooking,
-  type RideBookingStatus,
 } from '../RideBooking';
 
 function booking(status: RideBooking['status'], seats: number): RideBooking {
@@ -60,17 +59,6 @@ describe('isRideBookingStatus', () => {
   });
 });
 
-describe('getRideRemainingCapacity', () => {
-  it('deducts only confirmed and completed bookings from capacity', () => {
-    const list = [booking('reserved', 2), booking('confirmed', 1), booking('handed_over', 1)];
-    expect(getRideRemainingCapacity(4, list)).toBe(2);
-  });
-
-  it('floors at zero when committed bookings exceed capacity', () => {
-    expect(getRideRemainingCapacity(2, [booking('confirmed', 3)])).toBe(0);
-  });
-});
-
 describe('canApproveRideBooking — seat counting and capacity guards', () => {
   it('allows approval when requested seats fit in remaining capacity', () => {
     const target = booking('reserved', 2);
@@ -83,6 +71,14 @@ describe('canApproveRideBooking — seat counting and capacity guards', () => {
     const list = [target, booking('confirmed', 2)];
     // capacity 3, confirmed takes 2, remaining is 1. target needs 2 -> beyond capacity.
     expect(canApproveRideBooking(3, list, target)).toBe(false);
+  });
+
+  it('counts other waiting bookings, as confirm_ride_booking does', () => {
+    // Capacity lowered to 2 after two waiting bookings of one seat and one of two seats.
+    const target = { ...booking('reserved', 2), handoffId: 'target' };
+    const list = [target, { ...booking('reserved', 1), handoffId: 'w1' }, { ...booking('reserved', 1), handoffId: 'w2' }];
+    expect(canApproveRideBooking(2, list, target)).toBe(false);
+    expect(canApproveRideBooking(4, list, target)).toBe(true);
   });
 
   it('rejects approval if target booking is not reserved', () => {
@@ -116,28 +112,6 @@ describe('canBookRideSeats — passenger seat counting', () => {
   it('rejects invalid seats', () => {
     expect(canBookRideSeats(4, [], 0)).toBe(false);
     expect(canBookRideSeats(4, [], 9)).toBe(false);
-  });
-});
-
-describe('isValidRideBookingTransition', () => {
-  it.each([
-    ['reserved', 'confirmed'],
-    ['reserved', 'handed_over'],
-    ['reserved', 'cancelled'],
-    ['confirmed', 'handed_over'],
-    ['confirmed', 'cancelled'],
-  ] as const)('permits valid transition from %s to %s', (from, to) => {
-    expect(isValidRideBookingTransition(from, to)).toBe(true);
-  });
-
-  it.each([
-    ['confirmed', 'reserved'],
-    ['handed_over', 'confirmed'],
-    ['handed_over', 'cancelled'],
-    ['cancelled', 'reserved'],
-    ['cancelled', 'confirmed'],
-  ] as const)('rejects invalid transition from %s to %s', (from, to) => {
-    expect(isValidRideBookingTransition(from as unknown as RideBookingStatus, to as unknown as RideBookingStatus)).toBe(false);
   });
 });
 
@@ -201,5 +175,49 @@ describe('canReinstateRideBooking', () => {
     expect(canReinstateRideBooking({ ...base, cancelReason: 'declined' })).toBe(true);
     expect(canReinstateRideBooking({ ...base, cancelReason: 'expired' })).toBe(false);
     expect(canReinstateRideBooking(booking('confirmed', 1))).toBe(false);
+  });
+});
+
+describe('rideReinstateBlocker — mirrors reinstate_ride_booking (0667)', () => {
+  const NOW = new Date('2026-11-09T10:00:00Z');
+  const cancelled = { ...booking('confirmed', 1), handoffId: 'c1', recipientId: 'p1', status: 'cancelled' as const, cancelReason: 'declined' };
+  const ride = (overrides: Partial<Parameters<typeof rideReinstateBlocker>[1]> = {}) => ({
+    listingStatus: 'open',
+    departsAt: '2026-11-09T12:00:00Z',
+    capacity: 3,
+    bookings: [cancelled, { ...booking('confirmed', 1), handoffId: 'o1', recipientId: 'p2' }],
+    ...overrides,
+  });
+
+  it('allows a declined booking on an open ride with a free seat', () => {
+    expect(rideReinstateBlocker(cancelled, ride(), NOW)).toBeNull();
+  });
+
+  it('refuses with the RPC code, in the RPC order', () => {
+    expect(rideReinstateBlocker(cancelled, ride({ listingStatus: 'closed' }), NOW)).toBe('listing_not_available');
+    expect(rideReinstateBlocker({ ...cancelled, cancelReason: 'expired' }, ride(), NOW)).toBe('invalid_status');
+    const twice = ride({ bookings: [cancelled, { ...booking('reserved', 1), handoffId: 'r1', recipientId: 'p1' }] });
+    expect(rideReinstateBlocker(cancelled, twice, NOW)).toBe('already_booked');
+    expect(rideReinstateBlocker(cancelled, ride({ departsAt: '2026-11-09T09:00:00Z' }), NOW)).toBe('ride_departed');
+    expect(rideReinstateBlocker(cancelled, ride({ capacity: 1 }), NOW)).toBe('ride_seats_exhausted');
+  });
+
+  it('treats a ride with no departure as not departed', () => {
+    expect(rideReinstateBlocker(cancelled, ride({ departsAt: null }), NOW)).toBeNull();
+  });
+});
+
+describe('canCompleteRideBooking — complete_ride_trip (0667)', () => {
+  const NOW = new Date('2026-11-09T10:00:00Z');
+
+  it('allows a live booking from an hour before departure', () => {
+    expect(canCompleteRideBooking(booking('confirmed', 1), '2026-11-09T10:30:00Z', NOW)).toBe(true);
+    expect(canCompleteRideBooking(booking('reserved', 1), '2026-11-09T10:30:00Z', NOW)).toBe(true);
+  });
+
+  it('refuses earlier, and from an end state', () => {
+    expect(canCompleteRideBooking(booking('confirmed', 1), '2026-11-09T12:00:00Z', NOW)).toBe(false);
+    expect(canCompleteRideBooking(booking('handed_over', 1), '2026-11-09T10:30:00Z', NOW)).toBe(false);
+    expect(canCompleteRideBooking({ ...booking('confirmed', 1), status: 'cancelled' }, null, NOW)).toBe(false);
   });
 });

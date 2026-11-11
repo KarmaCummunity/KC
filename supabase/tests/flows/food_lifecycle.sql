@@ -13,13 +13,14 @@ select kc_test.create_user('food_giver') as giver,
 
 -- A food offer as the native create form stores it (give_food detail schema, 0241): the
 -- giver's expiry lives in details.expires_at and is copied to listings.expires_at (0459).
+-- An offer carries its required photo (D132, 0741).
 create function pg_temp.create_food_offer(
   p_giver uuid, p_expires_in interval default interval '2 days', p_title text default 'Fresh cookies to share')
 returns uuid language sql as $$
-  select kc_test.create_listing(p_giver, 'food', 'give_food', 'give', p_title,
+  select kc_test.add_listing_photo(kc_test.create_listing(p_giver, 'food', 'give_food', 'give', p_title,
     jsonb_build_object('food_type', 'cooked', 'expires_at', kc_test.iso_in(p_expires_in),
                        'allergens', jsonb_build_array('gluten')),
-    p_expires_at => null)
+    p_expires_at => null))
 $$;
 
 -- Quick-claims an offer as p_recipient (0383) and returns the handoff id.
@@ -163,6 +164,8 @@ begin
 
   -- Simulate the hour passing: writing a past expiry would fire the write-time block (0266)
   -- instead of leaving the rows for the hourly sweep, so that trigger is off for the backdate.
+  -- Settle the pending D132 photo checks first: DDL on `posts` is refused while one is queued.
+  perform kc_test.run_commit_checks();
   if (select relkind from pg_class where relname = 'listings' and relnamespace = 'public'::regnamespace) = 'r' then
     execute 'alter table public.listings disable trigger listings_food_expiry_block';
   end if;

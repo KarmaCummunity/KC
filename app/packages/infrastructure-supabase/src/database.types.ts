@@ -3976,6 +3976,96 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_slots: {
+        Row: {
+          capacity: number
+          created_at: string
+          ends_at: string
+          post_id: string
+          slot_id: string
+          starts_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          capacity: number
+          created_at?: string
+          ends_at: string
+          post_id: string
+          slot_id?: string
+          starts_at: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          ends_at?: string
+          post_id?: string
+          slot_id?: string
+          starts_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_slots_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "feed_visible_posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "knowledge_slots_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "knowledge_slots_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "knowledge_slots_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["legacy_post_id"]
+          },
+          {
+            foreignKeyName: "knowledge_slots_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listing_card"
+            referencedColumns: ["listing_id"]
+          },
+          {
+            foreignKeyName: "knowledge_slots_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "knowledge_slots_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["linked_post_id"]
+          },
+          {
+            foreignKeyName: "knowledge_slots_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ride_listings"
+            referencedColumns: ["ride_id"]
+          },
+        ]
+      }
       knowledge_topic_aliases: {
         Row: {
           alias: string
@@ -6293,7 +6383,9 @@ export type Database = {
           contact_email: string | null
           contact_phone: string | null
           created_at: string
+          declared_nonprofit: boolean
           org_description: string | null
+          org_id: string | null
           org_name: string
           review_note: string | null
           reviewed_at: string | null
@@ -6307,7 +6399,9 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          declared_nonprofit?: boolean
           org_description?: string | null
+          org_id?: string | null
           org_name: string
           review_note?: string | null
           reviewed_at?: string | null
@@ -6321,7 +6415,9 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          declared_nonprofit?: boolean
           org_description?: string | null
+          org_id?: string | null
           org_name?: string
           review_note?: string | null
           reviewed_at?: string | null
@@ -6350,6 +6446,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users_public"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "org_applications_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["org_id"]
           },
           {
             foreignKeyName: "org_applications_reviewed_by_fkey"
@@ -7230,6 +7333,7 @@ export type Database = {
           handed_over_at: string | null
           handoff_id: string
           idempotency_key: string | null
+          knowledge_slot_id: string | null
           no_show_at: string | null
           owner_id: string
           pickup_mode: string
@@ -7253,6 +7357,7 @@ export type Database = {
           handed_over_at?: string | null
           handoff_id?: string
           idempotency_key?: string | null
+          knowledge_slot_id?: string | null
           no_show_at?: string | null
           owner_id: string
           pickup_mode?: string
@@ -7276,6 +7381,7 @@ export type Database = {
           handed_over_at?: string | null
           handoff_id?: string
           idempotency_key?: string | null
+          knowledge_slot_id?: string | null
           no_show_at?: string | null
           owner_id?: string
           pickup_mode?: string
@@ -7292,6 +7398,13 @@ export type Database = {
           world_slug?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "post_handoffs_knowledge_slot_id_fkey"
+            columns: ["knowledge_slot_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_slots"
+            referencedColumns: ["slot_id"]
+          },
           {
             foreignKeyName: "post_handoffs_owner_id_fkey"
             columns: ["owner_id"]
@@ -12301,6 +12414,10 @@ export type Database = {
         }
         Returns: Json
       }
+      account_purge_media_paths: {
+        Args: { p_user_id: string }
+        Returns: string[]
+      }
       accounts_due_for_purge: {
         Args: { p_limit?: number }
         Returns: {
@@ -13126,6 +13243,36 @@ export type Database = {
           until_at: string
         }[]
       }
+      book_knowledge_seat: {
+        Args: { p_slot_id: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string | null
+          listing_id: string | null
+          no_show_at: string | null
+          owner_id: string | null
+          pickup_mode: string | null
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string | null
+          world_slug: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "giving_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       book_knowledge_slot: {
         Args: { p_listing_id: string }
         Returns: {
@@ -13247,6 +13394,7 @@ export type Database = {
           confirmed_at: string | null
           handed_over_at: string | null
           handoff_id: string
+          knowledge_slot_id: string | null
           no_show_at: string | null
           owner_id: string
           pickup_mode: string
@@ -13657,6 +13805,36 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      confirm_knowledge_booking: {
+        Args: { p_handoff_id: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string | null
+          listing_id: string | null
+          no_show_at: string | null
+          owner_id: string | null
+          pickup_mode: string | null
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string | null
+          world_slug: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "giving_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       confirm_ride_booking: {
         Args: { p_handoff_id: string }
         Returns: {
@@ -13750,6 +13928,10 @@ export type Database = {
           p_title: string
           p_urgency_level?: number
         }
+        Returns: string
+      }
+      create_post_with_media: {
+        Args: { p_media?: Json; p_post: Json }
         Returns: string
       }
       create_ride_series: {
@@ -13861,6 +14043,7 @@ export type Database = {
           confirmed_at: string | null
           handed_over_at: string | null
           handoff_id: string
+          knowledge_slot_id: string | null
           no_show_at: string | null
           owner_id: string
           pickup_mode: string
@@ -13885,6 +14068,36 @@ export type Database = {
       }
       decide_housing_booking: {
         Args: { p_approve: boolean; p_handoff_id: string; p_note?: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string | null
+          listing_id: string | null
+          no_show_at: string | null
+          owner_id: string | null
+          pickup_mode: string | null
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          recipient_id: string | null
+          reserved_at: string | null
+          seats: number | null
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string | null
+          world_slug: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "giving_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      decline_knowledge_booking: {
+        Args: { p_handoff_id: string }
         Returns: {
           cancel_reason: string | null
           cancelled_at: string | null
@@ -14007,6 +14220,7 @@ export type Database = {
         Returns: string
       }
       escape_ilike: { Args: { p: string }; Returns: string }
+      event_attendance_prompt_sweep: { Args: never; Returns: number }
       event_promote_waitlist: {
         Args: { p_post_id: string }
         Returns: undefined
@@ -14020,6 +14234,7 @@ export type Database = {
           confirmed_at: string | null
           handed_over_at: string | null
           handoff_id: string
+          knowledge_slot_id: string | null
           no_show_at: string | null
           owner_id: string
           pickup_mode: string
@@ -14042,6 +14257,8 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      event_reminder_sweep: { Args: never; Returns: number }
+      events_expired_sweep: { Args: never; Returns: number }
       feed_cache_enqueue: { Args: { p_user_id: string }; Returns: number }
       feed_cache_enqueue_active_users: {
         Args: { p_limit?: number }
@@ -14352,6 +14569,7 @@ export type Database = {
         Args: { p_h: Database["public"]["Tables"]["post_handoffs"]["Row"] }
         Returns: undefined
       }
+      giving_reservation_expiry_sweep: { Args: never; Returns: number }
       handoff_target_listing_id: { Args: { p_id: string }; Returns: string }
       handoff_target_post_id: { Args: { p_id: string }; Returns: string }
       has_accepted_housing_conduct: {
@@ -14577,6 +14795,10 @@ export type Database = {
         Returns: Json
       }
       kc_dev_seed_demo_match_candidates: { Args: never; Returns: number }
+      kc_dev_seed_demo_org_events: {
+        Args: { p_caller: string }
+        Returns: number
+      }
       kc_dev_seed_demo_post_media: { Args: never; Returns: undefined }
       kc_dev_seed_demo_rides: { Args: never; Returns: undefined }
       kc_dev_seed_demo_user_profiles: { Args: never; Returns: undefined }
@@ -14613,7 +14835,58 @@ export type Database = {
       }
       kc_dev_wipe_demo_seed_ids: { Args: never; Returns: string[] }
       kc_dev_wipe_next_step: { Args: { p_step: string }; Returns: string }
+      knowledge_booking_copy_key: { Args: { p_kind: string }; Returns: string }
+      knowledge_bookings_expire_sweep: { Args: never; Returns: number }
+      knowledge_check_slots: {
+        Args: { p_details: Json; p_post_id: string }
+        Returns: string
+      }
+      knowledge_kind_has_slots: {
+        Args: { p_kind_slug: string }
+        Returns: boolean
+      }
+      knowledge_lock_waiting_booking: {
+        Args: { p_handoff_id: string }
+        Returns: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          confirm_by: string | null
+          confirmed_at: string | null
+          handed_over_at: string | null
+          handoff_id: string
+          knowledge_slot_id: string | null
+          no_show_at: string | null
+          owner_id: string
+          pickup_mode: string
+          pickup_window_end: string | null
+          pickup_window_start: string | null
+          post_id: string
+          recipient_id: string
+          requested_meeting_point: Json | null
+          reserved_at: string
+          seats: number
+          slot_ends_at: string | null
+          slot_starts_at: string | null
+          status: string
+          world_slug: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "post_handoffs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       knowledge_normalize_text: { Args: { p: string }; Returns: string }
+      knowledge_offers_expired_sweep: { Args: never; Returns: number }
+      knowledge_session_giver_units: {
+        Args: { p_ends_at: string; p_giver: string; p_starts_at: string }
+        Returns: number
+      }
+      knowledge_slot_seats_taken: {
+        Args: { p_slot_id: string }
+        Returns: number
+      }
       knowledge_topic_merge: {
         Args: { p_into: string; p_topic_id: string }
         Returns: undefined
@@ -14704,6 +14977,33 @@ export type Database = {
           payee_phone: string
           provider_label: string
           url: string
+        }[]
+      }
+      list_knowledge_bookings: {
+        Args: { p_post_id: string }
+        Returns: {
+          cancel_reason: string
+          confirm_by: string
+          ends_at: string
+          handoff_id: string
+          learner_avatar: string
+          learner_id: string
+          learner_name: string
+          slot_id: string
+          starts_at: string
+          status: string
+        }[]
+      }
+      list_knowledge_slots: {
+        Args: { p_post_id: string }
+        Returns: {
+          capacity: number
+          ends_at: string
+          my_handoff_id: string
+          my_status: string
+          seats_left: number
+          slot_id: string
+          starts_at: string
         }[]
       }
       list_my_blocked_users: {
@@ -14850,6 +15150,17 @@ export type Database = {
           starts_at: string
           status: string
           title: string
+        }[]
+      }
+      list_org_members: {
+        Args: { p_org_id: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          joined_at: string
+          role: string
+          share_handle: string
+          user_id: string
         }[]
       }
       list_profile_listings: {
@@ -15134,6 +15445,7 @@ export type Database = {
           confirmed_at: string | null
           handed_over_at: string | null
           handoff_id: string
+          knowledge_slot_id: string | null
           no_show_at: string | null
           owner_id: string
           pickup_mode: string
@@ -15370,16 +15682,26 @@ export type Database = {
       }
       notifications_food_expiry_check: { Args: never; Returns: number }
       notifications_post_relevance_check: { Args: never; Returns: number }
+      offer_requires_photo: {
+        Args: { p_direction: string; p_world_slug: string }
+        Returns: boolean
+      }
+      org_add_member: {
+        Args: { p_org_id: string; p_role?: string; p_share_handle: string }
+        Returns: string
+      }
+      org_remove_member: {
+        Args: { p_org_id: string; p_user_id: string }
+        Returns: undefined
+      }
       organizer_message_shift_volunteers: {
         Args: { p_message: string; p_shift_id: string }
         Returns: number
       }
-      owner_complete_offer_with_user:
-        | { Args: { p_recipient_id: string; p_target: string }; Returns: Json }
-        | {
-            Args: { p_mode?: string; p_recipient_id?: string; p_target: string }
-            Returns: Json
-          }
+      owner_complete_offer_with_user: {
+        Args: { p_mode?: string; p_recipient_id?: string; p_target: string }
+        Returns: Json
+      }
       owner_offer_set_status: {
         Args: {
           p_listing: Database["public"]["Views"]["listings"]["Row"]
@@ -15427,6 +15749,10 @@ export type Database = {
       post_close_from_handoff: {
         Args: { p_h: Database["public"]["Tables"]["post_handoffs"]["Row"] }
         Returns: undefined
+      }
+      post_delivery_recipients: {
+        Args: { p_post_id: string }
+        Returns: string[]
       }
       post_handoff_seats_taken: {
         Args: { p_exclude?: string; p_post_id: string }
@@ -15665,6 +15991,7 @@ export type Database = {
           confirmed_at: string | null
           handed_over_at: string | null
           handoff_id: string
+          knowledge_slot_id: string | null
           no_show_at: string | null
           owner_id: string
           pickup_mode: string
@@ -16002,13 +16329,11 @@ export type Database = {
       }
       ride_booking_copy_key: { Args: { p_kind: string }; Returns: string }
       ride_bookings_expire_sweep: { Args: never; Returns: number }
-      ride_complete_pending_rating_cleanup: { Args: never; Returns: undefined }
       ride_cost_share_cap: { Args: { p_details: Json }; Returns: number }
       ride_details_with_place: {
         Args: { p_details: Json; p_end: string }
         Returns: Json
       }
-      ride_food_overdue_alert: { Args: never; Returns: undefined }
       ride_listing_emergency: {
         Args: { p_listing_id: string; p_note?: string }
         Returns: {
@@ -16031,7 +16356,6 @@ export type Database = {
         Args: { p_listing_id: string }
         Returns: string[]
       }
-      ride_listings_expire_check: { Args: never; Returns: number }
       ride_listings_find_matches: {
         Args: { p_limit?: number; p_ride_id: string; p_window_hours?: number }
         Returns: {
@@ -16164,7 +16488,6 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      ride_participants_expire_stale_check: { Args: never; Returns: number }
       ride_place_lookup: {
         Args: { p_id: string; p_kind: string }
         Returns: {
@@ -16269,7 +16592,6 @@ export type Database = {
         Returns: number
       }
       ride_series_sweep: { Args: never; Returns: number }
-      ride_templates_materialize: { Args: never; Returns: number }
       rides_expired_listings_sweep: { Args: never; Returns: number }
       role_rank: { Args: { p_role: string }; Returns: number }
       rpc_chat_hide_for_viewer: {
@@ -16370,6 +16692,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      rpc_dev_reset_onboarding: { Args: never; Returns: undefined }
       rpc_feed_add_mute_filter: {
         Args: { p_filter_kind: string; p_filter_value: string }
         Returns: {
@@ -16501,6 +16824,7 @@ export type Database = {
           occurred_at: string
           post_id: string
           post_title: string
+          world_slug: string
         }[]
       }
       rpc_my_matches: {
@@ -16896,6 +17220,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      rpc_set_onboarding_state: {
+        Args: { p_state: string }
+        Returns: undefined
+      }
       rpc_set_post_comment_like: {
         Args: { p_comment_id: string; p_liked: boolean }
         Returns: boolean
@@ -17161,6 +17489,17 @@ export type Database = {
         }[]
       }
       stats_safe_dec: { Args: { p_value: number }; Returns: number }
+      submit_org_application: {
+        Args: {
+          p_contact_email: string
+          p_contact_phone?: string
+          p_declared_nonprofit?: boolean
+          p_org_description: string
+          p_org_name: string
+          p_website_url?: string
+        }
+        Returns: string
+      }
       submit_public_research_response: {
         Args: {
           p_answers: Json

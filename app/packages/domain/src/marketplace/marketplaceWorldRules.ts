@@ -1,28 +1,60 @@
 // Client-side mirror of the server world rules (0266 listings_enforce_world_rules) and a
 // mapper from server error codes to stable codes the UI can translate.
-// Items photos are optional (product decision; 0357 dropped the 0351 items image check).
+// An offer in a photo world needs at least one photo (D132, KC#1937; it
+// reverses the items-only removal of 0357). Server parity: KC#2020.
 // Keep in sync with supabase/migrations/0266, 0357, 0539 (food expiry binds offers only),
 // 0563 (an organization's event ends after it starts) and 0612 (animals are no longer routed).
+
+import { knowledgeSlotsFromDetails, knowledgeSlotsProblem } from '../knowledge/knowledgeSlots';
 
 // Animals left this list in 0612: members give and take directly there (PM 2026-11-04).
 export const ROUTED_WORLDS = ['medical', 'environment'] as const;
 
+/**
+ * Worlds whose offers (`give`) must carry at least one photo (D132).
+ * Requests stay photo-optional everywhere, and so do rides (a ride is not a thing to look at).
+ */
+export const OFFER_PHOTO_WORLDS = ['items', 'food', 'housing', 'animals'] as const;
+
+/** True when publishing this side of this world needs at least one photo. */
+export function offerRequiresPhoto(worldSlug: string, direction: 'give' | 'request'): boolean {
+  return direction === 'give' && (OFFER_PHOTO_WORLDS as readonly string[]).includes(worldSlug);
+}
+
 export type MarketplaceRuleErrorCode =
+  | 'offer_photo_required'
+  | 'food_subcategory_required'
   | 'food_expiry_required'
   | 'routed_world_requires_external_body'
   | 'ride_route_required'
   | 'ride_departure_past'
   | 'knowledge_slot_invalid'
+  // #2034 (0703): the slot list of a lesson offer or consulting hour.
+  | 'knowledge_slot_duration_invalid'
+  | 'knowledge_slot_in_past'
+  | 'knowledge_slots_overlap'
   | 'event_window_invalid';
 
 /** Server-raised listing error codes the UI has friendly copy for. */
 export const MARKETPLACE_SERVER_ERROR_CODES = [
+  'offer_photo_required',
+  'food_subcategory_required',
   'food_expiry_required',
   'routed_world_requires_external_body',
   'ride_route_required',
   'ride_departure_past',
   'knowledge_slot_invalid',
   'event_window_invalid',
+  // #2034 (0703–0704) — knowledge slots, bookings and the consulting-hour identity gate.
+  'knowledge_slot_duration_invalid',
+  'knowledge_slot_in_past',
+  'knowledge_slots_overlap',
+  'knowledge_slot_has_booking',
+  'knowledge_slot_capacity_below_bookings',
+  'consulting_requires_id_verification',
+  'slot_not_found',
+  'booking_expired',
+  'account_not_active',
   'seats_exhausted',
   'ride_seats_exhausted',
   'slots_exhausted',
@@ -97,6 +129,8 @@ export const MARKETPLACE_SERVER_ERROR_CODES = [
   'housing_not_in_window',
   'housing_note_too_long',
   'housing_use_booking_cancel',
+  // 0733 — an event registration cancels through its own RPC, not the generic handoff cancel.
+  'event_use_registration_cancel',
   // G1 step 5 (0563) — organization events: membership, verified-only registration, organizer actions.
   'event_org_required',
   'verification_required',
@@ -113,8 +147,16 @@ export interface WorldRulesInput {
   /** Offer (`give`) or request: some rules bind one side only (food expiry, D21 / D28). */
   direction: 'give' | 'request';
   details: Record<string, unknown>;
-  /** Number of attached photos. Informational only: photos are optional in every world. */
-  photoCount: number;
+  /**
+   * Number of attached photos. Undefined when the form does not manage photos (a listing edit
+   * keeps its photos as they are), so the photo rule is skipped there.
+   */
+  photoCount?: number;
+  /**
+   * The chosen world sub-category, or null when none is chosen. Undefined when the form does not
+   * manage it (a listing edit keeps its sub-category), so the sub-category rule is skipped there.
+   */
+  subcategoryId?: string | null;
   externalBodyId?: string | null;
   now?: Date;
 }
@@ -132,6 +174,8 @@ export function validateMarketplaceWorldRules(input: WorldRulesInput): Marketpla
     const ts = typeof raw === 'string' ? Date.parse(raw) : Number.NaN;
     const now = (input.now ?? new Date()).getTime();
     if (Number.isNaN(ts) || ts <= now) return 'food_expiry_required';
+    // A food offer's type is its world sub-category (D137, KC#1398).
+    if (input.subcategoryId === null) return 'food_subcategory_required';
   }
 
   if (worldSlug === 'rides') {
@@ -154,7 +198,16 @@ export function validateMarketplaceWorldRules(input: WorldRulesInput): Marketpla
     return 'routed_world_requires_external_body';
   }
 
+  // Checked last, so a form with several problems still reports the field-specific ones first.
+  if (lacksRequiredPhoto(input)) return 'offer_photo_required';
+
   return null;
+}
+
+/** An offer in a photo world with neither an attached photo nor a legacy details image (0351). */
+function lacksRequiredPhoto(input: WorldRulesInput): boolean {
+  if (input.photoCount === undefined || !offerRequiresPhoto(input.worldSlug, input.direction)) return false;
+  return input.photoCount === 0 && !nonEmptyString(input.details.image_url);
 }
 
 function finiteNumber(v: unknown): boolean {
@@ -177,11 +230,16 @@ export function validateRideDetails(
   return null;
 }
 
-/** Knowledge offers with a slot need a future start and an end after the start. */
+/**
+ * Knowledge offers with slots: the slot list of a lesson offer or consulting hour (#2034) follows
+ * `knowledgeSlotsProblem`; a legacy one-slot post needs a future start and an end after it.
+ */
 export function validateKnowledgeSlot(
   details: Record<string, unknown>,
   now: Date = new Date(),
 ): MarketplaceRuleErrorCode | null {
+  const slots = knowledgeSlotsFromDetails(details);
+  if (slots) return knowledgeSlotsProblem(slots, now);
   if (details.slot_starts_at === undefined && details.slot_ends_at === undefined) return null;
   const start = parseTime(details.slot_starts_at);
   const end = parseTime(details.slot_ends_at);

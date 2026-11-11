@@ -24,7 +24,7 @@ begin
   raise notice '✓ T1 posts age-based expiry removed';
 end $$;
 
--- T2: the remaining expiry sweeps (food listings, rides) leave a 400-day-old
+-- T2: the remaining expiry sweeps (food, ride offers, ride series) leave a 400-day-old
 -- open item post untouched.
 begin;
 do $$
@@ -44,7 +44,8 @@ begin
   returning post_id into v_post;
 
   perform public.food_expired_listings_sweep();
-  perform public.ride_listings_expire_check();
+  perform public.rides_expired_listings_sweep();
+  perform public.ride_series_sweep();
 
   perform pg_temp.assert((select status from public.posts where post_id = v_post) = 'open',
     'an old item post was expired by an expiry sweep');

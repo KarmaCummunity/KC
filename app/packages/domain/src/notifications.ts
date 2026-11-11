@@ -43,6 +43,8 @@ export type NotificationKind =
   | 'ride_booking_declined'
   | 'ride_booking_expired'
   | 'ride_booking_cancelled'
+  // 0734 — the ride expired without leaving, so a confirmed seat was cancelled.
+  | 'ride_booking_lapsed'
   // D74 (0516) — a new ride on a route the user follows.
   | 'ride_route_match'
   // D70 (0517) — an emergency raised on a ride of the one rides flow.
@@ -53,7 +55,16 @@ export type NotificationKind =
   | 'giving_handoff_confirmed'
   | 'giving_handoff_declined'
   | 'giving_handoff_cancelled'
+  // Wave 2c (0716) — a request the giver did not answer within its confirm window lapsed.
+  | 'giving_handoff_expired'
   | 'giving_handoff_completed'
+  // FR-KNOW-004 AC5 (0704, #2034) — knowledge slot bookings: every change reaches the other side.
+  | 'knowledge_booking_requested'
+  | 'knowledge_booking_confirmed'
+  | 'knowledge_booking_declined'
+  | 'knowledge_booking_expired'
+  | 'knowledge_booking_cancelled'
+  | 'knowledge_session_completed'
   // FR-HOUSING-017 (0602–0603) — housing stay bookings: every change reaches the other side.
   | 'housing_booking_requested'
   | 'housing_booking_confirmed'
@@ -61,7 +72,35 @@ export type NotificationKind =
   | 'housing_booking_expired'
   | 'housing_booking_superseded'
   | 'housing_booking_cancelled'
-  | 'housing_booking_completed';
+  | 'housing_booking_completed'
+  // D131 — the organizer paused, closed or deleted the event
+  // before it started, so the attendee's registration was cancelled (0686).
+  | 'event_registration_cancelled'
+  // G18 (0731) — an event registration's moves, the day-before reminder and the organizer's
+  // attendance prompt.
+  | 'event_join_request'
+  | 'event_registration_approved'
+  | 'event_registration_promoted'
+  | 'event_registration_declined'
+  // 0736 — the event ended while the member still waited (a request or the waitlist).
+  | 'event_registration_expired'
+  | 'event_reminder'
+  | 'event_mark_attendance'
+  // FR-ORG-002 (0730) — an organization application's decision, and being added to one.
+  | 'org_registration_decided'
+  | 'org_member_added'
+  // FR-FEED engagement (0252 / 0255) — a reaction, a comment, a mention on the member's post.
+  | 'post_reaction'
+  | 'post_comment'
+  | 'post_mention'
+  // FR-MOD (0150, 0136, 0611) — the member's account was suspended; a chat was removed after
+  // reports; a report waits past its 12-hour mark (to admins).
+  | 'account_suspended'
+  | 'chat_auto_removed'
+  | 'report_sla_warning'
+  // Match v1 (0261) and listing subscriptions (0667) — a listing that fits the member's.
+  | 'listing_match_found'
+  | 'listing_subscription_hit';
 
 /** Payload attached to every Expo push under `data`. The client reads this on tap. */
 export interface PushData {
@@ -74,6 +113,8 @@ export interface PushData {
   params?: Record<string, string>;
   /** Convenience field used by the foreground handler to detect chat-active state. */
   chat_id?: string;
+  /** The listing a match or listing-subscription notice is about (0261, 0667 write it at top level). */
+  listing_id?: string;
 }
 
 export interface DeviceRegistration {

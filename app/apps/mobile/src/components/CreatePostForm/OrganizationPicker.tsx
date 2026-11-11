@@ -8,6 +8,7 @@ import { Text } from '@kc/ui';
 import type { OrganizationMembershipOption } from '@kc/domain';
 import { useCreatePostStyles } from '../../screens/tabs/create.styles';
 import { Chip } from '../ui/Chip';
+import { ChipSelectRow } from '../filterKit/ChipSelectRow';
 
 interface Props {
   readonly organizations: readonly OrganizationMembershipOption[];
@@ -25,7 +26,7 @@ export function OrganizationPicker({ organizations, value, onChange, disabled = 
         {t('eventPost.create.orgLabel')}
         <Text style={styles.required}> *</Text>
       </Text>
-      <View style={styles.chipWrap}>
+      <ChipSelectRow testID="org-picker-chips">
         {organizations.map((org) => (
           <Chip
             key={org.orgId}
@@ -36,7 +37,7 @@ export function OrganizationPicker({ organizations, value, onChange, disabled = 
             disabled={disabled}
           />
         ))}
-      </View>
+      </ChipSelectRow>
     </View>
   );
 }

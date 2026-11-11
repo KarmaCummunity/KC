@@ -1,4 +1,4 @@
--- supabase/tests/0692_adr004_idempotency_keys.sql
+-- supabase/tests/0743_adr004_idempotency_keys.sql
 -- ADR-004 §2 (#1999): Idempotency key tests for post creation, handoffs, and messages.
 
 begin;

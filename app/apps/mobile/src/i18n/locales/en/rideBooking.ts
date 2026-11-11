@@ -33,6 +33,7 @@ export const rideBooking = {
   cancelBooking: 'Cancel my booking',
   loadError: "We couldn't load the bookings. Tap to try again.",
   exceedsCapacity: 'Cannot approve: exceeds available seats',
+  completeFromHourBefore: 'The trip can be completed from an hour before departure',
   departed: 'This ride has already departed',
   full: 'No free seats left on this ride',
   chat: 'Message',

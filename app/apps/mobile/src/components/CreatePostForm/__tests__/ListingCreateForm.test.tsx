@@ -26,6 +26,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 vi.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+vi.mock('expo-router', () => ({ useRouter: () => ({ push: vi.fn() }) })); // the membership hint (FR-ORG-002)
 // A native picker may only ever mount inside the date sheet, never inline in the form.
 vi.mock('@react-native-community/datetimepicker', () => ({
   default: mocks.nativeDatePicker,
@@ -88,7 +89,6 @@ vi.mock('../../CityPicker', () => ({
     <button type="button" data-testid="city-picker" onClick={() => onChange({ id: '7000', name: 'לוד' })} />
   ),
 }));
-
 import { ListingCreateForm } from '../ListingCreateForm';
 
 const RIDE_FILL = vi.hoisted(() => ({
@@ -161,11 +161,12 @@ describe('ListingCreateForm — renders every category', () => {
 
   it('shows the category-specific fields of the chosen direction', async () => {
     const { rerender } = renderForm('food', 'give');
-    expect(await screen.findByTestId('listing-field-food_type')).toBeTruthy();
-    expect(screen.getByTestId('listing-field-expires_at')).toBeTruthy();
+    expect(await screen.findByTestId('listing-field-expires_at')).toBeTruthy();
+    // The food type is the sub-category picker, not a detail field (D137, KC#1398).
+    expect(screen.getByTestId('listing-subcategory-field')).toBeTruthy();
+    expect(screen.queryByTestId('listing-field-food_type')).toBeNull();
     rerender('request');
     expect(await screen.findByTestId('listing-field-household_size')).toBeTruthy();
-    expect(screen.queryByTestId('listing-field-food_type')).toBeNull();
   });
 
   it('shows a retry message instead of an endless spinner when kinds fail to load', async () => {
@@ -180,9 +181,10 @@ describe('ListingCreateForm — publish', () => {
   it('blocks publish with the first missing required field, shown inside that field', async () => {
     renderForm('food', 'give');
     await tapPublishWhenReady();
-    const field = screen.getByTestId('listing-field-food_type');
+    // The expiry is the food offer's first required detail field now that food type left the form.
+    const field = screen.getByTestId('listing-field-expires_at');
     expect((await within(field).findByTestId('listing-error')).textContent).toBe(
-      'post.unifiedCreate.errors.fieldRequired:marketplace.field.food_type',
+      'post.unifiedCreate.errors.fieldRequired:marketplace.field.expires_at',
     );
     expect(mocks.createListing).not.toHaveBeenCalled();
   });
