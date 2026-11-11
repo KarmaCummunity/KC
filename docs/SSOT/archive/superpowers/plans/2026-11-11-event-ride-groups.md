@@ -18,7 +18,7 @@ This plan turns the spec into releasable slices. One slice = one issue = one PR 
 |---|---|---|
 | **R1 — Closed pilot** | kc-dev, then a handful of invited organizers in prod | S0–S6 (core), cancel + member management, reports/admin hide, content filter, retention purge |
 | **R2 — Launch quality** | everyone, flag on | Announcements, request answering, night-return tools, trust details, analytics, a11y/copy polish, public-launch hardening |
-| **P2** | everyone | Round trip, matches, reminders, coverage, public groups, waitlist, printable summary |
+| **P2** | everyone | Round trip, matches, reminders, coverage, waitlist, printable summary |
 | **P3** | — | Org-event link, group chat, trust options |
 
 R1 → R2 is gated by the pilot's exit criteria (section 7).
@@ -95,10 +95,10 @@ S6 can start as soon as S2 defines the kinds; S3 and S4 can run in parallel lane
 | Need | Needed by | Fallback |
 |---|---|---|
 | Spec approval and the open items | S0 | Defaults in the spec |
-| Apple Team ID, Android SHA-256 (A2/A3) | S2 exit for app-opening links | Web landing + code entry |
-| SMS provider (A7) for "phone-verified to join 50+" | R2 | Rule stays off |
+| Link manifests (Apple Team ID, Android SHA-256) | S2 exit for app-opening links | PM handles them outside this plan; web landing + code entry meanwhile |
+| Data-protection review of the optional gender field (`FR-EVRIDE-040`) | Before R1 exit | Field stays off until reviewed |
 | Counsel: acknowledgement texts, retention periods, sober chip wording (L1, L3) | R2 | Draft texts behind the flag |
-| Pilot organizers (real events) | S9 | Internal test events on kc-dev |
+| Pilot events | S9 | Real events are plentiful; the pilot starts when the quality gates of section 7 pass (no calendar date) |
 
 ## 6. Risk register
 
@@ -113,7 +113,7 @@ S6 can start as soon as S2 defines the kinds; S3 and S4 can run in parallel lane
 | Visibility predicate cost in feeds | Medium | Gated clause after cheap branches; board reader checks membership once |
 | Scam or commercial groups | Medium | Content filter, weighted hide, review of large new-account groups |
 | Legal/privacy review slips | Medium | Behind the flag; retention values are config constants |
-| Scope creep (group chat, public groups) | Medium | Phase gates in the spec |
+| Scope creep (group chat) | Medium | Phase gates in the spec |
 
 ## 7. Quality gates
 
