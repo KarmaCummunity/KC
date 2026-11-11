@@ -28,6 +28,7 @@ import type { AuthEmailForm } from './useAuthEmailForm';
 import { useKeyboardVerticalOffset } from '../../lib/platform/useKeyboardVerticalOffset';
 import { KeyboardFormAccessory } from '../ui/KeyboardFormAccessory';
 import { useFormFieldFocus } from '../../hooks/useFormFieldFocus';
+import { resolveKeyboardAvoidingBehavior } from '../../lib/platform/keyboardVerticalOffset';
 
 /** Side of the logo in the header, in points (a layout size). */
 const LOGO_SIZE = 48;
@@ -100,7 +101,7 @@ export function AuthFormScreen({
       <AmbientBlobs density="auth" />
       <Animated.View style={[styles.fill, motion.screen]}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={resolveKeyboardAvoidingBehavior(Platform.OS)}
           style={styles.fill}
           keyboardVerticalOffset={keyboardOffset}
         >
