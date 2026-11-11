@@ -3973,12 +3973,15 @@ export type Database = {
           counterpart_id: string
           counterpart_last_read_at: string
           counterpart_share_handle: string
+          counterpart_verification_level: number
           kind: string
           last_message_at: string
           last_message_id: string
           last_message_kind: string
+          last_message_media_type: string
           last_message_preview: string
           last_message_sender_id: string
+          last_message_system_payload: Json
           unread_count: number
         }[]
       }
