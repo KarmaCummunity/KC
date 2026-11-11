@@ -244,6 +244,7 @@ rpc('api_match_llm_pending', 'same', 'rpc:api_match_llm_pending', 'Signature unc
 rpc('api_match_llm_store', 'changed', 'rpc:api_match_llm_store', 'Returns void (was boolean): an unknown pair raises `match_not_found`.');
 rpc('provider_webhook_apply', 'same', 'rpc:provider_webhook_apply', 'Signature unchanged; errors are stable snake_case messages.');
 rpc('api_revenuecat_set_pro', 'same', 'rpc:api_revenuecat_set_pro', 'Signature unchanged.');
+rpc('api_my_pro_status', 'same', 'rpc:api_my_pro_status', 'The caller\'s Pro status (`is_pro`); the Pro screen reads it.');
 rpc('api_revenuecat_set_org_entitlement', 'same', 'rpc:api_revenuecat_set_org_entitlement', 'Service role only (RevenueCat webhook, 0002): reports an organization\'s store subscription state.');
 rpc('submit_public_research_response', 'same', 'rpc:submit_public_research_response', 'Signature unchanged.');
 rpc('get_research_salt', 'same', 'rpc:get_research_salt', 'Service role only: the current hashing salt of the public research form (the `research_secrets` table is private).');
@@ -286,9 +287,9 @@ rpc('rides_feed', 'same', 'rpc:rides_feed', 'The rides feed; with `p_filters.ori
 rpc('ride_occurrence_schedules', 'same', 'rpc:ride_occurrence_schedules', 'The series day, weekdays, departure time and last day of ride occurrences the caller can read (`p_post_ids`); the ride detail builds its series marker from it, since `ride_series` is its owner\'s alone.');
 rpc('post_seat_counts', 'same', 'rpc:post_seat_counts', 'Places held, waiting registrations and seats left of event and ride posts the caller can read (`p_post_ids`, at most 100); the volunteering shifts and the occurrences of a ride series read their free places here.');
 table('post_series', 'same', 'table:post_series', 'The recurring-event series of a post (schedule plus post and event templates); read through the series RPCs, written only by them.');
-rpc('create_post_series', 'same', 'rpc:create_post_series', 'Creates a series and materializes its first occurrences; the owner only.');
+rpc('create_post_series', 'same', 'rpc:create_post_series', 'Creates a series and publishes its dates of the next 30 days; any active member, for an organization only one who may act for it.');
 rpc('update_post_series', 'same', 'rpc:update_post_series', 'Edits the series template and schedule; the owner only (`post_series_not_found`).');
-rpc('set_post_series_status', 'same', 'rpc:set_post_series_status', '`p_series`, `p_status`: active, paused or cancelled; the owner only.');
+rpc('set_post_series_status', 'same', 'rpc:set_post_series_status', '`p_series_id`, `p_status`: active, paused or ended; ending cancels every upcoming date and tells its registrants. The owner only.');
 rpc('cancel_post_series_date', 'same', 'rpc:cancel_post_series_date', 'Cancels one date of a series without ending it; the owner only.');
 rpc('accept_world_consent', 'same', 'rpc:accept_world_consent', 'Accepts the driver declaration in force (`p_kind`, `p_version`); `consent_version_stale` for an old version.');
 rpc('my_matches', 'same', 'rpc:my_matches', 'The caller\'s pairs, each with the other member\'s post as a card (`other_post`).');
@@ -359,7 +360,7 @@ export const packages = [
     degrade: 'This package defines the rule for all others: an adapter call that hits a missing function or table throws `BackendUnavailableError`; a list screen shows its empty state, an action shows the generic "not available yet" message, a world whose `world_<slug>_enabled` flag is off never renders its entry points. No screen reads `error.message` of an unknown error.',
     risks: 'Everything depends on it and it must not change behaviour: no adapter logic changed, only its type import. CI still diffs `database.types.ts` against the old migrations until the workflow change listed in the P0 report lands.' },
   { id: 'P1', title: 'Identity: session start, profile, privacy, follow, block, legal, account deletion, devices', launch: 'core', parallelWith: [],
-    select: either(inArea('auth', 'users', 'legal', 'blocks', 'social', 'cities', 'streets', 'about', 'notifications'), named(/^(record_active_day|avatars|topic = `user:.*notifications`)$/)),
+    select: either(inArea('auth', 'users', 'legal', 'blocks', 'social', 'cities', 'streets', 'about', 'notifications'), named(/^(record_active_day|api_my_pro_status|avatars|topic = `user:.*notifications`)$/)),
     files: ['auth/**', 'users/**', 'legal/**', 'blocks/**', 'social/**', 'cities/**', 'streets/**', 'about/**', 'notifications/**', 'survey/SupabaseUserActivityRepository.ts', 'apps/mobile: auth gate, onboarding, settings, edit profile, avatar upload, notification badge hook, devIdentityVerification (deleted)'],
     work: 'Done in P1: the account gate, private profile, onboarding state and pending legal documents read `bootstrap_session`; `users/mapUserRow.ts` maps the public `users` row plus `user_stats` and, for the caller\'s own row, the `bootstrap_session` private blocks (`user_private`, `user_account`, staff roles); follows go through `follow_user`, `follow_request_decide` and `follow_request_cancel`; account deletion through `request_account_deletion` and `restore_account`; the account gate listens on `user:<id>:account`. M01, M03, M04 and M08 are hidden or empty (no call is made); the dev-only identity and onboarding helpers are gone.',
     tests: ['vitest: auth, users, legal, blocks, social, notifications suites', 'contract tests against a baseline database (sqlProbes, contract.integration)', 'pgTAP 010, 011, 020, 021, 050, 051'],

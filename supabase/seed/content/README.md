@@ -19,7 +19,7 @@ loads reference and content on the baseline twice and runs `check.sql`; CI runs 
 | File | Rows | Lands in |
 | --- | --- | --- |
 | `data/donation_link_categories.csv` | 11 | `donation_link_categories` (icon, order; labels live in the app's locale files) |
-| `data/donation_links.csv` | 86 | `donation_links`, curated (no submitter), approved after loading |
+| `data/donation_links.csv` | 108 | `donation_links`, curated (no submitter), approved after loading |
 | `data/legal_document_versions.csv` | 2 | `legal_documents` pointer + `legal_document_versions` (terms, privacy, version 1, Hebrew) |
 | `data/surveys.csv`, `survey_versions.csv`, `survey_questions.csv` | 3 / 3 / 8 | `surveys`, `survey_versions`, `survey_questions` |
 | the platform organization (in `load.sql`) | 1 + 3 | `organizations` (Karma Community) + `billing.org_finance_accounts` (cash, Bit, Paybox, empty balances) |
@@ -35,7 +35,7 @@ when the old migrations are archived: `world_links`, `external_bodies`, `knowled
 
 | Class | What | Handling |
 | --- | --- | --- |
-| Real content / reference | NGO and volunteering links (86 in 11 lists), terms and privacy text, 3 surveys, platform org and its accounts, cities, streets, junctions, worlds, post kinds, subcategories | loaded (this seed and `../reference/`) |
+| Real content / reference | NGO, volunteering and Kol Zchut links (108 in 11 lists), terms and privacy text, 3 surveys, platform org and its accounts, cities, streets, junctions, worlds, post kinds, subcategories | loaded (this seed and `../reference/`) |
 | Real content, no baseline target yet | `world_links` 12, `external_bodies` 10, `knowledge_topics` 56 + aliases 78, `whatsapp_message_templates` 10 (draft/deprecated), `kc_support_channels` 2, `marketplace_rules` 17 + params 9 | `deferred/` |
 | Superseded by the baseline | old catalog `listing_kinds` 40 and `categories` 90 (the baseline has its own kinds and subcategories in `../reference/`), `match_weights`, `matching_settings`, `feed_ranking_config`, `fsm_*`, `app_flags` for money/payments (baseline defaults and flags own them) | not copied (kept in `deferred/` where useful) |
 | Configuration of the dev environment | `kc_dev_demo_*`, `app_flags` `dev_mock_identity_verification` and `sandbox_payments`, `payment_providers` sandbox, `research_secrets`, `ingestion_sources` (WhatsApp, flag off) | excluded |

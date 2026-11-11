@@ -165,7 +165,7 @@ insert into kc_private.scheduled_jobs (name, schedule, command, timeout, alert_a
 -- since no date was folded before.
 select kc_private.series_refold(s.id) from public.ride_series s;
 
--- The feed query of 30_social/080_feed_page.sql, with one added condition (marked 0006).
+-- The feed query of 30_social/080_feed_page.sql, with one added condition (marked 0023).
 create or replace function public.feed_page(
   p_cursor jsonb default null,
   p_limit integer default 20,
@@ -249,7 +249,7 @@ begin
   -- Filters, each added only when asked for, so the plan fits the request. Values travel
   -- as parameters ($n below); the text is assembled from the fixed fragments in this
   -- function only.
-  -- 0006: a series is one card in every list this function serves — its date in the feed.
+  -- 0023: a series is one card in every list this function serves — its date in the feed.
   v_where := ' and p.published_at <= $1 and not p.feed_folded';
   if v_worlds is not null then
     v_where := v_where || ' and p.world_slug = any ($2)';

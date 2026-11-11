@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 176 | 109 | 20 | 28 | 0 | 19 |
+| RPCs | 177 | 110 | 20 | 28 | 0 | 19 |
 | Tables and views | 60 | 44 | 0 | 15 | 0 | 1 |
 | Storage buckets | 4 | 3 | 0 | 1 | 0 | 0 |
 | Realtime channels | 6 | 6 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 3 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | 249 | 165 | 20 | 44 | 0 | 20 |
+| **Total** | 250 | 166 | 20 | 44 | 0 | 20 |
 
 ### Launch scope
 
@@ -21,10 +21,10 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 
 | Launch tier | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| core | 105 | 87 | 1 | 17 | 0 | 0 |
+| core | 106 | 88 | 1 | 17 | 0 | 0 |
 | wedge | 53 | 32 | 15 | 6 | 0 | 0 |
 | later | 91 | 46 | 4 | 21 | 0 | 20 |
-| **Launch-critical (core + wedge)** | 158 | 119 | 16 | 23 | 0 | 0 |
+| **Launch-critical (core + wedge)** | 159 | 120 | 16 | 23 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
 
@@ -74,7 +74,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/translations/` | 6 | 3 | 3 | 0 | 0 |
 | `infrastructure-supabase/src/users/` | 33 | 20 | 13 | 0 | 0 |
 | `infrastructure-supabase/src/volunteering/` | 9 | 3 | 6 | 0 | 0 |
-| `apps/mobile` (direct calls outside the adapters) | 17 | 16 | 1 | 0 | 0 |
+| `apps/mobile` (direct calls outside the adapters) | 18 | 17 | 1 | 0 | 0 |
 | Edge Function `_shared` | 11 | 0 | 0 | 0 | 11 |
 | Edge Function `backfill-image-thumbs` | 2 | 0 | 2 | 0 | 0 |
 | Edge Function `embed-worker` | 3 | 3 | 0 | 0 | 0 |
@@ -481,8 +481,8 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `cancel_post_series_date` | later | 1:1 | `cancel_post_series_date(p_post_id: string) → undefined` | Cancels one date of a series without ending it; the owner only. |  | high | SupabasePostSeriesRepository.ts:92 |
-| `create_post_series` | later | 1:1 | `create_post_series(p_duration_minutes: number, p_ends_on?: string, p_event: Json, p_org_id?: string, p_post: Json, p_start_time: string, p_time_zone?: string, p_weekdays: number) → string` | Creates a series and materializes its first occurrences; the owner only. |  | high | SupabasePostSeriesRepository.ts:56 |
-| `set_post_series_status` | later | 1:1 | `set_post_series_status(p_series_id: string, p_status: string) → undefined` | `p_series`, `p_status`: active, paused or cancelled; the owner only. |  | high | SupabasePostSeriesRepository.ts:88 |
+| `create_post_series` | later | 1:1 | `create_post_series(p_duration_minutes: number, p_ends_on?: string, p_event: Json, p_org_id?: string, p_post: Json, p_start_time: string, p_time_zone?: string, p_weekdays: number) → string` | Creates a series and publishes its dates of the next 30 days; any active member, for an organization only one who may act for it. |  | high | SupabasePostSeriesRepository.ts:56 |
+| `set_post_series_status` | later | 1:1 | `set_post_series_status(p_series_id: string, p_status: string) → undefined` | `p_series_id`, `p_status`: active, paused or ended; ending cancels every upcoming date and tells its registrants. The owner only. |  | high | SupabasePostSeriesRepository.ts:88 |
 | `update_post_series` | later | 1:1 | `update_post_series(p_duration_minutes: number, p_ends_on?: string, p_event?: Json, p_post?: Json, p_series_id: string, p_start_time: string, p_weekdays: number) → undefined` | Edits the series template and schedule; the owner only (`post_series_not_found`). |  | high | SupabasePostSeriesRepository.ts:77 |
 | `post_event_details` (table) | wedge | 1:1 | see `infrastructure-supabase/src/marketplace/` |  |  |  | SupabasePostSeriesRepository.ts:101 |
 | `post_series` (table) | later | 1:1 | table `post_series` | The recurring-event series of a post (schedule plus post and event templates); read through the series RPCs, written only by them. |  | high | SupabasePostSeriesRepository.ts:40 |
@@ -570,15 +570,16 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `apps/mobile` (direct calls outside the adapters)
 
-17 call sites: 16 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
+18 call sites: 17 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `avatars` (bucket) | core | 1:1 | bucket `avatars` | Declared in `95_platform/090_storage.sql`: public, JPEG, 512 KB, `<user_id>/avatar.jpg` (and the thumb in the same folder) (M23, verified). |  | high | avatarUpload.ts:132, avatarUpload.ts:143, avatarUpload.ts:153, avatarUpload.ts:167 |
 | `chat-media` (bucket) | core | 1:1 | bucket `chat-media` | Declared in `95_platform/090_storage.sql`: private, `<user_id>/<chat_id>/<file>`, read through signed URLs by chat members (M23, verified). |  | high | chatMediaUpload.ts:44, chatMediaUrl.ts:17 |
-| `post-images` (bucket) | core | 1:1 | bucket `post-images` | Declared by the baseline (own-folder insert / delete policies); `post_media.storage_bucket` points at it. |  | high | [id].tsx:42, PostImageCarousel.tsx:72, usePostShare.ts:64, probeDraftImageAvailability.ts:30, imageUpload.ts:179, imageUpload.ts:191, listingImageUpload.ts:42, listingImageUpload.ts:56 |
+| `post-images` (bucket) | core | 1:1 | bucket `post-images` | Declared by the baseline (own-folder insert / delete policies); `post_media.storage_bucket` points at it. |  | high | [id].tsx:42, PostImageCarousel.tsx:72, usePostShare.ts:64, probeDraftImageAvailability.ts:30, imageUpload.ts:182, imageUpload.ts:194, listingImageUpload.ts:42, listingImageUpload.ts:56 |
 | `topic = 'user:${userId}:notifications'` (channel) | core | 1:1 | topic `user:<user id>:notifications` | Already on the baseline contract (event `badge`). |  | high | useNotificationInboxBadge.ts:30 |
-| `app_flags` (table) | core | 1:1 | table `app_flags` | Same `select key, enabled`, for signed-in members only (no `anon` grant): before sign-in the compiled defaults apply. After sign-in the same map is `bootstrap_session().flags`. The rows (`world_<slug>_enabled`) are seed data, not part of the baseline (M09, verified). |  | high | featureFlagsComposition.ts:9 |
+| `api_my_pro_status` | core | 1:1 | `api_my_pro_status() → Json` | The caller's Pro status (`is_pro`); the Pro screen reads it. |  | high | pro.tsx:38 |
+| `app_flags` (table) | core | 1:1 | table `app_flags` | Same `select key, enabled`, for signed-in members only (no `anon` grant): before sign-in the compiled defaults apply. After sign-in the same map is `bootstrap_session().flags`. The rows (`world_<slug>_enabled`) are seed data, not part of the baseline (M09, verified). |  | high | featureFlagsComposition.ts:12 |
 | `karma_ledger` (table) | wedge | CHANGED | table `karma_ledger` | `ledger_id` → `id`, `points_delta` → `points`, `ref_type` / `ref_id` → `subject` / `reference`. The total is `my_karma_points()`. |  | high | useKarmaHistory.ts:24 |
 
 ### Edge Function `_shared`
@@ -743,7 +744,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | Package | Launch | Objects | 1:1 | Changed | Removed | MISSING | May run in parallel with |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | P0 — Contract switch and the degrade rule (first, alone) | core | 2 | 2 | 0 | 0 | 0 | — |
-| P1 — Identity: session start, profile, privacy, follow, block, legal, account deletion, devices | core | 31 | 27 | 4 | 0 | 0 | — |
+| P1 — Identity: session start, profile, privacy, follow, block, legal, account deletion, devices | core | 32 | 28 | 4 | 0 | 0 | — |
 | P2 — Posts, feed, search, closure, translations | core | 42 | 31 | 11 | 0 | 0 | P3, P4 |
 | P3 — Chat and realtime | core | 18 | 17 | 1 | 0 | 0 | P2, P4 |
 | P4 — Reports, moderation and admin basics | core | 18 | 13 | 5 | 0 | 0 | P2, P3 |

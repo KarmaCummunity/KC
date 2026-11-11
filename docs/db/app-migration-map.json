@@ -2,8 +2,8 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 176,
-   "same": 109,
+   "objects": 177,
+   "same": 110,
    "renamed": 20,
    "changed": 28,
    "removed": 0,
@@ -44,8 +44,8 @@
  },
  "launchTotals": {
   "core": {
-   "objects": 105,
-   "same": 87,
+   "objects": 106,
+   "same": 88,
    "renamed": 1,
    "changed": 17,
    "removed": 0,
@@ -266,8 +266,8 @@
    "missing": 0
   },
   "mobile": {
-   "callSites": 17,
-   "oneToOne": 16,
+   "callSites": 18,
+   "oneToOne": 17,
    "changed": 1,
    "removed": 0,
    "missing": 0
@@ -512,13 +512,14 @@
     "rpc:notifications_mark_read",
     "rpc:notifications_mark_all_read",
     "table:user_devices",
+    "rpc:api_my_pro_status",
     "bucket:avatars",
     "channel:topic = `user:${userId}:notifications`",
     "channel:topic = `user:${userId}:account`"
    ],
    "counts": {
-    "objects": 31,
-    "oneToOne": 27,
+    "objects": 32,
+    "oneToOne": 28,
     "changed": 4,
     "removed": 0,
     "missing": 0
@@ -1467,13 +1468,13 @@
     },
     {
      "file": "app/apps/mobile/src/services/imageUpload.ts",
-     "line": 179,
+     "line": 182,
      "symbol": "resizeAndUploadImage",
      "area": "mobile"
     },
     {
      "file": "app/apps/mobile/src/services/imageUpload.ts",
-     "line": 191,
+     "line": 194,
      "symbol": "resizeAndUploadImage",
      "area": "mobile"
     },
@@ -3172,6 +3173,42 @@
      "line": 47,
      "symbol": "pairs",
      "area": "fn:match-rerank"
+    }
+   ]
+  },
+  {
+   "old": "api_my_pro_status",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "The caller's Pro status (`is_pro`); the Pro screen reads it.",
+   "oldObject": {
+    "signature": [
+     "api_my_pro_status() → Json"
+    ]
+   },
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_my_pro_status",
+     "source": "85_billing/110_entitlements.sql:42",
+     "signature": [
+      "api_my_pro_status() → Json"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "mobile"
+   ],
+   "callSites": [
+    {
+     "file": "app/apps/mobile/app/pro.tsx",
+     "line": 38,
+     "symbol": "ProPaywallScreen",
+     "area": "mobile"
     }
    ]
   },
@@ -4940,7 +4977,7 @@
    "launch": "later",
    "confidence": "high",
    "missing": null,
-   "note": "Creates a series and materializes its first occurrences; the owner only.",
+   "note": "Creates a series and publishes its dates of the next 30 days; any active member, for an organization only one who may act for it.",
    "oldObject": {},
    "targets": [
     {
@@ -9381,7 +9418,7 @@
    "launch": "later",
    "confidence": "high",
    "missing": null,
-   "note": "`p_series`, `p_status`: active, paused or cancelled; the owner only.",
+   "note": "`p_series_id`, `p_status`: active, paused or ended; ending cancels every upcoming date and tells its registrants. The owner only.",
    "oldObject": {},
    "targets": [
     {
@@ -9992,7 +10029,7 @@
    "callSites": [
     {
      "file": "app/apps/mobile/src/services/featureFlagsComposition.ts",
-     "line": 9,
+     "line": 12,
      "symbol": "fetchRemoteFeatureFlags",
      "area": "mobile",
      "ops": [
