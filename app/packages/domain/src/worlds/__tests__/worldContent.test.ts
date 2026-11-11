@@ -4,6 +4,7 @@ import {
   isWorldContentEmpty,
   localizedWorldLabel,
   worldLinkListSlug,
+  worldSlugOfLinkList,
   type WorldLink,
 } from '../worldContent';
 
@@ -31,5 +32,7 @@ describe('world content', () => {
     expect(worldLinkListSlug('rides')).toBe('transport');
     expect(worldLinkListSlug('items')).toBeNull();
     expect(worldLinkListSlug('unknown')).toBeNull();
+    expect(worldSlugOfLinkList('transport')).toBe('rides');
+    expect(worldSlugOfLinkList('medical')).toBe('medical');
   });
 });

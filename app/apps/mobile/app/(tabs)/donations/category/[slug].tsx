@@ -7,15 +7,14 @@ import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import {
   DONATION_CATEGORY_SLUGS,
-  isWorldContentEmpty,
+  worldSlugOfLinkList,
   type DonationCategorySlug,
 } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import type { Ionicons } from '@expo/vector-icons';
 import { DonationLinksList } from '../../../../src/components/DonationLinksList';
 import { MedicalBodiesSection } from '../../../../src/components/MedicalBodiesSection';
-import { WorldContentSections } from '../../../../src/components/giving/WorldContentSections';
-import { useWorldContent } from '../../../../src/hooks/useWorldContent';
+import { WorldCuratedContent } from '../../../../src/components/giving/WorldCuratedContent';
 import { Screen } from '../../../../src/components/ui/Screen';
 import { IconTile } from '../../../../src/components/ui/IconTile';
 import { MotionEntry, ENTRY_DELAY } from '../../../../src/components/ui/MotionEntry';
@@ -96,8 +95,6 @@ export default function DonationCategoryScreen() {
   const { t } = useTranslation();
   const styles = useStyles();
   const tabBarPad = useShellTabBarScrollInset();
-  // A link-only world is its own "links and knowledge" screen: its list slug is its world slug.
-  const { content } = useWorldContent(typeof slug === 'string' ? slug : '');
 
   if (!isCategorySlug(slug) || slug === 'time' || slug === 'money') {
     return <Redirect href="/(tabs)/donations" />;
@@ -139,11 +136,9 @@ export default function DonationCategoryScreen() {
         </MotionEntry>
 
         {/* Curated organizations, related worlds and knowledge topics of the world (migration 0003). */}
-        {isWorldContentEmpty(content) ? null : (
-          <MotionEntry variant="bottom" delay={ENTRY_DELAY.section + 120}>
-            <WorldContentSections content={content} />
-          </MotionEntry>
-        )}
+        <MotionEntry variant="bottom" delay={ENTRY_DELAY.section + 120}>
+          <WorldCuratedContent worldSlug={worldSlugOfLinkList(slug)} />
+        </MotionEntry>
       </ScrollView>
     </Screen>
   );

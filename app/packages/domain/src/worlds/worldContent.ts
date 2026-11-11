@@ -62,6 +62,11 @@ const LINK_LIST_BY_WORLD: Readonly<Record<string, DonationCategorySlug>> = {
   challenges: 'challenges',
 };
 
+/** The world a community link list belongs to: the inverse of `worldLinkListSlug`. */
+export function worldSlugOfLinkList(listSlug: DonationCategorySlug): string {
+  return Object.keys(LINK_LIST_BY_WORLD).find((world) => LINK_LIST_BY_WORLD[world] === listSlug) ?? listSlug;
+}
+
 /** The community link list (`donation_link_categories.slug`) of a world, or null when it has none. */
 export function worldLinkListSlug(worldSlug: string): DonationCategorySlug | null {
   return LINK_LIST_BY_WORLD[worldSlug] ?? null;

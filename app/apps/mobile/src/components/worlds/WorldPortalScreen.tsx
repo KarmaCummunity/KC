@@ -1,16 +1,18 @@
 // D60 (docs/spec/04_product_structure.md): a world whose launch flag is off is
 // a portal — it is still shown in full, with its links and knowledge (the
-// FR-DONATE-006 links list) — instead of a "coming soon" dead end. The money
+// FR-DONATE-006 links list, then the curated organizations, related worlds and
+// knowledge topics) — instead of a "coming soon" dead end. The money
 // portal also keeps the support-KC card (FR-DONATE-011) and the jgive card (FR-DONATE-003).
 import React from 'react';
 import { ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import type { DonationCategorySlug } from '@kc/domain';
+import { worldSlugOfLinkList, type DonationCategorySlug } from '@kc/domain';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../ui/Screen';
 import { PrimaryButton } from '../ui/Buttons';
 import { DonationLinksList } from '../DonationLinksList';
+import { WorldCuratedContent } from '../giving/WorldCuratedContent';
 import { SupportKcCard } from '../money/SupportKcCard';
 import { PartnerNonprofitsCard } from '../money/PartnerNonprofitsCard';
 import { rtlTextAlignStart } from '../../lib/rtlTextAlignStart';
@@ -40,6 +42,8 @@ export function WorldPortalScreen({ categorySlug }: Readonly<{ categorySlug?: Do
           </>
         ) : null}
         {categorySlug ? <DonationLinksList categorySlug={categorySlug} /> : null}
+        {/* Organizations, related worlds and knowledge topics of the world (FR-FEED-020 AC7). */}
+        {categorySlug ? <WorldCuratedContent worldSlug={worldSlugOfLinkList(categorySlug)} /> : null}
         <View>
           <PrimaryButton
             label={t('donations.worldLaunch.backToHub')}

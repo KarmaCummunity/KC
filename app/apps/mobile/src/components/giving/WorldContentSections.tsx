@@ -67,7 +67,7 @@ export function WorldContentSections({ content }: { readonly content: WorldConte
               testID={`world-content-link-${link.linkSlug}`}
               title={localizedWorldLabel(link, language)}
               subtitle={link.description}
-              icon="arrow-forward-outline"
+              icon="chevron-back-outline"
               onPress={() => router.push(givingWorldHref(link.toWorldSlug))}
             />
           ))}
