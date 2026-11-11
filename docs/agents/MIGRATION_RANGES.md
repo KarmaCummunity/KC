@@ -137,12 +137,11 @@ Last applied on kc-dev when this was written: `0239`.
 | 0730–0739 | Events and organizations (G18) and the handoff fixes found on the way: `0730` organization registration and members (FR-ORG-002 first slice), `0731` event notifications, `0732` demo events on kc-dev, `0733` animal handoff pushes (`fix/animals-handoff-push`), `0734` ride expiry settles bookings (`fix/rides-expiry-settles-bookings`), `0735` an event's close earns no fulfilled karma, `0736` the end of an event lapses its requests and waitlist; `0737`–`0739` held | in progress |
 | 0740 | delivered listing visibility: union of the two surfaces, recipient via handoff, `recipients` row for food / animals / items hand-overs + backfill (D-229) | in progress |
 | 0741 | #2020 offer photo rule on the server (D132): commit-time check on new posts and deleted listing photos, `create_post_with_media` | in progress |
-| 0742 | #2096 `rpc_submit_support_issue` caps the description at 500 characters (FR-MOD-002 AC6) | in progress |
-| 0726–0729, 0743+ | — | free |
+| 0726–0729, 0742+ | — | free |
 
 ## Next free ranges
 
-`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0726–0729`, `0743+`.
+`0248–0249`, `0271–0279`, `0286–0299`, `0309`, `0310–0319`, `0404–0409`, `0414`, `0443–0444`, `0595–0599`, `0614–0619`, `0639`, `0640–0659`, `0726–0729`, `0742+`.
 
 ## How to claim
 

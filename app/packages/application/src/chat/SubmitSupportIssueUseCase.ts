@@ -20,7 +20,7 @@ export class SubmitSupportIssueUseCase {
   /**
    * Trims the description, checks its length bounds, then opens or resumes the support
    * thread with the report as a system message. The server (`rpc_submit_support_issue`)
-   * enforces the same bounds, so another client cannot bypass them.
+   * enforces the minimum; its matching maximum is held by the DB schema freeze (#2138).
    */
   async execute(input: SubmitSupportIssueInput): Promise<Chat> {
     const description = input.description.trim();

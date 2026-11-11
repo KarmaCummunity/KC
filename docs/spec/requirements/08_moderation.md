@@ -64,11 +64,11 @@ A user files a support / bug / feedback report from Settings, which becomes a ch
 - AC3. The system message contains a stable internal ID that lets the Super Admin reference the thread when replying or escalating.
 - AC4. The user is dropped onto the conversation screen after submission.
 - AC5. **No** auto-removal counter increments for this kind of report (it has no content target — `R-MVP-Privacy-4a`).
-- AC6. *(#2096)* The description is at most 500 characters after trim. The form stops typing at 500 and shows the count; the server refuses a longer one (`description_too_long`, `0742`), so no client can bypass it.
+- AC6. *(#2096)* The description is at most 500 characters after trim. The form stops typing at 500 and shows the count, and the app refuses a longer one (`description_too_long`). The server half (`rpc_submit_support_issue` refuses it too, so no client can bypass it) is held by the DB schema freeze until the production baseline cut-over (#2138).
 - AC7. *(#2096)* One tap burst files one report: Send is disabled below 10 characters and while a report is being sent, and a second tap before the screen updates is ignored. A failed send (network, server) explains itself in a dialog and keeps the category and the text for another try.
 - AC8. *(#2096)* The description hint sits on the reading-start edge of the app language (right in Hebrew, left in English) on iOS, Android and web; typed text follows its own language (`FR-RESP-006` AC21). The four categories show as an even two-by-two grid.
 
-**Related.** Screens: 6.1b · Domain: `Report` (with `target_type = none`) · Code: `app/settings/report-issue.tsx`, `src/components/settings/ReportIssueForm.tsx`, `src/hooks/useReportIssueSubmit.ts`, `rpc_submit_support_issue` (`0742`) · E2E: `tests/e2e/journeys/qa/report-issue.spec.ts`.
+**Related.** Screens: 6.1b · Domain: `Report` (with `target_type = none`) · Code: `app/settings/report-issue.tsx`, `src/components/settings/ReportIssueForm.tsx`, `src/hooks/useReportIssueSubmit.ts`, `rpc_submit_support_issue` · E2E: `tests/e2e/journeys/qa/report-issue.spec.ts`.
 
 ---
 
