@@ -3,9 +3,10 @@ import { defineWorldJourney } from '../lib/worldJourney';
 
 defineWorldJourney({
   world: 'items',
-  kindSlug: 'give_item',
+  kindSlug: 'item_offer',
+  publish: 'plain',
   titleHe: 'כיסא עץ למסירה',
   claim: { testId: 'giving-handoff-reserve', label: 'שריון הפריט', resultsIn: 'reserved' },
-  // Matches give_item detail_schema (0241); pickup_mode is a handoff column, not listing details.
-  details: () => ({ item_condition: 'Good', fulfillment_mode: 'owner_approval' }),
+  // A plain post: no detail row; pickup_mode is a handoff column.
+  details: () => ({}),
 });

@@ -3689,6 +3689,7 @@ export type Database = {
         Returns: undefined
       }
       api_my_pro_status: { Args: never; Returns: Json }
+      api_org_entitlement_status: { Args: { p_org_id: string }; Returns: Json }
       api_payment_method_save: {
         Args: {
           p_brand?: string
@@ -3707,8 +3708,21 @@ export type Database = {
         }
         Returns: string
       }
+      api_revenuecat_set_org_entitlement: {
+        Args: { p_active: boolean; p_expires_at: string; p_org_id: string }
+        Returns: Json
+      }
       api_revenuecat_set_pro: {
         Args: { p_active: boolean; p_expires_at: string; p_user_id: string }
+        Returns: Json
+      }
+      api_set_org_entitlement: {
+        Args: {
+          p_active: boolean
+          p_expires_at?: string
+          p_org_id: string
+          p_source?: string
+        }
         Returns: Json
       }
       api_set_pro_entitlement: {
