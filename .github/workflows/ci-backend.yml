@@ -62,19 +62,26 @@ jobs:
         continue-on-error: true
         run: |
           DB_URL="$(supabase status -o env | sed -n 's/^DB_URL="\(.*\)"$/\1/p')"
-          psql "$DB_URL" -Atc "select version()"
-          psql "$DB_URL" -Atc "select extname||' '||extversion from pg_extension order by 1" | tr '\n' ' '
-          psql "$DB_URL" -qc "drop database if exists probe_geo with (force)" -c "create database probe_geo"
-          U="$(node -e 'const u=new URL(process.argv[1]);u.pathname="/probe_geo";process.stdout.write(u.toString())' "$DB_URL")"
-          psql "$U" -v ON_ERROR_STOP=1 -q -f supabase/baseline/local/supabase_shim.sql
-          psql "$U" -v ON_ERROR_STOP=1 -q --single-transaction -f supabase/migrations/0001_baseline.sql
-          i=0
-          for probe in "select 1 from public.streets" "select 1 from public.road_junctions" "select 1 from public.search_places('ganim')"; do
-            i=$((i+1))
-            { head -65 supabase/tests/005_geo.sql; echo "select pg_temp.rows_as('anon', null, \$q\$${probe}\$q\$);"; } > /tmp/probe_$i.sql
-            echo "── probe $i: $probe"
-            psql "$U" -q -f /tmp/probe_$i.sql 2>&1 | tail -3 || true
-          done
+          U="${DB_URL%/*}/probe_geo"
+          psql "$DB_URL" -X -qc "drop database if exists probe_geo with (force)" -c "create database probe_geo"
+          psql "$U" -X -v ON_ERROR_STOP=1 -q -f supabase/baseline/local/supabase_shim.sql
+          psql "$U" -X -v ON_ERROR_STOP=1 -q --single-transaction -f supabase/migrations/0001_baseline.sql
+          psql "$U" -X -q -c "create function public.zz_a(p text) returns table(a text) language plpgsql stable set search_path = '' as \$\$ begin return query select p; end \$\$" \
+            -c "create function public.zz_b(p text) returns table(a text) language plpgsql stable as \$\$ begin return query select p; end \$\$" \
+            -c "create function public.zz_c(p text, k text[] default array['x'], l integer default 20) returns table(a text) language plpgsql stable set search_path = '' as \$\$ begin return query select p; end \$\$" \
+            -c "create function public.zz_d(p text) returns text language sql stable as 'select p'" \
+            -c "revoke execute on function public.zz_a(text), public.zz_b(text), public.zz_c(text,text[],integer), public.zz_d(text) from public, anon"
+          wait_db() { for _ in $(seq 1 30); do psql "$U" -X -Atc "select 1" >/dev/null 2>&1 && return 0; sleep 2; done; }
+          q() { echo "── $1"; psql "$U" -X -v ON_ERROR_STOP=0 -c "begin; set local role anon; $1; rollback" 2>&1 | tail -3; wait_db; }
+          q "select count(*) from public.zz_a('x')"
+          q "select count(*) from public.zz_b('x')"
+          q "select count(*) from public.zz_c('x')"
+          q "select public.zz_d('x')"
+          q "select count(*) from public.cities"
+          q "select count(*) from public.search_places('ganim', array['city'], 5)"
+          q "select count(*) from public.search_places('ganim')"
+          q "select public.set_onboarding_state('completed')"
+          q "select * from public.search_places('ganim')"
 
       - name: Migrations apply on an empty database + pgTAP tests + seed loaders
         run: scripts/run-baseline-tests.sh
