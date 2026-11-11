@@ -337,11 +337,9 @@ rpc('api_match_llm_store', 'changed', 'rpc:api_match_llm_store', 'Returns void (
 rpc('provider_webhook_apply', 'same', 'rpc:provider_webhook_apply', 'Signature unchanged; errors are stable snake_case messages.');
 rpc('api_revenuecat_set_pro', 'same', 'rpc:api_revenuecat_set_pro', 'Signature unchanged.');
 rpc('submit_public_research_response', 'same', 'rpc:submit_public_research_response', 'Signature unchanged.');
-rpc('rpc_request_account_deletion', 'renamed', 'rpc:request_account_deletion', 'Returns the purge date. It is granted to members, so the app can call it directly and the `delete-account` function is no longer needed.');
-table('research_secrets', 'changed', ['rpc:get_research_salt', 'rpc:rotate_research_salt'], 'The table is private: read the salt with `get_research_salt()`, rotate with `rotate_research_salt()` (service role).');
-table('payments', 'removed', null, 'Lives in the `billing` schema, not exposed. `receipts-issuer` is obsolete: the receipt is issued in the transaction that settles the payment (`kc_private.billing_receipt_issue`).');
-table('donation_receipts', 'removed', null, 'Same: `billing.receipts`, written by the database.');
-table('standing_orders', 'changed', 'rpc:api_standing_orders_charge_due', 'Lives in `billing`: the charger calls `api_standing_orders_charge_due(p_limit)`, which opens the due charges and returns them (amounts in agorot).');
+rpc('get_research_salt', 'same', 'rpc:get_research_salt', 'Service role only: the current hashing salt of the public research form (the `research_secrets` table is private).');
+rpc('rotate_research_salt', 'same', 'rpc:rotate_research_salt', 'Service role only: replaces the salt and returns the rotation time.');
+rpc('api_standing_orders_charge_due', 'same', 'rpc:api_standing_orders_charge_due', 'Service role only: opens the due charges of active standing orders (amounts in agorot) and returns them for the provider.');
 
 // ───────────────────────────── storage buckets
 bucket('post-images', 'same', 'bucket:post-images', 'Declared by the baseline (own-folder insert / delete policies); `post_media.storage_bucket` points at it.');
@@ -387,8 +385,8 @@ const AREA_TIER = {
   social: 'core', streets: 'core', translations: 'core', users: 'core', mobile: 'core',
   marketplace: 'wedge', rides: 'wedge', volunteering: 'wedge', matching: 'wedge', donations: 'wedge',
   housing: 'later', knowledge: 'later', challenges: 'later', payments: 'later', research: 'later', stats: 'later', survey: 'later',
-  'fn:delete-account': 'core', 'fn:purge-deleted-accounts': 'core', 'fn:translate': 'core', 'fn:strip-exif': 'core',
-  'fn:reconcile-storage-orphans': 'core', 'fn:backfill-image-thumbs': 'core', 'fn:mock-login': 'core',
+  'fn:purge-deleted-accounts': 'core', 'fn:translate': 'core', 'fn:strip-exif': 'core',
+  'fn:reconcile-storage-orphans': 'core', 'fn:backfill-image-thumbs': 'core',
   'fn:embed-worker': 'wedge', 'fn:match-rerank': 'wedge', 'fn:validate-donation-link': 'wedge',
 };
 const NAME_TIER = [
@@ -522,22 +520,22 @@ export const packages = [
 // verdict: keep (no database change) · retarget (same job, renamed objects) · rewrite · obsolete · park · done
 export const edgeFunctions = [
   { name: 'dispatch-notification', verdict: 'done', uses: 'kc_private.notifications_deliver_batch, notification_push_retry_batch, notification_push_settle (direct Postgres)', change: 'Already rewritten for the baseline.' },
-  { name: 'embed-worker', verdict: 'retarget', uses: 'embedding_jobs_claim, embedding_job_store, embedding_job_fail', change: 'Claimed job carries `post_id` instead of `listing_id`. Design §9 asks for queue consumption; the claim RPC already wraps it.' },
-  { name: 'match-rerank', verdict: 'retarget', uses: 'api_match_llm_pending, api_match_llm_store', change: '`api_match_llm_store` returns void and raises `match_not_found`.' },
-  { name: 'payments-webhook', verdict: 'keep', uses: 'provider_webhook_apply', change: 'Same call; map the new stable error messages to HTTP statuses.' },
-  { name: 'revenuecat-webhook', verdict: 'keep', uses: 'api_revenuecat_set_pro', change: 'None.' },
-  { name: 'public-research-submit', verdict: 'retarget', uses: 'research_secrets (select), submit_public_research_response', change: 'Read the salt with `get_research_salt()`; if the public page loads its questions, proxy `get_public_research_questions` (service role only).' },
-  { name: 'rotate-research-salt', verdict: 'retarget', uses: 'research_secrets (update)', change: 'Call `rotate_research_salt()`.' },
-  { name: 'translate', verdict: 'keep', uses: 'content_translations (select, insert, delete)', change: 'Same table with the service role; the key is (content_type, content_id, field, target_language), no `id`.' },
-  { name: 'validate-donation-link', verdict: 'retarget', uses: 'donation_links (select, insert, update), users (select)', change: '`tags`, `hidden_at`, `hidden_by` are gone; new links start in `review_status = pending`.' },
-  { name: 'delete-account', verdict: 'obsolete', uses: 'rpc_request_account_deletion', change: 'The app calls `request_account_deletion()` itself; delete the function and its invoke.' },
+  { name: 'embed-worker', verdict: 'done', uses: 'embedding_jobs_claim, embedding_job_store, embedding_job_fail', change: 'Retargeted: the claimed job carries `post_id`; the caller must present the service-role key itself (a JWT claiming the role is refused).' },
+  { name: 'match-rerank', verdict: 'done', uses: 'api_match_llm_pending, api_match_llm_store', change: 'Retargeted: a store of an unknown pair (`match_not_found`) counts as failed; service-role key only.' },
+  { name: 'payments-webhook', verdict: 'done', uses: 'provider_webhook_apply', change: 'Retargeted: the provider\'s HMAC-SHA256 signature is verified (secret `PAYMENTS_WEBHOOK_SECRET_<SLUG>`, fail closed), the provider\'s own event id is the idempotency key (never generated), and `verify_jwt` is off for it in `supabase/config.toml`.' },
+  { name: 'revenuecat-webhook', verdict: 'done', uses: 'api_revenuecat_set_pro', change: 'Verified against the baseline signature; no change.' },
+  { name: 'public-research-submit', verdict: 'done', uses: 'get_research_salt, submit_public_research_response', change: 'Retargeted: the salt comes from `get_research_salt()`; `invalid_input` maps to 400.' },
+  { name: 'rotate-research-salt', verdict: 'done', uses: 'rotate_research_salt', change: 'Retargeted: calls `rotate_research_salt()`; service-role key only.' },
+  { name: 'translate', verdict: 'done', uses: 'content_translations (select, insert, delete)', change: 'Retargeted: the source registry follows the cache\'s content types (`post`, `comment`, `message`, `user`) over `posts`, `post_comments`, `messages`, `users` keyed by `id`; `ride_listing` is gone (rides are posts).' },
+  { name: 'validate-donation-link', verdict: 'done', uses: 'donation_links (select, insert, update), get_my_admin_roles', change: 'Retargeted: new and edited links start in `review_status = pending`, the giving world is checked by the foreign key, the super-admin check reads the caller\'s roles; split into handler and SSRF guard.' },
+  { name: 'delete-account', verdict: 'obsolete', uses: 'none', change: 'Deleted: the app calls `request_account_deletion()` itself.' },
   { name: 'purge-deleted-accounts', verdict: 'rewrite', uses: 'accounts_due_for_purge, account_purge_media_paths, delete_account_data_for', change: 'None of the three is exposed. Rewrite like `dispatch-notification`: `kc_private.accounts_due_for_purge` over Postgres, media paths from `post_media`, storage removal, then `auth.admin.deleteUser` (foreign keys cascade; billing is detached by trigger).' },
-  { name: 'receipts-issuer', verdict: 'obsolete', uses: 'payments (select), donation_receipts (upsert)', change: 'Receipts are issued by the database when a payment settles (`kc_private.billing_receipt_issue`, gapless serial per organization).' },
-  { name: 'subscriptions-charger', verdict: 'rewrite', uses: 'standing_orders (select)', change: 'Call `api_standing_orders_charge_due(p_limit)`, charge each returned intent at the provider, and let `provider_webhook_apply` settle it.' },
+  { name: 'receipts-issuer', verdict: 'obsolete', uses: 'none', change: 'Deleted: the database issues the receipt when a payment settles.' },
+  { name: 'subscriptions-charger', verdict: 'done', uses: 'api_standing_orders_charge_due', change: 'Retargeted: opens the due charges through the RPC. No payment provider is integrated, so submission to the provider is a port that is not wired yet.' },
   { name: 'reconcile-storage-orphans', verdict: 'retarget', uses: 'media_assets (select), bucket post-images', change: 'Read `post_media.storage_key` (+ `storage_bucket`).' },
-  { name: 'strip-exif', verdict: 'keep', uses: 'bucket post-images', change: 'Storage only.' },
-  { name: 'backfill-image-thumbs', verdict: 'keep', uses: 'buckets passed at run time', change: 'Storage only; one-off tool, may be dropped after the cut-over.' },
-  { name: 'mock-login', verdict: 'obsolete', uses: 'users (upsert), admin_role_grants (select, insert)', change: 'Dev-only: moves to the dev seed scripts (design §9). It must never be deployed to kc-prod; clients cannot write either table in the baseline.' },
+  { name: 'strip-exif', verdict: 'done', uses: 'bucket post-images', change: 'Verified; storage only. Only its header comment changed.' },
+  { name: 'backfill-image-thumbs', verdict: 'done', uses: 'buckets passed at run time', change: 'Service-role key only (a JWT claiming the role is refused); buckets `post-images` and `avatars`; one-off tool, may be dropped after the cut-over.' },
+  { name: 'mock-login', verdict: 'obsolete', uses: 'none', change: 'Deleted: demo users are dev seed data (design §9).' },
   { name: 'whatsapp-webhook', verdict: 'park', uses: '8 api_whatsapp_* RPCs', change: 'No `integrations` objects yet (M22): not deployed at launch.' },
   { name: 'whatsapp-intake-worker', verdict: 'park', uses: 'api_bot_* and api_whatsapp_llm_budget_take', change: 'Same (M22).' },
   { name: 'whatsapp-sender', verdict: 'park', uses: 'whatsapp_channel_config, api_whatsapp_outbound_*', change: 'Same (M22).' },

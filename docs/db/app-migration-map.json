@@ -2,19 +2,19 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 260,
-   "same": 70,
-   "renamed": 28,
+   "objects": 262,
+   "same": 73,
+   "renamed": 27,
    "changed": 93,
    "removed": 7,
    "missing": 62
   },
   "table": {
-   "objects": 62,
+   "objects": 58,
    "same": 27,
    "renamed": 2,
-   "changed": 27,
-   "removed": 2,
+   "changed": 25,
+   "removed": 0,
    "missing": 4
   },
   "bucket": {
@@ -44,19 +44,19 @@
  },
  "launchTotals": {
   "core": {
-   "objects": 104,
+   "objects": 103,
    "same": 85,
-   "renamed": 2,
+   "renamed": 1,
    "changed": 17,
    "removed": 0,
    "missing": 0
   },
   "later": {
-   "objects": 132,
-   "same": 16,
+   "objects": 131,
+   "same": 19,
    "renamed": 4,
-   "changed": 43,
-   "removed": 3,
+   "changed": 41,
+   "removed": 1,
    "missing": 66
   },
   "wedge": {
@@ -139,13 +139,6 @@
    "removed": 0,
    "missing": 0
   },
-  "fn:delete-account": {
-   "callSites": 1,
-   "oneToOne": 1,
-   "changed": 0,
-   "removed": 0,
-   "missing": 0
-  },
   "fn:embed-worker": {
    "callSites": 3,
    "oneToOne": 3,
@@ -160,13 +153,6 @@
    "removed": 0,
    "missing": 0
   },
-  "fn:mock-login": {
-   "callSites": 3,
-   "oneToOne": 0,
-   "changed": 3,
-   "removed": 0,
-   "missing": 0
-  },
   "fn:payments-webhook": {
    "callSites": 1,
    "oneToOne": 1,
@@ -176,16 +162,9 @@
   },
   "fn:public-research-submit": {
    "callSites": 2,
-   "oneToOne": 1,
-   "changed": 1,
-   "removed": 0,
-   "missing": 0
-  },
-  "fn:receipts-issuer": {
-   "callSites": 2,
-   "oneToOne": 0,
+   "oneToOne": 2,
    "changed": 0,
-   "removed": 2,
+   "removed": 0,
    "missing": 0
   },
   "fn:revenuecat-webhook": {
@@ -197,8 +176,8 @@
   },
   "fn:rotate-research-salt": {
    "callSites": 1,
-   "oneToOne": 0,
-   "changed": 1,
+   "oneToOne": 1,
+   "changed": 0,
    "removed": 0,
    "missing": 0
   },
@@ -211,8 +190,8 @@
   },
   "fn:subscriptions-charger": {
    "callSites": 1,
-   "oneToOne": 0,
-   "changed": 1,
+   "oneToOne": 1,
+   "changed": 0,
    "removed": 0,
    "missing": 0
   },
@@ -225,8 +204,8 @@
   },
   "fn:validate-donation-link": {
    "callSites": 5,
-   "oneToOne": 0,
-   "changed": 5,
+   "oneToOne": 1,
+   "changed": 4,
    "removed": 0,
    "missing": 0
   },
@@ -933,8 +912,7 @@
    "degrade": "Workers fail closed: a worker that cannot reach its function logs and exits; the app is unaffected (no embedding → no matches yet; no purge → accounts stay deactivated).",
    "risks": "No file shared with the app packages. **Launch line: after P6 the app is shippable on the new database.**",
    "rows": [
-    "table:users",
-    "table:admin_role_grants",
+    "rpc:get_my_admin_roles",
     "table:donation_links",
     "table:content_translations",
     "rpc:embedding_jobs_claim",
@@ -942,14 +920,13 @@
     "rpc:embedding_job_fail",
     "rpc:api_match_llm_pending",
     "rpc:api_match_llm_store",
-    "rpc:rpc_request_account_deletion",
     "bucket:post-images",
     "bucket:<bucket>"
    ],
    "counts": {
-    "objects": 12,
+    "objects": 10,
     "oneToOne": 6,
-    "changed": 6,
+    "changed": 4,
     "removed": 0,
     "missing": 0
    }
@@ -1146,15 +1123,13 @@
     "rpc:finance_donors_summary",
     "rpc:provider_webhook_apply",
     "rpc:api_revenuecat_set_pro",
-    "table:payments",
-    "table:donation_receipts",
-    "table:standing_orders"
+    "rpc:api_standing_orders_charge_due"
    ],
    "counts": {
-    "objects": 33,
-    "oneToOne": 6,
-    "changed": 21,
-    "removed": 3,
+    "objects": 31,
+    "oneToOne": 7,
+    "changed": 20,
+    "removed": 1,
     "missing": 3
    }
   },
@@ -1195,13 +1170,14 @@
     "rpc:admin_user_feedback_list",
     "rpc:get_public_research_questions",
     "rpc:submit_public_research_response",
-    "table:research_secrets",
+    "rpc:get_research_salt",
+    "rpc:rotate_research_salt",
     "edge_function:public-research-submit"
    ],
    "counts": {
-    "objects": 13,
-    "oneToOne": 4,
-    "changed": 4,
+    "objects": 14,
+    "oneToOne": 6,
+    "changed": 3,
     "removed": 0,
     "missing": 5
    }
@@ -1335,57 +1311,57 @@
   },
   {
    "name": "embed-worker",
-   "verdict": "retarget",
+   "verdict": "done",
    "uses": "embedding_jobs_claim, embedding_job_store, embedding_job_fail",
-   "change": "Claimed job carries `post_id` instead of `listing_id`. Design §9 asks for queue consumption; the claim RPC already wraps it."
+   "change": "Retargeted: the claimed job carries `post_id`; the caller must present the service-role key itself (a JWT claiming the role is refused)."
   },
   {
    "name": "match-rerank",
-   "verdict": "retarget",
+   "verdict": "done",
    "uses": "api_match_llm_pending, api_match_llm_store",
-   "change": "`api_match_llm_store` returns void and raises `match_not_found`."
+   "change": "Retargeted: a store of an unknown pair (`match_not_found`) counts as failed; service-role key only."
   },
   {
    "name": "payments-webhook",
-   "verdict": "keep",
+   "verdict": "done",
    "uses": "provider_webhook_apply",
-   "change": "Same call; map the new stable error messages to HTTP statuses."
+   "change": "Retargeted: the provider's HMAC-SHA256 signature is verified (secret `PAYMENTS_WEBHOOK_SECRET_<SLUG>`, fail closed), the provider's own event id is the idempotency key (never generated), and `verify_jwt` is off for it in `supabase/config.toml`."
   },
   {
    "name": "revenuecat-webhook",
-   "verdict": "keep",
+   "verdict": "done",
    "uses": "api_revenuecat_set_pro",
-   "change": "None."
+   "change": "Verified against the baseline signature; no change."
   },
   {
    "name": "public-research-submit",
-   "verdict": "retarget",
-   "uses": "research_secrets (select), submit_public_research_response",
-   "change": "Read the salt with `get_research_salt()`; if the public page loads its questions, proxy `get_public_research_questions` (service role only)."
+   "verdict": "done",
+   "uses": "get_research_salt, submit_public_research_response",
+   "change": "Retargeted: the salt comes from `get_research_salt()`; `invalid_input` maps to 400."
   },
   {
    "name": "rotate-research-salt",
-   "verdict": "retarget",
-   "uses": "research_secrets (update)",
-   "change": "Call `rotate_research_salt()`."
+   "verdict": "done",
+   "uses": "rotate_research_salt",
+   "change": "Retargeted: calls `rotate_research_salt()`; service-role key only."
   },
   {
    "name": "translate",
-   "verdict": "keep",
+   "verdict": "done",
    "uses": "content_translations (select, insert, delete)",
-   "change": "Same table with the service role; the key is (content_type, content_id, field, target_language), no `id`."
+   "change": "Retargeted: the source registry follows the cache's content types (`post`, `comment`, `message`, `user`) over `posts`, `post_comments`, `messages`, `users` keyed by `id`; `ride_listing` is gone (rides are posts)."
   },
   {
    "name": "validate-donation-link",
-   "verdict": "retarget",
-   "uses": "donation_links (select, insert, update), users (select)",
-   "change": "`tags`, `hidden_at`, `hidden_by` are gone; new links start in `review_status = pending`."
+   "verdict": "done",
+   "uses": "donation_links (select, insert, update), get_my_admin_roles",
+   "change": "Retargeted: new and edited links start in `review_status = pending`, the giving world is checked by the foreign key, the super-admin check reads the caller's roles; split into handler and SSRF guard."
   },
   {
    "name": "delete-account",
    "verdict": "obsolete",
-   "uses": "rpc_request_account_deletion",
-   "change": "The app calls `request_account_deletion()` itself; delete the function and its invoke."
+   "uses": "none",
+   "change": "Deleted: the app calls `request_account_deletion()` itself."
   },
   {
    "name": "purge-deleted-accounts",
@@ -1396,14 +1372,14 @@
   {
    "name": "receipts-issuer",
    "verdict": "obsolete",
-   "uses": "payments (select), donation_receipts (upsert)",
-   "change": "Receipts are issued by the database when a payment settles (`kc_private.billing_receipt_issue`, gapless serial per organization)."
+   "uses": "none",
+   "change": "Deleted: the database issues the receipt when a payment settles."
   },
   {
    "name": "subscriptions-charger",
-   "verdict": "rewrite",
-   "uses": "standing_orders (select)",
-   "change": "Call `api_standing_orders_charge_due(p_limit)`, charge each returned intent at the provider, and let `provider_webhook_apply` settle it."
+   "verdict": "done",
+   "uses": "api_standing_orders_charge_due",
+   "change": "Retargeted: opens the due charges through the RPC. No payment provider is integrated, so submission to the provider is a port that is not wired yet."
   },
   {
    "name": "reconcile-storage-orphans",
@@ -1413,21 +1389,21 @@
   },
   {
    "name": "strip-exif",
-   "verdict": "keep",
+   "verdict": "done",
    "uses": "bucket post-images",
-   "change": "Storage only."
+   "change": "Verified; storage only. Only its header comment changed."
   },
   {
    "name": "backfill-image-thumbs",
-   "verdict": "keep",
+   "verdict": "done",
    "uses": "buckets passed at run time",
-   "change": "Storage only; one-off tool, may be dropped after the cut-over."
+   "change": "Service-role key only (a JWT claiming the role is refused); buckets `post-images` and `avatars`; one-off tool, may be dropped after the cut-over."
   },
   {
    "name": "mock-login",
    "verdict": "obsolete",
-   "uses": "users (upsert), admin_role_grants (select, insert)",
-   "change": "Dev-only: moves to the dev seed scripts (design §9). It must never be deployed to kc-prod; clients cannot write either table in the baseline."
+   "uses": "none",
+   "change": "Deleted: demo users are dev seed data (design §9)."
   },
   {
    "name": "whatsapp-webhook",
@@ -1470,13 +1446,13 @@
    "callSites": [
     {
      "file": "supabase/functions/backfill-image-thumbs/index.ts",
-     "line": 196,
+     "line": 180,
      "symbol": "recordError",
      "area": "fn:backfill-image-thumbs"
     },
     {
      "file": "supabase/functions/backfill-image-thumbs/index.ts",
-     "line": 210,
+     "line": 194,
      "symbol": "recordError",
      "area": "fn:backfill-image-thumbs"
     }
@@ -1651,19 +1627,19 @@
     },
     {
      "file": "supabase/functions/strip-exif/index.ts",
-     "line": 111,
+     "line": 112,
      "symbol": "listRecentPaths",
      "area": "fn:strip-exif"
     },
     {
      "file": "supabase/functions/strip-exif/index.ts",
-     "line": 169,
+     "line": 170,
      "symbol": "serve",
      "area": "fn:strip-exif"
     },
     {
      "file": "supabase/functions/strip-exif/index.ts",
-     "line": 179,
+     "line": 180,
      "symbol": "serve",
      "area": "fn:strip-exif"
     }
@@ -3762,7 +3738,7 @@
    "callSites": [
     {
      "file": "supabase/functions/match-rerank/handler.ts",
-     "line": 46,
+     "line": 30,
      "symbol": "createRerankHandler",
      "area": "fn:match-rerank"
     }
@@ -3807,7 +3783,7 @@
    "callSites": [
     {
      "file": "supabase/functions/match-rerank/handler.ts",
-     "line": 63,
+     "line": 47,
      "symbol": "pairs",
      "area": "fn:match-rerank"
     }
@@ -3846,6 +3822,38 @@
      "line": 43,
      "symbol": "createRevenueCatHandler",
      "area": "fn:revenuecat-webhook"
+    }
+   ]
+  },
+  {
+   "old": "api_standing_orders_charge_due",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Service role only: opens the due charges of active standing orders (amounts in agorot) and returns them for the provider.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "api_standing_orders_charge_due",
+     "source": "85_billing/080_provider_events.sql:104",
+     "signature": [
+      "api_standing_orders_charge_due(p_limit?: number) → { amount_agorot: number intent_id: string mandate_ref: string standing_order_id: string }[]"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:subscriptions-charger"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/subscriptions-charger/index.ts",
+     "line": 18,
+     "symbol": "openDueCharges",
+     "area": "fn:subscriptions-charger"
     }
    ]
   },
@@ -6889,7 +6897,7 @@
    "callSites": [
     {
      "file": "supabase/functions/embed-worker/handler.ts",
-     "line": 82,
+     "line": 71,
      "symbol": "jobs",
      "area": "fn:embed-worker"
     }
@@ -6930,7 +6938,7 @@
    "callSites": [
     {
      "file": "supabase/functions/embed-worker/handler.ts",
-     "line": 76,
+     "line": 65,
      "symbol": "jobs",
      "area": "fn:embed-worker"
     }
@@ -6966,7 +6974,7 @@
    "callSites": [
     {
      "file": "supabase/functions/embed-worker/handler.ts",
-     "line": 68,
+     "line": 57,
      "symbol": "createEmbedWorkerHandler",
      "area": "fn:embed-worker"
     }
@@ -8000,7 +8008,8 @@
     }
    ],
    "areas": [
-    "admin"
+    "admin",
+    "fn:validate-donation-link"
    ],
    "callSites": [
     {
@@ -8008,6 +8017,12 @@
      "line": 15,
      "symbol": "fetchMyAdminRoles",
      "area": "admin"
+    },
+    {
+     "file": "supabase/functions/validate-donation-link/index.ts",
+     "line": 58,
+     "symbol": "authenticate",
+     "area": "fn:validate-donation-link"
     }
    ]
   },
@@ -8116,6 +8131,38 @@
      "line": 94,
      "symbol": "SupabasePublicResearchRepository.loadBundle",
      "area": "research"
+    }
+   ]
+  },
+  {
+   "old": "get_research_salt",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Service role only: the current hashing salt of the public research form (the `research_secrets` table is private).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "get_research_salt",
+     "source": "90_research/030_public_research.sql:79",
+     "signature": [
+      "get_research_salt() → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:public-research-submit"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/public-research-submit/index.ts",
+     "line": 21,
+     "symbol": "getSalt",
+     "area": "fn:public-research-submit"
     }
    ]
   },
@@ -10857,8 +10904,8 @@
    "callSites": [
     {
      "file": "supabase/functions/payments-webhook/index.ts",
-     "line": 19,
-     "symbol": "serve",
+     "line": 23,
+     "symbol": "apply",
      "area": "fn:payments-webhook"
     }
    ]
@@ -11972,6 +12019,38 @@
    ]
   },
   {
+   "old": "rotate_research_salt",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "later",
+   "confidence": "high",
+   "missing": null,
+   "note": "Service role only: replaces the salt and returns the rotation time.",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "rotate_research_salt",
+     "source": "90_research/030_public_research.sql:64",
+     "signature": [
+      "rotate_research_salt() → string"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "fn:rotate-research-salt"
+   ],
+   "callSites": [
+    {
+     "file": "supabase/functions/rotate-research-salt/index.ts",
+     "line": 17,
+     "symbol": "rotate",
+     "area": "fn:rotate-research-salt"
+    }
+   ]
+  },
+  {
    "old": "rpc_match_refresh_mine",
    "kind": "rpc",
    "status": "removed",
@@ -12124,55 +12203,6 @@
      "line": 69,
      "symbol": "SupabaseOrgTransparencyRepository.getPublic",
      "area": "admin"
-    }
-   ]
-  },
-  {
-   "old": "rpc_request_account_deletion",
-   "kind": "rpc",
-   "status": "renamed",
-   "launch": "core",
-   "confidence": "high",
-   "missing": null,
-   "note": "Returns the purge date. It is granted to members, so the app can call it directly and the `delete-account` function is no longer needed.",
-   "oldObject": {
-    "signature": [
-     "rpc_request_account_deletion() → string"
-    ]
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "request_account_deletion",
-     "source": "10_identity/090_account_rpcs.sql:103",
-     "signature": [
-      "request_account_deletion() → string"
-     ],
-     "errors": [
-      {
-       "code": "suspended",
-       "knownToApp": true
-      },
-      {
-       "code": "unauthenticated",
-       "knownToApp": true
-      },
-      {
-       "code": "user_not_found",
-       "knownToApp": true
-      }
-     ]
-    }
-   ],
-   "areas": [
-    "fn:delete-account"
-   ],
-   "callSites": [
-    {
-     "file": "supabase/functions/delete-account/index.ts",
-     "line": 34,
-     "symbol": "handler",
-     "area": "fn:delete-account"
     }
    ]
   },
@@ -13568,8 +13598,8 @@
    "callSites": [
     {
      "file": "supabase/functions/public-research-submit/index.ts",
-     "line": 187,
-     "symbol": "mapRpcError",
+     "line": 26,
+     "symbol": "submit",
      "area": "fn:public-research-submit"
     }
    ]
@@ -14053,7 +14083,6 @@
    ],
    "areas": [
     "admin",
-    "fn:mock-login",
     "moderation"
    ],
    "callSites": [
@@ -14073,24 +14102,6 @@
      "area": "moderation",
      "ops": [
       "select"
-     ]
-    },
-    {
-     "file": "supabase/functions/mock-login/ensureUser.ts",
-     "line": 91,
-     "symbol": "ensureAdminGrant",
-     "area": "fn:mock-login",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "supabase/functions/mock-login/ensureUser.ts",
-     "line": 98,
-     "symbol": "ensureAdminGrant",
-     "area": "fn:mock-login",
-     "ops": [
-      "insert"
      ]
     }
    ]
@@ -14763,8 +14774,8 @@
     },
     {
      "file": "supabase/functions/validate-donation-link/index.ts",
-     "line": 274,
-     "symbol": "displayName",
+     "line": 23,
+     "symbol": "find",
      "area": "fn:validate-donation-link",
      "ops": [
       "select"
@@ -14772,8 +14783,8 @@
     },
     {
      "file": "supabase/functions/validate-donation-link/index.ts",
-     "line": 298,
-     "symbol": "displayName",
+     "line": 28,
+     "symbol": "update",
      "area": "fn:validate-donation-link",
      "ops": [
       "select",
@@ -14782,8 +14793,8 @@
     },
     {
      "file": "supabase/functions/validate-donation-link/index.ts",
-     "line": 318,
-     "symbol": "displayName",
+     "line": 34,
+     "symbol": "countSince",
      "area": "fn:validate-donation-link",
      "ops": [
       "select"
@@ -14791,48 +14802,12 @@
     },
     {
      "file": "supabase/functions/validate-donation-link/index.ts",
-     "line": 330,
-     "symbol": "displayName",
+     "line": 42,
+     "symbol": "insert",
      "area": "fn:validate-donation-link",
      "ops": [
       "select",
       "insert"
-     ]
-    }
-   ]
-  },
-  {
-   "old": "donation_receipts",
-   "kind": "table",
-   "status": "removed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Same: `billing.receipts`, written by the database.",
-   "oldObject": {
-    "columns": [
-     "issued_at",
-     "org_id",
-     "payload",
-     "payment_id",
-     "receipt_id",
-     "section46_serial",
-     "user_id"
-    ],
-    "isView": false
-   },
-   "targets": [],
-   "areas": [
-    "fn:receipts-issuer"
-   ],
-   "callSites": [
-    {
-     "file": "supabase/functions/receipts-issuer/index.ts",
-     "line": 33,
-     "symbol": "serve",
-     "area": "fn:receipts-issuer",
-     "ops": [
-      "upsert"
      ]
     }
    ]
@@ -16058,46 +16033,6 @@
    ]
   },
   {
-   "old": "payments",
-   "kind": "table",
-   "status": "removed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Lives in the `billing` schema, not exposed. `receipts-issuer` is obsolete: the receipt is issued in the transaction that settles the payment (`kc_private.billing_receipt_issue`).",
-   "oldObject": {
-    "columns": [
-     "amount_ils",
-     "created_at",
-     "idempotency_key",
-     "intent_id",
-     "method_id",
-     "org_id",
-     "payment_id",
-     "provider_id",
-     "provider_ref",
-     "status",
-     "user_id"
-    ],
-    "isView": false
-   },
-   "targets": [],
-   "areas": [
-    "fn:receipts-issuer"
-   ],
-   "callSites": [
-    {
-     "file": "supabase/functions/receipts-issuer/index.ts",
-     "line": 21,
-     "symbol": "serve",
-     "area": "fn:receipts-issuer",
-     "ops": [
-      "select"
-     ]
-    }
-   ]
-  },
-  {
    "old": "post_actor_identity",
    "kind": "table",
    "status": "changed",
@@ -17145,67 +17080,6 @@
    ]
   },
   {
-   "old": "research_secrets",
-   "kind": "table",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "The table is private: read the salt with `get_research_salt()`, rotate with `rotate_research_salt()` (service role).",
-   "oldObject": {
-    "columns": [
-     "key",
-     "rotated_at",
-     "value"
-    ],
-    "isView": false
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "get_research_salt",
-     "source": "90_research/030_public_research.sql:79",
-     "signature": [
-      "get_research_salt() → string"
-     ],
-     "errors": []
-    },
-    {
-     "type": "rpc",
-     "name": "rotate_research_salt",
-     "source": "90_research/030_public_research.sql:64",
-     "signature": [
-      "rotate_research_salt() → string"
-     ],
-     "errors": []
-    }
-   ],
-   "areas": [
-    "fn:public-research-submit",
-    "fn:rotate-research-salt"
-   ],
-   "callSites": [
-    {
-     "file": "supabase/functions/public-research-submit/index.ts",
-     "line": 145,
-     "symbol": "mapRpcError",
-     "area": "fn:public-research-submit",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "supabase/functions/rotate-research-salt/index.ts",
-     "line": 99,
-     "symbol": "isAuthorized",
-     "area": "fn:rotate-research-salt",
-     "ops": [
-      "update"
-     ]
-    }
-   ]
-  },
-  {
    "old": "ride_emergency_events",
    "kind": "table",
    "status": "changed",
@@ -18095,57 +17969,6 @@
    ]
   },
   {
-   "old": "standing_orders",
-   "kind": "table",
-   "status": "changed",
-   "launch": "later",
-   "confidence": "high",
-   "missing": null,
-   "note": "Lives in `billing`: the charger calls `api_standing_orders_charge_due(p_limit)`, which opens the due charges and returns them (amounts in agorot).",
-   "oldObject": {
-    "columns": [
-     "amount_ils",
-     "cadence",
-     "cancelled_at",
-     "created_at",
-     "idempotency_key",
-     "next_charge_at",
-     "order_id",
-     "org_id",
-     "provider_id",
-     "provider_ref",
-     "status",
-     "user_id"
-    ],
-    "isView": false
-   },
-   "targets": [
-    {
-     "type": "rpc",
-     "name": "api_standing_orders_charge_due",
-     "source": "85_billing/080_provider_events.sql:104",
-     "signature": [
-      "api_standing_orders_charge_due(p_limit?: number) → { amount_agorot: number intent_id: string mandate_ref: string standing_order_id: string }[]"
-     ],
-     "errors": []
-    }
-   ],
-   "areas": [
-    "fn:subscriptions-charger"
-   ],
-   "callSites": [
-    {
-     "file": "supabase/functions/subscriptions-charger/index.ts",
-     "line": 18,
-     "symbol": "serve",
-     "area": "fn:subscriptions-charger",
-     "ops": [
-      "select"
-     ]
-    }
-   ]
-  },
-  {
    "old": "streets",
    "kind": "table",
    "status": "changed",
@@ -18749,8 +18572,6 @@
    "areas": [
     "admin",
     "chat",
-    "fn:mock-login",
-    "fn:validate-donation-link",
     "posts",
     "reports",
     "search",
@@ -18906,24 +18727,6 @@
      "line": 93,
      "symbol": "fetchUserBy",
      "area": "users",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "supabase/functions/mock-login/ensureUser.ts",
-     "line": 82,
-     "symbol": "ensurePublicUserRow",
-     "area": "fn:mock-login",
-     "ops": [
-      "upsert"
-     ]
-    },
-    {
-     "file": "supabase/functions/validate-donation-link/index.ts",
-     "line": 285,
-     "symbol": "displayName",
-     "area": "fn:validate-donation-link",
      "ops": [
       "select"
      ]

@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 260 | 70 | 28 | 93 | 7 | 62 |
-| Tables and views | 62 | 27 | 2 | 27 | 2 | 4 |
+| RPCs | 262 | 73 | 27 | 93 | 7 | 62 |
+| Tables and views | 58 | 27 | 2 | 25 | 0 | 4 |
 | Storage buckets | 5 | 3 | 0 | 2 | 0 | 0 |
 | Realtime channels | 6 | 6 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 3 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | 336 | 109 | 30 | 122 | 9 | 66 |
+| **Total** | 334 | 112 | 29 | 120 | 7 | 66 |
 
 ### Launch scope
 
@@ -21,10 +21,10 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 
 | Launch tier | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| core | 104 | 85 | 2 | 17 | 0 | 0 |
+| core | 103 | 85 | 1 | 17 | 0 | 0 |
 | wedge | 100 | 8 | 24 | 62 | 6 | 0 |
-| later | 132 | 16 | 4 | 43 | 3 | 66 |
-| **Launch-critical (core + wedge)** | 204 | 93 | 26 | 79 | 6 | 0 |
+| later | 131 | 19 | 4 | 41 | 1 | 66 |
+| **Launch-critical (core + wedge)** | 203 | 93 | 25 | 79 | 6 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
 
@@ -74,19 +74,16 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `apps/mobile` (direct calls outside the adapters) | 22 | 14 | 5 | 0 | 3 |
 | Edge Function `_shared` | 11 | 0 | 0 | 0 | 11 |
 | Edge Function `backfill-image-thumbs` | 2 | 0 | 2 | 0 | 0 |
-| Edge Function `delete-account` | 1 | 1 | 0 | 0 | 0 |
 | Edge Function `embed-worker` | 3 | 3 | 0 | 0 | 0 |
 | Edge Function `match-rerank` | 2 | 1 | 1 | 0 | 0 |
-| Edge Function `mock-login` | 3 | 0 | 3 | 0 | 0 |
 | Edge Function `payments-webhook` | 1 | 1 | 0 | 0 | 0 |
-| Edge Function `public-research-submit` | 2 | 1 | 1 | 0 | 0 |
-| Edge Function `receipts-issuer` | 2 | 0 | 0 | 2 | 0 |
+| Edge Function `public-research-submit` | 2 | 2 | 0 | 0 | 0 |
 | Edge Function `revenuecat-webhook` | 1 | 1 | 0 | 0 | 0 |
-| Edge Function `rotate-research-salt` | 1 | 0 | 1 | 0 | 0 |
+| Edge Function `rotate-research-salt` | 1 | 1 | 0 | 0 | 0 |
 | Edge Function `strip-exif` | 3 | 3 | 0 | 0 | 0 |
-| Edge Function `subscriptions-charger` | 1 | 0 | 1 | 0 | 0 |
+| Edge Function `subscriptions-charger` | 1 | 1 | 0 | 0 | 0 |
 | Edge Function `translate` | 3 | 0 | 3 | 0 | 0 |
-| Edge Function `validate-donation-link` | 5 | 0 | 5 | 0 | 0 |
+| Edge Function `validate-donation-link` | 5 | 1 | 4 | 0 | 0 |
 | Edge Function `whatsapp-intake-worker` | 5 | 0 | 0 | 0 | 5 |
 | Edge Function `whatsapp-sender` | 1 | 0 | 0 | 0 | 1 |
 | Edge Function `whatsapp-webhook` | 10 | 0 | 0 | 0 | 10 |
@@ -637,15 +634,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `<bucket>` (bucket) | core | CHANGED | bucket `post-images` | `backfill-image-thumbs` loops over a bucket list passed at run time; after the cut-over the list is `post-images` (plus `avatars` and `chat-media`). |  | medium | index.ts:196, index.ts:210 |
-
-### Edge Function `delete-account`
-
-1 call sites: 1 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
-
-| Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `rpc_request_account_deletion` | core | 1:1 (renamed) | `request_account_deletion() → string` | Returns the purge date. It is granted to members, so the app can call it directly and the `delete-account` function is no longer needed. | `suspended`, `unauthenticated`, `user_not_found` | high | index.ts:34 |
+| `<bucket>` (bucket) | core | CHANGED | bucket `post-images` | `backfill-image-thumbs` loops over a bucket list passed at run time; after the cut-over the list is `post-images` (plus `avatars` and `chat-media`). |  | medium | index.ts:180, index.ts:194 |
 
 ### Edge Function `embed-worker`
 
@@ -653,9 +642,9 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `embedding_job_fail` | wedge | 1:1 | `embedding_job_fail(p_error: string, p_job_id: string) → undefined` | Signature unchanged. |  | high | handler.ts:82 |
-| `embedding_job_store` | wedge | 1:1 | `embedding_job_store(p_embedding: string, p_job_id: string, p_model: string) → boolean` | Signature unchanged. | `embedding_job_not_found` † | high | handler.ts:76 |
-| `embedding_jobs_claim` | wedge | 1:1 (renamed) | `embedding_jobs_claim(p_limit?: number) → { details: Json job_id: string model: string post_id: string summary: string title: string }[]` | Returned `listing_id` → `post_id`. |  | high | handler.ts:68 |
+| `embedding_job_fail` | wedge | 1:1 | `embedding_job_fail(p_error: string, p_job_id: string) → undefined` | Signature unchanged. |  | high | handler.ts:71 |
+| `embedding_job_store` | wedge | 1:1 | `embedding_job_store(p_embedding: string, p_job_id: string, p_model: string) → boolean` | Signature unchanged. | `embedding_job_not_found` † | high | handler.ts:65 |
+| `embedding_jobs_claim` | wedge | 1:1 (renamed) | `embedding_jobs_claim(p_limit?: number) → { details: Json job_id: string model: string post_id: string summary: string title: string }[]` | Returned `listing_id` → `post_id`. |  | high | handler.ts:57 |
 
 ### Edge Function `match-rerank`
 
@@ -663,17 +652,8 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `api_match_llm_pending` | wedge | 1:1 | `api_match_llm_pending(p_limit?: number) → { candidate_id: string offer_summary: string offer_title: string request_summary: string request_title: string score: number world_slug: string }[]` | Signature unchanged. |  | high | handler.ts:46 |
-| `api_match_llm_store` | wedge | CHANGED | `api_match_llm_store(p_candidate_id: string, p_reason: string, p_score: number) → undefined` | Returns void (was boolean): an unknown pair raises `match_not_found`. | `invalid_input`, `match_not_found` † | high | handler.ts:63 |
-
-### Edge Function `mock-login`
-
-3 call sites: 0 map 1:1, 3 need logic changes, 0 removed, 0 MISSING.
-
-| Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `admin_role_grants` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | ensureUser.ts:91, ensureUser.ts:98 |
-| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | ensureUser.ts:82 |
+| `api_match_llm_pending` | wedge | 1:1 | `api_match_llm_pending(p_limit?: number) → { candidate_id: string offer_summary: string offer_title: string request_summary: string request_title: string score: number world_slug: string }[]` | Signature unchanged. |  | high | handler.ts:30 |
+| `api_match_llm_store` | wedge | CHANGED | `api_match_llm_store(p_candidate_id: string, p_reason: string, p_score: number) → undefined` | Returns void (was boolean): an unknown pair raises `match_not_found`. | `invalid_input`, `match_not_found` † | high | handler.ts:47 |
 
 ### Edge Function `payments-webhook`
 
@@ -681,25 +661,16 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `provider_webhook_apply` | later | 1:1 | `provider_webhook_apply(p_event_id: string, p_payload: Json, p_provider_slug: string) → string` | Signature unchanged; errors are stable snake_case messages. | `amount_mismatch` †, `intent_not_found` †, `intent_not_payable` †, `payment_not_found` †, `payout_not_found` †, `refund_not_found` †, `unknown_event_type` † | high | index.ts:19 |
+| `provider_webhook_apply` | later | 1:1 | `provider_webhook_apply(p_event_id: string, p_payload: Json, p_provider_slug: string) → string` | Signature unchanged; errors are stable snake_case messages. | `amount_mismatch` †, `intent_not_found` †, `intent_not_payable` †, `payment_not_found` †, `payout_not_found` †, `refund_not_found` †, `unknown_event_type` † | high | index.ts:23 |
 
 ### Edge Function `public-research-submit`
 
-2 call sites: 1 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
+2 call sites: 2 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `submit_public_research_response` | later | 1:1 | `submit_public_research_response(p_answers: Json, p_contact_email?: string, p_contact_window_he?: string, p_honeypot: string, p_ip_hash: string, p_slug: string, p_source: string, p_user_agent_hash: string, p_version: number) → string` | Signature unchanged. | `invalid_input`, `rate_limited_day` †, `rate_limited_hour` †, `rate_limited_minute` †, `research_circuit_open` †, `survey_not_found_or_version_mismatch` † | high | index.ts:187 |
-| `research_secrets` (table) | later | CHANGED | `get_research_salt() → string`<br>`rotate_research_salt() → string` | The table is private: read the salt with `get_research_salt()`, rotate with `rotate_research_salt()` (service role). |  | high | index.ts:145 |
-
-### Edge Function `receipts-issuer`
-
-2 call sites: 0 map 1:1, 0 need logic changes, 2 removed, 0 MISSING.
-
-| Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `donation_receipts` (table) | later | REMOVED | — | Same: `billing.receipts`, written by the database. |  | high | index.ts:33 |
-| `payments` (table) | later | REMOVED | — | Lives in the `billing` schema, not exposed. `receipts-issuer` is obsolete: the receipt is issued in the transaction that settles the payment (`kc_private.billing_receipt_issue`). |  | high | index.ts:21 |
+| `get_research_salt` | later | 1:1 | `get_research_salt() → string` | Service role only: the current hashing salt of the public research form (the `research_secrets` table is private). |  | high | index.ts:21 |
+| `submit_public_research_response` | later | 1:1 | `submit_public_research_response(p_answers: Json, p_contact_email?: string, p_contact_window_he?: string, p_honeypot: string, p_ip_hash: string, p_slug: string, p_source: string, p_user_agent_hash: string, p_version: number) → string` | Signature unchanged. | `invalid_input`, `rate_limited_day` †, `rate_limited_hour` †, `rate_limited_minute` †, `research_circuit_open` †, `survey_not_found_or_version_mismatch` † | high | index.ts:26 |
 
 ### Edge Function `revenuecat-webhook`
 
@@ -711,11 +682,11 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### Edge Function `rotate-research-salt`
 
-1 call sites: 0 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
+1 call sites: 1 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `research_secrets` (table) | later | CHANGED | see Edge Function `public-research-submit` |  |  |  | index.ts:99 |
+| `rotate_research_salt` | later | 1:1 | `rotate_research_salt() → string` | Service role only: replaces the salt and returns the rotation time. |  | high | index.ts:17 |
 
 ### Edge Function `strip-exif`
 
@@ -723,15 +694,15 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `post-images` (bucket) | core | 1:1 | see `apps/mobile` (direct calls outside the adapters) |  |  |  | index.ts:111, index.ts:169, index.ts:179 |
+| `post-images` (bucket) | core | 1:1 | see `apps/mobile` (direct calls outside the adapters) |  |  |  | index.ts:112, index.ts:170, index.ts:180 |
 
 ### Edge Function `subscriptions-charger`
 
-1 call sites: 0 map 1:1, 1 need logic changes, 0 removed, 0 MISSING.
+1 call sites: 1 map 1:1, 0 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `standing_orders` (table) | later | CHANGED | `api_standing_orders_charge_due(p_limit?: number) → { amount_agorot: number intent_id: string mandate_ref: string standing_order_id: string }[]` | Lives in `billing`: the charger calls `api_standing_orders_charge_due(p_limit)`, which opens the due charges and returns them (amounts in agorot). |  | high | index.ts:18 |
+| `api_standing_orders_charge_due` | later | 1:1 | `api_standing_orders_charge_due(p_limit?: number) → { amount_agorot: number intent_id: string mandate_ref: string standing_order_id: string }[]` | Service role only: opens the due charges of active standing orders (amounts in agorot) and returns them for the provider. |  | high | index.ts:18 |
 
 ### Edge Function `translate`
 
@@ -743,12 +714,12 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### Edge Function `validate-donation-link`
 
-5 call sites: 0 map 1:1, 5 need logic changes, 0 removed, 0 MISSING.
+5 call sites: 1 map 1:1, 4 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `donation_links` (table) | core | CHANGED | see `infrastructure-supabase/src/donations/` |  |  |  | index.ts:274, index.ts:298, index.ts:318, index.ts:330 |
-| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | index.ts:285 |
+| `get_my_admin_roles` | core | 1:1 | see `infrastructure-supabase/src/admin/` |  |  |  | index.ts:58 |
+| `donation_links` (table) | core | CHANGED | see `infrastructure-supabase/src/donations/` |  |  |  | index.ts:23, index.ts:28, index.ts:34, index.ts:42 |
 
 ### Edge Function `whatsapp-intake-worker`
 
@@ -812,12 +783,12 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | P3 — Chat and realtime | core | 18 | 17 | 1 | 0 | 0 | P2, P4 |
 | P4 — Reports, moderation and admin basics | core | 17 | 12 | 5 | 0 | 0 | P2, P3 |
 | P5 — Launch worlds: items, food, rides, time (events), matching, donation links | wedge | 99 | 28 | 64 | 6 | 1 | P6 |
-| P6 — Edge Functions of the launch | core | 12 | 6 | 6 | 0 | 0 | P5 |
+| P6 — Edge Functions of the launch | core | 10 | 6 | 4 | 0 | 0 | P5 |
 | L1 — Housing world | later | 12 | 3 | 9 | 0 | 0 | L2, L3, L4, L5, L6, L7 |
 | L2 — Knowledge world | later | 12 | 1 | 5 | 0 | 6 | L1, L3, L4, L5, L6, L7 |
 | L3 — Challenges | later | 9 | 5 | 4 | 0 | 0 | L1, L2, L4, L5, L6, L7 |
-| L4 — Money: donations to organizations, standing orders, org finance, org onboarding | later | 33 | 6 | 21 | 3 | 3 | L1, L2, L3, L5, L6, L7 |
-| L5 — Surveys, feedback, public research | later | 13 | 4 | 4 | 0 | 5 | L1, L2, L3, L4, L6, L7 |
+| L4 — Money: donations to organizations, standing orders, org finance, org onboarding | later | 31 | 7 | 20 | 1 | 3 | L1, L2, L3, L5, L6, L7 |
+| L5 — Surveys, feedback, public research | later | 14 | 6 | 3 | 0 | 5 | L1, L2, L3, L4, L6, L7 |
 | L6 — Back-office tools: tasks, CRM, timesheets | later | 18 | 0 | 0 | 0 | 18 | L1, L2, L3, L4, L5, L7 |
 | L7 — WhatsApp bot, linking, admin console | later | 33 | 0 | 0 | 0 | 33 | L1, L2, L3, L4, L5, L6 |
 
@@ -940,22 +911,22 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | Function | Verdict | Uses today | What changes |
 | --- | --- | --- | --- |
 | `dispatch-notification` | done | kc_private.notifications_deliver_batch, notification_push_retry_batch, notification_push_settle (direct Postgres) | Already rewritten for the baseline. |
-| `embed-worker` | retarget | embedding_jobs_claim, embedding_job_store, embedding_job_fail | Claimed job carries `post_id` instead of `listing_id`. Design §9 asks for queue consumption; the claim RPC already wraps it. |
-| `match-rerank` | retarget | api_match_llm_pending, api_match_llm_store | `api_match_llm_store` returns void and raises `match_not_found`. |
-| `payments-webhook` | keep | provider_webhook_apply | Same call; map the new stable error messages to HTTP statuses. |
-| `revenuecat-webhook` | keep | api_revenuecat_set_pro | None. |
-| `public-research-submit` | retarget | research_secrets (select), submit_public_research_response | Read the salt with `get_research_salt()`; if the public page loads its questions, proxy `get_public_research_questions` (service role only). |
-| `rotate-research-salt` | retarget | research_secrets (update) | Call `rotate_research_salt()`. |
-| `translate` | keep | content_translations (select, insert, delete) | Same table with the service role; the key is (content_type, content_id, field, target_language), no `id`. |
-| `validate-donation-link` | retarget | donation_links (select, insert, update), users (select) | `tags`, `hidden_at`, `hidden_by` are gone; new links start in `review_status = pending`. |
-| `delete-account` | obsolete | rpc_request_account_deletion | The app calls `request_account_deletion()` itself; delete the function and its invoke. |
+| `embed-worker` | done | embedding_jobs_claim, embedding_job_store, embedding_job_fail | Retargeted: the claimed job carries `post_id`; the caller must present the service-role key itself (a JWT claiming the role is refused). |
+| `match-rerank` | done | api_match_llm_pending, api_match_llm_store | Retargeted: a store of an unknown pair (`match_not_found`) counts as failed; service-role key only. |
+| `payments-webhook` | done | provider_webhook_apply | Retargeted: the provider's HMAC-SHA256 signature is verified (secret `PAYMENTS_WEBHOOK_SECRET_<SLUG>`, fail closed), the provider's own event id is the idempotency key (never generated), and `verify_jwt` is off for it in `supabase/config.toml`. |
+| `revenuecat-webhook` | done | api_revenuecat_set_pro | Verified against the baseline signature; no change. |
+| `public-research-submit` | done | get_research_salt, submit_public_research_response | Retargeted: the salt comes from `get_research_salt()`; `invalid_input` maps to 400. |
+| `rotate-research-salt` | done | rotate_research_salt | Retargeted: calls `rotate_research_salt()`; service-role key only. |
+| `translate` | done | content_translations (select, insert, delete) | Retargeted: the source registry follows the cache's content types (`post`, `comment`, `message`, `user`) over `posts`, `post_comments`, `messages`, `users` keyed by `id`; `ride_listing` is gone (rides are posts). |
+| `validate-donation-link` | done | donation_links (select, insert, update), get_my_admin_roles | Retargeted: new and edited links start in `review_status = pending`, the giving world is checked by the foreign key, the super-admin check reads the caller's roles; split into handler and SSRF guard. |
+| `delete-account` | obsolete | none | Deleted: the app calls `request_account_deletion()` itself. |
 | `purge-deleted-accounts` | rewrite | accounts_due_for_purge, account_purge_media_paths, delete_account_data_for | None of the three is exposed. Rewrite like `dispatch-notification`: `kc_private.accounts_due_for_purge` over Postgres, media paths from `post_media`, storage removal, then `auth.admin.deleteUser` (foreign keys cascade; billing is detached by trigger). |
-| `receipts-issuer` | obsolete | payments (select), donation_receipts (upsert) | Receipts are issued by the database when a payment settles (`kc_private.billing_receipt_issue`, gapless serial per organization). |
-| `subscriptions-charger` | rewrite | standing_orders (select) | Call `api_standing_orders_charge_due(p_limit)`, charge each returned intent at the provider, and let `provider_webhook_apply` settle it. |
+| `receipts-issuer` | obsolete | none | Deleted: the database issues the receipt when a payment settles. |
+| `subscriptions-charger` | done | api_standing_orders_charge_due | Retargeted: opens the due charges through the RPC. No payment provider is integrated, so submission to the provider is a port that is not wired yet. |
 | `reconcile-storage-orphans` | retarget | media_assets (select), bucket post-images | Read `post_media.storage_key` (+ `storage_bucket`). |
-| `strip-exif` | keep | bucket post-images | Storage only. |
-| `backfill-image-thumbs` | keep | buckets passed at run time | Storage only; one-off tool, may be dropped after the cut-over. |
-| `mock-login` | obsolete | users (upsert), admin_role_grants (select, insert) | Dev-only: moves to the dev seed scripts (design §9). It must never be deployed to kc-prod; clients cannot write either table in the baseline. |
+| `strip-exif` | done | bucket post-images | Verified; storage only. Only its header comment changed. |
+| `backfill-image-thumbs` | done | buckets passed at run time | Service-role key only (a JWT claiming the role is refused); buckets `post-images` and `avatars`; one-off tool, may be dropped after the cut-over. |
+| `mock-login` | obsolete | none | Deleted: demo users are dev seed data (design §9). |
 | `whatsapp-webhook` | park | 8 api_whatsapp_* RPCs | No `integrations` objects yet (M22): not deployed at launch. |
 | `whatsapp-intake-worker` | park | api_bot_* and api_whatsapp_llm_budget_take | Same (M22). |
 | `whatsapp-sender` | park | whatsapp_channel_config, api_whatsapp_outbound_* | Same (M22). |

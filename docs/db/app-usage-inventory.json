@@ -20,12 +20,12 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 273,
-   "distinct": 260
+   "callSites": 276,
+   "distinct": 262
   },
   "table": {
-   "callSites": 161,
-   "distinct": 62
+   "callSites": 152,
+   "distinct": 58
   }
  },
  "entries": [
@@ -4233,7 +4233,7 @@
   {
    "kind": "bucket",
    "file": "supabase/functions/backfill-image-thumbs/index.ts",
-   "line": 196,
+   "line": 180,
    "area": "fn:backfill-image-thumbs",
    "symbol": "recordError",
    "via": "unresolved",
@@ -4242,7 +4242,7 @@
   {
    "kind": "bucket",
    "file": "supabase/functions/backfill-image-thumbs/index.ts",
-   "line": 210,
+   "line": 194,
    "area": "fn:backfill-image-thumbs",
    "symbol": "recordError",
    "via": "unresolved",
@@ -4250,17 +4250,8 @@
   },
   {
    "kind": "rpc",
-   "file": "supabase/functions/delete-account/index.ts",
-   "line": 34,
-   "area": "fn:delete-account",
-   "symbol": "handler",
-   "via": "literal",
-   "name": "rpc_request_account_deletion"
-  },
-  {
-   "kind": "rpc",
    "file": "supabase/functions/embed-worker/handler.ts",
-   "line": 68,
+   "line": 57,
    "area": "fn:embed-worker",
    "symbol": "createEmbedWorkerHandler",
    "via": "literal",
@@ -4269,7 +4260,7 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/embed-worker/handler.ts",
-   "line": 76,
+   "line": 65,
    "area": "fn:embed-worker",
    "symbol": "jobs",
    "via": "literal",
@@ -4278,7 +4269,7 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/embed-worker/handler.ts",
-   "line": 82,
+   "line": 71,
    "area": "fn:embed-worker",
    "symbol": "jobs",
    "via": "literal",
@@ -4287,7 +4278,7 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/match-rerank/handler.ts",
-   "line": 46,
+   "line": 30,
    "area": "fn:match-rerank",
    "symbol": "createRerankHandler",
    "via": "literal",
@@ -4296,101 +4287,38 @@
   {
    "kind": "rpc",
    "file": "supabase/functions/match-rerank/handler.ts",
-   "line": 63,
+   "line": 47,
    "area": "fn:match-rerank",
    "symbol": "pairs",
    "via": "literal",
    "name": "api_match_llm_store"
   },
   {
-   "kind": "table",
-   "file": "supabase/functions/mock-login/ensureUser.ts",
-   "line": 82,
-   "area": "fn:mock-login",
-   "symbol": "ensurePublicUserRow",
-   "via": "literal",
-   "ops": [
-    "upsert"
-   ],
-   "name": "users"
-  },
-  {
-   "kind": "table",
-   "file": "supabase/functions/mock-login/ensureUser.ts",
-   "line": 91,
-   "area": "fn:mock-login",
-   "symbol": "ensureAdminGrant",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "admin_role_grants"
-  },
-  {
-   "kind": "table",
-   "file": "supabase/functions/mock-login/ensureUser.ts",
-   "line": 98,
-   "area": "fn:mock-login",
-   "symbol": "ensureAdminGrant",
-   "via": "literal",
-   "ops": [
-    "insert"
-   ],
-   "name": "admin_role_grants"
-  },
-  {
    "kind": "rpc",
    "file": "supabase/functions/payments-webhook/index.ts",
-   "line": 19,
+   "line": 23,
    "area": "fn:payments-webhook",
-   "symbol": "serve",
+   "symbol": "apply",
    "via": "literal",
    "name": "provider_webhook_apply"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "supabase/functions/public-research-submit/index.ts",
-   "line": 145,
+   "line": 21,
    "area": "fn:public-research-submit",
-   "symbol": "mapRpcError",
+   "symbol": "getSalt",
    "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "research_secrets"
+   "name": "get_research_salt"
   },
   {
    "kind": "rpc",
    "file": "supabase/functions/public-research-submit/index.ts",
-   "line": 187,
+   "line": 26,
    "area": "fn:public-research-submit",
-   "symbol": "mapRpcError",
+   "symbol": "submit",
    "via": "literal",
    "name": "submit_public_research_response"
-  },
-  {
-   "kind": "table",
-   "file": "supabase/functions/receipts-issuer/index.ts",
-   "line": 21,
-   "area": "fn:receipts-issuer",
-   "symbol": "serve",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "payments"
-  },
-  {
-   "kind": "table",
-   "file": "supabase/functions/receipts-issuer/index.ts",
-   "line": 33,
-   "area": "fn:receipts-issuer",
-   "symbol": "serve",
-   "via": "literal",
-   "ops": [
-    "upsert"
-   ],
-   "name": "donation_receipts"
   },
   {
    "kind": "rpc",
@@ -4402,21 +4330,18 @@
    "name": "api_revenuecat_set_pro"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "supabase/functions/rotate-research-salt/index.ts",
-   "line": 99,
+   "line": 17,
    "area": "fn:rotate-research-salt",
-   "symbol": "isAuthorized",
+   "symbol": "rotate",
    "via": "literal",
-   "ops": [
-    "update"
-   ],
-   "name": "research_secrets"
+   "name": "rotate_research_salt"
   },
   {
    "kind": "bucket",
    "file": "supabase/functions/strip-exif/index.ts",
-   "line": 111,
+   "line": 112,
    "area": "fn:strip-exif",
    "symbol": "listRecentPaths",
    "via": "const",
@@ -4425,7 +4350,7 @@
   {
    "kind": "bucket",
    "file": "supabase/functions/strip-exif/index.ts",
-   "line": 169,
+   "line": 170,
    "area": "fn:strip-exif",
    "symbol": "serve",
    "via": "const",
@@ -4434,23 +4359,20 @@
   {
    "kind": "bucket",
    "file": "supabase/functions/strip-exif/index.ts",
-   "line": 179,
+   "line": 180,
    "area": "fn:strip-exif",
    "symbol": "serve",
    "via": "const",
    "name": "post-images"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "supabase/functions/subscriptions-charger/index.ts",
    "line": 18,
    "area": "fn:subscriptions-charger",
-   "symbol": "serve",
+   "symbol": "openDueCharges",
    "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "standing_orders"
+   "name": "api_standing_orders_charge_due"
   },
   {
    "kind": "table",
@@ -4491,9 +4413,9 @@
   {
    "kind": "table",
    "file": "supabase/functions/validate-donation-link/index.ts",
-   "line": 274,
+   "line": 23,
    "area": "fn:validate-donation-link",
-   "symbol": "displayName",
+   "symbol": "find",
    "via": "literal",
    "ops": [
     "select"
@@ -4503,21 +4425,9 @@
   {
    "kind": "table",
    "file": "supabase/functions/validate-donation-link/index.ts",
-   "line": 285,
+   "line": 28,
    "area": "fn:validate-donation-link",
-   "symbol": "displayName",
-   "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "users"
-  },
-  {
-   "kind": "table",
-   "file": "supabase/functions/validate-donation-link/index.ts",
-   "line": 298,
-   "area": "fn:validate-donation-link",
-   "symbol": "displayName",
+   "symbol": "update",
    "via": "literal",
    "ops": [
     "select",
@@ -4528,9 +4438,9 @@
   {
    "kind": "table",
    "file": "supabase/functions/validate-donation-link/index.ts",
-   "line": 318,
+   "line": 34,
    "area": "fn:validate-donation-link",
-   "symbol": "displayName",
+   "symbol": "countSince",
    "via": "literal",
    "ops": [
     "select"
@@ -4540,15 +4450,24 @@
   {
    "kind": "table",
    "file": "supabase/functions/validate-donation-link/index.ts",
-   "line": 330,
+   "line": 42,
    "area": "fn:validate-donation-link",
-   "symbol": "displayName",
+   "symbol": "insert",
    "via": "literal",
    "ops": [
     "select",
     "insert"
    ],
    "name": "donation_links"
+  },
+  {
+   "kind": "rpc",
+   "file": "supabase/functions/validate-donation-link/index.ts",
+   "line": 58,
+   "area": "fn:validate-donation-link",
+   "symbol": "authenticate",
+   "via": "literal",
+   "name": "get_my_admin_roles"
   },
   {
    "kind": "rpc",

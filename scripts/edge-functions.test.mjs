@@ -16,16 +16,16 @@ function makeFunctionsDir(layout) {
 }
 
 test('lists function directories with an index.ts, sorted', () => {
-  const dir = makeFunctionsDir({ translate: ['index.ts'], 'delete-account': ['index.ts', 'deno.json'] });
+  const dir = makeFunctionsDir({ translate: ['index.ts'], 'strip-exif': ['index.ts', 'deno.json'] });
   try {
-    assert.deepEqual(listDeployableFunctions(dir), ['delete-account', 'translate']);
+    assert.deepEqual(listDeployableFunctions(dir), ['strip-exif', 'translate']);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 });
 
-test('skips shared code, local-only functions and directories without an entry point', () => {
-  const dir = makeFunctionsDir({ _shared: ['cors.ts'], 'mock-login': ['index.ts'], drafts: ['notes.md'], translate: ['index.ts'] });
+test('skips shared code and directories without an entry point', () => {
+  const dir = makeFunctionsDir({ _shared: ['cors.ts'], drafts: ['notes.md'], translate: ['index.ts'] });
   try {
     assert.deepEqual(listDeployableFunctions(dir), ['translate']);
   } finally {
@@ -53,6 +53,6 @@ test('inactiveFunctions reports functions missing or not ACTIVE', () => {
     { slug: 'translate', status: 'ACTIVE' },
     { slug: 'strip-exif', status: 'THROTTLED' },
   ];
-  assert.deepEqual(inactiveFunctions(listed, ['translate', 'strip-exif', 'delete-account']), ['strip-exif', 'delete-account']);
+  assert.deepEqual(inactiveFunctions(listed, ['translate', 'strip-exif', 'match-rerank']), ['strip-exif', 'match-rerank']);
   assert.deepEqual(inactiveFunctions([{ name: 'translate', status: 'ACTIVE' }], ['translate']), []);
 });
