@@ -129,7 +129,7 @@ for (const [name, note] of [
 rpc('cancel_giving_handoff', 'renamed', 'rpc:cancel_giving_handoff', 'Same argument; now returns the handoff row (was void).');
 table('post_handoffs', 'changed', 'table:post_handoffs', 'Read-only for both parties. `handoff_id` → `id`, `reserved_at` → `created_at`, `world_slug` gone (join the post), `knowledge_slot_id` → slot times, new `machine_id`.');
 table('org_memberships', 'changed', 'table:org_memberships', '`role` → `roles` (array), `membership_id` gone (key is org + user), new `can_post`.');
-table('org_applications', 'same', 'table:org_applications', 'Read-only for the applicant (own rows) and org reviewers; written through `submit_org_application`. Ported from dev (organization registration).');
+table('org_applications', 'same', 'table:org_applications', 'Read-only: the applicant reads their own rows, and platform admins read the review queue directly (policy `org_applications_select_reviewers`) with an exact count; written through `submit_org_application`.');
 rpc('submit_org_application', 'same', 'rpc:submit_org_application', '`p_org_name`, `p_org_description`, `p_contact_email`, `p_contact_phone`, `p_website_url`, `p_declared_nonprofit`; one open application per user, again 7 days after a rejection.');
 rpc('list_org_members', 'same', 'rpc:list_org_members', '`p_org_id`; members only. Returns user, display name, share handle, avatar, role and join time.');
 rpc('org_add_member', 'same', 'rpc:org_add_member', '`p_org_id`, `p_share_handle`, `p_role`; adds a member or changes their role (grants live in `admin_role_grants`, `org_memberships` is the projection).');
@@ -143,25 +143,12 @@ table('ride_series', 'changed', 'table:ride_series', '`series_id` → `id`; titl
 table('ride_saved_routes', 'changed', 'table:ride_saved_routes', '`route_id` → `id`; label / lat / lng / place columns → official place ids (`*_city_id`, `*_street_id`, `*_junction_id`) with a derived point.');
 
 // ───────────────────────────── housing, knowledge, volunteering
-rpc('accept_housing_conduct', 'changed', 'rpc:accept_world_consent', '`accept_world_consent(\'housing_conduct\', p_version)`; rejects a stale version (`consent_version_stale`).');
-rpc('housing_conduct_version', 'changed', 'rpc:bootstrap_session', 'Read `consents.housing_conduct.version` (and `accepted`) from the session payload (M11, built).');
-table('housing_conduct_acceptances', 'changed', 'table:user_consents', 'Read `user_consents` where `consent_kind = \'housing_conduct\'`.');
-rpc('complete_housing_booking', 'changed', 'rpc:close_housing_booking', '`close_housing_booking(p_handoff_id, \'completed\')`; inside its time window only (`housing_not_in_window`).', { c: M });
-rpc('mark_housing_no_show', 'changed', 'rpc:close_housing_booking', '`close_housing_booking(p_handoff_id, \'no_show\')`.', { c: M });
-rpc('list_housing_bookings', 'changed', ['table:post_handoffs', 'table:handoff_booking_details', 'table:users'], 'The host reads the handoffs of the post with their booking details and the guests\' names. Guest reputation fields (`guest_completed_stays`, `rated_by_me`) are not derivable: `rated_by_me` is a select on `post_ratings`, the reputation count is `user_stats.ratings_count` (M07, built).', { c: M });
-rpc('list_my_housing_stays', 'changed', ['table:post_handoffs', 'table:handoff_booking_details'], 'The guest reads their handoffs with booking details, joined to `posts` and `users`; `can_view_address` = status confirmed (then call `get_post_private_location`).', { c: M });
-rpc('get_housing_private_details', 'changed', 'rpc:get_post_private_location', 'Returns the `post_private_locations` row: street, street_number, exact_point, `access_notes`.');
-rpc('set_housing_private_details', 'changed', 'table:post_private_locations', 'Owner insert / update. Apartment, floor, entrance notes and access instructions fold into `access_notes`; `p_street_id` → `street` text; lat / lng → `exact_point`.', { c: M });
-rpc('list_knowledge_slots', 'changed', 'table:post_knowledge_slots', 'Direct read of the slots; the caller\'s booking per slot comes from their `post_handoffs` rows (match on `slot_starts_at`); `seats_left` is not returned.', { c: M });
-rpc('list_knowledge_bookings', 'changed', ['table:post_handoffs', 'table:users'], 'The giver reads the post\'s handoffs and the learners\' names directly.', { c: M });
-rpc('confirm_knowledge_booking', 'changed', 'rpc:confirm_item_handoff', 'Knowledge uses the generic machine: confirm with the generic RPC.');
-rpc('decline_knowledge_booking', 'changed', 'rpc:cancel_giving_handoff', 'Decline = the owner cancelling a waiting handoff.');
-rpc('complete_knowledge_session', 'changed', 'rpc:mark_giving_handed_over', 'Complete = handed over.');
-for (const name of ['resolve_knowledge_topics', 'propose_knowledge_topic', 'update_my_proposed_knowledge_topic', 'review_knowledge_topic']) {
-  rpc(name, 'missing', null, 'No topic graph in the baseline.', { m: 'M12' });
-}
-table('knowledge_topics', 'missing', null, 'No topic graph in the baseline (design §8 names `topics`, not built).', { m: 'M12' });
-table('knowledge_topic_follows', 'missing', null, 'No topic follows in the baseline.', { m: 'M12' });
+// Objects the housing and knowledge adapters address since they moved to the baseline (L1, L2).
+rpc('close_housing_booking', 'same', 'rpc:close_housing_booking', 'The host closes an approved stay: `p_outcome` `completed` (check-in to seven days after the stay) or `no_show` (3 to 24 hours after check-in); `housing_not_in_window` outside them.');
+table('handoff_booking_details', 'same', 'table:handoff_booking_details', 'Dates, party, message and notes of a stay booking, read by its host and guest next to the `post_handoffs` row.');
+rpc('housing_completed_stays', 'same', 'rpc:housing_completed_stays', 'Completed stays (as host or guest) of the listed members whose profile the caller can read: the trust block of the host panel (S16, FR-HOUSING-036).');
+rpc('knowledge_slot_seats', 'same', 'rpc:knowledge_slot_seats', 'The slots of a knowledge offer with their places held and left, for every reader of the offer (FR-KNOW-004); the caller\'s booking per slot is matched on `slot_starts_at`.');
+table('post_knowledge_slots', 'same', 'table:post_knowledge_slots', 'The giver\'s view maps each booking to its slot by its start.');
 
 // ───────────────────────────── challenges, matching, karma, stats, surveys
 rpc('create_challenge', 'same', 'rpc:create_challenge', 'New optional `p_city_id` (required for a community challenge: `city_required`).');
@@ -197,9 +184,6 @@ rpc('admin_delete_message', 'same', 'rpc:admin_delete_message', 'Same name and a
 rpc('admin_audit_search', 'changed', 'rpc:admin_audit_search', 'Offset → keyset (`p_before_occurred_at`, `p_before_id`); `p_target_user_id` → `p_target_id`; no display names and no `total_count` (join `users` on the device).');
 table('reports', 'same', 'table:reports', 'Direct insert of (reporter_id, target_type, target_id, reason, note); `report_id` → `id`.');
 rpc('admin_set_manager', 'changed', 'rpc:admin_set_manager', '`p_manager_grant_id` is required: a grant can be moved under another grant but not detached.');
-rpc('admin_org_tree', 'changed', 'table:admin_role_grants', 'Build the tree on the device from the grants (`manager_grant_id`, `scope_org_id`).', { c: M });
-rpc('admin_hierarchy_census', 'changed', 'table:admin_role_grants', 'Counts per level and role computed on the device from the same grants read.', { c: M });
-rpc('admin_org_application_list', 'changed', 'table:org_applications', 'Direct read (policy `org_applications_select_reviewers`).');
 rpc('admin_org_application_approve', 'changed', 'rpc:admin_org_application_approve', 'New required `p_slug`; returns the organization id.');
 rpc('admin_org_application_reject', 'same', 'rpc:admin_org_application_reject', 'Signature unchanged.');
 // Admin tasks, CRM and timesheets (old M19): the baseline has none of them and the adapters make
@@ -221,18 +205,15 @@ rpc('list_my_donation_history', 'changed', 'rpc:list_my_donation_history', 'Keys
 rpc('get_donation_receipt', 'same', 'rpc:get_donation_receipt', 'Signature unchanged; amounts in the JSON are agorot.', { c: M });
 rpc('get_nonprofit_public_page', 'same', 'rpc:get_nonprofit_public_page', 'Signature unchanged; totals in agorot.', { c: M });
 rpc('list_verified_nonprofits', 'changed', 'rpc:list_verified_nonprofits', 'Keyset (`p_after_name`, `p_after_id`); `org_id` → `id`; `verification_level` replaces `is_verified_nonprofit`.');
-rpc('complete_sandbox_donation', 'removed', null, 'Sandbox shortcut; not carried over. A donation settles only through the provider event (`provider_webhook_apply`).');
-rpc('list_kc_support_channels', 'missing', null, 'No support-channel list in the baseline.', { m: 'M20' });
 rpc('rpc_org_transparency', 'same', 'rpc:rpc_org_transparency', 'Signature unchanged; totals only, in agorot.', { c: M });
-rpc('finance_transparency_settings_get', 'changed', 'table:organizations', 'The switches are the `show_*` columns of the organization row.');
 rpc('finance_transparency_settings_set', 'changed', 'rpc:finance_transparency_settings_set', 'New required `p_org_id`; returns void.');
 rpc('finance_accounts_list', 'changed', 'rpc:finance_accounts_list', 'New required `p_org_id`; `*_cents` → `*_agorot`; `account_id` → `id`; no `entry_count`.');
 rpc('finance_account_upsert', 'changed', 'rpc:finance_account_upsert', 'New required `p_org_id`; `p_opening_balance_cents` → `_agorot`; `p_sort_order` is gone.');
 rpc('finance_ledger_list', 'changed', 'rpc:finance_ledger_list', 'New required `p_org_id`; offset → keyset (`p_after_occurred_at`, `p_after_id`); `amount_cents` → `amount_agorot`; `p_kind` filter and `reference_url` are gone.');
 rpc('finance_ledger_upsert', 'changed', 'rpc:finance_ledger_upsert', 'New required `p_org_id`; `p_amount_cents` → `_agorot`; `p_currency` and `p_reference_url` are gone.');
-rpc('finance_ledger_delete', 'changed', 'rpc:finance_ledger_mark', 'Entries are never deleted: void with `finance_ledger_mark(p_org_id, p_entry_id, p_void_reason)`.');
-rpc('finance_ledger_summary', 'missing', null, 'No ledger summary function.', { m: 'M21' });
-rpc('finance_donors_summary', 'missing', null, 'No donors summary function.', { m: 'M21' });
+rpc('finance_ledger_summary', 'changed', 'rpc:finance_ledger_summary', 'New required `p_org_id`; `*_cents` → `*_agorot`; cleared entries only, transfers aside (M21, built in `85_billing/140`).');
+rpc('finance_ledger_mark', 'same', 'rpc:finance_ledger_mark', 'Voids an entry with a reason (the admin delete action) or sets its reconciliation; the entry stays in the books.');
+rpc('finance_donors_summary', 'changed', 'rpc:finance_donors_summary', 'New required `p_org_id`; `total_cents` → `total_agorot`; in-app donations grouped by member, typed ones by party name; organization admins only (M21, built in `85_billing/140`).');
 
 // ───────────────────────────── translation, notifications
 rpc('get_post_translations', 'same', 'rpc:get_post_translations', 'Signature unchanged.');
@@ -320,9 +301,6 @@ table('post_ratings', 'same', 'table:post_ratings', 'The rater reads back the ra
 // ═════════════════════════════ MISSING: what the baseline does not provide
 // action: build (add to the baseline) · rls-read (already possible, no new object) · drop · defer (behind a flag)
 export const missing = [
-  { id: 'M12', title: 'Knowledge topic graph (topics, aliases, follows, proposals, review)', usedBy: 'Knowledge world topic picker, follow, proposal and admin review (SupabaseKnowledgeTopicRepository)', spec: 'FR-KNOW-001, FR-KNOW-002', launch: 'no (knowledge is a portal at launch)', action: 'defer', recommendation: 'Keep the knowledge world behind `world_knowledge_enabled`. When it opens: design §8 maps `knowledge_topics` → `topics`, `topic_aliases`, `topic_follows`, but no module creates them. Add them to `70_worlds` (knowledge), or launch knowledge with item subcategories only and defer.' },
-  { id: 'M20', title: 'KC support channels', usedBy: 'Donations → support KC card (SupabaseKcSupportChannelsRepository)', spec: 'FR-DONATE-010, FR-DONATE-011; launch plan A11 (only if the money world is on)', launch: 'no (money is a portal at launch)', action: 'defer', recommendation: 'The support card must render nothing when the call fails (today it throws: catch in the adapter). Later: a small reference table in `85_billing` (channel, label, url, payee phone; select for members), or ship the channels in app configuration.' },
-  { id: 'M21', title: 'Organization finance summaries (ledger summary, donors summary)', usedBy: 'Org finance overview and donors screens (SupabaseFinanceLedgerRepository.summary, SupabaseFinanceDonorsRepository)', spec: 'FR-FIN-014, FR-FIN-017', launch: 'no', action: 'defer', recommendation: 'Org finance stays behind its flag. Later: two functions in `85_billing/100_org_finance_rpcs.sql` over the ledger, guarded like `finance_ledger_list`.' },
   { id: 'M22', title: 'WhatsApp bot, linking and admin console', usedBy: 'Three Edge Functions (webhook, intake worker, sender) — 19 RPCs and one table; the mobile link screen and the admin WhatsApp console are parked and make no call', spec: 'design Q4 (PM): not in the launch baseline', launch: 'no', action: 'defer', recommendation: 'Do not deploy the three functions; hide the link screen and the admin console behind a flag until the `integrations` module lands.' },
 ];
 
@@ -342,7 +320,7 @@ const AREA_TIER = {
   'fn:embed-worker': 'wedge', 'fn:match-rerank': 'wedge', 'fn:validate-donation-link': 'wedge',
 };
 const NAME_TIER = [
-  [/^(finance_|admin_task_|crm_|timesheet_|api_whatsapp|api_bot|whatsapp_|dev_|admin_(demo|seed|wipe)_|admin_survey|admin_pmf|admin_org_|rpc_org_transparency$)/, 'later'],
+  [/^(finance_|admin_task_|crm_|timesheet_|api_whatsapp|api_bot|whatsapp_|dev_|admin_(demo|seed|wipe)_|admin_survey|admin_pmf|admin_org_|rpc_org_transparency$|org_applications$)/, 'later'],
   [/^(admin_hierarchy_census|admin_set_manager|admin_user_feedback_list|admin_match_quality|admin_world_flow_funnel|my_world_givings)$/, 'later'],
   [/^(list_my_blocked_users|rpc_follow_suggestions|rpc_profile_completeness|rpc_search_suggested_queries|about_team_profiles)$/, 'later'],
   [/^(community_stats|rpc_my_activity_timeline|record_active_day|app_flags|is_admin)$/, 'core'],
@@ -420,17 +398,17 @@ export const packages = [
   { id: 'L1', title: 'Housing world', launch: 'later', parallelWith: ['L2', 'L3', 'L4', 'L5', 'L6', 'L7'],
     select: inArea('housing'),
     files: ['housing/**', 'apps/mobile: housing screens'],
-    work: 'Bookings on the shared handoff shape, private details through `post_private_locations`, consent through `accept_world_consent`.',
-    tests: ['vitest: housing suite', 'pgTAP 071'],
-    degrade: '`world_housing_enabled` off: the world is a portal and no housing adapter is called.',
-    risks: 'M07 and M11 are built (shared with rides).' },
+    work: 'Done in L1: bookings are `post_handoffs` rows (machine `housing_booking`) with `handoff_booking_details`, read directly by host and guest; complete and no-show are `close_housing_booking`; the code of conduct comes from `bootstrap_session` and is accepted with `accept_world_consent`; the exact place is `post_private_locations` (apartment, floor, entrance and access notes folded into `access_notes`), released through `get_post_private_location`; the guest trust block counts completed stays with `housing_completed_stays`.',
+    tests: ['vitest: housing suite', 'pgTAP 071, 075 (trust counts)'],
+    degrade: '`world_housing_enabled` off: the world is a portal and no housing adapter is called. With it on, the housing lists load through `listOrEmpty` / `valueOrNull` and an action on a missing object shows "not available yet".',
+    risks: 'The stay offer\'s exact point is written as EWKT; the separate apartment, floor and entrance fields come back merged in the access instructions.' },
   { id: 'L2', title: 'Knowledge world', launch: 'later', parallelWith: ['L1', 'L3', 'L4', 'L5', 'L6', 'L7'],
     select: inArea('knowledge'),
     files: ['knowledge/**', 'apps/mobile: knowledge screens'],
-    work: 'Slots and bookings on the generic handoff RPCs; topics wait for M12.',
-    tests: ['vitest: knowledge suite', 'pgTAP 073'],
-    degrade: '`world_knowledge_enabled` off: portal only. The topic picker must tolerate an empty topic list.',
-    risks: 'M12 (topic graph) is not built.' },
+    work: 'Done in L2: slots with their places left come from `knowledge_slot_seats`, the caller\'s booking per slot from their `post_handoffs` rows; bookings move through the generic handoff RPCs (`book_knowledge_seat`, `confirm_item_handoff`, `cancel_giving_handoff`, `mark_giving_handed_over`). The topic graph (FR-KNOW-001) is not in the baseline: the topic repository rejects every call with `BackendUnavailableError` and calls nothing.',
+    tests: ['vitest: knowledge suite', 'pgTAP 073, 075 (slot seats)'],
+    degrade: '`world_knowledge_enabled` off: portal only. With it on, the slot and booking lists load through `listOrEmpty`; a topic picker shows its empty state.',
+    risks: 'The topic graph (topics, aliases, follows, proposals, review) is still to be designed into `70_worlds` before the topic features open.' },
   { id: 'L3', title: 'Challenges', launch: 'later', parallelWith: ['L1', 'L2', 'L4', 'L5', 'L6', 'L7'],
     select: inArea('challenges'),
     files: ['challenges/**', 'apps/mobile: challenge screens, useChallengeLinkedPost'],
@@ -439,12 +417,12 @@ export const packages = [
     degrade: 'Challenges flag off: the tab is hidden; a challenge post in the feed opens as a plain post.',
     risks: 'Low.' },
   { id: 'L4', title: 'Money: donations to organizations, standing orders, org finance, org onboarding', launch: 'later', parallelWith: ['L1', 'L2', 'L3', 'L5', 'L6', 'L7'],
-    select: (row) => row.launch === 'later' && (row.areas.includes('payments') || /^(finance_|admin_org_|rpc_org_transparency|admin_hierarchy_census|admin_set_manager)/.test(row.old) || row.areas.some((a) => ['fn:payments-webhook', 'fn:revenuecat-webhook', 'fn:receipts-issuer', 'fn:subscriptions-charger'].includes(a))),
+    select: (row) => row.launch === 'later' && (row.areas.includes('payments') || /^(finance_|admin_org_|org_applications$|rpc_org_transparency|admin_hierarchy_census|admin_set_manager)/.test(row.old) || row.areas.some((a) => ['fn:payments-webhook', 'fn:revenuecat-webhook', 'fn:receipts-issuer', 'fn:subscriptions-charger'].includes(a))),
     files: ['payments/**', 'admin/SupabaseFinance*.ts', 'admin/SupabaseOrgTransparencyRepository.ts', 'admin/SupabaseOrgApplicationsRepository.ts', 'admin/SupabaseOrgHierarchyRepository.ts', 'supabase/functions/{payments-webhook,revenuecat-webhook,subscriptions-charger}', 'supabase/functions/receipts-issuer (deleted)', 'apps/mobile: donations money screens, org finance portal'],
-    work: 'Agorot end to end, org-scoped finance arguments, keyset lists; charger rewritten on `api_standing_orders_charge_due`.',
-    tests: ['vitest: payments and finance suites', 'pgTAP 080, 085, 086'],
-    degrade: '`world_money_enabled` off: the money world is a portal of links; the support card renders nothing when its call fails (M20); the finance portal entry is hidden.',
-    risks: 'M20, M21 open. Retention of billing rows is an open legal question (design Q5).' },
+    work: 'Done in L4 for the app: amounts are agorot end to end (the payments contract), a donation starts an intent and opens the provider\'s checkout page (no client-side settlement), the finance adapters pass the platform organization to the org-scoped RPCs, the ledger pages by keyset and voids instead of deleting, the summaries call `finance_ledger_summary` / `finance_donors_summary` (built), applications are a direct read and an approval sends the chosen slug, the staff tree and census are built from `admin_role_grants`. The KC support channels have no baseline list: the adapter degrades without a call. Still open: the Edge Functions of this package (charger on `api_standing_orders_charge_due`, the payments webhook).',
+    tests: ['vitest: payments and finance suites', 'pgTAP 080, 085, 086, 087 (finance summaries)'],
+    degrade: '`world_money_enabled` off: the money world is a portal of links; the support card shows its unavailable state (no channel list); a donation without a checkout page says "not available yet".',
+    risks: 'No checkout Edge Function sets `checkout_url` yet. A KC support-channel list (a small reference table in `85_billing`, or app configuration) is still to be decided. Retention of billing rows is an open legal question (design Q5).' },
   { id: 'L5', title: 'Surveys, feedback, public research', launch: 'later', parallelWith: ['L1', 'L2', 'L3', 'L4', 'L6', 'L7'],
     select: (row) => row.launch === 'later' && row.areas.some((a) => ['survey', 'research', 'fn:public-research-submit', 'fn:rotate-research-salt'].includes(a)),
     files: ['survey/** (except survey/SupabaseUserActivityRepository.ts, owned by P1)', 'research/**', 'supabase/functions/{public-research-submit,rotate-research-salt}', 'apps/mobile: surveys and feedback hub, admin survey dashboard, public research page'],
