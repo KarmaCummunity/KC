@@ -1,154 +1,183 @@
 import { describe, it, expect } from 'vitest';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { supabaseGetEditableProfile } from '../editableProfileSupabase';
-import type { UsersSelfPrivateSlice } from '../usersSelfPrivateFields';
+import { callsTo, createFakeClient, type FakeResult } from '../../__tests__/fakeBaselineClient';
+import {
+  supabaseGetEditableProfile,
+  supabaseSetContactPhone,
+  supabaseSetProfileAddressLines,
+  supabaseUpdateEditableProfile,
+} from '../editableProfileSupabase';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+const ok = (data: unknown = null): FakeResult => ({ data, error: null });
 
-// Companion file editableProfileSupabase.updates.test.ts covers
-// supabaseSetProfileAddressLines + supabaseUpdateEditableProfile.
-
-interface SelectCall {
-  table: string;
-  selected: string;
-  eqCol: string;
-  eqVal: unknown;
-}
-
-const PRIVATE_SLICE: UsersSelfPrivateSlice = {
-  profile_street: 'Allenby',
-  profile_street_number: '12',
-  contact_phone: '050-1234567',
-  notification_preferences: { critical: true, social: true },
-  is_super_admin: false,
-  active_posts_count_internal: 0,
-  karma_points: 0,
-  date_of_birth: null,
-};
-
-function makeFakeClient(opts: {
-  data?: unknown;
-  error?: { message: string } | null;
-  privateSlice?: UsersSelfPrivateSlice | null;
-  /** The signed-in user; the private slice belongs to them. Defaults to the profile owner. */
-  sessionUserId?: string;
-}): { client: SupabaseClient<any>; calls: SelectCall[]; rpcCalls: string[] } {
-  const calls: SelectCall[] = [];
-  const rpcCalls: string[] = [];
-  const sessionUserId = opts.sessionUserId ?? 'u_me';
-  const client = {
-    auth: {
-      getSession: async () => ({ data: { session: { user: { id: sessionUserId } } }, error: null }),
-    },
-    from: (table: string) => ({
-      select: (cols: string) => ({
-        eq: (col: string, val: unknown) => ({
-          single: async () => {
-            calls.push({ table, selected: cols, eqCol: col, eqVal: val });
-            return { data: opts.data ?? null, error: opts.error ?? null };
-          },
-        }),
-      }),
-    }),
-    rpc: async (fn: string) => {
-      rpcCalls.push(fn);
-      if (fn === 'users_get_self_private_fields') {
-        return { data: opts.privateSlice ?? PRIVATE_SLICE, error: null };
-      }
-      return { data: null, error: null };
-    },
-  } as unknown as SupabaseClient<any>;
-  return { client, calls, rpcCalls };
-}
-
-const PUBLIC_ROW = {
-  display_name: 'Alice',
-  city: 'IL-001',
-  city_name: 'Tel Aviv',
-  biography: 'I give books.',
-  avatar_url: 'https://cdn.example.com/u_1.jpg',
-};
+const USER_ROW = { display_name: 'Dana', city_id: '5000', biography: 'bio', avatar_url: 'https://cdn/a.jpg' };
+const PRIVATE_ROW = { contact_phone: '050-1234567', profile_street: 'Herzl', profile_street_number: '12' };
 
 describe('supabaseGetEditableProfile', () => {
-  it('selects public editable columns and loads PII via users_get_self_private_fields', async () => {
-    const { client, calls } = makeFakeClient({ data: PUBLIC_ROW });
-
-    await supabaseGetEditableProfile(client, 'u_me');
-
-    expect(calls).toHaveLength(1);
-    expect(calls[0]).toEqual({
-      table: 'users',
-      selected: 'display_name, city, city_name, biography, avatar_url',
-      eqCol: 'user_id',
-      eqVal: 'u_me',
+  it('reads the public columns, the city name and — for the owner — the private fields', async () => {
+    const { client, calls } = createFakeClient({
+      tables: { users: ok(USER_ROW), cities: ok({ name_he: 'Tel Aviv' }), user_private: ok(PRIVATE_ROW) },
+      userId: 'u1',
     });
-  });
 
-  it('maps snake_case columns to the camelCase DTO', async () => {
-    const { client } = makeFakeClient({ data: PUBLIC_ROW });
+    const profile = await supabaseGetEditableProfile(client, 'u1');
 
-    const out = await supabaseGetEditableProfile(client, 'u_me');
-
-    expect(out).toEqual({
-      displayName: 'Alice',
-      city: 'IL-001',
+    expect(profile).toEqual({
+      displayName: 'Dana',
+      city: '5000',
       cityName: 'Tel Aviv',
-      profileStreet: 'Allenby',
+      profileStreet: 'Herzl',
       profileStreetNumber: '12',
       contactPhone: '050-1234567',
-      biography: 'I give books.',
-      avatarUrl: 'https://cdn.example.com/u_1.jpg',
+      biography: 'bio',
+      avatarUrl: 'https://cdn/a.jpg',
     });
+    expect(callsTo(calls, 'users')[0]?.columns).toBe('display_name, city_id, biography, avatar_url');
+    expect(callsTo(calls, 'users')[0]?.filters).toContainEqual(['eq', 'id', 'u1']);
+    expect(callsTo(calls, 'user_private')[0]?.filters).toContainEqual(['eq', 'user_id', 'u1']);
   });
 
-  it('preserves null for the five nullable columns', async () => {
-    const { client } = makeFakeClient({
-      data: {
-        ...PUBLIC_ROW,
-        biography: null,
-        avatar_url: null,
-      },
-      privateSlice: {
-        ...PRIVATE_SLICE,
-        profile_street: null,
-        profile_street_number: null,
-        contact_phone: null,
-      },
+  it("returns null private fields for another member's profile, without reading user_private", async () => {
+    const { client, calls } = createFakeClient({
+      tables: { users: ok(USER_ROW), cities: ok({ name_he: 'Tel Aviv' }), user_private: ok(PRIVATE_ROW) },
+      userId: 'someone-else',
     });
 
-    const out = await supabaseGetEditableProfile(client, 'u_me');
+    const profile = await supabaseGetEditableProfile(client, 'u1');
 
-    expect(out.profileStreet).toBeNull();
-    expect(out.profileStreetNumber).toBeNull();
-    expect(out.contactPhone).toBeNull();
-    expect(out.biography).toBeNull();
-    expect(out.avatarUrl).toBeNull();
+    expect(profile).toMatchObject({ profileStreet: null, profileStreetNumber: null, contactPhone: null });
+    expect(callsTo(calls, 'user_private')).toHaveLength(0);
   });
 
-  it("returns null private fields for another member's profile, without reading the caller's slice", async () => {
-    // Regression: the RPC returns the caller's phone and address, which used to be
-    // merged into whichever profile was requested.
-    const { client, rpcCalls } = makeFakeClient({ data: PUBLIC_ROW, sessionUserId: 'u_viewer' });
+  it('preserves null for the nullable columns and skips the city lookup without a city', async () => {
+    const { client, calls } = createFakeClient({
+      tables: {
+        users: ok({ display_name: null, city_id: null, biography: null, avatar_url: null }),
+        user_private: ok(null),
+      },
+      userId: 'u1',
+    });
 
-    const out = await supabaseGetEditableProfile(client, 'u_me');
+    const profile = await supabaseGetEditableProfile(client, 'u1');
 
-    expect(rpcCalls).toEqual([]);
-    expect(out).toMatchObject({ displayName: 'Alice', contactPhone: null, profileStreet: null, profileStreetNumber: null });
+    expect(profile).toEqual({
+      displayName: null,
+      city: null,
+      cityName: null,
+      profileStreet: null,
+      profileStreetNumber: null,
+      contactPhone: null,
+      biography: null,
+      avatarUrl: null,
+    });
+    expect(callsTo(calls, 'cities')).toHaveLength(0);
   });
 
-  it('throws "no row" when data is null (user missing or RLS-hidden)', async () => {
-    const { client } = makeFakeClient({ data: null });
+  it('throws "no row" when the profile is missing or hidden', async () => {
+    const { client } = createFakeClient({ tables: { users: ok(null) } });
 
-    await expect(supabaseGetEditableProfile(client, 'u_me')).rejects.toThrow(
-      'getEditableProfile: no row',
-    );
+    await expect(supabaseGetEditableProfile(client, 'u1')).rejects.toThrow('no row');
   });
 
-  it('throws with a prefixed "getEditableProfile: " message on query error', async () => {
-    const { client } = makeFakeClient({ error: { message: 'transport error' } });
+  it('surfaces a query failure', async () => {
+    const { client } = createFakeClient({ tables: { users: { data: null, error: { message: 'timeout' } } } });
 
-    await expect(supabaseGetEditableProfile(client, 'u_me')).rejects.toThrow(
-      'getEditableProfile: transport error',
-    );
+    await expect(supabaseGetEditableProfile(client, 'u1')).rejects.toThrow('timeout');
+  });
+});
+
+describe('supabaseSetProfileAddressLines / supabaseSetContactPhone', () => {
+  it('updates both address columns of user_private together', async () => {
+    const { client, calls } = createFakeClient();
+
+    await supabaseSetProfileAddressLines(client, 'u1', 'Herzl', '12');
+
+    expect(calls[0]).toMatchObject({
+      kind: 'update',
+      table: 'user_private',
+      payload: { profile_street: 'Herzl', profile_street_number: '12' },
+    });
+    expect(calls[0]?.filters).toContainEqual(['eq', 'user_id', 'u1']);
+  });
+
+  it('forwards null/null verbatim (clear-the-address case)', async () => {
+    const { client, calls } = createFakeClient();
+
+    await supabaseSetProfileAddressLines(client, 'u1', null, null);
+
+    expect(calls[0]?.payload).toEqual({ profile_street: null, profile_street_number: null });
+  });
+
+  it('writes the contact phone to user_private', async () => {
+    const { client, calls } = createFakeClient();
+
+    await supabaseSetContactPhone(client, 'u1', '050-1234567');
+
+    expect(calls[0]).toMatchObject({ table: 'user_private', payload: { contact_phone: '050-1234567' } });
+  });
+
+  it('surfaces a constraint failure (the address pair)', async () => {
+    const { client } = createFakeClient({
+      tables: { user_private: { data: null, error: { code: '23514', message: 'violates check user_private_address_pair_chk' } } },
+    });
+
+    await expect(supabaseSetProfileAddressLines(client, 'u1', 'Herzl', null)).rejects.toThrow('address_pair');
+  });
+});
+
+describe('supabaseUpdateEditableProfile', () => {
+  it('splits a multi-field patch into one statement per table, public columns first', async () => {
+    const { client, calls } = createFakeClient();
+
+    await supabaseUpdateEditableProfile(client, 'u1', {
+      displayName: 'Dana',
+      city: '5000',
+      biography: 'bio',
+      avatarUrl: 'https://cdn/a.jpg',
+      profileStreet: 'Herzl',
+      profileStreetNumber: '12',
+      contactPhone: '050-1234567',
+    });
+
+    expect(calls.map((c) => [c.table, c.payload])).toEqual([
+      ['users', { display_name: 'Dana', city_id: '5000', biography: 'bio', avatar_url: 'https://cdn/a.jpg' }],
+      ['user_private', { profile_street: 'Herzl', profile_street_number: '12', contact_phone: '050-1234567' }],
+    ]);
+  });
+
+  it('writes only the table a single field belongs to', async () => {
+    const { client, calls } = createFakeClient();
+
+    await supabaseUpdateEditableProfile(client, 'u1', { contactPhone: '050' });
+
+    expect(calls.map((c) => c.table)).toEqual(['user_private']);
+  });
+
+  it('preserves explicit null in nullable fields (clear-the-value semantic)', async () => {
+    const { client, calls } = createFakeClient();
+
+    await supabaseUpdateEditableProfile(client, 'u1', { biography: null, avatarUrl: null, contactPhone: null });
+
+    expect(calls[0]?.payload).toEqual({ biography: null, avatar_url: null });
+    expect(calls[1]?.payload).toEqual({ contact_phone: null });
+  });
+
+  it('does not call the database for an empty patch or one of undefined fields', async () => {
+    const { client, calls } = createFakeClient();
+
+    await supabaseUpdateEditableProfile(client, 'u1', {});
+    await supabaseUpdateEditableProfile(client, 'u1', { displayName: undefined, contactPhone: undefined });
+
+    expect(calls).toHaveLength(0);
+  });
+
+  it('writes nothing private when the public update is refused (an unknown city)', async () => {
+    const { client, calls } = createFakeClient({
+      tables: { users: { data: null, error: { code: '23503', message: 'violates foreign key users_city_id_fkey' } } },
+    });
+
+    await expect(
+      supabaseUpdateEditableProfile(client, 'u1', { city: 'no-such-city', contactPhone: '050' }),
+    ).rejects.toThrow('foreign key');
+    expect(callsTo(calls, 'user_private')).toHaveLength(0);
   });
 });

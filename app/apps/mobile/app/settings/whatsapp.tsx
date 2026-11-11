@@ -8,7 +8,7 @@ import { makeUseStyles, radius, spacing, typography, useTheme, Text } from '@kc/
 import { useShellStackScreenOptions } from '../../src/navigation/shellStackScreenOptions';
 import { rtlTextAlignStart } from '../../src/lib/rtlTextAlignStart';
 import { webTextRtl, webViewRtl } from '../../src/lib/webRtlStyle';
-import { getMarketplaceSupabaseClient } from '../../src/services/marketplaceComposition';
+import { legacySupabase } from '../../src/lib/container';
 import { LaunchSurfaceGate } from '../../src/components/LaunchSurfaceGate';
 
 interface LinkStatus { linked: boolean; wa_id_masked: string | null; is_pro: boolean }
@@ -17,7 +17,7 @@ interface LinkCode { code: string; expires_at: string }
 const STATUS_KEY = ['whatsapp-link-status'];
 
 async function fetchStatus(): Promise<LinkStatus> {
-  const { data, error } = await getMarketplaceSupabaseClient().rpc('api_whatsapp_my_link_status');
+  const { data, error } = await legacySupabase.rpc('api_whatsapp_my_link_status');
   if (error) throw error;
   return data as unknown as LinkStatus;
 }
@@ -37,7 +37,7 @@ function WhatsAppLinkScreenContent() {
   const onGetCode = React.useCallback(async () => {
     setBusy(true);
     try {
-      const { data, error } = await getMarketplaceSupabaseClient().rpc('api_whatsapp_create_link_code');
+      const { data, error } = await legacySupabase.rpc('api_whatsapp_create_link_code');
       if (error) throw error;
       setCode(data as unknown as LinkCode);
     } catch {
@@ -50,7 +50,7 @@ function WhatsAppLinkScreenContent() {
   const doUnlink = React.useCallback(async () => {
     setBusy(true);
     try {
-      const { error } = await getMarketplaceSupabaseClient().rpc('api_whatsapp_unlink_me');
+      const { error } = await legacySupabase.rpc('api_whatsapp_unlink_me');
       if (error) throw error;
       setCode(null);
       await queryClient.invalidateQueries({ queryKey: STATUS_KEY });

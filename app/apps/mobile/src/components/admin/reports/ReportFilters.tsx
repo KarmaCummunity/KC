@@ -26,17 +26,17 @@ export function ReportFilterSheetSections({ value, onChange }: ReportFiltersProp
   const styles = useStyles();
   const L = useLocaleBundle();
 
-  const TYPES: ReadonlyArray<{ readonly key: 'all' | 'post' | 'user' | 'chat' | 'listing'; readonly label: string }> = [
+  const TYPES: ReadonlyArray<{ readonly key: 'all' | 'post' | 'user' | 'chat' | 'comment'; readonly label: string }> = [
     { key: 'all',  label: L.admin.reports.filters.all },
     { key: 'post', label: L.admin.reports.filters.posts },
     { key: 'user', label: L.admin.reports.filters.users },
     { key: 'chat', label: L.admin.reports.filters.chats },
-    { key: 'listing', label: L.admin.reports.filters.listings },
+    { key: 'comment', label: L.admin.reports.filters.comments },
   ];
 
   return (
     <>
-      <FilterSection<'all' | 'post' | 'user' | 'chat' | 'listing'>
+      <FilterSection<'all' | 'post' | 'user' | 'chat' | 'comment'>
         options={TYPES.map((t) => ({ value: t.key, label: t.label }))}
         value={value.targetType ?? 'all'}
         onChange={(key) => onChange({ ...value, targetType: key === 'all' || key === null ? null : key })}

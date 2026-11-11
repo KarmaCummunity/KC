@@ -66,8 +66,8 @@ describe('SupabaseOrganizationsRepository', () => {
   it('lists my organizations once each, with the strongest role', async () => {
     const { repo } = makeRepo({}, {
       data: [
-        { org_id: 'o1', role: 'org_volunteer', organizations: { name: 'Org', slug: 'org' } },
-        { org_id: 'o1', role: 'org_admin', organizations: { name: 'Org', slug: 'org' } },
+        { org_id: 'o1', roles: ['org_volunteer', 'org_admin'], organizations: { name: 'Org', slug: 'org' } },
+        { org_id: 'o2', roles: ['unknown'], organizations: { name: 'Other', slug: 'other' } },
       ],
       error: null,
     });
@@ -79,8 +79,8 @@ describe('SupabaseOrganizationsRepository', () => {
   it('reads the latest application, or null when there is none', async () => {
     const { repo } = makeRepo({}, {
       data: {
-        application_id: 'a1', org_name: 'Org', status: 'approved', created_at: 'c',
-        reviewed_at: 'r', review_note: null, org_id: 'o1',
+        id: 'a1', org_name: 'Org', status: 'approved', created_at: 'c',
+        reviewed_at: 'r', review_note: null, organization_id: 'o1',
       },
       error: null,
     });

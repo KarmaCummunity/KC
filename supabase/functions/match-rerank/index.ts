@@ -1,5 +1,6 @@
-// match-rerank — matching v2 optional Gemini re-rank. Logic in handler.ts (unit-tested, mocked).
-// Off by default: needs matching_settings.llm_rerank_enabled = true AND the GEMINI_API_KEY secret.
+// match-rerank — service role only; started every five minutes by the database job
+// `match_rerank`. Logic in handler.ts (unit-tested, mocked). Off by default: needs the
+// matching setting llm_rerank_enabled = true AND the GEMINI_API_KEY secret.
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';

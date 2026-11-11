@@ -1,70 +1,39 @@
-// Online presence (green dot) on the global private `presence:online` topic.
-// One channel per signed-in app session; UI consumers subscribe to the shared
-// online-id set instead of opening their own channels (no per-row channels,
-// no leaks). Policies: 0415 (active members track, authenticated receive).
+// Online presence (the green dot).
+//
+// DEGRADED (map row M24): the baseline has no global presence topic. Its realtime policies admit
+// only `chat:<id>:…` topics of a chat the member uses and the member's own `user:<id>:…` topics
+// (supabase/schemas/40_messaging/060_realtime.sql), so joining the old `presence:online` topic
+// would only be refused and retried. This class therefore keeps the surface the screens use
+// (`start`, `stop`, `isOnline`, `getSnapshot`, `subscribe`) but tracks nobody: the online set is
+// always empty and no dot turns green. Per-chat presence (`chat:<id>:presence`) is allowed by the
+// baseline and is the replacement to build, not part of this migration.
 
-import type { RealtimeChannel } from '@supabase/supabase-js';
-import { openExactTopicChannel, type ManagedChannel, type RealtimeHost } from './exactTopicChannel';
-
+/** The topic the app used to join; kept as the name of what is missing. */
 export const ONLINE_PRESENCE_TOPIC = 'presence:online';
 
 export type OnlineListener = (online: ReadonlySet<string>) => void;
 
+const NOBODY: ReadonlySet<string> = new Set();
+
 export class SupabaseOnlinePresence {
-  private managed: ManagedChannel | null = null;
-  private userId: string | null = null;
-  private online: ReadonlySet<string> = new Set();
-  private readonly listeners = new Set<OnlineListener>();
+  /** Would start tracking `userId` as online; with no topic to join it does nothing. */
+  start(_userId: string): void {}
 
-  constructor(private readonly client: RealtimeHost) {}
+  /** Would leave presence; there is nothing joined to leave. */
+  stop(): void {}
 
-  /** Start (or keep) tracking `userId` as online. Idempotent per user. */
-  start(userId: string): void {
-    if (this.managed && this.userId === userId) return;
-    this.stop();
-    this.userId = userId;
-    this.managed = openExactTopicChannel(
-      this.client,
-      ONLINE_PRESENCE_TOPIC,
-      { private: true, presence: { key: userId } },
-      (ch) => {
-        ch.on('presence', { event: 'sync' }, () => this.publish(onlineIdsFrom(ch)));
-      },
-      (status, ch) => {
-        if (status === 'SUBSCRIBED') void ch.track({ online_at: new Date().toISOString() });
-      },
-    );
+  /** Always false: nobody is tracked. */
+  isOnline(_userId: string | null | undefined): boolean {
+    return false;
   }
 
-  /** Leave presence and drop the channel (background / sign-out). */
-  stop(): void {
-    this.managed?.close();
-    this.managed = null;
-    this.userId = null;
-    if (this.online.size > 0) this.publish(new Set());
-  }
-
-  isOnline(userId: string | null | undefined): boolean {
-    return !!userId && this.online.has(userId);
-  }
-
+  /** The (always empty) set of online member ids. */
   getSnapshot(): ReadonlySet<string> {
-    return this.online;
+    return NOBODY;
   }
 
-  subscribe(listener: OnlineListener): () => void {
-    this.listeners.add(listener);
-    return () => {
-      this.listeners.delete(listener);
-    };
+  /** Registers a listener that, as the set never changes, is never called; returns its unsubscribe. */
+  subscribe(_listener: OnlineListener): () => void {
+    return () => undefined;
   }
-
-  private publish(next: ReadonlySet<string>): void {
-    this.online = next;
-    for (const l of this.listeners) l(next);
-  }
-}
-
-export function onlineIdsFrom(ch: Pick<RealtimeChannel, 'presenceState'>): ReadonlySet<string> {
-  return new Set(Object.keys(ch.presenceState() ?? {}));
 }

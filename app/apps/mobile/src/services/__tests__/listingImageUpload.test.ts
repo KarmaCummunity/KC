@@ -57,14 +57,14 @@ describe('listingImageUpload', () => {
   });
 
   describe('uploadListingImages', () => {
-    it('compresses and uploads images to the listing-images bucket', async () => {
+    it('compresses and uploads images to the post-images bucket', async () => {
       mockManipulateAsync.mockResolvedValue({ base64: Buffer.from('jpeg-bytes').toString('base64') });
       mockUpload.mockResolvedValue({ error: null });
 
       const paths = await uploadListingImages('user-1', sampleImages);
 
       expect(paths).toEqual(['user-1/batch-uuid-1/0.jpg', 'user-1/batch-uuid-1/1.jpg']);
-      expect(mockClient.storage.from).toHaveBeenCalledWith('listing-images');
+      expect(mockClient.storage.from).toHaveBeenCalledWith('post-images');
       expect(mockUpload).toHaveBeenCalledTimes(2);
       expect(mockUpload).toHaveBeenCalledWith(
         'user-1/batch-uuid-1/0.jpg',
@@ -115,14 +115,14 @@ describe('listingImageUpload', () => {
   describe('listingImagePublicUrl', () => {
     it('returns publicUrl from Supabase storage', () => {
       mockGetPublicUrl.mockReturnValueOnce({
-        data: { publicUrl: 'https://cdn.example.com/listing-images/u/b/0.jpg' },
+        data: { publicUrl: 'https://cdn.example.com/post-images/u/b/0.jpg' },
       });
 
       const url = listingImagePublicUrl('u/b/0.jpg');
 
-      expect(mockClient.storage.from).toHaveBeenCalledWith('listing-images');
+      expect(mockClient.storage.from).toHaveBeenCalledWith('post-images');
       expect(mockGetPublicUrl).toHaveBeenCalledWith('u/b/0.jpg');
-      expect(url).toBe('https://cdn.example.com/listing-images/u/b/0.jpg');
+      expect(url).toBe('https://cdn.example.com/post-images/u/b/0.jpg');
     });
   });
 });

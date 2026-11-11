@@ -1,0 +1,10 @@
+rule_code,param_key,param_value
+R-Housing-2,current_version,1
+R-Items-5,ttl_days,30
+R-Match-6,min_age_years,18
+R-Money-3,max_active,5
+R-Rides-1,max_cost_share_ils,70
+R-Rides-2,max_cost_share_ils,20
+R-SEC-Follow-Write,max_per_hour,100
+R-SEC-Handoff-Write,max_per_hour,30
+R-SEC-Listing-Write,max_per_hour,20

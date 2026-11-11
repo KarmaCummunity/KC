@@ -23,14 +23,23 @@ export interface PostRepositoryContractContext {
   newActor(): Promise<PostRepositoryActor>;
   /** An address whose city the implementation knows (cities are a lookup table). */
   readonly address: Address;
+  /**
+   * The production baseline's rules that differ from the first implementation (default: the first):
+   * - `reopenCountReadable: false` — the count is an internal moderation signal, a reader sees 0;
+   * - `deleteKeepsPostForReopen: true` — deleting a published post moves it to `deleted_no_recipient`
+   *   for seven days (undone by a reopen) instead of removing it; a post already in that state cannot
+   *   be deleted again.
+   */
+  readonly reopenCountReadable?: boolean;
+  readonly deleteKeepsPostForReopen?: boolean;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** One photo under the owner's storage prefix: a Give post needs at least one (D132). */
+/** One photo under the owner's storage prefix: a Give post needs at least one (D132). A file belongs to one post, so each call names a new one. */
 function onePhoto(ownerId: string): CreatePostInput['mediaAssets'] {
-  return [{ path: `${ownerId}/contract.jpg`, mimeType: 'image/jpeg', sizeBytes: 1000 }];
+  return [{ path: `${ownerId}/${crypto.randomUUID()}.jpg`, mimeType: 'image/jpeg', sizeBytes: 1000 }];
 }
 
 /** Minimal valid Give post (with its required photo) for `ownerId`; override what a case is about. */
@@ -209,7 +218,7 @@ const reopenAfterClose: ContractCase<Ctx> = {
     await actor.repo.close(created.postId, null);
     const reopened = await actor.repo.reopen(created.postId);
     assertEqual(reopened.status, 'open', 'status after reopen');
-    assertEqual(reopened.reopenCount, 1, 'reopenCount after one reopen');
+    if (ctx.reopenCountReadable !== false) assertEqual(reopened.reopenCount, 1, 'reopenCount after one reopen');
     assertEqual(reopened.deleteAfter, null, 'deleteAfter after reopen');
     await assertRejectsWithCode(actor.repo.reopen(created.postId), 'closure_wrong_status', 'reopen of an open post');
   },
@@ -224,6 +233,12 @@ const deleteUnlinkedOwnPost: ContractCase<Ctx> = {
     const actor = await ctx.newActor();
     const open = await createFor(actor, ctx);
     await actor.repo.delete(open.postId);
+    if (ctx.deleteKeepsPostForReopen) {
+      const kept = await actor.repo.findById(open.postId, actor.userId);
+      assertEqual(kept?.status, 'deleted_no_recipient', 'the deleted post is kept for its seven-day window');
+      await assertRejectsWithCode(actor.repo.delete(open.postId), 'post_owner_delete_forbidden', 'delete twice');
+      return;
+    }
     assertEqual(await actor.repo.findById(open.postId, actor.userId), null, 'findById after delete');
     await assertRejectsWithCode(actor.repo.delete(open.postId), 'post_owner_delete_forbidden', 'delete twice');
     const closed = await createFor(actor, ctx);

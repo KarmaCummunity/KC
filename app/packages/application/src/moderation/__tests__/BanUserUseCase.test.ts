@@ -32,7 +32,7 @@ describe('BanUserUseCase', () => {
     expect(repo.banCalls).toEqual([]);
   });
 
-  it('rejects self-ban with cannot_ban_self and does NOT call banUser', async () => {
+  it('rejects self-ban with cannot_sanction_self and does NOT call banUser', async () => {
     const repo = new FakeModerationAdminRepository();
     const uc = new BanUserUseCase(repo);
 
@@ -45,13 +45,13 @@ describe('BanUserUseCase', () => {
       }),
     ).rejects.toMatchObject({
       name: 'ModerationError',
-      code: 'cannot_ban_self',
+      code: 'cannot_sanction_self',
     });
 
     expect(repo.banCalls).toEqual([]);
   });
 
-  it('rejects banning another admin with cannot_ban_admin and does NOT call banUser', async () => {
+  it('rejects banning platform staff with cannot_sanction_admin and does NOT call banUser', async () => {
     const repo = new FakeModerationAdminRepository();
     repo.adminIds.add('u_other_admin');
     const uc = new BanUserUseCase(repo);
@@ -71,7 +71,7 @@ describe('BanUserUseCase', () => {
         reason: 'policy_violation',
         note: '',
       }),
-    ).rejects.toMatchObject({ code: 'cannot_ban_admin' });
+    ).rejects.toMatchObject({ code: 'cannot_sanction_admin' });
 
     expect(repo.banCalls).toEqual([]);
   });

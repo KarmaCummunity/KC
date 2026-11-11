@@ -1,12 +1,12 @@
 // Maps a challenge to its feed post (0639) for share, menu and likes/comments on the detail screen.
 import { useQuery } from '@tanstack/react-query';
-import { getSupabaseClient } from '@kc/infrastructure-supabase';
+import { getLegacySupabaseClient } from '@kc/infrastructure-supabase';
 import type { PostWithOwner } from '@kc/application';
 import { getPostByIdUseCase } from '../services/postsComposition';
 import { pickAuthStorage } from '../services/authSecureStorage';
 
 async function resolveChallengePostId(challengeId: string): Promise<string | null> {
-  const client = getSupabaseClient({ storage: pickAuthStorage() });
+  const client = getLegacySupabaseClient({ storage: pickAuthStorage() });
   const { data, error } = await client
     .from('posts')
     .select('post_id')

@@ -1,13 +1,15 @@
 // app/apps/mobile/src/components/admin/admins/UserLookupField.tsx
-// FR-ADMIN-016 — debounced active-user lookup for the grant modal. Queries
-// `users` directly (RLS lets any signed-in viewer read active rows, D-21);
-// once a user is picked the field collapses into the selection with a
+// FR-ADMIN-016 — debounced active-user lookup for the grant modal, through the
+// `adminFindMembers` use case (a plain `users` read: RLS lets any signed-in viewer read
+// active rows, D-21); once a user is picked the field collapses into the selection with a
 // "change" link.
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { MIN_MEMBER_LOOKUP_CHARS } from '@kc/application';
 import { makeUseStyles, radius, spacing, Text, typography } from '@kc/ui';
 import { TextField } from '../../ui/TextField';
-import { supabase } from '../../../lib/container';
+import { container } from '../../../lib/container';
+import { listOrEmpty } from '../../../lib/backendAvailability';
 import { rowDirectionStart, textAlignStart } from '../../../lib/rtlLayout';
 import { useLocaleBundle } from '../../../i18n/useLocaleBundle';
 
@@ -19,21 +21,12 @@ export interface PickedUser {
 
 /** Debounce between keystrokes and the lookup, in ms. */
 const LOOKUP_DEBOUNCE_MS = 280;
-/** Characters needed before the lookup runs. */
-const MIN_QUERY = 2;
+/** Characters needed before the lookup runs (the spinner and the empty hint follow the same rule). */
+const MIN_QUERY = MIN_MEMBER_LOOKUP_CHARS;
 
-async function lookupUsers(q: string): Promise<readonly PickedUser[]> {
-  const trimmed = q.trim();
-  if (trimmed.length < MIN_QUERY) return [];
-  const { data, error } = await supabase
-    .from('users')
-    .select('user_id, display_name')
-    .eq('account_status', 'active')
-    .ilike('display_name', `%${trimmed}%`)
-    .limit(8);
-  if (error || !Array.isArray(data)) return [];
-  return (data as { user_id: string; display_name: string | null }[])
-    .map((r) => ({ userId: r.user_id, displayName: r.display_name }));
+/** Matching members; empty when the backend cannot serve the lookup yet (degrade rule). */
+function lookupUsers(q: string): Promise<PickedUser[]> {
+  return listOrEmpty(() => container.adminFindMembers.execute(q));
 }
 
 export interface UserLookupFieldProps {

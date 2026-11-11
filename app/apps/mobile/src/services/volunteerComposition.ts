@@ -4,10 +4,8 @@ import {
 } from '@kc/infrastructure-supabase';
 import {
   CancelVolunteerSignupUseCase,
-  CheckInVolunteerShiftUseCase,
   CloseVolunteerOpportunityUseCase,
   GetVolunteerOpportunityDetailUseCase,
-  GetVolunteerShiftIcsUseCase,
   ListMyOrganizerVolunteerOpportunitiesUseCase,
   ListMyVolunteerSignupsUseCase,
   ListShiftVolunteersUseCase,
@@ -30,8 +28,6 @@ export const volunteerUseCases = {
   signUp: () => new SignUpVolunteerShiftUseCase(repo()),
   cancelSignup: () => new CancelVolunteerSignupUseCase(repo()),
   listMySignups: () => new ListMyVolunteerSignupsUseCase(repo()),
-  checkIn: () => new CheckInVolunteerShiftUseCase(repo()),
-  getIcs: () => new GetVolunteerShiftIcsUseCase(repo()),
   close: () => new CloseVolunteerOpportunityUseCase(repo()),
   listOrganizer: () => new ListMyOrganizerVolunteerOpportunitiesUseCase(repo()),
   listRoster: () => new ListShiftVolunteersUseCase(repo()),
