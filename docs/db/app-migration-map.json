@@ -2,8 +2,8 @@
  "generatedBy": "scripts/app-migration-map.mjs",
  "totals": {
   "rpc": {
-   "objects": 221,
-   "same": 92,
+   "objects": 222,
+   "same": 93,
    "renamed": 20,
    "changed": 47,
    "removed": 1,
@@ -44,8 +44,8 @@
  },
  "launchTotals": {
   "core": {
-   "objects": 103,
-   "same": 85,
+   "objects": 104,
+   "same": 86,
    "renamed": 1,
    "changed": 17,
    "removed": 0,
@@ -371,8 +371,8 @@
    "missing": 0
   },
   "users": {
-   "callSites": 32,
-   "oneToOne": 19,
+   "callSites": 33,
+   "oneToOne": 20,
    "changed": 13,
    "removed": 0,
    "missing": 0
@@ -564,6 +564,7 @@
     "table:legal_document_versions",
     "table:cities",
     "table:streets",
+    "rpc:my_karma_points",
     "rpc:notifications_page",
     "rpc:notifications_unread_count",
     "rpc:notifications_mark_read",
@@ -574,8 +575,8 @@
     "channel:topic = `user:${userId}:account`"
    ],
    "counts": {
-    "objects": 30,
-    "oneToOne": 26,
+    "objects": 31,
+    "oneToOne": 27,
     "changed": 4,
     "removed": 0,
     "missing": 0
@@ -4871,7 +4872,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 60,
+     "line": 61,
      "symbol": "SupabaseChatRepository.chatCall",
      "area": "chat"
     }
@@ -4914,7 +4915,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 81,
+     "line": 97,
      "symbol": "SupabaseChatRepository.getUnreadTotal",
      "area": "chat"
     }
@@ -8389,7 +8390,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 77,
+     "line": 93,
      "symbol": "SupabaseChatRepository.markRead",
      "area": "chat"
     }
@@ -8693,6 +8694,38 @@
      "line": 52,
      "symbol": "SupabaseStatsRepository.listMyActivityTimeline",
      "area": "stats"
+    }
+   ]
+  },
+  {
+   "old": "my_karma_points",
+   "kind": "rpc",
+   "status": "same",
+   "launch": "core",
+   "confidence": "high",
+   "missing": null,
+   "note": "The caller's own karma total (the `user_stats.karma_points` column is not readable by clients).",
+   "oldObject": {},
+   "targets": [
+    {
+     "type": "rpc",
+     "name": "my_karma_points",
+     "source": "72_karma/020_karma_ledger.sql:69",
+     "signature": [
+      "my_karma_points() → number"
+     ],
+     "errors": []
+    }
+   ],
+   "areas": [
+    "users"
+   ],
+   "callSites": [
+    {
+     "file": "app/packages/infrastructure-supabase/src/users/userReads.ts",
+     "line": 36,
+     "symbol": "loadOwnerSlice",
+     "area": "users"
     }
    ]
   },
@@ -10668,7 +10701,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 71,
+     "line": 79,
      "symbol": "SupabaseChatRepository.sendMessage",
      "area": "chat"
     },
@@ -10775,6 +10808,7 @@
        "access_notes",
        "destination_street_number",
        "exact_point",
+       "post_id",
        "street",
        "street_number"
       ]
@@ -11899,7 +11933,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 138,
+     "line": 154,
      "symbol": "SupabaseChatRepository.readMarkers",
      "area": "chat",
      "ops": [
@@ -12049,7 +12083,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/users/userReads.ts",
-     "line": 45,
+     "line": 49,
      "symbol": "loadCityNames",
      "area": "users",
      "ops": [
@@ -13171,7 +13205,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 96,
+     "line": 112,
      "symbol": "SupabaseChatRepository.hasSentAnyMessage",
      "area": "chat",
      "ops": [
@@ -14151,6 +14185,7 @@
        "access_notes",
        "destination_street_number",
        "exact_point",
+       "post_id",
        "street",
        "street_number"
       ]
@@ -15619,7 +15654,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/users/userReads.ts",
-     "line": 56,
+     "line": 60,
      "symbol": "loadStats",
      "area": "users",
      "ops": [
@@ -15849,7 +15884,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/chat/SupabaseChatRepository.ts",
-     "line": 117,
+     "line": 133,
      "symbol": "SupabaseChatRepository.getCounterpart",
      "area": "chat",
      "ops": [
@@ -15993,7 +16028,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/users/userReads.ts",
-     "line": 93,
+     "line": 97,
      "symbol": "fetchUserBy",
      "area": "users",
      "ops": [

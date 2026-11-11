@@ -8,12 +8,12 @@ The application (`app/packages/infrastructure-supabase`, `app/apps/mobile`) and 
 
 | Kind | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| RPCs | 221 | 92 | 20 | 47 | 1 | 61 |
+| RPCs | 222 | 93 | 20 | 47 | 1 | 61 |
 | Tables and views | 56 | 36 | 0 | 16 | 0 | 4 |
 | Storage buckets | 4 | 3 | 0 | 1 | 0 | 0 |
 | Realtime channels | 6 | 6 | 0 | 0 | 0 | 0 |
 | Edge Function invokes | 3 | 3 | 0 | 0 | 0 | 0 |
-| **Total** | 290 | 140 | 20 | 64 | 1 | 65 |
+| **Total** | 291 | 141 | 20 | 64 | 1 | 65 |
 
 ### Launch scope
 
@@ -21,10 +21,10 @@ Every row carries `launch` (spec D102, `docs/spec/96_launch_and_first_group_plan
 
 | Launch tier | Objects used | 1:1 | 1:1 (renamed) | CHANGED | REMOVED | MISSING |
 | --- | --- | --- | --- | --- | --- | --- |
-| core | 103 | 85 | 1 | 17 | 0 | 0 |
+| core | 104 | 86 | 1 | 17 | 0 | 0 |
 | wedge | 52 | 31 | 15 | 6 | 0 | 0 |
 | later | 135 | 24 | 4 | 41 | 1 | 65 |
-| **Launch-critical (core + wedge)** | 155 | 116 | 16 | 23 | 0 | 0 |
+| **Launch-critical (core + wedge)** | 156 | 117 | 16 | 23 | 0 | 0 |
 
 Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename of the function or its arguments · **CHANGED** the caller's logic changes · **REMOVED** no replacement by design · **MISSING** the baseline has no equivalent although the code needs one (§4). Confidence: **high** read in the baseline source, **medium** inferred from names and generated types.
 
@@ -70,7 +70,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `infrastructure-supabase/src/streets/` | 1 | 0 | 1 | 0 | 0 |
 | `infrastructure-supabase/src/survey/` | 10 | 3 | 2 | 0 | 5 |
 | `infrastructure-supabase/src/translations/` | 6 | 3 | 3 | 0 | 0 |
-| `infrastructure-supabase/src/users/` | 32 | 19 | 13 | 0 | 0 |
+| `infrastructure-supabase/src/users/` | 33 | 20 | 13 | 0 | 0 |
 | `infrastructure-supabase/src/volunteering/` | 9 | 3 | 6 | 0 | 0 |
 | `apps/mobile` (direct calls outside the adapters) | 21 | 16 | 2 | 0 | 3 |
 | Edge Function `_shared` | 11 | 0 | 0 | 0 | 11 |
@@ -191,19 +191,19 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `'chat:${chatId}:typing'` (channel) | core | 1:1 | topic `chat:<chat id>:typing` | Members may send on `chat:%:typing` and `chat:%:presence`. |  | high | SupabaseChatV2Realtime.ts:30 |
 | `'user:${userId}:chats'` (channel) | core | 1:1 | topic `user:<user id>:chats` | Private topic of the member; event `chat_updated` carries ids only, so the inbox refreshes and the unread total is re-read. |  | high | SupabaseChatRealtime.ts:77 |
 | `chat_inbox_page` | core | 1:1 | `chat_inbox_page(p_before_chat_id?: string, p_before_last_message_at?: string, p_limit?: number, p_search?: string) → { anchor_post_id: string chat_id: string counterpart_avatar_url: string counterpart_display_name: string counterpart_id: string counterpart_last_read_at: string counterpart_share_handle: string kind: string last_messa...` | `p_limit`, `p_before_last_message_at`, `p_before_chat_id`, `p_search`; one row per visible chat with the counterpart, a 140-character preview of the newest message and the unread count. The app reads one page of 50; it carries no counterpart verification level and no media or system payload of the newest message. | `unauthenticated` | high | getMyChats.ts:71 |
-| `chat_messages_page` | core | 1:1 | `chat_messages_page(p_after?: string, p_before?: string, p_chat_id: string, p_limit?: number) → messages row[]` | `p_chat_id`, `p_limit`, `p_before`, `p_after`; the `messages` rows, newest first when paging backwards. Refusal `chat_not_found`. | `chat_not_found`, `unauthenticated` | high | SupabaseChatRepository.ts:60 |
-| `chat_unread_total` | core | 1:1 | `chat_unread_total() → number` | The badge; also delivered in `bootstrap_session().unread.chats`. | `unauthenticated` | high | SupabaseChatRealtime.ts:101, SupabaseChatRepository.ts:81 |
+| `chat_messages_page` | core | 1:1 | `chat_messages_page(p_after?: string, p_before?: string, p_chat_id: string, p_limit?: number) → messages row[]` | `p_chat_id`, `p_limit`, `p_before`, `p_after`; the `messages` rows, newest first when paging backwards. Refusal `chat_not_found`. | `chat_not_found`, `unauthenticated` | high | SupabaseChatRepository.ts:61 |
+| `chat_unread_total` | core | 1:1 | `chat_unread_total() → number` | The badge; also delivered in `bootstrap_session().unread.chats`. | `unauthenticated` | high | SupabaseChatRealtime.ts:101, SupabaseChatRepository.ts:97 |
 | `hide_chat` | core | 1:1 | `hide_chat(p_chat_id: string) → undefined` | `p_chat_id`; a support thread cannot be hidden (`support_thread_not_hideable`). | `chat_not_found`, `support_thread_not_hideable`, `unauthenticated` | high | supabaseDmChat.ts:46 |
-| `mark_chat_read` | core | 1:1 | `mark_chat_read(p_chat_id: string) → undefined` | `p_chat_id`; advances the caller's `chat_members.last_read_at`, which is the read receipt other members see. | `chat_not_found`, `unauthenticated` | high | SupabaseChatRepository.ts:77 |
+| `mark_chat_read` | core | 1:1 | `mark_chat_read(p_chat_id: string) → undefined` | `p_chat_id`; advances the caller's `chat_members.last_read_at`, which is the read receipt other members see. | `chat_not_found`, `unauthenticated` | high | SupabaseChatRepository.ts:93 |
 | `open_direct_chat` | core | 1:1 | `open_direct_chat(p_anchor_post_id?: string, p_user_id: string) → chats row` | `p_user_id`, `p_anchor_post_id`; the caller's one chat with the member (created when missing, un-hidden when hidden), re-pinned when an anchor is given. A ride is a post, so a ride anchor is a post anchor; the old "second chat after a personal hide" no longer exists. Refusals `account_not_active`, `blocked_relationship`, `cannot_chat_self`, `post_unavailable` †, `user_unavailable`. | `account_not_active`, `blocked_relationship`, `cannot_chat_self`, `post_unavailable`, `unauthenticated`, `user_unavailable` | high | supabaseDmChat.ts:30 |
 | `open_support_thread` | core | 1:1 | `open_support_thread(anchor_post_id: string \| null, created_at: string, direct_user_a: string \| null, direct_user_b: string \| null, id: string, kind: string, last_message_at: string \| null, moderation_hidden_at: string \| null, support_user_id: string \| null) → chats row` | No arguments; the caller's support thread (`kind = 'support'`, `support_user_id`), created on first use. A support issue is this call plus `send_message`: the category is the first line of the body (there is no category column). | `unauthenticated` | high | supabaseDmChat.ts:40 |
-| `send_message` | core | 1:1 | `send_message(p_body: string, p_chat_id: string, p_media_payload?: Json, p_message_id?: string) → messages row` | `p_chat_id`, `p_body`, `p_media_payload`, `p_message_id` (the optimistic message id, so a retry returns the first copy); also carries media messages and the support issue. Refusals `account_not_active`, `blocked_relationship`, `chat_not_found`, `invalid_media_payload` †, `invalid_rate_limit_args` †, `message_body_invalid` †, `rate_limited`. | `account_not_active`, `blocked_relationship`, `chat_not_found`, `invalid_media_payload`, `invalid_rate_limit_args`, `message_body_invalid`, `rate_limited`, `unauthenticated` | high | submitSupportIssue.ts:27, SupabaseChatRepository.ts:71, SupabaseChatV2Repository.ts:36 |
+| `send_message` | core | 1:1 | `send_message(p_body: string, p_chat_id: string, p_media_payload?: Json, p_message_id?: string) → messages row` | `p_chat_id`, `p_body`, `p_media_payload`, `p_message_id` (the optimistic message id, so a retry returns the first copy); also carries media messages and the support issue. Refusals `account_not_active`, `blocked_relationship`, `chat_not_found`, `invalid_media_payload` †, `invalid_rate_limit_args` †, `message_body_invalid` †, `rate_limited`. | `account_not_active`, `blocked_relationship`, `chat_not_found`, `invalid_media_payload`, `invalid_rate_limit_args`, `message_body_invalid`, `rate_limited`, `unauthenticated` | high | submitSupportIssue.ts:27, SupabaseChatRepository.ts:79, SupabaseChatV2Repository.ts:36 |
 | `set_message_reaction` | core | 1:1 | `set_message_reaction(p_message_id: string, p_reaction_type: string) → undefined` | `p_message_id`, `p_reaction_type` (null clears); returns nothing, the change arrives as a `reaction` broadcast on the chat topic. Refusals `account_not_active`, `invalid_reaction_type` †, `message_not_found`. | `account_not_active`, `invalid_reaction_type`, `message_not_found`, `unauthenticated` | high | SupabaseChatV2Repository.ts:20 |
-| `chat_members` (table) | core | 1:1 | table `chat_members` | Read by chat for the members' read markers (`user_id`, `last_read_at`): a message is read when another member's marker reached it. Writes only through `mark_chat_read` and `hide_chat`. |  | high | SupabaseChatRepository.ts:138 |
+| `chat_members` (table) | core | 1:1 | table `chat_members` | Read by chat for the members' read markers (`user_id`, `last_read_at`): a message is read when another member's marker reached it. Writes only through `mark_chat_read` and `hide_chat`. |  | high | SupabaseChatRepository.ts:154 |
 | `chats` (table) | core | 1:1 | table `chats` | Read by id for the chat screen (`id`, `kind`, `direct_user_a/b`, `support_user_id`, `anchor_post_id`, `last_message_at`, `created_at`); creation is `open_direct_chat`, the inbox is `chat_inbox_page`. |  | high | SupabaseChatRepository.ts:32 |
 | `message_reactions` (table) | core | 1:1 | table `message_reactions` | Read for the reactions of the listed messages (`message_id`, `user_id`, `reaction_type`); writes only through `set_message_reaction`. |  | high | SupabaseChatV2Repository.ts:52 |
-| `messages` (table) | core | 1:1 | table `messages` | Read-only for clients: the "has this member ever sent a message" check selects the caller's `kind = 'user'` rows; paging is `chat_messages_page`, sending is `send_message`. |  | high | SupabaseChatRepository.ts:96 |
-| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | SupabaseChatRepository.ts:117 |
+| `messages` (table) | core | 1:1 | table `messages` | Read-only for clients: the "has this member ever sent a message" check selects the caller's `kind = 'user'` rows; paging is `chat_messages_page`, sending is `send_message`. |  | high | SupabaseChatRepository.ts:112 |
+| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | SupabaseChatRepository.ts:133 |
 
 ### `infrastructure-supabase/src/cities/`
 
@@ -548,7 +548,7 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 
 ### `infrastructure-supabase/src/users/`
 
-32 call sites: 19 map 1:1, 13 need logic changes, 0 removed, 0 MISSING.
+33 call sites: 20 map 1:1, 13 need logic changes, 0 removed, 0 MISSING.
 
 | Old object | Launch | Status | Baseline replacement | What changes for the caller | Errors raised (new) | Conf. | Call sites |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -557,16 +557,17 @@ Status: **1:1** same name and call shape · **1:1 (renamed)** mechanical rename 
 | `follow_request_cancel` | core | 1:1 | `follow_request_cancel(p_target: string) → undefined` | `p_target`; a request that is no longer pending is treated as already cancelled. | `follow_request_not_pending`, `unauthenticated` | high | followRequestMethods.ts:77 |
 | `follow_request_decide` | core | 1:1 | `follow_request_decide(p_accept: boolean, p_requester: string) → undefined` | `p_requester`, `p_accept`; a request that is no longer pending (`follow_request_not_pending`) is treated as already decided. | `account_not_active`, `follow_request_not_pending`, `invalid_decision` †, `unauthenticated` | high | followRequestMethods.ts:85 |
 | `follow_user` | core | 1:1 | `follow_user(p_target: string) → string` | `p_target`; answers `following` or `requested`, idempotent. Refusals: `self_follow_forbidden`, `blocked_relationship`, `follow_request_cooldown_active` (detail `cooldown_until=`), `account_not_active`, `rate_limited`, `user_unavailable`. | `account_not_active`, `blocked_relationship`, `follow_request_cooldown_active`, `invalid_rate_limit_args`, `rate_limited`, `self_follow_forbidden`, `unauthenticated`, `user_unavailable` | high | followUserRpc.ts:16 |
+| `my_karma_points` | core | 1:1 | `my_karma_points() → number` | The caller's own karma total (the `user_stats.karma_points` column is not readable by clients). |  | high | userReads.ts:36 |
 | `request_account_deletion` | core | 1:1 | `request_account_deletion() → string` | Deactivates the caller's account for 30 days and returns the purge date (refusals `suspended`, `user_not_found`); the app calls it directly. | `suspended`, `unauthenticated`, `user_not_found` | high | SupabaseUserRepository.ts:169 |
 | `set_date_of_birth` | core | 1:1 | `set_date_of_birth(p_date: string) → undefined` | `p_date`; the 18+ rule answers `underage` / `invalid_date_of_birth`. | `invalid_date_of_birth`, `unauthenticated`, `underage`, `user_not_found` | high | onboardingSupabase.ts:46 |
 | `set_onboarding_state` | core | 1:1 | `set_onboarding_state(p_state: string) → undefined` | `p_state`; refusals `onboarding_basic_info_missing`, `onboarding_transition_invalid`. | `onboarding_basic_info_missing`, `onboarding_transition_invalid`, `unauthenticated`, `user_not_found` | high | onboardingSupabase.ts:60 |
 | `set_privacy_mode` | core | 1:1 | `set_privacy_mode(p_mode: string) → undefined` | `p_mode` 'Public' \| 'Private'; going public accepts every pending follow request. | `account_not_active`, `invalid_privacy_mode` †, `unauthenticated` | high | SupabaseUserRepository.ts:94 |
-| `cities` (table) | core | CHANGED | see `infrastructure-supabase/src/cities/` |  |  |  | editableProfileSupabase.ts:40, userReads.ts:45 |
+| `cities` (table) | core | CHANGED | see `infrastructure-supabase/src/cities/` |  |  |  | editableProfileSupabase.ts:40, userReads.ts:49 |
 | `follow_requests` (table) | core | CHANGED | table `follow_requests`<br>`follow_user(p_target: string) → string`<br>`follow_request_decide(p_accept: boolean, p_requester: string) → undefined`<br>`follow_request_cancel(p_target: string) → undefined` | Read-only for clients. Insert → `follow_user`; accept / reject → `follow_request_decide(p_requester, p_accept)`; cancel → `follow_request_cancel(p_target)`. Status column is ruled by the follow_request machine. | `account_not_active`, `blocked_relationship`, `follow_request_cooldown_active`, `invalid_rate_limit_args`, `rate_limited`, `self_follow_forbidden`, `unauthenticated`, `user_unavailable`, `follow_request_not_pending`, `invalid_decision` † | high | followRequestMethods.ts:104, followRequestMethods.ts:120, getFollowState.ts:19, getFollowState.ts:26 |
 | `follows` (table) | core | 1:1 | table `follows` | Select and delete direct (`follower_id`, `followed_id`); an edge is created only by `follow_user`. |  | high | followMethods.ts:41, followMethods.ts:53, followMethods.ts:80, followMethods.ts:100, getFollowState.ts:17 |
 | `user_private` (table) | core | 1:1 | table `user_private` | The caller's own row: select, and update of the granted columns (contact phone, address lines, notification preferences, dismiss flags, `basic_info_skipped`, `show_active_status`). |  | high | editableProfileSupabase.ts:24, ownPrivateUpdate.ts:27, SupabaseActiveStatusRepository.ts:20, SupabaseUserRepository.ts:230 |
-| `user_stats` (table) | core | 1:1 | see `infrastructure-supabase/src/search/` |  |  |  | userReads.ts:56 |
-| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | editableProfileSupabase.ts:51, followMethods.ts:108, followRequestMethods.ts:130, getFollowState.ts:16, ownUserUpdate.ts:20, searchUsers.ts:28, userReads.ts:93 |
+| `user_stats` (table) | core | 1:1 | see `infrastructure-supabase/src/search/` |  |  |  | userReads.ts:60 |
+| `users` (table) | core | CHANGED | see `infrastructure-supabase/src/admin/` |  |  |  | editableProfileSupabase.ts:51, followMethods.ts:108, followRequestMethods.ts:130, getFollowState.ts:16, ownUserUpdate.ts:20, searchUsers.ts:28, userReads.ts:97 |
 
 ### `infrastructure-supabase/src/volunteering/`
 
@@ -765,7 +766,7 @@ In launch order: after package *n* the app is shippable with everything up to *n
 | Package | Launch | Objects | 1:1 | Changed | Removed | MISSING | May run in parallel with |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | P0 — Contract switch and the degrade rule (first, alone) | core | 2 | 2 | 0 | 0 | 0 | — |
-| P1 — Identity: session start, profile, privacy, follow, block, legal, account deletion, devices | core | 30 | 26 | 4 | 0 | 0 | — |
+| P1 — Identity: session start, profile, privacy, follow, block, legal, account deletion, devices | core | 31 | 27 | 4 | 0 | 0 | — |
 | P2 — Posts, feed, search, closure, translations | core | 42 | 31 | 11 | 0 | 0 | P3, P4 |
 | P3 — Chat and realtime | core | 18 | 17 | 1 | 0 | 0 | P2, P4 |
 | P4 — Reports, moderation and admin basics | core | 17 | 12 | 5 | 0 | 0 | P2, P3 |

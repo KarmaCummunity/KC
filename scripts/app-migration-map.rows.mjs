@@ -172,6 +172,7 @@ rpc('list_challenges', 'changed', 'rpc:list_challenges', 'Offset → keyset `p_c
 rpc('list_challenge_leaderboard', 'same', 'rpc:list_challenge_leaderboard', 'Adds `avatar_url`.');
 rpc('list_my_challenge_entries', 'changed', 'table:challenge_progress_entries', 'Direct read of the caller\'s own entries (policy `challenge_progress_entries_select_own`).');
 table('karma_ledger', 'changed', 'table:karma_ledger', '`ledger_id` → `id`, `points_delta` → `points`, `ref_type` / `ref_id` → `subject` / `reference`. The total is `my_karma_points()`.');
+rpc('my_karma_points', 'same', 'rpc:my_karma_points', 'The caller\'s own karma total (the `user_stats.karma_points` column is not readable by clients).');
 rpc('check_survey_prompt_eligibility', 'same', 'rpc:check_survey_prompt_eligibility', 'Signature unchanged.');
 rpc('upsert_survey_answers', 'same', 'rpc:upsert_survey_answers', 'Signature unchanged.');
 rpc('list_active_surveys', 'changed', 'table:surveys', 'Direct read of active surveys (policy `surveys_select_published`).', { c: M });
