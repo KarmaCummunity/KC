@@ -11,6 +11,14 @@ export function mapChatError(err: { code?: string; message?: string }): Error {
   if (code === '42501') {
     return new ChatError('chat_forbidden', err.message ?? 'chat_forbidden', err);
   }
+  // Named support-issue length errors (rpc_submit_support_issue, #2096) are also raised as
+  // 23514, so they are matched before the generic CHECK-violation branch below.
+  const supportIssueCode = (['description_too_short', 'description_too_long'] as const).find((c) =>
+    err.message?.includes(c),
+  );
+  if (supportIssueCode) {
+    return new ChatError(supportIssueCode, err.message ?? supportIssueCode, err);
+  }
   if (code === '23514') {
     return new ChatError('message_too_long', err.message ?? 'message_too_long', err);
   }
