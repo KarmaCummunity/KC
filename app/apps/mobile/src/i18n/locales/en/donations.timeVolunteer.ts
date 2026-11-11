@@ -1,6 +1,6 @@
 export const timeVolunteer = {
   hubTitle: 'Volunteer your time',
-  hubIntro: 'Browse shifts, sign up or join a waitlist, check in on the day, and earn karma for logged hours.',
+  hubIntro: 'Browse shifts, sign up or join a waitlist; the organizers mark your attendance, and logged hours earn karma.',
   myShiftsLink: 'My shifts',
   opportunityDetail: 'Volunteer opportunity',
   organizerLink: 'Organize opportunities',
