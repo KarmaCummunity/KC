@@ -1,15 +1,17 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { WorldSubcategory } from '@kc/domain';
-import type { Database } from '../database.legacy.types';
+import type { Database } from '../database.types';
+import { unwrapCall } from '../rpc/mapRpcError';
 
-type CategoryRow = Pick<
-  Database['public']['Tables']['categories']['Row'],
-  'category_id' | 'slug' | 'label_he' | 'label_en'
+type SubcategoryRow = Pick<
+  Database['public']['Tables']['item_subcategories']['Row'],
+  'id' | 'slug' | 'label_he' | 'label_en'
 >;
 
-export function mapWorldSubcategory(row: CategoryRow): WorldSubcategory {
+/** A subcategory row → the picker's option. */
+export function mapWorldSubcategory(row: SubcategoryRow): WorldSubcategory {
   return {
-    categoryId: row.category_id,
+    categoryId: row.id,
     slug: row.slug,
     labelHe: row.label_he,
     labelEn: row.label_en,
@@ -17,21 +19,22 @@ export function mapWorldSubcategory(row: CategoryRow): WorldSubcategory {
 }
 
 /**
- * Active child categories of a giving world (KC#1296), split out of SupabaseMarketplaceRepository
- * (300-line cap). The world's root row (no parent) is not a subcategory, so it is left out.
- * Returns [] on error: the picker is optional and a listing can be published without one.
+ * Active item subcategories of a giving world (KC#1296), in display order. The baseline catalog is
+ * a tree whose seeded rows are flat, so every active row of the world is an option. A missing
+ * catalog surfaces as `BackendUnavailableError`; the picker is optional for most worlds.
  */
 export async function listWorldSubcategories(
   client: SupabaseClient<Database>,
   worldSlug: string,
 ): Promise<WorldSubcategory[]> {
-  const { data, error } = await client
-    .from('categories')
-    .select('category_id, slug, label_he, label_en')
-    .eq('world_slug', worldSlug)
-    .eq('is_active', true)
-    .not('parent_id', 'is', null)
-    .order('sort_order');
-  if (error || !data) return [];
-  return data.map(mapWorldSubcategory);
+  const rows = unwrapCall(
+    'table:item_subcategories',
+    await client
+      .from('item_subcategories')
+      .select('id, slug, label_he, label_en')
+      .eq('world_slug', worldSlug)
+      .eq('is_active', true)
+      .order('sort_order'),
+  );
+  return (rows ?? []).map(mapWorldSubcategory);
 }

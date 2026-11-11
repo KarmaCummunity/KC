@@ -38,7 +38,7 @@ export interface FakeClientConfig {
 }
 
 const OK: FakeResult = { data: null, error: null };
-const MODIFIERS = ['eq', 'neq', 'in', 'or', 'lt', 'gt', 'gte', 'lte', 'is', 'order', 'limit', 'range'] as const;
+const MODIFIERS = ['eq', 'neq', 'in', 'or', 'lt', 'gt', 'gte', 'lte', 'is', 'not', 'ilike', 'contains', 'order', 'limit', 'range'] as const;
 
 function answer(handler: Handler | undefined, call: FakeCall): FakeResult {
   if (handler === undefined) return OK;

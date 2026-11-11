@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { isBackendObjectMissing } from '../rpc/backendUnavailable';
 import type { DonationCategorySlug, DonationLink, DonationLinkReviewStatus } from '@kc/domain';
 import { DonationLinkError } from '@kc/application';
 import type {
@@ -7,13 +8,19 @@ import type {
   IDonationLinksRepository,
   UpdateDonationLinkInput,
 } from '@kc/application';
-import type { Database } from '../database.legacy.types';
+import type { Database } from '../database.types';
+import { BackendRuleError, BackendUnavailableError } from '@kc/domain';
+import { unwrapCall } from '../rpc/mapRpcError';
 import {
   donationLinkErrorFromInvokeData,
   donationLinkErrorFromInvokeFailure,
 } from './parseDonationLinkInvokeError';
 
+type Client = SupabaseClient<Database>;
 type LinkRow = Database['public']['Tables']['donation_links']['Row'];
+
+/** The most links one category list shows. */
+const LIST_LIMIT = 100;
 
 function mapRow(row: LinkRow): DonationLink {
   return {
@@ -24,116 +31,138 @@ function mapRow(row: LinkRow): DonationLink {
     description: row.description,
     submittedBy: row.submitted_by,
     validatedAt: row.validated_at,
-    hiddenAt: row.hidden_at,
     createdAt: row.created_at,
     reviewStatus: row.review_status as DonationLinkReviewStatus,
     reviewNote: row.review_note,
   };
 }
 
+interface EdgeAnswer {
+  ok: boolean;
+  code?: string;
+  link?: LinkRow;
+}
+
+/**
+ * Community donation links. Reads, reports and deletes go to the table and its RPCs; adding or
+ * editing a link is the `validate-donation-link` Edge Function (it checks the address and writes
+ * with the service role). A new or edited link waits in the review queue (`review_status`).
+ */
 export class SupabaseDonationLinksRepository implements IDonationLinksRepository {
-  constructor(private readonly client: SupabaseClient<Database>) {}
+  constructor(private readonly client: Client) {}
 
+  /** Approved links of the list, plus the caller's own with their review state; newest first. */
   async listByCategory(slug: DonationCategorySlug): Promise<DonationLink[]> {
-    const { data, error } = await this.client
-      .from('donation_links')
-      .select(
-        'id, category_slug, url, display_name, description, submitted_by, validated_at, hidden_at, created_at, review_status, review_note',
-      )
-      .eq('category_slug', slug)
-      .is('hidden_at', null)
-      .order('created_at', { ascending: false })
-      .limit(100);
-    if (error) throw new DonationLinkError('network', error.message, error);
-    return (data ?? []).map((row) => mapRow(row as unknown as LinkRow));
+    const rows = await this.guarded('table:donation_links', async () =>
+      unwrapCall(
+        'table:donation_links',
+        await this.client
+          .from('donation_links')
+          .select('*')
+          .eq('category_slug', slug)
+          .order('created_at', { ascending: false })
+          .limit(LIST_LIMIT),
+      ),
+    );
+    return (rows ?? []).map(mapRow);
   }
 
-  async addViaEdgeFunction(input: AddDonationLinkInput): Promise<DonationLink> {
-    const { data, error } = await this.client.functions.invoke<{
-      ok: boolean;
-      code?: string;
-      link?: LinkRow;
-    }>('validate-donation-link', {
-      body: {
-        category_slug: input.categorySlug,
-        url: input.url,
-        display_name: input.displayName,
-        description: input.description ?? null,
-      },
+  addViaEdgeFunction(input: AddDonationLinkInput): Promise<DonationLink> {
+    return this.invoke({
+      category_slug: input.categorySlug,
+      url: input.url,
+      display_name: input.displayName,
+      description: input.description ?? null,
     });
+  }
+
+  updateViaEdgeFunction(input: UpdateDonationLinkInput): Promise<DonationLink> {
+    return this.invoke({
+      link_id: input.linkId,
+      category_slug: input.categorySlug,
+      url: input.url,
+      display_name: input.displayName,
+      description: input.description ?? null,
+    });
+  }
+
+  private async invoke(body: Record<string, unknown>): Promise<DonationLink> {
+    const { data, error } = await this.client.functions.invoke<EdgeAnswer>('validate-donation-link', { body });
     if (error) throw await donationLinkErrorFromInvokeFailure(error);
-    if (!data || !data.ok || !data.link) {
-      throw donationLinkErrorFromInvokeData(data);
-    }
+    if (!data || !data.ok || !data.link) throw donationLinkErrorFromInvokeData(data);
     return mapRow(data.link);
   }
 
-  async updateViaEdgeFunction(input: UpdateDonationLinkInput): Promise<DonationLink> {
-    const { data, error } = await this.client.functions.invoke<{
-      ok: boolean;
-      code?: string;
-      link?: LinkRow;
-    }>('validate-donation-link', {
-      body: {
-        link_id: input.linkId,
-        category_slug: input.categorySlug,
-        url: input.url,
-        display_name: input.displayName,
-        description: input.description ?? null,
-      },
-    });
-    if (error) throw await donationLinkErrorFromInvokeFailure(error);
-    if (!data || !data.ok || !data.link) {
-      throw donationLinkErrorFromInvokeData(data);
-    }
-    return mapRow(data.link);
-  }
-
-  async softHide(linkId: string): Promise<void> {
-    const userId = (await this.client.auth.getUser()).data.user?.id ?? null;
-    const { error } = await this.client
-      .from('donation_links')
-      .update({ hidden_at: new Date().toISOString(), hidden_by: userId })
-      .eq('id', linkId);
-    if (error) throw new DonationLinkError('network', error.message, error);
-  }
-
+  /** The submitter (or the super admin) removes a link for good; the policy refuses anyone else. */
   async deleteById(linkId: string): Promise<void> {
-    const { error } = await this.client.from('donation_links').delete().eq('id', linkId);
-    if (error) throw new DonationLinkError('network', error.message, error);
+    await this.guarded('table:donation_links', async () =>
+      unwrapCall('table:donation_links', await this.client.from('donation_links').delete().eq('id', linkId)),
+    );
   }
 
+  /** Reports a link to the support team (a system line in the caller's support thread). */
   async report(linkId: string): Promise<void> {
-    const { error } = await this.client.rpc('report_donation_link', { p_link_id: linkId });
-    if (error) throw new DonationLinkError('network', error.message, error);
+    await this.guarded('rpc:report_donation_link', async () =>
+      unwrapCall('rpc:report_donation_link', await this.client.rpc('report_donation_link', { p_link_id: linkId })),
+    );
   }
 
-  /** D9 — the reviewer's queue (admin_list_donation_links_for_review, 0546). */
+  /** D9 — the reviewer's queue: links in `status`, oldest first, with the submitters' names. */
   async listForReview(status: DonationLinkReviewStatus): Promise<DonationLinkReviewItem[]> {
-    const { data, error } = await this.client.rpc('admin_list_donation_links_for_review', { p_status: status });
-    if (error) throw new DonationLinkError(error.code === '42501' ? 'forbidden' : 'network', error.message, error);
-    return (data ?? []).map((row) => ({
+    const rows =
+      (await this.guarded('table:donation_links', async () =>
+        unwrapCall(
+          'table:donation_links',
+          await this.client.from('donation_links').select('*').eq('review_status', status).order('created_at', { ascending: true }),
+        ),
+      )) ?? [];
+    if (rows.length === 0) return [];
+    const users = await this.guarded('table:users', async () =>
+      unwrapCall(
+        'table:users',
+        await this.client.from('users').select('id, display_name').in('id', [...new Set(rows.map((row) => row.submitted_by))]),
+      ),
+    );
+    const names = new Map((users ?? []).map((user) => [user.id, user.display_name]));
+    return rows.map((row) => ({
       id: row.id,
       categorySlug: row.category_slug as DonationCategorySlug,
       url: row.url,
       displayName: row.display_name,
       description: row.description,
       submittedBy: row.submitted_by,
-      submitterName: row.submitter_name,
+      submitterName: names.get(row.submitted_by) ?? null,
       reviewStatus: row.review_status as DonationLinkReviewStatus,
       reviewNote: row.review_note,
       createdAt: row.created_at,
     }));
   }
 
-  /** D9 — approve or reject one pending link (admin_review_donation_link, 0546). */
+  /** D9 — approve or reject one pending link; a rejection may carry a short note. */
   async review(linkId: string, approve: boolean, note?: string | null): Promise<DonationLinkReviewStatus> {
-    const { data, error } = await this.client.rpc('admin_review_donation_link', {
-      p_link_id: linkId,
-      p_approve: approve,
-      p_note: note ?? undefined,
-    });
-    if (error) throw new DonationLinkError(error.code === '42501' ? 'forbidden' : 'unknown', error.message, error);
-    return data as DonationLinkReviewStatus;
+    const status = await this.guarded('rpc:admin_review_donation_link', async () =>
+      unwrapCall(
+        'rpc:admin_review_donation_link',
+        await this.client.rpc('admin_review_donation_link', { p_link_id: linkId, p_approve: approve, p_note: note ?? undefined }),
+      ),
+    );
+    return status as DonationLinkReviewStatus;
+  }
+
+  /**
+   * Runs one call and turns its failure into the module's own error: a missing backend object stays
+   * `BackendUnavailableError` (degrade rule), a refused staff call is `forbidden`, anything else `network`.
+   */
+  private async guarded<T>(object: string, call: () => Promise<T>): Promise<T> {
+    try {
+      return await call();
+    } catch (error) {
+      if (error instanceof BackendUnavailableError || error instanceof DonationLinkError) throw error;
+      const cause = (error as { cause?: { code?: string; message?: string } }).cause;
+      const refused = cause?.code === '42501' && !isBackendObjectMissing(cause);
+      const reason = error instanceof BackendRuleError ? error.reason : null;
+      const code = refused || reason === 'unauthenticated' ? 'forbidden' : reason ? 'unknown' : 'network';
+      throw new DonationLinkError(code, error instanceof Error ? error.message : object, error);
+    }
   }
 }

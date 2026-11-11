@@ -44,8 +44,6 @@ export function rowToChat(r: ChatRowSlice): Chat {
     chatId: r.id,
     participantIds,
     anchorPostId: r.anchor_post_id,
-    anchorRideId: null,
-    anchorListingId: null,
     isSupportThread: r.kind === 'support',
     lastMessageAt: r.last_message_at,
     createdAt: r.created_at,

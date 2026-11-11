@@ -42,7 +42,7 @@ export class SupabaseChatRepository implements IChatRepository {
   async findOrCreateChat(
     _userId: string,
     otherUserId: string,
-    anchor?: { postId?: string; rideId?: string },
+    anchor?: { postId?: string },
     _options?: { preferNewThread?: boolean },
   ): Promise<Chat> {
     return openDirectChat(this.client, otherUserId, anchor);

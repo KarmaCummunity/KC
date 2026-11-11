@@ -7,8 +7,8 @@ import type { Database } from '../database.types';
 import { rowToChat, type ChatRowSlice } from './rowMappers';
 import { chatCall, requireRow } from './mapChatError';
 
-/** The post a chat is opened from. A ride is a post, so both ids go to the same argument. */
-export type ChatAnchorInput = { postId?: string; rideId?: string };
+/** The post a chat is opened from (a ride or a listing is a post). */
+export type ChatAnchorInput = { postId?: string };
 
 /** An RPC that returns one `chats` row may surface it bare or as a one-element array. */
 function singleChatRow(data: unknown, rpcName: string): ChatRowSlice {
@@ -29,7 +29,7 @@ export async function openDirectChat(
     'rpc:open_direct_chat',
     client.rpc('open_direct_chat', {
       p_user_id: otherUserId,
-      p_anchor_post_id: anchor?.postId ?? anchor?.rideId,
+      p_anchor_post_id: anchor?.postId,
     }),
   );
   return rowToChat(singleChatRow(data, 'open_direct_chat'));

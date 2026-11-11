@@ -49,8 +49,6 @@ function rowToPreview(row: InboxRow, viewerId: string): ChatWithPreview {
     chatId: row.chat_id,
     participantIds: [viewerId, counterpartId],
     anchorPostId: row.anchor_post_id,
-    anchorRideId: null,
-    anchorListingId: null,
     isSupportThread: isSupport,
     lastMessageAt: row.last_message_at,
     createdAt: row.last_message_at,

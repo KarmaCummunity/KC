@@ -35,8 +35,6 @@ const direct: Chat = {
   chatId: 'c_1',
   participantIds: ['u_me', 'u_other'],
   anchorPostId: null,
-  anchorRideId: null,
-  anchorListingId: null,
   isSupportThread: false,
   lastMessageAt: null,
   createdAt: '2026-05-16T11:00:00.000Z',

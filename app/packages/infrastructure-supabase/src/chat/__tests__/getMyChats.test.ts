@@ -40,7 +40,6 @@ describe('getMyChats', () => {
       chatId: 'c_1',
       participantIds: ['u_me', 'u_other'],
       anchorPostId: 'p_1',
-      anchorRideId: null,
       isSupportThread: false,
       lastMessageAt: '2026-05-16T12:00:00.000Z',
       unreadCount: 2,

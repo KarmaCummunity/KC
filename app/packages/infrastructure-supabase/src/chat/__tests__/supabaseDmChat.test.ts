@@ -37,14 +37,6 @@ describe('openDirectChat', () => {
     expect(chat.anchorPostId).toBe('p_1');
   });
 
-  it('sends a ride anchor as a post anchor (a ride is a post)', async () => {
-    const { client, calls } = rpcClient('open_direct_chat', CHAT_ROW);
-
-    await openDirectChat(client, 'u_b', { rideId: 'ride_1' });
-
-    expect(calls[0]?.args).toEqual({ p_user_id: 'u_b', p_anchor_post_id: 'ride_1' });
-  });
-
   it('accepts the chat row as a one-element array', async () => {
     const chat = await openDirectChat(rpcClient('open_direct_chat', [CHAT_ROW]).client, 'u_b');
 
