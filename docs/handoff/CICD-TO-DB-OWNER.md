@@ -7,6 +7,7 @@ No secret value appears in this file. Facts below were read from the repository,
 ## 0. Changes of 2026-11-11 10:31 (Asia/Jerusalem) that override the rest of this file
 
 - **Ownership of the cut-over moved.** Nave decided that the CI/CD bot ports the dev-only features into the baseline and runs the cut-over itself, on the branch `feat/db-baseline-cutover`. **Claude Code should stop pushing to `claude/ecstatic-bell-me5r37`.** Where sections 1 to 4 say "DB owner's" for the cut-over PR, read "CI/CD". Open questions for the DB owner (schema intent, the baseline's design) stay with whoever wrote the baseline; ask through Nave.
+- **Since then (also 2026-11-11, Asia/Jerusalem):** kc-prod Auth config was applied by CI/CD (about 10:58, sections 2 and 5). Launch surfaces (email auth, WhatsApp bot and payments hidden in production builds) merged in PR #2134 (11:57). PR #2137 fills the AASA / assetlinks files with real values and adds CI and deploy-smoke checks.
 - **DB schema freeze on `dev`** until the cut-over merges. PR #2126 adds a required check (`db schema freeze`, inside the `static` lane that `CI verdict` aggregates, also in the merge queue). While the repository variable `KC_DB_SCHEMA_FREEZE` is `true`, a PR into `dev` that adds, modifies, renames or deletes a file under `supabase/migrations/`, `supabase/baseline/` or `supabase/schemas/` fails with "DB schema freeze until the production baseline cut-over merges; hold DB changes and land them after the baseline". Only a PR from the branch `feat/db-baseline-cutover` is exempt. Hold DB changes and land them after the baseline. To lift: set the variable to anything but `true`. The variable is `true`; #2126 merged to `dev` on 2026-11-11 at 10:52 (Asia/Jerusalem), so the check is live. A throwaway PR (#2128, closed) that added a file under `supabase/migrations/` failed the check.
 
 ## 1. Decisions
@@ -32,13 +33,20 @@ No secret value appears in this file. Facts below were read from the repository,
 | APNs and FCM | **Done** | APNs key `UC9PDL6Q83` and FCM V1 credentials are configured on EAS. The iOS time-sensitive entitlement exists only on your branch; EAS syncs capabilities at build time (not verified on a real build yet). |
 | Real-device push test | **Awaiting a human** (and a store build) | Not possible before a first TestFlight / Play internal build exists. |
 | Apple Sign-In on kc-prod | Enabled; client ID set (`org.karmacommunity.a…`); **no secret present**, verified as read by the management API. Whether a secret is needed for the native-only flow is unknown / not verified | |
-| Google Sign-In on kc-prod | **Not yet applied**: see section 5 and the verified state below | DB owner / kc-prod Auth owner applies; the client secret must come from the Google Cloud console. |
+| Google Sign-In on kc-prod | **Applied by CI/CD, 2026-11-11 about 10:58 (Asia/Jerusalem)**, read back and verified | Auth config only (one management-API call, five keys); no schema, no data. Google client IDs, the web client secret (taken from the Google Cloud console by Nave, stored on the CI/CD box, never printed), skip-nonce check on, Site URL and redirect allowlist set. Details in the section below; a real sign-in test on a device is **not done yet**. |
 | SMTP on kc-prod | **Not configured, verified**: no custom SMTP host, so Supabase's built-in sender (rate-limited, not meant for production) is used | Provider choice and sender domain are **awaiting Nave** (not decided). |
 | SMS on kc-prod | Provider is `twilio` but no Account SID is set and the phone provider is **disabled**, verified | Phone sign-in is therefore off. Whether it is in launch scope: unknown / not verified. |
 | Store accounts | Apple (App Store Connect API key, `KC_ASC_APP_ID`) and Google Play service account are in GitHub secrets / variables; Play service account in RevenueCat is **not done** | First store build is blocked on the items under section 4, not on accounts. |
 | #2079 licences | **Done**: all sources free for commercial use with attribution | https://github.com/KarmaCummunity/KC/issues/2079#issuecomment-6783007997. Attribution must go in the About screen and the README (not done; yours and the KC bot's). |
 
-### Verified kc-prod Auth state (read-only, 2026-11-11 about 10:30 Asia/Jerusalem)
+### kc-prod Auth after the change (applied 2026-11-11 about 10:58 Asia/Jerusalem, read back)
+
+- Google client IDs now: the new prod web client first (`cpou07r…`), then the iOS (`vnp8bp7…`) and two Android (`7n83ln1…`, `so59h0j…`) clients, all from project 501128729523. Both 430191522654 clients and the kc-dev web client (`aqs65g…`) were removed. A new client secret for the web client is set.
+- Google skip-nonce check: **on**. Site URL: `https://karma-community-kc.com` (was `http://localhost:3000`).
+- Redirect allowlist (was empty): `https://karma-community-kc.com/auth/callback`, `https://www.karma-community-kc.com/auth/callback`, `https://karma-community-kc.com/auth/verify`, `https://karma-community-kc.com/auth/reset-password`, `karmacommunity://auth/callback`. The reset-password entry is not in the handoff; the app builds that URL (`authComposition.ts`).
+- Read-back diff: 238 of 243 keys unchanged; Apple (enabled, no secret), email (on) and phone (off) unchanged. A backup of the previous config is on the CI/CD box (the API returns secrets as hashes, so a restore cannot bring back the old Google secret). Not done: recovery/confirmation email templates (Supabase defaults), SMTP (built-in sender, rate-limited), and a real device sign-in test.
+
+### Verified kc-prod Auth state before the change (read-only, 2026-11-11 about 10:30 Asia/Jerusalem; superseded by the block above)
 
 - Enabled: email, Google, Apple. Disabled: phone, anonymous and all other providers.
 - Google client IDs list on kc-prod (first six characters of each after the project number): two clients from project 430191522654 and four from project 501128729523, including the kc-dev web client. The new prod web client from the handoff in section 5 (`cpou07r…`) is **not** on the list. So the handoff below is unapplied.
@@ -55,7 +63,7 @@ No secret value appears in this file. Facts below were read from the repository,
 
 ## 4. What still blocks the first store build (unchanged)
 
-1. kc-prod Auth fix (section 5).
+1. ~~kc-prod Auth fix (section 5).~~ **Done** (2026-11-11 about 10:58); a real device sign-in test is still open.
 2. Baseline applied on kc-prod and the ledger non-empty (D-228, `KC_PROD_SCHEMA_MODE=baseline`).
 3. Green product E2E, then the dev to main release with Nave's go/no-go.
 4. A tagged PROD Deploy succeeding on `main`. Only then does CI/CD set `KC_PROD_STORE_BUILD_ENABLED=true`. Nothing is published to a public store without Nave's explicit word; TestFlight and Play internal only.
@@ -123,9 +131,9 @@ Nave approved everything below on 2026-11-11 (02:10 Asia/Jerusalem). KC CI/CD ow
 
 ## 6. Full text: kc-prod Auth handoff (`HANDOFF-PROD-AUTH.md`)
 
-Public OAuth client IDs only; no client secret was ever read. Verified state of kc-prod today is in section 2 above (not yet applied).
+Public OAuth client IDs only; no client secret was ever read. The handoff below was **applied by CI/CD on 2026-11-11 about 10:58** (Auth config only); the result is in section 2 above. The text is kept as written for the record.
 
-#### Handoff: kc-prod Google Auth (do not apply from the CI/CD workstream)
+#### Handoff: kc-prod Google Auth (original text; applied by CI/CD on 2026-11-11)
 
 Prepared 11 Nov 2026, 00:45 IST (Asia/Jerusalem, UTC+2) for the
 agent or person who owns **kc-prod Auth**. This workstream must not
