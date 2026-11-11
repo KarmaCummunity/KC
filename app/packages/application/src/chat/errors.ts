@@ -10,7 +10,6 @@ export type ChatErrorCode =
   | 'super_admin_not_found'
   | 'support_thread_not_hideable'
   | 'description_too_short'
-  | 'both_anchors_forbidden'
   | 'cannot_chat_self'
   | 'blocked_relationship'
   | 'account_not_active'

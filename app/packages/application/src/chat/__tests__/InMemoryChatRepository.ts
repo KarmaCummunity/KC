@@ -39,7 +39,7 @@ export class InMemoryChatRepository implements IChatRepository {
   async findOrCreateChat(
     userId: string,
     otherUserId: string,
-    anchor?: { postId?: string; rideId?: string },
+    anchor?: { postId?: string },
     options?: { preferNewThread?: boolean },
   ): Promise<Chat> {
     if (!this.store.users.has(otherUserId)) {
@@ -48,9 +48,9 @@ export class InMemoryChatRepository implements IChatRepository {
     const [a, b] = userId < otherUserId ? [userId, otherUserId] : [otherUserId, userId];
     const reusable = options?.preferNewThread ? undefined : this.visibleThreadOfPair(a, b);
     if (!reusable) return this.store.insertChat(a, b, anchor);
-    if (anchor?.postId || anchor?.rideId) {
+    if (anchor?.postId) {
       // One context per chat (0464): the latest anchor replaces the previous one.
-      reusable.chat = { ...reusable.chat, anchorPostId: anchor.postId ?? null, anchorRideId: anchor.rideId ?? null };
+      reusable.chat = { ...reusable.chat, anchorPostId: anchor.postId };
     }
     return reusable.chat;
   }

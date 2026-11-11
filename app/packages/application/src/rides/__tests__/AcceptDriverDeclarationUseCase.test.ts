@@ -12,9 +12,7 @@ function makeDeclaration(): DriverDeclaration {
   return {
     userId: ME,
     declaredAt: '2026-05-31T10:00:00Z',
-    licenseDeclared: true,
-    insuranceDeclared: true,
-    noProfitAcknowledged: true,
+    version: 1,
   };
 }
 

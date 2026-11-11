@@ -19,7 +19,7 @@ export interface IChatRepository {
   findOrCreateChat(
     userId: string,
     otherUserId: string,
-    anchor?: { postId?: string; rideId?: string },
+    anchor?: { postId?: string },
     options?: { preferNewThread?: boolean },
   ): Promise<Chat>;
   /** FR-CHAT-016 — hides chat from viewer inbox only (RPC `hide_chat`). */

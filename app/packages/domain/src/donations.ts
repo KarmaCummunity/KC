@@ -24,7 +24,6 @@ export interface DonationLink {
   readonly description: string | null;
   readonly submittedBy: string;
   readonly validatedAt: string;
-  readonly hiddenAt: string | null;
   readonly createdAt: string;
   /** D9 review state; a content edit sends an approved link back to 'pending'. */
   readonly reviewStatus: DonationLinkReviewStatus;

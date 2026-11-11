@@ -30,7 +30,7 @@ export interface UpdateDonationLinkInput {
 }
 
 export interface IDonationLinksRepository {
-  /** Visible (non-hidden) rows for a category, newest first. */
+  /** Approved links of a category plus the caller's own, newest first. */
   listByCategory(slug: DonationCategorySlug): Promise<DonationLink[]>;
 
   /** Calls the validate-donation-link Edge Function. The function performs URL
@@ -40,11 +40,6 @@ export interface IDonationLinksRepository {
   /** Same Edge Function with `link_id`: validates URL, then updates the row if
    *  the caller is the submitter and the row is visible. */
   updateViaEdgeFunction(input: UpdateDonationLinkInput): Promise<DonationLink>;
-
-  /** Soft-hide a link (sets hidden_at + hidden_by). Authorization (own-row or
-   *  super-admin) is enforced by RLS — repository simply UPDATEs and trusts
-   *  the policy to reject unauthorized writers. */
-  softHide(linkId: string): Promise<void>;
 
   /** Permanently deletes the row. Authorization (own-row or super-admin) is
    *  enforced by RLS (`donation_links_delete_own_or_admin`). */
