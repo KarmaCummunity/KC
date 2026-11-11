@@ -13,6 +13,7 @@ import { matchMachine } from './machines/match';
 import { moderationQueueMachine } from './machines/moderationQueue';
 import { onboardingMachine } from './machines/onboarding';
 import { organizationMachine } from './machines/organization';
+import { orgSec46Machine } from './machines/orgSec46';
 import { orgApplicationMachine } from './machines/orgApplication';
 import { orgFinanceEntryMachine } from './machines/orgFinanceEntry';
 import { paymentMachine } from './machines/payment';
@@ -54,6 +55,7 @@ export const FSM_MACHINES: readonly FsmMachine<string, string>[] = [
   challengeMachine,
   matchMachine,
   organizationMachine,
+  orgSec46Machine,
   orgApplicationMachine,
   donationLinkReviewMachine,
   standingOrderMachine,
