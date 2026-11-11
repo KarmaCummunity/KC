@@ -37,9 +37,9 @@ test('create a "request" post (no photo) from the composer', async ({ page }) =>
   }
   await expect(page).not.toHaveURL(/\/create$/, { timeout: 30_000 });
   const { session } = await sessionFor(USER_A);
-  const rows = await rest<{ post_id: string }[]>(
+  const rows = await rest<{ id: string }[]>(
     session.access_token as string,
-    `posts?select=post_id&title=eq.${encodeURIComponent(title)}`,
+    `posts?select=id&title=eq.${encodeURIComponent(title)}`,
   );
   expect(rows.length).toBe(1);
 });
@@ -47,12 +47,12 @@ test('create a "request" post (no photo) from the composer', async ({ page }) =>
 test('like and comment on a post', async ({ page }) => {
   const { session } = await sessionFor(USER_A);
   const me = (session.user as { id: string }).id;
-  const [post] = await rest<{ post_id: string }[]>(
+  const [post] = await rest<{ id: string }[]>(
     session.access_token as string,
-    `posts?select=post_id&status=eq.open&world_slug=eq.items&owner_id=neq.${me}&order=created_at.desc&limit=1`,
+    `posts?select=id&status=eq.open&world_slug=eq.items&owner_id=neq.${me}&order=created_at.desc&limit=1`,
   );
   test.skip(!post, 'no open post from another user on kc-dev');
-  await gotoApp(page, `/post/${post!.post_id}`);
+  await gotoApp(page, `/post/${post!.id}`);
   await page.getByRole('button', { name: 'אהבתי' }).first().click();
   await expect(page.getByRole('button', { name: 'אהבתי' }).first()).toContainText(/[1-9]/);
 

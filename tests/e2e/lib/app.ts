@@ -13,7 +13,12 @@ export function trackApiErrors(page: Page) {
   const errors: string[] = [];
   page.on('response', (r) => {
     if (r.status() >= 400 && r.url().includes('.supabase.co/')) {
-      errors.push(`${r.status()} ${r.request().method()} ${r.url().split('?')[0]}`);
+      const line = `${r.status()} ${r.request().method()} ${r.url().split('?')[0]}`;
+      // The server message makes a failed call diagnosable from the report alone.
+      void r.text().then(
+        (text) => errors.push(`${line} — ${text.slice(0, 300)}`),
+        () => errors.push(line),
+      );
     }
   });
   return errors;

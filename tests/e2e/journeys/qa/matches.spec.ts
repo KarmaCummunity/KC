@@ -1,20 +1,20 @@
-// Matching v2 (0420–0423) — "Matches for you" on kc-dev.
+// Matching — "Matches for you" on kc-dev (`my_matches`, production baseline).
 import { test, expect } from '@playwright/test';
 import { expectNoRawI18nKeys, gotoApp, trackApiErrors } from '../../lib/app';
 import { rest, sessionFor } from '../../lib/api';
 import { USER_A } from '../../lib/env';
 
-type MatchRow = { candidate_id: string; my_listing_id: string; other_listing_id: string; score: number };
+type MatchRow = { match_id: string; my_post_id: string; other_post: { id: string } | null; score: number };
 
-test('api: rpc_my_matches returns only my pairs; internals are not client-callable', async () => {
+test('api: my_matches returns only my pairs; internals are not client-callable', async () => {
   const { session } = await sessionFor(USER_A);
   const token = session.access_token as string;
-  const rows = await rest<MatchRow[]>(token, 'rpc/rpc_my_matches', { method: 'POST', body: { p_limit: 20 } });
+  const rows = await rest<MatchRow[]>(token, 'rpc/my_matches', { method: 'POST', body: { p_limit: 20 } });
   expect(Array.isArray(rows)).toBe(true);
   for (const r of rows) {
     expect(r.score).toBeGreaterThanOrEqual(0);
     expect(r.score).toBeLessThanOrEqual(1);
-    expect(r.my_listing_id).not.toEqual(r.other_listing_id);
+    expect(r.my_post_id).not.toEqual(r.other_post?.id);
   }
   await expect(
     rest(token, 'rpc/match_run_sweep', { method: 'POST', body: { p_batch: 1 } }),
