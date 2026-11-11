@@ -14,3 +14,4 @@
 0003_post_seat_counts.sql
 0004_ride_series_schedule.sql
 0005_match_quality.sql
+0006_profile_posts_mine_tab.sql

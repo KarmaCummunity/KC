@@ -253,8 +253,8 @@
   },
   "marketplace": {
    "callSites": 48,
-   "oneToOne": 34,
-   "changed": 14,
+   "oneToOne": 35,
+   "changed": 13,
    "removed": 0,
    "missing": 0
   },
@@ -9454,7 +9454,7 @@
    "launch": "core",
    "confidence": "high",
    "missing": null,
-   "note": "`p_tab` open | closed | hidden, keyset `p_cursor`; the closed tab of a profile. The owner's delivered or deleted \"only me\" posts come from `posts` ids completed by `post_cards`.",
+   "note": "`p_tab` open | closed | hidden | mine, keyset `p_cursor`; the closed tab of a profile. `mine` is the owner's own posts in every status and audience, narrowed by `p_statuses` (`forbidden` on another member's profile): \"my listings\" reads it. The owner's delivered or deleted \"only me\" posts still come from `posts` ids completed by `post_cards`.",
    "oldObject": {},
    "targets": [
     {
@@ -9462,7 +9462,7 @@
      "name": "profile_posts_page",
      "source": "30_social/090_profile_and_search.sql:13",
      "signature": [
-      "profile_posts_page(p_cursor?: Json, p_limit?: number, p_tab?: string, p_user_id: string) → { card: post_card next_cursor: Json }[]"
+      "profile_posts_page(p_cursor?: Json, p_limit?: number, p_statuses?: string[], p_tab?: string, p_user_id: string) → { card: post_card next_cursor: Json }[]"
      ],
      "errors": [
       {
@@ -9479,7 +9479,13 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 88,
+     "line": 68,
+     "symbol": "SupabaseMarketplaceRepository.listMyListingsPage",
+     "area": "marketplace"
+    },
+    {
+     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
+     "line": 89,
      "symbol": "SupabaseMarketplaceRepository.listProfileListings",
      "area": "marketplace"
     },
@@ -10845,7 +10851,7 @@
     },
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 51,
+     "line": 54,
      "symbol": "SupabaseMarketplaceRepository.startChat",
      "area": "marketplace"
     }
@@ -11275,7 +11281,7 @@
    "callSites": [
     {
      "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 30,
+     "line": 33,
      "symbol": "SupabaseMarketplaceRepository.similarListings",
      "area": "marketplace"
     }
@@ -14868,15 +14874,6 @@
      "file": "app/packages/infrastructure-supabase/src/marketplace/mapListingDetail.ts",
      "line": 112,
      "symbol": "fetchListingDetail",
-     "area": "marketplace",
-     "ops": [
-      "select"
-     ]
-    },
-    {
-     "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-     "line": 65,
-     "symbol": "SupabaseMarketplaceRepository.listMyListingsPage",
      "area": "marketplace",
      "ops": [
       "select"

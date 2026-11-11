@@ -126,19 +126,31 @@ describe('SupabaseMarketplaceRepository', () => {
     await expect(new SupabaseMarketplaceRepository(client).startChat('p1')).rejects.toMatchObject({ reason: 'post_unavailable' });
   });
 
-  it('pages the caller\'s own listings by creation time and hands on an opaque cursor', async () => {
+  it('pages the caller\'s own listings through the owner-only tab and hands on an opaque cursor', async () => {
+    const cursor = { t: '2026-02-01T00:00:00Z', id: 'a' };
     const { client, calls } = createFakeClient({
       userId: 'me',
-      tables: {
-        post_kinds: ok(KINDS),
-        posts: ok([{ id: 'a', created_at: '2026-02-01T00:00:00Z' }, { id: 'b', created_at: '2026-01-01T00:00:00Z' }]),
-      },
-      rpc: { post_cards: ok([makeCard({ id: 'a', status: 'paused', kind_id: 'kind-offer' })]) },
+      tables: { post_kinds: ok(KINDS) },
+      rpc: { profile_posts_page: ok([{ card: makeCard({ id: 'a', status: 'paused', kind_id: 'kind-offer' }), next_cursor: cursor }]) },
     });
-    const page = await new SupabaseMarketplaceRepository(client).listMyListingsPage(1);
+    const repo = new SupabaseMarketplaceRepository(client);
+    const page = await repo.listMyListingsPage(1);
     expect(page.rows[0]).toMatchObject({ listingId: 'a', status: 'cancelled', kindSlug: 'item_offer', feedPostId: 'a' });
-    expect(JSON.parse(page.nextCursor ?? '{}')).toEqual({ t: '2026-02-01T00:00:00Z', id: 'a' });
-    expect(callsTo(calls, 'posts')[0]?.filters).toContainEqual(['neq', 'status', 'draft']);
+    expect(JSON.parse(page.nextCursor ?? '{}')).toEqual(cursor);
+    const args = callsTo(calls, 'profile_posts_page')[0]?.args as { p_tab: string; p_statuses: string[]; p_user_id: string };
+    expect(args).toMatchObject({ p_user_id: 'me', p_tab: 'mine', p_limit: 1 });
+    expect(args.p_statuses).toContain('paused');
+    expect(args.p_statuses).not.toContain('draft');
+    await repo.listMyListingsPage(1, page.nextCursor);
+    expect(callsTo(calls, 'profile_posts_page')[1]?.args).toMatchObject({ p_cursor: cursor });
+    expect(calls.some((call) => call.table === 'posts')).toBe(false);
+  });
+
+  it('ends the listing pages on a short page and keeps the server\'s refusal', async () => {
+    const short = createFakeClient({ userId: 'me', tables: { post_kinds: ok(KINDS) }, rpc: { profile_posts_page: ok([]) } });
+    expect(await new SupabaseMarketplaceRepository(short.client).listMyListingsPage(5)).toEqual({ rows: [], nextCursor: null });
+    const refused = createFakeClient({ userId: 'me', tables: { post_kinds: ok(KINDS) }, rpc: { profile_posts_page: fail('42501', 'forbidden') } });
+    await expect(new SupabaseMarketplaceRepository(refused.client).listMyListingsPage(5)).rejects.not.toBeInstanceOf(BackendUnavailableError);
   });
 
   it('lists a member\'s open listings through the profile tab', async () => {

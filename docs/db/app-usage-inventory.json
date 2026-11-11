@@ -20,11 +20,11 @@
    "distinct": 3
   },
   "rpc": {
-   "callSites": 248,
+   "callSites": 249,
    "distinct": 226
   },
   "table": {
-   "callSites": 165,
+   "callSites": 164,
    "distinct": 56
   }
  },
@@ -1949,7 +1949,7 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-   "line": 30,
+   "line": 33,
    "area": "marketplace",
    "symbol": "SupabaseMarketplaceRepository.similarListings",
    "via": "literal",
@@ -1958,28 +1958,25 @@
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-   "line": 51,
+   "line": 54,
    "area": "marketplace",
    "symbol": "SupabaseMarketplaceRepository.startChat",
    "via": "literal",
    "name": "send_message"
   },
   {
-   "kind": "table",
+   "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-   "line": 65,
+   "line": 68,
    "area": "marketplace",
    "symbol": "SupabaseMarketplaceRepository.listMyListingsPage",
    "via": "literal",
-   "ops": [
-    "select"
-   ],
-   "name": "posts"
+   "name": "profile_posts_page"
   },
   {
    "kind": "rpc",
    "file": "app/packages/infrastructure-supabase/src/marketplace/SupabaseMarketplaceRepository.ts",
-   "line": 88,
+   "line": 89,
    "area": "marketplace",
    "symbol": "SupabaseMarketplaceRepository.listProfileListings",
    "via": "literal",
