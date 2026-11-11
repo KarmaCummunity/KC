@@ -91,6 +91,7 @@ export const NOTIFICATION_ROUTES: Record<NotificationKind, RouteBuilder> = {
   ride_booking_declined: post,
   ride_booking_cancelled: post,
   ride_booking_expired: post,
+  ride_booking_lapsed: post,
   ride_booking_completed: post,
   ride_booking_no_show: post,
   ride_booking_waitlist_promoted: post,
@@ -115,6 +116,11 @@ export const NOTIFICATION_ROUTES: Record<NotificationKind, RouteBuilder> = {
   event_registration_no_show: post,
   event_registration_waitlist_promoted: post,
   event_registration_reinstated: post,
+  // Time around an event: the day-before reminder, and the organizer's attendance prompt.
+  event_reminder: post,
+  event_mark_attendance: post,
+  // Added to an organization's team: the centre row says which one.
+  org_member_added: inbox,
   // Engagement on a post (spec 07 §7.9).
   post_reaction: post,
   post_comment: post,
