@@ -92,7 +92,7 @@ as $$
   select count(*) from audit.events e where e.action = p_action;
 $$;
 
-select plan(59);
+select plan(62);
 
 -- a super admin · b moderator · d platform admin · e applicant, then admin of `helpers` ·
 -- f its manager · c its volunteer · 3 its employee · 1, 2 members outside it.
@@ -170,6 +170,14 @@ select is(pg_temp.act('e', $$select public.admin_grant_role(@f, 'org_manager', &
 select is(pg_temp.val(null, $$select string_agg(right(user_id::text, 1) || ':' || array_to_string(roles, '+'), ' ' order by user_id)
     from public.org_memberships where org_id = &helpers$$),
   '3:org_employee+org_accountant c:org_volunteer e:org_admin f:org_manager', 'each member holds their active roles, most senior first');
+-- The team screen: an organization's administrator reads the grants of their own
+-- organization and nobody else's; an ordinary member of the team sees only their own grant.
+select is(pg_temp.val('e', $$select count(*) from public.admin_role_grants where scope_org_id = &helpers$$)::int > 3,
+  true, 'an organization administrator reads the grants of their organization');
+select is(pg_temp.val('e', $$select count(*) from public.admin_role_grants where scope_org_id is distinct from &helpers and user_id <> @e$$),
+  '0', 'and not those of any other organization or the platform');
+select is(pg_temp.val('c', $$select count(*) from public.admin_role_grants where scope_org_id = &helpers and user_id <> @c$$),
+  '0', 'a volunteer of the team sees only their own grant');
 select is(pg_temp.act(null, $$update public.admin_role_grants set revoked_at = now()
       where user_id = @3 and role = 'org_accountant'$$)
   || pg_temp.val(null, $$select array_to_string(roles, '+') from public.org_memberships where user_id = @3$$),

@@ -195,7 +195,7 @@ select is(pg_temp.seen('b', $$select 1 where public.bootstrap_session() -> 'admi
   3::bigint, 'session start carries the caller''s staff roles');
 select is(pg_temp.seen('2', 'select 1 from public.admin_role_grants') || '/' || pg_temp.seen('3', 'select 1 from public.admin_role_grants')
   || '/' || (pg_temp.seen('c', 'select 1 from public.admin_role_grants') = pg_temp.val('select count(*) from public.admin_role_grants')::bigint),
-  '1/0/true', 'a member reads their own grants, staff read the roster');
+  '2/0/true', 'a member reads their own grants (an org manager also their organization''s team), staff read the roster');
 
 -- ── Staff read access, and what stays closed ────────────────────────────────
 select is(pg_temp.seen('2', 'select 1 from public.users'), 14::bigint, 'a member still sees active profiles only');
