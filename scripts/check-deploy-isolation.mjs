@@ -73,6 +73,8 @@ export const MONITORS = {
   // Read-only ledger gate of the PROD store-build pipeline. Other jobs in this
   // workflow use mobile-store (or no environment) and must not use `production`.
   'prod-store-build.yml': { job: 'ledger', envs: ['supabase-prod'], triggers: ['workflow_run', 'workflow_dispatch'] },
+  // Daily encrypted `supabase db dump` of kc-prod (read-only; Supabase Free has no backups).
+  'db-backup-prod.yml': { job: 'backup', envs: ['supabase-prod'], triggers: ['schedule', 'workflow_dispatch'] },
 };
 
 const PROD_ENVS = new Set(['production', 'supabase-prod', 'cloudflare-prod']);

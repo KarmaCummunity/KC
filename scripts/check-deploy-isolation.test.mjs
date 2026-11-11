@@ -115,6 +115,15 @@ test('read-only monitor: prod-store-build.yml ledger job may use supabase-prod o
   );
 });
 
+test('read-only monitor: db-backup-prod.yml may dump supabase-prod on a schedule, not on push', () => {
+  assert.deepEqual(
+    checkWorkflow('db-backup-prod.yml', monitorYaml({ envs: ['supabase-prod'], job: 'backup', run: 'supabase db dump --linked' })),
+    [],
+  );
+  assert.ok(checkWorkflow('db-backup-prod.yml', monitorYaml({ envs: ['supabase-prod'], job: 'backup', on: '  push:' })).length > 0, 'push trigger');
+  assert.ok(checkWorkflow('db-backup-prod.yml', monitorYaml({ envs: ['supabase-prod'], job: 'backup', run: 'supabase db push' })).length > 0, 'deploy command');
+});
+
 test('read-only monitor: any other file, job, env, trigger or deploy command is refused', () => {
   const refused = (file, opts) => checkWorkflow(file, monitorYaml(opts)).length > 0;
   assert.ok(refused('other-monitor.yml', {}), 'unlisted workflow');

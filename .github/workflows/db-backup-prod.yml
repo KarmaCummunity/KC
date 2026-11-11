@@ -1,0 +1,57 @@
+name: DB backup (prod)
+
+# Daily encrypted logical backup of kc-prod. Supabase Free has no backups and
+# no PITR (the owner decided to stay on Free on 2026-11-11), so this is the
+# only copy of prod data outside the project. Read-only against kc-prod: it
+# runs `supabase db dump` and two SELECTs, never a write. The job holds
+# `supabase-prod` (branch `main` only) and is a listed read-only monitor of
+# scripts/check-deploy-isolation.mjs. It does not wait for the `production`
+# approval and cannot deploy.
+#
+# Scheduled runs always use the workflow file on `main`, so this starts only
+# after the release that carries it. Details and the restore procedure:
+# docs/SSOT/OPERATOR_RUNBOOK.md "Scheduled database backups".
+#
+# A database with no tables yet (before the baseline) is dumped and kept like
+# any other; the run records `empty` instead of failing.
+
+on:
+  schedule:
+    - cron: '17 1 * * *' # 01:17 UTC (03:17 Israel), off the :00 rush
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup-prod
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: backup (${{ matrix.target.env }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - { env: prod, environment: supabase-prod }
+    environment: ${{ matrix.target.environment }}
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+      - uses: ./.github/actions/db-backup
+        with:
+          target: prod
+          expected-ref: kdqtbdbzwvlugkhonexg
+          age-recipient: ${{ vars.BACKUP_AGE_RECIPIENT }}
+          retention-days: '30'
