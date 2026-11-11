@@ -13,7 +13,7 @@
 | Range | Owner / issue | Status |
 |---|---|---|
 | 0002 | #2150 organization entitlement (`0002_org_entitlements.sql`) | merged |
-| 0003–0019 | `claude/baseline-post-cutover`: the post-cut-over world, chat, research, housing, knowledge and money changes ported from the pre-cut-over baseline branches | in progress |
+| 0003–0019 | `claude/baseline-post-cutover`: the post-cut-over world, chat, research, housing, knowledge and money changes ported from the pre-cut-over baseline branches. `0003` post seat counts, `0004` ride series schedule, `0005` match quality, `0006` profile mine tab, `0007` chat inbox previews, `0008` post media sizes, `0009` research feedback and survey reports, `0010` housing, knowledge and finance reads; `0011`–`0019` held for follow-ups | in progress |
 
 Next free number: `0020`.
 
