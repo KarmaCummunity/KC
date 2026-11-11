@@ -1,6 +1,6 @@
 # Event ride groups — delivery plan (2026-11-11)
 
-Spec: [`docs/spec/requirements/24_ride_event_groups.md`](../../../../spec/requirements/24_ride_event_groups.md) (`FR-EVRIDE-*`) · ADR: [ADR-007](../../../../architecture/adr/ADR-007-event-group-audience.md) · Decision `{{D:event-ride-groups}}` · Gap `{{G:event-ride-groups}}` · Migrations `0750–0779`.
+Spec: [`docs/spec/requirements/24_ride_event_groups.md`](../../../../spec/requirements/24_ride_event_groups.md) (`FR-EVRIDE-*`) · ADR: [ADR-007](../../../../architecture/adr/ADR-007-event-group-audience.md) · Decision `D144` · Gap `G62` · Migrations `0750–0779`.
 
 This plan turns the spec into releasable slices. One slice = one issue = one PR of ≤ ~600 changed lines (split further when larger), branch from `origin/dev`, base `dev`, opened-by label, `Mapped to spec`, tests first. Nothing starts before the PM approves the spec and answers the open items (or accepts their defaults).
 
@@ -136,4 +136,4 @@ Ops-health rows for each sweep; alerts: dispatch backlog > 200 rows older than 2
 
 ## 10. First issues to open (after approval)
 
-S0, S1, S2, S3, S4, S5, S6, S7, S8, S9 as sub-issues of the epic `{{G:event-ride-groups}}`; R2 issues created at the pilot exit. Each carries its slice text above, the FR list it implements, the migration numbers it uses and its exit criteria.
+S0, S1, S2, S3, S4, S5, S6, S7, S8, S9 as sub-issues of the epic `G62`; R2 issues created at the pilot exit. Each carries its slice text above, the FR list it implements, the migration numbers it uses and its exit criteria.

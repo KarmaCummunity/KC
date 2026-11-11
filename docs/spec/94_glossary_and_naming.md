@@ -29,7 +29,7 @@
 | נקודת איסוף | Meeting point | An official place along a ride where passengers board; up to 3 per ride (D71) |
 | מסלול שמור | Saved route | A followed from → to route that notifies on new rides along it (D74) |
 | הזמנת מקום | Seat booking | A passenger's request for seats on a ride offer; approved or declined by the driver (D73) |
-| קבוצת טרמפים לאירוע | Event ride group | A private room around one event (wedding, party, concert, trip) whose members publish and book rides to and from it; its rides are visible to members only (`{{D:event-ride-groups}}`, requirements/24) |
+| קבוצת טרמפים לאירוע | Event ride group | A private room around one event (wedding, party, concert, trip) whose members publish and book rides to and from it; its rides are visible to members only (`D144`, requirements/24) |
 | רגל נסיעה | Ride leg | `to_event` (ends at the event place) or `from_event` (starts there) of a group ride |
 | מארגן קבוצה | Group organizer | The one creator of an event ride group, with up to 3 co-organizers who manage members and announcements |
 | חוקת ברזל | Iron constitution | Rules core not changeable by vote (D40) |

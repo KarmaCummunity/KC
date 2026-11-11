@@ -1,6 +1,6 @@
 # ADR-007 — Audience of an event ride group: fail-closed membership
 
-- **Status:** Proposed (2026-11-11, revised after code review) · for gap `{{G:event-ride-groups}}` (decision `{{D:event-ride-groups}}`)
+- **Status:** Proposed (2026-11-11, revised after code review) · for gap `G62` (decision `D144`)
 - **Related:** [`FR-EVRIDE-011`](../../spec/requirements/24_ride_event_groups.md), [ADR-006](./ADR-006-one-post-model.md), [ADR-002](./ADR-002-data-layer.md), [ADR-003](./ADR-003-realtime.md)
 
 ## Context
