@@ -1,5 +1,6 @@
 import * as Crypto from 'expo-crypto';
 import { getSupabaseClient } from '@kc/infrastructure-supabase';
+import type { MediaAssetInput } from '@kc/application';
 import { buildPostImagePath, pickPostImages, type PickedImage } from './imageUpload';
 
 export type { PickedImage };
@@ -12,6 +13,8 @@ const MAX_LISTING_IMAGES = 5;
 const MAX_EDGE = 2048;
 const COMPRESS = 0.85;
 const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
+/** Every listing photo is re-encoded as JPEG before upload. */
+const LISTING_IMAGE_MIME = 'image/jpeg';
 
 export { pickPostImages as pickListingImages };
 
@@ -28,23 +31,24 @@ async function encodeJpeg(uri: string): Promise<Uint8Array> {
 export async function uploadListingImages(
   userId: string,
   picked: PickedImage[],
-): Promise<string[]> {
+): Promise<MediaAssetInput[]> {
   const batch = Crypto.randomUUID();
   const client = getSupabaseClient();
-  const paths: string[] = [];
+  const uploaded: MediaAssetInput[] = [];
   const slice = picked.slice(0, MAX_LISTING_IMAGES);
   for (let i = 0; i < slice.length; i += 1) {
     const path = buildPostImagePath(userId, batch, i);
     const bytes = await encodeJpeg(slice[i]!.uri);
     const { error } = await client.storage.from(LISTING_BUCKET).upload(path, bytes, {
-      contentType: 'image/jpeg',
+      contentType: LISTING_IMAGE_MIME,
       upsert: false,
       cacheControl: IMMUTABLE_CACHE_CONTROL,
     });
     if (error) throw new Error(error.message);
-    paths.push(path);
+    // The bytes actually stored: `post_media` records the real size and type of each file.
+    uploaded.push({ path, mimeType: LISTING_IMAGE_MIME, sizeBytes: bytes.byteLength });
   }
-  return paths;
+  return uploaded;
 }
 
 export function listingImagePublicUrl(storagePath: string): string {

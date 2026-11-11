@@ -26,6 +26,12 @@ vi.mock('react-native-reanimated', async () => (await import('../../ui/__tests__
 vi.mock('expo-haptics', async () => (await import('../../ui/__tests__/kitDialogTestKit')).hapticsDouble);
 vi.mock('../../../hooks/useReducedMotion', () => ({ useReducedMotion: () => true }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
+// The real helper pulls in the i18n bootstrap; the lists here always load.
+vi.mock('../../../lib/backendAvailability', () => ({
+  listOrEmpty: async <T,>(load: () => Promise<readonly T[]>) => [...(await load())],
+  isBackendUnavailable: () => false,
+  notAvailableMessage: () => 'backend.notAvailableYet',
+}));
 vi.mock('../../../store/authStore', () => ({
   useAuthStore: Object.assign(
     (select: (s: unknown) => unknown) => select({ session: sessionUserId ? { userId: sessionUserId } : null }),

@@ -33,5 +33,6 @@ export interface FinanceAccount {
   readonly sortOrder: number;
   /** Opening balance + cleared inflows − cleared outflows (computed by the server). */
   readonly balanceCents: number;
-  readonly entryCount: number;
+  /** Entries booked on the account; null when the server does not report it. */
+  readonly entryCount: number | null;
 }

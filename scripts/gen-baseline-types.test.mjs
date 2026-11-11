@@ -107,8 +107,9 @@ test('the generator and its formatter are pinned to exact versions', () => {
 
 // The committed files prove the convention: the file CI generates with the Supabase CLI
 // and the baseline file generated here have the same layout.
-test('the frozen legacy types (Supabase CLI) have the layout this script checks for', () => {
-  assert.deepEqual(shapeProblems(readFileSync(join(TYPES_DIR, 'database.legacy.types.ts'), 'utf8')), []);
+test('the frozen pre-baseline types (Supabase CLI) have the layout this script checks for', () => {
+  const frozen = join(dirname(fileURLToPath(import.meta.url)), '..', 'docs/db/pre-baseline-schema.types.ts');
+  assert.deepEqual(shapeProblems(readFileSync(frozen, 'utf8')), []);
 });
 
 test('the committed baseline types have the same layout and the same helper types', () => {

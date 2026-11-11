@@ -26,7 +26,8 @@ export const CHALLENGE_LIST_VIEWS = ['discover', 'joined', 'created'] as const;
 export type ChallengeListView = (typeof CHALLENGE_LIST_VIEWS)[number];
 
 export const CHALLENGE_TITLE_MIN_LENGTH = 3;
-export const CHALLENGE_TITLE_MAX_LENGTH = 120;
+/** A challenge is a post: its title obeys the posts title limit of 1–80 characters. */
+export const CHALLENGE_TITLE_MAX_LENGTH = 80;
 export const CHALLENGE_DESCRIPTION_MAX_LENGTH = 2000;
 export const CHALLENGE_TOPIC_MAX_LENGTH = 50;
 export const CHALLENGE_NOTE_MAX_LENGTH = 500;
@@ -61,6 +62,8 @@ export interface ChallengeDraft {
 /** A challenge as listed, plus the viewer's own participation (null fields when not joined). */
 export interface ChallengeSummary extends Omit<ChallengeDraft, 'endsAt'> {
   readonly challengeId: string;
+  /** The challenge's feed post (title, audience, comments and reactions live on it). */
+  readonly postId: string;
   readonly creatorId: string;
   readonly creatorDisplayName: string;
   readonly status: 'active' | 'ended';
@@ -73,6 +76,15 @@ export interface ChallengeSummary extends Omit<ChallengeDraft, 'endsAt'> {
   readonly myBestStreak: number;
   readonly mySuccessfulCycles: number;
   readonly myCompleted: boolean;
+}
+
+/** Opaque keyset cursor of a challenge list; pass back the `nextCursor` of the previous page. */
+export type ChallengeListCursor = string;
+
+/** One keyset page of a challenge list; `nextCursor` is null on the last page. */
+export interface ChallengePage {
+  readonly challenges: readonly ChallengeSummary[];
+  readonly nextCursor: ChallengeListCursor | null;
 }
 
 /** What a participant reports for one cycle. */

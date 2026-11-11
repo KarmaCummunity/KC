@@ -1,15 +1,14 @@
 // app/apps/mobile/app/(admin)/org-approvals/index.tsx
 // V2-ADMIN-ORG-7 — V2 §13.12 Admin Org Approvals foundation.
-// Lists pending NGO applications and lets a privileged admin approve or
-// reject each one. The "approval = create organization" side-effect is
-// out of scope here — it lands in a separate slice when the org world
-// schema is built.
+// Lists NGO applications and lets a privileged admin approve or reject each
+// one. Approving creates the organization at the web address the reviewer
+// chooses (FR-ORG-002) and makes the applicant its first admin.
 import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { adminChipScroll } from '../../../src/components/admin/adminChipScroll';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  hasPermission, isOrgApplicationError,
+  hasPermission, isOrgApplicationError, suggestOrgSlug,
   type AdminPermission, type AdminRole,
   type OrgApplication, type OrgApplicationStatus,
 } from '@kc/domain';
@@ -72,10 +71,11 @@ export default function OrgApprovalsScreen() {
   });
 
   const decide = useMutation({
-    mutationFn: (vars: { applicationId: string; approve: boolean; note: string }) =>
+    mutationFn: (vars: { applicationId: string; approve: boolean; note: string; slug: string }) =>
       container.decideOrgApplication.execute({
         applicationId: vars.applicationId,
         approve: vars.approve,
+        slug: vars.slug,
         note: vars.note.trim() || null,
       }),
     onSuccess: () => {
@@ -84,11 +84,11 @@ export default function OrgApprovalsScreen() {
   });
 
   const handleDecide = useCallback(
-    async (applicationId: string, approve: boolean, note: string) => {
+    async (applicationId: string, approve: boolean, note: string, slug: string) => {
       const ok = await confirmAction(approve ? t.actions.confirmApprove : t.actions.confirmReject, L);
       if (!ok) return;
       try {
-        await decide.mutateAsync({ applicationId, approve, note });
+        await decide.mutateAsync({ applicationId, approve, note, slug });
       } catch (err) {
         const code = isOrgApplicationError(err) ? err.code : 'unknown';
         const msg = t.errors[code as keyof typeof t.errors] ?? t.errors.unknown;
@@ -158,7 +158,7 @@ export default function OrgApprovalsScreen() {
 interface ApplicationCardProps {
   readonly application: OrgApplication;
   readonly busy: boolean;
-  readonly onDecide: (applicationId: string, approve: boolean, note: string) => Promise<void>;
+  readonly onDecide: (applicationId: string, approve: boolean, note: string, slug: string) => Promise<void>;
 }
 
 function ApplicationCardInner({ application, busy, onDecide }: ApplicationCardProps) {
@@ -166,6 +166,7 @@ function ApplicationCardInner({ application, busy, onDecide }: ApplicationCardPr
   const L = useLocaleBundle();
   const t = L.admin.orgApprovals;
   const [note, setNote] = useState('');
+  const [slug, setSlug] = useState(() => suggestOrgSlug(application.orgName, application.websiteUrl));
 
   const showActions = application.status === 'pending';
 
@@ -208,6 +209,7 @@ function ApplicationCardInner({ application, busy, onDecide }: ApplicationCardPr
 
       {showActions && (
         <>
+          <TextField label={t.row.slugLabel} value={slug} onChangeText={setSlug} autoCapitalize="none" autoCorrect={false} />
           <TextField
             label={t.row.noteLabel}
             value={note}
@@ -220,13 +222,13 @@ function ApplicationCardInner({ application, busy, onDecide }: ApplicationCardPr
               label={busy ? t.actions.busy : t.actions.reject}
               size="sm"
               disabled={busy}
-              onPress={() => { void onDecide(application.applicationId, false, note); }}
+              onPress={() => { void onDecide(application.applicationId, false, note, slug); }}
             />
             <PrimaryButton
               label={busy ? t.actions.busy : t.actions.approve}
               size="sm"
               disabled={busy}
-              onPress={() => { void onDecide(application.applicationId, true, note); }}
+              onPress={() => { void onDecide(application.applicationId, true, note, slug); }}
             />
           </View>
         </>

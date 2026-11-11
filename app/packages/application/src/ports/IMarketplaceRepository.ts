@@ -12,6 +12,7 @@ import type {
   OrganizationMembershipOption,
   ProfileListingRow,
 } from '@kc/domain';
+import type { MediaAssetInput } from './IPostRepository';
 
 /** Opaque keyset cursor of "My listings"; pass back the `nextCursor` of the previous page. */
 export type MyListingsCursor = string;
@@ -39,7 +40,8 @@ export interface IMarketplaceRepository {
     lat?: number | null;
     lng?: number | null;
     maxRadiusKm?: number | null;
-    mediaPaths?: string[];
+    /** Photos already uploaded to the owner's folder, in order, with their real type and size. */
+    media?: MediaAssetInput[];
     /** Required for routed worlds (medical / animals / environment). */
     externalBodyId?: string | null;
     /** The giver's world subcategory; must belong to the listing's world (0462). */
@@ -76,7 +78,7 @@ export interface IMarketplaceRepository {
    * listing, open, paused or closed; existing photos are never replaced (ten at most).
    * Resolves with the number added. Spec 07 §7.1 "Owner management".
    */
-  addMyListingMedia(listingId: string, mediaPaths: readonly string[]): Promise<number>;
+  addMyListingMedia(listingId: string, media: readonly MediaAssetInput[]): Promise<number>;
   getListingHandoff(listingId: string): Promise<GivingHandoffSnapshot | null>;
   listMyGivingHandoffs(limit?: number): Promise<MyGivingHandoffRow[]>;
   reserveItemGiving(

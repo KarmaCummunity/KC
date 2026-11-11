@@ -100,13 +100,6 @@ export function foodDetailColumns(details: Readonly<Record<string, unknown>>): J
   };
 }
 
-/** The Israel-local `HH:mm` of an instant: a series' departure time is stored in Israel time. */
-export function israelTimeOfDay(iso: string): string {
-  return new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit', hour12: false }).format(
-    new Date(iso),
-  );
-}
-
 interface RideRowLike {
   readonly departs_at: string;
   readonly arrives_at: string | null;

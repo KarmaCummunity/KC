@@ -37,6 +37,7 @@ export function AdminNav({ variant }: { variant: 'sidebar' | 'topbar' }): ReactE
 
   const items = ITEMS.filter(
     (it) =>
+      it.available !== false &&
       (it.key !== 'whatsapp' || whatsappBotVisible) &&
       (it.perm == null || hasPermission(roles as readonly AdminRole[], it.perm)),
   );

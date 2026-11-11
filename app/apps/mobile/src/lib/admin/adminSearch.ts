@@ -23,7 +23,7 @@ export function visibleDestinations(
   all: readonly AdminDestination[],
   roles: readonly AdminRole[],
 ): readonly AdminDestination[] {
-  return all.filter((d) => d.perm == null || hasPermission(roles, d.perm));
+  return all.filter((d) => d.available !== false && (d.perm == null || hasPermission(roles, d.perm)));
 }
 
 /**

@@ -3,7 +3,7 @@
 // today (scripts/db-usage-inventory.mjs) the replacement in the production baseline.
 //
 //   authored   scripts/app-migration-map.rows.mjs   one row per old object: status, target, note
-//   derived    call sites (inventory), old signature (database.legacy.types.ts), new signature
+//   derived    call sites (inventory), old signature (docs/db/pre-baseline-schema.types.ts), new signature
 //              (database.types.ts), error codes and client grants (supabase/schemas)
 //   output     docs/db/app-migration-map.json   every row with everything derived
 //              docs/db/app-migration-map.md     the same, for people
@@ -261,7 +261,8 @@ export function buildMap({ rows, missing, packages, edgeFunctions, notes, launch
 
 async function main() {
   const authored = await import('./app-migration-map.rows.mjs');
-  const oldTypes = parseTypes(readFileSync(join(TYPES_DIR, 'database.legacy.types.ts'), 'utf8'));
+  // The frozen pre-baseline schema: the "old" side of every row, kept as a record of the move.
+  const oldTypes = parseTypes(readFileSync(join(ROOT, 'docs/db/pre-baseline-schema.types.ts'), 'utf8'));
   const newTypes = parseTypes(readFileSync(join(TYPES_DIR, 'database.types.ts'), 'utf8'));
   const schemas = join(ROOT, 'supabase/schemas');
   const baseline = parseBaselineSql(walkSql(schemas).map((full) => ({ path: full.slice(schemas.length + 1), sql: readFileSync(full, 'utf8') })));

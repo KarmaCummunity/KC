@@ -3,7 +3,6 @@
 // pairs, as the other member's post card, and answers them.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { BackendUnavailableError } from '@kc/domain';
 import type { Database } from '../database.types';
 import { unwrapCall } from '../rpc/mapRpcError';
 
@@ -61,6 +60,27 @@ export interface MatchQualityByWorld {
 }
 
 type Row = Database['public']['Functions']['my_matches']['Returns'][number];
+type QualityRow = Database['public']['Functions']['admin_match_quality']['Returns'][number];
+
+/** A rate column: PostgREST returns numerics as strings, and null when the denominator is zero. */
+const rate = (value: number | string | null): number | null => (value === null ? null : Number(value));
+
+/** One `admin_match_quality` row. */
+export function mapQualityRow(r: QualityRow): MatchQualityByWorld {
+  return {
+    worldSlug: r.world_slug,
+    worldLabelHe: r.world_label_he,
+    worldLabelEn: r.world_label_en,
+    notifiedPairs: r.notified_pairs,
+    responses: r.responses,
+    accepted: r.accepted,
+    precisionProxy: rate(r.precision_proxy),
+    chatPairs: r.chat_pairs,
+    chatRate: rate(r.chat_rate),
+    completedPairs: r.completed_pairs,
+    completionRate: rate(r.completion_rate),
+  };
+}
 
 const asResponse = (v: string | null): MatchResponse | null => (v === 'accepted' || v === 'declined' ? v : null);
 
@@ -109,11 +129,9 @@ export class SupabaseMatchRepository {
     return { status: status ?? '', mutual: status === 'accepted' };
   }
 
-  /**
-   * Admin-only match quality per world. DEGRADED (M14): the baseline has no such report, so the call
-   * always reports `BackendUnavailableError` and the admin screen shows its empty state.
-   */
-  async qualityByWorld(_days = 30): Promise<MatchQualityByWorld[]> {
-    throw new BackendUnavailableError('rpc:admin_match_quality', 'function');
+  /** Match quality per world over the last `days` (moderators and above; the server clamps 1..365). */
+  async qualityByWorld(days = 30): Promise<MatchQualityByWorld[]> {
+    const rows = unwrapCall('rpc:admin_match_quality', await this.client.rpc('admin_match_quality', { p_days: days }));
+    return (rows ?? []).map(mapQualityRow);
   }
 }

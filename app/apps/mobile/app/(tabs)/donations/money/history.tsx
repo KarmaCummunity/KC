@@ -7,6 +7,8 @@ import { useQuery } from '@tanstack/react-query';
 import { makeUseStyles, spacing, typography, Text } from '@kc/ui';
 import { Screen } from '../../../../src/components/ui/Screen';
 import { paymentsUseCases } from '../../../../src/services/paymentsComposition';
+import { shekelsText } from '../../../../src/components/money/moneyAmount';
+import { listOrEmpty } from '../../../../src/lib/backendAvailability';
 
 const useStyles = makeUseStyles(({ colors }) => ({
   row: { padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
@@ -20,7 +22,7 @@ export default function DonationHistoryScreen() {
   const styles = useStyles();
   const history = useQuery({
     queryKey: ['money', 'history'],
-    queryFn: () => paymentsUseCases.listHistory().execute(50),
+    queryFn: () => listOrEmpty(() => paymentsUseCases.listHistory().execute(50)),
   });
 
   return (
@@ -44,11 +46,11 @@ export default function DonationHistoryScreen() {
             }
           >
             <Text style={styles.title}>
-              ₪{item.amountIls.toFixed(0)} · {item.orgName}
+              ₪{shekelsText(item.amountAgorot)} · {item.orgName}
             </Text>
             <Text style={styles.meta}>
               {new Date(item.paidAt).toLocaleString()}
-              {item.section46Serial ? ` · ${item.section46Serial}` : ''}
+              {item.receiptSerial !== null ? ` · ${item.receiptSerial}` : ''}
             </Text>
           </Pressable>
         )}

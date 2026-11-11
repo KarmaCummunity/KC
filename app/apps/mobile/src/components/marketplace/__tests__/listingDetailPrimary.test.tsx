@@ -17,6 +17,12 @@ const { viewer } = vi.hoisted(() => ({ viewer: { id: 'u_viewer' as string | null
 
 vi.mock('expo-router', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'he' } }) }));
+// The real helper pulls in the i18n bootstrap; the lists here always load.
+vi.mock('../../../lib/backendAvailability', () => ({
+  listOrEmpty: async <T,>(load: () => Promise<readonly T[]>) => [...(await load())],
+  isBackendUnavailable: () => false,
+  notAvailableMessage: () => 'backend.notAvailableYet',
+}));
 vi.mock('@expo/vector-icons', async () => (await import('../../ui/__tests__/kitDialogTestKit')).iconsDouble);
 vi.mock('expo-image', () => ({ Image: () => null }));
 vi.mock('../../../store/authStore', () => ({

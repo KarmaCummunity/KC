@@ -126,7 +126,7 @@ export function useListingCreateForm({
     setError,
     eventChoice,
   });
-  const photoCount = photos.length + source.carriedMediaPaths.length;
+  const photoCount = photos.length + source.carriedMedia.length;
 
   const setDetail = (key: string, value: unknown) => setDetails((prev) => ({ ...prev, [key]: value }));
   const isRides = worldSlug === 'rides';
@@ -214,7 +214,7 @@ export function useListingCreateForm({
       }
       // A republish reuses the source's photos (already in the owner's folder) before new ones.
       const uploaded = photos.length > 0 ? await uploadListingImages(userId, photos) : [];
-      const mediaPaths = [...source.carriedMediaPaths, ...uploaded];
+      const media = [...source.carriedMedia, ...uploaded];
       const id = await marketplaceRepository().createListing(
         buildListingCreatePayload({
           kindId: kind.kindId,
@@ -228,7 +228,7 @@ export function useListingCreateForm({
           lat: null,
           lng: null,
           radiusKm: DEFAULT_RADIUS_KM,
-          mediaPaths,
+          media,
           worldSubcategoryId: showSubcategory ? subcategoryId : null,
           additionalWorldSlugs: additionalWorlds.filter((w) => w !== worldSlug),
         }),
@@ -265,7 +265,7 @@ export function useListingCreateForm({
     setCity,
     photos,
     setPhotos,
-    carriedMediaPaths: source.carriedMediaPaths,
+    carriedMedia: source.carriedMedia,
     removeCarriedMedia: source.removeCarriedMedia,
     subcategoryId,
     setSubcategoryId,
