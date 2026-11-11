@@ -24,11 +24,17 @@ const source = MOBILE_DIRS.flatMap((d) => walk(d, (p) => /\.tsx?$/.test(p) && !p
   .map((p) => readFileSync(p, 'utf8'))
   .join('\n');
 
-/** Ids used by flows: `id: foo` lines (Maestro element selectors). */
+/**
+ * Ids used by flows: `id: foo` lines (Maestro element selectors). A quoted selector made only of ids
+ * joined by `|` (`id: "a|b"`, either screen state is valid) contributes each alternative; a selector
+ * with other regex syntax (`rides-feed-item-.*`) matches a family of ids and is not checked.
+ */
 function flowIds() {
   const ids = new Set();
   for (const file of flowFiles) {
-    for (const [, id] of readFileSync(file, 'utf8').matchAll(/^\s*id:\s*([A-Za-z0-9_-]+)\s*$/gm)) ids.add(id);
+    for (const [, id] of readFileSync(file, 'utf8').matchAll(/^\s*id:\s*"?([A-Za-z0-9_|-]+)"?\s*$/gm)) {
+      for (const alternative of id.split('|')) ids.add(alternative);
+    }
   }
   return [...ids].sort();
 }
@@ -74,4 +80,17 @@ test('system ANR dialogs from the emulator cannot cover the app', () => {
   assert.match(runner, /^adb shell settings put global hide_error_dialogs 1$/m);
   const gates = readFileSync(join(MAESTRO_DIR, 'subflows', 'dismiss-gates.yaml'), 'utf8');
   assert.match(gates, /visible: "isn't responding"[\s\S]*tapOn: "Wait"/);
+});
+
+test('the E2E build keeps email sign-in on: production builds hide it by default (#2134)', () => {
+  // Every flow signs in through the welcome screen's email entry, which launchSurfaces.ts hides in a
+  // build without EXPO_PUBLIC_ENVIRONMENT=development unless this override is set.
+  const workflow = readFileSync(join(ROOT, '.github', 'workflows', 'ci-maestro-android.yml'), 'utf8');
+  assert.match(workflow, /^ {2}EXPO_PUBLIC_LAUNCH_EMAIL_AUTH: '1'$/m);
+});
+
+test('the Maestro debug output is uploaded: it lives in a hidden .maestro folder', () => {
+  // Without this the screenshots, view hierarchy and maestro.log of a failed flow never reach the artifact.
+  const workflow = readFileSync(join(ROOT, '.github', 'workflows', 'ci-maestro-android.yml'), 'utf8');
+  assert.match(workflow, /name: maestro-android[\s\S]*?include-hidden-files: true/);
 });

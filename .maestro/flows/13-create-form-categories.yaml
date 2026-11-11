@@ -77,8 +77,12 @@ tags: [posts]
       CATEGORY: housing
 - tapOn:
     id: create-category-housing
-- assertVisible:
-    id: listing-create-form
+# Housing is gated (FR-HOUSING-003 AC2): a member below verification level 2 sees the verification
+# card instead of the listing form. The seeded members span levels 0-2, so either is correct here.
+- extendedWaitUntil:
+    visible:
+      id: "housing-verify-gate|listing-create-form"
+    timeout: 15000
 - runFlow:
     file: ../subflows/reveal-create-category.yaml
     env:
